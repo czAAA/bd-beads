@@ -75,38 +75,23 @@ export interface FrameAnchor extends SelectionAnchor {
   scale: number
 }
 
-/** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` (2px) apart. */
-const STEPPER_PX = 28
-const TOUCH_STEPPER_PX = 36
-const STEPPER_PAIR_GAP_PX = 2
-
-/** A centre kept `BAR_EDGE_PX` clear of the canvas box's edges for a control `extent` long. */
-const clamp = (value: number, extent: number, limit: number) => Math.max(BAR_EDGE_PX + extent / 2, Math.min(value, limit - BAR_EDGE_PX - extent / 2))
-
 /** The centre of each edge's stepper pair, in the canvas box's pixels. */
 export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }>
 
 /**
  * Where Edit Frame's margin steppers go (ticket 427, ADR 0055): each pair centred on its edge, in the margin between the
- * ruler numbers and the margin's outer edge, then clamped so the whole pair stays inside the canvas box.
+ * ruler numbers and the margin's outer edge. They are pinned there, never clamped to the canvas box: panning carries them
+ * with the Frame, and a pair off the box goes out of sight with its edge.
  */
-export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameStepperCentres {
-  const { box, outer, numbers, viewport } = anchor
-  const size = (touch ? TOUCH_STEPPER_PX : STEPPER_PX) * anchor.scale
-  const pair = 2 * size + STEPPER_PAIR_GAP_PX * anchor.scale
+export function frameStepperCentres(anchor: FrameAnchor): FrameStepperCentres {
+  const { box, outer, numbers } = anchor
   const midX = box.left + box.width / 2
   const midY = box.top + box.height / 2
-  const topY = (box.top - numbers.down + outer.top) / 2
-  const bottomY = (box.top + box.height + numbers.down + outer.top + outer.height) / 2
-  const leftX = (box.left - numbers.across + outer.left) / 2
-  const rightX = (box.left + box.width + numbers.across + outer.left + outer.width) / 2
-  const across = (x: number) => clamp(x, size, viewport.width)
-  const down = (y: number) => clamp(y, size, viewport.height)
   return {
-    top: { x: clamp(midX, pair, viewport.width), y: down(topY) },
-    bottom: { x: clamp(midX, pair, viewport.width), y: down(bottomY) },
-    left: { x: across(leftX), y: clamp(midY, pair, viewport.height) },
-    right: { x: across(rightX), y: clamp(midY, pair, viewport.height) },
+    top: { x: midX, y: (box.top - numbers.down + outer.top) / 2 },
+    bottom: { x: midX, y: (box.top + box.height + numbers.down + outer.top + outer.height) / 2 },
+    left: { x: (box.left - numbers.across + outer.left) / 2, y: midY },
+    right: { x: (box.left + box.width + numbers.across + outer.left + outer.width) / 2, y: midY },
   }
 }
 
@@ -128,17 +113,15 @@ export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number
 
 /**
  * The Frame's three corner controls (ticket 455, after 452): Move handle, Edit Frame and Remove Frame in one row, like a
- * window's buttons, just inside the margin outline's top-right corner, the row kept inside the canvas box.
+ * window's buttons, just inside the margin outline's top-right corner, pinned there (not clamped to the canvas box, so panning carries it).
  */
 export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameCornerControls {
-  const { outer, viewport } = anchor
-  const { scale } = anchor
+  const { outer, scale } = anchor
   const fullSize = touch ? TOUCH_CORNER_PX : CORNER_PX
   const size = fullSize * scale
   const gap = CORNER_GAP_PX * scale
-  const row = 3 * size + 2 * gap
-  const right = Math.max(BAR_EDGE_PX + row, Math.min(outer.left + outer.width - CORNER_INSET_PX * scale, viewport.width - BAR_EDGE_PX))
-  const top = Math.max(BAR_EDGE_PX, Math.min(outer.top + CORNER_INSET_PX * scale, viewport.height - BAR_EDGE_PX - size))
+  const right = outer.left + outer.width - CORNER_INSET_PX * scale
+  const top = outer.top + CORNER_INSET_PX * scale
   const y = top + size / 2
   const at = (slot: number) => ({ x: right - size / 2 - slot * (size + gap), y })
   return { size, fullSize, scale, remove: at(0), edit: at(1), move: at(2) }
