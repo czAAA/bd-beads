@@ -188,15 +188,16 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
  */
 function drawPreview(context: DrawingContext, project: DrawnProject, space: Space, preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = project
-  const size = CELL_SIZE_PX - 2
-  const roundness = beadRoundness(technique) * CELL_SIZE_PX - 1
+  const inset = BEAD_GAP_PX / 2
+  const size = CELL_SIZE_PX - BEAD_GAP_PX
+  const roundness = beadRoundness(technique) * CELL_SIZE_PX - inset
 
   for (const cell of preview.cells) {
     if (!inSpace(space, cell.row, cell.column)) {
       continue
     }
-    const x = shiftOf(space, technique, cell.row) + cell.column * CELL_SIZE_PX + 1
-    const y = rowTopPx(technique, cell.row) + 1
+    const x = shiftOf(space, technique, cell.row) + cell.column * CELL_SIZE_PX + inset
+    const y = rowTopPx(technique, cell.row) + inset
     const color = cell.color ?? preview.color
 
     if (color) {
@@ -422,15 +423,16 @@ function strokeTourMark(context: DrawingContext, theme: ProjectTheme, draw: () =
 function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Space, marks: TourMarks, theme: ProjectTheme): void {
   const { technique } = project
   const { columns, rows } = space
-  const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - 1)
-  const size = CELL_SIZE_PX - 2
+  const inset = BEAD_GAP_PX / 2
+  const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - inset)
+  const size = CELL_SIZE_PX - BEAD_GAP_PX
 
   for (const { row, column } of marks.cells) {
     if (!inSpace(space, row, column)) {
       continue
     }
-    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + 1
-    const y = rowTopPx(technique, row) + 1
+    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + inset
+    const y = rowTopPx(technique, row) + inset
     strokeTourMark(context, theme, () => {
       context.beginPath()
       roundedRect(context, x, y, size, size, radius)
