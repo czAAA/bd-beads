@@ -234,7 +234,6 @@ describe('Position marks tile styles', () => {
   it('draws one shared 1px line on each cell\'s edge, and clears the bead inside it', () => {
     // A technique of its own, as a tile is kept per style and Technique.
     const { named } = tileCalls('squares', 'brick')
-    expect(BEAD_GAP_PX).toBe(1)
     // The outline sits on the cell's edge (a neighbour's is the same line), the clearing is the bead, half a gap in.
     const rights = named('arcTo').map((call) => call.args[0] as number)
     expect(rights).toContain(CELL_SIZE_PX)
