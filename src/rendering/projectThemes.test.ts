@@ -31,9 +31,7 @@ describe('ProjectTheme', () => {
     for (const [field, name] of Object.entries(FIELDS)) {
       expect(values[field as keyof typeof FIELDS], field).toBe(token(name, theme))
     }
-    // A rim drawn in the board's own color is no rim: the renderer skips it.
-    const rim = token('bead-rim', theme)
-    expect(values.rim).toBe(rim === token('board', theme) ? null : rim)
+    expect(values.rim).toBe(token('bead-rim', theme))
   })
 
   it('fades finished rows by the BeadBoard card: light 28% of the color, dark 45% of its grey', () => {
