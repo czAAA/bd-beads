@@ -59,6 +59,8 @@ export interface ControlDeps {
   onNamePiece: () => void
   onToggleRowDirection: () => void
   onMoveRow: (delta: number) => void
+  /** Asks, then takes Row progress back to the first row (ticket 455). */
+  onResetProgress: () => void
   openShortcutsHelp: () => void
   /** Ctrl/⌘ + plus, minus and 0: Canvas zoom in, out and Fit (ticket 316). */
   onZoomIn: () => void
@@ -514,6 +516,16 @@ export const CONTROLS: readonly ControlAction[] = [
     // Allowed once a pass is done too: it asks first, and clears the passes with the Frame (ticket 426).
     enabled: hasFrame,
     disabledBody: (t: Translations) => t.tooltips.noFrameToRemove,
+  }),
+  unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { body: (t) => t.tooltips.moveFrame }),
+  unkeyed('reset-progress', (t) => t.rowProgress.resetButton, 'rowProgress', {
+    icon: 'reset',
+    body: (t) => t.tooltips.resetProgress,
+    enabled: (deps: ControlDeps) => {
+      const project = deps.activeProject()
+      return !!project && rowProgressStarted(project)
+    },
+    disabledBody: (t: Translations) => t.tooltips.noProgressToReset,
   }),
   unkeyed('change-technique', (t) => t.form.techniqueLabel, 'canvas', {
     body: (t) => t.tooltips.changeTechnique,

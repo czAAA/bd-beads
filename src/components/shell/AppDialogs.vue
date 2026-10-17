@@ -12,6 +12,9 @@ const {
   deleteAllConfirmOpen,
   onCancelDeleteAll,
   onConfirmDeleteAll,
+  resetProgressConfirmOpen,
+  onCancelResetProgress,
+  onConfirmResetProgress,
   removeFrameConfirmOpen,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
@@ -65,6 +68,17 @@ const {
     :cancel-label="t.deleteAll.cancelButton"
     @confirm="onConfirmDeleteAll"
     @cancel="onCancelDeleteAll"
+  />
+
+  <ConfirmModal
+    v-if="resetProgressConfirmOpen"
+    data-testid="reset-progress-modal"
+    :title="t.rowProgress.resetConfirmTitle"
+    :message="t.rowProgress.resetConfirmMessage"
+    :confirm-label="t.rowProgress.resetButton"
+    :cancel-label="t.rowProgress.resetConfirmCancel"
+    @confirm="onConfirmResetProgress"
+    @cancel="onCancelResetProgress"
   />
 
   <ConfirmModal

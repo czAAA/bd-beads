@@ -40,6 +40,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onRemoveSelectedLine: vi.fn(),
     onToggleRowDirection: vi.fn(),
     onMoveRow: vi.fn(),
+    onResetProgress: vi.fn(),
     openShortcutsHelp: vi.fn(),
     onZoomIn: vi.fn(),
     onZoomOut: vi.fn(),

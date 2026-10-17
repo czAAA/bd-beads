@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition, Technique } from '../../domain/grid'
-import { changeFrame, frameChangeDiscardsProgress } from '../../domain/changeFrame'
+import { changeFrame } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -167,18 +167,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 
-  /** Whether the Remove frame confirmation is open: shown only when a pass is done, as removing the Frame throws the passes away (ticket 426). */
+  /** Whether the Remove frame confirmation is open: always asked first: the passes go with the Frame (tickets 426, 455). */
   const removeConfirmOpen = ref(false)
 
-  /** Remove Frame; once a pass is done it asks first. */
+  /** Remove Frame: asks first (ticket 455). */
   function remove(): void {
-    const project = deps.currentProject()
-    if (!project?.frame) return
-    if (frameChangeDiscardsProgress(project, { remove: true })) {
-      removeConfirmOpen.value = true
-      return
-    }
-    commit(undefined)
+    if (deps.currentProject()?.frame) removeConfirmOpen.value = true
   }
 
   /** The Remove frame question answered No: nothing changes. */

@@ -10,9 +10,8 @@ import IconButton from '../ui/IconButton.vue'
 /**
  * Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one short bar along the
  * canvas box's bottom edge, always shown at every width whatever the Project's shape. Row progress is on whenever there is
- * a Frame (ADR 0055), so the first control is Remove frame, disabled with a Tooltip reason while there is none; without a
- * Frame the bar then offers Fit to drawing, and the bar keeps its height so the canvas doesn't jump. With a Frame, Turn row
- * direction sits beside Remove frame; then come the current row, the finished share, and the large Row not done and Row
+ * a Frame (ADR 0055); without one the bar offers Fit to drawing, and keeps its height so the canvas doesn't jump. Remove
+ * frame lives on the Frame's corner (ticket 455). With a Frame, Turn row direction and Reset progress come first; then come the current row, the finished share, and the large Row not done and Row
  * done buttons, whose label and arrow follow Row direction. They move the current-row pointer exactly as the hotkeys do
  * (D, Shift+Enter/Shift+Space, Enter/Space (ticket 178)).
  */
@@ -20,9 +19,8 @@ const props = defineProps<{ project: Project }>()
 
 const emit = defineEmits<{
   'move-row': [delta: number]
-  /** Remove frame, which asks first once a pass is done (ticket 426). */
-  'remove-frame': []
-  /** Edit Frame, the Frame's one way in now that Project no longer has it (ticket 443); it is only offered with a Frame. */
+  /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
+  'reset-progress': []
   'toggle-row-direction': []
   /** The bar's own way to a Frame, shown while there is none to count rows on: Fit to drawing. */
   'fit-frame': []
@@ -32,7 +30,7 @@ const { t } = useI18n()
 
 /** Every control here is a registry action: its name, Tooltip, key chip and disabled reason come from there (ADR 0035). */
 const actions = {
-  removeFrame: controlAction('remove-frame'),
+  reset: controlAction('reset-progress'),
   fitFrame: controlAction('fit-to-drawing'),
   direction: controlAction('row-direction'),
   notDone: controlAction('row-not-done'),
@@ -64,8 +62,6 @@ const directionLabel = computed(() =>
 
 <template>
   <div class="progress-bar no-page-pan" data-testid="progress-bar">
-    <AppButton variant="box" :action="actions.removeFrame" :deps="deps" data-testid="progress-bar-remove-frame" @click="emit('remove-frame')" />
-
     <template v-if="!hasFrame">
       <!-- Styled like the CanvasHint: Select, then Set Frame to start, each with its icon. -->
       <p class="progress-bar__need" data-testid="progress-bar-needs-frame">
@@ -78,13 +74,20 @@ const directionLabel = computed(() =>
       </span>
     </template>
     <template v-else>
-      <!-- Turn row direction sits beside Remove frame, away from the do/undo pair, so it can't be hit while doing rows (ticket 411). -->
+      <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
       <IconButton
         variant="box"
         :action="actions.direction"
         :selected="columnWise"
         data-testid="progress-bar-direction"
         @click="emit('toggle-row-direction')"
+      />
+      <IconButton
+        variant="box"
+        :action="actions.reset"
+        :deps="deps"
+        data-testid="progress-bar-reset"
+        @click="emit('reset-progress')"
       />
       <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
         <span class="progress-bar__row">{{ t.rowProgress.positionLabel }} {{ shownRow }}</span>

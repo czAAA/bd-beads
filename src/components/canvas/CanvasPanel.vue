@@ -128,6 +128,7 @@ const {
   onFrameKey,
   onStepFrameEdge,
   onRemoveFrame,
+  onResetProgress,
   frameDraft,
   onFramePress,
   onFrameDrag,
@@ -187,6 +188,8 @@ const selectionSummary = computed(() => {
 const selectionAnchor = ref<SelectionAnchor>()
 /** Where the Frame and its margin are while it is edited: Edit Frame's margin steppers sit in the margin (tickets 417, 427). */
 const frameAnchor = ref<FrameAnchor>()
+/** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
+const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
 
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
@@ -296,6 +299,8 @@ function techniqueWord(technique: Technique): string {
           :anchor="frameAnchor"
           :editing="settingFrame"
           @toggle="onEditFrame"
+          @remove="onRemoveFrame"
+          @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
         />
 
@@ -324,6 +329,7 @@ function techniqueWord(technique: Technique): string {
             />
             <ProjectSurface
               v-else-if="activeProject"
+              ref="surfaceRef"
               :project="shownProject!"
               :setting-frame="settingFrame"
               :frame-tooltip="frameTooltip"
@@ -429,7 +435,7 @@ function techniqueWord(technique: Technique): string {
         v-if="activeProject && !framing"
         :project="activeProject"
         @move-row="onMoveRow"
-        @remove-frame="onRemoveFrame"
+        @reset-progress="onResetProgress"
         @toggle-row-direction="onToggleRowDirection"
         @fit-frame="onFitFrame"
       />

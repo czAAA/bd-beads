@@ -171,17 +171,18 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="panel-body"] [aria-label="Undo"]').exists()).toBe(false)
   })
 
-  it('always shows the Progress bar, whose Remove frame replaces the Row progress switch (tickets 411, 426)', async () => {
+  it('always shows the Progress bar, and Remove frame on the Frame replaces the Row progress switch (tickets 411, 426, 455)', async () => {
     const wrapper = await mountWithProject(15, 30)
     const bar = () => wrapper.get('[data-testid="progress-bar"]')
     expect(bar().classes()).not.toContain('app-shell__progress--hidden')
     expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBeUndefined()
+    expect(wrapper.get('[data-testid="frame-chrome-remove"]').attributes('aria-disabled')).toBeUndefined()
 
-    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)
   })
 

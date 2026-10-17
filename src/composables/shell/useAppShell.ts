@@ -738,6 +738,7 @@ function wireAppShell(services: Services) {
     onNamePiece: namePiece.onNamePiece,
     onToggleRowDirection: rowOps.onToggleRowDirection,
     onMoveRow: rowOps.onMoveRow,
+    onResetProgress: rowOps.onResetProgress,
     onStepMirrorAxis,
     onToggleMirrorCopyMode,
     onMirrorCurrent,

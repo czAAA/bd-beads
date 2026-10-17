@@ -112,12 +112,12 @@ describe('ProgressBar', () => {
     expect(wrapper.find('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
   })
 
-  it('puts Turn row direction beside Remove frame, ahead of the do/undo pair (ticket 411)', () => {
+  it('puts Turn row direction and Reset progress ahead of the do/undo pair (tickets 411, 455)', () => {
     const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
     const order = wrapper
-      .findAll('[data-testid="progress-bar-remove-frame"], [data-testid="progress-bar-direction"], [data-testid="progress-bar-previous"], [data-testid="progress-bar-next"]')
+      .findAll('[data-testid="progress-bar-direction"], [data-testid="progress-bar-reset"], [data-testid="progress-bar-previous"], [data-testid="progress-bar-next"]')
       .map((element) => element.attributes('data-testid'))
-    expect(order).toEqual(['progress-bar-remove-frame', 'progress-bar-direction', 'progress-bar-previous', 'progress-bar-next'])
+    expect(order).toEqual(['progress-bar-direction', 'progress-bar-reset', 'progress-bar-previous', 'progress-bar-next'])
   })
 
   it('says which way the rows run after the total', () => {
@@ -133,7 +133,7 @@ describe('ProgressBar', () => {
 
     expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').exists()).toBe(false)
   })
 
   it('gives every control its key in a Tooltip and no native title (ticket 339)', () => {
@@ -145,14 +145,24 @@ describe('ProgressBar', () => {
     expect(wrapper.find('[title]').exists()).toBe(false)
   })
 
-  it('turns the row direction from its button and asks to remove the Frame from the first control', async () => {
+  it('turns the row direction from its button and asks to reset progress from the next (tickets 411, 455)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
 
     await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
-    await wrapper.find('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.find('[data-testid="progress-bar-reset"]').trigger('click')
 
     expect(wrapper.emitted('toggle-row-direction')).toHaveLength(1)
-    expect(wrapper.emitted('remove-frame')).toHaveLength(1)
+    expect(wrapper.emitted('reset-progress')).toHaveLength(1)
+  })
+
+  it('disables Reset progress, with its reason, while no row is done (ticket 455)', async () => {
+    const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
+
+    const reset = wrapper.find('[data-testid="progress-bar-reset"]')
+    expect(reset.attributes('aria-disabled')).toBe('true')
+    await reset.trigger('click')
+    expect(wrapper.emitted('reset-progress')).toBeUndefined()
+    expect(wrapper.text()).toContain(ru.tooltips.noProgressToReset)
   })
 })
 
@@ -162,14 +172,11 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     return rest
   }
 
-  it('shows Remove frame disabled with its reason, "Set Frame to start" and a Fit to drawing button, and no row buttons (ticket 426)', async () => {
+  it('shows "Set Frame to start" and a Fit to drawing button, and no row buttons (ticket 426)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
-    const remove = wrapper.find('[data-testid="progress-bar-remove-frame"]')
-    expect(remove.attributes('aria-disabled')).toBe('true')
-    await remove.trigger('click')
-    expect(wrapper.emitted('remove-frame')).toBeUndefined()
-    expect(wrapper.text()).toContain(ru.tooltips.noFrameToRemove)
+    expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-reset"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(`${ru.tools.selectLabel}·${ru.frame.progressNeedsFrame}`)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
