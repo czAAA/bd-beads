@@ -199,6 +199,17 @@ const GAP_PX = BEAD_GAP_PX / 2
 /** Width of the faint rim inside each bead's edge, in the Project's own px. */
 const RIM_PX = 0.75
 
+/** The rim of a near-black bead: light's dark-tint rim vanishes on it, so it gets the white tint dark draws (`bead-rim`, dark). */
+const NEAR_BLACK_RIM = 'rgba(255,255,255,.16)'
+
+/** Below this grey (0-255) a bead is near-black. */
+const NEAR_BLACK_GREY = 45
+
+function isNearBlack(color: string): boolean {
+  const rgb = parseHex(color)
+  return !!rgb && 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] < NEAR_BLACK_GREY
+}
+
 /**
  * A color's grey, worked out directly. A finished row is drawn as its greyscale at reduced opacity, and canvas filters
  * (`ctx.filter = 'grayscale(1)'`) are missing on iPad Safari, so nothing here leans on one. The weights are the ones CSS's
@@ -320,7 +331,7 @@ function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.back
 
 /**
  * The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell, and a
- * faint rim just inside its edge. A finished bead is the same shapes in the colors its fade comes to, so it covers
+ * faint rim just inside its edge (white on a near-black bead, in light too). A finished bead is the same shapes in the colors its fade comes to, so it covers
  * whatever is under it (a finished bead drawn on the overlay covers the bead on the cells layer).
  */
 function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
@@ -329,7 +340,7 @@ function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, col
   const outerSize = size - GAP_PX * 2
   const outerRadius = Math.max(0, cornerRadius - GAP_PX)
 
-  context.fillStyle = blendOver(theme.rim, fill)
+  context.fillStyle = blendOver(isNearBlack(fill) ? NEAR_BLACK_RIM : theme.rim, fill)
   fillShape(context, x + GAP_PX, y + GAP_PX, outerSize, outerRadius)
   context.fillStyle = fill
   fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, outerSize - RIM_PX * 2, Math.max(0, outerRadius - RIM_PX))
