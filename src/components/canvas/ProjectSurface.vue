@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { inMargin, mayPlace, withMargin } from '../../domain/margin'
+import { inMargin, marginAt, mayPlace, withMargin } from '../../domain/margin'
 import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -13,9 +13,9 @@ import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
-import { frameMoveHandle, type FrameAnchor, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { cornerControlsReachPx, frameMoveHandle, type FrameAnchor, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
-import { surfaceView, type Scroll } from '../../rendering/surfaceView'
+import { rowPitchPx, surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
@@ -298,20 +298,30 @@ watch(
 /** The coarsest Ruler step at which the Frame's steppers still show, and the least they shrink to (ticket 427). */
 const STEPPER_MAX_RULER_STEP = 5
 const STEPPER_MIN_SCALE = 0.5
+const stepperScale = (zoom: number) => Math.min(1, Math.max(STEPPER_MIN_SCALE, zoom))
+
+/** How many positions wide the margin is shown at this zoom (ticket 459): wide enough that the Frame's corner controls, which stop shrinking at half size, stay inside it. */
+const shownMargin = computed(() =>
+  marginAt({
+    neededPx: cornerControlsReachPx(stepperScale(props.zoom), touchInput.value),
+    pitchPx: rowPitchPx(props.project.technique),
+    zoom: props.zoom,
+  }),
+)
 
 /** Where the Frame is on screen (ticket 417, 427, 452): told to the margin steppers, the Move handle's key stop and the edit toggle. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = props.project.frame
   if (!frame || size.value.width === 0) return undefined
   const box = surface.value.frameBox(frame)
-  const outer = surface.value.beadBox(withMargin(frame))
+  const outer = surface.value.beadBox(withMargin(frame, shownMargin.value))
   const { fontPx, gap } = rulers.value.scale
   return {
     box: { left: box.x, top: box.y, width: box.width, height: box.height },
     outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
     // Three digits across, one line down, past the Frame's line (Rulers card).
     numbers: { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
-    scale: Math.min(1, Math.max(STEPPER_MIN_SCALE, surface.value.zoom)),
+    scale: stepperScale(surface.value.zoom),
     // The steppers go once the rulers show fewer than every 5th number (or the Rulers are off); until then they shrink with the zoom (ticket 427).
     ...(props.showRulers === false || rulers.value.step > STEPPER_MAX_RULER_STEP ? { steppersHidden: true } : {}),
     viewport: { ...size.value },
@@ -401,11 +411,11 @@ function drawCells(): void {
       : undefined
 
   if (bands === undefined) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value, margin: shownMargin.value })
     return
   }
   for (const rows of bands) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value, margin: shownMargin.value })
   }
 }
 
@@ -538,6 +548,7 @@ function drawOverlay(): void {
       dimmedCells: props.dimmedCells,
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
+      margin: shownMargin.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
       selectionHandles: props.selecting ? { surface: surface.value, touch: touchInput.value } : undefined,
       rulers: { layout: rulers.value, surface: surface.value },
@@ -697,13 +708,13 @@ watch(
 
 /** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket 428). */
 function refusesSelectionStart(bead: GridPosition): boolean {
-  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)
+  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead, shownMargin.value)
 }
 
 function refusesMargin(bead: GridPosition | undefined): boolean {
   if (bead === undefined) return false
   if (refusesSelectionStart(bead)) return true
-  return props.blocksMargin === true && !mayPlace(props.project, bead)
+  return props.blocksMargin === true && !mayPlace(props.project, bead, shownMargin.value)
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {

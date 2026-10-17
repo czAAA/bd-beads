@@ -146,6 +146,11 @@ export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameC
   return { size, fullSize, scale, remove: at(0), edit: at(1), move: at(2) }
 }
 
+/** The height of the margin's top band the corner controls need at a zoom scale (ticket 459): a control and the inset above and below it. */
+export function cornerControlsReachPx(scale: number, touch: boolean): number {
+  return ((touch ? TOUCH_CORNER_PX : CORNER_PX) + 2 * CORNER_INSET_PX) * scale
+}
+
 /** The Move handle's square (ticket 452, 455): the leftmost of the corner controls. */
 export function frameMoveHandle(anchor: FrameAnchor, touch: boolean): { x: number; y: number; size: number } {
   const { move, size } = frameCornerControls(anchor, touch)
