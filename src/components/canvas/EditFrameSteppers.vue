@@ -11,7 +11,7 @@ import { useI18n } from '../../i18n/useI18n'
 /**
  * Edit Frame's margin steppers (ticket 417, ADR 0054, ticket 427): a mini −/+ on each of the Frame's four edges, in the
  * margin between the ruler numbers and its outer edge, clamped inside the canvas box,
- * shrinking with the zoom and gone once the rulers drop below every 5th number. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
+ * shrinking with the zoom and staying whatever the Rulers show. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
  * changes by itself and the Frame never has a pending size. The pairs follow the Frame's rectangle (`anchor`, in the canvas box's own
  * pixels), so they track pan and zoom. Rendered only while the edit toggle is on (ticket 452), never for a Selection; arrow keys on a focused stepper move or resize the Frame.
  */
