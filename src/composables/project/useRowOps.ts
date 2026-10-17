@@ -1,6 +1,9 @@
+import { ref } from 'vue'
 import {
   moveToRow,
+  resetRowProgress,
   rowProgressPosition,
+  rowProgressStarted,
   toggleRowDirection,
   type Project,
 } from '../../domain/project'
@@ -45,5 +48,26 @@ export function useRowOps(deps: RowOpsDeps) {
     }
   }
 
-  return { onToggleRowDirection, onMoveRow }
+  /** Whether the Reset progress question is open (ticket 455): clearing every finished row is not an undo step, so it asks first. */
+  const resetProgressConfirmOpen = ref(false)
+
+  /** Asks whether to reset; nothing to ask about until a row is done. */
+  function onResetProgress() {
+    const project = deps.currentProject()
+    if (project && rowProgressStarted(project)) resetProgressConfirmOpen.value = true
+  }
+
+  /** The Reset progress question answered No: nothing changes. */
+  function onCancelResetProgress() {
+    resetProgressConfirmOpen.value = false
+  }
+
+  /** Reset progress after the question: the pointers go back to the first row, the direction stays. */
+  function onConfirmResetProgress() {
+    resetProgressConfirmOpen.value = false
+    const project = deps.currentProject()
+    if (project) deps.replaceProject(resetRowProgress(project))
+  }
+
+  return { onToggleRowDirection, onMoveRow, resetProgressConfirmOpen, onResetProgress, onCancelResetProgress, onConfirmResetProgress }
 }

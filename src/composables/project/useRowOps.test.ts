@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, toggleRowDirection, type Project } from '../../domain/project'
+import { createProject, moveToRow, toggleRowDirection, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
 
@@ -51,5 +51,28 @@ describe('useRowOps', () => {
     onToggleRowDirection()
     onMoveRow(1)
     expect(deps.replaceProject).not.toHaveBeenCalled()
+  })
+
+  it('asks before Reset progress, and only once a row is done (ticket 455)', () => {
+    const framed = { ...base, frame: { row: 0, column: 0, rows: 3, columns: 3 } }
+    const fresh = setup(framed)
+    fresh.onResetProgress()
+    expect(fresh.resetProgressConfirmOpen.value).toBe(false)
+
+    const started = setup(moveToRow(framed, 2))
+    started.onResetProgress()
+    expect(started.resetProgressConfirmOpen.value).toBe(true)
+    expect(started.deps.replaceProject).not.toHaveBeenCalled()
+    started.onCancelResetProgress()
+    expect(started.resetProgressConfirmOpen.value).toBe(false)
+  })
+
+  it('takes both pointers back to the first row on confirm, keeping the direction (ticket 455)', () => {
+    const columns = toggleRowDirection({ ...base, frame: { row: 0, column: 0, rows: 3, columns: 3 } })
+    const { deps, onResetProgress, onConfirmResetProgress, resetProgressConfirmOpen } = setup(moveToRow(columns, 2))
+    onResetProgress()
+    onConfirmResetProgress()
+    expect(resetProgressConfirmOpen.value).toBe(false)
+    expect(replaced(deps).rowProgress).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
   })
 })

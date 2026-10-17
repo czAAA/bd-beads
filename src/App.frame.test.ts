@@ -103,6 +103,15 @@ describe('Edit Frame', () => {
     expect(savedFrame()).toEqual({ row: 3, column: 4, rows: 2, columns: 4 })
   })
 
+  it('drags the Frame from the Move handle\'s button, which hands its press to the canvas (ticket 455)', async () => {
+    const wrapper = await mountOpen(framedProject())
+    await wrapper.get('[data-testid="frame-move-handle"]').trigger('pointerdown', { button: 0, buttons: 1, isPrimary: true, pointerId: 1 })
+    await hoverBead(wrapper, { row: 2, column: 4 }, { buttons: 1 })
+    await surface(wrapper).trigger('pointerup')
+    await flushPromises()
+    expect(savedFrame()).not.toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+  })
+
   it('carries the Frame\'s beads when it is moved, in one Undo step (ticket 452)', async () => {
     const wrapper = await mountOpen(framedProject())
     await wrapper.get('[data-testid="frame-move-handle"]').trigger('keydown', { key: 'ArrowRight' })
@@ -141,7 +150,8 @@ describe('Edit Frame', () => {
   it('goes with the Frame when Remove Frame takes it away, and is on again for a Frame brought back by Undo', async () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
-    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(false)
@@ -171,7 +181,8 @@ describe('Fit and Remove frame, on the Progress bar and not in Project (ticket 4
     await wrapper.get('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
-    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(savedFrame()).toBeUndefined()
 
     await key({ key: 'z', ctrlKey: true })
@@ -264,13 +275,17 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
   })
 
-  it('removes the Frame at once while no pass is done, and one Undo brings it back', async () => {
+  it('asks before removing the Frame even while no pass is done, and one Undo brings it back (ticket 455)', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
 
-    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
-    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(true)
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
     expect(savedFrame()).toBeUndefined()
-    expect(wrapper.get('[data-testid="progress-bar-remove-frame"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(true)
 
     await key({ key: 'z', ctrlKey: true })
@@ -278,12 +293,30 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(false)
   })
 
+  it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
+    expect(savedProgress().currentRow).toBe(1)
+
+    await wrapper.get('[data-testid="progress-bar-reset"]').trigger('click')
+    expect(wrapper.find('[data-testid="reset-progress-modal"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
+    expect(savedProgress().currentRow).toBe(1)
+
+    await wrapper.get('[data-testid="progress-bar-reset"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
+    expect(savedProgress()).toMatchObject({ currentRow: 0, currentColumn: 0 })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(wrapper.get('[data-testid="progress-bar-reset"]').attributes('aria-disabled')).toBe('true')
+  })
+
   it('asks before Remove frame throws away a done pass; one Undo brings the Frame and the progress back', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
-    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(true)
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
@@ -291,7 +324,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
-    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
@@ -310,7 +343,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
 
-    await wrapper.get('[data-testid="progress-bar-remove-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     await selectAll(wrapper)

@@ -323,7 +323,7 @@ watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, 
 const moveHandle = computed(() => (frameAnchor.value ? frameMoveHandle(frameAnchor.value, touchInput.value) : undefined))
 
 // Tests read what was drawn from the layout the surface built.
-defineExpose({ rulerLayout: rulers })
+defineExpose({ rulerLayout: rulers, pressMoveHandle })
 
 /** Animation frames asked for and not yet run, so they can be cancelled with the surface. */
 const pendingFrames = new Set<number>()
@@ -750,6 +750,18 @@ function framePress(event: PointerEvent): FramePress | undefined {
   if (!props.settingFrame) return undefined
   const target = framePressAt(props.project.frame, surface.value, props.project.rotation, point, touchInput.value)
   return target.kind === 'handle' ? target : undefined
+}
+
+/** A press on the Move handle's button over the canvas (ticket 455): the same grab as a press on the handle itself. */
+function pressMoveHandle(event: PointerEvent): void {
+  if (!props.project.frame || event.button !== 0) return
+  touchInput.value = event.pointerType === 'touch'
+  onPress(event)
+  framing.value = true
+  hideMarker()
+  rootEl.value?.setPointerCapture?.(event.pointerId)
+  emit('frame-press', { kind: 'move' }, cellUnder(event))
+  event.preventDefault()
 }
 
 function onPointerDown(event: PointerEvent): void {
