@@ -498,10 +498,10 @@ describe('renderOverlay', () => {
       const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.5)
       expect(red).toBe(fadeOver('#e63746', DEFAULT_THEME.background, 0.5))
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-        [blendOver(DEFAULT_THEME.rim!, red), 1, 1, 1, 18, 18],
-        [red, 1, 1.75, 1.75, 16.5, 16.5],
-        [blendOver(DEFAULT_THEME.rim!, black), 1, 21, 21, 18, 18],
-        [black, 1, 21.75, 21.75, 16.5, 16.5],
+        [blendOver(DEFAULT_THEME.rim!, red), 1, 0.5, 0.5, 19, 19],
+        [red, 1, 1.25, 1.25, 17.5, 17.5],
+        [blendOver(DEFAULT_THEME.rim!, black), 1, 20.5, 20.5, 19, 19],
+        [black, 1, 21.25, 21.25, 17.5, 17.5],
       ])
     })
 
@@ -541,7 +541,7 @@ describe('renderOverlay', () => {
       })
 
       const rects = named('fillRect')
-      expect(rects[0]!.args).toEqual([1, 1, 18, 18])
+      expect(rects[0]!.args).toEqual([0.5, 0.5, 19, 19])
       expect(rects.at(-4)!.args).toEqual([0, 0, 20, 2])
     })
   })
@@ -618,11 +618,11 @@ describe('the bead cursor (ticket 159)', () => {
 
     const fills = calls.filter((call) => call.name === 'fill')
     expect(fills.at(-1)!.fillStyle).toBe(DEFAULT_THEME.cursor)
-    // Bead (2, 1) stands at x 41, y 21, 18 across; the ring's inside is 2px out from it, and 2px wide.
+    // Bead (2, 1) stands at x 40.5, y 20.5, 19 across; the ring's inside is 2px out from it, and 2px wide.
     const rects = calls.filter((call) => call.name === 'roundRect').slice(-2).map((call) => (call.args as number[]).slice(0, 4))
     expect(rects).toEqual([
-      [37, 17, 26, 26],
-      [39, 19, 22, 22],
+      [36.5, 16.5, 27, 27],
+      [38.5, 18.5, 23, 23],
     ])
   })
 
@@ -736,8 +736,8 @@ describe('on the Canvas (ADR 0026)', () => {
 
     const rects = calls.filter((call) => call.name === 'roundRect').slice(-2).map((call) => (call.args as number[]).slice(0, 4))
     expect(rects).toEqual([
-      [117, 137, 26, 26],
-      [119, 139, 22, 22],
+      [116.5, 136.5, 27, 27],
+      [118.5, 138.5, 23, 23],
     ])
   })
 })

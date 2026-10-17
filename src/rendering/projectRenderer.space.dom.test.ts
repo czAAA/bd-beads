@@ -3,7 +3,7 @@ import { withColors } from '../domain/canvas'
 import { type Rotation, type Technique } from '../domain/grid'
 import { createProject, type Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
-import { DEFAULT_THEME, type BeadShape } from './beadLook'
+import { BEAD_GAP_PX, DEFAULT_THEME, type BeadShape } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX, gridToRegion, rowShiftPx, rowTopPx, type Region } from './surfaceView'
@@ -229,6 +229,26 @@ describe('Position marks tile styles', () => {
 
     const peyote = tileCalls('squares', 'peyote')
     expect(peyote.named('arcTo').some((call) => (call.args[4] as number) > 0)).toBe(true)
+  })
+
+  it('draws one shared 1px line on each cell\'s edge, and clears the bead inside it', () => {
+    // A technique of its own, as a tile is kept per style and Technique.
+    const { named } = tileCalls('squares', 'brick')
+    expect(BEAD_GAP_PX).toBe(1)
+    // The outline sits on the cell's edge (a neighbour's is the same line), the clearing is the bead, half a gap in.
+    const rights = named('arcTo').map((call) => call.args[0] as number)
+    expect(rights).toContain(CELL_SIZE_PX)
+    expect(rights).toContain(CELL_SIZE_PX - BEAD_GAP_PX / 2)
+  })
+
+  it('fills the marks over the Frame\'s own positions too in Squares, not in Dots', () => {
+    function fills(style: 'dots' | 'squares') {
+      const { context, named } = recordingContext()
+      const project = framedProject('loom')
+      renderProject(context, { project, space: spaceOf(project, true), region: { x: -1000, y: -1000, width: 2000, height: 2000 }, zoom: 1, positionMarks: style })
+      return named('fillRect').length
+    }
+    expect(fills('squares')).toBeGreaterThan(fills('dots'))
   })
 
   it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {
