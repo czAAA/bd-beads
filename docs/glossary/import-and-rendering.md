@@ -15,7 +15,7 @@ The one thing that draws a Project's cells — for the editor, the Convert image
 _Avoid_: grid component, exporter, preview renderer
 
 **Bead rim** (ticket 0460):
-A faint line just inside every bead's edge (0.75px), so where one bead ends and the next starts shows even when both are the same color. Every theme has one: a dark tint in light and high contrast, a white tint in dark. The same on every bead and in every Technique, at any zoom; exports and printed pages draw their own (light) rim, unchanged. It sits under every overlay (the Frame, the Selection, the Bead pointer, the Row progress marks).
+A faint line just inside every bead's edge (0.75px), so where one bead ends and the next starts shows even when both are the same color. Every theme has one: a dark tint in light and high contrast, a white tint in dark. The same on every bead and in every Technique, 0.75px in the Project's own px so it shrinks with zoom with the bead; exports and printed pages draw their own (light) rim, unchanged. It sits under every overlay (the Frame, the Selection, the Bead pointer, the Row progress marks).
 _Avoid_: border, outline (the hover outline is another thing), grid line, gap
 
 **Drawing surface**:
