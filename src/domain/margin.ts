@@ -13,14 +13,23 @@ import type { Selection } from './selection'
 /** How many bead positions the margin is wide: the room kept for the Frame's line and rulers. */
 export const MARGIN = 6
 
+/**
+ * How many bead positions the margin shows at a zoom (ticket 459): the 6 of `MARGIN`, or more once zoomed out so far that
+ * their band, `pitchPx` per position at `zoom`, is shorter than `neededPx`, the room the Frame's corner controls take.
+ * Only what is shown and refused on screen widens; a margin removes nothing, so covering more loses no bead.
+ */
+export function marginAt({ neededPx, pitchPx, zoom }: { neededPx: number; pitchPx: number; zoom: number }): number {
+  return Math.max(MARGIN, Math.ceil(neededPx / (pitchPx * zoom)))
+}
+
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
-export function withMargin(frame: Frame): Frame {
-  return { row: frame.row - MARGIN, column: frame.column - MARGIN, rows: frame.rows + 2 * MARGIN, columns: frame.columns + 2 * MARGIN }
+export function withMargin(frame: Frame, margin: number = MARGIN): Frame {
+  return { row: frame.row - margin, column: frame.column - margin, rows: frame.rows + 2 * margin, columns: frame.columns + 2 * margin }
 }
 
 /** Whether a bead may be placed at a position: not in a row the weaver has finished (ticket 33), and not in the Frame's margin (ticket 261). The one statement of the rule, which an Edit enforces and a press asks to show it is refused. */
-export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, position: GridPosition): boolean {
-  return !isInFinishedRow(project, position) && !inMargin(project.frame, position)
+export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, position: GridPosition, margin: number = MARGIN): boolean {
+  return !isInFinishedRow(project, position) && !inMargin(project.frame, position, margin)
 }
 
 /**
@@ -33,8 +42,8 @@ export function keepAllowedEdits(before: Project, after: Project): Project {
 }
 
 /** Whether a position lies in the Frame's margin: within MARGIN of the Frame, but not in it. */
-export function inMargin(frame: Frame | undefined, position: GridPosition): boolean {
-  return !!frame && frameContains(withMargin(frame), position) && !frameContains(frame, position)
+export function inMargin(frame: Frame | undefined, position: GridPosition, margin: number = MARGIN): boolean {
+  return !!frame && frameContains(withMargin(frame, margin), position) && !frameContains(frame, position)
 }
 
 /**

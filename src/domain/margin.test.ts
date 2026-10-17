@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Frame } from './canvas'
-import { clampOutOfMargin, inMargin, keepAllowedEdits, MARGIN, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { clampOutOfMargin, inMargin, keepAllowedEdits, MARGIN, marginAt, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
@@ -110,5 +110,22 @@ describe('a Selection never covers the margin (ticket 428)', () => {
     expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 2, column: 2 })).toEqual({ row: 2, column: 2 })
     // across in one direction only still cuts through the margin, so it is held back
     expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 30, column: 12 })).toEqual({ row: 3, column: 12 })
+  })
+})
+
+describe('marginAt (ticket 459)', () => {
+  it('keeps the 6 beads while they are tall enough for the controls', () => {
+    expect(marginAt({ neededPx: 17, pitchPx: 20, zoom: 0.5 })).toBe(MARGIN)
+  })
+
+  it('grows as the zoom falls so the band is never shorter than the controls', () => {
+    const beads = marginAt({ neededPx: 17, pitchPx: 20, zoom: 0.1 })
+    expect(beads).toBe(9)
+    expect(beads * 20 * 0.1).toBeGreaterThanOrEqual(17)
+    expect(marginAt({ neededPx: 17, pitchPx: 20, zoom: 0.05 })).toBe(17)
+  })
+
+  it('counts the nested rows of peyote by their pitch', () => {
+    expect(marginAt({ neededPx: 17, pitchPx: 15, zoom: 0.1 })).toBe(12)
   })
 })
