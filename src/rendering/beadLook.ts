@@ -55,6 +55,9 @@ export type DrawingContext = Pick<
   | 'rotate'
 >
 
+/** The white tint of dark's rim (`bead-rim`, dark). */
+const WHITE_RIM = 'rgba(255,255,255,.16)'
+
 /**
  * The colors a Project is drawn in, one set per theme (DESIGN.md §4.2). The values are copied from the design system's
  * tokens rather than read from CSS, so the renderer draws the same in a canvas, an export and a test, none of which have
@@ -76,6 +79,8 @@ export interface ProjectTheme {
   background: string
   /** The faint rim round every bead (`bead-rim`). */
   rim: string
+  /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim` in high contrast. */
+  rimOnBlack: string
   /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board (`bead-empty`). */
   emptyBead: string
   /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
@@ -107,6 +112,7 @@ export const LIGHT_THEME: ProjectTheme = {
   rulerStrong: '#4a4a4a',
   background: '#e8e3df',
   rim: 'rgba(20,20,19,.12)',
+  rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
   outline: '#1f1f1f',
@@ -125,7 +131,8 @@ export const DARK_THEME: ProjectTheme = {
   ruler: '#8c8c8c',
   rulerStrong: '#cccccc',
   background: '#202020',
-  rim: 'rgba(255,255,255,.16)',
+  rim: WHITE_RIM,
+  rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
   outline: '#ffffff',
@@ -145,6 +152,7 @@ const CONTRAST_THEME: ProjectTheme = {
   rulerStrong: '#1f1f1f',
   background: '#e8e3df',
   rim: 'rgba(0,0,0,.35)',
+  rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
   outline: '#000000',
@@ -199,15 +207,16 @@ const GAP_PX = BEAD_GAP_PX / 2
 /** Width of the faint rim inside each bead's edge, in the Project's own px. */
 const RIM_PX = 0.75
 
-/** The rim of a near-black bead: light's dark-tint rim vanishes on it, so it gets the white tint dark draws (`bead-rim`, dark). */
-const NEAR_BLACK_RIM = 'rgba(255,255,255,.16)'
+/** Below this luma (0-255) a bead is near-black. */
+const NEAR_BLACK_LUMA = 45
 
-/** Below this grey (0-255) a bead is near-black. */
-const NEAR_BLACK_GREY = 45
+function luma(rgb: [number, number, number]): number {
+  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
+}
 
 function isNearBlack(color: string): boolean {
   const rgb = parseHex(color)
-  return !!rgb && 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2] < NEAR_BLACK_GREY
+  return !!rgb && luma(rgb) < NEAR_BLACK_LUMA
 }
 
 /**
@@ -220,7 +229,7 @@ export function greyscale(color: string): string {
   if (!rgb) {
     return color
   }
-  const grey = Math.round(0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2])
+  const grey = Math.round(luma(rgb))
   return `rgb(${grey}, ${grey}, ${grey})`
 }
 
@@ -331,7 +340,7 @@ function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.back
 
 /**
  * The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell, and a
- * faint rim just inside its edge (white on a near-black bead, in light too). A finished bead is the same shapes in the colors its fade comes to, so it covers
+ * faint rim just inside its edge (white on a near-black bead, in light too, however faded). A finished bead is the same shapes in the colors its fade comes to, so it covers
  * whatever is under it (a finished bead drawn on the overlay covers the bead on the cells layer).
  */
 function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
@@ -340,7 +349,7 @@ function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, col
   const outerSize = size - GAP_PX * 2
   const outerRadius = Math.max(0, cornerRadius - GAP_PX)
 
-  context.fillStyle = blendOver(isNearBlack(fill) ? NEAR_BLACK_RIM : theme.rim, fill)
+  context.fillStyle = blendOver(isNearBlack(own) ? theme.rimOnBlack : theme.rim, fill)
   fillShape(context, x + GAP_PX, y + GAP_PX, outerSize, outerRadius)
   context.fillStyle = fill
   fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, outerSize - RIM_PX * 2, Math.max(0, outerRadius - RIM_PX))

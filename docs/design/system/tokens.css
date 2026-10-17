@@ -49,7 +49,7 @@
   --canvas-bg-4: #eff4f8;
   --canvas-bg-5: #fbf0ea;
   --canvas-bg-6: #fafafa;
-  --bead-rim: rgba(20,20,19,.12); /* Faint 0.75px rim drawn just inside each bead's edge, so two beads of one color stay apart: a dark tint in light and high contrast, a white tint in dark. */
+  --bead-rim: rgba(20,20,19,.12); /* Faint 0.75px rim drawn just inside each bead's edge, so two beads of one color stay apart: a dark tint in light and high contrast, a white tint in dark (and, in light, on a near-black bead). */
   --bead-empty: #d8d2cc; /* An empty bead position on the board (Derived). */
   --position-mark: #d8d2cc;  /* A Position mark on the open canvas: the dot, or the outline of the square, at an empty position outside the Frame (starts from bead-empty). */
   --bead-outline: #1f1f1f; /* Hover outline when no color is chosen. */

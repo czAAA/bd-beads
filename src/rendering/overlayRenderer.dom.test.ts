@@ -493,14 +493,14 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, dimmedCells: [{ row: 0, column: 0 }, { row: 1, column: 1 }] })
 
-      // The bead's own color at 50% over the board, its faint rim over that: opaque, so it covers what it is over.
+      // The bead's own color at 50% over the board, its faint rim over that (white on the near-black one): opaque, so it covers what it is over.
       const red = fadeOver('#e63746', DEFAULT_THEME.background, 0.5)
       const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.5)
       expect(red).toBe(fadeOver('#e63746', DEFAULT_THEME.background, 0.5))
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
         [blendOver(DEFAULT_THEME.rim, red), 1, 0.5, 0.5, 19, 19],
         [red, 1, 1.25, 1.25, 17.5, 17.5],
-        [blendOver(DEFAULT_THEME.rim, black), 1, 20.5, 20.5, 19, 19],
+        [blendOver(DEFAULT_THEME.rimOnBlack, black), 1, 20.5, 20.5, 19, 19],
         [black, 1, 21.25, 21.25, 17.5, 17.5],
       ])
     })

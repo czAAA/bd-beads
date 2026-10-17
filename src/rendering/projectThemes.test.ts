@@ -10,7 +10,7 @@ const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/sys
 const token = (name: string, theme: Theme) => tokens.color.tokens.find((entry) => entry.name === name)!.value[theme]
 
 /** DESIGN.md §4.2: which token each ProjectTheme field copies. */
-const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'finished' | 'cursorWidth'>, string> = {
+const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finished' | 'cursorWidth'>, string> = {
   background: 'board',
   canvas: 'box',
   positionMark: 'position-mark',
@@ -32,6 +32,12 @@ describe('ProjectTheme', () => {
       expect(values[field as keyof typeof FIELDS], field).toBe(token(name, theme))
     }
     expect(values.rim).toBe(token('bead-rim', theme))
+  })
+
+  it('rims a near-black bead in the dark rim token (white) in light and dark, in its own rim in high contrast', () => {
+    expect(PROJECT_THEMES.light.rimOnBlack).toBe(token('bead-rim', 'dark'))
+    expect(PROJECT_THEMES.dark.rimOnBlack).toBe(token('bead-rim', 'dark'))
+    expect(PROJECT_THEMES.contrast.rimOnBlack).toBe(token('bead-rim', 'contrast'))
   })
 
   it('fades finished rows by the BeadBoard card: light 28% of the color, dark 45% of its grey', () => {
