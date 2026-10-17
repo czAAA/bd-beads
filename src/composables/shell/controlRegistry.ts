@@ -517,7 +517,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: hasFrame,
     disabledBody: (t: Translations) => t.tooltips.noFrameToRemove,
   }),
-  unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { body: (t) => t.tooltips.moveFrame }),
+  unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { icon: 'move-frame', body: (t) => t.tooltips.moveFrame }),
   unkeyed('reset-progress', (t) => t.rowProgress.resetButton, 'rowProgress', {
     icon: 'reset',
     body: (t) => t.tooltips.resetProgress,

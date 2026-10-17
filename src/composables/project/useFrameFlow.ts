@@ -36,6 +36,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const editOn = ref(true)
   /** The Frame as it looks mid-drag, before it is committed. */
   const draft = ref<Frame | undefined>()
+  /** How far a Move drag has carried the Frame with its beads, so the canvas previews the beads moving too; undefined otherwise. */
+  const draftMove = ref<{ rows: number; columns: number } | undefined>()
   let gesture: Gesture | undefined
   /** How far the Move handle has been dragged, in whole beads. */
   let moved = { rows: 0, columns: 0 }
@@ -113,8 +115,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (gesture.kind === 'resize') {
       draft.value = frameWithEdges(project.technique, gesture.start, gesture.edges, cell)
     } else {
-      moved = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
-      draft.value = movedFrame(project.technique, gesture.start, moved.rows, moved.columns)
+      const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
+      const unchanged = draft.value && next.rows === moved.rows && next.columns === moved.columns
+      moved = next
+      if (!unchanged) {
+        draft.value = movedFrame(project.technique, gesture.start, moved.rows, moved.columns)
+        draftMove.value = next
+      }
     }
   }
 
@@ -123,6 +130,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const wasMove = gesture?.kind === 'move'
     gesture = undefined
     draft.value = undefined
+    draftMove.value = undefined
     if (!result || !dragged) return
     if (wasMove) moveBy(moved.rows, moved.columns)
     else commit(result)
@@ -132,6 +140,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function cancel(): void {
     gesture = undefined
     draft.value = undefined
+    draftMove.value = undefined
   }
 
   /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo step. */
@@ -209,6 +218,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     settingFrame,
     /** What the canvas draws as the Frame while a drag has not committed it. */
     draft,
+    draftMove,
     frameLocked: locked,
     editOn,
     toggleEdit,

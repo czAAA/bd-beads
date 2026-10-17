@@ -34,6 +34,7 @@ export const ICON_NAMES = [
   'library',
   'menu',
   'mirror-copy-mode',
+  'move-frame',
   'mirror-horizontal',
   'mirror-vertical',
   'moon',

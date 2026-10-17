@@ -22,6 +22,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import type { PillRect } from '../../domain/toolPill'
 import { hasBeads } from '../../domain/canvas'
+import { changeFrame } from '../../domain/changeFrame'
 import { hasGuides } from '../../domain/selection'
 import { resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
@@ -130,6 +131,7 @@ const {
   onRemoveFrame,
   onResetProgress,
   frameDraft,
+  frameDraftMove,
   onFramePress,
   onFrameDrag,
   onFrameRelease,
@@ -159,7 +161,16 @@ const colorPick = useColorPick()
 /** Whether Select or Piece is in hand: the pointer is the native arrow, and the margin cannot be selected (tickets 414, 433). */
 const selecting = computed(() => activeTool.value === 'select' || activeTool.value === 'piece')
 
-const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
+const shownProject = computed(() => {
+  const project = activeProject.value
+  if (!project || !frameDraft.value) return project
+  // A Move drag shows the beads travelling with the Frame, as the release will leave them.
+  if (frameDraftMove.value) {
+    const outcome = changeFrame(project, { move: frameDraftMove.value })
+    return outcome.kind === 'changed' ? outcome.project : project
+  }
+  return { ...project, frame: frameDraft.value }
+})
 
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {

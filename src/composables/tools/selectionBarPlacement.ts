@@ -113,8 +113,8 @@ export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameS
 }
 
 /** A corner control is 34px square, 44px on touch; the three sit 4px apart, 4px inside the margin outline's corner. */
-const CORNER_PX = 34
-const TOUCH_CORNER_PX = 44
+const CORNER_PX = 26
+const TOUCH_CORNER_PX = 36
 const CORNER_GAP_PX = 4
 const CORNER_INSET_PX = 4
 

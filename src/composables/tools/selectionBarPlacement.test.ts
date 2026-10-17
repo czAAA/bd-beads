@@ -101,12 +101,12 @@ describe('frameCornerControls (ticket 455)', () => {
   }
 
   it('puts Move, Edit and Remove in a row just inside the margin outline\'s top-right corner', () => {
-    // 34px buttons, 4px apart, 4px in from the corner (300, 50): right edge 296, top 54.
+    // 26px buttons, 4px apart, 4px in from the corner (300, 50): right edge 296, top 54.
     expect(frameCornerControls(anchor, false)).toEqual({
-      size: 34,
-      remove: { x: 279, y: 71 },
-      edit: { x: 241, y: 71 },
-      move: { x: 203, y: 71 },
+      size: 26,
+      remove: { x: 283, y: 67 },
+      edit: { x: 253, y: 67 },
+      move: { x: 223, y: 67 },
     })
   })
 
