@@ -200,11 +200,10 @@ function drawPreview(context: DrawingContext, project: DrawnProject, space: Spac
     const color = cell.color ?? preview.color
 
     if (color) {
-      const radius = Math.max(0, roundness)
-      const covered = space.open || cell.row + 1 < space.rows ? nextRowBeads(technique, space, cell, x, y, size, radius) : []
-      fillFaintly(context, x, y, size, radius, color, covered)
+      const bead = { x, y, size, radius: Math.max(0, roundness) }
+      fillFaintly(context, bead, color, nextRowBeads(technique, space, cell, bead))
     } else {
-      outlineBead(context, x, y, size, roundness, theme)
+      outlineBead(context, { x, y, size, radius: roundness }, theme)
     }
   }
 }
@@ -221,18 +220,27 @@ interface BeadRect {
  * The beads of the next row that lie over this one, as drawn (peyote's rows nest, so the next row covers the bottom of
  * this one): none where rows stack, a full bead apart. The next row sits half a bead over, so two of its beads reach this one.
  */
-function nextRowBeads(technique: Technique, space: Space, cell: GridPosition, x: number, y: number, size: number, radius: number): BeadRect[] {
+function nextRowBeads(technique: Technique, space: Space, cell: GridPosition, bead: BeadRect): BeadRect[] {
   const pitch = rowPitchPx(technique)
   if (pitch >= CELL_SIZE_PX) {
     return []
   }
-  const across = (((shiftOf(space, technique, cell.row + 1) - shiftOf(space, technique, cell.row)) % CELL_SIZE_PX) + CELL_SIZE_PX) % CELL_SIZE_PX
-  const top = y + pitch
-  return [across - CELL_SIZE_PX, across].map((dx) => ({ x: x + dx, y: top, size, radius }))
+  const shiftNow = shiftOf(space, technique, cell.row)
+  const shiftNext = shiftOf(space, technique, cell.row + 1)
+  const across = (((shiftNext - shiftNow) % CELL_SIZE_PX) + CELL_SIZE_PX) % CELL_SIZE_PX
+  const beads: BeadRect[] = []
+  for (const dx of [across - CELL_SIZE_PX, across]) {
+    // The covering bead's own column in the next row; one the Project does not have is not drawn, so it covers nothing.
+    const column = cell.column + (shiftNow + dx - shiftNext) / CELL_SIZE_PX
+    if (inSpace(space, cell.row + 1, column)) {
+      beads.push({ ...bead, x: bead.x + dx, y: bead.y + pitch })
+    }
+  }
+  return beads
 }
 
 /** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity, leaving out the beads lying over it. */
-function fillFaintly(context: DrawingContext, x: number, y: number, size: number, radius: number, color: string, coveredBy: readonly BeadRect[] = []): void {
+function fillFaintly(context: DrawingContext, { x, y, size, radius }: BeadRect, color: string, coveredBy: readonly BeadRect[] = []): void {
   context.globalAlpha = PREVIEW_OPACITY
   context.fillStyle = color
   if (coveredBy.length > 0) {
@@ -259,7 +267,7 @@ function fillFaintly(context: DrawingContext, x: number, y: number, size: number
 }
 
 /** The hover preview's neutral look: a ring in the dark ink, as thick as PREVIEW_OUTLINE_PX, inside the bead's rounded corners. */
-function outlineBead(context: DrawingContext, x: number, y: number, size: number, radius: number, theme: ProjectTheme): void {
+function outlineBead(context: DrawingContext, { x, y, size, radius }: BeadRect, theme: ProjectTheme): void {
   const inset = PREVIEW_OUTLINE_PX
   context.fillStyle = theme.outline
   context.beginPath()
@@ -281,9 +289,9 @@ function drawPointer(context: DrawingContext, technique: Technique, zoom: number
 
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   if (pointer.color) {
-    fillFaintly(context, x, y, size, radius, pointer.color)
+    fillFaintly(context, { x, y, size, radius }, pointer.color)
   } else {
-    outlineBead(context, x, y, size, radius, theme)
+    outlineBead(context, { x, y, size, radius }, theme)
   }
 }
 

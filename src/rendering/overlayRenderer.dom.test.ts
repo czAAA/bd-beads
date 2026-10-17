@@ -249,6 +249,17 @@ describe('renderOverlay', () => {
       expect(named('clip')[0]!.args).toEqual(['evenodd'])
     })
 
+    it('leaves out only the next-row beads the Project has', () => {
+      const project = projectOf('peyote', 4, 3, noProgress)
+      const { context, named } = recordingContext()
+
+      // Row 1 is shifted half a bead, so row 2's beads under its last bead are columns 3 and 4, and 4 is not there.
+      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 3 }], color: '#e63746' } })
+
+      const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 2))
+      expect(cutOuts).toEqual([[61, 31], [71, 16]])
+    })
+
     it('leaves a bead on the last peyote row whole, and a loom bead too', () => {
       const peyote = projectOf('peyote', 4, 3, noProgress)
       const last = recordingContext()
