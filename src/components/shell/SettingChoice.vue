@@ -57,12 +57,12 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div v-if="sheet" class="setting setting--list">
-    <button type="button" class="ui-control setting__header" :aria-expanded="open" :aria-controls="listId" @click="open = !open">
+    <button type="button" class="ui-control setting__header" data-wrap-ok :aria-expanded="open" :aria-controls="listId" @click="open = !open">
       <span :id="labelId" class="setting__label setting__label--heading">
         <AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}
       </span>
+      <AppIcon class="setting__chevron" :name="open ? 'chevron-up' : 'chevron-down'" :size="16" />
       <span class="setting__current">{{ currentLabel }}</span>
-      <AppIcon :name="open ? 'chevron-up' : 'chevron-down'" :size="16" />
     </button>
     <div v-if="open" :id="listId" ref="listEl" class="setting__list" role="radiogroup" :aria-labelledby="labelId" @keydown="onKeydown">
       <button
@@ -130,9 +130,11 @@ function onKeydown(event: KeyboardEvent) {
 }
 
 .setting__header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label label' 'current chevron';
   align-items: center;
-  gap: var(--space-8);
+  column-gap: var(--space-8);
   box-sizing: border-box;
   width: 100%;
   min-height: var(--panel-item-height);
@@ -145,13 +147,20 @@ function onKeydown(event: KeyboardEvent) {
   cursor: pointer;
 }
 
-.setting__header .setting__label {
-  flex: 1;
-}
-
 .setting__current {
+  grid-area: current;
+  padding: 0 0 var(--space-6) calc(16px + var(--space-10));
   font: var(--type-meta);
   color: var(--muted);
+}
+
+.setting__chevron {
+  grid-area: chevron;
+  align-self: start;
+}
+
+.setting__header .setting__label {
+  grid-area: label;
 }
 
 .setting__header:active {
