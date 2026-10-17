@@ -15,6 +15,6 @@ Row done and Row not done show text and follow Row direction: top to bottom they
 
 **Phone widths (30rem and under).** Row not done and Row done do not fit one row with Turn row direction, Reset progress and the track in every language at 360px, so they take a second row of their own, half the bar each (`type-small`), and the bar is 88px (`--progress-height` 5.5rem) instead of 48px; everything above it follows that height.
 
-**No Frame (v16).** Row progress works on the Frame: its rows are the Frame's rows. Until a Frame is set the bar shows "Row progress" (`control`), "Set Frame to start" (`meta`) and, right-aligned, a Fit to drawing button (secondary in a box, `frame` icon); Fit to drawing is shown only while there is no Frame (ticket 426). Row done and Row not done are not offered, and the bar keeps its height so the canvas does not jump.
+**No Frame (v16).** Row progress works on the Frame: its rows are the Frame's rows. Until a Frame is set the bar shows the hint "[Select icon] Select to set a [Frame icon] Frame" (`meta`, `muted`; each icon, 14px, in a 20px hint chip like the CanvasHint's Kbd chips: `elevated`, 1px `line-strong` edge with a 2px bottom, `radius-xs`) and, right-aligned, a Fit to drawing button (secondary in a box, `frame` icon); Fit to drawing is shown only while there is no Frame (ticket 426). Row done and Row not done are not offered, and the bar keeps its height so the canvas does not jump.
 
 Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.

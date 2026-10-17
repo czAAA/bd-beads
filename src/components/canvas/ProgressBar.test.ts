@@ -172,12 +172,12 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     return rest
   }
 
-  it('shows "Set Frame to start" and a Fit to drawing button, and no row buttons (ticket 426)', async () => {
+  it('shows "Select to set a Frame" and a Fit to drawing button, and no row buttons (ticket 426)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: unframedProject() } })
 
     expect(wrapper.find('[data-testid="progress-bar-remove-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-reset"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toBe(`${ru.tools.selectLabel}·${ru.frame.progressNeedsFrame}`)
+    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text().replace(/\s+/g, ' ')).toBe(`${ru.frame.progressSelectToSet} ${ru.frame.progressFrameWord}`)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-previous"]').exists()).toBe(false)
 
