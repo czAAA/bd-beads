@@ -540,7 +540,8 @@ export interface Translations {
     /** Export without a Frame opens a dialog with this title. */
     exportPromptTitle: string
     countNeedsFrame: string
-    progressNeedsFrame: string
+    progressSelectToSet: string
+    progressFrameWord: string
     /** The Message after Rotate turned the Selection onto beads ("{count}" of them, ADR 0052): the singular and plural of the sentence. */
     rotateCoveredMessage: PluralForms
   }

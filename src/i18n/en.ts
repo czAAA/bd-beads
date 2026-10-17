@@ -509,7 +509,8 @@ export const en: Translations = {
     announceSelectionRotated: 'Selection rotated',
     exportPromptTitle: 'Set Frame to export',
     countNeedsFrame: 'Set Frame to count beads.',
-    progressNeedsFrame: 'Set Frame to start',
+    progressSelectToSet: 'Select to set a',
+    progressFrameWord: 'Frame',
     rotateCoveredMessage: {
       one: '{count} bead covered.',
       other: '{count} beads covered.',
