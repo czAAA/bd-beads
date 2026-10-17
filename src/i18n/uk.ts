@@ -500,7 +500,8 @@ export const uk: Translations = {
     announceSelectionRotated: 'Виділення повернуто',
     exportPromptTitle: 'Задайте рамку для експорту',
     countNeedsFrame: 'Задайте рамку, щоб порахувати бісер.',
-    progressNeedsFrame: 'Задайте рамку, щоб почати',
+    progressSelectToSet: 'Виділіть, щоб задати',
+    progressFrameWord: 'рамку',
     rotateCoveredMessage: {
       one: '{count} бісерину перекрито.',
       few: '{count} бісерини перекрито.',
