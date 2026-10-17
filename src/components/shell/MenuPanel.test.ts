@@ -60,15 +60,19 @@ describe('MenuPanel (ticket 443)', () => {
     expect(wrapper.get('[data-testid="menu-version"]').text()).toContain(en.panels.menu.version)
   })
 
-  it('under 1024px shows Language, Theme, Tools position and Input one option per line, with a check on the current', () => {
+  it('under 1024px folds Language, Theme, Tools position and Input to a row with the current choice, and opens one option per line with a check on the current', async () => {
     const wrapper = mountIn(true, { penSeen: true })
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(false)
-    const groups = wrapper.findAll('[role="radiogroup"]')
-    expect(groups).toHaveLength(4)
+    expect(wrapper.findAll('[role="radiogroup"]')).toHaveLength(0)
     const position = wrapper.get('[data-testid="menu-tools-position"]')
+    expect(position.get('button').text()).toContain(en.toolPill.bottom)
+    await position.get('button').trigger('click')
+    expect(position.get('button').attributes('aria-expanded')).toBe('true')
     expect(position.findAll('[role="radio"]').map((option) => option.text())).toEqual([en.toolPill.left, en.toolPill.top, en.toolPill.right, en.toolPill.bottom])
     expect(position.get('[aria-checked="true"]').text()).toBe(en.toolPill.bottom)
     expect(position.get('[aria-checked="true"] svg').attributes('data-icon')).toBe('check')
+    await position.get('button').trigger('click')
+    expect(position.findAll('[role="radio"]')).toHaveLength(0)
   })
 
   it('on the dropdown has the language switcher and the four theme segments', () => {
