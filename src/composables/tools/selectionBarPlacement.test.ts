@@ -104,6 +104,7 @@ describe('frameCornerControls (ticket 455)', () => {
     // 26px buttons, 4px apart, 4px in from the corner (300, 50): right edge 296, top 54.
     expect(frameCornerControls(anchor, false)).toEqual({
       size: 26,
+      fullSize: 26,
       scale: 1,
       remove: { x: 283, y: 67 },
       edit: { x: 253, y: 67 },

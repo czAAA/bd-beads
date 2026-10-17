@@ -40,12 +40,12 @@ describe('useFrameFlow', () => {
   })
 
   it('previews a Move drag with the beads carried too, and clears the preview on release', () => {
-    const { draftMove, press, drag, release } = setup(sized)
+    const { deps, draftProject, press, drag, release } = setup(sized)
     press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
-    expect(draftMove.value).toEqual({ rows: 1, columns: 2 })
+    expect(draftProject.value?.frame).toEqual({ ...sized.frame, row: 1, column: 2 })
     release()
-    expect(draftMove.value).toBeUndefined()
+    expect(draftProject.value).toBe(deps.harness.project)
   })
 
   it('does not move the Frame by a press inside it, so the tool gets it (ticket 452)', () => {
