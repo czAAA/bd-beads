@@ -33,8 +33,12 @@ const moveAction = controlAction('move-frame')
 
 const touch = useMediaQuery('(pointer: coarse)')
 const controls = computed(() => frameCornerControls(props.anchor, touch.value))
-const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
-const sized = computed(() => ({ width: `${controls.value.size}px`, height: `${controls.value.size}px` }))
+const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px`, '--corner-scale': String(controls.value.scale) })
+// Each button keeps its full size and the wrapper shrinks it with the zoom, so the icon shrinks with the box.
+const sized = computed(() => {
+  const full = controls.value.size / controls.value.scale
+  return { width: `${full}px`, height: `${full}px` }
+})
 
 const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 </script>
@@ -87,7 +91,7 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 
 .frame-chrome__control {
   position: absolute;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--corner-scale, 1));
   pointer-events: auto;
 }
 
