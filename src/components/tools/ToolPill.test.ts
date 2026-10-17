@@ -104,14 +104,18 @@ describe('ToolPill (ticket 439)', () => {
   })
 
   it('drops the recents while the pill would overflow its edge, and brings them back with room', async () => {
-    let scrollWidth = 600
-    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockImplementation(() => scrollWidth)
-    vi.spyOn(HTMLElement.prototype, 'clientWidth', 'get').mockReturnValue(400)
+    // The pill is 400px wide; its last tile ends at `tileRight`. A touch target reaching past the pill (scrollWidth) is not overflow.
+    let tileRight = 600
+    vi.spyOn(HTMLElement.prototype, 'scrollWidth', 'get').mockReturnValue(1000)
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const right = this.classList.contains('tool-pill') ? 400 : tileRight
+      return { left: 0, top: 0, right, bottom: 40, width: right, height: 40, x: 0, y: 0, toJSON: () => ({}) }
+    })
     const wrapper = mount(ToolPill, { props: { ...base, colorMode: 'recent', recentsInPill: ['#111111', '#222222', '#333333'] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
 
-    scrollWidth = 400
+    tileRight = 396
     await wrapper.setProps({ position: 'top' })
     await flushPromises()
     expect(wrapper.findAll('[data-testid="pill-recent"]')).toHaveLength(3)
