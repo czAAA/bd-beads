@@ -95,7 +95,16 @@ export async function deleteAll(wrapper: Wrapper): Promise<void> {
 export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
   await openSheet(wrapper, 'strip-menu')
   if (wrapper.find('[data-testid="language-switcher"]').exists()) await chooseLanguage(wrapper, locale)
-  else await wrapper.get(`[data-testid="language-${locale}"]`).trigger('click')
+  else {
+    await openChoice(wrapper, 'menu-language')
+    await wrapper.get(`[data-testid="language-${locale}"]`).trigger('click')
+  }
+}
+
+/** Unfolds one of the sheet Menu's choices (its header is a button, folded to the current choice) unless it is already open (or absent). */
+export async function openChoice(wrapper: Wrapper, testid: string): Promise<void> {
+  const header = wrapper.find(`[data-testid="${testid}"] .setting__header`)
+  if (header.exists() && header.attributes('aria-expanded') !== 'true') await header.trigger('click')
 }
 
 /** Opens Saved Projects, the sheet Menu's item raises, unless it is already up. */

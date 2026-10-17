@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { mountWithProject } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
-import { openSheet, pickColor, pickTool } from './testUtils/pill'
+import { openChoice, openSheet, pickColor, pickTool } from './testUtils/pill'
 import { frameGrid } from './domain/project'
 import { PALETTE } from './domain/palette'
 import App from './App.vue'
@@ -79,6 +79,7 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
   it('moves from the Menu sheet\'s Tools position and remembers it on the device', async () => {
     const wrapper = await mountWithProject(15, 30)
     await openSheet(wrapper, 'strip-menu')
+    await openChoice(wrapper, 'menu-tools-position')
     const position = wrapper.get('[data-testid="menu-tools-position"]')
     expect(position.get('[data-value="bottom"]').attributes('aria-checked')).toBe('true')
 
