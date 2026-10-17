@@ -144,7 +144,7 @@ export interface RulerLayout {
   numbers: boolean
   /** The boxes near the viewport that carry rulers, for their lines. */
   boxes: RuledBox[]
-  /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none (Edit Frame's steppers hide above 5, ticket 427). */
+  /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none. */
   step: number
   /** The numbers to draw: none while `numbers` is off. */
   labels: RulerLabel[]

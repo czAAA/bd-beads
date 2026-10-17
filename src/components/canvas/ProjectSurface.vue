@@ -295,8 +295,7 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** The coarsest Ruler step at which the Frame's steppers still show, and the least they shrink to (ticket 427). */
-const STEPPER_MAX_RULER_STEP = 5
+/** The least the Frame's steppers shrink to (ticket 427). */
 const STEPPER_MIN_SCALE = 0.5
 const stepperScale = (zoom: number) => Math.min(1, Math.max(STEPPER_MIN_SCALE, zoom))
 
@@ -309,21 +308,22 @@ const shownMargin = computed(() =>
   }),
 )
 
-/** Where the Frame is on screen (ticket 417, 427, 452): told to the margin steppers, the Move handle's key stop and the edit toggle. */
+/** Where the Frame is on screen, none once it is out of view (ticket 417, 427, 452): told to the margin steppers, the Move handle's key stop and the edit toggle. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = props.project.frame
   if (!frame || size.value.width === 0) return undefined
   const box = surface.value.frameBox(frame)
   const outer = surface.value.beadBox(withMargin(frame, shownMargin.value))
+  // Scrolled wholly out of view, the Frame has no controls to keep on screen: they are clamped to the box only while some of it shows.
+  const { width, height } = size.value
+  if (outer.x + outer.width <= 0 || outer.y + outer.height <= 0 || outer.x >= width || outer.y >= height) return undefined
   const { fontPx, gap } = rulers.value.scale
   return {
     box: { left: box.x, top: box.y, width: box.width, height: box.height },
     outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
-    // Three digits across, one line down, past the Frame's line (Rulers card).
-    numbers: { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
+    // Three digits across, one line down, past the Frame's line (Rulers card); none with the Rulers off.
+    numbers: props.showRulers === false ? { across: 0, down: 0 } : { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
     scale: stepperScale(surface.value.zoom),
-    // The steppers go once the rulers show fewer than every 5th number (or the Rulers are off); until then they shrink with the zoom (ticket 427).
-    ...(props.showRulers === false || rulers.value.step > STEPPER_MAX_RULER_STEP ? { steppersHidden: true } : {}),
     viewport: { ...size.value },
   }
 })

@@ -73,8 +73,6 @@ export interface FrameAnchor extends SelectionAnchor {
   numbers: { across: number; down: number }
   /** How much the steppers shrink at this zoom, 0.5 to 1 (ticket 427). */
   scale: number
-  /** True when the margin steppers have no room at this zoom (the rulers show fewer than every 5th number, ticket 452). */
-  steppersHidden?: boolean
 }
 
 /** A margin stepper is `--selbar-height` square, 28px or 36px on touch, and the two of a pair sit `--space-2` (2px) apart. */
