@@ -3,6 +3,7 @@ import { colorAt, frameContains } from '../domain/canvas'
 import { MARGIN, withMargin } from '../domain/margin'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn, type Project } from '../domain/project'
 import {
+  BEAD_GAP_PX,
   beadRoundness,
   brighten,
   CURRENT_ROW_BRIGHTNESS,
@@ -138,9 +139,10 @@ export interface RenderInput {
 }
 
 /**
- * The Canvas's Position marks (CONTEXT.md): the empty positions outside the Frame and its keep-out margin, as one
- * pattern fill over what is in view, in up to four strips round the margin's box. The strips' edges sit between the
- * marks either side of the margin, whichever way the rows are shifted, so no position is tested.
+ * The Canvas's Position marks (CONTEXT.md): one pattern fill over what is in view, in up to four strips round the
+ * margin's box. The strips' edges sit between the marks either side of the margin, whichever way the rows are shifted,
+ * so no position is tested. Dots mark only the empty positions outside it; Squares also fill the Frame's box, as the
+ * outlines show in the gaps between its beads (ticket 458).
  */
 function drawPositionMarks(
   context: DrawingContext,
@@ -176,6 +178,18 @@ function drawPositionMarks(
     const bottom = Math.min(hole.bottom, area.bottom)
     strip(area.left, top, Math.min(hole.left, area.right), bottom)
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
+  }
+  if (style === 'squares' && project.frame) {
+    // Squares are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps between its beads.
+    const { column, row, columns, rows } = project.frame
+    const edge = BEAD_GAP_PX / 2
+    const shift = project.technique === 'loom' ? 0 : CELL_SIZE_PX / 2
+    strip(
+      Math.max(column * CELL_SIZE_PX - edge, area.left),
+      Math.max(row * pitch - edge, area.top),
+      Math.min((column + columns) * CELL_SIZE_PX + shift + edge, area.right),
+      Math.min((row + rows - 1) * pitch + CELL_SIZE_PX + edge, area.bottom),
+    )
   }
   context.imageSmoothingEnabled = false
 }

@@ -998,7 +998,7 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ previewCells: [{ row: 1, column: 2 }, { row: 1, column: 17 }], previewColor: '#e63746' })
 
       const faint = context.named('fillRect').filter((call) => call.globalAlpha === 0.6)
-      expect(faint.map((call) => call.args)).toEqual([[41, 21, 18, 18], [341, 21, 18, 18]])
+      expect(faint.map((call) => call.args)).toEqual([[40.5, 20.5, 19, 19], [340.5, 20.5, 19, 19]])
       // The cells were not drawn again for it.
       expect(context.named('rect')).toHaveLength(0)
     })
