@@ -759,8 +759,8 @@ describe('the keep-out margin on the Canvas', () => {
     const drawBead: BeadDrawer = (_context, bead) => {
       const clipAt = calls.map(({ name }) => name).lastIndexOf('clip')
       const clip = calls[clipAt]
-      const rects = clip ? calls.slice(0, clipAt).filter(({ name }) => name === 'rect') : []
-      cutOut.set(`${bead.x},${bead.y}`, clip?.args[0] === 'evenodd' && rects.some(({ args }) => box.every((value, index) => args[index] === value)))
+      const corners = clip ? calls.slice(0, clipAt).filter(({ name }) => name === 'moveTo').map(({ args }) => args) : []
+      cutOut.set(`${bead.x},${bead.y}`, clip?.args[0] === 'evenodd' && corners.some(([x, y]) => x === box[0] && y === box[1]))
     }
     renderProject(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead })
     return cutOut
