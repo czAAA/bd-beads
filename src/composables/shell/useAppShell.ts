@@ -892,6 +892,7 @@ function wireAppShell(services: Services) {
     ...removeLine,
     settingFrame: frameFlow.settingFrame,
     frameDraft: frameFlow.draft,
+    frameDraftMove: frameFlow.draftMove,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
     onFrameKey: (event: KeyboardEvent) => {

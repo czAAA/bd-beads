@@ -11,6 +11,8 @@ Ticket 324 added `pen-mode` (a tablet, a stylus and three square bead pixels und
 
 Ticket 455 added `reset` (a circular arrow, one 1.75 stroke plus its head): Reset progress.
 
+Ticket 0457 added `move-frame` (four arrowheads on short arms round a bead at 2.6): the Frame's Move handle.
+
 `more` (three dots) is reserved: no card places it yet, so the app does not draw it. `pattern` is the Dock's Project button; `delete` is Clear.
 
 Ticket 413 added five for the Selection work. `piece` (the Piece tool) is a polygon of five bead corners, drawn at 3.2 so they read as the points you tap, joined by dashed bead edges (2.4, `0 4.09`), like Select's. `select-all` is Select's dashed bead square with the word "all" inside, drawn in strokes at 1.5 (a circle for the a and two stems), so it needs no font; the letters are small, so check them at 14 to 16px. `cut` is scissors: two ring handles and two crossing blades. `fill-selection` is Select's dashed bead square with a drop inside, the Selection bar's Fill, distinct from `fill`, the tool's bucket. `share` is an arrow leaving a rounded square; no card places it yet. Frame (from Selection) reuses `frame` and Save keeps `save`.
