@@ -10,7 +10,7 @@ import { inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawMoveHandle, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
-import { CELL_SIZE_PX, projectExtentPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
+import { CELL_SIZE_PX, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
 import { beadRoundness } from './beadLook'
 
 /**
@@ -42,6 +42,9 @@ export interface HoverPreview {
 
 /** How much of a bead as drawn the pointer's marker is (ticket 353, BeadHover card). */
 const POINTER_SCALE = 0.9
+
+/** How much smaller than that the marker is drawn, in px on the screen at any zoom, so it reads as the bead's own size inside the hover preview. */
+const POINTER_TRIM_PX = 1
 
 /** The bead-shaped pointer over the board (ticket 353): where the pointer is, in the surface's own px, and the color it shows. */
 interface BeadPointer {
@@ -197,18 +200,54 @@ function drawPreview(context: DrawingContext, project: DrawnProject, space: Spac
     const color = cell.color ?? preview.color
 
     if (color) {
-      fillFaintly(context, x, y, size, 0, color)
+      const radius = Math.max(0, roundness)
+      const covered = space.open || cell.row + 1 < space.rows ? nextRowBeads(technique, space, cell, x, y, size, radius) : []
+      fillFaintly(context, x, y, size, radius, color, covered)
     } else {
       outlineBead(context, x, y, size, roundness, theme)
     }
   }
 }
 
-/** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity. */
-function fillFaintly(context: DrawingContext, x: number, y: number, size: number, radius: number, color: string): void {
+/** A bead as drawn: where it sits and how big, with its corner radius. */
+interface BeadRect {
+  x: number
+  y: number
+  size: number
+  radius: number
+}
+
+/**
+ * The beads of the next row that lie over this one, as drawn (peyote's rows nest, so the next row covers the bottom of
+ * this one): none where rows stack, a full bead apart. The next row sits half a bead over, so two of its beads reach this one.
+ */
+function nextRowBeads(technique: Technique, space: Space, cell: GridPosition, x: number, y: number, size: number, radius: number): BeadRect[] {
+  const pitch = rowPitchPx(technique)
+  if (pitch >= CELL_SIZE_PX) {
+    return []
+  }
+  const across = (((shiftOf(space, technique, cell.row + 1) - shiftOf(space, technique, cell.row)) % CELL_SIZE_PX) + CELL_SIZE_PX) % CELL_SIZE_PX
+  const top = y + pitch
+  return [across - CELL_SIZE_PX, across].map((dx) => ({ x: x + dx, y: top, size, radius }))
+}
+
+/** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity, leaving out the beads lying over it. */
+function fillFaintly(context: DrawingContext, x: number, y: number, size: number, radius: number, color: string, coveredBy: readonly BeadRect[] = []): void {
   context.globalAlpha = PREVIEW_OPACITY
   context.fillStyle = color
-  if (radius > 0) {
+  if (coveredBy.length > 0) {
+    context.save()
+    context.beginPath()
+    context.rect(x - CELL_SIZE_PX, y - CELL_SIZE_PX, size + 2 * CELL_SIZE_PX, size + 2 * CELL_SIZE_PX)
+    for (const over of coveredBy) {
+      roundedRect(context, over.x, over.y, over.size, over.size, over.radius)
+    }
+    context.clip('evenodd')
+    context.beginPath()
+    roundedRect(context, x, y, size, size, radius)
+    context.fill()
+    context.restore()
+  } else if (radius > 0) {
     context.beginPath()
     roundedRect(context, x, y, size, size, radius)
     context.fill()
@@ -234,7 +273,7 @@ function outlineBead(context: DrawingContext, x: number, y: number, size: number
  * pen has no CSS cursor, so one drawn marker serves the mouse and the pen alike.
  */
 function drawPointer(context: DrawingContext, technique: Technique, zoom: number, pixelRatio: number, pointer: BeadPointer, theme: ProjectTheme): void {
-  const size = CELL_SIZE_PX * zoom * POINTER_SCALE
+  const size = CELL_SIZE_PX * zoom * POINTER_SCALE - POINTER_TRIM_PX
   const x = pointer.x - size / 2
   const y = pointer.y - size / 2
   const radius = Math.max(0, beadRoundness(technique) * size)
