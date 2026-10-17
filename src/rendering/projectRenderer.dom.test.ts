@@ -563,6 +563,14 @@ describe('the bead look', () => {
     ])
   })
 
+  it('draws a white rim on a near-black bead in light, where the dark rim would vanish', () => {
+    const { context, named } = recordingContext()
+
+    drawFlatBead(context, bead({ color: '#1a1a1a' }))
+
+    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([blendOver(DARK_THEME.rim, '#1a1a1a'), '#1a1a1a'])
+  })
+
   it('blends the translucent rim over the bead color into one opaque color', () => {
     expect(blendOver('rgba(20,20,19,.12)', '#ffffff')).toBe('rgb(227, 227, 227)')
     expect(blendOver('#123456', '#ffffff')).toBe('#123456')
