@@ -18,6 +18,7 @@ import type { Space } from './space'
 import {
   CELL_SIZE_PX,
   gridToRegion,
+  projectExtentPx,
   regionInGridSpace,
   rowPitchPx,
   rowShiftPx,
@@ -227,6 +228,15 @@ function bandOnSurface(
   return { x: first, y: upper, width: Math.max(0, last - first), height: Math.max(0, lower - upper) }
 }
 
+/** Adds a rectangle to the current path as lines, not `rect`, which a band's clip is told by. */
+function boxPath(context: DrawingContext, x: number, y: number, width: number, height: number): void {
+  context.moveTo(x, y)
+  context.lineTo(x + width, y)
+  context.lineTo(x + width, y + height)
+  context.lineTo(x, y + height)
+  context.closePath()
+}
+
 /**
  * Draws the part of the Project in the region. Clears what was there first; the surface can be redrawn in place.
  *
@@ -305,6 +315,18 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   if (space.open) {
     // Only the stored rows in view, and only their stored columns: the cost follows the beads, not the canvas.
     const rowsInView = Object.keys(beads).map(Number).filter((row) => row >= firstRow && row <= lastRow).sort((a, b) => a - b)
+    // The beads round the margin nest into its edge (peyote rows sit closer than a bead is tall, offset rows reach half a bead across): cut out its box so none shows inside the outline (the outer rectangle is the view, a cell wider each side so only the cut-out matters).
+    const cutOut = frame !== undefined && rowsInView.length > 0
+    if (frame && cutOut) {
+      context.save()
+      const outer = withMargin(frame, margin)
+      const { width, height } = projectExtentPx(technique, outer.columns, outer.rows)
+      const area = regionInGridSpace(extent, region, zoom, rotation)
+      context.beginPath()
+      boxPath(context, area.left - CELL_SIZE_PX, area.top - CELL_SIZE_PX, area.right - area.left + 2 * CELL_SIZE_PX, area.bottom - area.top + 2 * CELL_SIZE_PX)
+      boxPath(context, outer.column * CELL_SIZE_PX, rowTopPx(technique, outer.row), width, height)
+      context.clip('evenodd')
+    }
     for (const row of rowsInView) {
       const { first, last } = visible.columnsOf(row)
       const stored = beads[row]!
@@ -314,6 +336,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
           drawAt(row, column, stored[column]!)
         }
       }
+    }
+    if (cutOut) {
+      context.restore()
     }
   }
 
