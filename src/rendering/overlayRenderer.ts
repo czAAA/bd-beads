@@ -11,7 +11,7 @@ import { drawBoxHandles, drawFrameEditing, drawMoveHandle, drawRulers } from './
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
-import { beadRoundness } from './beadLook'
+import { BEAD_GAP_PX, beadRoundness } from './beadLook'
 
 /**
  * The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -366,8 +366,8 @@ function drawCursor(context: DrawingContext, project: DrawnProject, space: Space
   if (!inSpace(space, cursor.row, cursor.column)) {
     return
   }
-  // The bead stands a pixel in from its cell (its gap); the ring starts 2px outside that.
-  const offset = 2 - 1
+  // The bead stands half the gap in from its cell; the ring starts 2px outside that.
+  const offset = 2 - BEAD_GAP_PX / 2
   const width = theme.cursorWidth
   const x = shiftOf(space, technique, cursor.row) + cursor.column * CELL_SIZE_PX - offset
   const y = rowTopPx(technique, cursor.row) - offset
