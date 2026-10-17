@@ -271,9 +271,10 @@ describe('App at the phone tier (ticket 79)', () => {
 
     const sheet = wrapper.get('[data-testid="top-sheet"]')
     expect(wrapper.find('[data-testid="top-sheet-scrim"]').exists()).toBe(true)
-    // Under 1024px the choices are one option per line, not the dropdown's switcher.
+    // Under 1024px the choices are folded rows, not the dropdown's switcher, and none is open until tapped.
     expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(false)
-    expect(sheet.findAll('[role="radiogroup"]').length).toBeGreaterThanOrEqual(3)
+    expect(sheet.findAll('[aria-expanded="false"]').length).toBeGreaterThanOrEqual(3)
+    expect(sheet.findAll('[role="radiogroup"]')).toHaveLength(0)
     expect(sheet.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(false)
     expect(sheet.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
     expect(sheet.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
