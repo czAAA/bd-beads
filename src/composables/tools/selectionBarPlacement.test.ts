@@ -38,7 +38,7 @@ describe('frameStepperCentres (ticket 427)', () => {
   }
 
   it('centres each pair between the ruler numbers and the margin\'s outer edge', () => {
-    expect(frameStepperCentres(anchor, false)).toEqual({
+    expect(frameStepperCentres(anchor)).toEqual({
       top: { x: 200, y: 68 },
       bottom: { x: 200, y: 192 },
       left: { x: 115, y: 130 },
@@ -46,18 +46,16 @@ describe('frameStepperCentres (ticket 427)', () => {
     })
   })
 
-  it('keeps every pair inside the canvas box when the Frame is near or past its edge', () => {
-    const corner = { ...anchor, box: { left: -40, top: -30, width: 100, height: 60 }, outer: { left: -90, top: -80, width: 200, height: 160 } }
-    const centres = frameStepperCentres(corner, true)
-    expect(centres.top.y).toBe(8 + 18)
-    expect(centres.left.x).toBe(8 + 18)
-    expect(centres.top.x).toBeGreaterThanOrEqual(8 + 37)
-  })
-
-  it('shrinks the pairs with the zoom, so a smaller pair may sit closer to the canvas box\'s edge (ticket 427)', () => {
-    const corner = { ...anchor, box: { left: -40, top: -30, width: 100, height: 60 }, outer: { left: -90, top: -80, width: 200, height: 160 } }
-    expect(frameStepperCentres({ ...corner, scale: 0.5 }, false).top.y).toBe(8 + 7)
-    expect(frameStepperCentres({ ...corner, scale: 1 }, false).top.y).toBe(8 + 14)
+  it('pins the pairs to the Frame: panning carries them, they are never clamped to the canvas box (ticket 467)', () => {
+    const at = frameStepperCentres(anchor)
+    const panned = frameStepperCentres({
+      ...anchor,
+      box: { ...anchor.box, left: anchor.box.left - 500, top: anchor.box.top - 400 },
+      outer: { ...anchor.outer, left: anchor.outer.left - 500, top: anchor.outer.top - 400 },
+    })
+    for (const edge of ['top', 'bottom', 'left', 'right'] as const) {
+      expect(panned[edge]).toEqual({ x: at[edge].x - 500, y: at[edge].y - 400 })
+    }
   })
 })
 
@@ -116,12 +114,11 @@ describe('frameCornerControls (ticket 455)', () => {
     expect(frameCornerControls({ ...anchor, scale: 0.5 }, false)).toMatchObject({ size: 13, scale: 0.5 })
   })
 
-  it('keeps the whole row inside the canvas box when the margin runs off it', () => {
-    const off = { ...anchor, outer: { left: -400, top: -60, width: 2000, height: 160 } }
-    const { remove, move, size } = frameCornerControls(off, false)
-    expect(remove.x + size / 2).toBeLessThanOrEqual(viewport.width - 8)
-    expect(move.x - size / 2).toBeGreaterThanOrEqual(8)
-    expect(move.y - size / 2).toBeGreaterThanOrEqual(8)
+  it('is pinned to the margin outline: panning carries the row, it is never clamped to the canvas box (ticket 467)', () => {
+    const at = frameCornerControls(anchor, false)
+    const panned = frameCornerControls({ ...anchor, outer: { ...anchor.outer, left: anchor.outer.left - 700, top: anchor.outer.top - 90 } }, false)
+    expect(panned.move).toEqual({ x: at.move.x - 700, y: at.move.y - 90 })
+    expect(panned.remove).toEqual({ x: at.remove.x - 700, y: at.remove.y - 90 })
   })
 })
 
