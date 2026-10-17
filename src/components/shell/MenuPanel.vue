@@ -118,7 +118,7 @@ const sheet = computed(() => context?.sheet.value ?? false)
     </PanelSection>
 
     <PanelSection :label="t.panels.menu.preferences">
-      <SettingChoice v-if="sheet" :model-value="locale" :label="t.languageSwitcher.ariaLabel" icon="info" :options="languageOptions" @update:model-value="setLocale" />
+      <SettingChoice v-if="sheet" :model-value="locale" :label="t.languageSwitcher.ariaLabel" icon="info" :options="languageOptions" data-testid="menu-language" @update:model-value="setLocale" />
       <div v-else class="menu-panel__row">
         <span class="menu-panel__label"><AppIcon name="info" :size="16" />{{ t.languageSwitcher.ariaLabel }}</span>
         <LanguageSwitcher />
