@@ -5,7 +5,7 @@ import { createProject } from './domain/project'
 import { saveProjects } from './services/libraryStore'
 import { beadColor, pressBead } from './testUtils/beads'
 import { en } from './i18n/en'
-import { closeSheet, openSheet } from './testUtils/pill'
+import { closeSheet, openChoice, openSheet } from './testUtils/pill'
 
 /** Pen mode and Mouse mode (tickets 325, 326, 443): which pointer draws and which one moves the canvas, and the Menu's Input row that picks, which shows once a pen is seen. */
 
@@ -36,6 +36,7 @@ const bead = (row: number, column: number) => ({ row, column })
 /** The Menu's Input row (ticket 443): Pen | Mouse, which opens Menu first. */
 async function inputRow(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
   await openSheet(wrapper, 'strip-menu')
+  await openChoice(wrapper, 'menu-input-mode')
   return wrapper.find('[data-testid="menu-input-mode"]')
 }
 const chosen = (row: Awaited<ReturnType<typeof inputRow>>) => row.findAll('[role="radio"]').find((option) => option.attributes('aria-checked') === 'true')?.text()
