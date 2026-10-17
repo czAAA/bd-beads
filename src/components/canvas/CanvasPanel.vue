@@ -286,7 +286,7 @@ function techniqueWord(technique: Technique): string {
         />
 
         <EditFrameSteppers
-          v-if="activeProject && settingFrame && frameAnchor && !frameAnchor.steppersHidden && !selection"
+          v-if="activeProject && settingFrame && frameAnchor && !selection"
           :project="activeProject"
           :anchor="frameAnchor"
           @step="onStepFrameEdge"

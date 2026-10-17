@@ -1133,6 +1133,11 @@ describe('ProjectSurface with a Frame', () => {
     expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toMatchObject({ box: { left: expect.any(Number) }, outer: { left: expect.any(Number) } })
   })
 
+  it('reports no Frame place once the Frame and its margin are scrolled wholly out of view, so no control stays on screen', async () => {
+    const { wrapper } = await mountSurface(framed(), 1, { x: 5000, y: 5000 }, { settingFrame: true })
+    expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toBeUndefined()
+  })
+
   it('reports a press on a resize handle, the drag and the release, and draws no bead', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
     // The bottom-right handle stands on the corner of the Frame's line, 7px outside its beads (8 × 6 beads of 20px).
