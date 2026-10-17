@@ -7,8 +7,8 @@ import { PANEL_CONTEXT } from './panelContext'
 
 /**
  * A preference shown as its choices (MenuPanel card): on the dropdown, a SegmentedControl, on the row beside its label
- * when it has two choices (`inline`) and stacked under it otherwise; in the Top sheet, one option per line, a radiogroup
- * with a check on the current one, since four segments do not fit a phone. Both are one control to the app: choosing
+ * when it has two choices (`inline`) and stacked under it otherwise; in the Top sheet, a row with the current choice that
+ * opens one option per line, a radiogroup with a check on the current one, since four segments do not fit a phone. Both are one control to the app: choosing
  * applies at once.
  */
 const props = defineProps<{
@@ -22,7 +22,11 @@ const value = defineModel<T>({ required: true })
 const context = inject(PANEL_CONTEXT)
 const sheet = computed(() => context?.sheet.value ?? false)
 const labelId = useId()
+const listId = useId()
 const listEl = ref<HTMLElement>()
+/** In the sheet the choices start folded to the current one, as the dropdown's segments are one line; the header opens them. */
+const open = ref(false)
+const currentLabel = computed(() => props.options.find((option) => option.value === value.value)?.label ?? '')
 
 const segments = computed(() =>
   props.options.map((option) => ({
@@ -52,11 +56,15 @@ function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div v-if="sheet" class="setting setting--list" role="radiogroup" :aria-labelledby="labelId">
-    <span :id="labelId" class="setting__label setting__label--heading">
-      <AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}
-    </span>
-    <div ref="listEl" class="setting__list" @keydown="onKeydown">
+  <div v-if="sheet" class="setting setting--list">
+    <button type="button" class="ui-control setting__header" data-wrap-ok :aria-expanded="open" :aria-controls="listId" @click="open = !open">
+      <span :id="labelId" class="setting__label setting__label--heading">
+        <AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}
+      </span>
+      <AppIcon class="setting__chevron" :name="open ? 'chevron-up' : 'chevron-down'" :size="16" />
+      <span class="setting__current">{{ currentLabel }}</span>
+    </button>
+    <div v-if="open" :id="listId" ref="listEl" class="setting__list" role="radiogroup" :aria-labelledby="labelId" @keydown="onKeydown">
       <button
         v-for="option in options"
         :key="option.value"
@@ -119,6 +127,49 @@ function onKeydown(event: KeyboardEvent) {
 .setting--list {
   gap: 0;
   padding: 0 var(--space-12);
+}
+
+.setting__header {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: 'label label' 'current chevron';
+  align-items: center;
+  column-gap: var(--space-8);
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--panel-item-height);
+  padding: 0;
+  color: var(--ink);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.setting__current {
+  grid-area: current;
+  padding: 0 0 var(--space-6) calc(16px + var(--space-10));
+  font: var(--type-meta);
+  color: var(--muted);
+}
+
+.setting__chevron {
+  grid-area: chevron;
+  align-self: start;
+}
+
+.setting__header .setting__label {
+  grid-area: label;
+}
+
+.setting__header:active {
+  background: var(--press-fill);
+}
+
+.setting__header:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
 }
 
 .setting__list {

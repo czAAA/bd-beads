@@ -6,7 +6,7 @@ import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
-import { openSheet } from './testUtils/pill'
+import { openChoice, openSheet } from './testUtils/pill'
 
 /**
  * Menu and Project (spec 0440, ticket 443): one happy path per flow. As every test starts the page is under 1024px, so
@@ -106,6 +106,7 @@ describe('Menu', () => {
     const wrapper = mountApp()
     await openSheet(wrapper, 'strip-menu')
 
+    await openChoice(wrapper, 'menu-tools-position')
     await wrapper.get('[data-testid="menu-tools-position"] [data-value="top"]').trigger('click')
 
     expect(localStorage.getItem('openbeads:tool-pill-position')).toBe('top')
@@ -124,6 +125,7 @@ describe('Menu', () => {
     await openSheet(wrapper, 'strip-menu')
 
     expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
+    await openChoice(wrapper, 'menu-input-mode')
     await wrapper.get('[data-testid="menu-input-mode"] [data-value="mouse"]').trigger('click')
     expect(localStorage.getItem('openbeads:input-mode')).toBe('mouse')
   })

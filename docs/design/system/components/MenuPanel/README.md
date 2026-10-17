@@ -34,7 +34,7 @@ A preference that is always visible as its choices, in a SegmentedControl (small
 - The selected segment sits on `elevated` with a `line-strong` edge; in high contrast it is the `ink` fill with white text. Not `accent`: the one accent is for the next action.
 - **Input** shows only once a pen has been seen (ticket 326), and is absent otherwise, not disabled. Pen draws with the tip and pans with touch; Mouse treats the pen as a mouse. It replaces the pill's Pen/Mouse toggle.
 - **Tools position** replaces the Menu sheet's "Tools position" row and is the keyboard route to the pill's four edges (ToolPill card). It follows the device, like Theme.
-- **In the Top sheet** these become choice lists, one option per line: a group heading (icon + name, Inter 600), then one 48px item per choice indented 42px, the current one in 600 weight with a 18px check at the right (`accent-strong`; `ink` in high contrast), `role="radiogroup"` with `role="radio"` and `aria-checked`. A segmented control of four does not fit a phone's width.
+- **In the Top sheet** these become choice lists, one option per line, folded until tapped: a header row (icon + name in Inter 600 and under it the current choice in `muted` meta type, indented to the name, with a 16px chevron at the right of that line, down, up when open; a button with `aria-expanded`) that opens the list, so the sheet stays short like the dropdown's one-line controls. Open, below the header, one 48px item per choice indented 42px, the current one in 600 weight with a 18px check at the right (`accent-strong`; `ink` in high contrast), `role="radiogroup"` with `role="radio"` and `aria-checked`. A segmented control of four does not fit a phone's width.
 
 ## Keyboard and screen readers
 
