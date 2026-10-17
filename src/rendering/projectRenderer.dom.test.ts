@@ -552,10 +552,21 @@ describe('the bead look', () => {
     expect(named('fill')).toHaveLength(0)
   })
 
-  it('draws no rim in dark: the bead alone, half a pixel in from its cell', () => {
+  it('draws a white rim in dark, so two beads of one color stay apart (ticket 0460)', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead({ theme: DARK_THEME }))
+
+    expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([
+      [blendOver(DARK_THEME.rim!, '#e63746'), 40.5, 20.5, 19, 19],
+      ['#e63746', 41.25, 21.25, 17.5, 17.5],
+    ])
+  })
+
+  it('draws the bead alone, half a pixel in from its cell, in a theme whose rim is null', () => {
+    const { context, named } = recordingContext()
+
+    drawFlatBead(context, bead({ theme: { ...DARK_THEME, rim: null } }))
 
     expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([['#e63746', 40.5, 20.5, 19, 19]])
   })
@@ -611,7 +622,8 @@ describe('the bead look', () => {
 
     drawFlatBead(context, bead({ dimmed: true, theme: DARK_THEME }))
 
-    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([fadeOver('#e63746', DARK_THEME.background, 0.5)])
+    const faded = fadeOver('#e63746', DARK_THEME.background, 0.5)
+    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([blendOver(DARK_THEME.rim!, faded), faded])
   })
 
   it('leaves the context as it found it', () => {

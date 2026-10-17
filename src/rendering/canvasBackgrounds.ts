@@ -51,7 +51,7 @@ export function canvasBackgroundOf(theme: ResolvedTheme, choice: number): Canvas
 }
 
 /** Ash, the lightest dark background, needs its own greys to stay legible. */
-const ASH = { ruler: '#a0a0a0', emptyBead: '#3d3b38', word: '#353432', rim: 'rgba(255,255,255,.16)' }
+const ASH = { ruler: '#a0a0a0', emptyBead: '#3d3b38', word: '#353432' }
 
 function isAsh(theme: ResolvedTheme, choice: number): boolean {
   return canvasBackgroundOf(theme, choice)?.id === 'ash'
@@ -67,7 +67,6 @@ export function canvasTheme(theme: ResolvedTheme, choice: number): ProjectTheme 
     look.ruler = ASH.ruler
     look.positionMark = ASH.emptyBead
     look.emptyBead = ASH.emptyBead
-    look.rim = ASH.rim
   }
   return look
 }
