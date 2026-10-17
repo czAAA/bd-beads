@@ -70,7 +70,7 @@ describe('MenuPanel (ticket 443)', () => {
     expect(position.get('button').attributes('aria-expanded')).toBe('true')
     expect(position.findAll('[role="radio"]').map((option) => option.text())).toEqual([en.toolPill.left, en.toolPill.top, en.toolPill.right, en.toolPill.bottom])
     expect(position.get('[aria-checked="true"]').text()).toBe(en.toolPill.bottom)
-    expect(position.get('[aria-checked="true"] svg').attributes('data-icon')).toBe('check')
+    expect(position.get('[aria-checked="true"] .setting__check').attributes('data-icon')).toBe('check')
     await position.get('button').trigger('click')
     expect(position.findAll('[role="radio"]')).toHaveLength(0)
   })

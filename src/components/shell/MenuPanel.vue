@@ -64,7 +64,7 @@ const actions = {
 }
 const version = __APP_VERSION__
 
-const languageOptions = computed(() => LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], lang: code, testid: `language-${code}` })))
+const languageOptions = computed(() => LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], icon: 'globe' as const, lang: code, testid: `language-${code}` })))
 const themeOptions = computed<{ value: ThemePick; label: string; icon: 'device' | 'sun' | 'moon' | 'contrast' }[]>(() => [
   { value: 'device', icon: 'device', label: t.value.theme.matchDevice },
   { value: 'light', icon: 'sun', label: t.value.theme.light },
@@ -72,10 +72,10 @@ const themeOptions = computed<{ value: ThemePick; label: string; icon: 'device' 
   { value: 'contrast', icon: 'contrast', label: t.value.theme.contrast },
 ])
 const positionOptions = computed(() => [
-  { value: 'left' as const, label: t.value.toolPill.left },
-  { value: 'top' as const, label: t.value.toolPill.top },
-  { value: 'right' as const, label: t.value.toolPill.right },
-  { value: 'bottom' as const, label: t.value.toolPill.bottom },
+  { value: 'left' as const, icon: 'position-left' as const, label: t.value.toolPill.left },
+  { value: 'top' as const, icon: 'position-top' as const, label: t.value.toolPill.top },
+  { value: 'right' as const, icon: 'position-right' as const, label: t.value.toolPill.right },
+  { value: 'bottom' as const, icon: 'position-bottom' as const, label: t.value.toolPill.bottom },
 ])
 const inputOptions = computed(() => [
   { value: 'pen' as const, label: t.value.panels.menu.pen, icon: 'pen-mode' as const },
@@ -118,9 +118,9 @@ const sheet = computed(() => context?.sheet.value ?? false)
     </PanelSection>
 
     <PanelSection :label="t.panels.menu.preferences">
-      <SettingChoice v-if="sheet" :model-value="locale" :label="t.languageSwitcher.ariaLabel" icon="info" :options="languageOptions" data-testid="menu-language" @update:model-value="setLocale" />
+      <SettingChoice v-if="sheet" :model-value="locale" :label="t.languageSwitcher.ariaLabel" icon="globe" :options="languageOptions" data-testid="menu-language" @update:model-value="setLocale" />
       <div v-else class="menu-panel__row">
-        <span class="menu-panel__label"><AppIcon name="info" :size="16" />{{ t.languageSwitcher.ariaLabel }}</span>
+        <span class="menu-panel__label"><AppIcon name="globe" :size="16" />{{ t.languageSwitcher.ariaLabel }}</span>
         <LanguageSwitcher />
       </div>
       <SettingChoice v-if="sheet" :model-value="pick" :label="t.theme.groupLabel" icon="sun" :options="themeOptions" @update:model-value="setPick" />
