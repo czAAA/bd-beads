@@ -63,11 +63,12 @@ const directionLabel = computed(() =>
 <template>
   <div class="progress-bar no-page-pan" data-testid="progress-bar">
     <template v-if="!hasFrame">
-      <!-- Styled like the CanvasHint: Select, then Set Frame to start, each with its icon. -->
+      <!-- Styled like the CanvasHint: "(Select chip) Select to set a (Frame chip) Frame", each icon in a chip. -->
       <p class="progress-bar__need" data-testid="progress-bar-needs-frame">
-        <span class="progress-bar__need-step"><AppIcon name="select" :size="16" />{{ t.tools.selectLabel }}</span>
-        <span class="progress-bar__need-dot">·</span>
-        <span class="progress-bar__need-step"><AppIcon name="frame" :size="16" />{{ t.frame.progressNeedsFrame }}</span>
+        <span class="progress-bar__chip"><AppIcon name="select" :size="14" /></span>
+        {{ t.frame.progressSelectToSet }}
+        <span class="progress-bar__chip"><AppIcon name="frame" :size="14" /></span>
+        {{ t.frame.progressFrameWord }}
       </p>
       <span class="progress-bar__fit-frame">
         <AppButton variant="box" :action="actions.fitFrame" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-frame')" />
@@ -141,25 +142,31 @@ const directionLabel = computed(() =>
 </template>
 
 <style scoped>
-/* No Frame (ProgressBar card): "Select · Set Frame to start" set like the CanvasHint, and the Fit to drawing button pushed to the right. */
+/* No Frame (ProgressBar card): "Select to set a Frame" set like the CanvasHint, and the Fit to drawing button pushed to the right. */
 .progress-bar__need {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: var(--space-4);
   margin: 0;
   font: 400 0.75rem/1rem var(--font-sans);
   color: var(--muted);
   white-space: nowrap;
 }
 
-.progress-bar__need-step {
+/* An icon chip, 20px like the CanvasHint's key chips. */
+.progress-bar__chip {
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
-  gap: var(--space-4);
-}
-
-.progress-bar__need-dot {
-  margin: 0 var(--space-4);
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--space-4);
+  color: var(--body);
+  background: var(--elevated);
+  border: 1px solid var(--line-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--radius-xs);
 }
 
 .progress-bar__fit-frame {
