@@ -74,7 +74,7 @@ export interface ProjectTheme {
   rulerStrong: string
   /** The board: behind everything, what shows through the gaps and what a finished row fades toward (`board`). */
   background: string
-  /** The faint rim round every bead (`bead-rim`), or null for none (a theme whose rim is the board color). */
+  /** The faint rim round every bead (`bead-rim`), or null for none (a rim token set to the board color draws no rim). */
   rim: string | null
   /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board (`bead-empty`). */
   emptyBead: string
