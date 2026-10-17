@@ -119,7 +119,12 @@ const CORNER_GAP_PX = 4
 const CORNER_INSET_PX = 4
 
 /** Where one corner control goes, in the canvas box's pixels: its centre. */
-export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number; y: number }> & { size: number; scale: number }
+export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number; y: number }> & {
+  /** The scaled side of each control, in the canvas box's pixels. */
+  size: number
+  /** The zoom factor already applied to `size`, gaps and inset (the anchor's `scale`). */
+  scale: number
+}
 
 /**
  * The Frame's three corner controls (ticket 455, after 452): Move handle, Edit Frame and Remove Frame in one row, like a

@@ -9,8 +9,8 @@ import type { Project } from '../../domain/project'
 /**
  * What a Frame carries all the time (tickets 452, 455, ADR 0062): three small buttons in a row just inside the top-right
  * corner of the margin outline, like a window's, clamped inside the canvas box: Move handle, Edit Frame and Remove Frame.
- * The Move handle's button hands a press on to the canvas to drag, and the arrows move the Frame with its beads while Shift + arrows resize
- * it. `anchor` is the Frame's rectangle in the canvas box's own pixels.
+ * The Move handle's button hands a press on to the canvas to drag, and the arrows move the Frame with its beads while
+ * Shift + arrows resize it. `anchor` is the Frame's rectangle in the canvas box's own pixels.
  */
 const props = defineProps<{
   project: Project
@@ -33,7 +33,8 @@ const moveAction = controlAction('move-frame')
 
 const touch = useMediaQuery('(pointer: coarse)')
 const controls = computed(() => frameCornerControls(props.anchor, touch.value))
-const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px`, '--corner-scale': String(controls.value.scale) })
+const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
+const scaled = computed(() => ({ '--corner-scale': String(controls.value.scale) }))
 // Each button keeps its full size and the wrapper shrinks it with the zoom, so the icon shrinks with the box.
 const sized = computed(() => {
   const full = controls.value.size / controls.value.scale
@@ -44,7 +45,7 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 </script>
 
 <template>
-  <div class="frame-chrome" data-testid="frame-chrome">
+  <div class="frame-chrome" data-testid="frame-chrome" :style="scaled">
     <div class="frame-chrome__control" :style="place(controls.move)">
       <IconButton
         variant="box"
