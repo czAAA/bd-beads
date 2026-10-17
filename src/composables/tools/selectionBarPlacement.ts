@@ -112,14 +112,21 @@ export function frameStepperCentres(anchor: FrameAnchor, touch: boolean): FrameS
   }
 }
 
-/** A corner control is 34px square, 44px on touch; the three sit 4px apart, 4px inside the margin outline's corner. */
-const CORNER_PX = 34
-const TOUCH_CORNER_PX = 44
+/** A corner control is 26px square, 36px on touch, shrinking with the zoom like the steppers (`anchor.scale`); the three sit 4px apart, 4px inside the margin outline's corner. */
+const CORNER_PX = 26
+const TOUCH_CORNER_PX = 36
 const CORNER_GAP_PX = 4
 const CORNER_INSET_PX = 4
 
 /** Where one corner control goes, in the canvas box's pixels: its centre. */
-export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number; y: number }> & { size: number }
+export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number; y: number }> & {
+  /** The scaled side of each control, in the canvas box's pixels. */
+  size: number
+  /** The side before the zoom, which the button keeps while its wrapper is scaled down. */
+  fullSize: number
+  /** The zoom factor already applied to `size`, gaps and inset (the anchor's `scale`). */
+  scale: number
+}
 
 /**
  * The Frame's three corner controls (ticket 455, after 452): Move handle, Edit Frame and Remove Frame in one row, like a
@@ -127,13 +134,16 @@ export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number
  */
 export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameCornerControls {
   const { outer, viewport } = anchor
-  const size = touch ? TOUCH_CORNER_PX : CORNER_PX
-  const row = 3 * size + 2 * CORNER_GAP_PX
-  const right = Math.max(BAR_EDGE_PX + row, Math.min(outer.left + outer.width - CORNER_INSET_PX, viewport.width - BAR_EDGE_PX))
-  const top = Math.max(BAR_EDGE_PX, Math.min(outer.top + CORNER_INSET_PX, viewport.height - BAR_EDGE_PX - size))
+  const { scale } = anchor
+  const fullSize = touch ? TOUCH_CORNER_PX : CORNER_PX
+  const size = fullSize * scale
+  const gap = CORNER_GAP_PX * scale
+  const row = 3 * size + 2 * gap
+  const right = Math.max(BAR_EDGE_PX + row, Math.min(outer.left + outer.width - CORNER_INSET_PX * scale, viewport.width - BAR_EDGE_PX))
+  const top = Math.max(BAR_EDGE_PX, Math.min(outer.top + CORNER_INSET_PX * scale, viewport.height - BAR_EDGE_PX - size))
   const y = top + size / 2
-  const at = (slot: number) => ({ x: right - size / 2 - slot * (size + CORNER_GAP_PX), y })
-  return { size, remove: at(0), edit: at(1), move: at(2) }
+  const at = (slot: number) => ({ x: right - size / 2 - slot * (size + gap), y })
+  return { size, fullSize, scale, remove: at(0), edit: at(1), move: at(2) }
 }
 
 /** The Move handle's square (ticket 452, 455): the leftmost of the corner controls. */

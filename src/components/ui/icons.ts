@@ -38,6 +38,7 @@ export const ICON_NAMES = [
   'mirror-vertical',
   'moon',
   'more',
+  'move-frame',
   'name-piece',
   'paint',
   'palette',

@@ -129,7 +129,7 @@ const {
   onStepFrameEdge,
   onRemoveFrame,
   onResetProgress,
-  frameDraft,
+  frameDraftProject,
   onFramePress,
   onFrameDrag,
   onFrameRelease,
@@ -159,7 +159,7 @@ const colorPick = useColorPick()
 /** Whether Select or Piece is in hand: the pointer is the native arrow, and the margin cannot be selected (tickets 414, 433). */
 const selecting = computed(() => activeTool.value === 'select' || activeTool.value === 'piece')
 
-const shownProject = computed(() => (activeProject.value && frameDraft.value ? { ...activeProject.value, frame: frameDraft.value } : activeProject.value))
+const shownProject = frameDraftProject
 
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {

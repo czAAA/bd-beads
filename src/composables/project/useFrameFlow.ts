@@ -34,13 +34,21 @@ type Gesture =
 export function useFrameFlow(deps: FrameFlowDeps) {
   /** The weaver's choice on the edit toggle; true until they turn it off. Never saved. */
   const editOn = ref(true)
-  /** The Frame as it looks mid-drag, before it is committed. */
-  const draft = ref<Frame | undefined>()
+  /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its beads. */
+  const draft = ref<{ frame: Frame; move?: { rows: number; columns: number } } | undefined>()
   let gesture: Gesture | undefined
   /** How far the Move handle has been dragged, in whole beads. */
   let moved = { rows: 0, columns: 0 }
   /** Whether the pointer has moved since the press: a click that drew nothing is not a Frame. */
   let dragged = false
+
+  const draftProject = computed(() => {
+    const project = deps.currentProject()
+    if (!project || !draft.value) return project
+    if (!draft.value.move) return { ...project, frame: draft.value.frame }
+    const outcome = changeFrame(project, { move: draft.value.move })
+    return outcome.kind === 'changed' ? outcome.project : project
+  })
 
   const locked = computed(() => {
     const project = deps.currentProject()
@@ -111,15 +119,18 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project || !gesture) return
     dragged = true
     if (gesture.kind === 'resize') {
-      draft.value = frameWithEdges(project.technique, gesture.start, gesture.edges, cell)
+      draft.value = { frame: frameWithEdges(project.technique, gesture.start, gesture.edges, cell) }
     } else {
-      moved = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
-      draft.value = movedFrame(project.technique, gesture.start, moved.rows, moved.columns)
+      const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
+      // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left alone.
+      if (draft.value && next.rows === moved.rows && next.columns === moved.columns) return
+      moved = next
+      draft.value = { frame: movedFrame(project.technique, gesture.start, next.rows, next.columns), move: next }
     }
   }
 
   function release(): void {
-    const result = draft.value
+    const result = draft.value?.frame
     const wasMove = gesture?.kind === 'move'
     gesture = undefined
     draft.value = undefined
@@ -207,8 +218,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   return {
     settingFrame,
-    /** What the canvas draws as the Frame while a drag has not committed it. */
-    draft,
+    /** The Project as the canvas draws it while a drag has not committed: a Move drag shows the beads travelling too, exactly as the release will leave them. */
+    draftProject,
     frameLocked: locked,
     editOn,
     toggleEdit,

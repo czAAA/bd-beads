@@ -539,7 +539,6 @@ function drawOverlay(): void {
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
-      moveHandle: moveHandle.value,
       selectionHandles: props.selecting ? { surface: surface.value, touch: touchInput.value } : undefined,
       rulers: { layout: rulers.value, surface: surface.value },
     })
@@ -574,7 +573,6 @@ watch(
     () => props.showRulers,
     () => props.settingFrame,
     sizeShown,
-    moveHandle,
     handMoves,
     () => props.markerHidden,
     () => props.selecting,

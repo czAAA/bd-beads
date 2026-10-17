@@ -891,7 +891,7 @@ function wireAppShell(services: Services) {
     onConfirmRemoveAddedColor,
     ...removeLine,
     settingFrame: frameFlow.settingFrame,
-    frameDraft: frameFlow.draft,
+    frameDraftProject: frameFlow.draftProject,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
     onFrameKey: (event: KeyboardEvent) => {
