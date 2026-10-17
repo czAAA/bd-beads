@@ -1,9 +1,9 @@
 import type { Tool } from '../../domain/tool'
 
-/** The Tool pill's six tool tiles, in their fixed order (ToolPill card; ticket 439). */
-export const PILL_TOOLS: readonly Tool[] = ['paint', 'fill', 'select', 'piece', 'erase', 'hand']
+/** The Tool pill's six tool tiles, in their fixed order, which is their hotkey order 1 to 6 (ToolPill card; tickets 439, 461). */
+export const PILL_TOOLS: readonly Tool[] = ['paint', 'fill', 'select', 'erase', 'hand', 'piece']
 
-/** The Paste tool's key (ticket 447): not a Tool, but a tile after Hand that enters paste mode while the clipboard holds something. */
+/** The Paste tool's key (ticket 447): not a Tool, but a tile after the last tool that enters paste mode while the clipboard holds something. */
 export const PASTE_TILE_HOTKEY = '7'
 
 /** Each tool's single-key shortcut, shown as a badge on its Tool button (ticket 250). Eraser's `Del` is not one. */

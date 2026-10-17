@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ToolPill from './ToolPill.vue'
 
-const TOOL_IDS = ['paint', 'fill', 'select', 'piece', 'erase', 'hand']
+const TOOL_IDS = ['paint', 'fill', 'select', 'erase', 'hand', 'piece']
 
 const base = { activeTool: 'paint', position: 'bottom', colorMode: 'one', recentsInPill: [], recentsInPopover: [], popoverOpen: false, colorHex: '#e63746', colorName: 'Red' } as const
 
@@ -26,12 +26,12 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.findAll('.tool-pill__divider')).toHaveLength(1)
   })
 
-  it('shows a Paste tile right after Hand only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
+  it('shows a Paste tile right after Piece only while the clipboard holds something, lit in paste mode (ticket 447)', async () => {
     expect(mount(ToolPill, { props: base }).find('[data-testid="pill-tool-paste"]').exists()).toBe(false)
 
     const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
     const ids = wrapper.findAll('button').map((button) => button.attributes('data-testid'))
-    expect(ids.indexOf('pill-tool-paste')).toBe(ids.indexOf('pill-tool-hand') + 1)
+    expect(ids.indexOf('pill-tool-paste')).toBe(ids.indexOf('pill-tool-piece') + 1)
     const paste = wrapper.get('[data-testid="pill-tool-paste"]')
     expect(paste.attributes('aria-label')).toBe('Paste')
     expect(paste.get('.icon-btn__key').text()).toBe('7')
@@ -56,6 +56,12 @@ describe('ToolPill (ticket 439)', () => {
 
     for (const id of TOOL_IDS) await wrapper.get(`[data-testid="pill-tool-${id}"]`).trigger('click')
     expect(wrapper.emitted('select-tool')).toEqual(TOOL_IDS.map((id) => [id]))
+  })
+
+  it('lays the tool tiles out in hotkey order, 1 to 6, then Paste 7 (ticket 461)', () => {
+    const wrapper = mount(ToolPill, { props: { ...base, hasClipboard: true } })
+    const keys = wrapper.findAll('[data-testid^="pill-tool-"] .icon-btn__key').map((key) => key.text())
+    expect(keys).toEqual(['1', '2', '3', '4', '5', '6', '7'])
   })
 
   it('goes vertical on the left and right, and docks to the position it is given', async () => {
