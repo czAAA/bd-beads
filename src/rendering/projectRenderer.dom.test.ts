@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
-import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, type BeadDrawer, type BeadShape } from './beadLook'
+import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, projectExtentPx, rowPitchPx, rowShiftPx, rowTopPx, type Region } from './surfaceView'
@@ -563,12 +563,18 @@ describe('the bead look', () => {
     ])
   })
 
-  it('draws a white rim on a near-black bead in light, where the dark rim would vanish', () => {
-    const { context, named } = recordingContext()
+  it('draws a white rim on a near-black bead in light, where the dark rim would vanish, but not on a dark navy', () => {
+    const rims = (color: string, theme = DEFAULT_THEME) => {
+      const { context, named } = recordingContext()
+      drawFlatBead(context, bead({ color, theme }))
+      return named('fillRect')[0]!.fillStyle
+    }
 
-    drawFlatBead(context, bead({ color: '#1a1a1a' }))
-
-    expect(named('fillRect').map((call) => call.fillStyle)).toEqual([blendOver(DARK_THEME.rim, '#1a1a1a'), '#1a1a1a'])
+    expect(rims('#1a1a1a')).toBe(blendOver(DARK_THEME.rim, '#1a1a1a'))
+    expect(rims('#2c2c2c')).toBe(blendOver(DARK_THEME.rim, '#2c2c2c'))
+    expect(rims('#2e2e2e')).toBe(blendOver(DEFAULT_THEME.rim, '#2e2e2e'))
+    expect(rims('#1f3f8a')).toBe(blendOver(DEFAULT_THEME.rim, '#1f3f8a'))
+    expect(rims('#1a1a1a', PROJECT_THEMES.contrast)).toBe(blendOver(PROJECT_THEMES.contrast.rim, '#1a1a1a'))
   })
 
   it('blends the translucent rim over the bead color into one opaque color', () => {
