@@ -123,8 +123,13 @@ async function probeRoom() {
   await nextTick()
   if (probe !== latestProbe) return // a newer probe owns the measuring now
   const el = pillEl.value
-  // One pixel of slack: sub-pixel rounding must not read a pill that just fits as overflowing.
-  if (el) recentsRoom.value = vertical.value ? el.scrollHeight <= el.clientHeight + 1 : el.scrollWidth <= el.clientWidth + 1
+  // Where the last tile ends, not `scrollWidth`: a tile's touch target reaches past the pill's edge and would count as overflow. One pixel of slack for sub-pixel rounding.
+  const last = el?.lastElementChild
+  if (el && last) {
+    const box = el.getBoundingClientRect()
+    const tile = last.getBoundingClientRect()
+    recentsRoom.value = vertical.value ? tile.bottom <= box.bottom - el.clientTop + 1 : tile.right <= box.right - el.clientLeft + 1
+  }
   probing.value = false
 }
 const pillSize = useElementSize(pillEl)
