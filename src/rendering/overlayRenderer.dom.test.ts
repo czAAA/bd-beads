@@ -222,16 +222,54 @@ describe('renderOverlay', () => {
       const project = projectOf('peyote', 4, 3, noProgress)
       const { context, named } = recordingContext()
 
-      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: '#e63746' } })
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: null } })
 
       // Row 1: half a bead across (10) and 15px down; the color goes inside the 1px rim.
-      expect(named('fillRect')[0]!.args).toEqual([31, 16, 18, 18])
       const outline = named('roundRect').map((call) => call.args as number[])
       expect(outline.map((args) => args.slice(0, 4))).toEqual([[31, 16, 18, 18], [33, 18, 14, 14]])
       // Rounded at 22% of the bead less its gap, and 2px less inside.
       expect(outline[0]![4]).toBeCloseTo(3.4)
       expect(outline[1]![4]).toBeCloseTo(1.4)
+    })
+
+    it('fills a peyote bead\'s own rounded shape, leaving out what the next row\'s beads lie over', () => {
+      const project = projectOf('peyote', 4, 3, noProgress)
+      const { context, calls, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 1 }], color: '#e63746' } })
+
+      expect(named('fillRect')).toHaveLength(0)
+      // Row 2 sits 15px lower and half a bead back: its beads at x = 21 and 41 (the bead is at 31), under the bead's own 1px gap.
+      const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 4))
+      expect(cutOuts).toEqual([[21, 31, 18, 18], [41, 31, 18, 18], [31, 16, 18, 18]])
+      const clipAt = calls.findIndex((call) => call.name === 'clip')
+      const fillAt = calls.findIndex((call) => call.name === 'fill' && call.fillStyle === '#e63746')
+      expect(clipAt).toBeGreaterThan(0)
+      expect(fillAt).toBeGreaterThan(clipAt)
+      expect(named('clip')[0]!.args).toEqual(['evenodd'])
+    })
+
+    it('leaves out only the next-row beads the Project has', () => {
+      const project = projectOf('peyote', 4, 3, noProgress)
+      const { context, named } = recordingContext()
+
+      // Row 1 is shifted half a bead, so row 2's beads under its last bead are columns 3 and 4, and 4 is not there.
+      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 3 }], color: '#e63746' } })
+
+      const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 2))
+      expect(cutOuts).toEqual([[61, 31], [71, 16]])
+    })
+
+    it('leaves a bead on the last peyote row whole, and a loom bead too', () => {
+      const peyote = projectOf('peyote', 4, 3, noProgress)
+      const last = recordingContext()
+      renderOverlay(last.context, { project: peyote, region: whole(peyote), zoom: 1, preview: { cells: [{ row: 2, column: 1 }], color: '#e63746' } })
+      expect(last.named('clip')).toHaveLength(0)
+
+      const loom = projectOf('loom', 4, 3, noProgress)
+      const stacked = recordingContext()
+      renderOverlay(stacked.context, { project: loom, region: whole(loom), zoom: 1, preview: { cells: [{ row: 0, column: 1 }], color: '#e63746' } })
+      expect(stacked.named('clip')).toHaveLength(0)
     })
 
     it('leaves out a bead that is not in the Project', () => {
@@ -512,14 +550,14 @@ describe('renderOverlay', () => {
 describe('the bead-shaped pointer (ticket 353)', () => {
   const noProgress = { marks: false }
 
-  it('is 90% of a bead as drawn, centred on the pointer, in the chosen color at 60%', () => {
+  it('is 90% of a bead as drawn less 1px, centred on the pointer, in the chosen color at 60%', () => {
     const project = projectOf('loom', 8, 8, noProgress)
     const { context, named } = recordingContext()
 
     renderOverlay(context, { project, region: whole(project, 2), zoom: 2, pointer: { x: 50, y: 40, color: '#e63746' } })
 
     expect(named('setTransform').at(-1)!.args).toEqual([1, 0, 0, 1, 0, 0])
-    expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([['#e63746', 0.6, 32, 22, 36, 36]])
+    expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([['#e63746', 0.6, 32.5, 22.5, 35, 35]])
   })
 
   it('scales with the pixel ratio and shows at every zoom', () => {
@@ -529,7 +567,7 @@ describe('the bead-shaped pointer (ticket 353)', () => {
     renderOverlay(context, { project, region: whole(project, 0.5), zoom: 0.5, pixelRatio: 2, pointer: { x: 10, y: 10, color: '#e63746' } })
 
     expect(named('setTransform').at(-1)!.args).toEqual([2, 0, 0, 2, 0, 0])
-    expect(named('fillRect')[0]!.args).toEqual([5.5, 5.5, 9, 9])
+    expect(named('fillRect')[0]!.args).toEqual([6, 6, 8, 8])
   })
 
   it('is a 2px dark outline when there is no color', () => {
@@ -549,7 +587,7 @@ describe('the bead-shaped pointer (ticket 353)', () => {
     const rounded = recordingContext()
     renderOverlay(rounded.context, { project: peyote, region: whole(peyote), zoom: 1, pointer: { x: 30, y: 30, color: '#e63746' } })
     expect(rounded.named('fillRect')).toHaveLength(0)
-    expect(rounded.named('roundRect')[0]!.args.slice(2)).toEqual([18, 18, beadRoundness('peyote') * 18])
+    expect(rounded.named('roundRect')[0]!.args.slice(2)).toEqual([17, 17, beadRoundness('peyote') * 17])
 
     const loom = projectOf('loom', 8, 8, noProgress)
     const square = recordingContext()

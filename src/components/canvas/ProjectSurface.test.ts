@@ -892,8 +892,8 @@ describe('ProjectSurface', () => {
   })
 
   describe('the bead-shaped pointer (ticket 353)', () => {
-    /** The marker's fill: the only translucent fillRect of 90% of a 20px bead at zoom 1. */
-    const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 18)
+    /** The marker's fill: the only translucent fillRect of 90% of a 20px bead less 1px at zoom 1. */
+    const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 17)
 
     it('follows a mouse and a hovering pen, centred on the pointer, in the chosen color', async () => {
       const project = projectOf(20, 10)
@@ -903,7 +903,7 @@ describe('ProjectSurface', () => {
       for (const pointerType of ['mouse', 'pen']) {
         context.calls.length = 0
         await surface.trigger('pointermove', { clientX: 105, clientY: 47, pointerType, buttons: 0 })
-        await vi.waitFor(() => expect(marker().map((call) => [call.fillStyle, call.args[0], call.args[1]])).toEqual([['#e63746', 96, 38]]))
+        await vi.waitFor(() => expect(marker().map((call) => [call.fillStyle, call.args[0], call.args[1]])).toEqual([['#e63746', 96.5, 38.5]]))
       }
     })
 
@@ -927,7 +927,7 @@ describe('ProjectSurface', () => {
   })
 
   describe('the bead-shaped pointer, in the cases that hold it back (ticket 353)', () => {
-    const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 18)
+    const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 17)
     const hover = { clientX: 105, clientY: 47, buttons: 0 }
     const surfaceOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.find('[data-testid="project-surface"]')
 
