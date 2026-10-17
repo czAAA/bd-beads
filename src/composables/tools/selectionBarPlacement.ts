@@ -122,6 +122,8 @@ const CORNER_INSET_PX = 4
 export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number; y: number }> & {
   /** The scaled side of each control, in the canvas box's pixels. */
   size: number
+  /** The side before the zoom, which the button keeps while its wrapper is scaled down. */
+  fullSize: number
   /** The zoom factor already applied to `size`, gaps and inset (the anchor's `scale`). */
   scale: number
 }
@@ -133,14 +135,15 @@ export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number
 export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameCornerControls {
   const { outer, viewport } = anchor
   const { scale } = anchor
-  const size = (touch ? TOUCH_CORNER_PX : CORNER_PX) * scale
+  const fullSize = touch ? TOUCH_CORNER_PX : CORNER_PX
+  const size = fullSize * scale
   const gap = CORNER_GAP_PX * scale
   const row = 3 * size + 2 * gap
   const right = Math.max(BAR_EDGE_PX + row, Math.min(outer.left + outer.width - CORNER_INSET_PX * scale, viewport.width - BAR_EDGE_PX))
   const top = Math.max(BAR_EDGE_PX, Math.min(outer.top + CORNER_INSET_PX * scale, viewport.height - BAR_EDGE_PX - size))
   const y = top + size / 2
   const at = (slot: number) => ({ x: right - size / 2 - slot * (size + gap), y })
-  return { size, scale, remove: at(0), edit: at(1), move: at(2) }
+  return { size, fullSize, scale, remove: at(0), edit: at(1), move: at(2) }
 }
 
 /** The Move handle's square (ticket 452, 455): the leftmost of the corner controls. */

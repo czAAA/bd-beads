@@ -36,10 +36,7 @@ const controls = computed(() => frameCornerControls(props.anchor, touch.value))
 const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
 const scaled = computed(() => ({ '--corner-scale': String(controls.value.scale) }))
 // Each button keeps its full size and the wrapper shrinks it with the zoom, so the icon shrinks with the box.
-const sized = computed(() => {
-  const full = controls.value.size / controls.value.scale
-  return { width: `${full}px`, height: `${full}px` }
-})
+const sized = computed(() => ({ width: `${controls.value.fullSize}px`, height: `${controls.value.fullSize}px` }))
 
 const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 </script>
@@ -49,6 +46,7 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
     <div class="frame-chrome__control" :style="place(controls.move)">
       <IconButton
         variant="box"
+        :icon-size="15"
         :action="moveAction"
         class="frame-chrome__move"
         :style="sized"
@@ -60,6 +58,7 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
     <div class="frame-chrome__control" :style="place(controls.edit)">
       <IconButton
         variant="box"
+        :icon-size="15"
         :action="toggleAction"
         :deps="deps"
         :pressed="editing && editEnabled"
@@ -71,6 +70,7 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
     <div class="frame-chrome__control" :style="place(controls.remove)">
       <IconButton
         variant="box"
+        :icon-size="15"
         :action="removeAction"
         :deps="deps"
         :style="sized"
