@@ -501,7 +501,8 @@ export const be: Translations = {
     announceSelectionRotated: 'Вылучэнне павернута',
     exportPromptTitle: 'Задайце рамку для экспарту',
     countNeedsFrame: 'Задайце рамку, каб палічыць бісер.',
-    progressNeedsFrame: 'Задайце рамку, каб пачаць',
+    progressSelectToSet: 'Вылучыце, каб задаць',
+    progressFrameWord: 'рамку',
     rotateCoveredMessage: {
       one: '{count} бісерына перакрыта.',
       few: '{count} бісерыны перакрыта.',
