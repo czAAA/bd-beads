@@ -1,6 +1,6 @@
 import { colorAt, type Frame } from '../domain/canvas'
 import { type GridPosition, type PreviewCell, type Technique } from '../domain/grid'
-import { withMargin } from '../domain/margin'
+import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import { lineOfPass, passCount, passOf } from '../domain/passes'
 import { rowProgressOn } from '../domain/project'
@@ -95,6 +95,8 @@ export interface OverlayInput {
   frameEditing?: { touch: boolean; tooltip: string }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
   marginOutline?: number
+  /** How many positions wide the margin outline stands out from the Frame (ticket 459): wider when zoomed out. Defaults to `MARGIN`. */
+  margin?: number
 }
 
 /** The Tour's marks on the Project, dashed. */
@@ -385,8 +387,8 @@ const MARGIN_OUTLINE_DASH_PX = [4, 3]
 const MARGIN_OUTLINE_RADIUS_PX = 12
 
 /** Strokes the box round the margin's drawn extent (ticket 372): peyote rows nest closer than a bead is tall, and offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
-function drawMarginOutline(context: DrawingContext, frame: Frame, technique: Technique, zoom: number, opacity: number, theme: ProjectTheme): void {
-  const outer = withMargin(frame)
+function drawMarginOutline(context: DrawingContext, frame: Frame, technique: Technique, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
+  const outer = withMargin(frame, margin)
   const x = outer.column * CELL_SIZE_PX
   const { width, height } = projectExtentPx(technique, outer.columns, outer.rows)
   context.save()
@@ -477,7 +479,7 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
 
 /** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, pointer, rowMarks } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -517,7 +519,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawMirrorAxes(context, project, space, axes, theme)
   }
   if (marginOutline > 0 && project.frame) {
-    drawMarginOutline(context, project.frame, project.technique, zoom, marginOutline, theme)
+    drawMarginOutline(context, project.frame, project.technique, zoom, marginOutline, theme, margin)
   }
   if (marks) {
     drawTourMarks(context, project, space, marks, theme)

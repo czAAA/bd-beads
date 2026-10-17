@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { frameCornerControls, frameStepperCentres, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
+import { cornerControlsReachPx, frameCornerControls, frameStepperCentres, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
 const viewport = { width: 400, height: 300 }
@@ -122,5 +122,13 @@ describe('frameCornerControls (ticket 455)', () => {
     expect(remove.x + size / 2).toBeLessThanOrEqual(viewport.width - 8)
     expect(move.x - size / 2).toBeGreaterThanOrEqual(8)
     expect(move.y - size / 2).toBeGreaterThanOrEqual(8)
+  })
+})
+
+describe('cornerControlsReachPx (ticket 459)', () => {
+  it('is a control and its inset above and below, shrunk with the zoom, taller on touch', () => {
+    expect(cornerControlsReachPx(1, false)).toBe(34)
+    expect(cornerControlsReachPx(0.5, false)).toBe(17)
+    expect(cornerControlsReachPx(0.5, true)).toBe(22)
   })
 })
