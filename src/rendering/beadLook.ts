@@ -74,7 +74,7 @@ export interface ProjectTheme {
   rulerStrong: string
   /** The board: behind everything, what shows through the gaps and what a finished row fades toward (`board`). */
   background: string
-  /** The faint rim round every bead (`bead-rim`), or null for none: dark draws none. */
+  /** The faint rim round every bead (`bead-rim`), or null for none (a theme whose rim is the board color). */
   rim: string | null
   /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board (`bead-empty`). */
   emptyBead: string
@@ -116,7 +116,7 @@ export const LIGHT_THEME: ProjectTheme = {
   tourMark: '#f2c94c',
 }
 
-/** The dark theme: no rim. */
+/** The dark theme: a white rim, so two beads of one color stay apart. */
 export const DARK_THEME: ProjectTheme = {
   canvas: '#202020',
   positionMark: '#3c3c3c',
@@ -125,7 +125,7 @@ export const DARK_THEME: ProjectTheme = {
   ruler: '#8c8c8c',
   rulerStrong: '#cccccc',
   background: '#202020',
-  rim: null,
+  rim: 'rgba(255,255,255,.16)',
   emptyBead: '#3c3c3c',
   marker: '#faff69',
   outline: '#ffffff',
@@ -319,7 +319,7 @@ function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.back
 }
 
 /**
- * The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell, and in light a
+ * The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell, and a
  * faint rim just inside its edge. A finished bead is the same shapes in the colors its fade comes to, so it covers
  * whatever is under it (a finished bead drawn on the overlay covers the bead on the cells layer).
  */
@@ -349,7 +349,7 @@ function spriteFor(bead: BeadShape): Sprite | undefined {
 
 /**
  * The design system's bead (BeadBoard card): a square (or, for peyote, rounded) bead in its color on the board, a gap
- * from its neighbours, with a faint rim in light; a finished row's beads faded toward the board.
+ * from its neighbours, with a faint rim; a finished row's beads faded toward the board.
  *
  * A Project of thousands of beads is redrawn on every move of a drag in the Convert image preview, and on every scroll
  * of the editor, so how cheaply a bead is drawn is what keeps those smooth. A square bead is two rectangles, the

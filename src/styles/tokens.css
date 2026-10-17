@@ -119,7 +119,7 @@
   --canvas-bg-4: #171608;
   --canvas-bg-5: #1c1714;
   --canvas-bg-6: #2c2b29;
-  --bead-rim: #202020;
+  --bead-rim: rgba(255,255,255,.16);
   --bead-empty: #3c3c3c;
   --position-mark: #3c3c3c;
   --bead-outline: #ffffff;

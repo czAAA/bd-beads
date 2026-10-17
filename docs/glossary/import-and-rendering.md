@@ -14,6 +14,10 @@ _Avoid_: extracted palette, pattern palette, image palette, pattern colors
 The one thing that draws a Project's cells — for the editor, the Convert image preview and the exports — so a bead looks the same wherever it appears. Draws whatever part of the Project is in view, at the current zoom and rotation, in the Technique's geometry. One renderer over two spaces: the canvas of the editor, where every position is real and the Frame sits where it is, and the Frame alone of the exports, the Convert image preview and the Overview, where the Frame's first bead is position (0, 0). The overlay layer is drawn in the same space.
 _Avoid_: grid component, exporter, preview renderer
 
+**Bead rim** (ticket 0460):
+A faint line just inside every bead's edge (0.75px), so where one bead ends and the next starts shows even when both are the same color. Every theme has one: a dark tint in light and high contrast, a white tint in dark. The same on every bead and in every Technique, at any zoom; exports and printed pages draw their own (light) rim, unchanged. It sits under every overlay (the Frame, the Selection, the Bead pointer, the Row progress marks).
+_Avoid_: border, outline (the hover outline is another thing), grid line, gap
+
 **Drawing surface**:
 What the Project renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, the bead pointer, Selection, Mirror axes, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
 _Avoid_: canvas (that is the panel), bitmap, canvas element
