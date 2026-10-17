@@ -1,5 +1,5 @@
 import type { Technique } from '../domain/grid'
-import { beadRoundness, type DrawingContext } from './beadLook'
+import { BEAD_GAP_PX, beadRoundness, type DrawingContext } from './beadLook'
 import { CELL_SIZE_PX, rowPitchPx } from './surfaceView'
 
 /**
@@ -7,7 +7,7 @@ import { CELL_SIZE_PX, rowPitchPx } from './surfaceView'
  * tile, a bead across and two rows down (so the alternate rows of peyote and brick stitch carry their half-bead shift),
  * filled over the whole view at once, rather than one shape for each of the tens of thousands of positions a zoomed-out
  * canvas shows. The tile is a bitmap at the size it is on the screen, kept like the bead sprites (sprites.ts). Its style
- * is a preference of the device: Dots, or Squares, an outline in the gap round each position.
+ * is a preference of the device: Dots, or Squares, one shared outline in the gap between neighbouring positions.
  */
 
 /** How Position marks look (CONTEXT.md). */
@@ -15,9 +15,6 @@ export type PositionMarkStyle = 'dots' | 'squares'
 
 /** The dot that marks an empty position: 1.5px across on screen (BeadBoard card). */
 const DOT_DIAMETER_PX = 1.5
-
-/** The gap a bead stands in from its cell on each side (beadLook.ts): where a square's outline sits. */
-const GAP_PX = 1
 
 const MAX_TILES = 64
 const tiles = new Map<string, CanvasImageSource | null>()
@@ -71,7 +68,7 @@ function squarePath(context: DrawingContext, x: number, y: number, size: number,
 /**
  * Draws a square for each position of the tile, and the copies that spill over its edges, from the top row down, as the
  * beads are drawn: each one first clears the bead's own area (so the rows of peyote that overlap leave no outline
- * showing through the bead above), then draws the outline in the 1px gap round it, at most 1 CSS px thick.
+ * showing through the bead above), then draws the outline on the cell's edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
  */
 function drawSquares(context: DrawingContext, input: MarkTileInput, size: { width: number; height: number }): void {
   const pitch = rowPitchPx(input.technique)
@@ -91,16 +88,17 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, size: { widt
   }
   squares.sort((a, b) => a.y - b.y)
   context.strokeStyle = input.color
-  context.lineWidth = Math.min(GAP_PX, 1 / zoom)
+  context.lineWidth = Math.min(BEAD_GAP_PX, 1 / zoom)
+  const inset = BEAD_GAP_PX / 2
   for (const { x, y } of squares) {
     context.save()
     context.globalCompositeOperation = 'destination-out'
     context.beginPath()
-    squarePath(context, x + GAP_PX, y + GAP_PX, CELL_SIZE_PX - 2 * GAP_PX, Math.max(0, radius - GAP_PX))
+    squarePath(context, x + inset, y + inset, CELL_SIZE_PX - BEAD_GAP_PX, Math.max(0, radius - inset))
     context.fill()
     context.restore()
     context.beginPath()
-    squarePath(context, x + GAP_PX / 2, y + GAP_PX / 2, CELL_SIZE_PX - GAP_PX, Math.max(0, radius - GAP_PX / 2))
+    squarePath(context, x, y, CELL_SIZE_PX, radius)
     context.stroke()
   }
 }
