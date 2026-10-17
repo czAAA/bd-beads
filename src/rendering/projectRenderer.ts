@@ -18,6 +18,7 @@ import type { Space } from './space'
 import {
   CELL_SIZE_PX,
   gridToRegion,
+  projectExtentPx,
   regionInGridSpace,
   rowPitchPx,
   rowShiftPx,
@@ -305,6 +306,17 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   if (space.open) {
     // Only the stored rows in view, and only their stored columns: the cost follows the beads, not the canvas.
     const rowsInView = Object.keys(beads).map(Number).filter((row) => row >= firstRow && row <= lastRow).sort((a, b) => a - b)
+    // The beads round the margin nest into its edge (peyote rows sit closer than a bead is tall, offset rows reach half a bead across): cut out its box so none shows inside the outline.
+    context.save()
+    if (frame) {
+      const outer = withMargin(frame, margin)
+      const { width, height } = projectExtentPx(technique, outer.columns, outer.rows)
+      const area = regionInGridSpace(extent, region, zoom, rotation)
+      context.beginPath()
+      context.rect(area.left - CELL_SIZE_PX, area.top - CELL_SIZE_PX, area.right - area.left + 2 * CELL_SIZE_PX, area.bottom - area.top + 2 * CELL_SIZE_PX)
+      context.rect(outer.column * CELL_SIZE_PX, rowTopPx(technique, outer.row), width, height)
+      context.clip('evenodd')
+    }
     for (const row of rowsInView) {
       const { first, last } = visible.columnsOf(row)
       const stored = beads[row]!
@@ -315,6 +327,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
         }
       }
     }
+    context.restore()
   }
 
   if (band) {
