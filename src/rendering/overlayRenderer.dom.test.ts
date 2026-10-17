@@ -188,7 +188,7 @@ describe('renderOverlay', () => {
 
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 2 }], color: '#e63746' } })
 
-      expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([['#e63746', 0.6, 41, 21, 18, 18]])
+      expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([['#e63746', 0.6, 40.5, 20.5, 19, 19]])
       expect(context.globalAlpha).toBe(1)
     })
 
@@ -226,10 +226,10 @@ describe('renderOverlay', () => {
 
       // Row 1: half a bead across (10) and 15px down; the color goes inside the 1px rim.
       const outline = named('roundRect').map((call) => call.args as number[])
-      expect(outline.map((args) => args.slice(0, 4))).toEqual([[31, 16, 18, 18], [33, 18, 14, 14]])
+      expect(outline.map((args) => args.slice(0, 4))).toEqual([[30.5, 15.5, 19, 19], [32.5, 17.5, 15, 15]])
       // Rounded at 22% of the bead less its gap, and 2px less inside.
-      expect(outline[0]![4]).toBeCloseTo(3.4)
-      expect(outline[1]![4]).toBeCloseTo(1.4)
+      expect(outline[0]![4]).toBeCloseTo(3.9)
+      expect(outline[1]![4]).toBeCloseTo(1.9)
     })
 
     it('fills a peyote bead\'s own rounded shape, leaving out what the next row\'s beads lie over', () => {
@@ -241,7 +241,7 @@ describe('renderOverlay', () => {
       expect(named('fillRect')).toHaveLength(0)
       // Row 2 sits 15px lower and half a bead back: its beads at x = 21 and 41 (the bead is at 31), under the bead's own 1px gap.
       const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 4))
-      expect(cutOuts).toEqual([[21, 31, 18, 18], [41, 31, 18, 18], [31, 16, 18, 18]])
+      expect(cutOuts).toEqual([[20.5, 30.5, 19, 19], [40.5, 30.5, 19, 19], [30.5, 15.5, 19, 19]])
       const clipAt = calls.findIndex((call) => call.name === 'clip')
       const fillAt = calls.findIndex((call) => call.name === 'fill' && call.fillStyle === '#e63746')
       expect(clipAt).toBeGreaterThan(0)
@@ -257,7 +257,7 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 1, column: 3 }], color: '#e63746' } })
 
       const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 2))
-      expect(cutOuts).toEqual([[61, 31], [71, 16]])
+      expect(cutOuts).toEqual([[60.5, 30.5], [70.5, 15.5]])
     })
 
     it('leaves a bead on the last peyote row whole, and a loom bead too', () => {
@@ -498,10 +498,10 @@ describe('renderOverlay', () => {
       const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.5)
       expect(red).toBe(fadeOver('#e63746', DEFAULT_THEME.background, 0.5))
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-        [blendOver(DEFAULT_THEME.rim!, red), 1, 1, 1, 18, 18],
-        [red, 1, 1.75, 1.75, 16.5, 16.5],
-        [blendOver(DEFAULT_THEME.rim!, black), 1, 21, 21, 18, 18],
-        [black, 1, 21.75, 21.75, 16.5, 16.5],
+        [blendOver(DEFAULT_THEME.rim!, red), 1, 0.5, 0.5, 19, 19],
+        [red, 1, 1.25, 1.25, 17.5, 17.5],
+        [blendOver(DEFAULT_THEME.rim!, black), 1, 20.5, 20.5, 19, 19],
+        [black, 1, 21.25, 21.25, 17.5, 17.5],
       ])
     })
 
@@ -541,7 +541,7 @@ describe('renderOverlay', () => {
       })
 
       const rects = named('fillRect')
-      expect(rects[0]!.args).toEqual([1, 1, 18, 18])
+      expect(rects[0]!.args).toEqual([0.5, 0.5, 19, 19])
       expect(rects.at(-4)!.args).toEqual([0, 0, 20, 2])
     })
   })
@@ -618,11 +618,11 @@ describe('the bead cursor (ticket 159)', () => {
 
     const fills = calls.filter((call) => call.name === 'fill')
     expect(fills.at(-1)!.fillStyle).toBe(DEFAULT_THEME.cursor)
-    // Bead (2, 1) stands at x 41, y 21, 18 across; the ring's inside is 2px out from it, and 2px wide.
+    // Bead (2, 1) stands at x 40.5, y 20.5, 19 across; the ring's inside is 2px out from it, and 2px wide.
     const rects = calls.filter((call) => call.name === 'roundRect').slice(-2).map((call) => (call.args as number[]).slice(0, 4))
     expect(rects).toEqual([
-      [37, 17, 26, 26],
-      [39, 19, 22, 22],
+      [36.5, 16.5, 27, 27],
+      [38.5, 18.5, 23, 23],
     ])
   })
 
@@ -726,8 +726,8 @@ describe('on the Canvas (ADR 0026)', () => {
     const { named } = overlay(openProject({ marks: false }), { preview: { cells: [{ row: 8, column: 7 }, { row: -2, column: -3 }], color: '#e63746' } })
 
     expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-      ['#e63746', 0.6, 141, 161, 18, 18],
-      ['#e63746', 0.6, -59, -39, 18, 18],
+      ['#e63746', 0.6, 140.5, 160.5, 19, 19],
+      ['#e63746', 0.6, -59.5, -39.5, 19, 19],
     ])
   })
 
@@ -736,8 +736,8 @@ describe('on the Canvas (ADR 0026)', () => {
 
     const rects = calls.filter((call) => call.name === 'roundRect').slice(-2).map((call) => (call.args as number[]).slice(0, 4))
     expect(rects).toEqual([
-      [117, 137, 26, 26],
-      [119, 139, 22, 22],
+      [116.5, 136.5, 27, 27],
+      [118.5, 138.5, 23, 23],
     ])
   })
 })
