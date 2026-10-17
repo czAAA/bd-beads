@@ -56,6 +56,12 @@ describe('Canvas color backgrounds', () => {
     expect(canvasTheme('contrast', 4)).toBe(PROJECT_THEMES.contrast)
   })
 
+  it.each(['light', 'dark'] as const)('draws the theme\'s bead rim on every %s background (ticket 0460)', (theme) => {
+    for (let choice = 1; choice <= canvasBackgrounds(theme).length; choice++) {
+      expect(canvasTheme(theme, choice).rim, `${theme} ${choice}`).toBe(PROJECT_THEMES[theme].rim)
+    }
+  })
+
   it('gives Ash its own greys, and no other background', () => {
     const ash = canvasTheme('dark', 6)
     expect(ash).toMatchObject({ canvas: '#2c2b29', ruler: '#a0a0a0', emptyBead: '#3d3b38', positionMark: '#3d3b38' })

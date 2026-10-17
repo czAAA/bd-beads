@@ -74,8 +74,8 @@ export interface ProjectTheme {
   rulerStrong: string
   /** The board: behind everything, what shows through the gaps and what a finished row fades toward (`board`). */
   background: string
-  /** The faint rim round every bead (`bead-rim`), or null for none (a rim token set to the board color draws no rim). */
-  rim: string | null
+  /** The faint rim round every bead (`bead-rim`). */
+  rim: string
   /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board (`bead-empty`). */
   emptyBead: string
   /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
@@ -329,11 +329,6 @@ function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, col
   const outerSize = size - GAP_PX * 2
   const outerRadius = Math.max(0, cornerRadius - GAP_PX)
 
-  if (!theme.rim) {
-    context.fillStyle = fill
-    fillShape(context, x + GAP_PX, y + GAP_PX, outerSize, outerRadius)
-    return
-  }
   context.fillStyle = blendOver(theme.rim, fill)
   fillShape(context, x + GAP_PX, y + GAP_PX, outerSize, outerRadius)
   context.fillStyle = fill
@@ -343,7 +338,7 @@ function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, col
 function spriteFor(bead: BeadShape): Sprite | undefined {
   const pixels = Math.max(1, Math.round(bead.size * bead.deviceScale))
   const { theme } = bead
-  const key = ['bead', pixels, bead.cornerRadius, bead.dimmed ? 'd' : 'p', bead.backdrop ?? '', bead.color ?? '', theme.background, theme.rim ?? '', theme.emptyBead].join('|')
+  const key = ['bead', pixels, bead.cornerRadius, bead.dimmed ? 'd' : 'p', bead.backdrop ?? '', bead.color ?? '', theme.background, theme.rim, theme.emptyBead].join('|')
   return cachedSprite(key, pixels, bead.size, (context) => drawBeadShapes(context, { ...bead, x: 0, y: 0 }))
 }
 

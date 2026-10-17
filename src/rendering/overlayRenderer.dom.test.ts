@@ -498,9 +498,9 @@ describe('renderOverlay', () => {
       const black = fadeOver('#1a1a1a', DEFAULT_THEME.background, 0.5)
       expect(red).toBe(fadeOver('#e63746', DEFAULT_THEME.background, 0.5))
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-        [blendOver(DEFAULT_THEME.rim!, red), 1, 0.5, 0.5, 19, 19],
+        [blendOver(DEFAULT_THEME.rim, red), 1, 0.5, 0.5, 19, 19],
         [red, 1, 1.25, 1.25, 17.5, 17.5],
-        [blendOver(DEFAULT_THEME.rim!, black), 1, 20.5, 20.5, 19, 19],
+        [blendOver(DEFAULT_THEME.rim, black), 1, 20.5, 20.5, 19, 19],
         [black, 1, 21.25, 21.25, 17.5, 17.5],
       ])
     })
