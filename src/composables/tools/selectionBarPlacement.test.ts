@@ -104,10 +104,15 @@ describe('frameCornerControls (ticket 455)', () => {
     // 26px buttons, 4px apart, 4px in from the corner (300, 50): right edge 296, top 54.
     expect(frameCornerControls(anchor, false)).toEqual({
       size: 26,
+      scale: 1,
       remove: { x: 283, y: 67 },
       edit: { x: 253, y: 67 },
       move: { x: 223, y: 67 },
     })
+  })
+
+  it('shrinks the row with the zoom', () => {
+    expect(frameCornerControls({ ...anchor, scale: 0.5 }, false)).toMatchObject({ size: 13, scale: 0.5 })
   })
 
   it('keeps the whole row inside the canvas box when the margin runs off it', () => {
