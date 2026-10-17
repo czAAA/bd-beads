@@ -71,7 +71,7 @@ function onKeydown(event: KeyboardEvent) {
         type="button"
         role="radio"
         class="ui-control setting__option"
-        :class="{ 'setting__option--current': option.value === value }"
+        :class="{ 'setting__option--current': option.value === value, 'setting__option--icon': option.icon }"
         :aria-checked="option.value === value"
         :tabindex="option.value === value ? 0 : -1"
         :lang="option.lang"
@@ -79,7 +79,7 @@ function onKeydown(event: KeyboardEvent) {
         :data-testid="option.testid"
         @click="value = option.value"
       >
-        <span class="setting__option-label">{{ option.label }}</span>
+        <span class="setting__option-label"><AppIcon v-if="option.icon" :name="option.icon" :size="16" />{{ option.label }}</span>
         <AppIcon v-if="option.value === value" class="setting__check" name="check" :size="18" />
       </button>
     </div>
@@ -192,6 +192,16 @@ function onKeydown(event: KeyboardEvent) {
   border: 0;
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.setting__option-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-10);
+}
+
+.setting__option--icon {
+  padding-left: calc(16px + var(--space-10));
 }
 
 .setting__option--current {
