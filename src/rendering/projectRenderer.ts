@@ -1,6 +1,6 @@
 import type { GridPosition, Rotation, Technique } from '../domain/grid'
 import { colorAt, frameContains } from '../domain/canvas'
-import { withMargin } from '../domain/margin'
+import { MARGIN, withMargin } from '../domain/margin'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn, type Project } from '../domain/project'
 import {
   beadRoundness,
@@ -131,6 +131,8 @@ export interface RenderInput {
   rows?: { first: number; last: number }
   /** How the Canvas draws its Position marks: the device's choice. Defaults to Dots. */
   positionMarks?: PositionMarkStyle
+  /** How many positions wide the keep-out margin is drawn (ticket 459): the surface widens it when zoomed out. Defaults to `MARGIN`. */
+  margin?: number
   /** How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows, zoom, rotation or what is on screen. */
   drawBead?: BeadDrawer
 }
@@ -142,14 +144,14 @@ export interface RenderInput {
  */
 function drawPositionMarks(
   context: DrawingContext,
-  { project, area, zoom, pixelRatio, theme, style }: { project: DrawnProject; style: PositionMarkStyle; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
+  { project, area, zoom, pixelRatio, theme, style, margin }: { project: DrawnProject; style: PositionMarkStyle; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
 ): void {
   const pattern = positionMarkPattern(context, { style, technique: project.technique, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
   if (!pattern) {
     return
   }
   const pitch = rowPitchPx(project.technique)
-  const box = project.frame && withMargin(project.frame)
+  const box = project.frame && withMargin(project.frame, margin)
   // The margin's box, between the marks just outside it: marks sit at the middle of each bead's cell, a row's shift moves them half a bead right.
   const hole = box && {
     left: box.column * CELL_SIZE_PX + CELL_SIZE_PX / 4,
@@ -219,7 +221,7 @@ function bandOnSurface(
  * (the Canvas draws the dots outside the Frame, and leaves the Frame's keep-out margin as a gap).
  */
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots', showFinished = false, rowMarks = rowProgressOn(input.project) } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots', showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN } = input
   const { technique, beads, frame, rotation } = project
   const { extent, origin } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
@@ -255,7 +257,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const lastRow = band ? Math.min(visible.lastRow, band.last + 1) : visible.lastRow
 
   if (space.open) {
-    drawPositionMarks(context, { project, area: regionInGridSpace(extent, region, zoom, rotation), zoom, pixelRatio, theme, style: positionMarks })
+    drawPositionMarks(context, { project, area: regionInGridSpace(extent, region, zoom, rotation), zoom, pixelRatio, theme, style: positionMarks, margin })
   }
 
   // The Frame's own cells, bead or empty bead, then the painted beads round it.
@@ -294,7 +296,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       const stored = beads[row]!
       for (const column of Object.keys(stored).map(Number).filter((column) => column >= first && column <= last).sort((a, b) => a - b)) {
         // The keep-out margin covers any bead that lies in it (ticket 261): it stays in the Project, undrawn.
-        if (!(frame && frameContains(withMargin(frame), { row, column }))) {
+        if (!(frame && frameContains(withMargin(frame, margin), { row, column }))) {
           drawAt(row, column, stored[column]!)
         }
       }
