@@ -190,8 +190,11 @@ export interface BeadShape {
 
 export type BeadDrawer = (context: DrawingContext, bead: BeadShape) => void
 
-/** The gap between two beads is twice this: each bead stands this far in from its cell on every side, in the Project's own px. */
-const GAP_PX = 1
+/** The gap between two neighbouring beads, in the Project's own px (ticket 458): each bead stands half of it in from its cell on every side. */
+export const BEAD_GAP_PX = 1
+
+/** How far a bead stands in from its cell on each side. */
+const GAP_PX = BEAD_GAP_PX / 2
 
 /** Width of the faint rim inside each bead's edge, in the Project's own px. */
 const RIM_PX = 0.75

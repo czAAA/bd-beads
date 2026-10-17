@@ -540,24 +540,24 @@ describe('the bead look', () => {
     ...overrides,
   })
 
-  it('draws a square bead a pixel in from its cell, its faint rim and, inside that, its color: two rectangles', () => {
+  it('draws a square bead half a pixel in from its cell, its faint rim and, inside that, its color: two rectangles', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead())
 
     expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([
-      [blendOver(DEFAULT_THEME.rim!, '#e63746'), 41, 21, 18, 18],
-      ['#e63746', 41.75, 21.75, 16.5, 16.5],
+      [blendOver(DEFAULT_THEME.rim!, '#e63746'), 40.5, 20.5, 19, 19],
+      ['#e63746', 41.25, 21.25, 17.5, 17.5],
     ])
     expect(named('fill')).toHaveLength(0)
   })
 
-  it('draws no rim in dark: the bead alone, a pixel in from its cell', () => {
+  it('draws no rim in dark: the bead alone, half a pixel in from its cell', () => {
     const { context, named } = recordingContext()
 
     drawFlatBead(context, bead({ theme: DARK_THEME }))
 
-    expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([['#e63746', 41, 21, 18, 18]])
+    expect(named('fillRect').map((call) => [call.fillStyle, ...call.args])).toEqual([['#e63746', 40.5, 20.5, 19, 19]])
   })
 
   it('blends the translucent rim over the bead color into one opaque color', () => {
@@ -571,8 +571,8 @@ describe('the bead look', () => {
     drawFlatBead(context, bead({ cornerRadius: 6 }))
 
     expect(named('roundRect').map((call) => call.args)).toEqual([
-      [41, 21, 18, 18, 5],
-      [41.75, 21.75, 16.5, 16.5, 4.25],
+      [40.5, 20.5, 19, 19, 5.5],
+      [41.25, 21.25, 17.5, 17.5, 4.75],
     ])
     expect(named('fill').map((call) => call.fillStyle)).toEqual([blendOver(DEFAULT_THEME.rim!, '#e63746'), '#e63746'])
   })
@@ -583,7 +583,7 @@ describe('the bead look', () => {
 
     drawFlatBead(context, bead({ cornerRadius: 6 }))
 
-    expect(named('arcTo').map((call) => call.args[4])).toEqual([5, 5, 5, 5, 4.25, 4.25, 4.25, 4.25])
+    expect(named('arcTo').map((call) => call.args[4])).toEqual([5.5, 5.5, 5.5, 5.5, 4.75, 4.75, 4.75, 4.75])
   })
 
   it('draws an empty bead in the empty tint', () => {
@@ -699,8 +699,8 @@ describe('the bead look', () => {
 
       const faded = fadeOver('#e63746', '#ffffff', 0.5)
       expect(named('fillRect').map((call) => [call.fillStyle, call.globalAlpha, ...call.args])).toEqual([
-        [blendOver(DEFAULT_THEME.rim!, faded), 1, 41, 21, 18, 18],
-        [faded, 1, 41.75, 21.75, 16.5, 16.5],
+        [blendOver(DEFAULT_THEME.rim!, faded), 1, 40.5, 20.5, 19, 19],
+        [faded, 1, 41.25, 21.25, 17.5, 17.5],
       ])
       expect(named('fill')).toHaveLength(0)
     })
