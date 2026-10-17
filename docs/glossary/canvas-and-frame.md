@@ -42,7 +42,7 @@ The Frame's edit toggle (ticket 0452, ADR 0062, amending ADRs 0054 and 0055). An
 _Avoid_: Set Frame (the old mode, which also drew a Frame by dragging), crop, resize, set size, Edit Frame mode
 
 **Move handle**:
-The leftmost of the Frame's three corner buttons (ticket 0455), always visible and active, also after Row progress has started. Dragging it moves the whole Frame with its beads (ticket 0452, ADR 0062): beads at the destination are overwritten, the cells left behind are emptied, the move is clamped to the canvas box and goes by a pair of rows on peyote and brick stitch, and the Row progress pointer travels with the Frame. One announced Undo step. Resizing never touches a bead.
+The leftmost of the Frame's three corner buttons (ticket 0455), always visible and active, also after Row progress has started. Dragging it moves the whole Frame with its beads (ticket 0452, ADR 0062): while it is dragged the beads travel with the Frame on screen, not only its outline; beads at the destination are overwritten, the cells left behind are emptied, the move is clamped to the canvas box and goes by a pair of rows on peyote and brick stitch, and the Row progress pointer travels with the Frame. One announced Undo step. Resizing never touches a bead.
 _Avoid_: Frame drag, drag inside the Frame
 
 **Hand tool**:

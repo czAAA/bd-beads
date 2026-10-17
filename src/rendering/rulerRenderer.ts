@@ -190,36 +190,3 @@ export function drawFrameEditing(context: DrawingContext, input: { frame: Frame;
   context.textBaseline = 'middle'
   context.fillText(tooltip, Math.max(4, x) + TOOLTIP_PAD_X, Math.max(4, y) + TOOLTIP_HEIGHT / 2)
 }
-
-/**
- * The Frame's Move handle (ticket 452): a rounded square in the Frame's line colour with a four-way arrow cross in the
- * canvas colour, on the top margin. In the viewport's own px, over everything else.
- */
-export function drawMoveHandle(context: DrawingContext, handle: { x: number; y: number; size: number }, pixelRatio: number, theme: ProjectTheme): void {
-  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
-  const { x, y, size } = handle
-  const reach = size * 0.3
-  const tip = size * 0.12
-  context.setLineDash([])
-  context.fillStyle = theme.frameLine
-  context.beginPath()
-  context.roundRect(x - size / 2, y - size / 2, size, size, 4)
-  context.fill()
-  context.strokeStyle = theme.canvas
-  context.lineWidth = 1.5
-  context.lineCap = 'round'
-  context.lineJoin = 'round'
-  context.beginPath()
-  context.moveTo(x - reach, y)
-  context.lineTo(x + reach, y)
-  context.moveTo(x, y - reach)
-  context.lineTo(x, y + reach)
-  for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-    const ex = x + dx * reach
-    const ey = y + dy * reach
-    context.moveTo(ex - dx * tip - dy * tip, ey - dy * tip - dx * tip)
-    context.lineTo(ex, ey)
-    context.lineTo(ex - dx * tip + dy * tip, ey - dy * tip + dx * tip)
-  }
-  context.stroke()
-}

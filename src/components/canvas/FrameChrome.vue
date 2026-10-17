@@ -9,9 +9,8 @@ import type { Project } from '../../domain/project'
 /**
  * What a Frame carries all the time (tickets 452, 455, ADR 0062): three small buttons in a row just inside the top-right
  * corner of the margin outline, like a window's, clamped inside the canvas box: Move handle, Edit Frame and Remove Frame.
- * The Move handle is drawn on the canvas (ProjectSurface); its button here sits over it for the Tooltip and the keyboard,
- * and hands a press on to the canvas to drag, and the arrows move the Frame with its beads while Shift + arrows resize
- * it. `anchor` is the Frame's rectangle in the canvas box's own pixels.
+ * The Move handle's button hands a press on to the canvas to drag, and the arrows move the Frame with its beads while
+ * Shift + arrows resize it. `anchor` is the Frame's rectangle in the canvas box's own pixels.
  */
 const props = defineProps<{
   project: Project
@@ -35,16 +34,19 @@ const moveAction = controlAction('move-frame')
 const touch = useMediaQuery('(pointer: coarse)')
 const controls = computed(() => frameCornerControls(props.anchor, touch.value))
 const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
-const sized = computed(() => ({ width: `${controls.value.size}px`, height: `${controls.value.size}px` }))
+const scaled = computed(() => ({ '--corner-scale': String(controls.value.scale) }))
+// Each button keeps its full size and the wrapper shrinks it with the zoom, so the icon shrinks with the box.
+const sized = computed(() => ({ width: `${controls.value.fullSize}px`, height: `${controls.value.fullSize}px` }))
 
 const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 </script>
 
 <template>
-  <div class="frame-chrome" data-testid="frame-chrome">
+  <div class="frame-chrome" data-testid="frame-chrome" :style="scaled">
     <div class="frame-chrome__control" :style="place(controls.move)">
       <IconButton
-        variant="plain"
+        variant="box"
+        :icon-size="15"
         :action="moveAction"
         class="frame-chrome__move"
         :style="sized"
@@ -56,6 +58,7 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
     <div class="frame-chrome__control" :style="place(controls.edit)">
       <IconButton
         variant="box"
+        :icon-size="15"
         :action="toggleAction"
         :deps="deps"
         :pressed="editing && editEnabled"
@@ -67,6 +70,7 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
     <div class="frame-chrome__control" :style="place(controls.remove)">
       <IconButton
         variant="box"
+        :icon-size="15"
         :action="removeAction"
         :deps="deps"
         :style="sized"
@@ -88,14 +92,12 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 
 .frame-chrome__control {
   position: absolute;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--corner-scale, 1));
   pointer-events: auto;
 }
 
-/* The Move handle is drawn on the canvas: its button only carries the Tooltip, the focus ring and the press. */
+/* The Move handle's press goes on to the canvas to drag. */
 .frame-chrome__control :deep(.frame-chrome__move) {
-  background: transparent;
-  border: 0;
   cursor: grab;
   touch-action: none;
 }
