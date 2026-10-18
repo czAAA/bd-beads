@@ -4,11 +4,9 @@ import { startHost, type Host } from '../support/hostProxy'
 import { fixtureProject, STORAGE_KEY } from '../support/projects'
 import { baseURL } from '../support/server'
 
-/**
- * The offline shell in a real browser (ticket 69, ADR 0045): the production build served by `vite preview`, with its
- * service worker allowed to run (every other check blocks it). Our hosting is played by `startHost`, so it can be taken
- * down, slowed and given a new version of the worker.
- */
+// The offline shell in a real browser (ticket 69, ADR 0045): the production build under `vite preview` with its service
+// worker allowed (other checks block it); `startHost` plays our hosting, so it can go down, slow, or serve a new
+// worker.
 test.use({ serviceWorkers: 'allow' })
 
 let host: Host

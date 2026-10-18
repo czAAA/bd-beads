@@ -2,10 +2,8 @@ import { expect, test } from '@playwright/test'
 import { INFO_POPOVERS, NATIVE_TITLES } from '../support/hoverExemptions'
 import { handMadeTooltips, nativeTitles } from '../support/hoverSource'
 
-/**
- * The source guard of the hover text check (ticket 264): there is one way to make hover text, so that the check that
- * opens every Tooltip (textFit.spec.ts) cannot be bypassed by a new kind. No browser: it reads the templates.
- */
+/** The hover text check's source guard (ticket 264): one way to make hover text, so the Tooltip-opening check can't
+ * be bypassed. No browser. */
 
 test('hover text is made by the shared Tooltip, not by a native title', () => {
   const used = new Set(nativeTitles().map((title) => `${title.file}|${title.what}`))

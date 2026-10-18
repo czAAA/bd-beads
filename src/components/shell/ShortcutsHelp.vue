@@ -9,15 +9,9 @@ import KeyChip from '../ui/KeyChip.vue'
 import { chordParts } from '../../domain/chord'
 import { CONTROLS, CONTROL_GROUPS, controlAction, POINTER_HELP, type ControlGroup } from '../../composables/shell/controlRegistry'
 
-/**
- * The `?` shortcuts help overlay (ticket 96), generated from the control registry (ADR 0035, ticket 329): every
- * action with a key, grouped under the Tool group names (CONTEXT.md's Tool group entry),
- * plus the two pointer gestures that have no key (Space+drag, Ctrl/Cmd+wheel). Key labels (digits, letters,
- * "Ctrl/Cmd+C") are locale-neutral and written out directly rather than translated.
- *
- * The Modal template (ticket 151; ShortcutsHelp card): two columns of groups in the Toolbox's order, each a `label`
- * heading, each row the action and its keys as Kbd chips.
- */
+// The `?` shortcuts help overlay (tickets 96, 151, 329; ADR 0035), generated from the control registry: every action
+// with a key, grouped under the Tool group names, plus the keyless pointer gestures. Key labels are locale-neutral,
+// not translated. Two columns in the Toolbox's order, rows as Kbd chips.
 const emit = defineEmits<{
   close: []
 }>()
@@ -25,7 +19,8 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const closeAction = controlAction('close')
 
-/** The switch for hotkey chips (ticket 438): reads the effective state, and its first flip keeps a choice on this device. */
+/** The switch for hotkey chips (ticket 438): reads the effective state, and its first flip keeps a choice on this
+ * device. */
 const { shown: hintsShown, setShown: setHintsShown } = useKeyHints()
 const hintsChoice = computed<'on' | 'off'>({
   get: () => (hintsShown.value ? 'on' : 'off'),

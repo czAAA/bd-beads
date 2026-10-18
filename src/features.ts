@@ -1,18 +1,10 @@
-/**
- * Features that are built but switched off. The code stays; only the way in is hidden, so turning one back on is
- * flipping its flag here.
- */
+/** Features that are built but switched off. The code stays; only the way in is hidden, so a flag here turns one
+ * back on. */
 
-/**
- * The Tour (ticket 80), switched off by ticket 247: no "Take the tour" menu item, no Tour band on the Overview, and a
- * Tour left running on a device does not resume. The Tour's own code and tests stay.
- */
+/** The Tour (ticket 80), switched off by ticket 247: no menu item, no Overview band, a running Tour does not resume. */
 export const TOUR_ENABLED = false
 
-/**
- * Mirror (tickets 09, 44–50), switched off by ticket 174 pending its own redesign (ADR 0006): no Mirror row in the
- * Dock's sheets, no Mirror button or sheet on the phone, no Mirror group in the shortcuts help, and no Mirror keys. The
- * domain code, the session state and live mirroring while drawing stay; with no way to raise an axis count they stay
- * inert. The redo starts from ADR 0006's first two points.
- */
+// Mirror (tickets 09, 44–50), switched off by ticket 174 pending a redesign (ADR 0006): no Mirror UI or keys. The
+// domain code, session state and live mirroring stay but are inert with no way to raise an axis count. The redo starts
+// from ADR 0006's first two points.
 export const MIRROR_ENABLED = false

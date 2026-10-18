@@ -1,10 +1,7 @@
 import { deflateSync } from 'node:zlib'
 
-/**
- * A small PNG to convert (ticket 103's framing fixtures), built here rather than committed so the picture is
- * readable as code: a sky-to-grass gradient with a sun and a dark hill, in a handful of clearly different colors so
- * that reducing to a few Image colors has real choices to make.
- */
+/** A small PNG to convert (ticket 103's framing fixtures), built as code: sky-to-grass gradient, sun, dark hill,
+ * clearly different colors. */
 export function fixturePicture(width = 240, height = 160): Buffer {
   const pixel = (x: number, y: number): [number, number, number] => {
     const sun = Math.hypot(x - width * 0.72, y - height * 0.3) < height * 0.16

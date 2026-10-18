@@ -29,14 +29,9 @@ function onUntilOff(key: string): Preference<boolean> {
   return preference({ key, fallback: true, parse: (raw) => raw !== 'off', write: (on) => (on ? 'on' : 'off') })
 }
 
-/**
- * Every preference kept on this device (ADR 0020), declared once. The storage keys and stored values are the app's
- * long-standing ones, so what people saved before survives.
- *
- * To add a preference: add one declaration here, then read it where it is used with
- * `devicePreferences.get('name')`. Reading, validating, falling back and saving (also when storage is blocked) are
- * handled below, not per preference.
- */
+// Every preference kept on this device (ADR 0020), declared once; keys and values are the long-standing ones so saved
+// data survives. To add one, declare it here and read it with `devicePreferences.get('name')`; validating, fallback and
+// saving are handled below.
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
   rulers: onUntilOff('openbeads:rulers'),
@@ -57,7 +52,8 @@ export const PREFERENCES = {
     parse: (raw) => (raw === 'dots' || raw === 'squares' ? raw : undefined),
     write: (style) => (style === 'dots' ? null : style),
   }),
-  /** The input mode the person chose (ticket 325): Pen mode or Mouse mode; unset until they choose (ticket 326), so a pen can pick Pen mode. */
+  // The input mode the person chose (ticket 325): Pen mode or Mouse mode; unset until they choose (ticket 326), so a
+  // pen can pick Pen mode.
   inputMode: preference<InputMode | undefined>({
     key: 'openbeads:input-mode',
     fallback: undefined,
@@ -71,7 +67,8 @@ export const PREFERENCES = {
     parse: (raw) => raw === 'yes',
     write: (seen) => (seen ? 'yes' : null),
   }),
-  /** Whether the note before the browser's storage prompt has been shown on this device (ticket 399): once, then never again. */
+  // Whether the note before the browser's storage prompt has been shown on this device (ticket 399): once, then never
+  // again.
   storageNoteSeen: preference<boolean>({
     key: 'openbeads:storage-note-seen',
     fallback: false,
@@ -85,35 +82,40 @@ export const PREFERENCES = {
     parse: (raw) => (raw === 'light' || raw === 'dark' || raw === 'contrast' ? raw : undefined),
     write: (pick) => (pick === 'device' ? null : pick),
   }),
-  /** The unit the Frame section states the Schema size in (ticket 342): beads until mm is chosen. Never saved with a Project. */
+  // The unit the Frame section states the Schema size in (ticket 342): beads until mm is chosen. Never saved with a
+  // Project.
   sizeUnit: preference<SchemaSizeUnit>({
     key: 'openbeads:size-unit',
     fallback: 'beads',
     parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),
     write: (unit) => (unit === 'beads' ? null : unit),
   }),
-  /** Whether hotkey chips show (ticket 438): unset (auto, by the device) until the Keyboard shortcuts switch is flipped. */
+  /** Whether hotkey chips show (ticket 438): unset (auto, by the device) until the Keyboard shortcuts switch is
+   * flipped. */
   keyHints: preference<boolean | undefined>({
     key: 'openbeads:key-hints',
     fallback: undefined,
     parse: (raw) => (raw === 'on' ? true : raw === 'off' ? false : undefined),
     write: (on) => (on === undefined ? null : on ? 'on' : 'off'),
   }),
-  /** Which edge the Tool pill is docked to (ticket 439): bottom until it is moved, and a stored value that is not an edge is bottom too. */
+  // Which edge the Tool pill is docked to (ticket 439): bottom until it is moved, and a stored value that is not an
+  // edge is bottom too.
   toolPillPosition: preference<PillPosition>({
     key: 'openbeads:tool-pill-position',
     fallback: DEFAULT_PILL_POSITION,
     parse: (raw) => PILL_POSITIONS.find((position) => position === raw),
     write: (position) => (position === DEFAULT_PILL_POSITION ? null : position),
   }),
-  /** What the pill's colour control shows (ticket 439): the recents beside the swatch while they fit, until One color is chosen. */
+  // What the pill's colour control shows (ticket 439): the recents beside the swatch while they fit, until One color is
+  // chosen.
   pillColors: preference<PillColorMode>({
     key: 'openbeads:pill-colors',
     fallback: 'recent',
     parse: (raw) => PILL_COLOR_MODES.find((mode) => mode === raw),
     write: (mode) => (mode === 'recent' ? null : mode),
   }),
-  /** The colours painted with lately, newest first, as `#rrggbb` (ticket 439): at most eight, anything else in storage is dropped. */
+  // The colours painted with lately, newest first, as `#rrggbb` (ticket 439): at most eight, anything else in storage
+  // is dropped.
   recentColors: preference<readonly string[]>({
     key: 'openbeads:recent-colors',
     fallback: [],
@@ -137,7 +139,8 @@ export type PreferenceStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeIte
 /** The on-device preferences: each is a ref that holds what was saved and saves itself when set. */
 export interface DevicePreferences {
   get: <N extends PreferenceName>(name: N) => Ref<PreferenceValue<N>>
-  /** Lets go of what has been read, so the next `get` reads storage afresh. For tests that seed storage between mounts. */
+  /** Lets go of what has been read, so the next `get` reads storage afresh. For tests that seed storage between
+   * mounts. */
   forget: () => void
 }
 
@@ -196,7 +199,8 @@ export const browserDevicePreferences: DevicePreferences = createDevicePreferenc
 
 export const devicePreferencesKey: InjectionKey<DevicePreferences> = Symbol('devicePreferences')
 
-/** The app's preferences, as the shell provided them (see provideAppShell); this browser's own outside the app, in an isolated test, say. */
+// The app's preferences, as the shell provided them (see provideAppShell); this browser's own outside the app, in an
+// isolated test, say.
 export function useDevicePreferences(): DevicePreferences {
   return (hasInjectionContext() ? inject(devicePreferencesKey, undefined) : undefined) ?? browserDevicePreferences
 }

@@ -45,12 +45,9 @@ export function resetKeyHintsDevice() {
   if (watching) watchPointer()
 }
 
-/**
- * Whether hotkey chips show (ticket 438). Auto, until the person flips the switch in Keyboard shortcuts: they show on a
- * device with a hovering fine pointer, or once a real keyboard key has been seen this session. The first flip keeps
- * an explicit on or off on this device and there is no way back to auto. The shared chip components read this, so no
- * control carries its own check.
- */
+// Whether hotkey chips show (ticket 438). Auto until the person flips the switch in Keyboard shortcuts: shown with a
+// hovering fine pointer or once a real key has been seen this session. The first flip keeps an explicit on/off on this
+// device, with no way back to auto. The shared chip components read this, so no control carries its own check.
 export function useKeyHints(): { shown: ComputedRef<boolean>; setShown: (on: boolean) => void } {
   watchDevice()
   const choice = useDevicePreferences().get('keyHints')

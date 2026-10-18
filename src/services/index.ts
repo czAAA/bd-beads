@@ -8,11 +8,8 @@ import { browserAppUpdates, type AppUpdates } from './offlineShell'
 import { browserPersistentStorage, type PersistentStorage } from './persistentStorage'
 import { browserTourStore, type TourStore } from './tourStore'
 
-/**
- * Everything that reaches outside the page's own memory (ADR 0020), as one bundle for the app shell to wire into the
- * composables. Each field is a small interface with a browser implementation; a test hands over a fake for the ones it
- * cares about.
- */
+// Everything reaching outside the page's memory (ADR 0020), as one bundle for the app shell; a test fakes the fields it
+// cares about.
 export interface Services {
   libraryStore: LibraryStore
   downloadFile: DownloadFile

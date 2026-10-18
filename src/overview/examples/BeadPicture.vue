@@ -10,12 +10,9 @@ import { PROJECT_THEMES, PRINT_THEME } from '../../rendering/beadLook'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import { displayedExtentPx } from '../../rendering/surfaceView'
 
-/**
- * Beads on their board for the Overview carousel's examples (ticket 218; Overview card): a grid drawn by the real Project
- * renderer, so a bead and its Technique's geometry look as they do in the editor, with the editor's own marks (the
- * current row, a Selection, the Paint preview) from the overlay renderer. It takes only those two renderers and the
- * theme, not the editor. Decorative: hidden from screen readers.
- */
+// Beads on their board for the Overview carousel's examples (ticket 218; Overview card): a grid drawn by the real
+// Project renderer plus the overlay renderer's marks (current row, Selection, Paint preview), taking only those and the
+// theme. Decorative: hidden from screen readers.
 const props = withDefaults(
   defineProps<{
     grid: Grid

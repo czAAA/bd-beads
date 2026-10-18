@@ -1,12 +1,9 @@
 import type { ResolvedTheme } from '../theme/theme'
 import { PROJECT_THEMES, type ProjectTheme } from './beadLook'
 
-/**
- * The drawing area's background, which the person picks (ticket 252; CanvasBackground card): five in light, six in dark.
- * The app stores the choice's number, not its color, so switching theme keeps the position. The colors are the design
- * system's `canvas-bg-1` to `canvas-bg-6` tokens, copied here because a canvas can't read CSS; canvasBackgrounds.test.ts
- * keeps them equal to tokens.json. Light has no sixth, so a stored 6 shows Studio there (`canvas-bg-6` light).
- */
+// The drawing area's background, picked by the person (ticket 252; CanvasBackground card): five in light, six in dark.
+// The app stores the choice's number, not its color, so switching theme keeps the position; a stored 6 shows Studio in
+// light. Colors are tokens `canvas-bg-1`..`6` copied (a canvas can't read CSS); canvasBackgrounds.test.ts checks them.
 type CanvasBackgroundId = 'studio' | 'linen' | 'sage' | 'mist' | 'blush' | 'night' | 'ink' | 'midnight' | 'olive' | 'umber' | 'ash'
 
 export interface CanvasBackground {
@@ -40,7 +37,8 @@ export function canvasBackgrounds(theme: ResolvedTheme): readonly CanvasBackgrou
 /** How many backgrounds the highest stored number can mean: 6, the most dark offers. */
 export const CANVAS_BACKGROUND_MAX = DARK.length
 
-/** The 1-based position that shows in a theme: a number light has no background for (6) shows its first, and stays stored. */
+/** The 1-based position that shows in a theme: a number light has no background for (6) shows its first, and stays
+ * stored. */
 export function shownChoice(theme: ResolvedTheme, choice: number): number {
   return choice >= 1 && choice <= canvasBackgrounds(theme).length ? choice : 1
 }
@@ -57,7 +55,8 @@ function isAsh(theme: ResolvedTheme, choice: number): boolean {
   return canvasBackgroundOf(theme, choice)?.id === 'ash'
 }
 
-/** The colors the Project is drawn in on the Canvas: the theme's, on the chosen background. Exports don't use this (they print on PRINT_THEME). */
+/** The colors the Project is drawn in on the Canvas: the theme's, on the chosen background. Exports don't use this
+ * (they print on PRINT_THEME). */
 export function canvasTheme(theme: ResolvedTheme, choice: number): ProjectTheme {
   const base = PROJECT_THEMES[theme]
   const background = canvasBackgroundOf(theme, choice)

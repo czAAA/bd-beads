@@ -6,12 +6,9 @@ import { openApp, projectBox, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
-/**
- * The look of a Project in the app, held to the reference screenshots (support/referenceCheck.ts says how the
- * comparison works): every Technique, plain and with Row progress in both directions, at 100% and 300% upright and at 100%
- * rotated — the marker included, since the overlay layer draws it. The pointer tools are in interaction.spec.ts and
- * the overlays that come with a tool in overlays.spec.ts.
- */
+// The look of a Project held to the reference screenshots (support/referenceCheck.ts): every Technique, plain and with
+// Row progress both ways, at 100% and 300% upright and 100% rotated, marker included. Pointer tools:
+// interaction.spec.ts; overlays: overlays.spec.ts.
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const ZOOMS = [100, 300]
 const TECHNIQUES = ['loom', 'peyote', 'brick'] as const
@@ -61,11 +58,8 @@ for (const scenario of scenarios) {
   }
 }
 
-/**
- * The comparisons have to fail when the picture is wrong, or a pass means nothing. Each of these draws a Project that
- * differs from the one the reference shows in one small way, at every zoom (100% is where a bead is smallest), and expects
- * the check to notice.
- */
+// The comparisons must fail when the picture is wrong: each draws a Project differing from the reference in one small
+// way, at every zoom (100% is where a bead is smallest), and expects the check to notice.
 test.describe('the check notices a wrong picture', () => {
   const reference = fixtureProject({ technique: 'loom' })
 

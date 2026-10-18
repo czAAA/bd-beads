@@ -6,11 +6,7 @@ export function isSpaceKey(event: KeyboardEvent): boolean {
   return event.code === 'Space'
 }
 
-/**
- * Whether Space has a native meaning at `target` that panning must not steal -- a focused button (every sheet
- * control) activates on Space in every browser, so hijacking the key there would silently break keyboard-only use
- * of the sheets, not just cursor-driven panning.
- */
+/** Whether Space has a native meaning at `target` (a focused button activates on Space) that panning must not steal. */
 function activatesOnSpace(target: EventTarget | null): boolean {
   return target instanceof HTMLElement && (target.tagName === 'BUTTON' || target.getAttribute('role') === 'button')
 }
@@ -20,16 +16,12 @@ function closestButton(target: EventTarget | null): EventTarget | null {
   return target instanceof Element ? target.closest('button, [role="button"]') : null
 }
 
-/**
- * Holding Space and dragging moves the canvas (tickets 95, 233): a pure pan, regardless of which tool
- * is active — never a paint/fill/erase/select, so callers guard their own cell handlers with `spaceHeld` rather
- * than this composable trying to intercept those events itself. Both directions move the Canvas (`panBy`); the page
- * itself never scrolls (ticket 141).
- * Bound to the window, the same way useKeyboardShortcuts is: the canvas takes no keyboard focus of its own, and a
- * drag can wander (or start) anywhere once Space is held.
- */
+// Holding Space and dragging pans the Canvas (tickets 95, 233), whatever the tool; callers guard their cell handlers
+// with `spaceHeld`. Bound to the window like useKeyboardShortcuts: the canvas takes no keyboard focus and a drag can
+// wander anywhere; the page never scrolls (ticket 141).
 export function useSpaceDragPan(panBy: (dx: number, dy: number) => void) {
-  /** Space is currently held down (not while typing) -- shows the grab cursor and arms panning on the next pointerdown. */
+  /** Space is currently held down (not while typing) -- shows the grab cursor and arms panning on the next
+   * pointerdown. */
   const spaceHeld = ref(false)
   /** A pan drag is actively in progress -- shows the grabbing cursor. */
   const panning = ref(false)

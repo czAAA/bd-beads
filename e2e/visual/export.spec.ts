@@ -10,13 +10,11 @@ import { openApp, openDockSheet } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { displayedExtentPx } from '../../src/rendering/surfaceView'
 
-/**
- * Tickets 73 and 74: a Project exported as a PNG picture and as a printable PDF, in a real browser, where the canvases
- * are real: the picture has the Project's beads in the right colors, and a Project far too big for one canvas still comes
- * out whole.
- */
+/** Tickets 73 and 74: a Project exported as PNG and printable PDF in a real browser: right bead colors, and a
+ * too-big Project comes out whole. */
 
-/** Picks an export from the save box's Export menu (ticket 148) and waits for the file it hands over. Save box sits in the Dock's Project sheet. */
+/** Picks an export from the save box's Export menu (ticket 148) and waits for the file it hands over. Save box sits
+ * in the Dock's Project sheet. */
 async function downloadOf(page: Page, testId: string): Promise<{ name: string; bytes: Buffer }> {
   await openDockSheet(page, 'strip-project')
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId(testId).click()])
@@ -28,7 +26,8 @@ function hex(png: PNG, x: number, y: number): string {
   return `#${[0, 1, 2].map((channel) => png.data[at + channel]!.toString(16).padStart(2, '0')).join('')}`
 }
 
-/** Whether any pixel in the box isn't plain white — the story column has drawn something there, wherever its lines land. */
+/** Whether any pixel in the box isn't plain white — the story column has drawn something there, wherever its lines
+ * land. */
 function nonWhiteIn(png: PNG, x: number, y: number, width: number, height: number): boolean {
   for (let row = y; row < Math.min(y + height, png.height); row += 3) {
     for (let column = x; column < Math.min(x + width, png.width); column += 3) {
@@ -38,10 +37,8 @@ function nonWhiteIn(png: PNG, x: number, y: number, width: number, height: numbe
   return false
 }
 
-/**
- * Whether any pixel in the box has the background name's pale warm tint (the accent color at 14% over the plain board
- * color, PRINT_OPACITY.name) — distinct from the board itself, which fills this whole area regardless (ticket 183).
- */
+/** Whether any pixel in the box has the background name's pale warm tint (accent at 14% over the board color),
+ * unlike the board (ticket 183). */
 function warmerThanBoardIn(png: PNG, x: number, y: number, width: number, height: number): boolean {
   for (let row = y; row < Math.min(y + height, png.height); row += 2) {
     for (let column = x; column < Math.min(x + width, png.width); column += 2) {
@@ -68,7 +65,8 @@ test('PNG export draws each bead in its color, at a legible size, on the print b
   // Wider than tall: the story sits under the chart, so the picture is exactly the chart's width and taller than it.
   expect(png.width).toBe(chartWidth)
   expect(png.height).toBeGreaterThan(chartHeight)
-  // Exports are always light, on the print board (DESIGN.md §4.3), whatever the app's theme — rounded, so its very corner is left white.
+  // Exports are always light, on the print board (DESIGN.md §4.3), whatever the app's theme — rounded, so its very
+  // corner is left white.
   expect(hex(png, 15, 15)).toBe(PRINT_THEME.background)
   // The middle of the bead in row 3, column 2 (the gap and rim are at its edge, so the middle is all its color).
   const painted = frameGrid(project)[3]![2]!.color
@@ -95,7 +93,8 @@ test('a Project with no maker name leaves it out of the PNG (printed-output.md, 
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 10, rows: 10 })])
 
   const { bytes } = await downloadOf(page, 'export-png')
-  // Nothing throws, and the file is a normal, decodable size (no stray "by " with a blank name, no crash reading an unset name).
+  // Nothing throws, and the file is a normal, decodable size (no stray "by " with a blank name, no crash reading an
+  // unset name).
   const png = PNG.sync.read(bytes)
   expect(png.width).toBeGreaterThan(0)
 })
@@ -111,7 +110,8 @@ test('a Project with a maker name prints it in the PNG, large and pale under the
   const chartHeight = 10 * PNG_BEAD_PX + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX
   // Somewhere in the board's own bottom margin, under the beads.
   expect(warmerThanBoardIn(png, 0, chartHeight - PNG_BOTTOM_MARGIN_PX + 30, chartWidth, PNG_BOTTOM_MARGIN_PX - 40)).toBe(true)
-  // Never cut off (ticket 183 regression): the picture is tall enough to hold the whole bottom margin, not just the beads.
+  // Never cut off (ticket 183 regression): the picture is tall enough to hold the whole bottom margin, not just the
+  // beads.
   expect(png.height).toBeGreaterThanOrEqual(chartHeight)
 })
 

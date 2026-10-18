@@ -3,13 +3,9 @@ import { drawAccentLine, drawBackgroundName, drawMark, font, MONO, pt, SANS, SER
 import { PRINT_COLORS } from './printColors'
 import type { PrintText } from './printText'
 
-/**
- * The PNG's story column (ticket 164; printed-output.md's PNG image section, the PngExport and PrintStrips cards): the
- * chart is drawn straight onto the same canvas the picture streams from (projectExport.ts); this is the rest — the
- * words, in a column beside a typical Project or under a wide one, told in the shared print pieces from ticket 162 so
- * the picture and the PDF read alike. Reused for layout (a throwaway context, to find how tall it needs to be) and for
- * drawing (the real one, offset for the band being streamed): both calls go through `drawStory`, so they can't drift.
- */
+// The PNG's story column (ticket 164; printed-output.md, PngExport and PrintStrips cards): the chart is drawn onto the
+// canvas the picture streams from (projectExport.ts); this is the words, beside or under it, via the shared print pieces
+// (ticket 162). Used for layout (throwaway context) and drawing (real one) through `drawStory`, so they can't drift.
 
 /** The gap between the chart and the story, and between the story's own blocks. */
 const PNG_GUTTER = mm(8)
@@ -28,7 +24,8 @@ export interface PngLayout {
   storyWidth: number
 }
 
-/** Where the chart and the story column sit: beside a typical Project, under a wide one (printed-output.md). Whole px throughout: the streamed encoder needs an exact pixel height, and mm()/pt() math isn't naturally whole. */
+/** Where the chart and the story column sit: beside a typical Project, under a wide one (printed-output.md). Whole
+ * px throughout: the streamed encoder needs an exact pixel height, and mm()/pt() math isn't naturally whole. */
 export function pngLayout(chart: { width: number; height: number }, words: PrintText): PngLayout {
   const wide = chart.width > chart.height
   const scratch = document.createElement('canvas').getContext('2d')!
@@ -46,7 +43,8 @@ export function drawPngStory(context: CanvasRenderingContext2D, words: PrintText
   drawStory(context, words, layout.storyX, layout.storyY - bandTop, layout.storyWidth, layout.wide)
 }
 
-/** Clips to the board's rounded corners before the chart is drawn onto the same canvas: call `context.restore()` after. `bandTop` is the top of the band being streamed, in the whole picture. */
+/** Clips to the board's rounded corners before the chart is drawn onto the same canvas: call `context.restore()`
+ * after. `bandTop` is the top of the band being streamed, in the whole picture. */
 export function clipToPngBoard(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, bandTop: number): void {
   context.save()
   context.beginPath()
@@ -54,7 +52,8 @@ export function clipToPngBoard(context: CanvasRenderingContext2D, x: number, y: 
   context.clip()
 }
 
-/** The title, "by {maker}" (left out when empty) and the bead/size line every layout starts with; returns where it ends. */
+/** The title, "by {maker}" (left out when empty) and the bead/size line every layout starts with; returns where it
+ * ends. */
 function drawStoryHeader(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number): number {
   const word = text(context, words.techniqueWord, x, y + pt(15), font('italic 400', 17, SERIF), PRINT_COLORS.accent)
   text(context, words.name, x + word + mm(2), y + pt(15), font('700', 11, SANS), PRINT_COLORS.ink, 'left', width - word - mm(2))
@@ -150,7 +149,8 @@ function drawStory(context: CanvasRenderingContext2D, words: PrintText, x: numbe
   return Math.max(afterBrand, afterColors)
 }
 
-/** The background name large and pale under the board, and the accent line's curve behind it, drawn before the chart and the story. `bandTop` is the top of the band being streamed, in the whole picture. */
+/** The background name large and pale under the board, and the accent line's curve behind it, drawn before the chart
+ * and the story. `bandTop` is the top of the band being streamed, in the whole picture. */
 export function drawPngBackground(context: CanvasRenderingContext2D, page: PageSize, background: string, board: { x: number; top: number; bottom: number; right: number }, bandTop: number): void {
   drawBackgroundName(context, background, board.x, board.bottom - bandTop, 'left')
   drawAccentLine(context, page, { x: 0, y: page.height - mm(6) - bandTop }, { right: board.right, top: board.top - bandTop, bottom: board.bottom - bandTop })

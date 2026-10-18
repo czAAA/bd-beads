@@ -1,11 +1,9 @@
 import { createServer } from 'node:http'
 import type { AddressInfo } from 'node:net'
 
-/**
- * Our hosting, played by the test (ticket 69): a server in front of the preview build that the test can take down (every
- * answer 503, as a failing host or a gateway in front of it would), slow down, or change a file on. The page under test
- * is opened from here instead of from the preview, so the service worker meets the same failures the real one would.
- */
+// Our hosting, played by the test (ticket 69): a server in front of the preview build that can be taken down (every
+// answer 503), slowed, or have a file changed. The page is opened from here so the service worker meets the failures
+// the real one would.
 export interface Host {
   /** The app's address, with the base path, like the preview's. */
   url: string
@@ -13,12 +11,14 @@ export interface Host {
   down: boolean
   /** Waits this long before answering a path that matches. */
   delay: { pattern: RegExp; ms: number } | null
-  /** Changes a text file before it is sent (a new version of the worker, say); returns the text as it is for other paths. */
+  /** Changes a text file before it is sent (a new version of the worker, say); returns the text as it is for other
+   * paths. */
   rewrite: ((path: string, text: string) => string) | null
   close: () => Promise<void>
 }
 
-/** Starts the stand-in host in front of `upstream` (the preview's address) on a free port; `close()` it after the check. */
+/** Starts the stand-in host in front of `upstream` (the preview's address) on a free port; `close()` it after the
+ * check. */
 export async function startHost(upstream: string): Promise<Host> {
   const origin = new URL(upstream).origin
   const host: Host = { url: '', down: false, delay: null, rewrite: null, close: async () => {} }

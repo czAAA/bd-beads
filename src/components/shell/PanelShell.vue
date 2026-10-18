@@ -6,14 +6,9 @@ import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { PANEL_CONTEXT } from './panelContext'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
 
-/**
- * The shell Menu and Project open in (spec 0440, ticket 443; MenuPanel and TopSheet cards): a dropdown 4px under its
- * strip button from 1024px, and under that a Top sheet sliding down from under the strip, over a scrim that starts below
- * the strip so Menu and Project stay visible and clickable (a press on the other one swaps the panels, a press on the
- * open one closes it). Same content in both, which reads `sheet` from the context for its bigger rows. Escape and a
- * press outside close it, and focus goes back to the button. One shell stays mounted while the panels swap, so nothing
- * flashes.
- */
+// The shell Menu and Project open in (spec 0440, ticket 443; MenuPanel and TopSheet cards): a dropdown 4px under its
+// strip button from 1024px, below that a Top sheet over a scrim below the strip, so both buttons stay clickable.
+// Escape or a press outside closes it, focus returns to the button; one shell stays mounted on swap.
 const props = defineProps<{
   title: string
   /** The strip button this panel hangs from, by test id. */
@@ -34,10 +29,12 @@ const anchorEl = ref<HTMLElement>()
 const STRIP_BUTTONS = '[data-testid="strip-menu"], [data-testid="strip-project"]'
 
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => 'start')
-/** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside past that. */
+/** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
+ * past that. */
 const dropdownStyle = computed(() => ({ ...anchored.style.value, maxHeight: `calc(100dvh - ${Number.parseFloat(anchored.style.value.top ?? '0') || 0}px - ${16}px)` }))
 
-/** The Top sheet's box: from the strip's bottom edge down to 40px above the canvas box's bottom, the box's full width. */
+/** The Top sheet's box: from the strip's bottom edge down to 40px above the canvas box's bottom, the box's full
+ * width. */
 const sheetBox = ref<Record<string, string>>({})
 const scrimBox = ref<Record<string, string>>({})
 function measureSheet() {
@@ -63,10 +60,8 @@ function place() {
 }
 watch([wide, () => props.anchor], () => void nextTick(place))
 
-/**
- * Escape first ends an edit in progress: a field that can be cancelled (the Project's rename) marks its form
- * `data-handles-escape` and hears a `panel-escape` event; with none, Escape closes the panel.
- */
+// Escape first ends an edit in progress: a cancellable field (the Project's rename) marks its form
+// `data-handles-escape` and hears a `panel-escape` event; with none, Escape closes the panel.
 function onEscape() {
   const editing = document.activeElement?.closest('[data-handles-escape]')
   if (editing) editing.dispatchEvent(new CustomEvent('panel-escape'))
@@ -90,7 +85,8 @@ function focusables(): HTMLElement[] {
   return [...(panelEl.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
 }
 
-/** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab wraps in the Top sheet and leaves the dropdown. */
+/** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab wraps
+ * in the Top sheet and leaves the dropdown. */
 function onKeydown(event: KeyboardEvent) {
   const target = event.target as HTMLElement
   const list = focusables()
@@ -242,7 +238,8 @@ onBeforeUnmount(() => {
   display: none;
 }
 
-/* The dropdown (MenuPanel card): `panel-width`, under the button, over everything but dialogs; taller than the window, it scrolls inside. */
+/* The dropdown (MenuPanel card): `panel-width`, under the button, over everything but dialogs; taller than the
+ * window, it scrolls inside. */
 .panel-shell--dropdown {
   z-index: var(--z-popover);
   width: var(--panel-width);
@@ -251,7 +248,8 @@ onBeforeUnmount(() => {
   animation: panel-in var(--duration-base) var(--ease-out);
 }
 
-/* The Top sheet (TopSheet card): its box is set from the strip and the canvas box; bottom corners rounded, the handle at the bottom. */
+/* The Top sheet (TopSheet card): its box is set from the strip and the canvas box; bottom corners rounded, the
+ * handle at the bottom. */
 .panel-shell--sheet {
   --panel-item-height: 2.875rem;
   z-index: var(--z-sheet);

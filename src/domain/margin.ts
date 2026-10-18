@@ -4,20 +4,16 @@ import { changedPositions, isInFinishedRow, keepFinishedRows, type Project } fro
 import { carryNames, keepNamesApart } from './pieceNames'
 import type { Selection } from './selection'
 
-/**
- * The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): the 6 bead positions all the way round it (3 until ticket 427, ADR 0056),
- * outside its line, where nothing can be drawn, so beads never end up right against the Frame and its rulers. Erase
- * still works there. A change of the Frame leaves beads already there where they are: the margin covers them.
- */
+/** The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0027): 6 bead positions (3 until ticket 427,
+ * ADR 0056) outside its line where nothing can be drawn. Erase still works there; a Frame change leaves beads
+ * already there in place. */
 
 /** How many bead positions the margin is wide: the room kept for the Frame's line and rulers. */
 export const MARGIN = 6
 
-/**
- * How many bead positions the margin shows at a zoom (ticket 459): the 6 of `MARGIN`, or more once zoomed out so far that
- * their band, `pitchPx` per position at `zoom`, is shorter than `neededPx`, the room the Frame's corner controls take.
- * Only what is shown and refused on screen widens; a margin removes nothing, so covering more loses no bead.
- */
+/** How many bead positions the margin shows at a zoom (ticket 459): the 6 of `MARGIN`, or more when zoomed out so far
+ * that the band (`pitchPx` per position) is shorter than `neededPx`, the Frame's corner controls. Only the display
+ * widens; a margin removes nothing. */
 export function marginAt({ neededPx, pitchPx, zoom }: { neededPx: number; pitchPx: number; zoom: number }): number {
   return Math.max(MARGIN, Math.ceil(neededPx / (pitchPx * zoom)))
 }
@@ -27,15 +23,15 @@ export function withMargin(frame: Frame, margin: number = MARGIN): Frame {
   return { row: frame.row - margin, column: frame.column - margin, rows: frame.rows + 2 * margin, columns: frame.columns + 2 * margin }
 }
 
-/** Whether a bead may be placed at a position: not in a row the weaver has finished (ticket 33), and not in the Frame's margin (ticket 261). The one statement of the rule, which an Edit enforces and a press asks to show it is refused. */
+/** Whether a bead may be placed at a position: not in a row the weaver has finished (ticket 33), and not in the
+ * Frame's margin (ticket 261). The one statement of the rule, which an Edit enforces and a press asks to show it is
+ * refused. */
 export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, position: GridPosition, margin: number = MARGIN): boolean {
   return !isInFinishedRow(project, position) && !inMargin(project.frame, position, margin)
 }
 
-/**
- * What a drawing command did, minus what it did to finished rows (ticket 33), what it painted in the margin and what
- * would join two named Pieces (ticket 406), with the Piece names carried over; `before` itself when nothing is left.
- */
+/** What a drawing command did, minus finished rows (ticket 33), margin paint and joins of named Pieces (ticket 406),
+ * with Piece names carried over; `before` itself when nothing is left. */
 export function keepAllowedEdits(before: Project, after: Project): Project {
   const allowed = keepNamesApart(before, keepMarginClear(before, keepFinishedRows(before, after)))
   return allowed === before ? before : carryNames(before, allowed)
@@ -46,12 +42,9 @@ export function inMargin(frame: Frame | undefined, position: GridPosition, margi
   return !!frame && frameContains(withMargin(frame, margin), position) && !frameContains(frame, position)
 }
 
-/**
- * The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, wholly
- * clear of the Frame's margin band, or round the whole Frame and its band (so it never stops in the margin or cuts the
- * Frame, but can take in everything), never anything else. With no Frame there is no rule. Every path that makes a
- * Selection asks this: a drag clamps to it, a resize or move is refused by it, a one-shot Selection is trimmed to it.
- */
+/** The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, wholly
+ * clear of its margin band, or round the whole Frame and band. No Frame, no rule. Every Selection path asks this:
+ * a drag clamps, a resize or move is refused, a one-shot Selection is trimmed. */
 export function selectionAllowed(frame: Frame | undefined, selection: Selection): boolean {
   if (!frame) return true
   const box = withMargin(frame)
@@ -73,11 +66,8 @@ export function selectionAllowed(frame: Frame | undefined, selection: Selection)
   return !overlaps || inside || encloses
 }
 
-/**
- * `selection` cut down to the largest rectangle that holds `anchor` and is allowed (ticket 433): the cut that takes the
- * band out on whichever axis keeps more. Unchanged when it is allowed already; none when `anchor` is in the margin or
- * no cut is left.
- */
+/** `selection` cut to the largest allowed rectangle holding `anchor` (ticket 433), taking the band out on the axis
+ * that keeps more. Unchanged if allowed; none if `anchor` is in the margin or no cut is left. */
 export function trimToAllowed(frame: Frame | undefined, selection: Selection, anchor: GridPosition): Selection | undefined {
   if (selectionAllowed(frame, selection)) return selection
   if (!frame || inMargin(frame, anchor)) return undefined
@@ -102,20 +92,17 @@ export function trimToAllowed(frame: Frame | undefined, selection: Selection, an
     .sort((x, y) => y.rows * y.columns - x.rows * x.columns)[0]
 }
 
-/** The cell one step back from `value` on an axis, on the anchor's side of the margin band `[start - MARGIN, end + MARGIN)`: the margin's outer edge there. Unchanged when the anchor is level with the band. */
+/** The cell one step back from `value` on an axis, on the anchor's side of the margin band `[start - MARGIN, end +
+ * MARGIN)`: the margin's outer edge there. Unchanged when the anchor is level with the band. */
 function outsideEdge(start: number, length: number, anchor: number, value: number): number {
   if (anchor < start - MARGIN) return Math.min(value, start - MARGIN - 1)
   if (anchor >= start + length + MARGIN) return Math.max(value, start + length + MARGIN)
   return value
 }
 
-/**
- * Where a Selection drag that reached `cell` ends when it began at `anchor` (ticket 428, ADR 0055), so the Selection
- * never stops in the margin or cuts it (a drag that goes right across the Frame and its margin is allowed). A drag begun inside the Frame stays inside it (the cell is held to the Frame's bounds). One
- * begun outside is stopped at the margin's outer edge on the anchor's side, on whichever axis (the one that keeps more
- * of the drag) takes the rectangle out of the margin, so it cannot end in the margin nor stop part-way across it. A drag begun in the
- * margin (a Project saved with beads there) is refused (ticket 433): the Selection cannot start there, so the anchor is returned.
- */
+/** Where a Selection drag from `anchor` to `cell` ends (ticket 428, ADR 0055), never stopping in or cutting the
+ * margin. Begun inside the Frame it stays inside; begun outside it stops at the margin's outer edge on the axis that
+ * keeps more. Begun in the margin (ticket 433) is refused: `anchor` is returned. */
 export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
   if (!frame) return cell
   if (frameContains(frame, anchor)) {
@@ -139,10 +126,8 @@ export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition,
   return candidates.filter((to) => selectionAllowed(frame, between(to))).sort((x, y) => area(y) - area(x))[0] ?? { row, column }
 }
 
-/**
- * What an edit did, with every bead it newly painted in the margin taken back (erasing there stays). An edit left with
- * nothing to change hands back `before` itself, the same "unchanged" signal the drawing commands give.
- */
+/** What an edit did, with every bead it newly painted in the margin taken back (erasing there stays); nothing left
+ * to change returns `before` itself, the drawing commands' "unchanged" signal. */
 function keepMarginClear(before: Project, after: Project): Project {
   const frame = before.frame
   if (!frame) {

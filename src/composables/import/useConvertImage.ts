@@ -11,25 +11,12 @@ import {
   type PanFraction,
 } from '../../domain/imageFraming'
 
-/**
- * The framing step of Convert image (ticket 58, ADR 0010): which picture is being framed, and how it sits under the
- * frame. Deliberately independent of which Project is open — conversion creates a Project, it never converts into one
- * (ADR 0010), so this answers to nothing in the editor and the editor answers to nothing here.
- *
- * Nothing survives leaving: Cancel discards the picture along with the zoom, the pan and the colour count (ticket 58
- * decision), so re-entering always starts from a clean slate. There is deliberately nowhere to remember a picture for
- * a second try at different settings.
- *
- * Holds the picture and nothing about the frame. Whether framing is actually *running* is a question only App.vue can
- * answer, since it also needs the frame the New Project form's fields imply — see its `framing` computed, the one gate
- * for every piece of framing UI.
- */
+// The framing step of Convert image (ticket 58, ADR 0010): the picture and how it sits under the frame, independent of
+// the open Project (it creates one). Cancel discards everything. It holds no frame: whether framing runs is App.vue's
+// `framing` computed, the one gate for all framing UI.
 export function useConvertImage() {
-  /**
-   * shallowRef, not ref: a decoded picture is megabytes of pixel bytes, and a deep ref would wrap that array in a
-   * reactive proxy — every one of the tens of thousands of channel reads a single sampling pass makes would then go
-   * through it. Nothing ever mutates a decoded picture in place, so there is nothing deep reactivity would buy.
-   */
+  /** shallowRef: a decoded picture is megabytes of pixels that are never mutated in place, so deep reactivity would
+   * only slow every sampling read. */
   const image = shallowRef<PixelData | undefined>()
   /** A multiple of the scale at which the picture just covers the frame — 1 is that scale (see CONVERT_MIN_ZOOM). */
   const zoom = ref(1)

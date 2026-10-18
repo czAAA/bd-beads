@@ -7,10 +7,8 @@ import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import ImageColorsButton from '../palette/ImageColorsButton.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
 
-/**
- * The Colors group's controls (ticket 384): the Palette (Pick color from canvas, ticket 398, is its last
- * tile), Custom color and Image colors, kept in one place so the Color sheet and any other host show the same controls.
- */
+// The Colors group's controls (ticket 384): the Palette (Pick color from canvas, ticket 398, is its last tile), Custom
+// color and Image colors, in one place so the Color sheet and any other host show the same controls.
 const props = defineProps<{
   selectedColorId?: string
   /** The last Custom color chosen (CONTEXT.md), kept on its slot even once a Palette swatch deselects it. */
@@ -27,14 +25,13 @@ const emit = defineEmits<{
   'select-image-color': [hex: string]
 }>()
 
-/** Custom color is the active paint color exactly when neither a Palette swatch nor an Image color is (App.vue keeps the three mutually exclusive). */
+/** Custom color is the active paint color exactly when neither a Palette swatch nor an Image color is (App.vue keeps
+ * the three mutually exclusive). */
 const customColorSelected = computed(() => !props.selectedColorId && !props.selectedImageColor && !!props.customColor)
 
-/**
- * The Custom color picker expands under the buttons (ticket 449) and does not close on use. It opens on the slot's Custom
- * color, else the paint color. Taking its color (a press outside, Enter) hands it up once and closes the sheet holding this
- * control; Escape goes back to the button with nothing taken.
- */
+// The Custom color picker expands under the buttons (ticket 449) and does not close on use. Taking its color (press
+// outside, Enter) hands it up once and closes the sheet holding this control; Escape returns to the button with nothing
+// taken.
 const palette = usePalette()
 const closeSheet = useCloseSheetOnPick()
 const pickerOpen = ref(false)

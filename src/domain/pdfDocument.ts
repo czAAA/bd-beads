@@ -1,8 +1,5 @@
-/**
- * A PDF made of whole-page pictures (ticket 74): every page is one JPEG laid over the paper. The page is drawn on a
- * canvas by the caller — text and all, so any language the app speaks prints the same, with no font to embed — and this
- * only wraps the pictures in the file format, which keeps the whole export free of a PDF library.
- */
+/** A PDF of whole-page JPEGs (ticket 74). The caller draws each page on a canvas (text included, so no font to
+ * embed); this only wraps the pictures in the file format, keeping the export free of a PDF library. */
 
 export interface PdfPage {
   /** The page as a baseline JPEG. */

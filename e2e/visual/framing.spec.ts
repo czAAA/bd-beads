@@ -2,13 +2,9 @@ import { expect, test } from '@playwright/test'
 import { openApp, openNewProjectForm, setZoom, stateConvertSize } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
-/**
- * The framing step of Convert image (ticket 58): the picture as beads under the Project's frame, at the picture's
- * 100% and 200% zoom and after being dragged to another part of it. The frame outline and its dimming are part of
- * what is compared. The beads are drawn on a canvas (ticket 104) at the preview's own fit-to-panel scale, which is
- * rarely a whole number, so the tolerance is the anti-aliasing of their edges against the reference (made from the one-element-per-bead preview they replaced): 0.8% of
- * the picture's pixels, where one bead is about 0.6%. What each bead is drawn in is pinned by the component's own tests.
- */
+// The framing step of Convert image (ticket 58): beads under the frame at 100% and 200% and after a drag.
+// Beads are on a canvas (ticket 104) at a non-integer fit scale, so the tolerance (0.8% of pixels; a bead is ~0.6%)
+// covers anti-aliasing against the old reference. What each bead is drawn in is pinned by the component's tests.
 test.describe('Convert image framing', () => {
   for (const technique of ['loom', 'peyote', 'brick'] as const) {
     test(technique, async ({ page }) => {
@@ -28,7 +24,8 @@ test.describe('Convert image framing', () => {
         await page.mouse.move(5, 5)
         await expect.soft(preview, name).toHaveScreenshot(`framing-${technique}-${name}.png`, {
           maxDiffPixelRatio: 0.008,
-          // The hint's light-on-dark text is anti-aliased differently by every operating system; that its words fit is the text fit check's business.
+          // The hint's light-on-dark text is anti-aliased differently by every operating system; that its words fit is
+          // the text fit check's business.
           mask: [page.locator('.convert-image-frame__hint')],
         })
       }

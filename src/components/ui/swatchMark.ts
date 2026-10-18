@@ -10,10 +10,8 @@ function luminance(hex: string): number {
 /** The luminance where black and white have the same contrast ratio with a color: sqrt(1.05 * 0.05) - 0.05. */
 const BLACK_WHITE_BALANCE = 0.1791
 
-/**
- * Which mark reads on a swatch of this color (ticket 333): the `dark` one on a light swatch, the `light` one on a dark
- * swatch, whichever has more contrast with the swatch's own hex. It never looks at the theme.
- */
+/** Which mark reads on a swatch (ticket 333): `dark` or `light`, whichever contrasts more with its hex; never looks
+ * at the theme. */
 export function markOn(swatch: string): 'dark' | 'light' {
   return luminance(swatch) > BLACK_WHITE_BALANCE ? 'dark' : 'light'
 }

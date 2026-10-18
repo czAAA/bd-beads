@@ -19,25 +19,21 @@ import { rowPitchPx, surfaceView, type Scroll } from '../../rendering/surfaceVie
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
-/**
- * The Canvas drawn by the Project renderer in its open space (ADR 0018, ADR 0026): the Drawing surface of CONTEXT.md. It fills the
- * drawing area edge to edge with two canvases the size of what is on screen, one for the beads and the dots round them
- * and one over it for what comes and goes with a tool or the pointer (see overlayRenderer). There is no board, no edge
- * and no scroll container: what is shown is decided by the `scroll` and the `zoom` it is given, so a canvas of any size
- * costs what is in view and no more.
- *
- * It also reads the gestures that move the view — the wheel and Ctrl/⌘ + wheel, a drag with the Hand tool or the middle
- * button — and reports them, leaving the view itself to its owner (useCanvasView).
- */
+// The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
+// canvases (beads and dots; overlay: see overlayRenderer), no board; `scroll` and `zoom` decide what shows.
+// It reads the view gestures (wheel, Ctrl/Cmd + wheel, Hand tool or middle drag) and reports them to useCanvasView.
 const props = defineProps<{
   project: Project
   /** How much the canvas is enlarged by; 1 is a bead 20 px across. */
   zoom: number
-  /** Where the viewport's top-left corner is, in displayed px from the bead at row 0, column 0 (see the Surface view). */
+  /** Where the viewport's top-left corner is, in displayed px from the bead at row 0, column 0 (see the Surface
+   * view). */
   scroll: Scroll
-  /** Beads to show a hover preview on (ticket 23): the hovered bead and its live-mirror counterparts, or a whole copied block under the cursor (ticket 31). */
+  /** Beads to show a hover preview on (ticket 23): the hovered bead and its live-mirror counterparts, or a whole
+   * copied block under the cursor (ticket 31). */
   previewCells?: PreviewCell[]
-  /** The color to preview, faintly, on beads that carry none of their own; null for a neutral outline when no Palette color is selected. */
+  /** The color to preview, faintly, on beads that carry none of their own; null for a neutral outline when no
+   * Palette color is selected. */
   previewColor?: string | null
   /** The rectangle the Select tool has marked out, drawn as a marquee over those beads (ticket 31). */
   selection?: Selection
@@ -51,27 +47,35 @@ const props = defineProps<{
   tourMarks?: TourMarks
   /** The Project's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
   label?: string
-  /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held); Edit Frame takes the drag over it, so the Frame can be edited whichever Tool was chosen. */
+  /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held); Edit Frame takes the drag
+   * over it, so the Frame can be edited whichever Tool was chosen. */
   moving?: boolean
   /** Which pointer draws and which one moves the canvas (ticket 325); absent, every pointer draws. */
   inputMode?: InputMode
   /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
   showRulers?: boolean
-  /** Whether the Frame is being edited (Edit Frame, ticket 417): a drag moves or resizes it instead of drawing beads, and its handles, margin outline and size tooltip show. */
+  /** Whether the Frame is being edited (Edit Frame, ticket 417): a drag moves or resizes it instead of drawing
+   * beads, and its handles, margin outline and size tooltip show. */
   settingFrame?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 ≈ 2.1 × 2.1 cm"). */
   frameTooltip?: string
-  /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab cursor shows (ticket 353). */
+  /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab
+   * cursor shows (ticket 353). */
   markerHidden?: boolean
-  /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows `not-allowed` there, and a press there is refused (ticket 276). */
+  /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows
+   * `not-allowed` there, and a press there is refused (ticket 276). */
   blocksMargin?: boolean
-  /** Whether the Select tool is in hand: the margin cannot be selected, so a press starting there is refused with `not-allowed` and starts no Selection (ticket 428, ADR 0055). */
+  /** Whether the Select tool is in hand: the margin cannot be selected, so a press starting there is refused with
+   * `not-allowed` and starts no Selection (ticket 428, ADR 0055). */
   selectionBlocksMargin?: boolean
-  /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket 433): each one shows the not-allowed cue, the margin outline for 1s. */
+  /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket
+   * 433): each one shows the not-allowed cue, the margin outline for 1s. */
   selectionRefusals?: number
-  /** Whether Select or Piece is the tool in hand (ticket 414): the pointer is the native arrow, not the bead-shaped marker, and the Selection shows its handles. */
+  /** Whether Select or Piece is the tool in hand (ticket 414): the pointer is the native arrow, not the bead-shaped
+   * marker, and the Selection shows its handles. */
   selecting?: boolean
-  /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead marker give way, and a chip by the pointer shows the color of the bead under it. */
+  /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead
+   * marker give way, and a chip by the pointer shows the color of the bead under it. */
   picking?: boolean
 }>()
 
@@ -106,11 +110,14 @@ const emit = defineEmits<{
   'selection-release': []
   /** Edit Frame: a second finger landed, so the press was a pinch, not a drag: drop what was dragged. */
   'frame-cancel': []
-  /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors. Follows pan and zoom. */
+  /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors.
+   * Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
-  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit Frame's margin steppers sit, with the margin and the ruler numbers' reach. */
+  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit
+   * Frame's margin steppers sit, with the margin and the ruler numbers' reach. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
-  /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside meanwhile. */
+  /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
+   * meanwhile. */
   pressing: [pressing: boolean]
 }>()
 
@@ -119,11 +126,8 @@ const handMoves = computed(() => props.moving === true)
 /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
 const eyedropperShown = computed(() => props.picking === true && !props.markerHidden && !handMoves.value)
 
-/**
- * Set by a press on the surface: a press focuses it too, but the bead cursor shows only for focus that didn't come from
- * a pointer (Tab, or Skip to Project). Cleared by blur and by an arrow key, which is keyboard use again. While it is set,
- * Space pans the canvas instead of using the tool (ticket 424).
- */
+// Set by a press on the surface: bead cursor shows only for focus not from a pointer (Tab, Skip to Project). Cleared by
+// blur and arrow keys. While set, Space pans the canvas instead of using the tool (ticket 424).
 let pressed = false
 
 function onPress(event: PointerEvent) {
@@ -136,12 +140,14 @@ function onPress(event: PointerEvent) {
 /** The pointers down on the surface now: the Selection bar returns when the last one lifts (ticket 415). */
 const activePointers = new Set<number>()
 
-/** How long after the last wheel event a wheel or trackpad scroll or zoom counts as over, so the bar comes back (ticket 415). */
+/** How long after the last wheel event a wheel or trackpad scroll or zoom counts as over, so the bar comes back
+ * (ticket 415). */
 const WHEEL_IDLE_MS = 150
 let wheeling = false
 let wheelTimer: ReturnType<typeof setTimeout> | undefined
 
-/** The wheel is a pan or pinch with no press to end it: it holds the bar away until it has been quiet for WHEEL_IDLE_MS. */
+/** The wheel is a pan or pinch with no press to end it: it holds the bar away until it has been quiet for
+ * WHEEL_IDLE_MS. */
 function noteWheel() {
   if (!wheeling && activePointers.size === 0) emit('pressing', true)
   wheeling = true
@@ -168,17 +174,16 @@ function onBlur() {
   emit('keyboard-focus', false)
 }
 
-/**
- * Space after a pointer press passes on to the window's Space-drag pan (ticket 424) rather than using the tool at the bead
- * cursor, which a stroke would paint through. An arrow key ends the pointer's hold on Space: keyboard use again.
- */
+/** Space after a pointer press goes to the window's Space-drag pan (ticket 424), not the tool at the bead cursor; an
+ * arrow key ends that. */
 function onKeydown(event: KeyboardEvent): void {
   if (event.key.startsWith('Arrow')) pressed = false
   if (isSpaceKey(event) && pressed) return
   emit('cursor-key', event)
 }
 
-/** The colors the beads are drawn in follow the app's theme and the person's Canvas color; a change redraws both layers. */
+/** The colors the beads are drawn in follow the app's theme and the person's Canvas color; a change redraws both
+ * layers. */
 const canvasBackground = useCanvasBackground()
 const theme = canvasBackground.projectTheme
 const positionMarks = canvasBackground.positionMarks
@@ -208,7 +213,8 @@ function measure(): void {
 /** What the cells were last drawn from, to draw only what an edit changed. */
 let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; positionMarks: string; showFinished: boolean } | undefined
 
-/** Whether two Projects are laid out and dimmed alike, so that what differs between them is only which color each bead holds. */
+/** Whether two Projects are laid out and dimmed alike, so that what differs between them is only which color each
+ * bead holds. */
 function sameLayout(a: Project, b: Project): boolean {
   const progress = (project: Project) => project.rowProgress
   return (
@@ -224,11 +230,9 @@ function sameLayout(a: Project, b: Project): boolean {
 /** Past this many changed rows, drawing them one band at a time costs more than drawing the lot. */
 const MOST_ROWS_WORTH_A_BAND = 40
 
-/**
- * The bands of rows an edit changed, for drawing just those: rows apart by no more than two share a band, since a row's
- * neighbours are drawn with it anyway. Empty when nothing changed; undefined when so much did (an Undo, a Fill, a Mirror
- * current) that drawing it all again is the cheaper way.
- */
+// Bands of rows an edit changed, to draw just those (rows within two apart share a band; neighbours are drawn anyway).
+// Empty when nothing changed; undefined when so much did (Undo, Fill, Mirror current) that drawing all again is
+// cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
   const changed = [...new Set(changedPositions(before.beads, after.beads).map((position) => position.row))].sort((x, y) => x - y)
   if (changed.length > MOST_ROWS_WORTH_A_BAND) {
@@ -247,7 +251,8 @@ function changedBands(before: Project, after: Project): { first: number; last: n
   return bands
 }
 
-/** Sizes a canvas to the surface and the screen's pixel density, leaving it alone (and its drawing with it) when it already is. Whether it had to change. */
+/** Sizes a canvas to the surface and the screen's pixel density, leaving it alone (and its drawing with it) when it
+ * already is. Whether it had to change. */
 function sizeCanvas(canvas: HTMLCanvasElement, width: number, height: number, pixelRatio: number): boolean {
   const bitmapWidth = Math.max(1, Math.round(width * pixelRatio))
   const bitmapHeight = Math.max(1, Math.round(height * pixelRatio))
@@ -264,10 +269,12 @@ function currentRegion() {
   return { x: props.scroll.x, y: props.scroll.y, width: size.value.width, height: size.value.height }
 }
 
-/** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a position is. */
+/** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a
+ * position is. */
 const space = computed(() => spaceOf(toRaw(props.project), true))
 
-/** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles agree with what is drawn. */
+/** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
+ * agree with what is drawn. */
 const surface = computed(() =>
   surfaceView({ space: space.value, technique: props.project.technique, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
@@ -277,7 +284,8 @@ function rulerFontPx(): number {
   return window.innerWidth <= 743 ? 12 : 11
 }
 
-/** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two cannot disagree. */
+/** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two
+ * cannot disagree. */
 const rulers = computed(() => rulerLayout(toRaw(props.project), surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
@@ -299,7 +307,8 @@ watch(
 const STEPPER_MIN_SCALE = 0.5
 const stepperScale = (zoom: number) => Math.min(1, Math.max(STEPPER_MIN_SCALE, zoom))
 
-/** How many positions wide the margin is shown at this zoom (ticket 459): wide enough that the Frame's corner controls, which stop shrinking at half size, stay inside it. */
+/** How many positions wide the margin is shown at this zoom (ticket 459): wide enough that the Frame's corner
+ * controls, which stop shrinking at half size, stay inside it. */
 const shownMargin = computed(() =>
   marginAt({
     neededPx: cornerControlsReachPx(stepperScale(props.zoom), touchInput.value),
@@ -308,13 +317,15 @@ const shownMargin = computed(() =>
   }),
 )
 
-/** Where the Frame is on screen, none once it is out of view (ticket 417, 427, 452): told to the margin steppers, the Move handle's key stop and the edit toggle. */
+/** Where the Frame is on screen, none once it is out of view (ticket 417, 427, 452): told to the margin steppers,
+ * the Move handle's key stop and the edit toggle. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = props.project.frame
   if (!frame || size.value.width === 0) return undefined
   const box = surface.value.frameBox(frame)
   const outer = surface.value.beadBox(withMargin(frame, shownMargin.value))
-  // Scrolled wholly out of view, the Frame has no controls to keep on screen: they are clamped to the box only while some of it shows.
+  // Scrolled wholly out of view, the Frame has no controls to keep on screen: they are clamped to the box only while
+  // some of it shows.
   const { width, height } = size.value
   if (outer.x + outer.width <= 0 || outer.y + outer.height <= 0 || outer.x >= width || outer.y >= height) return undefined
   const { fontPx, gap } = rulers.value.scale
@@ -338,11 +349,8 @@ defineExpose({ rulerLayout: rulers, pressMoveHandle })
 /** Animation frames asked for and not yet run, so they can be cancelled with the surface. */
 const pendingFrames = new Set<number>()
 
-/**
- * A draw that waits for the next animation frame and runs once however many times it is asked first (a fast pinch or
- * wheel sends many events per frame, each changing zoom or scroll): it then draws what is current. Where there are no
- * animation frames, it draws at once.
- */
+/** A draw that waits for the next animation frame and runs once however often asked (pinch/wheel burst); draws at
+ * once without frames. */
 function oncePerFrame(draw: () => void): () => void {
   let frame: number | undefined
   return () => {
@@ -362,21 +370,21 @@ function oncePerFrame(draw: () => void): () => void {
   }
 }
 
-/**
- * Whether finished rows are drawn at their normal color (ticket 352): while a mouse or a Pencil hovers a finished row, or
- * after a tap on a finished row, which toggles it until the next tap. A view setting, not saved and not an Undo step.
- */
+/** Whether finished rows show their normal color (ticket 352): while hovered by mouse/Pencil, or toggled by a tap.
+ * View only, not saved or Undo. */
 const hovered = ref(false)
 const finishedRestored = ref(false)
 const showFinished = computed(() => hovered.value || finishedRestored.value)
-/** Where a mouse or a Pencil last was over the surface, so the hover can be asked again when the Project moves under it. */
+/** Where a mouse or a Pencil last was over the surface, so the hover can be asked again when the Project moves under
+ * it. */
 let hoverPoint: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
 
 function hoversFinishedRow(bead: GridPosition | undefined): boolean {
   return bead !== undefined && isInFinishedRow(props.project, bead)
 }
 
-/** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just those. */
+/** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just
+ * those. */
 function drawCells(): void {
   const canvas = baseEl.value
   if (!canvas || size.value.width === 0 || size.value.height === 0) {
@@ -440,11 +448,9 @@ function clearMove(): void {
   if (baseEl.value) baseEl.value.style.transform = ''
 }
 
-/**
- * Draws the beads, except while a very large piece is being panned or zoomed (ticket 349): there a redraw per step
- * would freeze the app, so the bitmap already drawn is moved and scaled to follow the gesture, and drawn sharp once it
- * has been still for SETTLE_MS. Anything else that changes the picture (an edit, a theme, a rotation, a resize) draws at once.
- */
+// Draws the beads, except while a very large piece is panned or zoomed (ticket 349): then the drawn bitmap is moved and
+// scaled to follow, and drawn sharp after SETTLE_MS still, since a redraw per step would freeze the app. Other changes
+// (edit, theme, rotation, resize) draw at once.
 function drawCellsOrMove(): void {
   const before = drawn
   const canvas = baseEl.value
@@ -481,16 +487,16 @@ function drawCellsOrMove(): void {
   }, SETTLE_MS)
 }
 
-/**
- * Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left corner: over the
- * beads, for a mouse or a hovering pen, with the OS pointer hidden. None over the margin that refuses a bead, with a
- * tool that moves the canvas, while the Frame is set, or for a finger, which has no hover.
- */
+// Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left: over beads, for
+// a mouse or hovering pen (OS pointer hidden). None over the refusing margin, with a canvas-moving tool, while the
+// Frame is set, or for a finger (no hover).
 const markerAt = ref<{ x: number; y: number }>()
-/** Whether the pointer last seen over the surface is one that draws and hovers: not a finger, not the one the input mode keeps for moving the canvas. */
+/** Whether the pointer last seen over the surface is one that draws and hovers: not a finger, not the one the input
+ * mode keeps for moving the canvas. */
 let hoverDraws = false
 
-/** Puts the marker where the hovering pointer is, if it is over a bead it may place; asked again when the canvas moves under a still pointer. */
+/** Puts the marker where the hovering pointer is, if it is over a bead it may place; asked again when the canvas
+ * moves under a still pointer. */
 function placeMarker(): void {
   const bead = hoverPoint && hoverDraws && !dragging.value && !framing.value ? beadUnder(hoverPoint) : undefined
   markerAt.value = hoverPoint && bead && !refusesMargin(bead) ? pointInSurface(hoverPoint) : undefined
@@ -505,11 +511,13 @@ function hideMarker(): void {
 /** How visible the Frame margin's outline is, 0 to 1: animated further down, drawn by the overlay. */
 /** Whether a Frame gesture is in progress (a press that grabbed the Frame or drew a new one). */
 const framing = ref(false)
-/** Whether a Frame gesture is in progress or a stepper has just changed the size: the size tooltip shows only then (ticket 452). */
+/** Whether a Frame gesture is in progress or a stepper has just changed the size: the size tooltip shows only then
+ * (ticket 452). */
 const sizeFlash = ref(false)
 let sizeTimer: ReturnType<typeof setTimeout> | undefined
 const sizeShown = computed(() => framing.value || sizeFlash.value)
-/** The Frame's size tooltip follows a size change that did not come from a drag (a margin stepper, a key) for a moment. */
+/** The Frame's size tooltip follows a size change that did not come from a drag (a margin stepper, a key) for a
+ * moment. */
 watch(
   () => [props.project.frame?.columns, props.project.frame?.rows],
   () => {
@@ -556,7 +564,8 @@ function drawOverlay(): void {
   }
 }
 
-// What is under a still pointer changes when the canvas moves or zooms, or the weaver's row does (Undo, the Progress bar).
+// What is under a still pointer changes when the canvas moves or zooms, or the weaver's row does (Undo, the Progress
+// bar).
 watch([() => props.project, () => props.zoom, () => props.scroll], () => {
   placeMarker()
   if (hoverPoint) {
@@ -597,12 +606,9 @@ watch(
   { flush: 'post' },
 )
 
-/**
- * Pointer events (ticket 60), not mouse events, so a paint or erase stroke works the same by mouse, touch and pen. The
- * surface is one element, so which bead a pointer is on is worked out from where it is (see the Surface view's pointToBead) instead of being
- * told by the bead's own element; and, as an element's pointerenter did, only a change of bead is news. A touch or pen
- * contact keeps its implicit capture on the surface, so the moves of a stroke go on arriving here.
- */
+// Pointer events (ticket 60), not mouse events, so strokes work the same by mouse, touch and pen. The surface is one
+// element, so the bead is worked out from the position (the Surface view's pointToBead), and only a change of bead is
+// news. Touch/pen keep implicit capture on the surface.
 const overBead = ref(false)
 /** Whether the pointer is over the Frame's margin with a tool that cannot place beads there. */
 const overRefusedMargin = ref(false)
@@ -613,10 +619,9 @@ const adjusting = ref(false)
 const handleCursor = ref<string>()
 let lastBead: GridPosition | undefined
 
-/**
- * The Frame margin's outline (ticket 276, Frame card): always shown with a Frame (ticket 452) and for 1s after a press in the margin is refused, faded in and out over --duration-fast. The fade is redrawn on the overlay frame by frame;
- * with reduced motion it is shown and hidden at once.
- */
+// The Frame margin's outline (ticket 276, Frame card): always shown with a Frame (ticket 452) and 1s after a refused
+// margin press, faded over --duration-fast, redrawn on the overlay frame by frame; with reduced motion shown and hidden
+// at once.
 const SIZE_FLASH_MS = 1200
 const MARGIN_FADE_MS = 120
 const REFUSED_PRESS_MS = 1000
@@ -675,10 +680,8 @@ function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPositi
   return surface.value.pointToBead({ x: event.clientX - box.left, y: event.clientY - box.top })
 }
 
-/**
- * The color chip beside the eyedropper (ticket 403): what a press would take, shown live as the pointer moves over the
- * beads, as paint programs do. Over an empty cell, or for a finger (which has no hover), there is no chip.
- */
+/** The color chip beside the eyedropper (ticket 403): what a press would take, live over beads; none over an empty
+ * cell or for a finger. */
 const pickChip = ref<{ x: number; y: number; hex: string; flipX: boolean; flipY: boolean }>()
 
 function placePickChip(event: PointerEvent, bead: GridPosition | undefined): void {
@@ -695,7 +698,8 @@ function placePickChip(event: PointerEvent, bead: GridPosition | undefined): voi
   pickChip.value = { x, y, hex, flipX: x > box.width - PICK_CHIP_ROOM.x, flipY: y > box.height - PICK_CHIP_ROOM.y }
 }
 
-/** The room the chip needs right of and below the tip, in px: its width with a full hex, and its height, plus the offset. */
+/** The room the chip needs right of and below the tip, in px: its width with a full hex, and its height, plus the
+ * offset. */
 const PICK_CHIP_ROOM = { x: 110, y: 40 }
 
 // A zoom, scroll or end of the pick leaves the chip showing a bead that is no longer under the pointer.
@@ -706,7 +710,8 @@ watch(
   },
 )
 
-/** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket 428). */
+/** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket
+ * 428). */
 function refusesSelectionStart(bead: GridPosition): boolean {
   return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead, shownMargin.value)
 }
@@ -721,21 +726,21 @@ function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): b
   return a?.row === b?.row && a?.column === b?.column
 }
 
-/**
- * A finger has no true hover, so its every "hover" arrives glued to a press or a drag -- one bead flashed a preview
- * of what a same-instant paint already shows. Suppressing it there is `responsive.md`'s "no hover paint preview" for
- * a coarse pointer; a Pencil keeps its real hover, and a mouse or trackpad was never touch to begin with.
- */
+// A finger has no true hover: its "hover" arrives glued to a press or drag, flashing a preview of what a same-instant
+// paint shows. Suppressed there (`responsive.md`, "no hover paint preview" for coarse pointers); a Pencil keeps its
+// hover, a mouse was never touch.
 function hoversFor(event: PointerEvent): boolean {
   return event.pointerType !== 'touch'
 }
 
-/** Whether this pointer is the one that moves the canvas in the input mode (ticket 325): Pen mode's finger and mouse, Mouse mode's pen. */
+/** Whether this pointer is the one that moves the canvas in the input mode (ticket 325): Pen mode's finger and
+ * mouse, Mouse mode's pen. */
 function movesCanvas(event: PointerEvent): boolean {
   return props.inputMode !== undefined && !pointerDraws(props.inputMode, event.pointerType)
 }
 
-/** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle button on any tool, or the pointer the input mode keeps for moving. */
+/** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle button on any tool, or the
+ * pointer the input mode keeps for moving. */
 function startsDrag(event: PointerEvent): boolean {
   return handMoves.value || event.button === 1 || movesCanvas(event)
 }
@@ -751,7 +756,8 @@ function cellUnder(event: PointerEvent): GridPosition {
   return surface.value.pointToCell(pointInSurface(event))
 }
 
-/** What a press grabs of the Frame's chrome (ticket 452): the Move handle always, a resize handle only while edit is on; nothing otherwise, so the tool gets the press. */
+/** What a press grabs of the Frame's chrome (ticket 452): the Move handle always, a resize handle only while edit is
+ * on; nothing otherwise, so the tool gets the press. */
 function framePress(event: PointerEvent): FramePress | undefined {
   const point = pointInSurface(event)
   const move = moveHandle.value
@@ -850,11 +856,9 @@ function onPointerDown(event: PointerEvent): void {
   }
 }
 
-/**
- * Reports the hover for the preview, plus a drag move when a button is held: primary continues a paint/fill stroke
- * (ticket 24), secondary an erase stroke (ticket 25). `buttons` reads 1 for a touch/pen still in contact, so the same
- * primary-move branch covers all three input kinds without checking pointerType.
- */
+// Reports the hover for the preview, plus a drag move when a button is held: primary continues a paint/fill stroke
+// (ticket 24), secondary an erase (ticket 25). `buttons` is 1 for touch/pen in contact, so one branch covers all three
+// input kinds.
 function onPointerMove(event: PointerEvent): void {
   if (adjusting.value) {
     emit('selection-drag', cellUnder(event))
@@ -878,12 +882,14 @@ function onPointerMove(event: PointerEvent): void {
     lastPoint = { x: event.clientX, y: event.clientY }
     return
   }
-  // A finger has no true hover: only a mouse or a Pencil restores the finished rows, and only by being over one of them.
+  // A finger has no true hover: only a mouse or a Pencil restores the finished rows, and only by being over one of
+  // them.
   const bead = beadUnder(event)
   hoverPoint = event.pointerType === 'touch' ? undefined : { clientX: event.clientX, clientY: event.clientY }
   hovered.value = hoverPoint !== undefined && hoversFinishedRow(bead)
   hoverDraws = hoversFor(event) && !movesCanvas(event)
-  // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does the pointer that only moves the canvas.
+  // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does the pointer that only
+  // moves the canvas.
   if (handMoves.value || movesCanvas(event)) {
     overBead.value = false
     overRefusedMargin.value = false
@@ -947,7 +953,8 @@ function wheelPx(delta: number, mode: number): number {
   return mode === 1 ? delta * 16 : mode === 2 ? delta * size.value.height : delta
 }
 
-/** Ctrl/⌘ + wheel zooms (a trackpad's pinch arrives the same way); the wheel on its own moves the canvas, Shift turning a vertical wheel sideways. */
+/** Ctrl/⌘ + wheel zooms (a trackpad's pinch arrives the same way); the wheel on its own moves the canvas, Shift
+ * turning a vertical wheel sideways. */
 function onWheel(event: WheelEvent): void {
   event.preventDefault()
   noteWheel()
@@ -1041,21 +1048,21 @@ onBeforeUnmount(() => {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  /*
-   * Without this (ticket 60), a touch/pen drag across the canvas is fair game for the browser to treat as a scroll/pan
-   * gesture instead of delivering it to the pointermove handler.
-   */
+  /* Without this (ticket 60), the browser may treat a touch/pen drag as scroll/pan instead of delivering
+   * pointermove. */
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
 }
 
-/* Over the canvas's beads the OS pointer is hidden: the overlay draws a bead-shaped marker in its place (BeadHover card, ticket 353). */
+/* Over the canvas's beads the OS pointer is hidden: the overlay draws a bead-shaped marker in its place (BeadHover
+ * card, ticket 353). */
 .project-surface--over-bead {
   cursor: none;
 }
 
-/* Over the Frame's margin with a tool that cannot place beads there (Frame card, ticket 276); it wins over the bead marker. */
+/* Over the Frame's margin with a tool that cannot place beads there (Frame card, ticket 276); it wins over the bead
+ * marker. */
 .project-surface--refused {
   cursor: not-allowed;
 }
@@ -1065,7 +1072,8 @@ onBeforeUnmount(() => {
   cursor: grab;
 }
 
-/* The live color under the eyedropper: a small chip a little below and right of the tip, never in the way of the press. */
+/* The live color under the eyedropper: a small chip a little below and right of the tip, never in the way of the
+ * press. */
 .project-surface__pick-chip {
   position: absolute;
   display: flex;

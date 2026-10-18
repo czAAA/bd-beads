@@ -1,13 +1,8 @@
 <script setup lang="ts">
 import { useId } from 'vue'
 
-/**
- * A single-line input (ticket 149; TextField and NumberField cards): 40px, `elevated` fill, a `field-line` border,
- * 14px text with 12px padding, the placeholder in `muted`. Focus is an `ink` border and the focus ring; `invalid` is a
- * `danger` border; disabled is `surface` with `faint` text. A `unit` is a label on the top border, 12px from the right, in `meta-small` on a patch that cuts the border, with the field's `radius-md` corners (ticket 224;
- * NumberField card); it takes the border's color and reaches screen readers once, as the input's description. Attributes
- * (id, type, min, step, inputmode, data-testid) go to the <input> itself.
- */
+// A single-line input (ticket 149): a `unit` is a label on the top border that cuts it (ticket 224) and reaches screen
+// readers once, as the description; attributes go to the <input> itself.
 defineOptions({ inheritAttrs: false })
 withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean }>(), { unit: undefined })
 const value = defineModel<string | number>()

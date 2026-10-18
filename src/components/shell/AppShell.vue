@@ -59,19 +59,18 @@ const {
 </template>
 
 <style scoped>
-/*
- * The app shell (ticket 141, ADR 0021): notice row, then the body, filling the screen exactly. The page itself never
- * scrolls: the Project scrolls inside the canvas box, so the canvas box's own top and bottom stay in view on a Project
- * of any size.
- */
+/* The app shell (ticket 141, ADR 0021): notice row, then the body, filling the screen. The page never scrolls; the
+ * Project scrolls inside the canvas box. */
 .app-shell {
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
-  /* Pinned to the screen, not sized by 100dvh: iOS's dvh can fall short of the screen and leave a band under the Dock. */
+  /* Pinned to the screen, not sized by 100dvh: iOS's dvh can fall short of the screen and leave a band under the
+   * Dock. */
   position: fixed;
   inset: 0;
-  /* clip, not hidden: nothing, not even a focus() on a sheet placed off-screen, may scroll the shell and push the Canvas strip out of view (iPad Safari). */
+  /* clip, not hidden: nothing, not even a focus() on a sheet placed off-screen, may scroll the shell and push the
+   * Canvas strip out of view (iPad Safari). */
   overflow: clip;
   background: var(--canvas);
 }
@@ -113,12 +112,8 @@ const {
   padding: var(--space-8) var(--space-16) 0;
 }
 
-/*
- * The body (ticket 383, ADR 0046, ticket 439): the canvas box is the screen, `screen-edge` (12px) from every edge, or the
- * safe-area inset where that is larger. Nothing sits below it: the Progress bar is its footer, and the Tool pill floats
- * over its drawing area. minmax(0, 1fr) lets the canvas box shrink below its
- * content instead of pushing the page wider.
- */
+/* Body (tickets 383, 439, ADR 0046): the canvas box is the screen, `screen-edge` (12px) from every edge or the
+ * safe-area inset if larger. */
 .app-shell__body {
   display: grid;
   flex: 1 1 auto;
@@ -129,12 +124,8 @@ const {
   padding: var(--body-inset);
 }
 
-/*
- * Ticket 450: the gap is a transparent frame over the body's padding that takes `touch-action: none`, so a drag or swipe
- * that starts there pans nothing. It is a frame, not `touch-action` on the body, because that would also reach the canvas box
- * (touch-action intersects down to the nearest scroll container). It covers the whole body box, so the positioned canvas box
- * must paint after it (it does, in tree order); keep it positioned.
- */
+/* Ticket 450: a transparent frame over the body's padding with `touch-action: none`, so a drag there pans nothing. A
+ * frame, not touch-action on the body, which would reach the canvas box too. */
 .app-shell__body::before {
   content: '';
   position: absolute;

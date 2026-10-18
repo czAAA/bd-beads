@@ -2,10 +2,8 @@ import { expect, test } from '@playwright/test'
 import { openApp, openDockSheet } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/**
- * The Canvas section of the Project panel open on a non-default background (tickets 252, 443): Linen in light, Ash (the
- * lightest dark one, with its own ruler, empty bead and rim colors) in dark. The picture is the canvas strip, the panel and the drawing area.
- */
+/** The Canvas section open on a non-default background (tickets 252, 443): Linen in light, Ash (lightest dark, own
+ * ruler/bead/rim colors) in dark. */
 for (const [scheme, choice, name] of [
   ['light', 2, 'linen'],
   ['dark', 6, 'ash'],
@@ -24,7 +22,8 @@ for (const [scheme, choice, name] of [
   })
 }
 
-/** Squares for Position marks (ticket 348): the Canvas with an outline round each empty position, per Technique, and the Dots | Squares choice. */
+/** Squares for Position marks (ticket 348): the Canvas with an outline round each empty position, per Technique, and
+ * the Dots | Squares choice. */
 for (const technique of ['loom', 'peyote', 'brick'] as const) {
   test(`position marks as squares, ${technique}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })

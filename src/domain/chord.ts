@@ -1,9 +1,6 @@
-/**
- * One key or combination. `key` (any of the listed `event.key` values, case-insensitively) or `code` (the physical
- * key, for the digits Shift turns into symbols) picks the key. `mod` is Ctrl or ⌘, `ctrl` is Ctrl alone; a chord with
- * neither needs both unpressed. `shift` must match exactly, unless it is `'any'` (the key itself needs Shift on some
- * layouts, like `?` and `+`). `label` is the key as the Keyboard shortcuts dialog and the key chips write it.
- */
+// One key or combination. `key` (any listed `event.key`, case-insensitive) or `code` (physical key, for digits Shift
+// turns into symbols) picks it. `mod` is Ctrl or ⌘, `ctrl` Ctrl alone; neither means both unpressed. `shift` must match
+// unless `'any'` (some layouts need Shift for `?`). `label` is how the shortcuts dialog and chips write it.
 export interface Chord {
   key?: string | readonly string[]
   code?: string

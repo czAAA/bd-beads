@@ -5,16 +5,9 @@ import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
 import { markOn } from './swatchMark'
 
-/**
- * One color chip (ticket 333; PaletteSwatches card), for the Palette, the Image colors popover and the Canvas color
- * popover. Its Tooltip is the name "Color", the hex as the body and, where it has one, the key chip. `label` is the
- * accessible name (the color's name and position); attributes (`data-*`, `tabindex`, `@keydown`) go to the button.
- *
- * The remove × (added colors only): shown on the active swatch, while a mouse or an Apple Pencil hovers an added swatch
- * (touch cannot hover) and while keyboard focus is on it. It sits top-right inside the swatch with no background,
- * drawn black or white, whichever reads better on this hex, with a thin halo of the other, in an invisible hit
- * area that reaches 4px past the glyph, so a click on the swatch body never removes.
- */
+// One color chip (ticket 333; PaletteSwatches card). Tooltip: name, hex body, key chip if any. `label` is the a11y
+// name. The remove x (added colors only) shows on the active swatch, on hover and on keyboard focus, with a hit area
+// 4px past it, so a click on the body never removes.
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
@@ -123,8 +116,9 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
 </template>
 
 <style scoped>
-/* The chip's size is the parent's to set: `--swatch-size` (the whole cell by default); `--swatch-min` a floor for touch (ticket 166); `--swatch-gap` is the color the
- * selected ring's gap is drawn in, the surface the swatch sits on. */
+/* The chip's size is the parent's to set: `--swatch-size` (the whole cell by default); `--swatch-min` a floor for
+ * touch (ticket 166); `--swatch-gap` is the color the selected ring's gap is drawn in, the surface the swatch sits
+ * on. */
 .swatch {
   position: relative;
   display: block;
@@ -169,7 +163,8 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   outline-offset: var(--focus-offset);
 }
 
-/* A button the size of the × and its 4px inset, with no look of its own: only the × shows, in the swatch's top-right corner. It stays small so a second click on the swatch body never removes. */
+/* A button the size of the × and its 4px inset, with no look of its own: only the × shows, in the swatch's top-right
+ * corner. It stays small so a second click on the swatch body never removes. */
 .swatch__remove {
   position: absolute;
   top: 0;

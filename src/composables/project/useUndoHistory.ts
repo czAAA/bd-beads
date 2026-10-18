@@ -12,22 +12,20 @@ import {
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { snapshotOf, type Project, type UndoEntry } from '../../domain/project'
 
-/** What the history needs from the app shell: the open Project, Mirror's live axis counts, and Edit's way of putting a snapshot back. */
+/** What the history needs from the app shell: the open Project, Mirror's live axis counts, and Edit's way of putting
+ * a snapshot back. */
 export interface UndoHistoryDeps {
   currentProject: () => Project | undefined
-  /** Mirror's live axis counts, recorded with the snapshot of the current state so a Redo/Undo through it round-trips (ADR 0036). */
+  /** Mirror's live axis counts, recorded with the snapshot of the current state so a Redo/Undo through it
+   * round-trips (ADR 0036). */
   mirrorAxisCounts: () => MirrorAxisCounts
   /** Edit's restore: writes the snapshot back and runs the session resets, without Edit's guards (ADR 0036). */
   restore: (snapshot: UndoEntry) => void
 }
 
-/**
- * Undo/redo (tickets 34, 48; ADRs 0023, 0036): the stacks of snapshots (see domain/history.ts) and the Undo and Redo
- * steps through them. Every entry is a full snapshot, pushed by Edit through record(). It's an editing-session aid, not
- * part of the saved Project, so the app shell calls reset() whenever the open Project changes.
- *
- * Deps are read lazily (at call time), so the shell can pass this and Edit to each other.
- */
+// Undo/redo (tickets 34, 48; ADRs 0023, 0036): stacks of full snapshots (domain/history.ts) pushed by Edit through
+// record(); not saved with the Project, so the shell reset()s on a change. Deps are read lazily, so the shell can pass
+// this and Edit to each other.
 export function useUndoHistory(deps: UndoHistoryDeps) {
   const history = ref<History<UndoEntry>>(emptyHistory())
 
@@ -56,7 +54,8 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
     }
   }
 
-  /** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than drawing, so it's not blocked by the Row progress lock. */
+  /** Re-applies whatever Undo most recently stepped back from (ticket 34); like Undo, replays history rather than
+   * drawing, so it's not blocked by the Row progress lock. */
   function onRedo() {
     const project = deps.currentProject()
     const step = project && redoStep(history.value, snapshotOf(project, deps.mirrorAxisCounts()))

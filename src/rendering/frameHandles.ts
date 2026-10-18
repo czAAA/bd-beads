@@ -3,11 +3,9 @@ import type { FrameEdge } from '../domain/frame'
 import type { Rotation } from '../domain/grid'
 import type { SurfaceView } from './surfaceView'
 
-/**
- * The handles a Frame carries while it is being set (Frame card): eight round it with a mouse or pen (9px squares), four
- * at the corners on touch (16px). A handle is named by where it stands on screen; what it drags is the Frame's own edge,
- * which a legacy turned view carries to another side.
- */
+// The handles a Frame carries while being set (Frame card): eight with a mouse or pen (9px squares), four corners on
+// touch (16px). A handle is named by where it stands on screen; what it drags is the Frame's own edge, which a legacy
+// turned view carries to another side.
 export type HandleId = 'top-left' | 'top' | 'top-right' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left'
 
 export interface Handle {
@@ -24,7 +22,8 @@ export const TOUCH_HANDLE_PX = 16
 const ALL: readonly HandleId[] = ['top-left', 'top', 'top-right', 'right', 'bottom-right', 'bottom', 'bottom-left', 'left']
 const CORNERS: readonly HandleId[] = ['top-left', 'top-right', 'bottom-right', 'bottom-left']
 
-/** The handles round a rectangle on screen (the Frame's line, not its beads), the eight or, for touch, the four corners. */
+/** The handles round a rectangle on screen (the Frame's line, not its beads), the eight or, for touch, the four
+ * corners. */
 export function frameHandles(box: { x: number; y: number; width: number; height: number }, touch: boolean): Handle[] {
   const size = touch ? TOUCH_HANDLE_PX : HANDLE_PX
   const left = box.x
@@ -46,19 +45,19 @@ export function frameHandles(box: { x: number; y: number; width: number; height:
   return (touch ? CORNERS : ALL).map((id) => ({ id, x: places[id][0], y: places[id][1], size }))
 }
 
-/** How far from a handle's centre a press still grabs it (ticket 414): the visible squares stay small, the target does not. */
+/** How far from a handle's centre a press still grabs it (ticket 414): the visible squares stay small, the target
+ * does not. */
 const HIT_RADIUS_PX = 14
 const TOUCH_HIT_RADIUS_PX = 24
 
-/** The reach of a handle on a rectangle: 14px for a mouse or pen, 24px for touch, never more than a third of the shorter side so a small rectangle keeps an inside to move. */
+/** The reach of a handle on a rectangle: 14px for a mouse or pen, 24px for touch, never more than a third of the
+ * shorter side so a small rectangle keeps an inside to move. */
 export function hitRadius(box: { width: number; height: number }, touch: boolean): number {
   return Math.min(touch ? TOUCH_HIT_RADIUS_PX : HIT_RADIUS_PX, Math.min(box.width, box.height) / 3)
 }
 
-/**
- * The handle a press at a point grabs, if any: the nearest within `radius` of its centre, except that a corner within
- * reach beats an edge handle that is nearer. A press inside the rectangle near a corner is therefore that corner's.
- */
+/** The handle a press grabs, if any: the nearest within `radius`, except that a corner in reach beats a nearer edge
+ * handle. */
 export function handleAt(handles: readonly Handle[], point: { x: number; y: number }, radius: number): Handle | undefined {
   const reached = handles
     .map((handle) => ({ handle, distance: Math.hypot(point.x - handle.x, point.y - handle.y) }))
@@ -67,7 +66,8 @@ export function handleAt(handles: readonly Handle[], point: { x: number; y: numb
   return (reached.find(({ handle }) => CORNERS.includes(handle.id)) ?? reached[0])?.handle
 }
 
-/** The side of the displayed rectangle a handle sits on, as the side of the Frame it drags once the picture is turned a quarter at a time. */
+/** The side of the displayed rectangle a handle sits on, as the side of the Frame it drags once the picture is
+ * turned a quarter at a time. */
 const GRID_SIDE: Record<Rotation, Record<'top' | 'bottom' | 'left' | 'right', FrameEdge>> = {
   0: { top: 'top', bottom: 'bottom', left: 'left', right: 'right' },
   90: { top: 'left', right: 'top', bottom: 'right', left: 'bottom' },
@@ -81,10 +81,12 @@ export function handleEdges(rotation: Rotation, id: HandleId): FrameEdge[] {
   return sides.map((side) => GRID_SIDE[rotation][side])
 }
 
-/** What a press grabbed: one of the Frame's handles (with the edges it drags), its Move handle (ticket 452), its inside, or the Canvas. */
+/** What a press grabbed: one of the Frame's handles (with the edges it drags), its Move handle (ticket 452), its
+ * inside, or the Canvas. */
 export type FramePress = { kind: 'handle'; edges: FrameEdge[] } | { kind: 'move' } | { kind: 'inside' } | { kind: 'outside' }
 
-/** What a press at a point of the viewport grabs of a rectangle on screen: a handle first, then its inside, then the canvas round it. */
+/** What a press at a point of the viewport grabs of a rectangle on screen: a handle first, then its inside, then the
+ * canvas round it. */
 export function boxPressAt(box: { x: number; y: number; width: number; height: number }, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
   const handle = handleAt(frameHandles(box, touch), point, hitRadius(box, touch))
   if (handle) {

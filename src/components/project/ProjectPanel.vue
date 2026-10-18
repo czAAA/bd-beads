@@ -19,12 +19,9 @@ import CanvasSection from './CanvasSection.vue'
 import FrameControls from './FrameControls.vue'
 import NameOnExportsRow from './NameOnExportsRow.vue'
 
-/**
- * The body of Project (spec 0440, ticket 443; ProjectPanel card): everything about the open Project and nothing a tool
- * already does. The head (the name with a pencil to rename, and the save state), Technique, the Bead line with Replace
- * bead, the Canvas, Save and the exports, the "Name on exports" row, then Duplicate, Clear this Project and Delete this Project. The Frame's
- * Edit, Fit and Remove are not here. It only asks; the app shell does the work.
- */
+// The body of Project (spec 0440, ticket 443; ProjectPanel card): everything about the open Project that no tool already
+// does: head (name, rename pencil, save state), Technique, Bead line, Canvas, Save and exports, "Name on exports", then
+// Duplicate, Clear and Delete. The Frame's Edit, Fit and Remove are not here. It only asks; the app shell does the work.
 const props = defineProps<{
   project: Project
   /** The Project as summaries see it while a stroke is going on (useSettledProject), for Beads needed. */

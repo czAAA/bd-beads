@@ -9,11 +9,8 @@ import BeadPicture from './BeadPicture.vue'
 import ExampleFrame from './ExampleFrame.vue'
 import { ART_COLORS, POPPY } from './exampleArt'
 
-/**
- * Exports (ticket 218): an A4 page as the PDF draws it, with the technique word filling the page's width and the four
- * ways out beside it. The page is always light, whatever the theme (DESIGN.md §4.3), so it takes the export's own
- * colors; its word is scaled uniformly to the width, never stretched.
- */
+// Exports (ticket 218): an A4 page as the PDF draws it, the technique word scaled uniformly to the page width, and the
+// four ways out beside it. Always light, whatever the theme (DESIGN.md §4.3), so it takes the export's own colors.
 const { t } = useI18n()
 
 const FORMATS: { icon: IconName; label: () => string }[] = [
@@ -36,7 +33,8 @@ const paperStyle = {
   '--paper-board': PRINT_COLORS.board,
 }
 
-/** The word's box measured once its font is in, so the viewBox hugs the letters and the word fills the width at their own proportions. */
+/** The word's box measured once its font is in, so the viewBox hugs the letters and the word fills the width at
+ * their own proportions. */
 const wordEl = ref<SVGTextElement>()
 const wordBox = ref<{ x: number; y: number; width: number; height: number }>()
 const word = computed(() => t.value.form.techniqueLoom)
@@ -54,7 +52,8 @@ async function measure() {
 onMounted(measure)
 watch(word, measure)
 const wordView = computed(() => (wordBox.value ? `${wordBox.value.x} ${wordBox.value.y} ${wordBox.value.width} ${wordBox.value.height}` : '0 0 164 60'))
-/** Page units (the page is 180 wide): as tall as the word is at the page's width, up to 74, centred on the same line whatever its height. */
+/** Page units (the page is 180 wide): as tall as the word is at the page's width, up to 74, centred on the same line
+ * whatever its height. */
 const wordHeight = computed(() => (wordBox.value ? Math.min(74, (164 * wordBox.value.height) / wordBox.value.width) : 60))
 const wordStyle = computed(() => ({ height: `calc(${wordHeight.value} * var(--p))`, top: `calc(${150 - wordHeight.value / 2} * var(--p))` }))
 </script>

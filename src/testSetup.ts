@@ -1,24 +1,15 @@
 import { afterEach, beforeEach, vi } from 'vitest'
 
-/**
- * Page tests share one jsdom and one module cache per worker (ticket 420), so a file would otherwise start from the
- * modules the last one imported, mocks and module state included. Empty the cache first, and import what this file's
- * setup shares with its tests only afterwards, so both hold the same instance.
- */
+// Page tests share one jsdom and module cache per worker (ticket 420): empty the cache first, then import what setup
+// shares with tests.
 vi.resetModules()
 const { disableAutoUnmount, enableAutoUnmount } = await import('@vue/test-utils')
 const { browserDevicePreferences } = await import('./services/devicePreferences')
 const { installSurfaceLayout } = await import('./testUtils/surfaceLayout')
 
-/**
- * jsdom's PointerEvent doesn't redeclare `button`/`buttons` on its own prototype -- they're inherited, getter-only,
- * from MouseEvent.prototype (ticket 60). @vue/test-utils' `trigger(type, options)` re-assigns every option key onto
- * the constructed event afterwards, but only skips a key when `Object.getOwnPropertyDescriptor` finds a read-only
- * descriptor *directly on the event's own prototype* -- an inherited one doesn't count, so it doesn't realize
- * `button`/`buttons` are read-only and throws trying to set them. Copying the descriptors down as PointerEvent's own
- * makes @vue/test-utils see them and skip the (redundant -- the constructor already set them from `options`)
- * reassignment. `clientX`/`clientY` are the same (tests that press a Project at a point, ticket 106, set them).
- */
+// jsdom's PointerEvent inherits getter-only `button`/`buttons` (ticket 60); @vue/test-utils' trigger() only skips read-
+// only keys found on the event's own prototype and so throws. Copy the descriptors down onto PointerEvent so it skips
+// them; `clientX`/`clientY` likewise (ticket 106).
 if (typeof PointerEvent !== 'undefined') {
   for (const key of ['button', 'buttons', 'clientX', 'clientY'] as const) {
     const descriptor = Object.getOwnPropertyDescriptor(MouseEvent.prototype, key)
@@ -28,20 +19,15 @@ if (typeof PointerEvent !== 'undefined') {
   }
 }
 
-/**
- * A press swallowed by an overlay (swallowNextClick) waits on `document` for its click and drops away at the next press.
- * A test that presses outside an overlay without clicking would leave it to eat a click in a later test, or a later
- * file on this shared page, so every test ends with a press that lets it go.
- * Registered before the unmount below, so it runs after it (afterEach hooks run last-in first).
- */
+// A press swallowed by an overlay (swallowNextClick) waits for its click and would eat one in a later test or file, so
+// every test ends with a press that lets it go. Registered before the unmount below so it runs after it (afterEach runs
+// last-in first).
 afterEach(() => {
   document.dispatchEvent(new Event('pointerdown'))
 })
-/**
- * Unmount every wrapper after each test. A leaked App keeps its window keydown listeners and reactive watchers
- * alive, so each later test in the same file pays for every earlier one (App.test.ts went from ~26s to a fraction).
- */
-// Page tests share one jsdom per worker (ticket 420), so this runs once per file; the library throws on a second arming.
+/** Unmount every wrapper after each test: a leaked App's listeners and watchers slow every later test (~26s once). */
+// Page tests share one jsdom per worker (ticket 420), so this runs once per file; the library throws on a second
+// arming.
 disableAutoUnmount()
 enableAutoUnmount(afterEach)
 
@@ -56,11 +42,8 @@ if (typeof document !== 'undefined') {
   window.sessionStorage.clear()
 }
 
-/**
- * jsdom has no canvas: getContext logs "not implemented" and hands back nothing. A component that draws on one (the
- * Project renderer's surfaces) carries on without a context, so this only keeps that from being logged on every mount.
- * A test that wants to see what is drawn installs a fake instead (see testUtils/fakeCanvas.ts).
- */
+// jsdom has no canvas: getContext logs "not implemented"; silenced here. A test that checks drawing installs
+// testUtils/fakeCanvas.ts.
 if (typeof HTMLCanvasElement !== 'undefined') {
   HTMLCanvasElement.prototype.getContext = (() => null) as unknown as typeof HTMLCanvasElement.prototype.getContext
 }
@@ -72,12 +55,9 @@ beforeEach(() => {
   }
 })
 
-/**
- * jsdom has no matchMedia at all (ticket 168's useMediaQuery, currently only Drawer.vue): every query answers false
- * and never changes, so a component that reads one carries on rather than throwing. A test that cares installs
- * testUtils/fakeMatchMedia.ts over it instead, with vi.stubGlobal('matchMedia', ...) and its own vi.unstubAllGlobals()
- * in afterEach -- the same project useElementSize.test.ts's FakeResizeObserver uses for ResizeObserver.
- */
+// jsdom has no matchMedia (ticket 168's useMediaQuery): every query answers false so components carry on. A test that
+// cares installs testUtils/fakeMatchMedia.ts with vi.stubGlobal('matchMedia', ...) and vi.unstubAllGlobals() in
+// afterEach.
 if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
   window.matchMedia = ((query: string) =>
     ({
@@ -90,14 +70,12 @@ if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
     }) as unknown as MediaQueryList) as typeof window.matchMedia
 }
 
-/** Device preferences are read once and shared; a test seeds localStorage and then mounts, so each starts from what storage holds. */
+// Device preferences are read once and shared; a test seeds localStorage and then mounts, so each starts from what
+// storage holds.
 beforeEach(() => browserDevicePreferences.forget())
 
-/**
- * jsdom pretends to paint, so it has animation frames, and the Drawing surface waits for one before it draws (at most
- * once per frame). A test would then have to wait a frame after every change; with none, the surface draws at once. A
- * test of the waiting installs a fake with vi.stubGlobal('requestAnimationFrame', ...) and unstubs it afterwards.
- */
+// jsdom has animation frames, so the Drawing surface would wait one before drawing; with none it draws at once. Fake
+// rAF with vi.stubGlobal to test waiting.
 if (typeof window !== 'undefined') {
   Reflect.deleteProperty(window, 'requestAnimationFrame')
   Reflect.deleteProperty(window, 'cancelAnimationFrame')

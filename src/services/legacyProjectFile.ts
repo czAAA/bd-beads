@@ -2,7 +2,8 @@ import { normalizeProject, type GridProject, type Project } from '../domain/proj
 import { looksLikeProject, type ProjectFileContents } from '../domain/projectFile'
 
 const LEGACY_KINDS = ['bd-beads/pattern', 'bd-beads/library']
-/** Version 1 held a grid of cells per Project, 2 beads by position and a Frame (ADR 0026), 3 added Piece names (ticket 406). */
+// Version 1 held a grid of cells per Project, 2 beads by position and a Frame (ADR 0026), 3 added Piece names (ticket
+// 406).
 const LEGACY_VERSIONS = [1, 2, 3]
 
 interface LegacyProjectFile {
@@ -11,14 +12,8 @@ interface LegacyProjectFile {
   patterns: (Project | GridProject)[]
 }
 
-/**
- * Reads a plain-JSON Project file as written before ADR 0048: kinds `bd-beads/pattern` and `bd-beads/library`, the key
- * `patterns`, a full object per bead. Throws on anything else, like the current reader.
- *
- * Versions 1 to 3 are read, not just 1 and 2: the JSON files written until ADR 0048 already said version 3 (Piece names).
- *
- * @deprecated Ticket 392: the old `.json` files people already have. Remove it, and `.json` from the import picker, after release.
- */
+// Reads a plain-JSON Project file as before ADR 0048 (`bd-beads/pattern`, `bd-beads/library`, key `patterns`); versions
+// 1 to 3, as those files said 3. @deprecated Ticket 392: remove with `.json` from the import picker after release.
 export function parseLegacyProjectsFile(text: string): ProjectFileContents {
   let parsed: unknown
   try {

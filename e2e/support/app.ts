@@ -4,15 +4,14 @@ import { normalizeProject, type Project } from '../../src/domain/project'
 import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
 import type { Tool } from '../../src/domain/tool'
 
-/**
- * Opens the app with these Projects already in the library (the most recently updated one opens), or none at all. It
- * opens at the preview's address, or at `url` where a check serves the build itself.
- */
+/** Opens the app with these Projects in the library (the most recent opens), or none; at the preview's address or
+ * `url`. */
 export async function openApp(
   page: Page,
   projects: Project[],
   url = './',
-  /** Leave the storage note (ticket 399) to appear at the first save; by default the device has already seen it, so it never covers a check's clicks. */
+  /** Leave the storage note (ticket 399) to appear at the first save; by default the device has already seen it, so
+   * it never covers a check's clicks. */
   options: { storageNote?: boolean } = {},
 ): Promise<void> {
   if (!options.storageNote) {
@@ -53,7 +52,8 @@ export async function settle(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
 }
 
-/** One of the Canvas strip's panels (CanvasStrip card): Menu or Project, a dropdown from 1024px and a Top sheet under it. */
+/** One of the Canvas strip's panels (CanvasStrip card): Menu or Project, a dropdown from 1024px and a Top sheet
+ * under it. */
 type DockSheetButton = 'strip-project' | 'strip-menu'
 
 /** Opens Menu or Project (CanvasStrip card), closing whatever is open first — the strip buttons toggle, so clicking one
@@ -64,7 +64,8 @@ export async function openDockSheet(page: Page, dock: DockSheetButton): Promise<
   await settle(page)
 }
 
-/** Closes whatever is open: a bottom sheet (New Project, Saved Projects) with its Close button, then Menu or Project with the strip button that lit it; does nothing with none open. */
+/** Closes whatever is open: a bottom sheet (New Project, Saved Projects) with its Close button, then Menu or Project
+ * with the strip button that lit it; does nothing with none open. */
 export async function closeSheet(page: Page): Promise<void> {
   const close = page.getByTestId('sheet-close')
   while ((await close.count()) > 0) {
@@ -98,8 +99,8 @@ export async function copySelection(page: Page): Promise<void> {
   await settle(page)
 }
 
-/** Opens the New Project form (modal sheet): with no Project open the layout shows the project bar in the Progress bar's
- * place (AppBottomBar card) instead of the Toolbox layout's inline form. */
+/** Opens the New Project form (modal sheet): with no Project open the layout shows the project bar in the Progress
+ * bar's place (AppBottomBar card) instead of the Toolbox layout's inline form. */
 export async function openNewProjectForm(page: Page): Promise<void> {
   await page.getByTestId('phone-bar-new-project').click()
   await settle(page)
@@ -129,10 +130,8 @@ export async function setZoom(page: Page, percent: number): Promise<void> {
 
 type Box = { x: number; y: number; width: number; height: number }
 
-/**
- * The surface's box moved back by how far the view is scrolled (the canvas opens centred on the Frame, so that is not
- * 0): the box `beadCentre` wants, whose corner is where the Project's own corner is on screen.
- */
+/** The surface's box moved back by the view's scroll (the canvas opens centred on the Frame, so not 0): what
+ * `beadCentre` wants. */
 export async function projectBox(page: Page, box: Box): Promise<Box> {
   const grid = page.getByTestId('project-surface')
   const scrollX = Number(await grid.getAttribute('data-scroll-x')) || 0
@@ -140,7 +139,8 @@ export async function projectBox(page: Page, box: Box): Promise<Box> {
   return { ...box, x: box.x - scrollX, y: box.y - scrollY }
 }
 
-/** The Project's corner and the canvas's size on screen, scrolled into view first so the numbers are usable as pointer coordinates. */
+/** The Project's corner and the canvas's size on screen, scrolled into view first so the numbers are usable as
+ * pointer coordinates. */
 export async function gridBox(page: Page): Promise<Box> {
   const grid: Locator = page.getByTestId('project-surface')
   await grid.scrollIntoViewIfNeeded()
@@ -151,7 +151,8 @@ export async function gridBox(page: Page): Promise<Box> {
   return projectBox(page, box)
 }
 
-/** States the Schema size in the size step Convert image opens after a picture is chosen (ticket 342), in beads, and continues to framing. */
+/** States the Schema size in the size step Convert image opens after a picture is chosen (ticket 342), in beads, and
+ * continues to framing. */
 export async function stateConvertSize(page: Page, columns: number, rows: number): Promise<void> {
   const unit = page.getByTestId('convert-size-unit').locator('[data-value="beads"]')
   await unit.click()

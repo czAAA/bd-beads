@@ -7,10 +7,8 @@ import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { restoreBeads, type Project } from './project'
 
-/**
- * A rectangular area of a Project's grid, marked out with the Select tool (see CONTEXT.md's Selection entry).
- * Addressed by its top-left corner and its size in cells, so it reads the same way a Project's own grid does.
- */
+/** A rectangular area of a Project's grid, marked out with the Select tool (CONTEXT.md's Selection): top-left corner
+ * plus size in cells. */
 export interface Selection {
   top: number
   left: number
@@ -18,36 +16,25 @@ export interface Selection {
   columns: number
 }
 
-/**
- * The cells one Copy snapshotted, ready to stamp elsewhere (see CONTEXT.md's Copy entry). Holds colors rather than
- * grid positions: where it came from stops mattering the moment it's copied, and a block is stamped at whatever
- * position Paste is aimed at.
- */
+/** The cells one Copy snapshotted (CONTEXT.md's Copy): colors, not grid positions, stamped wherever Paste is aimed. */
 export interface CopiedBlock {
   rows: number
   columns: number
-  /**
-   * Row-major cell colors, relative to the block's own top-left corner. `null` marks a cell that was empty in the
-   * Selection — a hole, which Paste skips rather than erasing what's underneath it (see pastedCells).
-   */
+  /** Row-major cell colors relative to the block's top-left. `null` is a hole that Paste skips (see pastedCells). */
   colors: (string | null)[][]
-  /**
-   * The first drawn bead in reading order (leftmost of the top row), relative to the block's top-left corner: the cell
-   * the pointer's bead lands on when stamping (ticket 437, ADR 0057), so no empty corner offsets the stamp.
-   */
+  /** First drawn bead in reading order, relative to the top-left: where the pointer's bead lands (ticket 437, ADR
+   * 0057). */
   anchor: { row: number; column: number }
 }
 
-/** One cell a Paste would land on, with the color it would get — what both the paste preview and the paste itself are built from. */
+/** One cell a Paste would land on, with the color it would get — what both the paste preview and the paste itself
+ * are built from. */
 export interface PastedCell extends GridPosition {
   color: string
 }
 
-/**
- * The Selection a drag from `anchor` to `focus` marks out. Either corner may be the one the drag started from, so
- * dragging up-left covers the same rectangle as dragging down-right. The Canvas has no edge to clamp to
- * (ADR 0026): a Selection covers whatever positions the drag crossed, painted or not.
- */
+/** The Selection a drag from `anchor` to `focus` marks out, from either corner. The Canvas has no edge to clamp to
+ * (ADR 0026). */
 export function selectionBetween(anchor: GridPosition, focus: GridPosition): Selection {
   const rowsSpanned = [anchor.row, focus.row]
   const columnsSpanned = [anchor.column, focus.column]
@@ -62,15 +49,18 @@ export function selectionBetween(anchor: GridPosition, focus: GridPosition): Sel
   }
 }
 
-/** A box of beads carries guides (rulers, selection handles) once it spans at least this many beads in total, i.e. more than 4 (tickets 377, 435); a single row of five does. */
+/** A box of beads carries guides (rulers, selection handles) once it spans at least this many beads in total, i.e.
+ * more than 4 (tickets 377, 435); a single row of five does. */
 const GUIDED_MIN_BEADS = 5
 
-/** Whether a box of this many rows and columns is big enough for guides: the one rule behind a Piece area's rulers and a Selection's handles. */
+/** Whether a box of this many rows and columns is big enough for guides: the one rule behind a Piece area's rulers
+ * and a Selection's handles. */
 export function hasGuides(box: { rows: number; columns: number }): boolean {
   return box.rows * box.columns >= GUIDED_MIN_BEADS
 }
 
-/** The Selection's rectangle as a Frame-shaped box, for what measures a block of beads on screen (its border, its handles). */
+/** The Selection's rectangle as a Frame-shaped box, for what measures a block of beads on screen (its border, its
+ * handles). */
 export function selectionFrame(selection: Selection): Frame {
   return { row: selection.top, column: selection.left, rows: selection.rows, columns: selection.columns }
 }
@@ -80,12 +70,9 @@ function selectionOfBox(box: Frame): Selection {
   return { top: box.row, left: box.column, rows: box.rows, columns: box.columns }
 }
 
-/**
- * The Selection a tap with the Piece tool makes (ticket 414): the bounding rectangle of the Piece the tapped bead belongs
- * to. Beads of other Pieces inside that rectangle are inside the Selection too. None when the tap is on an empty position.
- * With a Frame (ticket 433) only the part of the Piece on the tapped bead's side counts, inside the Frame or clear of its
- * margin, and the rectangle is trimmed to a legal one; a tap in the margin selects nothing.
- */
+// The Selection a tap with the Piece tool makes (ticket 414): the bounding rectangle of the tapped bead's Piece (other
+// Pieces' beads inside it are in too); none on an empty position. With a Frame (ticket 433) only the part on the
+// tapped bead's side counts, trimmed to a legal rectangle; a tap in the margin selects nothing.
 export function pieceSelectionAt(beads: BeadMap, technique: Technique, at: GridPosition, frame?: Frame): Selection | undefined {
   const members = pieceBeadsAt(beads, technique, at).filter((member) => {
     if (!frame) return true
@@ -102,7 +89,8 @@ export function pieceSelectionAt(beads: BeadMap, technique: Technique, at: GridP
   return trimToAllowed(frame, { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }, at)
 }
 
-/** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle round every placed bead, or none on an empty canvas. */
+/** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
+ * round every placed bead, or none on an empty canvas. */
 export function selectAllSelection(beads: BeadMap, frame: Frame | undefined): Selection | undefined {
   return frame ? { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns } : allBeadsSelection(beads)
 }
@@ -113,7 +101,8 @@ export function allBeadsSelection(beads: BeadMap): Selection | undefined {
   return bounds ? selectionOfBox(bounds) : undefined
 }
 
-/** Whether the Selection holds every placed bead (ticket 415): the Select all case, where Clear selection means Delete all. False on an empty canvas. */
+/** Whether the Selection holds every placed bead (ticket 415): the Select all case, where Clear selection means
+ * Delete all. False on an empty canvas. */
 export function selectionHoldsAllBeads(beads: BeadMap, selection: Selection): boolean {
   const all = allBeadsSelection(beads)
   if (!all) return false
@@ -125,10 +114,8 @@ export function selectionHoldsAllBeads(beads: BeadMap, selection: Selection): bo
   )
 }
 
-/**
- * The Selection with the sides a handle drags moved to a bead (ticket 414): `edges` are the sides (a corner drags two),
- * `cell` the bead the pointer is over. A side never passes the one opposite it, so a Selection stays one bead each way.
- */
+/** The Selection with the sides a handle drags (`edges`, two for a corner) moved to `cell` (ticket 414); a side
+ * never passes its opposite. */
 export function selectionWithEdges(selection: Selection, edges: readonly FrameEdge[], cell: GridPosition): Selection {
   let top = selection.top
   let bottom = selection.top + selection.rows - 1
@@ -148,11 +135,8 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
   return { ...selection, top: selection.top + rows, left: selection.left + columns }
 }
 
-/**
- * Snapshots a Selection's drawn beads into a block Paste can stamp anywhere (ticket 437, ADR 0057): trimmed to their
- * bounding box, so empty cells inside stay holes and none outside is kept, anchored on the first drawn bead in reading
- * order. Undefined for a Selection with no drawn bead.
- */
+/** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
+ * the first bead. */
 export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {
   const drawn: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
@@ -173,11 +157,8 @@ export function copySelection(project: Project, selection: Selection): CopiedBlo
   return { rows: colors.length, columns: colors[0].length, colors, anchor: { row: 0, column: drawn[0].column - left } }
 }
 
-/**
- * Where a block's painted cells land when stamped with its top-left corner at `at`. The block's own empty cells are
- * left out: they are holes that leave the destination's color alone (stamping a motif onto painted background mustn't
- * punch through it). Nothing is clipped, since the Canvas has no edge (ADR 0026).
- */
+/** Where a block's painted cells land with its top-left at `at`; empty cells are holes, nothing is clipped (ADR
+ * 0026). */
 export function pastedCells(block: CopiedBlock, at: GridPosition): PastedCell[] {
   const cells: PastedCell[] = []
 
@@ -214,16 +195,9 @@ function flippedBlock(block: CopiedBlock, flipRows: boolean, flipColumns: boolea
   return { ...block, colors }
 }
 
-/**
- * Every cell every Mirror-projected copy of `block` would land on when its anchor bead is aimed at `at`
- * (ticket 50, reversing Paste's old "unaffected by Mirror" precedent — see CONTEXT.md's Paste entry): one
- * placement per strip combination the current axis counts (and copy mode) define, each built by flipping the
- * block's content per mirrorBlockPlacements' verdict and then handed to pastedCells exactly like a single
- * unmirrored placement — so each copy keeps its own hole rule and its own independent edge-clipping, with no
- * interaction between copies beyond later ones winning where two happen to overlap (the same merge order
- * paintCells uses for mirrored Paint strokes). With both axis counts at 0 this is exactly pastedCells'
- * own single placement.
- */
+// Every cell every Mirror-projected copy of `block` lands on when aimed at `at` (ticket 50; CONTEXT.md's Paste entry):
+// one placement per strip combination, flipped per mirrorBlockPlacements and run through pastedCells, so each copy
+// keeps its own hole and clipping rules and later copies win overlaps (paintCells' order).
 export function mirroredPastedCells(
   frame: Frame | undefined,
   block: CopiedBlock,
@@ -253,12 +227,8 @@ export function mirroredPastedCells(
   return [...cellsByPosition.values()]
 }
 
-/**
- * The Mirror-aware form of a single unmirrored paste stamp (ticket 50): stamps `block` at `at` plus every copy Mirror projects it onto
- * (see mirroredPastedCells), all as one Project edit so the whole click — original placement and every mirrored one
- * — undoes in a single step, same as a mirrored Paint stroke. Returns the same Project instance, unchanged, when the
- * stamp would leave every cell as it already is.
- */
+/** The Mirror-aware paste stamp (ticket 50): `block` at `at` plus every Mirror copy as one Project edit (one undo
+ * step). */
 export function mirroredPasteBlock(
   project: Project,
   block: CopiedBlock,

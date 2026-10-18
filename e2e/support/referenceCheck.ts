@@ -11,33 +11,20 @@ import { differingBlocks } from './imageDiff'
 import { beadCentre } from './projects'
 import { type Region } from '../../src/rendering/surfaceView'
 
-/**
- * The comparisons that hold the app's drawing of a Project to the reference screenshots in e2e/visual/__screenshots__.
- * Those were made from the one-element-per-bead grid the renderer replaced (ticket 103), and stay as the reference the
- * renderer is held to (ADR 0018: "visually indistinguishable"). A canvas never lands on exactly the same pixels as the
- * DOM did (that snapped a scaled box's inside to whole pixels its own way, and rasterized a 0.25px rim its own way), so
- * there are two comparisons, one for the look and one for the content:
- *
- *  - The look: both images reduced to the average color of blocks a fraction of a bead wide, and at most a share of the
- *    blocks may differ. Averaging ignores where an edge falls within a pixel or two, and still sees a rim, a gap, a
- *    corner or an overlay that is really different.
- *  - The content: every bead's centre must be its color, within a few levels: a bead in the wrong color, missing, or in
- *    the wrong place fails however small it is drawn. Finished rows' greys are worked out here independently.
- */
+// Holds the drawing to the reference screenshots in e2e/visual/__screenshots__ (one element per bead; ticket 103,
+// ADR 0018). A canvas never matches DOM pixels exactly, so two comparisons: the look (block-averaged colors, a share
+// of blocks may differ) and the content (every bead's centre color).
 
-/**
- * The share of blocks that may differ from the reference before the look counts as different, measured on the renderer
- * as it is: loom comes out within 2.5% and brick stitch within 3.6% at worst, and peyote, whose rounded corners the two engines
- * anti-alias differently (and whose rotated box lands on half a pixel), within 5.5%. A rim drawn 2 px instead of 1
- * moves loom and brick stitch by 4–8% at 100% and 300% zoom, so those show; it does not show in peyote's, nor at 50%,
- * where a bead is 10 px and a block can't be smaller than 4 — the content check below is what holds there.
- */
+// Share of blocks that may differ before the look counts as different: loom 2.5%, brick stitch 3.6%, peyote 5.5%
+// (anti-aliased rounded corners). A 2 px rim instead of 1 moves loom and brick by 4-8% at 100% and 300%, so it shows;
+// not in peyote or at 50%: the content check holds there.
 export const MAX_DIFFERING_BLOCKS = { loom: 0.03, brick: 0.04, peyote: 0.06 }
 const BLOCK_TOLERANCE = 48
 /** How far a bead's centre pixel may be from its expected color, per channel. */
 const CENTRE_TOLERANCE = 10
 
-/** A block is 8 px at 100% and follows the zoom, so it stays a fraction of a bead (a bead is 20 px there); never under 4, or one anti-aliased corner pixel of a 5 px bead counts as a difference. */
+/** A block is 8 px at 100% and follows the zoom, so it stays a fraction of a bead (a bead is 20 px there); never
+ * under 4, or one anti-aliased corner pixel of a 5 px bead counts as a difference. */
 export const blockFor = (zoom: number) => Math.max(4, Math.round((8 * zoom) / 100))
 
 function rgb(hex: string): [number, number, number] {
@@ -51,7 +38,8 @@ const FINISHED_SHARE = 0.5
 /** How far the current row's beads are lifted toward white (10%, ticket 352). */
 const CURRENT_ROW_LIFT = 0.1
 
-/** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at 50% over the Canvas; the current row's are 10% brighter. */
+/** The color a bead should show at its centre, from the Project alone. A finished row's beads are their own color at
+ * 50% over the Canvas; the current row's are 10% brighter. */
 function expectedCentre(project: Project, row: number, column: number): [number, number, number] {
   const color = beadColorAt(project, row, column)
   const own = rgb(color ?? LIGHT_THEME.emptyBead)
@@ -65,11 +53,9 @@ function expectedCentre(project: Project, row: number, column: number): [number,
   return own.map((channel, index) => FINISHED_SHARE * channel + (1 - FINISHED_SHARE) * board[index]!) as [number, number, number]
 }
 
-/**
- * The beads whose centre is not the color it should be, in a screenshot of the grid taken from `origin` (the page
- * position of its top-left pixel). "The centre" is any pixel within one of it: at 50% a bead is 10 px across, and where
- * its centre falls between pixels differs by a pixel between the reference and a canvas.
- */
+// The beads whose centre is not the right color in a screenshot taken from `origin` (page position of its top-left
+// pixel). "Centre" is any pixel within one of it: at 50% a bead is 10 px, and the centre falls between pixels
+// differently in reference and canvas.
 export function wrongBeads(
   image: Buffer,
   project: Project,
@@ -104,7 +90,8 @@ export function wrongBeads(
   return wrong
 }
 
-/** What a screenshot of the drawn Project (the `actual`) is judged on against a reference: the share of blocks that differ in look, and the beads whose centre is the wrong color. */
+/** What a screenshot of the drawn Project (the `actual`) is judged on against a reference: the share of blocks that
+ * differ in look, and the beads whose centre is the wrong color. */
 export function compareToReference(
   actual: Buffer,
   expected: Buffer,
@@ -122,11 +109,8 @@ export function compareToReference(
   }
 }
 
-/**
- * `UPDATE_REFERENCES=1 npm run visual` redraws the reference screenshots from the app as it is: only right when the
- * look is meant to change (ticket 140 redrew them for the design system's board and colors), never to make a failing
- * run pass. Each scenario's reference is then the surface as drawn, and its comparison passes against itself.
- */
+/** `UPDATE_REFERENCES=1 npm run visual` redraws the references from the app: only when the look is meant to change
+ * (ticket 140), never to pass. */
 export const UPDATING_REFERENCES = process.env.UPDATE_REFERENCES === '1'
 
 /** The pixels the Project's Frame covers on screen, from the Project's corner: turned and zoomed, to whole pixels. */
@@ -140,10 +124,8 @@ export async function writeReference(page: Page, path: string, region: Region): 
   writeFileSync(path, await page.screenshot({ clip: region }))
 }
 
-/**
- * The zooms a reference exists for. Rotation and zoom are independent in the renderer, so rotated is checked at 100%
- * (catches a wrong rotation) and upright at both (catches a wrong zoom); rotated at 300% would only repeat those two.
- */
+/** The zooms a reference exists for: rotation and zoom are independent in the renderer, so rotated at 100% and
+ * upright at both. */
 export function zoomsFor(rotated: boolean): number[] {
   return rotated ? [100] : [100, 300]
 }

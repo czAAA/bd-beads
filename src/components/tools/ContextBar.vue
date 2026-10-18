@@ -10,14 +10,9 @@ import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { rowProgressStarted, type Project } from '../../domain/project'
 
-/**
- * The design system's ContextBar (tickets 168, 415; ContextBar card): a thin icon-only bar anchored above the
- * Selection's top edge, centred on it, clamped inside the canvas box and flipped below when there is no room above. It
- * offers what a Selection can do: its size, Copy, Cut, Paste (while the clipboard holds something), Fill, Frame, Rotate and, after a divider, Clear selection; only
- * what applies is rendered (Rotate until a Row progress pass is done, Remove line with a line selected). When the
- * canvas box is too narrow for all of it, the last actions fold into a "…" menu. While paste mode is on (ticket 437,
- * ADR 0057) there is no bar at all: Copy cleared the Selection and Select all hides. The standalone Select all button of the no-selection state is gone (ticket 439). It has no mode for Edit Frame: that has no bar (ticket 427, ADR 0055).
- */
+// The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
+// clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
+// None in paste mode (ticket 437, ADR 0057) or Edit Frame (ticket 427, ADR 0055); no Select all button (ticket 439).
 const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
@@ -25,18 +20,21 @@ const props = withDefaults(defineProps<{
   anchor?: SelectionAnchor
   /** A gesture, pan or pinch is running: the bar steps out of the way until it ends. */
   gesturing?: boolean
-  /** While `gesturing`, shrink to the size readout alone, in place, instead of hiding; the buttons return when the gesture ends. */
+  /** While `gesturing`, shrink to the size readout alone, in place, instead of hiding; the buttons return when the
+   * gesture ends. */
   sizeOnly?: boolean
   /** Whether paste mode is on (useSelectionGesture's pasteProjectionActive): the bar then hides, Select all with it. */
   pasteArmed: boolean
-  /** Whether the clipboard holds something (ticket 447): the bar then offers Paste, which enters paste mode and stamps nothing. */
+  /** Whether the clipboard holds something (ticket 447): the bar then offers Paste, which enters paste mode and
+   * stamps nothing. */
   hasClipboard?: boolean
   /** The open Project: what the actions' enabled states and disabled reasons read (ADR 0035). */
   project: Project
   canRemoveLine: boolean
   /** Whether the Selection holds beads of exactly one Piece, which Name can then name (ticket 406). */
   canNamePiece?: boolean
-  /** A color is chosen to paint with: Fill needs one (it is disabled with its reason without). Chosen unless told otherwise. */
+  /** A color is chosen to paint with: Fill needs one (it is disabled with its reason without). Chosen unless told
+   * otherwise. */
   hasPaintColor?: boolean
   /** Whether the Select tool is active: the bar then offers Select all as its first item (ticket 428, ADR 0055). */
   selectActive?: boolean
@@ -116,11 +114,9 @@ const items = computed<BarItem[]>(() => {
   return list
 })
 
-/**
- * The bar's own spacing in px, kept in step with its CSS: `--space-2` between items and at each side, and a divider
- * that is 1px wide with `--selbar-divider-margin` (3px) either side. The fit maths reserves a side padding and a
- * divider for each end of the readout.
- */
+// The bar's spacing in px, in step with its CSS: `--space-2` between items and at each side, and a 1px divider with
+// `--selbar-divider-margin` (3px) either side. The fit maths reserves a side padding and a divider per end of the
+// readout.
 const BAR_ITEM_GAP_PX = 2
 const BAR_SIDE_PADDING_PX = 2
 const BAR_DIVIDER_PX = 1 + 2 * 3
@@ -130,7 +126,8 @@ const readoutEl = ref<HTMLElement>()
 const bar = useElementSize(rootEl)
 const readout = useElementSize(readoutEl)
 
-/** How many buttons fit beside the readout in the canvas box's width (a button is as wide as the bar is high); every one with no measured box (a test). */
+/** How many buttons fit beside the readout in the canvas box's width (a button is as wide as the bar is high); every
+ * one with no measured box (a test). */
 const capacity = computed(() => {
   const viewport = props.anchor?.viewport.width
   if (!viewport || !readout.width.value || !bar.height.value) return Infinity

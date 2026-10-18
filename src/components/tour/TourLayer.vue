@@ -19,16 +19,9 @@ import AppIcon from '../ui/AppIcon.vue'
 import KeyChip from '../ui/KeyChip.vue'
 import type { IconName } from '../ui/icons'
 
-/**
- * The Tour's layers (ticket 80; TourStep card): a dim layer over the app with a hole for the control the step points at,
- * a gold ring round it, one dotted line to the step card, and the card. It draws over the real editor, which keeps
- * working underneath: the dim blocks every press except the hole's, the card's, and the Project's own scroll and zoom
- * (the Project is a hole for the pointer, and the app itself keeps it from drawing unless the step is about drawing).
- *
- * Each control is found on the screen by its `data-tour` mark, so the same step works at every size: the same control is
- * in the Dock or a sheet, and the first one showing is the one pointed at. A control that isn't
- * showing is reached through what opens it (the Dock button, the Tools button); if nothing is, the card centres.
- */
+// The Tour's layers (ticket 80; TourStep card): a dim layer with a hole for the step's control, a gold ring, a dotted
+// line to the step card, and the card. The editor keeps working underneath; the dim blocks every press but the hole's
+// and the card's. Controls are found by `data-tour` (first showing, else via what opens it); if none, the card centres.
 const { t, tour, announce } = useAppShell()
 
 /** For each control, the `data-tour` marks that can be it, the first showing wins; the later ones open it. */
@@ -172,7 +165,8 @@ function measure() {
   let beside: Rect | undefined
 
   if (found) {
-    // A control in the left column may be scrolled out of it; bring it in once per step, not against a visitor who scrolls away.
+    // A control in the left column may be scrolled out of it; bring it in once per step, not against a visitor who
+    // scrolls away.
     const scrollKey = `${cardKey.value}:${control}:${found.key}`
     if (control !== 'board' && scrollKey !== scrolledTo) {
       scrolledTo = scrollKey

@@ -15,10 +15,8 @@ export interface Toast {
   stamp: number
 }
 
-/**
- * Short-lived results shown as toasts (ticket 76; Message card): newest last, one per id. How long each stays is the
- * toast region's business (ToastRegion.vue); this only holds what is showing.
- */
+// Short-lived results shown as toasts (ticket 76; Message card): newest last, one per id. How long each stays is
+// ToastRegion.vue's business; this only holds what is showing.
 export function useToasts() {
   const toasts = ref<Toast[]>([])
   let stamp = 0

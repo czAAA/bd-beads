@@ -1,8 +1,5 @@
-/**
- * A stand-in for window.matchMedia whose answers a test can change, firing 'change' like a resize or an OS setting
- * would (the same shape src/theme/theme.test.ts's own fakeDevice uses, generalized to any query rather than just the
- * two theme ones).
- */
+/** A window.matchMedia stand-in whose answers a test can change, firing 'change' like a resize or an OS setting
+ * would. */
 export function fakeMatchMedia(initial: Record<string, boolean> = {}) {
   const state = new Map<string, boolean>(Object.entries(initial))
   const listeners = new Map<string, Set<() => void>>()

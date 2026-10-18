@@ -14,11 +14,9 @@ import TourBand from './TourBand.vue'
 import { provideI18n } from '../i18n/useI18n'
 import { TOUR_ENABLED } from '../features'
 
-/**
- * The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads to someone new. The
- * header is the editor's own (logo, header menu, Language, Theme; no Keyboard shortcuts), then the slogan, the two
- * ways in and the features carousel (ticket 217) the coffee tile (ticket 219), the plan tiles (ticket 220) and the drawn layer behind each section (ticket 221). It only reports which way in was chosen: the entry decides where that goes.
- */
+// The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads. The header is the
+// editor's own (no Keyboard shortcuts), then the slogan, two ways in, and tickets 217/219/220/221's sections. It only
+// reports which way in was chosen: the entry decides where that goes.
 const props = defineProps<{
   /** How many Projects this device has saved; none means a new visitor. */
   projectCount: number

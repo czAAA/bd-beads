@@ -8,13 +8,9 @@ import { fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 import { SCENARIOS } from './scenarios'
 
-/**
- * The overlays that come with a tool, against the reference screenshots: the Selection marquee and the paste preview
- * in its own colors, at 100% and 300% upright, and 100% rotated (ticket 174 hid Mirror's own axis lines, "Mirror
- * current" dimming and mirrored hover preview along with its UI, pending its own redesign). The scenarios
- * (scenarios.ts) drive the app by its own controls and by pointer coordinates. (Hover, Row progress and the plain
- * look are in interaction.spec.ts and look.spec.ts.)
- */
+// Overlays that come with a tool vs the references: Selection marquee and paste preview, at 100% and 300% upright and
+// 100% rotated (ticket 174 hid Mirror's overlays with its UI). Scenarios (scenarios.ts) drive the app by its controls
+// and pointer coordinates. Hover, Row progress and the plain look are in interaction.spec.ts and look.spec.ts.
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const COVERED = /selection|paste-preview/
 

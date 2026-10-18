@@ -1,8 +1,6 @@
-/**
- * Eats the click that follows a press an overlay swallowed (a sheet or popover closing on a press outside it), so
- * nothing under the press acts. It outlives the overlay (which unmounts before the click lands) and drops away at the
- * next press, so a press that never clicks (a drag, a cancel) leaves nothing behind.
- */
+// Eats the click that follows a press an overlay swallowed (sheet or popover closing on an outside press). It outlives
+// the overlay (which unmounts before the click lands) and drops away at the next press, so a press that never clicks
+// leaves nothing behind.
 export function swallowNextClick(): void {
   const stop = (event: Event) => {
     event.stopPropagation()

@@ -11,12 +11,9 @@ import ExpandablePanel from '../ui/ExpandablePanel.vue'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import ProjectThumbnail from './ProjectThumbnail.vue'
 
-/**
- * Saved Projects (ticket 147; SavedProjects and SavedProjectsExpanded cards): the five most recently saved Projects as
- * round thumbnails, with name and size under each; expanded, every Project and a footer with Export Project and Export
- * all. The open Project is ringed in the accent. Remove is a small × at a thumbnail's top-right, shown on hover or
- * keyboard focus. `projects` comes in the library's own order, most recently saved first (ticket 145).
- */
+// Saved Projects (ticket 147; SavedProjects and SavedProjectsExpanded cards): the five most recent as round thumbnails
+// with name and size; expanded, all of them plus Export Project and Export all. Remove is a × shown on hover or
+// keyboard focus. `projects` arrives in the library's order, most recently saved first (ticket 145).
 const props = defineProps<{
   projects: Project[]
   activeProjectId?: string
@@ -33,7 +30,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for two rows before expanding. */
+/** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for two rows before
+ * expanding. */
 const isDesktop = useMediaQuery('(min-width: 1920px)')
 
 /** How many thumbnails the collapsed box holds: one row of five, or two rows (ten) at the 24" tier. */

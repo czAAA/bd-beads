@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { useId } from 'vue'
 
-/**
- * A named section of a panel (MenuPanel card): the `label` style heading, then its rows, split from the section above by a
- * 1px `line-soft` rule. A group named by its heading, so a screen reader hears where it is.
- */
+/** A named section of a panel (MenuPanel card): `label` heading, then rows, split by a 1px `line-soft` rule; a named
+ * group for screen readers. */
 defineProps<{ label: string }>()
 const labelId = useId()
 </script>

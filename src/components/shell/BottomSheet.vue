@@ -7,21 +7,15 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
 import { SHEET_CLOSE } from './sheetContext'
 
-/**
- * The design system's ToolSheet (ticket 79; ToolSheet card): the phone Dock's bottom sheets. Light (the default --
- * Tool, Colour, Edit, Mirror, Size): `panel`, 18px top corners, a grab handle, title and close, no scrim, only as
- * tall as its content so the Project stays in view. `modal` (the Project sheet): taller, with a scrim. Both close on a
- * press anywhere outside them, which only closes (ticket 402).
- *
- * Mounted with `v-if`, like AppModal: while open, focus stays inside (Tab wraps, Escape and the close button hand it
- * back to whatever opened it). Slides up with `transform` (ADR 0018: the drawing surface behind it never resizes).
- * Swipe-to-dismiss: the handle closes the sheet on a tap or a drag down (ticket 402).
- */
+// The design system's ToolSheet (ticket 79; ToolSheet card): the phone Dock's bottom sheets. `panel` (Tool, Colour,
+// Edit, Mirror, Size) has a grab handle, no scrim; `modal` (Project) is taller with a scrim. A press outside only
+// closes (ticket 402), as does the handle. Mounted with `v-if`; focus stays inside; slides with `transform` (ADR 0018).
 withDefaults(defineProps<{ title: string; modal?: boolean }>(), { modal: false })
 const emit = defineEmits<{ close: [] }>()
 const closeAction = controlAction('close')
 
-/** Pick controls inside (tool tiles, Palette swatches, the Custom and Image colors) close the sheet through this once they have picked. */
+/** Pick controls inside (tool tiles, Palette swatches, the Custom and Image colors) close the sheet through this
+ * once they have picked. */
 provide(SHEET_CLOSE, () => emit('close'))
 
 const titleId = useId()
@@ -84,7 +78,8 @@ function onFocusIn(event: FocusEvent) {
   ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus({ preventScroll: true })
 }
 
-/** The handle: a tap closes the sheet, a drag down follows the finger and closes past the threshold, else springs back. */
+/** The handle: a tap closes the sheet, a drag down follows the finger and closes past the threshold, else springs
+ * back. */
 const DRAG_CLOSE_PX = 80
 let dragStartY: number | null = null
 let dragOffset = 0

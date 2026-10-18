@@ -1,15 +1,9 @@
 import type { Page } from '@playwright/test'
 import type { TextMisfit } from './textFit'
 
-/**
- * The hover text check (ticket 264): finds every Tooltip trigger on the page, opens each one the three ways a person
- * can (hover with a mouse, keyboard focus, a long press on a touch screen) and measures the bubble that appears
- * against the screen, against every ancestor that clips it and against its own box. Nothing here names a trigger: the
- * triggers are found on the page (`.app-tooltip`), so a Tooltip added tomorrow is looked at too.
- *
- * What it reports is shaped like the text fit check's misfits, so the same pending list machinery (textFitPending.ts)
- * explains the ones that are known: `element` is the trigger, `text` the Tooltip's text, `against` what cuts it.
- */
+// The hover text check (ticket 264): opens every Tooltip trigger (`.app-tooltip`) by hover, focus and long press, and
+// measures the bubble against the screen, every clipping ancestor and its own box.
+// Reports misfit-shaped results, so the pending list (textFitPending.ts) applies: `against` is what cuts it.
 
 export interface HoverResult {
   /** Which Tooltips came open, by the components whose templates they come from (the bubble's `data-owner`). */
@@ -23,7 +17,8 @@ interface Trigger {
   index: number
   /** What the trigger looks like to the check and to a reader of a failure: its test id or label, and where it sits. */
   name: string
-  /** The same, with the chain of containers: two triggers that look alike in different containers are measured separately. */
+  /** The same, with the chain of containers: two triggers that look alike in different containers are measured
+   * separately. */
   signature: string
 }
 
@@ -68,7 +63,8 @@ async function discover(page: Page, seen: Set<string>): Promise<Trigger[]> {
   })
 }
 
-/** Measures the open bubble of the trigger marked `index`, in the browser. Returns what is cut and how, or null when none is open. */
+/** Measures the open bubble of the trigger marked `index`, in the browser. Returns what is cut and how, or null when
+ * none is open. */
 function measureOpenBubble(index: number): { text: string; owner: string; cuts: { against: string; pixels: number }[] } | null {
   const TOLERANCE = 1
   const wrapper = document.querySelector(`[data-hover-probe="${index}"]`)
@@ -135,7 +131,8 @@ function measureOpenBubble(index: number): { text: string; owner: string; cuts: 
   return { text, owner: bubble.getAttribute('data-owner') ?? '', cuts }
 }
 
-/** Scrolls the trigger into view where it is (the column, the canvas) and nothing else. In the page, so that a trigger under a dialog doesn't wait for a click that could never reach it. */
+/** Scrolls the trigger into view where it is (the column, the canvas) and nothing else. In the page, so that a
+ * trigger under a dialog doesn't wait for a click that could never reach it. */
 const scrollTo = (page: Page, index: number) => page.evaluate((i) => document.querySelector(`[data-hover-probe="${i}"]`)?.scrollIntoView({ block: 'nearest', inline: 'nearest' }), index)
 
 /** Waits for the bubble's fade-in to finish, then measures it. */
@@ -147,10 +144,8 @@ async function measureTrigger(page: Page, index: number) {
   return page.evaluate(measureOpenBubble, index)
 }
 
-/**
- * Opens every Tooltip on the page that this run has not opened in the same place before, by hover, by focus, by
- * long press and (a disabled one) by click, and measures each. `seen` is kept by the caller for the whole run at one language and width.
- */
+/** Opens every Tooltip not yet opened in the same place (hover, focus, long press, click if disabled) and measures
+ * it; `seen` is the caller's. */
 export async function findHoverMisfits(page: Page, seen: Set<string>): Promise<HoverResult> {
   const result: HoverResult = { opened: [], misfits: [], silent: [] }
   // The info popovers (opened by click, and measured by the text fit check) are not opened here, only counted as seen.
@@ -194,9 +189,11 @@ export async function findHoverMisfits(page: Page, seen: Set<string>): Promise<H
   await page.evaluate(() => {
     const sheet = document.querySelector('.bottom-sheet, .panel-shell')
     for (const wrapper of document.querySelectorAll('[data-hover-probe]')) {
-      // Under an open sheet a press outside it closes it (ticket 402, in the capture phase, so not bubbling doesn't hide it): only what is in the sheet can be long-pressed.
+      // Under an open sheet a press outside it closes it (ticket 402, in the capture phase, so not bubbling doesn't
+      // hide it): only what is in the sheet can be long-pressed.
       if (sheet && !sheet.contains(wrapper)) continue
-      // At the Tooltip itself and no further (not bubbling): a press the page at large sees would close the menu a trigger is under.
+      // At the Tooltip itself and no further (not bubbling): a press the page at large sees would close the menu a
+      // trigger is under.
       wrapper.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: false, isPrimary: true }))
     }
   })
@@ -209,7 +206,8 @@ export async function findHoverMisfits(page: Page, seen: Set<string>): Promise<H
   await page.evaluate(() => {
     for (const wrapper of document.querySelectorAll('[data-hover-probe]')) {
       wrapper.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch', bubbles: false }))
-      // The press left the Tooltip believing a press is under way (which it only forgets on blur): tell it that it is over.
+      // The press left the Tooltip believing a press is under way (which it only forgets on blur): tell it that it is
+      // over.
       wrapper.dispatchEvent(new FocusEvent('focusout', { bubbles: false }))
     }
   })

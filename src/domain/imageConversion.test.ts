@@ -54,10 +54,8 @@ function flat(width: number, height: number, [r, g, b]: [number, number, number]
   )
 }
 
-/**
- * A picture whose every pixel says where it is: red carries its x, green its y. Sampling it and reading the channels
- * back tells a test exactly which pixel each cell took, which is how the technique-aware geometry is checked.
- */
+/** A picture whose every pixel says where it is (red carries x, green y), so sampling it shows exactly which pixel
+ * each cell took. */
 function coordinateImage(width: number, height: number): PixelData {
   const rgba: number[][] = []
   for (let y = 0; y < height; y += 1) {
@@ -74,7 +72,8 @@ function sampledPixel(hex: string): { x: number; y: number } {
   return { x: r, y: g }
 }
 
-/** The color a picture's pixel contributes to a cell as the `#rrggbb` a grid cell stores, or undefined for a pixel too transparent to weave. */
+/** The color a picture's pixel contributes to a cell as the `#rrggbb` a grid cell stores, or undefined for a pixel
+ * too transparent to weave. */
 function pixelColorAt(image: PixelData, x: number, y: number): string | undefined {
   const packed = pixelPackedAt(image, x, y)
   return packed === NO_COLOR ? undefined : packedToHex(packed)
@@ -125,11 +124,8 @@ function convert(
   return { dimensions, ...convertImage({ image, view, technique, bead, dimensions, maxColors }) }
 }
 
-/**
- * The grid's raw sampled colors, before Convert image quantizes them onto the Palette (ticket 177) -- for tests that
- * check which source pixel each cell's geometry picked, which unconditional Palette quantization would otherwise
- * obscure (nearby coordinateImage markers can snap onto the same Palette color).
- */
+/** The grid's raw sampled colors, before Convert image snaps them onto the Palette (ticket 177), which would
+ * otherwise obscure which source pixel each cell picked (nearby markers can snap to one color). */
 function convertRawGrid(
   image: PixelData,
   technique: Technique,
@@ -186,7 +182,8 @@ describe('pixelPackedAt', () => {
 })
 
 describe('sampleLatticePacked', () => {
-  /** What one cell took, the way it was worked out before sampling ran a row at a time: cellCenter, then sourcePixelAt, then the pixel's color. */
+  /** What one cell took, the way it was worked out before sampling ran a row at a time: cellCenter, then
+   * sourcePixelAt, then the pixel's color. */
   function cellByCell(
     image: PixelData,
     technique: Technique,

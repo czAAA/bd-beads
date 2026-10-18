@@ -11,19 +11,9 @@ import { menuTooltipBody } from './menuTooltipBody'
 type ButtonVariant = InstanceType<typeof AppButton>['$props']['variant']
 type IconVariant = InstanceType<typeof IconButton>['$props']['variant']
 
-/**
- * The one button that opens something (ticket 332, ADR 0035): an IconButton (`icon-only`) or an AppButton with a
- * trailing chevron, which opens a popover under it from 1024px up, or a sheet under that. It owns `aria-haspopup`,
- * `aria-expanded`, focus return and closing on Escape or a press outside, so the Export menu, the header Menu, the
- * Dock's slots, Image colors, Canvas color and the Custom color picker don't each write them again.
- *
- * What it opens is the default slot: AppMenuItems for a `menu`, or any content for a `popover` (a small dialog: Tab
- * moves through it and leaving it closes it). A phone shows the `sheet` slot instead, given a `close` function, and
- * falls back to the popover when there is none (ui/ imports no feature folder, ADR 0020, so the BottomSheet itself is
- * the caller's). Its Tooltip body is `tooltip`, or the `items` names written as "A, B, C." (the Dock slots' "Set
- * Frame, Rotate, Copy, Paste."). An icon-only button always has a Tooltip (its name, ADR 0035), a labelled one only when
- * there is a body that adds something. An icon-only button may draw its own face in the `icon` slot (the Canvas color dot). Attributes and listeners (data-testid) go to the button itself.
- */
+// The one button that opens something (ticket 332, ADR 0035): a popover from 1024px up, the `sheet` slot under that
+// (ui/ imports no feature folder, ADR 0020). It owns `aria-haspopup`, `aria-expanded`, focus return and closing on
+// Escape or an outside press; an icon-only button always has a Tooltip.
 defineOptions({ inheritAttrs: false })
 const emit = defineEmits<{ open: [] }>()
 const props = withDefaults(
@@ -61,7 +51,8 @@ const props = withDefaults(
 )
 
 const slots = useSlots()
-/** A menu opens as a sheet at every width (ADR 0046), when the caller gave one: it brings its own Escape layer and outside press. */
+/** A menu opens as a sheet at every width (ADR 0046), when the caller gave one: it brings its own Escape layer and
+ * outside press. */
 const showsSheet = computed(() => !!slots.sheet)
 
 const open = ref(false)

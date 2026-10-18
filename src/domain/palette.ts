@@ -3,7 +3,8 @@ export interface PaletteColor {
   hex: string
 }
 
-/** The twelve built-in colors (see CONTEXT.md's Palette entry), independent of the bead catalog; Custom colors that were used join them (ticket 227, ADR 0002). */
+/** The twelve built-in colors (see CONTEXT.md's Palette entry), independent of the bead catalog; Custom colors that
+ * were used join them (ticket 227, ADR 0002). */
 export const PALETTE: readonly PaletteColor[] = [
   { id: 'black', hex: '#1a1a1a' },
   { id: 'white', hex: '#ffffff' },
@@ -23,12 +24,8 @@ export function findPaletteColor(id: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.id === id)
 }
 
-/**
- * Shift+1..9, Shift+0, Q, W (ticket 88), one per PALETTE entry in order: the physical key (`KeyboardEvent.code`,
- * layout- and Shift-independent -- the digit row's *shifted* `.key` values like "!" vary by keyboard layout, unlike
- * `.code`) and its display label. The one source both App.vue's dispatcher and PalettePicker.vue's tooltips read,
- * so the two can't drift apart.
- */
+/** Shift+1..9, Shift+0, Q, W (ticket 88), one per PALETTE entry: the physical key (`KeyboardEvent.code`; shifted `.key`
+ * values like "!" vary by layout) and its label. The one source App.vue's dispatcher and PalettePicker.vue read. */
 export interface PaletteShortcut {
   code: string
   keyLabel: string
@@ -49,15 +46,18 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
   { code: 'KeyW', keyLabel: 'W' },
 ]
 
-/** The Palette color a painted cell holds, looked up by the hex the grid stores; undefined for a hex from outside the Palette. */
+/** The Palette color a painted cell holds, looked up by the hex the grid stores; undefined for a hex from outside
+ * the Palette. */
 export function findPaletteColorByHex(hex: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.hex === hex)
 }
 
-/** How many Custom colors can join the Palette; with the twelve built-in ones it tops out at 40 swatches (ticket 227; the Message card). */
+/** How many Custom colors can join the Palette; with the twelve built-in ones it tops out at 40 swatches (ticket
+ * 227; the Message card). */
 export const MAX_ADDED_COLORS = 28
 
-/** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for anything else. */
+/** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for
+ * anything else. */
 export function normalizeHex(hex: string): string | undefined {
   const lower = hex.trim().toLowerCase()
   return /^#[0-9a-f]{6}$/.test(lower) ? lower : undefined
@@ -68,7 +68,8 @@ export function addedColorId(hex: string): string {
   return `added-${hex.slice(1)}`
 }
 
-/** Whether a Palette color joined from a Custom color (and so can be removed) rather than being one of the twelve built-in ones. */
+/** Whether a Palette color joined from a Custom color (and so can be removed) rather than being one of the twelve
+ * built-in ones. */
 export function isAddedColorId(colorId: string): boolean {
   return colorId.startsWith('added-')
 }
@@ -80,10 +81,8 @@ export function paletteWith(added: readonly string[]): PaletteColor[] {
 
 export type AddUsedColorOutcome = 'added' | 'known' | 'full'
 
-/**
- * A Custom color has just painted a cell: the added colors with it appended on its first use. 'known' when the hex is
- * already a swatch (built-in or added), 'full' when 28 are added and it can't join; either way `added` is unchanged.
- */
+/** A Custom color just painted a cell: added colors with it appended on first use. 'known' if the hex is already a
+ * swatch, 'full' at 28 added; either way `added` is unchanged. */
 export function addUsedColor(
   added: readonly string[],
   hex: string,
@@ -98,7 +97,8 @@ export function addUsedColor(
   return { added: [...added, normalized], outcome: 'added' }
 }
 
-/** An added color taken out of the Palette (ticket 228): the colors without it, and where it stood, so Undo can put it back. */
+/** An added color taken out of the Palette (ticket 228): the colors without it, and where it stood, so Undo can put
+ * it back. */
 export function removeAddedColor(
   added: readonly string[],
   hex: string,
@@ -113,11 +113,8 @@ export function restoreAddedColor(added: readonly string[], hex: string, index: 
   return [...added.slice(0, index), hex, ...added.slice(index)]
 }
 
-/**
- * The Palette in the order its slots stand (ticket 398): `order` is the ids a person arranged them in. A slot whose
- * color is gone is dropped, so the ones after it close up, and a color `order` doesn't name yet (a new one, or a
- * built-in one on a device that never reordered) follows in the default order.
- */
+/** The Palette in slot order (ticket 398): `order` is the ids a person arranged. A slot whose color is gone closes up;
+ * a color `order` doesn't name yet follows in default order. */
 export function orderedPalette(added: readonly string[], order: readonly string[]): PaletteColor[] {
   const all = paletteWith(added)
   const byId = new Map(all.map((color) => [color.id, color]))
@@ -133,7 +130,8 @@ export function orderedPalette(added: readonly string[], order: readonly string[
   return [...result, ...all.filter((color) => !placed.has(color.id))]
 }
 
-/** A slot's color dragged to another slot: the ids with it taken out and put at `to`, the ones between shifting by one. */
+/** A slot's color dragged to another slot: the ids with it taken out and put at `to`, the ones between shifting by
+ * one. */
 export function moveSlot(ids: readonly string[], from: number, to: number): string[] {
   if (from === to || from < 0 || from >= ids.length || to < 0 || to >= ids.length) return [...ids]
   const next = [...ids]

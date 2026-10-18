@@ -1,9 +1,7 @@
 import type { DrawingContext } from '../rendering/beadLook'
 
-/**
- * A stand-in for a canvas's 2D context that writes down every drawing call, with the fill color and opacity in force at
- * the time, so a test can say what was drawn without a real canvas (jsdom has none).
- */
+/** A 2D context stand-in that writes down every drawing call with the fill color and opacity in force (jsdom has
+ * none). */
 export function recordingContext() {
   const calls: { name: string; args: unknown[]; fillStyle: unknown; globalAlpha: number }[] = []
   const state = { fillStyle: '#000000' as unknown, globalAlpha: 1 }

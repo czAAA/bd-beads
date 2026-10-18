@@ -1,8 +1,5 @@
-/*
- * High contrast (ticket 160; HighContrastTheme card, accessibility.md): every line 2px in its full line color, every
- * surface white, no elevation. The controls thicken their own edges; this sheet covers the boxes and the rules between
- * things, by the class each component gives them. `:root[data-theme]` outweighs a component's scoped rule.
- */
+/* High contrast (ticket 160; HighContrastTheme card): 2px full-color lines, white surfaces, no elevation;
+   `:root[data-theme]` outweighs scoped rules. */
 :root[data-theme='contrast'] :is(
     .save-box,
     .expandable-panel,
@@ -26,11 +23,8 @@
   border-top-width: 2px;
 }
 
-/*
- * Windows high contrast (forced-colors): system colors win; edges, focus and selected states stay visible. Bead colors
- * are the Project itself, so everything that shows one keeps its own colors; the background word and curve are
- * decoration and step aside. `html:root` outweighs a component's scoped rule.
- */
+/* Windows forced-colors: system colors win and edges, focus, selection stay visible; bead colors are kept,
+   decoration steps aside. */
 @media (forced-colors: active) {
   html:root :is(
       .project-surface,

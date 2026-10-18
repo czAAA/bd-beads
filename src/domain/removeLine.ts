@@ -5,14 +5,11 @@ import { carryNames } from './pieceNames'
 import { rowProgressStarted, type Project } from './project'
 import type { Selection } from './selection'
 
-/**
- * Remove line (CONTEXT.md, ADR 0026, ticket 313): takes one whole row or column out of the Frame, or with no Frame out of
- * a Piece area, closing the gap. The area's beads after the line shift up or left by one and the area loses a row or
- * column; every bead outside the area stays where it is. The line is the Selection when it is exactly one row or column
- * of the area, which a ruler number picks out.
- */
+/** Remove line (CONTEXT.md, ADR 0026, ticket 313): takes one row or column out of the Frame (or Piece area), closing
+ * the gap. */
 
-/** What a Selection reads as: the axis the line runs along and its index counted from the area's first row or column. */
+/** What a Selection reads as: the axis the line runs along and its index counted from the area's first row or
+ * column. */
 export interface AreaLine {
   axis: 'row' | 'column'
   index: number
@@ -23,10 +20,8 @@ interface ProjectLine extends AreaLine {
   area: Frame
 }
 
-/**
- * Which whole line of an area a Selection covers exactly, or undefined when it is neither. On a one-bead area the
- * single bead fits both readings; it is called a row, an arbitrary but fixed tiebreak.
- */
+/** Which whole line of an area a Selection covers exactly, or undefined; a one-bead area counts as a row (fixed
+ * tiebreak). */
 export function selectedAreaLine(frame: Frame | undefined, selection: Selection | undefined): AreaLine | undefined {
   if (!frame || !selection) {
     return undefined
@@ -54,7 +49,8 @@ function selectedProjectLine(project: Project, selection: Selection | undefined)
 
 /** Why Remove line would not apply, or undefined when it would. */
 export type RemoveLineRefusal =
-  /** The Selection isn't exactly one whole row or column of the Frame, or with no Frame of a Piece area: nothing for it to act on. */
+  /** The Selection isn't exactly one whole row or column of the Frame, or with no Frame of a Piece area: nothing for
+   * it to act on. */
   | 'no-line'
   /** Row progress is on: the Frame's rows are held still while it is (ADR 0026). */
   | 'locked'
@@ -81,10 +77,7 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
   }
 }
 
-/**
- * Taking out the line the Selection marks out, as a Frame change's result. With a Frame this is changeFrame's own; with
- * none it is only an edit of a Piece area's beads, which Row progress still holds still.
- */
+/** Taking out the Selection's line: changeFrame's result with a Frame, else an edit of a Piece area's beads only. */
 export function removeSelectedLine(project: Project, selection: Selection | undefined): FrameChangeResult {
   const line = selectedProjectLine(project, selection)
   if (!line) {

@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
-/**
- * A wait (ticket 158; Loading card, forms-and-states.md): nothing for the first `loading-delay` (300ms), so fast work
- * never flashes, then three accent beads swelling in turn (standing still with reduced motion), or the 4px progress
- * track when the share done is known, with a line saying what is happening ("Making the PDF · Fox"). Mount it for as
- * long as the wait lasts.
- */
+/** A wait (ticket 158): nothing for the first `loading-delay` (300ms) so fast work never flashes, then beads or a
+ * progress track. */
 defineProps<{ text: string; share?: number; compact?: boolean }>()
 
 /** `--loading-delay` (tokens.json): read from the page when it has one, since a timer can't take a CSS value. */

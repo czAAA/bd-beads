@@ -10,12 +10,9 @@ import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
-/**
- * The Frame's part of the Project panel (ProjectPanel and Frame cards, tickets 233, 443): the Technique choice, and the
- * Frame's Estimated size with its warning as a Note (ticket 328). Edit Frame, Fit to drawing and Remove Frame are not here
- * any more: they stay on the Selection and Progress bars (spec 0440). Once a Row progress pass is done the Technique is
- * locked and the reason is written under it.
- */
+// The Frame's part of the Project panel (ProjectPanel and Frame cards, tickets 233, 443): the Technique choice and the
+// Frame's Estimated size with its warning as a Note (ticket 328). Edit/Fit/Remove Frame live on the Selection and
+// Progress bars (spec 0440). Once a Row progress pass is done the Technique is locked, with the reason under it.
 const props = defineProps<{ project: Project }>()
 
 const emit = defineEmits<{ 'set-technique': [technique: Technique] }>()
@@ -81,10 +78,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 </template>
 
 <style scoped>
-/*
- * As wide as the sheet it sits in, so everything below wraps inside that width rather than setting one of its own: the estimate and the notes
- * wrap, and the buttons fall onto as many lines as they need.
- */
+/* As wide as the sheet it sits in, so everything below wraps inside that width rather than setting its own. */
 .frame-controls {
   display: flex;
   flex-direction: column;

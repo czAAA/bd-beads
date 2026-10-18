@@ -25,16 +25,14 @@ import {
 import { headerMaker, type PrintText } from './printText'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
-/**
- * Drawing the printed pages (ticket 162; printed-output.md, the PrintPage1 and PrintChartPage cards). The chart comes
- * first and the rest is small, in the margins. The accent stays light, so a black-and-white printer loses nothing: the
- * technique word at full strength, the background line at 38%, the marks at 7%, the maker's name at 14%. Everything
- * is on paper at 150 dpi; the beads are drawn by the Project renderer in the light print theme.
- */
+// Drawing the printed pages (ticket 162; printed-output.md, PrintPage1 and PrintChartPage cards). The chart first,
+// the rest is small in the margins. The accent stays light so a black-and-white printer loses nothing (word full, line
+// 38%, marks 7%, maker's name 14%). Paper is 150 dpi; beads are drawn by the Project renderer in the light print theme.
 
 export const PRINT_OPACITY = { line: 0.38, mark: 0.07, name: 0.14 }
 
-// The canvas can't read CSS variables, so these three stacks repeat `docs/design/system/tokens.json` (type.families): change them together.
+// The canvas can't read CSS variables, so these three stacks repeat `docs/design/system/tokens.json` (type.families):
+// change them together.
 export const SANS = "Inter, system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif"
 export const MONO = '"DM Mono", "JetBrains Mono", ui-monospace, "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", monospace'
 export const SERIF = '"Instrument Serif", "Source Serif 4", Georgia, "Songti SC", "Noto Serif CJK SC", serif'
@@ -44,7 +42,8 @@ export const pt = (value: number) => (value * 150) / 72
 
 export const font = (weight: string, size: number, family: string) => `${weight} ${pt(size)}px ${family}`
 
-/** The type the pages use, loaded before anything is drawn (with the Cyrillic and Latin Extended subsets, for a Russian or Polish export). */
+/** The type the pages use, loaded before anything is drawn (with the Cyrillic and Latin Extended subsets, for a
+ * Russian or Polish export). */
 export async function loadPrintFonts(): Promise<void> {
   const fonts = typeof document === 'undefined' ? undefined : document.fonts
   if (!fonts) return
@@ -143,10 +142,8 @@ export function drawAccentLine(context: CanvasRenderingContext2D, page: PageSize
   context.restore()
 }
 
-/**
- * Large and pale under the board, its top tucked behind the board's lower edge; never cut. The maker's name, or, for
- * a Project with its own maker's name (ticket 182), that name alongside the Project's own (see PrintText.background).
- */
+// Large and pale under the board, its top tucked behind the board's lower edge; never cut. The maker's name, or with a
+// Project maker's name (ticket 182) both (see PrintText.background).
 export function drawBackgroundName(context: CanvasRenderingContext2D, background: string, x: number, boardBottom: number, align: CanvasTextAlign): void {
   if (!background) return
   context.save()
@@ -186,10 +183,8 @@ export interface Span {
 
 type RulerShape = Pick<Project, 'frame' | 'beads' | 'rotation'>
 
-/**
- * Each quarter turn reverses one axis and swaps which of columns/rows is which (composing gridToRegion's own per-turn
- * mapping): the across axis reads reversed at 90°/180°, the down axis at 180°/270°.
- */
+// Each quarter turn reverses one axis and swaps columns/rows (composing gridToRegion's per-turn mapping): across reads
+// reversed at 90°/180°, down at 180°/270°.
 function acrossReversed(rotation: Rotation): boolean {
   return rotation === 90 || rotation === 180
 }
@@ -198,7 +193,8 @@ function downReversed(rotation: Rotation): boolean {
   return rotation === 180 || rotation === 270
 }
 
-/** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted from its far end when the turn reverses this axis. */
+/** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted
+ * from its far end when the turn reverses this axis. */
 function acrossNumber(project: RulerShape, index: number): number {
   const dimension = rotationSwapsAxes(project.rotation) ? projectDimensions(project).rows : projectDimensions(project).columns
   return acrossReversed(project.rotation) ? dimension - index : index + 1
@@ -210,11 +206,8 @@ function downNumber(project: RulerShape, index: number): number {
   return downReversed(project.rotation) ? dimension - index : index + 1
 }
 
-/**
- * The rulers on all four sides, in the Project's own numbers (a turned Project's rows run across, counted from its
- * far end), and a hairline every 10 beads across the board. `every` is 10 on page 1; the chart pages label every 5th
- * bead in `muted` and every 10th bold.
- */
+// The rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the far
+// end), and a hairline every 10 beads. `every` is 10 on page 1; chart pages label every 5th bead in `muted`, 10th bold.
 export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10): void {
   const grid = displayedGrid(project)
   const bead = CELL_SIZE_PX * zoom
@@ -278,13 +271,9 @@ function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: numbe
 
 // ---- Page 1 -------------------------------------------------------------------------------------------------------
 
-/**
- * How the whole Project sits on page 1: the zoom and the room it takes, beside (or, wide, above) the Beads needed
- * column. Tried both ways and the one that draws the Project larger wins — a Project only a little wider than tall
- * (peyote and brick's rows sit closer than their columns, so even a square bead count comes out that way) fits the
- * side column's room far better than the fixed band left under a truly wide one, and picking by shape alone once
- * left it tiny with the rest of the sheet empty.
- */
+// How the whole Project sits on page 1: zoom and room, beside (or, wide, above) the Beads needed column. Both ways are
+// tried and the larger Project wins: a slightly wider than tall one (peyote/brick rows sit closer than columns) fits
+// the side column far better, and picking by shape alone once left it tiny with the sheet empty.
 export function pageOneLayout(project: Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'>, page: PageSize) {
   const wide = displayedExtentPx(project.technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation)
   const top = PRINT_MARGIN + mm(30)
@@ -305,12 +294,9 @@ export function pageOneLayout(project: Pick<Project, 'technique' | 'frame' | 'be
   return beside.zoom >= below.zoom ? beside : below
 }
 
-/**
- * Beads needed and the grams note, in a column `width` wide from (x, y); returns the column's bottom. A narrow
- * rectangle on purpose (ticket 186): it used to stretch its row height to whatever room the page had left below it,
- * which read as a wide, sparse block; the facts that used to run on underneath it are `drawFacts`'s own column now,
- * so the two can sit side by side in the room that stretching used to waste.
- */
+// Beads needed and the grams note, in a column `width` wide from (x, y); returns its bottom. A narrow rectangle on
+// purpose (ticket 186): it used to stretch to the room below, a wide sparse block; `drawFacts`'s column now sits beside
+// it.
 function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number): number {
   const { labels } = words
   text(context, labels.beadsNeeded, x, y, font('700', 10, SANS), PRINT_COLORS.ink)
@@ -368,7 +354,8 @@ function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x:
   return y
 }
 
-/** The maker, technique, bead, size and estimated-size facts, in their own narrow column beside Beads needed (ticket 186). */
+/** The maker, technique, bead, size and estimated-size facts, in their own narrow column beside Beads needed (ticket
+ * 186). */
 function drawFacts(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number): number {
   const { labels } = words
   const facts: [string, string][] = [
@@ -469,7 +456,8 @@ function drawParts(context: CanvasRenderingContext2D, project: Project, plan: Pr
 
 // ---- Chart pages --------------------------------------------------------------------------------------------------
 
-/** Past this many blocks, the locator lays out as a horizontal strip instead of the block grid's own shape (ticket 187). */
+/** Past this many blocks, the locator lays out as a horizontal strip instead of the block grid's own shape (ticket
+ * 187). */
 export const MINI_MAP_GRID_LIMIT = 16
 
 export interface MiniMapCell {
@@ -479,11 +467,9 @@ export interface MiniMapCell {
   here: boolean
 }
 
-/**
- * The locator's own layout (ticket 187): the block grid's own row/column shape up to `MINI_MAP_GRID_LIMIT` blocks,
- * or a single horizontal row past that, so a Project that splits tall doesn't add a tall locator under the header
- * and push the chart down or off the page. Pure, so it can be checked without a canvas; `drawMiniMap` draws it.
- */
+// The locator's layout (ticket 187): the block grid's shape up to `MINI_MAP_GRID_LIMIT` blocks, or one horizontal row
+// past that, so a tall split doesn't add a tall locator and push the chart down. Pure, so checkable without a canvas;
+// `drawMiniMap` draws it.
 export function miniMapLayout(plan: PrintPlan, part: PrintPart): { cell: number; width: number; cells: MiniMapCell[] } {
   const total = plan.partsAcross * plan.partsDown
   const horizontal = total > MINI_MAP_GRID_LIMIT
@@ -574,7 +560,8 @@ function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan,
 
 // ---- Stacked strips (PrintStrips) ----------------------------------------------------------------------------------
 
-/** "Part 2 · columns 39–76": the raw axis being split (columns when not turned a quarter, rows when it is), lowest number first. */
+/** "Part 2 · columns 39–76": the raw axis being split (columns when not turned a quarter, rows when it is), lowest
+ * number first. */
 function stripLabel(project: Project, labels: PrintText['labels'], part: PrintPart): string {
   const a = acrossNumber(project, part.firstAcross)
   const b = acrossNumber(project, part.lastAcross)
@@ -582,7 +569,8 @@ function stripLabel(project: Project, labels: PrintText['labels'], part: PrintPa
   return template.replace('{part}', String(part.across + 1)).replace('{from}', String(Math.min(a, b))).replace('{to}', String(Math.max(a, b)))
 }
 
-/** Several parts sharing one sheet, at the base bead size, each on its own board with rulers and a label, top to bottom. */
+/** Several parts sharing one sheet, at the base bead size, each on its own board with rulers and a label, top to
+ * bottom. */
 function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[]): HTMLCanvasElement {
   const { page } = plan
   const { canvas, context } = blankPage(page)
@@ -593,7 +581,8 @@ function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, par
   drawMark(context, page.width - mm(44), page.height * 0.5, mm(52), PRINT_COLORS.accent, PRINT_OPACITY.mark)
   drawMark(context, PRINT_MARGIN - mm(4), page.height - PRINT_MARGIN - mm(18), mm(18), PRINT_COLORS.accent, PRINT_OPACITY.mark)
 
-  // The header: technique word and name, the maker and date, the page number (no per-part indicator or mini map: each board has its own label).
+  // The header: technique word and name, the maker and date, the page number (no per-part indicator or mini map: each
+  // board has its own label).
   const pageLabel = labels.page.replace('{page}', String(parts[0]!.page)).replace('{pages}', String(plan.pageCount))
   text(context, pageLabel, page.width - PRINT_MARGIN, PRINT_MARGIN + mm(5), font('700', 9, SANS), PRINT_COLORS.ink, 'right')
   drawTitle(context, words, PRINT_MARGIN, PRINT_MARGIN + mm(6), 18, 11, page.width - PRINT_MARGIN * 2 - mm(40))

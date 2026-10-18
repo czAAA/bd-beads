@@ -9,11 +9,9 @@ export interface UpdatePromptDeps {
   showToast: ReturnType<typeof useToasts>['show']
 }
 
-/**
- * "Update ready" (ticket 69, ADR 0045): when a newer version of the app has downloaded behind the open page, a quiet
- * toast offers Reload and stays until answered or closed. Nothing reloads by itself, so an update never takes the
- * person's place on the canvas; the version also arrives on the next full load.
- */
+// "Update ready" (ticket 69, ADR 0045): once a newer version has downloaded behind the open page, a quiet toast offers
+// Reload and stays until answered or closed. Nothing reloads by itself, so an update never takes the person's place on
+// the canvas.
 export function useUpdatePrompt({ updates, messages, showToast }: UpdatePromptDeps) {
   const stopListening = updates.onReady(() => {
     const t = messages()

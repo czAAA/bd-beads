@@ -1,13 +1,8 @@
 import { ImageConversionError, validateImagePixelCount, type DecodeImage } from '../domain/imageConversion'
 
-/**
- * The one part of Convert image that is the browser's job rather than this app's: turning a chosen file's PNG/JPEG/
- * GIF/WebP bytes into pixels. Kept apart from domain/imageConversion.ts on purpose — everything there is a pure function over
- * already-decoded pixel data and is unit-tested as such, while this is a thin adapter over browser APIs that only a
- * real browser implements (jsdom decodes no image bytes and paints no canvas).
- *
- * Callers take it as a `DecodeImage` (declared in domain/imageConversion.ts), so a test can hand over synthetic pixel data instead.
- */
+// The browser's part of Convert image: decoding PNG/JPEG/GIF/WebP bytes to pixels. Apart from
+// domain/imageConversion.ts, whose pure functions are unit-tested, because jsdom decodes no images; callers take a
+// `DecodeImage` so a test can pass synthetic pixels.
 
 /** What both decode paths hand back: something drawable, with the size it decoded to. */
 interface DecodedSource {
@@ -17,10 +12,8 @@ interface DecodedSource {
   release: () => void
 }
 
-/**
- * Decodes through an `<img>` element, for a browser without createImageBitmap. The object URL has to outlive the load,
- * and is revoked either way so a refused picture doesn't leak one.
- */
+// Decodes through an `<img>` for browsers without createImageBitmap; the object URL outlives the load and is always
+// revoked.
 function decodeViaImageElement(file: Blob): Promise<DecodedSource> {
   return new Promise<DecodedSource>((resolve, reject) => {
     const url = URL.createObjectURL(file)
@@ -44,11 +37,7 @@ function decodeViaImageElement(file: Blob): Promise<DecodedSource> {
   })
 }
 
-/**
- * An animated GIF decodes as its first frame here, whichever path runs: createImageBitmap produces one bitmap, and an
- * `<img>` drawn to a canvas paints whatever frame it is showing, which is the first one at load. That is deliberate —
- * a Project is a still picture, so there is nothing an animation's later frames could become.
- */
+/** An animated GIF decodes as its first frame on either path; deliberate, since a Project is a still picture. */
 async function decodeSource(file: Blob): Promise<DecodedSource> {
   if (typeof createImageBitmap === 'function') {
     const bitmap = await createImageBitmap(file)
@@ -57,12 +46,9 @@ async function decodeSource(file: Blob): Promise<DecodedSource> {
   return decodeViaImageElement(file)
 }
 
-/**
- * Reads a chosen picture's pixels, throwing an ImageConversionError for a file the browser can't decode or one past
- * the resolution limit. File format and file size are checked before this is ever reached (see validateImageFile) —
- * this is where a picture's real dimensions first become known, so the resolution limit is enforced here, before the
- * pixels are read out.
- */
+// Reads a chosen picture's pixels, throwing an ImageConversionError if undecodable or past the resolution limit. Format
+// and size are checked earlier (validateImageFile); the real dimensions first become known here, so the resolution
+// limit is enforced here.
 export const decodeImageFile: DecodeImage = async (file) => {
   let source: DecodedSource
   try {

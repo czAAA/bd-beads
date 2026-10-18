@@ -11,10 +11,8 @@ export interface A11yAnnouncerDeps {
   beadCursor: () => GridPosition
 }
 
-/**
- * Screen-reader announcements (tickets 159, 192; ADR 0020): the one polite live-region message per action -- the bead
- * cursor's place and color, what a key just did. Deps are read lazily.
- */
+// Screen-reader announcements (tickets 159, 192; ADR 0020): the one polite live-region message per action, such as the
+// bead cursor's place and color. Deps are read lazily.
 export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {
   /** The live region's text. */
   const announcement = ref('')
@@ -35,11 +33,9 @@ export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {
     return color ? (t.colorNames[color.id] ?? hex) : t.colorNames.custom!
   }
 
-  /**
-   * Says the bead cursor's row, column and the color under it. With a Frame the numbers are the Frame's own (its rulers
-   * count from 1 at its top-left), so a bead above or left of it is row or column 0 and below; with none they are the
-   * canvas's, from the bead at row 0, column 0.
-   */
+  // Says the bead cursor's row, column and color. With a Frame the numbers are the Frame's own (rulers count from 1 at
+  // its top-left), so a bead above or left of it is row or column 0 and below; with none they are the canvas's, from
+  // row 0, column 0.
   function announceCursor() {
     const project = deps.currentProject()
     if (!project) return

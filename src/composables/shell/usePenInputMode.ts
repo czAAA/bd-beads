@@ -2,11 +2,9 @@ import { computed, onBeforeUnmount, onMounted } from 'vue'
 import { DEFAULT_INPUT_MODE, type InputMode } from '../../domain/inputMode'
 import type { DevicePreferences } from '../../services/devicePreferences'
 
-/**
- * The input mode (tickets 325, 326, 443): which pointer draws and which one moves the canvas. A browser cannot say
- * whether a pen exists until it touches the screen, so the Menu's Input row is offered only once a pen event has been seen, and
- * that first pen switches to Pen mode unless the person already chose a mode. "A pen has been seen" is kept on the device.
- */
+// The input mode (tickets 325, 326, 443): which pointer draws and which moves the canvas. A browser can't tell a pen
+// exists until it touches the screen, so the Menu's Input row appears only once a pen event is seen (kept on the
+// device); the first pen switches to Pen mode unless the person already chose a mode.
 export function usePenInputMode(preferences: DevicePreferences) {
   const chosen = preferences.get('inputMode')
   const penSeen = preferences.get('penSeen')

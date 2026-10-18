@@ -1,8 +1,5 @@
-/**
- * How the rulers' own parts scale with the zoom (Rulers card, ticket 377), so they look alike at every zoom: the lines
- * stay close to the beads when zoomed out and keep clear of them when zoomed in, the numbers stay readable far out and
- * grow with the beads close up, and the dots grow so they are still seen. At zoom 1 every value is the base one.
- */
+// How the rulers' lines, numbers and dots scale with zoom (Rulers card, ticket 377) so they look alike at every zoom; 1
+// = base value.
 
 /** How far a Frame's line sits outside its outermost beads at zoom 1 (Frame card). */
 const FRAME_OUTSET_PX = 7
@@ -18,13 +15,15 @@ const FIFTH_DOT_RADIUS_PX = 1.75
 const FAR = -3
 const NEAR = 2
 
-/** `far` at 12.5% zoom and below, `one` at 100%, `near` at 400% and above, steady in between in the zoom's own steps. */
+/** `far` at 12.5% zoom and below, `one` at 100%, `near` at 400% and above, steady in between in the zoom's own
+ * steps. */
 function interpolateByZoom(zoom: number, far: number, one: number, near: number): number {
   const power = Math.min(NEAR, Math.max(FAR, Math.log2(Math.max(zoom, 1e-6))))
   return power <= 0 ? far + (one - far) * ((power - FAR) / -FAR) : one + (near - one) * (power / NEAR)
 }
 
-/** How a line's distance from its beads, and a dot's radius, change with the zoom: shared by the Frame, a piece and both kinds of dot. */
+// How a line's distance from its beads, and a dot's radius, change with the zoom: shared by the Frame, a piece and both
+// kinds of dot.
 const outsetShare = (zoom: number) => interpolateByZoom(zoom, 0.45, 1, 2)
 const dotShare = (zoom: number) => interpolateByZoom(zoom, 1, 1, 2.5)
 
