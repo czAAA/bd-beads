@@ -28,11 +28,14 @@ type Gesture =
 // Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle opens the Frame bar and shows the
 // handles; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
 // Margin handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
+/** The control that opened the Frame bar, for it to hang from (ticket 475). */
+export type FrameBarOrigin = 'pencil' | 'strip'
+
 export function useFrameFlow(deps: FrameFlowDeps) {
   /** The weaver's choice on the edit toggle (the Frame bar open); false until they turn it on. Never saved. */
   const editOn = ref(false)
-  /** Which control opened the bar, for it to hang from (ticket 475): the edit pencil, or the strip's Frame button. */
-  const barFrom = ref<'pencil' | 'strip'>('strip')
+  /** Which control opened the bar: the edit pencil, or the strip's Frame button. */
+  const barFrom = ref<FrameBarOrigin>('strip')
   /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its
    * beads. */
   const draft = ref<{ frame: Frame; move?: { rows: number; columns: number } } | undefined>()
@@ -75,7 +78,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** The edit toggle: nothing happens without a Frame. Once Row progress has started it opens the bar alone, with no
    * handles. */
-  function toggleEdit(from: 'pencil' | 'strip' = 'strip'): void {
+  function toggleEdit(from: FrameBarOrigin = 'strip'): void {
     if (!deps.currentProject()?.frame) return
     editOn.value = !editOn.value
     if (editOn.value) barFrom.value = from

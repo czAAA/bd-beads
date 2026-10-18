@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 import PanelShell from '../shell/PanelShell.vue'
@@ -57,6 +57,10 @@ const barEl = ref<HTMLElement>()
 const size = useElementSize(barEl)
 const shell = ref<InstanceType<typeof PanelShell>>()
 watch(() => props.pencil, () => shell.value?.place(), { flush: 'post' })
+/** Where the shell hangs the bar: under the edit pencil, right edges lined up, at every width; else from the strip. */
+const placement = computed(() =>
+  props.pencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : { anchor: 'strip-frame', align: 'start' as const, dropdown: false },
+)
 
 /** A press on the Margin handle or the pencil, or one that grabs a resize handle, works the Frame: the bar stays. */
 function keepsPress(event: PointerEvent): boolean {
@@ -66,11 +70,12 @@ function keepsPress(event: PointerEvent): boolean {
 
 /** The panel's rectangle in the drawing area's pixels. */
 function measure(): BarBox | undefined {
-  const bar = barEl.value?.closest('.panel-shell')?.getBoundingClientRect()
+  const bar = shell.value?.el?.getBoundingClientRect()
   const area = document.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
   return bar && area && bar.width > 0 ? { left: bar.left - area.left, top: bar.top - area.top, width: bar.width, height: bar.height } : undefined
 }
-watch([size.width, size.height, () => props.pencil], () => emit('rect', measure()), { immediate: true, flush: 'post' })
+// The shell sets its box after mount and on every move, so it is measured once the box has reached the page.
+watch([size.width, size.height, () => shell.value?.box], () => void nextTick(() => emit('rect', measure())), { immediate: true, flush: 'post' })
 onBeforeUnmount(() => emit('rect', undefined))
 
 /** The size field: shows "columns × rows"; Enter or leaving it takes a typed "20x120", Escape puts the size back. */
@@ -96,9 +101,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   <PanelShell
     ref="shell"
     :title="t.frame.title"
-    :anchor="pencil ? 'frame-edit-toggle' : 'strip-frame'"
-    :align="pencil ? 'end' : 'start'"
-    :dropdown="!!pencil"
+    v-bind="placement"
     width="min(calc(100vw - 2 * var(--frame-bar-gap)), var(--frame-bar-width))"
     :keeps-press="keepsPress"
     @close="emit('close')"
