@@ -1,44 +1,23 @@
 import { forEachBead, type BeadMap } from './canvas'
 import type { Grid, GridProject, Project } from './project'
 
-/**
- * The compact form a Project's beads are stored in (ADR 0009, reshaped for the Canvas by ADR 0026): the distinct
- * colors the Project holds, listed once each, plus, for every row that has a bead, where that row's beads start and
- * the beads themselves as runs of indexes into that list. A 60×90 Project costs about 3KB this way instead of about
- * 100KB as an object per bead, which is what moves the library's ceiling from roughly 50 Projects to roughly 1,600.
- * Only rows with a bead are written, so a bead far from the others costs one row and an empty canvas costs nothing.
- *
- * The table is per-Project and deliberately not indexes into the Palette: a bead may hold any hex at all — a Custom
- * color, or a color from an imported Project this device's Palette has never had — and a Palette-indexed encoding
- * would have had nothing to write for those.
- *
- * It is also deliberately **not** ticket 58's Image colors (ADR 0011): that field records what one Convert image found
- * and is frozen, while this describes the beads as they stand now. They differ the moment a color is erased and both
- * are then correct, so this table stays inside the beads' own stored value rather than becoming a Project field the
- * two could be confused for.
- */
+// The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with a
+// bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex) and not
+// ticket 58's frozen Image colors (ADR 0011): it describes the beads as they stand now.
 interface EncodedBeads {
   /** Every distinct hex on the canvas, in the order the beads first use it. */
   colors: string[]
-  /**
-   * One entry per row that has a bead, keyed by the row number: `"<first column>:<runs>"`, where the runs cover the
-   * columns from the first bead to the last in that row as comma-separated color-table indexes — `"3"` for a single
-   * bead of index 3, `"3x40"` for forty of them, and index 0 for an empty position between two beads.
-   */
+  /** Per row with a bead, keyed by row: `"<first column>:<runs>"`, runs as color-table indexes (`"3"`, `"3x40"`; 0
+   * is a gap). */
   rows: Record<string, string>
 }
 
-/**
- * A Project as the Canvas stores it: every field it has, verbatim, except that `beads` is replaced by its compact
- * form. Passing the rest through by spread rather than field by field is what lets a field added after this encoding —
- * Image colors, say, or the Frame — round-trip untouched without this module knowing it exists.
- */
+  /** Per row with a bead, keyed by row: `"<first column>:<runs>"`, runs as color-table indexes (`"3"`, `"3x40"`, 0 =
+   * gap). */
 export type EncodedProject = Omit<Project, 'beads'> & { encodedBeads: EncodedBeads }
 
-/**
- * A Project as it was stored before the Canvas (ADR 0009's original shape): `columns` × `rows` cells as runs in
- * row-major order. Still read, never written.
- */
+/** A Project as stored before the Canvas (ADR 0009's original shape): `columns` × `rows` cells as row-major runs.
+ * Read only. */
 interface EncodedCells {
   colors: string[]
   runs: string
@@ -121,7 +100,8 @@ function encodeBeads(beads: BeadMap): EncodedBeads {
   return { colors, rows }
 }
 
-/** The color-table index of each position a stored run list covers, in order. A run that is not a number reads as empty. */
+/** The color-table index of each position a stored run list covers, in order. A run that is not a number reads as
+ * empty. */
 function expandRuns(runs: string): number[] {
   const indexes: number[] = []
   if (runs === '') {
@@ -155,11 +135,7 @@ function decodeBeads({ colors, rows }: EncodedBeads): BeadMap {
   return beads
 }
 
-/**
- * Expands the original compact cells back to `rows` × `columns` cells. The Project's own dimensions decide the shape,
- * so a stored value whose runs don't add up to exactly that many cells still yields a usable grid — missing cells come
- * back empty, extra ones are dropped — rather than a Project the editor can't open at all.
- */
+/** Expands the original compact cells to `rows` × `columns`; runs that don't add up still yield a usable grid. */
 function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: number): Grid {
   const flat = expandRuns(runs).map((index) => (index === EMPTY_INDEX ? null : (colors[index - 1] ?? null)))
   return Array.from({ length: rows }, (_row, row) =>
@@ -172,7 +148,8 @@ export function encodeProject(project: Project): EncodedProject {
   return { ...rest, encodedBeads: encodeBeads(beads) }
 }
 
-/** The Project a stored value holds, whichever shape wrote it; a grid-shaped one still goes through normalizeProject to get its Frame. */
+/** The Project a stored value holds, whichever shape wrote it; a grid-shaped one still goes through normalizeProject
+ * to get its Frame. */
 export function decodeProject(encoded: EncodedProject | EncodedGridProject): Project | GridProject {
   if ('encodedBeads' in encoded) {
     const { encodedBeads, ...rest } = encoded

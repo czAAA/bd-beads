@@ -1,11 +1,8 @@
 import type { Grid } from '../../domain/project'
 import { tourFinishedGrid } from '../../domain/tour'
 
-/**
- * The small bead drawings the Overview carousel's examples are made of (ticket 218; Overview card): a heart, a poppy, a
- * landscape, stripes and checks, written as letters so the picture can be read in the source. They are artwork, not
- * Projects the app keeps, and use the colors the design system's preview gives them.
- */
+// The small bead drawings of the Overview carousel's examples (ticket 218; Overview card): a heart, poppy, landscape,
+// stripes and checks, as letters. Artwork, not Projects the app keeps, in the design system preview's colors.
 export const ART_COLORS: Readonly<Record<string, string>> = {
   Y: '#f2c94c',
   K: '#1a1a1a',

@@ -24,10 +24,8 @@ export interface ToolAtCursorDeps {
   colorWords: (hex: string | null | undefined) => string
 }
 
-/**
- * The active tool at a cursor position (tickets 159, 193; ADR 0020): one press and release, and a Selection stretched
- * from the bead the cursor was on. Kept apart from keyboard navigation so other cursor sources (touch) can use it.
- */
+// The active tool at a cursor position (tickets 159, 193; ADR 0020): one press and release, and a Selection stretched
+// from the bead the cursor was on. Kept apart from keyboard navigation so other cursor sources (touch) can use it.
 export function useToolAtCursor(deps: ToolAtCursorDeps) {
   /** Whether a Selection is being stretched, begun at the bead the cursor was on. */
   let extending = false
@@ -50,7 +48,8 @@ export function useToolAtCursor(deps: ToolAtCursorDeps) {
     )
   }
 
-  /** Stretches the Selection from `from` to `to`, beginning it at `from` on the first call. Returns false, with the not-allowed cue, when the keep-out margin stops it a cell short, so the cursor stays put (ticket 433). */
+  /** Stretches the Selection from `from` to `to`, beginning it at `from` on the first call. Returns false, with the
+   * not-allowed cue, when the keep-out margin stops it a cell short, so the cursor stays put (ticket 433). */
   function extendSelectionTo(from: GridPosition, to: GridPosition): boolean {
     if (!extending) {
       extending = true

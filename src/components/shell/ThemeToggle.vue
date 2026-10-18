@@ -7,11 +7,9 @@ import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
 
-/**
- * The header's four-way theme control (ticket 139; ThemeToggle card): Match device, Light, Dark, High contrast. A radio
- * group with one Tab stop: the arrow keys move the pick, which takes effect at once, and Home and End jump to the ends.
- * Match device is the default and follows the device live; any other pick sticks and is remembered on this device.
- */
+// The header's four-way theme control (ticket 139; ThemeToggle card): Match device, Light, Dark, High contrast. A radio
+// group with one Tab stop (arrows move the pick and apply at once, Home/End jump). Match device is the default and
+// follows the device live; any other pick is remembered on this device.
 const { t } = useI18n()
 const { pick, setPick } = useThemePick()
 

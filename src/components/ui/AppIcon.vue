@@ -2,10 +2,8 @@
 import { computed } from 'vue'
 import { ICON_BODIES, type IconName, type IconSize } from './icons'
 
-/**
- * One Icons v2 icon, drawn inline in the current text color (ticket 137). Decorative by default, hidden from assistive
- * tech, since the control it sits in carries the name; pass `label` only for an icon that means something on its own.
- */
+// One Icons v2 icon, drawn inline in the current text color (ticket 137). Decorative (hidden from assistive tech)
+// unless given a `label`.
 const props = withDefaults(defineProps<{ name: IconName; size?: IconSize; label?: string }>(), { size: 16, label: undefined })
 
 const body = computed(() => ICON_BODIES[props.name])

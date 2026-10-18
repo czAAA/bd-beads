@@ -1,14 +1,8 @@
 import { fromHex, type Rgb } from './color'
 import { PALETTE } from './palette'
 
-/**
- * The colors a Convert image (ticket 58) takes out of a picture: how they are reduced to a count a weaver can
- * actually buy, and how each reduced color is then quantized onto the Palette.
- *
- * Deliberately no dithering (ticket 58 decision). Every resolved color is snapped to its nearest Palette color
- * (ticket 177, amending ADR 0011): a converted Project's Image colors are always a subset of the same twelve
- * Palette colors every other Project paints with, rather than a closed set of picture-only hexes.
- */
+/** The colors a Convert image (ticket 58) takes from a picture: reduced to a buyable count, then no dithering, each
+ * snapped to its nearest Palette color (ticket 177, amending ADR 0011), so Image colors are a Palette subset. */
 
 
 function channelHex(value: number): string {
@@ -25,11 +19,8 @@ export function channelsOf(hex: string): Rgb {
   return fromHex(hex) ?? { r: 0, g: 0, b: 0 }
 }
 
-/**
- * Straight-line distance between two colors in RGB. Not a perceptual color space — this app's own pragmatism (a
- * Project cell is a plain hex, and every other color decision here is made on hexes) — which is good enough for the
- * one judgement it is used for: "are these two the same color as far as an eye can tell".
- */
+/** Straight-line RGB distance between two colors. Not perceptual (a cell is a plain hex), but enough for
+ * "same color as far as an eye can tell". */
 export function colorDistance(a: Rgb, b: Rgb): number {
   return Math.sqrt((a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2)
 }
@@ -53,11 +44,8 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
 
 const PALETTE_HEXES: readonly string[] = PALETTE.map((color) => color.hex)
 
-/**
- * The Palette color nearest `hex` (ticket 177, amending ADR 0011): unconditional quantization, not a distance
- * threshold, so every resolved Image color lands on one of the Palette's twelve. The *nearest* one, not merely the
- * first in range, so the answer doesn't depend on the Palette's own order.
- */
+/** The Palette color nearest `hex` (ticket 177, amending ADR 0011): unconditional, no threshold. The *nearest*, not
+ * the first in range, so the answer doesn't depend on Palette order. */
 export function snapToPalette(hex: string): string {
   // PALETTE is never empty, so nearestColor always finds a match.
   return nearestColor(PALETTE_HEXES, hex)!
@@ -92,11 +80,8 @@ function widestChannel(box: readonly WeightedColor[]): Channel {
   )
 }
 
-/**
- * Splits a box in two at the point half its cells fall either side of, along the channel it spreads widest on — the
- * "median" in median cut, weighted by cell count so a color covering most of the picture pulls the split towards
- * itself rather than counting the same as a stray single bead.
- */
+/** Splits a box at the cell-count median of its widest channel, so a color covering most of the picture pulls the
+ * split towards itself rather than counting like a stray bead. */
 function splitBox(box: readonly WeightedColor[]): [WeightedColor[], WeightedColor[]] {
   const channel = widestChannel(box)
   const sorted = [...box].sort((a, b) => a.rgb[channel] - b.rgb[channel])
@@ -129,13 +114,8 @@ function representative(box: readonly WeightedColor[]): Rgb {
   return { r: sum.r / total, g: sum.g / total, b: sum.b / total }
 }
 
-/**
- * Median cut down to at most `maxColors` boxes: repeatedly split whichever box still spreads widest, until the count
- * is reached or nothing is left to split (every remaining box holds one color). Chosen over k-means because it
- * terminates in a fixed number of steps with no starting guess to get unlucky with, and over a fixed octree because
- * it adapts to where a picture's colors actually sit — which matters most on the flat artwork this feature targets,
- * where a handful of colors may be crowded into one corner of the cube.
- */
+/** Median cut down to at most `maxColors` boxes by splitting the widest box until done. Over k-means (fixed steps,
+ * no unlucky start) and a fixed octree (adapts to where flat artwork's few colors crowd the cube). */
 function medianCut(colors: WeightedColor[], maxColors: number): WeightedColor[][] {
   let boxes: WeightedColor[][] = [colors]
 
@@ -168,17 +148,8 @@ function boxColor(box: readonly WeightedColor[]): string {
   return box.length === 1 ? box[0]!.hex : toHex(representative(box))
 }
 
-/**
- * The Image colors (CONTEXT.md, ADR 0011 as amended by ticket 177) for a picture's sampled cell colors, and what
- * each sampled color became.
- *
- * A picture already holding at most `maxColors` distinct colors skips median cut and uses each one as its own box;
- * a busier one is reduced by median cut down to `maxColors` boxes. Either way each box's representative color is
- * then quantized onto its nearest Palette color, so two boxes can resolve to the same Image color -- `colors` can
- * come out shorter than `maxColors`, down to the twelve Palette colors themselves as the hard floor.
- *
- * Ordered by how much of the picture each color covers, so the Colors group leads with the ones worth reaching for.
- */
+/** The Image colors (CONTEXT.md, ADR 0011 as amended by ticket 177) for sampled cell colors, ordered by coverage. At
+ * most `maxColors` distinct colors skip median cut; each box then snaps to the Palette, so `colors` can be shorter. */
 export function resolveImageColors(
   counts: ReadonlyMap<string, number>,
   maxColors: number,

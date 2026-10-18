@@ -5,12 +5,9 @@ import type { IconName } from '../ui/icons'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { PANEL_CONTEXT } from './panelContext'
 
-/**
- * A preference shown as its choices (MenuPanel card): on the dropdown, a SegmentedControl, on the row beside its label
- * when it has two choices (`inline`) and stacked under it otherwise; in the Top sheet, a row with the current choice that
- * opens one option per line, a radiogroup with a check on the current one, since four segments do not fit a phone. Both are one control to the app: choosing
- * applies at once.
- */
+// A preference shown as its choices (MenuPanel card): on the dropdown a SegmentedControl (beside the label with two
+// choices, stacked otherwise); in the Top sheet a row opening one option per line (a radiogroup), since four segments
+// do not fit a phone. Both apply at once.
 const props = defineProps<{
   label: string
   icon?: IconName
@@ -24,7 +21,8 @@ const sheet = computed(() => context?.sheet.value ?? false)
 const labelId = useId()
 const listId = useId()
 const listEl = ref<HTMLElement>()
-/** In the sheet the choices start folded to the current one, as the dropdown's segments are one line; the header opens them. */
+/** In the sheet the choices start folded to the current one, as the dropdown's segments are one line; the header
+ * opens them. */
 const open = ref(false)
 const currentLabel = computed(() => props.options.find((option) => option.value === value.value)?.label ?? '')
 

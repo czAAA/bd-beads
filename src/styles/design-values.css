@@ -1,7 +1,5 @@
-/*
- * Values DESIGN.md defines that aren't plain tokens (§4.6): copied from the top of components/bundle.css and
- * interaction-and-motion.md. Kept apart from tokens.css, which src/styles/tokens.test.ts holds equal to tokens.json.
- */
+/* Values DESIGN.md defines that aren't tokens (§4.6), kept apart from tokens.css, which tokens.test.ts holds equal
+   to tokens.json. */
 
 :root,
 :root[data-theme="light"] {
@@ -67,7 +65,8 @@
   --underline-width: 3px;
 }
 
-/* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar is light, so danger as is) */
+/* Selection bar (ContextBar card): the danger icon, lifted so it reads on the ink bar (on the dark theme the bar
+   is light, so danger as is) */
 :root,
 :root[data-theme="light"],
 :root[data-theme="contrast"] {

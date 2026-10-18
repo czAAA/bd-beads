@@ -1,10 +1,7 @@
 import { vi } from 'vitest'
 
-/**
- * Test doubles for what localStorage does to a write, for the ticket-55 saving behavior: how many writes a gesture
- * makes, and what the app does when one is refused. Both spy on Storage.prototype, so a test using either needs
- * `vi.restoreAllMocks()` afterwards.
- */
+/** Doubles for what localStorage does to a write (ticket 55): counting writes, and refusing them.
+ * Both spy on Storage.prototype, so a test needs `vi.restoreAllMocks()` afterwards. */
 
 /** A spy over every localStorage write, for counting them; pass `key` to count only that key's writes. */
 export function spyOnStorageWrites(key?: string) {
@@ -19,11 +16,8 @@ export function spyOnStorageWrites(key?: string) {
   }
 }
 
-/**
- * Makes localStorage refuse writes the way a browser out of quota does — the failure mode ticket 55 exists for.
- * Refuses only `key` when one is given, so a test can leave unrelated keys (the saved language, say) working, and
- * returns the spy so a test can restore real writes mid-run and watch the app recover.
- */
+/** Makes localStorage refuse writes like a browser out of quota (ticket 55), only `key` when given.
+ * Returns the spy so a test can restore real writes mid-run and watch the app recover. */
 export function refuseStorageWrites(key?: string) {
   const realSetItem = Storage.prototype.setItem
 

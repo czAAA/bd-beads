@@ -13,11 +13,9 @@ export interface ColorQuantity {
   count: number
 }
 
-/**
- * How many beads of each color the Project needs, counted straight off its painted cells and ordered most-needed
- * first. Unpainted cells don't count; a color painted nowhere isn't listed at all. Only the Frame's beads are counted
- * (ADR 0026): with no Frame there is nothing to count.
- */
+// How many beads of each color the Project needs, counted off its painted cells, most-needed first. Unpainted cells and
+// colors painted nowhere aren't listed. Only the Frame's beads count (ADR 0026): with no Frame there is nothing to
+// count.
 export function computeColorQuantities(project: Project): ColorQuantity[] {
   const counts = new Map<string, number>()
   if (!project.frame) {
@@ -33,11 +31,8 @@ export function computeColorQuantities(project: Project): ColorQuantity[] {
     .sort((a, b) => b.count - a.count || a.hex.localeCompare(b.hex))
 }
 
-/**
- * A quantity's Estimated weight in grams (CONTEXT.md): the bead count times the Bead's average weight of one bead.
- * Derived on the spot and never stored; undefined when the Bead has no weight, so a caller hides the weights rather
- * than showing zero.
- */
+// A quantity's Estimated weight in grams (CONTEXT.md): bead count times the Bead's average weight. Derived, never
+// stored; undefined when the Bead has no weight, so a caller hides weights rather than showing zero.
 export function estimatedGrams(count: number, bead: Pick<Bead, 'gramsPerBead'> | undefined): number | undefined {
   return bead?.gramsPerBead === undefined ? undefined : count * bead.gramsPerBead
 }
@@ -47,7 +42,8 @@ const MIN_WEIGHABLE_GRAMS = 0.01
 /** From here up (once rounded to two decimals it would read 10.00) the weight has one decimal. */
 const ONE_DECIMAL_FROM_GRAMS = 9.995
 
-/** "12.3 g" / "12,3 г" from 10 g up, "1.25 g" below it, and "< 0.01 g" for a color too small to weigh. The unit and decimal sign follow the app language (writing.md). */
+/** "12.3 g" / "12,3 г" from 10 g up, "1.25 g" below it, and "< 0.01 g" for a color too small to weigh. The unit and
+ * decimal sign follow the app language (writing.md). */
 export function formatGrams(grams: number, unit: string, locale: Locale = 'en'): string {
   const decimal = decimalSign(locale)
   if (grams < MIN_WEIGHABLE_GRAMS) {

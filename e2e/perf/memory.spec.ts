@@ -2,11 +2,9 @@ import { test } from '@playwright/test'
 import { currentZoomPercent, openApp, openColorPopover, projectBox, selectTool } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 
-/**
- * Memory with a long Undo history on a big Project (ticket 112's other condition): how much the page's heap grows as a
- * 250 × 250 Project is painted a bead at a time, and then filled again and again (each Fill keeps a whole grid to Undo
- * to). Printed, not asserted: there is no agreed limit, only what a small device can be expected to hold.
- */
+// Memory with a long Undo history on a big Project (ticket 112): heap growth as a 250 × 250 Project is painted a bead
+// at a time, then Filled again and again (each Fill keeps a whole grid to Undo to). Printed, not asserted: no agreed
+// limit.
 
 test('memory with a long Undo history at 250 × 250', async ({ page }) => {
   await openApp(page, [{ ...fixtureProject({ technique: 'loom', columns: 250, rows: 250, blank: true }), id: 'big' }])

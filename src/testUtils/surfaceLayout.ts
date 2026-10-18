@@ -1,14 +1,9 @@
 import { vi } from 'vitest'
 
-/**
- * jsdom has no layout, so an element's box is whatever a test says. The surface's is the size its own style states, at
- * the page's corner, which is all that turning a bead's place into a pointer's place needs. Every other element keeps
- * jsdom's own answer.
- */
-/**
- * jsdom's own method, taken once when this module loads: installing runs before every test, and reading the prototype
- * then would pick up the previous test's spy, whose "original" is itself, and recurse for any element but the surface.
- */
+/** jsdom has no layout: the surface's box is the size its own style states, at the page's corner, which is all that
+ * turning a bead's place into a pointer's place needs. Every other element keeps jsdom's own answer. */
+/** jsdom's own method, taken once at module load: installing runs before every test, and reading the prototype then
+ * would pick up the previous test's spy, whose "original" is itself, and recurse. */
 const original = typeof Element === 'undefined' ? undefined : Element.prototype.getBoundingClientRect
 
 export function installSurfaceLayout(): void {

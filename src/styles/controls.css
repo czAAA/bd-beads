@@ -1,7 +1,5 @@
-/*
- * Sizes the component cards give that tokens.json has no token for (ticket 157), in rem like the tokens. Take them
- * from here rather than writing the number into a component.
- */
+/* Sizes the component cards give that tokens.json has no token for (ticket 157), in rem; take them from here, not
+   a number in a component. */
 :root {
   /* Button card: 34 default, 38 in the save box and Edit row, 32 in the Saved Projects footer */
   --control-height: 2.125rem;
@@ -77,13 +75,8 @@
   }
 }
 
-/*
- * Touch input (ticket 166; responsive.md "Input, not width"): every .ui-control keeps its drawn size on a coarse
- * pointer but gets a `touch-target` (44px) hit area, an invisible square centered on it that can run past its own
- * box without moving anything else. Palette swatches and tool tabs are the two documented exceptions -- close enough
- * together that an invisible 44px zone on each would overlap its neighbours, so they grow their own real size
- * instead (their own rules opt back out of this one with `::before { content: none }`).
- */
+/* Touch (ticket 166): a coarse pointer gives every .ui-control a 44px invisible hit area; swatches and tool tabs
+   grow for real (`::before { content: none }`). */
 @media (pointer: coarse) {
   .ui-control {
     position: relative;
@@ -99,7 +92,8 @@
   }
 }
 
-/* A 20px chip in a hint line (CanvasHint card): a 1px `line-strong` edge with a 2px bottom, on `elevated`. Holds a key (CanvasHint) or an icon (Progress bar). */
+/* A 20px chip in a hint line (CanvasHint card): a 1px `line-strong` edge with a 2px bottom, on `elevated`. Holds a
+   key (CanvasHint) or an icon (Progress bar). */
 .hint-chip {
   box-sizing: border-box;
   display: inline-flex;

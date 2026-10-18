@@ -13,12 +13,9 @@ import FormField from '../ui/form/FormField.vue'
 import NumberField from '../ui/form/NumberField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 
-/**
- * The size step Convert image keeps (ticket 342, ADR 0026): a picture needs a Schema size before there is a Frame to
- * fit it into, and the New Project form no longer asks for one. Width and Height in beads or mm (the unit is the
- * device's, shared with the Frame section), the size in the other unit beside them, and the slow-framing heads-up
- * (ticket 61) for the Bead and Technique chosen in the form. A typed mm value rounds up to whole beads (gridFromSize).
- */
+// The size step Convert image keeps (ticket 342, ADR 0026): a picture needs a Schema size before there is a Frame.
+// Width and Height in beads or mm (the device's unit) with the other unit beside them, and the slow-framing heads-up
+// (ticket 61). A typed mm value rounds up to whole beads (gridFromSize).
 const props = defineProps<{
   bead: Bead
   technique: Technique

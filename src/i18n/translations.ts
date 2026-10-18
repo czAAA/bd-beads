@@ -4,7 +4,8 @@ import type { PluralForms } from './plural'
 
 export type { Locale }
 
-/** One Overview feature; `tabName` and `tabLine` are shorter wordings for the carousel tab where the full ones don't fit. */
+/** One Overview feature; `tabName` and `tabLine` are shorter wordings for the carousel tab where the full ones don't
+ * fit. */
 interface FeatureCopy {
   name: string
   text: string
@@ -61,7 +62,8 @@ export interface Translations {
     filled: string
     erased: string
     emptyBead: string
-    /** The Project's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the progress. */
+    /** The Project's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the
+     * progress. */
     projectLabel: string
     /** The Project's name for a screen reader while it has no Frame: a Canvas, with no size to state. */
     canvasLabel: string
@@ -179,7 +181,8 @@ export interface Translations {
     noFrame: string
     /** The Rulers toggle's name (Rulers card). */
     rulersLabel: string
-    /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of 5") and the eleven background names. */
+    /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of
+     * 5") and the eleven background names. */
     canvasColor: {
       label: string
       pickerLabel: string
@@ -217,9 +220,11 @@ export interface Translations {
     menuButton: string
     overviewItem: string
     tourItem: string
-    /** The HeaderMenu's link to the repository (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted copy to offer one. */
+    /** The HeaderMenu's link to the repository (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted
+     * copy to offer one. */
     sourceItem: string
-    /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill, Beads needed, Saved Projects, New Project, Import. */
+    /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill,
+     * Beads needed, Saved Projects, New Project, Import. */
     projectSheetLabel: string
   }
   /** The Tour (ticket 80; TourStep card): the step card's words, step by step, and what it says when it moves. */
@@ -275,7 +280,8 @@ export interface Translations {
       exports: FeatureCopy
       savedProjects: FeatureCopy
     }
-    /** The words inside the carousel's examples (ticket 218; Overview card): decorative, so hidden from screen readers with them. */
+    /** The words inside the carousel's examples (ticket 218; Overview card): decorative, so hidden from screen
+     * readers with them. */
     examples: {
       loom: string
       peyote: string
@@ -316,9 +322,11 @@ export interface Translations {
     undoButton: string
     redoButton: string
     rotateButton: string
-    /** CONTEXT.md's Custom color glossary entry: the button at the end of the Colors group that opens the color picker. */
+    /** CONTEXT.md's Custom color glossary entry: the button at the end of the Colors group that opens the color
+     * picker. */
     customColorLabel: string
-    /** The picker's wheel (ticket 449): its name, and its value as heard, `{hue}` in degrees and `{saturation}` in percent. */
+    /** The picker's wheel (ticket 449): its name, and its value as heard, `{hue}` in degrees and `{saturation}` in
+     * percent. */
     wheelLabel: string
     wheelValue: string
     brightnessLabel: string
@@ -333,7 +341,8 @@ export interface Translations {
     removed: string
     /** A removal button's accessible name; `{hex}` is the swatch's color. */
     removeSwatch: string
-    /** The confirmation before an added swatch is removed (ticket 304); `{hex}` in the message is the swatch's color. */
+    /** The confirmation before an added swatch is removed (ticket 304); `{hex}` in the message is the swatch's
+     * color. */
     removeConfirmTitle: string
     removeConfirmMessage: string
     removeConfirmButton: string
@@ -354,13 +363,16 @@ export interface Translations {
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: string
     cutButton: string
-    /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage (ADR 0012). */
+    /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage
+     * (ADR 0012). */
     saveButton: string
     /** The brief confirmation Save shows once storage took the write. */
     savedConfirmation: string
-    /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names it. */
+    /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names
+     * it. */
     pasteLabel: string
-    /** The Tools-group button next to Eraser (ticket 123): removes the selected whole row/column, enabled only while the Selection is exactly one. */
+    /** The Tools-group button next to Eraser (ticket 123): removes the selected whole row/column, enabled only while
+     * the Selection is exactly one. */
     removeLineButton: string
     /** Its link text under the tool tabs (ToolTabs card); the full name stays its tooltip. */
     removeLineShort: string
@@ -455,7 +467,8 @@ export interface Translations {
     /** While an export is drawn (Loading card): what is happening, to which Project. */
     makingPng: string
     makingPdf: string
-    /** The toast once a PNG or PDF is made where sharing needs a fresh tap (iPhone, iPad; ticket 306), and its action. */
+    /** The toast once a PNG or PDF is made where sharing needs a fresh tap (iPhone, iPad; ticket 306), and its
+     * action. */
     readyPng: string
     readyPdf: string
     readyFile: string
@@ -504,10 +517,8 @@ export interface Translations {
       rowProgress: string
     }
   }
-  /**
-   * The Frame (CONTEXT.md, ADR 0026) and everything that needs one. The action is always "Set Frame"; "Frame" alone names
-   * the thing, the Toolbox row and the Dock button. The Russian is proposed in the design system and not yet reviewed.
-   */
+  /** The Frame (CONTEXT.md, ADR 0026) and what needs one. The action is "Set Frame"; "Frame" alone names the thing.
+   * Russian unreviewed. */
   frame: {
     title: string
     editFrame: string
@@ -540,10 +551,13 @@ export interface Translations {
     /** Export without a Frame opens a dialog with this title. */
     exportPromptTitle: string
     countNeedsFrame: string
-    /** The Progress bar's hint with no Frame: [Select icon] {progressSelectToSet} [Frame icon] {progressFrameWord}. Two pieces so each language can order and inflect them: the second ends the sentence (a noun in the accusative where the language has one). */
+    /** The Progress bar's hint with no Frame: [Select icon] {progressSelectToSet} [Frame icon] {progressFrameWord}.
+     * Two pieces so each language can order and inflect them: the second ends the sentence (a noun in the
+     * accusative where the language has one). */
     progressSelectToSet: string
     progressFrameWord: string
-    /** The Message after Rotate turned the Selection onto beads ("{count}" of them, ADR 0052): the singular and plural of the sentence. */
+    /** The Message after Rotate turned the Selection onto beads ("{count}" of them, ADR 0052): the singular and
+     * plural of the sentence. */
     rotateCoveredMessage: PluralForms
   }
   size: {
@@ -591,14 +605,9 @@ export interface Translations {
     confirmButton: string
     cancelButton: string
   }
-  /**
-   * Convert image (CONTEXT.md, ADR 0010/0011): the file input in the New Project form, the framing step that takes the
-   * canvas panel over, and Image colors in the Colors group.
-   *
-   * Every string here holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` is filled in by formatImageLimits (see
-   * domain/imageConversion.ts) from the very constants the validation enforces, so the limits the UI advertises and the
-   * limits it applies cannot drift apart. Never write the numbers out here.
-   */
+  // Convert image (CONTEXT.md, ADR 0010/0011). Strings holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` are
+  // filled by formatImageLimits (domain/imageConversion.ts) from the validation constants, so never write the numbers
+  // here.
   convertImage: {
     /** The size step Convert image asks for before framing a picture (ADR 0026; ticket 342). */
     sizeTitle: string
@@ -611,11 +620,8 @@ export interface Translations {
     fileName: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
-    /**
-     * The heads-up shown once the current Bead + Technique + size implies a grid past that Technique's
-     * isSlowFramingSize threshold (ticket 61) — informational, not an error, and never blocks the file input.
-     * `{technique}` is filled in with the chosen Technique's own localized name (form.techniqueLoom etc).
-     */
+    /** Heads-up once the grid passes isSlowFramingSize (ticket 61): informational, never blocks. `{technique}` is
+     * its localized name. */
     slowFramingWarning: string
     /** The framing step's heading in the canvas panel. */
     heading: string
@@ -642,15 +648,13 @@ export interface Translations {
       decodeFailed: string
     }
   }
-  /** The Replace Bead control (CONTEXT.md, ADR 0007) next to the open Project's Bead, and its confirmation modal (ticket 48). */
+  /** The Replace Bead control (CONTEXT.md, ADR 0007) next to the open Project's Bead, and its confirmation modal
+   * (ticket 48). */
   replaceBead: {
     selectLabel: string
     confirmTitle: string
-    /**
-     * `{bead}` is the new Bead's label, `{new}` and `{old}` the Estimated size with it and with the current one (e.g.
-     * "3.3 × 6.6 cm"). Says the size changes, the design and its bead count don't, and that rows and columns can be
-     * adjusted afterwards to get the size back.
-     */
+    // `{bead}` is the new Bead, `{new}`/`{old}` the Estimated size with it and the current one. Says the size changes,
+    // the design and bead count don't, and rows/columns can be adjusted afterwards.
     confirmMessage: string
     confirmButton: string
     cancelButton: string
@@ -674,7 +678,8 @@ export interface Translations {
     keyHintsOn: string
     keyHintsOff: string
   }
-  /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One imperative sentence ending in a full stop; keys never appear (they are the key chip). */
+  /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One
+   * imperative sentence ending in a full stop; keys never appear (they are the key chip). */
   tooltips: {
     paint: string
     fill: string

@@ -1,10 +1,7 @@
 import { MAX_MAKER_NAME } from './makerName'
 import type { Project } from './project'
 
-/**
- * A Project's own name (spec 0440, ticket 443): what Rename and Duplicate ask for. The same 40 characters as the
- * Maker's name, and it may not be empty ("A Project needs a name.").
- */
+/** A Project's own name (spec 0440, ticket 443), for Rename and Duplicate: up to 40 characters, never empty. */
 export const MAX_PROJECT_NAME = MAX_MAKER_NAME
 
 /** A name as it is kept: trimmed and cut to the longest allowed; empty means the name is refused. */
@@ -17,11 +14,8 @@ export function withProjectName(project: Project, name: string): Project {
   return { ...project, name: normalizeProjectName(name) }
 }
 
-/**
- * What Duplicate suggests (ticket 443): the name plus the first unused number from 2 ("Moth 2", then "Moth 3" once that
- * exists). A name that already ends in a number ("Moth 2") suggests the next free one after it ("Moth 3"). The base is
- * trimmed so the suggestion still fits the name length.
- */
+/** What Duplicate suggests (ticket 443): the name plus the first unused number from 2 ("Moth 2", "Moth 3"), trimmed
+ * to fit. */
 export function suggestCopyName(name: string, existingNames: readonly string[]): string {
   const taken = new Set(existingNames.map((existing) => existing.trim().toLowerCase()))
   const trailing = /^(.*\S)\s+(\d+)$/.exec(name.trim())
@@ -35,7 +29,8 @@ export function suggestCopyName(name: string, existingNames: readonly string[]):
   }
 }
 
-/** A copy of the Project under a new id and name, everything else kept, Row progress included, so it works as a snapshot. */
+/** A copy of the Project under a new id and name, everything else kept, Row progress included, so it works as a
+ * snapshot. */
 export function duplicateProject(project: Project, name: string, id: string = crypto.randomUUID(), now = Date.now()): Project {
   return { ...structuredClone(project), id, name: normalizeProjectName(name), createdAt: now, updatedAt: now }
 }

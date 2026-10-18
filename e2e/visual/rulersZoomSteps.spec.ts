@@ -2,10 +2,8 @@ import { expect, test } from '@playwright/test'
 import { openApp, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/**
- * The rulers from 100% down to the Zoom floor (ticket 301, ADR 0033): every number at 100%, a wider Ruler step with
- * Ruler dots between the numbers at 50% and 25%, and only the last number at the 10% floor.
- */
+/** Rulers from 100% to the Zoom floor (ticket 301, ADR 0033): all numbers at 100%, wider Ruler step with dots at
+ * 50%/25%, last number at 10%. */
 for (const zoom of [100, 50, 25, 10]) {
   test(`rulers at ${zoom}%`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })

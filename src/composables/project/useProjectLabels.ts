@@ -12,13 +12,11 @@ export interface ProjectLabelsDeps {
   locale: () => Locale
 }
 
-/** The words that name the open Project (tickets 37, 159, 206; ADR 0020): its Bead for the header, and its accessible name. Deps are read lazily. */
+/** The words that name the open Project (tickets 37, 159, 206; ADR 0020): its Bead for the header, and its
+ * accessible name. Deps are read lazily. */
 export function useProjectLabels(deps: ProjectLabelsDeps) {
-  /**
-   * The open Project's single Bead, shown in the header (ticket 37): its label when the catalog still has it, or a
-   * neutral "unknown bead" placeholder when it doesn't — a custom Bead removed since (ticket 38), or one an imported
-   * file names that this device never had.
-   */
+  /** The open Project's Bead for the header (ticket 37): its label, or an "unknown bead" placeholder when removed
+   * (ticket 38) or never on this device. */
   const activeBeadLabel = computed(() => {
     const project = deps.currentProject()
     if (!project) {

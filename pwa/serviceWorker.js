@@ -1,17 +1,6 @@
-/*
- * The offline shell (ticket 69, ADR 0045). vite.pwa.ts copies this file to the build as `sw.js`, filling in the two
- * placeholders below: the cache's name (it changes whenever any built file does) and the list of every built file.
- * Plain JavaScript on purpose: a worker is its own bundle, and this one needs no library.
- *
- * - Install: every built file goes into this version's own cache. If any one fails, this version does not install and
- *   the one before it keeps serving.
- * - No skipWaiting by itself: a new version waits until the page asks for it ("Update ready, reload") or until every
- *   tab of the old one is closed, so an open tab never gets new code under it.
- * - A page (index.html, the Overview) is network-first, so a visit with a connection sees the newest, and a visit with
- *   none, or with our hosting down (any answer but success), sees the copy installed with this version.
- * - Every other built file is cache-first: its name carries a hash or the whole cache changes with it.
- * - Nothing else is touched, so a call to an API or to another site goes to the network as it would without a worker.
- */
+// The offline shell (ticket 69, ADR 0045). vite.pwa.ts copies this to the build as `sw.js`, filling in cache and files.
+// Install caches every built file, all or nothing; no skipWaiting; pages are network-first, other built files
+// cache-first (hashed names); anything else goes to the network. Plain JS: no library.
 
 const CACHE = '__CACHE_NAME__'
 const PRECACHE = '__PRECACHE__'

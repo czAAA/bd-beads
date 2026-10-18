@@ -4,11 +4,9 @@ import AppIcon from '../components/ui/AppIcon.vue'
 import DrawnLayer from './DrawnLayer.vue'
 import { useI18n } from '../i18n/useI18n'
 
-/**
- * The plan tiles (ticket 220; Overview card): "Three ways to use it". No account is the one that works now: it opens the
- * editor, like the hero's button. Free account and Pro are switched off, and the reason is written once for both. The
- * contents are placeholders: there is no account, pricing or payment behaviour here.
- */
+// The plan tiles (ticket 220; Overview card): "Three ways to use it". No account opens the editor, like the hero's
+// button; Free account and Pro are switched off, one shared reason. Contents are placeholders: no account, pricing or
+// payment behaviour here.
 const emit = defineEmits<{ openEditor: [] }>()
 const { t } = useI18n()
 

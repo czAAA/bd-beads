@@ -29,11 +29,8 @@ const MEASURES: Record<Measure, MeasureSpec> = {
   'blobs-db': { level: 'WARN_BLOBS_DB_MB', unit: 'MB', label: () => 'blobs database size' },
 }
 
-/**
- * Counts are whole numbers, grouped by thousands with a regex rather than `toLocaleString`: the first `Intl` call in a
- * fresh isolate initialises ICU (about 6 ms of V8 CPU, measured in Node), and the watchdog is cold on every run,
- * against Workers Free's 10 ms (ticket 409).
- */
+/** Whole numbers grouped by regex, not `toLocaleString`: the first `Intl` call in a fresh isolate initialises ICU
+ * (~6 ms CPU), and the watchdog is cold every run against Workers Free's 10 ms (ticket 409). */
 function format(value: number, unit: MeasureSpec['unit']): string {
   return unit === 'MB' ? `${(value / MB).toFixed(1)} MB` : String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 }
@@ -45,10 +42,8 @@ interface Reading {
   line: string
 }
 
-/**
- * Each measure against this Worker's warn level, from its variables: over when the value is past the level. A level
- * that isn't a number counts as over, so a mistyped variable is reported instead of silently never warning.
- */
+/** Each measure against this Worker's warn level: over when past it. A level that isn't a number counts as over, so a
+ * mistyped variable is reported instead of silently never warning. */
 export function checkLevels(env: Env, usage: Usage): Reading[] {
   return (Object.keys(MEASURES) as Measure[]).map((measure) => {
     const spec = MEASURES[measure]

@@ -59,7 +59,8 @@ const TOUR_CREATE: Pick<CreateProjectInput, 'technique' | 'beadId' | 'size'> = {
   size: { width: TOUR_COLUMNS, height: TOUR_ROWS, unit: 'beads' },
 }
 
-/** Bumped when the card's "Back to loom for your first Project" is pressed, so the New Project form sets itself back (Name kept). */
+/** Bumped when the card's "Back to loom for your first Project" is pressed, so the New Project form sets itself back
+ * (Name kept). */
 export const tourFormResetKey: InjectionKey<Ref<number>> = Symbol('tourFormReset')
 
 export function provideTourFormReset(tick: Ref<number>) {
@@ -70,11 +71,9 @@ export function useTourFormReset(): Ref<number> | undefined {
   return inject(tourFormResetKey, undefined)
 }
 
-/**
- * The Tour (CONTEXT.md; ticket 80): which step the visitor is on, when it moves on, and what Next, Skip and "start it
- * again" do. The rules are in domain/tour.ts; this holds the state on this device and does the steps' own edits. It is
- * a real walk through the real editor, so every edit goes through the same commit path the editor's own commands use.
- */
+// The Tour (CONTEXT.md; ticket 80): which step the visitor is on, when it moves on, and what Next, Skip and "start it
+// again" do. Rules are in domain/tour.ts; this holds the state on this device and does the steps' edits through the
+// editor's own commit path.
 export function useTour(deps: TourDeps) {
   const status = ref<TourStatus>(TOUR_ENABLED ? deps.store.loadStatus() : 'off')
   const progress = ref<TourProgress>(deps.store.loadProgress())

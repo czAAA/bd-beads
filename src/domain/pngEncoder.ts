@@ -1,9 +1,6 @@
-/**
- * A PNG written strip by strip (ticket 73), so a picture too big for one canvas (a 250 × 250 Project at a legible bead
- * size is far past what iPad Safari will make) can still be one file: the caller draws a band of rows at a time, this
- * compresses each as it arrives, and only the compressed bytes are kept. Compression is the browser's own
- * (`CompressionStream`, whose "deflate" is the zlib format a PNG's data is in).
- */
+/** A PNG written strip by strip (ticket 73), so a picture too big for one canvas (iPad Safari's limit) is still one
+ * file: the caller draws a band of rows, this compresses it and keeps only the bytes. Compression is the browser's
+ * `CompressionStream` ("deflate" is the zlib format a PNG's data is in). */
 
 const SIGNATURE = Uint8Array.of(137, 80, 78, 71, 13, 10, 26, 10)
 

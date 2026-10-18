@@ -1,10 +1,8 @@
 import type { Ref } from 'vue'
 
-/**
- * One Tab stop for a group of buttons, with the arrow keys moving between them (ticket 159; `accessibility.md`,
- * Keyboard): the group's chosen button, or its first, is the one Tab reaches; the others are tabindex -1. The arrows,
- * Home and End only move focus; Space or Enter presses the button as usual.
- */
+// One Tab stop for a group of buttons, arrow keys moving between them (ticket 159; `accessibility.md`, Keyboard): the
+// chosen or first button is the Tab stop, the rest tabindex -1. Arrows, Home and End only move focus; Space or Enter
+// presses as usual.
 export function useRovingFocus(container: Ref<HTMLElement | undefined>, selector = 'button') {
   function items(): HTMLElement[] {
     return [...(container.value?.querySelectorAll<HTMLElement>(selector) ?? [])].filter(

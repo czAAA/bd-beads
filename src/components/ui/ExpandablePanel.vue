@@ -6,14 +6,9 @@ import KeyChip from './KeyChip.vue'
 import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 
-/**
- * The expandable panel template (ticket 146; BeadsNeeded and SavedProjectsExpanded cards), shared by Beads needed and
- * Saved Projects. A 28px header: an optional `icon` (ticket 188: Saved Projects' own library icon, at every tier),
- * the title (`control`) with an optional muted `suffix`, optional `meta` on the right, then the round expand button.
- * Collapsed, the body is a fixed-height summary (`collapsedHeight`); expanded, the box grows downward to its natural
- * height, never less, pushing the boxes below it down, and shows the `footer`. Escape from inside it, or ↑, collapses
- * it. An optional `note` (ticket 328) sits under the body at every size, collapsed or not. An empty panel keeps its header, drops the expand button and the fixed height.
- */
+// The expandable panel template (ticket 146; BeadsNeeded, SavedProjectsExpanded cards): a 28px header (`icon`, title
+// with `suffix`, `meta`, round expand button). Collapsed, a fixed-height summary (`collapsedHeight`); expanded, grows
+// with the `footer`. Escape or up-arrow collapses. Optional `note` (ticket 328) sits under the body. Empty: no button.
 const props = withDefaults(
   defineProps<{
     title: string
@@ -23,12 +18,9 @@ const props = withDefaults(
     /** Nothing to list: the body is just its one line. */
     empty?: boolean
     collapsedHeight?: string
-    /**
-     * Whether the collapsed body clips content past `collapsedHeight` (ticket 175). BeadsNeeded needs this: it draws
-     * every row and relies on the clip to show only the summary ones. Saved Projects already slices down to its own
-     * summary count before this ever sees it, so it turns the clip off instead — the clip was cutting off a
-     * truncated name's hover tooltip, which sits below the row that names it.
-     */
+    // Whether the collapsed body clips content past `collapsedHeight` (ticket 175). BeadsNeeded needs it (it draws
+    // every row); Saved Projects slices to its summary itself and turns the clip off, as it cut off a truncated name's
+    // hover tooltip.
     clipOverflow?: boolean
   }>(),
   { icon: undefined, expandable: false, empty: false, collapsedHeight: 'var(--panel-body-height)', clipOverflow: true },

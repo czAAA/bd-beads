@@ -1,14 +1,8 @@
 import type { GridDimensions, GridPosition } from './grid'
 
-/**
- * The painted beads of a Canvas (ADR 0026), by position: row, then column, then the color's hex. Only painted
- * positions are stored, so an empty canvas is `{}` and a bead far from the others costs one entry. Rows and columns
- * may be negative: the canvas has no origin the person has to stay below or to the right of.
- *
- * Kept as nested plain objects rather than one flat map so an edit copies only the rows it touched and shares every
- * other row with the version before it (the property Undo's snapshots and the renderer's row comparison rely on, ADR
- * 0019), and so the whole thing is JSON-serialisable as it is.
- */
+// The painted beads of a Canvas (ADR 0026) by row, then column, then the color's hex. Only painted positions are
+// stored; rows and columns may be negative. Nested plain objects, so an edit copies only the rows it touched and shares
+// the rest (Undo's snapshots and the renderer rely on it, ADR 0019).
 export type BeadMap = Record<number, Record<number, string>>
 
 /** The rectangle of whole bead positions that marks which beads are the Project (CONTEXT.md's Frame). */
@@ -30,10 +24,8 @@ export interface BeadChange extends GridPosition {
   color: string | null
 }
 
-/**
- * The beads after painting every change, as a new map that shares each row no change touched; the same map back when
- * nothing would differ. A row emptied by erasing is dropped, so a map never holds an empty row.
- */
+// The beads after painting every change, as a new map sharing each untouched row; the same map back when nothing would
+// differ. A row emptied by erasing is dropped, so a map never holds an empty row.
 export function withColors(beads: BeadMap, changes: Iterable<BeadChange>): BeadMap {
   let next: BeadMap | undefined
   const copiedRows = new Set<number>()

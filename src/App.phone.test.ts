@@ -18,10 +18,8 @@ beforeEach(() => {
   vi.mocked(downloadFile).mockClear()
 })
 
-/**
- * The phone New Project sheet's own form: with it open, the wider tiers' own (hidden but still mounted, ticket 79's
- * own note on AppDrawer) NewProjectForm is a second, earlier `form` in the DOM, so this scopes to the sheet's.
- */
+/** The phone New Project sheet's form: the wider tiers' hidden but mounted NewProjectForm (ticket 79) is an earlier
+ * `form`, so scope to the sheet's. */
 async function createProjectViaPhoneSheet(wrapper: ReturnType<typeof mount>) {
   const sheet = wrapper.findAll('[data-testid="bottom-sheet"]').find((s) => s.find('[data-testid="bead-select"]').exists())!
   await sheet.get('[data-testid="bead-select"]').setValue(cubeBead.id)

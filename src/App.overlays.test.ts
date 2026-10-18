@@ -5,10 +5,8 @@ import { drawnProject, pressBead } from './testUtils/beads'
 import { openSheet } from './testUtils/pill'
 import { frameGrid } from './domain/project'
 
-/**
- * The universal rule (ticket 449, ADR 0061): the first press outside an open overlay only closes it. It never draws,
- * whatever the pointer. One happy path per overlay; the stack and the exemptions are in `useOverlayLayer.dom.test.ts`.
- */
+/** Ticket 449, ADR 0061: the first press outside an open overlay only closes it, never draws. Stack and exemptions:
+ * `useOverlayLayer.dom.test.ts`. */
 
 beforeEach(() => {
   localStorage.clear()

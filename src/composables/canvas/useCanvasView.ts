@@ -5,23 +5,19 @@ import type { Project } from '../../domain/project'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Scroll, type Size, type SurfaceView } from '../../rendering/surfaceView'
 
-/** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and BeadBoard cards). */
+/** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and
+ * BeadBoard cards). */
 export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
 
-/** The block of beads a view fits to and centres on: the Frame when there is one, otherwise the box round every bead, otherwise nothing. */
+/** The block of beads a view fits to and centres on: the Frame when there is one, otherwise the box round every
+ * bead, otherwise nothing. */
 export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Frame | undefined {
   return project.frame ?? beadBounds(project.beads)
 }
 
-/**
- * Where the Canvas is looked at from and how closely (ADR 0026): the zoom, and the scroll that says which part of
- * the endless field the drawing area shows. Moving the canvas is changing the scroll; there is no edge to stop at.
- *
- * A view starts, and `fit` returns it, at the level that shows the Frame (or, with none, everything drawn) whole, and an
- * empty canvas at 100% with its first bead in the middle. Until the person moves or zooms by hand the view follows that
- * fit as the drawing area changes size; after, it keeps the part they chose, and a zoom keeps the point under the
- * pointer (or the middle, for the zoom buttons) where it was.
- */
+// Where the Canvas is looked at from (ADR 0026): zoom and scroll over an endless field. `fit` shows the Frame (or all
+// drawn) whole; until moved by hand the view follows it, after that it keeps the chosen part, and a zoom keeps the
+// point under the pointer (or the middle for the buttons) fixed.
 export function useCanvasView(
   currentProject: () => Project | undefined,
   viewport: Ref<Size>,
@@ -61,7 +57,8 @@ export function useCanvasView(
     isAtFit.value = true
   }
 
-  /** Moves the canvas under the viewport by a distance on screen (a drag, a wheel): the content follows the pointer, so the scroll goes the other way. */
+  /** Moves the canvas under the viewport by a distance on screen (a drag, a wheel): the content follows the pointer,
+   * so the scroll goes the other way. */
   function panBy(dx: number, dy: number): void {
     scroll.value = { x: scroll.value.x - dx, y: scroll.value.y - dy }
     isAtFit.value = false
@@ -82,7 +79,8 @@ export function useCanvasView(
     isAtFit.value = false
   }
 
-  /** Scrolls only as far as it takes to bring a bead into view, `margin` px clear of the viewport's edges: what moving the keyboard cursor does. */
+  /** Scrolls only as far as it takes to bring a bead into view, `margin` px clear of the viewport's edges: what
+   * moving the keyboard cursor does. */
   function reveal(position: GridPosition, margin = 24): void {
     const project = currentProject()
     if (!project || !measured()) {
@@ -115,7 +113,8 @@ export function useCanvasView(
   }
 
   watch(
-    // Two sources, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on every bead drawn.
+    // Two sources, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on
+    // every bead drawn.
     [() => currentProject()?.id, () => currentProject()?.rotation],
     () => {
       if (measured()) {
@@ -143,7 +142,8 @@ export function useCanvasView(
     zoomPercent: computed(() => Math.round(zoom.value * 100)),
     zoomIn: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, 1), anchor),
     zoomOut: (anchor?: Scroll) => setZoom(stepZoom(zoom.value, -1), anchor),
-    /** A zoom the wheel or fingers chose: any level in the usable range rather than a step, about the point under them. */
+    /** A zoom the wheel or fingers chose: any level in the usable range rather than a step, about the point under
+     * them. */
     setZoom,
     resetZoom: fit,
     fit,

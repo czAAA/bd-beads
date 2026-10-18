@@ -10,23 +10,19 @@ interface Context {
   zoom: number
 }
 
-/**
- * One thing the visual check looks at (ticket 103): a Project in some state, drawn at every zoom and both ways round.
- * Each is a state of the drawn Project that a bead-by-bead reference has to keep right — a Technique's geometry, the
- * Row progress overlay in either direction, or one of the pointer-driven overlays.
- */
+/** One thing the visual check looks at (ticket 103): a Project in some state, drawn at every zoom and both ways
+ * round. */
 export interface Scenario {
   name: string
   technique: Technique
   rowProgress?: Partial<RowProgress>
   /** Runs once, at 100%, before any screenshot: makes the state (a Selection, a copied block, a Mirror axis). */
   prepare?: (page: Page, context: Context) => Promise<void>
-  /** Runs at each zoom, once the zoom has settled and before the screenshot: puts the pointer where the state needs it. */
+  /** Runs at each zoom, once the zoom has settled and before the screenshot: puts the pointer where the state needs
+   * it. */
   place?: (page: Page, context: Context) => Promise<void>
-  /**
-   * The beads (as "(row, column)") that something is drawn over, whose centre is therefore meant to differ from the bead's
-   * own color when the renderer's own picture is checked bead by bead; "all" when too many are covered to say.
-   */
+  /** The beads ("(row, column)") drawn over, whose centre should differ from their own color; "all" when too many to
+   * say. */
   overlaid?: string[] | 'all'
 }
 
@@ -80,29 +76,34 @@ export const SCENARIOS: Scenario[] = [
     place: pointerAway,
   })),
 
-  // A Selection: its border reads as one rectangle even across peyote's and brick stitch's shifted rows, with the Frame's eight handles (ticket 414); the handles reach into the beads round it.
+  // A Selection: its border reads as one rectangle even across peyote's and brick stitch's shifted rows, with the
+  // Frame's eight handles (ticket 414); the handles reach into the beads round it.
   ...perTechnique((technique) => ({
     name: `${technique}-selection`,
     prepare: (page, context) => dragSelection(page, context, [2, 3], [6, 9]),
     place: pointerAway,
-    // The Selection bar floats over the Canvas above the Selection's top edge (ticket 415), wherever the zoom and the turn put that.
+    // The Selection bar floats over the Canvas above the Selection's top edge (ticket 415), wherever the zoom and the
+    // turn put that.
     overlaid: 'all',
   })),
 
-  // A paste preview: the copied block in its own colors under the pointer; Copy arms paste mode and clears the Selection (ticket 437).
+  // A paste preview: the copied block in its own colors under the pointer; Copy arms paste mode and clears the
+  // Selection (ticket 437).
   ...perTechnique((technique) => ({
     name: `${technique}-paste-preview`,
     prepare: async (page, context) => {
       await dragSelection(page, context, [1, 1], [3, 4])
       await copySelection(page)
     },
-    // The fixture's bead (1, 1) is empty, so the copy is anchored on its first drawn bead, (1, 2): aiming at (5, 9) puts the block's corner at (5, 8).
+    // The fixture's bead (1, 1) is empty, so the copy is anchored on its first drawn bead, (1, 2): aiming at (5, 9)
+    // puts the block's corner at (5, 8).
     place: (page, context) => pointerOnBead(page, context, 5, 9),
     // The block of 3 × 4 stamped with its corner at (5, 8), and the beads it was copied from.
     overlaid: [...beadsIn(1, 1, 3, 4), ...beadsIn(5, 8, 3, 4)],
   })),
 
-  // The paint preview on the hovered bead (ticket 174 hid Mirror's own UI, and with it its live-mirror preview scenarios, pending its own redesign).
+  // The paint preview on the hovered bead (ticket 174 hid Mirror's own UI, and with it its live-mirror preview
+  // scenarios, pending its own redesign).
   ...perTechnique((technique) => ({
     name: `${technique}-hover-paint`,
     place: (page, context) => pointerOnBead(page, context, 3, 5),

@@ -3,12 +3,9 @@ import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { inTourCard } from '../../composables/ui/tourDom'
 
-/**
- * The design system's Modal (ticket 76; Modal and ConfirmDialogs cards): a centered dialog over a scrim, 420px for a
- * confirmation or 560px for a panel (Keyboard shortcuts). The parent mounts it with `v-if` and decides what
- * cancelling means; Escape cancels, and so does a press on the scrim unless `backdrop` is `swallow`. While open, focus stays inside: it starts on the control marked
- * `data-autofocus`, or the first one, Tab wraps around, and closing hands focus back to whatever opened it.
- */
+// The design system's Modal (ticket 76; Modal and ConfirmDialogs cards): a centered dialog over a scrim, 420 or 560px.
+// The parent mounts it with `v-if` and decides what cancelling means; Escape and (unless `backdrop` is `swallow`) a
+// scrim press cancel. Focus stays inside (starts on `data-autofocus`, Tab wraps) and returns to what opened it.
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
@@ -18,12 +15,11 @@ const props = withDefaults(
     /** The id of the text that describes the dialog, for an alert dialog's message. */
     describedby?: string
     scrimTestid?: string
-    /**
-     * Where focus starts: the control marked data-autofocus, or the first one; or the dialog itself, for a panel that
-     * is read rather than answered (Tab then reaches its controls), so its first button's tooltip doesn't pop up.
-     */
+    // Where focus starts: the `data-autofocus` control or the first one; or the dialog itself for a panel that is read,
+    // not answered, so its first button's tooltip doesn't pop up.
     initialFocus?: 'control' | 'dialog'
-    /** A press on the scrim behind: `close` cancels, `swallow` only eats it (a question that demands an answer, ADR 0061). */
+    /** A press on the scrim behind: `close` cancels, `swallow` only eats it (a question that demands an answer, ADR
+     * 0061). */
     backdrop?: 'close' | 'swallow'
   }>(),
   { size: 'confirm', role: 'dialog', describedby: undefined, scrimTestid: 'modal-scrim', initialFocus: 'control', backdrop: 'close' },

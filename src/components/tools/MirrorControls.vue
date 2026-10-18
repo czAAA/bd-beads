@@ -8,9 +8,8 @@ import type { Project } from '../../domain/project'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 
-/**
- * The Mirror group's controls (MirrorSizeControls card; ticket 79), the Mirror ToolSheet's markup and axis-vs-rotation math.
- */
+/** The Mirror group's controls (MirrorSizeControls card; ticket 79), the Mirror ToolSheet's markup and
+ * axis-vs-rotation math. */
 const props = defineProps<{
   project: Project
   mirrorAxisCounts: MirrorAxisCounts
@@ -27,11 +26,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/**
- * Which grid-space axis ('columns'/'rows') the on-screen Left–right and Top–bottom counters each drive, given the
- * Project's current view-only rotation (see Project.rotation, kept for Projects saved turned): a quarter turn either way
- * swaps the two (180° leaves them as they are), never a transform of the counts or grid data themselves.
- */
+// Which grid-space axis ('columns'/'rows') the Left–right and Top–bottom counters drive, given the view-only rotation
+// (Project.rotation, kept for Projects saved turned): a quarter turn swaps the two, 180° leaves them; never a transform
+// of the counts or grid data.
 const swapped = computed(() => rotationSwapsAxes(props.project.rotation))
 const leftRightAxis = computed<'columns' | 'rows'>(() => (swapped.value ? 'rows' : 'columns'))
 const topBottomAxis = computed<'columns' | 'rows'>(() => (swapped.value ? 'columns' : 'rows'))

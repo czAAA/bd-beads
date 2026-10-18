@@ -5,7 +5,8 @@ import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
 
-/** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by writing it directly. */
+/** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by
+ * writing it directly. */
 const STORAGE_KEY = 'openbeads:patterns'
 const STORED_VERSION = 3
 
@@ -21,11 +22,8 @@ export interface FixtureOptions {
   override?: { row: number; column: number; color: string | null }[]
 }
 
-/**
- * A Project with a deterministic busy picture: most of the Palette in diagonal bands, some beads left empty, so every
- * color, the empty-bead tint and the seams between beads all show up in a screenshot. Ids and dates are fixed so the
- * stored library is identical run to run.
- */
+/** A deterministic busy Project: most of the Palette in diagonal bands, some beads empty, fixed ids and dates (a
+ * stable library). */
 export function fixtureProject({
   technique,
   columns = 16,
@@ -65,12 +63,9 @@ export function storedLibrary(projects: Project[]): string {
 
 export { STORAGE_KEY }
 
-/**
- * Where a bead's centre is on screen, given the surface's bounding box and where the view is scrolled to (the surface's
- * `data-scroll-x` and `data-scroll-y`, which are 0 until the canvas has been moved). The surface is the Canvas
- * itself (ADR 0026): a bead is at its own displayed position, turned and zoomed, less the scroll, from the surface's
- * corner. Worked out from the Technique's geometry (the renderer's).
- */
+// Where a bead's centre is on screen, from the surface's bounding box and scroll (`data-scroll-x`/`-y`, 0 until the
+// canvas is moved). The surface is the Canvas itself (ADR 0026): a bead sits at its displayed position, turned and
+// zoomed, less the scroll. Worked out from the Technique's geometry (the renderer's).
 export function beadCentre(
   project: Pick<Project, 'technique' | 'rotation'>,
   box: { x: number; y: number; width: number; height: number },

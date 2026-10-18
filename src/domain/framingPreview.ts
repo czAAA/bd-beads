@@ -3,24 +3,14 @@ import { NO_COLOR, type ConvertedImage } from './imageConversion'
 import type { PreviewLattice } from './imageFraming'
 import type { GridDimensions } from './grid'
 
-/**
- * What color each bead of the Convert image framing preview shows (ticket 104, ADR 0018), for a lattice sampled into
- * packed colors (see sampleLatticePacked): row by row, a `#rrggbb` for a bead, or undefined for one that stays empty (a
- * cell off the picture, or on a pixel too transparent to weave).
- *
- * Two ways to arrive at them, because the exact one is too slow to run on every move of a drag: reducing a whole
- * lattice's colors costs more than the frame budget on its own. So while the picture is moving the preview keeps the
- * colors the conversion had when the move began and puts each bead to the nearest of them (approximatePreviewColors);
- * whenever the picture is at rest — the drag ends, or pauses — it is worked out exactly (exactPreviewColors).
- */
+// What color each bead of the Convert image framing preview shows (ticket 104, ADR 0018): a `#rrggbb` per bead,
+// undefined if empty. The exact reduction is too slow per drag move, so while the picture moves each bead takes the
+// nearest color from drag start (approximatePreviewColors); at rest it is exact (exactPreviewColors).
 export type PreviewColors = (string | undefined)[]
 
-/**
- * A function from a packed color to the nearest of `colors` — by the same straight-line RGB distance imageColors's
- * nearestColor uses, with the same tie going to the earlier color — that remembers what it has answered. A picture has
- * far fewer distinct colors than beads, so this costs a search per distinct color rather than per bead, and (unlike
- * nearestColor) reads each of `colors` once rather than once per bead.
- */
+// A memoised function from a packed color to the nearest of `colors`, by the same RGB distance and earlier-color tie as
+// imageColors's nearestColor. A picture has far fewer distinct colors than beads, so this searches once per distinct
+// color and reads `colors` once, not per bead.
 export function nearestColorLookup(colors: readonly string[]): (packed: number) => string | undefined {
   const candidates = colors.map((hex) => channelsOf(hex))
   const answers = new Map<number, string | undefined>()
@@ -53,11 +43,9 @@ export function nearestColorLookup(colors: readonly string[]): (packed: number) 
   }
 }
 
-/**
- * The exact colors of a lattice at rest: inside the frame, the Project a Create would make (its grid, reduced to the
- * count of colors asked for); around it, the nearest of the Image colors that conversion found, so the surround reads
- * as part of the same bead picture rather than as unquantized pixels.
- */
+// The exact colors of a lattice at rest: inside the frame, the Project a Create would make (reduced to the count asked
+// for); around it, the nearest of the Image colors that conversion found, so the surround reads as part of the same
+// bead picture, not unquantized pixels.
 export function exactPreviewColors(
   sampled: Int32Array,
   lattice: PreviewLattice,
@@ -83,7 +71,8 @@ export function exactPreviewColors(
   return colors
 }
 
-/** The colors of a lattice while the picture is being moved: every bead, the frame's included, the nearest of the colors held from before the move. */
+/** The colors of a lattice while the picture is being moved: every bead, the frame's included, the nearest of the
+ * colors held from before the move. */
 export function approximatePreviewColors(sampled: Int32Array, held: readonly string[]): PreviewColors {
   const nearest = nearestColorLookup(held)
   return Array.from(sampled, (packed) => nearest(packed))

@@ -8,11 +8,8 @@ interface WorkerParts {
   daily?: DailyHook[]
 }
 
-/**
- * The Worker (spec 385). The platform calls it only for /api/* (`run_worker_first` in `wrangler.jsonc`) and, on its
- * Cron Trigger, for the watchdog; the app and the Overview are served as static assets without it. Later tickets add
- * their routes and daily hooks here. Built by a function so the tests can add parts of their own.
- */
+/** The Worker (spec 385). Called only for /api/* (`run_worker_first`) and the Cron Trigger's watchdog; the app is
+ * static assets. Built by a function so the tests can add parts of their own. */
 export function createWorker({ routes = [], daily = [] }: WorkerParts = {}): ExportedHandler<Env> {
   const all = [healthRoute, ...routes]
   return {

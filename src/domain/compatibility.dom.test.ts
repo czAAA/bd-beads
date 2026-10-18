@@ -12,12 +12,9 @@ import libraryFileV3 from './fixtures/library-file-v3-openbeads.json?raw'
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
 
-/**
- * Stored-data compatibility (ticket 103, ADR 0018): the renderer work changes how a Project is drawn and nothing about
- * how it is kept, so every library and file format the app has written must keep opening as exactly the Projects it
- * held. The fixtures are committed as literal files, generated once from the pictures below and never by the code under
- * test, so a change to an encoder or decoder can't quietly rewrite what "unchanged" means here.
- */
+// Stored-data compatibility (ticket 103, ADR 0018): the renderer work changes how a Project is drawn, not how it is
+// kept, so every library and file format the app has written must keep opening as exactly the Projects it held.
+// Fixtures are literal files generated once, never by the code under test.
 
 const STORAGE_KEY = 'openbeads:patterns'
 

@@ -8,42 +8,24 @@ import {
 } from './imageFraming'
 import type { Cell, Grid } from './project'
 
-/**
- * Convert image's actual conversion (ticket 58, ADR 0010): what the picture's pixels become, cell by cell, and what a
- * picture is allowed to be in the first place.
- *
- * Everything here is a pure function over an already-decoded picture. Reading a file and decoding PNG/JPEG/GIF/WebP
- * bytes is the browser's job and lives apart, in imageDecode.ts, so the conversion itself can be exercised on pixel
- * data built by hand.
- */
+/** Convert image's conversion (ticket 58, ADR 0010): pixels to cells, and what a picture may be. Pure functions over
+ * a decoded picture; file reading and decoding live in imageDecode.ts so tests can use hand-built pixel data. */
 
-/**
- * A decoded picture: RGBA, four bytes per pixel, row by row. Deliberately its own interface rather than `ImageData`,
- * which only a browser can construct — a `{ width, height, data }` object is buildable in a test, and a real
- * `ImageData` satisfies this shape as it stands.
- */
+/** A decoded picture: RGBA, four bytes per pixel, row by row. Its own interface, not `ImageData` (browser-only), so
+ * tests can build one; a real `ImageData` satisfies it. */
 export interface PixelData extends ImageSize {
   data: ArrayLike<number>
 }
 
-/**
- * A pixel this transparent or more leaves its cell unpainted: there is no half-bead, so a pixel is either woven or it
- * is not, and 50% is the only non-arbitrary place to put that line. A transparent-background icon therefore converts
- * to a shape rather than to a rectangle with a background.
- */
+/** A pixel this transparent or more leaves its cell unpainted: there is no half-bead, and 50% is the only
+ * non-arbitrary line. A transparent-background icon converts to a shape, not a rectangle. */
 const ALPHA_THRESHOLD = 128
 
 /** What a packed color holds for a pixel that is too transparent to weave, or a cell that falls off the picture. */
 export const NO_COLOR = -1
 
-/**
- * The color a picture's pixel contributes to a cell as one number, 0xRRGGBB, or NO_COLOR for a pixel below half alpha
- * (an empty cell — see ALPHA_THRESHOLD). A partly transparent pixel at or above the line is composited over white, the
- * paper it would be seen against.
- *
- * Sampling a whole framing lattice on every move of a drag is tens of thousands of these, so a color stays a number
- * here, and the preview only ever needs the string for the few distinct colors it holds.
- */
+/** A pixel's color as one number 0xRRGGBB, or NO_COLOR below half alpha (see ALPHA_THRESHOLD); partly transparent
+ * pixels composite over white. A number, not a string, since a drag samples tens of thousands per move. */
 export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   const at = (y * image.width + x) * 4
   const alpha = image.data[at + 3] ?? 0
@@ -64,7 +46,8 @@ export function packedToHex(packed: number): string {
   return `#${packed.toString(16).padStart(6, '0')}`
 }
 
-/** A picture format Convert image accepts, named the way the file input, the validation and the helper text each need it. */
+/** A picture format Convert image accepts, named the way the file input, the validation and the helper text each
+ * need it. */
 export interface ImageFormat {
   mimeType: string
   /** A brand name, so it reads the same in every language. */
@@ -72,11 +55,8 @@ export interface ImageFormat {
   extensions: readonly string[]
 }
 
-/**
- * The accepted formats, in one place. The file input's `accept`, the media-type check, the extension fallback for a
- * browser that reports no media type, and the advertised helper text all read this, so what the UI promises and what
- * the validation enforces cannot drift apart.
- */
+/** The accepted formats, in one place: file input `accept`, media-type check, extension fallback and helper text
+ * all read this, so the UI's promise and the validation cannot drift apart. */
 export const ACCEPTED_IMAGE_FORMATS: readonly ImageFormat[] = [
   { mimeType: 'image/png', label: 'PNG', extensions: ['.png'] },
   { mimeType: 'image/jpeg', label: 'JPEG', extensions: ['.jpg', '.jpeg'] },
@@ -89,11 +69,8 @@ export const IMAGE_MAX_BYTES = IMAGE_MAX_MEGABYTES * 1024 * 1024
 export const IMAGE_MAX_MEGAPIXELS = 16
 export const IMAGE_MAX_PIXELS = IMAGE_MAX_MEGAPIXELS * 1_000_000
 
-/**
- * HEIC/HEIF, the format an iPhone photo arrives in, turned away with a message of its own rather than as a nameless
- * unsupported file — browsers can't decode it, and being told "use PNG or JPEG" is the only useful answer. Matched on
- * the extension as well as the media type, because a phone often hands over no media type at all for one.
- */
+/** HEIC/HEIF (iPhone photos) gets its own rejection message: browsers can't decode it. Matched on extension too,
+ * because a phone often supplies no media type. */
 const HEIC_FORMAT: ImageFormat = {
   mimeType: 'image/heic',
   label: 'HEIC',
@@ -101,11 +78,8 @@ const HEIC_FORMAT: ImageFormat = {
 }
 const HEIC_MIME_TYPES = ['image/heic', 'image/heif']
 
-/**
- * SVG, turned away on purpose (ticket 58 decision): it has no native resolution to sample, so there is nothing to
- * decide the conversion's fidelity, and rendering arbitrary markup from a file is a security surface this feature
- * has no need of.
- */
+/** SVG, turned away on purpose (ticket 58): no native resolution to sample, and rendering arbitrary markup from a
+ * file is a security surface this feature doesn't need. */
 const SVG_FORMAT: ImageFormat = { mimeType: 'image/svg+xml', label: 'SVG', extensions: ['.svg'] }
 
 /** Why a picture can't be converted. Each has its own localised message (see i18n's convertImage.errors). */
@@ -133,16 +107,14 @@ function isFormat(file: ImageFileFacts, format: ImageFormat, mimeTypes = [format
   return mimeTypes.includes(file.type.toLowerCase()) || (file.type === '' && hasExtension(file.name, format))
 }
 
-/** The `accept` attribute for the file input: the media types plus their extensions, for pickers that filter by either. */
+/** The `accept` attribute for the file input: the media types plus their extensions, for pickers that filter by
+ * either. */
 export function imageInputAccept(): string {
   return ACCEPTED_IMAGE_FORMATS.flatMap((format) => [format.mimeType, ...format.extensions]).join(',')
 }
 
-/**
- * Fills the advertised limits into a localised sentence: `{formats}`, `{maxSizeMb}` and `{maxMegapixels}`. The helper
- * text under the file input and its `title` both go through here, so the numbers the UI promises are literally the
- * constants the validation enforces (ticket 58's "cannot drift apart" requirement).
- */
+/** Fills `{formats}`, `{maxSizeMb}` and `{maxMegapixels}` into a localised sentence, so the numbers the UI promises
+ * are the constants the validation enforces (ticket 58's "cannot drift apart"). */
 export function formatImageLimits(template: string): string {
   return template
     .replace('{formats}', ACCEPTED_IMAGE_FORMATS.map((format) => format.label).join(', '))
@@ -150,11 +122,8 @@ export function formatImageLimits(template: string): string {
     .replace('{maxMegapixels}', String(IMAGE_MAX_MEGAPIXELS))
 }
 
-/**
- * Whether a chosen file can be converted at all, judged on what a file input can tell us before anything is decoded:
- * its format and its size. The resolution limit needs the decoded pixel dimensions instead — see
- * validateImagePixelCount.
- */
+/** Whether a chosen file can be converted, judged before decoding: format and size. The resolution limit needs
+ * decoded dimensions instead (validateImagePixelCount). */
 export function validateImageFile(file: ImageFileFacts): ImageRejection | undefined {
   if (isFormat(file, HEIC_FORMAT, HEIC_MIME_TYPES)) {
     return 'heic'
@@ -176,20 +145,9 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
   return width * height > IMAGE_MAX_PIXELS ? 'tooManyPixels' : undefined
 }
 
-/**
- * How many colors a conversion may keep. The default aims at the flat artwork this feature targets, where the honest
- * count is usually in single figures anyway and the limit never bites; a photograph is where the user reaches for the
- * control, and where any number is a compromise.
- *
- * The ceiling is 14 because Image colors are shown as swatches in the Colors group, and a Tool group holds at most 14
- * controls in view — two rows of seven (CONTEXT.md's Tool group). A higher ceiling would let one conversion fill that
- * group past what the layout is built for, and a Project needing more than fourteen colors is not one this feature is
- * for: it is the photograph case the ticket deliberately declines to build machinery for.
- *
- * The floor is 1, down from 2 (ticket 177, amending ADR 0011): now that every resolved color is quantized onto the
- * Palette regardless of count, reducing all the way to a single Palette-matched silhouette color is no less
- * meaningful a result than reducing to two -- there was nothing special about 2 once quantization is unconditional.
- */
+/** How many colors a conversion may keep. Ceiling 14: Image colors show as swatches in a Tool group, which holds at
+ * most 14 controls (CONTEXT.md). Floor 1, down from 2 (ticket 177, amending ADR 0011): quantization is
+ * unconditional. */
 export const MIN_IMAGE_COLORS = 1
 export const MAX_IMAGE_COLORS = 14
 export const DEFAULT_MAX_IMAGE_COLORS = 12
@@ -206,16 +164,8 @@ interface SamplingInput {
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
 }
 
-/**
- * The picture's raw colors for every cell of a framing preview's lattice (see imageFraming's previewLattice), row by
- * row, as packed colors (see pixelPackedAt) — NO_COLOR where a cell falls off the picture, or on a pixel too
- * transparent to weave.
- *
- * Each cell is sampled at its true centre in millimetres (see grid.ts's cellCenter): `origin` is where the frame's own
- * cell (0, 0) sits in that lattice, so subtracting it puts the point back in the frame's own coordinates, which is what
- * the picture's position is measured in. The arithmetic is cellCenter's and sourcePixelAt's, in the same order, written
- * out over a whole row at a time because this runs on every move of a drag.
- */
+/** The picture's raw colors for every cell of a framing preview's lattice (see previewLattice), row by row, packed
+ * (see pixelPackedAt); NO_COLOR off the picture or on a too-transparent pixel. Inlines cellCenter and sourcePixelAt. */
 export function sampleLatticePacked({
   image,
   view,
@@ -226,11 +176,9 @@ export function sampleLatticePacked({
   const cellWidth = beadPitchMm(bead)
   const cellHeight = bead.heightMm
 
-  /*
-   * Where the frame's top-left corner sits in the lattice's own coordinates. A whole number of cells across and a
-   * whole number of rows down, so a lattice cell's centre is its frame cell's centre plus exactly this — including the
-   * half-cell stagger, which matches because frameRow is always even (see PreviewLattice.frameRow).
-   */
+  // Where the frame's top-left corner sits in the lattice's coordinates: whole cells and rows, so a lattice cell's
+  // centre is its frame cell's centre plus exactly this, half-cell stagger included (frameRow is always even,
+  // see PreviewLattice.frameRow).
   const originXMm = lattice.frameColumn * cellWidth
   const originYMm = lattice.frameRow * rowPitch(technique, cellHeight)
 
@@ -263,7 +211,8 @@ export interface ConvertedImage {
   imageColors: string[]
 }
 
-/** Reduces the frame's raw colors (undefined for an empty cell) to at most `maxColors` and offers them to the Palette; see convertPackedFrame. */
+/** Reduces the frame's raw colors (undefined for an empty cell) to at most `maxColors` and offers them to the
+ * Palette; see convertPackedFrame. */
 function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColors: number): ConvertedImage {
   const counts = new Map<string, number>()
   for (const row of raw) {
@@ -282,15 +231,8 @@ function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColor
   return { grid, imageColors: colors }
 }
 
-/**
- * The Project's grid and Image colors, out of an already-sampled lattice (see sampleLatticePacked): the frame's own
- * block of cells, reduced to at most `maxColors` colors and offered to the Palette for near-exact snapping (see
- * resolveImageColors).
- *
- * Only the frame's cells take part. The preview's surrounding cells are context for judging the crop, and letting them
- * influence the reduction would mean the colors inside the frame changed as the picture was panned — the opposite of
- * "what is inside the frame is exactly the Project that will be created".
- */
+/** The Project's grid and Image colors from an already-sampled lattice (see sampleLatticePacked): only the frame's
+ * cells take part, so panning the picture never changes the colors inside the frame. */
 export function convertPackedFrame(
   sampled: Int32Array,
   lattice: PreviewLattice,
@@ -318,7 +260,8 @@ export function convertPackedFrame(
   )
 }
 
-/** How a picture is turned into pixels. The real one is services/imageDecode's decodeImageFile; a test supplies its own. */
+/** How a picture is turned into pixels. The real one is services/imageDecode's decodeImageFile; a test supplies its
+ * own. */
 export type DecodeImage = (file: Blob) => Promise<PixelData>
 
 /** A file that can't be converted, carrying which of the localised reasons to show (see ImageRejection). */

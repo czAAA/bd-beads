@@ -11,12 +11,9 @@ import AppSwatch from '../ui/AppSwatch.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 
-/**
- * The Canvas section of the Project panel (ProjectPanel and CanvasBackground cards, tickets 252, 348, 443): the Canvas
- * background as round swatches, five in light and six in dark, a radio group (Tab lands on the chosen one, the arrows
- * move and apply at once), and the Position marks, Dots | Squares. High contrast has one white canvas, so the swatches
- * give way to a line saying so and only the Position marks remain. It was the strip's Canvas color button.
- */
+// The Canvas section of the Project panel (ProjectPanel and CanvasBackground cards, tickets 252, 348, 443): Canvas
+// background swatches (five light, six dark; a radio group applying at once) and the Position marks, Dots | Squares.
+// High contrast has one white canvas, so only a line saying so and the Position marks remain.
 const { t } = useI18n()
 const theme = useResolvedTheme()
 const canvas = useCanvasBackground()

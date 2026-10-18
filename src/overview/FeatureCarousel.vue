@@ -7,14 +7,13 @@ import { useI18n } from '../i18n/useI18n'
 import type { Translations } from '../i18n/translations'
 import FeatureExample from './examples/FeatureExample.vue'
 
-/**
- * The Overview's "What's inside" carousel (ticket 217; Overview card). From 1024 a `tablist` of the seven features on
- * the left and the selected feature's stage on the right, with ‹ › and "n / 7" top-right; below 1024 swipe cards with
- * dots and ‹ ›. Each stage holds the feature's example (ticket 218), scaled to what the stage leaves it.
- */
+// The Overview's "What's inside" carousel (ticket 217; Overview card). From 1024 a `tablist` of the seven features
+// beside the selected stage, with ‹ › and "n / 7"; below 1024 swipe cards with dots and ‹ ›. Each stage scales the
+// feature's example (ticket 218) to the room it leaves.
 const { t } = useI18n()
 
-/** The features in the order the design system lists them, each with its Icons v2 icon. Mirror is left out while its controls are hidden (ticket 174). */
+/** The features in the order the design system lists them, each with its Icons v2 icon. Mirror is left out while its
+ * controls are hidden (ticket 174). */
 const FEATURES: { key: keyof Translations['overview']['features']; icon: IconName }[] = [
   { key: 'techniques', icon: 'grid' },
   { key: 'projectEditing', icon: 'paint' },

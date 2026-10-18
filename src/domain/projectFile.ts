@@ -1,12 +1,9 @@
 import { normalizeProject, type GridProject, type Project } from './project'
 import { decodeProject, encodeProject, type EncodedProject } from './projectEncoding'
 
-/**
- * The export file format (ADR 0048). There is no backend to migrate a Project for us (ADR 0001), so a file carries the
- * kind it is and the format version that wrote it, and the reader refuses anything it doesn't understand rather than
- * silently importing half a Project. This is the JSON inside a `.openbeads` file; the gzip around it is the service's
- * (`projectFileCodec`). Files written before ADR 0048 are plain JSON and read by `legacyProjectFile`.
- */
+// The export file format (ADR 0048). With no backend to migrate for us (ADR 0001), a file carries its kind and format
+// version and the reader refuses what it doesn't understand. This is the JSON inside `.openbeads`; the gzip is
+// `projectFileCodec`'s.
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
 /** Version 3 is the first gzipped one: `projects`, each with its beads in the compact encoding (ADR 0009). */
@@ -33,7 +30,8 @@ export function serializeProject(project: Project): string {
   return serialize(PROJECT_FILE_KIND, [project])
 }
 
-/** Every saved Project in one file, for moving a whole library to another device (ticket 15), as the JSON a file wraps. */
+/** Every saved Project in one file, for moving a whole library to another device (ticket 15), as the JSON a file
+ * wraps. */
 export function serializeLibrary(projects: Project[]): string {
   return serialize(LIBRARY_FILE_KIND, projects)
 }
@@ -87,11 +85,8 @@ function looksLikeEncodedProject(value: unknown): value is EncodedProject {
   )
 }
 
-/**
- * Reads the Projects out of the JSON of a version 3 file, whether it holds one Project or a whole library, so a single
- * import action handles both. Throws when the JSON isn't one openbeads wrote, or was written by a format version this
- * build doesn't know.
- */
+/** Reads the Projects out of a version 3 file's JSON (one Project or a library); throws on foreign JSON or unknown
+ * version. */
 export function parseProjectsFile(text: string): ProjectFileContents {
   let parsed: unknown
   try {
@@ -122,11 +117,8 @@ export function parseProjectsFile(text: string): ProjectFileContents {
   }
 }
 
-/**
- * Picks which of the imported Projects to add locally. Importing never overwrites: a Project whose identity is
- * already taken here comes in as a separate entry under a fresh id, so the local copy and the imported one both
- * survive (ticket 15).
- */
+/** Picks which imported Projects to add. Importing never overwrites: a taken id comes in under a fresh id (ticket
+ * 15). */
 export function importProjects(
   incoming: Project[],
   existing: Project[],

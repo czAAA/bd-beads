@@ -12,11 +12,9 @@ export interface NamePieceFlowDeps {
   selection: () => Selection | undefined
 }
 
-/**
- * "Name Piece" (ticket 406, ADR 0050): the Selection holds beads of exactly one Piece, and Name asks for its name in a
- * dialog; saving an empty name takes the name off and makes it a plain Piece again. One Edit, so one Undo step. The
- * Piece is fixed when the dialog opens, so a changed Selection behind it cannot move the name. Deps are read lazily.
- */
+// "Name Piece" (ticket 406, ADR 0050): names the Selection's one Piece in a dialog; an empty name makes it plain. One
+// Edit, one Undo step. The Piece is fixed when the dialog opens so a changed Selection can't move the name. Deps are
+// lazy.
 export function useNamePieceFlow(deps: NamePieceFlowDeps) {
   /** The bead that stands for the Piece the Selection covers, or undefined when it covers none or several. */
   const target = computed(() => {

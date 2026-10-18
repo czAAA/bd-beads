@@ -13,7 +13,8 @@ export function isVerticalPill(position: PillPosition): boolean {
   return position === 'left' || position === 'right'
 }
 
-/** What the pill's colour control shows: the chosen colour alone, or it with the recent colours beside it (ticket 439). */
+/** What the pill's colour control shows: the chosen colour alone, or it with the recent colours beside it (ticket
+ * 439). */
 export const PILL_COLOR_MODES = ['one', 'recent'] as const
 export type PillColorMode = (typeof PILL_COLOR_MODES)[number]
 
@@ -62,10 +63,8 @@ export function pillPositionForKey(key: string): PillPosition | undefined {
   return key === 'ArrowLeft' ? 'left' : key === 'ArrowRight' ? 'right' : key === 'ArrowUp' ? 'top' : key === 'ArrowDown' ? 'bottom' : undefined
 }
 
-/**
- * Where the colour popover goes (ticket 439; ToolPill card): beside the pill toward the canvas, `gap` away from it,
- * centred on the tile that opened it, then clamped `edge` inside the screen. It never sits under the pill.
- */
+/** Where the colour popover goes (ticket 439; ToolPill card): beside the pill toward the canvas, `gap` away, clamped
+ * `edge` in. */
 export function popoverPlacement(
   tile: PillRect,
   pill: PillRect,

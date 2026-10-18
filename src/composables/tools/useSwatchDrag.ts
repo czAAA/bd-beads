@@ -1,16 +1,15 @@
 import { onBeforeUnmount, ref } from 'vue'
 
-/** How far a mouse or pen moves before a press on a swatch becomes a drag; a touch holds this long instead, so a swipe still scrolls the sheet. */
+/** How far a mouse or pen moves before a press on a swatch becomes a drag; a touch holds this long instead, so a
+ * swipe still scrolls the sheet. */
 const DRAG_THRESHOLD_PX = 5
 const TOUCH_HOLD_MS = 300
 /** A touch that moves this far before the hold ended is a scroll. */
 const TOUCH_SCROLL_PX = DRAG_THRESHOLD_PX * 2
 
-/**
- * Dragging a Palette swatch to another slot (ticket 398). A press on a swatch becomes a drag once the pointer has moved
- * a few pixels (a touch: once held a moment); the swatch under the pointer when it is released is the slot it lands in.
- * `onMove(from, to)` gets the slot indexes. The click that ends a drag is swallowed through `consumeDrag()`.
- */
+// Dragging a Palette swatch to another slot (ticket 398). A press becomes a drag once the pointer moves a few pixels
+// (touch: once held a moment); the swatch under the pointer on release is the target. `onMove(from, to)` gets slot
+// indexes. The click that ends a drag is swallowed through `consumeDrag()`.
 export function useSwatchDrag(onMove: (from: number, to: number) => void, slotAt: (x: number, y: number) => number | undefined) {
   /** The slot being dragged, and the slot it would land in right now; undefined outside a drag. */
   const draggingFrom = ref<number>()

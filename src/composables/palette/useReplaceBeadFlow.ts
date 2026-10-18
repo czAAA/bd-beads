@@ -15,7 +15,8 @@ export interface ReplaceBeadFlowDeps {
 
 /** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0023). Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
-  /** The Bead id picked from the Replace bead menu, awaiting confirmation (ticket 48); undefined when its modal is closed. */
+  /** The Bead id picked from the Replace bead menu, awaiting confirmation (ticket 48); undefined when its modal is
+   * closed. */
   const pendingId = ref<string | undefined>()
 
   /** The other built-in catalog Beads the open Project could switch to (ticket 48) — everything but its current one. */
@@ -24,17 +25,15 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     return project ? BEAD_CATALOG.filter((bead) => bead.id !== project.beadId) : []
   })
 
-  /** The Bead behind the pending id, resolved from the catalog — also doubles as "is the Replace bead modal open" (ticket 48), since a pending id always names a real catalog Bead. */
+  /** The Bead behind the pending id, resolved from the catalog — also doubles as "is the Replace bead modal open"
+   * (ticket 48), since a pending id always names a real catalog Bead. */
   const pendingBead = computed(() => {
     const id = pendingId.value
     return id ? findBead(id) : undefined
   })
 
-  /**
-   * The modal's message (ticket 48, ADR 0007): the Project's Estimated size with the new Bead next to the one it has
-   * now, plus the static reassurance that the design and its bead count stay put and that rows and columns can be
-   * adjusted afterwards. The grid itself never changes, so there is no new grid size to show.
-   */
+  /** The modal's message (ticket 48, ADR 0007): the Estimated size with the new Bead beside the old, and reassurance
+   * the design stays put; no new grid size to show. */
   const confirmMessage = computed(() => {
     const project = deps.currentProject()
     const bead = pendingBead.value
@@ -64,11 +63,8 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     pendingId.value = undefined
   }
 
-  /**
-   * Confirms Replace Bead (ticket 48, ADR 0007): swaps the Bead and nothing else, as a single undo step. The grid, Row
-   * progress and Mirror all stay as they are, since the grid — the Project's size — is untouched; only its Estimated
-   * size changes. An exempt Edit: it doesn't draw, so the Row progress lock has nothing to guard.
-   */
+  /** Confirms Replace Bead (ticket 48, ADR 0007): swaps the Bead only, as one undo step. An exempt Edit: it doesn't
+   * draw, so the Row progress lock has nothing to guard. */
   function onConfirmReplaceBead() {
     const bead = pendingBead.value
     pendingId.value = undefined

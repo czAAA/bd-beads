@@ -4,13 +4,9 @@ import AppIcon from '../AppIcon.vue'
 import AppTooltip from '../AppTooltip.vue'
 import type { IconName } from '../icons'
 
-/**
- * Two or three always-visible choices (ticket 149; SegmentedControl card): Technique, Unit, Change from. A radiogroup
- * that is one tab stop: the arrows, Home and End move the choice, which follows focus. Options are 34px (28px `small`)
- * with a 2px inset; the chosen one is `ink` with `canvas` text. Words are in Inter, values and units (`mono`) in DM
- * Mono. An option may carry an `icon` before its label and a `tooltip` (name and body) shown on hover and focus. A label that doesn't fit wraps to two lines, and every option keeps the same height. A single word wider than
- * its share moves the option to the next row instead of being squeezed (ticket 231).
- */
+// Two or three always-visible choices (ticket 149): a radiogroup of one tab stop, arrows/Home/End move the choice,
+// which follows focus. A label that doesn't fit wraps; a single word wider than its share moves the option to the next
+// row (ticket 231).
 /** An option's Tooltip: the `disabledBody` replaces the body while the whole control is disabled. */
 interface OptionTooltip {
   name: string
@@ -31,7 +27,8 @@ const props = withDefaults(
 const value = defineModel<T>({ required: true })
 const rootEl = ref<HTMLElement>()
 
-/** What an option's Tooltip says: while the control is disabled and gives a reason, that reason in place of the body (ADR 0035). */
+/** What an option's Tooltip says: while the control is disabled and gives a reason, that reason in place of the body
+ * (ADR 0035). */
 function tipFor(tooltip: OptionTooltip) {
   if (props.disabled && tooltip.disabledBody !== undefined) {
     return { name: tooltip.name, disabled: true as const, disabledBody: tooltip.disabledBody, announce: false }

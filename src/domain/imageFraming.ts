@@ -7,24 +7,13 @@ import {
   type Technique,
 } from './grid'
 
-/**
- * The framing step of Convert image (ticket 58, ADR 0010): the frame is the Project itself, fixed at its stated
- * real-world size, and the picture is scaled and panned underneath it.
- *
- * Everything here works in the frame's own millimetres. That is the one space in which the Project's real size, the
- * Bead's footprint and the Technique's grid geometry all mean the same thing, so a cell's true centre (see
- * grid.ts's cellCenter) can be turned straight into the picture pixel underneath it.
- */
+/** The framing step of Convert image (ticket 58, ADR 0010): the frame is the Project at its real-world size, the
+ * picture scaled and panned beneath it. All in frame millimetres, where a cell's true centre maps to a picture
+ * pixel. */
 
-/**
- * 100% is the scale at which the picture just covers the frame, and it is also the minimum: zooming out past it would
- * leave a band of the frame unfilled, and an unfilled cell reads as a deliberate hole in the finished piece rather
- * than as an artifact of fitting a picture (ADR 0010).
- *
- * Deliberately its own range rather than grid.ts's MIN_ZOOM/MAX_ZOOM/clampZoom, which the Project editor's own canvas
- * zoom owns (0.25–3, fit-to-box at reset): the two mean different things, and one function bent to serve both would
- * make either one's range a change to the other's behaviour.
- */
+/** 100% is the scale at which the picture just covers the frame, and the minimum: an unfilled cell would read as a
+ * deliberate hole (ADR 0010). Not grid.ts's MIN_ZOOM/MAX_ZOOM, which the editor canvas owns; sharing would couple
+ * them. */
 export const CONVERT_MIN_ZOOM = 1
 export const CONVERT_MAX_ZOOM = 8
 export const CONVERT_ZOOM_STEP = 0.25
@@ -46,11 +35,8 @@ export interface FrameSizeMm {
   heightMm: number
 }
 
-/**
- * The frame's real-world size: the Project grid's own footprint, taking each cell at the Bead's millimetre footprint
- * and each row at the Technique's spacing. Physical size rather than cell count (ADR 0010), so Delica's 1.6 × 1.3mm
- * cell gives a frame the shape the finished piece will have instead of a square one it never was.
- */
+/** The frame's real-world size: cells at the Bead's mm footprint, rows at the Technique's spacing. Physical size,
+ * not cell count (ADR 0010), so Delica's 1.6 x 1.3mm cell gives the finished piece's real shape. */
 export function frameSizeMm(
   technique: Technique,
   dimensions: GridDimensions,
@@ -62,20 +48,14 @@ export function frameSizeMm(
   }
 }
 
-/**
- * Millimetres per source pixel at the smallest scale that still covers the frame — the framing step's 100%. A picture
- * smaller than the frame is upscaled by this rather than left to fill part of it.
- */
+/** Millimetres per source pixel at the smallest scale that still covers the frame (the framing step's 100%);
+ * a smaller picture is upscaled by this. */
 export function coverScaleMm(image: ImageSize, frame: FrameSizeMm): number {
   return Math.max(frame.widthMm / image.width, frame.heightMm / image.height)
 }
 
-/**
- * Where the picture is, as a fraction of how far it can move in each direction: 0 is flush with the frame's left/top
- * edge, 1 with its right/bottom, 0.5 centred. Stored as a fraction rather than as millimetres so it stays valid with
- * no re-clamping when the zoom changes or the size fields grow the frame — there is no such thing as an out-of-range
- * pan, only one that means "as far that way as this picture goes".
- */
+/** Where the picture is, as a fraction of its travel: 0 flush left/top, 1 right/bottom, 0.5 centred. A fraction, so
+ * it stays valid with no re-clamping when zoom changes or the size fields grow the frame. */
 export interface PanFraction {
   x: number
   y: number
@@ -87,7 +67,8 @@ export const CENTERED_PAN: PanFraction = { x: 0.5, y: 0.5 }
 export interface FramingView {
   /** Millimetres per source pixel. */
   scaleMm: number
-  /** The picture's top-left corner, measured from the frame's own top-left corner. Never above 0: the picture covers. */
+  /** The picture's top-left corner, measured from the frame's own top-left corner. Never above 0: the picture
+   * covers. */
   offsetXMm: number
   offsetYMm: number
   pictureWidthMm: number
@@ -98,11 +79,8 @@ function clampFraction(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
-/**
- * The picture's position and scale under the frame, for a zoom (a multiple of the cover scale, see CONVERT_MIN_ZOOM)
- * and a pan fraction. The picture always covers the frame, by construction: the scale starts at cover, and the offset
- * can only range over the overhang there actually is.
- */
+/** The picture's position and scale under the frame, for a zoom (multiple of the cover scale) and a pan fraction.
+ * Always covers the frame: scale starts at cover and the offset ranges only over the overhang. */
 export function framingView(
   image: ImageSize,
   frame: FrameSizeMm,
@@ -126,29 +104,13 @@ export function framingView(
   }
 }
 
-/**
- * How many bead cells the framing preview renders at most. The preview shows the picture around the frame as beads
- * too, so that the crop can be judged, and at a high zoom the picture reaches far past the frame — a 60 × 90 frame at
- * 800% would be eight frames wide and eight tall, which is 64 times the beads of the Project itself. This caps that:
- * the surrounding context shrinks to fit, evenly in both directions, and the frame itself is always rendered whole
- * even when the Project alone is past the cap.
- *
- * Set when every bead was a DOM element and is kept since (ticket 104 moved the drawing to a canvas, which made a
- * bead far cheaper but not free): the preview is redrawn and resampled on every pointer move of a drag rather than once
- * when a Project is opened, so the budget is set by what can be redrawn smoothly, not by what can be displayed.
- */
+/** Most bead cells the framing preview renders. High zoom reaches far past the frame (800% is 64x the beads), so the
+ * surround shrinks evenly to fit; the frame is always whole. Kept since ticket 104 (canvas): redrawn on every drag
+ * move. */
 export const PREVIEW_MAX_CELLS = 12000
 
-/**
- * Per-Technique warning thresholds for the New Project form (ticket 61): once a Project's own grid (columns × rows,
- * the frame alone — not the margin PREVIEW_MAX_CELLS otherwise budgets for) reaches a Technique's threshold, framing
- * risks feeling slow once Convert image is used, and the form says so ahead of a picture being chosen.
- *
- * Three separate constants rather than one, even though all three start at the same number: there is no profiling
- * data today showing one Technique's render cost differs from another's at the same cell count (it scales with cell
- * count, not stagger or row packing), so a future ticket can move just one once someone has actually felt it lag
- * first, without that being a change to the other two.
- */
+/** Per-Technique slow-framing warning thresholds for the New Project form (ticket 61): the frame's own grid size
+ * (not the margin). Three constants though equal, since no profiling shows techniques differ, so one can move alone. */
 export const LOOM_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
 export const PEYOTE_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
 export const BRICK_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
@@ -160,11 +122,8 @@ export const SLOW_FRAMING_CELLS: Record<Technique, number> = {
   brick: BRICK_SLOW_FRAMING_CELLS,
 }
 
-/**
- * Whether a grid this size, in this Technique, is large enough that Convert image's framing preview risks feeling
- * slow (see SLOW_FRAMING_CELLS). `thresholds` defaults to the real per-Technique constants; a test overrides it to
- * exercise the per-Technique lookup without the three real thresholds having to differ.
- */
+/** Whether a grid this size in this Technique risks slow framing (see SLOW_FRAMING_CELLS). `thresholds` defaults to
+ * the real constants; a test overrides it to exercise the lookup without differing thresholds. */
 export function isSlowFramingSize(
   technique: Technique,
   dimensions: GridDimensions,
@@ -173,20 +132,15 @@ export function isSlowFramingSize(
   return dimensions.columns * dimensions.rows >= thresholds[technique]
 }
 
-/**
- * The block of bead cells the framing preview draws, and where the frame sits inside it. The lattice is the frame's
- * own cell grid extended outward by a margin of cells on each side, so a cell of the lattice is a cell of the Project
- * offset by that margin.
- */
+/** The block of bead cells the framing preview draws: the frame's grid extended by a margin of cells on each side,
+ * so a lattice cell is a Project cell offset by that margin. */
 export interface PreviewLattice {
   columns: number
   rows: number
   /** Which lattice column holds the frame's column 0. */
   frameColumn: number
-  /**
-   * Which lattice row holds the frame's row 0. Always even, so a lattice row has the same parity as the frame row it
-   * holds and an offset Technique's half-cell stagger runs unbroken across the frame's edge.
-   */
+  /** Which lattice row holds the frame's row 0. Always even, so row parity matches and an offset Technique's
+   * half-cell stagger runs unbroken across the frame's edge. */
   frameRow: number
 }
 
@@ -216,16 +170,9 @@ export interface PreviewLatticeInput {
   technique: Technique
 }
 
-/**
- * The preview's lattice for a given view: the frame plus as much of the picture as hangs over it, capped at
- * PREVIEW_MAX_CELLS. The margin is the same on both sides of an axis (the larger of the two overhangs), so the bead
- * lattice stays put while the picture is panned instead of jumping a cell as the overhang moves from one side to the
- * other.
- *
- * At the cover scale the whole picture nearly always fits inside the cap, so the framing step opens showing all of it.
- * Zoomed in, the surround is what gets trimmed — the part of the picture furthest from the crop being judged, and still
- * reachable by panning.
- */
+/** The preview's lattice for a view: the frame plus the overhanging picture, capped at PREVIEW_MAX_CELLS. The margin
+ * is equal on both sides of an axis (larger overhang) so the lattice doesn't jump while panning; when capped, the
+ * surround furthest from the crop is trimmed. */
 export function previewLattice({
   view,
   frame,

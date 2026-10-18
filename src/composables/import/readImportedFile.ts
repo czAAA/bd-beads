@@ -1,10 +1,8 @@
 import type { ProjectFileContents } from '../../domain/projectFile'
 import { readProjectsFile } from '../../services/projectFileCodec'
 
-/**
- * The Projects in a file the person picked: a `.openbeads` file, or a plain `.json` one from before ADR 0048 (ticket
- * 392). It is here so the import control, which may not reach services, reads files through the composables layer.
- */
+/** The Projects in a picked `.openbeads` file, or a pre-ADR 0048 `.json` (ticket 392); here so the import control,
+ * which may not reach services, can read files. */
 export function readImportedFile(file: Blob): Promise<ProjectFileContents> {
   return readProjectsFile(file)
 }

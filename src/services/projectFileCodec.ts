@@ -2,10 +2,8 @@ import { parseProjectsFile, serializeLibrary, serializeProject, type ProjectFile
 import type { Project } from '../domain/project'
 import { parseLegacyProjectsFile } from './legacyProjectFile'
 
-/**
- * Turns Project files into the gzipped bytes of a `.openbeads` file and back (ADR 0048), with the browser's own
- * CompressionStream: this is the service so the domain keeps only the JSON.
- */
+// Project files to and from gzipped `.openbeads` bytes (ADR 0048) with the browser's CompressionStream; the domain
+// keeps only the JSON.
 
 async function pipeThrough(bytes: Uint8Array<ArrayBuffer>, stream: CompressionStream | DecompressionStream): Promise<Uint8Array<ArrayBuffer>> {
   const piped = new Response(bytes).body!.pipeThrough(stream)
@@ -26,12 +24,8 @@ export function packLibraryFile(projects: Project[]): Promise<Uint8Array<ArrayBu
   return gzip(serializeLibrary(projects))
 }
 
-/**
- * Limits on a picked file (ticket 469), for Project files, library files and legacy JSON alike. Real files are tiny
- * (a 150x200 Project in 20 noisy colours is 14 KB gzipped, 78 KB unpacked; ADR 0048), so these only stop a crafted
- * file ("gzip bomb") freezing or crashing the tab: a file over 25 MB is refused unread, and unpacking aborts, counting
- * bytes as they stream out, once it passes 100 MB.
- */
+// Limits on a picked file (ticket 469), against a crafted "gzip bomb" (real files are tiny, ADR 0048): over 25 MB is
+// refused unread, and unpacking aborts, counting streamed bytes, past 100 MB.
 /** The largest picked file read at all. */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024
 /** The most a gzip may unpack to before reading aborts. */
@@ -64,11 +58,8 @@ function isGzip(bytes: Uint8Array): boolean {
   return bytes[0] === 0x1f && bytes[1] === 0x8b
 }
 
-/**
- * Reads the Projects out of a picked file: gzip (by its magic bytes) goes to the current reader, anything else to the
- * deprecated JSON reader. Throws, importing nothing, for a file that is neither, an unknown version, a gzip that
- * doesn't unpack, or a file past the size limits above.
- */
+// Reads Projects from a picked file: gzip (by magic bytes) to the current reader, else the legacy JSON reader. Throws,
+// importing nothing, on bad input.
 export async function readProjectsFile(file: Blob): Promise<ProjectFileContents> {
   if (file.size > MAX_FILE_BYTES) throw new Error('Project file is over the size limit')
   const bytes = new Uint8Array(await file.arrayBuffer())

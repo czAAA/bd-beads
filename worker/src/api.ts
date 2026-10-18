@@ -45,11 +45,9 @@ function match(route: Route, method: string, pathname: string): Record<string, s
   return params
 }
 
-/**
- * Everything under /api, in the order spec 385 sets: the Origin check on changing requests (CSRF), the kill
- * switches, the route, its guards, its handler. Health skips the kill switches, so a switched-off feature never looks
- * like a dead Worker. Only `ApiError`s become refusals; anything else is rethrown as the crash it is.
- */
+/** Everything under /api in spec 385's order: Origin check on changing requests (CSRF), kill switches, route,
+ * guards, handler. Health skips the kill switches, so a switched-off feature never looks like a dead Worker. Only
+ * `ApiError`s become refusals; anything else is rethrown as the crash it is. */
 export async function handleApi(request: Request, env: Env, routes: Route[]): Promise<Response> {
   const url = new URL(request.url)
   try {
@@ -74,10 +72,8 @@ export async function handleApi(request: Request, env: Env, routes: Route[]): Pr
   }
 }
 
-/**
- * `GET /api/health`: the Worker's name and version, after one read of each database, so "up" means "can reach its
- * storage". Behind Access it is the one bypassed path, so it reveals nothing but these.
- */
+/** `GET /api/health`: name and version after one read of each database, so "up" means "can reach its storage".
+ * Bypasses Access. */
 export const healthRoute: Route = {
   method: 'GET',
   path: '/api/health',

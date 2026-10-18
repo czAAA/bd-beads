@@ -9,10 +9,8 @@ import ProjectPanel from '../project/ProjectPanel.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { MIRROR_ENABLED } from '../../features'
 
-/**
- * The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelShell, the New Project and Saved
- * Projects sheets that open from Menu, and Mirror's. Each panel only asks; the app shell does the work.
- */
+// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelShell, the New Project and Saved
+// Projects sheets that open from Menu, and Mirror's. Each panel only asks; the app shell does the work.
 const {
   t,
   projects,

@@ -1,11 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { basename, join, relative } from 'node:path'
 
-/**
- * What the hover text check reads out of the app's source (ticket 264): where Tooltips are made, and the two guards
- * that keep hover text going through the shared Tooltip, so that every one of them is found and measured. Plain text
- * scanning of the .vue templates, cheap on purpose.
- */
+/** What the hover text check reads from the source (ticket 264): where Tooltips are made, plus the guards keeping
+ * hover text shared. */
 
 const SRC = join(import.meta.dirname, '..', '..', 'src')
 
@@ -55,7 +52,8 @@ export const TOOLTIP_MAKERS = ['AppTooltip', 'IconButton']
 /** Components that hand their attributes (a `title`) on to the native element inside. */
 const PASS_THROUGH = ['AppButton', 'IconButton']
 
-/** Every place a native `title` is used, which the browser shows as hover text that nothing can clip, measure or style. */
+/** Every place a native `title` is used, which the browser shows as hover text that nothing can clip, measure or
+ * style. */
 export function nativeTitles(): { file: string; what: string }[] {
   const found: { file: string; what: string }[] = []
   for (const file of sourceFiles()) {

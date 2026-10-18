@@ -18,10 +18,8 @@ async function withWorker(options: StartOptions, test: (worker: RunningWorker) =
   }
 }
 
-/**
- * A changing request from the app's own origin. A buffered body declares its length, as a browser's always does
- * (Miniflare's `dispatchFetch` would otherwise send it in chunks).
- */
+/** A changing request from the app's own origin; a buffered body declares its length like a browser's (else
+ * Miniflare chunks it). */
 function change(method: string, init: RequestInit = {}): RequestInit {
   const bytes = typeof init.body === 'string' ? new TextEncoder().encode(init.body) : init.body
   const length = bytes instanceof Uint8Array ? { 'Content-Length': String(bytes.byteLength) } : {}

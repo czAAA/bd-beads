@@ -1,13 +1,10 @@
-/**
- * The offline shell's side in the page (ticket 69, ADR 0045; the worker itself is pwa/serviceWorker.js): registers the
- * worker once the app has loaded, so the offline copy downloads silently behind the app, and tells the app when a newer
- * version is waiting. Everything here does nothing where the browser has no service worker (jsdom, an old browser, a
- * private window that refuses it): the app just isn't offline-capable there.
- */
+// The offline shell's page side (ticket 69, ADR 0045; worker in pwa/serviceWorker.js): registers it after load and
+// reports a waiting update. Does nothing where there is no service worker (jsdom, old or private browsers).
 
 /** What the app knows of the offline shell: whether a newer version is waiting, and how to switch to it. */
 export interface AppUpdates {
-  /** Calls `listener` when a newer version is waiting (at once, if it already is); returns the way to stop listening. */
+  /** Calls `listener` when a newer version is waiting (at once, if it already is); returns the way to stop
+   * listening. */
   onReady(listener: () => void): () => void
   /** Hands the page over to the waiting version and reloads onto it. */
   apply(): void
@@ -38,11 +35,8 @@ function watchForUpdates(found: ServiceWorkerRegistration) {
   })
 }
 
-/**
- * In a production build, registers the worker found at `baseUrl` once the page has loaded. Called by each page's entry;
- * a dev server has no worker to register. It never asks for persistent storage: that waits for a first save, with a
- * note before it (ticket 399, useStorageAskFlow).
- */
+// Registers the worker at `baseUrl` after load in a production build. Never asks for persistent storage: that waits for
+// a first save (ticket 399).
 export function startOfflineShell(baseUrl: string): void {
   if (!import.meta.env.PROD) return
   const start = () => {

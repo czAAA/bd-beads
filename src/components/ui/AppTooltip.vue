@@ -6,25 +6,9 @@ import KeyChip from './KeyChip.vue'
 import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
 
-/**
- * The design system's Tooltip (tickets 157, 327; Menu card): a light, slightly see-through bubble (`elevated` at 90%
- * over a backdrop blur, `ink` text, a `line-soft` edge, `elevation-3`; opaque in High contrast) that shows while its
- * trigger is hovered with a mouse or focused from the keyboard, and hides on leave, blur or Escape. A pen hovers like a
- * mouse (an Apple Pencil over an iPad). On a finger there is no hover, so a touch or pen press held for LONG_PRESS_MS
- * opens it instead, closing again on release (ticket 166; responsive.md "Input, not width": "tooltips become
- * long-press"). The trigger gets the tooltip's id through the `describedby` slot prop; an icon-only button whose own
- * name already says the same passes `announce: false`, so screen readers don't hear it twice.
- *
- * What it says (ADR 0035): the `name` in bold, an optional `hotkey` as a key chip beside it and an optional `body`
- * under them. A control shows a Tooltip exactly when it is given one. A disabled control (`aria-disabled`, so it stays
- * hoverable and focusable) gives a `disabledBody` that replaces the body, in `muted`, with no key chip. A click or tap
- * on such a control shows its tip too (ticket 453), so a finger, which has no hover, can learn why; the control's action
- * still does not run. That tip is a layer in the overlay registry, so a press elsewhere closes it, as does Escape.
- *
- * The bubble is never clipped (ticket 265): while open it sits in the browser's top layer (a manual popover), outside
- * every ancestor's `overflow`, positioned in screen coordinates from its trigger. It opens on the side that has room
- * (`placement` is the side it prefers), stays inside the screen on all four edges and wraps at a maximum width.
- */
+// The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows
+// on mouse/pen hover or keyboard focus; a touch/pen press held LONG_PRESS_MS opens it (ticket 166), as does a click on
+// a disabled control. Never clipped (ticket 265): a manual top-layer popover. `announce: false` avoids double reading.
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
@@ -171,7 +155,8 @@ function onClick() {
   pinned.value = true
 }
 
-/** Only a tip a click opened is a layer: a hover or focus tip must not take Escape or a press from the menu behind it. */
+/** Only a tip a click opened is a layer: a hover or focus tip must not take Escape or a press from the menu behind
+ * it. */
 useOverlayLayer({ isOpen: () => open.value && pinned.value, root: () => triggerEl.value, close: hide })
 
 function onFocusOut() {
@@ -284,7 +269,8 @@ onBeforeUnmount(hide)
   z-index: var(--z-tooltip);
   box-sizing: border-box;
   width: max-content;
-  /* A long tip wraps at the wide-tooltip measure, or at the screen's width where that is narrower (tickets 246, 265). */
+  /* A long tip wraps at the wide-tooltip measure, or at the screen's width where that is narrower (tickets 246,
+   * 265). */
   max-width: min(var(--tooltip-max-width), calc(100vw - 2 * var(--space-8)));
   margin: 0;
   padding: var(--space-6) var(--space-8);

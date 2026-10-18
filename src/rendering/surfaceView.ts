@@ -4,23 +4,12 @@ import { beadRoundness, type DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 
-/**
- * The Surface view: the one place that knows how a bead and a point on screen map onto each other (ADR 0010, ADR 0018,
- * ADR 0026), in both directions. It answers from a `Space` (space.ts), the Technique, the quarter turn, the zoom and, for
- * a viewport, where it is looking. Rotation, the row shift and the row pitch are private to it: what leaves is a point,
- * a box, a bead or a step on screen.
- *
- * Drawn geometry, here, follows the physical geometry in `domain/grid.ts` (ADR 0010, amended by ticket 0448): brick rows
- * sit one bead apart with no seam, and the gap between two rows is the gap between two columns. Nothing here knows about
- * millimetres.
- *
- * Coordinates. "Grid space" is px at zoom 1 with a bead CELL_SIZE_PX square. "Displayed space" is grid space zoomed and
- * turned clockwise by the rotation, about the box round the beads in a space of its own (an export, the Convert image
- * preview) or about the origin on the Canvas. A "point" is in the viewport: displayed space less the scroll, which
- * is the displayed position of the viewport's top-left corner.
- */
+// The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation, row shift
+// and pitch are private; geometry follows domain/grid.ts (ticket 0448). Grid space is px at zoom 1; displayed space is
+// zoomed and turned about the beads' box (Canvas: the origin); a point is displayed space less the scroll.
 
-/** The pixel size a bead is drawn at, at zoom 1 (the Project renderer's own size), so every layer lines up with what is drawn. */
+// The pixel size a bead is drawn at, at zoom 1 (the Project renderer's own size), so every layer lines up with what is
+// drawn.
 export const CELL_SIZE_PX = 20
 
 export interface Scroll {
@@ -42,10 +31,8 @@ export interface Region {
   height: number
 }
 
-/**
- * The distance from one row's top to the next, in grid px (drawn geometry). Peyote rows nest into each other, so they
- * sit closer than a bead is tall; brick stitch and loom rows stack, a full bead apart.
- */
+// Distance between row tops, in grid px: peyote rows nest closer than a bead is tall; brick stitch and loom rows stack
+// a full bead apart.
 export function rowPitchPx(technique: Technique): number {
   if (technique === 'peyote') {
     return CELL_SIZE_PX * 0.75
@@ -58,12 +45,14 @@ export function rowTopPx(technique: Technique, row: number): number {
   return row * rowPitchPx(technique)
 }
 
-/** How far a row's beads are shifted sideways, in grid px: every other row in peyote and brick stitch, by half a bead. */
+/** How far a row's beads are shifted sideways, in grid px: every other row in peyote and brick stitch, by half a
+ * bead. */
 export function rowShiftPx(technique: Technique, row: number): number {
   return isOffsetTechnique(technique) && Math.abs(row % 2) === 1 ? CELL_SIZE_PX / 2 : 0
 }
 
-/** How far a space's row has its beads shifted sideways, in grid px: by the bead's own row, whichever space the row is numbered in (a Project with no Frame may start on an odd row). */
+// How far a space's row has its beads shifted sideways, in grid px: by the bead's own row, whichever space the row is
+// numbered in (a Project with no Frame may start on an odd row).
 export function shiftOf(space: Space, technique: Technique, row: number): number {
   return rowShiftPx(technique, space.toAbsolute.row + row)
 }
@@ -82,17 +71,12 @@ export function displayedExtentPx(technique: Technique, columns: number, rows: n
   return rotationSwapsAxes(rotation) ? { width: height * zoom, height: width * zoom } : { width: width * zoom, height: height * zoom }
 }
 
-/**
- * The extent of the Canvas: nothing. It has no first bead to measure from, so displayed space is measured from the
- * bead at row 0, column 0 and a region may reach into the negative; a quarter turn is about the origin instead of a box.
- */
+// The Canvas's extent: nothing. Displayed space is measured from the bead at row 0, column 0, may go negative, and
+// turns about the origin.
 export const OPEN_EXTENT: Extent = { width: 0, height: 0 }
 
-/**
- * The transform from grid space to the displayed region's own coordinates: zoom, then rotation, then moving the region
- * to the origin. Each quarter turn clockwise carries the grid point (x, y) to (height − y, x) — composing that with
- * itself gives 180° and 270° (ticket 171).
- */
+// Grid space to the region's coordinates: zoom, rotate, move to the origin. A quarter turn maps (x, y) to (height − y,
+// x) (ticket 171).
 export function gridToRegion(extent: Extent, region: Region, zoom: number, rotation: Rotation): [number, number, number, number, number, number] {
   switch (rotation) {
     case 90:
@@ -106,7 +90,8 @@ export function gridToRegion(extent: Extent, region: Region, zoom: number, rotat
   }
 }
 
-/** Sets the context's transform to draw in grid space, on a surface showing `region` of the displayed Project, on a screen of the given pixel density. */
+// Sets the context's transform to draw in grid space, on a surface showing `region` of the displayed Project, on a
+// screen of the given pixel density.
 export function setGridTransform(
   context: DrawingContext,
   extent: Extent,
@@ -119,7 +104,8 @@ export function setGridTransform(
   context.setTransform(a * pixelRatio, b * pixelRatio, c * pixelRatio, d * pixelRatio, e * pixelRatio, f * pixelRatio)
 }
 
-/** The part of grid space a displayed region covers: the inverse of gridToRegion's own mapping, one case per quarter turn. */
+// The part of grid space a displayed region covers: the inverse of gridToRegion's own mapping, one case per quarter
+// turn.
 export function regionInGridSpace(extent: Extent, region: Region, zoom: number, rotation: Rotation): { left: number; right: number; top: number; bottom: number } {
   switch (rotation) {
     case 90:
@@ -171,19 +157,24 @@ export interface SurfaceView {
   viewport: Size
   /** Where a bead's centre is in the viewport. */
   beadToPoint(position: GridPosition): Scroll
-  /** The rectangle a block of beads covers in the viewport, with the half bead an offset technique's shifted rows add on the right. */
+  // The rectangle a block of beads covers in the viewport, with the half bead an offset technique's shifted rows add on
+  // the right.
   beadBox(box: Frame): Region
   /** The bead under a point of the viewport, or undefined between beads (ADR 0018). */
   pointToBead(point: Scroll): GridPosition | undefined
   /** The bead position nearest a point, gaps and rounded corners included: what dragging a Frame needs. */
   pointToCell(point: Scroll): GridPosition
-  /** The Frame's line in the viewport: its beads' rectangle with the line's outset, which is what its handles stand on. */
+  /** The Frame's line in the viewport: its beads' rectangle with the line's outset, which is what its handles stand
+   * on. */
   frameBox(frame: Frame): Region
-  /** The scroll that puts the middle of a block of beads, or the origin when there is none, in the middle of the viewport. */
+  // The scroll that puts the middle of a block of beads, or the origin when there is none, in the middle of the
+  // viewport.
   scrollToCentre(box?: Frame): Scroll
-  /** The scroll after the zoom changes to `to`, keeping the displayed point under `anchor` (a position in the viewport) where it was. */
+  // The scroll after the zoom changes to `to`, keeping the displayed point under `anchor` (a position in the viewport)
+  // where it was.
   scrollAfterZoom(anchor: Scroll, to: number): Scroll
-  /** The largest zoom, never past 100%, at which a block of beads leaves `margin` px clear on every side of the viewport; whole percent, rounded down. */
+  // The largest zoom, never past 100%, at which a block of beads leaves `margin` px clear on every side of the
+  // viewport; whole percent, rounded down.
   zoomToFit(box: Frame, margin: Size): number
   /** How far one step along a row (`column`) and one step down (`row`) go on screen. */
   beadStep(): { column: Scroll; row: Scroll }
@@ -193,7 +184,8 @@ export interface SurfaceView {
   gridDirection(x: number, y: number): Scroll
 }
 
-/** The bead position of a point in grid space, in the rows and columns a space has: the row it falls in by the row pitch, and (where rows nest) the one above it. A bound left out is no bound. */
+// The bead position of a point in grid space, in the rows and columns a space has: the row it falls in by the row
+// pitch, and (where rows nest) the one above it. A bound left out is no bound.
 function beadInGrid(
   technique: Technique,
   space: Space,
@@ -234,7 +226,8 @@ function inRoundedCorner(x: number, y: number, radius: number): boolean {
   return (x - cornerX) ** 2 + (y - cornerY) ** 2 > radius ** 2
 }
 
-/** A box's rectangle in grid space: its beads, and the half bead an offset technique's shifted rows add on the right. */
+/** A box's rectangle in grid space: its beads, and the half bead an offset technique's shifted rows add on the
+ * right. */
 function gridBox(technique: Technique, box: Frame): Region {
   const top = rowTopPx(technique, box.row)
   return {
@@ -259,7 +252,8 @@ export function surfaceView({ space, technique, rotation, zoom, scroll = { x: 0,
     return { x: Math.min(first.x, last.x), y: Math.min(first.y, last.y), width: Math.abs(last.x - first.x), height: Math.abs(last.y - first.y) }
   }
   const inViewport = (region: Region): Region => ({ ...region, x: region.x - scroll.x, y: region.y - scroll.y })
-  /** A point of the viewport in grid space: the turn and the zoom undone. The matrix is a quarter turn times the zoom, so its inverse is its transpose over the zoom squared. */
+  // A point of the viewport in grid space: the turn and the zoom undone. The matrix is a quarter turn times the zoom,
+  // so its inverse is its transpose over the zoom squared.
   const toGrid = (point: Scroll): [number, number] => {
     const [a, b, c, d, e, f] = matrix(zoom)
     const x = point.x + scroll.x - e

@@ -6,7 +6,8 @@ interface PinchPanDeps {
   setZoom: (value: number, anchor?: { x: number; y: number }) => void
   /** Moves the canvas under the viewport by a distance on screen. */
   panBy: (dx: number, dy: number) => void
-  /** Drops the paint stroke the first finger began, with the bead(s) it already painted: that finger was the start of a pinch, not a stroke. */
+  /** Drops the paint stroke the first finger began, with the bead(s) it already painted: that finger was the start
+   * of a pinch, not a stroke. */
   cancelStroke: () => void
 }
 
@@ -23,17 +24,9 @@ function distance(a: Point, b: Point): number {
   return Math.hypot(a.x - b.x, a.y - b.y)
 }
 
-/**
- * Two fingers on the Project pinch it to zoom and pan it (ticket 79; responsive.md's phone tier). One finger stays
- * a paint stroke: the drawing surface keeps `touch-action: none` (ticket 60), so the browser never zooms or scrolls
- * for us and this is the whole gesture recognizer.
- *
- * It listens in the capture phase on the canvas panel's scroller, above the drawing surface. The second finger
- * landing takes back the stroke the first began, with every bead it painted, and from then until every finger is up
- * the surface hears nothing, so neither finger paints. Zoom follows the fingers' spread directly, no steps and no easing (interaction-and-motion.md),
- * and the point between them stays under them as the zoom changes; moving them together scrolls the Project.
- * Only touch takes part: a mouse or pen has no second contact, and the Canvas strip's zoom and keys cover them.
- */
+// Two fingers pinch-zoom and pan the Project (ticket 79); one finger stays a stroke (`touch-action: none`, ticket 60).
+// Listens in the capture phase on the scroller: the second finger takes back the first's stroke and the surface hears
+// nothing until all are up. Zoom follows the spread with no steps; touch only.
 export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDeps) {
   const touches = new Map<number, Point>()
   let gesturing = false
@@ -72,7 +65,8 @@ export function usePinchPan(scrollEl: Ref<HTMLElement | null>, deps: PinchPanDep
     const [a, b] = firstTwo()
     const mid = midpoint(a, b)
     const box = scrollEl.value?.getBoundingClientRect()
-    // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with them.
+    // The point between the fingers stays under them as the zoom changes; moving them together moves the canvas with
+    // them.
     deps.setZoom(startZoom * (distance(a, b) / startSpread), { x: mid.x - (box?.left ?? 0), y: mid.y - (box?.top ?? 0) })
     deps.panBy(mid.x - lastMid.x, mid.y - lastMid.y)
     lastMid = mid

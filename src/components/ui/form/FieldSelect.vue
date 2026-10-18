@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import AppIcon from '../AppIcon.vue'
 
-/**
- * The native select in the field look (ticket 149; NumberField card): 40px like a TextField, with a 16px `chevron-down`
- * in `muted`, so phones and iPads show their own picker. Attributes and v-model go to the <select> itself.
- */
+/** The native select in the field look (ticket 149): a native picker on phones and iPads; attributes and v-model go
+ * to the <select>. */
 defineOptions({ inheritAttrs: false })
 defineProps<{ disabled?: boolean }>()
 const value = defineModel<string>()

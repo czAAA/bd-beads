@@ -1,16 +1,9 @@
 import { TOUR_ENABLED } from '../../src/features'
 import type { TextMisfit } from './textFit'
 
-/**
- * The text that does not fit its box yet (ticket 229), so that the check can land green and then guard what is fixed.
- * Each entry says where (the screen's name, as in textFit.spec.ts, up to any " (detail)"), which texts (the text as the
- * check reports it, or 'any' for a whole screen), and at which widths in which language it is known to overflow.
- * `fixedBy` names the ticket that deletes the entry: '231' for Russian-only layout fixes, 'unassigned' for places that
- * overflow in English too (nobody owns those yet).
- *
- * The check fails on a misfit that no entry names, and on an entry that no longer matches anything at one of its
- * widths: a fixed place must be deleted from here. When the list is empty the check is strict.
- */
+// Text that does not fit its box yet (ticket 229): `screen`, `texts` (or 'any'), widths per language, `fixedBy`
+// (ticket that deletes it; 'unassigned' = overflows in English). The check fails on a misfit no entry names and on an
+// entry matching nothing at one of its widths. Empty list = strict.
 export interface PendingEntry {
   screen: string
   texts: string[] | 'any'
@@ -32,7 +25,8 @@ const ALL_PENDING: PendingEntry[] = [
   { screen: 'Saved Projects expanded', texts: 'any', at: { ru: [390, 360, 320], uk: [320], be: [320], pl: [320] }, fixedBy: 'unassigned' },
 ]
 
-/** The Tour's entries wait while it is switched off (ticket 247): its screen isn't visited, so they would read as stale. */
+/** The Tour's entries wait while it is switched off (ticket 247): its screen isn't visited, so they would read as
+ * stale. */
 export const PENDING = ALL_PENDING.filter((entry) => TOUR_ENABLED || entry.screen !== 'Tour')
 
 export type Found = TextMisfit & { screen: string }
@@ -44,7 +38,8 @@ const covers = (entry: PendingEntry, locale: string, width: number, found: Found
   (entry.at[locale] ?? []).includes(width) &&
   (entry.texts === 'any' || entry.texts.includes(found.text))
 
-/** What is wrong at this language and width once the pending entries are taken out: misfits nobody listed, and entries that no longer match. */
+/** What is wrong at this language and width once the pending entries are taken out: misfits nobody listed, and
+ * entries that no longer match. */
 export function unexplained(locale: string, width: number, found: Found[], pending: PendingEntry[] = PENDING): string[] {
   const problems = found
     .filter((misfit) => !pending.some((entry) => covers(entry, locale, width, misfit)))

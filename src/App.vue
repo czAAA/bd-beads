@@ -2,10 +2,8 @@
 import AppShell from './components/shell/AppShell.vue'
 import { provideAppShell } from './composables/shell/useAppShell'
 
-/**
- * The app is pure composition (ADR 0020): useAppShell wires every composable to the others, and the shell's own
- * components — header, sidebar, canvas panel, bottom bar, phone sheets, dialogs — draw on what it provides.
- */
+/** The app is pure composition (ADR 0020): useAppShell wires every composable together, and the shell's components
+ * draw on what it provides. */
 provideAppShell()
 </script>
 

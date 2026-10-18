@@ -1,12 +1,8 @@
 import { nextTick, onBeforeUnmount, ref, type Ref } from 'vue'
 
-/**
- * Places a popup (a Menu, a popover) against the button it belongs to, 4px under it (Menu card), on the page itself
- * rather than inside the box that holds the button: the left column scrolls on its own and would clip it. When there
- * isn't room below, it opens above instead, and it stays inside the window sideways. It follows the button while
- * anything scrolls or the window resizes. A `transform` on an ancestor (the open Drawer) makes `fixed` count from that
- * ancestor instead of the window; the popup's real place is measured and the difference taken out (ticket 246).
- */
+// Places a popup against its button, 4px under it (Menu card), on the page itself, since the left column scrolls and
+// would clip it. Opens above when no room below, stays inside the window, follows the button. A `transform` ancestor
+// (open Drawer) shifts `fixed`: the real place is measured and corrected (ticket 246).
 export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup: Ref<HTMLElement | undefined>, align: () => 'start' | 'end') {
   const style = ref<Record<string, string>>({})
   const GAP = 4

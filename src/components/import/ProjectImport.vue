@@ -12,19 +12,16 @@ const props = withDefaults(
   defineProps<{
     /** Every Project saved on this device, for spotting import collisions. */
     projects: Project[]
-    /**
-     * Icons only, each name kept as its tooltip and accessible name: the header's first step when it runs out of room
-     * (ticket 142; `writing.md`, Fitting longer text), or the whole look inside the iPad mini tier's More menu
-     * (ticket 168), where `toastResults` also applies.
-     */
+    // Icons only, each name kept as tooltip and accessible name: the header's first step when it runs out of room
+    // (ticket 142; `writing.md`, Fitting longer text), or the whole look inside the iPad mini More menu (ticket 168),
+    // where `toastResults` also applies.
     compact?: boolean
-    /**
-     * The iPad mini tier's More menu (ticket 168; OverflowMenu card): a result doesn't fit beside the button in
-     * there, so it's emitted as `import-result` instead of drawn inline -- the app shell turns it into a toast above
-     * the bottom toolbar. The header's own instance leaves this off and keeps the inline result it always had.
-     */
+    // The iPad mini tier's More menu (ticket 168; OverflowMenu card): a result doesn't fit beside the button there, so
+    // it is emitted as `import-result` for the app shell to toast above the bottom toolbar. The header's instance
+    // leaves this off and keeps the inline result.
     toastResults?: boolean
-    /** A second, simultaneously-mounted instance (the More menu's, alongside the header's own) needs its own testids. */
+    /** A second, simultaneously-mounted instance (the More menu's, alongside the header's own) needs its own
+     * testids. */
     testidPrefix?: string
   }>(),
   {

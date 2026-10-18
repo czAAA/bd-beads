@@ -6,12 +6,9 @@ import IconButton from '../ui/IconButton.vue'
 import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 
-/**
- * The "Name on exports" row of the Project panel (NameOnExports card, ADR 0060, ticket 443): the open Project's Maker's name,
- * printed on its PDF and PNG exports. Unset it is an open field with a counter and the hint; Enter or leaving the field
- * saves it. Set it is one row, the name and a pencil that swaps the name for the field, and clearing the field returns it to
- * unset. Up to 40 characters, saved at once and not part of Undo.
- */
+// The "Name on exports" row of the Project panel (NameOnExports card, ADR 0060, ticket 443): the Maker's name printed
+// on PDF and PNG exports, up to 40 characters, saved at once, not part of Undo. Unset: a field with counter and hint
+// (Enter or blur saves). Set: the name and a pencil that swaps in the field; clearing it returns to unset.
 const props = defineProps<{ name: string }>()
 const emit = defineEmits<{ save: [name: string] }>()
 const { t } = useI18n()

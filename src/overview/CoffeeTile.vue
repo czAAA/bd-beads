@@ -2,11 +2,9 @@
 import AppButton from '../components/ui/AppButton.vue'
 import { useI18n } from '../i18n/useI18n'
 
-/**
- * The coffee tile (ticket 219; Overview card): a beaded cup with three beads of steam, who made the app, one line and a
- * secondary button. The button goes nowhere yet: the maker's own page, and opening it, are a later ticket. No
- * donation-service name, logo or colours. The cup and steam are decorative.
- */
+// The coffee tile (ticket 219; Overview card): a beaded cup with steam, who made the app, one line and a secondary
+// button that goes nowhere yet (the maker's page is a later ticket). No donation-service name, logo or colours.
+// The cup and steam are decorative.
 const { t } = useI18n()
 
 /** The cup, one letter a bead: `A` a body bead in the accent, `S` a saucer bead in the ink. */

@@ -5,12 +5,9 @@ import KeyChip from '../ui/KeyChip.vue'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { TOOL_HOTKEYS } from '../tools/toolIcons'
 
-/**
- * The one line at the drawing area's top-centre, under the strip, shown while the Project has no beads (ticket 429),
- * that says how to move the Canvas and names its shortcuts (CanvasHint card): "scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers". It does not move
- * with the canvas, is decoration for the eye (the same shortcuts are in Keyboard shortcuts), and is left to the phone,
- * which has no wheel and no keyboard, to leave out. On Windows and Linux the ⌘ chip reads "Ctrl".
- */
+// The one line under the strip while the Project has no beads (ticket 429; CanvasHint card): "scroll or space drag to
+// move · ⌘ scroll to zoom · 5 Hand · R Rulers". Fixed to the drawing area, decoration (shortcuts are in Keyboard
+// shortcuts), left out on phone; ⌘ reads "Ctrl" on Windows/Linux.
 const { t } = useI18n()
 /** The line is made of key chips, so it goes when they do (ticket 438). */
 const { shown } = useKeyHints()
