@@ -7,19 +7,19 @@ import AppNote from '../ui/AppNote.vue'
 import TextField from '../ui/form/TextField.vue'
 
 // The Custom color picker (ticket 449; ColorPickers card): wheel (hue = angle, saturation = distance), brightness
-// slider, hex field and preview swatch, drawn by the app. It only previews. A layer of the overlay registry (ADR 0061):
-// a press outside takes the color and leaves, Escape leaves without it, Enter takes it; untouched, it takes nothing.
+// slider, hex field and preview swatch; it only previews. A layer of the overlay registry (ADR 0061): a press outside,
+// Escape and Enter take the color; a press on a Palette swatch picks that swatch and takes nothing.
 const props = defineProps<{
   /** The color the picker opens on: the slot's Custom color, else the paint color, else a mid red. */
   color?: string
 }>()
 
 const emit = defineEmits<{
-  /** The color was taken (a press outside, or Enter): it becomes the paint color and joins the Palette. */
+  /** The color was taken (a press outside, Escape or Enter): it becomes the paint color and joins the Palette. */
   take: [hex: string]
   /** The picker was left with nothing to take (opened and untouched). */
   leave: []
-  /** Escape: back to the Custom button, nothing taken. */
+  /** Escape with nothing to take: back to the Custom button. */
   cancel: []
 }>()
 
@@ -69,8 +69,10 @@ function take() {
 useOverlayLayer({
   isOpen: () => true,
   root: () => rootEl.value,
-  close: () => emit('cancel'),
+  close: () => (touched ? take() : emit('cancel')),
   onOutsidePress: take,
+  // A Palette swatch is picked as usual (the host closes the picker); the custom color is not added.
+  keepsPress: (event) => event.target instanceof Element && event.target.closest('[data-testid="palette-swatch"]') !== null,
   // The Custom button toggles the picker itself (a press on it while open takes the color, like leaving it).
   isOpener: (target) => target.closest('[data-testid="custom-color-button"]') !== null,
 })

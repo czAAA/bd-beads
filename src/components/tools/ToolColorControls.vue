@@ -23,8 +23,8 @@ const emit = defineEmits<{
 const customColorSelected = computed(() => !props.selectedColorId && !!props.customColor)
 
 // The Custom color picker expands under the grid (ticket 449) and does not close on use. Taking its color (press
-// outside, Enter) hands it up once and closes the sheet holding this control; Escape returns to the button with nothing
-// taken.
+// outside, Escape, Enter) hands it up once and closes the sheet holding this control; picking a Palette swatch instead
+// closes the picker with nothing taken.
 const palette = usePalette()
 const closeSheet = useCloseSheetOnPick()
 const pickerOpen = ref(false)
@@ -35,6 +35,11 @@ const paintHex = computed(() => palette.value.find((color) => color.id === props
 function take(hex: string) {
   emit('select-custom-color', hex)
   leave()
+}
+
+function selectColor(colorId: string) {
+  pickerOpen.value = false
+  emit('select-color', colorId)
 }
 
 function leave() {
@@ -55,7 +60,7 @@ async function cancel() {
 </script>
 
 <template>
-  <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)">
+  <PalettePicker :selected-color-id="selectedColorId" @select="selectColor">
     <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" @toggle="toggle" />
   </PalettePicker>
   <CustomColorPanel ref="panel" v-if="pickerOpen" :color="customColor ?? paintHex" @take="take" @leave="leave" @cancel="cancel" />
