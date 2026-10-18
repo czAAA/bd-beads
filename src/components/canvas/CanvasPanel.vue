@@ -59,6 +59,8 @@ const {
   activeTool,
   showRulers,
   toggleRulers,
+  rowHighlight,
+  toggleRowHighlight,
   canUndo,
   canRedo,
   onUndo,
@@ -345,6 +347,7 @@ function techniqueWord(technique: Technique): string {
               :zoom="zoom"
               :scroll="scroll"
               :show-rulers="showRulers"
+              :row-marks="rowHighlight"
               :moving="activeTool === 'hand'"
               :marker-hidden="spaceHeld"
               :picking="colorPick?.picking.value"
@@ -439,9 +442,11 @@ function techniqueWord(technique: Technique): string {
       <ProgressBar
         v-if="activeProject && !framing"
         :project="activeProject"
+        :row-highlight="rowHighlight"
         @move-row="onMoveRow"
         @reset-progress="onResetProgress"
         @toggle-row-direction="onToggleRowDirection"
+        @toggle-row-highlight="toggleRowHighlight"
         @fit-frame="onFitFrame"
       />
     </div>

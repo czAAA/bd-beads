@@ -372,6 +372,7 @@ export const pl: Translations = {
   rowProgress: {
     enabledLabel: 'Pokaż postęp rzędów',
     directionButton: 'Zmień kierunek rzędów',
+    highlightButton: 'Podświetlenie rzędu',
     resetButton: 'Zresetuj postęp',
     resetConfirmTitle: 'Zresetować postęp?',
     resetConfirmMessage: 'Wszystkie rzędy oznaczone jako gotowe zostaną wyczyszczone i zaczniesz od pierwszego rzędu. Koraliki zostaną.',
