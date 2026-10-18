@@ -569,10 +569,6 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.pickFromCanvas,
     shownKey: 'Esc',
   }),
-  unkeyed('image-colors', (t) => t.convertImage.imageColorsLabel, 'colors', {
-    enabled: (deps: ControlDeps) => (deps.activeProject()?.imageColors?.length ?? 0) > 0,
-    disabledBody: (t: Translations) => t.tooltips.imageColorsDisabled,
-  }),
   unkeyed('strip-project', (t) => t.header.projectSheetLabel, 'edit', {
     icon: 'pattern',
     body: (t) => t.tooltips.list([t.form.techniqueLabel, t.saveBox.saveButton, t.panels.project.exportHeading, t.panels.project.duplicate]),

@@ -1,6 +1,6 @@
 # PaletteSwatches
 
-The Colors group: the Pattern's Palette as an 8-column grid of square swatches that grows by rows from 12 to 40, then Custom and Image colors.
+The Colors group: the Pattern's Palette as an 8-column grid of square swatches that grows by rows from 12 to 40, then Custom.
 
 - **Grid:** 8 columns, gap 6, square swatches, radius-sm, inset 1px `swatch-edge` so ivory and black do not vanish.
 - **Contents:** the 12 built-in swatches first, then every Custom color that joined the Palette by painting a cell, in the order it was added. Up to 28 can be added, so the group holds 12 to 40 swatches.
@@ -8,7 +8,7 @@ The Colors group: the Pattern's Palette as an 8-column grid of square swatches t
 - **Added swatches** look and behave exactly like built-in ones: the same size, the same inset edge, the same selected ring, the same focus ring.
 - **Selected:** `0 0 0 2px panel, 0 0 0 4px ring`. **Focus:** 2px `focus-ring`, 2px away (the app now matches; it was 4px).
 - **Touch** (`pointer: coarse`): `repeat(auto-fill, minmax(36px, 1fr))` instead of 8 columns, the same 6px gap, so swatches stay at least 36px.
-- **One Swatch (ticket 333; `AppSwatch` in the app):** the Palette, the Image colors popover and the Canvas color popover use the same chip. It takes a color, `selected`, an optional key chip and an optional ×. The ring's gap is the surface it sits on (`panel` in the Toolbox, `overlay-fill` in a popover).
+- **One Swatch (ticket 333; `AppSwatch` in the app):** the Palette, and the Canvas color popover use the same chip. It takes a color, `selected`, an optional key chip and an optional ×. The ring's gap is the surface it sits on (`panel` in the Toolbox, `overlay-fill` in a popover).
 - **Tooltip:** the name "Color" (Russian «Цвет»), the hex as the body and the key chip where there is one (see the Menu card). Only the first 12 Palette swatches have a key (Shift+1 to 9, Shift+0, Q, W); added swatches, Image colors and Canvas colors show just the name and hex.
 - **Accessible names:** every swatch has one. A built-in swatch is "Color 1, black"; an added swatch is named by its hex ("#6b3fa0").
 - **Removing an added swatch:** a × sits inside the top-right corner of an added swatch while it is the **active** (selected) color, while a mouse or an Apple Pencil hovers it, and while keyboard focus is on it (touch cannot hover, so it shows there only on the active swatch). Other added swatches at rest and built-in swatches never show it; built-in swatches cannot be removed. The first click on a swatch always selects it, even one that lands on the ×; only a click on the × of an already selected swatch removes.
@@ -20,7 +20,7 @@ The Colors group: the Pattern's Palette as an 8-column grid of square swatches t
 - **Palette is full:** with 28 colors already added, a new Custom color still paints but is not added, and a toast says so (see the Message card).
 - **Pick color from canvas (tickets 398, 403):** the grid's last tile, a swatch's size (the same 36px floor on touch) holding the 22px `eyedropper` icon, with the Toolbox button's look and `aria-pressed` while it is on. It is not a slot: it isn't dragged and has no Shift+key. While it is on the canvas pointer is the eyedropper, hot spot on its tip, in place of the bead marker and paint preview; a chip below and right of the tip (flipping at the canvas edge) shows the hex of the bead under it, and none over an empty cell or for a finger. Esc or choosing a tool ends it.
 - **Tools sit on this grid (v18):** the Tools group above uses the same 8 columns, 6px gap and square size, so tool tiles and swatches line up (ToolTabs card).
-- 12px below: two equal buttons: **Custom** (a 14px hatched square in `muted`, always, never a fill of the chosen colour, then the label; the hatch stands for "pick any color") and **Image colors** (image icon; `faint` while the Pattern has no Image colors). Unchanged by the longer grid.
+- 12px below: the **Custom** button (a 14px hatched square in `muted`, always, never a fill of the chosen colour, then the label; the hatch stands for "pick any color") Unchanged by the longer grid.
 - The swatch colors are the Pattern's bead colors (user data), never brand colors. The consumer provides them and the selected index.
 
 Hand-written from DESIGN.md §5.5 and the v16 Palette change; static rendition. The preview shows 12, 16 and 40 swatches at the Toolbox's 264px content width, then the touch layout, with the × on the selected added swatch and on the hovered one. The first 12 are the built-in Palette colors (see the Glossary card); the added ones are sample bead colors.

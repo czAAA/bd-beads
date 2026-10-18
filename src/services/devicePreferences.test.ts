@@ -25,7 +25,6 @@ const CASES = [
   { name: 'penSeen', key: 'openbeads:pen-seen', saved: 'yes', read: true, other: true, stored: 'yes', invalid: 'no', fallback: false },
   { name: 'theme', key: 'openbeads:theme', saved: 'contrast', read: 'contrast', other: 'dark', stored: 'dark', invalid: 'sepia', fallback: 'device' },
   { name: 'toolPillPosition', key: 'openbeads:tool-pill-position', saved: 'left', read: 'left', other: 'right', stored: 'right', invalid: 'middle', fallback: 'bottom' },
-  { name: 'pillColors', key: 'openbeads:pill-colors', saved: 'one', read: 'one', other: 'one', stored: 'one', invalid: 'many', fallback: 'recent' },
   { name: 'locale', key: 'openbeads:locale', saved: 'ru', read: 'ru', other: 'en', stored: 'en', invalid: 'fr', fallback: 'en' },
 ] as const satisfies readonly { name: PreferenceName; [k: string]: unknown }[]
 

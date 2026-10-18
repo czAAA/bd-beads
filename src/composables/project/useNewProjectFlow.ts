@@ -69,7 +69,7 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
       return
     }
 
-    deps.addProject(createProjectFromImage({ ...draft, grid: converted.grid, imageColors: converted.imageColors }))
+    deps.addProject(createProjectFromImage({ ...draft, grid: converted.grid }))
     deps.cancelConvertImage()
   }
 

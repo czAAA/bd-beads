@@ -16,7 +16,7 @@ export interface ToolAndColorDeps {
 }
 
 // The active tool and the paint color (tickets 58, 171, 206; ADR 0020): which of the four tools is active, and which of
-// the three mutually exclusive paint colors (a Palette swatch, an Image color or the Custom color) is chosen. Deps are
+// the two mutually exclusive paint colors (a Palette swatch or the Custom color) is chosen. Deps are
 // read lazily.
 export function useToolAndColor(deps: ToolAndColorDeps) {
   const palette = () => deps.palette?.() ?? PALETTE
@@ -27,20 +27,15 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
   // color exactly when selectedColorId is unset; onSelectColor/onSelectCustomColor keep the two exclusive.
   const customColor = ref<string | undefined>(undefined)
 
-  // The Image color being painted with (CONTEXT.md, ticket 58): one of the open Project's converted colors, the third
-  // of three mutually exclusive paint colors (kept so by the onSelect* handlers). Reset on a Project switch, since a
-  // hex from one conversion means nothing in another.
-  const selectedImageColor = ref<string | undefined>(undefined)
-
   const activeTool = ref<Tool>('paint')
 
-  /** The current paint color's hex: the selected Palette color, the selected Image color, or the Custom color —
-   * whichever of the three is active; null when none is. */
+  /** The current paint color's hex: the selected Palette color or the Custom color — whichever is
+   * active; null when none is. */
   function selectedColorHex(): string | null {
     if (selectedColorId.value) {
       return palette().find((color) => color.id === selectedColorId.value)?.hex ?? null
     }
-    return selectedImageColor.value ?? customColor.value ?? null
+    return customColor.value ?? null
   }
 
   /** The color the hover preview shows; null (a neutral outline, not a color) when nothing is selected. */
@@ -66,16 +61,15 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     }
   }
 
-  /** Choosing a Palette swatch deselects Custom color and any Image color (CONTEXT.md); the Custom slot keeps
+  /** Choosing a Palette swatch deselects Custom color (CONTEXT.md); the Custom slot keeps
    * showing its last hex, just unselected. */
   function onSelectColor(colorId: string) {
     selectedColorId.value = colorId
-    selectedImageColor.value = undefined
     switchToPaintOnColorPick()
   }
 
-  /** Choosing a Custom color makes it the paint color and deselects whichever Palette swatch or Image color was
-   * active, vice versa. */
+  /** Choosing a Custom color makes it the paint color and deselects the active Palette swatch, and
+   * vice versa. */
   function onSelectCustomColor(hex: string) {
     customColor.value = hex
     // A hex the Palette already has (built-in, or added earlier) just selects that swatch (ticket 227).
@@ -85,7 +79,6 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
       return
     }
     selectedColorId.value = undefined
-    selectedImageColor.value = undefined
     switchToPaintOnColorPick()
   }
 
@@ -95,35 +88,15 @@ export function useToolAndColor(deps: ToolAndColorDeps) {
     selectedColorId.value = colorId
   }
 
-  /** Choosing one of the open Project's Image colors (ticket 58) paints with it, the same way a Palette swatch does;
-   * the Custom slot keeps its own last hex, unselected. */
-  function onSelectImageColor(hex: string) {
-    selectedImageColor.value = hex
-    selectedColorId.value = undefined
-    switchToPaintOnColorPick()
-  }
-
-  /** A Project switch: an Image color belongs to the Project that was converted, so it can't stay selected; the
-   * Palette's own default steps back in, rather than leaving the editor with no paint color at all. */
-  function resetImageColor() {
-    if (selectedImageColor.value) {
-      selectedImageColor.value = undefined
-      selectedColorId.value = DEFAULT_PALETTE_COLOR_ID
-    }
-  }
-
   return {
     activeTool,
     selectedColorId,
     customColor,
-    selectedImageColor,
     selectedColorHex,
     previewColor,
     onSelectTool,
     onSelectColor,
     onSelectCustomColor,
     onCustomColorAdded,
-    onSelectImageColor,
-    resetImageColor,
   }
 }

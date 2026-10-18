@@ -269,15 +269,12 @@ function wireAppShell(services: Services) {
     activeTool,
     selectedColorId,
     customColor,
-    selectedImageColor,
     selectedColorHex,
     previewColor,
     onSelectTool: selectTool,
     onSelectColor,
     onSelectCustomColor: selectCustomColor,
     onCustomColorAdded,
-    onSelectImageColor,
-    resetImageColor,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
 
   /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0059). */
@@ -285,10 +282,8 @@ function wireAppShell(services: Services) {
     preferences: services.devicePreferences,
     selectedColorHex,
     palette: () => palette.value,
-    imageColors: () => currentProject()?.imageColors,
     onSelectColor,
     onSelectCustomColor: (hex) => onSelectCustomColor(hex),
-    onSelectImageColor,
   })
 
   /** Whether Pick color from canvas is on (ticket 398); see pickColorAt. */
@@ -408,7 +403,7 @@ function wireAppShell(services: Services) {
    * still paints, and the user is told once per color. */
   let limitToldFor: string | undefined
   function onPaintColorUsed(hex: string) {
-    if (selectedColorId.value || selectedImageColor.value) return
+    if (selectedColorId.value) return
     const { outcome, colorId } = addUsed(hex)
     if (outcome === 'added' && colorId) {
       onCustomColorAdded(colorId)
@@ -774,7 +769,6 @@ function wireAppShell(services: Services) {
     frameFlow.cancelRemove()
     replaceBead.onCancelReplaceBead()
     clearSavedConfirmation()
-    resetImageColor()
     pickingColor.value = false
   })
 
@@ -844,13 +838,11 @@ function wireAppShell(services: Services) {
     activeTool,
     selectedColorId,
     customColor,
-    selectedImageColor,
     previewColor,
     onSelectTool,
     onSelectAll,
     onSelectColor,
     onSelectCustomColor,
-    onSelectImageColor,
     ...toolPill,
     selectedColorHex,
     selection,

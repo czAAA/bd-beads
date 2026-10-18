@@ -58,8 +58,6 @@
   --control-height-small: 1.75rem;
   --stepper-value-width: 2.75rem;
   --stepper-value-size: 0.9375rem;
-  /* ColorPickers card: an Image colors swatch */
-  --image-color-size: 1.75rem;
   /* InteractionStates card: the pressed shrink */
   --press-scale: 0.98;
   /* responsive.md "Input, not width": a swatch's real minimum size on a coarse pointer */

@@ -4,7 +4,7 @@ import ToolPill from './ToolPill.vue'
 
 const TOOL_IDS = ['paint', 'fill', 'select', 'erase', 'hand', 'piece']
 
-const base = { activeTool: 'paint', position: 'bottom', colorMode: 'one', recentsInPill: [], recentsInPopover: [], popoverOpen: false, colorHex: '#e63746', colorName: 'Red' } as const
+const base = { activeTool: 'paint', position: 'bottom', recentsInPill: [], recentsInPopover: [], popoverOpen: false, colorHex: '#e63746', colorName: 'Red' } as const
 
 describe('ToolPill (ticket 439)', () => {
   afterEach(() => vi.restoreAllMocks())
@@ -90,17 +90,14 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(true)
   })
 
-  it('shows three recents in Recent colors mode, and a recent picks its colour at once', async () => {
-    const wrapper = mount(ToolPill, { props: { ...base, colorMode: 'recent', recentsInPill: ['#111111', '#222222', '#333333'] } })
+  it('shows three recents beside the swatch, and a recent picks its colour at once', async () => {
+    const wrapper = mount(ToolPill, { props: { ...base, recentsInPill: ['#111111', '#222222', '#333333'] } })
     const recents = wrapper.findAll('[data-testid="pill-recent"]')
     expect(recents).toHaveLength(3)
     await recents[1]!.trigger('click')
     expect(wrapper.emitted('pick-recent')).toEqual([['#222222']])
     expect(wrapper.find('[data-testid="pill-palette"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="pill-color"] .tool-pill__swatch-mark').exists()).toBe(true)
-
-    await wrapper.setProps({ colorMode: 'one' })
-    expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
   })
 
   it('drops the recents while the pill would overflow its edge, and brings them back with room', async () => {
@@ -111,7 +108,7 @@ describe('ToolPill (ticket 439)', () => {
       const right = this.classList.contains('tool-pill') ? 400 : tileRight
       return { left: 0, top: 0, right, bottom: 40, width: right, height: 40, x: 0, y: 0, toJSON: () => ({}) }
     })
-    const wrapper = mount(ToolPill, { props: { ...base, colorMode: 'recent', recentsInPill: ['#111111', '#222222', '#333333'] } })
+    const wrapper = mount(ToolPill, { props: { ...base, recentsInPill: ['#111111', '#222222', '#333333'] } })
     await flushPromises()
     expect(wrapper.find('[data-testid="pill-recent"]').exists()).toBe(false)
 
