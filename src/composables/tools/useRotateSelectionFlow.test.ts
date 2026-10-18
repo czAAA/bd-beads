@@ -10,12 +10,12 @@ import { useRotateSelectionFlow } from './useRotateSelectionFlow'
 const GREEN = '#00aa00'
 const RED = '#e63746'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
-/** A 1 x 3 strip of red beads at row 10, in a Frame all round it. */
+/** A 1 x 3 strip of red beads at row 10, in a Frame all round it: the Frame\'s own beads, since it lies over the Canvas. */
 const strip: Selection = { top: 10, left: 10, rows: 1, columns: 3 }
 const framed: Project = {
   ...base,
-  frame: { row: 0, column: 0, rows: 40, columns: 40 },
-  beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))),
+  frame: { row: 0, column: 0, rows: 40, columns: 40, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) },
+  beads: {},
 }
 
 function setup(project: Project | null = framed, selection: Selection | null = strip) {
@@ -39,13 +39,14 @@ describe('useRotateSelectionFlow', () => {
     onRotate()
 
     expect(deps.selection.value).toEqual({ top: 9, left: 11, rows: 3, columns: 1 })
-    expect(harness.project.frame).toEqual(framed.frame)
+    expect(harness.project.frame).toMatchObject({ row: 0, column: 0, rows: 40, columns: 40 })
     expect(harness.resetAfterFrameChange).not.toHaveBeenCalled()
-    expect(colorAt(harness.project.beads, 10, 10)).toBeNull()
-    expect(colorAt(harness.project.beads, 9, 11)).toBe(RED)
+    expect(colorAt(harness.project.frame!.beads, 10, 10)).toBeNull()
+    expect(colorAt(harness.project.frame!.beads, 9, 11)).toBe(RED)
+    expect(harness.project.beads).toBe(framed.beads)
 
     harness.history.onUndo()
-    expect(harness.project.beads).toEqual(framed.beads)
+    expect(harness.project.frame).toEqual(framed.frame)
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -57,7 +58,7 @@ describe('useRotateSelectionFlow', () => {
   })
 
   it('says how many beads it covered, once, with an Undo that undoes the one step', () => {
-    const covering: Project = { ...framed, beads: withColors(framed.beads, [{ row: 9, column: 11, color: GREEN }, { row: 11, column: 11, color: GREEN }]) }
+    const covering: Project = { ...framed, frame: { ...framed.frame!, beads: withColors(framed.frame!.beads, [{ row: 9, column: 11, color: GREEN }, { row: 11, column: 11, color: GREEN }]) } }
     const { deps, harness, onRotate } = setup(covering)
     onRotate()
 
@@ -70,16 +71,24 @@ describe('useRotateSelectionFlow', () => {
     expect(deps.onUndo).toHaveBeenCalledTimes(1)
 
     harness.history.onUndo()
-    expect(harness.project.beads).toEqual(covering.beads)
+    expect(harness.project.frame).toEqual(covering.frame)
   })
 
-  it('counts nothing for a covered bead the keep-out margin took back', () => {
-    // A Frame with its top edge at row 10: row 9 is in the margin, where nothing is drawn, so the turn's top bead is trimmed.
-    const edge: Project = { ...framed, frame: { row: 10, column: 0, rows: 30, columns: 40 }, beads: withColors(framed.beads, [{ row: 9, column: 11, color: GREEN }]) }
+  it('drops what the turn would put outside the Frame, and counts nothing for it', () => {
+    // The Frame\'s top edge is row 10: the turn\'s top bead would stand on row 9, which the Frame does not hold.
+    const edge: Project = { ...framed, frame: { row: 10, column: 0, rows: 30, columns: 40, beads: withColors({}, [0, 1, 2].map((column) => ({ row: 0, column: 10 + column, color: RED }))) } }
     const { deps, harness, onRotate } = setup(edge)
     onRotate()
-    expect(colorAt(harness.project.beads, 9, 11)).toBe(GREEN)
+    expect(Object.values(harness.project.frame!.beads).flatMap((row) => Object.keys(row))).toHaveLength(2)
     expect(deps.showToast).not.toHaveBeenCalled()
+  })
+
+  it('turns the Canvas\'s beads for a Selection that begins on the Canvas, and leaves the Frame', () => {
+    const sketch: Project = { ...framed, frame: { row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }
+    const { harness, onRotate } = setup(sketch)
+    onRotate()
+    expect(colorAt(harness.project.beads, 9, 11)).toBe(RED)
+    expect(harness.project.frame).toBe(sketch.frame)
   })
 
   it('does nothing with no Selection, no Project, or once a Row progress pass is done (ticket 411)', () => {

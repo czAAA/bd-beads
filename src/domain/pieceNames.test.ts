@@ -103,16 +103,17 @@ describe('piece names', () => {
   })
 
   it('follows its beads through Rotate and Remove line', () => {
-    const framed = { ...withPieceName(projectWith(row(1, 1, 3)), { row: 1, column: 1 }, 'Fox'), frame: { row: 0, column: 0, rows: 4, columns: 5 } }
-    const turned = rotateSelection(framed, { top: 0, left: 0, rows: 4, columns: 5 }).project
+    const fox = withPieceName(projectWith(row(1, 1, 3)), { row: 1, column: 1 }, 'Fox')
+    const turned = rotateSelection(fox, { top: 0, left: 0, rows: 4, columns: 5 }).project
     expect(pieceNameAt(turned, { row: 1, column: 1 })).toBeUndefined()
     expect(namedPieces(turned)).toHaveLength(1)
     expect(namedPieces(turned)[0]).toMatchObject({ name: 'Fox', beads: 3, rows: 3, columns: 1 })
 
-    const removed = removeSelectedLine(framed, { top: 0, left: 0, rows: 1, columns: 5 })
+    const tall = withPieceName(projectWith(row(1, 1, 3), row(2, 1, 3)), { row: 1, column: 1 }, 'Fox')
+    const removed = removeSelectedLine(tall, { top: 1, left: 1, rows: 1, columns: 3 })
     expect(removed.kind).toBe('changed')
     if (removed.kind === 'changed') {
-      expect(namedPieces(removed.project)[0]).toMatchObject({ name: 'Fox', row: 0, column: 1, beads: 3 })
+      expect(namedPieces(removed.project)[0]).toMatchObject({ name: 'Fox', row: 1, column: 1, beads: 3 })
     }
   })
 
@@ -136,12 +137,12 @@ describe('piece names', () => {
   describe('framing a named Schema (ticket 407)', () => {
     const fox = () => withPieceName(projectWith(row(0, 0, 3), row(0, 10, 12)), { row: 0, column: 0 }, 'Fox')
 
-    it('frames a named Piece whole: the Frame snaps to it and the name stays', () => {
+    it('frames a named Piece whole: the Frame snaps to it and takes its name with the beads', () => {
       const project = fox()
-      const result = changeFrame(project, { set: { row: 0, column: 0, rows: 1, columns: 4 } })
+      const result = changeFrame(project, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
 
-      expect(result.kind === 'changed' && result.project.frame).toEqual({ row: 0, column: 0, rows: 1, columns: 4 })
-      expect(result.kind === 'changed' && namedPieces(result.project)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 4, beads: 4 }])
+      expect(result.kind === 'changed' && result.project.frame).toEqual({ row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
+      expect(result.kind === 'changed' && namedPieces(result.project)).toEqual([])
     })
 
     it('refuses a Frame that cuts a named Piece, and says which', () => {
@@ -149,7 +150,7 @@ describe('piece names', () => {
       const cut = { row: 0, column: 2, rows: 1, columns: 4 }
 
       expect(namedPieceCutBy(project, cut)).toBe('Fox')
-      expect(changeFrame(project, { set: cut })).toEqual({ kind: 'refused', reason: 'cuts-schema' })
+      expect(changeFrame(project, { make: cut })).toEqual({ kind: 'refused', reason: 'cuts-schema' })
     })
 
     it('lets a Frame cut an unnamed Piece, as before, and take in a named one whole with it', () => {
@@ -161,7 +162,7 @@ describe('piece names', () => {
 
     it('leaves the beads of every other Schema out of what the Frame holds, which is what Export, Beads needed and Row progress read', () => {
       const both = withPieceName(fox(), { row: 0, column: 10 }, 'Owl')
-      const onFox = changeFrame(both, { set: { row: 0, column: 0, rows: 1, columns: 4 } })
+      const onFox = changeFrame(both, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
       if (onFox.kind !== 'changed') throw new Error('expected a change')
 
       const colors = frameGrid(onFox.project).flat().map((cell) => cell.color)
@@ -169,17 +170,18 @@ describe('piece names', () => {
       expect(colors).toEqual([R, R, R, R])
     })
 
-    it('keeps the Schema and its name when the Frame moves to another Schema or is removed', () => {
+    it('keeps the Schema and its name when the Frame moves to another Schema, and the Frame takes the other one with it when removed', () => {
       const both = withPieceName(fox(), { row: 0, column: 10 }, 'Owl')
-      const onFox = changeFrame(both, { set: { row: 0, column: 0, rows: 1, columns: 4 } })
+      const onFox = changeFrame(both, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
       if (onFox.kind !== 'changed') throw new Error('expected a change')
-      const onOwl = changeFrame(onFox.project, { set: { row: 0, column: 10, rows: 1, columns: 3 } })
+      const onOwl = changeFrame(onFox.project, { make: { row: 0, column: 10, rows: 1, columns: 3 } })
       if (onOwl.kind !== 'changed') throw new Error('expected a change')
       const removed = changeFrame(onOwl.project, { remove: true })
 
-      expect(onOwl.project.pieceNames?.map((entry) => entry.name).sort()).toEqual(['Fox', 'Owl'])
+      expect(onOwl.project.frame?.name).toBe('Owl')
+      expect(onOwl.project.pieceNames?.map((entry) => entry.name)).toEqual(['Fox'])
       expect(removed.kind === 'changed' && removed.project.frame).toBeUndefined()
-      expect(removed.kind === 'changed' && removed.project.pieceNames?.map((entry) => entry.name).sort()).toEqual(['Fox', 'Owl'])
+      expect(removed.kind === 'changed' && removed.project.pieceNames?.map((entry) => entry.name)).toEqual(['Fox'])
     })
   })
 })

@@ -1,5 +1,5 @@
 import type { Ref } from 'vue'
-import { coveredByRotation, rotateSelection } from '../../domain/rotate'
+import { rotateLayerSelection } from '../../domain/rotate'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { plural } from '../../i18n/plural'
@@ -32,15 +32,16 @@ export function useRotateSelectionFlow(deps: RotateSelectionFlowDeps) {
     }
 
     let turnedSelection = selection
+    let turnedCovered = 0
     const outcome = deps.edit('drawing', (project) => {
-      const turned = rotateSelection(project, selection)
+      const turned = rotateLayerSelection(project, selection)
       turnedSelection = turned.selection
+      turnedCovered = turned.covered
       return turned.project
     })
     deps.selection.value = turnedSelection
 
-    const after = deps.currentProject()
-    const covered = outcome.kind === 'applied' && after ? coveredByRotation(before, after, selection, turnedSelection) : 0
+    const covered = outcome.kind === 'applied' ? turnedCovered : 0
     const t = deps.messages()
     if (covered > 0) {
       const text = plural(deps.locale(), covered, t.frame.rotateCoveredMessage)

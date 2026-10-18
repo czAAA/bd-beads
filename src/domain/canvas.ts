@@ -14,6 +14,15 @@ export interface Frame {
   rows: number
 }
 
+/** The Frame as a Project holds it (ADR 0066): a rectangle laid on the Canvas that owns its own beads. The rectangle is
+ * in Canvas positions; `beads` are counted from the Frame's own first row and column, so moving the Frame moves them
+ * with it and changes nothing else. */
+export interface FrameSheet extends Frame {
+  beads: BeadMap
+  /** The name of the Piece the Frame was made from (ticket 489), drawn under the Frame. Absent: unnamed. */
+  name?: string
+}
+
 /** One bead's color at a position, or null where nothing is painted. */
 export function colorAt(beads: BeadMap, row: number, column: number): string | null {
   return beads[row]?.[column] ?? null
@@ -159,4 +168,62 @@ export function beadsInFrame(beads: BeadMap, frame: Frame): BeadMap {
     }
   })
   return inside
+}
+
+/** The beads moved by whole rows and columns, those that land outside `within` (rows × columns from 0, 0) dropped when
+ * it is given. The same map back when nothing moves and nothing is dropped. */
+export function shiftedBeads(beads: BeadMap, rows: number, columns: number, within?: GridDimensions): BeadMap {
+  if (rows === 0 && columns === 0 && !within) {
+    return beads
+  }
+  const shifted: BeadMap = {}
+  forEachBead(beads, (row, column, color) => {
+    const to = { row: row + rows, column: column + columns }
+    if (within && (to.row < 0 || to.row >= within.rows || to.column < 0 || to.column >= within.columns)) {
+      return
+    }
+    shifted[to.row] ??= {}
+    shifted[to.row]![to.column] = color
+  })
+  return shifted
+}
+
+/** `beads` with every bead of `over` laid on top, at the same positions. */
+export function beadsOver(beads: BeadMap, over: BeadMap): BeadMap {
+  const changes: BeadChange[] = []
+  forEachBead(over, (row, column, color) => changes.push({ row, column, color }))
+  return withColors(beads, changes)
+}
+
+/** `beads` without the beads that lie inside `area`. */
+export function beadsWithout(beads: BeadMap, area: Frame): BeadMap {
+  const changes: BeadChange[] = []
+  forEachBead(beads, (row, column) => {
+    if (frameContains(area, { row, column })) {
+      changes.push({ row, column, color: null })
+    }
+  })
+  return withColors(beads, changes)
+}
+
+/** Every position whose color differs between two bead maps; a row both share is passed over unread. */
+export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[] {
+  const changed: GridPosition[] = []
+  const rows = new Set([...Object.keys(before), ...Object.keys(after)])
+  for (const key of rows) {
+    const row = Number(key)
+    const was = before[row]
+    const now = after[row]
+    if (was === now) {
+      continue
+    }
+    const columns = new Set([...Object.keys(was ?? {}), ...Object.keys(now ?? {})])
+    for (const columnKey of columns) {
+      const column = Number(columnKey)
+      if (was?.[column] !== now?.[column]) {
+        changed.push({ row, column })
+      }
+    }
+  }
+  return changed.sort((a, b) => a.row - b.row || a.column - b.column)
 }

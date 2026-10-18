@@ -4,7 +4,8 @@ import { gzipJson } from '../../testUtils/gzipJson'
 import { mount } from '@vue/test-utils'
 import ProjectImport from './ProjectImport.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, paintCells, type Project, frameGrid } from '../../domain/project'
+import { createProject, type Project, frameGrid } from '../../domain/project'
+import { paintAt } from '../../testUtils/layers'
 import { serializeLibrary, serializeProject } from '../../domain/projectFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -59,7 +60,7 @@ describe('ProjectImport import', () => {
 
   it('brings in a Project that clashes with a local one under a new identity, keeping both', async () => {
     const local = makeProject('Fox')
-    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+    const incoming = paintAt(local, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
     const wrapper = mount(ProjectImport, { props: { projects: [local] } })
 
     await pickFile(wrapper, serializeProject(incoming))

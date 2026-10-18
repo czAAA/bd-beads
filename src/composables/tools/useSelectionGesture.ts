@@ -1,35 +1,24 @@
 import { computed, ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { paintCells, type Project } from '../../domain/project'
+import { beadColorAt, type Project } from '../../domain/project'
 import {
   selectAllSelection,
-  copySelection,
-  mirroredPasteBlock,
-  mirroredPastedCells,
+  copyLayerSelection,
   movedSelection,
-  pieceSelectionAt,
+  paintLayerSelection,
+  pasteOnLayer,
+  pastedCellsOnLayer,
+  pieceSelectionOnLayer,
   selectionBetween,
   selectionWithEdges,
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
 import { clampOutOfMargin, inMargin, selectionAllowed } from '../../domain/margin'
-import { colorAt } from '../../domain/canvas'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
-
-/** Every position in the Selection's rectangle. */
-function selectionPositions(sel: Selection): GridPosition[] {
-  const positions: GridPosition[] = []
-  for (let rowOffset = 0; rowOffset < sel.rows; rowOffset++) {
-    for (let columnOffset = 0; columnOffset < sel.columns; columnOffset++) {
-      positions.push({ row: sel.top + rowOffset, column: sel.left + columnOffset })
-    }
-  }
-  return positions
-}
 
 // The Select tool's whole gesture (ticket 63): the Selection, in-session clipboard, the in-progress press (click vs
 // drag) and the live paste preview. Like useMirrorState (ticket 62) it never reads the active tool (see
@@ -122,7 +111,7 @@ export function useSelectionGesture(
     }
 
     const block = copiedBlock.value!
-    edit('drawing', (current) => mirroredPasteBlock(current, block, press.anchor, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => pasteOnLayer(current, block, press.anchor, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, on
@@ -134,8 +123,8 @@ export function useSelectionGesture(
       return
     }
     const at = { row, column }
-    const picked = pieceSelectionAt(project.beads, project, at, project.frame)
-    if (inMargin(project.frame, at) || (!picked && colorAt(project.beads, row, column))) {
+    const picked = pieceSelectionOnLayer(project, at)
+    if (inMargin(project.frame, at) || (!picked && beadColorAt(project, row, column))) {
       refusals.value += 1
       return
     }
@@ -246,7 +235,7 @@ export function useSelectionGesture(
   function snapshotSelection(): boolean {
     const project = currentProject()
     if (!project || !selection.value) return false
-    const block = copySelection(project, selection.value)
+    const block = copyLayerSelection(project, selection.value)
     if (!block) return false
     copiedBlock.value = block
     return true
@@ -290,7 +279,7 @@ export function useSelectionGesture(
   function fill(color: string) {
     const sel = selection.value
     if (!currentProject() || !sel) return
-    edit('drawing', (current) => paintCells(current, selectionPositions(sel), color, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => paintLayerSelection(current, sel, color, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   // Ctrl/Cmd+V (ticket 92): pastes the clipboard block at `cell` as a Select click does (see endPress), but under any
@@ -304,7 +293,7 @@ export function useSelectionGesture(
 
     const block = copiedBlock.value
     pasteDismissed.value = false
-    edit('drawing', (current) => mirroredPasteBlock(current, block, cell, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => pasteOnLayer(current, block, cell, mirrorAxisCounts(), mirrorCopyMode()))
     return true
   }
 
@@ -318,14 +307,14 @@ export function useSelectionGesture(
       return
     }
 
-    edit('drawing', (current) => paintCells(current, selectionPositions(sel), null, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => paintLayerSelection(current, sel, null, mirrorAxisCounts(), mirrorCopyMode()))
   }
 
   // The block Paste would stamp under the cursor, Mirror-projected (tickets 31/50): the shell's hover preview under
   // Select; empty with no active (undismissed) projection, since a click would then put nothing down.
   function pastePreviewCells(project: Project, hovered: GridPosition): PreviewCell[] {
     return pasteProjectionActive.value
-      ? mirroredPastedCells(project.frame, copiedBlock.value!, hovered, mirrorAxisCounts(), mirrorCopyMode())
+      ? pastedCellsOnLayer(project, copiedBlock.value!, hovered, mirrorAxisCounts(), mirrorCopyMode())
       : []
   }
 

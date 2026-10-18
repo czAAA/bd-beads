@@ -16,7 +16,7 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function framed(frame = { row: 2, column: 3, rows: 6, columns: 5 }): Project {
+function framed(frame = { row: 2, column: 3, rows: 6, columns: 5, beads: {} }): Project {
   return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame }
 }
 
@@ -103,7 +103,7 @@ describe('FrameBar (ticket 473)', () => {
   })
 
   it('disables the − at four beads with the reason, and a press is no step', async () => {
-    const wrapper = mountBar(framed({ row: 2, column: 3, rows: 4, columns: 5 }))
+    const wrapper = mountBar(framed({ row: 2, column: 3, rows: 4, columns: 5, beads: {} }))
     const shrink = wrapper.get('[data-testid="frame-edge-bottom-in"]')
     expect(shrink.attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="frame-edge-bottom-out"]').attributes('aria-disabled')).toBeUndefined()

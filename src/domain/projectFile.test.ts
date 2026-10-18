@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
+import { paintAt } from '../testUtils/layers'
 import {
   importProjects,
   libraryFileName,
@@ -12,7 +13,6 @@ import {
 import {
   createProject,
   moveToRow,
-  paintCells,
   withBrickBlock,
   withTechnique,
   type Project,
@@ -31,7 +31,7 @@ function makeProject(name = 'Fox'): Project {
 }
 
 function decoratedProject(): Project {
-  const painted = paintCells(makeProject(), [{ row: 2, column: 3 }], '#e63746', { columns: 0, rows: 0 })
+  const painted = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746', { columns: 0, rows: 0 })
   return moveToRow(painted, 4)
 }
 
@@ -98,23 +98,30 @@ describe('single-Project roundtrip', () => {
     expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 3 with the compact encoding and the openbeads kind (ADR 0048)', () => {
+  it('writes version 4 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(3)
+    expect(file.version).toBe(4)
     expect(file.patterns).toBeUndefined()
     expect(file.projects[0].beads).toBeUndefined()
     expect(file.projects[0].encodedBeads).toBeDefined()
-    expect(file.projects[0].frame).toBeDefined()
+    expect(file.projects[0].frame.encodedBeads.rows).toEqual({ 2: '3:1' })
+    expect(file.projects[0].frame.beads).toBeUndefined()
     expect(JSON.parse(serializeLibrary([decoratedProject()])).kind).toBe('openbeads/library')
   })
 
-  it('keeps the beads hidden under the Frame through a file (ticket 476)', () => {
-    const covered = { ...decoratedProject(), coveredBeads: { 2: { 3: '#123456' } } }
+  it('keeps the Canvas beside the Frame through a file, and the Frame\'s name', () => {
+    const both = { ...decoratedProject(), beads: { 40: { 40: '#123456' } } }
+    both.frame = { ...both.frame!, name: 'Cherry' }
 
-    expect(parseProjectsFile(serializeProject(covered)).projects[0].coveredBeads).toEqual({ 2: { 3: '#123456' } })
-    expect(parseProjectsFile(serializeProject(decoratedProject())).projects[0].coveredBeads).toBeUndefined()
+    expect(parseProjectsFile(serializeProject(both)).projects).toEqual([both])
+  })
+
+  it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
+    const file = JSON.parse(serializeProject(decoratedProject()))
+    file.version = 5
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 5')
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
@@ -250,7 +257,7 @@ describe('importProjects', () => {
 
   it('keeps a same-identity local Project and brings the imported one in alongside it', () => {
     const local = decoratedProject()
-    const incoming = paintCells(local, [{ row: 0, column: 0 }], '#2f6fed', { columns: 0, rows: 0 })
+    const incoming = paintAt(local, [{ row: 0, column: 0 }], '#2f6fed', { columns: 0, rows: 0 })
 
     const added = importProjects([incoming], [local], () => 'fresh-id')
 

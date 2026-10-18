@@ -504,7 +504,7 @@ export const en: Translations = {
     fitToDrawing: 'Fit to drawing',
     removeFrame: 'Remove Frame',
     removeConfirmTitle: 'Remove Frame?',
-    removeConfirmMessage: 'The Frame goes and the beads stay. Rows marked as done are cleared with it. This can be undone.',
+    removeConfirmMessage: 'The Frame goes, and its beads go with it. Rows marked as done are cleared too. This can be undone.',
     removeConfirmButton: 'Remove Frame',
     removeConfirmCancel: 'Cancel',
     explainer: 'The Frame marks which beads become the Schema. Beads outside it stay on the Canvas.',

@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { colorAt } from '../../domain/canvas'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
-import { createProject, moveToRow, paintCells, type Project } from '../../domain/project'
+import { beadColorAt, createProject, moveToRow, type Project } from '../../domain/project'
+import { paintAt } from '../../testUtils/layers'
 import type { Tool } from '../../domain/tool'
 import { editHarness } from '../../testUtils/editHarness'
 import { usePaintStroke } from './usePaintStroke'
@@ -19,7 +19,7 @@ function setup(tool: Tool = 'paint', initial?: Project) {
     activeTool: () => tool,
     endSelectPress,
   })
-  const at = (row: number, column: number) => colorAt(harness.project.beads, harness.project.frame!.row + row, harness.project.frame!.column + column)
+  const at = (row: number, column: number) => beadColorAt(harness.project, harness.project.frame!.row + row, harness.project.frame!.column + column)
   return { stroke, harness, endSelectPress, at, frame: harness.project.frame! }
 }
 
@@ -40,8 +40,8 @@ describe('usePaintStroke', () => {
   it('cancels an erase stroke and a drag over several beads, and ends a Select press', () => {
     const { stroke, harness, endSelectPress, at, frame } = setup('paint', undefined)
     const { row, column } = frame
-    harness.edit('drawing', (project) => paintCells(project, [{ row, column }], '#0000ff', NO_MIRROR_AXES, false))
-    const painted = harness.project.beads
+    harness.edit('drawing', (project) => paintAt(project, [{ row, column }], '#0000ff', NO_MIRROR_AXES, false))
+    const painted = harness.project.frame!.beads
 
     stroke.beginOrCommitPress('erase', null, row, column)
     stroke.paintStrokeCell(row, column + 1, '#00ff00')
@@ -49,7 +49,7 @@ describe('usePaintStroke', () => {
     expect(at(0, 0)).toBeNull()
     stroke.cancelStroke()
 
-    expect(harness.project.beads).toEqual(painted)
+    expect(harness.project.frame!.beads).toEqual(painted)
     expect(at(0, 0)).toBe('#0000ff')
     expect(endSelectPress).toHaveBeenCalled()
   })
@@ -71,7 +71,7 @@ describe('usePaintStroke', () => {
     expect(stroke.strokeMode.value).toBeNull()
 
     harness.history.onUndo()
-    expect(Object.keys(harness.project.beads)).toHaveLength(0)
+    expect(Object.keys(harness.project.frame!.beads)).toHaveLength(0)
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -115,5 +115,48 @@ describe('usePaintStroke', () => {
 
     harness.history.onUndo()
     expect(at(0, 0)).toBe('#00ff00')
+  })
+
+  describe('layers (ADR 0066)', () => {
+    /** A 3 x 3 Frame at (20, 20), far from the margin of a Canvas sketch at the origin. */
+    const over = () => {
+      const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+      return { ...base, frame: { ...base.frame!, row: 20, column: 20 } }
+    }
+
+    it('paints the Frame for a press inside it, and a stroke that began there leaves nothing where it goes outside', () => {
+      const { stroke, harness } = setup('paint', over())
+
+      stroke.beginOrCommitPress('paint', '#ff0000', 20, 20)
+      stroke.paintStrokeCell(20, 21, '#ff0000')
+      stroke.paintStrokeCell(20, 30, '#ff0000')
+      stroke.paintStrokeCell(5, 5, '#ff0000')
+      stroke.endStroke()
+
+      expect(harness.project.frame!.beads).toEqual({ 0: { 0: '#ff0000', 1: '#ff0000' } })
+      expect(harness.project.beads).toEqual({})
+    })
+
+    it('paints the Canvas for a press outside the Frame, and a stroke that began there does not enter the Frame', () => {
+      const { stroke, harness } = setup('paint', over())
+
+      stroke.beginOrCommitPress('paint', '#ff0000', 5, 5)
+      stroke.paintStrokeCell(5, 6, '#ff0000')
+      stroke.paintStrokeCell(21, 21, '#ff0000')
+      stroke.endStroke()
+
+      expect(harness.project.beads).toEqual({ 5: { 5: '#ff0000', 6: '#ff0000' } })
+      expect(harness.project.frame!.beads).toEqual({})
+    })
+
+    it('fills and erases the layer the press is on, as one undo step each', () => {
+      const { stroke, harness } = setup('fill', over())
+      stroke.beginOrCommitPress('paint', '#00ff00', 21, 21)
+      expect(Object.values(harness.project.frame!.beads).flatMap((row) => Object.keys(row))).toHaveLength(9)
+      expect(harness.project.beads).toEqual({})
+
+      harness.history.onUndo()
+      expect(harness.project.frame!.beads).toEqual({})
+    })
   })
 })

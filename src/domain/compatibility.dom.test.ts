@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { framedGrid, type Grid, type Project, type RowProgress } from './project'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
+import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
 import { readProjectsFile } from '../services/projectFileCodec'
 import { gzipJson } from '../testUtils/gzipJson'
 import { loadProjects, saveProjects } from '../services/libraryStore'
@@ -9,6 +10,12 @@ import libraryV1 from './fixtures/library-v1.json?raw'
 import libraryV2 from './fixtures/library-v2.json?raw'
 import libraryV2OverCap from './fixtures/library-v2-over-cap.json?raw'
 import libraryFileV3 from './fixtures/library-file-v3-openbeads.json?raw'
+import libraryFileV3Framed from './fixtures/library-file-v3-framed-covered.json?raw'
+import libraryFileV4 from './fixtures/library-file-v4-openbeads.json?raw'
+import libraryV3 from './fixtures/library-v3.json?raw'
+import libraryV4 from './fixtures/library-v4.json?raw'
+import projectFileV3Framed from './fixtures/project-file-v3-framed-covered.json?raw'
+import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
@@ -140,6 +147,41 @@ const fileProjects = {
   }),
 }
 
+/** What version 3 stored as a Frame over a sketch and what the Frame sheet reads it as (ADR 0066): the beads inside the
+ * old Frame are the Frame's own, counted from its first bead; the bead it covered is an ordinary Canvas bead; the name
+ * anchored inside the Frame is the Frame's, the one outside stays on the Canvas. */
+const framedOverSketch: Project = {
+  id: 'v3-framed',
+  name: 'Framed over a sketch',
+  technique: 'loom',
+  beadId: BEAD,
+  beads: { 7: { 4: COLORS.R! }, 20: { 2: COLORS.B!, 3: COLORS.B!, 4: COLORS.B! } },
+  frame: {
+    row: 6,
+    column: 4,
+    columns: 4,
+    rows: 3,
+    name: 'Ornament',
+    beads: { 0: { 0: COLORS.R!, 1: COLORS.B!, 3: COLORS.K! }, 1: { 1: COLORS.K!, 2: COLORS.K! } },
+  },
+  rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 },
+  rotation: 0,
+  pieceNames: [{ name: 'Sketch', row: 20, column: 2 }],
+  createdAt: 1740000000000,
+  updatedAt: 1740000001000,
+}
+const unframedSketch: Project = {
+  id: 'v3-unframed',
+  name: 'Just a sketch',
+  technique: 'peyote',
+  beadId: BEAD,
+  beads: { [-3]: { [-2]: COLORS.B!, [-1]: COLORS.B! }, 4: { 0: COLORS.B! } },
+  rowProgress: noProgress,
+  rotation: 0,
+  createdAt: 1740000002000,
+  updatedAt: 1740000003000,
+}
+
 beforeEach(() => {
   localStorage.clear()
 })
@@ -165,8 +207,24 @@ describe('stored-data compatibility', () => {
       expect(loadProjects()).toEqual([overCapProject])
     })
 
+    it('opens a version 3 library (the Frame a rectangle of the Canvas, beads it covered kept aside) as the same picture on the Frame sheet (ADR 0066)', () => {
+      localStorage.setItem(STORAGE_KEY, libraryV3)
+
+      expect(loadProjects()).toEqual([framedOverSketch, unframedSketch])
+    })
+
+    it('opens a version 4 library as it is, and saves it back byte for byte', () => {
+      localStorage.setItem(STORAGE_KEY, libraryV4)
+
+      const opened = loadProjects()
+      expect(opened).toEqual([framedOverSketch, unframedSketch])
+      saveProjects(opened)
+
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(libraryV4.trim())
+    })
+
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
-      for (const stored of [libraryV1, libraryV2, libraryV2OverCap]) {
+      for (const stored of [libraryV1, libraryV2, libraryV2OverCap, libraryV3, libraryV4]) {
         localStorage.setItem(STORAGE_KEY, stored)
         loadProjects()
       }
@@ -183,7 +241,7 @@ describe('stored-data compatibility', () => {
 
       saveProjects(loadProjects())
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 3 })
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!)).toMatchObject({ version: 4 })
       expect(loadProjects()).toEqual(expected)
     })
 
@@ -212,6 +270,21 @@ describe('stored-data compatibility', () => {
       const many = new File([await gzipJson(libraryFileV3)], 'b.openbeads')
       expect((await readProjectsFile(one)).projects).toEqual([fileProjects.peyote])
       expect((await readProjectsFile(many)).projects).toEqual([fileProjects.loom, fileProjects.brick])
+    })
+
+    it('opens a version 3 file with a Frame over a covered sketch as the same picture on the Frame sheet, and a version 4 file as it is (ADR 0066)', async () => {
+      const one = await readProjectsFile(new File([await gzipJson(projectFileV3Framed)], 'd.openbeads'))
+      const many = await readProjectsFile(new File([await gzipJson(libraryFileV3Framed)], 'e.openbeads'))
+      expect(one.projects).toEqual([framedOverSketch])
+      expect(many.projects).toEqual([framedOverSketch, unframedSketch])
+      expect((await readProjectsFile(new File([await gzipJson(projectFileV4)], 'f.openbeads'))).projects).toEqual([framedOverSketch])
+      expect((await readProjectsFile(new File([await gzipJson(libraryFileV4)], 'g.openbeads'))).projects).toEqual([framedOverSketch, unframedSketch])
+    })
+
+    it('writes a version 4 file back byte for byte', () => {
+      const [framed] = parseProjectsFile(projectFileV4).projects
+      expect(serializeProject(framed!)).toBe(projectFileV4.trim())
+      expect(serializeLibrary(parseProjectsFile(libraryFileV4).projects)).toBe(libraryFileV4.trim())
     })
 
     it('opens a Project file that holds a Brick block (ticket 477), and one without as 1', async () => {

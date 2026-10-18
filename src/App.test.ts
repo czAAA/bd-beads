@@ -157,7 +157,8 @@ describe('App', () => {
     // A data turn of the Selection: the Project is not left turned and its Frame stays as it was.
     expect(afterRotate.rotation).toBe(0)
     expect(afterRotate.technique).toBe(beforeRotate.technique)
-    expect(afterRotate.frame).toEqual(beforeRotate.frame)
+    expect(afterRotate.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 3 })
+    expect(beforeRotate.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 3 })
     // The 1 x 2 strip becomes a 2 x 1 column on its right: the left bead goes to the top, the right one below it.
     const grid = frameGrid(afterRotate)
     expect(grid[0]![0]!.color).toBeNull()

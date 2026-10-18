@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { pieceInSelection, pieceNameAt, withPieceName } from '../../domain/pieceNames'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
-import type { Selection } from '../../domain/selection'
+import { selectionLayer, type Selection } from '../../domain/selection'
 import type { EditFn } from './useEdit'
 
 /** What Name Piece needs from the app shell: the open Project, Edit and the Selection. */
@@ -20,7 +20,8 @@ export function useNamePieceFlow(deps: NamePieceFlowDeps) {
   const target = computed(() => {
     const project = deps.currentProject()
     const selection = deps.selection()
-    return project && selection ? pieceInSelection(project, selection) : undefined
+    // Pieces are the Canvas's: a Selection on the Frame names nothing (ADR 0066).
+    return project && selection && selectionLayer(project, selection) === 'canvas' ? pieceInSelection(project, selection) : undefined
   })
 
   const canNamePiece = computed(() => !!target.value)

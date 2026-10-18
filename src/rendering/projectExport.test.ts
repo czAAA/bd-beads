@@ -4,7 +4,7 @@ import { PRINT_BOARD_PAD } from './printPlan'
 import type { Rotation, Technique } from '../domain/grid'
 import { projectExtentPx } from './surfaceView'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows } })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows, beads: {} } })
 
 describe('pngZoom (ticket 73)', () => {
   it('draws a bead at the legible size for an ordinary Project', () => {

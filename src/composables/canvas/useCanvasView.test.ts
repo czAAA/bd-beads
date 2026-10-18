@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
-import { createProject, paintCells, type Project } from '../../domain/project'
+import { createProject, type Project } from '../../domain/project'
+import { paintAt } from '../../testUtils/layers'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
 
 const NO_MIRROR = { columns: 0, rows: 0 }
@@ -47,7 +48,7 @@ describe('useCanvasView', () => {
   })
 
   it('fits what is drawn when there is no Frame, and puts the origin in the middle of an empty canvas', () => {
-    const painted = paintCells({ ...projectOf(2, 2), frame: undefined }, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
+    const painted = paintAt({ ...projectOf(2, 2), frame: undefined }, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
     expect(fitBox(painted)).toEqual({ row: 50, column: 80, rows: 1, columns: 1 })
     expect(fitBox({ ...projectOf(2, 2), frame: undefined })).toBeUndefined()
 
@@ -144,7 +145,7 @@ describe('useCanvasView', () => {
     view.fit()
     const before = { ...view.scroll.value }
 
-    current.value = paintCells(empty, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
+    current.value = paintAt(empty, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
     await nextTick()
 
     expect(view.scroll.value).toEqual(before)

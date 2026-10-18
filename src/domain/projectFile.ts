@@ -1,18 +1,27 @@
-import { normalizeProject, type GridProject, type Project } from './project'
-import { decodeProject, encodeProject, type EncodedProject } from './projectEncoding'
+import { normalizeProject, type GridProject, type Project, type StoredProject } from './project'
+import { decodeEarlierProject, decodeProject, encodeProject, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
+import type { VersionThreeProject } from './versionThree'
 
 // The export file format (ADR 0048). With no backend to migrate for us (ADR 0001), a file carries its kind and format
 // version and the reader refuses what it doesn't understand. This is the JSON inside `.openbeads`; the gzip is
 // `projectFileCodec`'s.
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
-/** Version 3 is the first gzipped one: `projects`, each with its beads in the compact encoding (ADR 0009). */
-const FILE_VERSION = 3
+/** Version 3 is the first gzipped one: `projects`, each with its beads in the compact encoding (ADR 0009). Version 4
+ * (ADR 0066) saves the Frame with its own beads; a build that knows only version 3 refuses it rather than drop them. */
+const FILE_VERSION = 4
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
   version: number
   projects: EncodedProject[]
+}
+
+// Every readable file version: each takes the file's encoded Projects and returns Projects for normalizeProject. The
+// version 3 reader is temporary (versionThree.ts).
+const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
+  3: (projects) => (projects as EncodedVersionThreeProject[]).map(decodeEarlierProject) as (VersionThreeProject | GridProject)[],
+  4: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
 /** What an exported file holds once read back. */
@@ -59,7 +68,7 @@ export function libraryFileName(): string {
 }
 
 /** Whether a parsed value has the fields of a Project, in either the beads shape or the older grid shape. */
-export function looksLikeProject(value: unknown): value is Project | GridProject {
+export function looksLikeProject(value: unknown): value is StoredProject {
   const project = value as Partial<Project & GridProject> | null
   const hasBeads = typeof project?.beads === 'object' && project.beads !== null
   const hasGrid = typeof project?.columns === 'number' && typeof project.rows === 'number' && Array.isArray(project.grid)
@@ -85,8 +94,8 @@ function looksLikeEncodedProject(value: unknown): value is EncodedProject {
   )
 }
 
-/** Reads the Projects out of a version 3 file's JSON (one Project or a library); throws on foreign JSON or unknown
- * version. */
+/** Reads the Projects out of a file's JSON (one Project or a library) of a version this build knows; throws on foreign
+ * JSON or an unknown version. */
 export function parseProjectsFile(text: string): ProjectFileContents {
   let parsed: unknown
   try {
@@ -104,7 +113,8 @@ export function parseProjectsFile(text: string): ProjectFileContents {
     throw new Error('Not an openbeads file')
   }
 
-  if (file.version !== FILE_VERSION) {
+  const read = typeof file.version === 'number' ? READERS[file.version] : undefined
+  if (!read) {
     throw new Error(`Unsupported openbeads file version: ${String(file.version)}`)
   }
 
@@ -112,9 +122,7 @@ export function parseProjectsFile(text: string): ProjectFileContents {
     throw new Error('This openbeads file does not contain readable Projects')
   }
 
-  return {
-    projects: file.projects.map((project) => normalizeProject(decodeProject(project))),
-  }
+  return { projects: read(file.projects).map(normalizeProject) }
 }
 
 /** Picks which imported Projects to add. Importing never overwrites: a taken id comes in under a fresh id (ticket

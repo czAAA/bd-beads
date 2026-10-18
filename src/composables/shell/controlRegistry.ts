@@ -3,7 +3,7 @@ import { MIRROR_ENABLED } from '../../features'
 import type { IconName } from '../../components/ui/icons'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
-import { rowProgressOn, rowProgressStarted, type Project } from '../../domain/project'
+import { hasProjectBeads, rowProgressOn, rowProgressStarted, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 
@@ -137,7 +137,10 @@ const rowProgressIsOn = (deps: ControlDeps) => {
   return project !== undefined && rowProgressOn(project)
 }
 const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefined
-const hasBeads = (deps: ControlDeps) => Object.keys(deps.activeProject()?.beads ?? {}).length > 0
+const hasBeads = (deps: ControlDeps) => {
+  const project = deps.activeProject()
+  return project !== undefined && hasProjectBeads(project)
+}
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
 /** One of the Frame bar's steppers (tickets 417, 473): an edge a bead out or in, named for its edge. Moving in stops

@@ -21,9 +21,8 @@ import type { BarBox, FrameAnchor, SelectionAnchor } from '../../composables/too
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import type { PillRect } from '../../domain/toolPill'
-import { hasBeads } from '../../domain/canvas'
 import { hasGuides } from '../../domain/selection'
-import { resolveProjectBead } from '../../domain/project'
+import { hasProjectBeads, resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 
@@ -281,7 +280,7 @@ function techniqueWord(technique: Technique): string {
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="activeProject && !framing && !hasBeads(activeProject.beads)" class="app-shell__canvas-hint" />
+        <CanvasHint v-if="activeProject && !framing && !hasProjectBeads(activeProject)" class="app-shell__canvas-hint" />
 
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped

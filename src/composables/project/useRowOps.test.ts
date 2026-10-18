@@ -54,7 +54,7 @@ describe('useRowOps', () => {
   })
 
   it('asks before Reset progress, and only once a row is done (ticket 455)', () => {
-    const framed = { ...base, frame: { row: 0, column: 0, rows: 3, columns: 3 } }
+    const framed = { ...base, frame: { row: 0, column: 0, rows: 3, columns: 3, beads: {} } }
     const fresh = setup(framed)
     fresh.onResetProgress()
     expect(fresh.resetProgressConfirmOpen.value).toBe(false)
@@ -68,7 +68,7 @@ describe('useRowOps', () => {
   })
 
   it('takes both pointers back to the first row on confirm, keeping the direction (ticket 455)', () => {
-    const columns = toggleRowDirection({ ...base, frame: { row: 0, column: 0, rows: 3, columns: 3 } })
+    const columns = toggleRowDirection({ ...base, frame: { row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
     const { deps, onResetProgress, onConfirmResetProgress, resetProgressConfirmOpen } = setup(moveToRow(columns, 2))
     onResetProgress()
     onConfirmResetProgress()

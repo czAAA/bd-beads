@@ -1,5 +1,5 @@
 import type { GridPosition } from '../../domain/grid'
-import type { Project } from '../../domain/project'
+import { sameBeads, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
 
@@ -34,11 +34,12 @@ export function useToolAtCursor(deps: ToolAtCursorDeps) {
   function invokeToolAt(cursor: GridPosition) {
     const project = deps.currentProject()
     if (!project) return
-    const before = project.beads
+    const before = project
     const color = deps.selectedColorHex()
     deps.pressCell(cursor.row, cursor.column)
     deps.endStroke()
-    if (deps.currentProject()?.beads === before) return
+    const after = deps.currentProject()
+    if (!after || sameBeads(before, after)) return
     const t = deps.messages()
     const tool = deps.activeTool()
     deps.announce(

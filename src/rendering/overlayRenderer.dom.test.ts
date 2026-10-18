@@ -30,7 +30,7 @@ function projectOf(technique: Technique, columns: number, rows: number, rowProgr
   for (let row = 0; filled && row < rows; row += 1) {
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
-  return { ...project, beads, rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
+  return { ...project, frame: { ...project.frame!, beads }, rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
 }
 
 function whole(project: Project, zoom = 1) {
@@ -119,7 +119,8 @@ describe('renderOverlay', () => {
     })
 
     it('marks only the cells that hold a bead: an empty cell gets no ring and no lift (ticket 411)', () => {
-      const project = { ...projectOf('loom', 3, 3, { currentRow: 1 }), beads: { 1: { 0: '#e63746', 2: '#e63746' } } }
+      const base = projectOf('loom', 3, 3, { currentRow: 1 })
+      const project = { ...base, frame: { ...base.frame!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } }
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -636,7 +637,7 @@ describe('the bead cursor (ticket 159)', () => {
   })
 
   describe('the Frame margin outline (ticket 276)', () => {
-    const framed = { ...projectOf('loom', 4, 4, { marks: false }), frame: { row: 5, column: 5, rows: 4, columns: 4 } }
+    const framed = { ...projectOf('loom', 4, 4, { marks: false }), frame: { row: 5, column: 5, rows: 4, columns: 4, beads: {} } }
 
     it('strokes a dashed 1px outline round the margin at the given opacity', () => {
       const { context, calls, named } = recordingContext()
@@ -650,7 +651,7 @@ describe('the bead cursor (ticket 159)', () => {
 
     // The margin's cells come from `withMargin`; the sizes are worked out here from the bead geometry (CELL_SIZE_PX 20), not from `projectExtentPx`.
     const outline = (technique: Technique, frame: Frame) => {
-      const project = { ...projectOf(technique, 4, 4, { marks: false }), frame }
+      const project = { ...projectOf(technique, 4, 4, { marks: false }), frame: { ...frame, beads: {} } }
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
       const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
@@ -691,10 +692,10 @@ describe('on the Canvas (ADR 0026)', () => {
   function openProject(rowProgress: Partial<TestRowProgress>): Project {
     const project = projectOf('loom', 3, 4, rowProgress, 0, false)
     const beads: Project['beads'] = {}
-    for (let row = 6; row < 10; row += 1) {
-      beads[row] = { 5: '#e63746', 6: '#e63746', 7: '#e63746' }
+    for (let row = 0; row < 4; row += 1) {
+      beads[row] = { 0: '#e63746', 1: '#e63746', 2: '#e63746' }
     }
-    return { ...project, beads, frame: { row: 6, column: 5, rows: 4, columns: 3 } }
+    return { ...project, beads: {}, frame: { row: 6, column: 5, rows: 4, columns: 3, beads } }
   }
   const view = { x: 0, y: 0, width: 400, height: 400 }
   const overlay = (project: Project, extra: Parameters<typeof renderOverlay>[1] extends infer Input ? Partial<Input> : never) => {
