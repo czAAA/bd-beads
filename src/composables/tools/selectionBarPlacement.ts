@@ -73,10 +73,10 @@ export interface FrameAnchor extends SelectionAnchor {
  * `--frame-handle-hit-*` values (ticket 473). */
 const HANDLE_HIT_HEIGHT_PX = 44
 const HANDLE_SIDE_GAP_PX = 32
-/** The edit pencil's hit area and how far out and up its centre sits from the margin outline's top-right corner,
+/** The edit pencil's hit area and how far in and down its centre sits from the margin outline's top-right corner,
  * mirroring `--frame-edit-hit`. */
 const PENCIL_HIT_PX = 44
-const PENCIL_OFFSET_PX = 14
+const PENCIL_OFFSET_PX = 26
 
 const clampTo = (value: number, low: number, high: number) => (low > high ? (low + high) / 2 : Math.max(low, Math.min(value, high)))
 
@@ -110,13 +110,13 @@ export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: numb
   return slides.filter((at) => !hits(at)).sort((a, b) => distance(a) - distance(b))[0] ?? natural
 }
 
-/** Where the edit pencil goes (ticket 473): 14px out and up from the margin outline's top-right corner, pinned to it
+/** Where the edit pencil goes (ticket 473): inside the margin, its hit area 4px in from the outline's top-right corner, pinned to it
  * and kept inside the canvas box. */
 export function editPencilCentre(anchor: FrameAnchor): { x: number; y: number } {
   const { outer, viewport } = anchor
   const half = PENCIL_HIT_PX / 2
   return {
-    x: clampTo(outer.left + outer.width + PENCIL_OFFSET_PX, half, viewport.width - half),
-    y: clampTo(outer.top - PENCIL_OFFSET_PX, half, viewport.height - half),
+    x: clampTo(outer.left + outer.width - PENCIL_OFFSET_PX, half, viewport.width - half),
+    y: clampTo(outer.top + PENCIL_OFFSET_PX, half, viewport.height - half),
   }
 }
