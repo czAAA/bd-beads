@@ -157,7 +157,8 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
 }
 
 /** Creates a Project from a picture (ticket 58): an ordinary new Project with its cells painted. Conversion only
- * creates, never edits an open Project (ADR 0010). The grid is fitted to the stated dimensions (missing cells empty, surplus dropped), so they never disagree. */
+ * creates, never edits an open Project (ADR 0010). The grid is fitted to the stated dimensions (missing cells empty,
+ * surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
   const frame = project.frame!
