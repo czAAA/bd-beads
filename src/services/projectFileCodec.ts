@@ -32,7 +32,9 @@ export function packLibraryFile(projects: Project[]): Promise<Uint8Array<ArrayBu
  * file ("gzip bomb") freezing or crashing the tab: a file over 25 MB is refused unread, and unpacking aborts, counting
  * bytes as they stream out, once it passes 100 MB.
  */
+/** The largest picked file read at all. */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024
+/** The most a gzip may unpack to before reading aborts. */
 export const MAX_UNPACKED_BYTES = 100 * 1024 * 1024
 
 async function unpack(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {
