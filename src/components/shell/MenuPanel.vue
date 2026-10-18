@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { LOCALES, LOCALE_NAMES } from '../../domain/locale'
+import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import type { InputMode } from '../../domain/inputMode'
 import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
@@ -61,7 +61,7 @@ const actions = {
 }
 const version = __APP_VERSION__
 
-const languageOptions = computed(() => LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], icon: 'globe' as const, lang: code, testid: `language-${code}` })))
+const languageOptions = computed(() => LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], chip: localeCode(code), lang: code, testid: `language-${code}` })))
 const themeOptions = computed<{ value: ThemePick; label: string; icon: 'device' | 'sun' | 'moon' | 'contrast' }[]>(() => [
   { value: 'device', icon: 'device', label: t.value.theme.matchDevice },
   { value: 'light', icon: 'sun', label: t.value.theme.light },
