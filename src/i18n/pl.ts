@@ -608,7 +608,6 @@ export const pl: Translations = {
     selectAll: 'Zaznacza wszystkie koraliki naraz.',
     hand: 'Przeciągnij, aby przesuwać się po płótnie.',
     editFrame: 'Pokaż lub ukryj uchwyty ramki i przyciski rozmiaru.',
-    editFrameLocked: 'Postęp rzędów już się zaczął, więc ramkę można tylko przesuwać.',
     frameEdgeOut: 'Powiększ ramkę o jeden koralik z tej strony.',
     frameEdgeIn: 'Zmniejsz ramkę o jeden koralik z tej strony.',
     frameEdgeInDisabled: 'Z tej strony ramki nie można już zmniejszyć.',

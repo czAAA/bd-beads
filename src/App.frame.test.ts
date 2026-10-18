@@ -118,19 +118,38 @@ describe('Edit Frame', () => {
     expect(editing(wrapper)).toBe(false)
   })
 
-  it('is not left by Escape, Enter or choosing a tool, and the tools draw inside the Frame with the bar open', async () => {
+  it('closes like Menu and Project: Escape, or a press on the canvas that only closes it, and the next one draws (ticket 475)', async () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
     await key({ key: 'Escape' })
-    await surface(wrapper).trigger('keydown', { key: 'Enter' })
-    await pickTool(wrapper, 'fill')
-    expect(editing(wrapper)).toBe(true)
+    expect(editing(wrapper)).toBe(false)
 
+    await toggleEdit(wrapper)
     await pickTool(wrapper, 'paint')
+    expect(editing(wrapper)).toBe(true)
+    await pressBead(wrapper, { row: 2, column: 4 })
+    await surface(wrapper).trigger('pointerup')
+    await flushPromises()
+    expect(editing(wrapper)).toBe(false)
+    expect(beadColor(wrapper, { row: 2, column: 4 })).toBeNull()
+
     await pressBead(wrapper, { row: 2, column: 4 })
     await surface(wrapper).trigger('pointerup')
     await flushPromises()
     expect(beadColor(wrapper, { row: 2, column: 4 })).not.toBeNull()
+  })
+
+  it('is one panel at a time with Menu and Project (ticket 475)', async () => {
+    const wrapper = await mountOpen(framedProject())
+    await toggleEdit(wrapper)
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await flushPromises()
+    expect(editing(wrapper)).toBe(false)
+    expect(wrapper.find('[data-testid="panel-dropdown"], [data-testid="top-sheet"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="strip-frame"]').trigger('click')
+    await flushPromises()
+    expect(editing(wrapper)).toBe(true)
+    expect(wrapper.findAll('[data-testid="panel-dropdown"], [data-testid="top-sheet"]')).toHaveLength(1)
   })
 
   it('works from the keyboard on the Margin handle: arrows move the Frame and Shift resizes it', async () => {
@@ -205,15 +224,16 @@ describe('Edit Frame', () => {
     expect(editing(wrapper)).toBe(false)
   })
 
-  it('is disabled once Row progress has started: the bar holds the size and Remove alone, and the Margin handle still moves the Frame (tickets 452, 473)', async () => {
+  it('opens once Row progress has started with the size and Remove alone, and the Margin handle still moves the Frame (tickets 452, 473, 475)', async () => {
     const wrapper = await mountOpen({ ...framedProject(), rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
-    expect(wrapper.get('[data-testid="frame-edit-toggle"]').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-disabled')).toBe('true')
+    expect(editing(wrapper)).toBe(false)
+    expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-disabled')).toBeUndefined()
+    await toggleEdit(wrapper)
     expect((wrapper.get('[data-testid="frame-bar-size"]').element as HTMLInputElement).value).toBe('3 × 2')
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     for (const gone of ['frame-rotate', 'frame-edge-top-out', 'frame-bar-cell-left']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
     await toggleEdit(wrapper)
-    expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
+    expect(editing(wrapper)).toBe(false)
 
     await wrapper.get('[data-testid="frame-move-handle"]').trigger('keydown', { key: 'ArrowRight' })
     expect(savedFrame()).toEqual({ row: 2, column: 4, rows: 2, columns: 3 })
@@ -382,6 +402,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
+    await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(true)
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
@@ -390,6 +411,8 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
+    // The dialog took focus, so the bar closed, as Menu and Project do (ticket 475).
+    await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
@@ -411,6 +434,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
 
     // A Selection carries no Frame bar, so it goes first.
     await key({ key: 'Escape' })
+    await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()

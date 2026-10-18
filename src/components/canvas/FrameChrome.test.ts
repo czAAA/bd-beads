@@ -59,13 +59,13 @@ describe('FrameChrome (ticket 473)', () => {
     expect(wrapper.emitted('toggle')).toHaveLength(1)
   })
 
-  it('disables the pencil once Row progress has started, while the handle stays', async () => {
+  it('keeps the pencil and the handle working once Row progress has started, for the size and Remove (ticket 475)', async () => {
     const wrapper = mountChrome({ project: moveToRow(framed(), 1), editing: true })
     const pencil = wrapper.get('[data-testid="frame-edit-toggle"]')
-    expect(pencil.attributes('aria-disabled')).toBe('true')
-    expect(pencil.attributes('aria-pressed')).toBe('false')
+    expect(pencil.attributes('aria-disabled')).toBeUndefined()
+    expect(pencil.attributes('aria-pressed')).toBe('true')
     await pencil.trigger('click')
-    expect(wrapper.emitted('toggle')).toBeUndefined()
+    expect(wrapper.emitted('toggle')).toHaveLength(1)
     expect(wrapper.get('[data-testid="frame-move-handle"]').attributes('aria-disabled')).toBeUndefined()
   })
 })

@@ -615,7 +615,6 @@ export const en: Translations = {
     selectAll: 'Select every bead at once.',
     hand: 'Drag to move around the Canvas.',
     editFrame: 'Show or hide the handles and size buttons on the Frame.',
-    editFrameLocked: 'Row progress has started, so the Frame can only be moved.',
     frameEdgeOut: 'Grow the Frame by one bead on this side.',
     frameEdgeIn: 'Shrink the Frame by one bead on this side.',
     frameEdgeInDisabled: 'The Frame can’t get any smaller on this side.',
