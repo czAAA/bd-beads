@@ -78,12 +78,6 @@ export function frameWithEdgeStep(weave: Weave, frame: Frame, edge: FrameEdge, s
   }
 }
 
-/** The width and height typed as "20x120" (x, ×, * or the Cyrillic х between them), or none when it isn't one. */
-export function parseFrameSize(text: string): { columns: number; rows: number } | undefined {
-  const match = /^\s*(\d{1,4})\s*[x×*хХ]\s*(\d{1,4})\s*$/i.exec(text)
-  return match ? { columns: Number(match[1]), rows: Number(match[2]) } : undefined
-}
-
 /** The Frame resized to `columns` × `rows`, each side growing or shrinking evenly on both of its edges (ticket 473): an
  * odd change gives the extra bead to the right or bottom. Where rows alternate the top edge moves by whole cycles of
  * rows, so the first row keeps its place in the stagger. A side is kept between four and MAX_TYPED_SIDE beads. */

@@ -6,12 +6,12 @@ import PanelShell from '../shell/PanelShell.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
-import { FRAME_EDGES, frameWithEdgeStep, parseFrameSize, type FrameEdge } from '../../domain/frame'
+import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import type { BarBox, FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useI18n } from '../../i18n/useI18n'
 
-// The Frame bar (tickets 473, 475; Frame card): the Frame's size (typeable), Rotate and Remove, and a − and + pair per
+// The Frame bar (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
 // edge. It is a panel like Menu and Project (PanelShell): from the strip's Frame button, or from the edit pencil that
 // opened it, which it follows; a press outside or Escape closes it, a Frame handle's press does not.
 const props = defineProps<{
@@ -78,19 +78,37 @@ function measure(): BarBox | undefined {
 watch([size.width, size.height, () => shell.value?.box], () => void nextTick(() => emit('rect', measure())), { immediate: true, flush: 'post' })
 onBeforeUnmount(() => emit('rect', undefined))
 
-/** The size field: shows "columns × rows"; Enter or leaving it takes a typed "20x120", Escape puts the size back. */
-const typed = ref('')
-const shownSize = computed(() => t.value.frame.sizeValue.replace('{columns}', String(frame.value?.columns)).replace('{rows}', String(frame.value?.rows)))
-watch(shownSize, (value) => (typed.value = value), { immediate: true })
+/** The width and height fields start empty (their placeholders show the current size), so a tablet's keyboard only opens
+ * on a tap. They take whole numbers from 1 up; Enter or leaving both takes them, an empty one keeps its side, Escape clears. */
+const typedWidth = ref('')
+const typedHeight = ref('')
+const sizeEdited = computed(() => typedWidth.value !== '' || typedHeight.value !== '')
+function clearSize(): void {
+  typedWidth.value = ''
+  typedHeight.value = ''
+}
 function commitSize(): void {
-  const wanted = parseFrameSize(typed.value)
+  const columns = Number(typedWidth.value) || frame.value?.columns
+  const rows = Number(typedHeight.value) || frame.value?.rows
   // The size it already has is no step: re-centring it would shift a Frame whose rows alternate by a pair.
-  if (wanted && (wanted.columns !== frame.value?.columns || wanted.rows !== frame.value?.rows)) emit('resize', wanted.columns, wanted.rows)
-  typed.value = shownSize.value
+  if (sizeEdited.value && columns && rows && (columns !== frame.value?.columns || rows !== frame.value?.rows)) emit('resize', columns, rows)
+  clearSize()
+}
+/** Keeps digits only, as typed or pasted, and no leading zero. */
+function onSizeInput(event: Event, side: 'width' | 'height'): void {
+  const input = event.target as HTMLInputElement
+  const digits = input.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 3)
+  input.value = digits
+  if (side === 'width') typedWidth.value = digits
+  else typedHeight.value = digits
 }
 function onSizeKey(event: KeyboardEvent): void {
   event.stopPropagation()
   if (event.key === 'Enter') commitSize()
+}
+/** Focus moving from one field to the other is no end of editing. */
+function onSizeFocusOut(event: FocusEvent): void {
+  if (!(event.relatedTarget instanceof Node && (event.currentTarget as HTMLElement).contains(event.relatedTarget))) commitSize()
 }
 
 // Top, Bottom, Left, Right is the cell order whatever the edges' own order is.
@@ -108,25 +126,44 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   >
     <div ref="barEl" class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
       <div class="frame-bar__head">
-        <div class="frame-bar__size">
-          <span class="frame-bar__label">{{ t.frame.title }}</span>
-          <!-- Escape during an edit in the field puts the size back; otherwise it closes the panel (PanelShell). -->
-          <span class="frame-bar__value" :data-handles-escape="typed !== shownSize || undefined" @panel-escape="typed = shownSize">
-            <input
-              v-model="typed"
-              class="frame-bar__input"
-              type="text"
-              inputmode="numeric"
-              autocomplete="off"
-              :aria-label="t.frame.sizeLabel"
-              :readonly="locked"
-              data-testid="frame-bar-size"
-              @keydown="onSizeKey"
-              @blur="commitSize"
-              @focus="($event.target as HTMLInputElement).select()"
-            />
-            <span class="frame-bar__unit">{{ t.frame.sizeUnit }}</span>
-          </span>
+        <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelShell). -->
+        <div class="frame-bar__size" :data-handles-escape="sizeEdited || undefined" @panel-escape="clearSize" @focusout="onSizeFocusOut">
+            <label class="frame-bar__field">
+              <span class="frame-bar__label">{{ t.frame.widthLabel }}</span>
+              <input
+                :value="typedWidth"
+                class="frame-bar__input"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                autocomplete="off"
+                :placeholder="String(frame?.columns)"
+                :readonly="locked"
+                data-testid="frame-bar-width"
+                @input="onSizeInput($event, 'width')"
+                @keydown="onSizeKey"
+                @focus="($event.target as HTMLInputElement).select()"
+              />
+            </label>
+          <span class="frame-bar__times" aria-hidden="true">×</span>
+            <label class="frame-bar__field">
+              <span class="frame-bar__label">{{ t.frame.heightLabel }}</span>
+              <input
+                :value="typedHeight"
+                class="frame-bar__input"
+                type="text"
+                inputmode="numeric"
+                pattern="[0-9]*"
+                autocomplete="off"
+                :placeholder="String(frame?.rows)"
+                :readonly="locked"
+                data-testid="frame-bar-height"
+                @input="onSizeInput($event, 'height')"
+                @keydown="onSizeKey"
+                @focus="($event.target as HTMLInputElement).select()"
+              />
+            </label>
+          <span class="frame-bar__unit">{{ t.frame.sizeUnit }}</span>
         </div>
         <IconButton
           v-if="!locked"
@@ -196,7 +233,16 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-bar__size {
   display: flex;
   flex: 1;
+  align-items: flex-end;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.frame-bar__field {
+  display: flex;
+  flex: 1 1 5rem;
   flex-direction: column;
+  max-width: 7rem;
   min-width: 0;
 }
 
@@ -205,24 +251,27 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   color: var(--muted);
 }
 
-.frame-bar__value {
-  font: var(--type-title);
-  font-size: 0.9375rem;
-  color: var(--ink);
+.frame-bar__times {
+  padding-bottom: var(--space-4);
+  color: var(--muted);
 }
 
 .frame-bar__input {
-  box-sizing: content-box;
-  width: 7ch;
-  field-sizing: content;
-  min-width: 5ch;
-  padding: 0 var(--space-2);
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 0;
-  border-bottom: 1px dashed var(--line-strong);
-  border-radius: 0;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: var(--frame-hit);
+  padding: 0 var(--space-6);
+  font: var(--type-title);
+  font-size: 0.9375rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-md);
+}
+
+.frame-bar__input::placeholder {
+  color: var(--muted);
+  opacity: 1;
 }
 
 .frame-bar__input:focus-visible {
@@ -231,6 +280,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 }
 
 .frame-bar__unit {
+  padding-bottom: var(--space-4);
   color: var(--muted);
 }
 
