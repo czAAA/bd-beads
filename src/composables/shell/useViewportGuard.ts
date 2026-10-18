@@ -10,7 +10,8 @@ const KEYBOARD_CLOSE_MS = 350
 /** Whether the page or the visual viewport has been moved off the screen's origin, with no page zoom to explain it. */
 function isMovedOff(): boolean {
   const viewport = window.visualViewport
-  const panned = viewport !== null && (viewport.offsetLeft !== 0 || viewport.offsetTop !== 0) && viewport.scale <= PAGE_ZOOM_TOLERANCE
+  // Absent (undefined, not null) in older browsers and in jsdom, so test for it rather than against null.
+  const panned = !!viewport && (viewport.offsetLeft !== 0 || viewport.offsetTop !== 0) && viewport.scale <= PAGE_ZOOM_TOLERANCE
   return window.scrollX !== 0 || window.scrollY !== 0 || panned
 }
 
