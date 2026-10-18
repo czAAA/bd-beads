@@ -521,9 +521,16 @@ export interface Translations {
     title: string
     editFrame: string
     moveHandle: string
-    /** The margin steppers' names, by the edge they move (ticket 417): a bead out, a bead in. */
+    /** The Frame bar's stepper names, by the edge they move (tickets 417, 473): a bead out, a bead in. */
     edgeOut: Record<'top' | 'bottom' | 'left' | 'right', string>
     edgeIn: Record<'top' | 'bottom' | 'left' | 'right', string>
+    /** The Frame bar's edge cells' labels (ticket 473). */
+    edgeName: Record<'top' | 'bottom' | 'left' | 'right', string>
+    /** The Frame bar's size, "24 × 30" with its unit "beads" beside it in a quieter colour. */
+    sizeValue: string
+    sizeUnit: string
+    /** The name of the size field, which also takes a typed "20x120". */
+    sizeLabel: string
     fitToDrawing: string
     removeFrame: string
     /** The question before Remove frame throws away finished rows (ticket 426). */

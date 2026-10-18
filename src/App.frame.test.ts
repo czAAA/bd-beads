@@ -46,7 +46,7 @@ async function key(init: KeyboardEventInit) {
   await flushPromises()
 }
 
-/** The edit toggle at the top-right corner of the margin outline (ticket 452). */
+/** The edit pencil at the top-right corner of the margin outline (tickets 452, 473). */
 async function toggleEdit(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
   await wrapper.get('[data-testid="frame-edit-toggle"]').trigger('click')
   await flushPromises()
@@ -56,11 +56,13 @@ const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find
 const savedFrame = () => loadProjects()[0]!.frame
 
 const framedProject = (): Project => ({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
-/** Whether edit is on: the margin steppers are up (ticket 452). */
-const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="edit-frame-steppers"]').exists()
+/** A Frame big enough to step every edge in and out (ticket 473). */
+const bigFramedProject = (): Project => ({ ...unframedProject(), frame: { row: 1, column: 2, rows: 5, columns: 5 } })
+/** Whether the Frame bar is up (ticket 473). */
+const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="frame-bar"]').exists()
 
 describe('Edit Frame', () => {
-  it('is a toggle on the Frame, on by default, and only with a Frame; the Progress bar and Project have no Edit Frame button (tickets 443, 452)', async () => {
+  it('is a toggle on the Frame, closed by default, and only with a Frame; the Progress bar and Project have no Edit Frame button (tickets 443, 473)', async () => {
     const wrapper = await mountOpen()
     expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-edit-frame"]').exists()).toBe(false)
@@ -68,18 +70,57 @@ describe('Edit Frame', () => {
     expect(wrapper.find('[data-testid="frame-edit"]').exists()).toBe(false)
     await closeSheet(wrapper)
 
+    expect(wrapper.find('[data-testid="strip-frame"]').exists()).toBe(false)
+
     const framed = await mountOpen(framedProject())
-    expect(editing(framed)).toBe(true)
-    expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('true')
-    await toggleEdit(framed)
     expect(editing(framed)).toBe(false)
     expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('false')
     await toggleEdit(framed)
     expect(editing(framed)).toBe(true)
+    expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('true')
+    await toggleEdit(framed)
+    expect(editing(framed)).toBe(false)
   })
 
-  it('is not left by Escape, Enter or choosing a tool, and the tools draw inside the Frame with edit on', async () => {
+  it('opens and closes from the Frame button in the Canvas strip too: one switch with the pencil (ticket 473)', async () => {
     const wrapper = await mountOpen(framedProject())
+    const button = () => wrapper.get('[data-testid="strip-frame"]')
+    expect(button().text()).toBe('Frame')
+    expect(button().attributes('aria-pressed')).toBe('false')
+    await button().trigger('click')
+    await flushPromises()
+    expect(editing(wrapper)).toBe(true)
+    expect(button().attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('true')
+    await toggleEdit(wrapper)
+    expect(editing(wrapper)).toBe(false)
+    expect(button().attributes('aria-pressed')).toBe('false')
+  })
+
+  it('resizes to a typed size, growing both sides evenly, as one Undo step (ticket 473)', async () => {
+    const wrapper = await mountOpen(bigFramedProject())
+    await toggleEdit(wrapper)
+    const field = wrapper.get('[data-testid="frame-bar-size"]')
+    await field.setValue('9x7')
+    await field.trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+    expect(savedFrame()).toEqual({ row: 0, column: 0, rows: 7, columns: 9 })
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 5 })
+  })
+
+  it('does not open the bar when a Frame is set from a Selection (ticket 473)', async () => {
+    const wrapper = await mountOpen()
+    await selectAll(wrapper)
+    await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
+    await flushPromises()
+    expect(savedFrame()).toBeDefined()
+    expect(editing(wrapper)).toBe(false)
+  })
+
+  it('is not left by Escape, Enter or choosing a tool, and the tools draw inside the Frame with the bar open', async () => {
+    const wrapper = await mountOpen(framedProject())
+    await toggleEdit(wrapper)
     await key({ key: 'Escape' })
     await surface(wrapper).trigger('keydown', { key: 'Enter' })
     await pickTool(wrapper, 'fill')
@@ -92,8 +133,9 @@ describe('Edit Frame', () => {
     expect(beadColor(wrapper, { row: 2, column: 4 })).not.toBeNull()
   })
 
-  it('works from the keyboard on the Move handle: arrows move the Frame and Shift resizes it', async () => {
+  it('works from the keyboard on the Margin handle: arrows move the Frame and Shift resizes it', async () => {
     const wrapper = await mountOpen(framedProject())
+    await toggleEdit(wrapper)
     const handle = wrapper.get('[data-testid="frame-move-handle"]')
 
     await handle.trigger('keydown', { key: 'ArrowRight' })
@@ -123,31 +165,33 @@ describe('Edit Frame', () => {
     expect(beadColor(wrapper, { row: 2, column: 3 })).toBe(RED)
   })
 
-  it('has a mini − and + on each edge: a press moves that edge one bead and is one Undo step', async () => {
-    const wrapper = await mountOpen(framedProject())
+  it('has a − and + on each edge of the bar: a press moves that edge one bead and is one Undo step, to a least of four beads (ticket 473)', async () => {
+    const wrapper = await mountOpen(bigFramedProject())
+    await toggleEdit(wrapper)
     const press = async (edge: string, direction: 'out' | 'in') => {
       await wrapper.get(`[data-testid="frame-edge-${edge}-${direction}"]`).trigger('click')
       await flushPromises()
     }
 
     await press('right', 'out')
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
+    expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 6 })
     await press('left', 'out')
-    expect(savedFrame()).toEqual({ row: 2, column: 2, rows: 2, columns: 5 })
+    expect(savedFrame()).toEqual({ row: 1, column: 1, rows: 5, columns: 7 })
     await press('top', 'in')
-    expect(savedFrame()).toEqual({ row: 3, column: 2, rows: 1, columns: 5 })
+    expect(savedFrame()).toEqual({ row: 2, column: 1, rows: 4, columns: 7 })
 
-    // At one row the top and bottom are as far in as they go: the press is no step.
+    // At four rows the top and bottom are as far in as they go: the button is disabled and the press is no step.
+    expect(wrapper.get('[data-testid="frame-edge-bottom-in"]').attributes('aria-disabled')).toBe('true')
     await press('bottom', 'in')
-    expect(savedFrame()).toEqual({ row: 3, column: 2, rows: 1, columns: 5 })
+    expect(savedFrame()).toEqual({ row: 2, column: 1, rows: 4, columns: 7 })
 
     await key({ key: 'z', ctrlKey: true })
-    expect(savedFrame()).toEqual({ row: 2, column: 2, rows: 2, columns: 5 })
+    expect(savedFrame()).toEqual({ row: 1, column: 1, rows: 5, columns: 7 })
     await key({ key: 'z', ctrlKey: true })
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 4 })
+    expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 6 })
   })
 
-  it('goes with the Frame when Remove Frame takes it away, and is on again for a Frame brought back by Undo', async () => {
+  it('goes with the Frame when Remove Frame takes it away, and is closed again for a Frame brought back by Undo', async () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
@@ -158,15 +202,18 @@ describe('Edit Frame', () => {
 
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-    expect(editing(wrapper)).toBe(true)
+    expect(editing(wrapper)).toBe(false)
   })
 
-  it('is disabled once Row progress has started, and the Move handle still moves the Frame (ticket 452)', async () => {
+  it('is disabled once Row progress has started: the bar holds the size and Remove alone, and the Margin handle still moves the Frame (tickets 452, 473)', async () => {
     const wrapper = await mountOpen({ ...framedProject(), rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
-    expect(editing(wrapper)).toBe(false)
     expect(wrapper.get('[data-testid="frame-edit-toggle"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-disabled')).toBe('true')
+    expect((wrapper.get('[data-testid="frame-bar-size"]').element as HTMLInputElement).value).toBe('3 × 2')
+    expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
+    for (const gone of ['frame-rotate', 'frame-edge-top-out', 'frame-bar-cell-left']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
     await toggleEdit(wrapper)
-    expect(editing(wrapper)).toBe(false)
+    expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="frame-move-handle"]').trigger('keydown', { key: 'ArrowRight' })
     expect(savedFrame()).toEqual({ row: 2, column: 4, rows: 2, columns: 3 })
@@ -181,6 +228,7 @@ describe('Fit and Remove frame, on the Progress bar and not in Project (ticket 4
     await wrapper.get('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
 
+    await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(savedFrame()).toBeUndefined()
@@ -225,6 +273,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
 
   it('turns the Frame and its beads from the Frame row, leaving Edit as it was, and one Undo turns it back (ticket 471)', async () => {
     const wrapper = await mountOpen(framedProject())
+    await toggleEdit(wrapper)
     const wasEditing = editing(wrapper)
     await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
     await flushPromises()
@@ -294,6 +343,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   it('asks before removing the Frame even while no pass is done, and one Undo brings it back (ticket 455)', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
 
+    await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(true)
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
@@ -359,6 +409,8 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
 
+    // A Selection carries no Frame bar, so it goes first.
+    await key({ key: 'Escape' })
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()

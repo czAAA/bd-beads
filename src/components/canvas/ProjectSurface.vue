@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { inMargin, marginAt, mayPlace, withMargin } from '../../domain/margin'
+import { inMargin, mayPlace, withMargin } from '../../domain/margin'
 import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -13,9 +13,9 @@ import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
-import { cornerControlsReachPx, frameMoveHandle, type FrameAnchor, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
-import { rowPitchPx, surfaceView, type Scroll } from '../../rendering/surfaceView'
+import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
@@ -113,8 +113,8 @@ const emit = defineEmits<{
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors.
    * Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
-  /** The Frame's rectangle in the surface's pixels while it is being edited (ticket 417), or none: where Edit
-   * Frame's margin steppers sit, with the margin and the ruler numbers' reach. */
+  /** The Frame's rectangle and its margin's outer edge in the surface's pixels (tickets 417, 473), or none once it is
+   * out of view: where the Margin handle and the edit pencil sit. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
    * meanwhile. */
@@ -303,45 +303,24 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** The least the Frame's steppers shrink to (ticket 427). */
-const STEPPER_MIN_SCALE = 0.5
-const stepperScale = (zoom: number) => Math.min(1, Math.max(STEPPER_MIN_SCALE, zoom))
-
-/** How many positions wide the margin is shown at this zoom (ticket 459): wide enough that the Frame's corner
- * controls, which stop shrinking at half size, stay inside it. */
-const shownMargin = computed(() =>
-  marginAt({
-    neededPx: cornerControlsReachPx(stepperScale(props.zoom), touchInput.value),
-    pitchPx: rowPitchPx(props.project.technique),
-    zoom: props.zoom,
-  }),
-)
-
-/** Where the Frame is on screen, none once it is out of view (ticket 417, 427, 452): told to the margin steppers,
- * the Move handle's key stop and the edit toggle. */
+/** Where the Frame is on screen, none once it is out of view (tickets 417, 427, 452, 473): told to the Margin handle
+ * and the edit pencil. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = props.project.frame
   if (!frame || size.value.width === 0) return undefined
   const box = surface.value.frameBox(frame)
-  const outer = surface.value.beadBox(withMargin(frame, shownMargin.value))
+  const outer = surface.value.beadBox(withMargin(frame))
   // Scrolled wholly out of view, the Frame has no controls to keep on screen: they are clamped to the box only while
   // some of it shows.
   const { width, height } = size.value
   if (outer.x + outer.width <= 0 || outer.y + outer.height <= 0 || outer.x >= width || outer.y >= height) return undefined
-  const { fontPx, gap } = rulers.value.scale
   return {
     box: { left: box.x, top: box.y, width: box.width, height: box.height },
     outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
-    // Three digits across, one line down, past the Frame's line (Rulers card); none with the Rulers off.
-    numbers: props.showRulers === false ? { across: 0, down: 0 } : { across: gap + fontPx * 1.8, down: gap + fontPx * 1.2 },
-    scale: stepperScale(surface.value.zoom),
     viewport: { ...size.value },
   }
 })
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
-
-/** The Move handle on the top margin (ticket 452), in the surface's pixels; always there with a Frame. */
-const moveHandle = computed(() => (frameAnchor.value ? frameMoveHandle(frameAnchor.value, touchInput.value) : undefined))
 
 // Tests read what was drawn from the layout the surface built.
 defineExpose({ rulerLayout: rulers, pressMoveHandle })
@@ -419,11 +398,11 @@ function drawCells(): void {
       : undefined
 
   if (bands === undefined) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value, margin: shownMargin.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
     return
   }
   for (const rows of bands) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value, margin: shownMargin.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
   }
 }
 
@@ -556,7 +535,6 @@ function drawOverlay(): void {
       dimmedCells: props.dimmedCells,
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
-      margin: shownMargin.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
       selectionHandles: props.selecting ? { surface: surface.value, touch: touchInput.value } : undefined,
       rulers: { layout: rulers.value, surface: surface.value },
@@ -713,13 +691,13 @@ watch(
 /** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket
  * 428). */
 function refusesSelectionStart(bead: GridPosition): boolean {
-  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead, shownMargin.value)
+  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)
 }
 
 function refusesMargin(bead: GridPosition | undefined): boolean {
   if (bead === undefined) return false
   if (refusesSelectionStart(bead)) return true
-  return props.blocksMargin === true && !mayPlace(props.project, bead, shownMargin.value)
+  return props.blocksMargin === true && !mayPlace(props.project, bead)
 }
 
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
@@ -756,12 +734,10 @@ function cellUnder(event: PointerEvent): GridPosition {
   return surface.value.pointToCell(pointInSurface(event))
 }
 
-/** What a press grabs of the Frame's chrome (ticket 452): the Move handle always, a resize handle only while edit is
- * on; nothing otherwise, so the tool gets the press. */
+/** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
+ * so the tool gets the press. The Margin handle's own press comes through `pressMoveHandle`. */
 function framePress(event: PointerEvent): FramePress | undefined {
   const point = pointInSurface(event)
-  const move = moveHandle.value
-  if (move && Math.abs(point.x - move.x) <= move.size / 2 + 4 && Math.abs(point.y - move.y) <= move.size / 2 + 4) return { kind: 'move' }
   if (!props.settingFrame) return undefined
   const target = framePressAt(props.project.frame, surface.value, props.project.rotation, point, touchInput.value)
   return target.kind === 'handle' ? target : undefined
