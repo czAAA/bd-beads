@@ -138,3 +138,28 @@ describe('formatOtherUnit (ticket 342)', () => {
     expect(formatOtherUnit({ columns: 10, rows: 20 }, cube, 'mm', labels)).toBe('≈ 10×20 beads')
   })
 })
+
+describe('Right-angle weave sizes count Units (ticket 482)', () => {
+  const weave = { technique: 'rightAngle' as const }
+
+  it('takes a size in Units as the positions they take: one more column, two rows and one over for each Unit down', () => {
+    expect(gridFromSize({ width: 4, height: 3, unit: 'beads' }, delica, weave)).toEqual({ columns: 5, rows: 7 })
+  })
+
+  it('converts mm to whole Units, a Unit being a Bead\'s length plus its width, and never rounds down', () => {
+    // A Delica's Unit is 1.6 + 1.3 = 2.9 mm.
+    expect(gridFromSize({ width: 29, height: 30, unit: 'mm' }, delica, weave)).toEqual({ columns: 11, rows: 23 })
+    expect(gridFromSize({ width: 2.9, height: 2.9, unit: 'mm' }, delica, weave)).toEqual({ columns: 2, rows: 3 })
+  })
+
+  it('estimates the size from the Unit: its Units across, plus the width of the bead that closes the last', () => {
+    const { widthMm, heightMm } = estimatedSizeMm({ columns: 5, rows: 7, technique: 'rightAngle' }, delica)
+    expect(widthMm).toBeCloseTo(4 * 2.9 + 1.3)
+    expect(heightMm).toBeCloseTo(3 * 2.9 + 1.3)
+  })
+
+  it('says a size in the other unit in Units', () => {
+    const labels = { ...units, beadsTemplate: '{columns}×{rows} Units' }
+    expect(formatOtherUnit({ columns: 5, rows: 7 }, delica, 'mm', labels, 'en', 'rightAngle')).toBe('4×3 Units')
+  })
+})

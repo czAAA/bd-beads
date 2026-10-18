@@ -26,6 +26,7 @@ import { hasGuides } from '../../domain/selection'
 import { hasProjectBeads, resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { describeWeave } from '../../domain/weave'
 
 const {
   t,
@@ -185,8 +186,9 @@ const frameTooltip = computed(() => {
   const frame = project?.frame
   if (!project || !frame) return ''
   const bead = resolveProjectBead(project)
-  const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
-  return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
+  const estimate = bead ? formatSizeMm(estimatedSizeMm({ ...frame, technique: project.technique }, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
+  const { columns, rows } = describeWeave(project).unitsOf(frame)
+  return t.value.frame.sizeTooltip.replace('{columns}', String(columns)).replace('{rows}', String(rows)).replace('{estimate}', estimate)
 })
 
 /** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar

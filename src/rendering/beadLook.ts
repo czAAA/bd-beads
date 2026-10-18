@@ -169,6 +169,10 @@ export interface BeadShape {
   x: number
   y: number
   size: number
+  /** The bead's own width and height where it isn't `size` square (Right-angle weave, ticket 482): a bead lying the
+   * other way is the same bead turned a quarter. */
+  width?: number
+  height?: number
   /** 0 for a square bead. */
   cornerRadius: number
   /** The bead's color, or null for an empty one. */
@@ -262,16 +266,16 @@ function roundedRectPath(context: DrawingContext, x: number, y: number, width: n
 
 // A filled square, or rounded square, as cheaply as a canvas can: a rectangle, or the browser's own roundRect (a fast
 // path that arcs don't get); arcs where a browser has no roundRect yet.
-function fillShape(context: DrawingContext, x: number, y: number, size: number, radius: number): void {
+function fillShape(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {
   if (radius <= 0) {
-    context.fillRect(x, y, size, size)
+    context.fillRect(x, y, width, height)
     return
   }
   context.beginPath()
   if (typeof context.roundRect === 'function') {
-    context.roundRect(x, y, size, size, radius)
+    context.roundRect(x, y, width, height, radius)
   } else {
-    roundedRectPath(context, x, y, size, size, radius)
+    roundedRectPath(context, x, y, width, height, radius)
   }
   context.fill()
 }
@@ -320,16 +324,17 @@ function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.back
 // The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell and a faint rim
 // just inside its edge. A finished bead is the same shapes in its faded colors, so it covers whatever is under it (the
 // bead on the cells layer, when drawn on the overlay).
-function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
+function drawBeadShapes(context: DrawingContext, { x, y, size, width = size, height = size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
   const own = color ?? theme.emptyBead
   const fill = dimmed ? finishedColor(own, theme, backdrop) : own
-  const outerSize = size - GAP_PX * 2
+  const outerWidth = width - GAP_PX * 2
+  const outerHeight = height - GAP_PX * 2
   const outerRadius = Math.max(0, cornerRadius - GAP_PX)
 
   context.fillStyle = blendOver(isNearBlack(own) ? theme.rimOnBlack : theme.rim, fill)
-  fillShape(context, x + GAP_PX, y + GAP_PX, outerSize, outerRadius)
+  fillShape(context, x + GAP_PX, y + GAP_PX, outerWidth, outerHeight, outerRadius)
   context.fillStyle = fill
-  fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, outerSize - RIM_PX * 2, Math.max(0, outerRadius - RIM_PX))
+  fillShape(context, x + GAP_PX + RIM_PX, y + GAP_PX + RIM_PX, outerWidth - RIM_PX * 2, outerHeight - RIM_PX * 2, Math.max(0, outerRadius - RIM_PX))
 }
 
 function spriteFor(bead: BeadShape): Sprite | undefined {
@@ -343,7 +348,7 @@ function spriteFor(bead: BeadShape): Sprite | undefined {
 // Redrawn thousands of times per drag/scroll, so a square is two rectangles and rounded or faded is a cached bitmap;
 // batching a row into one path was slower (many subpaths cost more than their sum).
 export const drawFlatBead: BeadDrawer = (context, bead) => {
-  const sprite = bead.cornerRadius > 0 || bead.dimmed ? spriteFor(bead) : undefined
+  const sprite = (bead.cornerRadius > 0 || bead.dimmed) && bead.width === undefined ? spriteFor(bead) : undefined
   if (sprite) {
     context.drawImage(sprite, bead.x, bead.y, bead.size, bead.size)
     return
