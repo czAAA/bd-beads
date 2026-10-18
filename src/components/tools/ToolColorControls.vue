@@ -22,7 +22,7 @@ const emit = defineEmits<{
 /** Custom color is the active paint color exactly when no Palette swatch is (App.vue keeps the two mutually exclusive). */
 const customColorSelected = computed(() => !props.selectedColorId && !!props.customColor)
 
-// The Custom color picker expands under the buttons (ticket 449) and does not close on use. Taking its color (press
+// The Custom color picker expands under the grid (ticket 449) and does not close on use. Taking its color (press
 // outside, Enter) hands it up once and closes the sheet holding this control; Escape returns to the button with nothing
 // taken.
 const palette = usePalette()
@@ -55,18 +55,8 @@ async function cancel() {
 </script>
 
 <template>
-  <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)" />
-  <div class="tool-color-controls__buttons">
+  <PalettePicker :selected-color-id="selectedColorId" @select="(colorId) => emit('select-color', colorId)">
     <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" @toggle="toggle" />
-  </div>
+  </PalettePicker>
   <CustomColorPanel ref="panel" v-if="pickerOpen" :color="customColor ?? paintHex" @take="take" @leave="leave" @cancel="cancel" />
 </template>
-
-<style scoped>
-.tool-color-controls__buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-8);
-  margin-top: var(--space-12);
-}
-</style>

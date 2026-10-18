@@ -6,9 +6,9 @@ import { isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppTooltip from '../ui/AppTooltip.vue'
 
-// The Custom color button (tickets 75, 151, 449; PaletteSwatches and ColorPickers cards): a 14px hatched square in
-// `muted` then the label, ringed while it is the paint color. It opens CustomColorPanel under the buttons; a second
-// press takes its color and closes it.
+// The Custom color tile (tickets 75, 151, 449; PaletteSwatches and ColorPickers cards): a swatch-sized tile after Pick
+// color from canvas, the hatched square in `muted` with a + inside, ringed while it is the paint color. It opens
+// CustomColorPanel under the grid; a second press takes its color and closes it.
 defineProps<{
   /** Whether Custom color is the active paint color right now, as opposed to just remembered on this slot. */
   selected: boolean
@@ -46,40 +46,38 @@ const tooltip = computed(() => {
       :class="{ 'custom-color-picker--selected': selected }"
       :aria-pressed="selected"
       :aria-expanded="expanded"
+      :aria-label="t.palette.customColorLabel"
       data-testid="custom-color-button"
       @click="emit('toggle')"
     >
       <span class="custom-color-picker__swatch" />
-      <span class="custom-color-picker__label">{{ t.palette.customColorLabel }}</span>
+      <svg class="custom-color-picker__plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" /></svg>
     </button>
   </AppTooltip>
 </template>
 
 <style scoped>
-/* The Tooltip's wrapper takes the button's place in the row. */
+/* The Tooltip's wrapper is a grid cell: a swatch's size, like Pick color from canvas. */
 .custom-color-picker-wrap {
-  display: flex;
-  flex: 1 1 auto;
-  min-width: max-content;
+  display: block;
+  width: 100%;
+  min-width: var(--swatch-min, 0);
+  aspect-ratio: 1;
 }
 
-/* A Toolbox button (Button card, `toolbox`) holding the swatch and the label. */
 .custom-color-picker {
-  display: flex;
-  flex: 1 1 auto;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-8);
+  position: relative;
+  display: grid;
+  place-items: center;
   box-sizing: border-box;
-  min-width: max-content;
-  height: var(--control-height);
+  width: 100%;
+  height: 100%;
   margin: 0;
-  padding: 0 var(--space-8);
-  font: var(--type-tab);
+  padding: 0;
   color: var(--ink);
   background: var(--elevated);
   border: 1px solid var(--panel-line);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-standard);
 }
@@ -94,9 +92,9 @@ const tooltip = computed(() => {
   }
 }
 
-.custom-color-picker:has(:focus-visible) {
+.custom-color-picker:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .custom-color-picker--selected {
@@ -105,18 +103,22 @@ const tooltip = computed(() => {
     0 0 0 4px var(--ring);
 }
 
+/* Today's hatched glyph, filling the tile; the + sits over it. */
 .custom-color-picker__swatch {
-  flex: none;
-  width: var(--swatch-dot);
-  height: var(--swatch-dot);
+  position: absolute;
+  inset: var(--space-4);
   border-radius: var(--swatch-dot-radius);
   background: repeating-linear-gradient(45deg, var(--muted) 0 1px, transparent 1px var(--space-4));
 }
 
-.custom-color-picker__label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.custom-color-picker__plus {
+  position: relative;
+  width: 50%;
+  height: 50%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
 :root[data-theme='contrast'] .custom-color-picker {
