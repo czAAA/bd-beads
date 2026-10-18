@@ -14,7 +14,7 @@ interface EncodedBeads {
 
   /** Per row with a bead, keyed by row: `"<first column>:<runs>"`, runs as color-table indexes (`"3"`, `"3x40"`, 0 =
    * gap). */
-export type EncodedProject = Omit<Project, 'beads'> & { encodedBeads: EncodedBeads }
+export type EncodedProject = Omit<Project, 'beads' | 'coveredBeads'> & { encodedBeads: EncodedBeads; encodedCoveredBeads?: EncodedBeads }
 
 /** A Project as stored before the Canvas (ADR 0009's original shape): `columns` × `rows` cells as row-major runs.
  * Read only. */
@@ -144,16 +144,16 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
 }
 
 export function encodeProject(project: Project): EncodedProject {
-  const { beads, ...rest } = project
-  return { ...rest, encodedBeads: encodeBeads(beads) }
+  const { beads, coveredBeads, ...rest } = project
+  return { ...rest, encodedBeads: encodeBeads(beads), ...(coveredBeads ? { encodedCoveredBeads: encodeBeads(coveredBeads) } : {}) }
 }
 
 /** The Project a stored value holds, whichever shape wrote it; a grid-shaped one still goes through normalizeProject
  * to get its Frame. */
 export function decodeProject(encoded: EncodedProject | EncodedGridProject): Project | GridProject {
   if ('encodedBeads' in encoded) {
-    const { encodedBeads, ...rest } = encoded
-    return { ...rest, beads: decodeBeads(encodedBeads) }
+    const { encodedBeads, encodedCoveredBeads, ...rest } = encoded
+    return { ...rest, beads: decodeBeads(encodedBeads), ...(encodedCoveredBeads ? { coveredBeads: decodeBeads(encodedCoveredBeads) } : {}) }
   }
   const { cells, ...rest } = encoded
   return { ...rest, grid: decodeCells(cells, rest.columns, rest.rows) }

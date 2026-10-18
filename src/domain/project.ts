@@ -68,6 +68,10 @@ export interface Project {
   /** What is painted on the Canvas, by position (ADR 0026); see BeadMap. No real-world size is stored: the
    * Estimated size is worked out from the Frame (estimatedSizeMm). */
   beads: BeadMap
+  /** Beads hidden under the Frame (ticket 476, ADR 0065): a Frame move that lands on beads keeps them here, by
+   * position, instead of clearing them. Not drawn, counted or exported; they come back into `beads` when the Frame
+   * leaves their cell (see domain/coveredBeads.ts). Absent when none. */
+  coveredBeads?: BeadMap
   /** The Frame (CONTEXT.md): which beads are the Project. Absent on a Canvas with none; an old Project gets one the
    * size of its old grid (see normalizeProject). */
   frame?: Frame
@@ -503,6 +507,8 @@ export function restoreBeads(project: Project, beads: BeadMap): Project {
  * restoreSnapshot leaves applying them to the caller. All immutable, sharing structure. */
 export interface UndoEntry {
   beads: BeadMap
+  /** The beads hidden under the Frame as they were (ticket 476). */
+  coveredBeads?: BeadMap
   rowProgress: RowProgress
   beadId: string
   frame: Frame | undefined
@@ -517,14 +523,15 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
 export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, mirrorAxisCounts }
+  return { beads: project.beads, coveredBeads: project.coveredBeads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, mirrorAxisCounts }
 }
 
 /** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, coveredBeads: _covered, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
+    ...(entry.coveredBeads ? { coveredBeads: entry.coveredBeads } : {}),
     rowProgress: entry.rowProgress,
     beadId: entry.beadId,
     frame: entry.frame,
@@ -548,12 +555,12 @@ function isInitialRowProgress(rowProgress: RowProgress): boolean {
  * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
  * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
-  if (Object.keys(project.beads).length === 0 && isInitialRowProgress(project.rowProgress)) {
+  if (Object.keys(project.beads).length === 0 && !project.coveredBeads && isInitialRowProgress(project.rowProgress)) {
     return project
   }
 
   // No bead is left, so no Piece is: a name would only wait for a bead painted at its anchor (ticket 406).
-  const { pieceNames: _names, ...rest } = project
+  const { pieceNames: _names, coveredBeads: _covered, ...rest } = project
   return touch(rest, {
     beads: {},
     rowProgress: { ...INITIAL_ROW_PROGRESS },

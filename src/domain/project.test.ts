@@ -1080,6 +1080,22 @@ describe('snapshotOf and restoreSnapshot', () => {
   })
 })
 
+describe('covered beads in an undo entry (ticket 476)', () => {
+  it('are put back by Undo, and gone again when the entry had none', () => {
+    const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
+    const covered = { ...base, coveredBeads: { 1: { 1: '#abcdef' } } }
+
+    expect(restoreSnapshot(base, snapshotOf(covered, { columns: 0, rows: 0 })).coveredBeads).toEqual({ 1: { 1: '#abcdef' } })
+    expect(restoreSnapshot(covered, snapshotOf(base, { columns: 0, rows: 0 })).coveredBeads).toBeUndefined()
+  })
+
+  it('go with Delete all', () => {
+    const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
+
+    expect(deleteAll({ ...base, coveredBeads: { 1: { 1: '#abcdef' } } }).coveredBeads).toBeUndefined()
+  })
+})
+
 describe('normalizeProject', () => {
   it('gives a Project saved as a fixed grid beads by position and a Frame the size of that grid (ADR 0026)', () => {
     const { beads: _beads, frame: _frame, ...base } = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } })

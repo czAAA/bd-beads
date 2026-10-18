@@ -110,6 +110,13 @@ describe('single-Project roundtrip', () => {
     expect(JSON.parse(serializeLibrary([decoratedProject()])).kind).toBe('openbeads/library')
   })
 
+  it('keeps the beads hidden under the Frame through a file (ticket 476)', () => {
+    const covered = { ...decoratedProject(), coveredBeads: { 2: { 3: '#123456' } } }
+
+    expect(parseProjectsFile(serializeProject(covered)).projects[0].coveredBeads).toEqual({ 2: { 3: '#123456' } })
+    expect(parseProjectsFile(serializeProject(decoratedProject())).projects[0].coveredBeads).toBeUndefined()
+  })
+
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
     const named = { ...decoratedProject(), pieceNames: [{ row: 2, column: 3, name: 'Fox' }] }
     const file = JSON.parse(serializeProject(named))
