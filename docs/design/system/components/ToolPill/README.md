@@ -19,7 +19,7 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 - **Dividers:** 1px `line-soft`, 24px long, 4px margin, across the pill's length.
 - **Pen/Mouse is not on the pill (ticket 0443, spec 0440).** It is the Input row in Menu, shown once a pen has been seen (MenuPanel card). The `pen-mode` / `pen-mode-off` icons stay in the set.
 - **Phones under 400px**, top or bottom: tiles stay 40px and the pill scrolls rather than shrinking.
-- **No Project open:** the New Project / Import bar takes the Progress bar's place and there is no pill.
+- **No Project open:** New Project and Import sit under the EmptyCanvas message and there is no pill.
 
 ## Colour control
 

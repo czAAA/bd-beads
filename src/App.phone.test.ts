@@ -39,7 +39,6 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="phone-bar-menu"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
 
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-item-overview"]').exists()).toBe(true)
   })
