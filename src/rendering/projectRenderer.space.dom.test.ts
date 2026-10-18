@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
-import { type Rotation, type Technique } from '../domain/grid'
+import { type Rotation } from '../domain/grid'
+import { type Technique } from '../domain/weave'
 import { createProject, type Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, type BeadShape } from './beadLook'

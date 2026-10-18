@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { rotationSwapsAxes } from '../domain/grid'
-import type { Rotation, Technique } from '../domain/grid'
+import type { Rotation } from '../domain/grid'
+import type { Technique } from '../domain/weave'
 import { A4_LANDSCAPE, A4_PORTRAIT, chartArea, continuation, mm, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_BLOCK_BEADS } from './printPlan'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 

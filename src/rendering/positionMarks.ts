@@ -1,5 +1,5 @@
-import { isShiftedRow, rowCycle, type Technique } from '../domain/grid'
-import { BEAD_GAP_PX, beadRoundness, type DrawingContext } from './beadLook'
+import { beadRoundness, isShiftedRow, rowCycle, type Technique } from '../domain/weave'
+import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
 import { CELL_SIZE_PX, rowPitchPx } from './surfaceView'
 
 // Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of

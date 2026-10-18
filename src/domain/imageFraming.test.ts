@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { gridHeight, gridWidth } from './grid'
+import { gridHeight, gridWidth } from './weave'
 import {
   BRICK_SLOW_FRAMING_CELLS,
   CENTERED_PAN,

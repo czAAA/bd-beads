@@ -1,5 +1,5 @@
 import { fromHex } from '../domain/color'
-import { isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/grid'
+import { isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/weave'
 import type { ProjectTheme } from './beadLook'
 
 // A coarse look for a block of beads being moved (ticket 122, ADR 0018): one flat pixel per bead stretched in a single
