@@ -61,10 +61,10 @@ function onKeydown(event: KeyboardEvent) {
   const active = document.activeElement
   if (event.shiftKey && (active === first || active === dialogEl.value)) {
     event.preventDefault()
-    last.focus()
+    last.focus({ preventScroll: true })
   } else if (!event.shiftKey && active === last) {
     event.preventDefault()
-    first.focus()
+    first.focus({ preventScroll: true })
   }
 }
 
@@ -72,7 +72,7 @@ function onKeydown(event: KeyboardEvent) {
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
   if (dialogEl.value && target && !dialogEl.value.contains(target) && !inTourCard(target)) {
-    ;(focusables()[0] ?? dialogEl.value).focus()
+    ;(focusables()[0] ?? dialogEl.value).focus({ preventScroll: true })
   }
 }
 
@@ -82,7 +82,7 @@ onMounted(() => {
     props.initialFocus === 'dialog'
       ? dialogEl.value
       : (dialogEl.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0] ?? dialogEl.value)
-  start?.focus()
+  start?.focus({ preventScroll: true })
   document.addEventListener('focusin', onFocusIn)
 })
 
@@ -90,9 +90,9 @@ onBeforeUnmount(() => {
   document.removeEventListener('focusin', onFocusIn)
   const target = opener
   if (target?.isConnected) {
-    target.focus()
+    target.focus({ preventScroll: true })
   } else {
-    void nextTick(() => target?.isConnected && target.focus())
+    void nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
   }
 })
 </script>

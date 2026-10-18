@@ -491,7 +491,7 @@ function techniqueWord(technique: Technique): string {
   flex: 1 1 auto;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: clip;
   background: var(--box);
   border: 1px solid var(--box-line);
   border-radius: var(--radius-lg);
