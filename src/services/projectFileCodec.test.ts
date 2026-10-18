@@ -10,7 +10,7 @@ import {
   type Project,
 } from '../domain/project'
 import { serializeLibrary } from '../domain/projectFile'
-import { packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
+import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -119,5 +119,19 @@ describe('a plain .json file from before ADR 0048 (deprecated)', () => {
   it('refuses an unknown kind or version', async () => {
     await expect(readProjectsFile(asFile('{"kind":"bd-beads/pattern","version":99,"patterns":[]}'))).rejects.toThrow()
     await expect(readProjectsFile(asFile('{"kind":"openbeads/project","version":3,"projects":[]}'))).rejects.toThrow()
+  })
+})
+
+describe('the size limits (ticket 469)', () => {
+  it('refuses a file over 25 MB without reading it', async () => {
+    const big = { size: MAX_FILE_BYTES + 1, arrayBuffer: () => Promise.reject(new Error('read')) } as unknown as Blob
+    await expect(readProjectsFile(big)).rejects.toThrow('size limit')
+  })
+
+  it('aborts a gzip that unpacks past 100 MB', async () => {
+    const zeros = new Uint8Array(MAX_UNPACKED_BYTES + 1024 * 1024)
+    const bomb = new Uint8Array(await new Response(new Blob([zeros]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer())
+    expect(bomb.length).toBeLessThan(MAX_FILE_BYTES)
+    await expect(readProjectsFile(asFile(bomb))).rejects.toThrow('size limit')
   })
 })
