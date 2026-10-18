@@ -183,12 +183,12 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('creates the Project from the pinned Create button, switches to it and closes the panel', async () => {
+  it('creates the Project from the Create button, switches to it and closes the panel', async () => {
     const wrapper = mountApp()
     await openSheet(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
     await wrapper.get('[data-testid="name-input"]').setValue('Heron')
-    expect(wrapper.find('[data-testid="panel-footer"] button[type="submit"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="create-project"]').exists()).toBe(true)
     await wrapper.get('form.new-project-form').trigger('submit')
     await flushPromises()
 

@@ -328,7 +328,7 @@ describe('App', () => {
     await openNewProject(wrapper)
 
     expect(wrapper.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
-    expect(wrapper.find('[data-testid="panel-footer"] button[type="submit"]').text()).toBe(en.form.submit)
+    expect(wrapper.find('[data-testid="create-project"]').text()).toBe(en.form.submit)
 
     wrapper.unmount()
     const afterReload = mount(App)
