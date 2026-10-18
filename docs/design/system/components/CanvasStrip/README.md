@@ -1,9 +1,9 @@
 # CanvasStrip
 
-The 46px header strip at the top of the canvas box: Menu and Project, then the canvas's own controls: Rulers, Undo, Redo and zoom, nothing else. It names nothing (tickets 425, 431, 0443, ADR 0055).
+The 46px header strip at the top of the canvas box: Menu, Project and Frame, then the canvas's own controls: Rulers, Undo, Redo and zoom, nothing else. It names nothing (tickets 425, 431, 0443, 0473, ADR 0055).
 
 - The canvas box: `box` fill, 1px `box-line`, radius-lg, `elevation-2` (light only), overflow hidden; it takes all the width right of the left column.
-- Strip: padding 0 10 0 16, gap 8, bottom divider `box-muted` at 22%. Menu and Project lead on the left; the canvas controls follow, pushed to the right.
+- Strip: padding 0 10 0 16, gap 8, bottom divider `box-muted` at 22%. Menu, Project and Frame lead on the left; the canvas controls follow, pushed to the right.
 - **No title, size line, printed-size estimate, grid icon or keyboard-focus hint** (ticket 425 removed them; before it the strip read "Canvas · 3 pieces · no Frame" or "Pattern · Width 21 · Height 19 · 3.4 × 3.0 cm"). The Project's size lives in the Project sheet and the Frame's size tooltip.
 - **Menu and Project (ticket 431):** text buttons with their icon (`menu`, `pattern`) and the word "Menu" or "Project", before the zoom cluster, in that order. They open the Menu and Project panels (MenuPanel and ProjectPanel cards): a dropdown from 1024px, a Top sheet below it (TopSheet card). They sit on `ink` while theirs is open, in both forms. Padding 0 14 0 12 and an 8px gap between icon and word keep the label off the button's edge. Menu is always there, with no Project open too (the strip then holds Menu alone, and during Convert image framing Menu and the zoom); Project is hidden, not disabled, with no Project. The New Project / Import bar has no Menu of its own any more.
 - **Controls, in this order:** Menu, Project, Rotate canvas, the Rulers toggle, Undo, Redo, zoom out, the zoom level, zoom in, Fit. Rotate canvas, Rulers, Undo and Redo show only with a Project open (not while a picture is framed). The level is DM Mono `type-meta`, 48px wide and centered so the buttons don't shift. Zoom runs 10% to 400% in 10% steps; the tier's smallest-bead floor wins where it is higher. Icon buttons 30px (44px on a coarse pointer), 18px icons, radius-sm, no fill.

@@ -300,3 +300,22 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | The canvas stays white in high contrast. | В режиме высокой контрастности холст остаётся белым. |
 
 Russian here is a proposal for review. The Technique explanation in Project is the app's existing note.
+
+## Copy added in ticket 0473
+
+The Frame bar, the Margin handle and the edit pencil (Frame card). The Russian is proposed and not yet reviewed.
+
+| English | Russian |
+| --- | --- |
+| Frame (the Canvas strip button and the bar's label) | Рамка |
+| Edit Frame (the pencil) | Править рамку |
+| Move Frame (the Margin handle's name) | Переместить рамку |
+| Drag to move the Frame together with its beads. | Перетащите, чтобы переместить рамку вместе с бисером. |
+| Rotate Frame | Повернуть рамку |
+| Remove Frame · Remove Frame? | Убрать рамку · Убрать рамку? |
+| 24 × 30 beads | 24 × 30 бисерин |
+| Top · Bottom · Left · Right (the edge cells) | Верх · Низ · Слева · Справа |
+| Top edge: add one row · Top edge: remove one row | Верхний край: добавить ряд · Верхний край: убрать ряд |
+| Left edge: add one column · Left edge: remove one column | Левый край: добавить столбец · Левый край: убрать столбец |
+| The Frame can’t get any smaller on this side. | Рамку нельзя сделать меньше с этой стороны. |
+| Row progress has started, so the Frame can only be moved. | Прогресс по рядам начат, поэтому рамку можно только перемещать. |
