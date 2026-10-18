@@ -71,6 +71,14 @@ describe('useViewportGuard', () => {
     wrapper = mount(defineComponent({ render: () => h('div') }), { attachTo: document.body })
   })
 
+  it('still puts a scrolled page back where the browser has no visual viewport', () => {
+    vi.stubGlobal('visualViewport', undefined)
+    moveView({ scrollY: 40 })
+    window.dispatchEvent(new Event('scroll'))
+    vi.advanceTimersByTime(1)
+    expect(scrollTo).toHaveBeenCalledWith(0, 0)
+  })
+
   it('leaves a page zoom alone: panning a zoomed page is not being lost', () => {
     moveView({ offsetTop: 120, scale: 2 })
     window.visualViewport?.dispatchEvent(new Event('scroll'))
