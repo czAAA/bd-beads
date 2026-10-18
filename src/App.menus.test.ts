@@ -212,7 +212,7 @@ describe('Menu', () => {
   it('opens Menu on the form with an empty library, Escape closes it, and Back shows the list', async () => {
     saveProjects([])
     const wrapper = mountApp()
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    // The empty canvas opens Menu on the form by itself.
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
@@ -224,6 +224,12 @@ describe('Menu', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+  })
+
+  it('opens Menu on the form by itself when the empty canvas shows', async () => {
+    saveProjects([])
+    const wrapper = mountApp()
+    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
   })
 
   it('opens Menu on the form from the empty-canvas bar button, in the dropdown from 1024px too', async () => {
@@ -243,7 +249,6 @@ describe('Menu', () => {
     const wrapper = mountApp()
 
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
   })

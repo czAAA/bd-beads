@@ -2,7 +2,7 @@
 import { useI18n } from '../../i18n/useI18n'
 
 /** The canvas box with no Project open (ticket 158; EmptyCanvas card): an empty board (`bead-empty` beads), "No
- * Project open yet", one hint line. */
+ * Project open yet", one hint line, then the slot (New Project and Import). */
 const { t } = useI18n()
 </script>
 
@@ -13,6 +13,7 @@ const { t } = useI18n()
     <div class="empty-canvas__message">
       <p class="empty-canvas__title">{{ t.shell.canvasPlaceholder }}</p>
       <p class="empty-canvas__hint">{{ t.shell.canvasPlaceholderHint }}</p>
+      <slot />
     </div>
   </div>
 </template>
