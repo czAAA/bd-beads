@@ -4,11 +4,9 @@ import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import MenuButton from '../ui/MenuButton.vue'
 
-/**
- * The language switcher (tickets 142, 368; Header and ThemeToggle cards): one button showing the current language's
- * code ("EN"), which opens a list of every language under it (or above it, where there is no room below), each named
- * in itself so a person finds their own whatever the app shows now. Choosing one switches the whole app.
- */
+// The language switcher (tickets 142, 368; Header and ThemeToggle cards): a button showing the current language's code
+// that opens a list of every language, each named in itself (below the button, or above where there is no room).
+// Choosing one switches the whole app.
 const { locale, setLocale, t } = useI18n()
 </script>
 

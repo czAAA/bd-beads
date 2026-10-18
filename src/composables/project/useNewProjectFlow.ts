@@ -18,11 +18,8 @@ export interface NewProjectFlowDeps {
 
 /** New-Project creation, blank or from Convert image (tickets 58, 196; ADR 0020). Deps are read lazily. */
 export function useNewProjectFlow(deps: NewProjectFlowDeps) {
-  /**
-   * The last New Project form state that named a real size (a form with none is a Canvas, which has no frame to follow). The frame follows the form's fields as they're edited
-   * during framing, and this is what a Create reads — holding the last *valid* state rather than the live one is what
-   * keeps the frame put while a width field is momentarily empty mid-retype, instead of collapsing it to a single cell.
-   */
+  /** The last form state that named a real size (a form with none is a Canvas): the frame and Create read it, so the
+   * frame stays put while a width field is empty mid-retype. */
   const newProjectDraft = ref<(CreateProjectInput & { size: StatedSize }) | undefined>()
 
   function onNewProjectDraft(draft: CreateProjectInput) {
@@ -41,14 +38,9 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
     }
   }
 
-  /**
-   * Everything the framing step needs, or undefined when it isn't running: the picture, and the frame the form's
-   * current values imply — the Bead, the Technique and the grid size, read through the same projectGeometry the Project
-   * itself will be created from, so the frame can't disagree with what Create makes.
-   *
-   * One value gates all three pieces of framing UI (the form staying up, the canvas panel, the zoom cluster), so they
-   * can never disagree about whether framing is on — a canvas showing a frame with no Cancel button, say.
-   */
+  // What framing needs, or undefined when it isn't running: the picture and the frame the form implies, via the same
+  // projectGeometry Create uses. One value gates all framing UI (form, canvas panel, zoom cluster) so they can't
+  // disagree about whether framing is on.
   const framing = computed(() => {
     const image = deps.convertImage()
     const draft = newProjectDraft.value
@@ -69,12 +61,8 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
     deps.addProject(createProject(payload))
   }
 
-  /**
-   * Creates the Project the frame was holding (ticket 58): an ordinary new Project that arrives painted, carrying the
-   * conversion's Image colors (ADR 0011). The grid comes from the framing preview itself, so what was inside the frame
-   * is literally what is created — see ConvertImageFrame.vue. Cancel, by contrast, creates nothing and keeps nothing
-   * (ticket 58 decision), so it goes straight to the composable.
-   */
+  // Creates the Project the frame was holding (ticket 58): an ordinary new Project arriving painted with the Image
+  // colors (ADR 0011), from the framing preview grid. Cancel creates nothing, so it goes straight to the composable.
   function onConvertImageCreate(converted: ConvertedImage) {
     const draft = framing.value?.draft
     if (!draft) {

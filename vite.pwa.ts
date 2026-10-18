@@ -14,11 +14,8 @@ export function filesBelow(dir: string): string[] {
     .sort()
 }
 
-/**
- * The worker's source with this build's file list in it (ticket 69, ADR 0045): everything in the build but the worker
- * itself. The cache is named after the files' content, so a changed build is a new cache and the old one is dropped
- * when the new worker takes over.
- */
+/** The worker's source with this build's file list (ticket 69, ADR 0045). The cache is named after the files'
+ * content, so a changed build is a new cache and the old one is dropped when the new worker takes over. */
 export function renderServiceWorker(template: string, dir: string): { source: string; precache: string[] } {
   const precache = filesBelow(dir).filter((path) => path !== SERVICE_WORKER_FILE)
   const hash = createHash('sha256')
@@ -29,10 +26,8 @@ export function renderServiceWorker(template: string, dir: string): { source: st
   return { source, precache }
 }
 
-/**
- * Writes `sw.js` into the build once every other file is there (public/ is copied in by then), so the list it carries
- * is the whole of the build. No library: see ADR 0045.
- */
+/** Writes `sw.js` once every other file is there (public/ is copied by then), so its list is the whole build. No
+ * library: ADR 0045. */
 export function offlineShell(): Plugin {
   let outDir = ''
   return {

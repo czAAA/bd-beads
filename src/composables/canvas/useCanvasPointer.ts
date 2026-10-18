@@ -4,7 +4,8 @@ import type { MirrorAxisCounts } from '../../domain/mirror'
 import { isInFinishedRow, mirroredCells, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 
-/** What pointer input on the canvas needs from the app shell: the open Project and tool, the paint color, and the paint/selection gestures it drives. */
+/** What pointer input on the canvas needs from the app shell: the open Project and tool, the paint color, and the
+ * paint/selection gestures it drives. */
 export interface CanvasPointerDeps {
   currentProject: () => Project | undefined
   activeTool: () => Tool
@@ -18,7 +19,8 @@ export interface CanvasPointerDeps {
   beginSelectPress: (row: number, column: number) => void
   extendSelection: (row: number, column: number) => void
   backOutOfSelect: () => void
-  /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty space. */
+  /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty
+   * space. */
   tapPiece: (row: number, column: number) => void
   beginOrCommitPress: (mode: 'paint' | 'erase', color: string | null, row: number, column: number) => void
   paintStrokeCell: (row: number, column: number, color: string | null) => void
@@ -28,12 +30,11 @@ export interface CanvasPointerDeps {
   pickColorAt: (row: number, column: number) => boolean
 }
 
-/**
- * Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0020): the hovered cell and
- * its paint preview, and what a primary or secondary press and drag does under each tool. Deps are read lazily.
- */
+/** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0020): hover preview and
+ * what a press and drag does under each tool. */
 export function useCanvasPointer(deps: CanvasPointerDeps) {
-  /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the canvas. */
+  /** The cell the cursor is over, for the hover paint preview (ticket 23); cleared when the cursor leaves the
+   * canvas. */
   const hoveredCell: Ref<GridPosition | undefined> = ref()
 
   function cellsUnderCursor(project: Project, hovered: GridPosition): PreviewCell[] {
@@ -54,11 +55,8 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     return mirroredCells(project, hovered, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
   }
 
-  /**
-   * What the hover preview shows: the block Paste would stamp under the cursor (ticket 31), or the cell Paint/Fill would
-   * touch plus its live-mirror counterpart(s) (tickets 22/23). Beads in rows already woven are left out, since nothing
-   * lands on them (ticket 33).
-   */
+  // The hover preview: the block Paste would stamp (ticket 31), or the cell Paint/Fill would touch plus its mirror
+  // counterparts (tickets 22/23). Beads in rows already woven are left out (ticket 33).
   const previewCells = computed<PreviewCell[]>(() => {
     const project = deps.currentProject()
     if (!project || !hoveredCell.value) {
@@ -75,11 +73,8 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     hoveredCell.value = undefined
   }
 
-  /**
-   * Ctrl/Cmd+V (ticket 92): pastes at the cell under the pointer, regardless of the active tool -- driven by hoveredCell
-   * rather than the Select-only click gesture. Claims the chord from the browser only when something was pasted, so a
-   * no-op (nothing copied, pointer off the grid -- see onHoverEnd) leaves the browser's own handling alone.
-   */
+  // Ctrl/Cmd+V (ticket 92): pastes at the hovered cell under any tool. Claims the chord from the browser only when
+  // something was pasted, so a no-op leaves the browser's own handling alone.
   function pasteAtPointer(event: KeyboardEvent) {
     if (deps.pasteAt(hoveredCell.value)) {
       event.preventDefault()
@@ -115,10 +110,8 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    // Eraser (ticket 176): single-bead erase by default, the same stroke path right-click erase already used --
-    // so it works on touch/phone without needing a right-click. Right-click stays as-is (see onCellSecondaryDown);
-    // it's now simply redundant with the primary press while Eraser is the active tool, and still the only way to
-    // erase without leaving Paint, or to flood-erase without leaving Fill.
+    // Eraser (ticket 176): single-bead erase by default, so it works on touch without a right-click. Right-click stays
+    // (see onCellSecondaryDown): the only way to erase without leaving Paint, or flood-erase without leaving Fill.
     if (tool === 'erase') {
       deps.beginOrCommitPress('erase', null, row, column)
       return
@@ -160,7 +153,9 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     deps.paintStrokeCell(row, column, color)
   }
 
-  /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill, single-cell/dragged-line erase under Paint and Eraser -- the latter now redundant with Eraser's own primary press (ticket 176), and kept for Paint/Fill where it's the only erase available without switching tools. */
+  /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill,
+   * single-cell/dragged-line erase under Paint and Eraser -- the latter now redundant with Eraser's own primary
+   * press (ticket 176), and kept for Paint/Fill where it's the only erase available without switching tools. */
   function onCellSecondaryDown(row: number, column: number) {
     if (deps.spaceHeld()) {
       return
@@ -171,7 +166,8 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    // Select and Piece never erase; under them the right button backs out of a pending Paste or the Selection, alongside Escape.
+    // Select and Piece never erase; under them the right button backs out of a pending Paste or the Selection,
+    // alongside Escape.
     if (deps.activeTool() === 'select' || deps.activeTool() === 'piece') {
       deps.backOutOfSelect()
       return

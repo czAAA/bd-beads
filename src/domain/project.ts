@@ -36,22 +36,22 @@ export interface Cell {
   color: string | null
 }
 
-/** A dense rows × columns array of cells: not what a Project stores (it stores `beads`), but what Convert image produces and what older Projects were saved as. */
+/** A dense rows × columns array of cells: not what a Project stores (it stores `beads`), but what Convert image
+ * produces and what older Projects were saved as. */
 export type Grid = Cell[][]
 
-/**
- * Which way the weaver's rows run across the grid (ticket 32): along the grid's rows, or down its columns. Separate
- * from Project.rotation, which only turns the picture: rotating changes which grid axis runs across the screen, so
- * the weaver flips this too, but neither setting ever changes the other.
- */
+/** Which way the weaver's rows run: along the grid's rows or down its columns (ticket 32). Separate from
+ * Project.rotation, which only turns the picture; rotating swaps the axis, so the weaver flips this too. */
 type RowDirection = 'rows' | 'columns'
 
-/** Which row the weaver is on (see CONTEXT.md's Row progress entry); whether the overlay shows is worked out from the Frame (rowProgressOn). */
+/** Which row the weaver is on (see CONTEXT.md's Row progress entry); whether the overlay shows is worked out from
+ * the Frame (rowProgressOn). */
 export interface RowProgress {
   direction: RowDirection
   /** Zero-based index of the row being woven now; every row before it counts as finished. */
   currentRow: number
-  /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses either place. */
+  /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses
+   * either place. */
   currentColumn: number
 }
 
@@ -60,53 +60,31 @@ export interface Project {
   name: string
   technique: Technique
   beadId: string
-  /**
-   * What is painted on the Canvas, by position (ADR 0026); see BeadMap. A Project stores no real-world size —
-   * what the editor shows in millimetres is an Estimated size worked out on demand from the Frame (estimatedSizeMm).
-   */
+  /** What is painted on the Canvas, by position (ADR 0026); see BeadMap. No real-world size is stored: the
+   * Estimated size is worked out from the Frame (estimatedSizeMm). */
   beads: BeadMap
-  /**
-   * The Frame (CONTEXT.md): which beads are the Project, and so its size in beads. Absent on a canvas that has none
-   * yet; a Project saved before the Canvas has one the size of its old grid (see normalizeProject).
-   */
+  /** The Frame (CONTEXT.md): which beads are the Project. Absent on a Canvas with none; an old Project gets one the
+   * size of its old grid (see normalizeProject). */
   frame?: Frame
   rowProgress: RowProgress
-  /**
-   * A view-only orientation turn (tickets 28, 171): shows the Project turned this many degrees clockwise, like a
-   * rotated photo. Purely cosmetic — the grid, technique geometry, and every other field stay exactly as woven; only
-   * the on-screen (and printed/exported) presentation turns. Deliberately not a data transform: for Peyote/Brick, the
-   * offset stagger is tied to weave direction, so actually transposing the grid would change which cells are
-   * adjacent — a different, unweavable schema, not the same picture turned sideways.
-   */
+  /** View-only turn (tickets 28, 171): the Project shown turned this many degrees clockwise. Never a data transform:
+   * for Peyote/Brick the stagger is tied to weave direction, so transposing the grid would give an unweavable
+   * schema. */
   rotation: Rotation
-  /**
-   * The colors one Convert image found (CONTEXT.md's Image colors, ADR 0011), offered in the Colors group alongside
-   * the Palette while this Project is open. Absent on a Project created any other way — which is most of them, hence
-   * optional rather than an empty array everywhere.
-   *
-   * Frozen at the moment of conversion: nothing in this file ever adds to it or takes from it, so painting a new
-   * color never grows it and erasing one never shrinks it. Deliberately not the same thing as the per-Project color
-   * table the compact storage encoding builds (projectEncoding.ts), which describes the grid as it stands now; the two
-   * differ the moment a color is erased and both are then correct.
-   */
+  /** The colors one Convert image found (CONTEXT.md's Image colors, ADR 0011), offered in the Colors group. Absent
+   * on other Projects. Frozen at conversion: painting or erasing never changes it, unlike the compact encoding's
+   * per-Project color table (projectEncoding.ts), which describes the grid as it stands. */
   imageColors?: string[]
-  /**
-   * This Project's maker's name (ADR 0060), printed on its exports and its background watermark. Absent when none is
-   * set: the exports then print no name (domain/makerName.ts).
-   */
+  /** This Project's maker's name (ADR 0060), printed on exports and the background watermark. Absent: no name
+   * printed (domain/makerName.ts). */
   makerName?: string
-  /**
-   * The names of Pieces (ticket 406, ADR 0050): a named Piece is an unframed Schema. Each name is kept by the position
-   * of one bead of its Piece (the anchor), because Pieces are never stored; see domain/pieceNames.ts for how a name
-   * follows its Piece as beads are painted, erased and moved. Absent when no Piece has a name.
-   */
+  /** The names of Pieces (ticket 406, ADR 0050): a named Piece is an unframed Schema, named by one bead's position
+   * (the anchor) since Pieces aren't stored; see domain/pieceNames.ts. Absent when no Piece has a name. */
   pieceNames?: PieceName[]
   createdAt: number
   updatedAt: number
-  /**
-   * When the Project last reached this device's storage (ticket 145): what orders the Project library, most recently
-   * saved first. Absent on a Project saved before the order existed, whose updatedAt stands in for it (see lastSaved).
-   */
+  /** When the Project last reached this device's storage (ticket 145): orders the library, newest first. Absent on
+   * older Projects, whose updatedAt stands in (see lastSaved). */
   savedAt?: number
 }
 
@@ -115,22 +93,19 @@ export interface CreateProjectInput {
   name?: string
   technique: Technique
   beadId: string
-  /**
-   * How big the Project's Frame is, in beads or in mm/cm — the latter converted once to a grid and not remembered
-   * (ADR 0026). Left out, the Project is a Canvas with no Frame (ADR 0026).
-   */
+  /** How big the Frame is, in beads or mm/cm (converted once to a grid, not remembered; ADR 0026). Left out: a Canvas
+   * with no Frame. */
   size?: StatedSize
   /** This Project's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
   makerName?: string
 }
 
-/** Row progress exactly as a freshly created Project starts out — also what Delete all (ticket 42) resets it back to. */
+/** Row progress exactly as a freshly created Project starts out — also what Delete all (ticket 42) resets it back
+ * to. */
 const INITIAL_ROW_PROGRESS: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
-/**
- * Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055). Worked out here
- * wherever it is read, never stored, so no place that sets a Frame has to remember it; an old file's saved flag is ignored.
- */
+/** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055). Derived, never
+ * stored, so setting a Frame needn't remember it; an old file's saved flag is ignored. */
 export const rowProgressOn = (project: Pick<Project, 'frame'>): boolean => project.frame !== undefined
 
 /** What a new Project's stated size and Bead work out to: the Bead, and the grid that implies. */
@@ -138,13 +113,8 @@ export interface ProjectGeometry extends GridDimensions {
   bead: Bead
 }
 
-/**
- * The grid a New Project form state implies, or undefined when the Bead isn't in the catalog.
- *
- * Shared with Convert image (ticket 58), whose frame is this same geometry: the frame has to be the grid the Project
- * will actually be created at, so both read it from here rather than each converting units and dividing by the Bead's
- * footprint in their own way.
- */
+/** The grid a New Project form state implies, or undefined when the Bead isn't in the catalog. Shared with Convert
+ * image (ticket 58) so its frame is exactly the grid the Project will be created at. */
 export function projectGeometry(input: CreateProjectInput & { size: StatedSize }): ProjectGeometry | undefined {
   // findBead looks the id up in the fixed built-in catalog (ADR 0007 / ticket 38).
   const bead = findBead(input.beadId)
@@ -181,7 +151,8 @@ export function createProject(input: CreateProjectInput): Project {
   }
 }
 
-/** A new Project made from a picture (CONTEXT.md's Convert image): the same fields as any other, plus what the conversion produced. */
+/** A new Project made from a picture (CONTEXT.md's Convert image): the same fields as any other, plus what the
+ * conversion produced. */
 export interface CreateProjectFromImageInput extends CreateProjectInput {
   /** A picture needs a Frame to land in: the Frame's size, which is also the grid it was sampled at. */
   size: StatedSize
@@ -191,18 +162,9 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
   imageColors: string[]
 }
 
-/**
- * Creates a Project from a picture (ticket 58): an ordinary new Project in every respect — same name/size/Bead/
- * Technique handling, same fresh Row progress — except that its cells arrive painted and it carries the conversion's
- * Image colors.
- *
- * Conversion is a way of creating a Project, never a command on one already open (ADR 0010), so this is the only place
- * Image colors is ever written and there is no Row progress lock, Mirror strip or undo step for it to answer to.
- *
- * The grid is fitted to the dimensions the stated size implies rather than trusted to match: a cell the conversion
- * didn't reach comes back empty and a surplus one is dropped, the same tolerance the stored encoding applies, so a
- * disagreement can never produce a Project whose grid and dimensions contradict each other.
- */
+/** Creates a Project from a picture (ticket 58): an ordinary new Project with its cells painted and the conversion's
+ * Image colors. Conversion only creates, never edits an open Project (ADR 0010), so this is the only writer of Image
+ * colors. The grid is fitted to the stated dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
   const frame = project.frame!
@@ -224,12 +186,14 @@ function touch(project: Project, changes: Partial<Project>): Project {
   return { ...project, ...changes, updatedAt: Date.now() }
 }
 
-/** Keeps a pointer inside 0..passes: one past the last pass means every pass is done (ticket 411), which fills the track. */
+/** Keeps a pointer inside 0..passes: one past the last pass means every pass is done (ticket 411), which fills the
+ * track. */
 function clampRow(row: number, passes: number): number {
   return Math.max(0, Math.min(passes, row))
 }
 
-/** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame change uses. */
+/** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame
+ * change uses. */
 function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, technique: Technique): Project['rowProgress'] {
   return {
     ...rowProgress,
@@ -238,25 +202,26 @@ function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, techniq
   }
 }
 
-/**
- * The Project's Frame, or — for a canvas that has none — the smallest box round its beads (nothing at all for an empty
- * one). What the parts of the app that still think in a Project's extent read: with a Frame it is the Project itself.
- */
+/** The Project's Frame, or for a Canvas without one the smallest box round its beads (nothing for an empty one). For
+ * the parts of the app that still think in a Project's extent. */
 export function projectFrame(project: Pick<Project, 'frame' | 'beads'>): Frame {
   return project.frame ?? beadBounds(project.beads) ?? { row: 0, column: 0, columns: 0, rows: 0 }
 }
 
-/** What the open Project's Frame measures in beads, for the grid-shaped helpers (mirror strips, adjacency, fit zoom). */
+/** What the open Project's Frame measures in beads, for the grid-shaped helpers (mirror strips, adjacency, fit
+ * zoom). */
 export function projectDimensions(project: Pick<Project, 'frame' | 'beads'>): GridDimensions {
   return frameDimensions(projectFrame(project))
 }
 
-/** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the Tour's check, a test's expectation). Empty with no Frame and no beads. */
+/** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the
+ * Tour's check, a test's expectation). Empty with no Frame and no beads. */
 export function frameGrid(project: Pick<Project, 'frame' | 'beads'>): Grid {
   return colorsInFrame(project.beads, projectFrame(project)).map((row) => row.map((color) => ({ color })))
 }
 
-/** A dense grid of cells as beads with a Frame the size of the grid: what the Convert image preview, the Overview's pictures and a test's hand-made block of beads are drawn from. */
+/** A dense grid of cells as beads with a Frame the size of the grid: what the Convert image preview, the Overview's
+ * pictures and a test's hand-made block of beads are drawn from. */
 export function framedGrid(grid: Grid): Pick<Project, 'beads' | 'frame'> {
   return {
     beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))),
@@ -264,7 +229,8 @@ export function framedGrid(grid: Grid): Pick<Project, 'beads' | 'frame'> {
   }
 }
 
-/** The Project with its Frame's beads replaced by a dense grid of cells whose top-left sits at the Frame's; beads outside the Frame stay as they are. */
+/** The Project with its Frame's beads replaced by a dense grid of cells whose top-left sits at the Frame's; beads
+ * outside the Frame stay as they are. */
 export function withFrameGrid(project: Project, grid: Grid): Project {
   const frame = projectFrame(project)
   const outside = withColors(
@@ -289,21 +255,16 @@ export function beadColorAt(project: Pick<Project, 'beads'>, row: number, column
   return colorAt(project.beads, row, column)
 }
 
-/**
- * A Project as it was saved before the Canvas (ADR 0026): a fixed `columns` × `rows` grid of cells in place of
- * beads by position and a Frame. Read by normalizeProject only, which gives it a Frame the size of the grid.
- */
+/** A Project as saved before the Canvas (ADR 0026): a fixed `columns` x `rows` grid instead of beads by position and
+ * a Frame. Read by normalizeProject only, which gives it a Frame the size of the grid. */
 export type GridProject = Omit<Project, 'beads' | 'frame'> & { columns: number; rows: number; grid: Grid }
 
 function isGridProject(project: Project | GridProject): project is GridProject {
   return Array.isArray((project as GridProject).grid)
 }
 
-/**
- * A Project as an older version of the app may have saved it: still carrying the color-to-bead override field ADR
- * 0007/ticket 36 dropped, the stored real-world size (`widthMm`/`heightMm`) ADR 0026 dropped, and rotation as
- * ticket 28's two-position `rotated` boolean rather than ticket 171's four-position `rotation`.
- */
+/** A Project as an older app may have saved it: with the color-to-bead override (ADR 0007/ticket 36), the stored
+ * `widthMm`/`heightMm` (ADR 0026) and ticket 28's `rotated` boolean instead of ticket 171's `rotation`. */
 type ProjectWithLegacyFields = Project & {
   columns?: unknown
   rows?: unknown
@@ -316,7 +277,8 @@ type ProjectWithLegacyFields = Project & {
 
 const ROTATIONS: readonly Rotation[] = [0, 90, 180, 270]
 
-/** `rotation` as ticket 171 shipped it, or ticket 28's `rotated` boolean read as its nearest quarter turn, or upright for a Project from before either existed. */
+/** `rotation` as ticket 171 shipped it, or ticket 28's `rotated` boolean read as its nearest quarter turn, or
+ * upright for a Project from before either existed. */
 function normalizeRotation(project: ProjectWithLegacyFields): Rotation {
   if (typeof project.rotation === 'number' && (ROTATIONS as readonly number[]).includes(project.rotation)) {
     return project.rotation
@@ -324,12 +286,9 @@ function normalizeRotation(project: ProjectWithLegacyFields): Rotation {
   return project.rotated ? 90 : 0
 }
 
-/**
- * Fills in fields added after a Project was first saved, re-clamps the row pointer, and drops the fields nothing
- * reads anymore — the color-to-bead override a Project saved before ticket 36 may carry (ADR 0007: a Project now has
- * one Bead, not a per-color mapping) and the stored millimetre size (ADR 0026: the grid is the size) — so a Project
- * read back from storage or an imported file is safe to use whatever version wrote it, and never re-saves them.
- */
+/** Fills in fields added after a Project was saved, re-clamps the row pointer and drops dead fields (the color-to-bead
+ * override, ADR 0007; the millimetre size, ADR 0026), so a Project from storage or a file is safe whatever version
+ * wrote it, and never re-saves them. */
 export function normalizeProject(project: Project | GridProject): Project {
   const rowProgress: Partial<RowProgress> & { currentRow: number } = project.rowProgress ?? { currentRow: 0 }
   const legacy = project as ProjectWithLegacyFields
@@ -371,11 +330,9 @@ export function normalizeProject(project: Project | GridProject): Project {
   }
 }
 
-/**
- * The Project with its Frame set, moved, resized or removed (ADR 0026). No bead changes: the Frame only says which of
- * them are the Project. Row progress's pointers are kept inside the new Frame; a Project with the same Frame comes back
- * as it is, so a gesture that ends where it began is no change.
- */
+/** The Project with its Frame set, moved, resized or removed (ADR 0026). No bead changes. Row progress's pointers
+ * stay inside the new Frame; an unchanged Frame returns the Project itself, so a gesture ending where it began is
+ * no change. */
 export function withFrame(project: Project, frame: Frame | undefined): Project {
   if (sameFrame(project.frame, frame)) {
     return project
@@ -388,11 +345,8 @@ export function withFrame(project: Project, frame: Frame | undefined): Project {
   return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
 }
 
-/**
- * The Project woven in another Technique (ticket 351): the grid, Bead and cells stay, only the geometry changes. Offset
- * Techniques start their Frame on an even row, so a Frame that began on an odd one takes in the empty row above it
- * rather than moving or losing a row.
- */
+/** The Project woven in another Technique (ticket 351): grid, Bead and cells stay, only geometry changes. Offset
+ * Techniques start their Frame on an even row, so a Frame on an odd one takes in the empty row above it. */
 export function withTechnique(project: Project, technique: Technique): Project {
   const frame = project.frame
   const top = frame ? snapRow(technique, frame.row) : 0
@@ -402,7 +356,8 @@ export function withTechnique(project: Project, technique: Technique): Project {
   return touch(project, { technique, frame: { ...frame, row: top, rows: frame.rows + frame.row - top } })
 }
 
-/** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it (ticket 411). */
+/** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
+ * (ticket 411). */
 export function rowProgressStarted(project: Pick<Project, 'rowProgress' | 'frame'>): boolean {
   const { currentRow, currentColumn } = project.rowProgress
   return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0)
@@ -411,23 +366,26 @@ export function rowProgressStarted(project: Pick<Project, 'rowProgress' | 'frame
 /** The next quarter turn clockwise: 0, 90, 180, 270 and round again. */
 const NEXT_ROTATION: Readonly<Record<Rotation, Rotation>> = { 0: 90, 90: 180, 180: 270, 270: 0 }
 
-/** Rotate canvas (ticket 471): the picture a quarter turn clockwise further. Only the view turns; no bead, Frame, name or Row direction changes. */
+/** Rotate canvas (ticket 471): the picture a quarter turn clockwise further; only the view turns, no data changes. */
 export function rotateCanvas(project: Project): Project {
   return touch(project, { rotation: NEXT_ROTATION[project.rotation] })
 }
 
-/** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is untouched. */
+/** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
+ * untouched. */
 export function resetRowProgress(project: Project): Project {
   return touch(project, { rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 } })
 }
 
-/** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view alone. */
+/** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
+ * alone. */
 export function toggleRowDirection(project: Project): Project {
   const direction = project.rowProgress.direction === 'rows' ? 'columns' : 'rows'
   return touch(project, { rowProgress: { ...project.rowProgress, direction } })
 }
 
-/** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many rows the Frame has. */
+/** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
+ * rows the Frame has. */
 export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>): { current: number; total: number } {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
@@ -436,7 +394,9 @@ export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'fram
     : { current: currentColumn, total: passCount(project.technique, frame?.columns ?? 0) }
 }
 
-/** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote) is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a Frame is set. */
+/** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
+ * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
+ * Frame is set. */
 export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, { row, column }: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
@@ -451,7 +411,8 @@ export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' |
     : passOf(project.technique, relativeColumn, relativeRow) < currentColumn
 }
 
-/** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the current row is drawn brighter. Only while the overlay is on and a Frame is set. */
+/** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
+ * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
 export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, { row, column }: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
@@ -487,11 +448,8 @@ export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[
   return changed.sort((a, b) => a.row - b.row || a.column - b.column)
 }
 
-/**
- * Takes back whatever a drawing command did to finished rows (ticket 33): those beads are already woven, so an edit
- * only lands on the row being woven now and the ones after it. An edit left with nothing to change hands back
- * `before` itself, the same "unchanged" signal the drawing commands give, so it records no undo step.
- */
+/** Takes back what a drawing command did to finished rows (ticket 33): those beads are already woven. Nothing left to
+ * change returns `before` itself, the drawing commands' "unchanged" signal, so no undo step is recorded. */
 export function keepFinishedRows(before: Project, after: Project): Project {
   const reverts: BeadChange[] = changedPositions(before.beads, after.beads)
     .filter((position) => isInFinishedRow(before, position))
@@ -500,7 +458,8 @@ export function keepFinishedRows(before: Project, after: Project): Project {
   return changedPositions(before.beads, beads).length > 0 ? { ...after, beads } : before
 }
 
-/** Points row progress at the given row in its current direction, clamped to the Project — used to advance a finished row and to go back to an earlier one. */
+/** Points row progress at the given row in its current direction, clamped to the Project — used to advance a
+ * finished row and to go back to an earlier one. */
 export function moveToRow(project: Project, row: number): Project {
   const { total } = rowProgressPosition(project)
   const pointer = project.rowProgress.direction === 'rows' ? 'currentRow' : 'currentColumn'
@@ -514,12 +473,9 @@ export function restoreBeads(project: Project, beads: BeadMap): Project {
   return touch(project, { beads })
 }
 
-/**
- * One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change, so every Undo and
- * Redo step restores the same things whichever command made it: the beads, Row progress, the Bead, the Frame, and
- * Mirror's axis counts. Mirror's counts are an editing-session setting, not a Project field, so restoreSnapshot leaves
- * applying them to the caller. All of it is immutable, so a snapshot shares structure with the Project it came from.
- */
+/** One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change (beads, Row
+ * progress, Bead, Frame, Mirror's axis counts). Mirror's counts are a session setting, not a Project field, so
+ * restoreSnapshot leaves applying them to the caller. All immutable, sharing structure. */
 export interface UndoEntry {
   beads: BeadMap
   rowProgress: RowProgress
@@ -550,7 +506,8 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   })
 }
 
-/** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has nothing left to reset. */
+/** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has
+ * nothing left to reset. */
 function isInitialRowProgress(rowProgress: RowProgress): boolean {
   return (
     rowProgress.direction === INITIAL_ROW_PROGRESS.direction &&
@@ -559,13 +516,9 @@ function isInitialRowProgress(rowProgress: RowProgress): boolean {
   )
 }
 
-/**
- * Resets the open Project to how it was when first created at its size (CONTEXT.md's Delete all): every cell
- * emptied and Row progress back to its just-created state — both pointers at the first row — while name, size,
- * Technique, Bead and rotation stay exactly as they were. Unlike Paint/Fill/Paste/Mirror it ignores the Row
- * progress lock (see isInFinishedRow): clearing progress is the point, so callers apply this directly rather than
- * routing it through keepFinishedRows. Returns the same Project instance, unchanged, if it's already in that state.
- */
+/** Resets the open Project to as first created (CONTEXT.md's Delete all): cells emptied, both Row progress pointers at
+ * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
+ * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
   if (Object.keys(project.beads).length === 0 && isInitialRowProgress(project.rowProgress)) {
     return project
@@ -579,21 +532,14 @@ export function deleteAll(project: Project): Project {
   })
 }
 
-/**
- * Swaps the Project's Bead for a different catalog entry (ticket 48, ADR 0007). Nothing else changes: the grid, its
- * columns and rows, every painted cell, Row progress and Mirror all stay exactly as they were, since the grid is the
- * Project's size and only its Estimated size depends on the Bead. Someone who wants the old size back afterwards
- * adds or removes rows and columns (see resizeProject).
- */
+/** Swaps the Project's Bead for another catalog entry (ticket 48, ADR 0007). Nothing else changes: the grid is the
+ * Project's size and only the Estimated size depends on the Bead; resizeProject restores the old size. */
 export function replaceBead(project: Project, bead: Bead): Project {
   return touch(project, { beadId: bead.id })
 }
 
-/**
- * Where a Fill stops (ADR 0026): the Frame when it starts inside one, otherwise the box round the Frame and every
- * painted bead, one position wider on each side, so filling empty open space stays a finite patch rather than the
- * whole endless canvas.
- */
+/** Where a Fill stops (ADR 0026): the Frame when it starts inside one, else the box round the Frame and every bead,
+ * one position wider each side, so filling open space stays a finite patch. */
 function fillLimit(project: Pick<Project, 'beads' | 'frame'>, start: GridPosition): Frame {
   if (project.frame && frameContains(project.frame, start)) {
     return project.frame
@@ -608,11 +554,8 @@ function fillLimit(project: Pick<Project, 'beads' | 'frame'>, start: GridPositio
   return { row: top, column: left, rows: bottom - top, columns: right - left }
 }
 
-/**
- * Every cell reachable from `start` through same-colored neighbors, per the Project's grid adjacency (see
- * neighborsOf) -- the flood region a click at `start` would act on. Used by Fill (fillArea), including right-click
- * erase under Fill (ticket 25), which calls fillArea with a null color.
- */
+/** Every cell reachable from `start` through same-colored neighbors (see neighborsOf): the flood region of a click.
+ * Used by Fill (fillArea), including right-click erase under Fill (ticket 25), which passes a null color. */
 function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, start: GridPosition): GridPosition[] {
   const targetColor = colorAt(project.beads, start.row, start.column)
   const limit = fillLimit(project, start)
@@ -638,7 +581,8 @@ function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, st
   return region
 }
 
-/** Bucket-fills every cell reachable from (row, column) through same-colored neighbors (see floodRegion), with the given color. Returns the same Project instance, unchanged, if the clicked cell is already that color. */
+/** Bucket-fills every cell reachable from (row, column) through same-colored neighbors (see floodRegion), with the
+ * given color. Returns the same Project instance, unchanged, if the clicked cell is already that color. */
 export function fillArea(project: Project, row: number, column: number, color: string | null): Project {
   if (colorAt(project.beads, row, column) === color) {
     return project
@@ -648,16 +592,9 @@ export function fillArea(project: Project, row: number, column: number, color: s
   return restoreBeads(project, withColors(project.beads, region.map((position) => ({ ...position, color }))))
 }
 
-/**
- * Every cell a live-mirrored stroke touches when painting `position` (ADR 0006/ticket 22, generalized to
- * per-direction axis *counts* by ticket 44): itself, plus its reflection(s) across every Mirror axis, fixed to the
- * Frame's exact center(s) rather than mirrorCurrent's adaptive "fullest strip" heuristic (there's no drawn-so-far
- * content to judge a source strip from mid-stroke). `axes.columns` splits the Frame across its columns
- * ("horizontal"), `axes.rows` across its rows ("vertical"); see domain/mirror.ts for the strip math and why counts
- * are grid-space, never screen-space. `copyMode` (ticket 45) is one switch for both directions: strips repeat the
- * same way round (A | A | A) instead of mirror-imaging (A | A' | A). A position outside the Frame, or a canvas
- * without one, has no axes to reflect across and is only itself.
- */
+/** Resets the open Project to as first created (CONTEXT.md's Delete all): cells emptied, Row progress at the first row;
+ * name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow): clearing
+ * progress is the point. Returns the same instance if already so. */
 export function mirroredCells(
   project: Pick<Project, 'frame'>,
   position: GridPosition,
@@ -687,13 +624,9 @@ export function mirroredCells(
   return cells
 }
 
-/**
- * Paints every position in `positions` plus each one's live-mirror counterpart(s) (see mirroredCells) as a single
- * Project edit, so a whole stroke — mirrored or not, one cell or a whole dragged path (ticket 24) — is one undo
- * step rather than one per cell. Returns the same Project instance, unchanged, if every touched cell is already
- * that color. Only the rows a stroke touched are copied (see withColors): an edit costs what it touched, not the size
- * of the Project.
- */
+/** Paints every position in `positions` plus each one's live-mirror counterparts (see mirroredCells) as a single
+ * edit, so a whole stroke (ticket 24) is one undo step. Returns the same Project if nothing changes. Only the touched
+ * rows are copied (see withColors). */
 export function paintCells(
   project: Project,
   positions: GridPosition[],
@@ -712,7 +645,8 @@ export function paintCells(
   return beads === project.beads ? project : restoreBeads(project, beads)
 }
 
-/** How many painted cells (non-null color) fall in each strip (0-indexed, 0..axisCount) of the Frame along `axis`, per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
+/** How many painted cells (non-null color) fall in each strip (0-indexed, 0..axisCount) of the Frame along `axis`,
+ * per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
 function paintedCountsByStrip(project: Project, frame: Frame, axis: 'columns' | 'rows', axisCount: number): number[] {
   const counts = new Array(axisCount + 1).fill(0)
   const dimension = axis === 'columns' ? frame.columns : frame.rows
@@ -726,17 +660,9 @@ function paintedCountsByStrip(project: Project, frame: Frame, axis: 'columns' | 
   return counts
 }
 
-/**
- * "Mirror current" (ticket 46, ADR 0006 amendment): a one-time sync of what's already painted in the Frame along ONE
- * direction, using that direction's own axis count -- the other direction is left alone entirely, matching how the
- * per-axis buttons have always worked (see onMirrorCurrent in App.vue). The strip holding the most painted cells
- * becomes the source and is copied onto every other strip, mirrored by default or unflipped in copy mode (see
- * mirrorCounterpartInStrip). Ties go to the lowest strip index (leftmost/topmost). Beads outside the Frame are not
- * touched; with no Frame there is nothing to mirror across and the Project comes back unchanged.
- *
- * A count of 0 acts as a single center axis (1 axis, 2 strips) purely for this one sync -- the stored axis count
- * itself is untouched -- so the button always does something even before any axis is turned on.
- */
+/** "Mirror current" (ticket 46, ADR 0006 amendment): a one-time sync along ONE direction using its own axis count.
+ * The strip with the most painted cells (ties: lowest index) is copied onto the others (mirrorCounterpartInStrip).
+ * No Frame: unchanged. A count of 0 acts as one center axis for this sync only, so the button always does something. */
 export function mirrorCurrent(
   project: Project,
   axis: 'columns' | 'rows',
@@ -774,7 +700,9 @@ export function mirrorCurrent(
   return restoreBeads(project, withColors(project.beads, changes))
 }
 
-/** A short, language-neutral identifier for a Project in UI lists (names are proper nouns, not translated): its name and, once it has a Frame, the Frame's size; reflects the rotated view's swapped dimensions, since that's how the Project currently looks. */
+/** A short, language-neutral identifier for a Project in UI lists (names are proper nouns, not translated): its name
+ * and, once it has a Frame, the Frame's size; reflects the rotated view's swapped dimensions, since that's how the
+ * Project currently looks. */
 export function summarizeProject(project: Project): string {
   // The size is the Frame's: a canvas with none has no size to state (ADR 0026).
   if (!project.frame) {
@@ -785,11 +713,8 @@ export function summarizeProject(project: Project): string {
   return `${project.name} · ${width}×${height}`
 }
 
-/**
- * The Bead a Project was woven from (ticket 37), or undefined when the catalog no longer has it — a custom Bead
- * removed since (ticket 38), or one an imported file names that this device never had. Callers show a neutral
- * placeholder for the undefined case rather than a raw id.
- */
+/** The Bead a Project was woven from (ticket 37), or undefined when the catalog no longer has it (a removed custom
+ * Bead, ticket 38, or one an imported file names). Callers show a placeholder, not a raw id. */
 export function resolveProjectBead(project: Project): Bead | undefined {
   return findBead(project.beadId)
 }
@@ -804,10 +729,8 @@ export function markSaved(project: Project, at = Date.now()): Project {
   return { ...project, savedAt: at }
 }
 
-/**
- * The Project library's order (ticket 145): most recently saved first; saved at the same moment, most recently edited
- * first; and otherwise as they were, so a library read twice comes out the same twice.
- */
+/** The Project library's order (ticket 145): newest saved first; ties, most recently edited first; otherwise as they
+ * were, so a library read twice comes out the same. */
 export function inSavedOrder(projects: Project[]): Project[] {
   return projects
     .map((project, index) => ({ project, index }))

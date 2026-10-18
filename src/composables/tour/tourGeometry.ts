@@ -1,4 +1,5 @@
-/** Where the Tour's card sits and how its pointer runs (ticket 80; TourStep card), as plain rectangles so none of it needs a screen. */
+/** Where the Tour's card sits and how its pointer runs (ticket 80; TourStep card), as plain rectangles so none of it
+ * needs a screen. */
 
 export interface Rect {
   x: number
@@ -51,12 +52,9 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value))
 }
 
-/**
- * The card's place: docked under the header on a phone, centred when there is nothing to point at, otherwise beside the
- * hole on the side its position suggests (below a header control, above a bottom one, to the right of a left-column
- * control, clear of `beside` when the control sits in a column or a board whose whole width must stay visible), and
- * failing every side, in the corner under the header.
- */
+// The card's place: docked under the header on a phone, centred with nothing to point at, otherwise beside the hole on
+// the side its position suggests (clear of `beside` when the control sits in a column or board whose width must stay
+// visible), failing every side, in the corner under the header.
 export function placeCard(card: Size, hole: Rect | undefined, viewport: Size, beside?: Rect): Placement {
   if (viewport.w <= PHONE_MAX_WIDTH) {
     return { x: MARGIN, y: PHONE_HEADER + MARGIN, side: hole ? 'above' : undefined }

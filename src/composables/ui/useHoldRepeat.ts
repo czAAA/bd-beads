@@ -8,13 +8,9 @@ const HOLD_SPEED_UP = 0.85
 /** How long after a release the browser's own `click` for it is still swallowed, in ms. */
 const CLICK_AFTER_RELEASE_MS = 100
 
-/**
- * Hold-to-repeat for a pair of step buttons (ticket 355): a press steps once straight away, and after a short delay keeps
- * stepping, faster the longer it is held, until release, pointer leave or `step` saying it can go no further. Mouse, touch
- * and Enter/Space all work. A press that has already stepped swallows the `click` that follows it, so a release never
- * adds a step; a `click` with no press before it (a screen reader, a script) still steps once.
- * `step(direction)` returns whether it moved.
- */
+// Hold-to-repeat for a pair of step buttons (ticket 355): a press steps at once, then after a delay keeps stepping
+// faster until release, pointer leave or `step(direction)` returning false (no further). A press that stepped swallows
+// the following `click`; a `click` with no press (screen reader, script) steps once.
 export function useHoldRepeat(step: (direction: 1 | -1) => boolean) {
   let timer: ReturnType<typeof setTimeout> | undefined
   let pressed = false
@@ -75,7 +71,8 @@ export function useHoldRepeat(step: (direction: 1 | -1) => boolean) {
         abandon()
         stop()
       },
-      // Leaving after the release (touch fires it before the click) keeps the click to swallow; leaving mid-press has none.
+      // Leaving after the release (touch fires it before the click) keeps the click to swallow; leaving mid-press has
+      // none.
       pointerleave() {
         if (pressed) abandon()
         stop()

@@ -1,16 +1,15 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { isOffsetTechnique, neighborsOf, type GridPosition, type Technique } from './grid'
 
-/**
- * A Piece (CONTEXT.md): beads that touch by a side or a corner. Pieces form, merge and split as beads are painted and
- * erased, so they are never stored; they are worked out from the beads on demand (and cached per set of beads).
- */
+/** A Piece (CONTEXT.md): beads that touch by a side or a corner. Pieces merge and split as beads change, so they are
+ * never stored; worked out on demand (cached per set of beads). */
 export interface Piece extends Frame {
   /** How many beads it holds. */
   beads: number
 }
 
-/** The positions a bead touches: all eight around it on loom, whose rows stack; on peyote and brick stitch the six beads that nest against it (the neighbours of the Technique's own geometry). */
+/** The positions a bead touches: all eight around it on loom, whose rows stack; on peyote and brick stitch the six
+ * beads that nest against it (the neighbours of the Technique's own geometry). */
 function touching(technique: Technique, position: GridPosition): GridPosition[] {
   if (isOffsetTechnique(technique)) {
     return neighborsOf(technique, undefined, position)
@@ -21,7 +20,8 @@ function touching(technique: Technique, position: GridPosition): GridPosition[] 
   )
 }
 
-/** A position as one number, for sets that hold thousands of them: cheaper to make and compare than a string. Good for rows and columns within a million of the start. */
+/** A position as one number, for sets that hold thousands of them: cheaper to make and compare than a string. Good
+ * for rows and columns within a million of the start. */
 const KEY_SPAN = 2 ** 22
 const KEY_OFFSET = 2 ** 21
 export function numericKey({ row, column }: GridPosition): number {
@@ -51,10 +51,8 @@ export function pieceBeadsAt(beads: BeadMap, technique: Technique, start: GridPo
 
 const cache = new WeakMap<BeadMap, Map<Technique, Piece[]>>()
 
-/**
- * Every Piece on the canvas, top to bottom and left to right by the top-left of its rectangle. The same beads give back
- * the same array, so a repaint that changes nothing costs nothing.
- */
+/** Every Piece on the canvas, top to bottom, left to right by its rectangle's top-left. The same beads give back the
+ * same array, so a repaint that changes nothing costs nothing. */
 export function piecesOf(beads: BeadMap, technique: Technique): Piece[] {
   const known = cache.get(beads)?.get(technique)
   if (known) {
@@ -100,7 +98,8 @@ export function piecesOf(beads: BeadMap, technique: Technique): Piece[] {
 }
 
 
-/** Whether two rectangles overlap, one lies inside the other, or they touch: a cell of one is in the other's cell ring (side or corner, by the Technique's own neighbour geometry). */
+/** Whether two rectangles overlap, one lies inside the other, or they touch: a cell of one is in the other's cell
+ * ring (side or corner, by the Technique's own neighbour geometry). */
 function areasJoin(technique: Technique, a: Frame, b: Frame): boolean {
   const aBottom = a.row + a.rows - 1
   const aRight = a.column + a.columns - 1
@@ -125,10 +124,12 @@ function areasJoin(technique: Technique, a: Frame, b: Frame): boolean {
   return false
 }
 
-/** How far a Piece's area reaches past its own bounds when Pieces are joined: one bead, so Pieces with one empty bead between them join and two empty beads keep them apart (ticket 293). */
+/** How far a Piece's area reaches past its own bounds when Pieces are joined: one bead, so Pieces with one empty
+ * bead between them join and two empty beads keep them apart (ticket 293). */
 const JOIN_MARGIN = 1
 
-/** Whether two Pieces' areas join: `areasJoin` once `a` is counted with the margin. The margin is a distance, so the answer is the same either way round. */
+/** Whether two Pieces' areas join: `areasJoin` once `a` is counted with the margin. The margin is a distance, so the
+ * answer is the same either way round. */
 function areasJoinWithMargin(technique: Technique, a: Frame, b: Frame): boolean {
   return areasJoin(technique, {
     row: a.row - JOIN_MARGIN,
@@ -140,12 +141,9 @@ function areasJoinWithMargin(technique: Technique, a: Frame, b: Frame): boolean 
 
 const areaCache = new WeakMap<BeadMap, Map<Technique, Frame[]>>()
 
-/**
- * Every Piece area (CONTEXT.md): the rectangle around one or more Pieces. A Piece's area, counted as everything within one
- * bead outside its bounds, that overlaps, lies inside or touches another's joins it, repeated until none do, so the area
- * is the bounding box of the group (the margin joins, it is not drawn). Top to bottom
- * and left to right. Cached per set of beads like `piecesOf`.
- */
+/** Every Piece area (CONTEXT.md): the rectangle round one or more Pieces. A Piece's area plus one bead outside its
+ * bounds that overlaps or touches another's joins it, repeated until none do (the margin joins, it isn't drawn).
+ * Top to bottom, left to right; cached per set of beads like `piecesOf`. */
 export function pieceAreasOf(beads: BeadMap, technique: Technique): Frame[] {
   const known = areaCache.get(beads)?.get(technique)
   if (known) {

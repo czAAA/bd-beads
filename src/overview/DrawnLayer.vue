@@ -4,13 +4,9 @@ import AppLogo from '../components/ui/AppLogo.vue'
 import { findPaletteColor } from '../domain/palette'
 import { beadsOf, DRAWINGS, LAYERS, LETTER_COLORS, TIERS, type Doodle, type Placement, type SectionName } from './drawnLayer'
 
-/**
- * The drawn layer behind one Overview section (ticket 221; Overview card): bead drawings beside the main column and X1
- * marks at 8% `accent`. It is decoration only: hidden from screen readers, behind the content (the section isolates it
- * with `z-index: -1`), and out of reach of the pointer and the keyboard. It is as wide as the page and centred on the
- * column, whose half-width is `--col`, so a placement's gap is measured from the column's edge. Each placement belongs
- * to one screen-size band and only that band's are shown (see `drawnLayer.ts`).
- */
+// The drawn layer behind one Overview section (ticket 221; Overview card): bead drawings and X1 marks at 8% `accent`.
+// Decoration only: hidden from screen readers, behind the content (section isolates it, `z-index: -1`), no pointer.
+// Page-wide, centred on the column (half-width `--col`), so a gap is from the column's edge; one screen band at a time.
 const props = defineProps<{ section: SectionName }>()
 
 function fillOf(letter: string): string {

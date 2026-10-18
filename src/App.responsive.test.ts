@@ -2,11 +2,9 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-/**
- * One layout at every width (ticket 412, ADR 0046): the canvas box is the screen and the Tool pill floats over it (ticket 439). These tests read the shell's CSS back out of its
- * components, so a rule that brings a second, width-dependent layout back fails here, and read the sizes from
- * `tokens.json` so a token change can't silently drift out of sync with what the shell actually says.
- */
+// One layout at every width (ticket 412, ADR 0046; Tool pill floats over the canvas, ticket 439). Reads the shell's CSS
+// back from its components so a rule restoring a width-dependent layout fails, and sizes from `tokens.json` so token
+// changes can't drift.
 const repo = resolve(__dirname, '..')
 const componentsDir = resolve(__dirname, 'components')
 const source = (name: string) => readFileSync(resolve(componentsDir, `${name}.vue`), 'utf8')

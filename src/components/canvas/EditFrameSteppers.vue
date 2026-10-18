@@ -7,13 +7,9 @@ import { FRAME_EDGES, type FrameEdge } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 
-/**
- * Edit Frame's margin steppers (ticket 417, ADR 0054, ticket 427): a mini −/+ on each of the Frame's four edges, in the
- * margin between the ruler numbers and its outer edge, pinned there (they move with the Frame when the canvas is panned),
- * shrinking with the zoom and staying whatever the Rulers show. Each press moves that edge one bead out (+) or in (−) and is one Undo step, so an edge
- * changes by itself and the Frame never has a pending size. The pairs follow the Frame's rectangle (`anchor`, in the canvas box's own
- * pixels), so they track pan and zoom. Rendered only while the edit toggle is on (ticket 452), never for a Selection; arrow keys on a focused stepper move or resize the Frame.
- */
+// Edit Frame's margin steppers (tickets 417, 427, ADR 0054): a mini -/+ on each Frame edge, shrinking with zoom; each
+// press moves that edge one bead and is one Undo step. `anchor` is the Frame's rectangle in canvas box pixels.
+// Only while edit is on (ticket 452), never for a Selection; arrow keys on a stepper move or resize the Frame.
 const props = defineProps<{
   project: Project
   /** The Frame's rectangle, the margin round it and the canvas box they are in. */
@@ -61,7 +57,8 @@ function pairStyle(edge: FrameEdge) {
 </template>
 
 <style scoped>
-/* Over the whole canvas box, whose pixels the pairs are placed in, letting everything but the buttons through to the canvas. */
+/* Over the whole canvas box, whose pixels the pairs are placed in, letting everything but the buttons through to the
+ * canvas. */
 .edit-frame-steppers {
   position: absolute;
   inset: 0;

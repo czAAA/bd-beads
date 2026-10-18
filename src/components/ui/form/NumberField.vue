@@ -4,13 +4,9 @@ import { useHoldRepeat } from '../../../composables/ui/useHoldRepeat'
 import AppIcon from '../AppIcon.vue'
 import TextField from './TextField.vue'
 
-/**
- * A number with its unit as a label on the border (ticket 149; NumberField card): a TextField of type number that asks for the numeric
- * keyboard on touch, `decimal` for a length in mm or cm and `numeric` for a count of beads. Optionally paired with a
- * compact up/down stepper (ticket 181) — narrow enough for the New Project form's own sidebar column, unlike the
- * Stepper card's wide − and + buttons — so a caller that wants the field settable entirely by clicking or tapping can
- * turn it on without giving up typing. Holding either button repeats and speeds up (ticket 355).
- */
+// A number with its unit on the border (ticket 149): a TextField asking for the numeric keyboard (`decimal` for
+// lengths, `numeric` for counts), optionally with a compact up/down stepper (ticket 181, narrow enough for the New
+// Project sidebar; holding repeats, ticket 355).
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
@@ -20,15 +16,14 @@ const props = withDefaults(
     min?: number
     step?: number | 'any'
     stepper?: boolean
-    /**
-     * Digits only (ticket 211): a plain text input with the numeric keypad that drops anything but 0-9, typed or pasted,
-     * and lets its placeholder go while focused (it returns on blur if the field is left empty).
-     */
+    /** Digits only (ticket 211): a text input with the numeric keypad that drops anything but 0-9; its placeholder
+     * goes while focused. */
     digitsOnly?: boolean
     /** Required together whenever `stepper` is on: each button needs its own name for screen readers (Stepper card). */
     decreaseLabel?: string
     increaseLabel?: string
-    /** The `data-testid` root the two buttons build "-decrease"/"-increase" onto, e.g. "width-input" → "width-input-decrease". */
+    /** The `data-testid` root the two buttons build "-decrease"/"-increase" onto, e.g. "width-input" →
+     * "width-input-decrease". */
     testidPrefix?: string
   }>(),
   {
@@ -68,7 +63,8 @@ function currentValue(): number {
   return Number.isFinite(current) ? current : 0
 }
 
-/** Rounds off the float drift a repeated decimal step can leave (e.g. 0.1 + 0.2), to two decimal places — finer than any size unit is shown in. */
+/** Rounds off the float drift a repeated decimal step can leave (e.g. 0.1 + 0.2), to two decimal places — finer than
+ * any size unit is shown in. */
 function rounded(n: number): number {
   return props.whole ? Math.round(n) : Math.round(n * 100) / 100
 }
@@ -88,7 +84,8 @@ const hold = useHoldRepeat(applyStep)
 const increaseHandlers = hold.handlers(1)
 const decreaseHandlers = hold.handlers(-1)
 
-/** Down turns away once a step down would pass the field's own minimum (Stepper card: "at the limit the button turns faint"). */
+/** Down turns away once a step down would pass the field's own minimum (Stepper card: "at the limit the button turns
+ * faint"). */
 const decreaseDisabled = computed(() => props.disabled || (props.min !== undefined && currentValue() - stepAmount.value < props.min))
 </script>
 
@@ -145,7 +142,8 @@ const decreaseDisabled = computed(() => props.disabled || (props.min !== undefin
   min-width: 0;
 }
 
-/* A native-spinner-sized column (ticket 181: "up/down" — not the Stepper card's wide − and + — so it fits this narrow sidebar), split into two equal buttons. */
+/* A native-spinner-sized column (ticket 181: "up/down" — not the Stepper card's wide − and + — so it fits this
+ * narrow sidebar), split into two equal buttons. */
 .number-field__stepper {
   display: flex;
   flex: none;

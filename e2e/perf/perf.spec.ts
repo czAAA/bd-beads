@@ -3,21 +3,9 @@ import { copySelection, currentZoomPercent, openApp, openDockSheet, openNewProje
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
-/**
- * The performance check (ticket 103, ADR 0018), run by hand: `npm run perf`. It drives the production build in a real
- * browser at a chosen CPU slowdown and prints how the app holds up at the sizes that matter. Not part of CI, since a
- * shared runner's timings are too noisy to gate on.
- *
- *   PERF_SLOWDOWNS=4,6   the CPU slowdown factors to report at (default 4,6; 4 is a midrange Android tablet or a Core i3
- *                        laptop, "the floor"; 6 is a rougher one)
- *   PERF_SIZES=60x90,... limit the Project sizes (default 60x90,70x250,250x250)
- *   PERF_ONLY=hover,...  limit the interactions (open, hover, paint, select, paste, scroll, zoom, framing)
- *   PERF_TECHNIQUES=...  the Techniques the framing drag is measured in (default loom; loom,peyote,brick for all)
- *
- * Every interaction reports frames per second while it is being done continuously for a couple of seconds (the
- * browser produces a frame only when the main thread is free, so a slow render shows up as few frames), and the main
- * thread's busy milliseconds per frame. "open" and "zoom" are one-off actions, so they report how long one takes.
- */
+// The performance check (ticket 103, ADR 0018), run by hand: `npm run perf`, not in CI (noisy runner timings).
+// Env: PERF_SLOWDOWNS (default 4,6), PERF_SIZES (default 60x90,70x250,250x250), PERF_ONLY, PERF_TECHNIQUES.
+// Reports fps and busy ms per frame for continuous interactions; 'open' and 'zoom' are one-off, so report duration.
 
 const SLOWDOWNS = (process.env.PERF_SLOWDOWNS ?? '4,6').split(',').map(Number)
 const SIZES = (process.env.PERF_SIZES ?? '60x90,70x250,250x250').split(',').map((size) => {
@@ -132,10 +120,8 @@ async function openProject(page: Page, id: string): Promise<void> {
   }
 }
 
-/**
- * The centres of the beads that are on screen right now, in the order a pointer sweeping the page would meet them
- * (row by row): only beads a person could actually point at count, however big the Project is.
- */
+/** The centres of the on-screen beads, row by row as a sweeping pointer would meet them: only beads a person can
+ * point at. */
 function onScreenBeads(
   project: ReturnType<typeof fixtureProject>,
   box: { x: number; y: number; width: number; height: number },

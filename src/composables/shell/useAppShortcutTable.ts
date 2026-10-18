@@ -4,10 +4,8 @@ import { useKeyboardShortcuts, type KeyboardShortcut } from './useKeyboardShortc
 /** What the shortcut table needs from the app shell: the control registry's deps. */
 export type AppShortcutTableDeps = ControlDeps
 
-/**
- * Ticket 94: Enter/Shift+Enter move the Row progress pointer, except when a Progress bar button has focus —
- * otherwise Tab+Enter would both click that button and move the row.
- */
+/** Ticket 94: Enter/Shift+Enter move the Row progress pointer, except on a focused Progress bar button, or Tab+Enter
+ * would do both. */
 function isFocusedOnProgressBarButton(event: KeyboardEvent): boolean {
   const target = event.target
   return (
@@ -17,13 +15,11 @@ function isFocusedOnProgressBarButton(event: KeyboardEvent): boolean {
   )
 }
 
-/**
- * The app's keyboard shortcuts (ADR 0035, ticket 329): the table handed to the generic useKeyboardShortcuts, the only
- * place that composable is called, built from the control registry so a key runs the action its button runs. Deps are
- * read lazily.
- */
+/** The app's keyboard shortcuts (ADR 0035, ticket 329): the table for useKeyboardShortcuts (its only caller), built
+ * from the control registry. Deps are lazy. */
 export function useAppShortcutTable(deps: AppShortcutTableDeps) {
-  /** Withholds a shortcut while a menu or a dialog (anyDialogOpen) is open — same precedence Escape gives those modals. */
+  /** Withholds a shortcut while a menu or a dialog (anyDialogOpen) is open — same precedence Escape gives those
+   * modals. */
   function noModalOpen(): boolean {
     return !deps.hasOpenLayer() && !deps.anyDialogOpen()
   }

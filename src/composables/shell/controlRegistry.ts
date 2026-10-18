@@ -36,7 +36,8 @@ export interface ControlDeps {
   onClearSelection: () => void
   /** Cut (Ctrl+X), Fill and Frame from the Selection (ticket 415). */
   onCut: () => void
-  /** The Paste tool and the Selection bar's Paste button (ticket 447): enter paste mode under Select, stamping nothing. */
+  /** The Paste tool and the Selection bar's Paste button (ticket 447): enter paste mode under Select, stamping
+   * nothing. */
   onPasteMode: () => void
   onFillSelection: () => void
   onFrameFromSelection: () => void
@@ -78,7 +79,8 @@ export type ControlGroup = 'tools' | 'canvas' | 'colors' | 'edit' | 'mirror' | '
 /** The groups the dialog lists, in order; Mirror's is there only while Mirror is on (MIRROR_ENABLED). */
 export const CONTROL_GROUPS: readonly ControlGroup[] = ['tools', 'canvas', 'colors', 'edit', ...(MIRROR_ENABLED ? (['mirror'] as const) : []), 'rowProgress']
 
-/** Whether the action's key runs while a menu or dialog is open: not at all, regardless, or claimed from the browser but not run. */
+/** Whether the action's key runs while a menu or dialog is open: not at all, regardless, or claimed from the browser
+ * but not run. */
 type ModalRule = 'block' | 'ignore' | 'claim'
 
 /** An action that can be disabled says why (ADR 0035): both are given, or neither. */
@@ -95,9 +97,11 @@ export type ControlAction = Disableable & {
   chords: readonly Chord[]
   /** A key the action shows without owning it (Done, Cancel and Clear selection show Back out's `Esc`). */
   shownKey?: string
-  /** The Keyboard shortcuts dialog's wording when it differs from `name` and `chords` (one row for the whole Palette). */
+  /** The Keyboard shortcuts dialog's wording when it differs from `name` and `chords` (one row for the whole
+   * Palette). */
   help?: { name: (t: Translations) => string; keys: readonly (readonly string[])[] }
-  /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. Absent where there is no key: the control's own surface runs it. */
+  /** Runs from a key press: the key is claimed from the browser first when `preventDefault`. Absent where there is
+   * no key: the control's own surface runs it. */
   run?: (deps: ControlDeps, event: KeyboardEvent) => void
   preventDefault?: boolean
   allowWhileTyping?: boolean
@@ -134,7 +138,8 @@ const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefine
 const hasBeads = (deps: ControlDeps) => Object.keys(deps.activeProject()?.beads ?? {}).length > 0
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
-/** One of Edit Frame's margin steppers (ticket 417): an edge a bead out or in, named for its edge. Moving in stops at one bead. */
+/** One of Edit Frame's margin steppers (ticket 417): an edge a bead out or in, named for its edge. Moving in stops
+ * at one bead. */
 const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlAction => ({
   id: `frame-edge-${edge}-${direction}`,
   name: (t) => t.frame[direction === 'out' ? 'edgeOut' : 'edgeIn'][edge],
@@ -153,7 +158,8 @@ const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlActio
 const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, rest: Partial<Disableable> & { body?: ControlAction['body']; icon?: IconName; shownKey?: string } = {}): ControlAction =>
   ({ id, name, group, chords: [], ...rest }) as ControlAction
 
-/** Mirror's actions (ADR 0006): -/= step Left–right, [/] step Top–bottom, M toggles copy mode, H/V are Mirror current. */
+/** Mirror's actions (ADR 0006): -/= step Left–right, [/] step Top–bottom, M toggles copy mode, H/V are Mirror
+ * current. */
 const MIRROR_CONTROLS: readonly ControlAction[] = [
   {
     id: 'mirror-left-right-decrease',
@@ -221,11 +227,8 @@ const MIRROR_CONTROLS: readonly ControlAction[] = [
   unkeyed('pill-mirror', (t) => t.toolbox.groups.mirror, 'mirror', { icon: 'mirror-horizontal' }),
 ]
 
-/**
- * The control registry (ADR 0035, ticket 329): every action with a key, defined once. The keyboard shortcut table is
- * built from it (useAppShortcutTable) so a key always runs what the button runs, and the Keyboard shortcuts dialog
- * lists it. Order is the dialog's order within each group. A test fails if two actions share a key or combination.
- */
+// The control registry (ADR 0035, ticket 329): every action with a key, defined once; the shortcut table and the
+// shortcuts dialog (in this order) are built from it. A test fails if two actions share a key.
 export const CONTROLS: readonly ControlAction[] = [
   selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel, 'tools', (t) => t.tooltips.paint),
   selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel, 'tools', (t) => t.tooltips.fill),
@@ -624,7 +627,8 @@ export function chordSlots(chord: Chord): string[] {
   return modifiers.flatMap((modifier) => shifts.flatMap((shift) => keys.map((key) => `${modifier}+${shift}+${key}`)))
 }
 
-/** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls passes this, not the handlers. */
+/** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
+ * passes this, not the handlers. */
 export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */

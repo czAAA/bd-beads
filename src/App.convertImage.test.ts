@@ -9,13 +9,9 @@ import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
 import { openNewProject } from './testUtils/pill'
 
-/**
- * Convert image end to end through the app shell (ticket 58): the New Project form's file input, the framing step
- * taking the canvas panel over, and the Project it creates.
- *
- * The one thing stubbed is the decode itself — jsdom decodes no image bytes and paints no canvas (see imageDecode.ts),
- * so the picture arrives here as pixel data built by hand, which is exactly what the real adapter would have produced.
- */
+// Convert image end to end through the app shell (ticket 58): the form's file input, the framing step, and the Project
+// it creates. Only the decode is stubbed (jsdom decodes no image bytes, see imageDecode.ts): the picture arrives as
+// hand-built pixel data.
 const decodeState = vi.hoisted(() => ({
   image: undefined as PixelData | undefined,
   error: undefined as Error | undefined,
@@ -47,7 +43,8 @@ function twoBlocks(width = 8, height = 8): PixelData {
   return { width, height, data: new Uint8ClampedArray(rgba.flat()) }
 }
 
-/** Raises the New Project sheet. The form states no size (ticket 342): all it has to settle before a picture is the Bead. */
+/** Raises the New Project sheet. The form states no size (ticket 342): all it has to settle before a picture is the
+ * Bead. */
 async function pickBead(wrapper: ReturnType<typeof mount>, beadId = cubeBead.id) {
   await openNewProject(wrapper)
   await wrapper.find('[data-testid="bead-select"]').setValue(beadId)
@@ -63,7 +60,8 @@ async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', 
   await flushPromises()
 }
 
-/** Starts framing a 15 x 30mm Project (10 x 20 cells in 1.5mm cubes) from the two-block picture, its size stated in the size step. */
+/** Starts framing a 15 x 30mm Project (10 x 20 cells in 1.5mm cubes) from the two-block picture, its size stated in
+ * the size step. */
 async function startFraming(
   wrapper: ReturnType<typeof mount>,
   width = '15',

@@ -10,11 +10,9 @@ import { currentZoomPercent, openApp, openDockSheet, openNewProjectForm, project
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
-/**
- * Ticket 108: with the limit on size gone (ADR 0019), a 70 × 250 bracelet and a 250 × 250 Project can be created,
- * edited, saved, reloaded, exported as a Project file and undone, and a full device still says so and keeps the edit on
- * screen. In a real browser, on the renderer (the default), at the size the Project opens at.
- */
+// Ticket 108: with the size limit gone (ADR 0019), 70 × 250 and 250 × 250 Projects can be created, edited, saved,
+// reloaded, exported and undone, and a full device says so and keeps the edit on screen. Real browser, default
+// renderer.
 const RED = PALETTE.find((color) => color.id === 'red')!.hex
 const SIZES = [
   { columns: 70, rows: 250 },
@@ -22,7 +20,8 @@ const SIZES = [
 ]
 
 async function openSized(page: Page, columns: number, rows: number): Promise<void> {
-  // The New Project form states no size any more (ticket 342): the Project starts saved with its Frame, as one reopened.
+  // The New Project form states no size any more (ticket 342): the Project starts saved with its Frame, as one
+  // reopened.
   await openApp(page, [createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
   await page.getByTestId('project-surface').scrollIntoViewIfNeeded()
@@ -30,7 +29,8 @@ async function openSized(page: Page, columns: number, rows: number): Promise<voi
   await showTopLeft(page)
 }
 
-/** A new Project opens centred on its Frame, which for a tall one is far from its first rows: wheel the canvas to bring them into view. */
+/** A new Project opens centred on its Frame, which for a tall one is far from its first rows: wheel the canvas to
+ * bring them into view. */
 async function showTopLeft(page: Page): Promise<void> {
   const surface = page.getByTestId('project-surface')
   const box = (await surface.boundingBox())!
@@ -124,8 +124,8 @@ for (const { columns, rows } of SIZES) {
 
       await expect(page.getByTestId('save-failed-message')).toBeVisible()
       await settle(page)
-      // The bead is drawn: its centre is the color it was painted. The notice row under the header has pushed the canvas
-      // box down (ticket 141), so the bead is found again where it is now.
+      // The bead is drawn: its centre is the color it was painted. The notice row under the header has pushed the
+      // canvas box down (ticket 141), so the bead is found again where it is now.
       await showTopLeft(page)
       const now = await firstBeadPoint(page, 2, 3)
       const box = (await page.getByTestId('project-surface').boundingBox())!

@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import AppIcon from '../AppIcon.vue'
 
-/**
- * A form field's frame (ticket 149; TextField card, forms-and-states.md): the label above in `control`, 6px to the
- * control, "optional" or a note (the Unit's "≈ 64×48 mm") at the label's right in `meta-small`, a 13/18 `muted` hint
- * under it, and an error in `danger` with the warning icon, saying what to enter. `labelFor` names the control a
- * <label> points at; a group (a SegmentedControl) takes `labelId` instead and is named by it.
- */
+/** A form field's frame (ticket 149): label, optional note, hint and error; `labelFor` names the control, a group
+ * takes `labelId` instead. */
 defineProps<{
   label: string
   labelFor?: string

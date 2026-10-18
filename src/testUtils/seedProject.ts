@@ -5,11 +5,8 @@ import { createProject } from '../domain/project'
 import { saveProjects } from '../services/libraryStore'
 import { openNewProject } from './pill'
 
-/**
- * Saves a Loom Project of Toho Cube 1.5mm beads, sized in mm like the New Project form's
- * first fields, so a test can start from an existing Project without driving the form.
- * The form itself keeps its own flow test.
- */
+/** Saves a Loom Project of Toho Cube 1.5mm beads, sized in mm like the New Project form, to start without driving
+ * the form. */
 export function seedProject(widthMm: number, heightMm: number) {
   const project = createProject({
     technique: 'loom',
@@ -28,10 +25,7 @@ export async function mountWithProject(widthMm: number, heightMm: number, option
   return wrapper
 }
 
-/**
- * Raises the New Project sheet if it is not up, then fills in and submits its form: Toho Cube 1.5mm beads. The form
- * states no size (ticket 342), so this makes a Canvas.
- */
+/** Raises the New Project sheet if needed, then submits Toho Cube 1.5mm beads. The form states no size (ticket 342). */
 export async function createProjectViaForm(wrapper: ReturnType<typeof mount>, name?: string) {
   await openNewProject(wrapper)
   const sheet = wrapper.findAll('[data-testid="bottom-sheet"]').find((candidate) => candidate.find('[data-testid="bead-select"]').exists())!

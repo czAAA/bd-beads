@@ -3,12 +3,8 @@ import { ref } from 'vue'
 import AppIcon from '../AppIcon.vue'
 import type { IconName } from '../icons'
 
-/**
- * A button that opens the system file picker (ticket 149; SwitchAndFileButton card): 40px, a dashed border saying
- * "a file goes here", and on desktop a file can be dropped on it too. The limits are always written under it; while
- * it is off, the reason is written there as well. The <input> keeps the attributes (id, accept, data-testid) and the
- * change listener; a dropped file arrives as `drop-file`.
- */
+/** A button that opens the system file picker (ticket 149): desktop can also drop a file on it (`drop-file`); the
+ * <input> keeps the attributes and change listener. */
 defineOptions({ inheritAttrs: false })
 defineProps<{ label: string; icon?: IconName; disabled?: boolean; disabledReason?: string; limits?: string }>()
 const emit = defineEmits<{ 'drop-file': [file: File] }>()

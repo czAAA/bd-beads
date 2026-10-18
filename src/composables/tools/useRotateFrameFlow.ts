@@ -17,10 +17,8 @@ export interface RotateFrameFlowDeps {
 }
 
 /**
- * Rotate Frame (CONTEXT.md, ticket 471, ADR 0063): the Frame, its keep-out margin and the beads inside both a quarter turn
- * clockwise, as one drawing Edit with Rotate's rules, so Undo brings the Frame and every bead the turn covered back at once.
- * A Message says how many beads outside it covered, with Undo. The Edit chrome is left as it was. Deps are read lazily.
- */
+ * Rotate Frame (ticket 471, ADR 0063): the Frame, its margin and the beads inside a quarter turn, as one drawing Edit so
+ * Undo restores all. A Message says how many beads outside it covered, with Undo. The Edit chrome is left as it was. */
 export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   function onRotateFrame(): void {
     const before = deps.currentProject()

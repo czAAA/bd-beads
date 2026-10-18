@@ -2,10 +2,8 @@ import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-/**
- * contrast.css (ticket 160) reaches into components by their class names, so a renamed class would quietly drop out of
- * high contrast or forced colors. Every class it names has to still be a class some component draws.
- */
+/** contrast.css (ticket 160) names component classes, so every class it names must still be one some component
+ * draws. */
 const here = __dirname
 const sheet = readFileSync(join(here, 'contrast.css'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '')
 

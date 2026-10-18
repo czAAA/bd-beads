@@ -1,8 +1,5 @@
-/**
- * The browser's persistent storage (ticket 399): whether it has already agreed to keep this device's library when space
- * runs short, and asking it to. Every answer is "unknown" where the browser has no such API or refuses, so nothing
- * here ever throws and saving never depends on it.
- */
+// The browser's persistent storage (ticket 399): whether it's granted, and asking for it. Unknown answers where
+// unsupported; never throws.
 export interface PersistentStorage {
   /** Whether the browser already keeps the library; undefined where it can't say. */
   persisted(): Promise<boolean | undefined>

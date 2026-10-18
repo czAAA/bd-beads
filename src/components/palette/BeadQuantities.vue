@@ -8,12 +8,9 @@ import AppNote from '../ui/AppNote.vue'
 import ExpandablePanel from '../ui/ExpandablePanel.vue'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 
-/**
- * Beads needed (ticket 146; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 ×0.0108g≈13 g"
- * (ticket 178: the count × the Bead's average weight ≈ the total) -- omitted, along with the multiplication and total,
- * when the Bead has no known weight. Collapsed it shows the three most-needed colors (swatch, name, count, weight);
- * expanded, every color. Under them, always, a Note (ticket 328) says where the weight comes from. The rows stay a table, with its column headings for screen readers only.
- */
+// Beads needed (tickets 146, 178; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 ×0.0108g≈13 g"
+// (weight omitted when the Bead has none). Collapsed it shows the three most-needed colors, expanded every color;
+// a Note (ticket 328) says where the weight comes from. The rows stay a table, headings for screen readers only.
 const props = defineProps<{
   /** The Project whose bead counts are shown; without one the box just asks for a Project to be opened. */
   project?: Project
@@ -21,21 +18,22 @@ const props = defineProps<{
 
 const { t, locale } = useI18n()
 
-// Read from the Project itself, not through the library's reactive wrapper: a Project is replaced whole by every edit, so
-// its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is slow.
+// Read from the Project itself, not through the library's reactive wrapper: a Project is replaced whole by every edit,
+// so its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is
+// slow.
 const quantities = computed(() => (props.project ? computeColorQuantities(toRaw(props.project)) : []))
 
-/** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for five rows before expanding. */
+/** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for five rows before
+ * expanding. */
 const isDesktop = useMediaQuery('(min-width: 1920px)')
 
-/** How many rows the collapsed summary holds (BeadsNeeded card: 3 rows of 32px, a 96px body; 5 rows, 160px, at the 24" tier). */
+/** How many rows the collapsed summary holds (BeadsNeeded card: 3 rows of 32px, a 96px body; 5 rows, 160px, at the
+ * 24" tier). */
 const summaryRows = computed(() => (isDesktop.value ? 5 : 3))
 const collapsedHeight = computed(() => (isDesktop.value ? 'var(--panel-body-height-desktop)' : 'var(--panel-body-height)'))
 
-/**
- * Estimated weight (ticket 155, CONTEXT.md): count × the Bead's average weight of one bead, worked out here and never
- * stored. A Project whose Bead is unknown or has no weight gets no weight column at all, rather than zeros.
- */
+/** Estimated weight (ticket 155, CONTEXT.md): count × average bead weight, never stored; no weight column if the
+ * Bead has none. */
 const gramsPerBead = computed(() => (props.project ? resolveProjectBead(props.project)?.gramsPerBead : undefined))
 
 function weightOf(count: number): string | undefined {
@@ -43,12 +41,9 @@ function weightOf(count: number): string | undefined {
   return grams === undefined ? undefined : formatGrams(grams, t.value.quantities.gramsUnit, locale.value)
 }
 
-/**
- * The Bead's average weight of one bead (ticket 178's header), in the language's own decimal sign (writing.md).
- * Shown at full precision, not rounded like formatGrams's total: the catalog's per-bead weights already sit close
- * together (0.0108g, 0.0091g, 0.005g), and rounding them to formatGrams's one or two decimals would collapse them
- * to the same value, breaking the header's own count × average = total arithmetic.
- */
+// The Bead's average weight of one bead (ticket 178's header), in the language's decimal sign. Shown at full precision,
+// not rounded like formatGrams's total: the catalog's weights sit close together (0.0108g, 0.0091g), so rounding would
+// collapse them and break the header's count × average = total arithmetic.
 const avgWeightLabel = computed(() => {
   const grams = gramsPerBead.value
   return grams === undefined ? undefined : `${String(grams).replace('.', decimalSign(locale.value))}${t.value.quantities.gramsUnit}`
@@ -200,7 +195,8 @@ const expanded = ref(false)
   color: var(--muted);
 }
 
-/* Ticket 450: the canvas box is 12px narrower each side, so on a phone the weight column gives up its reserved width (a table column is as wide as its widest cell anyway). */
+/* Ticket 450: the canvas box is 12px narrower each side, so on a phone the weight column gives up its reserved width
+ * (a table column is as wide as its widest cell anyway). */
 @media (max-width: 30rem) {
   .bead-quantities__grams {
     min-width: 0;

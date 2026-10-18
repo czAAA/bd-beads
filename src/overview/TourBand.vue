@@ -9,11 +9,9 @@ import { spaceOf } from '../rendering/space'
 import { useResolvedTheme } from '../theme/useResolvedTheme'
 import { displayedExtentPx } from '../rendering/surfaceView'
 
-/**
- * The Tour Project lying across the Overview as a band on its `board`, no ruler (ticket 216; Overview card). Drawn by
- * the real Project renderer, so a bead looks as it does in the editor; it takes only the renderer and the theme, not the
- * editor. Turned a quarter so its 75 rows run left to right, row 1 at the left.
- */
+// The Tour Project lying across the Overview as a band on its `board`, no ruler (ticket 216; Overview card). Drawn by
+// the real Project renderer, taking only it and the theme. Turned a quarter so its 75 rows run left to right, row 1 at
+// the left.
 const PROJECT: DrawnProject = {
   technique: 'loom',
   ...framedGrid(tourFinishedGrid()),

@@ -8,13 +8,9 @@ import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
-/**
- * The canvas box's header strip (ticket 143, ADR 0055; CanvasStrip card): Menu and Project (icon + text, ticket 431),
- * then the canvas's own controls, Rotate canvas (ticket 471) · Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit (the Canvas color moved into
- * Project, ticket 443). Menu is always there; Project only with a Project open. It names nothing: no title, size line or
- * hint. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. At phone width
- * Menu and Project stay put and the middle scrolls sideways, with touch-sized buttons.
- */
+// The canvas box's header strip (ticket 143, ADR 0055; CanvasStrip card): Menu and Project (ticket 431), then Rotate
+// (ticket 471) · Rulers · Undo · Redo · zoom out/%/in · Fit. Names nothing (no title or hint). While framing a picture
+// (Convert image) it holds Menu and the framing zoom. On phone the middle scrolls sideways; Menu and Project stay put.
 const props = defineProps<{
   project?: Project
   /** The open sheet, so Menu and Project show lit while theirs is open. */

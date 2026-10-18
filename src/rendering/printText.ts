@@ -16,20 +16,15 @@ interface PrintedColor {
   grams?: string
 }
 
-/**
- * Everything the PDF and PNG print, worked out in words before anything is drawn (tickets 162, 164): the drawing only
- * places these strings. In the app's language; the maker's name is left out when empty (printed-output.md).
- */
+// Everything the PDF and PNG print, worked out as words before drawing (tickets 162, 164); maker's name omitted when
+// empty.
 export interface PrintText {
   locale: Locale
   name: string
   techniqueWord: string
   maker: string
-  /**
-   * What the background watermark reads (ticket 182): the maker's name alone, same as `maker` — unless this Project
-   * overrides the device-wide maker's name, in which case its own name joins it, since a name set just for this
-   * Project is worth telling apart from the rest of the maker's exports.
-   */
+  // Background watermark text (ticket 182): the maker's name, plus this Project's own name when it overrides the
+  // device-wide one.
   background: string
   /** "Sep 26, 2026 · 14:32" */
   exportedAt: string

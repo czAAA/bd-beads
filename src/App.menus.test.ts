@@ -8,10 +8,8 @@ import { en } from './i18n/en'
 import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
 import { openChoice, openSheet } from './testUtils/pill'
 
-/**
- * Menu and Project (spec 0440, ticket 443): one happy path per flow. As every test starts the page is under 1024px, so
- * both open as a Top sheet; the dropdown from 1024px is the one test that says so.
- */
+/** Menu and Project (spec 0440, ticket 443): one happy path per flow; under 1024px both open as a Top sheet, one
+ * test covers the dropdown. */
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 10, height: 10, unit: 'beads' } })
 

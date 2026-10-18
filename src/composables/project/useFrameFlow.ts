@@ -25,16 +25,14 @@ type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Frame }
   | { kind: 'resize'; edges: FrameEdge[]; start: Frame }
 
-/**
- * Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle on the Frame switches its handles and margin
- * steppers on and off; it is on whenever a Frame is made or a Project opens, kept for the session only, and off while Row
- * progress has started (ticket 411), which still lets the Move handle carry the Frame with its beads (ticket 452). Every
- * resize is one Undo step that never touches a bead, and is announced.
- */
+// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle shows handles and steppers; on by
+// default per session, off once Row progress has started (ticket 411), though Move still carries the Frame with its
+// beads (ticket 452). Each resize is one announced Undo step that touches no bead.
 export function useFrameFlow(deps: FrameFlowDeps) {
   /** The weaver's choice on the edit toggle; true until they turn it off. Never saved. */
   const editOn = ref(true)
-  /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its beads. */
+  /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its
+   * beads. */
   const draft = ref<{ frame: Frame; move?: { rows: number; columns: number } } | undefined>()
   let gesture: Gesture | undefined
   /** How far the Move handle has been dragged, in whole beads. */
@@ -58,7 +56,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
   const settingFrame = computed(() => !!deps.currentProject()?.frame && editOn.value && !locked.value)
 
-  // Edit is on again whenever a Frame is made or a Project opens, and when Row progress is reset after having locked it.
+  // Edit is on again whenever a Frame is made or a Project opens, and when Row progress is reset after having locked
+  // it.
   watch(
     [() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame, locked],
     () => {
@@ -95,7 +94,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return true
   }
 
-  /** Weaves the open Project in another Technique (ticket 351): the grid, the beads and the Frame stay, one Undo step. */
+  /** Weaves the open Project in another Technique (ticket 351): the grid, the beads and the Frame stay, one Undo
+   * step. */
   function setTechnique(technique: Technique): void {
     const outcome = deps.edit('frame', (project) => changeFrame(project, { technique }))
     if (outcome.kind !== 'applied') return
@@ -122,7 +122,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       draft.value = { frame: frameWithEdges(project.technique, gesture.start, gesture.edges, cell) }
     } else {
       const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
-      // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left alone.
+      // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left
+      // alone.
       if (draft.value && next.rows === moved.rows && next.columns === moved.columns) return
       moved = next
       draft.value = { frame: movedFrame(project.technique, gesture.start, next.rows, next.columns), move: next }
@@ -145,13 +146,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     draft.value = undefined
   }
 
-  /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo step. */
+  /** The Move handle's change (ticket 452): the Frame and its beads by whole rows and columns, one announced Undo
+   * step. */
   function moveBy(rows: number, columns: number): void {
     const outcome = deps.edit('frame', (project) => changeFrame(project, { move: { rows, columns } }))
     if (outcome.kind === 'applied') deps.announce(deps.messages().frame.announceMoved)
   }
 
-  /** A margin stepper's press (ticket 417): one edge a bead out (1) or in (-1), one Undo step; a step that would empty the Frame is none. */
+  /** A margin stepper's press (ticket 417): one edge a bead out (1) or in (-1), one Undo step; a step that would
+   * empty the Frame is none. */
   function stepEdge(edge: FrameEdge, step: 1 | -1): void {
     const project = deps.currentProject()
     if (!project?.frame || locked.value) return
@@ -159,11 +162,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (next !== project.frame) commit(next)
   }
 
-  /**
-   * Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle, one Undo step, and edit is on for it (ticket 452).
-   * A Selection of a named Piece frames that Schema (ticket 407): the Frame snaps to
-   * it, and where rows alternate starts on an even row. With a Frame already set it moves the Frame there.
-   */
+  // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step, edit on. A named Piece's
+  // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407); with a Frame already
+  // set, it moves it there.
   function setTo(frame: Frame): void {
     const project = deps.currentProject()
     const top = project ? snapRow(project.technique, frame.row) : frame.row
@@ -178,7 +179,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 
-  /** Whether the Remove frame confirmation is open: always asked first: the passes go with the Frame (tickets 426, 455). */
+  /** Whether the Remove frame confirmation is open: always asked first: the passes go with the Frame (tickets 426,
+   * 455). */
   const removeConfirmOpen = ref(false)
 
   /** Remove Frame: asks first (ticket 455). */
@@ -197,7 +199,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     commit(undefined)
   }
 
-  /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it from its bottom-right. Whether the key was used. */
+  /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it
+   * from its bottom-right. Whether the key was used. */
   function onKey(event: KeyboardEvent): boolean {
     const steps: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }
     const step = steps[event.key]
@@ -218,7 +221,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   return {
     settingFrame,
-    /** The Project as the canvas draws it while a drag has not committed: a Move drag shows the beads travelling too, exactly as the release will leave them. */
+    /** The Project as the canvas draws it while a drag has not committed: a Move drag shows the beads travelling
+     * too, exactly as the release will leave them. */
     draftProject,
     frameLocked: locked,
     editOn,

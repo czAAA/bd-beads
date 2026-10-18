@@ -2,15 +2,9 @@
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 
-/**
- * The open Project's Image colors (CONTEXT.md, ADR 0011) as swatches in the Colors group, alongside the Palette: the
- * colors one Convert image found, so a converted Project can actually be touched up instead of offering only twelve
- * Palette colors none of its beads are.
- *
- * Deliberately the same shape and selection behaviour as PalettePicker, just keyed by hex rather than by a Palette
- * color id — a converted color has no id, it is only ever the hex the conversion produced. A Project created any other
- * way has no Image colors and this isn't rendered at all.
- */
+// The open Project's Image colors (CONTEXT.md, ADR 0011) as swatches beside the Palette, so a converted Project can be
+// touched up. Same shape and selection as PalettePicker but keyed by hex (a converted color has no id); not rendered
+// for a Project without Image colors.
 defineProps<{
   colors: readonly string[]
   /** The Image color being painted with right now, if any — mutually exclusive with a Palette or Custom color. */
@@ -46,7 +40,8 @@ const { t } = useI18n()
 </template>
 
 <style scoped>
-/* The popover's grid (ColorPickers card): seven columns of square swatches, the chosen one ringed like a Palette swatch. */
+/* The popover's grid (ColorPickers card): seven columns of square swatches, the chosen one ringed like a Palette
+ * swatch. */
 .image-colors-picker {
   --swatch-size: var(--image-color-size);
   --swatch-gap: var(--overlay-fill);

@@ -21,21 +21,17 @@ export interface KeyboardCursorDeps {
   settingFrame?: () => boolean
 }
 
-/**
- * Painting with the keyboard (tickets 159, 194; ADR 0020; BeadCursor card). The Project is one Tab stop with a bead
- * cursor: arrows move it, Shift + arrows extend a Selection, Home / End go to the row's ends, Page Up / Down move ten
- * rows, Space or Enter uses the current tool through the same handlers (and undo history) as a pointer press, and Escape
- * leaves. The cursor shows only after keyboard focus, and one polite announcement follows each action.
- */
+// Painting with the keyboard (tickets 159, 194; ADR 0020; BeadCursor card): the Project is one Tab stop with a bead
+// cursor that uses the tool through the same handlers and undo history as a pointer press; shown only after keyboard
+// focus, with one polite announcement per action.
 export function useKeyboardCursor(deps: KeyboardCursorDeps) {
   const beadCursor = ref<GridPosition>({ row: 0, column: 0 })
   const keyboardOnProject = ref(false)
-  /** The cursor is drawn only with keyboard focus on the Project, once it has been put somewhere, and not during Set Frame. */
+  /** The cursor is drawn only with keyboard focus on the Project, once it has been put somewhere, and not during Set
+   * Frame. */
   const cursorShown = computed(() => keyboardOnProject.value && cursorRevealed.value && !deps.settingFrame?.())
-  /**
-   * False after Set Frame switches on or off until a key puts the cursor somewhere (ticket 354): it must not come back
-   * on whatever bead it last rested on.
-   */
+  /** False after Set Frame switches on or off until a key places the cursor (ticket 354), so it doesn't return to
+   * its last bead. */
   const cursorRevealed = ref(true)
   /** Hides the cursor until a key puts it somewhere again: the app calls this whenever Set Frame switches on or off. */
   function hideCursor() {
@@ -58,7 +54,8 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
         const start = project.frame ?? beadBounds(project.beads)
         beadCursor.value = { row: start?.row ?? 0, column: start?.column ?? 0 }
       }
-      // F focuses the Project for Set Frame's arrows: the cursor stays hidden, so nothing to reveal, hover or announce (ticket 286).
+      // F focuses the Project for Set Frame's arrows: the cursor stays hidden, so nothing to reveal, hover or announce
+      // (ticket 286).
       if (deps.settingFrame?.()) return
       placeCursor()
       deps.reveal(beadCursor.value)
@@ -87,7 +84,8 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     deps.announceCursor()
   }
 
-  /** Where a row begins and ends for Home and End: across the Frame when there is one, otherwise from its first bead to its last (the cursor stays put on an empty row). */
+  /** Where a row begins and ends for Home and End: across the Frame when there is one, otherwise from its first bead
+   * to its last (the cursor stays put on an empty row). */
   function rowEnds(project: Project, row: number): { first: number; last: number } {
     if (project.frame) {
       return { first: project.frame.column, last: project.frame.column + project.frame.columns - 1 }

@@ -7,16 +7,9 @@ import { OPEN_SPACE } from '../rendering/space'
 import type { RulerLabel } from '../rendering/rulers'
 import { surfaceView } from '../rendering/surfaceView'
 
-/**
- * Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109 and 110). The surface is one
- * element and jsdom does no layout, so a bead is found the way a person's pointer finds it: by where it is. These put a
- * pointer event at the coordinates of a bead, which the surface then hit-tests exactly as it does for a real pointer
- * (see the Surface view's pointToBead), and read what the app did from the state it draws from: the Project, the Selection, the
- * hover preview, Mirror's axes and the dimmed beads are the props the surface is handed.
- *
- * A bead is named by its row and column, or by its index counting along the rows (row-major), which is how a grid of
- * elements was indexed and how most of the tests that used one count.
- */
+// Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109, 110). jsdom does no layout, so
+// a bead is found by its coordinates and hit-tested as for a real pointer (Surface view's pointToBead); results are
+// read from the props the surface is handed. A bead is named by row and column, or by row-major index.
 export type BeadAt = number | GridPosition
 
 type Anywhere = VueWrapper<never> | VueWrapper
@@ -47,7 +40,8 @@ function positionOf(wrapper: Anywhere, at: BeadAt): GridPosition {
   return { row: Math.floor(at / columns), column: at % columns }
 }
 
-/** Where a bead's centre is in the page, for a surface at the corner of it, whichever Technique, zoom, rotation and scroll. */
+// Where a bead's centre is in the page, for a surface at the corner of it, whichever Technique, zoom, rotation and
+// scroll.
 function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: number } {
   const root = surfaceRoot(wrapper)
   const technique = root.attributes('data-technique') as Technique
@@ -61,7 +55,8 @@ function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: n
   return { clientX: point.x, clientY: point.y }
 }
 
-/** Presses a bead: the left button by default, `{ button: 2 }` for the right. Whether the press is released is up to the test, as it is up to a hand. */
+// Presses a bead: the left button by default, `{ button: 2 }` for the right. Whether the press is released is up to the
+// test, as it is up to a hand.
 export async function pressBead(wrapper: Anywhere, at: BeadAt, options: { button?: number; pointerType?: string } = {}): Promise<void> {
   const button = options.button ?? 0
   await surfaceRoot(wrapper).trigger('pointerdown', {
@@ -73,7 +68,8 @@ export async function pressBead(wrapper: Anywhere, at: BeadAt, options: { button
   })
 }
 
-/** Moves the pointer onto a bead, with a button held to continue a stroke (`{ buttons: 1 }`) or none for a plain hover. */
+/** Moves the pointer onto a bead, with a button held to continue a stroke (`{ buttons: 1 }`) or none for a plain
+ * hover. */
 export async function hoverBead(wrapper: Anywhere, at: BeadAt, options: { buttons?: number; pointerType?: string } = {}): Promise<void> {
   await surfaceRoot(wrapper).trigger('pointermove', {
     ...beadPoint(wrapper, at),
@@ -116,7 +112,8 @@ export function selectedBeadCount(wrapper: Anywhere): number {
   )
 }
 
-/** The beads a hover preview shows a color on, each with the color it shows (a pasted block's own, or the paint color); a bead with none is drawn as a plain outline and is left out. */
+// The beads a hover preview shows a color on, each with the color it shows (a pasted block's own, or the paint color);
+// a bead with none is drawn as a plain outline and is left out.
 export function previewedBeads(wrapper: Anywhere): (GridPosition & { color: string })[] {
   const cells: PreviewCell[] = surface(wrapper).props('previewCells') ?? []
   const fallback = surface(wrapper).props('previewColor')
@@ -136,7 +133,8 @@ export function dimmedBeads(wrapper: Anywhere): GridPosition[] {
   return surface(wrapper).props('dimmedCells') ?? []
 }
 
-/** How far the weaver has got, as the surface draws it: the rows (or columns) behind the pointer are finished, dimmed; the one at it is outlined. */
+// How far the weaver has got, as the surface draws it: the rows (or columns) behind the pointer are finished, dimmed;
+// the one at it is outlined.
 export function rowProgressView(wrapper: Anywhere) {
   const project = drawnProject(wrapper)
   const enabled = rowProgressOn(project)
@@ -150,10 +148,8 @@ export function rulerNumbers(wrapper: Anywhere): RulerLabel[] {
   return surface(wrapper).vm.rulerLayout.labels
 }
 
-/**
- * Presses the number of a row or column on a ruler, as a pointer does: `index` counts from the first (0), and `edge` is
- * the side it is on — the left or top ruler (start) or the right or bottom one (end), which only a Frame has.
- */
+// Presses a row or column number on a ruler: `index` counts from 0, `edge` is start (left/top) or end (right/bottom,
+// Frame only).
 export async function pressRulerNumber(wrapper: Anywhere, axis: 'row' | 'column', index: number, edge: 'start' | 'end' = 'start'): Promise<void> {
   const matches = rulerNumbers(wrapper)
     .filter((label) => label.axis === axis && label.index === index)

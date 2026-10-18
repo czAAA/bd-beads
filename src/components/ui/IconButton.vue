@@ -7,21 +7,9 @@ import AppTooltip from './AppTooltip.vue'
 import { actionKey, type ControlActionLike } from './controlAction'
 import type { IconName, IconSize } from './icons'
 
-/**
- * The one icon-only button (tickets 157, 330; Button card): `square` (34 × 34, radius 8: Turn row direction) or `round`
- * (radius full: Keyboard shortcuts), in the secondary, in-box, toolbox or canvas-box (`box`) look, `plain` (30px, no fill:
- * the canvas strip's zoom buttons) or `pill` (one 40px tile of the Tool pill, ticket 439: a 22px icon, `selected` and `accent` for the active tool) or `tool` (a Tool tab: a 34px icon in a 56 × 72 cell, selected by a 2px accent
- * underline). Its accessible name is `label`. Attributes and listeners (data-testid, @click) go to the <button> itself,
- * not the tooltip around it.
- *
- * It shows a Tooltip exactly when it is given one (ADR 0035): `tooltip` (`true` for the name alone, or a `body` and
- * `placement`) or an `action` from the control registry, which supplies the name, body, key chip, enabled state and the
- * reason it is disabled (`deps` is what the action's `enabled` reads). `hotkey` is the single key a `tool` prints as a
- * badge when `showHotkey` is set.
- *
- * A disabled button (ticket 327) is `aria-disabled`, not natively disabled, so it stays hoverable and focusable and a
- * click does nothing. Its Tooltip says why (`disabledBody`); a disabled button given no reason shows no Tooltip.
- */
+// The one icon-only button (tickets 157, 330, 327, 439; ADR 0035): `label` is its name; a Tooltip shows only when given
+// one or an `action`. A disabled one is `aria-disabled` (stays hoverable and focusable), its Tooltip saying why
+// (`disabledBody`).
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
@@ -45,7 +33,8 @@ const props = withDefaults(
     shortcut?: string
     /** Why the button is disabled, shown by its Tooltip in place of the key chip. */
     disabledBody?: string
-    /** The single key printed as a badge by the `tool` variant when `showHotkey` is set; also its Tooltip's key chip. */
+    /** The single key printed as a badge by the `tool` variant when `showHotkey` is set; also its Tooltip's key
+     * chip. */
     hotkey?: string
     showHotkey?: boolean
     /** Gives the button a Tooltip: `true` for its name alone, or the body and side to show it on. */
@@ -205,7 +194,8 @@ function swallowClick(event: MouseEvent) {
   outline-offset: var(--focus-offset);
 }
 
-/* A Tool pill tile (ToolPill card): 40px, radius-lg, a 22px icon in `muted`; the active tool sits on `panel` with its icon in `accent`. */
+/* A Tool pill tile (ToolPill card): 40px, radius-lg, a 22px icon in `muted`; the active tool sits on `panel` with
+ * its icon in `accent`. */
 .icon-btn-wrap--pill {
   flex: none;
 }

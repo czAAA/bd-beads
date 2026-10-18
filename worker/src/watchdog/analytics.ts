@@ -41,15 +41,9 @@ function requireVar(value: string | undefined, name: string): string {
   return value
 }
 
-/**
- * Cloudflare's GraphQL Analytics API, with a read-only Account Analytics token (spec 385). Production counts requests,
- * D1 rows written and R2 storage account-wide, the limits it shares with dev; dev counts only its own Worker,
- * databases and bucket. Each counts only its own Worker's errors (crashes and CPU over the limit). GraphQL counts a
- * little more than Cloudflare bills, so it errs towards warning early.
- *
- * Checked against the real API on Workers Free in ticket 71 step A2 (`docs/operations.md`): all three datasets are
- * served, with these fields and filters, for up to 32 days at a time and 90 days back.
- */
+/** Cloudflare's GraphQL Analytics API, read-only token (spec 385). Production counts account-wide requests, D1 rows
+ * written and R2 storage (limits shared with dev); dev counts only its own. GraphQL counts a little more than
+ * Cloudflare bills, so it warns early. Verified on Workers Free (ticket 71 step A2, `docs/operations.md`): 32 days. */
 export function graphqlUsageReader(env: Env): UsageReader {
   return {
     async read(since, until) {

@@ -5,27 +5,26 @@ import { carryNames, namedPieceCutBy } from './pieceNames'
 import { rowProgressStarted, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
-/**
- * The one operation behind every change of the Frame (ticket 361): Set Frame, moving and resizing it, Fit to drawing,
- * Remove Frame and Remove row/column. It owns the rules such a change keeps, so no flow assembles them itself:
- * Row progress's lock (once a pass is done; only Remove Frame passes it, clearing the passes), Row progress following the
- * Frame and its pointers ending inside the new Frame. Beads that end up in the keep-out margin stay where they are,
- * covered by it.
- */
+// The one operation behind every change of the Frame (ticket 361): Set Frame, move, resize, Fit to drawing, Remove
+// Frame and Remove row/column. It owns the rules: Row progress's lock (only Remove Frame passes it, clearing the
+// passes), Row progress following the Frame. Beads left in the keep-out margin stay, covered.
 export type FrameChange =
   /** Set Frame, moving it, resizing it and Fit to drawing all reduce to this. */
   | { set: Frame }
   | { remove: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
-  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0062); allowed after Row progress has started, which then travels with the Frame. */
+  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0062); allowed after Row progress has
+   * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
-  /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and column. */
+  /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and
+   * column. */
   | { technique: Technique }
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
-  /** Row progress is on and a pass is done: the passes belong to the Frame, which any change would alter (ADR 0026, ticket 411). */
+  /** Row progress is on and a pass is done: the passes belong to the Frame, which any change would alter (ADR 0026,
+   * ticket 411). */
   | 'locked'
   /** Remove line needs a Frame to act on. */
   | 'no-frame'
@@ -33,7 +32,8 @@ export type FrameChangeRefusal =
   | 'no-line'
   /** The Frame has only the one row or column asked for, and a Frame is never empty. */
   | 'only-line'
-  /** The new Frame would cut through a named Piece (an unframed Schema), which it must take whole or leave whole (ticket 407). */
+  /** The new Frame would cut through a named Piece (an unframed Schema), which it must take whole or leave whole
+   * (ticket 407). */
   | 'cuts-schema'
 
 export type FrameChangeResult =
@@ -42,10 +42,8 @@ export type FrameChangeResult =
   | { kind: 'unchanged'; project: Project }
   | { kind: 'changed'; project: Project }
 
-/**
- * Whether the change throws away finished passes: only Remove Frame once a pass is done, as the passes go with the Frame
- * (ticket 434, ADR 0055). The one place that rule lives; the Remove frame flow asks it before showing its confirmation.
- */
+// Whether the change throws away finished passes: only Remove Frame once a pass is done, as the passes go with the
+// Frame (ticket 434, ADR 0055). The one place that rule lives; the Remove frame flow asks it before confirming.
 export function frameChangeDiscardsProgress(project: Project, change: FrameChange): boolean {
   return 'remove' in change && rowProgressStarted(project)
 }
@@ -120,7 +118,8 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   return { kind: 'changed', project: withFrame(project, next) }
 }
 
-/** Where a position goes when one line of `area` is taken out and the area's later beads shift up or left; undefined for a position on the removed line. */
+/** Where a position goes when one line of `area` is taken out and the area's later beads shift up or left; undefined
+ * for a position on the removed line. */
 export function shiftedByLine(area: Frame, line: AreaLine, position: GridPosition): GridPosition | undefined {
   if (!frameContains(area, position)) {
     return position
@@ -138,7 +137,8 @@ export function shiftedByLine(area: Frame, line: AreaLine, position: GridPositio
   return position
 }
 
-/** The Project's beads with one line of `area` taken out and the area's later beads shifted up or left to close the gap. */
+/** The Project's beads with one line of `area` taken out and the area's later beads shifted up or left to close the
+ * gap. */
 export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): BeadMap {
   const result: BeadMap = {}
   forEachBead(beads, (row, column, color) => {
@@ -152,10 +152,8 @@ export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): B
   return result
 }
 
-/**
- * The beads after the Frame moves from `from` to `to`: its beads travel with it, overwriting everything under the
- * destination (held margin beads included), and the cells it left are emptied. Beads in the margin elsewhere stay.
- */
+// The beads after the Frame moves from `from` to `to`: its beads travel with it, overwriting everything under the
+// destination (held margin beads included), and the cells it left are emptied. Beads in the margin elsewhere stay.
 function beadsWithFrameMoved(beads: BeadMap, from: Frame, to: Frame): BeadMap {
   const result: BeadMap = {}
   forEachBead(beads, (row, column, color) => {

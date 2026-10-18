@@ -5,12 +5,9 @@ import MenuButton from '../ui/MenuButton.vue'
 import ImageColorsPicker from './ImageColorsPicker.vue'
 import { useCloseSheetOnPick } from '../shell/sheetContext'
 
-/**
- * The Image colors button (ticket 151; ColorPickers card): a MenuButton that opens a popover under it with the colors
- * Convert image found as a 7-column grid. Choosing one, Escape or a press outside closes it, and Escape hands focus
- * back to the button. A Project with no Image colors leaves the button `faint`, saying why in its Tooltip; it stays
- * focusable so that reason can be read.
- */
+// The Image colors button (ticket 151; ColorPickers card): a MenuButton opening a popover with the colors Convert image
+// found, as a 7-column grid. Choosing one, Escape or a press outside closes it. With none it is `faint` but stays
+// focusable so its Tooltip can say why.
 const props = defineProps<{
   colors?: readonly string[]
   selectedColor?: string

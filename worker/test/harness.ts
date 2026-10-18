@@ -5,14 +5,9 @@ import { build } from 'esbuild'
 import { Miniflare, type Request as MiniflareRequest } from 'miniflare'
 import { unstable_readConfig, unstable_splitSqlQuery } from 'wrangler'
 
-/**
- * Runs the Worker in workerd through Miniflare 4 with local D1 and R2, configured from the repo's own
- * `wrangler.jsonc` for the chosen environment (its variables, databases, bucket and assets rule are under test too).
- * Miniflare is used directly: `@cloudflare/vitest-pool-workers` supports Vitest 4 only, and Wrangler's own Miniflare
- * is a version 5 alpha (docs/testing.md). Wrangler is used only to read the config and split the migrations. Tests
- * drive the Worker black-box, over HTTP and `scheduled()`, and see its outbound calls (Turnstile, GraphQL Analytics,
- * Healthchecks) in `outbound`, answered by `reply`.
- */
+/** Runs the Worker in workerd via Miniflare 4 with local D1 and R2, configured from the repo's `wrangler.jsonc`.
+ * Miniflare is used directly: `@cloudflare/vitest-pool-workers` supports Vitest 4 only (docs/testing.md). Tests drive
+ * it black-box over HTTP and `scheduled()`, seeing outbound calls in `outbound`, answered by `reply`. */
 const root = resolve(import.meta.dirname, '../..')
 
 /** A call the Worker made to the outside (Turnstile, GraphQL Analytics, Healthchecks), as the harness caught it. */
@@ -55,7 +50,8 @@ export interface RunningWorker {
 /** The Worker's origin in the tests; a changing request must name it in `Origin`. */
 export const ORIGIN = 'http://localhost'
 
-/** The parts of one environment of `wrangler.jsonc` the harness reads (Wrangler's own type for it is too loose here). */
+/** The parts of one environment of `wrangler.jsonc` the harness reads (Wrangler's own type for it is too loose
+ * here). */
 interface WranglerEnvironment {
   compatibility_date?: string
   compatibility_flags: string[]

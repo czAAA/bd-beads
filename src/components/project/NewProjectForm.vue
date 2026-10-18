@@ -33,16 +33,11 @@ const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
-    /**
-     * How a chosen picture is turned into pixels (ticket 58). The app shell hands over the browser's own decoding
-     * (ADR 0020); a test hands over synthetic pixel data instead, since jsdom decodes no image bytes.
-     */
+    // How a chosen picture is turned into pixels (ticket 58): the app shell hands over the browser's decoding (ADR
+    // 0020); a test hands over synthetic pixel data, since jsdom decodes no image bytes.
     decodeImage: DecodeImage
-    /**
-     * The per-Technique cell-count thresholds the slow-framing hint (ticket 61) compares the current grid against.
-     * Defaults to the real thresholds; a test overrides them to exercise the per-Technique lookup without the three
-     * real constants having to differ from each other.
-     */
+    // Per-Technique cell-count thresholds for the slow-framing hint (ticket 61). Defaults to the real ones; a test
+    // overrides them to exercise the lookup without the real constants having to differ.
     slowFramingCellThresholds?: Record<Technique, number>
   }>(),
   {
@@ -52,10 +47,8 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   submit: [payload: CreateProjectInput]
-  /**
-   * The form's current values, emitted whenever any of them change (and once on mount). Convert image's frame is sized
-   * from these, and follows them as they are edited during framing (ticket 58).
-   */
+  // The form's current values, emitted on any change (and once on mount). Convert image's frame is sized from these and
+  // follows them as they are edited during framing (ticket 58).
   draft: [payload: CreateProjectInput]
   /** A picture that passed validation and decoded — the framing step's starting point. */
   'convert-image': [image: PixelData]
@@ -66,7 +59,8 @@ const beadId = ref(BEAD_CATALOG[0]!.id)
 const technique = ref<Technique>('loom')
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
-/** The Tour's "Back to loom for your first Project" (ticket 80): Loom and the default Bead, with the Name left as typed. */
+/** The Tour's "Back to loom for your first Project" (ticket 80): Loom and the default Bead, with the Name left as
+ * typed. */
 const tourReset = useTourFormReset()
 if (tourReset) {
   watch(tourReset, () => {
@@ -78,10 +72,12 @@ if (tourReset) {
 /** The form's own root, so the Name input can be found and focused without a global id lookup (ticket 181). */
 const formEl = ref<HTMLFormElement>()
 
-/** Focused and its text selected as soon as the form opens (ticket 181), to encourage naming — scoped to this form's own root, since a phone and a wider tier can both have one mounted at once (one hidden by CSS). */
+/** Focused and its text selected as soon as the form opens (ticket 181), to encourage naming — scoped to this form's
+ * own root, since a phone and a wider tier can both have one mounted at once (one hidden by CSS). */
 onMounted(() => {
   const input = formEl.value?.querySelector<HTMLInputElement>('#name-input')
-  // preventScroll: a focus met before the sheet is placed must not scroll the app shell's clipped ancestors, which nothing scrolls back and which hides the Canvas strip (iPad Safari, first New Project after a load).
+  // preventScroll: a focus met before the sheet is placed must not scroll the app shell's clipped ancestors, which
+  // nothing scrolls back and which hides the Canvas strip (iPad Safari, first New Project after a load).
   input?.focus({ preventScroll: true })
   input?.select()
 })
@@ -108,7 +104,8 @@ function currentInput(): CreateProjectInput {
 /** The size Convert image's size step was given; only the framing step reads it, so Create never carries it. */
 const convertSize = ref<StatedSize>()
 
-/** The draft Convert image's frame follows: the form's values plus the size stated in the size step, once there is one. */
+/** The draft Convert image's frame follows: the form's values plus the size stated in the size step, once there is
+ * one. */
 function draftInput(): CreateProjectInput {
   return { ...currentInput(), ...(convertSize.value ? { size: convertSize.value } : {}) }
 }
@@ -122,7 +119,8 @@ function onSubmit() {
 /** A decoded picture waiting for its Schema size (ticket 342, ADR 0026); the size step is open while there is one. */
 const pendingImage = ref<PixelData>()
 
-/** The size is stated: the draft carries it first, so the frame the shell builds has a size to follow, then framing starts. */
+/** The size is stated: the draft carries it first, so the frame the shell builds has a size to follow, then framing
+ * starts. */
 function onSizeConfirm(size: StatedSize) {
   const image = pendingImage.value
   if (!image) return
@@ -137,20 +135,16 @@ const convertRejection = ref<ImageRejection | undefined>()
 
 const convertAction = controlAction('convert-image')
 
-/**
- * The advertised limits and every rejection message, filled in from the constants the validation itself enforces (see
- * formatImageLimits), so what this promises and what it refuses can never drift apart.
- */
+// The advertised limits and every rejection message, filled in from the constants the validation enforces (see
+// formatImageLimits), so what is promised and what is refused cannot drift apart.
 const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsHint))
 const convertError = computed(() =>
   convertRejection.value ? formatImageLimits(t.value.convertImage.errors[convertRejection.value]) : undefined,
 )
 
-/**
- * Validates and decodes a chosen picture, then hands it over for framing. Format and size are judged from the file
- * itself; the resolution limit needs the decoded dimensions, so it comes back from the decode step as a rejection of
- * its own (see imageDecode.ts).
- */
+// Validates and decodes a chosen picture, then hands it over for framing. Format and size are judged from the file; the
+// resolution limit needs the decoded dimensions, so it comes back from the decode step as its own rejection
+// (imageDecode.ts).
 async function onConvertImage(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]

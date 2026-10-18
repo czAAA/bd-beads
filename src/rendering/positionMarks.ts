@@ -2,13 +2,9 @@ import type { Technique } from '../domain/grid'
 import { BEAD_GAP_PX, beadRoundness, type DrawingContext } from './beadLook'
 import { CELL_SIZE_PX, rowPitchPx } from './surfaceView'
 
-/**
- * Position marks (CONTEXT.md): how the Canvas's empty positions outside the Frame are drawn. They are one repeating
- * tile, a bead across and two rows down (so the alternate rows of peyote and brick stitch carry their half-bead shift),
- * filled over the whole view at once, rather than one shape for each of the tens of thousands of positions a zoomed-out
- * canvas shows. The tile is a bitmap at the size it is on the screen, kept like the bead sprites (sprites.ts). Its style
- * is a preference of the device: Dots, or Squares, one shared outline in the gap between neighbouring positions.
- */
+// Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, two
+// rows down, for peyote/brick half-bead shifts) filled over the view, not a shape per position. A screen-size bitmap
+// kept like the bead sprites (sprites.ts). Style is a device preference: Dots, or Squares with one shared outline.
 
 /** How Position marks look (CONTEXT.md). */
 export type PositionMarkStyle = 'dots' | 'squares'
@@ -65,11 +61,9 @@ function squarePath(context: DrawingContext, x: number, y: number, size: number,
   context.closePath()
 }
 
-/**
- * Draws a square for each position of the tile, and the copies that spill over its edges, from the top row down, as the
- * beads are drawn: each one first clears the bead's own area (so the rows of peyote that overlap leave no outline
- * showing through the bead above), then draws the outline on the cell's edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
- */
+// Draws a square for each tile position and the copies spilling over its edges, top row down as beads are: each first
+// clears the bead's own area (so overlapping peyote rows leave no outline showing through), then outlines the cell's
+// edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
 function drawSquares(context: DrawingContext, input: MarkTileInput, size: { width: number; height: number }): void {
   const pitch = rowPitchPx(input.technique)
   const radius = beadRoundness(input.technique) * CELL_SIZE_PX
@@ -103,10 +97,8 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, size: { widt
   }
 }
 
-/**
- * The tile for the Canvas's Position marks as a pattern on `context`, scaled so that it repeats every bead across
- * in grid px, or undefined where there is no canvas to make the bitmap on. Fill with it while the context is in grid space.
- */
+// The tile for the Canvas's Position marks as a pattern on `context`, scaled to repeat every bead across in grid px, or
+// undefined without a canvas. Fill with it while the context is in grid space.
 export function positionMarkPattern(context: DrawingContext, input: MarkTileInput): CanvasPattern | undefined {
   if (typeof document === 'undefined') {
     return undefined

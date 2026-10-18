@@ -7,14 +7,9 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 
-/**
- * Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one short bar along the
- * canvas box's bottom edge, always shown at every width whatever the Project's shape. Row progress is on whenever there is
- * a Frame (ADR 0055); without one the bar offers Fit to drawing, and keeps its height so the canvas doesn't jump. Remove
- * frame lives on the Frame's corner (ticket 455). With a Frame, Turn row direction and Reset progress come first; then come the current row, the finished share, and the large Row not done and Row
- * done buttons, whose label and arrow follow Row direction. They move the current-row pointer exactly as the hotkeys do
- * (D, Shift+Enter/Shift+Space, Enter/Space (ticket 178)).
- */
+// Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
+// canvas box's bottom. On whenever there is a Frame (ADR 0055); without one it offers Fit to drawing. With a Frame:
+// Turn row direction, Reset, current row, share, Row not done / done, moving the pointer like the hotkeys (ticket 178).
 const props = defineProps<{ project: Project }>()
 
 const emit = defineEmits<{
@@ -28,7 +23,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 
-/** Every control here is a registry action: its name, Tooltip, key chip and disabled reason come from there (ADR 0035). */
+/** Every control here is a registry action: its name, Tooltip, key chip and disabled reason come from there (ADR
+ * 0035). */
 const actions = {
   reset: controlAction('reset-progress'),
   fitFrame: controlAction('fit-to-drawing'),
@@ -142,7 +138,8 @@ const directionLabel = computed(() =>
 </template>
 
 <style scoped>
-/* No Frame (ProgressBar card): "Select to set a Frame" set like the CanvasHint, and the Fit to drawing button pushed to the right. */
+/* No Frame (ProgressBar card): "Select to set a Frame" set like the CanvasHint, and the Fit to drawing button pushed
+ * to the right. */
 .progress-bar__need {
   display: flex;
   align-items: center;
@@ -195,12 +192,14 @@ const directionLabel = computed(() =>
   white-space: nowrap;
 }
 
-/* The wide row count stays out of the bar: the short counter stands in for it at every width (ticket 188, 295; ADR 0046). */
+/* The wide row count stays out of the bar: the short counter stands in for it at every width (ticket 188, 295; ADR
+ * 0046). */
 .progress-bar__phone-hide {
   display: none;
 }
 
-/* Row not done and Row done (ticket 411): large text buttons, set well apart from Turn row direction beside Remove frame. */
+/* Row not done and Row done (ticket 411): large text buttons, set well apart from Turn row direction beside Remove
+ * frame. */
 .progress-bar__steps {
   display: flex;
   flex: none;
@@ -230,16 +229,15 @@ const directionLabel = computed(() =>
   transition: width var(--duration-base) var(--ease-standard);
 }
 
-/*
- * Phone widths (ticket 411): the large text buttons can't share one row with Remove frame, Turn row direction and the track
- * at 360px in every language, so the buttons take a second row of their own, half the bar each. The bar is taller there:
- * --progress-height says so (controls.css), and everything that sits above the bar follows it.
- */
+/* Phone widths (ticket 411): the large buttons can't share a row with Remove frame, Turn row direction and the track at
+ * 360px in every language, so they take a second row, half the bar each. The bar is taller: --progress-height
+ * (controls.css), which things above follow. */
 @media (max-width: 30rem) {
   .progress-bar {
     flex-wrap: wrap;
     align-content: center;
-    /* Remove frame, Edit Frame and Turn row direction share the first row with the counter and the track (ticket 443): 4px between them keeps it one row at 320px, inside the 12px screen edge (ticket 450). */
+    /* Remove frame, Edit Frame and Turn row direction share the first row with the counter and the track (ticket
+     * 443): 4px between them keeps it one row at 320px, inside the 12px screen edge (ticket 450). */
     gap: var(--space-4);
     padding-inline: var(--space-4);
   }

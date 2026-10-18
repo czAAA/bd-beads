@@ -4,12 +4,9 @@ import { INFO_POPOVERS, UNREACHED } from './hoverExemptions'
 import { tooltipMakers } from './hoverSource'
 import { LOCALES, WIDTHS } from './textFitMatrix'
 
-/**
- * The reachability guard of the hover text check (ticket 264). Every place in the source that makes a Tooltip or an
- * info popover must have been seen open at least once in the run, or be listed in UNREACHED with a reason, so that a
- * Tooltip nobody can reach cannot be added without this check failing. Each language-and-width test writes what it
- * opened to a file; the Playwright global teardown reads them all once the run is over.
- */
+// The hover text check's reachability guard (ticket 264): every source place making a Tooltip or info popover must be
+// seen open at least once in the run, or be listed in UNREACHED with a reason. Each language-and-width test writes what
+// it opened to a file; the Playwright global teardown reads them all.
 
 const DIR = join('test-results', 'hover-opened')
 
@@ -24,7 +21,8 @@ export function requiredSites(): string[] {
   return [...tooltipMakers(), ...INFO_POPOVERS.map((popover) => `info:${popover.testid}`)]
 }
 
-/** What the run failed to reach, or the problems with the exemption list, once every test has written its file. Null when only part of the matrix ran (a filtered run), where nothing can be said. */
+/** What the run failed to reach, or the problems with the exemption list, once every test has written its file. Null
+ * when only part of the matrix ran (a filtered run), where nothing can be said. */
 export function unreached(): string[] | null {
   const expected = LOCALES.flatMap((locale) => WIDTHS.map((width) => `${locale}-${width}.json`))
   let files: string[]

@@ -13,28 +13,25 @@ import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX, beadRoundness } from './beadLook'
 
-/**
- * The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
- * tool, drawn over the cells, so that it changes without the cells being drawn again. Today that is the Row progress
- * marker; the hover preview, Selection, paste preview, Mirror axes and the "Mirror current" dimming join it as they
- * move over from the grid that was one element per bead.
- *
- * Coordinates are the base layer's (see projectRenderer): a Project's own px, drawn through the same transform, so an
- * overlay lands on the bead it belongs to at every zoom and rotation.
- */
+// The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
+// tool, drawn over the cells so it changes without redrawing them. Coordinates are the base layer's (see
+// projectRenderer): a Project's own px through the same transform, so an overlay lands on its bead at every zoom.
 
-/** The Row progress marker's thickness: the ring round a bead in the current pass (tickets 375, 376, BeadBoard card). */
+/** The Row progress marker's thickness: the ring round a bead in the current pass (tickets 375, 376, BeadBoard
+ * card). */
 const MARKER_RING_PX = 2
 
 /** What a hover preview shows a bead in (BeadHover card): the chosen color at 60%, over whatever the bead holds. */
 const PREVIEW_OPACITY = 0.6
 
-/** How thick the hover preview's outline is when there is no color to show (BeadHover card): the pointer's marker shares it. */
+/** How thick the hover preview's outline is when there is no color to show (BeadHover card): the pointer's marker
+ * shares it. */
 const PREVIEW_OUTLINE_PX = 2
 
 /** The hover preview (ticket 23): where paint would land, or a pasted block under the cursor. */
 export interface HoverPreview {
-  /** The beads it is on: the hovered one and its live-mirror counterparts, or every bead of a block about to be pasted. */
+  /** The beads it is on: the hovered one and its live-mirror counterparts, or every bead of a block about to be
+   * pasted. */
   cells: readonly PreviewCell[]
   /** The color to show on beads that carry none of their own; none for a neutral outline (no color selected). */
   color: string | null
@@ -43,10 +40,12 @@ export interface HoverPreview {
 /** How much of a bead as drawn the pointer's marker is (ticket 353, BeadHover card). */
 const POINTER_SCALE = 0.9
 
-/** How much smaller than that the marker is drawn, in px on the screen at any zoom, so it reads as the bead's own size inside the hover preview. */
+/** How much smaller than that the marker is drawn, in px on the screen at any zoom, so it reads as the bead's own
+ * size inside the hover preview. */
 const POINTER_TRIM_PX = 1
 
-/** The bead-shaped pointer over the board (ticket 353): where the pointer is, in the surface's own px, and the color it shows. */
+/** The bead-shaped pointer over the board (ticket 353): where the pointer is, in the surface's own px, and the color
+ * it shows. */
 interface BeadPointer {
   x: number
   y: number
@@ -55,7 +54,8 @@ interface BeadPointer {
 }
 
 export interface OverlayInput {
-  /** Whether Row progress is drawn (the current pass lifted, its row number bold). Defaults to `rowProgressOn(project)` (ticket 434). */
+  /** Whether Row progress is drawn (the current pass lifted, its row number bold). Defaults to
+   * `rowProgressOn(project)` (ticket 434). */
   rowMarks?: boolean
   /** The Project whose overlay this is: its Row progress decides the marker. */
   project: DrawnProject
@@ -70,32 +70,33 @@ export interface OverlayInput {
   pointer?: BeadPointer
   /** The rectangle the Select, Piece or Select all marked out (tickets 31, 414): drawn as its outer border. */
   selection?: Selection
-  /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four larger ones. Without it the Selection has no handles. */
+  /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four
+   * larger ones. Without it the Selection has no handles. */
   selectionHandles?: { surface: SurfaceView; touch: boolean }
   /** Mirror's per-direction axis counts (ticket 44): a line for each axis, whenever a direction's count is above 0. */
   mirrorAxisCounts?: MirrorAxisCounts
-  /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded, existing content stepping back. */
+  /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded, existing content stepping
+   * back. */
   dimmedCells?: readonly GridPosition[]
   /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Project has keyboard focus. */
   cursor?: GridPosition
   /** What the Tour marks on the Project (ticket 80): beads to paint or erase, and frames to select or paste into. */
   tourMarks?: TourMarks
-  /**
-   * Where positions live, from `spaceOf`, the same value the base layer was drawn with. On the Canvas (ADR 0026)
-   * any position can carry a preview, a Selection or the cursor; in Frame-only space, the default, the Project is the
-   * Frame alone, drawn from its first bead, as an export or a picture shows it.
-   */
+  // Where positions live, from `spaceOf`, as the base layer was drawn. On the Canvas (ADR 0026) any position can carry
+  // a preview, Selection or cursor; in Frame-only space (default) the Project is the Frame alone, drawn from its first
+  // bead.
   space?: Space
-  /**
-   * The rulers and the lines they hang from (Canvas only): the Frame's line, or each piece's rectangle, with the
-   * numbers of the Ruler layout while it has them. `surface` is the view the layout was made for.
-   */
+  /** The rulers and their lines (Canvas only): the Frame's line or each piece's rectangle; `surface` is the view the
+   * layout was made for. */
   rulers?: { layout: RulerLayout; surface: SurfaceView }
-  /** While the Frame is being set (Canvas only): its handles and the size tooltip's text. `touch` gives four larger corner handles. */
+  /** While the Frame is being set (Canvas only): its handles and the size tooltip's text. `touch` gives four larger
+   * corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
-  /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or resized, and after a refused press. */
+  /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or
+   * resized, and after a refused press. */
   marginOutline?: number
-  /** How many positions wide the margin outline stands out from the Frame (ticket 459): wider when zoomed out. Defaults to `MARGIN`. */
+  /** How many positions wide the margin outline stands out from the Frame (ticket 459): wider when zoomed out.
+   * Defaults to `MARGIN`. */
   margin?: number
 }
 
@@ -112,7 +113,8 @@ interface PassBead {
   color: string
 }
 
-/** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none when the Frame has no such pass. */
+/** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
+ * when the Frame has no such pass. */
 function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   const { technique } = project
   const columnWise = project.rowProgress.direction === 'columns'
@@ -141,10 +143,8 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   return beads
 }
 
-/**
- * The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells, so on peyote
- * and brick stitch, where the next row nests into the gaps, their corners are not covered while they are the row being woven.
- */
+// The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and
+// brick stitch, where the next row nests into the gaps, their corners aren't covered.
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], project: DrawnProject, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
   const cornerRadius = beadRoundness(project.technique) * CELL_SIZE_PX
   for (const bead of beads) {
@@ -152,11 +152,9 @@ function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], pr
   }
 }
 
-/**
- * The Row progress marker (tickets 352, 375, 376): a ring, MARKER_RING_PX thick, round each bead woven in the current
- * pass, inside its cell with its outer edge on the cell's edge, so it never reaches a neighbour and two rings side by
- * side stay two. Only the beads in the pass are ringed: no line joins them. One path, one stroke.
- */
+// The Row progress marker (tickets 352, 375, 376): a ring, MARKER_RING_PX thick, round each bead in the current pass,
+// inside its cell so it never reaches a neighbour and two rings side by side stay two. No line joins them; one path,
+// one stroke.
 function drawBeadRings(context: DrawingContext, beads: readonly PassBead[], project: DrawnProject, theme: ProjectTheme): void {
   const corner = beadRoundness(project.technique) * CELL_SIZE_PX
   const half = MARKER_RING_PX / 2
@@ -181,11 +179,9 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
   context.arcTo(x, y, x + width, y, radius)
 }
 
-/**
- * The hover preview on each bead it names, inside the bead's rim: its color at a faint opacity over whatever the bead
- * holds (a pasted block in each bead's own colors), or, with no color to show, a 2px outline in the dark ink. A color
- * fills the bead's own shape (rounded in peyote), less what the next row's beads lie over.
- */
+// The hover preview on each bead it names, inside the rim: its color at a faint opacity over what the bead holds (a
+// pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape,
+// less what the next row's beads lie over.
 function drawPreview(context: DrawingContext, project: DrawnProject, space: Space, preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = project
   const inset = BEAD_GAP_PX / 2
@@ -217,10 +213,8 @@ interface BeadRect {
   radius: number
 }
 
-/**
- * The beads of the next row that lie over this one, as drawn (peyote's rows nest, so the next row covers the bottom of
- * this one): none where rows stack, a full bead apart. The next row sits half a bead over, so two of its beads reach this one.
- */
+// The beads of the next row that lie over this one as drawn (peyote's rows nest): none where rows stack. The next row
+// sits half a bead over, so two of its beads reach this one.
 function nextRowBeads(technique: Technique, space: Space, cell: GridPosition, bead: BeadRect): BeadRect[] {
   const pitch = rowPitchPx(technique)
   if (pitch >= CELL_SIZE_PX) {
@@ -240,7 +234,8 @@ function nextRowBeads(technique: Technique, space: Space, cell: GridPosition, be
   return beads
 }
 
-/** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity, leaving out the beads lying over it. */
+/** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity, leaving
+ * out the beads lying over it. */
 function fillFaintly(context: DrawingContext, { x, y, size, radius }: BeadRect, color: string, coveredBy: readonly BeadRect[] = []): void {
   context.globalAlpha = PREVIEW_OPACITY
   context.fillStyle = color
@@ -267,7 +262,8 @@ function fillFaintly(context: DrawingContext, { x, y, size, radius }: BeadRect, 
   context.globalAlpha = 1
 }
 
-/** The hover preview's neutral look: a ring in the dark ink, as thick as PREVIEW_OUTLINE_PX, inside the bead's rounded corners. */
+/** The hover preview's neutral look: a ring in the dark ink, as thick as PREVIEW_OUTLINE_PX, inside the bead's
+ * rounded corners. */
 function outlineBead(context: DrawingContext, { x, y, size, radius }: BeadRect, theme: ProjectTheme): void {
   const inset = PREVIEW_OUTLINE_PX
   context.fillStyle = theme.outline
@@ -277,11 +273,9 @@ function outlineBead(context: DrawingContext, { x, y, size, radius }: BeadRect, 
   context.fill('evenodd')
 }
 
-/**
- * The pointer's marker (ticket 353): a bead 90% of the size one is drawn at, centred on the pointer rather than on the
- * bead under it, looking like the hover preview. Drawn in the surface's own px, so it follows zoom but not rotation; a
- * pen has no CSS cursor, so one drawn marker serves the mouse and the pen alike.
- */
+// The pointer's marker (ticket 353): a bead 90% of the drawn size, centred on the pointer and looking like the hover
+// preview. In the surface's px, so it follows zoom but not rotation; a pen has no CSS cursor, so one marker serves
+// both.
 function drawPointer(context: DrawingContext, technique: Technique, zoom: number, pixelRatio: number, pointer: BeadPointer, theme: ProjectTheme): void {
   const size = Math.max(0, CELL_SIZE_PX * zoom * POINTER_SCALE - POINTER_TRIM_PX)
   const x = pointer.x - size / 2
@@ -299,11 +293,9 @@ function drawPointer(context: DrawingContext, technique: Technique, zoom: number
 /** How thick, in the Project's own px, the Selection's border is, inside the edge of the rectangle. */
 const OUTLINE_PX = 2
 
-/**
- * The Selection (ticket 414): the rectangle's outer border in the Selection colour, with no wash on its beads. One
- * rectangle round the beads, so on peyote and brick stitch, whose alternate rows sit half a bead over, it spans the
- * furthest left and right any of its rows reach. Handles, when the surface is known, are drawn later in the viewport's px.
- */
+// The Selection (ticket 414): the rectangle's outer border in the Selection colour, no wash. One rectangle round the
+// beads, so on peyote and brick stitch (alternate rows half a bead over) it spans the furthest any row reaches. Handles
+// are drawn later in the viewport's px.
 function drawSelection(context: DrawingContext, project: DrawnProject, space: Space, selection: Selection, theme: ProjectTheme): void {
   const { technique } = project
   const bottom = space.open ? selection.top + selection.rows - 1 : Math.min(selection.top + selection.rows - 1, space.rows - 1)
@@ -321,11 +313,8 @@ function drawSelection(context: DrawingContext, project: DrawnProject, space: Sp
   context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
 }
 
-/**
- * The beads a hovered "Mirror current" button would overwrite, faded (ticket 47): existing content stepping back, not
- * what would be painted. Each is drawn as the bead it is, faded over the paper, which covers the bead under it on the
- * cells layer.
- */
+// The beads a hovered "Mirror current" button would overwrite, faded (ticket 47): existing content stepping back. Each
+// is drawn as the bead it is, faded over the paper, which covers the bead under it on the cells layer.
 function drawDimmed(
   context: DrawingContext,
   project: DrawnProject,
@@ -358,10 +347,8 @@ function drawDimmed(
   }
 }
 
-/**
- * The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px wide in
- * high contrast), following its corners. Drawn last, over everything, so it is never hidden.
- */
+// The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px in high
+// contrast), following its corners. Drawn last, over everything, so never hidden.
 function drawCursor(context: DrawingContext, project: DrawnProject, space: Space, cursor: GridPosition, theme: ProjectTheme): void {
   const { technique } = project
   if (!inSpace(space, cursor.row, cursor.column)) {
@@ -382,11 +369,13 @@ function drawCursor(context: DrawingContext, project: DrawnProject, space: Space
   context.fill('evenodd')
 }
 
-/** The Frame margin's outline (ticket 276, Frame card): 1px dashed `line-strong` round its outer edge, radius 12, faded by `opacity`. Drawn in grid space, so its widths are divided by the zoom to stay screen px. */
+/** The Frame margin's outline (ticket 276, Frame card): 1px dashed `line-strong` round its outer edge, radius 12,
+ * faded by `opacity`. Drawn in grid space, so its widths are divided by the zoom to stay screen px. */
 const MARGIN_OUTLINE_DASH_PX = [4, 3]
 const MARGIN_OUTLINE_RADIUS_PX = 12
 
-/** Strokes the box round the margin's drawn extent (ticket 372): peyote rows nest closer than a bead is tall, and offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
+/** Strokes the box round the margin's drawn extent (ticket 372): peyote rows nest closer than a bead is tall, and
+ * offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
 function drawMarginOutline(context: DrawingContext, frame: Frame, technique: Technique, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
   const outer = withMargin(frame, margin)
   const x = outer.column * CELL_SIZE_PX
@@ -477,7 +466,8 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
   context.globalAlpha = 1
 }
 
-/** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is transparent wherever nothing is drawn. */
+/** Draws the overlay for the part of the Project in the region, clearing what was there first. The overlay is
+ * transparent wherever nothing is drawn. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
   const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
 

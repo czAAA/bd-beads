@@ -2,11 +2,9 @@ import { beadBounds, forEachBead, type BeadMap, type Frame } from './canvas'
 import { isOffsetTechnique, type GridPosition, type Technique } from './grid'
 import { inMargin } from './margin'
 
-/**
- * The geometry of the Frame (CONTEXT.md, ADR 0026): drawing it, moving it, resizing it from its edges and fitting it to
- * what is drawn. All of it works on whole beads, and on peyote and brick stitch a Frame always starts on an even row, so
- * that its first row sits where a woven piece's first row does (the rows alternate, and a piece begins unshifted).
- */
+// The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
+// drawn, on whole beads. On peyote and brick stitch a Frame starts on an even row, so its first row sits where a woven
+// piece's first row does (rows alternate).
 
 export type FrameEdge = 'top' | 'bottom' | 'left' | 'right'
 
@@ -18,7 +16,8 @@ export function snapRow(technique: Technique, row: number): number {
   return isOffsetTechnique(technique) && Math.abs(row % 2) === 1 ? row - 1 : row
 }
 
-/** The Frame covering the beads from one corner to the other, whichever way the drag went, snapped to a legal top row. */
+/** The Frame covering the beads from one corner to the other, whichever way the drag went, snapped to a legal top
+ * row. */
 export function frameFromCells(technique: Technique, a: GridPosition, b: GridPosition): Frame {
   const top = snapRow(technique, Math.min(a.row, b.row))
   const bottom = Math.max(a.row, b.row)
@@ -27,10 +26,8 @@ export function frameFromCells(technique: Technique, a: GridPosition, b: GridPos
   return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-/**
- * The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell` the
- * bead the pointer is over. An edge never passes the one opposite it, so a Frame stays at least one bead each way.
- */
+// The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
+// the bead under the pointer. An edge never passes the opposite one, so a Frame stays at least one bead each way.
 export function frameWithEdges(technique: Technique, frame: Frame, edges: readonly FrameEdge[], cell: GridPosition): Frame {
   let top = frame.row
   let bottom = frame.row + frame.rows - 1
@@ -45,23 +42,22 @@ export function frameWithEdges(technique: Technique, frame: Frame, edges: readon
   return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-/** The Frame moved by whole beads; on peyote and brick stitch whole pairs of rows, so its first row keeps its place in the stagger. */
+/** The Frame moved by whole beads; on peyote and brick stitch whole pairs of rows, so its first row keeps its place
+ * in the stagger. */
 export function movedFrame(technique: Technique, frame: Frame, rows: number, columns: number): Frame {
   const rowStep = isOffsetTechnique(technique) ? Math.sign(rows) * Math.round(Math.abs(rows) / 2) * 2 : rows
   return { ...frame, row: frame.row + rowStep, column: frame.column + columns }
 }
 
-/** The Frame with its size changed from the top-left corner, which stays where it is; never smaller than one bead each way. */
+/** The Frame with its size changed from the top-left corner, which stays where it is; never smaller than one bead
+ * each way. */
 export function frameWithSize(frame: Frame, columns: number, rows: number): Frame {
   return { ...frame, columns: Math.max(1, Math.round(columns)), rows: Math.max(1, Math.round(rows)) }
 }
 
-/**
- * The Frame with one edge moved a bead out (`step` 1) or in (`step` -1), the other three staying put (Edit Frame's
- * margin steppers, ticket 417). Where rows alternate (peyote, brick stitch) the top edge goes by a pair of rows so the
- * first row stays on an even row, as dragging the top handle does. An edge never passes the one opposite it: a step that
- * would leave less than one bead each way changes nothing.
- */
+// The Frame with one edge moved a bead out (`step` 1) or in (`step` -1), the others staying put (Edit Frame's steppers,
+// ticket 417). Where rows alternate (peyote, brick stitch) the top edge goes by a pair of rows so the first row stays
+// even, as dragging the top handle does. A step that would leave less than one bead each way changes nothing.
 export function frameWithEdgeStep(technique: Technique, frame: Frame, edge: FrameEdge, step: 1 | -1): Frame {
   const rowStep = (isOffsetTechnique(technique) ? 2 : 1) * step
   switch (edge) {
@@ -76,7 +72,8 @@ export function frameWithEdgeStep(technique: Technique, frame: Frame, edge: Fram
   }
 }
 
-/** The Frame that wraps every bead drawn (Fit to drawing), or undefined for an empty canvas. Beads the `current` Frame's margin covers are not drawn, so they are not wrapped. */
+/** The Frame that wraps every bead drawn (Fit to drawing), or undefined for an empty canvas. Beads the `current`
+ * Frame's margin covers are not drawn, so they are not wrapped. */
 export function fitToDrawing(technique: Technique, beads: BeadMap, current?: Frame): Frame | undefined {
   const bounds = beadBounds(current ? withoutMargin(beads, current) : beads)
   if (!bounds) {

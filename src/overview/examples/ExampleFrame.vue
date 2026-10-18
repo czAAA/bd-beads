@@ -2,11 +2,8 @@
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import './examples.css'
 
-/**
- * The room an example of the Overview carousel (ticket 218) is drawn in: the example is laid out at its natural size and
- * scaled down, uniformly and never up, to fit what the stage leaves it, so nothing is stretched and nothing overflows at
- * any of the five screen sizes. Decorative: hidden from screen readers.
- */
+// The room an Overview carousel example (ticket 218) is drawn in: laid out at natural size and scaled down uniformly,
+// never up, to fit the stage at any of the five screen sizes. Decorative: hidden from screen readers.
 const box = ref<HTMLElement>()
 const content = ref<HTMLElement>()
 const scale = ref(1)
@@ -47,7 +44,8 @@ onBeforeUnmount(() => observer?.disconnect())
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Takes what the stage leaves and never asks for more: the example scales to the room, the room doesn't grow to the example. */
+  /* Takes what the stage leaves and never asks for more: the example scales to the room, the room doesn't grow to
+   * the example. */
   flex: 1 1 0;
   width: 100%;
   min-height: 0;

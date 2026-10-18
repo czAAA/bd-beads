@@ -15,13 +15,9 @@ import { PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
 import { MIRROR_ENABLED } from '../../features'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
-/**
- * The Tool pill (ticket 439, ADR 0059; ToolPill card): the tools floating over the drawing area, replacing the Dock.
- * From its leading end: the grip, the six tool tiles, a divider and the colour control (Pen/Mouse is in the Menu, ticket
- * 443). It docks to one of four edges, `pill-gap` in and centred, and is dragged (or moved with the grip's arrow keys) to another. This component is the layer over the drawing area, which
- * takes no pointer events itself, so the canvas under it stays fully usable. It is outside the canvas's zoom
- * transform and never scales with it (ADR 0034).
- */
+// The Tool pill (ticket 439, ADR 0059; ToolPill card): the tools floating over the drawing area, replacing the Dock:
+// grip, six tool tiles, a divider, the colour control. It docks to one of four edges (drag, or the grip's arrow keys).
+// This layer takes no pointer events itself and sits outside the canvas's zoom transform (ADR 0034).
 const props = defineProps<{
   activeTool: Tool
   /** Whether the clipboard holds something: the Paste tile follows Hand then (ticket 447). */
@@ -42,7 +38,8 @@ const props = defineProps<{
   customColor?: string
   selectedImageColor?: string
   imageColors?: readonly string[]
-  /** Which bottom sheet is open: the dormant Mirror button (MIRROR_ENABLED, ticket 174) shows lit while its sheet is. */
+  /** Which bottom sheet is open: the dormant Mirror button (MIRROR_ENABLED, ticket 174) shows lit while its sheet
+   * is. */
   openSheet?: PhoneSheet | null
 }>()
 
@@ -58,7 +55,8 @@ const emit = defineEmits<{
   'select-custom-color': [hex: string]
   'select-image-color': [hex: string]
   'select-sheet': [sheet: PhoneSheet]
-  /** Where the pill is in the drawing area's pixels (undefined when it cannot be measured): the Selection bar keeps clear of it. */
+  /** Where the pill is in the drawing area's pixels (undefined when it cannot be measured): the Selection bar keeps
+   * clear of it. */
   rect: [rect: PillRect | undefined]
 }>()
 
@@ -107,11 +105,9 @@ function measure(): PillRect | undefined {
   return pill && layer && pill.width > 0 ? { left: pill.left - layer.left, top: pill.top - layer.top, width: pill.width, height: pill.height } : undefined
 }
 
-/**
- * Recent colors shows the recents only while the whole pill fits along its edge (ticket 439: "when there is space on
- * the screen"); otherwise it shrinks to the one swatch rather than scroll. Whether it fits is
- * probed by drawing the recents and asking the pill if it overflows, before the browser paints.
- */
+// Recent colors shows the recents only while the whole pill fits along its edge (ticket 439), else the one swatch
+// rather than scroll. Fit is probed by drawing the recents and asking the pill if it overflows, before the browser
+// paints.
 const recentsRoom = ref(true)
 const probing = ref(false)
 const showRecents = computed(() => props.colorMode === 'recent' && (recentsRoom.value || probing.value))
@@ -123,7 +119,8 @@ async function probeRoom() {
   await nextTick()
   if (probe !== latestProbe) return // a newer probe owns the measuring now
   const el = pillEl.value
-  // Where the last tile ends, not `scrollWidth`: a tile's touch target reaches past the pill's edge and would count as overflow. One pixel of slack for sub-pixel rounding.
+  // Where the last tile ends, not `scrollWidth`: a tile's touch target reaches past the pill's edge and would count as
+  // overflow. One pixel of slack for sub-pixel rounding.
   const last = el?.lastElementChild
   if (el && last) {
     const box = el.getBoundingClientRect()
@@ -134,7 +131,8 @@ async function probeRoom() {
 }
 const pillSize = useElementSize(pillEl)
 const layerSize = useElementSize(layerEl)
-// Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether a chosen colour exists, and a drag ending.
+// Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether
+// a chosen colour exists, and a drag ending.
 watch(
   [layerSize.width, layerSize.height, () => props.position, () => props.colorMode, () => props.recentsInPill.length, () => props.hasClipboard, () => props.colorHex === undefined, drag.dragging],
   () => void probeRoom(),
@@ -291,10 +289,8 @@ watch(
 </template>
 
 <style scoped>
-/*
- * The layer is the drawing area itself, transparent to pointers; only the pill takes them. Sizes come from the design
- * system's tokens: 48px across (`pill-thickness`) is 40px tiles in 4px padding, 2px apart.
- */
+/* The layer is the drawing area, transparent to pointers; only the pill takes them. 48px (`pill-thickness`) = 40px
+ * tiles in 4px padding, 2px apart. */
 .tool-pill-layer {
   --pill-tile: calc(var(--pill-thickness) - 2 * var(--space-4));
   --pill-pad: var(--space-4);
@@ -331,7 +327,8 @@ watch(
 .tool-pill--bottom,
 .tool-pill--top {
   left: 50%;
-  /* As long as its content, up to the edge gaps: a box placed at `left: 50%` would otherwise be sized to half its layer (ticket 461). */
+  /* As long as its content, up to the edge gaps: a box placed at `left: 50%` would otherwise be sized to half its
+   * layer (ticket 461). */
   width: max-content;
   max-width: calc(100% - 2 * var(--pill-gap));
   transform: translateX(-50%);
@@ -445,7 +442,8 @@ watch(
   box-shadow: 0 0 0 var(--space-2) var(--elevated), 0 0 0 calc(2 * var(--space-2)) var(--ring);
 }
 
-/* The palette icon sits inside the swatch, in the mark that reads on the chosen colour (or the muted ink while none is chosen). */
+/* The palette icon sits inside the swatch, in the mark that reads on the chosen colour (or the muted ink while none
+ * is chosen). */
 .tool-pill__swatch-mark {
   color: var(--muted);
 }
@@ -504,7 +502,8 @@ watch(
   outline-offset: var(--focus-offset);
 }
 
-/* The four drop zones inside the drawing area while dragging: dashed, the nearest edge's in the accent with a 14% wash. */
+/* The four drop zones inside the drawing area while dragging: dashed, the nearest edge's in the accent with a 14%
+ * wash. */
 .tool-pill-zones {
   position: absolute;
   inset: 0;

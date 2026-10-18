@@ -1,8 +1,6 @@
-/**
- * A D1 database's size in bytes, from the metadata D1 returns with every query (`size_after`). The probe reads no
- * rows and writes none, so measuring costs nothing against the daily limits (spec 385, "Blob storage limit"). It
- * throws when the database can't be read, which is also how health tells a dead database.
- */
+/** A D1 database's size in bytes from the metadata every query returns (`size_after`); the probe reads and writes no
+ * rows (spec 385, "Blob storage limit"). Throws when the database can't be read, which is how health tells a dead
+ * one. */
 export async function databaseSize(db: D1Database): Promise<number> {
   const { meta } = await db.prepare('SELECT 1').run()
   const size = (meta as { size_after?: unknown }).size_after

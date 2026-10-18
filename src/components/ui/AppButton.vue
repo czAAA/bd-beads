@@ -6,23 +6,9 @@ import AppTooltip from './AppTooltip.vue'
 import { actionKey, type ControlActionLike } from './controlAction'
 import type { IconName } from './icons'
 
-/**
- * The one labelled button (tickets 157, 331; Button card): an optional leading icon, the label, and an optional
- * trailing icon. `primary` is the single most likely next action in a region (two never sit side by side), `secondary`
- * sits on the page, `in-box` inside the save box and Saved Projects, `toolbox` the sheets' own, `box` the canvas
- * box's Progress bar, `text` Import a file, `danger` only a destructive modal's confirm, and `link`
- * reads as a link (Remove line in `ink`; `danger` makes it Delete all's `danger`). `selected` is the segment look (an
- * `ink` fill), announced with aria-pressed. Attributes and listeners (data-testid, @click) go to the <button> itself,
- * not the wrapper around it.
- *
- * It shows a Tooltip exactly when it is given one (ADR 0035): `tooltip`, a sentence that adds something the label
- * doesn't ("Start an empty canvas."), or an `action` from the control registry, which supplies the label, body, key
- * chip, enabled state and the reason it is disabled (`deps` is what the action's `enabled` reads). The label is the
- * default slot, or the action's name when the slot is empty.
- *
- * A disabled button (ticket 327) is `aria-disabled`, not natively disabled, so it stays hoverable and focusable and a
- * click does nothing. Its Tooltip says why (`disabledBody`); a disabled button given no reason shows no Tooltip.
- */
+// The one labelled button (tickets 157, 327, 331; Button card), with optional leading and trailing icons. Variants:
+// `primary` (one/region), `secondary`, `in-box`, `toolbox`, `box`, `text`, `danger`, `link`; `selected`=aria-pressed.
+// A Tooltip shows when given `tooltip` or an `action` (ADR 0035); disabled is `aria-disabled`, `disabledBody` says why.
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(

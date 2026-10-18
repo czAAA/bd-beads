@@ -1,15 +1,13 @@
-// The artwork is copied from docs/design/system/components/TourPattern/tour-pattern.json; tour.test.ts keeps the two equal.
+// The artwork is copied from docs/design/system/components/TourPattern/tour-pattern.json; tour.test.ts keeps the two
+// equal.
 import tourProject from './tourProjectData.json'
 import { findPaletteColor } from './palette'
 import type { Grid, RowProgress } from './project'
 import type { Selection } from './selection'
 import type { Tool } from './tool'
 
-/**
- * The Tour (CONTEXT.md; ticket 80): eleven steps inside the real editor that build one finished Project, TourProject
- * in the design system. This module is the Tour's rules with no screen in them: the steps, the Project's grid at the end
- * of each step, when a step counts as done, and which control (or which beads) the Tour is pointing at right now.
- */
+// The Tour (CONTEXT.md; ticket 80): eleven steps in the real editor building one finished Project (TourProject in the
+// design system). Only rules here, no screen: steps, the grid after each, when a step is done, what is pointed at.
 
 export const TOUR_COLUMNS = tourProject.size.columns
 export const TOUR_ROWS = tourProject.size.rows
@@ -135,10 +133,8 @@ function stamp(grid: Grid, from: Grid, row: number, column: number): Grid {
   return copy
 }
 
-/**
- * The Project's grid once step `n` (1 to 8) is done. Step 1 leaves it empty, 7 leaves one stray yellow bead in the
- * top-left corner for step 8, which erases it.
- */
+/** The Project's grid once step `n` (1 to 8) is done. Step 7 leaves one stray yellow bead top-left, which step 8
+ * erases. */
 export function afterStep(n: number): Grid {
   const eyeRhombus = firstRhombusOnly()
   switch (n) {
@@ -201,7 +197,8 @@ function atTourSize(snapshot: TourSnapshot): boolean {
   return snapshot.columns === TOUR_COLUMNS && snapshot.rows === TOUR_ROWS
 }
 
-/** Whether a step is done, and what it needs to remember for the next look. The Tour finishing step is done only by Next. */
+/** Whether a step is done, and what it needs to remember for the next look. The Tour finishing step is done only by
+ * Next. */
 export function evaluateStep(step: TourStepId, snapshot: TourSnapshot, memo: TourMemo): TourEvaluation {
   const gridStep = GRID_STEP[step]
   if (gridStep !== undefined) {
@@ -210,7 +207,8 @@ export function evaluateStep(step: TourStepId, snapshot: TourSnapshot, memo: Tou
 
   switch (step) {
     case 'create':
-      // Only a blank Tour-sized Project counts, so a Project of someone's own that happens to be open is never built on.
+      // Only a blank Tour-sized Project counts, so a Project of someone's own that happens to be open is never built
+      // on.
       return { memo, done: snapshot.projectId !== undefined && atTourSize(snapshot) && gridsEqual(snapshot.grid, afterStep(1)) }
     case 'remove-line':
     case 'size': {

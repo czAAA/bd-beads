@@ -10,20 +10,19 @@ export interface CanvasFramingDeps {
   convertZoomPercent: () => number
 }
 
-/**
- * How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0020): the drawing area's measured size feeding the
- * Project's fit zoom, the zoom readout, and the strip's size and zoom meta, which follow the framing step while it
- * runs and the open Project otherwise. Deps are read lazily.
- */
+/** How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0020): the measured area, fit zoom and the strip's
+ * meta, following the framing step while it runs. */
 export function useCanvasFraming(deps: CanvasFramingDeps) {
-  /** The canvas area's own element, measured live (ticket 27) so the Project's fit zoom tracks the real available space instead of a guessed constant. */
+  /** The canvas area's own element, measured live (ticket 27) so the Project's fit zoom tracks the real available
+   * space instead of a guessed constant. */
   const canvasAreaEl = ref<HTMLElement | null>(null)
   const { width, height } = useElementSize(canvasAreaEl)
   const viewport = computed(() => ({ width: width.value, height: height.value }))
 
   const { zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, reveal } = useCanvasView(deps.currentProject, viewport)
 
-  /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than threaded down as a second prop. */
+  /** The floating zoom cluster's own readout (ticket 57): derived from the same zoom the grid scales by, rather than
+   * threaded down as a second prop. */
   const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
   /** The strip's zoom level: framing's own while framing, the Project's otherwise, none with nothing on the board. */
@@ -31,7 +30,8 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
     deps.framing() ? deps.convertZoomPercent() : deps.currentProject() ? zoomPercent.value : undefined,
   )
 
-  /** A template function ref for the canvas area, so the element stays this composable's own rather than a name App.vue has to declare. */
+  /** A template function ref for the canvas area, so the element stays this composable's own rather than a name
+   * App.vue has to declare. */
   function bindCanvasArea(el: unknown) {
     canvasAreaEl.value = el instanceof HTMLElement ? el : null
   }

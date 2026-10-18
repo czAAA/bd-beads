@@ -19,16 +19,11 @@ export interface RowOpsDeps {
   messages: () => Translations
 }
 
-/**
- * The Row progress controls (tickets 32, 171, 201; ADR 0020). None of these is a grid edit, so none is an
- * undo step, and this composable has no dependency on history. Deps are read lazily.
- */
+/** The Row progress controls (tickets 32, 171, 201; ADR 0020): not grid edits, so no undo step and no dependency on
+ * history. Deps are lazy. */
 export function useRowOps(deps: RowOpsDeps) {
-  /**
-   * Flips row progress between running along the grid's rows and down its columns (ticket 32). Its own toggle,
-   * separate from Rotate: turning the Project doesn't change which way the weaver's rows run. Not a grid edit, so not an
-   * undo step.
-   */
+  /** Flips row progress between rows and columns (ticket 32): its own toggle, separate from Rotate, and not an undo
+   * step. */
   function onToggleRowDirection() {
     const project = deps.currentProject()
     if (project) {
@@ -48,7 +43,8 @@ export function useRowOps(deps: RowOpsDeps) {
     }
   }
 
-  /** Whether the Reset progress question is open (ticket 455): clearing every finished row is not an undo step, so it asks first. */
+  /** Whether the Reset progress question is open (ticket 455): clearing every finished row is not an undo step, so
+   * it asks first. */
   const resetProgressConfirmOpen = ref(false)
 
   /** Asks whether to reset; nothing to ask about until a row is done. */

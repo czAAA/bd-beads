@@ -11,11 +11,8 @@ export interface RemoveLineFlowDeps {
   selection: () => Selection | undefined
 }
 
-/**
- * "Remove line" (tickets 123, 199; ADR 0020, ADR 0026): takes the selected whole row or column out of the Frame as one
- * Edit, which resets the Selection and Mirror's axis counts, built against the old lines. Refused while Row progress
- * is on. Deps are read lazily.
- */
+// "Remove line" (tickets 123, 199; ADRs 0020, 0026): takes the selected row or column out of the Frame as one Edit,
+// resetting Selection and Mirror's axis counts. Refused while Row progress is on. Deps are lazy.
 export function useRemoveLineFlow(deps: RemoveLineFlowDeps) {
   /** Whether Remove line applies right now: the Tools group's own enabled state. */
   const canRemoveSelectedLine = computed(() => {

@@ -22,28 +22,9 @@ import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
 
-/**
- * The framing step of Convert image (ticket 58, ADR 0010), which takes the canvas panel over: the picture rendered as
- * beads with the Project's own frame laid over it, and the picture moved underneath by zooming and dragging until the
- * right part is inside.
- *
- * The preview is the conversion, not a picture of it. Every bead on screen comes out of one sampling pass (see
- * sampleLatticePacked), and the Project this creates is the block of that pass which falls inside the frame — so "what
- * is inside the frame is exactly the Project that will be created" is true by construction rather than by two pieces of
- * code agreeing.
- *
- * The beads are drawn by the Project renderer onto one canvas (ticket 104, ADR 0018), the same way the editor draws a
- * Project, so the preview and the Project that follows it look like each other in every Technique. The frame outline
- * and the dimming around it stay ordinary elements over the canvas.
- *
- * A block too big to draw bead by bead on every move of a drag is drawn in a coarser look while the picture moves (ticket
- * 122, see draftRenderer), so that the drag holds its frame rate; the beads are back when it is at rest.
- *
- * Reducing a picture to the chosen number of colors costs more than a frame of a drag has to spend, so while the
- * picture is being dragged the beads take the colors the conversion had when the drag began (each to the nearest of
- * them), and it is worked out exactly again when the drag ends or the pointer pauses. At rest, and so for Create, it is
- * exactly the conversion, as ever.
- */
+// Framing step of Convert image (ticket 58, ADR 0010): the picture as beads with the Project's frame over it.
+// Beads come from one sampling pass (sampleLatticePacked); the Project renderer draws the block inside the frame
+// (ticket 104, ADR 0018). While dragging, beads use the colors held when it began (ticket 122, draftRenderer).
 const props = defineProps<{
   image: PixelData
   /** The New Project form's live values: these size the frame, and the frame follows them as they are edited. */
@@ -58,10 +39,8 @@ const props = defineProps<{
   availableWidth: number
   /** How one bead is drawn; the renderer's own flat bead unless given. */
   drawBead?: BeadDrawer
-  /**
-   * Where the conversion controls go (ConvertImage card): the canvas box's bottom, in the Progress bar's place. Left
-   * out, they stay under the preview.
-   */
+  /** Where the conversion controls go (ConvertImage card): the canvas box's bottom; left out, they stay under the
+   * preview. */
   controlsTo?: HTMLElement
 }>()
 
@@ -82,11 +61,8 @@ const frame = computed(() => frameSizeMm(props.technique, props.dimensions, prop
 
 const dragging = ref(false)
 
-/**
- * The pan the exact conversion is for. It is the live pan whenever the picture is at rest, and stays where it was while
- * a drag is going on (until the drag ends or pauses): everything worked out from it below is then not recomputed on each
- * move, and its Image colors are the ones held for the approximate colors.
- */
+// The pan the exact conversion is for: the live pan at rest, held during a drag (until it ends or pauses) so what is
+// worked out from it is not recomputed on each move and its Image colors are the held approximate ones.
 const restPan = shallowRef<PanFraction>(props.pan)
 let pauseTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -141,26 +117,24 @@ const converted = computed(() =>
   convertPackedFrame(restSampled.value, restLattice.value, props.dimensions, props.maxColors),
 )
 
-/** Whether the picture is away from where the exact conversion was made, which is the only time the beads are approximate. */
+/** Whether the picture is away from where the exact conversion was made, which is the only time the beads are
+ * approximate. */
 const moving = computed(() => dragging.value && props.pan !== restPan.value)
 
 const liveView = computed(() => (moving.value ? framingView(props.image, frame.value, props.zoom, props.pan) : restView.value))
 const lattice = computed(() => (moving.value ? latticeFor(liveView.value) : restLattice.value))
 const sampled = computed(() => (moving.value ? sampledFor(liveView.value, lattice.value) : restSampled.value))
 
-/**
- * What each lattice bead shows. At rest, inside the frame it is the converted grid itself and outside it is the nearest
- * Image color, so the surround reads as part of the same bead picture rather than as unquantized pixels — it is context
- * for judging the crop, and it is dimmed (see the frame overlay below) precisely because it is not the Project. While
- * the picture moves, every bead is the nearest of the colors held from when the move began.
- */
+// What each lattice bead shows. At rest: the converted grid inside the frame, the nearest Image color outside (dimmed,
+// since it is context for judging the crop, not the Project). While the picture moves: the nearest held color.
 const beadColors = computed(() =>
   moving.value
     ? approximatePreviewColors(sampled.value, converted.value.imageColors)
     : exactPreviewColors(sampled.value, lattice.value, props.dimensions, converted.value),
 )
 
-/** The lattice as a block of beads for the renderer: not a saved Project, but shaped like one, with no Row progress and upright. */
+/** The lattice as a block of beads for the renderer: not a saved Project, but shaped like one, with no Row progress
+ * and upright. */
 const drawnProject = computed(() => {
   const { columns, rows } = lattice.value
   const grid: Grid = Array.from({ length: rows }, (_row, row) =>
@@ -186,11 +160,8 @@ const latticeExtent = computed(() => latticeSpace.value.extent)
 /** The space kept round the preview inside the canvas panel, in px. */
 const PREVIEW_PADDING_PX = 14
 
-/**
- * How much the whole preview is scaled down to fit the canvas panel. Only the drawing scales — the frame is still the
- * Project's own cells, and zooming the picture is a separate thing entirely (it moves the picture under the frame,
- * see the zoom prop).
- */
+// How much the preview is scaled down to fit the canvas panel. Only the drawing scales; the frame stays the Project's
+// own cells, and zooming (the zoom prop) moves the picture under the frame.
 const fitScale = computed(() =>
   surfaceView({
     space: latticeSpace.value,
@@ -237,8 +208,8 @@ watchPostEffect(() => {
     canvas.height = bitmapHeight
   }
 
-  // A block too big to draw bead by bead on every move of a drag is drawn coarsely for as long as the picture moves (see
-  // draftRenderer); the beads themselves, and the Project they are, come back when it is at rest.
+  // A block too big to draw bead by bead on every move of a drag is drawn coarsely for as long as the picture moves
+  // (see draftRenderer); the beads themselves, and the Project they are, come back when it is at rest.
   if (moving.value && usesDraftLook(props.technique, lattice.value.columns * lattice.value.rows)) {
     renderDraft(context, {
       technique: props.technique,
@@ -277,12 +248,9 @@ const panRangeMm = computed(() => ({
   y: Math.max(0, liveView.value.pictureHeightMm - frame.value.heightMm),
 }))
 
-/**
- * Millimetres of picture per screen pixel dragged: how far a step is on screen (the Surface view's beadStep, at the fit
- * scale) against how far it is on the piece. Along a row, a step is the Bead's own width in millimetres; down the page,
- * the Technique's row spacing in millimetres, so the point under the pointer stays under it whichever Technique the
- * rows are packed for.
- */
+// Millimetres of picture per screen pixel dragged: a step on screen (beadStep at the fit scale) against a step on the
+// piece (the Bead's width along a row, the Technique's row spacing down the page), so the point under the pointer stays
+// under it in every Technique.
 const mmPerScreenPx = computed(() => {
   const step = surfaceView({ space: latticeSpace.value, technique: props.technique, rotation: 0, zoom: fitScale.value }).beadStep()
   return { x: beadPitchMm(props.bead) / step.column.x, y: rowPitch(props.technique, props.bead.heightMm) / step.row.y }
@@ -294,11 +262,8 @@ function clampFraction(value: number): number {
   return Math.min(1, Math.max(0, value))
 }
 
-/**
- * Dragging moves the picture, so dragging right shows more of the picture's left-hand side — which is a *smaller* pan
- * fraction (0 is the picture's own left edge against the frame's). An axis the picture can't move along stays put
- * rather than dividing by a zero range.
- */
+// Dragging right shows more of the picture's left side, a *smaller* pan fraction (0 = the picture's left edge against
+// the frame's). An axis the picture can't move along stays put rather than dividing by a zero range.
 function onDragMove(event: PointerEvent): void {
   const started = drag.value
   if (!started || event.pointerId !== started.pointerId) {
@@ -330,11 +295,8 @@ function endDrag(event?: PointerEvent): void {
   }
 }
 
-/**
- * Mouse, touch and pen all drag the same way. The pointer can be released anywhere, so the drag is followed on the
- * window rather than on the preview itself, and the box captures the pointer so a finger that slides off it is still
- * followed. A second finger ends the drag rather than moving the picture from a second place.
- */
+// Mouse, touch and pen drag alike. The drag is followed on the window (the pointer can be released anywhere) and the
+// box captures the pointer so a finger sliding off is still followed. A second finger ends the drag.
 function onDragStart(event: PointerEvent): void {
   if (drag.value) {
     endDrag()
@@ -444,10 +406,8 @@ onBeforeUnmount(() => {
   gap: var(--space-12);
 }
 
-/*
- * The preview's own box, sized to the scaled lattice (a transform leaves no layout size behind); the canvas fills it
- * with the light board. It clips the frame outline's dimming shadow, which reaches far past the beads on purpose.
- */
+/* The preview's own box, sized to the scaled lattice (a transform leaves no layout size); it clips the outline's
+ * far-reaching dimming shadow. */
 .convert-image-frame__box {
   position: relative;
   overflow: hidden;
@@ -461,7 +421,8 @@ onBeforeUnmount(() => {
   cursor: grabbing;
 }
 
-/* The beads are drawn on the canvas, which fills the box; the lattice over it only carries the frame outline, at the same scale. */
+/* The beads are drawn on the canvas, which fills the box; the lattice over it only carries the frame outline, at the
+ * same scale. */
 .convert-image-frame__canvas {
   display: block;
 }
@@ -498,7 +459,8 @@ onBeforeUnmount(() => {
   border-radius: var(--radius-sm);
 }
 
-/* In the Progress bar's place: the same height and rule, the settings on the left and Cancel and Create on the right. */
+/* In the Progress bar's place: the same height and rule, the settings on the left and Cancel and Create on the
+ * right. */
 .convert-image-frame__controls {
   display: flex;
   flex: none;

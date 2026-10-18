@@ -5,15 +5,9 @@ export interface ElementSize {
   height: Ref<number>
 }
 
-/**
- * The live content-box size (px) of a template-ref'd element, via ResizeObserver: layout that depends on "how much
- * room is actually there" (the canvas box's fit-to-screen zoom, ticket 27) tracks the real browser viewport instead
- * of a guessed constant. Reports 0 until the observer's first callback lands — ResizeObserver fires once,
- * asynchronously, as soon as observation starts — and again whenever the target element changes or is removed.
- *
- * jsdom (the test environment) has no ResizeObserver; tests that need one install a controllable fake — see
- * src/testUtils/fakeResizeObserver.ts — before mounting.
- */
+// The live content-box size (px) of a template-ref'd element via ResizeObserver, so layout (the fit-to-screen zoom,
+// ticket 27) tracks the real viewport. Reports 0 until the observer's first async callback. jsdom has no
+// ResizeObserver: tests install the fake in src/testUtils/fakeResizeObserver.ts before mounting.
 export function useElementSize(target: Ref<HTMLElement | null | undefined>): ElementSize {
   const width = ref(0)
   const height = ref(0)

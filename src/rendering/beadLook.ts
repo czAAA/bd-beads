@@ -5,19 +5,18 @@ import { cachedSprite, type Sprite } from './sprites'
 /** A rounded bead's corners, as a share of its width (BeadBoard card). */
 const ROUNDED_BEAD_CORNER = 0.22
 
-/** How much of a bead's width its corners are rounded by, per Technique: peyote's beads are rounded; loom and brick stitch are square. The one place the look is decided: the Surface view's hit test and the overlay read it too. */
+/** How much of a bead's width its corners are rounded by, per Technique: peyote's beads are rounded; loom and brick
+ * stitch are square. The one place the look is decided: the Surface view's hit test and the overlay read it too. */
 export function beadRoundness(technique: Technique): number {
   return technique === 'peyote' ? ROUNDED_BEAD_CORNER : 0
 }
 
-/**
- * How a single bead looks (ADR 0018): the one part of the Project renderer that knows. The renderer decides where a
- * bead goes and how big it is; a `BeadDrawer` decides what is drawn there. Only one look exists — the design system's flat
- * square or rounded bead on the board — but a richer one (glossy, faceted) is a different function handed to
- * `renderProject`, not a rewrite of it.
- */
+// How a single bead looks (ADR 0018): the one part of the Project renderer that knows. The renderer decides where a
+// bead goes and how big; a `BeadDrawer` decides what is drawn. Only one look exists, but a richer one (glossy, faceted)
+// is another function handed to `renderProject`, not a rewrite.
 
-/** The drawing calls the renderer and the bead drawer use: the part of CanvasRenderingContext2D they need, so a test can stand in for a real canvas. */
+/** The drawing calls the renderer and the bead drawer use: the part of CanvasRenderingContext2D they need, so a test
+ * can stand in for a real canvas. */
 export type DrawingContext = Pick<
   CanvasRenderingContext2D,
   | 'save'
@@ -58,13 +57,12 @@ export type DrawingContext = Pick<
 /** The white tint of dark's rim (`bead-rim`, dark). */
 const WHITE_RIM = 'rgba(255,255,255,.16)'
 
-/**
- * The colors a Project is drawn in, one set per theme (DESIGN.md §4.2). The values are copied from the design system's
- * tokens rather than read from CSS, so the renderer draws the same in a canvas, an export and a test, none of which have
- * a stylesheet to ask; projectThemes.test.ts keeps them equal to tokens.json.
- */
+// The colors a Project is drawn in, one set per theme (DESIGN.md §4.2). Copied from the design system's tokens, not
+// read from CSS, so the renderer draws the same in a canvas, an export and a test; projectThemes.test.ts keeps them
+// equal to tokens.json.
 export interface ProjectTheme {
-  /** The Canvas the editor draws on (`box`): the drawing area's own background, which a finished row on it fades toward. Exports and the Convert image preview use `background`, the board, instead. */
+  /** The Canvas the editor draws on (`box`): the drawing area's own background, which a finished row on it fades
+   * toward. Exports and the Convert image preview use `background`, the board, instead. */
   canvas: string
   /** The Position marks on the Canvas, dots or squares (`position-mark`). */
   positionMark: string
@@ -79,23 +77,24 @@ export interface ProjectTheme {
   background: string
   /** The faint rim round every bead (`bead-rim`). */
   rim: string
-  /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim` in high contrast. */
+  /** The rim of a near-black bead, where a dark `rim` would vanish: white in light and dark, the theme's own `rim`
+   * in high contrast. */
   rimOnBlack: string
-  /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board (`bead-empty`). */
+  /** An empty bead: tinted rather than blank, so "nothing painted here yet" doesn't read as a blank board
+   * (`bead-empty`). */
   emptyBead: string
   /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
   marker: string
   /** The outline of a hover preview that has no color to show (`bead-outline`). */
   outline: string
-  /**
-   * How a bead in a finished row is drawn: its own color at `opacity` over the board, in every theme (ticket 352): slightly
-   * dimmed, never grey. `grey` stays for a theme that wants the greyscale.
-   */
+  /** A bead in a finished row: its own color at `opacity` over the board in every theme (ticket 352), never grey;
+   * `grey` is the greyscale option. */
   finished: { grey: boolean; opacity: number }
   /** The keyboard's bead cursor ring (`focus-ring`) and its width: 2px, 3px in high contrast (BeadCursor card). */
   cursor: string
   cursorWidth: number
-  /** The dashed outline the Tour puts on beads to paint and on frames to select or paste into (`tour-highlight`; black in high contrast). */
+  /** The dashed outline the Tour puts on beads to paint and on frames to select or paste into (`tour-highlight`;
+   * black in high contrast). */
   tourMark: string
 }
 
@@ -174,7 +173,8 @@ export const PROJECT_THEMES: Readonly<Record<'light' | 'dark' | 'contrast', Proj
   contrast: CONTRAST_THEME,
 }
 
-/** Everything a bead drawer is told about the bead it is drawing. Positions and sizes are in the Project's own px at zoom 1: the renderer has already set the transform for zoom and rotation. */
+/** Everything a bead drawer is told about the bead it is drawing. Positions and sizes are in the Project's own px at
+ * zoom 1: the renderer has already set the transform for zoom and rotation. */
 export interface BeadShape {
   x: number
   y: number
@@ -185,20 +185,19 @@ export interface BeadShape {
   color: string | null
   /** Whether the bead is in a finished row, drawn faded and in greys. */
   dimmed: boolean
-  /**
-   * With `dimmed`: the color the faded bead sits over, so that it is drawn as opaque pieces already blended with it
-   * instead of translucent ones over whatever is beneath. What a bead faded on the overlay layer needs, to cover the bead
-   * on the cells layer under it.
-   */
+  // With `dimmed`: the color the faded bead sits over, so it is drawn as opaque pieces already blended with it. What a
+  // bead faded on the overlay layer needs, to cover the bead on the cells layer under it.
   backdrop?: string
-  /** Device pixels per px of the bead's own space (zoom times pixel ratio): how big the bead is on the screen's own grid of pixels, for a look that keeps bitmaps of its beads. */
+  /** Device pixels per px of the bead's own space (zoom times pixel ratio): how big the bead is on the screen's own
+   * grid of pixels, for a look that keeps bitmaps of its beads. */
   deviceScale: number
   theme: ProjectTheme
 }
 
 export type BeadDrawer = (context: DrawingContext, bead: BeadShape) => void
 
-/** The gap between two neighbouring beads, in the Project's own px (ticket 458): each bead stands half of it in from its cell on every side. */
+/** The gap between two neighbouring beads, in the Project's own px (ticket 458): each bead stands half of it in from
+ * its cell on every side. */
 export const BEAD_GAP_PX = 1
 
 /** How far a bead stands in from its cell on each side. */
@@ -219,11 +218,8 @@ function isNearBlack(color: string): boolean {
   return !!rgb && luma(rgb) < NEAR_BLACK_LUMA
 }
 
-/**
- * A color's grey, worked out directly. A finished row is drawn as its greyscale at reduced opacity, and canvas filters
- * (`ctx.filter = 'grayscale(1)'`) are missing on iPad Safari, so nothing here leans on one. The weights are the ones CSS's
- * grayscale() uses, so the result is the grey the DOM grid showed.
- */
+// A color's grey, worked out directly: canvas filters (`ctx.filter = 'grayscale(1)'`) are missing on iPad Safari. The
+// weights are CSS grayscale()'s, so the result is the grey the DOM grid showed.
 export function greyscale(color: string): string {
   const rgb = parseHex(color)
   if (!rgb) {
@@ -236,7 +232,8 @@ export function greyscale(color: string): string {
 /** How much brighter the current row's beads are than the todo rows (ticket 352). */
 export const CURRENT_ROW_BRIGHTNESS = 0.1
 
-/** The color lifted toward white by `amount` (0 to 1): the current row's 10% brighter beads (ticket 352). A color it cannot read comes back as it was. */
+/** The color lifted toward white by `amount` (0 to 1): the current row's 10% brighter beads (ticket 352). A color it
+ * cannot read comes back as it was. */
 export function brighten(color: string, amount: number): string {
   const rgb = parseHex(color)
   if (!rgb) {
@@ -256,11 +253,8 @@ function parseHex(color: string): [number, number, number] | undefined {
   return channels && [channels.r, channels.g, channels.b]
 }
 
-/**
- * A rounded rectangle as a path, with the corners cut by `radius` (0 for square). Left open on purpose: a fill closes
- * every subpath itself, and closePath is what made a path of a whole row's beads slow — it costs by the number of
- * subpaths already in the path.
- */
+// A rounded rectangle as a path, corners cut by `radius` (0 for square). Left open on purpose: a fill closes every
+// subpath itself, and closePath made a path of a whole row's beads slow (it costs by the subpaths already in the path).
 function roundedRectPath(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {
   if (radius <= 0) {
     context.moveTo(x, y)
@@ -276,11 +270,8 @@ function roundedRectPath(context: DrawingContext, x: number, y: number, width: n
   context.arcTo(x, y, x + width, y, radius)
 }
 
-/**
- * A filled square, or rounded square, as cheaply as a canvas can: a rectangle, or the browser's own rounded rectangle,
- * which it draws by a fast path that a path built from arcs does not get. (Where a browser has no roundRect yet, the
- * same shape from arcs.)
- */
+// A filled square, or rounded square, as cheaply as a canvas can: a rectangle, or the browser's own roundRect (a fast
+// path that arcs don't get); arcs where a browser has no roundRect yet.
 function fillShape(context: DrawingContext, x: number, y: number, size: number, radius: number): void {
   if (radius <= 0) {
     context.fillRect(x, y, size, size)
@@ -306,10 +297,8 @@ export function fadeOver(color: string, backdrop: string, opacity: number): stri
   return `rgb(${r}, ${g}, ${b})`
 }
 
-/**
- * Blends worked out so far. Every square bead on screen asks for its rim over its own color, and a Project has only a
- * handful of colors, so parsing them again for each of thousands of beads is what a scroll or a framing drag would pay.
- */
+// Blends worked out so far: a Project has few colors but thousands of beads, and re-parsing per bead is what a scroll
+// or framing drag would pay.
 const blends = new Map<string, string>()
 
 /** A translucent rgba(r,g,b,a) over an opaque color, as one opaque color; anything else is returned as it is. */
@@ -338,11 +327,9 @@ function finishedColor(color: string, theme: ProjectTheme, backdrop = theme.back
   return fadeOver(theme.finished.grey ? greyscale(color) : color, backdrop, theme.finished.opacity)
 }
 
-/**
- * The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell, and a
- * faint rim just inside its edge (white on a near-black bead, in light too, however faded). A finished bead is the same shapes in the colors its fade comes to, so it covers
- * whatever is under it (a finished bead drawn on the overlay covers the bead on the cells layer).
- */
+// The bead drawn straight onto a context, every shape an opaque fill: the bead a gap in from its cell and a faint rim
+// just inside its edge. A finished bead is the same shapes in its faded colors, so it covers whatever is under it (the
+// bead on the cells layer, when drawn on the overlay).
 function drawBeadShapes(context: DrawingContext, { x, y, size, cornerRadius, color, dimmed, backdrop, theme }: BeadShape): void {
   const own = color ?? theme.emptyBead
   const fill = dimmed ? finishedColor(own, theme, backdrop) : own
@@ -362,16 +349,9 @@ function spriteFor(bead: BeadShape): Sprite | undefined {
   return cachedSprite(key, pixels, bead.size, (context) => drawBeadShapes(context, { ...bead, x: 0, y: 0 }))
 }
 
-/**
- * The design system's bead (BeadBoard card): a square (or, for peyote, rounded) bead in its color on the board, a gap
- * from its neighbours, with a faint rim; a finished row's beads faded toward the board.
- *
- * A Project of thousands of beads is redrawn on every move of a drag in the Convert image preview, and on every scroll
- * of the editor, so how cheaply a bead is drawn is what keeps those smooth. A square bead is two rectangles, the
- * cheapest fill there is; anything rounded or faded is a bitmap kept from the first time that look was drawn (batching
- * a row's beads into one path was tried, and is slower than either: a path with many subpaths costs more than the sum
- * of its parts).
- */
+// The design system's bead (BeadBoard card): a square (rounded for peyote) bead with a faint rim; finished rows faded.
+// Redrawn thousands of times per drag/scroll, so a square is two rectangles and rounded or faded is a cached bitmap;
+// batching a row into one path was slower (many subpaths cost more than their sum).
 export const drawFlatBead: BeadDrawer = (context, bead) => {
   const sprite = bead.cornerRadius > 0 || bead.dimmed ? spriteFor(bead) : undefined
   if (sprite) {

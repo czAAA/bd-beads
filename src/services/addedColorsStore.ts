@@ -1,11 +1,8 @@
 import { MAX_ADDED_COLORS, normalizeHex } from '../domain/palette'
 import { readKey } from './storageKeys'
 
-/**
- * The Custom colors that joined the Palette (CONTEXT.md, ticket 227): they belong to the person using this device, not
- * to a Project, so they are kept on the device like the theme and the maker name and never sent anywhere (ADR 0001).
- * Cells store the hex, so a Project painted with them opens fine on a device that lacks them.
- */
+// The Custom colors added to the Palette (CONTEXT.md, ticket 227): kept on this device, never sent (ADR 0001); cells
+// store the hex.
 export const ADDED_COLORS_KEY = 'openbeads:added-colors'
 
 /** The ids of the Palette's swatches in the order their slots were arranged (ticket 398), built-in ones included. */
