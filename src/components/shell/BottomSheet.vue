@@ -66,10 +66,10 @@ function onKeydown(event: KeyboardEvent) {
   const active = document.activeElement
   if (event.shiftKey && (active === first || active === sheetEl.value)) {
     event.preventDefault()
-    last.focus()
+    last.focus({ preventScroll: true })
   } else if (!event.shiftKey && active === last) {
     event.preventDefault()
-    first.focus()
+    first.focus({ preventScroll: true })
   }
 }
 
@@ -81,7 +81,7 @@ function onFocusIn(event: FocusEvent) {
   if (target instanceof Element && target.closest('.bottom-sheet')) return
   // Likewise a modal raised from inside the sheet (the name on exports, a confirmation): it traps its own focus.
   if (target instanceof Element && target.closest('.app-modal')) return
-  ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus()
+  ;(initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus({ preventScroll: true })
 }
 
 /** The handle: a tap closes the sheet, a drag down follows the finger and closes past the threshold, else springs back. */
@@ -115,7 +115,7 @@ onMounted(() => {
   opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
   // The close button sits before the body in DOM order (so it can stay pinned top-right); focus starts on the
   // sheet's own content instead, the same way AppModal's own initial focus skips past its header.
-  void nextTick(() => (initialFocusable(bodyEl.value) ?? initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus())
+  void nextTick(() => (initialFocusable(bodyEl.value) ?? initialFocusable() ?? focusables()[0] ?? sheetEl.value)?.focus({ preventScroll: true }))
   document.addEventListener('focusin', onFocusIn)
 })
 
@@ -124,9 +124,9 @@ onBeforeUnmount(() => {
   if (pressClosed.wasPressClosed()) return
   const target = opener
   if (target?.isConnected) {
-    target.focus()
+    target.focus({ preventScroll: true })
   } else {
-    void nextTick(() => target?.isConnected && target.focus())
+    void nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
   }
 })
 </script>
