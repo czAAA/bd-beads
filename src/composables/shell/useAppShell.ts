@@ -13,6 +13,7 @@ import { rotationSwapsAxes } from '../../domain/grid'
 import { gridAxisOfDirection } from '../../domain/mirror'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
+import { useViewportGuard } from './useViewportGuard'
 import { usePenInputMode } from './usePenInputMode'
 import { useProjectManageFlow } from '../project/useProjectManageFlow'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
@@ -702,6 +703,7 @@ function wireAppShell(services: Services) {
   }
 
   usePageZoomLock()
+  useViewportGuard()
   useAppShortcutTable({
     activeProject: currentProject,
     activeTool: () => activeTool.value,
