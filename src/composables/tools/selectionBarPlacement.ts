@@ -83,9 +83,9 @@ const clampTo = (value: number, low: number, high: number) => (low > high ? (low
 const HANDLE_HIT_WIDTH_PX = 56
 const around = (centre: { x: number; y: number }, width: number, height: number): BarBox => ({ left: centre.x - width / 2, top: centre.y - height / 2, width, height })
 
-// Where the Margin handle goes (ticket 473): halfway down the top margin, centred on its on-screen stretch, 32px
-// from the box's sides and inside it vertically. Only its centre moves with the zoom; it slides clear of the edit
-// pencil and the Frame bar (`bar`) where they would cover it.
+/** Where the Margin handle goes (ticket 473): halfway down the top margin, centred on its on-screen stretch, 32px
+ * from the box's sides and inside it vertically. Only its centre moves with the zoom; it slides clear of the edit
+ * pencil and the Frame bar (`bar`) where they would cover it. */
 export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: number; y: number } {
   const { box, outer, viewport } = anchor
   const visibleLeft = Math.max(outer.left, 0)
@@ -110,8 +110,8 @@ export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: numb
   return slides.filter((at) => !hits(at)).sort((a, b) => distance(a) - distance(b))[0] ?? natural
 }
 
-// Where the edit pencil goes (ticket 473): 14px out and up from the margin outline's top-right corner, pinned to it
-// and kept inside the canvas box.
+/** Where the edit pencil goes (ticket 473): 14px out and up from the margin outline's top-right corner, pinned to it
+ * and kept inside the canvas box. */
 export function editPencilCentre(anchor: FrameAnchor): { x: number; y: number } {
   const { outer, viewport } = anchor
   const half = PENCIL_HIT_PX / 2
