@@ -63,6 +63,8 @@ describe('the control registry', () => {
     expect(remove.enabled?.(deps(project(true, 2)))).toBe(true)
     expect(remove.enabled?.(deps(project(false, 0)))).toBe(false)
     expect(remove.disabledBody?.(en, deps(project(false, 0)))).toBe(en.tooltips.noFrameToRemove)
+    // A bin, as every other remove (ticket 475).
+    expect(remove.icon).toBe('delete')
   })
 
   it('gives every action that can be disabled a reason, in both languages', () => {

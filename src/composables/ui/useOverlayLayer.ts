@@ -18,6 +18,9 @@ export interface OverlayLayerOptions {
   onOutsidePress?: () => void
   /** Whether a target is the overlay's own opener, which toggles the overlay itself. */
   isOpener?: (target: Element) => boolean
+  /** Whether a press outside still works the overlay's own thing, so it goes through and the overlay stays (the
+   * Frame bar's handles on the canvas, ticket 475). */
+  keepsPress?: (event: PointerEvent) => boolean
 }
 
 const layers: OverlayLayerOptions[] = []
@@ -46,7 +49,7 @@ function onPointerDown(event: PointerEvent) {
   // A pinch's second finger is not a press.
   if (!top || (event.pointerType === 'touch' && !event.isPrimary) || !(target instanceof Element)) return
   const root = top.root()
-  if (!root || root.contains(target) || isExempt(top, target)) return
+  if (!root || root.contains(target) || isExempt(top, target) || top.keepsPress?.(event)) return
   event.stopPropagation()
   event.preventDefault()
   swallowNextClick()

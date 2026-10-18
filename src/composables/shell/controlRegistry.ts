@@ -289,8 +289,9 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'pencil',
     name: (t) => t.frame.editFrame,
     body: (t) => t.tooltips.editFrame,
-    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
-    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.editFrameLocked : t.tooltips.setFrameFirst),
+    // Open once a pass is done too, for the size and Remove Frame (ticket 475).
+    enabled: hasFrame,
+    disabledBody: (t) => t.tooltips.setFrameFirst,
     group: 'canvas',
     chords: [],
     needsProject: true,
@@ -301,8 +302,9 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'frame',
     name: (t) => t.frame.title,
     body: (t) => t.tooltips.editFrame,
-    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
-    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.editFrameLocked : t.tooltips.setFrameFirst),
+    // Open once a pass is done too, for the size and Remove Frame (ticket 475).
+    enabled: hasFrame,
+    disabledBody: (t) => t.tooltips.setFrameFirst,
     group: 'canvas',
     chords: [],
     needsProject: true,
@@ -537,7 +539,7 @@ export const CONTROLS: readonly ControlAction[] = [
     },
   },
   unkeyed('remove-frame', (t) => t.frame.removeFrame, 'canvas', {
-    icon: 'close',
+    icon: 'delete',
     body: (t) => t.tooltips.removeFrame,
     // Allowed once a pass is done too: it asks first, and clears the passes with the Frame (ticket 426).
     enabled: hasFrame,

@@ -126,9 +126,11 @@ const {
   onResizeFrame,
   frameBarShown,
   frameBarOpen,
+  frameBarFrom,
   surfaceInputMode,
   onFitFrame,
   onEditFrame,
+  onCloseFrameBar,
   onFrameKey,
   onStepFrameEdge,
   onRemoveFrame,
@@ -302,7 +304,8 @@ function techniqueWord(technique: Technique): string {
           @name-piece="onNamePiece"
         />
 
-        <!-- The Frame's own controls (ticket 473): the Margin handle and edit pencil follow the Frame; the bar is docked. -->
+        <!-- The Frame's own controls (tickets 473, 475): the Margin handle and edit pencil follow the Frame; the bar hangs
+          from the pencil or the strip's Frame button, whichever opened it. -->
         <FrameChrome
           v-if="activeProject && frameAnchor && !selection"
           :project="activeProject"
@@ -310,7 +313,7 @@ function techniqueWord(technique: Technique): string {
           :editing="frameBarOpen"
           :pressing="surfacePressing"
           :bar="frameBarRect"
-          @toggle="onEditFrame"
+          @toggle="onEditFrame('pencil')"
           @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
         />
@@ -318,11 +321,14 @@ function techniqueWord(technique: Technique): string {
         <FrameBar
           v-if="activeProject && frameBarShown && !selection && !framing"
           :project="activeProject"
+          :pencil="frameBarFrom === 'pencil' ? frameAnchor : undefined"
+          :grabs-frame="(event: PointerEvent) => surfaceRef?.grabsFrame(event) ?? false"
           @step="onStepFrameEdge"
           @resize="onResizeFrame"
           @rotate="onRotateFrame"
           @remove="onRemoveFrame"
           @key="onFrameKey"
+          @close="onCloseFrameBar"
           @rect="frameBarRect = $event"
         />
 
