@@ -101,10 +101,10 @@ function onKeydown(event: KeyboardEvent) {
     if (!first || !last) return event.preventDefault()
     if (event.shiftKey && document.activeElement === first) {
       event.preventDefault()
-      last.focus()
+      last.focus({ preventScroll: true })
     } else if (!event.shiftKey && document.activeElement === last) {
       event.preventDefault()
-      first.focus()
+      first.focus({ preventScroll: true })
     }
     return
   }
@@ -113,7 +113,7 @@ function onKeydown(event: KeyboardEvent) {
   event.preventDefault()
   const index = list.indexOf(target)
   const next = event.key === 'Home' ? 0 : event.key === 'End' ? list.length - 1 : event.key === 'ArrowDown' ? Math.min(list.length - 1, index + 1) : Math.max(0, index - 1)
-  list[next]?.focus()
+  list[next]?.focus({ preventScroll: true })
 }
 
 /** The Dropdown closes when focus leaves it with Tab. */
@@ -152,14 +152,14 @@ onMounted(() => {
   opener = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`)
   place()
   window.addEventListener('resize', measureSheet)
-  void nextTick(() => (focusables()[0] ?? panelEl.value)?.focus())
+  void nextTick(() => (focusables()[0] ?? panelEl.value)?.focus({ preventScroll: true }))
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', measureSheet)
   anchored.stop()
   const target = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? opener
   // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes.
-  if (!pressClosed.wasPressClosed() && !document.querySelector('.app-modal')) void nextTick(() => target?.isConnected && target.focus())
+  if (!pressClosed.wasPressClosed() && !document.querySelector('.app-modal')) void nextTick(() => target?.isConnected && target.focus({ preventScroll: true }))
 })
 </script>
 
