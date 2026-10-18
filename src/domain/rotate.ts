@@ -1,5 +1,6 @@
 import { colorAt, forEachBead, frameContains, withColors, type BeadChange, type Frame } from './canvas'
 import { snapRow } from './frame'
+import { MARGIN, withMargin } from './margin'
 import { carryNames } from './pieceNames'
 import type { Project } from './project'
 import { selectionFrame, type Selection } from './selection'
@@ -82,4 +83,27 @@ export function coveredByRotation(before: Project, after: Project, selection: Se
     }
   })
   return covered
+}
+
+/** The Selection Rotate Frame turns: the Frame and its keep-out margin, the rectangle `selectionAllowed` takes. */
+export function frameAreaSelection(frame: Frame): Selection {
+  const area = withMargin(frame)
+  return { top: area.row, left: area.column, rows: area.rows, columns: area.columns }
+}
+
+/**
+ * Rotate Frame (ticket 471, ADR 0063): the Frame, its margin and the beads inside turned a quarter clockwise about their
+ * centre, as Rotate does a Selection; Width and Height swap, outside beads stay unless covered. No Frame: undefined. */
+export function rotateFrame(project: Project): Project | undefined {
+  if (!project.frame) {
+    return undefined
+  }
+  const turned = rotateSelection(project, frameAreaSelection(project.frame))
+  const frame: Frame = {
+    row: turned.selection.top + MARGIN,
+    column: turned.selection.left + MARGIN,
+    rows: turned.selection.rows - 2 * MARGIN,
+    columns: turned.selection.columns - 2 * MARGIN,
+  }
+  return { ...turned.project, frame }
 }
