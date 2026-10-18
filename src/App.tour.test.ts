@@ -96,7 +96,11 @@ describe('App Tour (ticket 80)', () => {
   it('Escape skips it too', async () => {
     const wrapper = mountApp()
     await flushPromises()
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    // The empty canvas opens Menu by itself, and a menu takes the first Escape.
+    const escape = () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+    escape()
+    await flushPromises()
+    escape()
     await flushPromises()
 
     expect(card(wrapper).exists()).toBe(false)
