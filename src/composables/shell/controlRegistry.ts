@@ -138,8 +138,8 @@ const hasFrame = (deps: ControlDeps) => deps.activeProject()?.frame !== undefine
 const hasBeads = (deps: ControlDeps) => Object.keys(deps.activeProject()?.beads ?? {}).length > 0
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
-/** One of Edit Frame's margin steppers (ticket 417): an edge a bead out or in, named for its edge. Moving in stops
- * at one bead. */
+/** One of the Frame bar's steppers (tickets 417, 473): an edge a bead out or in, named for its edge. Moving in stops
+ * at four beads. */
 const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlAction => ({
   id: `frame-edge-${edge}-${direction}`,
   name: (t) => t.frame[direction === 'out' ? 'edgeOut' : 'edgeIn'][edge],
@@ -286,6 +286,18 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'edit-frame',
     icon: 'pencil',
     name: (t) => t.frame.editFrame,
+    body: (t) => t.tooltips.editFrame,
+    enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.editFrameLocked : t.tooltips.setFrameFirst),
+    group: 'canvas',
+    chords: [],
+    needsProject: true,
+    run: (deps) => deps.onEditFrame(),
+  },
+  {
+    id: 'strip-frame',
+    icon: 'frame',
+    name: (t) => t.frame.title,
     body: (t) => t.tooltips.editFrame,
     enabled: (deps) => hasFrame(deps) && !frameLocked(deps),
     disabledBody: (t, deps) => (hasFrame(deps) ? t.tooltips.editFrameLocked : t.tooltips.setFrameFirst),
@@ -535,7 +547,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: hasBeads,
     disabledBody: (t: Translations) => t.tooltips.noBeadsToRotate,
   }),
-  unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { icon: 'move-frame', body: (t) => t.tooltips.moveFrame }),
+  unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { body: (t) => t.tooltips.moveFrame }),
   unkeyed('reset-progress', (t) => t.rowProgress.resetButton, 'rowProgress', {
     icon: 'reset',
     body: (t) => t.tooltips.resetProgress,

@@ -8,7 +8,7 @@ import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import ConvertImageFrame from '../import/ConvertImageFrame.vue'
-import EditFrameSteppers from './EditFrameSteppers.vue'
+import FrameBar from './FrameBar.vue'
 import FrameChrome from './FrameChrome.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
@@ -17,7 +17,7 @@ import ToastRegion from '../ui/ToastRegion.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useColorPick } from '../../composables/tools/usePalette'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { BarBox, FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/grid'
 import type { PillRect } from '../../domain/toolPill'
@@ -124,6 +124,9 @@ const {
   onRemoveSelectedLine,
   locale,
   settingFrame,
+  onResizeFrame,
+  frameBarShown,
+  frameBarOpen,
   surfaceInputMode,
   onFitFrame,
   onEditFrame,
@@ -194,10 +197,12 @@ const selectionSummary = computed(() => {
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps
  * aside for the other (ticket 415). */
 const selectionAnchor = ref<SelectionAnchor>()
-/** Where the Frame and its margin are while it is edited: Edit Frame's margin steppers sit in the margin (tickets
- * 417, 427). */
+/** Where the Frame and its margin are on the canvas box: the Margin handle and the edit pencil follow it (tickets
+ * 473). */
 const frameAnchor = ref<FrameAnchor>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
+/** Where the Frame bar is on the drawing area, for the Margin handle to keep clear of (ticket 473). */
+const frameBarRect = ref<BarBox>()
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
 
@@ -242,6 +247,7 @@ function techniqueWord(technique: Technique): string {
         class="app-shell__canvas-strip"
         :project="framing ? undefined : activeProject"
         :rulers="showRulers"
+        :frame-open="frameBarOpen"
         :can-undo="canUndo"
         :can-redo="canRedo"
         :open-sheet="openPhoneSheet"
@@ -249,6 +255,7 @@ function techniqueWord(technique: Technique): string {
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         @select-sheet="onSelectPhoneSheet"
+        @toggle-frame="onEditFrame"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
         @undo="onUndo"
@@ -296,24 +303,28 @@ function techniqueWord(technique: Technique): string {
           @name-piece="onNamePiece"
         />
 
-        <EditFrameSteppers
-          v-if="activeProject && settingFrame && frameAnchor && !selection"
+        <!-- The Frame's own controls (ticket 473): the Margin handle and edit pencil follow the Frame; the bar is docked. -->
+        <FrameChrome
+          v-if="activeProject && frameAnchor && !selection"
           :project="activeProject"
           :anchor="frameAnchor"
-          @step="onStepFrameEdge"
+          :editing="frameBarOpen"
+          :pressing="surfacePressing"
+          :bar="frameBarRect"
+          @toggle="onEditFrame"
+          @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
         />
 
-        <FrameChrome
-          v-if="activeProject && frameAnchor"
+        <FrameBar
+          v-if="activeProject && frameBarShown && !selection && !framing"
           :project="activeProject"
-          :anchor="frameAnchor"
-          :editing="settingFrame"
-          @toggle="onEditFrame"
+          @step="onStepFrameEdge"
+          @resize="onResizeFrame"
           @rotate="onRotateFrame"
           @remove="onRemoveFrame"
-          @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
+          @rect="frameBarRect = $event"
         />
 
         <div class="app-shell__canvas-row">
@@ -516,9 +527,9 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar and the Tool pill's layer, which
- * float over the beads. */
-.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar):not(.tool-pill-layer) {
+/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar, the Frame's chrome, and
+ * the Tool pill's layer, which float over the beads. */
+.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar):not(.frame-chrome):not(.tool-pill-layer) {
   position: relative;
 }
 

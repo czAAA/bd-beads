@@ -23,6 +23,13 @@ function setup(project: Project | null = sized) {
   return { deps: { ...deps, replaceProject: harness.replaceProject, harness }, ...useFrameFlow(deps) }
 }
 
+/** A flow whose Frame bar the weaver has opened, so the handles are on. */
+function setupEditing(project: Project | null = sized) {
+  const flow = setup(project)
+  flow.toggleEdit()
+  return flow
+}
+
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
   return deps.replaceProject.mock.calls.at(-1)?.[0].frame
 }
@@ -65,8 +72,14 @@ describe('useFrameFlow', () => {
     expect(deps.harness.project.rowProgress.currentRow).toBe(1)
   })
 
-  it('resizes the Frame by the edges of the handle it grabbed', () => {
-    const { deps, press, drag, release } = setup()
+  it('resizes the Frame by the edges of the handle it grabbed, only while the bar is open', () => {
+    const closed = setup()
+    closed.press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
+    closed.drag({ row: 5, column: 6 })
+    closed.release()
+    expect(closed.deps.replaceProject).not.toHaveBeenCalled()
+
+    const { deps, press, drag, release } = setupEditing()
     press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
     drag({ row: 5, column: 6 })
     release()
@@ -139,11 +152,11 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ row: 4, column: 5, rows: 4, columns: 4 })
   })
 
-  it('sets the Frame to a Selection\'s rectangle as one undo step, with edit on for it (tickets 415, 452)', () => {
+  it('sets the Frame to a Selection\'s rectangle as one undo step, and leaves the bar closed (tickets 415, 473)', () => {
     const { deps, settingFrame, setTo } = setup(open)
     setTo({ row: 2, column: 3, rows: 4, columns: 5 })
     expect(lastFrame(deps)).toEqual({ row: 2, column: 3, rows: 4, columns: 5 })
-    expect(settingFrame.value).toBe(true)
+    expect(settingFrame.value).toBe(false)
   })
 
   it('refuses a Frame that would cut a named Schema, with a Message naming it (ticket 407)', () => {
@@ -158,13 +171,41 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 1, columns: 4 })
   })
 
-  it('has edit on by default, toggles it, and keeps it off the Project (ticket 452)', () => {
+  it('has the bar closed by default and toggles it (tickets 452, 473)', () => {
     const { settingFrame, toggleEdit } = setup()
+    expect(settingFrame.value).toBe(false)
+    toggleEdit()
     expect(settingFrame.value).toBe(true)
     toggleEdit()
     expect(settingFrame.value).toBe(false)
     toggleEdit()
     expect(settingFrame.value).toBe(true)
+  })
+
+  it('shows the bar when opened, and always once a pass is done, when it holds the size and Remove alone (ticket 473)', () => {
+    const closed = setup()
+    expect(closed.barShown.value).toBe(false)
+    closed.toggleEdit()
+    expect(closed.barShown.value).toBe(true)
+    expect(setup(moveToRow(sized, 1)).barShown.value).toBe(true)
+    expect(setup(open).barShown.value).toBe(false)
+  })
+
+  it('resizes to a typed size, both sides evenly, as one Undo step, and not once a pass is done (ticket 473)', () => {
+    const big = { ...sized, frame: { row: 4, column: 4, rows: 6, columns: 6 } }
+    const { deps, resizeTo } = setup(big)
+    resizeTo(10, 8)
+    expect(lastFrame(deps)).toEqual({ row: 3, column: 2, rows: 8, columns: 10 })
+    expect(deps.announce).toHaveBeenCalledTimes(1)
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.frame).toEqual(big.frame)
+
+    const same = setup(big)
+    same.resizeTo(6, 6)
+    expect(same.deps.replaceProject).not.toHaveBeenCalled()
+    const locked = setup(moveToRow(big, 1))
+    locked.resizeTo(10, 10)
+    expect(locked.deps.replaceProject).not.toHaveBeenCalled()
   })
 
   it('has no edit with no Project open, with no Frame, or once Row progress holds the Frame; it is on again when the passes are reset (tickets 411, 452)', () => {
@@ -186,7 +227,7 @@ describe('useFrameFlow', () => {
     })
 
     it('moves the Frame with the arrows and resizes it from the bottom-right with Shift', () => {
-      const { deps, onKey } = setup()
+      const { deps, onKey } = setupEditing()
       expect(onKey(key('ArrowRight'))).toBe(true)
       expect(lastFrame(deps)).toEqual({ ...sized.frame, column: 1 })
       expect(onKey(key('ArrowDown', { shiftKey: true }))).toBe(true)
@@ -238,7 +279,7 @@ describe('useFrameFlow', () => {
 
   it('leaves beads the new Frame would crowd where they are, in the one undo step (ticket 261)', () => {
     const crowded = { ...sized, beads: withColors(sized.beads, [{ row: 5, column: 5, color: '#ff0000' }]) }
-    const { deps, press, drag, release } = setup(crowded)
+    const { deps, press, drag, release } = setupEditing(crowded)
     press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
     drag({ row: 4, column: 4 })
     release()
@@ -253,8 +294,9 @@ describe('useFrameFlow', () => {
 
   describe('the margin steppers (ticket 417)', () => {
     it('moves one edge a bead at a time, each press one Undo step, the other edges staying', () => {
-      const { deps, stepEdge } = setup()
-      const frame = sized.frame!
+      const big = { ...sized, frame: { row: 2, column: 2, rows: 6, columns: 6 } }
+      const { deps, stepEdge } = setup(big)
+      const frame = big.frame
       stepEdge('right', 1)
       expect(lastFrame(deps)).toEqual({ ...frame, columns: frame.columns + 1 })
       stepEdge('left', 1)
@@ -270,8 +312,8 @@ describe('useFrameFlow', () => {
       expect(deps.harness.history.canUndo.value).toBe(false)
     })
 
-    it('is no step at one bead, and never empties the Frame', () => {
-      const { deps, stepEdge } = setup({ ...sized, frame: { row: 2, column: 2, rows: 1, columns: 1 } })
+    it('is no step at four beads, and never shrinks the Frame past them (ticket 473)', () => {
+      const { deps, stepEdge } = setup({ ...sized, frame: { row: 2, column: 2, rows: 4, columns: 4 } })
       for (const edge of ['top', 'bottom', 'left', 'right'] as const) stepEdge(edge, -1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
@@ -292,7 +334,7 @@ describe('useFrameFlow', () => {
 
     it('refuses an edge that would cut a named Schema, with a Message naming it (ticket 407)', () => {
       const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
-      const named = { ...open, frame: { row: 0, column: 0, rows: 1, columns: 4 }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+      const named = { ...open, frame: { row: 0, column: 0, rows: 4, columns: 6 }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
       const { deps, stepEdge } = setup(named)
       stepEdge('left', -1)
       expect(deps.replaceProject).not.toHaveBeenCalled()

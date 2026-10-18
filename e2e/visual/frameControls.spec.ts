@@ -1,0 +1,83 @@
+import { expect, test, type Page } from '@playwright/test'
+import { openApp, settle, setZoom } from '../support/app'
+import { fixtureProject } from '../support/projects'
+
+/** The Frame's Margin handle, edit pencil and Frame bar never scale or move with the zoom or pan (ticket 473): measured
+ * by their boxes, not compared with a picture. */
+
+type Box = { x: number; y: number; width: number; height: number }
+
+async function box(page: Page, testid: string): Promise<Box> {
+  const found = await page.getByTestId(testid).first().boundingBox()
+  expect(found, testid).not.toBeNull()
+  return found!
+}
+
+const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
+
+for (const zoom of [10, 100, 400]) {
+  test(`the handle, pencil and bar keep their size, and clear each other, at ${zoom}%`, async ({ browser }) => {
+    const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+    const page = await context.newPage()
+    await openApp(page, [fixtureProject({ technique: 'loom' })])
+    await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+    await page.getByTestId('frame-edit-toggle').click()
+    await setZoom(page, zoom)
+
+    const handle = await box(page, 'frame-move-handle')
+    const pencil = await box(page, 'frame-edit-toggle')
+    const bar = await box(page, 'frame-bar')
+    const button = await box(page, 'strip-frame')
+
+    expect([handle.width, handle.height]).toEqual([56, 44])
+    expect([pencil.width, pencil.height]).toEqual([32, 32])
+    expect(bar.width).toBeLessThanOrEqual(504)
+    // Dropped down from the strip's Frame button, 4px under it, like Menu and Project.
+    expect(Math.round(bar.y - (button.y + button.height))).toBe(4)
+    expect(Math.round(bar.x)).toBe(Math.round(button.x))
+    for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
+      const step = await box(page, testid)
+      expect([step.width, step.height]).toEqual([48, 48])
+    }
+    expect(overlaps(handle, pencil)).toBe(false)
+    expect(overlaps(handle, bar)).toBe(false)
+    expect(overlaps(pencil, bar)).toBe(false)
+    await context.close()
+  })
+}
+
+test('opening the bar does not push the canvas or move the pencil', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom' })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  const closed = await box(page, 'project-surface')
+  const pencil = await box(page, 'frame-edit-toggle')
+  await page.getByTestId('frame-edit-toggle').click()
+  await settle(page)
+  expect(await box(page, 'project-surface')).toEqual(closed)
+  expect(await box(page, 'frame-edit-toggle')).toEqual(pencil)
+  await context.close()
+})
+
+test('panning the canvas moves the Frame but not the bar, and keeps the handle on screen', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rows: 40 })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  await page.getByTestId('frame-edit-toggle').click()
+  await setZoom(page, 400)
+
+  const before = { bar: await box(page, 'frame-bar'), handle: await box(page, 'frame-move-handle') }
+  await page.locator('[data-tour="canvas"]').evaluate((element) => element.scrollBy(300, 200))
+  await page.waitForTimeout(100)
+  const after = { bar: await box(page, 'frame-bar'), handle: await box(page, 'frame-move-handle') }
+
+  expect(after.bar).toEqual(before.bar)
+  expect([after.handle.width, after.handle.height]).toEqual([56, 44])
+  const area = await box(page, 'app-drawing-area')
+  expect(after.handle.x).toBeGreaterThanOrEqual(area.x)
+  expect(after.handle.x + after.handle.width).toBeLessThanOrEqual(area.x + area.width)
+  expect(after.handle.y).toBeGreaterThanOrEqual(area.y)
+  await context.close()
+})
