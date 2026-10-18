@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import type { Rotation, Technique } from '../domain/grid'
+import type { Rotation } from '../domain/grid'
+import type { Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX, projectExtentPx, surfaceView } from './surfaceView'
 

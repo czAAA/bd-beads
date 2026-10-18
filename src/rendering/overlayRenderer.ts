@@ -1,8 +1,9 @@
 import { colorAt, type Frame } from '../domain/canvas'
-import { type GridPosition, type PreviewCell, type Technique, type Weave } from '../domain/grid'
+import { type GridPosition, type PreviewCell } from '../domain/grid'
+import { type Technique, type Weave } from '../domain/weave'
 import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
-import { lineOfPass, passCount, passOf } from '../domain/passes'
+import { beadRoundness, lineOfPass, passCount, passOf } from '../domain/weave'
 import { rowProgressOn } from '../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
@@ -11,7 +12,7 @@ import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
-import { BEAD_GAP_PX, beadRoundness } from './beadLook'
+import { BEAD_GAP_PX } from './beadLook'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
 // tool, drawn over the cells so it changes without redrawing them. Coordinates are the base layer's (see

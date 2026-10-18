@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
-import type { Rotation, Technique } from '../domain/grid'
+import type { Rotation } from '../domain/grid'
+import type { Technique } from '../domain/weave'
 import { rulerLayout, type RulerDot, type RulerLabel } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
