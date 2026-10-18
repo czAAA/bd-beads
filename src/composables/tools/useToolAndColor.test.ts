@@ -7,11 +7,10 @@ function setup() {
   return { deps, ...useToolAndColor(deps) }
 }
 
-/** The three ways of picking a paint color, shared by the tests about what a pick does to the active tool. */
+/** The two ways of picking a paint color, shared by the tests about what a pick does to the active tool. */
 const colorPicks: [string, (flow: ReturnType<typeof setup>) => void][] = [
   ['a Palette swatch', (flow) => flow.onSelectColor('blue')],
   ['a Custom color', (flow) => flow.onSelectCustomColor('#123456')],
-  ['an Image color', (flow) => flow.onSelectImageColor('#abcdef')],
 ]
 
 describe('useToolAndColor', () => {
@@ -52,12 +51,11 @@ describe('useToolAndColor', () => {
   })
 
   describe('choosing a color', () => {
-    it('a Palette swatch deselects the Custom and Image colors but the Custom slot keeps its hex', () => {
-      const { customColor, selectedImageColor, selectedColorId, onSelectCustomColor, onSelectColor } = setup()
+    it('a Palette swatch deselects the Custom color but the Custom slot keeps its hex', () => {
+      const { customColor, selectedColorId, onSelectCustomColor, onSelectColor } = setup()
       onSelectCustomColor('#123456')
       onSelectColor('blue')
       expect(selectedColorId.value).toBe('blue')
-      expect(selectedImageColor.value).toBeUndefined()
       expect(customColor.value).toBe('#123456')
     })
 
@@ -66,15 +64,6 @@ describe('useToolAndColor', () => {
       onSelectCustomColor('#123456')
       expect(selectedColorId.value).toBeUndefined()
       expect(selectedColorHex()).toBe('#123456')
-    })
-
-    it('an Image color becomes the paint color and deselects the Palette swatch, leaving the Custom slot alone', () => {
-      const { customColor, selectedColorId, selectedColorHex, onSelectCustomColor, onSelectImageColor } = setup()
-      onSelectCustomColor('#123456')
-      onSelectImageColor('#abcdef')
-      expect(selectedColorId.value).toBeUndefined()
-      expect(selectedColorHex()).toBe('#abcdef')
-      expect(customColor.value).toBe('#123456')
     })
 
     it('has no paint color when nothing is selected', () => {
@@ -104,23 +93,6 @@ describe('useToolAndColor', () => {
       const flow = setup()
       flow.onSelectColor('blue')
       expect(flow.deps.leaveSelectTool).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('a Project switch', () => {
-    it('drops an Image color for the Palette default', () => {
-      const { selectedImageColor, selectedColorId, onSelectImageColor, resetImageColor } = setup()
-      onSelectImageColor('#abcdef')
-      resetImageColor()
-      expect(selectedImageColor.value).toBeUndefined()
-      expect(selectedColorId.value).toBe(DEFAULT_PALETTE_COLOR_ID)
-    })
-
-    it('leaves any other color alone', () => {
-      const { selectedColorId, onSelectColor, resetImageColor } = setup()
-      onSelectColor('blue')
-      resetImageColor()
-      expect(selectedColorId.value).toBe('blue')
     })
   })
 })

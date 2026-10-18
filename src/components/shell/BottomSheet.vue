@@ -14,7 +14,7 @@ withDefaults(defineProps<{ title: string; modal?: boolean }>(), { modal: false }
 const emit = defineEmits<{ close: [] }>()
 const closeAction = controlAction('close')
 
-/** Pick controls inside (tool tiles, Palette swatches, the Custom and Image colors) close the sheet through this
+/** Pick controls inside (tool tiles, Palette swatches, the Custom color) close the sheet through this
  * once they have picked. */
 provide(SHEET_CLOSE, () => emit('close'))
 
