@@ -46,33 +46,56 @@ function pencilAt(rect: { left: number; top: number }, height = 300) {
 }
 
 describe('FrameBar (ticket 473)', () => {
-  it('shows the size with its unit, and Rotate and Remove Frame', () => {
+  it('shows the size as two empty fields with the current size as placeholders, then the unit, Rotate and Remove Frame', () => {
     const wrapper = mountBar()
-    expect((wrapper.get('[data-testid="frame-bar-size"]').element as HTMLInputElement).value).toBe('5 × 6')
+    const width = wrapper.get('[data-testid="frame-bar-width"]')
+    const height = wrapper.get('[data-testid="frame-bar-height"]')
+    expect([(width.element as HTMLInputElement).value, (height.element as HTMLInputElement).value]).toEqual(['', ''])
+    expect([width.attributes('placeholder'), height.attributes('placeholder')]).toEqual(['5', '6'])
     expect(wrapper.text()).toContain('beads')
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
   })
 
-  it('takes a typed size on Enter or when left, and puts the size back when it is not one', async () => {
+  it('takes digits only, no zero, on Enter; an empty field keeps its side; the fields empty again', async () => {
     const wrapper = mountBar()
-    const field = wrapper.get('[data-testid="frame-bar-size"]')
-    await field.setValue('20x12')
-    await field.trigger('keydown', { key: 'Enter' })
-    expect(wrapper.emitted('resize')).toEqual([[20, 12]])
-    await field.setValue('5x6')
-    await field.trigger('blur')
+    const width = wrapper.get('[data-testid="frame-bar-width"]')
+    const height = wrapper.get('[data-testid="frame-bar-height"]')
+    await width.setValue('2a0-')
+    expect((width.element as HTMLInputElement).value).toBe('20')
+    await height.setValue('0')
+    expect((height.element as HTMLInputElement).value).toBe('')
+    await width.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('resize')).toEqual([[20, 6]])
+    expect((width.element as HTMLInputElement).value).toBe('')
+    await height.setValue('12')
+    await height.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('resize')).toEqual([[20, 6], [5, 12]])
+  })
+
+  it('takes the size when focus leaves both fields, not when it moves between them, and ignores the size it has', async () => {
+    const wrapper = mountBar()
+    const width = wrapper.get('[data-testid="frame-bar-width"]')
+    const height = wrapper.get('[data-testid="frame-bar-height"]')
+    await width.setValue('9')
+    await width.trigger('focusout', { relatedTarget: height.element })
+    expect(wrapper.emitted('resize')).toBeUndefined()
+    await height.setValue('6')
+    await height.trigger('focusout')
+    expect(wrapper.emitted('resize')).toEqual([[9, 6]])
+    await width.setValue('5')
+    await width.trigger('focusout')
     expect(wrapper.emitted('resize')).toHaveLength(1)
-    await field.setValue('20 by 12')
-    await field.trigger('blur')
-    expect(wrapper.emitted('resize')).toHaveLength(1)
-    expect((field.element as HTMLInputElement).value).toBe('5 × 6')
-    await field.setValue('9')
-    ;(field.element as HTMLInputElement).focus()
+  })
+
+  it('clears what was typed on Escape, and closes on the next', async () => {
+    const wrapper = mountBar()
+    const width = wrapper.get('[data-testid="frame-bar-width"]')
+    await width.setValue('9')
+    ;(width.element as HTMLInputElement).focus()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flushPromises()
-    expect((field.element as HTMLInputElement).value).toBe('5 × 6')
-    // The first Escape only put the size back; the next closes the bar.
+    expect((width.element as HTMLInputElement).value).toBe('')
     expect(wrapper.emitted('close')).toBeUndefined()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(wrapper.emitted('close')).toHaveLength(1)
@@ -128,7 +151,7 @@ describe('FrameBar (ticket 473)', () => {
 
   it('holds the size and Remove Frame alone once a pass is done', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
-    expect(wrapper.get('[data-testid="frame-bar-size"]').attributes('readonly')).toBeDefined()
+    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('readonly')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     for (const gone of ['frame-rotate', 'frame-edge-top-out', 'frame-bar-cell-top']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
   })
@@ -174,7 +197,7 @@ describe('FrameBar (ticket 473)', () => {
     const wrapper = mount(FrameBar, { props: { project: framed(), grabsFrame: () => grabs }, attachTo: document.body })
     await flushPromises()
     const press = (id: string) => document.getElementById(id)!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true }))
-    ;(wrapper.get('[data-testid="frame-bar-size"]').element as HTMLInputElement).focus()
+    ;(wrapper.get('[data-testid="frame-bar-width"]').element as HTMLInputElement).focus()
     // A kept press moves focus out of the panel without closing it.
     press('outside')
     document.getElementById('outside')!.focus()
