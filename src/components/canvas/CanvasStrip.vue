@@ -116,7 +116,15 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   border-bottom: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
 }
 
-/* Menu and Project stay at the left edge of the strip, even on a phone. */
+/* Menu, Project and Frame all fit in a 320px window in the longest language (ticket 473). */
+@media (max-width: 340px) {
+  .canvas-strip {
+    gap: var(--space-4);
+    padding-left: var(--space-8);
+  }
+}
+
+/* Menu, Project and Frame stay at the left edge of the strip, even on a phone. */
 .canvas-strip__sheets {
   display: flex;
   flex: none;
