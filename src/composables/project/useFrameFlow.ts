@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
-import { fitToDrawing, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, snapRow, type FrameEdge } from '../../domain/frame'
+import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition, Technique } from '../../domain/grid'
 import { changeFrame } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
@@ -25,12 +25,12 @@ type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Frame }
   | { kind: 'resize'; edges: FrameEdge[]; start: Frame }
 
-// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle shows handles and steppers; on by
-// default per session, off once Row progress has started (ticket 411), though Move still carries the Frame with its
-// beads (ticket 452). Each resize is one announced Undo step that touches no bead.
+// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle opens the Frame bar and shows the
+// handles; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
+// Margin handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
 export function useFrameFlow(deps: FrameFlowDeps) {
-  /** The weaver's choice on the edit toggle; true until they turn it off. Never saved. */
-  const editOn = ref(true)
+  /** The weaver's choice on the edit toggle (the Frame bar open); false until they turn it on. Never saved. */
+  const editOn = ref(false)
   /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its
    * beads. */
   const draft = ref<{ frame: Frame; move?: { rows: number; columns: number } } | undefined>()
@@ -56,16 +56,20 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
   const settingFrame = computed(() => !!deps.currentProject()?.frame && editOn.value && !locked.value)
 
-  // Edit is on again whenever a Frame is made or a Project opens, and when Row progress is reset after having locked
-  // it.
+  /** Whether the Frame bar shows: open by choice, and always while a pass is done, when it holds the size and Remove
+   * Frame alone (the switch is then disabled). */
+  const barShown = computed(() => !!deps.currentProject()?.frame && (editOn.value || locked.value))
+
+  // The bar is closed whenever a Project opens or its Frame goes (ticket 473); a Frame made or a lock changing only
+  // drops a drag in progress.
   watch(
-    [() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame, locked],
-    () => {
-      editOn.value = true
-      cancel()
+    [() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame],
+    ([id, framed], [previousId]) => {
+      if (id !== previousId || !framed) editOn.value = false
     },
     { flush: 'sync' },
   )
+  watch([() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame, locked], cancel, { flush: 'sync' })
 
   /** The edit toggle: nothing happens without a Frame, or once Row progress has started. */
   function toggleEdit(): void {
@@ -162,7 +166,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (next !== project.frame) commit(next)
   }
 
-  // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step, edit on. A named Piece's
+  /** The size typed into the Frame bar (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step. */
+  function resizeTo(columns: number, rows: number): void {
+    const project = deps.currentProject()
+    if (!project?.frame || locked.value) return
+    const next = frameResizedAround(project.technique, project.frame, columns, rows)
+    if (!sameFrame(next, project.frame)) commit(next)
+  }
+
+  // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
   // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407); with a Frame already
   // set, it moves it there.
   function setTo(frame: Frame): void {
@@ -221,6 +233,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   return {
     settingFrame,
+    barShown,
     /** The Project as the canvas draws it while a drag has not committed: a Move drag shows the beads travelling
      * too, exactly as the release will leave them. */
     draftProject,
@@ -232,6 +245,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     release,
     cancel,
     stepEdge,
+    resizeTo,
     setTechnique,
     fit,
     setTo,

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cornerControlsReachPx, frameCornerControls, frameStepperCentres, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
+import { editPencilCentre, marginHandleCentre, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
 const viewport = { width: 400, height: 300 }
@@ -28,34 +28,64 @@ describe('selectionBarPlacement (ticket 415)', () => {
   })
 })
 
-describe('frameStepperCentres (ticket 427)', () => {
+
+describe('the Margin handle and the edit pencil (ticket 473)', () => {
   const anchor = {
     box: { left: 150, top: 100, width: 100, height: 60 },
     outer: { left: 100, top: 50, width: 200, height: 160 },
-    numbers: { across: 20, down: 14 },
-    scale: 1,
     viewport,
   }
 
-  it('centres each pair between the ruler numbers and the margin\'s outer edge', () => {
-    expect(frameStepperCentres(anchor)).toEqual({
-      top: { x: 200, y: 68 },
-      bottom: { x: 200, y: 192 },
-      left: { x: 115, y: 130 },
-      right: { x: 285, y: 130 },
-    })
+  it('puts the handle halfway down the top margin, centred on it', () => {
+    expect(marginHandleCentre(anchor)).toEqual({ x: 200, y: 75 })
   })
 
-  it('pins the pairs to the Frame: panning carries them, they are never clamped to the canvas box (ticket 467)', () => {
-    const at = frameStepperCentres(anchor)
-    const panned = frameStepperCentres({
-      ...anchor,
-      box: { ...anchor.box, left: anchor.box.left - 500, top: anchor.box.top - 400 },
-      outer: { ...anchor.outer, left: anchor.outer.left - 500, top: anchor.outer.top - 400 },
-    })
-    for (const edge of ['top', 'bottom', 'left', 'right'] as const) {
-      expect(panned[edge]).toEqual({ x: at[edge].x - 500, y: at[edge].y - 400 })
-    }
+  it('slides the handle along the part of the top margin that is on screen', () => {
+    const roomy = { ...anchor, box: { ...anchor.box, top: 200 } }
+    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: -100 } }).x).toBe(50)
+    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 300 } }).x).toBe(350)
+  })
+
+  it('keeps the handle 32px from the canvas box sides and inside it vertically', () => {
+    const roomy = { ...anchor, box: { ...anchor.box, top: 200 } }
+    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: -190 } }).x).toBe(32)
+    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 390 } }).x).toBe(368)
+    const above = marginHandleCentre({ ...anchor, box: { ...anchor.box, top: -300 }, outer: { ...anchor.outer, top: -400 } })
+    expect(above.y).toBe(22)
+    const below = marginHandleCentre({ ...anchor, box: { ...anchor.box, top: 500 }, outer: { ...anchor.outer, top: 450 } })
+    expect(below.y).toBe(278)
+  })
+
+  it('does not change size or place with the zoom: only the anchor moves it', () => {
+    const panned = marginHandleCentre({ ...anchor, outer: { ...anchor.outer, left: 120, top: 70 }, box: { ...anchor.box, left: 170, top: 120 } })
+    expect(panned).toEqual({ x: 220, y: 95 })
+  })
+
+  it('slides the handle clear of the pencil on a small Frame, where their hit areas would meet', () => {
+    const small = { ...anchor, box: { left: 190, top: 100, width: 20, height: 20 }, outer: { left: 170, top: 80, width: 60, height: 60 } }
+    const pencil = editPencilCentre(small)
+    const handle = marginHandleCentre(small)
+    const clearX = Math.abs(handle.x - pencil.x) >= 28 + 22
+    const clearY = Math.abs(handle.y - pencil.y) >= 22 + 22
+    expect(clearX || clearY).toBe(true)
+  })
+
+  it('slides the handle out from under the Frame bar, to the side with the nearer room', () => {
+    const bar = { left: 100, top: 12, width: 200, height: 120 }
+    const above = { ...anchor, box: { ...anchor.box, top: -300 }, outer: { ...anchor.outer, top: -400 } }
+    const handle = marginHandleCentre(above, bar)
+    expect(handle.x + 28).toBeLessThanOrEqual(bar.left)
+    expect(handle.y).toBe(22)
+  })
+
+  it('puts the pencil inside the margin, 26px in and down from the outline corner, pinned to it', () => {
+    expect(editPencilCentre(anchor)).toEqual({ x: 274, y: 76 })
+    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, left: 150 } })).toEqual({ x: 324, y: 76 })
+  })
+
+  it('keeps the pencil inside the canvas box', () => {
+    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, left: 350 } }).x).toBe(378)
+    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, top: -90 } }).y).toBe(22)
   })
 })
 
@@ -86,47 +116,5 @@ describe('selectionBarPlacement around the Tool pill (ticket 439)', () => {
     expect(overlaps(placed, pill)).toBe(false)
     expect(placed.left).toBeGreaterThanOrEqual(8)
     expect(placed.left + bar.width).toBeLessThanOrEqual(viewport.width - 8)
-  })
-})
-
-describe('frameCornerControls (ticket 455)', () => {
-  const anchor = {
-    box: { left: 150, top: 100, width: 100, height: 60 },
-    outer: { left: 100, top: 50, width: 200, height: 160 },
-    numbers: { across: 20, down: 14 },
-    scale: 1,
-    viewport,
-  }
-
-  it('puts Move, Rotate, Edit and Remove in a row just inside the margin outline\'s top-right corner', () => {
-    // 26px buttons, 4px apart, 4px in from the corner (300, 50): right edge 296, top 54.
-    expect(frameCornerControls(anchor, false)).toEqual({
-      size: 26,
-      fullSize: 26,
-      scale: 1,
-      remove: { x: 283, y: 67 },
-      edit: { x: 253, y: 67 },
-      rotate: { x: 223, y: 67 },
-      move: { x: 193, y: 67 },
-    })
-  })
-
-  it('shrinks the row with the zoom', () => {
-    expect(frameCornerControls({ ...anchor, scale: 0.5 }, false)).toMatchObject({ size: 13, scale: 0.5 })
-  })
-
-  it('is pinned to the margin outline: panning carries the row, it is never clamped to the canvas box (ticket 467)', () => {
-    const at = frameCornerControls(anchor, false)
-    const panned = frameCornerControls({ ...anchor, outer: { ...anchor.outer, left: anchor.outer.left - 700, top: anchor.outer.top - 90 } }, false)
-    expect(panned.move).toEqual({ x: at.move.x - 700, y: at.move.y - 90 })
-    expect(panned.remove).toEqual({ x: at.remove.x - 700, y: at.remove.y - 90 })
-  })
-})
-
-describe('cornerControlsReachPx (ticket 459)', () => {
-  it('is a control and its inset above and below, shrunk with the zoom, taller on touch', () => {
-    expect(cornerControlsReachPx(1, false)).toBe(34)
-    expect(cornerControlsReachPx(0.5, false)).toBe(17)
-    expect(cornerControlsReachPx(0.5, true)).toBe(22)
   })
 })

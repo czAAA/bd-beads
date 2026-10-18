@@ -55,21 +55,42 @@ export function frameWithSize(frame: Frame, columns: number, rows: number): Fram
   return { ...frame, columns: Math.max(1, Math.round(columns)), rows: Math.max(1, Math.round(rows)) }
 }
 
+const MIN_STEPPED_SIDE = 4
+const MAX_TYPED_SIDE = 999
+
 // The Frame with one edge moved a bead out (`step` 1) or in (`step` -1), the others staying put (Edit Frame's steppers,
 // ticket 417). Where rows alternate (peyote, brick stitch) the top edge goes by a pair of rows so the first row stays
-// even, as dragging the top handle does. A step that would leave less than one bead each way changes nothing.
+// even, as dragging the top handle does. A step that would leave less than four beads each way changes nothing (ticket 473).
 export function frameWithEdgeStep(technique: Technique, frame: Frame, edge: FrameEdge, step: 1 | -1): Frame {
   const rowStep = (isOffsetTechnique(technique) ? 2 : 1) * step
   switch (edge) {
     case 'left':
-      return frame.columns + step < 1 ? frame : { ...frame, column: frame.column - step, columns: frame.columns + step }
+      return step < 0 && frame.columns + step < MIN_STEPPED_SIDE ? frame : { ...frame, column: frame.column - step, columns: frame.columns + step }
     case 'right':
-      return frame.columns + step < 1 ? frame : { ...frame, columns: frame.columns + step }
+      return step < 0 && frame.columns + step < MIN_STEPPED_SIDE ? frame : { ...frame, columns: frame.columns + step }
     case 'top':
-      return frame.rows + rowStep < 1 ? frame : { ...frame, row: frame.row - rowStep, rows: frame.rows + rowStep }
+      return step < 0 && frame.rows + rowStep < MIN_STEPPED_SIDE ? frame : { ...frame, row: frame.row - rowStep, rows: frame.rows + rowStep }
     case 'bottom':
-      return frame.rows + step < 1 ? frame : { ...frame, rows: frame.rows + step }
+      return step < 0 && frame.rows + step < MIN_STEPPED_SIDE ? frame : { ...frame, rows: frame.rows + step }
   }
+}
+
+/** The width and height typed as "20x120" (x, ×, * or the Cyrillic х between them), or none when it isn't one. */
+export function parseFrameSize(text: string): { columns: number; rows: number } | undefined {
+  const match = /^\s*(\d{1,4})\s*[x×*хХ]\s*(\d{1,4})\s*$/i.exec(text)
+  return match ? { columns: Number(match[1]), rows: Number(match[2]) } : undefined
+}
+
+/** The Frame resized to `columns` × `rows`, each side growing or shrinking evenly on both of its edges (ticket 473): an
+ * odd change gives the extra bead to the right or bottom. Where rows alternate the top edge moves by whole pairs of
+ * rows, so the first row keeps its place in the stagger. A side is kept between four and MAX_TYPED_SIDE beads. */
+export function frameResizedAround(technique: Technique, frame: Frame, columns: number, rows: number): Frame {
+  const side = (n: number) => Math.min(MAX_TYPED_SIDE, Math.max(MIN_STEPPED_SIDE, Math.round(n)))
+  const wide = side(columns)
+  const tall = side(rows)
+  const left = Math.trunc((wide - frame.columns) / 2)
+  const top = isOffsetTechnique(technique) ? 2 * Math.trunc((tall - frame.rows) / 4) : Math.trunc((tall - frame.rows) / 2)
+  return { row: frame.row - top, column: frame.column - left, rows: tall, columns: wide }
 }
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined for an empty canvas. Beads the `current`

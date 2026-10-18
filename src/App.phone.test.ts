@@ -76,7 +76,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
   })
 
-  it('has no Frame slot in the Tool pill; the edit toggle sits on the Frame, with steppers on and no sheet or ContextBar (tickets 417, 452)', async () => {
+  it('has no Frame slot in the Tool pill; the edit pencil sits on the Frame, with the Frame bar closed and no sheet or ContextBar (tickets 417, 473)', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="pill-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-edit-frame"]').exists()).toBe(false)
@@ -84,10 +84,10 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="frame-edit-toggle"]').trigger('click')
-    expect(wrapper.find('[data-testid="edit-frame-steppers"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(true)
   })
 
   it('picks a tool straight from the Tool pill, with no sheet in between (tickets 397, 431)', async () => {
@@ -175,6 +175,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(bar().classes()).not.toContain('app-shell__progress--hidden')
     expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="frame-edit-toggle"]').trigger('click')
     expect(wrapper.get('[data-testid="frame-chrome-remove"]').attributes('aria-disabled')).toBeUndefined()
 
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')

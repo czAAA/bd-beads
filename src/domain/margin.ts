@@ -12,13 +12,6 @@ import type { Selection } from './selection'
 /** How many bead positions the margin is wide: the room kept for the Frame's line and rulers. */
 export const MARGIN = 6
 
-/** How many bead positions the margin shows at a zoom (ticket 459): the 6 of `MARGIN`, or more when zoomed out so far
- * that the band (`pitchPx` per position) is shorter than `neededPx`, the Frame's corner controls. Only the display
- * widens; a margin removes nothing. */
-export function marginAt({ neededPx, pitchPx, zoom }: { neededPx: number; pitchPx: number; zoom: number }): number {
-  return Math.max(MARGIN, Math.ceil(neededPx / (pitchPx * zoom)))
-}
-
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
 export function withMargin(frame: Frame, margin: number = MARGIN): Frame {
   return { row: frame.row - margin, column: frame.column - margin, rows: frame.rows + 2 * margin, columns: frame.columns + 2 * margin }
