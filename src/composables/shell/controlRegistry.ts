@@ -59,6 +59,8 @@ export interface ControlDeps {
   hasPaintColor: () => boolean
   onNamePiece: () => void
   onToggleRowDirection: () => void
+  /** Shows or hides the Row progress look on the Canvas (ticket 474). */
+  onToggleRowHighlight: () => void
   onMoveRow: (delta: number) => void
   /** Asks, then takes Row progress back to the first row (ticket 455). */
   onResetProgress: () => void
@@ -485,6 +487,14 @@ export const CONTROLS: readonly ControlAction[] = [
     group: 'rowProgress',
     chords: [{ key: 'd', label: 'D' }],
     run: (deps) => deps.onToggleRowDirection(),
+  },
+  {
+    id: 'row-highlight',
+    icon: 'row-highlight',
+    name: (t) => t.rowProgress.highlightButton,
+    group: 'rowProgress',
+    chords: [],
+    run: (deps) => deps.onToggleRowHighlight(),
   },
   {
     id: 'row-done',

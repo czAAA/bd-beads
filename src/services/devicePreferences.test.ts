@@ -20,6 +20,7 @@ const blocked: PreferenceStorage = {
 /** Each preference: its long-standing key, a saved value that must still read, one that is not valid, and what it is by default. */
 const CASES = [
   { name: 'rulers', key: 'openbeads:rulers', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
+  { name: 'rowHighlight', key: 'openbeads:row-highlight', saved: 'off', read: false, other: true, stored: 'on', invalid: null, fallback: true },
   { name: 'canvasBackground', key: 'openbeads:canvas-background', saved: '6', read: 6, other: 3, stored: '3', invalid: '7', fallback: 1 },
   { name: 'inputMode', key: 'openbeads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },
   { name: 'penSeen', key: 'openbeads:pen-seen', saved: 'yes', read: true, other: true, stored: 'yes', invalid: 'no', fallback: false },

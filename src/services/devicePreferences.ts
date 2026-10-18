@@ -35,6 +35,8 @@ function onUntilOff(key: string): Preference<boolean> {
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
   rulers: onUntilOff('openbeads:rulers'),
+  /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0064): on by default; a view setting only. */
+  rowHighlight: onUntilOff('openbeads:row-highlight'),
   /** The Canvas color (ticket 252): a number, 1 to 6, so it survives a change of theme. */
   canvasBackground: preference({
     key: 'openbeads:canvas-background',

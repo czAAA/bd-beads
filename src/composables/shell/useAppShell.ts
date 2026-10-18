@@ -144,6 +144,8 @@ function wireAppShell(services: Services) {
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const showRulers = services.devicePreferences.get('rulers')
   const toggleRulers = () => void (showRulers.value = !showRulers.value)
+  const rowHighlight = services.devicePreferences.get('rowHighlight')
+  const toggleRowHighlight = () => void (rowHighlight.value = !rowHighlight.value)
 
   /** The input mode toggle (tickets 325, 326): offered once a pen has been seen. */
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode } = usePenInputMode(services.devicePreferences)
@@ -728,6 +730,7 @@ function wireAppShell(services: Services) {
     onFillSelection,
     onFrameFromSelection,
     onToggleRulers: toggleRulers,
+    onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
     onCopy,
     pasteAtPointer,
@@ -815,6 +818,8 @@ function wireAppShell(services: Services) {
     scroll,
     showRulers,
     toggleRulers,
+    rowHighlight,
+    toggleRowHighlight,
     inputMode,
     setInputMode,
     inputModeAvailable,

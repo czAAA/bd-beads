@@ -95,6 +95,28 @@ describe('App finished rows', () => {
     expect(undoDisabled(wrapper)).toBe(true)
   })
 
+  it('keeps the finished-row lock while Row highlight is off (ticket 474)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await withTwoRowsWoven(wrapper)
+    await wrapper.get('[data-testid="progress-bar-highlight"]').trigger('click')
+    expect(localStorage.getItem('openbeads:row-highlight')).toBe('off')
+
+    await pressBead(wrapper, 14) // (1,4)
+    await wrapper.trigger('mouseup')
+
+    expect(colorAt(1, 4)).toBeNull()
+    expect(undoDisabled(wrapper)).toBe(true)
+    expect(wrapper.get('[data-testid="progress-bar-highlight"]').attributes('aria-pressed')).toBe('false')
+  })
+
+  it('keeps Row highlight off across a reload, in the device and not in the Project (ticket 474)', async () => {
+    localStorage.setItem('openbeads:row-highlight', 'off')
+    const wrapper = await mountWithProject(15, 30)
+
+    expect(wrapper.get('[data-testid="progress-bar-highlight"]').attributes('aria-pressed')).toBe('false')
+    expect(JSON.stringify(loadProjects())).not.toContain('highlight')
+  })
+
   it('still undoes in full, even a change to a row marked done since', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, 'red')

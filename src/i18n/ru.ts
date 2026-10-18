@@ -383,6 +383,7 @@ export const ru: Translations = {
   rowProgress: {
     enabledLabel: 'Показывать прогресс по рядам',
     directionButton: 'Повернуть направление рядов',
+    highlightButton: 'Подсветка ряда',
     resetButton: 'Сбросить прогресс',
     resetConfirmTitle: 'Сбросить прогресс?',
     resetConfirmMessage: 'Все отмеченные готовыми ряды сотрутся, и вы начнёте с первого ряда. Бусины останутся.',

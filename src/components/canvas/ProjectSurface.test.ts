@@ -478,6 +478,17 @@ describe('ProjectSurface', () => {
         expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.5))).toBe(true)
       })
 
+      it('draws them at normal color, and the current row unbrightened, while Row highlight is off, and dims again when it is on (ticket 474)', async () => {
+        const { wrapper } = await mountSurface(weaving(), 1, { x: 0, y: 0 }, { rowMarks: false })
+        expect(redShown()).toBe(true)
+
+        context.calls.length = 0
+        await wrapper.setProps({ rowMarks: true })
+        await nextTick()
+        await nextTick()
+        expect(redShown()).toBe(false)
+      })
+
       it('draws them at normal color while a mouse or a pen hovers a finished row, and dims them again when it leaves', async () => {
         const project = weaving()
         const { wrapper } = await mountSurface(project)
