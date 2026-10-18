@@ -1,5 +1,6 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
-import { rowCycle, type GridPosition, type Weave } from './grid'
+import { type GridPosition } from './grid'
+import { rowCycle, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt } from './pieces'
 import type { Project } from './project'

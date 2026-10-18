@@ -1,5 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
-import { rowPitch, rowOffset, type GridDimensions, type Technique } from './grid'
+import { type GridDimensions } from './grid'
+import { rowPitch, rowOffset, type Technique } from './weave'
 import { resolveImageColors } from './imageColors'
 import {
   type FramingView,

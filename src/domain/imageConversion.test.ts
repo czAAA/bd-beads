@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { cellCenter, computeGridDimensions, type GridDimensions, rowPitch, type Technique } from './grid'
+import { computeGridDimensions, type GridDimensions } from './grid'
+import { cellCenter, rowPitch, type Technique } from './weave'
 import { channelsOf } from './imageColors'
 import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, type PreviewLattice } from './imageFraming'
 import {
