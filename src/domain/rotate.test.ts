@@ -119,29 +119,35 @@ describe('rotateFrame (ticket 471)', () => {
     const turned = rotateFrame(project)!
 
     // The 16 x 18 area at (14, 14) turns to 18 x 16 at (13, 15): the Frame is 6 rows by 4 columns at (19, 21).
-    expect(turned.project.frame).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
-    expect(positionsOf(turned.project.beads)).toEqual(['19,24:#aa0000', '24,21:#bb0000'])
-    expect(turned.area).toEqual({ top: 13, left: 15, rows: 18, columns: 16 })
+    expect(turned.frame).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(positionsOf(turned.beads)).toEqual(['19,24:#aa0000', '24,21:#bb0000'])
   })
 
   it('comes back after four turns', () => {
     const project = framed(withColors({}, [{ row: 21, column: 22, color: '#aa0000' }]))
     let turned = project
-    for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!.project
+    for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
     expect(turned.frame).toEqual(project.frame)
     expect(turned.beads).toEqual(project.beads)
   })
 
   it('turns the beads in the margin with the Frame, and leaves a Piece outside the area where it is', () => {
     const project = framed(withColors({}, [{ row: 16, column: 22, color: '#aa0000' }, { row: 2, column: 2, color: '#bb0000' }]))
-    const turned = rotateFrame(project)!
-    expect(positionsOf(turned.project.beads)).toEqual(['2,2:#bb0000', '21,28:#aa0000'])
+    expect(positionsOf(rotateFrame(project)!.beads)).toEqual(['2,2:#bb0000', '21,28:#aa0000'])
   })
 
   it('carries a Piece name with its beads', () => {
     const named = withPieceName(framed(withColors({}, [{ row: 21, column: 22, color: '#aa0000' }])), { row: 21, column: 22 }, 'Leaf')
-    const turned = rotateFrame(named)!
-    expect(namedPieces(turned.project).map((piece) => piece.name)).toEqual(['Leaf'])
+    expect(namedPieces(rotateFrame(named)!).map((piece) => piece.name)).toEqual(['Leaf'])
+  })
+
+  it('starts the turned Frame on an even row on peyote, the whole area moving with it', () => {
+    // A 5 x 4 Frame at (20, 20): its turned top row falls on an odd row, so it snaps to the even row above.
+    const peyote = withBeads(withColors({}, [{ row: 20, column: 20, color: '#aa0000' }]), { technique: 'peyote', frame: { row: 20, column: 20, rows: 5, columns: 4 } })
+    const turned = rotateFrame(peyote)!
+    expect(turned.frame!.row % 2).toBe(0)
+    expect(turned.frame).toMatchObject({ rows: 4, columns: 5 })
+    expect(positionsOf(turned.beads)).toHaveLength(1)
   })
 
   it('does nothing without a Frame', () => {

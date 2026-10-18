@@ -103,9 +103,9 @@ export function frameAreaSelection(frame: Frame): Selection {
  * Rotate Frame (CONTEXT.md, ticket 471, ADR 0063): the Frame and its keep-out margin turned a quarter clockwise about their
  * centre, with the beads inside both, by the same turn as Rotate on a Selection. The Frame takes the turned area back
  * less the margin, so its Width and Height swap; beads outside the area stay put except where the turned area covers them.
- * Handed back as the Project and the turned area (for counting what it covered), or undefined with no Frame.
+ * Handed back as the turned Project, or undefined with no Frame.
  */
-export function rotateFrame(project: Project): { project: Project; area: Selection } | undefined {
+export function rotateFrame(project: Project): Project | undefined {
   if (!project.frame) {
     return undefined
   }
@@ -116,5 +116,5 @@ export function rotateFrame(project: Project): { project: Project; area: Selecti
     rows: turned.selection.rows - 2 * MARGIN,
     columns: turned.selection.columns - 2 * MARGIN,
   }
-  return { project: { ...turned.project, frame }, area: turned.selection }
+  return { ...turned.project, frame }
 }

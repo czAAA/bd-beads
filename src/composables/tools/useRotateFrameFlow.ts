@@ -5,6 +5,7 @@ import type { Locale, Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from '../project/useEdit'
 
+/** What Rotate Frame needs from the app shell: the Edit path, the open Project and the Message and announcer. */
 export interface RotateFrameFlowDeps {
   edit: EditFn
   currentProject: () => Project | undefined
@@ -28,18 +29,12 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     }
     const area = frameAreaSelection(before.frame)
 
-    let turnedArea = area
-    const outcome = deps.edit('drawing', (project) => {
-      const turned = rotateFrame(project)
-      if (!turned) {
-        return project
-      }
-      turnedArea = turned.area
-      return turned.project
-    })
+    const outcome = deps.edit('drawing', (project) => rotateFrame(project) ?? project)
 
     const after = deps.currentProject()
-    const covered = outcome.kind === 'applied' && after ? coveredByRotation(before, after, area, turnedArea) : 0
+    // The turned area is the new Frame and its margin, which the Edit has already put in the Project.
+    const covered =
+      outcome.kind === 'applied' && after?.frame ? coveredByRotation(before, after, area, frameAreaSelection(after.frame)) : 0
     const t = deps.messages()
     if (covered > 0) {
       const text = plural(deps.locale(), covered, t.frame.rotateCoveredMessage)
