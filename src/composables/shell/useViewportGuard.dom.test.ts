@@ -5,11 +5,10 @@ import { useViewportGuard } from './useViewportGuard'
 
 const scrollTo = vi.fn()
 const visualViewport = Object.assign(new EventTarget(), { offsetLeft: 0, offsetTop: 0, scale: 1 })
-Object.defineProperty(window, 'visualViewport', { configurable: true, value: visualViewport })
 
 /** A page moved off the origin, as Safari leaves it after a focus or a gesture it took over. */
 function moveView({ scrollY = 0, offsetTop = 0, scale = 1 }: { scrollY?: number; offsetTop?: number; scale?: number }) {
-  Object.defineProperty(window, 'scrollY', { configurable: true, value: scrollY })
+  vi.stubGlobal('scrollY', scrollY)
   Object.assign(visualViewport, { offsetTop, scale })
 }
 
@@ -18,15 +17,18 @@ describe('useViewportGuard', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    window.scrollTo = scrollTo as unknown as typeof window.scrollTo
+    vi.stubGlobal('scrollTo', scrollTo)
+    vi.stubGlobal('visualViewport', visualViewport)
     moveView({})
     wrapper = mount(defineComponent({ setup: () => useViewportGuard(), render: () => h('div', [h('input')]) }), { attachTo: document.body })
   })
   afterEach(() => {
+    const focused = document.activeElement
+    if (focused instanceof HTMLElement) focused.blur()
     wrapper.unmount()
     vi.useRealTimers()
+    vi.unstubAllGlobals()
     scrollTo.mockClear()
-    ;(document.activeElement as HTMLElement | null)?.blur()
   })
 
   it('puts a scrolled page back at the origin', () => {
@@ -49,6 +51,24 @@ describe('useViewportGuard', () => {
     window.dispatchEvent(new Event('scroll'))
     vi.advanceTimersByTime(1)
     expect(scrollTo).not.toHaveBeenCalled()
+  })
+
+  it('puts the page back once a field has lost focus and the keyboard has gone', () => {
+    const input = wrapper.get('input').element
+    input.focus()
+    moveView({ scrollY: 40 })
+    input.blur()
+    vi.advanceTimersByTime(400)
+    expect(scrollTo).toHaveBeenCalledWith(0, 0)
+  })
+
+  it('stops watching when it is unmounted', () => {
+    wrapper.unmount()
+    moveView({ scrollY: 40 })
+    window.dispatchEvent(new Event('scroll'))
+    vi.advanceTimersByTime(1)
+    expect(scrollTo).not.toHaveBeenCalled()
+    wrapper = mount(defineComponent({ render: () => h('div') }), { attachTo: document.body })
   })
 
   it('leaves a page zoom alone: panning a zoomed page is not being lost', () => {
