@@ -249,16 +249,29 @@ describe('neighborsOf with a Brick block (ticket 477)', () => {
 })
 
 describe('describeWeave: every question a Weave answers (ticket 481)', () => {
+  const bead = { widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 }
+  const here = { row: 4, column: 7 }
+  const dims = { columns: 10, rows: 10 }
+
   it.each([
-    ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, roundness: 0, hasBrickBlock: false }],
-    ['peyote', { technique: 'peyote' as const }, { frameStep: 2, shifted: true, rowPitch: 0.75, roundness: 0.22, hasBrickBlock: false }],
-    ['brick stitch', { technique: 'brick' as const }, { frameStep: 2, shifted: true, rowPitch: 1, roundness: 0, hasBrickBlock: true }],
-    ['brick stitch, Brick block 3', { technique: 'brick' as const, brickBlock: 3 }, { frameStep: 6, shifted: true, rowPitch: 1, roundness: 0, hasBrickBlock: true }],
+    ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, hasBrickBlock: false, twoPasses: false }],
+    ['peyote', { technique: 'peyote' as const }, { frameStep: 2, shifted: true, rowPitch: 0.75, hasBrickBlock: false, twoPasses: true }],
+    ['brick stitch', { technique: 'brick' as const }, { frameStep: 2, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
+    ['brick stitch, Brick block 3', { technique: 'brick' as const, brickBlock: 3 }, { frameStep: 6, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
   ])('%s', (_name, weave, expected) => {
-    const weaveDescription = describeWeave(weave)
-    expect(weaveDescription).toMatchObject({ ...expected, switchable: true, quarterTurn: true, rowDirection: true })
-    expect(weaveDescription.hasPosition({ row: 4, column: 7 })).toBe(true)
-    expect(weaveDescription.orientationAt({ row: 4, column: 7 })).toBe('upright')
-    expect(weaveDescription.extent).toEqual({ width: 1, height: 1 })
+    const description = describeWeave(weave)
+    expect(description).toMatchObject({ ...expected, switchable: true, quarterTurn: true, rowDirection: true })
+    expect(description.hasPosition(here)).toBe(true)
+    expect(description.orientationAt(here)).toBe('upright')
+    expect(description.extent).toEqual({ width: 1, height: 1 })
+    expect(description.turned(here)).toEqual(here)
+    expect(description.mirrored(here)).toEqual(here)
+    expect(description.center(here, 2, 2)).toEqual(cellCenter(weave, here, 2, 2))
+    expect(description.neighbors(dims, here)).toEqual(neighborsOf(weave, dims, here))
+    expect(description.passes.count(5)).toBe(passCount(weave.technique, 5))
+    expect(description.passes.of(3, 1)).toBe(passOf(weave.technique, 3, 1))
+    expect(description.passes.lineOf(3)).toBe(lineOfPass(weave.technique, 3))
+    expect(description.stepMm(bead).across).toBeCloseTo(1.7)
+    expect(description.stepMm(bead).down).toBe(rowPitch(weave.technique, 1.3))
   })
 })
