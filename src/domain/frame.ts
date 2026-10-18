@@ -81,9 +81,9 @@ export function parseFrameSize(text: string): { columns: number; rows: number } 
   return match ? { columns: Number(match[1]), rows: Number(match[2]) } : undefined
 }
 
-// The Frame resized to `columns` × `rows`, each side growing or shrinking evenly on both of its edges (ticket 473): an
-// odd change gives the extra bead to the right or bottom. Where rows alternate the top edge moves by whole pairs of
-// rows, so the first row keeps its place in the stagger. A side is kept between four and MAX_TYPED_SIDE beads.
+/** The Frame resized to `columns` × `rows`, each side growing or shrinking evenly on both of its edges (ticket 473): an
+ * odd change gives the extra bead to the right or bottom. Where rows alternate the top edge moves by whole pairs of
+ * rows, so the first row keeps its place in the stagger. A side is kept between four and MAX_TYPED_SIDE beads. */
 export function frameResizedAround(technique: Technique, frame: Frame, columns: number, rows: number): Frame {
   const side = (n: number) => Math.min(MAX_TYPED_SIDE, Math.max(MIN_STEPPED_SIDE, Math.round(n)))
   const wide = side(columns)
