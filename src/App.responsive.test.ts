@@ -68,7 +68,7 @@ describe('the page never scrolls under the app shell (ticket 320)', () => {
     expect(rule?.[1]).toMatch(/height:\s*100%/)
   })
 
-  it('leaves the shell scrolling nothing itself', () => {
-    expect(source('shell/AppShell')).toMatch(/\.app-shell\s*\{[^}]*overflow:\s*hidden/)
+  it('leaves the shell scrolling nothing itself, not even by script or by a focus (clip, not hidden)', () => {
+    expect(source('shell/AppShell')).toMatch(/\.app-shell\s*\{[^}]*overflow:\s*clip/)
   })
 })
