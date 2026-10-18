@@ -366,7 +366,7 @@ export const ru: Translations = {
     selectLabel: 'Выделение',
     eraseLabel: 'Ластик',
     handLabel: 'Рука',
-    pieceLabel: 'Кусочек',
+    pieceLabel: 'Выделить кусочек',
     selectAllLabel: 'Выделить всё',
     copyButton: 'Копировать',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
@@ -621,7 +621,7 @@ export const ru: Translations = {
     fill: 'Правая кнопка мыши стирает область.',
     select: 'Затем скопируйте и вставьте или удалите.',
     erase: 'Delete очищает выделенное.',
-    piece: 'Коснитесь бусины, чтобы выделить весь её кусочек.',
+    piece: 'Коснитесь бусины, чтобы выделить её вместе со всем, что к ней прилегает.',
     selectAll: 'Выделяет все бусины сразу.',
     hand: 'Перетаскивайте, чтобы двигать полотно.',
     editFrame: 'Показать или скрыть маркеры рамки и кнопки размера.',
