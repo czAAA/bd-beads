@@ -372,6 +372,7 @@ export const uk: Translations = {
   rowProgress: {
     enabledLabel: 'Показувати прогрес за рядами',
     directionButton: 'Повернути напрям рядів',
+    highlightButton: 'Підсвітка ряду',
     resetButton: 'Скинути прогрес',
     resetConfirmTitle: 'Скинути прогрес?',
     resetConfirmMessage: 'Усі ряди, позначені готовими, зникнуть, і ви почнете з першого ряду. Бісеринки залишаться.',

@@ -381,6 +381,7 @@ export const en: Translations = {
   rowProgress: {
     enabledLabel: 'Show row progress',
     directionButton: 'Turn row direction',
+    highlightButton: 'Row highlight',
     resetButton: 'Reset progress',
     resetConfirmTitle: 'Reset progress?',
     resetConfirmMessage: 'Every row marked as done is cleared and you start again from the first row. The beads stay.',

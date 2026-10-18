@@ -15,7 +15,7 @@ const ROW_PROGRESS = { direction: 'rows', currentRow: 5, currentColumn: 0 } as c
     <div class="progress">
       <BeadPicture :grid="HILLS" :zoom="0.65" :row-progress="ROW_PROGRESS" />
       <div class="progress__bar">
-        <span class="progress__switch"><i /></span>
+        <span class="progress__toggle" data-testid="example-row-highlight"><AppIcon name="row-highlight" :size="14" /></span>
         <b class="progress__row">{{ t.overview.examples.row }}</b>
         <span class="ex-label">{{ t.overview.examples.ofRows }}</span>
         <span class="progress__track"><i /></span>
@@ -49,23 +49,15 @@ const ROW_PROGRESS = { direction: 'rows', currentRow: 5, currentColumn: 0 } as c
   box-shadow: var(--elevation-2);
 }
 
-.progress__switch {
-  position: relative;
+.progress__toggle {
+  display: grid;
   flex: none;
-  width: 1.625rem;
-  height: 1rem;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: var(--canvas);
   background: var(--ink);
-  border-radius: var(--radius-full);
-}
-
-.progress__switch i {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  width: 0.75rem;
-  height: 0.75rem;
-  background: var(--canvas);
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-sm);
 }
 
 .progress__row {

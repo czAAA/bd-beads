@@ -371,6 +371,7 @@ export const zh: Translations = {
   rowProgress: {
     enabledLabel: '显示行进度',
     directionButton: '切换行方向',
+    highlightButton: '行高亮',
     resetButton: '重置进度',
     resetConfirmTitle: '重置进度？',
     resetConfirmMessage: '所有已标记完成的行都会清除，并从第一行重新开始。珠子保持原位。',
