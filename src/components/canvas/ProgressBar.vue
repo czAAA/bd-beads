@@ -35,7 +35,7 @@ const actions = {
   reset: controlAction('reset-progress'),
   fitFrame: controlAction('fit-to-drawing'),
   direction: controlAction('row-direction'),
-  highlight: controlAction('row-highlight'),
+  rowHighlight: controlAction('row-highlight'),
   notDone: controlAction('row-not-done'),
   done: controlAction('row-done'),
 }
@@ -86,10 +86,10 @@ const directionLabel = computed(() =>
         data-testid="progress-bar-direction"
         @click="emit('toggle-row-direction')"
       />
-      <!-- Row highlight is a view switch, not an action on the Project: an on/off Switch (ticket 474). -->
+      <!-- Row highlight is a view switch, not an action on the Project: an on/off Switch (ticket 474); the parent owns the value and flips it. -->
       <AppSwitch
         :model-value="rowHighlight"
-        :action="actions.highlight"
+        :action="actions.rowHighlight"
         data-testid="progress-bar-highlight"
         @update:model-value="emit('toggle-row-highlight')"
       />
