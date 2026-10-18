@@ -97,12 +97,33 @@ describe('CustomColorPanel, the Custom color picker (ticket 449)', () => {
     expect(wrapper.emitted('leave')).toHaveLength(1)
   })
 
-  it('cancels on Escape without taking the color', async () => {
+  it('takes the color on Escape once touched', async () => {
     const wrapper = mountPanel('#123456')
     await hexField(wrapper).setValue('#654321')
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
 
+    expect(wrapper.emitted('take')).toEqual([['#654321']])
+  })
+
+  it('cancels on Escape when untouched', () => {
+    const wrapper = mountPanel('#123456')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true }))
+
     expect(wrapper.emitted('cancel')).toHaveLength(1)
+    expect(wrapper.emitted()).not.toHaveProperty('take')
+  })
+
+  it('lets a press on a Palette swatch through and takes nothing', async () => {
+    const wrapper = mountPanel('#123456')
+    await hexField(wrapper).setValue('#654321')
+    const swatch = document.createElement('button')
+    swatch.dataset.testid = 'palette-swatch'
+    document.body.append(swatch)
+    const press = new PointerEvent('pointerdown', { bubbles: true, cancelable: true })
+    swatch.dispatchEvent(press)
+    swatch.remove()
+
+    expect(press.defaultPrevented).toBe(false)
     expect(wrapper.emitted()).not.toHaveProperty('take')
   })
 
