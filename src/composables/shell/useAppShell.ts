@@ -651,6 +651,13 @@ function wireAppShell(services: Services) {
 
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
   const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch })
+  // Menu, Project and the Frame bar are one panel at a time (ticket 475).
+  watch(overlays.openPhoneSheet, (sheet) => {
+    if (sheet) frameFlow.closeEdit()
+  })
+  watch(frameFlow.editOn, (open) => {
+    if (open) overlays.openPhoneSheet.value = null
+  })
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
@@ -899,9 +906,11 @@ function wireAppShell(services: Services) {
     settingFrame: frameFlow.settingFrame,
     frameBarShown: frameFlow.barShown,
     frameBarOpen: frameFlow.editOn,
+    frameBarFrom: frameFlow.barFrom,
     frameDraftProject: frameFlow.draftProject,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
+    onCloseFrameBar: frameFlow.closeEdit,
     onFrameKey: (event: KeyboardEvent) => {
       if (frameFlow.onKey(event)) event.preventDefault()
     },

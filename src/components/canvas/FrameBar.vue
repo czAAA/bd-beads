@@ -1,22 +1,25 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
+import PanelShell from '../shell/PanelShell.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useElementSize } from '../../composables/ui/useElementSize'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, parseFrameSize, type FrameEdge } from '../../domain/frame'
 import { rowProgressStarted, type Project } from '../../domain/project'
-import type { BarBox } from '../../composables/tools/selectionBarPlacement'
+import type { BarBox, FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useI18n } from '../../i18n/useI18n'
 
-// The Frame bar (ticket 473, Frame card): the Frame's size (typeable), Rotate and Remove, and a − and + pair per edge.
-// It drops down from the strip's Frame button like Menu and Project (a dropdown from 1024px, a sheet under the strip
-// below), outside the zoom and pan, and stays while the canvas is worked. A held press repeats a step.
+// The Frame bar (tickets 473, 475; Frame card): the Frame's size (typeable), Rotate and Remove, and a − and + pair per
+// edge. It is a panel like Menu and Project (PanelShell): from the strip's Frame button, or from the edit pencil that
+// opened it, which it follows; a press outside or Escape closes it, a Frame handle's press does not.
 const props = defineProps<{
   project: Project
+  /** Given when the edit pencil opened the bar: it hangs from the pencil and moves with it as this changes. */
+  pencil?: FrameAnchor
+  /** Whether a press outside grabs the Frame on the canvas (a resize handle), so the bar stays. */
+  grabsFrame?: (event: PointerEvent) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -25,6 +28,7 @@ const emit = defineEmits<{
   rotate: []
   remove: []
   key: [event: KeyboardEvent]
+  close: []
   /** The bar's rectangle in the drawing area's pixels, or none once it is gone: what the Margin handle keeps clear of. */
   rect: [rect: BarBox | undefined]
 }>()
@@ -51,44 +55,23 @@ const cells = FRAME_EDGES.map((edge) => {
 })
 const barEl = ref<HTMLElement>()
 const size = useElementSize(barEl)
-const wide = useMediaQuery('(min-width: 1024px)')
-const anchorEl = ref<HTMLElement>()
-const anchored = useAnchoredPosition(anchorEl, barEl, () => 'start')
+const shell = ref<InstanceType<typeof PanelShell>>()
+watch(() => props.pencil, () => shell.value?.place(), { flush: 'post' })
 
-/** Below 1024px the bar is a sheet under the strip, the canvas box's full width. */
-const sheetStyle = ref<Record<string, string>>({})
-function placeSheet() {
-  const strip = document.querySelector('[data-testid="canvas-strip"]')?.getBoundingClientRect()
-  const box = document.querySelector('[data-testid="app-canvas"]')?.getBoundingClientRect()
-  if (strip && box) sheetStyle.value = { position: 'fixed', top: `${strip.bottom}px`, left: `${box.left}px`, width: `${box.width}px` }
+/** A press on the Margin handle or the pencil, or one that grabs a resize handle, works the Frame: the bar stays. */
+function keepsPress(event: PointerEvent): boolean {
+  const onChrome = event.target instanceof Element && event.target.closest('[data-testid="frame-chrome"]') !== null
+  return onChrome || (props.grabsFrame?.(event) ?? false)
 }
-function place() {
-  anchorEl.value = document.querySelector<HTMLElement>('[data-testid="strip-frame"]') ?? undefined
-  if (wide.value) {
-    anchored.follow()
-  } else {
-    anchored.stop()
-    placeSheet()
-  }
-}
-const placed = computed(() => (wide.value ? anchored.style.value : sheetStyle.value))
-onMounted(() => {
-  place()
-  window.addEventListener('resize', placeSheet)
-})
-watch(wide, () => void nextTick(place))
 
-/** The bar's rectangle in the drawing area's pixels. */
+/** The panel's rectangle in the drawing area's pixels. */
 function measure(): BarBox | undefined {
-  const bar = barEl.value?.getBoundingClientRect()
+  const bar = barEl.value?.closest('.panel-shell')?.getBoundingClientRect()
   const area = document.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
   return bar && area && bar.width > 0 ? { left: bar.left - area.left, top: bar.top - area.top, width: bar.width, height: bar.height } : undefined
 }
-watch([size.width, size.height, placed], () => void nextTick(() => emit('rect', measure())), { immediate: true, flush: 'post' })
-onBeforeUnmount(() => {
-  window.removeEventListener('resize', placeSheet)
-  emit('rect', undefined)
-})
+watch([size.width, size.height, () => props.pencil], () => emit('rect', measure()), { immediate: true, flush: 'post' })
+onBeforeUnmount(() => emit('rect', undefined))
 
 /** The size field: shows "columns × rows"; Enter or leaving it takes a typed "20x120", Escape puts the size back. */
 const typed = ref('')
@@ -96,13 +79,13 @@ const shownSize = computed(() => t.value.frame.sizeValue.replace('{columns}', St
 watch(shownSize, (value) => (typed.value = value), { immediate: true })
 function commitSize(): void {
   const wanted = parseFrameSize(typed.value)
-  if (wanted) emit('resize', wanted.columns, wanted.rows)
+  // The size it already has is no step: re-centring it would shift a Frame whose rows alternate by a pair.
+  if (wanted && (wanted.columns !== frame.value?.columns || wanted.rows !== frame.value?.rows)) emit('resize', wanted.columns, wanted.rows)
   typed.value = shownSize.value
 }
 function onSizeKey(event: KeyboardEvent): void {
   event.stopPropagation()
   if (event.key === 'Enter') commitSize()
-  else if (event.key === 'Escape') typed.value = shownSize.value
 }
 
 // Top, Bottom, Left, Right is the cell order whatever the edges' own order is.
@@ -110,12 +93,22 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 </script>
 
 <template>
-  <div>
-    <div ref="barEl" class="frame-bar" :class="{ 'frame-bar--sheet': !wide }" :style="placed" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
+  <PanelShell
+    ref="shell"
+    :title="t.frame.title"
+    :anchor="pencil ? 'frame-edit-toggle' : 'strip-frame'"
+    :align="pencil ? 'end' : 'start'"
+    :dropdown="!!pencil"
+    width="min(calc(100vw - 2 * var(--frame-bar-gap)), var(--frame-bar-width))"
+    :keeps-press="keepsPress"
+    @close="emit('close')"
+  >
+    <div ref="barEl" class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
       <div class="frame-bar__head">
         <div class="frame-bar__size">
           <span class="frame-bar__label">{{ t.frame.title }}</span>
-          <span class="frame-bar__value">
+          <!-- Escape during an edit in the field puts the size back; otherwise it closes the panel (PanelShell). -->
+          <span class="frame-bar__value" :data-handles-escape="typed !== shownSize || undefined" @panel-escape="typed = shownSize">
             <input
               v-model="typed"
               class="frame-bar__input"
@@ -180,7 +173,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         </div>
       </div>
     </div>
-  </div>
+  </PanelShell>
 </template>
 
 <style scoped>
@@ -188,21 +181,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   display: flex;
   flex-direction: column;
   gap: var(--frame-bar-gap);
-  box-sizing: border-box;
-  z-index: var(--z-context-bar);
-  width: min(calc(100vw - 2 * var(--frame-bar-gap)), var(--frame-bar-width));
-  padding: var(--frame-bar-gap);
   color: var(--ink);
-  background: var(--pill);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--elevation-2);
-}
-
-/* Below 1024px: a sheet under the strip, as wide as the canvas box. */
-.frame-bar--sheet {
-  width: auto;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
 }
 
 .frame-bar__head {

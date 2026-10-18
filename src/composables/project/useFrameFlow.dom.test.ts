@@ -182,12 +182,26 @@ describe('useFrameFlow', () => {
     expect(settingFrame.value).toBe(true)
   })
 
-  it('shows the bar when opened, and always once a pass is done, when it holds the size and Remove alone (ticket 473)', () => {
+  it('remembers whether the edit pencil or the strip opened the bar, so it hangs from that one (ticket 475)', () => {
+    const { barFrom, toggleEdit } = setup()
+    toggleEdit('pencil')
+    expect(barFrom.value).toBe('pencil')
+    toggleEdit()
+    toggleEdit()
+    expect(barFrom.value).toBe('strip')
+  })
+
+  it('shows the bar only when opened, once a pass is done too, with no handles then, and closes it (tickets 473, 475)', () => {
     const closed = setup()
     expect(closed.barShown.value).toBe(false)
     closed.toggleEdit()
     expect(closed.barShown.value).toBe(true)
-    expect(setup(moveToRow(sized, 1)).barShown.value).toBe(true)
+    closed.closeEdit()
+    expect(closed.barShown.value).toBe(false)
+    const done = setup(moveToRow(sized, 1))
+    expect(done.barShown.value).toBe(false)
+    done.toggleEdit()
+    expect([done.barShown.value, done.settingFrame.value]).toEqual([true, false])
     expect(setup(open).barShown.value).toBe(false)
   })
 

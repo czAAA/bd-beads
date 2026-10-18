@@ -1,6 +1,6 @@
 # MenuPanel
 
-The body of the Menu: what is about the app and the device. It renders as a dropdown under its strip button from 1024px and as the Top sheet below it, with the same sections and rows. The Project body is the ProjectPanel card; the shell under 1024px is the TopSheet card. (Spec 0440, ticket 0443.)
+The body of the Menu: what is about the app and the device. It renders as a dropdown under its strip button from 1024px and as the Top sheet below it, with the same sections and rows. The Project body is the ProjectPanel card; the shell under 1024px is the TopSheet card. The Frame bar (Frame card) opens in the same shell, so Menu, Project and Frame are one panel at a time and close the same way; it alone can also hang from a button on the canvas (the edit pencil), as a dropdown at every width. (Spec 0440, tickets 0443, 0475.)
 
 ## Panel (the dropdown)
 

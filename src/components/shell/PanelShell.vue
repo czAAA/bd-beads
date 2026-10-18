@@ -6,32 +6,45 @@ import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { PANEL_CONTEXT } from './panelContext'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
 
-// The shell Menu and Project open in (spec 0440, ticket 443; MenuPanel and TopSheet cards): a dropdown 4px under its
-// strip button from 1024px, below that a Top sheet over a scrim below the strip, so both buttons stay clickable.
-// Escape or a press outside closes it, focus returns to the button; one shell stays mounted on swap.
+// The shell Menu, Project and the Frame bar open in (spec 0440, tickets 443, 475; MenuPanel and TopSheet cards): a
+// dropdown 4px under its button from 1024px, below that a Top sheet under the strip. Escape or a press outside closes
+// it, focus returns to the button; one shell stays mounted on swap.
 const props = defineProps<{
   title: string
   /** The strip button this panel hangs from, by test id. */
   anchor: string
   /** The Menu is a `menu` of items from 1024px; the Project panel holds fields and is a plain dialog. */
   menu?: boolean
+  /** Which edge lines up with the button; `end` hangs the panel to its left (the Frame bar from the edit pencil). */
+  align?: 'start' | 'end'
+  /** A dropdown at every width, never the Top sheet: a button on the canvas, not in the strip. */
+  dropdown?: boolean
+  /** The dropdown's width, when not `panel-width`. */
+  width?: string
+  /** A press outside that still works the panel's own thing, so it goes through and the panel stays. */
+  keepsPress?: (event: PointerEvent) => boolean
 }>()
 const emit = defineEmits<{ close: [] }>()
 
 const wide = useMediaQuery('(min-width: 1024px)')
-const sheet = computed(() => !wide.value)
+const sheet = computed(() => !wide.value && !props.dropdown)
 const itemRole = computed(() => (wide.value && props.menu ? ('menuitem' as const) : undefined))
 provide(PANEL_CONTEXT, { sheet, itemRole, close: () => emit('close') })
 
 const titleId = useId()
 const panelEl = ref<HTMLElement>()
 const anchorEl = ref<HTMLElement>()
-const STRIP_BUTTONS = '[data-testid="strip-menu"], [data-testid="strip-project"]'
+/** The buttons that open, swap or close a panel themselves, so a press on one is not a press outside. */
+const STRIP_BUTTONS = '[data-testid="strip-menu"], [data-testid="strip-project"], [data-testid="strip-frame"], [data-testid="frame-edit-toggle"]'
 
-const anchored = useAnchoredPosition(anchorEl, panelEl, () => 'start')
+const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
 /** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
  * past that. */
-const dropdownStyle = computed(() => ({ ...anchored.style.value, maxHeight: `calc(100dvh - ${Number.parseFloat(anchored.style.value.top ?? '0') || 0}px - ${16}px)` }))
+const dropdownStyle = computed(() => ({
+  ...anchored.style.value,
+  maxHeight: `calc(100dvh - ${Number.parseFloat(anchored.style.value.top ?? '0') || 0}px - ${16}px)`,
+  ...(props.width ? { width: props.width } : {}),
+}))
 
 /** The Top sheet's box: from the strip's bottom edge down to 40px above the canvas box's bottom, the box's full
  * width. */
@@ -52,13 +65,13 @@ function measureSheet() {
 
 function place() {
   anchorEl.value = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? undefined
-  if (wide.value) anchored.follow()
+  if (!sheet.value) anchored.follow()
   else {
     anchored.stop()
     measureSheet()
   }
 }
-watch([wide, () => props.anchor], () => void nextTick(place))
+watch([wide, () => props.anchor, () => props.dropdown], () => void nextTick(place))
 
 // Escape first ends an edit in progress: a cancellable field (the Project's rename) marks its form
 // `data-handles-escape` and hears a `panel-escape` event; with none, Escape closes the panel.
@@ -67,12 +80,23 @@ function onEscape() {
   if (editing) editing.dispatchEvent(new CustomEvent('panel-escape'))
   else emit('close')
 }
+/** Whether the press just let through was one the panel keeps, so the focus it moves does not close it. */
+let keptPress = false
 useOverlayLayer({
   isOpen: () => true,
   root: () => panelEl.value,
   close: onEscape,
   // The strip's own buttons are left alone, since their click swaps or closes the panel.
   isOpener: (target) => target.closest(STRIP_BUTTONS) !== null,
+  keepsPress: (event) => {
+    const kept = props.keepsPress?.(event) ?? false
+    // The focus it moves (onto the canvas) comes in this same task.
+    if (kept) {
+      keptPress = true
+      setTimeout(() => (keptPress = false))
+    }
+    return kept
+  },
   onOutsidePress: () => {
     pressClosed.markPressClosed()
     emit('close')
@@ -88,6 +112,8 @@ function focusables(): HTMLElement[] {
 /** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab wraps
  * in the Top sheet and leaves the dropdown. */
 function onKeydown(event: KeyboardEvent) {
+  // A key the content already used (the Frame bar's arrows move the Frame) is not a move through the panel.
+  if (event.defaultPrevented) return
   const target = event.target as HTMLElement
   const list = focusables()
   if (event.key === 'Tab') {
@@ -112,9 +138,9 @@ function onKeydown(event: KeyboardEvent) {
   list[next]?.focus({ preventScroll: true })
 }
 
-/** The Dropdown closes when focus leaves it with Tab. */
+/** The Dropdown closes when focus leaves it with Tab, not with a press the panel keeps (a Frame handle on the canvas). */
 function onFocusOut(event: FocusEvent) {
-  if (sheet.value) return
+  if (sheet.value || keptPress) return
   const next = event.relatedTarget
   if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(STRIP_BUTTONS) && !next.closest('[popover]')) emit('close')
 }
@@ -141,6 +167,9 @@ function onHandleUp() {
   if (panelEl.value) panelEl.value.style.transform = ''
   if (offset < 4 || offset >= DRAG_CLOSE_PX) emit('close')
 }
+
+/** `place` again after the button moved with no scroll or resize (the edit pencil on a zoom). */
+defineExpose({ place })
 
 let opener: HTMLElement | null = null
 const pressClosed = usePressClosed()
