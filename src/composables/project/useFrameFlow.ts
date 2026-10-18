@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import type { Technique } from '../../domain/weave'
+import { describeWeave, type Technique } from '../../domain/weave'
 import { changeFrame } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { rowProgressStarted, type Project } from '../../domain/project'
@@ -92,9 +92,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   function describe(frame: Frame): string {
     const t = deps.messages()
-    return t.frame.announceSet
-      .replace('{width}', String(frame.columns))
-      .replace('{height}', String(frame.rows))
+    const project = deps.currentProject()
+    const { columns, rows } = describeWeave(project ?? { technique: 'loom' }).unitsOf(frame)
+    return t.frame.announceSet.replace('{width}', String(columns)).replace('{height}', String(rows))
   }
 
   /** Commits a new Frame (or none) as one undo step; a no-change is no step. */
@@ -202,7 +202,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function setTo(frame: Frame): void {
     const project = deps.currentProject()
     const top = project ? snapRow(project, frame.row) : frame.row
-    commit({ ...frame, row: top, rows: frame.rows + frame.row - top })
+    const bottom = project ? describeWeave(project).snapBottom(top, frame.row + frame.rows - 1) : frame.row + frame.rows - 1
+    commit({ ...frame, row: top, rows: bottom - top + 1 })
   }
 
   function fit(): void {
@@ -241,7 +242,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!step || !project?.frame) return false
     if (event.shiftKey) {
-      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]))
+      const down = describeWeave(project).rowsPerUnit
+      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0] * down, project))
     } else {
       moveBy(step[0], step[1])
     }

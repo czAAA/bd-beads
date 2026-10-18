@@ -201,3 +201,39 @@ describe('a Brick block (ticket 477)', () => {
     expect(fitToDrawing(block2, beads)).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
   })
 })
+
+describe('the Frame in Right-angle weave holds whole Units (ticket 482)', () => {
+  const weave = { technique: 'rightAngle' as const }
+  const frame = { row: 4, column: 3, rows: 7, columns: 5 }
+
+  it('starts on a line of horizontal beads and ends on one, at least a Unit across and down', () => {
+    expect(frameFromCells(weave, { row: 3, column: 1 }, { row: 8, column: 4 })).toEqual({ row: 2, column: 1, rows: 7, columns: 4 })
+    expect(frameFromCells(weave, { row: 2, column: 2 }, { row: 2, column: 2 })).toEqual({ row: 2, column: 2, rows: 3, columns: 2 })
+  })
+
+  it('drags an edge to the nearest whole Unit', () => {
+    expect(frameWithEdges(weave, frame, ['bottom'], { row: 13, column: 4 })).toEqual({ ...frame, rows: 11 })
+    expect(frameWithEdges(weave, frame, ['top'], { row: 1, column: 4 })).toEqual({ ...frame, row: 0, rows: 11 })
+    expect(frameWithEdges(weave, frame, ['bottom'], { row: 0, column: 4 })).toEqual({ ...frame, rows: 3 })
+  })
+
+  it('moves by whole Units down and by columns across', () => {
+    expect(movedFrame(weave, frame, 3, 1)).toEqual({ ...frame, row: 8, column: 4 })
+  })
+
+  it('steps an edge by a Unit, or a column across', () => {
+    expect(frameWithEdgeStep(weave, frame, 'bottom', 1)).toEqual({ ...frame, rows: 9 })
+    expect(frameWithEdgeStep(weave, frame, 'top', 1)).toEqual({ ...frame, row: 2, rows: 9 })
+    expect(frameWithEdgeStep(weave, frame, 'right', 1)).toEqual({ ...frame, columns: 6 })
+  })
+
+  it('is resized to Units typed, each side growing evenly', () => {
+    // 6 Units across (7 columns) and 4 down (9 rows).
+    expect(frameResizedAround(weave, frame, 6, 4)).toEqual({ row: 4, column: 2, rows: 9, columns: 7 })
+  })
+
+  it('wraps what is drawn in whole Units', () => {
+    const beads = withColors({}, [{ row: 3, column: 5, color: '#ff0000' }, { row: 6, column: 7, color: '#ff0000' }])
+    expect(fitToDrawing(weave, beads)).toEqual({ row: 2, column: 5, rows: 5, columns: 3 })
+  })
+})

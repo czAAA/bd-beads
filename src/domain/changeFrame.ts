@@ -1,7 +1,7 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { movedFrame, sameFrame } from './frame'
 import type { GridPosition } from './grid'
-import type { Technique } from './weave'
+import { describeWeave, type Technique } from './weave'
 import { carryNames, namedPieceCutBy } from './pieceNames'
 import { clampBrickBlock, rowProgressStarted, withBrickBlock, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
@@ -38,6 +38,8 @@ export type FrameChangeRefusal =
   /** The new Frame would cut through a named Piece (an unframed Schema), which it must take whole or leave whole
    * (ticket 407). */
   | 'cuts-schema'
+  /** A Technique counted in Units is fixed when the Project is created (ADR 0038), and a line of it isn't a Unit. */
+  | 'fixed-weave'
 
 export type FrameChangeResult =
   | { kind: 'refused'; reason: FrameChangeRefusal }
@@ -58,6 +60,12 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
     return 'locked'
   }
   const frame = project.frame
+  if ('technique' in change && change.technique !== project.technique && (!describeWeave(project).switchable || !describeWeave({ technique: change.technique }).switchable)) {
+    return 'fixed-weave'
+  }
+  if ('removeLine' in change && describeWeave(project).countsUnits) {
+    return 'fixed-weave'
+  }
   if ('removeLine' in change) {
     if (!frame) {
       return 'no-frame'

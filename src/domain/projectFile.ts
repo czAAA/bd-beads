@@ -1,5 +1,6 @@
 import { normalizeProject, type GridProject, type Project } from './project'
 import { decodeProject, encodeProject, type EncodedProject } from './projectEncoding'
+import { TECHNIQUES, type Technique } from './weave'
 
 // The export file format (ADR 0048). With no backend to migrate for us (ADR 0001), a file carries its kind and format
 // version and the reader refuses what it doesn't understand. This is the JSON inside `.openbeads`; the gzip is
@@ -67,7 +68,7 @@ export function looksLikeProject(value: unknown): value is Project | GridProject
     typeof project === 'object' &&
     project !== null &&
     typeof project.id === 'string' &&
-    typeof project.technique === 'string' &&
+    TECHNIQUES.includes(project.technique as Technique) &&
     typeof project.beadId === 'string' &&
     (hasBeads || hasGrid)
   )

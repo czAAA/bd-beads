@@ -1,9 +1,9 @@
 import type { Frame } from '../domain/canvas'
-import { gridWidth, type Technique, type Weave } from '../domain/weave'
+import { describeWeave, type Technique, type Weave } from '../domain/weave'
 import { pieceAreasOf } from '../domain/pieces'
 import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
-import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
+import { cellSizePx, CELL_SIZE_PX, positionsBoxPx, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
 // Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -168,24 +168,30 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
   const labels: RulerLabel[] = []
   const beads: RulerDot[] = []
 
+  const description = describeWeave(weave)
+  // What the rulers count: beads, or Units where the Technique counts them (ticket 482).
+  const counted = description.unitsOf(box)
+  const count = description.countsUnits ? counted : { columns: box.columns, rows: box.rows }
+  const unit = cellSizePx(technique).width + cellSizePx(technique).height
+  const area = positionsBoxPx({ toAbsolute: { row: 0, column: 0 } }, weave, box.row, box.column, box.rows, box.columns)
   const lastRow = box.row + box.rows - 1
-  const bottom = rowTopPx(technique, lastRow) + CELL_SIZE_PX
-  const right = box.column * CELL_SIZE_PX + gridWidth(technique, box.columns, CELL_SIZE_PX)
-  const left = box.column * CELL_SIZE_PX
+  const bottom = description.countsUnits ? area.y + area.height : rowTopPx(technique, lastRow) + CELL_SIZE_PX
+  const right = description.countsUnits ? area.x + area.width : box.column * CELL_SIZE_PX + description.blockExtent(box.columns, 0, CELL_SIZE_PX, CELL_SIZE_PX).width
+  const left = description.countsUnits ? area.x : box.column * CELL_SIZE_PX
 
   // The widest column numbers: the longest upright one (under 100) and the longest turned one.
-  const columnSizes = [labelBox(String(Math.min(box.columns, TURNED_FROM - 1)), false, fontPx)]
-  if (box.columns >= TURNED_FROM) {
-    columnSizes.push(labelBox(String(box.columns), true, fontPx))
+  const columnSizes = [labelBox(String(Math.min(count.columns, TURNED_FROM - 1)), false, fontPx)]
+  if (count.columns >= TURNED_FROM) {
+    columnSizes.push(labelBox(String(count.columns), true, fontPx))
   }
-  const rowSize = labelBox(String(box.rows), false, fontPx)
+  const rowSize = labelBox(String(count.rows), false, fontPx)
   // Every number is centred on the line the dots stand on, so a 1-digit row number is as far from the beads as a
   // 2-digit one.
   const columnBand = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
   const { column: columnStepOnScreen, row: rowStepOnScreen } = surface.beadStep()
   const lastOnly = surface.zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
-  const columnStep = lastOnly ? box.columns : rulerStep(columnStepOnScreen, columnSizes)
-  const rowStep = lastOnly ? box.rows : rulerStep(rowStepOnScreen, [rowSize])
+  const columnStep = lastOnly ? count.columns : rulerStep(columnStepOnScreen, columnSizes)
+  const rowStep = lastOnly ? count.rows : rulerStep(rowStepOnScreen, [rowSize])
   const columnPitch = Math.hypot(columnStepOnScreen.x, columnStepOnScreen.y)
   const rowPitch = Math.hypot(rowStepOnScreen.x, rowStepOnScreen.y)
 
@@ -237,15 +243,21 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
   }
 
   const columnsAt = (rowForShift: number, gridY: number, normal: [number, number]) => {
-    for (let index = 0; index < box.columns; index += 1) {
-      const gridX = rowShiftPx(weave, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
-      along('column', index, gridX, gridY, normal, { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }, box.column + index)
+    for (let index = 0; index < count.columns; index += 1) {
+      const gridX = description.countsUnits
+        ? area.x + index * unit + unit / 2
+        : rowShiftPx(weave, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
+      // A Unit spans its column and the next.
+      const marked = description.countsUnits ? { top: box.row, left: box.column + index, rows: box.rows, columns: 2 } : { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }
+      along('column', index, gridX, gridY, normal, marked, box.column + index)
     }
   }
   const rowsAt = (gridX: number, normal: [number, number]) => {
-    for (let index = 0; index < box.rows; index += 1) {
-      const gridY = rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2
-      along('row', index, gridX, gridY, normal, { top: box.row + index, left: box.column, rows: 1, columns: box.columns }, box.row + index)
+    for (let index = 0; index < count.rows; index += 1) {
+      const gridY = description.countsUnits ? area.y + index * unit + unit / 2 : rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2
+      const first = box.row + index * description.rowsPerUnit
+      const marked = description.countsUnits ? { top: first, left: box.column, rows: 3, columns: box.columns } : { top: first, left: box.column, rows: 1, columns: box.columns }
+      along('row', index, gridX, gridY, normal, marked, first)
     }
   }
 

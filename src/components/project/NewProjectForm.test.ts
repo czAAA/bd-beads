@@ -110,11 +110,11 @@ describe('NewProjectForm', () => {
     expect(events![0]![0]).toMatchObject({ name: 'My Bracelet' })
   })
 
-  it('lists Peyote and Brick stitch alongside Loom', () => {
+  it('lists Peyote, Brick stitch and Right-angle weave alongside Loom', () => {
     const wrapper = mount(NewProjectForm)
 
     const options = wrapper.findAll('[data-testid="technique-select"] [role="radio"]')
-    expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick'])
+    expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick', 'rightAngle'])
   })
 
   it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
@@ -125,6 +125,15 @@ describe('NewProjectForm', () => {
 
     const events = wrapper.emitted('submit')
     expect(events![0]![0]).toMatchObject({ technique: 'peyote' })
+  })
+
+  it('emits Right-angle weave when it is selected (ticket 482)', async () => {
+    const wrapper = mount(NewProjectForm)
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="rightAngle"]').trigger('click')
+    await wrapper.find('form').trigger('submit')
+
+    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'rightAngle' })
   })
 
   it("emits the trimmed maker's name when one is typed, keeping it apart from the device-wide one (ticket 182)", async () => {
