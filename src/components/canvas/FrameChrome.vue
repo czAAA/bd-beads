@@ -7,8 +7,8 @@ import { frameCornerControls, type FrameAnchor } from '../../composables/tools/s
 import type { Project } from '../../domain/project'
 
 /**
- * What a Frame carries all the time (tickets 452, 455, ADR 0062): three small buttons in a row just inside the top-right
- * corner of the margin outline, like a window's, clamped inside the canvas box: Move handle, Edit Frame and Remove Frame.
+ * What a Frame carries all the time (tickets 452, 455, ADR 0062): four small buttons in a row just inside the top-right
+ * corner of the margin outline, like a window's, clamped inside the canvas box: Move handle, Rotate Frame (ticket 471), Edit Frame and Remove Frame.
  * The Move handle's button hands a press on to the canvas to drag, and the arrows move the Frame with its beads while
  * Shift + arrows resize it. `anchor` is the Frame's rectangle in the canvas box's own pixels.
  */
@@ -21,6 +21,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   toggle: []
+  rotate: []
   remove: []
   'move-press': [event: PointerEvent]
   key: [event: KeyboardEvent]
@@ -30,6 +31,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const toggleAction = controlAction('edit-frame')
 const removeAction = controlAction('remove-frame')
 const moveAction = controlAction('move-frame')
+const rotateAction = controlAction('rotate-frame')
 
 const touch = useMediaQuery('(pointer: coarse)')
 const controls = computed(() => frameCornerControls(props.anchor, touch.value))
@@ -53,6 +55,17 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
         data-testid="frame-move-handle"
         @pointerdown="emit('move-press', $event)"
         @keydown="emit('key', $event)"
+      />
+    </div>
+    <div class="frame-chrome__control" :style="place(controls.rotate)">
+      <IconButton
+        variant="box"
+        :icon-size="15"
+        :action="rotateAction"
+        :deps="deps"
+        :style="sized"
+        data-testid="frame-rotate"
+        @click="emit('rotate')"
       />
     </div>
     <div class="frame-chrome__control" :style="place(controls.edit)">

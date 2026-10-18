@@ -8,7 +8,7 @@ import type { ReplaceOptions } from './useProjectLibrary'
 
 /**
  * The three kinds of undoable change (ADR 0036), by which rules they keep:
- * - drawing: Paint, Fill, Paste, Eraser, Mirror current. Row progress's lock and the keep-out margin are applied
+ * - drawing: Paint, Fill, Paste, Eraser, Mirror current, Rotate and Rotate Frame. Row progress's lock and the keep-out margin are applied
  *   silently, and an edit left with no effect is no Undo step.
  * - frame: everything that goes through changeFrame. Its refusals come from there; afterwards the session resets.
  * - exempt: Delete all (clearing progress is its point) and Replace Bead (touches no bead). No guards.
@@ -86,6 +86,10 @@ export function useEdit(deps: EditDeps) {
     }
     record(project)
     deps.replaceProject(updated)
+    // A drawing command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built against the old one.
+    if (!sameFrame(project.frame, updated.frame)) {
+      deps.resetAfterFrameChange()
+    }
     return { kind: 'applied' }
   }
 
