@@ -2,8 +2,8 @@ import { expect, test, type Page } from '@playwright/test'
 import { openApp, settle, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** The Frame's Margin handle, edit pencil and Frame bar never scale or move with the zoom or pan (ticket 473): measured
- * by their boxes, not compared with a picture. */
+/** The Frame's Margin handle, edit pencil and Frame bar never scale with the zoom (ticket 473); the bar hangs from
+ * whichever opened it (ticket 475). Measured by their boxes, not compared with a picture. */
 
 type Box = { x: number; y: number; width: number; height: number }
 
@@ -21,12 +21,13 @@ for (const zoom of [10, 100, 400]) {
     const page = await context.newPage()
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-    await page.getByTestId('frame-edit-toggle').click()
+    // Zoom first: a press on the strip's zoom buttons closes the bar, as it does Menu and Project (ticket 475).
     await setZoom(page, zoom)
+    await page.getByTestId('strip-frame').click()
 
     const handle = await box(page, 'frame-move-handle')
     const pencil = await box(page, 'frame-edit-toggle')
-    const bar = await box(page, 'frame-bar')
+    const bar = await box(page, 'panel-dropdown')
     const button = await box(page, 'strip-frame')
 
     expect([handle.width, handle.height]).toEqual([56, 44])
@@ -60,18 +61,18 @@ test('opening the bar does not push the canvas or move the pencil', async ({ bro
   await context.close()
 })
 
-test('panning the canvas moves the Frame but not the bar, and keeps the handle on screen', async ({ browser }) => {
+test('panning the canvas moves the Frame but not a bar opened from the strip, and keeps the handle on screen', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rows: 40 })])
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-  await page.getByTestId('frame-edit-toggle').click()
   await setZoom(page, 400)
+  await page.getByTestId('strip-frame').click()
 
-  const before = { bar: await box(page, 'frame-bar'), handle: await box(page, 'frame-move-handle') }
+  const before = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
   await page.locator('[data-tour="canvas"]').evaluate((element) => element.scrollBy(300, 200))
   await page.waitForTimeout(100)
-  const after = { bar: await box(page, 'frame-bar'), handle: await box(page, 'frame-move-handle') }
+  const after = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
 
   expect(after.bar).toEqual(before.bar)
   expect([after.handle.width, after.handle.height]).toEqual([56, 44])
@@ -79,5 +80,33 @@ test('panning the canvas moves the Frame but not the bar, and keeps the handle o
   expect(after.handle.x).toBeGreaterThanOrEqual(area.x)
   expect(after.handle.x + after.handle.width).toBeLessThanOrEqual(area.x + area.width)
   expect(after.handle.y).toBeGreaterThanOrEqual(area.y)
+  await context.close()
+})
+
+test('opened from the pencil, the bar hangs from it, right edges lined up, and follows it as the canvas zooms', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom' })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  await setZoom(page, 100)
+  await page.getByTestId('frame-edit-toggle').click()
+  await settle(page)
+
+  const hangs = async () => {
+    const pencil = await box(page, 'frame-edit-toggle')
+    const bar = await box(page, 'panel-dropdown')
+    expect(Math.round(bar.y - (pencil.y + pencil.height))).toBe(4)
+    expect(Math.round(bar.x + bar.width)).toBe(Math.round(pencil.x + pencil.width))
+    return bar
+  }
+  const before = await hangs()
+  // A Ctrl+wheel zoom moves the pencil with no press, so the bar stays open and goes with it.
+  const area = await box(page, 'app-drawing-area')
+  await page.mouse.move(area.x + 120, area.y + area.height / 2)
+  await page.keyboard.down('Control')
+  await page.mouse.wheel(0, 200)
+  await page.keyboard.up('Control')
+  await settle(page)
+  expect(await hangs()).not.toEqual(before)
   await context.close()
 })

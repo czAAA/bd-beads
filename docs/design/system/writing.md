@@ -318,4 +318,3 @@ The Frame bar, the Margin handle and the edit pencil (Frame card). The Russian i
 | Top edge: add one row · Top edge: remove one row | Верхний край: добавить ряд · Верхний край: убрать ряд |
 | Left edge: add one column · Left edge: remove one column | Левый край: добавить столбец · Левый край: убрать столбец |
 | The Frame can’t get any smaller on this side. | Рамку нельзя сделать меньше с этой стороны. |
-| Row progress has started, so the Frame can only be moved. | Прогресс по рядам начат, поэтому рамку можно только перемещать. |

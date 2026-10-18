@@ -325,7 +325,7 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
 
 // Tests read what was drawn from the layout the surface built.
-defineExpose({ rulerLayout: rulers, pressMoveHandle })
+defineExpose({ rulerLayout: rulers, pressMoveHandle, grabsFrame })
 
 /** Animation frames asked for and not yet run, so they can be cancelled with the surface. */
 const pendingFrames = new Set<number>()
@@ -745,11 +745,17 @@ function cellUnder(event: PointerEvent): GridPosition {
 
 /** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
  * so the tool gets the press. The Margin handle's own press comes through `pressMoveHandle`. */
-function framePress(event: PointerEvent): FramePress | undefined {
+function framePress(event: PointerEvent, touch = touchInput.value): FramePress | undefined {
   const point = pointInSurface(event)
   if (!props.settingFrame) return undefined
-  const target = framePressAt(props.project.frame, surface.value, props.project.rotation, point, touchInput.value)
+  const target = framePressAt(props.project.frame, surface.value, props.project.rotation, point, touch)
   return target.kind === 'handle' ? target : undefined
+}
+
+/** Whether a press on the surface would grab a resize handle, so the open Frame bar lets it through (ticket 475). */
+function grabsFrame(event: PointerEvent): boolean {
+  if (!(event.target instanceof Node) || !rootEl.value?.contains(event.target)) return false
+  return framePress(event, event.pointerType === 'touch') !== undefined
 }
 
 /** A press on the Move handle's button over the canvas (ticket 455): the same grab as a press on the handle itself. */
