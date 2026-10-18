@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import CanvasBackdrop from './CanvasBackdrop.vue'
 import CanvasHint from './CanvasHint.vue'
 import CanvasStrip from './CanvasStrip.vue'
@@ -146,6 +146,15 @@ const {
 } = useAppShell()
 
 const newProjectAction = controlAction('new-project')
+
+/** Whenever the empty canvas appears (nothing open, no picture being framed), Menu opens on its New Project form. */
+watch(
+  () => !framing.value && !activeProject.value,
+  (empty) => {
+    if (empty) openMenuOnForm()
+  },
+  { immediate: true },
+)
 
 /** The chosen colour as the pill's colour control shows it: its hex and its name (a Palette colour's own, "Custom"
  * for a one-off). */
@@ -405,7 +414,12 @@ function techniqueWord(technique: Technique): string {
               @frame-anchor="frameAnchor = $event"
               @pressing="surfacePressing = $event"
             />
-            <EmptyCanvas v-else />
+            <EmptyCanvas v-else>
+              <div class="app-shell__empty-actions" data-testid="phone-project-bar">
+                <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
+                <ProjectImport compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
+              </div>
+            </EmptyCanvas>
           </div>
 
         </div>
@@ -441,15 +455,6 @@ function techniqueWord(technique: Technique): string {
         @dismiss="dismissToast"
       />
 
-      <!--
-        With no Project open, a focused project-management bar (New Project + Import) takes the Progress bar's place
-        (ticket 439); Menu, for language and theme, is in the Canvas strip (ticket 431).
-      -->
-      <div v-if="!framing && !activeProject" class="app-shell__phone-project-bar" data-testid="phone-project-bar">
-        <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
-        <ProjectImport compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
-      </div>
-
       <!-- The framing step's controls, in the Progress bar's place (ticket 150; ConvertImage card). -->
       <div v-if="framing" ref="framingControlsEl" data-testid="framing-controls" />
 
@@ -472,20 +477,18 @@ function techniqueWord(technique: Technique): string {
 </template>
 
 <style scoped>
-/* The New Project / Import bar: in the Progress bar's place while no Project is open (ticket 439). */
-.app-shell__phone-project-bar {
+/* New Project and the import icons, under the empty canvas's message (they were a bar in the Progress bar's place,
+   ticket 439). */
+.app-shell__empty-actions {
   display: flex;
-  flex: none;
   align-items: center;
   gap: var(--space-4);
-  height: var(--dock-height);
-  /* Tight enough that New Project and both imports fit a 320px screen in Russian. */
-  padding: 0 var(--space-12);
-  border-top: 1px solid var(--line-soft);
+  /* Narrow enough that New Project and both imports fit a 320px screen in Russian. */
+  width: min(100%, var(--tooltip-wide));
 }
 
 /* New Project grows to take the remaining width; the import icons sit at a fixed square size beside it. */
-.app-shell__phone-project-bar :deep(.app-button) {
+.app-shell__empty-actions :deep(.app-button) {
   flex: 1 1 0;
 }
 
