@@ -1,16 +1,15 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useId } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, provide, ref } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
-import { popoverPlacement, type PillColorMode, type PillPosition } from '../../domain/toolPill'
+import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
-import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { SHEET_CLOSE } from '../shell/sheetContext'
 import ToolColorControls from './ToolColorControls.vue'
 
 // The colour popover (ticket 439, ADR 0059; ToolPill card): the Colour sheet's replacement on every device. Head with
-// the chosen colour and "In the pill", the recent chips, then the Palette with Pick color, Custom color, Image colors.
+// the chosen colour, the recent chips, then the Palette with Pick color and Custom color.
 // Beside the pill, clamped to the screen. Choosing, Close, Escape or a press outside closes it.
 const props = defineProps<{
   /** The colour tile that opened it, and the pill it is part of: where the popover is placed. */
@@ -21,23 +20,18 @@ const props = defineProps<{
   colorName?: string
   selectedColorId?: string
   customColor?: string
-  selectedImageColor?: string
-  imageColors?: readonly string[]
   recents: readonly string[]
 }>()
 
-const mode = defineModel<PillColorMode>('mode', { required: true })
 const emit = defineEmits<{
   close: []
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
-  'select-image-color': [hex: string]
 }>()
 
 const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
-const labelId = useId()
 const style = ref<Record<string, string>>({ visibility: 'hidden' })
 const closeAction = controlAction('close')
 
@@ -48,11 +42,6 @@ useOverlayLayer({
   close: () => emit('close'),
   isOpener: (target) => props.tile?.contains(target) ?? false,
 })
-
-const modeOptions = computed(() => [
-  { value: 'one' as const, label: t.value.toolPill.one },
-  { value: 'recent' as const, label: t.value.toolPill.recentColors },
-])
 
 /** The place beside the pill, in screen pixels: measured once the popover has its real size, and again when the
  * window changes. */
@@ -100,11 +89,6 @@ onBeforeUnmount(() => {
       <IconButton class="color-popover__close" variant="plain" :action="closeAction" :label="t.toolPill.close" :icon-size="16" data-testid="color-popover-close" @click="emit('close')" />
     </div>
 
-    <div class="color-popover__section">
-      <span :id="labelId" class="color-popover__label">{{ t.toolPill.inPill }}</span>
-      <SegmentedControl v-model="mode" :options="modeOptions" :labelledby="labelId" small data-testid="color-popover-mode" />
-    </div>
-
     <div v-if="recents.length" class="color-popover__section">
       <span class="color-popover__label">{{ t.toolPill.recent }}</span>
       <div class="color-popover__recents" data-testid="color-popover-recents">
@@ -125,11 +109,8 @@ onBeforeUnmount(() => {
       <ToolColorControls
         :selected-color-id="selectedColorId"
         :custom-color="customColor"
-        :selected-image-color="selectedImageColor"
-        :image-colors="imageColors"
         @select-color="(id) => emit('select-color', id)"
         @select-custom-color="(hex) => emit('select-custom-color', hex)"
-        @select-image-color="(hex) => emit('select-image-color', hex)"
       />
     </div>
   </div>
@@ -152,6 +133,8 @@ onBeforeUnmount(() => {
   max-height: calc(100dvh - 2 * var(--screen-edge));
   padding: var(--space-12) var(--space-14) var(--space-14);
   overflow-y: auto;
+  /* Its own scroll stops at its ends: a drag past them must not carry on into the page. */
+  overscroll-behavior: none;
   background: var(--overlay-fill);
   border: 1px solid var(--overlay-line);
   border-radius: var(--pill-popover-radius);

@@ -124,7 +124,7 @@
     {
       "name": "ColorPickers",
       "group": "Screens",
-      "summary": "The Image colors popover and the Custom colour button."
+      "summary": "The Custom colour button."
     },
     {
       "name": "ConfirmDialogs",
@@ -279,7 +279,7 @@
     {
       "name": "PaletteSwatches",
       "group": "Toolbox",
-      "summary": "The Colors group: the Pattern's Palette as an 8-column grid of square swatches, then Custom and Image colors."
+      "summary": "The Colors group: the Pattern's Palette as an 8-column grid of square swatches, then Custom."
     },
     {
       "name": "PhoneForms",

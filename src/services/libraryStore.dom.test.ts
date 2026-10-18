@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProject, createProjectFromImage, type Grid, type Project, type Technique, frameGrid, withFrameGrid } from '../domain/project'
+import { createProject, type Grid, type Project, type Technique, frameGrid, withFrameGrid } from '../domain/project'
 import { loadProjects, saveProjects } from './libraryStore'
 import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
@@ -260,53 +260,5 @@ describe('projectStorage', () => {
       expect(plainJsonBytes).toBeGreaterThan(60 * 1024)
       expect(storedBytes()).toBeLessThan(5 * 1024)
     })
-  })
-})
-
-describe('Image colors through storage (ticket 58)', () => {
-  function converted(): Project {
-    return createProjectFromImage({
-      name: 'Logo',
-      technique: 'brick',
-      beadId: cubeBead.id,
-      size: { width: 4.5, height: 4.5, unit: 'mm' }, // 3 columns x 3 rows in 1.5mm cubes
-      grid: [
-        [{ color: '#ff0000' }, { color: '#00ff00' }, { color: null }],
-        [{ color: null }, { color: '#ff0000' }, { color: '#0000ff' }],
-        [{ color: '#0000ff' }, { color: null }, { color: '#00ff00' }],
-      ],
-      imageColors: ['#ff0000', '#00ff00', '#0000ff'],
-    })
-  }
-
-  it('saves and loads a converted Project with its Image colors intact', () => {
-    const project = converted()
-
-    saveProjects([project])
-
-    expect(loadProjects()).toEqual([project])
-    expect(loadProjects()[0]!.imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
-  })
-
-  it('keeps Image colors apart from the compact encoding own color table, which follows the grid', () => {
-    // The grid has three colors; erasing one leaves the stored table with two, while Image colors still records what
-    // the conversion found (ADR 0011).
-    const project = converted()
-    const erased = withFrameGrid(
-      project,
-      frameGrid(project).map((row) => row.map((cell) => ({ color: cell.color === '#0000ff' ? null : cell.color }))),
-    )
-
-    saveProjects([erased])
-    const [loaded] = loadProjects()
-
-    expect(loaded!.imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
-    expect(new Set(frameGrid(loaded!).flat().map((cell) => cell.color))).toEqual(new Set(['#ff0000', '#00ff00', null]))
-  })
-
-  it('leaves a Project created any other way without the field', () => {
-    saveProjects([makeProject()])
-
-    expect(loadProjects()[0]!.imageColors).toBeUndefined()
   })
 })

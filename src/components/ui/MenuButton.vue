@@ -98,7 +98,6 @@ function close(returnFocus = true) {
 watch(showsSheet, () => close(false))
 
 provide(MENU_CLOSE, () => close())
-/** ImageColorsButton closes the menu from its own swatch handler. */
 defineExpose({ close })
 // A sheet is its own layer; its content may sit outside this button's element.
 useOverlayLayer({ isOpen: () => open.value && !showsSheet.value, root: () => rootEl.value, close: () => close(), onOutsidePress: () => close(false) })

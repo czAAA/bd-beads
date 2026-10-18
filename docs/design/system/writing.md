@@ -62,7 +62,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
 | Canvas · Hand · Rulers | Полотно · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
-| Convert image | Конвертировать изображение | Image colors / Цвета изображения |
+| Convert image | Конвертировать изображение | A Project made from a picture |
 
 ## Ukrainian, Belarusian, Chinese, Spanish and Polish (ticket 368)
 
@@ -169,7 +169,6 @@ The Canvas color button (Russian "Цвет полотна") offers five backgrou
 | Make one with New Pattern on the left, open a Saved Pattern, or import a file. | Создайте её кнопкой «Новая схема» слева, откройте сохранённую схему или импортируйте файл. |
 | Opening {Pattern} · {size} | Открываем {Pattern} · {size} |
 | Converting the picture · {percent} | Конвертируем изображение · {percent} |
-| No image colors: this Pattern was not converted from a picture. | Цветов изображения нет: эта схема сделана не из картинки. |
 | Skip to Pattern | Перейти к схеме |
 | High contrast | Высокий контраст |
 | More · Tools | Ещё · Инструменты |

@@ -29,7 +29,6 @@
   html:root :is(
       .project-surface,
       .palette-picker__swatch,
-      .image-colors-picker__swatch,
       .custom-color-picker__swatch,
       .bead-quantities__swatch,
       .convert-image-frame__swatch,
@@ -73,7 +72,7 @@
     border: 2px solid Highlight;
   }
 
-  html:root :is(.palette-picker__swatch, .image-colors-picker__swatch)[aria-pressed='true'],
+  html:root :is(.palette-picker__swatch)[aria-pressed='true'],
   html:root .custom-color-picker--selected {
     outline: 2px solid Highlight;
     outline-offset: 2px;

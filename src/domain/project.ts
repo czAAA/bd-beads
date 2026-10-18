@@ -71,10 +71,6 @@ export interface Project {
    * for Peyote/Brick the stagger is tied to weave direction, so transposing the grid would give an unweavable
    * schema. */
   rotation: Rotation
-  /** The colors one Convert image found (CONTEXT.md's Image colors, ADR 0011), offered in the Colors group. Absent
-   * on other Projects. Frozen at conversion: painting or erasing never changes it, unlike the compact encoding's
-   * per-Project color table (projectEncoding.ts), which describes the grid as it stands. */
-  imageColors?: string[]
   /** This Project's maker's name (ADR 0060), printed on exports and the background watermark. Absent: no name
    * printed (domain/makerName.ts). */
   makerName?: string
@@ -158,13 +154,10 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
   size: StatedSize
   /** The converted cells, sampled at the Project's own Frame size (see domain/imageConversion.ts). */
   grid: Grid
-  /** The colors that conversion found, saved on the Project and never changed afterwards (ADR 0011). */
-  imageColors: string[]
 }
 
-/** Creates a Project from a picture (ticket 58): an ordinary new Project with its cells painted and the conversion's
- * Image colors. Conversion only creates, never edits an open Project (ADR 0010), so this is the only writer of Image
- * colors. The grid is fitted to the stated dimensions (missing cells empty, surplus dropped), so they never disagree. */
+/** Creates a Project from a picture (ticket 58): an ordinary new Project with its cells painted. Conversion only
+ * creates, never edits an open Project (ADR 0010). The grid is fitted to the stated dimensions (missing cells empty, surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
   const frame = project.frame!
@@ -177,7 +170,6 @@ export function createProjectFromImage(input: CreateProjectFromImageInput): Proj
       ),
       frame,
     ),
-    imageColors: [...input.imageColors],
   }
 }
 

@@ -6,7 +6,7 @@ import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
-import { PILL_COLOR_MODES, PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillColorMode, type PillPosition } from '../domain/toolPill'
+import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
 import { normalizeHex } from '../domain/palette'
 import { readKey, removeKey } from './storageKeys'
 
@@ -105,14 +105,6 @@ export const PREFERENCES = {
     fallback: DEFAULT_PILL_POSITION,
     parse: (raw) => PILL_POSITIONS.find((position) => position === raw),
     write: (position) => (position === DEFAULT_PILL_POSITION ? null : position),
-  }),
-  // What the pill's colour control shows (ticket 439): the recents beside the swatch while they fit, until One color is
-  // chosen.
-  pillColors: preference<PillColorMode>({
-    key: 'openbeads:pill-colors',
-    fallback: 'recent',
-    parse: (raw) => PILL_COLOR_MODES.find((mode) => mode === raw),
-    write: (mode) => (mode === 'recent' ? null : mode),
   }),
   // The colours painted with lately, newest first, as `#rrggbb` (ticket 439): at most eight, anything else in storage
   // is dropped.

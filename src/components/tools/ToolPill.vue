@@ -4,7 +4,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
-import { PILL_POSITIONS, isVerticalPill, pillPositionForKey, type PillColorMode, type PillPosition, type PillRect } from '../../domain/toolPill'
+import { PILL_POSITIONS, isVerticalPill, pillPositionForKey, type PillPosition, type PillRect } from '../../domain/toolPill'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
@@ -28,16 +28,13 @@ const props = defineProps<{
   /** The chosen colour's hex and name; none while no colour is chosen. */
   colorHex?: string
   colorName?: string
-  colorMode: PillColorMode
-  /** The colours used before the chosen one, newest first: what Recent colors shows beside it. */
+  /** The colours used before the chosen one, newest first: what the pill shows beside it. */
   recentsInPill: readonly string[]
   /** The colours the popover offers back. */
   recentsInPopover: readonly string[]
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
-  selectedImageColor?: string
-  imageColors?: readonly string[]
   /** Which bottom sheet is open: the dormant Mirror button (MIRROR_ENABLED, ticket 174) shows lit while its sheet
    * is. */
   openSheet?: PhoneSheet | null
@@ -48,12 +45,10 @@ const emit = defineEmits<{
   /** The Paste tile was pressed: enter paste mode, stamp nothing (ticket 447). */
   'paste-mode': []
   'update:position': [position: PillPosition]
-  'update:colorMode': [mode: PillColorMode]
   'update:popoverOpen': [open: boolean]
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
-  'select-image-color': [hex: string]
   'select-sheet': [sheet: PhoneSheet]
   /** Where the pill is in the drawing area's pixels (undefined when it cannot be measured): the Selection bar keeps
    * clear of it. */
@@ -105,15 +100,15 @@ function measure(): PillRect | undefined {
   return pill && layer && pill.width > 0 ? { left: pill.left - layer.left, top: pill.top - layer.top, width: pill.width, height: pill.height } : undefined
 }
 
-// Recent colors shows the recents only while the whole pill fits along its edge (ticket 439), else the one swatch
+// The pill shows the recents only while the whole pill fits along its edge (ticket 439), else the one swatch
 // rather than scroll. Fit is probed by drawing the recents and asking the pill if it overflows, before the browser
 // paints.
 const recentsRoom = ref(true)
 const probing = ref(false)
-const showRecents = computed(() => props.colorMode === 'recent' && (recentsRoom.value || probing.value))
+const showRecents = computed(() => recentsRoom.value || probing.value)
 let latestProbe = 0
 async function probeRoom() {
-  if (props.colorMode !== 'recent' || drag.dragging.value) return
+  if (drag.dragging.value) return
   const probe = ++latestProbe
   probing.value = true
   await nextTick()
@@ -134,7 +129,7 @@ const layerSize = useElementSize(layerEl)
 // Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether
 // a chosen colour exists, and a drag ending.
 watch(
-  [layerSize.width, layerSize.height, () => props.position, () => props.colorMode, () => props.recentsInPill.length, () => props.hasClipboard, () => props.colorHex === undefined, drag.dragging],
+  [layerSize.width, layerSize.height, () => props.position, () => props.recentsInPill.length, () => props.hasClipboard, () => props.colorHex === undefined, drag.dragging],
   () => void probeRoom(),
   { immediate: true, flush: 'post' },
 )
@@ -270,20 +265,15 @@ watch(
       :tile="colorTileEl"
       :pill="pillEl"
       :position="position"
-      :mode="colorMode"
       :color-hex="colorHex"
       :color-name="colorName"
       :selected-color-id="selectedColorId"
       :custom-color="customColor"
-      :selected-image-color="selectedImageColor"
-      :image-colors="imageColors"
       :recents="recentsInPopover"
-      @update:mode="emit('update:colorMode', $event)"
       @close="emit('update:popoverOpen', false)"
       @pick-recent="emit('pick-recent', $event)"
       @select-color="emit('select-color', $event)"
       @select-custom-color="emit('select-custom-color', $event)"
-      @select-image-color="emit('select-image-color', $event)"
     />
   </div>
 </template>
@@ -456,7 +446,7 @@ watch(
   color: var(--swatch-mark-light);
 }
 
-/* Recent colors: 18px swatches on tiles 30px long and 40px across (30px tall when vertical). */
+/* Recents: 18px swatches on tiles 30px long and 40px across (30px tall when vertical). */
 .tool-pill__recent {
   display: flex;
   flex: none;

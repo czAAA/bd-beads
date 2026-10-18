@@ -13,12 +13,6 @@ export function isVerticalPill(position: PillPosition): boolean {
   return position === 'left' || position === 'right'
 }
 
-/** What the pill's colour control shows: the chosen colour alone, or it with the recent colours beside it (ticket
- * 439). */
-export const PILL_COLOR_MODES = ['one', 'recent'] as const
-export type PillColorMode = (typeof PILL_COLOR_MODES)[number]
-
-/** How many recent colours the device keeps, and how many the pill and the popover show beside the chosen one. */
 /** Recent colours kept on the device. */
 export const RECENT_COLORS_KEPT = 8
 /** Recents the pill shows beside the chosen colour. */
