@@ -40,10 +40,10 @@ describe('the Margin handle and the edit pencil (ticket 473)', () => {
     expect(marginHandleCentre(anchor)).toEqual({ x: 200, y: 75 })
   })
 
-  it('slides the handle along the part of the top margin that is on screen', () => {
+  it('stays on the margin\'s own centre while it is partly out of view, not sliding into the visible part', () => {
     const roomy = { ...anchor, box: { ...anchor.box, top: 200 } }
-    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: -100 } }).x).toBe(50)
-    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 300 } }).x).toBe(350)
+    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: -60 } }).x).toBe(40)
+    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 260 } }).x).toBe(360)
   })
 
   it('keeps the handle 32px from the canvas box sides and inside it vertically', () => {
