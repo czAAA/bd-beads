@@ -55,7 +55,7 @@ describe('App row progress', () => {
 
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
-      expect(wrapper.find('[data-testid="progress-bar-direction"]').attributes('aria-checked')).toBe('true')
+      expect(wrapper.find('[data-testid="progress-bar-direction"]').attributes('aria-pressed')).toBe('true')
       expect(position(wrapper)).toMatch(/\b1\D+10\b/)
 
       await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
