@@ -48,6 +48,19 @@ async function key(init: KeyboardEventInit) {
 
 const surface = (wrapper: ReturnType<typeof mountApp>) => wrapper.find('[data-testid="project-surface"]')
 
+describe('Rotate canvas (ticket 471)', () => {
+  it('turns the picture a quarter from the Canvas strip, saved with the Project and no Undo step', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+
+    await wrapper.get('[data-testid="strip-rotate-canvas"]').trigger('click')
+    await flushPromises()
+    expect(loadProjects()[0]!.rotation).toBe(90)
+    expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBe('true')
+  })
+})
+
 describe('drawing anywhere', () => {
   it('paints far from the first bead, at positions the canvas never had a size for, and keeps it through a reload', async () => {
     saveProjects([unframedProject()])

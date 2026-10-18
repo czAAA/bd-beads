@@ -1,3 +1,4 @@
+import { sameFrame } from './frame'
 import { forEachBead, frameContains, withColors, type BeadChange, type Frame } from './canvas'
 import type { GridPosition } from './grid'
 import { changedPositions, isInFinishedRow, keepFinishedRows, type Project } from './project'
@@ -34,7 +35,11 @@ export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'techn
  * with Piece names carried over; `before` itself when nothing is left. */
 export function keepAllowedEdits(before: Project, after: Project): Project {
   const allowed = keepNamesApart(before, keepMarginClear(before, keepFinishedRows(before, after)))
-  return allowed === before ? before : carryNames(before, allowed)
+  if (allowed === before) {
+    // No bead is left to change, but a command that turned the Frame (Rotate Frame, ticket 471) still did: an empty Frame turns too.
+    return sameFrame(before.frame, after.frame) ? before : { ...before, frame: after.frame, updatedAt: after.updatedAt }
+  }
+  return carryNames(before, allowed)
 }
 
 /** Whether a position lies in the Frame's margin: within MARGIN of the Frame, but not in it. */
@@ -130,7 +135,8 @@ export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition,
  * to change returns `before` itself, the drawing commands' "unchanged" signal. */
 function keepMarginClear(before: Project, after: Project): Project {
   const frame = before.frame
-  if (!frame) {
+  // A command that turned the Frame (Rotate Frame, ticket 471) brings its margin with it: beads in the old one are its own.
+  if (!frame || !sameFrame(frame, after.frame)) {
     return after
   }
   const reverts: BeadChange[] = []

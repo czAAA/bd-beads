@@ -13,6 +13,7 @@ import {
   mostRecentlyUpdated,
   moveToRow,
   normalizeProject,
+  rotateCanvas,
   paintCells,
   keepFinishedRows,
   replaceBead,
@@ -1088,6 +1089,13 @@ describe('normalizeProject', () => {
     expect(normalized).not.toHaveProperty('grid')
     expect(normalized).not.toHaveProperty('columns')
     expect(normalized).not.toHaveProperty('rows')
+  })
+
+  it('keeps a turned canvas through a save and load, and turns on from there (ticket 471)', () => {
+    const turned = rotateCanvas(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }))
+    const loaded = normalizeProject(JSON.parse(JSON.stringify(turned)))
+    expect(loaded.rotation).toBe(90)
+    expect(rotateCanvas(rotateCanvas(rotateCanvas(loaded))).rotation).toBe(0)
   })
 
   it('backfills row progress and the rotation on a Project saved before they existed', () => {

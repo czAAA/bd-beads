@@ -223,6 +223,22 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     expect(beadColor(wrapper, { row: 4, column: 4 })).toBeNull()
   })
 
+  it('turns the Frame and its beads from the Frame row, leaving Edit as it was, and one Undo turns it back (ticket 471)', async () => {
+    const wrapper = await mountOpen(framedProject())
+    const wasEditing = editing(wrapper)
+    await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
+    await flushPromises()
+
+    // The 2 x 3 Frame at (2, 3) becomes 3 x 2 about the middle of it and its margin.
+    expect(savedFrame()).toEqual({ row: 2, column: 4, rows: 3, columns: 2 })
+    expect(beadColor(wrapper, { row: 2, column: 3 })).toBeNull()
+    expect(editing(wrapper)).toBe(wasEditing)
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(beadColor(wrapper, { row: 2, column: 3 })).toBe(RED)
+  })
+
   it('opens "Set Frame to export" with no Frame, and Fit to drawing there sets one', async () => {
     const wrapper = await mountOpen()
     await openSheet(wrapper, 'strip-project')

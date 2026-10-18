@@ -59,6 +59,7 @@ export const ICON_NAMES = [
   'reset',
   'remove-line',
   'rotate',
+  'rotate-canvas',
   'ruler',
   'save',
   'select',

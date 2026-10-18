@@ -92,15 +92,15 @@ export function frameStepperCentres(anchor: FrameAnchor): FrameStepperCentres {
   }
 }
 
-/** A corner control is 26px square, 36px on touch, shrinking with the zoom like the steppers (`anchor.scale`); the
- * three sit 4px apart, 4px inside the margin outline's corner. */
+/** A corner control is 26px square, 36px on touch, shrinking with the zoom like the steppers (`anchor.scale`); the four
+ * sit 4px apart, 4px inside the margin outline's corner. */
 const CORNER_PX = 26
 const TOUCH_CORNER_PX = 36
 const CORNER_GAP_PX = 4
 const CORNER_INSET_PX = 4
 
 /** Where one corner control goes, in the canvas box's pixels: its centre. */
-export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number; y: number }> & {
+export type FrameCornerControls = Record<'move' | 'rotate' | 'edit' | 'remove', { x: number; y: number }> & {
   /** The scaled side of each control, in the canvas box's pixels. */
   size: number
   /** The side before the zoom, which the button keeps while its wrapper is scaled down. */
@@ -109,8 +109,8 @@ export type FrameCornerControls = Record<'move' | 'edit' | 'remove', { x: number
   scale: number
 }
 
-// The Frame's three corner controls (ticket 455): Move handle, Edit Frame and Remove Frame in one row just inside the
-// margin outline's top-right corner, pinned there (not clamped to the canvas box, so panning carries it).
+// The Frame's four corner controls (tickets 455, 471): Move handle, Rotate Frame, Edit Frame and Remove Frame in one row
+// just inside the margin outline's top-right corner, pinned there (not clamped to the canvas box, so panning carries it).
 export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameCornerControls {
   const { outer, scale } = anchor
   const fullSize = touch ? TOUCH_CORNER_PX : CORNER_PX
@@ -120,7 +120,7 @@ export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameC
   const top = outer.top + CORNER_INSET_PX * scale
   const y = top + size / 2
   const at = (slot: number) => ({ x: right - size / 2 - slot * (size + gap), y })
-  return { size, fullSize, scale, remove: at(0), edit: at(1), move: at(2) }
+  return { size, fullSize, scale, remove: at(0), edit: at(1), rotate: at(2), move: at(3) }
 }
 
 /** The height of the margin's top band the corner controls need at a zoom scale (ticket 459): a control and the

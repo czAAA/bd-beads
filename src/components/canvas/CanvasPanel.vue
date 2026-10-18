@@ -101,6 +101,8 @@ const {
   onProjectKey,
   onProjectKeyUp,
   onRotate,
+  onRotateFrame,
+  onRotateCanvas,
   onSelectAll,
   toolPillPosition,
   pillColorMode,
@@ -247,6 +249,7 @@ function techniqueWord(technique: Technique): string {
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         @select-sheet="onSelectPhoneSheet"
+        @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
         @undo="onUndo"
         @redo="onRedo"
@@ -307,6 +310,7 @@ function techniqueWord(technique: Technique): string {
           :anchor="frameAnchor"
           :editing="settingFrame"
           @toggle="onEditFrame"
+          @rotate="onRotateFrame"
           @remove="onRemoveFrame"
           @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"

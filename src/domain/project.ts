@@ -363,6 +363,14 @@ export function rowProgressStarted(project: Pick<Project, 'rowProgress' | 'frame
   return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0)
 }
 
+/** The next quarter turn clockwise: 0, 90, 180, 270 and round again. */
+const NEXT_ROTATION: Readonly<Record<Rotation, Rotation>> = { 0: 90, 90: 180, 180: 270, 270: 0 }
+
+/** Rotate canvas (ticket 471): the picture a quarter turn clockwise further; only the view turns, no data changes. */
+export function rotateCanvas(project: Project): Project {
+  return touch(project, { rotation: NEXT_ROTATION[project.rotation] })
+}
+
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
  * untouched. */
 export function resetRowProgress(project: Project): Project {
