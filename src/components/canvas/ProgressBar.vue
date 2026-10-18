@@ -229,9 +229,9 @@ const directionLabel = computed(() =>
   transition: width var(--duration-base) var(--ease-standard);
 }
 
-// Phone widths (ticket 411): the large buttons can't share a row with Remove frame, Turn row direction and the track at
-// 360px in every language, so they take a second row, half the bar each. The bar is taller: --progress-height
-// (controls.css), which things above follow.
+/* Phone widths (ticket 411): the large buttons can't share a row with Remove frame, Turn row direction and the track at
+ * 360px in every language, so they take a second row, half the bar each. The bar is taller: --progress-height
+ * (controls.css), which things above follow. */
 @media (max-width: 30rem) {
   .progress-bar {
     flex-wrap: wrap;

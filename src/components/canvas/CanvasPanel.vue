@@ -486,9 +486,9 @@ function techniqueWord(technique: Technique): string {
   min-height: 0;
 }
 
-// The canvas box (ticket 141): right of the left column, full body height, dot-grid texture; rows stack zoom cluster,
-// Progress bar, Project. The canvas moves under its own view (ADR 0026), so nothing scrolls natively; the zoom
-// cluster is a sibling of the scroller, so it never scrolls, zooms or rotates with the Project.
+/* The canvas box (ticket 141): right of the left column, full body height, dot-grid texture; rows stack zoom cluster,
+ * Progress bar, Project. The canvas moves under its own view (ADR 0026), so nothing scrolls natively; the zoom
+ * cluster is a sibling of the scroller, so it never scrolls, zooms or rotates with the Project. */
 .app-shell__canvas {
   position: relative;
   display: flex;
@@ -503,9 +503,9 @@ function techniqueWord(technique: Technique): string {
   box-shadow: var(--elevation-2);
 }
 
-// The drawing area (ticket 143): the box under the strip, sized for the fit zoom, so it takes a share (flex-basis 0),
-// never the Project's size. The backdrop fills it behind everything; later siblings are positioned too, so they paint
-// over it.
+/* The drawing area (ticket 143): the box under the strip, sized for the fit zoom, so it takes a share (flex-basis 0),
+ * never the Project's size. The backdrop fills it behind everything; later siblings are positioned too, so they paint
+ * over it. */
 .app-shell__drawing {
   position: relative;
   background: var(--canvas-bg, transparent);
