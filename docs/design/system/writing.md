@@ -314,6 +314,7 @@ The Frame bar, the Margin handle and the edit pencil (Frame card). The Russian i
 | Rotate Frame | Повернуть рамку |
 | Remove Frame · Remove Frame? | Убрать рамку · Убрать рамку? |
 | 24 × 30 beads | 24 × 30 бисерин |
+| Frame size, width × height (the size field's name) | Размер рамки, ширина × высота |
 | Top · Bottom · Left · Right (the edge cells) | Верх · Низ · Слева · Справа |
 | Top edge: add one row · Top edge: remove one row | Верхний край: добавить ряд · Верхний край: убрать ряд |
 | Left edge: add one column · Left edge: remove one column | Левый край: добавить столбец · Левый край: убрать столбец |

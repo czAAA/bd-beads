@@ -1,91 +1,80 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import { computed, ref, watch } from 'vue'
 import IconButton from '../ui/IconButton.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { frameCornerControls, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
+import { editPencilCentre, marginHandleCentre, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { Project } from '../../domain/project'
 
-// What a Frame always carries (tickets 452, 455, 471, ADR 0062): Move handle, Rotate Frame, Edit Frame and Remove Frame
-// buttons inside the margin outline's top-right, clamped in the canvas box. The Move handle hands a press to the canvas
-// to drag; arrows move the Frame with its beads, Shift+arrows resize. `anchor` is the Frame's rectangle in canvas pixels.
+// What a Frame always carries on the canvas (tickets 452, 473, ADR 0062): the Margin handle and the edit pencil. They
+// never scale with the zoom; only their centres follow the Frame, kept in the canvas box. The handle hands its press to
+// the canvas to drag; arrows move the Frame with its beads, Shift+arrows resize.
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
-  /** Whether the handles and steppers are on. */
+  /** Whether the Frame bar is open. */
   editing: boolean
+  /** Whether a pointer is down on the canvas, so the handle knows when its drag has ended. */
+  pressing: boolean
+  /** Where the Frame bar is, so the handle slides clear of it. */
+  bar?: BarBox
 }>()
 
 const emit = defineEmits<{
   toggle: []
-  rotate: []
-  remove: []
   'move-press': [event: PointerEvent]
   key: [event: KeyboardEvent]
 }>()
 
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const toggleAction = controlAction('edit-frame')
-const removeAction = controlAction('remove-frame')
 const moveAction = controlAction('move-frame')
-const rotateAction = controlAction('rotate-frame')
 
-const touch = useMediaQuery('(pointer: coarse)')
-const controls = computed(() => frameCornerControls(props.anchor, touch.value))
 const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
-const scaled = computed(() => ({ '--corner-scale': String(controls.value.scale) }))
-// Each button keeps its full size and the wrapper shrinks it with the zoom, so the icon shrinks with the box.
-const sized = computed(() => ({ width: `${controls.value.fullSize}px`, height: `${controls.value.fullSize}px` }))
+const handleAt = computed(() => place(marginHandleCentre(props.anchor, props.bar)))
+const pencilAt = computed(() => place(editPencilCentre(props.anchor)))
 
 const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
+
+/** Whether the handle is being dragged: it turns accent until the canvas press ends. */
+const dragging = ref(false)
+watch(
+  () => props.pressing,
+  (pressing) => {
+    if (!pressing) dragging.value = false
+  },
+)
+
+function onHandlePress(event: PointerEvent): void {
+  dragging.value = true
+  emit('move-press', event)
+}
 </script>
 
 <template>
-  <div class="frame-chrome" data-testid="frame-chrome" :style="scaled">
-    <div class="frame-chrome__control" :style="place(controls.move)">
+  <div class="frame-chrome" data-testid="frame-chrome">
+    <div class="frame-chrome__control" :style="handleAt">
       <IconButton
-        variant="box"
-        :icon-size="15"
+        variant="plain"
         :action="moveAction"
-        class="frame-chrome__move"
-        :style="sized"
+        class="frame-chrome__handle"
+        :class="{ 'frame-chrome__handle--dragging': dragging }"
         data-testid="frame-move-handle"
-        @pointerdown="emit('move-press', $event)"
+        @pointerdown="onHandlePress"
         @keydown="emit('key', $event)"
-      />
+      >
+        <span class="frame-chrome__line" aria-hidden="true" />
+      </IconButton>
     </div>
-    <div class="frame-chrome__control" :style="place(controls.rotate)">
+    <div class="frame-chrome__control" :style="pencilAt">
       <IconButton
         variant="box"
-        :icon-size="15"
-        :action="rotateAction"
-        :deps="deps"
-        :style="sized"
-        data-testid="frame-rotate"
-        @click="emit('rotate')"
-      />
-    </div>
-    <div class="frame-chrome__control" :style="place(controls.edit)">
-      <IconButton
-        variant="box"
-        :icon-size="15"
+        :icon-size="14"
         :action="toggleAction"
         :deps="deps"
-        :pressed="editing && editEnabled"
-        :style="sized"
+        :selected="editing && editEnabled"
+        class="frame-chrome__pencil"
         data-testid="frame-edit-toggle"
         @click="emit('toggle')"
-      />
-    </div>
-    <div class="frame-chrome__control" :style="place(controls.remove)">
-      <IconButton
-        variant="box"
-        :icon-size="15"
-        :action="removeAction"
-        :deps="deps"
-        :style="sized"
-        data-testid="frame-chrome-remove"
-        @click="emit('remove')"
       />
     </div>
   </div>
@@ -103,13 +92,46 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 
 .frame-chrome__control {
   position: absolute;
-  transform: translate(-50%, -50%) scale(var(--corner-scale, 1));
+  transform: translate(-50%, -50%);
   pointer-events: auto;
 }
 
-/* The Move handle's press goes on to the canvas to drag. */
-.frame-chrome__control :deep(.frame-chrome__move) {
+/* The Margin handle's press goes on to the canvas to drag. */
+.frame-chrome__control :deep(.frame-chrome__handle) {
+  width: var(--frame-handle-hit-width);
+  height: var(--frame-handle-hit-height);
+  background: none;
+  border: 0;
   cursor: grab;
   touch-action: none;
+}
+
+.frame-chrome__control :deep(.frame-chrome__handle--dragging) {
+  cursor: grabbing;
+}
+
+.frame-chrome__line {
+  width: var(--frame-handle-length);
+  height: var(--frame-handle-thickness);
+  background: var(--ink);
+  border-radius: var(--frame-handle-thickness);
+  box-shadow: 0 0 0 2px var(--canvas);
+}
+
+.frame-chrome__control :deep(.frame-chrome__handle--dragging) .frame-chrome__line {
+  background: var(--accent);
+}
+
+/* A 32px chip with a 44px hit area round it. */
+.frame-chrome__control :deep(.frame-chrome__pencil) {
+  position: relative;
+  width: var(--frame-edit-chip);
+  height: var(--frame-edit-chip);
+}
+
+.frame-chrome__control :deep(.frame-chrome__pencil)::after {
+  content: '';
+  position: absolute;
+  inset: calc((var(--frame-edit-chip) - var(--frame-edit-hit)) / 2);
 }
 </style>
