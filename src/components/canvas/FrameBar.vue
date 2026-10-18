@@ -186,7 +186,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           @click="emit('remove')"
         />
       </div>
-      <div v-if="!locked" class="frame-bar__edges">
+      <div class="frame-bar__edges">
         <div v-for="cell in ordered" :key="cell.edge" class="frame-bar__cell" :class="{ 'frame-bar__cell--last': lastEdge === cell.edge }" :data-testid="`frame-bar-cell-${cell.edge}`">
           <span class="frame-bar__glyph" :class="[`frame-bar__glyph--${cell.edge}`, { 'frame-bar__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
           <span class="frame-bar__name">{{ t.frame.edgeName[cell.edge] }}</span>
@@ -259,7 +259,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-bar__input {
   box-sizing: border-box;
   width: 100%;
-  min-height: var(--frame-hit);
+  min-height: 2rem;
   padding: 0 var(--space-6);
   font: var(--type-title);
   font-size: 0.9375rem;
