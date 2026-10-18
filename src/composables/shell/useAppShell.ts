@@ -25,6 +25,8 @@ import { useFrameFlow } from '../project/useFrameFlow'
 import { useNamePieceFlow } from '../project/useNamePieceFlow'
 import { useRemoveLineFlow } from '../project/useRemoveLineFlow'
 import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
+import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
+import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
@@ -571,6 +573,12 @@ function wireAppShell(services: Services) {
     locale: currentLocale,
   })
 
+  /** Rotate Frame: the Frame, its margin and the beads inside a quarter turn, one Undo step (ticket 471, ADR 0063). */
+  const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, showToast, onUndo, messages, locale: currentLocale })
+
+  /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0063). */
+  const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages })
+
   /** Remove line: the selected whole row or column of the Frame, as one undo step (tickets 123, 199, 233). */
   const removeLine = useRemoveLineFlow({
     currentProject,
@@ -885,6 +893,8 @@ function wireAppShell(services: Services) {
     tour,
     ...rowOps,
     onRotate: rotateFlow.onRotate,
+    onRotateFrame: rotateFrameFlow.onRotateFrame,
+    onRotateCanvas: rotateCanvasFlow.onRotateCanvas,
     ...deleteAll,
     pendingColorRemovalHex,
     onCancelRemoveAddedColor,
