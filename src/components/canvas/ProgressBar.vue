@@ -5,6 +5,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
+import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
@@ -34,7 +35,7 @@ const actions = {
   reset: controlAction('reset-progress'),
   fitFrame: controlAction('fit-to-drawing'),
   direction: controlAction('row-direction'),
-  highlight: controlAction('row-highlight'),
+  rowHighlight: controlAction('row-highlight'),
   notDone: controlAction('row-not-done'),
   done: controlAction('row-done'),
 }
@@ -85,12 +86,12 @@ const directionLabel = computed(() =>
         data-testid="progress-bar-direction"
         @click="emit('toggle-row-direction')"
       />
-      <IconButton
-        variant="box"
-        :action="actions.highlight"
-        :selected="rowHighlight"
+      <!-- Row highlight is a view switch, not an action on the Project: an on/off Switch (ticket 474); the parent owns the value and flips it. -->
+      <AppSwitch
+        :model-value="rowHighlight"
+        :action="actions.rowHighlight"
         data-testid="progress-bar-highlight"
-        @click="emit('toggle-row-highlight')"
+        @update:model-value="emit('toggle-row-highlight')"
       />
       <IconButton
         variant="box"
