@@ -70,7 +70,9 @@ const {
   position: fixed;
   inset: 0;
   /* clip, not hidden: nothing, not even a focus() on a sheet placed off-screen, may scroll the shell and push the
-   * Canvas strip out of view (iPad Safari). */
+   * Canvas strip out of view (iPad Safari). hidden stays as the fallback where clip is unknown (Safari before 16),
+   * with the sheets' preventScroll focus covering it there. */
+  overflow: hidden;
   overflow: clip;
   background: var(--canvas);
 }
