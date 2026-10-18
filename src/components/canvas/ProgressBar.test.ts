@@ -155,18 +155,18 @@ describe('ProgressBar', () => {
     expect(wrapper.emitted('reset-progress')).toHaveLength(1)
   })
 
-  it('offers Row highlight between Turn row direction and Reset progress, pressed unless it is off (ticket 474)', async () => {
+  it('offers Row highlight between Turn row direction and Reset progress, on unless it is off (ticket 474)', async () => {
     const wrapper = mount(ProgressBar, { props: { project: makeProject() } })
     const order = wrapper
       .findAll('[data-testid="progress-bar-direction"], [data-testid="progress-bar-highlight"], [data-testid="progress-bar-reset"]')
       .map((element) => element.attributes('data-testid'))
     expect(order).toEqual(['progress-bar-direction', 'progress-bar-highlight', 'progress-bar-reset'])
     const button = () => wrapper.get('[data-testid="progress-bar-highlight"]')
-    expect(button().attributes('aria-pressed')).toBe('true')
+    expect(button().attributes('aria-checked')).toBe('true')
     expect(button().attributes('aria-label')).toBe(ru.rowProgress.highlightButton)
 
     await wrapper.setProps({ rowHighlight: false })
-    expect(button().attributes('aria-pressed')).toBe('false')
+    expect(button().attributes('aria-checked')).toBe('false')
     await button().trigger('click')
     expect(wrapper.emitted('toggle-row-highlight')).toHaveLength(1)
   })

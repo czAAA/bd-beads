@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppButton from './AppButton.vue'
+import AppSwitch from './AppSwitch.vue'
 import AppTooltip from './AppTooltip.vue'
 import IconButton from './IconButton.vue'
 import { CONTROLS, type ControlDeps } from '../../composables/shell/controlRegistry'
@@ -402,5 +403,33 @@ describe('New Project', () => {
     const button = mount(App).get('[data-testid="phone-bar-new-project"]')
     expect(button.classes()).toEqual(expect.arrayContaining(['app-button', 'app-button--primary']))
     expect(button.get('svg').attributes('data-icon')).toBe('plus')
+  })
+})
+
+describe('AppSwitch', () => {
+  it('is a switch that follows its model and flips it on a click', async () => {
+    const wrapper = mount(AppSwitch, { props: { modelValue: false, label: 'Row highlight' } })
+    const button = wrapper.get('button')
+    expect(button.attributes('role')).toBe('switch')
+    expect(button.attributes('aria-label')).toBe('Row highlight')
+    expect(button.attributes('aria-checked')).toBe('false')
+    await button.trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toEqual([[true]])
+    await wrapper.setProps({ modelValue: true })
+    expect(button.attributes('aria-checked')).toBe('true')
+  })
+
+  it('does nothing on a click while it is disabled, and stays focusable', async () => {
+    const wrapper = mount(AppSwitch, { props: { modelValue: false, label: 'Row highlight', disabled: true } })
+    const button = wrapper.get('button')
+    await button.trigger('click')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+    expect(button.attributes('aria-disabled')).toBe('true')
+    expect(button.attributes('disabled')).toBeUndefined()
+  })
+
+  it('shows its registry action as a Tooltip', () => {
+    const wrapper = mount(AppSwitch, { props: { modelValue: true, action: CONTROLS.find((control) => control.id === 'row-highlight') } })
+    expect(wrapper.findComponent(AppTooltip).exists()).toBe(true)
   })
 })
