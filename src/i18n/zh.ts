@@ -614,6 +614,7 @@ export const zh: Translations = {
     noProgressToReset: '还没有已标记完成的行。',
     moveFrame: '拖动可连同珠子一起移动边框。',
     rowProgressLockedFrame: '已有标记完成的行。请先移除边框，再修改它。',
+    frameSizeLocked: '已有标记完成的行。请先重置进度，再修改边框大小。',
     fillNeedsColor: '请先选择颜色，再填充所选区域。',
     rowProgressLockedTechnique: '已有标记完成的行。请先移除边框，再更改工艺。',
     changeTechnique: '用另一种编织技法编织图样。每颗珠子保持原来的行和列。',

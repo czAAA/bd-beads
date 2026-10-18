@@ -151,7 +151,7 @@ describe('FrameBar (ticket 473)', () => {
 
   it('keeps the steppers, disabled, and drops Rotate once a pass is done', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
-    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('readonly')).toBeDefined()
+    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')

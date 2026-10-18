@@ -623,6 +623,7 @@ export const pl: Translations = {
     noProgressToReset: 'Żaden rząd nie jest jeszcze oznaczony jako gotowy.',
     moveFrame: 'Przeciągnij, aby przesunąć ramkę razem z koralikami.',
     rowProgressLockedFrame: 'Są gotowe rzędy. Usuń ramkę, aby ją zmienić.',
+    frameSizeLocked: 'Są gotowe rzędy. Zresetuj postęp, aby zmienić rozmiar ramki.',
     fillNeedsColor: 'Najpierw wybierz kolor, aby wypełnić zaznaczenie.',
     rowProgressLockedTechnique: 'Są gotowe rzędy. Usuń ramkę, aby zmienić technikę.',
     changeTechnique: 'Pleć schemat inną techniką. Każdy koralik zachowuje swój rząd i kolumnę.',
