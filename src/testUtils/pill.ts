@@ -15,6 +15,9 @@ export async function openSheet(wrapper: Wrapper, dock: Sheet): Promise<void> {
   if (!panelOpen || button.attributes('aria-pressed') !== 'true') {
     await button.trigger('click')
   }
+  // With an empty library Menu opens on New Project (spec 0478); callers of this want its list.
+  const back = wrapper.find('[data-testid="panel-back"]')
+  if (back.exists() && dock === 'strip-menu') await back.trigger('click')
 }
 
 /** Puts the open Menu or Project away with the strip button that lit it. */
@@ -52,10 +55,15 @@ export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void
   await swatch().trigger('click')
 }
 
-/** Raises the New Project form (a modal sheet) via the project bar's button, or Menu's when a Project is open; no-op
+/** Raises the New Project form (the Menu panel's sub-view) via the project bar's button, or Menu's when a Project is open; no-op
  * if up. */
 export async function openNewProject(wrapper: Wrapper): Promise<void> {
   if (wrapper.find('[data-testid="bead-select"]').exists()) {
+    return
+  }
+  const row = wrapper.find('[data-testid="menu-new-project"]')
+  if (row.exists()) {
+    await row.trigger('click')
     return
   }
   const bar = wrapper.find('[data-testid="phone-bar-new-project"]')

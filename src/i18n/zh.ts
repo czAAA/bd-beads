@@ -83,6 +83,7 @@ export const zh: Translations = {
     custom: '自定义',
   },
   panels: {
+    back: '返回',
     menu: {
       projects: '项目',
       preferences: '偏好设置',

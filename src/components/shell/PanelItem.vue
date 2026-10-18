@@ -6,7 +6,7 @@ import type { IconName } from '../ui/icons'
 import { PANEL_CONTEXT } from './panelContext'
 
 // One row of a panel (MenuPanel card): `item-height` tall (44 to 48px in the Top sheet or on a coarse pointer), icon,
-// label, optional value. A button, or a link with `href` (`external` opens a new tab). `danger` colors it for Delete. A
+// label, optional value. `accent` colors it as the panel's main action (New Project). A button, or a link with `href` (`external` opens a new tab). `danger` colors it for Delete. A
 // disabled item is `aria-disabled` so it keeps its Tooltip saying why. `closes` shuts the panel before `select` runs.
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
@@ -14,6 +14,7 @@ const props = withDefaults(
     icon?: IconName
     value?: string
     danger?: boolean
+    accent?: boolean
     disabled?: boolean
     /** What a disabled item's Tooltip is named and says. */
     name?: string
@@ -23,7 +24,7 @@ const props = withDefaults(
     /** Leave the panel open (Import: its file picker belongs to the open panel). */
     stays?: boolean
   }>(),
-  { icon: undefined, value: undefined, danger: false, disabled: false, name: undefined, disabledBody: undefined, href: undefined, external: false, stays: false },
+  { icon: undefined, value: undefined, danger: false, accent: false, disabled: false, name: undefined, disabledBody: undefined, href: undefined, external: false, stays: false },
 )
 const emit = defineEmits<{ select: [] }>()
 const context = inject(PANEL_CONTEXT)
@@ -40,7 +41,7 @@ function onClick(event: Event) {
 
 <template>
   <AppTooltip v-if="disabled && name && disabledBody" :name="name" disabled :disabled-body="disabledBody" :announce="false" class="panel-item-wrap">
-    <button v-bind="$attrs" class="ui-control panel-item" :class="{ 'panel-item--danger': danger }" type="button" :role="context?.itemRole.value" aria-disabled="true" @click="onClick">
+    <button v-bind="$attrs" class="ui-control panel-item" :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent }" type="button" :role="context?.itemRole.value" aria-disabled="true" @click="onClick">
       <AppIcon v-if="icon" :name="icon" :size="16" />
       <span class="panel-item__label"><slot /></span>
       <span v-if="value" class="panel-item__value">{{ value }}</span>
@@ -51,7 +52,7 @@ function onClick(event: Event) {
     v-else
     v-bind="$attrs"
     class="ui-control panel-item"
-    :class="{ 'panel-item--danger': danger }"
+    :class="{ 'panel-item--danger': danger, 'panel-item--accent': accent }"
     :type="href ? undefined : 'button'"
     :href="href"
     :target="external ? '_blank' : undefined"
@@ -120,6 +121,10 @@ function onClick(event: Event) {
 
 .panel-item--danger {
   color: var(--danger);
+}
+
+.panel-item--accent {
+  color: var(--accent-strong);
 }
 
 .panel-item[aria-disabled='true'] {

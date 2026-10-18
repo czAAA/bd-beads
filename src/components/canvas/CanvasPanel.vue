@@ -34,7 +34,7 @@ const {
   projects,
   onImportProjects,
   onImportToast,
-  phoneNewProjectOpen,
+  openMenuOnForm,
   activeProject,
   projectLabel,
   toasts,
@@ -446,7 +446,7 @@ function techniqueWord(technique: Technique): string {
         (ticket 439); Menu, for language and theme, is in the Canvas strip (ticket 431).
       -->
       <div v-if="!framing && !activeProject" class="app-shell__phone-project-bar" data-testid="phone-project-bar">
-        <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" data-tour="phone-new-project" @click="phoneNewProjectOpen = true" />
+        <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
         <ProjectImport compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
       </div>
 

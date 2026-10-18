@@ -83,6 +83,7 @@ export const pl: Translations = {
     custom: 'Własny',
   },
   panels: {
+    back: 'Wstecz',
     menu: {
       projects: 'Projekty',
       preferences: 'Preferencje',

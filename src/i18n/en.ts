@@ -81,6 +81,7 @@ export const en: Translations = {
     custom: 'Custom',
   },
   panels: {
+    back: 'Back',
     menu: {
       projects: 'Projects',
       preferences: 'Preferences',

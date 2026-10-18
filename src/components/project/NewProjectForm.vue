@@ -20,7 +20,6 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import BrickBlockField from './BrickBlockField.vue'
 import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
-import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import FieldSelect from '../ui/form/FieldSelect.vue'
@@ -191,12 +190,12 @@ function onDropImage(file: File) {
 
 <template>
   <!--
-    The New Project form (ticket 149; NewProjectForm card), in the left column's first box: Name (optional), Maker's
-    name (ticket 182, also optional and blank by default), Bead, Technique, Create Project, then "or" and Convert image.
+    The New Project form (ticket 149; NewProjectForm card), in the Menu panel's sub-view: Name (optional), Maker's
+    name (ticket 182, also optional and blank by default), Bead, Technique, then "or" and Convert image. Create Project is the panel's pinned footer button (spec 0478).
     It states no size (ticket 342): a Project starts as a Canvas and its size is set in the Frame
     sheet. Convert image still needs one, so choosing a picture opens its own size step before framing.
   -->
-  <form ref="formEl" class="new-project-form" data-tour="new-project" novalidate @submit.prevent="onSubmit">
+  <form id="new-project-form" ref="formEl" class="new-project-form" novalidate @submit.prevent="onSubmit">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
       <TextField id="name-input" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
     </FormField>
@@ -232,10 +231,6 @@ function onDropImage(file: File) {
     </FormField>
 
     <BrickBlockField v-if="technique === 'brick'" v-model="brickBlock" testid="brick-block" />
-
-    <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus">
-      {{ t.form.submit }}
-    </AppButton>
 
     <!--
       Convert image (CONTEXT.md, ADR 0010) as the form's second way out: a picture instead of an empty canvas. It needs
@@ -290,11 +285,6 @@ function onDropImage(file: File) {
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
-}
-
-.new-project-form__submit {
-  width: 100%;
-  height: var(--field-height);
 }
 
 /* "or", between two rules. */

@@ -152,13 +152,89 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
   })
 
-  it('opens New Project from its first item', async () => {
+  it('opens New Project as a sub-view in the Menu, and Back returns to the list with the Project untouched', async () => {
+    const wrapper = mountApp()
+    await openSheet(wrapper, 'strip-menu')
+    const open = wrapper.get('[data-testid="strip-project"]').text()
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
+    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="strip-project"]').text()).toBe(open)
+  })
+
+  it('goes back one level on Escape, then closes', async () => {
     const wrapper = mountApp()
     await openSheet(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+  })
+
+  it('creates the Project from the pinned Create button, switches to it and closes the panel', async () => {
+    const wrapper = mountApp()
+    await openSheet(wrapper, 'strip-menu')
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+    await wrapper.get('[data-testid="name-input"]').setValue('Heron')
+    expect(wrapper.find('[data-testid="panel-footer"] button[type="submit"]').exists()).toBe(true)
+    await wrapper.get('form.new-project-form').trigger('submit')
+    await flushPromises()
+
+    expect(names()).toEqual(['Heron', 'Moth'])
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+    await openSheet(wrapper, 'strip-project')
+    expect(text(wrapper, 'project-name')).toBe('Heron')
+  })
+
+  it('discards the draft on Back', async () => {
+    const wrapper = mountApp()
+    await openSheet(wrapper, 'strip-menu')
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+    await wrapper.get('[data-testid="name-input"]').setValue('Heron')
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+
+    expect((wrapper.get('[data-testid="name-input"]').element as HTMLInputElement).value).toBe('')
+  })
+
+  it('opens Menu on the form with an empty library, Escape closes it, and Back shows the list', async () => {
+    saveProjects([])
+    const wrapper = mountApp()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    expect(wrapper.find('[data-testid="menu-import"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await nextTick()
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+  })
+
+  it('opens Menu on the form from the empty-canvas bar button, in the dropdown from 1024px too', async () => {
+    saveProjects([])
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1024px)': true }).matchMedia)
+    const wrapper = mountApp()
+    await wrapper.get('[data-testid="phone-bar-new-project"]').trigger('click')
+
+    expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('dialog')
   })
 
   it('has no Menu section for the open Project: Project is hidden with none open, and Menu stays', async () => {
@@ -168,6 +244,7 @@ describe('Menu', () => {
 
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
   })
 })

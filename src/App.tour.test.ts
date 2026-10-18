@@ -6,6 +6,7 @@ import { BEAD_CATALOG } from './domain/beads'
 import { createProject, frameGrid } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
+import { openSheet } from './testUtils/pill'
 
 import { ru } from './i18n/ru'
 
@@ -108,7 +109,7 @@ describe('App Tour (ticket 80)', () => {
     await flushPromises()
     expect(card(wrapper).exists()).toBe(false)
 
-    await wrapper.find('[data-testid="strip-menu"]').trigger('click')
+    await openSheet(wrapper, 'strip-menu')
     await wrapper.find('[data-testid="menu-item-tour"]').trigger('click')
     await flushPromises()
 

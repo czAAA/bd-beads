@@ -83,6 +83,7 @@ export const uk: Translations = {
     custom: 'Власний колір',
   },
   panels: {
+    back: 'Назад',
     menu: {
       projects: 'Проєкти',
       preferences: 'Налаштування',

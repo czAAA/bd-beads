@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { provide, defineComponent, h, ref } from 'vue'
 import MenuPanel from './MenuPanel.vue'
@@ -15,10 +15,10 @@ const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', na
 const base = { projects: [project], toolsPosition: 'bottom' as const, inputMode: 'pen' as const, penSeen: false }
 
 /** The panel inside a shell's context: `sheet` is the Top sheet's, with one option per line. */
-function mountIn(sheet: boolean, props: Record<string, unknown> = {}) {
+function mountIn(sheet: boolean, props: Record<string, unknown> = {}, openSub = () => {}) {
   const Host = defineComponent({
     setup() {
-      provide(PANEL_CONTEXT, { sheet: ref(sheet), itemRole: ref(undefined), close: () => {} })
+      provide(PANEL_CONTEXT, { sheet: ref(sheet), itemRole: ref(undefined), close: () => {}, openSub })
       return () => h(MenuPanel, { ...base, ...props })
     },
   })
@@ -82,14 +82,16 @@ describe('MenuPanel (ticket 443)', () => {
   })
 
   it('emits its choices', async () => {
-    const wrapper = mountIn(false)
+    const openSub = vi.fn()
+    const wrapper = mountIn(false, {}, openSub)
     const panel = wrapper.getComponent(MenuPanel)
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
     await wrapper.get('[data-testid="menu-export-all"]').trigger('click')
     await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
     await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
     await wrapper.get('[data-testid="menu-tools-position"] [data-value="left"]').trigger('click')
-    expect(['new-project', 'export-all', 'saved-projects', 'delete-all'].map((name) => panel.emitted(name)?.length)).toEqual([1, 1, 1, 1])
+    expect(['export-all', 'saved-projects', 'delete-all'].map((name) => panel.emitted(name)?.length)).toEqual([1, 1, 1])
+    expect(openSub).toHaveBeenCalledOnce()
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
   })
 })

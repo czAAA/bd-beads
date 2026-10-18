@@ -99,8 +99,7 @@ export async function copySelection(page: Page): Promise<void> {
   await settle(page)
 }
 
-/** Opens the New Project form (modal sheet): with no Project open the layout shows the project bar in the Progress
- * bar's place (AppBottomBar card) instead of the Toolbox layout's inline form. */
+/** Opens the New Project form (the Menu panel's sub-view) from the project bar shown with no Project open. */
 export async function openNewProjectForm(page: Page): Promise<void> {
   await page.getByTestId('phone-bar-new-project').click()
   await settle(page)
