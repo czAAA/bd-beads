@@ -1,5 +1,5 @@
 import { fromHex } from '../domain/color'
-import { isOffsetTechnique, type Technique } from '../domain/grid'
+import { isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/grid'
 import type { ProjectTheme } from './beadLook'
 
 // A coarse look for a block of beads being moved (ticket 122, ADR 0018): one flat pixel per bead stretched in a single
@@ -39,8 +39,8 @@ function channels(color: string): readonly [number, number, number] {
 
 // The beads as an image: a pixel per bead, or in peyote and brick stitch two per bead with every other row starting a
 // pixel in (half a bead aside). `colors` is one entry per bead, row by row; undefined is empty.
-export function draftImage(technique: Technique, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
-  const offset = isOffsetTechnique(technique)
+export function draftImage(weave: Weave, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
+  const offset = isOffsetTechnique(weave.technique)
   const wide = offset ? 2 : 1
   const width = columns * wide + (offset ? 1 : 0)
   const data = new Uint8ClampedArray(width * rows * 4)
@@ -53,7 +53,7 @@ export function draftImage(technique: Technique, columns: number, rows: number, 
   }
 
   for (let row = 0; row < rows; row += 1) {
-    const start = offset && row % 2 === 1 ? 1 : 0
+    const start = isShiftedRow(weave, row) ? 1 : 0
     for (let column = 0; column < columns; column += 1) {
       const [r, g, b] = channels(colors[row * columns + column] ?? theme.emptyBead)
       for (let across = 0; across < wide; across += 1) {
@@ -75,6 +75,7 @@ export function renderDraft(
   context: CanvasRenderingContext2D,
   input: {
     technique: Technique
+    brickBlock?: number
     columns: number
     rows: number
     colors: readonly (string | undefined)[]
@@ -83,8 +84,8 @@ export function renderDraft(
     bitmapHeight: number
   },
 ): void {
-  const { technique, columns, rows, colors, theme, bitmapWidth, bitmapHeight } = input
-  const image = draftImage(technique, columns, rows, colors, theme)
+  const { technique, brickBlock, columns, rows, colors, theme, bitmapWidth, bitmapHeight } = input
+  const image = draftImage({ technique, brickBlock }, columns, rows, colors, theme)
 
   scratch ??= document.createElement('canvas')
   scratch.width = image.width

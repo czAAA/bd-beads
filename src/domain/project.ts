@@ -14,6 +14,7 @@ import {
 } from './canvas'
 import { sameFrame, snapRow } from './frame'
 import {
+  MAX_BRICK_BLOCK,
   neighborsOf,
   positionKey,
   rotationSwapsAxes,
@@ -59,6 +60,10 @@ export interface Project {
   id: string
   name: string
   technique: Technique
+  /** The Brick block (ticket 477): how many rows brick stitch weaves straight on top of each other before the next
+   * rows shift half a bead. Absent means 1, every other row. Kept when the Technique is switched away from brick
+   * stitch, and used by no other Technique. */
+  brickBlock?: number
   beadId: string
   /** What is painted on the Canvas, by position (ADR 0026); see BeadMap. No real-world size is stored: the
    * Estimated size is worked out from the Frame (estimatedSizeMm). */
@@ -88,6 +93,8 @@ export interface CreateProjectInput {
   /** User-chosen name; blank or omitted defaults to the bead's label. */
   name?: string
   technique: Technique
+  /** The Brick block of a new brick stitch Project (ticket 477); left out or 1 shifts every other row. */
+  brickBlock?: number
   beadId: string
   /** How big the Frame is, in beads or mm/cm (converted once to a grid, not remembered; ADR 0026). Left out: a Canvas
    * with no Frame. */
@@ -136,6 +143,7 @@ export function createProject(input: CreateProjectInput): Project {
     id: crypto.randomUUID(),
     name,
     technique: input.technique,
+    ...(input.brickBlock && input.brickBlock > 1 ? { brickBlock: clampBrickBlock(input.brickBlock) } : {}),
     beadId: input.beadId,
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows } } : {}),
@@ -306,12 +314,15 @@ export function normalizeProject(project: Project | GridProject): Project {
   const frame = projectFrame(placed)
   const technique = project.technique
 
-  const { pieceNames: _stored, ...withoutNames } = rest
+  const { pieceNames: _stored, brickBlock: storedBlock, ...withoutNames } = rest
+  // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
+  const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
 
   return {
     ...withoutNames,
     ...placed,
+    ...(brickBlock ? { brickBlock } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
     rowProgress: {
       direction: rowProgress.direction ?? 'rows',
@@ -341,12 +352,33 @@ export function withFrame(project: Project, frame: Frame | undefined): Project {
 /** The Project woven in another Technique (ticket 351): grid, Bead and cells stay, only geometry changes. Offset
  * Techniques start their Frame on an even row, so a Frame on an odd one takes in the empty row above it. */
 export function withTechnique(project: Project, technique: Technique): Project {
+  return withWeave(project, { technique })
+}
+
+/** The Project with its Brick block changed (ticket 477): the same cells, only the shift's rhythm changes. */
+export function withBrickBlock(project: Project, brickBlock: number): Project {
+  return withWeave(project, { brickBlock: clampBrickBlock(brickBlock) })
+}
+
+/** A stored Brick block if it is a whole number from 1 to MAX_BRICK_BLOCK, otherwise nothing (read as 1). */
+function readBrickBlock(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_BRICK_BLOCK ? value : undefined
+}
+
+/** A Brick block as a whole number from 1 to MAX_BRICK_BLOCK. */
+export function clampBrickBlock(value: number): number {
+  return Math.min(MAX_BRICK_BLOCK, Math.max(1, Math.round(value) || 1))
+}
+
+// A Frame whose first row is not the start of a cycle of the new weave takes in the empty rows above it.
+function withWeave(project: Project, change: Partial<Pick<Project, 'technique' | 'brickBlock'>>): Project {
   const frame = project.frame
-  const top = frame ? snapRow(technique, frame.row) : 0
+  const changed = { ...project, ...change }
+  const top = frame ? snapRow(changed, frame.row) : 0
   if (!frame || top === frame.row) {
-    return touch(project, { technique })
+    return touch(project, change)
   }
-  return touch(project, { technique, frame: { ...frame, row: top, rows: frame.rows + frame.row - top } })
+  return touch(project, { ...change, frame: { ...frame, row: top, rows: frame.rows + frame.row - top } })
 }
 
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
@@ -478,23 +510,26 @@ export interface UndoEntry {
   pieceNames?: PieceName[]
   /** The Technique the entry was taken in, so Undo undoes a change of Technique (ticket 351). */
   technique: Technique
+  /** The Brick block the entry was taken with, so Undo undoes a change of it (ticket 477). */
+  brickBlock?: number
   mirrorAxisCounts: MirrorAxisCounts
 }
 
 /** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
 export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, mirrorAxisCounts }
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, mirrorAxisCounts }
 }
 
 /** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
     beadId: entry.beadId,
     frame: entry.frame,
     technique: entry.technique,
+    ...(entry.brickBlock ? { brickBlock: entry.brickBlock } : {}),
     ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
   })
 }
@@ -568,7 +603,7 @@ function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, st
       continue
     }
     region.push(position)
-    stack.push(...neighborsOf(project.technique, limit, position))
+    stack.push(...neighborsOf(project, limit, position))
   }
 
   return region

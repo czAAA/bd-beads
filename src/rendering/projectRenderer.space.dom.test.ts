@@ -60,7 +60,7 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
         const row = origin.row + Math.floor(index / 3)
         const column = origin.column + (index % 3)
         // The Frame starts on an even row, so a row's shift is the same numbered in the space or in the Project.
-        return { x: rowShiftPx(technique, row) + column * CELL_SIZE_PX, y: rowTopPx(technique, row) }
+        return { x: rowShiftPx({ technique }, row) + column * CELL_SIZE_PX, y: rowTopPx(technique, row) }
       })
       expect(painted.map(({ x, y }) => ({ x, y }))).toEqual(expected)
     })

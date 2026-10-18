@@ -1,5 +1,5 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
-import { isOffsetTechnique, neighborsOf, type GridPosition, type Technique } from './grid'
+import { neighborsOf, rowCycle, type GridPosition, type Weave } from './grid'
 
 /** A Piece (CONTEXT.md): beads that touch by a side or a corner. Pieces merge and split as beads change, so they are
  * never stored; worked out on demand (cached per set of beads). */
@@ -9,10 +9,10 @@ export interface Piece extends Frame {
 }
 
 /** The positions a bead touches: all eight around it on loom, whose rows stack; on peyote and brick stitch the six
- * beads that nest against it (the neighbours of the Technique's own geometry). */
-function touching(technique: Technique, position: GridPosition): GridPosition[] {
-  if (isOffsetTechnique(technique)) {
-    return neighborsOf(technique, undefined, position)
+ * beads that nest against it (the neighbours of the weave's own geometry). */
+function touching(weave: Weave, position: GridPosition): GridPosition[] {
+  if (rowCycle(weave) > 1) {
+    return neighborsOf(weave, undefined, position)
   }
   const { row, column } = position
   return [-1, 0, 1].flatMap((dRow) =>
@@ -29,7 +29,7 @@ export function numericKey({ row, column }: GridPosition): number {
 }
 
 /** The beads of the Piece that holds the bead at `start`, as positions; empty when there is no bead there. */
-export function pieceBeadsAt(beads: BeadMap, technique: Technique, start: GridPosition): GridPosition[] {
+export function pieceBeadsAt(beads: BeadMap, weave: Weave, start: GridPosition): GridPosition[] {
   if (beads[start.row]?.[start.column] === undefined) {
     return []
   }
@@ -39,7 +39,7 @@ export function pieceBeadsAt(beads: BeadMap, technique: Technique, start: GridPo
   while (stack.length > 0) {
     const at = stack.pop()!
     members.push(at)
-    for (const next of touching(technique, at)) {
+    for (const next of touching(weave, at)) {
       if (beads[next.row]?.[next.column] !== undefined && !seen.has(numericKey(next))) {
         seen.add(numericKey(next))
         stack.push(next)
@@ -49,12 +49,13 @@ export function pieceBeadsAt(beads: BeadMap, technique: Technique, start: GridPo
   return members
 }
 
-const cache = new WeakMap<BeadMap, Map<Technique, Piece[]>>()
+// Keyed by the shift's cycle, not the Technique: peyote and brick stitch with a Brick block of 1 touch alike.
+const cache = new WeakMap<BeadMap, Map<number, Piece[]>>()
 
 /** Every Piece on the canvas, top to bottom, left to right by its rectangle's top-left. The same beads give back the
  * same array, so a repaint that changes nothing costs nothing. */
-export function piecesOf(beads: BeadMap, technique: Technique): Piece[] {
-  const known = cache.get(beads)?.get(technique)
+export function piecesOf(beads: BeadMap, weave: Weave): Piece[] {
+  const known = cache.get(beads)?.get(rowCycle(weave))
   if (known) {
     return known
   }
@@ -81,7 +82,7 @@ export function piecesOf(beads: BeadMap, technique: Technique): Piece[] {
       bottom = Math.max(bottom, at.row)
       left = Math.min(left, at.column)
       right = Math.max(right, at.column)
-      for (const next of touching(technique, at)) {
+      for (const next of touching(weave, at)) {
         if (unvisited.delete(numericKey(next))) {
           stack.push(next)
         }
@@ -91,16 +92,16 @@ export function piecesOf(beads: BeadMap, technique: Technique): Piece[] {
   })
 
   pieces.sort((a, b) => a.row - b.row || a.column - b.column)
-  const byTechnique = cache.get(beads) ?? new Map<Technique, Piece[]>()
-  byTechnique.set(technique, pieces)
-  cache.set(beads, byTechnique)
+  const byCycle = cache.get(beads) ?? new Map<number, Piece[]>()
+  byCycle.set(rowCycle(weave), pieces)
+  cache.set(beads, byCycle)
   return pieces
 }
 
 
 /** Whether two rectangles overlap, one lies inside the other, or they touch: a cell of one is in the other's cell
  * ring (side or corner, by the Technique's own neighbour geometry). */
-function areasJoin(technique: Technique, a: Frame, b: Frame): boolean {
+function areasJoin(weave: Weave, a: Frame, b: Frame): boolean {
   const aBottom = a.row + a.rows - 1
   const aRight = a.column + a.columns - 1
   const bBottom = b.row + b.rows - 1
@@ -116,7 +117,7 @@ function areasJoin(technique: Technique, a: Frame, b: Frame): boolean {
   for (let row = a.row; row <= aBottom; row += 1) {
     const edge = row === a.row || row === aBottom
     for (let column = a.column; column <= aRight; column += edge ? 1 : Math.max(1, a.columns - 1)) {
-      if (touching(technique, { row, column }).some(inB)) {
+      if (touching(weave, { row, column }).some(inB)) {
         return true
       }
     }
@@ -130,8 +131,8 @@ const JOIN_MARGIN = 1
 
 /** Whether two Pieces' areas join: `areasJoin` once `a` is counted with the margin. The margin is a distance, so the
  * answer is the same either way round. */
-function areasJoinWithMargin(technique: Technique, a: Frame, b: Frame): boolean {
-  return areasJoin(technique, {
+function areasJoinWithMargin(weave: Weave, a: Frame, b: Frame): boolean {
+  return areasJoin(weave, {
     row: a.row - JOIN_MARGIN,
     column: a.column - JOIN_MARGIN,
     rows: a.rows + 2 * JOIN_MARGIN,
@@ -139,24 +140,24 @@ function areasJoinWithMargin(technique: Technique, a: Frame, b: Frame): boolean 
   }, b)
 }
 
-const areaCache = new WeakMap<BeadMap, Map<Technique, Frame[]>>()
+const areaCache = new WeakMap<BeadMap, Map<number, Frame[]>>()
 
 /** Every Piece area (CONTEXT.md): the rectangle round one or more Pieces. A Piece's area plus one bead outside its
  * bounds that overlaps or touches another's joins it, repeated until none do (the margin joins, it isn't drawn).
  * Top to bottom, left to right; cached per set of beads like `piecesOf`. */
-export function pieceAreasOf(beads: BeadMap, technique: Technique): Frame[] {
-  const known = areaCache.get(beads)?.get(technique)
+export function pieceAreasOf(beads: BeadMap, weave: Weave): Frame[] {
+  const known = areaCache.get(beads)?.get(rowCycle(weave))
   if (known) {
     return known
   }
 
-  let areas: Frame[] = piecesOf(beads, technique).map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))
+  let areas: Frame[] = piecesOf(beads, weave).map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))
   let merged = true
   while (merged) {
     merged = false
     const next: Frame[] = []
     for (const area of areas) {
-      const at = next.findIndex((other) => areasJoinWithMargin(technique, other, area))
+      const at = next.findIndex((other) => areasJoinWithMargin(weave, other, area))
       if (at === -1) {
         next.push(area)
         continue
@@ -173,8 +174,8 @@ export function pieceAreasOf(beads: BeadMap, technique: Technique): Frame[] {
   }
 
   areas.sort((a, b) => a.row - b.row || a.column - b.column)
-  const byTechnique = areaCache.get(beads) ?? new Map<Technique, Frame[]>()
-  byTechnique.set(technique, areas)
-  areaCache.set(beads, byTechnique)
+  const byCycle = areaCache.get(beads) ?? new Map<number, Frame[]>()
+  byCycle.set(rowCycle(weave), areas)
+  areaCache.set(beads, byCycle)
   return areas
 }

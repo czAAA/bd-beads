@@ -1,5 +1,5 @@
 import { colorAt, type Frame } from '../domain/canvas'
-import { type GridPosition, type PreviewCell, type Technique } from '../domain/grid'
+import { type GridPosition, type PreviewCell, type Technique, type Weave } from '../domain/grid'
 import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import { lineOfPass, passCount, passOf } from '../domain/passes'
@@ -130,7 +130,7 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   for (let along = 0; along < length; along += 1) {
     const row = space.origin.row + (columnWise ? along : line)
     const column = space.origin.column + (columnWise ? line : along)
-    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX
+    const x = shiftOf(space, project, row) + column * CELL_SIZE_PX
     const y = rowTopPx(technique, row)
     if (passOf(technique, line, along) === pass) {
       // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
@@ -192,13 +192,13 @@ function drawPreview(context: DrawingContext, project: DrawnProject, space: Spac
     if (!inSpace(space, cell.row, cell.column)) {
       continue
     }
-    const x = shiftOf(space, technique, cell.row) + cell.column * CELL_SIZE_PX + inset
+    const x = shiftOf(space, project, cell.row) + cell.column * CELL_SIZE_PX + inset
     const y = rowTopPx(technique, cell.row) + inset
     const color = cell.color ?? preview.color
 
     if (color) {
       const bead = { x, y, size, radius: Math.max(0, roundness) }
-      fillFaintly(context, bead, color, nextRowBeads(technique, space, cell, bead))
+      fillFaintly(context, bead, color, nextRowBeads(project, space, cell, bead))
     } else {
       outlineBead(context, { x, y, size, radius: roundness }, theme)
     }
@@ -215,13 +215,13 @@ interface BeadRect {
 
 // The beads of the next row that lie over this one as drawn (peyote's rows nest): none where rows stack. The next row
 // sits half a bead over, so two of its beads reach this one.
-function nextRowBeads(technique: Technique, space: Space, cell: GridPosition, bead: BeadRect): BeadRect[] {
-  const pitch = rowPitchPx(technique)
+function nextRowBeads(weave: Weave, space: Space, cell: GridPosition, bead: BeadRect): BeadRect[] {
+  const pitch = rowPitchPx(weave.technique)
   if (pitch >= CELL_SIZE_PX) {
     return []
   }
-  const shiftNow = shiftOf(space, technique, cell.row)
-  const shiftNext = shiftOf(space, technique, cell.row + 1)
+  const shiftNow = shiftOf(space, weave, cell.row)
+  const shiftNext = shiftOf(space, weave, cell.row + 1)
   const across = (((shiftNext - shiftNow) % CELL_SIZE_PX) + CELL_SIZE_PX) % CELL_SIZE_PX
   const beads: BeadRect[] = []
   for (const dx of [across - CELL_SIZE_PX, across]) {
@@ -300,7 +300,7 @@ function drawSelection(context: DrawingContext, project: DrawnProject, space: Sp
   const { technique } = project
   const bottom = space.open ? selection.top + selection.rows - 1 : Math.min(selection.top + selection.rows - 1, space.rows - 1)
   const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
-  const shifts = [selection.top, Math.min(selection.top + 1, bottom)].map((row) => shiftOf(space, technique, row))
+  const shifts = [selection.top, Math.min(selection.top + 1, bottom)].map((row) => shiftOf(space, project, row))
   const x = Math.min(...shifts) + selection.left * CELL_SIZE_PX
   const width = Math.max(...shifts) + (right + 1) * CELL_SIZE_PX - x
   const y = rowTopPx(technique, selection.top)
@@ -326,7 +326,7 @@ function drawDimmed(
   theme: ProjectTheme,
 ): void {
   const { technique, beads } = project
-  const visible = visibleBeadsInSpace(technique, space, region, zoom, project.rotation)
+  const visible = visibleBeadsInSpace(project, space, region, zoom, project.rotation)
   const cornerRadius = beadRoundness(technique) * CELL_SIZE_PX
 
   for (const { row, column } of cells) {
@@ -334,7 +334,7 @@ function drawDimmed(
       continue
     }
     drawFlatBead(context, {
-      x: shiftOf(space, technique, row) + column * CELL_SIZE_PX,
+      x: shiftOf(space, project, row) + column * CELL_SIZE_PX,
       y: rowTopPx(technique, row),
       size: CELL_SIZE_PX,
       cornerRadius,
@@ -357,7 +357,7 @@ function drawCursor(context: DrawingContext, project: DrawnProject, space: Space
   // The bead stands half the gap in from its cell; the ring starts 2px outside that.
   const offset = 2 - BEAD_GAP_PX / 2
   const width = theme.cursorWidth
-  const x = shiftOf(space, technique, cursor.row) + cursor.column * CELL_SIZE_PX - offset
+  const x = shiftOf(space, project, cursor.row) + cursor.column * CELL_SIZE_PX - offset
   const y = rowTopPx(technique, cursor.row) - offset
   const size = CELL_SIZE_PX + offset * 2
   const radius = beadRoundness(technique) * CELL_SIZE_PX + offset
@@ -420,7 +420,7 @@ function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Sp
     if (!inSpace(space, row, column)) {
       continue
     }
-    const x = shiftOf(space, technique, row) + column * CELL_SIZE_PX + inset
+    const x = shiftOf(space, project, row) + column * CELL_SIZE_PX + inset
     const y = rowTopPx(technique, row) + inset
     strokeTourMark(context, theme, () => {
       context.beginPath()
@@ -432,7 +432,7 @@ function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Sp
   for (const box of marks.boxes) {
     const bottom = (space.open ? box.top + box.rows : Math.min(box.top + box.rows, rows)) - 1
     const right = (space.open ? box.left + box.columns : Math.min(box.left + box.columns, columns)) - 1
-    const left = shiftOf(space, technique, box.top) + box.left * CELL_SIZE_PX
+    const left = shiftOf(space, project, box.top) + box.left * CELL_SIZE_PX
     const top = rowTopPx(technique, box.top)
     const width = (right - box.left + 1) * CELL_SIZE_PX
     const height = rowTopPx(technique, bottom) + CELL_SIZE_PX - top

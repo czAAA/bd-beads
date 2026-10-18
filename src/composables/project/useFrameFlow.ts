@@ -107,6 +107,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
   }
 
+  /** Weaves the open brick stitch Project with another Brick block (ticket 477): every bead keeps its cell, one Undo
+   * step. */
+  function setBrickBlock(brickBlock: number): void {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { brickBlock }))
+    if (outcome.kind !== 'applied') return
+    deps.announce(deps.messages().frame.announceBrickBlock.replace('{count}', String(brickBlock)))
+  }
+
   function press(target: FramePress, cell: GridPosition): void {
     const project = deps.currentProject()
     const frame = project?.frame
@@ -123,14 +131,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project || !gesture) return
     dragged = true
     if (gesture.kind === 'resize') {
-      draft.value = { frame: frameWithEdges(project.technique, gesture.start, gesture.edges, cell) }
+      draft.value = { frame: frameWithEdges(project, gesture.start, gesture.edges, cell) }
     } else {
       const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
       // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left
       // alone.
       if (draft.value && next.rows === moved.rows && next.columns === moved.columns) return
       moved = next
-      draft.value = { frame: movedFrame(project.technique, gesture.start, next.rows, next.columns), move: next }
+      draft.value = { frame: movedFrame(project, gesture.start, next.rows, next.columns), move: next }
     }
   }
 
@@ -162,7 +170,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function stepEdge(edge: FrameEdge, step: 1 | -1): void {
     const project = deps.currentProject()
     if (!project?.frame || locked.value) return
-    const next = frameWithEdgeStep(project.technique, project.frame, edge, step)
+    const next = frameWithEdgeStep(project, project.frame, edge, step)
     if (next !== project.frame) commit(next)
   }
 
@@ -170,7 +178,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function resizeTo(columns: number, rows: number): void {
     const project = deps.currentProject()
     if (!project?.frame || locked.value) return
-    const next = frameResizedAround(project.technique, project.frame, columns, rows)
+    const next = frameResizedAround(project, project.frame, columns, rows)
     if (!sameFrame(next, project.frame)) commit(next)
   }
 
@@ -179,14 +187,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   // set, it moves it there.
   function setTo(frame: Frame): void {
     const project = deps.currentProject()
-    const top = project ? snapRow(project.technique, frame.row) : frame.row
+    const top = project ? snapRow(project, frame.row) : frame.row
     commit({ ...frame, row: top, rows: frame.rows + frame.row - top })
   }
 
   function fit(): void {
     const project = deps.currentProject()
     if (!project) return
-    const frame = fitToDrawing(project.technique, project.beads, project.frame)
+    const frame = fitToDrawing(project, project.beads, project.frame)
     if (frame) commit(frame)
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
@@ -247,6 +255,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     stepEdge,
     resizeTo,
     setTechnique,
+    setBrickBlock,
     fit,
     setTo,
     remove,

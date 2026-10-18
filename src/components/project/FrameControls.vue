@@ -2,6 +2,7 @@
 import { computed, useId } from 'vue'
 import AppNote from '../ui/AppNote.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import BrickBlockField from './BrickBlockField.vue'
 import { TECHNIQUES, type Technique } from '../../domain/grid'
 import { resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { formatOtherUnit } from '../../domain/projectSize'
@@ -15,7 +16,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 // Progress bars (spec 0440). Once a Row progress pass is done the Technique is locked, with the reason under it.
 const props = defineProps<{ project: Project }>()
 
-const emit = defineEmits<{ 'set-technique': [technique: Technique] }>()
+const emit = defineEmits<{ 'set-technique': [technique: Technique]; 'set-brick-block': [brickBlock: number] }>()
 
 const { t, locale } = useI18n()
 
@@ -34,6 +35,7 @@ const estimate = computed(() =>
 )
 
 const techniqueLabelId = useId()
+const brickBlockAction = controlAction('change-brick-block')
 const techniqueAction = controlAction('change-technique')
 /** The Technique choice, set on the open Project: choosing another is one Undo step (ticket 351). */
 const technique = computed({
@@ -67,6 +69,15 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
         data-testid="frame-technique"
       />
     </div>
+
+    <BrickBlockField
+      v-if="project.technique === 'brick'"
+      :model-value="project.brickBlock ?? 1"
+      :disabled="!brickBlockAction.enabled?.(deps)"
+      :disabled-body="brickBlockAction.disabledBody?.(t, deps)"
+      testid="frame-brick-block"
+      @update:model-value="emit('set-brick-block', $event)"
+    />
 
     <p v-if="locked" :id="lockedNoteId" class="frame-controls__note" data-testid="frame-locked">{{ t.size.lockedReason }}</p>
 

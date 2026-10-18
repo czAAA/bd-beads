@@ -286,14 +286,14 @@ describe('Piece and Select all selections (ticket 414)', () => {
   const picture = painted(['rr....', '.r..b.', '......', 'b...b.'])
 
   it('a tap selects the bounding rectangle of the tapped bead’s Piece, and nothing on an empty position', () => {
-    expect(pieceSelectionAt(picture.beads, 'loom', { row: 1, column: 1 })).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
-    expect(pieceSelectionAt(picture.beads, 'loom', { row: 2, column: 2 })).toBeUndefined()
+    expect(pieceSelectionAt(picture.beads, { technique: 'loom' }, { row: 1, column: 1 })).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
+    expect(pieceSelectionAt(picture.beads, { technique: 'loom' }, { row: 2, column: 2 })).toBeUndefined()
   })
 
   it('a Piece’s rectangle includes the beads of other Pieces inside it', () => {
     const ring = painted(['rrrrr', 'r...r', 'r.b.r', 'r...r', 'rrrrr'])
-    expect(pieceSelectionAt(ring.beads, 'loom', { row: 0, column: 0 })).toEqual({ top: 0, left: 0, rows: 5, columns: 5 })
-    expect(pieceSelectionAt(ring.beads, 'loom', { row: 2, column: 2 })).toEqual({ top: 2, left: 2, rows: 1, columns: 1 })
+    expect(pieceSelectionAt(ring.beads, { technique: 'loom' }, { row: 0, column: 0 })).toEqual({ top: 0, left: 0, rows: 5, columns: 5 })
+    expect(pieceSelectionAt(ring.beads, { technique: 'loom' }, { row: 2, column: 2 })).toEqual({ top: 2, left: 2, rows: 1, columns: 1 })
   })
 
   it('Select all is the rectangle round every placed bead, and nothing on an empty canvas', () => {
@@ -350,8 +350,8 @@ describe('pieceSelectionAt with a Frame (ticket 433)', () => {
   )
 
   it('takes the part on the tapped bead\'s side: the inside, or clear of the margin', () => {
-    expect(pieceSelectionAt(beads, 'loom', { row: 12, column: 10 }, frame)).toEqual({ top: 12, left: 10, rows: 1, columns: 2 })
-    expect(pieceSelectionAt(beads, 'loom', { row: 12, column: 9 }, frame)).toBeUndefined()
+    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 10 }, frame)).toEqual({ top: 12, left: 10, rows: 1, columns: 2 })
+    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 9 }, frame)).toBeUndefined()
   })
 })
 

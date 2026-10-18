@@ -9,6 +9,7 @@ import libraryV1 from './fixtures/library-v1.json?raw'
 import libraryV2 from './fixtures/library-v2.json?raw'
 import libraryV2OverCap from './fixtures/library-v2-over-cap.json?raw'
 import libraryFileV3 from './fixtures/library-file-v3-openbeads.json?raw'
+import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
 
@@ -211,6 +212,13 @@ describe('stored-data compatibility', () => {
       const many = new File([await gzipJson(libraryFileV3)], 'b.openbeads')
       expect((await readProjectsFile(one)).projects).toEqual([fileProjects.peyote])
       expect((await readProjectsFile(many)).projects).toEqual([fileProjects.loom, fileProjects.brick])
+    })
+
+    it('opens a Project file that holds a Brick block (ticket 477), and one without as 1', async () => {
+      const [block] = (await readProjectsFile(new File([await gzipJson(projectFileBrickBlock)], 'c.openbeads'))).projects
+      expect(block).toMatchObject({ technique: 'brick', brickBlock: 3 })
+      const [plain] = (await readProjectsFile(new File([await gzipJson(projectFileV3)], 'a.openbeads'))).projects
+      expect(plain!.brickBlock).toBeUndefined()
     })
   })
 })

@@ -38,21 +38,21 @@ describe('Technique geometry', () => {
   it('stacks loom rows a bead apart and never shifts them', () => {
     expect(rowPitchPx('loom')).toBe(20)
     expect(rowTopPx('loom', 3)).toBe(60)
-    expect([0, 1, 2, 3].map((row) => rowShiftPx('loom', row))).toEqual([0, 0, 0, 0])
+    expect([0, 1, 2, 3].map((row) => rowShiftPx({ technique: 'loom' }, row))).toEqual([0, 0, 0, 0])
     expect(projectExtentPx('loom', 4, 3)).toEqual({ width: 80, height: 60 })
   })
 
   it('nests peyote rows and shifts every other one half a bead', () => {
     expect(rowPitchPx('peyote')).toBe(15)
     expect(rowTopPx('peyote', 2)).toBe(30)
-    expect([0, 1, 2, 3].map((row) => rowShiftPx('peyote', row))).toEqual([0, 10, 0, 10])
+    expect([0, 1, 2, 3].map((row) => rowShiftPx({ technique: 'peyote' }, row))).toEqual([0, 10, 0, 10])
     expect(projectExtentPx('peyote', 4, 3)).toEqual({ width: 90, height: 50 })
   })
 
   it('stacks brick stitch rows a bead apart, with no seam between them', () => {
     expect(rowPitchPx('brick')).toBe(20)
     expect(rowTopPx('brick', 2)).toBe(40)
-    expect([0, 1, 2, 3].map((row) => rowShiftPx('brick', row))).toEqual([0, 10, 0, 10])
+    expect([0, 1, 2, 3].map((row) => rowShiftPx({ technique: 'brick' }, row))).toEqual([0, 10, 0, 10])
     expect(projectExtentPx('brick', 4, 3)).toEqual({ width: 90, height: 60 })
   })
 
@@ -94,6 +94,15 @@ describe('renderProject', () => {
 
     expect(named('fillRect')).toHaveLength(1) // just the background
     expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 20], [30, 20], [0, 40], [20, 40]])
+  })
+
+  it('draws brick stitch rows in blocks of the Brick block, N straight then N shifted (ticket 477)', () => {
+    const project = projectOf('brick', 2, 5, { brickBlock: 2 })
+
+    expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([
+      [0, 0], [20, 0], [0, 20], [20, 20], [10, 40], [30, 40], [10, 60], [30, 60], [0, 80], [20, 80],
+    ])
+    expect(rowShiftPx({ technique: 'brick', brickBlock: 2 }, 2)).toBe(10)
   })
 
   it('draws no seams in any Technique', () => {
@@ -496,19 +505,19 @@ describe('drawing only some rows again', () => {
 
 describe('visibleBeads', () => {
   it('finds no rows for an empty Project', () => {
-    const { firstRow, lastRow } = visibleBeads('loom', 5, 0, { left: 0, right: 100, top: 0, bottom: 100 })
+    const { firstRow, lastRow } = visibleBeads({ technique: 'loom' }, 5, 0, { left: 0, right: 100, top: 0, bottom: 100 })
 
     expect(lastRow).toBeLessThan(firstRow)
   })
 
   it('includes a peyote row whose top is inside the region but whose nested beads overlap the row above', () => {
     // Rows sit 15px apart: a region over the top 10px still meets row 0 and (at 15px) not yet row 1; 16px meets both.
-    expect(visibleBeads('peyote', 5, 10, { left: 0, right: 100, top: 0, bottom: 10 }).lastRow).toBe(0)
-    expect(visibleBeads('peyote', 5, 10, { left: 0, right: 100, top: 0, bottom: 16 }).lastRow).toBe(1)
+    expect(visibleBeads({ technique: 'peyote' }, 5, 10, { left: 0, right: 100, top: 0, bottom: 10 }).lastRow).toBe(0)
+    expect(visibleBeads({ technique: 'peyote' }, 5, 10, { left: 0, right: 100, top: 0, bottom: 16 }).lastRow).toBe(1)
   })
 
   it('takes the stagger into account for a shifted row\'s columns', () => {
-    const { columnsOf } = visibleBeads('peyote', 10, 4, { left: 0, right: 25, top: 0, bottom: 100 })
+    const { columnsOf } = visibleBeads({ technique: 'peyote' }, 10, 4, { left: 0, right: 25, top: 0, bottom: 100 })
 
     // Row 0's beads sit at 0 and 20 (the second reaches 25); row 1's are shifted to 10 and 30, so 30 is out of reach.
     expect(columnsOf(0)).toEqual({ first: 0, last: 1 })

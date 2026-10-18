@@ -337,6 +337,7 @@ function techniqueWord(technique: Technique): string {
               v-if="framing"
               :image="framing.image"
               :technique="framing.technique"
+              :brick-block="framing.brickBlock"
               :bead="framing.bead"
               :dimensions="framing.dimensions"
               :zoom="convertZoom"

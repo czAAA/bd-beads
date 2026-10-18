@@ -24,6 +24,10 @@ export interface Translations {
     techniqueLoom: string
     techniquePeyote: string
     techniqueBrick: string
+    brickBlockLabel: string
+    brickBlockLess: string
+    brickBlockMore: string
+    brickBlockValue: string
     widthLabel: string
     heightLabel: string
     /** Stepper buttons beside Width and Height (ticket 181), each named for screen readers like Stepper's own. */
@@ -552,6 +556,7 @@ export interface Translations {
     refusedCutsSchema: string
     /** `{technique}` is the new Technique's name. */
     announceTechnique: string
+    announceBrickBlock: string
     /** Announced after Rotate turned the Selection and covered no bead. */
     announceSelectionRotated: string
     rotateFrameLabel: string
@@ -709,6 +714,8 @@ export interface Translations {
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
+    brickBlock: string
+    rowProgressLockedBrickBlock: string
     rowProgressLockedRotate: string
     rowProgressLockedRemoveLine: string
     removeLine: string

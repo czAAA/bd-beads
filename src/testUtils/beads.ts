@@ -45,13 +45,14 @@ function positionOf(wrapper: Anywhere, at: BeadAt): GridPosition {
 function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: number } {
   const root = surfaceRoot(wrapper)
   const technique = root.attributes('data-technique') as Technique
+  const brickBlock = Number(root.attributes('data-brick-block') ?? 1)
   const rotation = Number(root.attributes('data-rotation')) as Rotation
   const zoom = Number(root.attributes('data-zoom'))
   const scrollX = Number(root.attributes('data-scroll-x'))
   const scrollY = Number(root.attributes('data-scroll-y'))
   const { row, column } = positionOf(wrapper, at)
 
-  const point = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
+  const point = surfaceView({ space: OPEN_SPACE, technique, brickBlock, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
   return { clientX: point.x, clientY: point.y }
 }
 

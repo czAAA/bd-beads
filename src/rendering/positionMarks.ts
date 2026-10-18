@@ -1,9 +1,9 @@
-import type { Technique } from '../domain/grid'
+import { isShiftedRow, rowCycle, type Technique } from '../domain/grid'
 import { BEAD_GAP_PX, beadRoundness, type DrawingContext } from './beadLook'
 import { CELL_SIZE_PX, rowPitchPx } from './surfaceView'
 
-// Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, two
-// rows down, for peyote/brick half-bead shifts) filled over the view, not a shape per position. A screen-size bitmap
+// Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of
+// rows down: two for peyote/brick half-bead shifts, 2N with a Brick block of N) filled over the view, not a shape per position. A screen-size bitmap
 // kept like the bead sprites (sprites.ts). Style is a device preference: Dots, or Squares with one shared outline.
 
 /** How Position marks look (CONTEXT.md). */
@@ -19,28 +19,36 @@ const tiles = new Map<string, CanvasImageSource | null>()
 export interface MarkTileInput {
   style: PositionMarkStyle
   technique: Technique
+  /** The Brick block (ticket 477); nothing is 1. */
+  brickBlock?: number
   /** Device pixels per grid px: the zoom times the screen's pixel ratio. */
   deviceScale: number
   pixelRatio: number
   color: string
 }
 
-/** A tile's size in grid px: one bead across, two rows down. */
-function tileSizePx(technique: Technique): { width: number; height: number } {
-  return { width: CELL_SIZE_PX, height: 2 * rowPitchPx(technique) }
+/** How many rows a tile holds: the shift's cycle, and at least two. */
+function tileRows(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): number {
+  return Math.max(2, rowCycle(input))
+}
+
+/** The sideways shift of each row of a tile, in grid px. */
+function rowShifts(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): number[] {
+  return Array.from({ length: tileRows(input) }, (_row, row) => (isShiftedRow(input, row) ? CELL_SIZE_PX / 2 : 0))
+}
+
+/** A tile's size in grid px: one bead across, a cycle of rows down. */
+function tileSizePx(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): { width: number; height: number } {
+  return { width: CELL_SIZE_PX, height: tileRows(input) * rowPitchPx(input.technique) }
 }
 
 /** Draws every mark of one tile, and the copies that spill over its edges so that they wrap round. */
 function drawDots(context: DrawingContext, input: MarkTileInput, size: { width: number; height: number }): void {
   const pitch = rowPitchPx(input.technique)
   const radius = DOT_DIAMETER_PX / 2 / (input.deviceScale / input.pixelRatio)
-  const shifted = input.technique === 'loom' ? 0 : CELL_SIZE_PX / 2
   context.fillStyle = input.color
   context.beginPath()
-  for (const [x, y] of [
-    [CELL_SIZE_PX / 2, CELL_SIZE_PX / 2],
-    [CELL_SIZE_PX / 2 + shifted, pitch + CELL_SIZE_PX / 2],
-  ] as const) {
+  for (const [x, y] of rowShifts(input).map((shift, row) => [CELL_SIZE_PX / 2 + shift, row * pitch + CELL_SIZE_PX / 2] as const)) {
     for (const dx of [-size.width, 0, size.width]) {
       for (const dy of [-size.height, 0, size.height]) {
         context.moveTo(x + dx + radius, y + dy)
@@ -67,13 +75,9 @@ function squarePath(context: DrawingContext, x: number, y: number, size: number,
 function drawSquares(context: DrawingContext, input: MarkTileInput, size: { width: number; height: number }): void {
   const pitch = rowPitchPx(input.technique)
   const radius = beadRoundness(input.technique) * CELL_SIZE_PX
-  const shifted = input.technique === 'loom' ? 0 : CELL_SIZE_PX / 2
   const zoom = input.deviceScale / input.pixelRatio
   const squares: { x: number; y: number }[] = []
-  for (const [x, y] of [
-    [0, 0],
-    [shifted, pitch],
-  ] as const) {
+  for (const [x, y] of rowShifts(input).map((shift, row) => [shift, row * pitch] as const)) {
     for (const dx of [-size.width, 0, size.width]) {
       for (const dy of [-size.height, 0, size.height]) {
         squares.push({ x: x + dx, y: y + dy })
@@ -103,7 +107,7 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
   if (typeof document === 'undefined') {
     return undefined
   }
-  const size = tileSizePx(input.technique)
+  const size = tileSizePx(input)
   const width = Math.max(1, Math.round(size.width * input.deviceScale))
   const height = Math.max(1, Math.round(size.height * input.deviceScale))
   const key = [input.style, input.technique, width, height, input.pixelRatio, input.color].join('|')
