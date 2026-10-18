@@ -7,7 +7,6 @@ import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
-import { frameMoveHandle, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 
 /** A Project of this many beads, with any of its fields changed. */
 function projectOf(columns: number, rows: number, extra: Partial<Project> = {}, technique: Technique = 'loom'): Project {
@@ -1145,11 +1144,10 @@ describe('ProjectSurface with a Frame', () => {
     await surface.trigger('pointerup', { clientX: to[0], clientY: to[1], pointerId: 1 })
   }
 
-  /** Where the Move handle is, from the anchor the surface reports. */
-  function moveHandleAt(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], touch = false): [number, number] {
-    const anchors = wrapper.emitted('frame-anchor')!
-    const { x, y } = frameMoveHandle(anchors.at(-1)![0] as FrameAnchor, touch)
-    return [x, y]
+  /** A press on the Margin handle's button, handed to the surface the way FrameChrome does (ticket 473). */
+  function pressMarginHandle(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], at: [number, number], pointerType = 'mouse'): void {
+    const event = { button: 0, clientX: at[0], clientY: at[1], pointerId: 1, pointerType, isPrimary: true, preventDefault: () => {} }
+    ;(wrapper.vm as unknown as { pressMoveHandle(event: PointerEvent): void }).pressMoveHandle(event as unknown as PointerEvent)
   }
 
   it('reports the Frame\'s place always, with edit on or off', async () => {
@@ -1181,12 +1179,14 @@ describe('ProjectSurface with a Frame', () => {
     expect(wrapper.emitted('cell-primary-down')).toBeDefined()
   })
 
-  it('has no resize handle to grab when edit is off, but the Move handle always works (ticket 452)', async () => {
+  it('has no resize handle to grab when edit is off, but the Margin handle always works (tickets 452, 473)', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
     await gesture(wrapper, [167, 127], [167, 127])
     expect(wrapper.emitted('frame-press')).toBeUndefined()
 
-    await gesture(wrapper, moveHandleAt(wrapper), [60, 60])
+    pressMarginHandle(wrapper, [60, 50])
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    await surface.trigger('pointermove', { buttons: 1, clientX: 60, clientY: 60, pointerId: 1 })
     expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'move' }])
     expect(wrapper.emitted('frame-drag')).toHaveLength(1)
   })
@@ -1209,9 +1209,8 @@ describe('ProjectSurface with a Frame', () => {
   it('drops a Frame drag when a second finger lands, and does not start another press with it', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
     const surface = wrapper.find('[data-testid="project-surface"]')
-    const [x, y] = moveHandleAt(wrapper, true)
 
-    await surface.trigger('pointerdown', { button: 0, clientX: x, clientY: y, pointerId: 1, pointerType: 'touch', isPrimary: true })
+    pressMarginHandle(wrapper, [60, 50], 'touch')
     await surface.trigger('pointerdown', { button: 0, clientX: 105, clientY: 75, pointerId: 2, pointerType: 'touch', isPrimary: false })
 
     expect(wrapper.emitted('frame-press')).toHaveLength(1)

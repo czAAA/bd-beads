@@ -8,14 +8,16 @@ import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
 import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
-// The canvas box's header strip (ticket 143, ADR 0055; CanvasStrip card): Menu and Project (ticket 431), then Rotate
-// (ticket 471) · Rulers · Undo · Redo · zoom out/%/in · Fit. Names nothing (no title or hint). While framing a picture
-// (Convert image) it holds Menu and the framing zoom. On phone the middle scrolls sideways; Menu and Project stay put.
+// The canvas box's header strip (tickets 143, 431, 473, ADR 0055; CanvasStrip card): Menu, Project and Frame, then
+// Rotate · Rulers · Undo · Redo · zoom · Fit. Names nothing. While framing a picture it holds Menu and the framing
+// zoom. On phone the middle scrolls sideways; Menu, Project and Frame stay put.
 const props = defineProps<{
   project?: Project
   /** The open sheet, so Menu and Project show lit while theirs is open. */
   openSheet?: PhoneSheet | null
   rulers?: boolean
+  /** Whether the Frame bar is open, so the Frame button shows lit. */
+  frameOpen?: boolean
   canUndo?: boolean
   canRedo?: boolean
   zoomPercent?: number
@@ -25,6 +27,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   'select-sheet': [sheet: 'menu' | 'project']
+  'toggle-frame': []
   'rotate-canvas': []
   'toggle-rulers': []
   undo: []
@@ -40,6 +43,7 @@ const { t } = useI18n()
 const actions = {
   menu: controlAction('strip-menu'),
   project: controlAction('strip-project'),
+  frame: controlAction('strip-frame'),
   rotateCanvas: controlAction('rotate-canvas'),
   rulers: controlAction('rulers'),
   undo: controlAction('undo'),
@@ -49,6 +53,7 @@ const actions = {
   zoomFit: controlAction('zoom-fit'),
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
+const frameEnabled = computed(() => actions.frame.enabled?.(deps.value) ?? true)
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 </script>
@@ -70,6 +75,15 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
         :selected="openSheet === 'project' ? true : undefined"
         data-testid="strip-project"
         @click="emit('select-sheet', 'project')"
+      />
+      <AppButton
+        v-if="project?.frame"
+        variant="text"
+        :action="actions.frame"
+        :deps="deps"
+        :selected="frameOpen && frameEnabled"
+        data-testid="strip-frame"
+        @click="emit('toggle-frame')"
       />
     </div>
     <div class="canvas-strip__controls" data-testid="canvas-strip-controls">
@@ -102,7 +116,15 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
   border-bottom: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
 }
 
-/* Menu and Project stay at the left edge of the strip, even on a phone. */
+/* Menu, Project and Frame all fit in a 320px window in the longest language (ticket 473). */
+@media (max-width: 340px) {
+  .canvas-strip {
+    gap: var(--space-4);
+    padding-left: var(--space-8);
+  }
+}
+
+/* Menu, Project and Frame stay at the left edge of the strip, even on a phone. */
 .canvas-strip__sheets {
   display: flex;
   flex: none;

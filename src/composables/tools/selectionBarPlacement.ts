@@ -62,75 +62,61 @@ export function selectionBarPlacement(
   return clear.sort((a, b) => distance(a) - distance(b))[0] ?? preferred
 }
 
-/** Where the Frame is while it is edited (ticket 427): its line's box, the margin's outer edge and how far the ruler
- * numbers reach past the line. */
+/** Where the Frame is on screen (tickets 427, 473): its line's box and the margin's outer edge, in the canvas box's
+ * pixels. The Margin handle and the edit pencil are placed from it. */
 export interface FrameAnchor extends SelectionAnchor {
   /** The margin's outer edge, in the canvas box's pixels. */
   outer: BarBox
-  /** How far the ruler numbers reach past the Frame's line: their width on the left and right, their height above
-   * and below. */
-  numbers: { across: number; down: number }
-  /** How much the steppers shrink at this zoom, 0.5 to 1 (ticket 427). */
-  scale: number
 }
 
-/** The centre of each edge's stepper pair, in the canvas box's pixels. */
-export type FrameStepperCentres = Record<'top' | 'bottom' | 'left' | 'right', { x: number; y: number }>
+/** The Margin handle's hit area and the least gap its centre keeps from the canvas box's sides, mirroring the
+ * `--frame-handle-hit-*` values (ticket 473). */
+const HANDLE_HIT_HEIGHT_PX = 44
+const HANDLE_SIDE_GAP_PX = 32
+/** The edit pencil's hit area and how far in and down its centre sits from the margin outline's top-right corner,
+ * mirroring `--frame-edit-hit`. */
+const PENCIL_HIT_PX = 44
+const PENCIL_OFFSET_PX = 26
 
-// Where Edit Frame's margin steppers go (ticket 427, ADR 0055): each pair centred on its edge, in the margin between
-// the ruler numbers and the margin's outer edge. Pinned there, never clamped to the canvas box: panning carries them
-// with the Frame.
-export function frameStepperCentres(anchor: FrameAnchor): FrameStepperCentres {
-  const { box, outer, numbers } = anchor
-  const midX = box.left + box.width / 2
-  const midY = box.top + box.height / 2
+const clampTo = (value: number, low: number, high: number) => (low > high ? (low + high) / 2 : Math.max(low, Math.min(value, high)))
+
+const HANDLE_HIT_WIDTH_PX = 56
+const around = (centre: { x: number; y: number }, width: number, height: number): BarBox => ({ left: centre.x - width / 2, top: centre.y - height / 2, width, height })
+
+/** Where the Margin handle goes (ticket 473): halfway down the top margin, centred on its on-screen stretch, 32px
+ * from the box's sides and inside it vertically. Only its centre moves with the zoom; it slides clear of the edit
+ * pencil and the Frame bar (`bar`) where they would cover it. */
+export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: number; y: number } {
+  const { box, outer, viewport } = anchor
+  const visibleLeft = Math.max(outer.left, 0)
+  const visibleRight = Math.min(outer.left + outer.width, viewport.width)
+  const keep = (x: number, y: number) => ({
+    x: clampTo(x, HANDLE_SIDE_GAP_PX, viewport.width - HANDLE_SIDE_GAP_PX),
+    y: clampTo(y, HANDLE_HIT_HEIGHT_PX / 2, viewport.height - HANDLE_HIT_HEIGHT_PX / 2),
+  })
+  const natural = keep((visibleLeft + visibleRight) / 2, (box.top + outer.top) / 2)
+  const obstacles = [around(editPencilCentre(anchor), PENCIL_HIT_PX, PENCIL_HIT_PX), ...(bar ? [bar] : [])]
+  const hits = (at: { x: number; y: number }) => obstacles.some((obstacle) => overlaps(around(at, HANDLE_HIT_WIDTH_PX, HANDLE_HIT_HEIGHT_PX), obstacle))
+  if (!hits(natural)) return natural
+  const halfW = HANDLE_HIT_WIDTH_PX / 2
+  const halfH = HANDLE_HIT_HEIGHT_PX / 2
+  const slides = obstacles.flatMap((o) => [
+    keep(o.left - halfW, natural.y),
+    keep(o.left + o.width + halfW, natural.y),
+    keep(natural.x, o.top - halfH),
+    keep(natural.x, o.top + o.height + halfH),
+  ])
+  const distance = (at: { x: number; y: number }) => Math.abs(at.x - natural.x) + Math.abs(at.y - natural.y)
+  return slides.filter((at) => !hits(at)).sort((a, b) => distance(a) - distance(b))[0] ?? natural
+}
+
+/** Where the edit pencil goes (ticket 473): inside the margin, its hit area 4px in from the outline's top-right corner, pinned to it
+ * and kept inside the canvas box. */
+export function editPencilCentre(anchor: FrameAnchor): { x: number; y: number } {
+  const { outer, viewport } = anchor
+  const half = PENCIL_HIT_PX / 2
   return {
-    top: { x: midX, y: (box.top - numbers.down + outer.top) / 2 },
-    bottom: { x: midX, y: (box.top + box.height + numbers.down + outer.top + outer.height) / 2 },
-    left: { x: (box.left - numbers.across + outer.left) / 2, y: midY },
-    right: { x: (box.left + box.width + numbers.across + outer.left + outer.width) / 2, y: midY },
+    x: clampTo(outer.left + outer.width - PENCIL_OFFSET_PX, half, viewport.width - half),
+    y: clampTo(outer.top + PENCIL_OFFSET_PX, half, viewport.height - half),
   }
-}
-
-/** A corner control is 26px square, 36px on touch, shrinking with the zoom like the steppers (`anchor.scale`); the four
- * sit 4px apart, 4px inside the margin outline's corner. */
-const CORNER_PX = 26
-const TOUCH_CORNER_PX = 36
-const CORNER_GAP_PX = 4
-const CORNER_INSET_PX = 4
-
-/** Where one corner control goes, in the canvas box's pixels: its centre. */
-export type FrameCornerControls = Record<'move' | 'rotate' | 'edit' | 'remove', { x: number; y: number }> & {
-  /** The scaled side of each control, in the canvas box's pixels. */
-  size: number
-  /** The side before the zoom, which the button keeps while its wrapper is scaled down. */
-  fullSize: number
-  /** The zoom factor already applied to `size`, gaps and inset (the anchor's `scale`). */
-  scale: number
-}
-
-// The Frame's four corner controls (tickets 455, 471): Move handle, Rotate Frame, Edit Frame and Remove Frame in one row
-// just inside the margin outline's top-right corner, pinned there (not clamped to the canvas box, so panning carries it).
-export function frameCornerControls(anchor: FrameAnchor, touch: boolean): FrameCornerControls {
-  const { outer, scale } = anchor
-  const fullSize = touch ? TOUCH_CORNER_PX : CORNER_PX
-  const size = fullSize * scale
-  const gap = CORNER_GAP_PX * scale
-  const right = outer.left + outer.width - CORNER_INSET_PX * scale
-  const top = outer.top + CORNER_INSET_PX * scale
-  const y = top + size / 2
-  const at = (slot: number) => ({ x: right - size / 2 - slot * (size + gap), y })
-  return { size, fullSize, scale, remove: at(0), edit: at(1), rotate: at(2), move: at(3) }
-}
-
-/** The height of the margin's top band the corner controls need at a zoom scale (ticket 459): a control and the
- * inset above and below it. */
-export function cornerControlsReachPx(scale: number, touch: boolean): number {
-  return ((touch ? TOUCH_CORNER_PX : CORNER_PX) + 2 * CORNER_INSET_PX) * scale
-}
-
-/** The Move handle's square (ticket 452, 455): the leftmost of the corner controls. */
-export function frameMoveHandle(anchor: FrameAnchor, touch: boolean): { x: number; y: number; size: number } {
-  const { move, size } = frameCornerControls(anchor, touch)
-  return { ...move, size }
 }
