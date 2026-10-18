@@ -533,11 +533,10 @@ export interface Translations {
     edgeIn: Record<'top' | 'bottom' | 'left' | 'right', string>
     /** The Frame bar's edge cells' labels (ticket 473). */
     edgeName: Record<'top' | 'bottom' | 'left' | 'right', string>
-    /** The Frame bar's size, "24 × 30" with its unit "beads" beside it in a quieter colour. */
-    sizeValue: string
+    /** The Frame bar's size: a width and a height field (each shows the current number as a placeholder), then the unit "beads" in a quieter colour. */
     sizeUnit: string
-    /** The name of the size field, which also takes a typed "20x120". */
-    sizeLabel: string
+    widthLabel: string
+    heightLabel: string
     fitToDrawing: string
     removeFrame: string
     /** The question before Remove frame throws away finished rows (ticket 426). */
