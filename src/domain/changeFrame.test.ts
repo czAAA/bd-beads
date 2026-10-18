@@ -279,5 +279,43 @@ describe('changeFrame', () => {
     it('is no change for no distance', () => {
       expect(changeFrame(framed(), { move: { rows: 0, columns: 0 } }).kind).toBe('unchanged')
     })
+
+    describe('beads under the destination (ticket 476)', () => {
+      const movedRight = (project: Project, columns: number) => {
+        const result = changeFrame(project, { move: { rows: 0, columns } })
+        if (result.kind !== 'changed') throw new Error('expected a change')
+        return result.project
+      }
+
+      it('keeps them hidden under the Frame instead of clearing them, and does not count them', () => {
+        const project = framed({ beads: withColors(beads, [{ row: 11, column: 16, color: '#333333' }]) })
+        const moved = movedRight(project, 3)
+        expect(colorAt(moved.beads, 11, 16)).toBeNull()
+        expect(colorAt(moved.coveredBeads ?? {}, 11, 16)).toBe('#333333')
+      })
+
+      it('brings them back when the Frame moves off them', () => {
+        const project = framed({ beads: withColors(beads, [{ row: 11, column: 16, color: '#333333' }]) })
+        const back = movedRight(movedRight(project, 3), -3)
+        expect(colorAt(back.beads, 11, 16)).toBe('#333333')
+        expect(colorAt(back.beads, 10, 10)).toBe('#111111')
+        expect(back.coveredBeads).toBeUndefined()
+      })
+
+      it('keeps what stays under the Frame covered while it slides over it', () => {
+        const project = framed({ beads: withColors(beads, [{ row: 10, column: 14, color: '#444444' }]) })
+        const moved = movedRight(movedRight(project, 2), 1)
+        expect(colorAt(moved.coveredBeads ?? {}, 10, 14)).toBe('#444444')
+        expect(colorAt(moved.beads, 10, 14)).toBeNull()
+      })
+
+      it('shows a covered bead again when Remove Frame takes the Frame away', () => {
+        const project = framed({ beads: withColors(beads, [{ row: 11, column: 16, color: '#333333' }]) })
+        const result = changeFrame(movedRight(project, 3), { remove: true })
+        if (result.kind !== 'changed') throw new Error('expected a change')
+        expect(colorAt(result.project.beads, 11, 16)).toBe('#333333')
+        expect(result.project.coveredBeads).toBeUndefined()
+      })
+    })
   })
 })
