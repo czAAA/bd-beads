@@ -355,7 +355,7 @@ export const es: Translations = {
     selectLabel: 'Seleccionar',
     eraseLabel: 'Borrador',
     handLabel: 'Mano',
-    pieceLabel: 'Trozo',
+    pieceLabel: 'Seleccionar un trozo',
     selectAllLabel: 'Seleccionar todo',
     copyButton: 'Copiar',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
@@ -609,7 +609,7 @@ export const es: Translations = {
     fill: 'El clic derecho borra la zona.',
     select: 'Luego copia y pega, o quita.',
     erase: 'Suprimir vacía lo seleccionado.',
-    piece: 'Toca una cuenta para seleccionar todo su trozo.',
+    piece: 'Toca una cuenta para seleccionarla junto con todo lo que toca.',
     selectAll: 'Selecciona todas las cuentas a la vez.',
     hand: 'Arrastra para moverte por el lienzo.',
     editFrame: 'Muestra u oculta los tiradores y los botones de tamaño del marco.',

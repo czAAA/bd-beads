@@ -355,7 +355,7 @@ export const pl: Translations = {
     selectLabel: 'Zaznacz',
     eraseLabel: 'Gumka',
     handLabel: 'Ręka',
-    pieceLabel: 'Kawałek',
+    pieceLabel: 'Zaznacz kawałek',
     selectAllLabel: 'Zaznacz wszystko',
     copyButton: 'Kopiuj',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
@@ -610,7 +610,7 @@ export const pl: Translations = {
     fill: 'Prawy przycisk wymazuje obszar.',
     select: 'Potem skopiuj i wklej albo usuń.',
     erase: 'Delete opróżnia zaznaczone.',
-    piece: 'Dotknij koralika, aby zaznaczyć cały jego kawałek.',
+    piece: 'Dotknij koralika, aby zaznaczyć go razem ze wszystkim, czego dotyka.',
     selectAll: 'Zaznacza wszystkie koraliki naraz.',
     hand: 'Przeciągnij, aby przesuwać się po płótnie.',
     editFrame: 'Pokaż lub ukryj uchwyty ramki i przyciski rozmiaru.',
