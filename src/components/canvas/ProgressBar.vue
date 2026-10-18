@@ -9,7 +9,7 @@ import IconButton from '../ui/IconButton.vue'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
 // canvas box's bottom. On whenever there is a Frame (ADR 0055); without one it offers Fit to drawing. With a Frame:
-// Turn row direction, Row highlight, Reset, current row, share, Row not done / done, moving the pointer like the hotkeys (ticket 178).
+// Turn row direction, Row highlight, Reset, current row, Row not done / done, moving the pointer like the hotkeys.
 const props = withDefaults(defineProps<{
   project: Project
   /** Whether the Canvas draws the Row progress look (ticket 474): pressed while it does. */
