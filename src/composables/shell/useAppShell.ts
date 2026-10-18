@@ -264,7 +264,7 @@ function wireAppShell(services: Services) {
   /** The Palette: the built-in colors and the Custom colors that joined it, kept on the device (ticket 227). */
   const { palette, addedCount, addUsed, removeAdded, moveColor } = useAddedColors(services.addedColorsStore)
 
-  /** The active tool and which of the three paint colors is chosen (tickets 58, 171, 206). */
+  /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
   const {
     activeTool,
     selectedColorId,

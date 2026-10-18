@@ -126,7 +126,7 @@ async function probeRoom() {
 }
 const pillSize = useElementSize(pillEl)
 const layerSize = useElementSize(layerEl)
-// Everything that changes the pill's length or its edge's: the layer, the edge, what the colour control holds, whether
+// Everything that changes the pill's length or its edge's: the layer, the edge, the recents it holds, whether
 // a chosen colour exists, and a drag ending.
 watch(
   [layerSize.width, layerSize.height, () => props.position, () => props.recentsInPill.length, () => props.hasClipboard, () => props.colorHex === undefined, drag.dragging],
