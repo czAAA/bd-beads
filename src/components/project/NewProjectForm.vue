@@ -81,7 +81,8 @@ const formEl = ref<HTMLFormElement>()
 /** Focused and its text selected as soon as the form opens (ticket 181), to encourage naming — scoped to this form's own root, since a phone and a wider tier can both have one mounted at once (one hidden by CSS). */
 onMounted(() => {
   const input = formEl.value?.querySelector<HTMLInputElement>('#name-input')
-  input?.focus()
+  // preventScroll: a focus met before the sheet is placed must not scroll the app shell's clipped ancestors, which nothing scrolls back and which hides the Canvas strip (iPad Safari, first New Project after a load).
+  input?.focus({ preventScroll: true })
   input?.select()
 })
 
