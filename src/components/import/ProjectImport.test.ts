@@ -30,6 +30,14 @@ async function pickFile(wrapper: ReturnType<typeof mount>, contents: string) {
 }
 
 describe('ProjectImport import', () => {
+  it('puts no accept filter on either file input, so an iPad does not grey out .openbeads (ticket 469)', () => {
+    for (const compact of [false, true]) {
+      const input = mount(ProjectImport, { props: { projects: [], compact } }).find('[data-testid="import-file"]')
+      expect(input.exists()).toBe(true)
+      expect(input.attributes('accept')).toBeUndefined()
+    }
+  })
+
   it('hands back the Projects in a single-Project file', async () => {
     const project = makeProject('Fox')
     const wrapper = mount(ProjectImport, { props: { projects: [] } })

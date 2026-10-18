@@ -89,7 +89,6 @@ async function onImportFile(event: Event): Promise<void> {
         :id="fileInputId"
         type="file"
         class="project-import__input"
-        accept=".openbeads,.json,application/json"
         :data-testid="`${testidPrefix}import-file`"
         :aria-label="t.transfer.importLabel"
         @change="onImportFile"
@@ -103,7 +102,6 @@ async function onImportFile(event: Event): Promise<void> {
         :id="fileInputId"
         type="file"
         class="project-import__input"
-        accept=".openbeads,.json,application/json"
         :data-testid="`${testidPrefix}import-file`"
         @change="onImportFile"
       />
