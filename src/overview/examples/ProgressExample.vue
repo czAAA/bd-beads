@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import AppIcon from '../../components/ui/AppIcon.vue'
+import AppSwitch from '../../components/ui/AppSwitch.vue'
 import { useI18n } from '../../i18n/useI18n'
 import BeadPicture from './BeadPicture.vue'
 import ExampleFrame from './ExampleFrame.vue'
@@ -15,7 +16,7 @@ const ROW_PROGRESS = { direction: 'rows', currentRow: 5, currentColumn: 0 } as c
     <div class="progress">
       <BeadPicture :grid="HILLS" :zoom="0.65" :row-progress="ROW_PROGRESS" />
       <div class="progress__bar">
-        <span class="progress__switch" data-testid="example-row-highlight" />
+        <AppSwitch class="progress__switch" :model-value="true" :label="t.rowProgress.highlightButton" tabindex="-1" data-testid="example-row-highlight" />
         <b class="progress__row">{{ t.overview.examples.row }}</b>
         <span class="ex-label">{{ t.overview.examples.ofRows }}</span>
         <span class="progress__track"><i /></span>
@@ -47,59 +48,5 @@ const ROW_PROGRESS = { direction: 'rows', currentRow: 5, currentColumn: 0 } as c
   background: var(--canvas);
   border-radius: var(--radius-lg);
   box-shadow: var(--elevation-2);
-}
-
-.progress__switch {
-  position: relative;
-  flex: none;
-  width: var(--switch-width);
-  height: var(--switch-height);
-  background: var(--accent);
-  border-radius: var(--radius-full);
-}
-
-.progress__switch::after {
-  content: '';
-  position: absolute;
-  top: calc((var(--switch-height) - var(--switch-knob)) / 2);
-  left: calc(var(--switch-width) - var(--switch-height) + (var(--switch-height) - var(--switch-knob)) / 2);
-  width: var(--switch-knob);
-  height: var(--switch-knob);
-  background: var(--on-accent);
-  border-radius: var(--radius-full);
-}
-
-.progress__row {
-  font: var(--type-control);
-  white-space: nowrap;
-}
-
-.progress__track {
-  flex: 1;
-  min-width: 3rem;
-  height: var(--space-4);
-  background: var(--line);
-  border-radius: var(--radius-xs);
-}
-
-.progress__track i {
-  display: block;
-  width: 28%;
-  height: 100%;
-  background: var(--accent);
-  border-radius: var(--radius-xs);
-}
-
-.progress__done {
-  display: flex;
-  align-items: center;
-  gap: var(--space-6);
-  height: 1.75rem;
-  padding: 0 var(--space-10);
-  font: var(--type-control);
-  color: var(--on-accent);
-  white-space: nowrap;
-  background: var(--accent);
-  border-radius: var(--radius-md);
 }
 </style>
