@@ -1,6 +1,13 @@
 import { beadLabel, findBead } from '../domain/beads'
-import { normalizeProject, type GridProject, type Project } from '../domain/project'
-import { decodeProject, encodeProject, type EncodedGridProject, type EncodedProject } from '../domain/projectEncoding'
+import { normalizeProject, type Project, type StoredProject } from '../domain/project'
+import {
+  decodeEarlierProject,
+  decodeProject,
+  encodeProject,
+  type EncodedGridProject,
+  type EncodedProject,
+  type EncodedVersionThreeProject,
+} from '../domain/projectEncoding'
 import { readKey } from './storageKeys'
 
 const STORAGE_KEY = 'openbeads:patterns'
@@ -11,13 +18,19 @@ const STORAGE_KEY = 'openbeads:patterns'
 const UNREADABLE_KEY = 'openbeads:patterns:unreadable'
 
 // The stored format saveProjects writes (ADR 0009): v1 a bare array of Projects with full hex cells, v2 an envelope
-// with compact grids.
-const STORED_VERSION = 3
+// with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame with its own beads.
+const STORED_VERSION = 4
 
 interface StoredLibrary {
   version: number
   // The key stays `patterns` in storage (ADR 0028).
   patterns: EncodedProject[]
+}
+
+/** The same envelope as version 3 wrote it, before the Frame had beads of its own (temporary, see versionThree.ts). */
+interface StoredVersionThreeLibrary {
+  version: number
+  patterns: EncodedVersionThreeProject[]
 }
 
 /** The same envelope as version 2 wrote it: every Project a fixed grid of cells, before the Canvas (ADR 0026). */
@@ -28,10 +41,11 @@ interface StoredGridLibrary {
 
 // Every readable stored format by version: each takes parsed JSON and returns plain Projects. v1 is recognised by being
 // an array; a reader may throw on a wrong shape, which loadProjects treats like unparseable JSON.
-const READERS: Record<number, (parsed: unknown) => (Project | GridProject)[]> = {
-  1: (parsed) => parsed as GridProject[],
-  2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeProject),
-  3: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
+const READERS: Record<number, (parsed: unknown) => StoredProject[]> = {
+  1: (parsed) => parsed as StoredProject[],
+  2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeEarlierProject),
+  3: (parsed) => (parsed as StoredVersionThreeLibrary).patterns.map(decodeEarlierProject),
+  4: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
 }
 
 /** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned
@@ -45,7 +59,7 @@ function versionOf(parsed: unknown): number | undefined {
 }
 
 /** Projects saved before the `name` field existed have none; fall back to the bead label. */
-function withName<T extends Project | GridProject>(project: T): T {
+function withName<T extends StoredProject>(project: T): T {
   if (project.name) {
     return project
   }

@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from './beadQuantities'
-import { createProject, paintCells, type Project } from './project'
+import { createProject, type Project } from './project'
+import { paintAt } from '../testUtils/layers'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -19,7 +20,7 @@ function blankProject(): Project {
 
 function painted(cells: [row: number, column: number, color: string][]): Project {
   return cells.reduce(
-    (project, [row, column, color]) => paintCells(project, [{ row: row, column: column }], color, { columns: 0, rows: 0 }),
+    (project, [row, column, color]) => paintAt(project, [{ row: row, column: column }], color),
     blankProject(),
   )
 }

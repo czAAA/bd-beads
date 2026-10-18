@@ -3,13 +3,17 @@ import { describe, expect, it } from 'vitest'
 import {
   allBeadsSelection,
   selectAllSelection,
-  copySelection,
+  copyLayerSelection,
   hasGuides,
+  paintLayerSelection,
+  pastedCellsOnLayer,
+  pieceSelectionOnLayer,
+  selectionLayer,
   movedSelection,
   pieceSelectionAt,
   selectionHoldsAllBeads,
   selectionWithEdges,
-  mirroredPasteBlock,
+  pasteOnLayer,
   mirroredPastedCells,
   pastedCells,
   selectionBetween,
@@ -86,11 +90,11 @@ describe('selectionBetween', () => {
   })
 })
 
-describe('copySelection (ticket 437, ADR 0057)', () => {
+describe('copyLayerSelection (ticket 437, ADR 0057)', () => {
   it('copies the drawn beads at the block’s own top-left origin', () => {
     const source = painted(['....', '.rb.', '.br.', '....'])
 
-    expect(copySelection(source, { top: 1, left: 1, rows: 2, columns: 2 })).toEqual({
+    expect(copyLayerSelection(source, { top: 1, left: 1, rows: 2, columns: 2 })).toEqual({
       rows: 2,
       columns: 2,
       colors: [
@@ -104,7 +108,7 @@ describe('copySelection (ticket 437, ADR 0057)', () => {
   it('trims to the drawn beads’ bounding box and keeps empty cells inside it as holes', () => {
     const source = painted(['.....', '..r..', '.....', '.b...', '.....'])
 
-    expect(copySelection(source, { top: 0, left: 0, rows: 5, columns: 5 })).toEqual({
+    expect(copyLayerSelection(source, { top: 0, left: 0, rows: 5, columns: 5 })).toEqual({
       rows: 3,
       columns: 2,
       colors: [
@@ -119,16 +123,16 @@ describe('copySelection (ticket 437, ADR 0057)', () => {
   it('anchors on the leftmost bead of the top row, however the rest lie', () => {
     const source = painted(['.rr', 'b..'])
 
-    expect(copySelection(source, { top: 0, left: 0, rows: 2, columns: 3 })?.anchor).toEqual({ row: 0, column: 1 })
+    expect(copyLayerSelection(source, { top: 0, left: 0, rows: 2, columns: 3 })?.anchor).toEqual({ row: 0, column: 1 })
   })
 
   it('copies nothing from a Selection with no drawn bead', () => {
-    expect(copySelection(painted(['..', '..']), { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
+    expect(copyLayerSelection(painted(['..', '..']), { top: 0, left: 0, rows: 2, columns: 2 })).toBeUndefined()
   })
 
   it('does not alias the Project’s own grid, so later edits cannot change what was copied', () => {
     const source = painted(['rr', 'rr'])
-    const block = copySelection(source, { top: 0, left: 0, rows: 2, columns: 2 })
+    const block = copyLayerSelection(source, { top: 0, left: 0, rows: 2, columns: 2 })
 
     frameGrid(source)[0]![0]!.color = BLUE
 
@@ -180,7 +184,7 @@ describe('a stamp lands the anchor bead on the aimed cell (ticket 437)', () => {
   })
 })
 
-describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects through Mirror)', () => {
+describe('mirroredPastedCells and pasteOnLayer (ticket 50: Paste projects through Mirror)', () => {
   const dot: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]], anchor: { row: 0, column: 0 } }
 
   it('with both axis counts at 0, behaves exactly like a single unmirrored pastedCells stamp', () => {
@@ -195,7 +199,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const target = painted(['......', '......', '......', '......'])
     const lean: CopiedBlock = { rows: 1, columns: 2, colors: [[null, RED]], anchor: { row: 0, column: 1 } }
 
-    const result = mirroredPasteBlock(target, lean, { row: 2, column: 1 }, { rows: 0, columns: 1 })
+    const result = pasteOnLayer(target, lean, { row: 2, column: 1 }, { rows: 0, columns: 1 })
 
     expect(picture(result)).toEqual(['......', '......', '.r..r.', '......'])
   })
@@ -204,7 +208,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const target = painted(['......', '......', '......', '......'])
 
     // 6-wide grid, mirrored across columns (axisCount 1): column 1 <-> column 4.
-    const result = mirroredPasteBlock(target, dot, { row: 2, column: 1 }, { rows: 0, columns: 1 })
+    const result = pasteOnLayer(target, dot, { row: 2, column: 1 }, { rows: 0, columns: 1 })
 
     expect(picture(result)).toEqual(['......', '......', '.r..r.', '......'])
   })
@@ -221,7 +225,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     // (r at 4, hole at 5) -- see the mirror.test.ts placements test this mirrors.
     const target = painted(['bbbbbb'], { r: RED, b: BLUE })
 
-    const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 })
+    const result = pasteOnLayer(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 })
 
     expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbbrrb'])
   })
@@ -230,7 +234,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
     const target = painted(['bbbbbb'], { r: RED, b: BLUE })
 
-    const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 }, true)
+    const result = pasteOnLayer(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 }, true)
 
     expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbrbrb'])
   })
@@ -239,7 +243,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
     const target = painted(['bbbbbb'], { r: RED, b: BLUE })
 
-    const result = mirroredPasteBlock(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 1 })
+    const result = pasteOnLayer(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 1 })
 
     // Column 0->r, column1 is a hole (stays b); mirrored at columns 4/5 (6-wide, single axis): column5->r,
     // column4 is a hole (stays b).
@@ -252,7 +256,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     // runs one cell past the grid's right edge; its mirror image runs one cell past the *left* edge instead.
     const target = painted(['......'])
 
-    const result = mirroredPasteBlock(target, motif, { row: 0, column: 5 }, { rows: 0, columns: 1 })
+    const result = pasteOnLayer(target, motif, { row: 0, column: 5 }, { rows: 0, columns: 1 })
 
     expect(picture(result)).toEqual(['r....r'])
   })
@@ -264,7 +268,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     const axes = { rows: 0, columns: 2 }
 
     const preview = mirroredPastedCells(target.frame, motif, at, axes, true)
-    const stamped = mirroredPasteBlock(target, motif, at, axes, true)
+    const stamped = pasteOnLayer(target, motif, at, axes, true)
 
     for (const cell of preview) {
       expect(frameGrid(stamped)[cell.row]![cell.column]!.color).toBe(cell.color)
@@ -276,7 +280,7 @@ describe('mirroredPastedCells and mirroredPasteBlock (ticket 50: Paste projects 
     // table for this exact dimension/axis-count) -- all three already red here.
     const target = painted(['r..rr.'])
 
-    const result = mirroredPasteBlock(target, dot, { row: 0, column: 0 }, { rows: 0, columns: 2 })
+    const result = pasteOnLayer(target, dot, { row: 0, column: 0 }, { rows: 0, columns: 2 })
 
     expect(result).toBe(target)
   })
@@ -286,22 +290,71 @@ describe('Piece and Select all selections (ticket 414)', () => {
   const picture = painted(['rr....', '.r..b.', '......', 'b...b.'])
 
   it('a tap selects the bounding rectangle of the tapped bead’s Piece, and nothing on an empty position', () => {
-    expect(pieceSelectionAt(picture.beads, { technique: 'loom' }, { row: 1, column: 1 })).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
-    expect(pieceSelectionAt(picture.beads, { technique: 'loom' }, { row: 2, column: 2 })).toBeUndefined()
+    expect(pieceSelectionAt(picture.frame!.beads, { technique: 'loom' }, { row: 1, column: 1 })).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
+    expect(pieceSelectionAt(picture.frame!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toBeUndefined()
   })
 
   it('a Piece’s rectangle includes the beads of other Pieces inside it', () => {
     const ring = painted(['rrrrr', 'r...r', 'r.b.r', 'r...r', 'rrrrr'])
-    expect(pieceSelectionAt(ring.beads, { technique: 'loom' }, { row: 0, column: 0 })).toEqual({ top: 0, left: 0, rows: 5, columns: 5 })
-    expect(pieceSelectionAt(ring.beads, { technique: 'loom' }, { row: 2, column: 2 })).toEqual({ top: 2, left: 2, rows: 1, columns: 1 })
+    expect(pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 0, column: 0 })).toEqual({ top: 0, left: 0, rows: 5, columns: 5 })
+    expect(pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toEqual({ top: 2, left: 2, rows: 1, columns: 1 })
   })
 
   it('Select all is the rectangle round every placed bead, and nothing on an empty canvas', () => {
-    expect(allBeadsSelection(picture.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
-    expect(allBeadsSelection(project(3, 3).beads)).toBeUndefined()
+    expect(allBeadsSelection(picture.frame!.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
+    expect(allBeadsSelection(project(3, 3).frame!.beads)).toBeUndefined()
     // ticket 428: with a Frame, Select all is the Frame's inside, whatever the beads
-    expect(selectAllSelection(picture.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12 })
-    expect(selectAllSelection(picture.beads, undefined)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
+    expect(selectAllSelection(picture.frame!.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12 })
+    expect(selectAllSelection(picture.frame!.beads, undefined)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
+  })
+})
+
+describe('Selections on a layer (ADR 0066)', () => {
+  // A 3 x 3 Frame at (2, 2) holding red in its middle, over a Canvas holding blue beads, one under the Frame.
+  const layered = (): Project => ({
+    ...project(3, 3),
+    beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3, color: BLUE }]),
+    frame: { row: 2, column: 2, rows: 3, columns: 3, beads: withColors({}, [{ row: 1, column: 1, color: RED }]) },
+  })
+
+  it('belongs to the layer its top-left bead is on', () => {
+    expect(selectionLayer(layered(), { top: 2, left: 2, rows: 2, columns: 2 })).toBe('frame')
+    expect(selectionLayer(layered(), { top: 0, left: 0, rows: 30, columns: 30 })).toBe('canvas')
+  })
+
+  it('copies the beads of the layer it is on: the Frame\'s own, not the Canvas bead hidden under them', () => {
+    const block = copyLayerSelection(layered(), { top: 2, left: 2, rows: 3, columns: 3 })
+    expect(block?.colors).toEqual([[RED]])
+    expect(copyLayerSelection(layered(), { top: 20, left: 20, rows: 1, columns: 1 })?.colors).toEqual([[BLUE]])
+  })
+
+  it('fills the Frame\'s cells only, in the Frame, whatever the Selection reaches', () => {
+    const filled = paintLayerSelection(layered(), { top: 3, left: 3, rows: 5, columns: 5 }, RED, { columns: 0, rows: 0 })
+    expect(filled.frame!.beads[2]).toEqual({ 1: RED, 2: RED })
+    expect(filled.beads).toEqual(layered().beads)
+  })
+
+  it('pastes on the layer the pointer is at, and clips to the Frame there', () => {
+    const block: CopiedBlock = { rows: 1, columns: 3, colors: [[RED, RED, RED]], anchor: { row: 0, column: 0 } }
+    const inFrame = pasteOnLayer(layered(), block, { row: 3, column: 3 }, { columns: 0, rows: 0 })
+    expect(inFrame.beads).toEqual(layered().beads)
+    expect(inFrame.frame!.beads[1]).toEqual({ 1: RED, 2: RED })
+    const onCanvas = pasteOnLayer(layered(), block, { row: 30, column: 9 }, { columns: 0, rows: 0 })
+    expect(onCanvas.beads[30]).toEqual({ 9: RED, 10: RED, 11: RED })
+    expect(onCanvas.frame).toEqual(layered().frame)
+  })
+
+  it('shows the paste preview where the paste would land, in Canvas positions and clipped to the Frame', () => {
+    const block: CopiedBlock = { rows: 1, columns: 3, colors: [[RED, RED, RED]], anchor: { row: 0, column: 0 } }
+    expect(pastedCellsOnLayer(layered(), block, { row: 3, column: 3 }, { columns: 0, rows: 0 })).toEqual([
+      { row: 3, column: 3, color: RED },
+      { row: 3, column: 4, color: RED },
+    ])
+  })
+
+  it('taps a Piece of the layer the tap is on', () => {
+    expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1 })
+    expect(pieceSelectionOnLayer(layered(), { row: 20, column: 20 })).toEqual({ top: 20, left: 20, rows: 1, columns: 1 })
   })
 })
 

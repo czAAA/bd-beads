@@ -1,7 +1,7 @@
 import { sameFrame } from './frame'
 import { forEachBead, frameContains, withColors, type BeadChange, type Frame } from './canvas'
 import type { GridPosition } from './grid'
-import { changedPositions, isInFinishedRow, keepFinishedRows, type Project } from './project'
+import { isInFinishedRow, keepFinishedRows, sameBeads, type Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
 import type { Selection } from './selection'
 
@@ -142,5 +142,6 @@ function keepMarginClear(before: Project, after: Project): Project {
     return after
   }
   const beads = withColors(after.beads, reverts)
-  return changedPositions(before.beads, beads).length === 0 ? before : { ...after, beads }
+  const kept = { ...after, beads }
+  return sameBeads(before, kept) ? before : kept
 }

@@ -11,9 +11,9 @@ import { CELL_SIZE_PX, gridToRegion, rowShiftPx, rowTopPx, type Region } from '.
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 4, unit: 'beads' } })
-  const frame = { row: 6, column: 5, rows: 4, columns: 3 }
-  const cells = Array.from({ length: 12 }, (_, index) => ({ row: frame.row + Math.floor(index / 3), column: frame.column + (index % 3), color: '#e63746' }))
-  return { ...project, technique, rotation, frame, beads: withColors(project.beads, cells), rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
+  const cells = Array.from({ length: 12 }, (_, index) => ({ row: Math.floor(index / 3), column: index % 3, color: '#e63746' }))
+  const frame = { row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
+  return { ...project, technique, rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
 }
 
 const view: Region = { x: 0, y: 0, width: 400, height: 400 }
@@ -157,7 +157,7 @@ describe('a Project with no Frame whose top bead is on an odd row (regression)',
 describe('the Frame margin on the Canvas (ticket 276)', () => {
   it('fills no marks in the margin or the Frame, leaving a flat gap', () => {
     const project = framedProject('loom')
-    const { named } = render({ ...project, frame: { row: 6, column: 6, rows: 4, columns: 3 } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
+    const { named } = render({ ...project, frame: { row: 6, column: 6, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)

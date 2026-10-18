@@ -16,7 +16,7 @@ function setup(tool: Tool = 'paint', changesGrid = true) {
     activeTool: () => tool,
     selectedColorHex: () => '#123457',
     pressCell: vi.fn(() => {
-      if (changesGrid) project = { ...project, beads: { ...project.beads } }
+      if (changesGrid) project = { ...project, beads: { 0: { 0: '#123457' } } }
     }),
     endStroke: vi.fn(),
     beginSelectPress: vi.fn(),

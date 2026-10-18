@@ -2,7 +2,7 @@ import type { Bead } from './beads'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 import { findPaletteColorByHex } from './palette'
-import { beadsInFrame, forEachBead } from './canvas'
+import { forEachBead } from './canvas'
 import type { Project } from './project'
 
 /** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
@@ -22,7 +22,7 @@ export function computeColorQuantities(project: Project): ColorQuantity[] {
     return []
   }
 
-  forEachBead(beadsInFrame(project.beads, project.frame), (_row, _column, color) => {
+  forEachBead(project.frame.beads, (_row, _column, color) => {
     counts.set(color, (counts.get(color) ?? 0) + 1)
   })
 

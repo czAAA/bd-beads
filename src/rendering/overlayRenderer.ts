@@ -1,4 +1,4 @@
-import { colorAt, type Frame } from '../domain/canvas'
+import type { Frame } from '../domain/canvas'
 import { type GridPosition, type PreviewCell, type Technique, type Weave } from '../domain/grid'
 import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
@@ -6,7 +6,7 @@ import { lineOfPass, passCount, passOf } from '../domain/passes'
 import { rowProgressOn } from '../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
-import { inSpace, spaceOf, type Space } from './space'
+import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
@@ -134,7 +134,7 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
     const y = rowTopPx(technique, row)
     if (passOf(technique, line, along) === pass) {
       // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
-      const color = colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column)
+      const color = beadInSpace(project, space, row, column)
       if (color !== null) {
         beads.push({ x, y, color })
       }
@@ -325,7 +325,7 @@ function drawDimmed(
   pixelRatio: number,
   theme: ProjectTheme,
 ): void {
-  const { technique, beads } = project
+  const { technique } = project
   const visible = visibleBeadsInSpace(project, space, region, zoom, project.rotation)
   const cornerRadius = beadRoundness(technique) * CELL_SIZE_PX
 
@@ -338,7 +338,7 @@ function drawDimmed(
       y: rowTopPx(technique, row),
       size: CELL_SIZE_PX,
       cornerRadius,
-      color: colorAt(beads, row, column),
+      color: beadInSpace(project, space, row, column),
       dimmed: true,
       backdrop: theme.background,
       deviceScale: zoom * pixelRatio,

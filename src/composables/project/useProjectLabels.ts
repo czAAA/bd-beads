@@ -1,7 +1,7 @@
 import { computed } from 'vue'
 import { beadLabel } from '../../domain/beads'
 import { rotationSwapsAxes } from '../../domain/grid'
-import { resolveProjectBead, rowProgressOn, rowProgressPosition, type Project, projectDimensions } from '../../domain/project'
+import { projectColors, resolveProjectBead, rowProgressOn, rowProgressPosition, type Project, projectDimensions } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 
@@ -33,7 +33,7 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
       return undefined
     }
     const t = deps.messages()
-    const colors = new Set(Object.values(project.beads).flatMap((row) => Object.values(row))).size
+    const colors = projectColors(project).length
     const dimensions = projectDimensions(project)
     const [columns, rows] = rotationSwapsAxes(project.rotation) ? [dimensions.rows, dimensions.columns] : [dimensions.columns, dimensions.rows]
     const colorWords = plural(deps.locale(), colors, t.a11y.colorsCount)

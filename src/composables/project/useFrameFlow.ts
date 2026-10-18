@@ -4,7 +4,7 @@ import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, fr
 import type { GridPosition, Technique } from '../../domain/grid'
 import { changeFrame } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { rowProgressStarted, type Project } from '../../domain/project'
+import { rowProgressStarted, withFrame, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -48,7 +48,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const draftProject = computed(() => {
     const project = deps.currentProject()
     if (!project || !draft.value) return project
-    if (!draft.value.move) return { ...project, frame: draft.value.frame }
+    if (!draft.value.move) return withFrame(project, draft.value.frame)
     const outcome = changeFrame(project, { move: draft.value.move })
     return outcome.kind === 'changed' ? outcome.project : project
   })
@@ -96,9 +96,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       .replace('{height}', String(frame.rows))
   }
 
-  /** Commits a new Frame (or none) as one undo step; a no-change is no step. */
-  function commit(frame: Frame | undefined): boolean {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? { set: frame } : { remove: true }))
+  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step. */
+  function commit(frame: Frame | undefined, how: 'set' | 'make' = 'set'): boolean {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }))
     if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
       const project = deps.currentProject()
@@ -201,14 +201,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function setTo(frame: Frame): void {
     const project = deps.currentProject()
     const top = project ? snapRow(project, frame.row) : frame.row
-    commit({ ...frame, row: top, rows: frame.rows + frame.row - top })
+    commit({ ...frame, row: top, rows: frame.rows + frame.row - top }, 'make')
   }
 
   function fit(): void {
     const project = deps.currentProject()
     if (!project) return
-    const frame = fitToDrawing(project, project.beads, project.frame)
-    if (frame) commit(frame)
+    const frame = fitToDrawing(project)
+    if (frame) commit(frame, 'make')
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 

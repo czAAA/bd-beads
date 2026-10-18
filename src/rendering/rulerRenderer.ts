@@ -1,4 +1,4 @@
-import type { Frame } from '../domain/canvas'
+import { frameContains, type Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { lineOfPass } from '../domain/passes'
 import { namedPieces } from '../domain/pieceNames'
@@ -115,7 +115,14 @@ const NAME_GAP_PX = 4
 // The name of each unframed Schema (a named Piece, ADR 0050), under its beads at the left edge, in the Frame's line
 // color; read at any zoom.
 function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
-  const pieces = namedPieces(project)
+  // The Frame's name, when it was made from a named Piece (ticket 489), stands under the Frame as a Piece's does.
+  const frame = project.frame
+  const covered = (piece: Frame) =>
+    frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
+  const pieces: { name: string; row: number; column: number; rows: number; columns: number }[] = namedPieces(project).filter((piece) => !covered(piece))
+  if (project.frame?.name) {
+    pieces.push({ ...project.frame, name: project.frame.name })
+  }
   if (pieces.length === 0) {
     return
   }

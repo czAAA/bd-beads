@@ -8,7 +8,7 @@ import { surfaceView } from '../../src/rendering/surfaceView'
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by
  * writing it directly. */
 const STORAGE_KEY = 'openbeads:patterns'
-const STORED_VERSION = 3
+const STORED_VERSION = 4
 
 export interface FixtureOptions {
   technique: Technique

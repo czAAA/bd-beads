@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { changedPositions } from '../../domain/canvas'
+import { sameFrame } from '../../domain/frame'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { inMargin, mayPlace, withMargin } from '../../domain/margin'
-import { beadColorAt, changedPositions, isInFinishedRow, rowProgressOn, type Project } from '../../domain/project'
+import { beadColorAt, isInFinishedRow, rowProgressOn, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
@@ -221,7 +223,7 @@ function sameLayout(a: Project, b: Project): boolean {
   const progress = (project: Project) => project.rowProgress
   return (
     a.technique === b.technique &&
-    a.frame === b.frame &&
+    sameFrame(a.frame, b.frame) &&
     a.rotation === b.rotation &&
     progress(a).direction === progress(b).direction &&
     progress(a).currentRow === progress(b).currentRow &&
@@ -236,7 +238,15 @@ const MOST_ROWS_WORTH_A_BAND = 40
 // Empty when nothing changed; undefined when so much did (Undo, Fill, Mirror current) that drawing all again is
 // cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
-  const changed = [...new Set(changedPositions(before.beads, after.beads).map((position) => position.row))].sort((x, y) => x - y)
+  // The Frame's rows are counted from its first, which is the same in both: the Layout is.
+  const framed = (project: Project) => project.frame?.beads ?? {}
+  const frameTop = after.frame?.row ?? 0
+  const changed = [
+    ...new Set([
+      ...changedPositions(before.beads, after.beads).map((position) => position.row),
+      ...changedPositions(framed(before), framed(after)).map((position) => position.row + frameTop),
+    ]),
+  ].sort((x, y) => x - y)
   if (changed.length > MOST_ROWS_WORTH_A_BAND) {
     return undefined
   }
@@ -416,12 +426,15 @@ function drawCells(): void {
 const storedCounts = new WeakMap<object, number>()
 
 function storedBeads(project: Project): number {
-  let count = storedCounts.get(project.beads)
-  if (count === undefined) {
-    count = Object.values(project.beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
-    storedCounts.set(project.beads, count)
+  const counted = (beads: Project['beads']) => {
+    let count = storedCounts.get(beads)
+    if (count === undefined) {
+      count = Object.values(beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
+      storedCounts.set(beads, count)
+    }
+    return count
   }
-  return count
+  return counted(project.beads) + (project.frame ? counted(project.frame.beads) : 0)
 }
 
 let settleTimer: ReturnType<typeof setTimeout> | undefined

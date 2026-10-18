@@ -318,3 +318,11 @@ The Frame bar, the Margin handle and the edit pencil (Frame card). The Russian i
 | Top edge: add one row · Top edge: remove one row | Верхний край: добавить ряд · Верхний край: убрать ряд |
 | Left edge: add one column · Left edge: remove one column | Левый край: добавить столбец · Левый край: убрать столбец |
 | The Frame can’t get any smaller on this side. | Рамку нельзя сделать меньше с этой стороны. |
+
+## Copy changed in ticket 0489
+
+Remove Frame? names what goes (Frame card, ConfirmDialogs card). The Russian is the approved confirm pattern (Confirm in Sentence patterns).
+
+| English | Russian |
+| --- | --- |
+| The Frame goes, and its beads go with it. Rows marked as done are cleared too. This can be undone. | Рамка уйдёт, и её бусины вместе с ней. Отмеченные готовыми ряды сотрутся тоже. Это действие можно отменить. |
