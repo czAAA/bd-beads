@@ -5,6 +5,14 @@ import { actionKey } from '../../components/ui/controlAction'
 import { CONTROLS, chordSlots, controlAction } from './controlRegistry'
 
 describe('the control registry', () => {
+  it('has Rotate canvas and Rotate Frame, both without a key (ticket 471)', () => {
+    for (const id of ['rotate-canvas', 'rotate-frame']) {
+      expect(CONTROLS.filter((control) => control.id === id)).toHaveLength(1)
+      expect(controlAction(id).chords).toEqual([])
+    }
+    expect(controlAction('rotate').chords.flatMap(chordSlots)).toContain('+shift+r')
+  })
+
   it('has no two actions that declare the same key or combination', () => {
     const owner = new Map<string, string>()
     const clashes: string[] = []

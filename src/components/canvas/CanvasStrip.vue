@@ -10,7 +10,7 @@ import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
 /**
  * The canvas box's header strip (ticket 143, ADR 0055; CanvasStrip card): Menu and Project (icon + text, ticket 431),
- * then the canvas's own controls, Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit (the Canvas color moved into
+ * then the canvas's own controls, Rotate canvas (ticket 471) · Rulers · Undo · Redo · zoom out · zoom % · zoom in · Fit (the Canvas color moved into
  * Project, ticket 443). Menu is always there; Project only with a Project open. It names nothing: no title, size line or
  * hint. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. At phone width
  * Menu and Project stay put and the middle scrolls sideways, with touch-sized buttons.
@@ -29,6 +29,7 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{
   'select-sheet': [sheet: 'menu' | 'project']
+  'rotate-canvas': []
   'toggle-rulers': []
   undo: []
   redo: []
@@ -43,6 +44,7 @@ const { t } = useI18n()
 const actions = {
   menu: controlAction('strip-menu'),
   project: controlAction('strip-project'),
+  rotateCanvas: controlAction('rotate-canvas'),
   rulers: controlAction('rulers'),
   undo: controlAction('undo'),
   redo: controlAction('redo'),
@@ -76,6 +78,7 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
     </div>
     <div class="canvas-strip__controls" data-testid="canvas-strip-controls">
       <template v-if="project">
+        <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" data-tour="undo" @click="emit('undo')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
