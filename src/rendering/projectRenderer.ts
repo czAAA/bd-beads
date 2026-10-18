@@ -1,5 +1,5 @@
 import type { GridPosition, Rotation } from '../domain/grid'
-import { beadRoundness, gridWidth, type Technique, type Weave } from '../domain/weave'
+import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import { colorAt, frameContains } from '../domain/canvas'
 import { MARGIN, withMargin } from '../domain/margin'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn, type Project } from '../domain/project'
@@ -17,14 +17,16 @@ import { positionMarkPattern, type PositionMarkStyle } from './positionMarks'
 import type { Space } from './space'
 import {
   CELL_SIZE_PX,
+  cellSizePx,
   gridToRegion,
+  positionBoxPx,
+  positionsBoxPx,
   projectExtentPx,
   regionInGridSpace,
   rowPitchPx,
   rowShiftPx,
   rowTopPx,
   setGridTransform,
-  shiftOf,
   type Region,
 } from './surfaceView'
 
@@ -41,6 +43,14 @@ export function visibleBeads(
   area: { left: number; right: number; top: number; bottom: number },
   firstRow = 0,
 ): { firstRow: number; lastRow: number; columnsOf: (row: number) => { first: number; last: number } } {
+  if (describeWeave(weave).countsUnits) {
+    const range = visibleUnitBeads(weave, area)
+    return {
+      firstRow: Math.max(0, range.firstRow),
+      lastRow: Math.min(rows - 1, range.lastRow),
+      columnsOf: () => ({ first: Math.max(0, range.first), last: Math.min(columns - 1, range.last) }),
+    }
+  }
   const pitch = rowPitchPx(weave.technique)
   // A bead reaches CELL_SIZE_PX below its row's top, so ask for a little more below.
   const topRow = Math.max(0, Math.ceil((area.top - CELL_SIZE_PX) / pitch))
@@ -59,12 +69,29 @@ export function visibleBeads(
   }
 }
 
+// The positions of Right-angle weave touching a stretch of grid space (ticket 482): a Unit's pitch down is two rows, so
+// the lines either side of the ones in view are asked for as well.
+function visibleUnitBeads(weave: Weave, area: { left: number; right: number; top: number; bottom: number }) {
+  const cell = cellSizePx(weave.technique)
+  const side = cell.width + cell.height
+  return {
+    firstRow: Math.floor(area.top / side) * 2 - 1,
+    lastRow: Math.floor(area.bottom / side) * 2 + 2,
+    first: Math.floor(area.left / side) - 1,
+    last: Math.floor(area.right / side) + 1,
+  }
+}
+
 // The beads touching a stretch of grid space on a Canvas (ADR 0026): as visibleBeads, but unbounded, so indices may be
 // negative.
 function visibleBeadsOpen(
   weave: Weave,
   area: { left: number; right: number; top: number; bottom: number },
 ): ReturnType<typeof visibleBeads> {
+  if (describeWeave(weave).countsUnits) {
+    const range = visibleUnitBeads(weave, area)
+    return { firstRow: range.firstRow, lastRow: range.lastRow, columnsOf: () => ({ first: range.first, last: range.last }) }
+  }
   const pitch = rowPitchPx(weave.technique)
   return {
     firstRow: Math.ceil((area.top - CELL_SIZE_PX) / pitch),
@@ -126,7 +153,7 @@ export interface RenderInput {
 // position is tested. Dots mark only empty positions outside it; Squares also fill the Frame's box (ticket 458).
 function drawPositionMarks(
   context: DrawingContext,
-  { project, area, zoom, pixelRatio, theme, style, margin }: { project: DrawnProject; style: PositionMarkStyle; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
+  { project, space, area, zoom, pixelRatio, theme, style, margin }: { project: DrawnProject; space: Space; style: PositionMarkStyle; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
 ): void {
   const pattern = positionMarkPattern(context, { style, technique: project.technique, brickBlock: project.brickBlock, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
   if (!pattern) {
@@ -136,12 +163,18 @@ function drawPositionMarks(
   const box = project.frame && withMargin(project.frame, margin)
   // The margin's box, between the marks just outside it: marks sit at the middle of each bead's cell, a row's shift
   // moves them half a bead right.
-  const hole = box && {
-    left: box.column * CELL_SIZE_PX + CELL_SIZE_PX / 4,
-    right: (box.column + box.columns) * CELL_SIZE_PX + CELL_SIZE_PX / 4,
-    top: box.row * pitch + CELL_SIZE_PX / 2 - pitch / 2,
-    bottom: (box.row + box.rows - 1) * pitch + CELL_SIZE_PX / 2 + pitch / 2,
-  }
+  const units = describeWeave(project).countsUnits
+  const outer = box && units ? positionsBoxPx(space, project, box.row, box.column, box.rows, box.columns) : undefined
+  const hole =
+    box &&
+    (outer
+      ? { left: outer.x, right: outer.x + outer.width, top: outer.y, bottom: outer.y + outer.height }
+      : {
+          left: box.column * CELL_SIZE_PX + CELL_SIZE_PX / 4,
+          right: (box.column + box.columns) * CELL_SIZE_PX + CELL_SIZE_PX / 4,
+          top: box.row * pitch + CELL_SIZE_PX / 2 - pitch / 2,
+          bottom: (box.row + box.rows - 1) * pitch + CELL_SIZE_PX / 2 + pitch / 2,
+        })
   context.fillStyle = pattern
   // The pattern is scaled to the tile's whole pixels, so it is smoothed here; the beads are blitted as they are.
   context.imageSmoothingEnabled = true
@@ -165,12 +198,13 @@ function drawPositionMarks(
     // between its beads.
     const { column, row, columns, rows } = project.frame
     const edge = BEAD_GAP_PX / 2
-    const shift = gridWidth(project.technique, 0, CELL_SIZE_PX)
+    const shift = describeWeave(project).blockExtent(0, 0, CELL_SIZE_PX, CELL_SIZE_PX).width
+    const own = units ? positionsBoxPx(space, project, row, column, rows, columns) : undefined
     strip(
-      Math.max(column * CELL_SIZE_PX - edge, area.left),
-      Math.max(row * pitch - edge, area.top),
-      Math.min((column + columns) * CELL_SIZE_PX + shift + edge, area.right),
-      Math.min((row + rows - 1) * pitch + CELL_SIZE_PX + edge, area.bottom),
+      Math.max((own?.x ?? column * CELL_SIZE_PX) - edge, area.left),
+      Math.max((own?.y ?? row * pitch) - edge, area.top),
+      Math.min(own ? own.x + own.width + edge : (column + columns) * CELL_SIZE_PX + shift + edge, area.right),
+      Math.min(own ? own.y + own.height + edge : (row + rows - 1) * pitch + CELL_SIZE_PX + edge, area.bottom),
     )
   }
   context.imageSmoothingEnabled = false
@@ -184,11 +218,12 @@ function bandOnSurface(
   zoom: number,
   rotation: Rotation,
   pixelRatio: number,
-  technique: Technique,
+  weave: Weave,
   rows: { first: number; last: number },
 ): Region {
-  const top = rowTopPx(technique, rows.first)
-  const bottom = rowTopPx(technique, rows.last) + CELL_SIZE_PX
+  const band = positionsBoxPx(space, weave, rows.first, 0, rows.last - rows.first + 1, 1)
+  const top = band.y
+  const bottom = band.y + band.height
   const area = regionInGridSpace(space.extent, region, zoom, rotation)
   const [left, right] = space.open ? [area.left, area.right] : [0, space.extent.width]
   const [a, b, c, d, e, f] = gridToRegion(space.extent, region, zoom, rotation)
@@ -222,6 +257,7 @@ function boxPath(context: DrawingContext, x: number, y: number, width: number, h
 export function renderProject(context: DrawingContext, input: RenderInput): void {
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots', showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN } = input
   const { technique, beads, frame, rotation } = project
+  const description = describeWeave(project)
   const { extent, origin } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme
@@ -231,7 +267,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // it.
   context.setTransform(1, 0, 0, 1, 0, 0)
   const cleared = band
-    ? bandOnSurface(space, region, zoom, rotation, pixelRatio, technique, band)
+    ? bandOnSurface(space, region, zoom, rotation, pixelRatio, project, band)
     : { x: 0, y: 0, width: region.width * pixelRatio, height: region.height * pixelRatio }
   if (band) {
     context.save()
@@ -257,7 +293,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const lastRow = band ? Math.min(visible.lastRow, band.last + 1) : visible.lastRow
 
   if (space.open) {
-    drawPositionMarks(context, { project, area: regionInGridSpace(extent, region, zoom, rotation), zoom, pixelRatio, theme, style: positionMarks, margin })
+    drawPositionMarks(context, { project, space, area: regionInGridSpace(extent, region, zoom, rotation), zoom, pixelRatio, theme, style: positionMarks, margin })
   }
 
   // The Frame's own cells, bead or empty bead, then the painted beads round it.
@@ -270,10 +306,16 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     color !== null && rowMarks && isInCurrentRow(project, position) ? brighten(color, CURRENT_ROW_BRIGHTNESS) : color
   const drawAt = (row: number, column: number, color: string | null) => {
     const position = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + column }
+    const box = positionBoxPx(space, project, row, column)
+    // The last column of a Frame's horizontal lines holds no bead (Right-angle weave).
+    if (!description.hasPosition(position, frame)) {
+      return
+    }
     drawBead(context, {
-      x: shiftOf(space, project, row) + column * CELL_SIZE_PX,
-      y: rowTopPx(technique, row),
+      x: box.x,
+      y: box.y,
       size: CELL_SIZE_PX,
+      ...(box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}),
       cornerRadius,
       color: lightenCurrent(color ?? colorAt(beads, position.row, position.column), position),
       dimmed: rowMarks && !showFinished && isInFinishedRow(project, position),
@@ -299,11 +341,12 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     if (frame && cutOut) {
       context.save()
       const outer = withMargin(frame, margin)
-      const { width, height } = projectExtentPx(technique, outer.columns, outer.rows)
+      const own = description.countsUnits ? positionsBoxPx(space, project, outer.row, outer.column, outer.rows, outer.columns) : undefined
+      const { width, height } = own ?? projectExtentPx(technique, outer.columns, outer.rows)
       const area = regionInGridSpace(extent, region, zoom, rotation)
       context.beginPath()
       boxPath(context, area.left - CELL_SIZE_PX, area.top - CELL_SIZE_PX, area.right - area.left + 2 * CELL_SIZE_PX, area.bottom - area.top + 2 * CELL_SIZE_PX)
-      boxPath(context, outer.column * CELL_SIZE_PX, rowTopPx(technique, outer.row), width, height)
+      boxPath(context, own?.x ?? outer.column * CELL_SIZE_PX, own?.y ?? rowTopPx(technique, outer.row), width, height)
       context.clip('evenodd')
     }
     for (const row of rowsInView) {

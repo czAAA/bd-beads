@@ -3,7 +3,7 @@ import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
 import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
-import { beadRoundness, lineOfPass, passCount, passOf } from '../domain/weave'
+import { beadRoundness, describeWeave, lineOfPass, passCount, passOf } from '../domain/weave'
 import { rowProgressOn } from '../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
@@ -11,7 +11,7 @@ import { inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
-import { CELL_SIZE_PX, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
+import { CELL_SIZE_PX, positionBoxPx, positionsBoxPx, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -111,6 +111,8 @@ export interface TourMarks {
 interface PassBead {
   x: number
   y: number
+  width: number
+  height: number
   color: string
 }
 
@@ -131,13 +133,12 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   for (let along = 0; along < length; along += 1) {
     const row = space.origin.row + (columnWise ? along : line)
     const column = space.origin.column + (columnWise ? line : along)
-    const x = shiftOf(space, project, row) + column * CELL_SIZE_PX
-    const y = rowTopPx(technique, row)
+    const { x, y, width, height } = positionBoxPx(space, project, row, column)
     if (passOf(technique, line, along) === pass) {
       // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
       const color = colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column)
       if (color !== null) {
-        beads.push({ x, y, color })
+        beads.push({ x, y, width, height, color })
       }
     }
   }
@@ -146,10 +147,15 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
 
 // The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and
 // brick stitch, where the next row nests into the gaps, their corners aren't covered.
+/** A bead's width and height, where they aren't a square of the drawn size (Right-angle weave). */
+function sizedLike(box: { width: number; height: number }): { width?: number; height?: number } {
+  return box.width === CELL_SIZE_PX && box.height === CELL_SIZE_PX ? {} : { width: box.width, height: box.height }
+}
+
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], project: DrawnProject, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
   const cornerRadius = beadRoundness(project.technique) * CELL_SIZE_PX
   for (const bead of beads) {
-    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, cornerRadius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
+    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, ...sizedLike(bead), cornerRadius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
   }
 }
 
@@ -163,7 +169,7 @@ function drawBeadRings(context: DrawingContext, beads: readonly PassBead[], proj
   context.lineWidth = MARKER_RING_PX
   context.beginPath()
   for (const bead of beads) {
-    roundedRect(context, bead.x + half, bead.y + half, CELL_SIZE_PX - MARKER_RING_PX, CELL_SIZE_PX - MARKER_RING_PX, Math.max(0, corner - half))
+    roundedRect(context, bead.x + half, bead.y + half, bead.width - MARKER_RING_PX, bead.height - MARKER_RING_PX, Math.max(0, corner - half))
   }
   context.stroke()
 }
@@ -186,22 +192,24 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 function drawPreview(context: DrawingContext, project: DrawnProject, space: Space, preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = project
   const inset = BEAD_GAP_PX / 2
-  const size = CELL_SIZE_PX - BEAD_GAP_PX
   const roundness = beadRoundness(technique) * CELL_SIZE_PX - inset
 
   for (const cell of preview.cells) {
-    if (!inSpace(space, cell.row, cell.column)) {
+    if (!inSpace(space, cell.row, cell.column) || !describeWeave(project).hasPosition(cell, project.frame)) {
       continue
     }
-    const x = shiftOf(space, project, cell.row) + cell.column * CELL_SIZE_PX + inset
-    const y = rowTopPx(technique, cell.row) + inset
+    const box = positionBoxPx(space, project, cell.row, cell.column)
+    const x = box.x + inset
+    const y = box.y + inset
+    const width = box.width - BEAD_GAP_PX
+    const height = box.height - BEAD_GAP_PX
     const color = cell.color ?? preview.color
 
     if (color) {
-      const bead = { x, y, size, radius: Math.max(0, roundness) }
+      const bead = { x, y, width, height, radius: Math.max(0, roundness) }
       fillFaintly(context, bead, color, nextRowBeads(project, space, cell, bead))
     } else {
-      outlineBead(context, { x, y, size, radius: roundness }, theme)
+      outlineBead(context, { x, y, width, height, radius: roundness }, theme)
     }
   }
 }
@@ -210,7 +218,8 @@ function drawPreview(context: DrawingContext, project: DrawnProject, space: Spac
 interface BeadRect {
   x: number
   y: number
-  size: number
+  width: number
+  height: number
   radius: number
 }
 
@@ -237,40 +246,40 @@ function nextRowBeads(weave: Weave, space: Space, cell: GridPosition, bead: Bead
 
 /** A bead-sized square (or rounded square, with a radius) in a color at the hover preview's faint opacity, leaving
  * out the beads lying over it. */
-function fillFaintly(context: DrawingContext, { x, y, size, radius }: BeadRect, color: string, coveredBy: readonly BeadRect[] = []): void {
+function fillFaintly(context: DrawingContext, { x, y, width, height, radius }: BeadRect, color: string, coveredBy: readonly BeadRect[] = []): void {
   context.globalAlpha = PREVIEW_OPACITY
   context.fillStyle = color
   if (coveredBy.length > 0) {
     context.save()
     context.beginPath()
     // The even-odd clip needs an outer rectangle bigger than the bead; the covering beads are holes in it.
-    context.rect(x - CELL_SIZE_PX, y - CELL_SIZE_PX, size + 2 * CELL_SIZE_PX, size + 2 * CELL_SIZE_PX)
+    context.rect(x - CELL_SIZE_PX, y - CELL_SIZE_PX, width + 2 * CELL_SIZE_PX, height + 2 * CELL_SIZE_PX)
     for (const over of coveredBy) {
-      roundedRect(context, over.x, over.y, over.size, over.size, over.radius)
+      roundedRect(context, over.x, over.y, over.width, over.height, over.radius)
     }
     context.clip('evenodd')
     context.beginPath()
-    roundedRect(context, x, y, size, size, radius)
+    roundedRect(context, x, y, width, height, radius)
     context.fill()
     context.restore()
   } else if (radius > 0) {
     context.beginPath()
-    roundedRect(context, x, y, size, size, radius)
+    roundedRect(context, x, y, width, height, radius)
     context.fill()
   } else {
-    context.fillRect(x, y, size, size)
+    context.fillRect(x, y, width, height)
   }
   context.globalAlpha = 1
 }
 
 /** The hover preview's neutral look: a ring in the dark ink, as thick as PREVIEW_OUTLINE_PX, inside the bead's
  * rounded corners. */
-function outlineBead(context: DrawingContext, { x, y, size, radius }: BeadRect, theme: ProjectTheme): void {
+function outlineBead(context: DrawingContext, { x, y, width, height, radius }: BeadRect, theme: ProjectTheme): void {
   const inset = PREVIEW_OUTLINE_PX
   context.fillStyle = theme.outline
   context.beginPath()
-  roundedRect(context, x, y, size, size, Math.max(0, radius))
-  roundedRect(context, x + inset, y + inset, size - 2 * inset, size - 2 * inset, Math.max(0, radius - inset))
+  roundedRect(context, x, y, width, height, Math.max(0, radius))
+  roundedRect(context, x + inset, y + inset, width - 2 * inset, height - 2 * inset, Math.max(0, radius - inset))
   context.fill('evenodd')
 }
 
@@ -285,9 +294,9 @@ function drawPointer(context: DrawingContext, technique: Technique, zoom: number
 
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   if (pointer.color) {
-    fillFaintly(context, { x, y, size, radius }, pointer.color)
+    fillFaintly(context, { x, y, width: size, height: size, radius }, pointer.color)
   } else {
-    outlineBead(context, { x, y, size, radius }, theme)
+    outlineBead(context, { x, y, width: size, height: size, radius }, theme)
   }
 }
 
@@ -298,14 +307,9 @@ const OUTLINE_PX = 2
 // beads, so on peyote and brick stitch (alternate rows half a bead over) it spans the furthest any row reaches. Handles
 // are drawn later in the viewport's px.
 function drawSelection(context: DrawingContext, project: DrawnProject, space: Space, selection: Selection, theme: ProjectTheme): void {
-  const { technique } = project
   const bottom = space.open ? selection.top + selection.rows - 1 : Math.min(selection.top + selection.rows - 1, space.rows - 1)
   const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
-  const shifts = [selection.top, Math.min(selection.top + 1, bottom)].map((row) => shiftOf(space, project, row))
-  const x = Math.min(...shifts) + selection.left * CELL_SIZE_PX
-  const width = Math.max(...shifts) + (right + 1) * CELL_SIZE_PX - x
-  const y = rowTopPx(technique, selection.top)
-  const height = rowTopPx(technique, bottom) + CELL_SIZE_PX - y
+  const { x, y, width, height } = positionsBoxPx(space, project, selection.top, selection.left, bottom - selection.top + 1, right - selection.left + 1)
 
   context.fillStyle = theme.marker
   context.fillRect(x, y, width, OUTLINE_PX)
@@ -334,10 +338,12 @@ function drawDimmed(
     if (!inSpace(space, row, column) || row < visible.firstRow || row > visible.lastRow) {
       continue
     }
+    const box = positionBoxPx(space, project, row, column)
     drawFlatBead(context, {
-      x: shiftOf(space, project, row) + column * CELL_SIZE_PX,
-      y: rowTopPx(technique, row),
+      x: box.x,
+      y: box.y,
       size: CELL_SIZE_PX,
+      ...sizedLike(box),
       cornerRadius,
       color: colorAt(beads, row, column),
       dimmed: true,
@@ -358,15 +364,17 @@ function drawCursor(context: DrawingContext, project: DrawnProject, space: Space
   // The bead stands half the gap in from its cell; the ring starts 2px outside that.
   const offset = 2 - BEAD_GAP_PX / 2
   const width = theme.cursorWidth
-  const x = shiftOf(space, project, cursor.row) + cursor.column * CELL_SIZE_PX - offset
-  const y = rowTopPx(technique, cursor.row) - offset
-  const size = CELL_SIZE_PX + offset * 2
+  const box = positionBoxPx(space, project, cursor.row, cursor.column)
+  const x = box.x - offset
+  const y = box.y - offset
+  const across = box.width + offset * 2
+  const down = box.height + offset * 2
   const radius = beadRoundness(technique) * CELL_SIZE_PX + offset
 
   context.fillStyle = theme.cursor
   context.beginPath()
-  roundedRect(context, x - width, y - width, size + width * 2, size + width * 2, radius + width)
-  roundedRect(context, x, y, size, size, radius)
+  roundedRect(context, x - width, y - width, across + width * 2, down + width * 2, radius + width)
+  roundedRect(context, x, y, across, down, radius)
   context.fill('evenodd')
 }
 
@@ -377,17 +385,19 @@ const MARGIN_OUTLINE_RADIUS_PX = 12
 
 /** Strokes the box round the margin's drawn extent (ticket 372): peyote rows nest closer than a bead is tall, and
  * offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
-function drawMarginOutline(context: DrawingContext, frame: Frame, technique: Technique, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
+function drawMarginOutline(context: DrawingContext, project: DrawnProject, space: Space, frame: Frame, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
+  const { technique } = project
   const outer = withMargin(frame, margin)
-  const x = outer.column * CELL_SIZE_PX
-  const { width, height } = projectExtentPx(technique, outer.columns, outer.rows)
+  const own = describeWeave(project).countsUnits ? positionsBoxPx(space, project, outer.row, outer.column, outer.rows, outer.columns) : undefined
+  const x = own?.x ?? outer.column * CELL_SIZE_PX
+  const { width, height } = own ?? projectExtentPx(technique, outer.columns, outer.rows)
   context.save()
   context.globalAlpha = opacity
   context.strokeStyle = theme.pieceLine
   context.lineWidth = 1 / zoom
   context.setLineDash(MARGIN_OUTLINE_DASH_PX.map((length) => length / zoom))
   context.beginPath()
-  roundedRect(context, x, rowTopPx(technique, outer.row), width, height, MARGIN_OUTLINE_RADIUS_PX / zoom)
+  roundedRect(context, x, own?.y ?? rowTopPx(technique, outer.row), width, height, MARGIN_OUTLINE_RADIUS_PX / zoom)
   context.stroke()
   context.restore()
 }
@@ -415,17 +425,17 @@ function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Sp
   const { columns, rows } = space
   const inset = BEAD_GAP_PX / 2
   const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - inset)
-  const size = CELL_SIZE_PX - BEAD_GAP_PX
 
   for (const { row, column } of marks.cells) {
     if (!inSpace(space, row, column)) {
       continue
     }
-    const x = shiftOf(space, project, row) + column * CELL_SIZE_PX + inset
-    const y = rowTopPx(technique, row) + inset
+    const box = positionBoxPx(space, project, row, column)
+    const x = box.x + inset
+    const y = box.y + inset
     strokeTourMark(context, theme, () => {
       context.beginPath()
-      roundedRect(context, x, y, size, size, radius)
+      roundedRect(context, x, y, box.width - BEAD_GAP_PX, box.height - BEAD_GAP_PX, radius)
       context.stroke()
     })
   }
@@ -433,10 +443,8 @@ function drawTourMarks(context: DrawingContext, project: DrawnProject, space: Sp
   for (const box of marks.boxes) {
     const bottom = (space.open ? box.top + box.rows : Math.min(box.top + box.rows, rows)) - 1
     const right = (space.open ? box.left + box.columns : Math.min(box.left + box.columns, columns)) - 1
-    const left = shiftOf(space, project, box.top) + box.left * CELL_SIZE_PX
-    const top = rowTopPx(technique, box.top)
+    const { x: left, y: top, height } = positionsBoxPx(space, project, box.top, box.left, bottom - box.top + 1, right - box.left + 1)
     const width = (right - box.left + 1) * CELL_SIZE_PX
-    const height = rowTopPx(technique, bottom) + CELL_SIZE_PX - top
     strokeTourMark(context, theme, () => {
       context.beginPath()
       roundedRect(context, left - 1, top - 1, width + 2, height + 2, 4)
@@ -453,9 +461,10 @@ function drawMirrorAxes(context: DrawingContext, project: DrawnProject, space: S
   if (!space.hasFrame) {
     return
   }
-  const { width, height } = projectExtentPx(project.technique, space.columns, space.rows)
-  const left = space.origin.column * CELL_SIZE_PX
-  const top = rowTopPx(project.technique, space.origin.row)
+  const own = describeWeave(project).countsUnits ? positionsBoxPx(space, project, space.origin.row, space.origin.column, space.rows, space.columns) : undefined
+  const { width, height } = own ?? projectExtentPx(project.technique, space.columns, space.rows)
+  const left = own?.x ?? space.origin.column * CELL_SIZE_PX
+  const top = own?.y ?? rowTopPx(project.technique, space.origin.row)
   context.globalAlpha = AXIS_OPACITY
   context.fillStyle = theme.marker
   for (const fraction of axisLinePositions(counts.columns)) {
@@ -510,7 +519,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     drawMirrorAxes(context, project, space, axes, theme)
   }
   if (marginOutline > 0 && project.frame) {
-    drawMarginOutline(context, project.frame, project.technique, zoom, marginOutline, theme, margin)
+    drawMarginOutline(context, project, space, project.frame, zoom, marginOutline, theme, margin)
   }
   if (marks) {
     drawTourMarks(context, project, space, marks, theme)

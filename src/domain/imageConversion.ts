@@ -1,6 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
 import { type GridDimensions } from './grid'
-import { rowPitch, rowOffset, type Technique } from './weave'
+import { describeWeave, rowPitch, rowOffset, type Technique } from './weave'
 import { resolveImageColors } from './imageColors'
 import {
   type FramingView,
@@ -178,6 +178,10 @@ export function sampleLatticePacked({
 }: SamplingInput & { lattice: PreviewLattice }): Int32Array {
   const cellWidth = beadPitchMm(bead)
   const cellHeight = bead.heightMm
+  const description = describeWeave({ technique, brickBlock })
+  if (description.countsUnits) {
+    return sampleUnitLattice({ image, view, description, cellWidth, cellHeight, lattice })
+  }
 
   // Where the frame's top-left corner sits in the lattice's coordinates: whole cells and rows, so a lattice cell's
   // centre is its frame cell's centre plus exactly this, half-cell stagger included (frameRow is always even,
@@ -232,6 +236,33 @@ function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColor
   )
 
   return { grid, imageColors: colors }
+}
+
+/** The picture's colors at the centre of each bead of a Units lattice (ticket 482): the lattice's top-left is the corner
+ * of a Unit, and a position with no bead (a line's empty end) takes nothing. */
+function sampleUnitLattice({ image, view, description, cellWidth, cellHeight, lattice }: {
+  image: PixelData
+  view: FramingView
+  description: ReturnType<typeof describeWeave>
+  cellWidth: number
+  cellHeight: number
+  lattice: PreviewLattice
+}): Int32Array {
+  // The frame's corner is its first Unit's: a line of vertical beads starts at the Unit's own edge.
+  const originX = lattice.frameColumn * (cellWidth + cellHeight)
+  const originY = (lattice.frameRow / 2) * (cellWidth + cellHeight)
+  const packed = new Int32Array(lattice.rows * lattice.columns).fill(NO_COLOR)
+  for (let row = 0; row < lattice.rows; row += 1) {
+    for (let column = 0; column < lattice.columns; column += 1) {
+      const { x, y } = description.center({ row, column }, cellWidth, cellHeight)
+      const sourceX = Math.floor((x - originX - view.offsetXMm) / view.scaleMm)
+      const sourceY = Math.floor((y - originY - view.offsetYMm) / view.scaleMm)
+      if (sourceX >= 0 && sourceX < image.width && sourceY >= 0 && sourceY < image.height) {
+        packed[row * lattice.columns + column] = pixelPackedAt(image, sourceX, sourceY)
+      }
+    }
+  }
+  return packed
 }
 
 /** The Project's grid and Image colors from an already-sampled lattice (see sampleLatticePacked): only the frame's
