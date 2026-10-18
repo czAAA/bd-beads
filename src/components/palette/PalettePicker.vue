@@ -27,18 +27,14 @@ function isStop(colorId: string, index: number): boolean {
   return selected ? colorId === props.selectedColorId : index === 0
 }
 
-/**
- * An added swatch asks to be removed (tickets 228, 304; PaletteSwatches card): by its ×, or Delete or Backspace on a
- * focused one, which is how the keyboard reaches it. The app shell confirms before anything goes.
- */
+// An added swatch asks to be removed (tickets 228, 304; PaletteSwatches card): by its ×, or Delete/Backspace on a
+// focused one (the keyboard route). The app shell confirms first.
 function remove(colorId: string) {
   removeAdded?.(colorId)
 }
 
-/**
- * Rearranging (ticket 398): a swatch is dragged to another slot, or moved a slot with Alt+Left/Right. Each slot owns
- * its Shift+key, so the swatch that lands in the first one is Shift+1.
- */
+// Rearranging (ticket 398): drag a swatch to another slot, or move it with Alt+Left/Right. Each slot owns its
+// Shift+key, so the swatch landing in the first is Shift+1.
 const moveColor = useMoveColor()
 const drag = useSwatchDrag(
   (from, to) => moveColor?.(from, to),
@@ -126,7 +122,8 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
   outline-offset: 2px;
 }
 
-/* Pick color from canvas is the grid's last tile (ticket 403): a swatch's size, with a bigger eyedropper. Not a slot: it isn't dragged and has no Shift+key. */
+/* Pick color from canvas is the grid's last tile (ticket 403): a swatch's size, with a bigger eyedropper. Not a
+ * slot: it isn't dragged and has no Shift+key. */
 .palette-picker :deep(.palette-picker__pick),
 .palette-picker :deep(.palette-picker__pick .icon-btn) {
   width: 100%;
@@ -135,10 +132,8 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
   height: auto;
 }
 
-/*
- * Touch input (ticket 166): a swatch grows to a real 36px minimum instead of controls.css's usual invisible 44px hit
- * area, which packed this tight (6px apart) would overlap its neighbours.
- */
+/* Touch (ticket 166): a real 36px minimum swatch instead of controls.css's invisible 44px hit area, which would
+ * overlap at 6px apart. */
 @media (pointer: coarse) {
   /* The 8-column grid would overflow a narrow column at a real 36px minimum, so columns give way to more rows. */
   .palette-picker {

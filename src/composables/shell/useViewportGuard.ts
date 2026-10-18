@@ -15,12 +15,8 @@ function isMovedOff(): boolean {
   return window.scrollX !== 0 || window.scrollY !== 0 || panned
 }
 
-/**
- * Keeps the app on the screen, beside the Page zoom lock (ADR 0034): the shell is pinned to the screen and nothing in it scrolls, so the
- * page is never meant to be anywhere but its origin. Safari can still move the layout or visual viewport (a focus, the
- * on-screen keyboard, a gesture it took over), and with nothing to scroll back there is no way for the person to undo
- * it: the Canvas strip and the Progress bar sit off the screen until the page is reloaded. So whenever the view is moved
- * and no field is being typed in, it is put back at the origin. A page zoom is left alone: that is the zoom lock's.
+/** Keeps the view at the origin beside the Page zoom lock (ADR 0034): Safari can move it (focus, keyboard, gesture)
+ * with nothing to scroll back, so when no field is being typed in it is put back; a page zoom is left alone.
  */
 export function useViewportGuard() {
   let settleTimer: ReturnType<typeof setTimeout> | undefined

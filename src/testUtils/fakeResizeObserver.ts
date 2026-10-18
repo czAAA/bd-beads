@@ -1,12 +1,5 @@
-/**
- * A controllable stand-in for ResizeObserver (jsdom has no real one, and real browser layout isn't available in
- * tests anyway): `observe()` just remembers the target and callback, and `trigger()` fires that callback with a
- * synthetic entry, so a test can simulate "the container is now this wide/tall" deterministically.
- *
- * Install with `vi.stubGlobal('ResizeObserver', FakeResizeObserver)` before mounting, read the instance a component
- * created off `FakeResizeObserver.instances`, and call `FakeResizeObserver.reset()` in afterEach/beforeEach so
- * instances don't leak between tests.
- */
+/** A controllable ResizeObserver (jsdom has none): `trigger()` fires the callback with a synthetic entry.
+ * Install with `vi.stubGlobal`, read `instances`, and call `reset()` in afterEach so instances don't leak. */
 export class FakeResizeObserver implements ResizeObserver {
   static instances: FakeResizeObserver[] = []
 

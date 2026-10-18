@@ -5,13 +5,9 @@ import AppIcon from './AppIcon.vue'
 import IconButton from './IconButton.vue'
 import type { IconName } from './icons'
 
-/**
- * The design system's Message (ticket 76; Message card): a notice or a toast. A 3px edge and a 16px icon in its tone
- * (`accent` for a result or information, `warning`, or `danger`), the text, optional text-button actions, and a close ×.
- * `placement` picks the frame: `toast` floats with elevation 3, `notice` fills the notice row under the header at
- * elevation 0. With a `timeout` it goes by itself, but never while hovered or focused: the clock starts again once it
- * is left. Errors (`danger`) are announced at once and are given no timeout by their callers.
- */
+// The design system's Message (ticket 76; Message card): a notice or toast with a tone edge and icon (`accent`,
+// `warning`, `danger`), text, actions and a close x. `placement`: `toast` floats, `notice` fills the notice row. A
+// `timeout` pauses while hovered or focused. Errors (`danger`) are announced at once and callers give them no timeout.
 const props = withDefaults(
   defineProps<{
     tone?: 'success' | 'info' | 'warning' | 'danger'

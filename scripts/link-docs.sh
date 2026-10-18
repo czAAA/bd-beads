@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Links the private docs repo (bd-beads-docs, cloned next to this checkout) into this tree at the original paths,
-# so tickets, ADRs, specs and the operations runbook keep the paths the code and the agent docs cite. The links are gitignored.
-# Safe to run again; never replaces a real file or folder (it reports it and exits 1 at the end).
-# Usage: bash scripts/link-docs.sh        (DOCS_NAME=bd-beads-docs, the folder next to this checkout)
+# Links the private docs repo (bd-beads-docs, next to this checkout) into this tree at the original paths (gitignored
+# links). Safe to run again; never replaces a real file or folder (reports it, exits 1). Usage: bash
+# scripts/link-docs.sh [DOCS_NAME=bd-beads-docs]
 set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)

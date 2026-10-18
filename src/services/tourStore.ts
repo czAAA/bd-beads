@@ -1,10 +1,8 @@
 import { TOUR_STEPS, type TourStepId } from '../domain/tour'
 import { readKey } from './storageKeys'
 
-/**
- * Where the Tour's status is kept on this device (ticket 77 reads it, ticket 80 builds the Tour on it). `untouched` is
- * a device that has never started it; `running` one that started it and hasn't finished or turned it off.
- */
+// Where the Tour's status is kept (tickets 77, 80): `untouched` never started; `running` started, not finished or
+// turned off.
 export type TourStatus = 'untouched' | 'running' | 'finished' | 'off'
 
 const STORAGE_KEY = 'openbeads:tour'

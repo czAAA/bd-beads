@@ -3,20 +3,17 @@ import { useId } from 'vue'
 import AppButton from './AppButton.vue'
 import AppModal from './AppModal.vue'
 
-/**
- * A confirmation (ticket 76; ConfirmDialogs card): the Modal template asking one question. The title is the question,
- * Cancel sits on the left and takes focus first, and the confirm button repeats the title (`writing.md`). A destructive
- * confirm is danger-filled (Delete all), any other is primary (Replace bead, Switch). The parent owns whether it's
- * mounted at all — usually via `v-if` — and decides what confirming/cancelling means. Cancel and the side action
- * take the in-box look, an `elevated` fill with a `line-strong` edge, so they stand out on the dialog in every theme.
- */
+// A confirmation (ticket 76; ConfirmDialogs card): the Modal asking one question (the title); Cancel is
+// left and takes focus first, the confirm button repeats the title (`writing.md`), danger-filled if destructive else
+// primary. The parent owns mounting and what confirming/cancelling means. Cancel and side action use the in-box look.
 withDefaults(
   defineProps<{
     title: string
     message: string
     confirmLabel: string
     cancelLabel: string
-    /** Styles the confirm as a destructive action; off for a confirmation that only moves the person along (ticket 154). */
+    /** Styles the confirm as a destructive action; off for a confirmation that only moves the person along (ticket
+     * 154). */
     confirmDanger?: boolean
     /** A third, side action shown before Cancel (Import's "Save current", ticket 154); absent means there is none. */
     extraLabel?: string

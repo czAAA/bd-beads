@@ -3,12 +3,8 @@ import { rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
-/**
- * How the PDF for printing is laid out (ticket 162; printed-output.md, the PrintPage1 and PrintChartPage cards, the
- * `print-*` tokens). Page 1 shows the whole Project; the chart pages then split it into fixed 100 × 100-bead blocks
- * (ticket 185), an edge block simply however many beads remain. Each block's bead then grows until it fills its
- * page, the same on every page and never above 7 mm. Everything here is in page px at 150 dpi; nothing draws.
- */
+// PDF page layout (ticket 162, 185): page 1 whole, then 100 × 100-bead chart blocks, beads up to 7 mm; page px at 150
+// dpi.
 
 export const PRINT_DPI = 150
 /** Millimetres as page px. */
@@ -39,7 +35,8 @@ export interface PageSize {
 export const A4_PORTRAIT: PageSize = { width: 1240, height: 1754 }
 export const A4_LANDSCAPE: PageSize = { width: 1754, height: 1240 }
 
-/** What a chart page leaves for the beads themselves: inside the margins, header, name band, footer, rulers and board. */
+/** What a chart page leaves for the beads themselves: inside the margins, header, name band, footer, rulers and
+ * board. */
 export function chartArea(page: PageSize): PageSize {
   const inset = (PRINT_RULER + PRINT_BOARD_PAD) * 2
   return {
@@ -49,7 +46,8 @@ export function chartArea(page: PageSize): PageSize {
 }
 
 export interface PrintPart {
-  /** The page it prints on (page 1 is the whole Project). Several parts share a page when they are stacked (see `PrintPlan.strip`). */
+  // The page it prints on (page 1 is the whole Project). Several parts share a page when they are stacked (see
+  // `PrintPlan.strip`).
   page: number
   /** Which part across and down, from 0. */
   across: number
@@ -72,10 +70,7 @@ export interface PrintPlan {
   partsDown: number
   parts: PrintPart[]
   pageCount: number
-  /**
-   * True when a part would fill less than half its page (a bracelet, split only one way): several parts then share a
-   * sheet at the base bead size instead of one nearly-empty page each (PrintStrips).
-   */
+  /** True when a part fills under half its page: several parts then share a sheet at base bead size (PrintStrips). */
   strip: boolean
 }
 
@@ -92,7 +87,8 @@ export function orientedPage(project: Shape): PageSize {
 
 type Shape = Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'>
 
-/** Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each way at zoom 1. */
+// Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
+// way at zoom 1.
 export function displayedGrid(project: Shape) {
   const { technique, rotation } = project
   const { columns, rows } = projectDimensions(project)
@@ -164,7 +160,8 @@ export function planPrint(project: Shape, page: PageSize = orientedPage(project)
 
 type Grid = ReturnType<typeof displayedGrid>
 
-/** Stacks equal across-only parts several to a sheet, at the base bead size, when doing one page each would waste paper. */
+/** Stacks equal across-only parts several to a sheet, at the base bead size, when doing one page each would waste
+ * paper. */
 function planStrips(project: Shape, page: PageSize, area: PageSize, grid: Grid, baseZoom: number, partAcross: number): PrintPlan | undefined {
   const partsAcross = Math.ceil(grid.across / partAcross)
   const downExtent = blockExtent(project.technique, project.rotation, partAcross, grid.down).height * baseZoom

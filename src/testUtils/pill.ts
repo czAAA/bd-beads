@@ -7,10 +7,8 @@ type Wrapper = ReturnType<typeof mount>
 
 type Sheet = 'strip-project' | 'strip-menu'
 
-/**
- * Opens Menu or Project (CanvasStrip and TopSheet cards, ticket 443): the strip's button toggles, so a panel that is already
- * open is left alone and the other one open is swapped for it by the press. Under 1024px, as every test starts, it is the Top sheet.
- */
+/** Opens Menu or Project (CanvasStrip and TopSheet cards, ticket 443): the strip's button toggles, so an open panel
+ * is left alone and the other is swapped in. Under 1024px, as every test starts, it is the Top sheet. */
 export async function openSheet(wrapper: Wrapper, dock: Sheet): Promise<void> {
   const button = wrapper.get(`[data-testid="${dock}"]`)
   const panelOpen = wrapper.find('[data-testid="panel-body"]').exists()
@@ -30,10 +28,8 @@ export async function pickTool(wrapper: Wrapper, tool: Tool): Promise<void> {
   await wrapper.get(`[data-testid="pill-tool-${tool}"]`).trigger('click')
 }
 
-/**
- * Selects everything inside the Frame with Ctrl+A, with the Select tool in hand (ticket 439: the standalone Select all
- * button is gone, and the Selection bar offers it only once a Selection exists).
- */
+/** Selects everything inside the Frame with Ctrl+A, Select tool in hand (ticket 439: no standalone Select all
+ * button). */
 export async function selectAll(wrapper: Wrapper): Promise<void> {
   await pickTool(wrapper, 'select')
   window.dispatchEvent(new KeyboardEvent('keydown', { key: 'a', ctrlKey: true, bubbles: true }))
@@ -56,10 +52,8 @@ export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void
   await swatch().trigger('click')
 }
 
-/**
- * Raises the New Project form (a modal sheet): the project bar's button with no Project open, otherwise Menu's.
- * Does nothing when the form is already up.
- */
+/** Raises the New Project form (a modal sheet) via the project bar's button, or Menu's when a Project is open; no-op
+ * if up. */
 export async function openNewProject(wrapper: Wrapper): Promise<void> {
   if (wrapper.find('[data-testid="bead-select"]').exists()) {
     return
@@ -91,7 +85,8 @@ export async function deleteAll(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="project-clear"]').trigger('click')
 }
 
-/** Picks a language in Menu (tickets 368, 443): the panel opens first; the Top sheet lists every language, the dropdown has the switcher. */
+/** Picks a language in Menu (tickets 368, 443): the panel opens first; the Top sheet lists every language, the
+ * dropdown has the switcher. */
 export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
   await openSheet(wrapper, 'strip-menu')
   if (wrapper.find('[data-testid="language-switcher"]').exists()) await chooseLanguage(wrapper, locale)
@@ -101,7 +96,8 @@ export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promi
   }
 }
 
-/** Unfolds one of the sheet Menu's choices (its header is a button, folded to the current choice) unless it is already open (or absent). */
+/** Unfolds one of the sheet Menu's choices (its header is a button, folded to the current choice) unless it is
+ * already open (or absent). */
 export async function openChoice(wrapper: Wrapper, testid: string): Promise<void> {
   const header = wrapper.find(`[data-testid="${testid}"] .setting__header`)
   if (header.exists() && header.attributes('aria-expanded') !== 'true') await header.trigger('click')
@@ -122,10 +118,8 @@ export function toolState(wrapper: Wrapper, tool: Tool): { pressed: boolean; sel
   return { pressed: tile.attributes('aria-pressed') === 'true', selected: tile.classes().includes('icon-btn--selected') }
 }
 
-/**
- * Reads one element of the Project panel (ProjectPanel card): the panel opens for it and closes again, so a press on
- * the canvas that follows is not swallowed by it.
- */
+/** Reads one element of the Project panel (ProjectPanel card), closing it again so the next canvas press isn't
+ * swallowed. */
 export async function sheetRead(wrapper: Wrapper, testId: string): Promise<{ exists: boolean; text: string }> {
   await openSheet(wrapper, 'strip-project')
   const element = wrapper.find(`[data-testid="${testId}"]`)
@@ -134,7 +128,8 @@ export async function sheetRead(wrapper: Wrapper, testId: string): Promise<{ exi
   return read
 }
 
-/** Sets the colour popover's Custom color the way a person does: opens the picker, types the hex and presses Enter, which takes it. */
+/** Sets the colour popover's Custom color the way a person does: opens the picker, types the hex and presses Enter,
+ * which takes it. */
 export async function chooseCustomColor(wrapper: Wrapper, hex: string): Promise<void> {
   if (!wrapper.find('[data-testid="custom-color-button"]').exists()) {
     await openColorPopover(wrapper)

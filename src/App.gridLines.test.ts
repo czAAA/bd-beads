@@ -7,11 +7,8 @@ import { createProject, type Technique } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { pickColor, pickTool } from './testUtils/pill'
 
-/**
- * The "remove selected row/column" Tool (ticket 123): a Selection of a whole row/column, made by a Select-tool drag
- * across the Frame, can be removed, shifting the rest of the grid to close the gap, in one undo step. Ruler numbers
- * are display-only (ticket 447): a press on one selects nothing.
- */
+// "Remove selected row/column" (ticket 123): a Select-tool drag across the Frame selects a whole row/column, removable
+// in one undo step. Ruler numbers are display-only (ticket 447): a press on one selects nothing.
 
 beforeEach(() => {
   localStorage.clear()
@@ -21,7 +18,8 @@ beforeEach(() => {
 const RED = '#e63746'
 const BLUE = '#2f6fed'
 
-/** Mounts the App on a saved Loom/Peyote/Brick Project of Toho Cube 1.5mm beads with a Frame of `columns` x `rows` beads: the New Project form states no size (ticket 342). */
+/** Mounts the App on a saved Loom/Peyote/Brick Project of Toho Cube 1.5mm beads with a Frame of `columns` x `rows`
+ * beads: the New Project form states no size (ticket 342). */
 async function mountSized(columns: number, rows: number, technique: Technique = 'loom') {
   saveProjects([createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })])
   const wrapper = mount(App)

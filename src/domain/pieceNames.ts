@@ -5,15 +5,9 @@ import { numericKey, pieceBeadsAt } from './pieces'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
-/**
- * A name for a Piece (ticket 406, ADR 0050): a named Piece is an unframed Schema. Pieces are never stored (they merge
- * and split as beads are painted), so a name is kept by the position of one bead of its Piece, its anchor, and follows
- * the Piece through every edit by `carryNames`:
- * - a Piece that joins an unnamed one absorbs it, and a bead that would join two named Pieces is refused
- *   (`keepNamesApart`), so painting never has to drop a name;
- * - a Piece that splits keeps its name on the larger part (more beads); the smaller part is a plain Piece;
- * - a Piece with no bead left has no name.
- */
+/** A name for a Piece (ticket 406, ADR 0050): a named Piece is an unframed Schema. Pieces are never stored, so a name
+ * is kept at one bead's position (its anchor) and follows the Piece through edits by `carryNames`: joining an unnamed
+ * Piece absorbs it, joining two named is refused (`keepNamesApart`), a split keeps the name on the larger part. */
 export interface PieceName extends GridPosition {
   name: string
 }
@@ -24,7 +18,8 @@ export const MAX_PIECE_NAME = MAX_MAKER_NAME
 /** A name as it is kept: trimmed and cut to the longest allowed; empty means no name. */
 const normalizePieceName = normalizeMakerName
 
-/** The names of a stored Project, keeping only well-formed ones (a hand-edited or newer file may hold anything), each cut to the longest allowed. */
+/** The names of a stored Project, keeping only well-formed ones (a hand-edited or newer file may hold anything),
+ * each cut to the longest allowed. */
 export function readPieceNames(stored: unknown): PieceName[] {
   if (!Array.isArray(stored)) {
     return []
@@ -43,7 +38,8 @@ export interface NamedPiece extends Frame {
   beads: number
 }
 
-/** The last answer of `namedPieces` per set of beads: the canvas asks on every repaint of the rulers, and the answer only changes when the beads or the names do. */
+/** The last answer of `namedPieces` per set of beads: the canvas asks on every repaint of the rulers, and the answer
+ * only changes when the beads or the names do. */
 const namedCache = new WeakMap<BeadMap, { names: PieceName[]; technique: Technique; found: NamedPiece[] }>()
 
 /** The Piece names that still have a Piece under them, and which Piece each is on. Unresolved names are skipped. */
@@ -72,10 +68,8 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'piec
   return found
 }
 
-/**
- * The name of the first named Piece (an unframed Schema) that `frame` would cut: some of its beads inside, some outside
- * (ticket 407). A Frame frames a Schema whole or not at all, as the keep-out margin is kept clear of new beads.
- */
+/** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
+ * A Frame frames a Schema whole or not at all, as the margin is kept clear of new beads. */
 export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'pieceNames'>, frame: Frame): string | undefined {
   for (const { name, row, column } of project.pieceNames ?? []) {
     const members = pieceBeadsAt(project.beads, project.technique, { row, column })
@@ -97,10 +91,8 @@ export function pieceNameAt(project: Pick<Project, 'beads' | 'technique' | 'piec
   return names.find((entry) => piece.has(numericKey(entry)))?.name
 }
 
-/**
- * The Project with the Piece that holds the bead at `position` named `name`, or unnamed when `name` is empty. The same
- * Project when nothing changes, and when there is no bead at `position`.
- */
+/** The Project with the Piece holding the bead at `position` named `name` (unnamed when empty). The same Project
+ * when nothing changes or there is no bead there. */
 export function withPieceName(project: Project, position: GridPosition, name: string): Project {
   const piece = new Set(pieceBeadsAt(project.beads, project.technique, position).map(numericKey))
   if (piece.size === 0) {
@@ -149,7 +141,8 @@ interface Landing {
   anchor: GridPosition
 }
 
-/** Where each name of `before` lands among the Pieces of `after`: on the part of its old Piece with the most beads (ties to the part that holds its anchor). Names with no bead left have none. */
+/** Where each name of `before` lands among the Pieces of `after`: on the part of its old Piece with the most beads
+ * (ties to the part that holds its anchor). Names with no bead left have none. */
 function landNames(
   before: Project,
   after: Pick<Project, 'beads' | 'technique'>,
@@ -180,12 +173,9 @@ function landNames(
   return landings
 }
 
-/**
- * The Project `after` with its Piece names carried over from `before`, where the beads painted, erased or moved between
- * them are what changed. `moved` says where a bead of `before` went (undefined when it is gone); left out, no bead
- * moved. Should two names land on one Piece, which only a move or a change of Technique can cause since painting is
- * refused first (`keepNamesApart`), the one with more of its old beads keeps its name and the other is dropped.
- */
+/** The Project `after` with Piece names carried over from `before`; `moved` says where a `before` bead went
+ * (undefined if gone). If two names land on one Piece (only a move or Technique change; painting is refused first),
+ * the one with more old beads keeps its name. */
 export function carryNames(before: Project, after: Project, moved?: (position: GridPosition) => GridPosition | undefined): Project {
   if (!before.pieceNames?.length) {
     return after
@@ -207,10 +197,8 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
   return { ...rest, ...(next.length > 0 ? { pieceNames: next } : {}) }
 }
 
-/**
- * What a drawing edit did, with every bead it newly placed that would join two named Pieces taken back (the bead is
- * refused, like the keep-out margin, so a name never has to be dropped). `after` itself when it joins none.
- */
+/** What a drawing edit did, with every bead that would join two named Pieces taken back (refused like the margin,
+ * so a name is never dropped). `after` itself when it joins none. */
 export function keepNamesApart(before: Project, after: Project): Project {
   if ((before.pieceNames?.length ?? 0) < 2 || after.beads === before.beads) {
     return after
@@ -234,10 +222,8 @@ export function keepNamesApart(before: Project, after: Project): Project {
   return { ...after, beads: withColors(after.beads, reverts) }
 }
 
-/**
- * The bead that stands for the one Piece a Selection covers (ticket 406): a Piece may be named only when the Selection
- * holds beads of exactly that Piece. Undefined for a Selection with no bead, or with beads of two or more Pieces.
- */
+/** The bead standing for the one Piece a Selection covers (ticket 406): a Piece may be named only when the Selection
+ * holds beads of exactly one. Undefined for no bead, or beads of two or more Pieces. */
 export function pieceInSelection(
   project: Pick<Project, 'beads' | 'technique'>,
   selection: Selection,

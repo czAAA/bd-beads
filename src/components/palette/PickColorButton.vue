@@ -4,12 +4,9 @@ import { useColorPick } from '../../composables/tools/usePalette'
 import IconButton from '../ui/IconButton.vue'
 import { useCloseSheetOnPick } from '../shell/sheetContext'
 
-/**
- * Pick color from canvas (ticket 398; PaletteSwatches card): the last tile of the swatch grid, a swatch's size with a
- * 22px eyedropper (ticket 403). It arms the pick, so the next press on a bead takes its color as the paint color (the
- * Palette gains it when a slot is free); pressed again it disarms. While armed the canvas pointer is the eyedropper
- * (ProjectSurface). Arming closes the colour popover, which would otherwise cover the canvas it is about to be picked from.
- */
+// Pick color from canvas (ticket 398; PaletteSwatches card): the last swatch-grid tile, a 22px eyedropper (ticket 403).
+// It arms the pick: the next press on a bead takes its color (the Palette gains it if a slot is free); pressed again
+// it disarms. Armed, the canvas pointer is the eyedropper; arming closes the colour popover.
 const colorPick = useColorPick()
 const closeSheet = useCloseSheetOnPick()
 const action = controlAction('pick-color')

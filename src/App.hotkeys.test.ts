@@ -6,21 +6,16 @@ import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
 
-/*
- * The App's wiring for keys and the controls beside them: one happy path per group, proving the control or key
- * reaches its action and the result lands in the screen or storage (docs/testing.md, "Where a test goes"). The key
- * table, its guards (typing, open dialogs, focused buttons), Row progress, the Toolbox's labels and the Progress
- * bar live in their own tests: useAppShortcutTable, ProgressBar, Toolbox, usePaintStroke, useSelectionGesture.
- */
+// The App's wiring for keys and nearby controls: one happy path per group (docs/testing.md, "Where a test goes"). The
+// key table, its guards, Row progress, Toolbox labels and the Progress bar are tested in useAppShortcutTable,
+// ProgressBar, Toolbox, usePaintStroke, useSelectionGesture.
 
 beforeEach(() => {
   localStorage.clear()
 })
 
-/**
- * Keydowns go to `window`, which every still-mounted App in this file hears, so each test unmounts its App (a
- * stray extra firing would break the tests that assert an incremental state).
- */
+/** Keydowns go to `window`, which every still-mounted App hears, so each test unmounts its App (a stray firing
+ * breaks incremental asserts). */
 const mounted: ReturnType<typeof mount>[] = []
 async function mountApp(widthMm: number, heightMm: number) {
   const wrapper = await mountWithProject(widthMm, heightMm)

@@ -1,8 +1,6 @@
 <script setup lang="ts">
-/**
- * The design system's Note (ticket 328; Note card): a thin block of helper text on a gray surface, always visible, with
- * no icon and no button to open it. It replaces the (i) popups: the text is just there, under what it explains.
- */
+/** The design system's Note (ticket 328; Note card): always-visible helper text on a gray surface, replacing the (i)
+ * popups. */
 </script>
 
 <template>

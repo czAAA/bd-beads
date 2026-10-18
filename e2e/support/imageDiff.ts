@@ -1,11 +1,8 @@
 import { PNG } from 'pngjs'
 
-/**
- * How many blocks of two same-sized screenshots differ, each image first reduced to the average color of every
- * `block` × `block` square of pixels. Averaging is what makes this indifferent to where exactly an edge falls inside a
- * pixel or two (anti-aliasing, a box that landed half a pixel over), while a bead in another color, a missing bead or an
- * overlay in the wrong place still moves the average of every block it covers by far more than `tolerance`.
- */
+// How many blocks of two same-sized screenshots differ, each image first reduced to the average color of every `block`
+// × `block` square. Averaging ignores where an edge falls within a pixel or two (anti-aliasing), while a wrong or
+// missing bead or a misplaced overlay moves a block's average by far more than `tolerance`.
 export function differingBlocks(actual: Buffer, expected: Buffer, block = 4, tolerance = 48): number | string {
   const a = PNG.sync.read(actual)
   const b = PNG.sync.read(expected)

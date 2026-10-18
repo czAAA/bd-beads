@@ -2,10 +2,8 @@ import { expect, test } from '@playwright/test'
 import { openApp, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/**
- * The rulers zoomed out below 50% (ticket 303): each shows only its last number, the column count along the columns
- * and the row count along the rows, at 20% and at the Zoom floor, 10%.
- */
+/** Rulers zoomed out below 50% (ticket 303): each shows only its last number (column or row count), at 20% and the
+ * 10% Zoom floor. */
 for (const zoom of [20, 10]) {
   test(`rulers show only their last number at ${zoom}%`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })

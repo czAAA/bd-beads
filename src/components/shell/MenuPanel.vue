@@ -21,12 +21,9 @@ import type { Project } from '../../domain/project'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 
-/**
- * The body of Menu (spec 0440, ticket 443; MenuPanel card): what is about the app and the device, in four sections,
- * Projects · Preferences · Help · About. Nothing here repeats a tool or is about the open Project. The same rows fill the
- * dropdown and the Top sheet; in the sheet the choices (Language, Theme, Tools position, Input) become one option per
- * line. It only asks: the app shell does the work.
- */
+// The body of Menu (spec 0440, ticket 443; MenuPanel card): what is about the app and the device, in four sections
+// (Projects, Preferences, Help, About). The same rows fill the dropdown and the Top sheet, where the choices become one
+// option per line. It only asks: the app shell does the work.
 defineProps<{
   projects: Project[]
   toolsPosition: PillPosition

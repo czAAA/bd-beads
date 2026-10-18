@@ -8,11 +8,8 @@ const writer = (instance: ComponentInternalInstance): ComponentInternalInstance 
 
 const nameOf = (instance: ComponentInternalInstance): string => instance.type.__name ?? ''
 
-/**
- * Which components' templates a Tooltip comes from, as names separated by spaces (ticket 264): the one that wrote the
- * `<AppTooltip>` tag and, when that one is just a wrapper (an IconButton), the one that wrote the wrapper's tag. The
- * hover text check reads it off the bubble to know which places in the source it has seen open.
- */
+/** Names, space-separated, of the components whose templates a Tooltip comes from (ticket 264): the `<AppTooltip>`
+ * writer and, if it is a wrapper, the wrapper's writer. */
 export function tooltipOwners(self: ComponentInternalInstance | null): string {
   const names: string[] = []
   for (let owner = self && writer(self); owner; owner = writer(owner)) {

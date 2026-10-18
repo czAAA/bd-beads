@@ -1,9 +1,6 @@
-/**
- * Which theme the app is drawn in (DESIGN.md §4.1). With no pick the theme follows the device, live: dark from
- * `prefers-color-scheme`, high contrast from `prefers-contrast: more`. The resolved theme is written as `data-theme`
- * and `color-scheme` on <html>; index.html's inline script does the same before first paint, so there is no flash of
- * the wrong theme, and this module keeps it right from then on.
- */
+/** Which theme the app is drawn in (DESIGN.md §4.1). With no pick it follows the device, live (`prefers-color-scheme`,
+ * `prefers-contrast: more`), written as `data-theme` and `color-scheme` on <html>; index.html's inline script does the
+ * same before first paint, so there is no flash. */
 
 export type ResolvedTheme = 'light' | 'dark' | 'contrast'
 /** The user's pick from the header's theme control; 'device' is Match device. */
@@ -28,10 +25,8 @@ export function applyTheme(root: HTMLElement, theme: ResolvedTheme): void {
   root.style.colorScheme = theme === 'dark' ? 'dark' : 'light'
 }
 
-/**
- * Applies the theme now and again whenever the device's setting changes, for as long as the pick is 'device'.
- * Returns a function that stops listening.
- */
+/** Applies the theme now and whenever the device's setting changes while the pick is 'device'; returns a stop
+ * function. */
 export function followDeviceTheme(
   win: Pick<Window, 'matchMedia'>,
   root: HTMLElement,

@@ -1,10 +1,8 @@
 import { defineConfig } from '@playwright/test'
 import { baseURL, webServer } from './e2e/support/server'
 
-/**
- * The performance check (ticket 103), run by hand with `npm run perf` and never in CI: timings on a shared runner are
- * too noisy to gate on. It drives the production build at a chosen CPU slowdown and prints a table.
- */
+/** The performance check (ticket 103), by hand with `npm run perf`, never in CI (shared-runner timings are too noisy
+ * to gate on). */
 export default defineConfig({
   testDir: './e2e/perf',
   fullyParallel: false,

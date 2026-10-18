@@ -1,9 +1,6 @@
-/**
- * What the Worker is given (spec 385): the bindings and variables declared per environment in `wrangler.jsonc`, the
- * variables the maintainer sets in the dashboard, and the secrets. Limits and warn levels are variables so they can be
- * tuned without a code change; a variable may arrive as a number or, once edited in the dashboard, a string, so they
- * are read through `numberVar`.
- */
+/** What the Worker is given (spec 385): bindings and variables in `wrangler.jsonc`, dashboard variables, and
+ * secrets. A variable may arrive as a number or, once edited in the dashboard, a string, so limits and levels go
+ * through `numberVar`. */
 export interface Env {
   /** Accounts, plan status, settings (ADR 0049); empty until ticket 78's first migration. */
   CORE: D1Database
@@ -16,31 +13,24 @@ export interface Env {
 
   /** Which Worker this is, so every health answer and alert names it. */
   WORKER_NAME: 'dev' | 'production'
-  /**
-   * The origin people use this Worker on (`https://dev.openbeads.com`, `https://openbeads.com`; ticket 400). Google's
-   * callback and the allowed origins come from this, never from the request's host: `workers.dev` stays on beside it
-   * until the release, and Google lists no such redirect URI.
-   */
+  /** The origin people use this Worker on (ticket 400). Google's callback and the allowed origins come from this,
+   * never the request's host: `workers.dev` stays on until the release, and Google lists no such redirect URI. */
   PUBLIC_ORIGIN?: string
   /** The git commit of the deploy, passed by the deploy workflow with `--var VERSION:<sha>`. */
   VERSION?: string
   /** Set by hand in the dashboard, never in `wrangler.jsonc`: comma-separated features switched off (features.ts). */
   DISABLED_FEATURES?: string
 
-  /**
-   * The account, and this Worker's own script name, databases and bucket, for the watchdog's analytics
-   * (watchdog/analytics.ts). The runtime can't tell a Worker its own names, so they are variables.
-   */
+  /** The account and this Worker's own script name, databases and bucket, for watchdog/analytics.ts (the runtime
+   * can't tell). */
   CF_ACCOUNT_ID?: string
   WORKER_SCRIPT?: string
   CORE_DATABASE_ID?: string
   BLOBS_DATABASE_ID?: string
   BLOBS_BUCKET_NAME?: string
 
-  /**
-   * Public ids, not secrets: the Google OAuth client (ticket 78's sign-in) and the Turnstile widget, whose site key the
-   * app renders the widget with. One of each serves both Workers and localhost.
-   */
+  /** Public ids, not secrets: the Google OAuth client (ticket 78) and the Turnstile site key. One of each serves
+   * both Workers and localhost. */
   GOOGLE_CLIENT_ID?: string
   TURNSTILE_SITE_KEY?: string
 

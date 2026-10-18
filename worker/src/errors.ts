@@ -1,9 +1,6 @@
-/**
- * The API's refusals (spec 385, "API contract"). JSON in and out; a refusal is `{"error": "<code>", ...details}` with a
- * stable code the app translates. Every later ticket's routes refuse through these and invent no codes of their own.
- * Anything else a handler throws is a crash: it is left to the platform, which answers 500 and counts it among the
- * Worker's errors that the watchdog reads.
- */
+/** The API's refusals (spec 385, "API contract"): `{"error": "<code>", ...details}` with a stable code the app
+ * translates; routes invent no codes of their own. Anything else a handler throws is a crash, left to the platform
+ * (500, counted by the watchdog). */
 type ApiErrorCode =
   | 'forbidden-origin' // 403: a changing request from another origin, or with none
   | 'turnstile-failed' // 403: a missing or rejected Turnstile token

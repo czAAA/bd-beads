@@ -58,12 +58,9 @@ import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { provideTourFormReset, useTour } from '../tour/useTour'
 import { useUndoHistory } from '../project/useUndoHistory'
 
-/**
- * The app's composition root (ADR 0020): every composable App.vue's shell components draw on, wired to each other and
- * handed over as one flat context. Nothing here decides anything itself; each concern lives in its own composable,
- * whose deps are lazy arrows so two of them can reference each other (Undo history and Mirror, say). Call it once,
- * from the root component's setup (see provideAppShell).
- */
+// The app's composition root (ADR 0020): wires every composable the shell uses into one flat context; nothing here
+// decides anything. Deps are lazy arrows so composables can reference each other. Call once from the root setup (see
+// provideAppShell).
 function wireAppShell(services: Services) {
   const { t, locale } = provideI18n(services.devicePreferences)
   // The theme pick is shared by the header's controls; this is where it is first read, from this device's preferences.
@@ -75,15 +72,13 @@ function wireAppShell(services: Services) {
     devicePreferences: services.devicePreferences,
   })
 
-  // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes it.
+  // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes
+  // it.
   migrateLegacyMakerName(services.libraryStore)
 
-  /**
-   * The Project library, which one is open, and persistence (ticket 55, ADR 0012) — every Project change goes through
-   * one of these mutators, and nothing here touches storage directly. replaceProject is the single commit point for a
-   * change to the open Project, and saves it as it lands; a dragged stroke is the one edit that doesn't, asking for its
-   * save to be deferred per cell and writing once when the stroke ends (see usePaintStroke).
-   */
+  // The Project library and persistence (ticket 55, ADR 0012): replaceProject is the single commit point for the open
+  // Project and saves as it lands; a dragged stroke defers its save per cell and writes once at the end (see
+  // usePaintStroke).
   const {
     projects,
     activeProjectId,
@@ -121,12 +116,9 @@ function wireAppShell(services: Services) {
     downloadFile: services.downloadFile,
   })
 
-  /**
-   * Convert image's framing step (ticket 58, ADR 0010): the picture being framed and how it sits under the frame. Its
-   * own state, deliberately independent of which Project is open — conversion creates a Project rather than converting
-   * into one, so nothing here goes through replaceProject, the undo stack, Mirror or the Row progress lock, and entering
-   * framing with a Project already open simply takes the canvas panel over until Cancel gives it back.
-   */
+  // Convert image's framing step (ticket 58, ADR 0010): independent of the open Project, so nothing here touches
+  // replaceProject, undo, Mirror or the Row lock; framing over an open Project takes the canvas panel over until
+  // Cancel.
   const {
     image: convertImageSource,
     zoom: convertZoom,
@@ -164,7 +156,8 @@ function wireAppShell(services: Services) {
       convertZoomPercent: () => convertZoomPercent.value,
     })
 
-  /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Mirror and Selection state declared below, through lazy arrows only called at runtime. */
+  /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Mirror and Selection
+   * state declared below, through lazy arrows only called at runtime. */
   const {
     canUndo,
     canRedo,
@@ -178,7 +171,8 @@ function wireAppShell(services: Services) {
     restore: (snapshot) => editing.restore(snapshot),
   })
 
-  /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Mirror and Selection state declared below, through lazy arrows only called at runtime. */
+  /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Mirror
+   * and Selection state declared below, through lazy arrows only called at runtime. */
   const editing = useEdit({
     currentProject,
     replaceProject,
@@ -193,12 +187,8 @@ function wireAppShell(services: Services) {
   })
   const { edit } = editing
 
-  /**
-   * Mirror's own session state (ticket 62): axis counts, copy mode, and both preview computations. Ticket 174 hid
-   * Mirror's UI pending its own redesign, so only the bookkeeping a Frame change and a Project switch still need is pulled
-   * out here; the axis counts stay forever at their NO_MIRROR_AXES default, which is exactly what leaves paint/fill/
-   * erase's own live-mirror calls inert without deleting them.
-   */
+  // Mirror's session state (ticket 62): ticket 174 hid its UI, so only the bookkeeping a Frame change and Project
+  // switch need remains; axis counts stay at NO_MIRROR_AXES, which keeps paint/fill/erase's live-mirror calls inert.
   const {
     axisCounts: mirrorAxisCounts,
     copyMode: mirrorCopyMode,
@@ -213,7 +203,8 @@ function wireAppShell(services: Services) {
     reset: resetMirrorState,
   } = useMirrorState(currentProject, edit)
 
-  /** -/=/[/] (ADR 0006): steps the Left–right or Top–bottom axis count as seen on screen; a quarter turn swaps which grid-space axis each drives. */
+  /** -/=/[/] (ADR 0006): steps the Left–right or Top–bottom axis count as seen on screen; a quarter turn swaps which
+   * grid-space axis each drives. */
   function onStepMirrorAxis(direction: 'leftRight' | 'topBottom', delta: number) {
     const project = currentProject()
     if (!project) {
@@ -224,7 +215,9 @@ function wireAppShell(services: Services) {
     onSetMirrorAxisCount(axis, mirrorAxisCounts.value[axis] + delta)
   }
 
-  /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that isn't tied to a tool. */
+  /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
+   * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that
+   * isn't tied to a tool. */
   const {
     selection,
     refusals: selectionRefusals,
@@ -252,7 +245,8 @@ function wireAppShell(services: Services) {
     hasClipboard,
   } = useSelectionGesture(currentProject, edit, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
 
-  /** Touch has no Escape or right-click, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR 0057). */
+  /** Touch has no Escape or right-click, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
+   * 0057). */
   const touch = useMediaQuery('(pointer: coarse)')
 
   /** Undo, which on touch also leaves paste mode. */
@@ -300,14 +294,12 @@ function wireAppShell(services: Services) {
   /** Whether Pick color from canvas is on (ticket 398); see pickColorAt. */
   const pickingColor = ref(false)
 
-  /**
-   * Choosing a tool. Choosing the Eraser while a Selection exists clears the Selection first (ticket 313), the same as
-   * Del under Select, so a Select all Selection asks for Delete all's confirmation too (ticket 415); leaving Select then
-   * drops the Selection, as it does for every other tool.
-   */
+  // Choosing a tool. The Eraser clears an existing Selection first (ticket 313), like Del under Select, so Select all
+  // asks for Delete all's confirmation (ticket 415); leaving Select drops the Selection, as for every other tool.
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
-    // Another tool leaves paste mode (Piece included, which leaveSelectTool spares); a second tap on Select does on touch.
+    // Another tool leaves paste mode (Piece included, which leaveSelectTool spares); a second tap on Select does on
+    // touch.
     if (tool !== 'select' || (touch.value && activeTool.value === 'select')) leavePasteMode()
     if (tool === 'erase' && selection.value) {
       onClearSelection()
@@ -315,10 +307,8 @@ function wireAppShell(services: Services) {
     selectTool(tool)
   }
 
-  /**
-   * Clear selection (Del, ticket 415): empties the Selection as one Undo step. A Selection that holds every placed bead
-   * (Select all) is Delete all instead, through its confirmation, so Row progress resets and no finished row is left behind.
-   */
+  /** Clear selection (Del, ticket 415): one Undo step. A Selection of every placed bead (Select all) is Delete all
+   * instead, via its confirmation, so no finished row remains. */
   function onClearSelection() {
     const project = currentProject()
     const current = selection.value
@@ -343,7 +333,8 @@ function wireAppShell(services: Services) {
     if (selection.value) frameFlow.setTo(selectionFrame(selection.value))
   }
 
-  /** Copy (ticket 437, ADR 0057): keeps the drawn beads, clears the Selection and arms paste mode under Select; a Selection with no drawn bead says so. */
+  /** Copy (ticket 437, ADR 0057): keeps the drawn beads, clears the Selection and arms paste mode under Select; a
+   * Selection with no drawn bead says so. */
   function onCopy() {
     if (copySelected()) selectTool('select')
     else showToast('copy-nothing', t.value.tools.copyNothingMessage, 'info')
@@ -366,7 +357,8 @@ function wireAppShell(services: Services) {
     return true
   }
 
-  /** Select all (ticket 414): selects the rectangle round every bead and makes Select the active tool, so the Selection can be copied, cut or resized at once. Nothing on an empty canvas. */
+  /** Select all (ticket 414): selects the rectangle round every bead and makes Select the active tool, so the
+   * Selection can be copied, cut or resized at once. Nothing on an empty canvas. */
   function onSelectAll() {
     if (!selectAllBeads()) return
     // Select and Piece share a Selection, so switching to Select keeps the one just made.
@@ -378,10 +370,8 @@ function wireAppShell(services: Services) {
     beginAdjust(target, cell, activeTool.value === 'piece' ? 'piece' : 'select')
   }
 
-  /**
-   * An added swatch is removed (ticket 228): painted cells keep their hex, so only the swatch goes. Removing the active
-   * one steps back to the Palette's default color, and a toast offers Undo, which puts the swatch back (selected again if it was).
-   */
+  /** An added swatch is removed (ticket 228): painted cells keep their hex. Removing the active one steps back to
+   * the default color; a toast offers Undo. */
   function onRemoveAddedColor(colorId: string) {
     const wasSelected = selectedColorId.value === colorId
     const restore = removeAdded(colorId)
@@ -414,7 +404,8 @@ function wireAppShell(services: Services) {
   provideRemoveAddedColor(onRequestRemoveAddedColor)
   provideMoveColor(moveColor)
 
-  /** A Custom color that has just painted a cell joins the Palette on its first use (ticket 227); at the limit it still paints, and the user is told once per color. */
+  /** A Custom color that has just painted a cell joins the Palette on its first use (ticket 227); at the limit it
+   * still paints, and the user is told once per color. */
   let limitToldFor: string | undefined
   function onPaintColorUsed(hex: string) {
     if (selectedColorId.value || selectedImageColor.value) return
@@ -427,19 +418,15 @@ function wireAppShell(services: Services) {
     }
   }
 
-  /**
-   * A color was picked as a Custom color, from the system picker or from the canvas (ticket 398): it is the paint color
-   * and, with a slot free, joins the Palette at once rather than on its first stroke.
-   */
+  /** A Custom color was picked (ticket 398): it becomes the paint color and, with a slot free, joins the Palette at
+   * once. */
   function onSelectCustomColor(hex: string) {
     selectCustomColor(hex)
     onPaintColorUsed(hex)
   }
 
-  /**
-   * Pick color from canvas (ticket 398): while it is on, the next press on a bead takes that bead's color as the paint
-   * color (an empty cell does nothing and it stays on). Choosing a tool or Escape ends it.
-   */
+  /** Pick color from canvas (ticket 398): the next press on a bead takes its color (an empty cell does nothing); a
+   * tool choice or Escape ends it. */
   function pickColorAt(row: number, column: number): boolean {
     if (!pickingColor.value) return false
     const project = currentProject()
@@ -452,7 +439,8 @@ function wireAppShell(services: Services) {
   }
   provideColorPick({ picking: pickingColor, toggle: () => (pickingColor.value = !pickingColor.value) })
 
-  /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode is 'paint'/'erase' while a stroke is in progress, else null. */
+  /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
+   * is 'paint'/'erase' while a stroke is in progress, else null. */
   const { strokeMode, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
@@ -462,22 +450,23 @@ function wireAppShell(services: Services) {
     endSelectPress,
   })
 
-  /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the stroke ends. */
+  /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the
+   * stroke ends. */
   const settledProject = useSettledProject(currentProject, () => strokeMode.value !== null)
 
-  /**
-   * The canvas panel's own horizontal scroller (ticket 95) -- what Space+drag panning scrolls sideways; vertical
-   * panning scrolls the window instead, since nothing in the shell traps vertical overflow of its own.
-   */
+  /** The canvas panel's horizontal scroller (ticket 95), which Space+drag scrolls sideways; vertical panning scrolls
+   * the window, as nothing traps vertical overflow. */
   const canvasScrollEl = ref<HTMLElement | null>(null)
   const { spaceHeld, panning: spacePanning } = useSpaceDragPan(panBy)
 
-  /** A template function ref for the canvas panel's scroller, so the element stays the wiring's own rather than a name the panel has to declare. */
+  /** A template function ref for the canvas panel's scroller, so the element stays the wiring's own rather than a
+   * name the panel has to declare. */
   function bindCanvasScroll(el: unknown) {
     canvasScrollEl.value = el instanceof HTMLElement ? el : null
   }
 
-  /** Two fingers on the Project pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress is taken back when the second lands. */
+  /** Two fingers on the Project pinch to zoom and pan it (ticket 79); the one-finger paint stroke in progress is
+   * taken back when the second lands. */
   usePinchPan(canvasScrollEl, { zoom: () => zoom.value, setZoom, panBy, cancelStroke: () => cancelStroke() })
 
   /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206). */
@@ -513,7 +502,8 @@ function wireAppShell(services: Services) {
     pickColorAt,
   })
 
-  /** Painting with the keyboard (tickets 159, 194): the announcer needs the cursor and the cursor the announcer, so the announcer reads the cursor lazily. */
+  /** Painting with the keyboard (tickets 159, 194): the announcer needs the cursor and the cursor the announcer, so
+   * the announcer reads the cursor lazily. */
   const { announcement, announce, announceCursor, colorWords } = useA11yAnnouncer({
     messages,
     currentProject,
@@ -550,7 +540,8 @@ function wireAppShell(services: Services) {
   /** Delete all and its confirmation (tickets 42, 198). */
   const deleteAll = useDeleteAllFlow({ currentProject, edit })
 
-  /** Edit Frame: moving and resizing the Frame and stepping its edges, Fit to drawing and Remove Frame (tickets 233, 417). */
+  /** Edit Frame: moving and resizing the Frame and stepping its edges, Fit to drawing and Remove Frame (tickets 233,
+   * 417). */
   const frameFlow = useFrameFlow({
     currentProject,
     edit,
@@ -667,11 +658,8 @@ function wireAppShell(services: Services) {
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
 
-  /**
-   * The Tour (ticket 80): a walk through this same editor, reading the state above and making its edits through the same
-   * commit paths. Its dim layer is drawn by TourLayer; what it needs from the wiring is whether the Project is open to
-   * drawing right now, and Create's hand-off in its first step.
-   */
+  /** The Tour (ticket 80): walks this editor through the same commit paths; needs whether the Project is open to
+   * drawing and Create's hand-off. Dim layer: TourLayer. */
   const tour = useTour({
     store: services.tourStore,
     currentProject,
@@ -693,7 +681,8 @@ function wireAppShell(services: Services) {
   })
   provideTourFormReset(tour.formResetTick)
 
-  /** While the Tour points somewhere other than the Project, the Project only scrolls and zooms: nothing on it draws. */
+  /** While the Tour points somewhere other than the Project, the Project only scrolls and zooms: nothing on it
+   * draws. */
   function unlessTourLocks<Args extends unknown[]>(handler: (...args: Args) => void) {
     return (...args: Args) => {
       if (!tour.canvasLocked.value) {
@@ -955,7 +944,8 @@ export function provideAppShell(services: Services = browserServices): AppShellC
   return context
 }
 
-/** The wired app, for a shell component: destructure what it draws on, and refs unwrap in its template as they always did in App.vue. */
+/** The wired app, for a shell component: destructure what it draws on, and refs unwrap in its template as they
+ * always did in App.vue. */
 export function useAppShell(): AppShellContext {
   const context = inject(appShellKey)
   if (!context) {

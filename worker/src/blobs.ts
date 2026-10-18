@@ -2,11 +2,9 @@ import { readBody, type Upload } from './body'
 import { MB, numberVar, type Env } from './env'
 import { ApiError } from './errors'
 
-/**
- * An owner's plan, which decides where their blobs live (spec 385, ADR 0014): Free accounts' and View links' in the
- * `blobs` D1 database, which stops at its limit instead of billing; only Pro's in R2. Moving Free data to R2 later is
- * a change in `blobStoreFor` plus a copy job.
- */
+/** An owner's plan decides where blobs live (spec 385, ADR 0014): Free and View links in the `blobs` D1 database
+ * (stops at its limit instead of billing), only Pro in R2. Moving Free data to R2 later is `blobStoreFor` plus a
+ * copy job. */
 export type Plan = 'free' | 'pro'
 
 /** What is kept beside a blob's bytes. */
@@ -77,11 +75,8 @@ function d1BlobStore(db: D1Database): BlobStore {
   }
 }
 
-/**
- * Blobs as objects of the environment's R2 bucket, streamed both ways: the request's own body goes to R2 and R2's
- * body comes back, with no JavaScript copying a chunk. R2 takes only a stream of known length, so an upload needs a
- * Content-Length; the runtime holds the body to it, and the size-cap guard has held it to the cap.
- */
+/** Blobs as R2 objects, streamed both ways with no JavaScript copying. R2 takes only a stream of known length, so an
+ * upload needs a Content-Length; the runtime holds the body to it, and the size-cap guard has held it to the cap. */
 function r2BlobStore(bucket: R2Bucket): BlobStore {
   return {
     async put(id, source, meta) {

@@ -4,18 +4,9 @@ import type { Project } from '../../domain/project'
 /** How often, while a stroke is going on, what only summarises the Project looks at it again. */
 export const SUMMARY_INTERVAL_MS = 250
 
-/**
- * The open Project as things that only summarise it should see it (ticket 106): the Project itself whenever nothing is
- * being drawn, and, while a stroke is going on, the Project as of at most every 250 ms. Painting replaces the Project on
- * every bead a stroke crosses, and a summary that reads every bead of a Project (how many of each color it needs, the
- * code for sharing it) would be worked out again each time — tens of thousands of beads at 250 × 250, several times a
- * frame. Kept to a few times a second it still reads as live, and it catches up the moment the stroke ends.
- *
- * The first change of a stroke is followed at once, so a single click shows straight away. With an interval of
- * Infinity nothing is followed until the stroke ends, for a summary nobody watches change as it happens.
- *
- * `busy` says whether a stroke is going on; it is read reactively, so the Project settles when it turns false.
- */
+// The open Project as summaries should see it (ticket 106): itself when idle, and during a stroke only every 250 ms,
+// since painting replaces it per bead and a summary over tens of thousands of beads each time is too costly. The first
+// change follows at once; Infinity waits for the stroke's end; `busy` is read reactively.
 export function useSettledProject(
   project: () => Project | undefined,
   busy: () => boolean,

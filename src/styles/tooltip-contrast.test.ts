@@ -2,10 +2,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 
-/**
- * The Tooltip is see-through (ticket 327), so its text has to pass WCAG 4.5:1 over any canvas color under it. The worst
- * cases are black and white under the bubble's fill; the fill's alpha and `tooltip-muted` are chosen to clear both.
- */
+// The see-through Tooltip (ticket 327) must pass WCAG 4.5:1 over black and white canvas colors; its fill alpha and
+// `tooltip-muted` clear both.
 const tokens = readFileSync(join(__dirname, 'tokens.css'), 'utf8')
 const values = readFileSync(join(__dirname, 'design-values.css'), 'utf8')
 

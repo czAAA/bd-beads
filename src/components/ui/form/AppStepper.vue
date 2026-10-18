@@ -3,20 +3,15 @@ import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useHoldRepeat } from '../../../composables/ui/useHoldRepeat'
 import AppTooltip from '../AppTooltip.vue'
 
-/**
- * The − value + control (ticket 149; Stepper card), for every counted setting on desktop: 40px tall, 40px buttons, the
- * value in `meta` between hairlines. At a limit that button turns `faint`; a locked stepper (`disabled`) is all `faint`
- * on `surface`, and its reason goes under it in words. Each button has its own name ("Fewer columns"), which the
- * Frame sheet's Size controls also show as a Tooltip (`tooltip`, ticket 251); a stepper in a form or dialog shows none.
- * Ticket 355: holding a button repeats and speeds up (`useHoldRepeat`), and tapping the number turns it into a numeric
- * input (Enter or blur commits, Escape cancels, out of range is clamped, empty or invalid reverts); `valueLabel` names it.
- */
+/** The − value + control (ticket 149; Stepper card): hold a button to repeat (ticket 355), tap the number to type it
+ * (Enter/blur commits, Escape cancels, clamped), `disabled` shows its reason. */
 const props = withDefaults(
   defineProps<{
     min?: number
     max?: number
     decreaseLabel: string
-    /** The name of the number for screen readers, e.g. "Width": it is a button that opens the number for typing (ticket 355). */
+    /** The name of the number for screen readers, e.g. "Width": it is a button that opens the number for typing
+     * (ticket 355). */
     valueLabel: string
     increaseLabel: string
     disabled?: boolean
@@ -26,14 +21,16 @@ const props = withDefaults(
     decreaseTestid?: string
     increaseTestid?: string
     valueTestid?: string
-    /** What the field shows when it is not the number itself, e.g. the width in mm for a count of beads (ticket 342). */
+    /** What the field shows when it is not the number itself, e.g. the width in mm for a count of beads (ticket
+     * 342). */
     display?: string
   }>(),
   { min: -Infinity, max: Infinity, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined, display: undefined },
 )
 const value = defineModel<number>({ required: true })
 
-/** The Tooltip of one button: its name while it can act, the reason while the stepper is locked (ADR 0035); a limit shows none. */
+/** The Tooltip of one button: its name while it can act, the reason while the stepper is locked (ADR 0035); a limit
+ * shows none. */
 function tooltipFor(name: string, canStep: boolean) {
   if (!props.tooltip) return undefined
   if (props.disabled) return props.disabledBody === undefined ? undefined : { name, disabled: true as const, disabledBody: props.disabledBody, announce: false }
@@ -52,7 +49,8 @@ function clamp(n: number) {
   return Math.min(props.max, Math.max(props.min, n))
 }
 
-/** Steps by one, clamped to min/max; says whether the value moved, so a held press knows when it has reached a limit. */
+/** Steps by one, clamped to min/max; says whether the value moved, so a held press knows when it has reached a
+ * limit. */
 function step(delta: number): boolean {
   if (props.disabled) return false
   // The model updates after the parent re-renders, so a typed number committed just now is the base, not `value`.
@@ -67,7 +65,8 @@ const hold = useHoldRepeat((direction) => step(direction))
 const decreaseHandlers = hold.handlers(-1)
 const increaseHandlers = hold.handlers(1)
 
-/** Opens the number for typing (the click is kept from reaching a surrounding label, which would press the first button). */
+/** Opens the number for typing (the click is kept from reaching a surrounding label, which would press the first
+ * button). */
 async function startEditing(event: Event) {
   event.preventDefault()
   if (props.disabled || editing.value) return
@@ -79,13 +78,15 @@ async function startEditing(event: Event) {
   input.value?.select()
 }
 
-/** A plain number, whole or decimal; hex, exponents and the like are not a value (a decimal is rounded to a whole one). */
+/** A plain number, whole or decimal; hex, exponents and the like are not a value (a decimal is rounded to a whole
+ * one). */
 function typedNumber(text: string): number {
   const typed = text.trim().replace(',', '.')
   return /^[+-]?\d+(\.\d+)?$/.test(typed) ? Number(typed) : NaN
 }
 
-/** Closes the input and returns the number it committed, if any; it is clamped to min/max, empty or invalid input leaves the value as it was. */
+/** Closes the input and returns the number it committed, if any; it is clamped to min/max, empty or invalid input
+ * leaves the value as it was. */
 function closeEditor(commit: boolean, refocus: boolean): number | undefined {
   if (!editing.value) return undefined
   editing.value = false
@@ -230,7 +231,8 @@ watch(
   border-left: 1px solid var(--line);
 }
 
-/* The number is a button that looks like plain text, and the input lies over it so the stepper keeps its width while typing. */
+/* The number is a button that looks like plain text, and the input lies over it so the stepper keeps its width while
+ * typing. */
 .stepper__value-button {
   padding: 0;
   font: inherit;

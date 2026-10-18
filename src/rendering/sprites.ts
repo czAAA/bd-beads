@@ -1,20 +1,14 @@
 import type { DrawingContext } from './beadLook'
 
-/**
- * Small pictures kept so they can be blitted instead of drawn again (ADR 0018): a Project has a handful of looks and
- * thousands of beads, and blitting a bitmap is many times cheaper than filling its shapes for every bead — filling a
- * path is the most expensive thing a canvas does. A bitmap is made at the size it is on the screen's own pixels, so it
- * stays crisp, and is blitted without smoothing (see renderProject), so it is never blurred by landing between pixels.
- */
+// Small pictures kept to blit instead of redraw (ADR 0018): a Project has few looks and thousands of beads, and filling
+// paths is costly. Made at screen-pixel size and blitted without smoothing (see renderProject) so they stay crisp.
 export type Sprite = CanvasImageSource
 
 const sprites = new Map<string, Sprite | null>()
 const MAX_SPRITES = 512
 
-/**
- * The picture for `key`, made by `draw` the first time and kept, or undefined where there is no canvas to make one on.
- * `draw` is given a context already scaled so that `size` units across fill the bitmap, which is `pixels` wide.
- */
+// The picture for `key`, made by `draw` once and kept; undefined where there is no canvas. `draw`'s context is scaled
+// so `size` fills `pixels`.
 export function cachedSprite(
   key: string,
   pixels: number,

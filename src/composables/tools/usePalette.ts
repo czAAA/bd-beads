@@ -4,10 +4,8 @@ import type { AddedColorsStore } from '../../services/addedColorsStore'
 
 const paletteKey: InjectionKey<ComputedRef<readonly PaletteColor[]>> = Symbol('palette')
 
-/**
- * The Palette as it stands (CONTEXT.md, ticket 227, ADR 0002): the built-in colors plus the Custom colors that joined
- * by painting a cell, kept on the device. Call once from the app shell; `palette` is what every swatch reads.
- */
+/** The Palette (CONTEXT.md, ticket 227, ADR 0002): built-in colors plus Custom colors added by painting, kept on the
+ * device. Call once from the shell. */
 export function useAddedColors(store: AddedColorsStore) {
   const added = ref<readonly string[]>(store.load())
   /** The slots' order as arranged (ticket 398); the colors it doesn't name yet follow in the default order. */
@@ -22,7 +20,8 @@ export function useAddedColors(store: AddedColorsStore) {
 
   provide(paletteKey, palette)
 
-  /** A Custom color has painted a cell: it joins the Palette on first use. Hands back what happened and the swatch it is. */
+  /** A Custom color has painted a cell: it joins the Palette on first use. Hands back what happened and the swatch
+   * it is. */
   function addUsed(hex: string): { outcome: AddUsedColorOutcome; colorId?: string } {
     const result = addUsedColor(added.value, hex)
     if (result.outcome === 'added') {
@@ -34,7 +33,8 @@ export function useAddedColors(store: AddedColorsStore) {
     return { outcome: result.outcome, colorId: palette.value.find((color) => color.hex === hex.toLowerCase())?.id }
   }
 
-  /** An added swatch is taken out of the Palette (ticket 228). Hands back how to put it back (false when it can't: the Palette has filled up since), or undefined for a color that isn't an added one. */
+  /** An added swatch is taken out of the Palette (ticket 228). Hands back how to put it back (false when it can't:
+   * the Palette has filled up since), or undefined for a color that isn't an added one. */
   function removeAdded(colorId: string): (() => boolean) | undefined {
     const hex = palette.value.find((color) => color.id === colorId && isAddedColorId(color.id))?.hex
     const removal = hex ? removeAddedColor(added.value, hex) : undefined
@@ -65,7 +65,8 @@ export function useAddedColors(store: AddedColorsStore) {
 
 const removeKey: InjectionKey<(colorId: string) => void> = Symbol('removeAddedColor')
 
-/** The app shell hands out how an added swatch is removed (ticket 228), so the three places that show the Palette needn't pass it down. */
+/** The app shell hands out how an added swatch is removed (ticket 228), so the three places that show the Palette
+ * needn't pass it down. */
 export function provideRemoveAddedColor(remove: (colorId: string) => void) {
   provide(removeKey, remove)
 }
@@ -92,7 +93,8 @@ export function useMoveColor(): ((from: number, to: number) => void) | undefined
   return inject(moveKey, undefined)
 }
 
-/** Pick color from canvas (ticket 398): whether the next press on the canvas takes a bead's color, and how the button arms or disarms it. */
+/** Pick color from canvas (ticket 398): whether the next press on the canvas takes a bead's color, and how the
+ * button arms or disarms it. */
 export interface ColorPick {
   picking: Readonly<Ref<boolean>>
   toggle: () => void
@@ -100,7 +102,8 @@ export interface ColorPick {
 
 const colorPickKey: InjectionKey<ColorPick> = Symbol('colorPick')
 
-/** The app shell hands out Pick color from canvas, so the button in the Toolbox and in the Colour sheet share one state. */
+/** The app shell hands out Pick color from canvas, so the button in the Toolbox and in the Colour sheet share one
+ * state. */
 export function provideColorPick(pick: ColorPick) {
   provide(colorPickKey, pick)
 }

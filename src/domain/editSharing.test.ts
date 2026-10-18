@@ -8,12 +8,9 @@ function blank(columns: number, rows: number): Project {
   return createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
 }
 
-/**
- * An edit costs what it touched, not the size of the Project (ticket 106): the rows a stroke leaves alone are the very
- * arrays the Project already had. Nothing observable changes; these pin the sharing, which is what lets a surface tell a
- * few changed rows from a whole new grid by looking no further than the array, and what keeps a stroke's step cheap on
- * a Project with tens of thousands of beads.
- */
+// An edit costs what it touched, not the Project's size (ticket 106): rows a stroke leaves alone are the very arrays
+// the Project had. These pin that sharing, which lets a surface tell a few changed rows from a whole new grid by
+// looking no further than the array, and keeps a stroke's step cheap on a Project with tens of thousands of beads.
 describe('an edit shares the rows it leaves alone', () => {
   it('paintCells copies only the row it painted', () => {
     const project = blank(6, 5)

@@ -7,17 +7,16 @@ import { checkLevels, type Usage } from './levels'
 /** Work done once a day, on the first watchdog run after 00:00 UTC (ticket 323's View link cleanup). */
 export type DailyHook = (env: Env, now: Date) => Promise<void>
 
-/** What a run reads from and reports to, behind interfaces so the tests can stand in for Cloudflare and Healthchecks. */
+/** What a run reads from and reports to, behind interfaces so the tests can stand in for Cloudflare and
+ * Healthchecks. */
 export interface WatchdogDeps {
   analytics: UsageReader
   heartbeat: Heartbeat
   daily: DailyHook[]
 }
 
-/**
- * The Cron Trigger's interval in `wrangler.jsonc` (every 15 minutes); the run inside the day's first interval is the
- * daily one, so no "done today" state is kept. Change both together: the watchdog test's daily-hook case checks it.
- */
+/** The Cron Trigger's interval in `wrangler.jsonc` (15 minutes); the run in the day's first interval is the daily
+ * one, so no state is kept. Change both together: the watchdog test's daily-hook case checks it. */
 const CRON_INTERVAL_MS = 15 * 60_000
 
 /** The production dependencies: Cloudflare's GraphQL Analytics and this Worker's Healthchecks.io check. */
@@ -29,12 +28,9 @@ function message(error: unknown): string {
   return error instanceof Error ? error.message : String(error)
 }
 
-/**
- * One watchdog run (spec 385): today's usage from the analytics and the databases' sizes from D1, each against this
- * Worker's warn levels, then a success ping when all are under and every step worked, or a `/fail` ping whose report
- * names the Worker, each measure over its level with its value and level, and any step that failed. On the first run
- * after 00:00 UTC it also runs the daily hooks. It only warns: nothing is switched off, and no state is kept.
- */
+/** One watchdog run (spec 385): usage and D1 sizes against this Worker's warn levels, then a success ping, or a
+ * `/fail` ping naming each measure over its level and any failed step. The first run after 00:00 UTC runs the daily
+ * hooks. Only warns. */
 export async function runWatchdog(env: Env, scheduledTime: number, deps: WatchdogDeps): Promise<void> {
   const now = new Date(scheduledTime)
   // Day boundaries are UTC, as Cloudflare's daily limits are.

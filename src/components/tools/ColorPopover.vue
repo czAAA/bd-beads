@@ -9,13 +9,9 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { SHEET_CLOSE } from '../shell/sheetContext'
 import ToolColorControls from './ToolColorControls.vue'
 
-/**
- * The colour popover (ticket 439, ADR 0059; ToolPill card): the Colour sheet's replacement on every device. A head with
- * the chosen colour, "In the pill" (One color | Recent colors, kept on the device), the recent chips, then the Palette
- * with Pick color from canvas, Custom color and Image colors. It sits beside the pill toward the canvas, centred on the
- * colour tile that opened it and clamped inside the screen. Picking a colour, Close, Escape or a press outside close it,
- * and a press outside only closes.
- */
+// The colour popover (ticket 439, ADR 0059; ToolPill card): the Colour sheet's replacement on every device. Head with
+// the chosen colour and "In the pill", the recent chips, then the Palette with Pick color, Custom color, Image colors.
+// Beside the pill, clamped to the screen. Choosing, Close, Escape or a press outside closes it.
 const props = defineProps<{
   /** The colour tile that opened it, and the pill it is part of: where the popover is placed. */
   tile: HTMLElement | undefined
@@ -58,7 +54,8 @@ const modeOptions = computed(() => [
   { value: 'recent' as const, label: t.value.toolPill.recentColors },
 ])
 
-/** The place beside the pill, in screen pixels: measured once the popover has its real size, and again when the window changes. */
+/** The place beside the pill, in screen pixels: measured once the popover has its real size, and again when the
+ * window changes. */
 function place() {
   const root = rootEl.value
   const tile = props.tile?.getBoundingClientRect()
@@ -139,11 +136,13 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* 288px, --pill-popover-radius corners, overlay fill and line, elevation-3, padding 12px 14px 14px, 12px between sections (ToolPill card). */
+/* 288px, --pill-popover-radius corners, overlay fill and line, elevation-3, padding 12px 14px 14px, 12px between
+ * sections (ToolPill card). */
 .color-popover {
   position: fixed;
   z-index: var(--z-popover);
-  /* It lives in the pill's layer, which takes no pointer events so the canvas under it stays usable; the popover takes its own. */
+  /* It lives in the pill's layer, which takes no pointer events so the canvas under it stays usable; the popover
+   * takes its own. */
   pointer-events: auto;
   display: flex;
   flex-direction: column;

@@ -2,12 +2,9 @@
 import { computed } from 'vue'
 import mark from '../../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 
-/**
- * The X1 Cross-weave mark (ticket 138; DESIGN.md §4.5, the design system README's Logo): drawn inline from the
- * design system's own file, in the current text color (the header sets `--accent`). The stroke gets heavier as the
- * mark gets smaller, so it keeps the same weight to the eye: 4.2 at 16px, 3.8 at 22px (the header), 3.6 at 32px,
- * 3.2 otherwise. Decorative unless given a `label`.
- */
+// The X1 Cross-weave mark (ticket 138; DESIGN.md §4.5), drawn inline from the design system's file in the current text
+// color. The stroke gets heavier as the mark shrinks so it keeps its weight to the eye: 4.2 at 16px, 3.8 at 22px, 3.6
+// at 32px, 3.2 otherwise. Decorative unless given a `label`.
 const props = withDefaults(defineProps<{ size?: number; label?: string }>(), { size: 22, label: undefined })
 
 /** The mark's own strokes: the file's children, without its outer <svg> and fixed accent stroke. */

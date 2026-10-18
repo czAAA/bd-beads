@@ -1,6 +1,35 @@
 import tseslint from 'typescript-eslint'
 import pluginVue from 'eslint-plugin-vue'
 
+// Ticket 472: a comment block is at most three lines. A longer one the maintainer approved says `approved-long` in it.
+const MAX_COMMENT_LINES = 3
+const maxCommentLines = {
+  meta: { type: 'suggestion', schema: [], messages: { tooLong: 'Comment is {{n}} lines; keep it to {{max}} (ticket 472), or mark an approved one `approved-long`.' } },
+  create(context) {
+    const source = context.sourceCode
+    const isDirective = (c) => /^\s*(eslint|@ts-|prettier|istanbul|v8|c8|vitest|jsdom|@vitest)/.test(c.value)
+    const standalone = (c) => source.lines[c.loc.start.line - 1].slice(0, c.loc.start.column).trim() === ''
+    return {
+      'Program:exit'() {
+        const groups = []
+        for (const c of source.getAllComments()) {
+          if (isDirective(c)) continue
+          const last = groups[groups.length - 1]
+          const prev = last && last[last.length - 1]
+          if (c.type === 'Line' && standalone(c) && prev && prev.type === 'Line' && prev.loc.end.line + 1 === c.loc.start.line) last.push(c)
+          else groups.push([c])
+        }
+        for (const g of groups) {
+          const n = g[g.length - 1].loc.end.line - g[0].loc.start.line + 1
+          if (n > MAX_COMMENT_LINES && !g.some((c) => c.value.includes('approved-long'))) {
+            context.report({ loc: { start: g[0].loc.start, end: g[g.length - 1].loc.end }, messageId: 'tooLong', data: { n, max: MAX_COMMENT_LINES } })
+          }
+        }
+      },
+    }
+  },
+}
+
 export default tseslint.config(
   {
     ignores: ['dist/**', 'test-results/**', 'playwright-report/**'],
@@ -16,7 +45,9 @@ export default tseslint.config(
     },
   },
   {
+    plugins: { local: { rules: { 'max-comment-lines': maxCommentLines } } },
     rules: {
+      'local/max-comment-lines': 'error',
       // This codebase's convention for a deliberately unused destructured
       // binding (e.g. dropping a legacy field via `const { x: _x, ...rest }`).
       '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],

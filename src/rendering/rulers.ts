@@ -5,24 +5,22 @@ import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { CELL_SIZE_PX, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
 
-/**
- * The rulers and the lines they hang from on the Canvas (Rulers and BeadBoard cards, ADR 0026): every row and
- * column number of the Frame on all four sides, or, until a Frame is set, of each Piece above and to the left of its
- * rectangle, counted from 1 at its top-left bead.
- *
- * The Ruler layout is plain geometry in viewport px, worked out once per view: the numbers and dots that are drawn are
- * the ones a test can find the way a pointer would (ADR 0033). Ruler numbers are display-only (ticket 447): a press on one reaches the active tool.
- */
+// The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
+// Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
+// Numbers are display-only (ticket 447).
 
-/** From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than two (Rulers card). */
+// From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than
+// two (Rulers card).
 const TURNED_FROM = 100
 /** DM Mono's advance, as a share of its size: what a number's box is worked out from. */
 const MONO_ADVANCE = 0.6
-/** The most half the band of numbers counts for when the dots stand on its line, as a share of the numbers' size: a 2-digit row number's, so only wider ones (3 digits, or turned) are held back. */
+// The most half the band of numbers counts for when the dots stand on its line, as a share of the numbers' size: a
+// 2-digit row number's, so only wider ones (3 digits, or turned) are held back.
 const DOT_BAND_HALF_MAX = 0.6
 /** The clear space kept between two neighbouring numbers when the Ruler step is chosen (ADR 0033). */
 const RULER_NUMBER_GAP_PX = 4
-/** Below this zoom a ruler drops the Ruler step and shows only its last number (ADR 0033, ticket 303); from it up the step applies. */
+// Below this zoom a ruler drops the Ruler step and shows only its last number (ADR 0033, ticket 303); from it up the
+// step applies.
 const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
 
 /** Something rulers hang from: a rectangle of beads, the line round it, and which of its sides carry numbers. */
@@ -57,7 +55,8 @@ export interface RulerLabel {
 /** What decides which boxes carry rulers. */
 export type RuledProject = { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique }
 
-/** The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those near the viewport are chosen by the caller). */
+// The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
+// near the viewport are chosen by the caller).
 function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
     return [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
@@ -80,12 +79,8 @@ function* rulerSteps(): Generator<number> {
   }
 }
 
-/**
- * The Ruler step (ADR 0033): the smallest of 1, 5, 10, 50, 100... beads between numbers that keeps every number clear
- * of the next. `spacing` is how far apart two neighbouring beads' numbers sit on screen, `sizes` the biggest numbers'
- * boxes; two numbers are clear when one box's width or height fits in the gap along its own axis, so a ruler running
- * sideways, up or at any turn is measured the same way.
- */
+// The Ruler step (ADR 0033): the smallest of 1, 5, 10, 50... beads between numbers that keeps each clear of the next
+// along its own axis.
 function rulerStep(spacing: { x: number; y: number }, sizes: readonly { width: number; height: number }[]): number {
   for (const step of rulerSteps()) {
     const clear = sizes.every(
@@ -107,7 +102,8 @@ function labelBox(text: string, turned: boolean, fontPx: number): { width: numbe
 /** How far outside the viewport a box still counts as near it. */
 const NEAR_VIEWPORT_PX = 40
 
-/** Below this bead pitch (px) a dot per bead would run together into a line, so only every 5th bead keeps its dot (ADR 0033). */
+// Below this bead pitch (px) a dot per bead would run together into a line, so only every 5th bead keeps its dot (ADR
+// 0033).
 const DOT_EVERY_BEAD_FROM_PX = 6
 
 /** A bead's mark on a ruler: where it sits in the viewport, and what a press on it selects. */
@@ -125,7 +121,8 @@ export interface RulerDot {
   /** The unit direction away from the ruled box, in the viewport, and the bead pitch along the ruler in px. */
   normal: [number, number]
   pitch: number
-  /** Half the thickness of the band the ruler's numbers fill, across the ruler: where the dot's line sits and how far a press on the ruler reaches. */
+  // Half the thickness of the band the ruler's numbers fill, across the ruler: where the dot's line sits and how far a
+  // press on the ruler reaches.
   half: number
 }
 
@@ -138,7 +135,8 @@ export interface RulerLayoutOptions {
 
 /** What the rulers of one view are: what to draw, and what a point of the viewport selects. */
 export interface RulerLayout {
-  /** What the parts of the rulers measure at this zoom: the numbers' size, their gap to the line and the dots' radii. */
+  /** What the parts of the rulers measure at this zoom: the numbers' size, their gap to the line and the dots'
+   * radii. */
   scale: RulerScale
   /** Whether the numbers and dots are drawn (the Rulers toggle). */
   numbers: boolean
@@ -148,7 +146,8 @@ export interface RulerLayout {
   step: number
   /** The numbers to draw: none while `numbers` is off. */
   labels: RulerLabel[]
-  /** The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch; none while `numbers` is off. */
+  // The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch;
+  // none while `numbers` is off.
   dots: RulerDot[]
 }
 
@@ -159,13 +158,9 @@ interface BoxLayout {
   step: number
 }
 
-/**
- * The numbers and bead marks of one ruled box that touch the viewport. Each number is placed where a grid-space point
- * just outside the box's line lands once turned and zoomed, then pushed away from the line by half the widest number's
- * size across the ruler, so the numbers stand clear of it by RULER_GAP_PX and on one line whichever way the picture is
- * turned. Dots stand on that same line. Numbers stay upright; only a column number from 100 up turns. The Ruler step
- * is worked out here once per axis.
- */
+// Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
+// number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
+// from 100 up turn. The Ruler step is worked out once per axis.
 function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   const margin = fontPx * 4
@@ -183,7 +178,8 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
     columnSizes.push(labelBox(String(box.columns), true, fontPx))
   }
   const rowSize = labelBox(String(box.rows), false, fontPx)
-  // Every number is centred on the line the dots stand on, so a 1-digit row number is as far from the beads as a 2-digit one.
+  // Every number is centred on the line the dots stand on, so a 1-digit row number is as far from the beads as a
+  // 2-digit one.
   const columnBand = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
   const { column: columnStepOnScreen, row: rowStepOnScreen } = surface.beadStep()
   const lastOnly = surface.zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
@@ -217,7 +213,9 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
     const turned = column && index + 1 >= TURNED_FROM
     const band = column ? columnBand : rowSize
     const half = column ? columnBand.height / 2 : rowSize.width / 2
-    // Below the zoom where only the last number is drawn the dots hug the line, as there is no row of numbers for them to line up with (ticket 378); above it they stand no further out than a 2-digit number's half, so a turned 3-digit number or a wide row number does not push them off the line (ticket 377).
+    // Below the zoom where only the last number is drawn the dots hug the line, as there is no row of numbers for them
+    // to line up with (ticket 378); above it they stand no further out than a 2-digit number's half, so a turned
+    // 3-digit number or a wide row number does not push them off the line (ticket 377).
     const dotHalf = lastOnly ? scale.dotRadius : Math.min(half, fontPx * DOT_BAND_HALF_MAX)
     const step = column ? columnStep : rowStep
     const { x, y, nx, ny } = outward(gridX, gridY, normal)
@@ -259,11 +257,8 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
   return { labels, beads, step: Math.max(columnStep, rowStep) }
 }
 
-/**
- * The rulers of one view of the Canvas (`surface` must be one): the boxes near the viewport that carry them, their
- * numbers and dots, and what a press selects. Drawing and picking read this one value, so they cannot disagree.
- * A surface not yet measured (a 0 by 0 viewport) has no edge to cut the numbers at.
- */
+// The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
+// no edge to cut at.
 export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }

@@ -19,11 +19,9 @@ export interface RotateSelectionFlowDeps {
   locale: () => Locale
 }
 
-/**
- * Rotate (CONTEXT.md, ADR 0052): a quarter turn of the Selection's beads about its centre, as one drawing Edit, so Undo
- * restores every bead the turn covered. The keep-out margin and finished rows trim it silently, as Paste. The turned
- * rectangle becomes the Selection; a Message says how many beads it covered, with Undo. Deps are read lazily.
- */
+// Rotate (CONTEXT.md, ADR 0052): a quarter turn of the Selection's beads about its centre as one drawing Edit (Undo
+// restores all). The keep-out margin and finished rows trim it silently, as Paste. The turned rectangle becomes the
+// Selection; a Message gives the count, with Undo. Deps are read lazily.
 export function useRotateSelectionFlow(deps: RotateSelectionFlowDeps) {
   function onRotate(): void {
     const selection = deps.selection.value

@@ -7,16 +7,14 @@ import MenuButton from '../ui/MenuButton.vue'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 
-/**
- * Save and export in the Project panel (ProjectPanel and SaveBox cards, tickets 148, 443): Save Project, the panel's only
- * primary button, then the Export label and three equal buttons, PNG | PDF | Project file. It only asks; the app does the
- * saving and exporting. With no Frame, exports take nothing to draw, so PNG and PDF open the "Set Frame to export" prompt
- * instead (Fit to drawing makes a Frame from every bead drawn; a Frame can also be made from a Selection, ticket 417).
- */
+// Save and export in the Project panel (ProjectPanel and SaveBox cards, tickets 148, 443): Save Project, then PNG | PDF
+// | Project file. It only asks; the app does the work. With no Frame, PNG and PDF open the "Set Frame to export" prompt
+// (Fit to drawing, or a Frame from a Selection, ticket 417).
 defineProps<{
   /** Whether the open Project has a Frame: PNG and PDF export only the Frame's beads. */
   hasFrame: boolean
-  /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one, and a long one says so. */
+  /** A PNG or PDF is being drawn: those two wait, so a second press doesn't start a second one, and a long one says
+   * so. */
   exporting?: 'png' | 'pdf'
   /** The open Project's name, for what the wait says it is doing. */
   projectName?: string
@@ -95,7 +93,8 @@ const file = controlAction('export-project-file')
   gap: var(--space-8);
 }
 
-/* Equal shares of the row; a language whose words need more room wraps its last button to a second row rather than squeeze or break a word. */
+/* Equal shares of the row; a language whose words need more room wraps its last button to a second row rather than
+ * squeeze or break a word. */
 .save-export__buttons > :deep(*),
 .save-export__buttons :deep(.app-button) {
   flex: 1 1 auto;

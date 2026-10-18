@@ -7,10 +7,8 @@ import AppModal from '../ui/AppModal.vue'
 import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 
-/**
- * Name Piece (ticket 406, ADR 0050): the name of the selected Piece, optional and up to 40 characters like the Maker's
- * name. A named Piece is a Schema; saving an empty field takes the name off. Enter saves, Escape cancels.
- */
+// Name Piece (ticket 406, ADR 0050): the selected Piece's optional name, up to 40 characters. A named Piece is a
+// Schema; saving an empty field takes the name off. Enter saves, Escape cancels.
 const props = defineProps<{ name: string }>()
 const emit = defineEmits<{ save: [name: string]; cancel: [] }>()
 const { t } = useI18n()

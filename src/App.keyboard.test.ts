@@ -8,10 +8,8 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { openColorPopover, pickColor } from './testUtils/pill'
 
-/*
- * Painting with the keyboard, landmarks and announcements (ticket 159; `accessibility.md`, BeadCursor and ScreenReaders
- * cards).
- */
+/** Painting with the keyboard, landmarks and announcements (ticket 159; `accessibility.md`, BeadCursor and
+ * ScreenReaders cards). */
 
 beforeEach(() => {
   localStorage.clear()

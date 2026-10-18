@@ -6,11 +6,9 @@ import { isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppTooltip from '../ui/AppTooltip.vue'
 
-/**
- * The Custom color button (tickets 75, 151, 449; PaletteSwatches and ColorPickers cards): a 14px hatched square in `muted`
- * ("pick any color"; v18 card), then the label; the ring, like a Palette swatch, while it is the paint color. It opens
- * the app's own color picker (CustomColorPanel) under the buttons, and a second press takes its color and closes it.
- */
+// The Custom color button (tickets 75, 151, 449; PaletteSwatches and ColorPickers cards): a 14px hatched square in
+// `muted` then the label, ringed while it is the paint color. It opens CustomColorPanel under the buttons; a second
+// press takes its color and closes it.
 defineProps<{
   /** Whether Custom color is the active paint color right now, as opposed to just remembered on this slot. */
   selected: boolean
@@ -27,10 +25,8 @@ const buttonEl = ref<HTMLButtonElement>()
 
 defineExpose({ focus: () => buttonEl.value?.focus() })
 
-/**
- * Its Tooltip (ticket 335) comes from the registry's Custom color action: what it adds, and, once the Palette holds its
- * most added colors, that it is full. A full Palette still lets a color be painted with, so the button stays usable.
- */
+/** Its Tooltip (ticket 335) comes from the registry's Custom color action; a full Palette still lets a color be
+ * painted with. */
 const palette = usePalette()
 const action = controlAction('custom-color')
 const tooltip = computed(() => {

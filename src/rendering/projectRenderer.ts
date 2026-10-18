@@ -28,29 +28,12 @@ import {
   type Region,
 } from './surfaceView'
 
-/**
- * The Project renderer (CONTEXT.md, ADR 0018): the one thing that draws a Project's beads onto a drawing surface, for
- * any Technique, so a bead looks the same in the editor, the Convert image preview and the exports.
- *
- * It draws the cells only (what the Drawing surface calls its base layer). Everything that comes and goes with the
- * pointer, and the Row progress marker, is drawn over this by the overlay layer.
- *
- * Coordinates. A Project has its own space, "grid space": px at zoom 1 with the origin at the top-left of the beads,
- * a bead being CELL_SIZE_PX square. What a person sees is that space scaled by the zoom and turned clockwise by the
- * Project's rotation (0°/90°/180°/270°, ticket 171). The region asked for is in that displayed space, measured from
- * the displayed Project's top-left, so a surface that follows the scroll asks for whatever part is in view and the
- * cost follows what is drawn rather than how big the Project is.
- *
- * One renderer over two spaces (ADR 0018, ADR 0026): a `Space` (space.ts) says whether the Project is drawn on its own,
- * as the Frame alone with its first bead at the origin (the exports, the Convert image preview, the Overview), or on
- * the Canvas, an endless field of positions measured from row 0, column 0 (the editor).
- */
+// The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
+// is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
+// view. A `Space` (space.ts, ADR 0026) says whether it draws the Frame alone from the origin or on the Canvas.
 
-/**
- * The rows and, for each, the columns of beads that touch a stretch of grid space. Exported for the tests; the renderer's
- * own way of skipping what is off screen. `firstRow` is the Project's own number for the first row drawn, which is what
- * decides which rows are shifted.
- */
+// The rows and columns of beads touching a stretch of grid space; `firstRow` decides which rows are shifted. Exported
+// for tests.
 export function visibleBeads(
   technique: Technique,
   columns: number,
@@ -76,10 +59,8 @@ export function visibleBeads(
   }
 }
 
-/**
- * The beads that touch a stretch of grid space on a Canvas (ADR 0026): the same maths as visibleBeads with no
- * edge to stop at, so rows and columns may be negative.
- */
+// The beads touching a stretch of grid space on a Canvas (ADR 0026): as visibleBeads, but unbounded, so indices may be
+// negative.
 function visibleBeadsOpen(
   technique: Technique,
   area: { left: number; right: number; top: number; bottom: number },
@@ -109,42 +90,40 @@ export function visibleBeadsInSpace(technique: Technique, space: Space, region: 
 export type DrawnProject = Pick<Project, 'technique' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'>
 
 export interface RenderInput {
-  /** The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded). Anything shaped like one will do: the Convert image preview draws a block of beads that is not a saved Project. */
+  // The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded).
+  // Anything shaped like one will do: the Convert image preview draws a block of beads that is not a saved Project.
   project: DrawnProject
   /** Where its positions live, from `spaceOf`: handed to the overlay as well, so both agree where a position is. */
   space: Space
-  /** The part of the displayed Project to draw, in displayed px: from its top-left corner in Frame-only space, how far the canvas has been moved on the Canvas. The surface is this big. */
+  // The part of the displayed Project to draw, in displayed px: from its top-left corner in Frame-only space, how far
+  // the canvas has been moved on the Canvas. The surface is this big.
   region: Region
   /** How much the Project is enlarged by; 1 is a bead 20px across. */
   zoom: number
   /** Device pixels per CSS pixel of the surface, so beads stay crisp on a high-density screen. Defaults to 1. */
   pixelRatio?: number
   theme?: ProjectTheme
-  /** Draw finished rows at their normal color (ticket 352): while the pointer hovers a finished row, or after a tap on a finished row. Off, they are dimmed. */
+  // Draw finished rows at their normal color (ticket 352): while the pointer hovers a finished row, or after a tap on a
+  // finished row. Off, they are dimmed.
   showFinished?: boolean
-  /** Whether Row progress is drawn: finished rows faded, the current one brighter. Defaults to `rowProgressOn(project)`; an export, a chart that shows every bead as it is, passes false (ticket 434). */
+  // Whether Row progress is drawn: finished rows faded, the current one brighter. Defaults to `rowProgressOn(project)`;
+  // an export, a chart that shows every bead as it is, passes false (ticket 434).
   rowMarks?: boolean
-  /**
-   * Draw only these rows (numbered in the space) again, and what they touch, leaving the rest of the surface as it is:
-   * what an edit that changed a few beads needs, in place of drawing every bead on screen. Everything in the band the
-   * rows occupy is cleared and drawn afresh, so the result is what drawing the whole surface would have made, and
-   * repeated edits do not pile up the anti-aliasing at the edges of rounded beads.
-   */
+  // Redraw only these rows: their whole band is cleared and redrawn, so edits do not pile up anti-aliasing on rounded
+  // beads.
   rows?: { first: number; last: number }
   /** How the Canvas draws its Position marks: the device's choice. Defaults to Dots. */
   positionMarks?: PositionMarkStyle
-  /** How many positions wide the keep-out margin is drawn (ticket 459): the surface widens it when zoomed out. Defaults to `MARGIN`. */
+  // How many positions wide the keep-out margin is drawn (ticket 459): the surface widens it when zoomed out. Defaults
+  // to `MARGIN`.
   margin?: number
-  /** How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows, zoom, rotation or what is on screen. */
+  // How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows,
+  // zoom, rotation or what is on screen.
   drawBead?: BeadDrawer
 }
 
-/**
- * The Canvas's Position marks (CONTEXT.md): one pattern fill over what is in view, in up to four strips round the
- * margin's box. The strips' edges sit between the marks either side of the margin, whichever way the rows are shifted,
- * so no position is tested. Dots mark only the empty positions outside it; Squares also fill the Frame's box, as the
- * outlines show in the gaps between its beads (ticket 458).
- */
+// The Canvas's Position marks (CONTEXT.md): one pattern fill in up to four strips round the margin's box, so no
+// position is tested. Dots mark only empty positions outside it; Squares also fill the Frame's box (ticket 458).
 function drawPositionMarks(
   context: DrawingContext,
   { project, area, zoom, pixelRatio, theme, style, margin }: { project: DrawnProject; style: PositionMarkStyle; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
@@ -155,7 +134,8 @@ function drawPositionMarks(
   }
   const pitch = rowPitchPx(project.technique)
   const box = project.frame && withMargin(project.frame, margin)
-  // The margin's box, between the marks just outside it: marks sit at the middle of each bead's cell, a row's shift moves them half a bead right.
+  // The margin's box, between the marks just outside it: marks sit at the middle of each bead's cell, a row's shift
+  // moves them half a bead right.
   const hole = box && {
     left: box.column * CELL_SIZE_PX + CELL_SIZE_PX / 4,
     right: (box.column + box.columns) * CELL_SIZE_PX + CELL_SIZE_PX / 4,
@@ -181,7 +161,8 @@ function drawPositionMarks(
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
   }
   if (style === 'squares' && project.frame) {
-    // Squares are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps between its beads.
+    // Squares are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
+    // between its beads.
     const { column, row, columns, rows } = project.frame
     const edge = BEAD_GAP_PX / 2
     const shift = project.technique === 'loom' ? 0 : CELL_SIZE_PX / 2
@@ -195,10 +176,8 @@ function drawPositionMarks(
   context.imageSmoothingEnabled = false
 }
 
-/**
- * The band of the surface, in its device pixels and on whole pixels, that rows `first` to `last` occupy: from the top
- * of the first to the bottom of the last, across the whole Project, or the whole viewport on the Canvas.
- */
+// The band of the surface, in device pixels, that rows `first` to `last` occupy: the whole Project width, or the
+// viewport on the Canvas.
 function bandOnSurface(
   space: Space,
   region: Region,
@@ -237,13 +216,9 @@ function boxPath(context: DrawingContext, x: number, y: number, width: number, h
   context.closePath()
 }
 
-/**
- * Draws the part of the Project in the region. Clears what was there first; the surface can be redrawn in place.
- *
- * What differs by space, and only this: the background (Frame-only fills the theme's background; the Canvas stays
- * transparent for the technique word behind it, and finished rows fade toward the drawing area), and empty positions
- * (the Canvas draws the dots outside the Frame, and leaves the Frame's keep-out margin as a gap).
- */
+// Draws the part of the Project in the region, clearing it first. Differs by space only in the background (Frame-only
+// fills it, the Canvas stays transparent and fades finished rows) and empty positions (the Canvas draws dots outside
+// the Frame).
 export function renderProject(context: DrawingContext, input: RenderInput): void {
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows: band, positionMarks = 'dots', showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN } = input
   const { technique, beads, frame, rotation } = project
@@ -251,8 +226,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme
 
-  // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface or
-  // just the band being drawn again, which the rest of the drawing is then cut to, then draw in CSS px scaled up to it.
+  // The backing store is in device px: clear (and paint the background, in Frame-only space) there, the whole surface
+  // or just the band being drawn again, which the rest of the drawing is then cut to, then draw in CSS px scaled up to
+  // it.
   context.setTransform(1, 0, 0, 1, 0, 0)
   const cleared = band
     ? bandOnSurface(space, region, zoom, rotation, pixelRatio, technique, band)
@@ -288,7 +264,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const inFrame = space.hasFrame
   const frameRows = { first: origin.row, last: origin.row + space.rows - 1 }
   const frameColumns = { first: origin.column, last: origin.column + space.columns - 1 }
-  // The current row's beads are drawn 10% brighter than the todo rows (ticket 352); an empty cell is left as it is (ticket 411).
+  // The current row's beads are drawn 10% brighter than the todo rows (ticket 352); an empty cell is left as it is
+  // (ticket 411).
   const lightenCurrent = (color: string | null, position: GridPosition): string | null =>
     color !== null && rowMarks && isInCurrentRow(project, position) ? brighten(color, CURRENT_ROW_BRIGHTNESS) : color
   const drawAt = (row: number, column: number, color: string | null) => {
@@ -315,7 +292,9 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   if (space.open) {
     // Only the stored rows in view, and only their stored columns: the cost follows the beads, not the canvas.
     const rowsInView = Object.keys(beads).map(Number).filter((row) => row >= firstRow && row <= lastRow).sort((a, b) => a - b)
-    // The beads round the margin nest into its edge (peyote rows sit closer than a bead is tall, offset rows reach half a bead across): cut out its box so none shows inside the outline (the outer rectangle is the view, a cell wider each side so only the cut-out matters).
+    // The beads round the margin nest into its edge (peyote rows sit closer than a bead is tall, offset rows reach half
+    // a bead across): cut out its box so none shows inside the outline (the outer rectangle is the view, a cell wider
+    // each side so only the cut-out matters).
     const cutOut = frame !== undefined && rowsInView.length > 0
     if (frame && cutOut) {
       context.save()

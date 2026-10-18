@@ -10,11 +10,9 @@ import { gridBox, openApp, projectBox, savedProject, selectTool, setZoom, settle
 import { beadCentre, fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
-/**
- * The pointer tools on the Drawing surface, in a real browser: the hover preview looks as the references have it, and
- * painting, erasing, Fill, the Row progress lock, Undo, Space-drag pan and a touch stroke paint the beads they should
- * and no others (ticket 174 hid Mirror's own UI pending its own redesign).
- */
+// The pointer tools on the Drawing surface in a real browser: hover preview matches references, and paint, erase, Fill,
+// Row progress lock, Undo, Space-drag pan and touch strokes change only the right beads (ticket 174 hid Mirror's UI
+// pending redesign).
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
 
@@ -306,8 +304,8 @@ test.describe('touch', () => {
   test.use({ hasTouch: true })
 
   test('a touch stroke paints the beads it crosses and does not scroll the page', async ({ page }) => {
-    // The page itself never scrolls (ticket 141), so a stroke that scrolled it instead would be seen at once. 40 rows fit
-    // the drawing area at 100%, the level this test strokes at.
+    // The page itself never scrolls (ticket 141), so a stroke that scrolled it instead would be seen at once. 40 rows
+    // fit the drawing area at 100%, the level this test strokes at.
     const project = fixtureProject({ technique: 'loom', rows: 40, blank: true })
     await openApp(page, [project])
     await setZoom(page, 100)
@@ -335,7 +333,8 @@ test.describe('the bead-shaped pointer (ticket 353)', () => {
     await openApp(page, [project])
     await setZoom(page, 100)
     const centre = await pointOn(page, 'loom', false, 100, 3, 5)
-    // Four px right of the bead's centre, the marker reaches 13px past it: into the next bead, which the preview does not touch.
+    // Four px right of the bead's centre, the marker reaches 13px past it: into the next bead, which the preview does
+    // not touch.
     const at = { x: centre.x + 4, y: centre.y }
     await page.mouse.move(at.x, at.y)
     await settle(page)
@@ -347,7 +346,8 @@ test.describe('the bead-shaped pointer (ticket 353)', () => {
       const index = (2 * shot.width + 20 + dx) * 4
       return [shot.data[index]!, shot.data[index + 1]!, shot.data[index + 2]!]
     }
-    // Inside the marker (8px right of the pointer) the paint color shows through; 12px right of it, past its 9px reach, the bead is as it was.
+    // Inside the marker (8px right of the pointer) the paint color shows through; 12px right of it, past its 9px reach,
+    // the bead is as it was.
     expect(pixel(8)).not.toEqual(pixel(12))
     expect(pixel(-8)).not.toEqual(pixel(-12))
   })

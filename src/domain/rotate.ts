@@ -5,12 +5,9 @@ import { carryNames } from './pieceNames'
 import type { Project } from './project'
 import { selectionFrame, type Selection } from './selection'
 
-/**
- * Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection and the beads in it, about the Selection's
- * centre. It changes the data, unlike the legacy view-only turn: the beads end up at new positions, and on peyote and
- * brick stitch the way they touch changes with them. The Frame, the rulers and Row progress's pointers are untouched.
- * Beads under the turned footprint are replaced, as drawing or pasting over them does; nothing is pushed away.
- */
+// Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection's beads about its centre. Unlike the legacy
+// view-only turn it changes the data (peyote/brick contacts change). Frame, rulers and Row progress are untouched;
+// beads under the turned footprint are replaced, nothing is pushed away.
 
 export interface RotatedSelection {
   project: Project
@@ -18,7 +15,8 @@ export interface RotatedSelection {
   selection: Selection
 }
 
-/** The Selection turned a quarter about its centre: rows and columns swap, and on stitches whose rows alternate it starts on an even row. */
+/** The Selection turned a quarter about its centre: rows and columns swap, and on stitches whose rows alternate it
+ * starts on an even row. */
 export function rotatedSelection(project: Pick<Project, 'technique'>, selection: Selection): Selection {
   const frame = selectionFrame(selection)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
@@ -48,11 +46,7 @@ function beadsIn(project: Project, area: Frame): BeadChange[] {
   return found
 }
 
-/**
- * The Project with the Selection's beads turned a quarter clockwise, and the turned rectangle. Every position of the
- * turned footprint takes what the turn puts there (empty ones too), so a bead it lands on is replaced. Piece names
- * follow their beads; a named bead that was covered loses its name with the Piece.
- */
+/** The Project with the Selection turned a quarter clockwise, and the turned rectangle; covered beads are replaced. */
 export function rotateSelection(project: Project, selection: Selection): RotatedSelection {
   const area = selectionFrame(selection)
   const turned = rotatedSelection(project, selection)
@@ -77,10 +71,8 @@ export function rotateSelection(project: Project, selection: Selection): Rotated
   return { project: named, selection: turned }
 }
 
-/**
- * How many beads outside the Selection the turn replaced: those under the turned footprint, outside the old
- * rectangle, that `after` (the Project once the keep-out margin and finished rows had trimmed the turn) no longer holds.
- */
+/** How many beads outside the Selection the turn replaced: under the turned footprint, outside the old rectangle,
+ * gone from `after`. */
 export function coveredByRotation(before: Project, after: Project, selection: Selection, turned: Selection): number {
   const area = selectionFrame(selection)
   const footprint = selectionFrame(turned)
@@ -93,18 +85,15 @@ export function coveredByRotation(before: Project, after: Project, selection: Se
   return covered
 }
 
-/** The whole-Frame Selection Rotate Frame turns: the Frame and its keep-out margin, the one rectangle `selectionAllowed` takes round a Frame. */
+/** The Selection Rotate Frame turns: the Frame and its keep-out margin, the rectangle `selectionAllowed` takes. */
 export function frameAreaSelection(frame: Frame): Selection {
   const area = withMargin(frame)
   return { top: area.row, left: area.column, rows: area.rows, columns: area.columns }
 }
 
 /**
- * Rotate Frame (CONTEXT.md, ticket 471, ADR 0063): the Frame and its keep-out margin turned a quarter clockwise about their
- * centre, with the beads inside both, by the same turn as Rotate on a Selection. The Frame takes the turned area back
- * less the margin, so its Width and Height swap; beads outside the area stay put except where the turned area covers them.
- * Handed back as the turned Project, or undefined with no Frame.
- */
+ * Rotate Frame (ticket 471, ADR 0063): the Frame, its margin and the beads inside turned a quarter clockwise about their
+ * centre, as Rotate does a Selection; Width and Height swap, outside beads stay unless covered. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   if (!project.frame) {
     return undefined

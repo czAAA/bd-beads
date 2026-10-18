@@ -6,12 +6,9 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { frameCornerControls, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { Project } from '../../domain/project'
 
-/**
- * What a Frame carries all the time (tickets 452, 455, ADR 0062): four small buttons in a row just inside the top-right
- * corner of the margin outline, like a window's, clamped inside the canvas box: Move handle, Rotate Frame (ticket 471), Edit Frame and Remove Frame.
- * The Move handle's button hands a press on to the canvas to drag, and the arrows move the Frame with its beads while
- * Shift + arrows resize it. `anchor` is the Frame's rectangle in the canvas box's own pixels.
- */
+// What a Frame always carries (tickets 452, 455, 471, ADR 0062): Move handle, Rotate Frame, Edit Frame and Remove Frame
+// buttons inside the margin outline's top-right, clamped in the canvas box. The Move handle hands a press to the canvas
+// to drag; arrows move the Frame with its beads, Shift+arrows resize. `anchor` is the Frame's rectangle in canvas pixels.
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
@@ -95,7 +92,8 @@ const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 </template>
 
 <style scoped>
-/* Over the whole canvas box, whose pixels the controls are placed in, letting everything but the controls through to the canvas. */
+/* Over the whole canvas box, whose pixels the controls are placed in, letting everything but the controls through to
+ * the canvas. */
 .frame-chrome {
   position: absolute;
   inset: 0;

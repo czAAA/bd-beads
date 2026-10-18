@@ -6,13 +6,9 @@ export interface Heartbeat {
   fail(report: string): Promise<void>
 }
 
-/**
- * One Healthchecks.io check per Worker (`watchdog-dev`, `watchdog-production`), whose ping URL is the secret
- * `HEALTHCHECK_URL`. Healthchecks emails only when the check changes state, so a day over a level brings one email
- * when it starts and one when it ends, with no state kept here; a run that never comes is noticed after the grace
- * period. The report goes in the ping's body, which Healthchecks shows in the email. Without a URL (a local run, or
- * before step H3d) the report is only logged.
- */
+/** One Healthchecks.io check per Worker, ping URL in secret `HEALTHCHECK_URL`. It emails only on state change, so a
+ * day over a level is one email at start and one at end, with no state kept here. The report is the ping body;
+ * without a URL it is only logged. */
 export function healthchecksHeartbeat(url: string | undefined): Heartbeat {
   async function ping(suffix: string, report: string): Promise<void> {
     if (!url) {

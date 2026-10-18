@@ -19,16 +19,15 @@ export interface ExportFlowDeps {
   replaceProject: (project: Project) => void
   /** How a file is handed over (ADR 0020); the browser's by default. */
   downloadFile?: DownloadFile
-  /** Whether handing over this file opens a share sheet, which only a fresh tap may start (ticket 306); the browser's by default. */
+  /** Whether handing over this file opens a share sheet, which only a fresh tap may start (ticket 306); the
+   * browser's by default. */
   sharesFromTap?: (fileName: string, type: string) => boolean
   /** Shows a toast with an action (useToasts). */
   showToast?: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
 }
 
-/**
- * Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020): as a Project file, a PNG or a PDF, and
- * the Project's maker's name the PNG and PDF print (ADR 0060). Deps are read lazily.
- */
+/** Exporting a Project (tickets 68, 73, 74, 158, 161, 202; ADR 0020) as a Project file, PNG or PDF, printing the
+ * maker's name (ADR 0060). Deps are lazy. */
 export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
   const sharesFromTap = deps.sharesFromTap ?? browserSharesFromTap
@@ -44,13 +43,12 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
   }
 
-  /** Which export is being drawn, if any: the save box says so while it takes a while (ticket 158). Drawing a large Project takes a moment, so the buttons wait until it is done. */
+  /** Which export is being drawn, if any: the save box says so while it takes a while (ticket 158). Drawing a large
+   * Project takes a moment, so the buttons wait until it is done. */
   const exporting = ref<'png' | 'pdf' | undefined>()
 
-  /**
-   * Makes a file and hands it over. Making takes the tap that began the export, and Safari shares only from a tap, so
-   * where sharing needs one the toast's action is the new tap (ticket 306).
-   */
+  /** Makes a file and hands it over. Safari shares only from a tap, so where sharing needs one the toast's action is
+   * the new tap (ticket 306). */
   async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string) {
     const contents = await make()
     if (deps.showToast && sharesFromTap(fileName, type)) {
@@ -82,17 +80,16 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
   }
 
-  /** The blob type stays JSON though the bytes are gzip: pickers and in-app browsers may grey out an unknown type (ADR 0048). */
+  /** The blob type stays JSON though the bytes are gzip: pickers and in-app browsers may grey out an unknown type
+   * (ADR 0048). */
   const FILE_TYPE = 'application/json'
 
   function handOverFile(fileName: string, make: () => Promise<BlobPart>) {
     return makeAndHandOver(fileName, make, FILE_TYPE, 'export-file', deps.messages().saveBox.readyFile)
   }
 
-  /**
-   * Export Project as the way out (ticket 158; forms-and-states.md): the open Project as a Project file, offered when a
-   * save fails. With none open, a failed save offers the whole library.
-   */
+  /** Export Project as the way out (ticket 158): offered when a save fails; with no Project open, it offers the
+   * whole library. */
   function onExportProjectFile() {
     const project = deps.currentProject()
     if (project) {

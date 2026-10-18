@@ -4,23 +4,22 @@ import { browserLibraryStore, type LibraryStore } from '../../services/librarySt
 
 /** How a change to a Project should reach storage (see replaceProject). */
 export interface ReplaceOptions {
-  /**
-   * Don't write yet — just remember that there is something to write, for a flushPendingSave() to come. What a
-   * dragged paint/erase stroke passes for every cell it touches, so the stroke writes once when it ends instead of
-   * once per mousemove (ticket 55).
-   */
+  /** Don't write yet, only remember there is something to write for a flushPendingSave(): a stroke writes once at
+   * its end, not per mousemove (ticket 55). */
   deferSave?: boolean
 }
 
 export interface ProjectLibrary {
-  /** Every Project on this device (CONTEXT.md's Project library), most recently saved first — the source of truth persistence follows. */
+  /** Every Project on this device (CONTEXT.md's Project library), most recently saved first — the source of truth
+   * persistence follows. */
   projects: Ref<Project[]>
   /** Which Project is open, or none (the New Project form). Writable: opening a Project is just setting this. */
   activeProjectId: Ref<string | undefined>
   activeProject: ComputedRef<Project | undefined>
   /** Whether the last attempted write to storage failed, so the UI can say so rather than losing the edit silently. */
   saveFailed: Ref<boolean>
-  /** Whether the library in memory has changes storage hasn't taken yet (a deferred stroke or a refused write): the Project panel's "unsaved". */
+  /** Whether the library in memory has changes storage hasn't taken yet (a deferred stroke or a refused write): the
+   * Project panel's "unsaved". */
   unsaved: Ref<boolean>
   addProject: (project: Project) => void
   addProjects: (projects: Project[]) => void
@@ -33,25 +32,13 @@ export interface ProjectLibrary {
   saveNow: () => boolean
 }
 
-/**
- * The Project library: the Projects on this device, which one is open, and persisting them (ADR 0001, localStorage
- * only; ADR 0012 for when a save happens and what a refused one does).
- *
- * Persistence is a subscriber to the library rather than a step in the edit path (ticket 55). Every change goes
- * through one of the mutators below, each of which updates the in-memory library and then either saves it or marks a
- * save as pending; nothing watches the Projects for changes, because a watch would also fire on each individual
- * stroke cell and make the deferral load-bearing for correctness rather than just for speed.
- *
- * A save writes the whole library from memory (see LibraryStore.save), which is both cheaper than the old read-modify-write
- * per Project and self-healing: any later save also persists whatever an earlier deferred or failed one left pending,
- * so a missed flush can cost at most the newest un-flushed stroke, never an older edit.
- *
- * The library is kept in last-saved order (ticket 145): each mutator that saves a Project stamps it (markSaved) and
- * moves it to the front, and the order is written with the library, so it survives a reload as it stood.
- */
+// The Project library: Projects on this device, which is open, and persisting them (ADR 0001, localStorage; ADR 0012).
+// Persistence is a subscriber, not a step in the edit path (ticket 55): each mutator saves or marks a save pending.
+// A save writes the whole library from memory, so a later one also persists what a failed one left (ticket 145).
 export function useProjectLibrary(
   store: LibraryStore = browserLibraryStore,
-  /** Called after each write that got through with a Project in the library, a removal aside (ticket 399: the first one asks the browser to keep it). */
+  /** Called after each write that got through with a Project in the library, a removal aside (ticket 399: the first
+   * one asks the browser to keep it). */
   onSaved?: () => void,
 ): ProjectLibrary {
   const projects = ref<Project[]>(inSavedOrder(store.load()))
@@ -105,10 +92,8 @@ export function useProjectLibrary(
       commit()
     },
 
-    /**
-     * Adds imported Projects (ticket 15's Project file). Opening one of them would interrupt whatever is already
-     * open, so it only steps in when nothing is. They are saved on this device now, so they go to the front.
-     */
+    /** Adds imported Projects (ticket 15's Project file); opens one only when nothing is open. Saved now, so they go
+     * to the front. */
     addProjects(imported: Project[]) {
       const now = Date.now()
       projects.value = [...inSavedOrder(imported.map((project) => markSaved(project, now))), ...projects.value]
@@ -132,26 +117,24 @@ export function useProjectLibrary(
       commit(undefined, false)
     },
 
-    /** Removes every Project; none is open afterwards. Like any removal it isn't a first save, so it never opens the storage note. */
+    /** Removes every Project; none is open afterwards. Like any removal it isn't a first save, so it never opens the
+     * storage note. */
     removeAllProjects() {
       projects.value = []
       activeProjectId.value = undefined
       commit(undefined, false)
     },
 
-    /** Writes whatever a deferred change (or a failed save) left pending; a no-op when storage is already up to date. */
+    /** Writes whatever a deferred change (or a failed save) left pending; a no-op when storage is already up to
+     * date. */
     flushPendingSave() {
       if (savePending.value) {
         save()
       }
     },
 
-    /**
-     * The Save tool's write (ticket 115): unlike flushPendingSave it doesn't trust the pending flag, since what Save
-     * reports back — "Saved" — has to be true whatever state that flag is in. It saves the open Project, so that one
-     * moves to the front of the library even with nothing changed. Returns whether the write got through;
-     * a refusal also raises saveFailed, like any other.
-     */
+    // The Save tool's write (ticket 115): doesn't trust the pending flag, since "Saved" must be true; saves the open
+    // Project (moving it to the front). Returns whether the write got through; a refusal also raises saveFailed.
     saveNow(): boolean {
       if (activeProject.value) {
         toFront(activeProject.value)

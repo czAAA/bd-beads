@@ -218,10 +218,9 @@ describe('mirrorBlockPlacements (ticket 50: Paste block geometry)', () => {
   })
 
   it('lets a mirrored placement run off the *other* edge when the original already ran off its own edge', () => {
-    // dimension 6, 1 axis -> strips [0,1,2] [3,4,5]. A 2-wide block anchored at 5 spans [5,6] -- column 6 is already
-    // past the grid's edge for the original placement. Its mirror image (index -> 5 - index) should be exactly as
-    // far off the *other* edge: column 5 -> 0 (on-grid), column 6 -> -1 (off-grid), so the flipped copy anchors at
-    // -1 rather than being pinned to 0.
+    // dimension 6, 1 axis -> strips [0,1,2] [3,4,5]. A 2-wide block anchored at 5 spans [5,6], past the grid's edge.
+    // Its mirror image (index -> 5 - index) should be as far off the *other* edge: column 6 -> -1, so the flipped
+    // copy anchors at -1 rather than being pinned to 0.
     expect(mirrorBlockPlacements(5, 2, 6, 1)).toEqual([
       { anchorIndex: -1, flipped: true },
       { anchorIndex: 5, flipped: false },

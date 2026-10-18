@@ -15,10 +15,8 @@ export interface SaveFlowDeps {
   downloadFile?: DownloadFile
 }
 
-/**
- * The "Saved" toast (tickets 115, 76; SaveStates card). Only ever raised by a write that landed; a refused one raises
- * the library's saveFailed instead.
- */
+/** The "Saved" toast (tickets 115, 76): raised only by a write that landed; a refused one raises the library's
+ * saveFailed. */
 const SAVED_TOAST = 'save-confirmation'
 
 /** Save and its confirmation (tickets 115, 119, 195; ADR 0020). Deps are read lazily. */
@@ -29,15 +27,9 @@ export function useSaveFlow(deps: SaveFlowDeps) {
     deps.dismissToast(SAVED_TOAST)
   }
 
-  /**
-   * Save (ticket 115): edits already reach this device as they land (ADR 0012), so the write to this device is
-   * reassurance rather than a new kind of storage — it writes whatever is pending now and says so. "Saved" is only
-   * claimed once the write got through; if the device refuses it the library's own "couldn't save" notice shows instead
-   * (saveFailed). A second press starts the confirmation's clock over.
-   *
-   * Save also hands over the open Project as a Project file (ticket 119), so it can be opened on another device. The
-   * file goes out even when the device refuses the write: it is then the only copy that survives.
-   */
+  // Save (ticket 115): edits already reach the device (ADR 0012), so this writes what is pending and claims "Saved"
+  // only once it got through (else saveFailed). It also hands over the open Project as a file (ticket 119), even when
+  // the write is refused: then it is the only surviving copy.
   function onSave() {
     clearSavedConfirmation()
     if (!deps.currentProject()) {

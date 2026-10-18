@@ -3,10 +3,8 @@ import { onMounted, ref, toRaw, watch } from 'vue'
 import type { Project } from '../../domain/project'
 import { thumbnailPixels } from '../../rendering/projectThumbnail'
 
-/**
- * A Project's own round thumbnail (ticket 147; SavedProjects card): the whole Project on the board color, drawn at twice
- * its size for sharp screens. Redrawn only when the Project is replaced, and at most once a frame while a stroke lands.
- */
+// A Project's round thumbnail (ticket 147; SavedProjects card): the whole Project on the board color, drawn at twice
+// its size for sharp screens. Redrawn only when the Project is replaced, at most once a frame while a stroke lands.
 const props = defineProps<{ project: Project }>()
 
 /** Pixels on the longer side: the 36px thumbnail at twice the density. */

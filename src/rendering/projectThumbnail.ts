@@ -16,11 +16,8 @@ function rgb(hex: string): [number, number, number] | undefined {
   return channels && [channels.r, channels.g, channels.b]
 }
 
-/**
- * A Saved Project's thumbnail (ticket 147; SavedProjects card): the whole Project fitted into `size` pixels on its
- * longer side, square beads, turned as it shows on screen, empty beads left clear. Each pixel samples the bead under
- * it, so a Project of any size costs at most size × size lookups (ADR 0019: no size limit).
- */
+// A Saved Project's thumbnail (ticket 147): the whole Project fitted to `size` px by sampling, so cost is at most size
+// × size (ADR 0019).
 export function thumbnailPixels(project: Pick<Project, 'frame' | 'beads' | 'rotation'>, size: number): ThumbnailImage {
   const { columns, rows } = projectDimensions(project)
   const frame = projectFrame(project)
@@ -39,7 +36,8 @@ export function thumbnailPixels(project: Pick<Project, 'frame' | 'beads' | 'rota
     const shownRow = Math.min(down - 1, Math.floor(y / scale))
     for (let x = 0; x < width; x += 1) {
       const shownColumn = Math.min(across - 1, Math.floor(x / scale))
-      // Undo the quarter turn on: what shows at (shownRow, shownColumn) is grid (row, column) per gridToRegion's own forward mapping.
+      // Undo the quarter turn on: what shows at (shownRow, shownColumn) is grid (row, column) per gridToRegion's own
+      // forward mapping.
       const [row, column] = ((): [number, number] => {
         switch (project.rotation) {
           case 90:

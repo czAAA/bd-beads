@@ -88,10 +88,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   }
 }
 
-/**
- * Draws the lines (the Frame's, or each piece's rectangle) and the Ruler layout's numbers and dots, in the
- * viewport's own px over whatever is drawn.
- */
+/** Draws the lines and the Ruler layout's numbers and dots, in the viewport's own px over whatever is drawn. */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
   const { project, surface, layout, pixelRatio, theme, cursor, rowMarks = rowProgressOn(project) } = input
   const { fontPx } = layout.scale
@@ -115,7 +112,8 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
 /** The gap between a named Piece's rectangle and its name below it. */
 const NAME_GAP_PX = 4
 
-/** The name of each unframed Schema (a named Piece, ADR 0050), under its beads at the left edge, in the Frame's line color; read at any zoom. */
+// The name of each unframed Schema (a named Piece, ADR 0050), under its beads at the left edge, in the Frame's line
+// color; read at any zoom.
 function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
   const pieces = namedPieces(project)
   if (pieces.length === 0) {
@@ -161,11 +159,8 @@ export function drawBoxHandles(context: DrawingContext, box: { x: number; y: num
   drawHandles(context, box, theme, touch)
 }
 
-/**
- * What the Frame carries while it is being set (Frame card): its handles, 9px squares (four 16px ones on touch) with a
- * 1.5px `ink` line, filled with the canvas, and the size tooltip hanging off its bottom-right corner (none when the tooltip is empty). In the viewport's
- * own px, over everything else.
- */
+// What the Frame carries while being set (Frame card): its handles, the size tooltip at the bottom-right, in viewport
+// px over all else.
 export function drawFrameEditing(context: DrawingContext, input: { frame: Frame; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string }): void {
   const { frame, surface, pixelRatio, theme, touch, tooltip } = input
   const { viewport } = surface

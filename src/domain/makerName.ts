@@ -1,9 +1,7 @@
 import type { Project } from './project'
 
-/**
- * The maker's name (CONTEXT.md, ADR 0060): who made a Project, printed on its PDF and PNG exports. It belongs to the
- * Project; what a name may be is here.
- */
+/** The maker's name (CONTEXT.md, ADR 0060): who made a Project, printed on its PDF and PNG exports; what a name
+ * may be is here. */
 
 /** The longest name the field takes (NameOnExports card). */
 export const MAX_MAKER_NAME = 40

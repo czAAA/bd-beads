@@ -1,10 +1,8 @@
 import type { PaletteColor } from '../domain/palette'
 
-/**
- * The Overview's drawn layer (ticket 221; Overview card, "The drawn layer"): bead drawings beside the main column and X1
- * marks behind each section, with the placements the design system's preview gives. The drawings are small
- * character maps: a letter is a Palette colour, `A` is `accent`, `M` is `muted`, `.` is empty.
- */
+// The Overview's drawn layer (ticket 221; Overview card, "The drawn layer"): bead drawings and X1 marks behind each
+// section, placed as the design system's preview gives. Drawings are character maps: a letter is a Palette colour,
+// `A` is `accent`, `M` is `muted`, `.` is empty.
 
 export type DrawingName = 'flower' | 'heart' | 'spool' | 'spark' | 'rhomb' | 'leaf' | 'bee'
 export type SectionName = 'hero' | 'inside' | 'coffee' | 'plans'
@@ -35,16 +33,9 @@ export const LETTER_COLORS: Record<string, PaletteColor['id'] | 'accent' | 'mute
 export const TIERS = ['sm', 'md', 'lg', 'xl', 'xxl'] as const
 export type Tier = (typeof TIERS)[number]
 
-/**
- * Where a drawing sits (ticket 290): `gap` px outside the main column's edge (the layer is centred on the column; a
- * negative gap is inside it) and `top` px down from the section's top. Wide screens have room beside the column, so
- * there each drawing sits a fixed gap of 24-48px out; where the gutter is too narrow (phone, tablet, the low end of
- * laptop) the small ones tuck into it or into blank space beside the hero's text. The placements were fitted to this
- * page's own layout at several widths of each band (English and Russian) so nothing touches text or a control, and an
- * item that finds no clear spot in a band is left out there. The bands thin out: `xl`/`xxl` carry the full set, `md`
- * and `lg` about two thirds of it, `sm` about a third. A drawing is small (3-6px beads) or large (`big`: 9-11px beads
- * at 16% opacity); the phone band keeps only small ones.
- */
+// Where a drawing sits (ticket 290): `gap` px outside the column's edge (negative: inside), `top` px down the section.
+// Fitted to the layout at several widths per band so nothing touches text or a control; an item with no clear spot is
+// left out. Bands thin out (`xl`/`xxl` full, `sm` a third); drawings are small or `big` (16% opacity).
 export interface Placement {
   side: 'left' | 'right'
   gap: number

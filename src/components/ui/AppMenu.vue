@@ -7,12 +7,9 @@ import AppIcon from './AppIcon.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 
-/**
- * The design system's Menu (ticket 76; Menu card): a button with a trailing chevron that opens a popup list 4px under
- * it (Export ▾). Items are AppMenuItems in the default slot; the `footer` slot takes a row under a rule (the Export
- * menu's name on exports). The arrows, Home and End move between items; choosing one, Escape, Tab or a press outside
- * closes the menu, and Escape and a choice give focus back to the button.
- */
+// The design system's Menu (ticket 76; Menu card): a button with a trailing chevron opening a popup list 4px under it;
+// items are AppMenuItems, the `footer` slot a row under a rule. Arrows, Home and End move; choosing, Escape, Tab or a
+// press outside closes it, and Escape and a choice return focus to the button.
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
@@ -22,9 +19,11 @@ const props = withDefaults(
     size?: 'md' | 'lg'
     /** Which edge of the button the menu lines up with. */
     align?: 'start' | 'end'
-    /** The header menu's trigger (HeaderMenu card): just the icon in a ghost button, no label or chevron; `label` is its accessible name. */
+    /** The header menu's trigger (HeaderMenu card): just the icon in a ghost button, no label or chevron; `label` is
+     * its accessible name. */
     iconOnly?: boolean
-    /** The popup is a small dialog of its own (the Export prompt "Set Frame to export", SaveBox card), not a list of items: Tab moves through it and leaving it closes it. */
+    /** The popup is a small dialog of its own (the Export prompt "Set Frame to export", SaveBox card), not a list of
+     * items: Tab moves through it and leaving it closes it. */
     popover?: boolean
   }>(),
   { icon: undefined, variant: 'secondary', size: 'md', align: 'start', iconOnly: false, popover: false },

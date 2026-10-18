@@ -8,12 +8,8 @@ export interface StorageAskFlowDeps {
   devicePreferences: DevicePreferences
 }
 
-/**
- * Asking the browser to keep the library (ticket 399). Opening the app never asks; the first time a Project is written
- * to the library on this device, and only if the browser doesn't already keep it, a note explains in plain words what
- * the browser may ask, and its button is what triggers the browser's prompt. The device remembers the note was shown
- * (whatever the answer), so it comes once. Nothing here can fail a save: where the browser can't say, nothing happens.
- */
+// Asking the browser to keep the library (ticket 399): never on open; on the first write, if not already kept, a note
+// explains and its button triggers the prompt. Shown once whatever the answer; nothing here can fail a save.
 export function useStorageAskFlow(deps: StorageAskFlowDeps) {
   /** Whether the note before the browser's prompt is open. */
   const storageNoteOpen = ref(false)
@@ -22,7 +18,8 @@ export function useStorageAskFlow(deps: StorageAskFlowDeps) {
   /** Whether a check is under way or has found nothing to ask, so later saves don't repeat it. */
   let settled = false
 
-  /** Called after each write of the library: the first one on a device, with the library not yet kept, opens the note. */
+  /** Called after each write of the library: the first one on a device, with the library not yet kept, opens the
+   * note. */
   function onLibrarySaved() {
     if (settled || asked.value) return
     settled = true

@@ -143,7 +143,8 @@ const {
 
 const newProjectAction = controlAction('new-project')
 
-/** The chosen colour as the pill's colour control shows it: its hex and its name (a Palette colour's own, "Custom" for a one-off). */
+/** The chosen colour as the pill's colour control shows it: its hex and its name (a Palette colour's own, "Custom"
+ * for a one-off). */
 const colorHex = computed(() => selectedColorHex() ?? undefined)
 const colorName = computed(() => {
   const id = selectedColorId.value
@@ -157,8 +158,10 @@ const pillRect = ref<PillRect>()
 /** Pick color from canvas (ticket 403): the surface shows the eyedropper while it is on. */
 const colorPick = useColorPick()
 
-/** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on release. */
-/** Whether Select or Piece is in hand: the pointer is the native arrow, and the margin cannot be selected (tickets 414, 433). */
+/** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on
+ * release. */
+/** Whether Select or Piece is in hand: the pointer is the native arrow, and the margin cannot be selected (tickets
+ * 414, 433). */
 const selecting = computed(() => activeTool.value === 'select' || activeTool.value === 'piece')
 
 const shownProject = frameDraftProject
@@ -173,10 +176,12 @@ const frameTooltip = computed(() => {
   return t.value.frame.sizeTooltip.replace('{columns}', String(frame.columns)).replace('{rows}', String(frame.rows)).replace('{estimate}', estimate)
 })
 
-/** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar then shrinks to the size instead of hiding. */
+/** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar
+ * then shrinks to the size instead of hiding. */
 const selectionGuided = computed(() => !!selection.value && hasGuides(selection.value) && showRulers.value !== false)
 
-/** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Project's Bead (ticket 415). */
+/** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Project's Bead
+ * (ticket 415). */
 const selectionSummary = computed(() => {
   const project = activeProject.value
   const current = selection.value
@@ -186,9 +191,11 @@ const selectionSummary = computed(() => {
   return t.value.frame.sizeTooltip.replace('{columns}', String(current.columns)).replace('{rows}', String(current.rows)).replace('{estimate}', estimate)
 })
 
-/** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps aside for the other (ticket 415). */
+/** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps
+ * aside for the other (ticket 415). */
 const selectionAnchor = ref<SelectionAnchor>()
-/** Where the Frame and its margin are while it is edited: Edit Frame's margin steppers sit in the margin (tickets 417, 427). */
+/** Where the Frame and its margin are while it is edited: Edit Frame's margin steppers sit in the margin (tickets
+ * 417, 427). */
 const frameAnchor = ref<FrameAnchor>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
@@ -197,7 +204,8 @@ const surfacePressing = ref(false)
 /** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
 const framingControlsEl = ref<HTMLElement>()
 
-/** The Canvas color (ticket 252) as the drawing area's fill, and the technique word's own color where the background needs one. */
+/** The Canvas color (ticket 252) as the drawing area's fill, and the technique word's own color where the background
+ * needs one. */
 const canvasBackground = useCanvasBackground()
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
@@ -478,17 +486,9 @@ function techniqueWord(technique: Technique): string {
   min-height: 0;
 }
 
-/*
- * The canvas box (ticket 141): all the width right of the left column and the full height of the body, on the same
- * dot-grid notepad texture. Its rows stack top to bottom (the zoom cluster,
- * a horizontal Progress bar, then the Project), and the Project's own row takes the rest of the height.
- *
- * The canvas is a surface that fills .app-shell__canvas-scroll edge to edge and moves under its own view (zoom and
- * scroll, ADR 0026), so nothing scrolls natively: the page never does either.
- *
- * The zoom cluster is a sibling of the scroller, not a descendant, so it never scrolls, zooms or rotates along with the
- * Project below it.
- */
+/* The canvas box (ticket 141): right of the left column, full body height, dot-grid texture; rows stack zoom cluster,
+ * Progress bar, Project. The canvas moves under its own view (ADR 0026), so nothing scrolls natively; the zoom
+ * cluster is a sibling of the scroller, so it never scrolls, zooms or rotates with the Project. */
 .app-shell__canvas {
   position: relative;
   display: flex;
@@ -503,11 +503,9 @@ function techniqueWord(technique: Technique): string {
   box-shadow: var(--elevation-2);
 }
 
-/*
- * The drawing area (ticket 143): the rest of the canvas box under the strip. Its size is measured for the fit zoom,
- * so it takes a share of the box (flex-basis 0), never the Project's size. The background highlight fills it behind
- * everything; what follows it is positioned too, so it paints over the highlight.
- */
+/* The drawing area (ticket 143): the box under the strip, sized for the fit zoom, so it takes a share (flex-basis 0),
+ * never the Project's size. The backdrop fills it behind everything; later siblings are positioned too, so they paint
+ * over it. */
 .app-shell__drawing {
   position: relative;
   background: var(--canvas-bg, transparent);
@@ -518,15 +516,14 @@ function techniqueWord(technique: Technique): string {
   overflow: hidden;
 }
 
-/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar and the Tool pill's layer, which float over the beads. */
+/* CanvasHint is excluded: it floats over the top-centre, and so are the context bar and the Tool pill's layer, which
+ * float over the beads. */
 .app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar):not(.tool-pill-layer) {
   position: relative;
 }
 
-/*
- * Space+drag panning (ticket 95): a grab cursor while Space is held, switching to grabbing once the drag actually starts
- * (BeadHover card). It wins over the board's own bead-shaped marker.
- */
+/** Space+drag panning (ticket 95): grab cursor while Space is held, grabbing once the drag starts (BeadHover card);
+ * wins over the bead marker. */
 .app-shell__canvas--pan,
 .app-shell__canvas--pan :deep(*) {
   cursor: grab;

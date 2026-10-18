@@ -5,22 +5,13 @@ import { readKey } from './storageKeys'
 
 const STORAGE_KEY = 'openbeads:patterns'
 
-/**
- * Where loadProjects keeps a stored value it can't read, rather than leaving it to be overwritten. A save always writes
- * the whole library from memory (ADR 0012), so a read that gives up and returns nothing is otherwise one edit away from
- * replacing a real library with an empty one. That only became reachable once the format had versions at all — a build
- * predating a format can't read what a newer one wrote (this app is served from a cache, ADR 0045) — so the bytes are
- * kept aside for whichever build does understand them.
- */
+// Where loadProjects keeps a value it can't read: a save writes the whole library (ADR 0012), so giving up and
+// returning nothing would be one edit from overwriting a real library; a build predating a format can't read newer ones
+// (ADR 0045), so keep the bytes.
 const UNREADABLE_KEY = 'openbeads:patterns:unreadable'
 
-/**
- * The stored format saveProjects writes (ADR 0009). Version 1 is the original: a bare JSON array of Projects, each
- * carrying an object per cell with a full hex string in it. Version 2 wraps the library in this envelope and stores
- * every grid compactly (see projectEncoding).
- *
- * Nothing but loadProjects and saveProjects ever sees either shape — the rest of the app works with plain Projects.
- */
+// The stored format saveProjects writes (ADR 0009): v1 a bare array of Projects with full hex cells, v2 an envelope
+// with compact grids.
 const STORED_VERSION = 3
 
 interface StoredLibrary {
@@ -35,21 +26,16 @@ interface StoredGridLibrary {
   patterns: EncodedGridProject[]
 }
 
-/**
- * Every stored format this build can read, keyed by version: each takes the parsed JSON and hands back plain Projects.
- * A third format needs only another entry here — version 1 is the one shape that has to be recognised by its own
- * outline (an array, not an envelope), and everything since says which version it is.
- *
- * A reader may throw on a value that isn't the shape it claims to be; loadProjects treats that the same as unparseable
- * JSON.
- */
+// Every readable stored format by version: each takes parsed JSON and returns plain Projects. v1 is recognised by being
+// an array; a reader may throw on a wrong shape, which loadProjects treats like unparseable JSON.
 const READERS: Record<number, (parsed: unknown) => (Project | GridProject)[]> = {
   1: (parsed) => parsed as GridProject[],
   2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeProject),
   3: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
 }
 
-/** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned envelope. */
+/** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned
+ * envelope. */
 function versionOf(parsed: unknown): number | undefined {
   if (Array.isArray(parsed)) {
     return 1
@@ -77,15 +63,9 @@ function keepUnreadable(raw: string): void {
   }
 }
 
-/**
- * Reads the whole Project library, in whichever stored format wrote it (see READERS). A library still in an older
- * format decodes to exactly the Projects it held; the next save rewrites it in the current one, since saveProjects
- * always writes the whole library.
- *
- * Returns no Projects at all — rather than throwing — for a value this build can't read: unparseable JSON, a shape that
- * doesn't match the version it claims, or a version a newer build wrote. That value is kept aside first, because the
- * app carrying on from an empty library is only safe if the bytes it couldn't read survive it (see UNREADABLE_KEY).
- */
+// Reads the whole library in any stored format (see READERS); the next save rewrites it in the current one. For an
+// unreadable value (bad JSON, wrong shape, newer version) returns no Projects, after keeping the bytes aside (see
+// UNREADABLE_KEY) so they survive.
 export function loadProjects(): Project[] {
   const raw = readKey(localStorage, STORAGE_KEY)
   if (raw === null) {
@@ -107,27 +87,16 @@ export function loadProjects(): Project[] {
   return []
 }
 
-/**
- * Writes the whole Project library, replacing whatever was there. The caller's in-memory library is the source of
- * truth (see useProjectLibrary), so this deliberately doesn't read storage back first to merge: a save used to parse
- * and re-normalise every saved Project before writing a single changed one, which is most of what ticket 55 measured
- * on the per-cell paint path.
- *
- * Every grid is encoded compactly on the way out (ADR 0009), which is the whole of the format change: an ordinary
- * 60×90 Project costs about 3KB here instead of about 100KB.
- *
- * Throws whatever the browser throws when the write doesn't fit (a QuotaExceededError, typically) — the caller is
- * expected to catch that and surface it rather than lose the edit silently.
- */
+// Writes the whole library, replacing what was there; the in-memory library is the truth (useProjectLibrary), so no
+// read-back merge (ticket 55). Grids are encoded compactly (ADR 0009): a 60×90 Project is about 3KB, not 100KB. Throws
+// what the browser throws when the write doesn't fit (QuotaExceededError); the caller must surface it.
 export function saveProjects(projects: Project[]): void {
   const stored: StoredLibrary = { version: STORED_VERSION, patterns: projects.map(encodeProject) }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
 }
 
-/**
- * Where the Project library is kept (ADR 0020). useProjectLibrary persists through this, so its tests hand it a fake
- * and the backend phase can add a store that syncs beside this one.
- */
+// Where the Project library is kept (ADR 0020); useProjectLibrary persists through it, so tests fake it and a backend
+// can add a store.
 export interface LibraryStore {
   /** Every stored Project; see loadProjects for what an unreadable value gives. */
   load: () => Project[]

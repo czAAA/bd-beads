@@ -1,9 +1,5 @@
-/*
- * Design system tokens (docs/design/system/tokens.json). Light is the default; data-theme="dark" or "contrast" on
- * <html> selects the others (src/theme). Sizes are in rem so the browser's text size scales the chrome.
- * src/styles/tokens.test.ts keeps this file equal to tokens.json: refresh both together (DESIGN.md §6). The values that
- * aren't tokens (motion, fills, scrims) are in design-values.css.
- */
+/* Design tokens (docs/design/system/tokens.json); tokens.test.ts keeps this equal to it, so refresh both
+   (DESIGN.md §6). Non-tokens: design-values.css. */
 
 :root,
 :root[data-theme="light"] {
@@ -212,7 +208,8 @@
   --type-ruler: 400 0.6875rem var(--font-mono);
   --type-word: italic 400 15rem/1 var(--font-serif);
   --tracking-word: -4px;
-  /* Overview only: the slogan, its section headings and handwritten notes. The slogan steps up with the screen (40px phone, 58px from 744, 60px from 1024, 70px at 24″; Russian 20% smaller). */
+  /* Overview only: the slogan, its section headings and handwritten notes. The slogan steps up with the screen (40px
+     phone, 58px from 744, 60px from 1024, 70px at 24″; Russian 20% smaller). */
   --type-tagline: italic 400 2.5rem/2.5rem var(--font-serif);
   --tracking-tagline: -0.6px;
   --type-note: italic 400 1.0625rem/1 var(--font-serif);

@@ -7,10 +7,8 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
 import { pickColor } from './testUtils/pill'
 
-/**
- * The Canvas (ticket 233, ADR 0026) as the app shows it: a Project with no Frame is an endless field you draw on
- * anywhere, move with the wheel, the Hand tool and Space, and read through the rulers of its pieces.
- */
+/** The Canvas (ticket 233, ADR 0026) as the app shows it: an endless field to draw on, moved by wheel, Hand tool and
+ * Space, read via rulers. */
 
 const RED = '#e63746'
 

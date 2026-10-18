@@ -1,14 +1,7 @@
 #!/usr/bin/env bash
-# Moves this machine from the old single-repo checkout to the two-repo layout (ADR 0047):
-#   <parent>/bd-beads        public, code only (a new history)
-#   <parent>/bd-beads-docs   private: tickets, ADRs, specs, research; linked into bd-beads by scripts/link-docs.sh
-#
-# Local and per-machine; safe to run again (a finished machine only re-links and pulls). Deletes nothing it cannot
-# recover: the old checkout is renamed to bd-beads.old2, merged worktrees are removed (their work is in `pre-split`),
-# and every unmerged branch and every uncommitted change is saved as a patch first.
-#
-# Usage: bash scripts/migrate.sh [path-to-old-checkout]    (default: <parent of this script's checkout>/bd-beads)
-# Env:   NEW_URL, DOCS_URL (remotes), SKIP_NPM=1 (no npm ci)
+# Moves this machine from the old single-repo checkout to the two-repo layout (ADR 0047), via scripts/link-docs.sh.
+# Safe to rerun; deletes nothing unrecoverable (old checkout renamed, unmerged work saved as patches).
+# Usage: bash scripts/migrate.sh [old-checkout]; env NEW_URL, DOCS_URL, SKIP_NPM=1.
 set -euo pipefail
 
 NEW_URL=${NEW_URL:-git@github.com:czAAA/bd-beads.git}

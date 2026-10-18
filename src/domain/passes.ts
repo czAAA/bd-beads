@@ -1,11 +1,7 @@
 import type { Technique } from './grid'
 
-/**
- * Row progress counts passes, not lines (ticket 347). A line is a row or a column of the Frame, whichever way the
- * weaver's rows run. On loom and brick stitch a pass is one whole line. On peyote the first line is woven in one pass
- * and every later line takes two, each adding every other bead of it: first the beads at even positions along the
- * line (the larger half on an odd line), then the ones at odd positions.
- */
+/** Row progress counts passes, not lines (ticket 347); a line is a row or column of the Frame. Loom and brick stitch:
+ * one pass per line. Peyote: the first line one pass, every later line two (even positions first, then odd). */
 
 /** How many passes weaving `lines` lines takes. */
 export function passCount(technique: Technique, lines: number): number {
@@ -15,7 +11,8 @@ export function passCount(technique: Technique, lines: number): number {
   return 1 + (lines - 1) * 2
 }
 
-/** The pass (zero-based) that weaves the bead at `along` (its position along its line) in line `line`; both counted from the Frame's first. */
+/** The pass (zero-based) that weaves the bead at `along` (its position along its line) in line `line`; both counted
+ * from the Frame's first. */
 export function passOf(technique: Technique, line: number, along: number): number {
   if (technique !== 'peyote' || line === 0) {
     return line

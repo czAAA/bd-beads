@@ -1,9 +1,5 @@
-/*
- * The app's own fonts, served from public/fonts/ (same origin, no font CDN: ADR 0001, DESIGN.md §4.4).
- * JetBrains Mono and Source Serif 4 carry only their Cyrillic glyphs: DM Mono and Instrument Serif have none, so the
- * Russian UI falls back to them per glyph through the --font-mono and --font-serif stacks. All SIL Open Font License
- * (public/fonts/LICENSE-*.txt), taken from the @fontsource packages.
- */
+/* Own fonts from public/fonts/ (ADR 0001, DESIGN.md §4.4), SIL OFL. JetBrains Mono and Source Serif 4 supply only
+ * Cyrillic, which DM Mono and Instrument Serif lack; the font stacks fall back per glyph. */
 
 /* inter-latin-400-normal */
 @font-face {

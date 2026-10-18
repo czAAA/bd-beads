@@ -16,12 +16,9 @@ export interface ToolPillDeps {
   onSelectImageColor: (hex: string) => void
 }
 
-/**
- * The Tool pill's own state (ticket 439, ADR 0059): which edge it is docked to, whether its colour control shows one
- * colour or the recents, the eight recent colours, and whether the colour popover is open. The first three are kept on
- * this device like the theme (ADR 0020). A colour joins the recents, at the front, whenever the paint colour changes,
- * and the colour it replaced joins with it: the colours "used before" are what the pill offers back.
- */
+// The Tool pill's own state (ticket 439, ADR 0059): docked edge, whether the colour control shows one colour or the
+// recents, the eight recents, and whether the colour popover is open. The first three are kept on this device like the
+// theme (ADR 0020). A colour joins the recents at the front when the paint colour changes, with the one it replaced.
 export function useToolPill(deps: ToolPillDeps) {
   const position = deps.preferences.get('toolPillPosition')
   const colorMode = deps.preferences.get('pillColors')

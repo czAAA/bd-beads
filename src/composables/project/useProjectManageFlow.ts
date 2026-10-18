@@ -16,11 +16,9 @@ export interface ProjectManageDeps {
   closeProject: () => void
 }
 
-/**
- * Rename, Duplicate and Delete for the open Project, and Delete all Projects for the library (spec 0440, ticket 443): each acts at once, saved with the library
- * and independent of Undo. Duplicate and Delete ask first, in the dialogs AppDialogs draws from `duplicating` and
- * `deleting`. Deps are read lazily.
- */
+// Rename, Duplicate, Delete for the open Project and Delete all Projects (spec 0440, ticket 443): saved with the
+// library, independent of Undo; Duplicate and Delete ask first in the dialogs AppDialogs draws from
+// `duplicating`/`deleting`. Deps are lazy.
 export function useProjectManageFlow(deps: ProjectManageDeps) {
   /** The suggested name while the Duplicate dialog is open. */
   const duplicating = ref<string | undefined>()
@@ -44,12 +42,14 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
     duplicating.value = undefined
   }
 
-  /** Adds the copy under the chosen name, with Row progress and everything else, and opens it; false when the name is empty. */
+  /** Adds the copy under the chosen name, with Row progress and everything else, and opens it; false when the name
+   * is empty. */
   function onConfirmDuplicate(name: string): boolean {
     const project = deps.currentProject()
     if (!project || !normalizeProjectName(name)) return false
     duplicating.value = undefined
-    // The library holds reactive Projects, which structuredClone refuses; the copy is made from the plain data underneath.
+    // The library holds reactive Projects, which structuredClone refuses; the copy is made from the plain data
+    // underneath.
     deps.addProject(duplicateProject(toRaw(project), name))
     return true
   }

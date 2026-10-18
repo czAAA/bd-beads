@@ -1,11 +1,5 @@
-/*
- * The very base of the page (ADR 0021, ticket 152): the design system's own tokens set the type, color and background;
- * this file exists only to put them on :root and to zero the body margin every browser adds. Everything else the app
- * draws is styled by tokens.css, controls.css, contrast.css and each component's own scoped style: the ticket-02
- * stylesheet this file used to be (its own --color-*, --border-width and --radius-* tokens, the old system font
- * stack, and the unstyled <button>/<input>/<label> rules that shaped them before every control had moved onto
- * .ui-control) is gone, superseded end to end.
- */
+/* The page base (ADR 0021, ticket 152): puts the design tokens on :root and zeroes the body margin; everything
+   else is in tokens.css, controls.css, contrast.css and scoped styles. */
 :root {
   /* The root's own type size and line height: nothing in tokens.css sets these (they're the page's base, not a
      component's), so they still live here. e2e/support/app.ts pins --line-height-base for the visual checks. */
@@ -23,16 +17,14 @@
 
 html,
 body {
-  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, no pinch zoom (`manipulation` would allow it on iOS), and no overscroll bounce moves the page. */
+  /* Page zoom is locked (ticket 316, ADR 0034): no double-tap zoom, no pinch zoom (`manipulation` would allow it on
+     iOS), and no overscroll bounce moves the page. */
   touch-action: pan-x pan-y;
   overscroll-behavior: none;
 }
 
-/*
- * touch-action is not inherited: a scrolling sheet body or any control left at `auto` would let Safari pinch-zoom the
- * page there. Every element is locked to panning; the canvas (ProjectSurface) sets its own `none`, which
- * out-ranks this zero-specificity rule.
- */
+/* touch-action isn't inherited: lock every element to panning or Safari pinch-zooms the page; the canvas sets its
+   own `none` (out-ranks this). */
 :where(*) {
   touch-action: pan-x pan-y;
 }
@@ -41,20 +33,14 @@ body {
   margin: 0;
 }
 
-/*
- * Shell chrome that scrolls nothing vertically (Canvas strip, Progress bar): a vertical drag on it must not pan the page
- * and carry the canvas out of view on a phone. Sideways stays allowed for a bar's own horizontal scroll. Out-ranks the
- * zero-specificity `:where(*)` rule above.
- */
+/* Shell chrome that scrolls nothing vertically: a vertical drag must not pan the page off the canvas on a phone;
+   sideways stays allowed. */
 .no-page-pan {
   touch-action: pan-x;
 }
 
-/*
- * The app is a tool, not a document: text in the Dock, Canvas strip, Progress rows, sheets and dialogs is chrome, so a
- * drag or long-press must not select it (as in any drawing or editor app). Fields keep selection so typing, caret moves
- * and copy still work; Safari needs the -webkit- form on them.
- */
+/* Chrome text is not selectable (it's a tool, not a document); fields keep selection for typing and copy; Safari
+   needs the -webkit- form. */
 /* `auto` follows the parent, so the root is enough. */
 :root:has(.app-shell) {
   -webkit-user-select: none;
@@ -68,11 +54,8 @@ body {
   user-select: text;
 }
 
-/*
- * The app shell fills the screen and scrolls nothing itself (ticket 141), so the document under it must not scroll
- * either (ticket 320): on a phone the page otherwise drags past the Dock into the empty band below it. The Overview
- * page has no shell and scrolls as a document, so it is left alone. overscroll-behavior is ticket 316's.
- */
+/* The shell scrolls nothing (ticket 141), so the document must not (ticket 320) or a phone drags past the Dock;
+   Overview scrolls; see ticket 316. */
 html:has(.app-shell),
 html:has(.app-shell) body {
   height: 100%;

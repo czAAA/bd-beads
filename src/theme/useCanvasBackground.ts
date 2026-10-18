@@ -5,10 +5,8 @@ import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { useDevicePreferences, type DevicePreferences } from '../services/devicePreferences'
 import { useResolvedTheme } from './useResolvedTheme'
 
-/**
- * The person's Canvas color (ticket 252), shared by the app: the picker sets it, and the drawing area and the canvas
- * renderer read what it shows in the theme now. The stored number is kept whatever the theme shows of it.
- */
+/** The person's Canvas color (ticket 252), shared by the app. The stored number is kept whatever the theme shows of
+ * it. */
 export function useCanvasBackground(preferences: DevicePreferences = useDevicePreferences()): {
   /** The stored number, 1 to 6. */
   choice: Readonly<Ref<number>>
