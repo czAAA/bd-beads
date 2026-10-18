@@ -171,6 +171,48 @@ describe('NewProjectForm draft (ticket 58)', () => {
   })
 })
 
+describe('NewProjectForm Brick block (ticket 477)', () => {
+  const field = '[data-testid="brick-block"]'
+
+  it('shows the stepper only for Brick stitch, with the hover text on it', async () => {
+    const wrapper = mount(NewProjectForm)
+    expect(wrapper.find(field).exists()).toBe(false)
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
+    expect(wrapper.find(field).exists()).toBe(true)
+    expect(wrapper.find('[data-testid="brick-block-value"]').text()).toBe('1')
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
+    expect(wrapper.find(field).exists()).toBe(false)
+  })
+
+  it('steps from 1 to 20, and sends the number with the draft and the submit', async () => {
+    const wrapper = mount(NewProjectForm)
+    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
+    expect(wrapper.find('[data-testid="brick-block-less"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerup')
+    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ technique: 'brick', brickBlock: 2 })
+
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'brick', brickBlock: 2 })
+  })
+
+  it('keeps the number while another Technique is chosen, and sends none for it', async () => {
+    const wrapper = mount(NewProjectForm)
+    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
+    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerup')
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
+    expect(wrapper.emitted('draft')!.at(-1)![0]).not.toHaveProperty('brickBlock')
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
+    expect(wrapper.find('[data-testid="brick-block-value"]').text()).toBe('2')
+  })
+})
+
 describe('NewProjectForm Convert image (ticket 58)', () => {
   it('advertises the limits as visible helper text and from the shared constants', async () => {
     const wrapper = await mountSizedForm()

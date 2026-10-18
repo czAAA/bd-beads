@@ -27,6 +27,7 @@ const {
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
+  onSetBrickBlock,
   onFitFrame,
   replaceBeadCandidates,
   onRequestReplaceBead,
@@ -118,6 +119,7 @@ const {
       :exporting="exporting"
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
+      @set-brick-block="onSetBrickBlock"
       @replace-bead="onRequestReplaceBead"
       @save="onSave"
       @export-png="onExportPng"

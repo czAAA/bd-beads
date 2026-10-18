@@ -2,6 +2,7 @@ import { beadPitchMm, type Bead } from './beads'
 import {
   gridHeight,
   gridWidth,
+  rowCycle,
   rowPitch,
   type GridDimensions,
   type Technique,
@@ -139,8 +140,8 @@ export interface PreviewLattice {
   rows: number
   /** Which lattice column holds the frame's column 0. */
   frameColumn: number
-  /** Which lattice row holds the frame's row 0. Always even, so row parity matches and an offset Technique's
-   * half-cell stagger runs unbroken across the frame's edge. */
+  /** Which lattice row holds the frame's row 0. Always a whole number of the shift's cycles (even, or 2N on
+   * brick stitch), so an offset Technique's half-cell stagger runs unbroken across the frame's edge. */
   frameRow: number
 }
 
@@ -168,6 +169,8 @@ export interface PreviewLatticeInput {
   dimensions: GridDimensions
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
   technique: Technique
+  /** The Brick block (ticket 477); nothing is 1. */
+  brickBlock?: number
 }
 
 /** The preview's lattice for a view: the frame plus the overhanging picture, capped at PREVIEW_MAX_CELLS. The margin
@@ -179,6 +182,7 @@ export function previewLattice({
   dimensions,
   bead,
   technique,
+  brickBlock,
 }: PreviewLatticeInput): PreviewLattice {
   const overhangX = Math.max(-view.offsetXMm, view.offsetXMm + view.pictureWidthMm - frame.widthMm)
   const overhangY = Math.max(-view.offsetYMm, view.offsetYMm + view.pictureHeightMm - frame.heightMm)
@@ -188,8 +192,10 @@ export function previewLattice({
 
   const fit = marginFit(dimensions, wantedColumns, wantedRows)
   const frameColumn = Math.floor(wantedColumns * fit)
-  // Rounded down to an even number of rows, so the frame keeps its own row parity (see PreviewLattice.frameRow).
-  const frameRow = 2 * Math.floor((wantedRows * fit) / 2)
+  // Rounded down to whole cycles of the shift, so the frame keeps its place in it (see PreviewLattice.frameRow).
+  // Loom has a cycle of 1 but its frame row has always been even.
+  const cycle = Math.max(2, rowCycle({ technique, brickBlock }))
+  const frameRow = cycle * Math.floor((wantedRows * fit) / cycle)
 
   return {
     columns: dimensions.columns + frameColumn * 2,

@@ -18,6 +18,7 @@ import type { StatedSize } from '../../domain/projectSize'
 import { useTourFormReset } from '../../composables/tour/useTour'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
+import BrickBlockField from './BrickBlockField.vue'
 import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -57,6 +58,8 @@ const emit = defineEmits<{
 const name = ref('')
 const beadId = ref(BEAD_CATALOG[0]!.id)
 const technique = ref<Technique>('loom')
+/** The Brick block (ticket 477): kept while another Technique is chosen, used by brick stitch only. */
+const brickBlock = ref(1)
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
 /** The Tour's "Back to loom for your first Project" (ticket 80): Loom and the default Bead, with the Name left as
@@ -96,6 +99,7 @@ function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
     technique: technique.value,
+    ...(technique.value === 'brick' && brickBlock.value > 1 ? { brickBlock: brickBlock.value } : {}),
     beadId: beadId.value,
     makerName: makerName.value.trim(),
   }
@@ -110,7 +114,7 @@ function draftInput(): CreateProjectInput {
   return { ...currentInput(), ...(convertSize.value ? { size: convertSize.value } : {}) }
 }
 
-watch([name, beadId, technique, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
+watch([name, beadId, technique, brickBlock, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
@@ -226,6 +230,8 @@ function onDropImage(file: File) {
         data-testid="technique-select"
       />
     </FormField>
+
+    <BrickBlockField v-if="technique === 'brick'" v-model="brickBlock" testid="brick-block" />
 
     <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus">
       {{ t.form.submit }}

@@ -1,5 +1,5 @@
 import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
-import type { GridPosition, Technique } from './grid'
+import { rowCycle, type GridPosition, type Weave } from './grid'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt } from './pieces'
 import type { Project } from './project'
@@ -40,21 +40,21 @@ export interface NamedPiece extends Frame {
 
 /** The last answer of `namedPieces` per set of beads: the canvas asks on every repaint of the rulers, and the answer
  * only changes when the beads or the names do. */
-const namedCache = new WeakMap<BeadMap, { names: PieceName[]; technique: Technique; found: NamedPiece[] }>()
+const namedCache = new WeakMap<BeadMap, { names: PieceName[]; cycle: number; found: NamedPiece[] }>()
 
 /** The Piece names that still have a Piece under them, and which Piece each is on. Unresolved names are skipped. */
-export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'pieceNames'>): NamedPiece[] {
+export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'pieceNames'>): NamedPiece[] {
   const names = project.pieceNames
   if (!names?.length) {
     return []
   }
   const known = namedCache.get(project.beads)
-  if (known && known.names === names && known.technique === project.technique) {
+  if (known && known.names === names && known.cycle === rowCycle(project)) {
     return known.found
   }
   const found: NamedPiece[] = []
   for (const { name, row, column } of names) {
-    const members = pieceBeadsAt(project.beads, project.technique, { row, column })
+    const members = pieceBeadsAt(project.beads, project, { row, column })
     if (members.length === 0) {
       continue
     }
@@ -64,15 +64,15 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'piec
     const left = Math.min(...columns)
     found.push({ name, row: top, column: left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1, beads: members.length })
   }
-  namedCache.set(project.beads, { names, technique: project.technique, found })
+  namedCache.set(project.beads, { names, cycle: rowCycle(project), found })
   return found
 }
 
 /** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
  * A Frame frames a Schema whole or not at all, as the margin is kept clear of new beads. */
-export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'pieceNames'>, frame: Frame): string | undefined {
+export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'pieceNames'>, frame: Frame): string | undefined {
   for (const { name, row, column } of project.pieceNames ?? []) {
-    const members = pieceBeadsAt(project.beads, project.technique, { row, column })
+    const members = pieceBeadsAt(project.beads, project, { row, column })
     const inside = members.filter((at) => frameContains(frame, at)).length
     if (inside > 0 && inside < members.length) {
       return name
@@ -82,19 +82,19 @@ export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | '
 }
 
 /** The name of the Piece that holds the bead at `position`, if it has one. */
-export function pieceNameAt(project: Pick<Project, 'beads' | 'technique' | 'pieceNames'>, position: GridPosition): string | undefined {
+export function pieceNameAt(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'pieceNames'>, position: GridPosition): string | undefined {
   const names = project.pieceNames
   if (!names?.length) {
     return undefined
   }
-  const piece = new Set(pieceBeadsAt(project.beads, project.technique, position).map(numericKey))
+  const piece = new Set(pieceBeadsAt(project.beads, project, position).map(numericKey))
   return names.find((entry) => piece.has(numericKey(entry)))?.name
 }
 
 /** The Project with the Piece holding the bead at `position` named `name` (unnamed when empty). The same Project
  * when nothing changes or there is no bead there. */
 export function withPieceName(project: Project, position: GridPosition, name: string): Project {
-  const piece = new Set(pieceBeadsAt(project.beads, project.technique, position).map(numericKey))
+  const piece = new Set(pieceBeadsAt(project.beads, project, position).map(numericKey))
   if (piece.size === 0) {
     return project
   }
@@ -110,7 +110,7 @@ export function withPieceName(project: Project, position: GridPosition, name: st
 }
 
 /** Labels the Pieces of one bead set as they are asked about, so two positions of one Piece answer with one id. */
-function pieceLabeller(beads: BeadMap, technique: Technique) {
+function pieceLabeller(beads: BeadMap, weave: Weave) {
   const ids = new Map<number, number>()
   const sizes: number[] = []
   return {
@@ -119,7 +119,7 @@ function pieceLabeller(beads: BeadMap, technique: Technique) {
       if (known !== undefined) {
         return known
       }
-      const members = pieceBeadsAt(beads, technique, position)
+      const members = pieceBeadsAt(beads, weave, position)
       if (members.length === 0) {
         return undefined
       }
@@ -145,14 +145,14 @@ interface Landing {
  * (ties to the part that holds its anchor). Names with no bead left have none. */
 function landNames(
   before: Project,
-  after: Pick<Project, 'beads' | 'technique'>,
+  after: Pick<Project, 'beads' | 'technique' | 'brickBlock'>,
   labeller: ReturnType<typeof pieceLabeller>,
   moved?: (position: GridPosition) => GridPosition | undefined,
 ): Landing[] {
   const where = (at: GridPosition) => (moved ? moved(at) : at)
   const landings: Landing[] = []
   for (const entry of before.pieceNames ?? []) {
-    const survivors = pieceBeadsAt(before.beads, before.technique, entry)
+    const survivors = pieceBeadsAt(before.beads, before, entry)
       .map(where)
       .filter((at): at is GridPosition => !!at && after.beads[at.row]?.[at.column] !== undefined)
     if (survivors.length === 0) {
@@ -181,7 +181,7 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
     return after
   }
   const kept: Landing[] = []
-  for (const landing of landNames(before, after, pieceLabeller(after.beads, after.technique), moved)) {
+  for (const landing of landNames(before, after, pieceLabeller(after.beads, after), moved)) {
     const clash = kept.findIndex((other) => other.id === landing.id)
     if (clash === -1) {
       kept.push(landing)
@@ -203,7 +203,7 @@ export function keepNamesApart(before: Project, after: Project): Project {
   if ((before.pieceNames?.length ?? 0) < 2 || after.beads === before.beads) {
     return after
   }
-  const labeller = pieceLabeller(after.beads, after.technique)
+  const labeller = pieceLabeller(after.beads, after)
   const counts = new Map<number, number>()
   for (const { id } of landNames(before, after, labeller)) {
     counts.set(id, (counts.get(id) ?? 0) + 1)
@@ -225,10 +225,10 @@ export function keepNamesApart(before: Project, after: Project): Project {
 /** The bead standing for the one Piece a Selection covers (ticket 406): a Piece may be named only when the Selection
  * holds beads of exactly one. Undefined for no bead, or beads of two or more Pieces. */
 export function pieceInSelection(
-  project: Pick<Project, 'beads' | 'technique'>,
+  project: Pick<Project, 'beads' | 'technique' | 'brickBlock'>,
   selection: Selection,
 ): GridPosition | undefined {
-  const labeller = pieceLabeller(project.beads, project.technique)
+  const labeller = pieceLabeller(project.beads, project)
   let found: { id: number; at: GridPosition } | undefined
   for (const [rowKey, columns] of Object.entries(project.beads)) {
     const row = Number(rowKey)

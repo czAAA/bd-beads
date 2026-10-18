@@ -2,7 +2,7 @@ import { positionKey, type GridPosition } from './grid'
 import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
 import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import type { FrameEdge } from './frame'
-import type { Technique } from './grid'
+import type { Weave } from './grid'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { restoreBeads, type Project } from './project'
@@ -73,8 +73,8 @@ function selectionOfBox(box: Frame): Selection {
 // The Selection a tap with the Piece tool makes (ticket 414): the bounding rectangle of the tapped bead's Piece (other
 // Pieces' beads inside it are in too); none on an empty position. With a Frame (ticket 433) only the part on the
 // tapped bead's side counts, trimmed to a legal rectangle; a tap in the margin selects nothing.
-export function pieceSelectionAt(beads: BeadMap, technique: Technique, at: GridPosition, frame?: Frame): Selection | undefined {
-  const members = pieceBeadsAt(beads, technique, at).filter((member) => {
+export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Frame): Selection | undefined {
+  const members = pieceBeadsAt(beads, weave, at).filter((member) => {
     if (!frame) return true
     if (frameContains(frame, at)) return frameContains(frame, member)
     return !frameContains(withMargin(frame), member)

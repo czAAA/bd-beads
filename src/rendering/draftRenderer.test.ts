@@ -10,7 +10,7 @@ function pixel(image: ReturnType<typeof draftImage>, x: number, y: number): numb
 
 describe('draftImage', () => {
   it('is one pixel per bead for loom, in the colors of the beads', () => {
-    const image = draftImage('loom', 2, 2, ['#ff0000', '#00ff00', undefined, '#0000ff'], DEFAULT_THEME)
+    const image = draftImage({ technique: 'loom' }, 2, 2, ['#ff0000', '#00ff00', undefined, '#0000ff'], DEFAULT_THEME)
 
     expect([image.width, image.height]).toEqual([2, 2])
     expect(pixel(image, 0, 0)).toEqual([255, 0, 0])
@@ -21,7 +21,7 @@ describe('draftImage', () => {
   })
 
   it('makes each peyote bead two pixels wide and shifts every other row by one, so the rows sit half a bead apart', () => {
-    const image = draftImage('peyote', 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
+    const image = draftImage({ technique: 'peyote' }, 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
 
     expect([image.width, image.height]).toEqual([5, 2])
     expect([0, 1, 2, 3, 4].map((x) => pixel(image, x, 0))).toEqual([[255, 0, 0], [255, 0, 0], [0, 255, 0], [0, 255, 0], [232, 227, 223]])
@@ -29,7 +29,7 @@ describe('draftImage', () => {
   })
 
   it('shifts brick stitch rows the same way', () => {
-    expect(draftImage('brick', 3, 2, new Array(6).fill('#000000'), DEFAULT_THEME).width).toBe(7)
+    expect(draftImage({ technique: 'brick' }, 3, 2, new Array(6).fill('#000000'), DEFAULT_THEME).width).toBe(7)
   })
 })
 

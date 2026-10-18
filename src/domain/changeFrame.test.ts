@@ -171,6 +171,50 @@ describe('changeFrame', () => {
     })
   })
 
+  describe('Brick block (ticket 477)', () => {
+    const brick = () => framed({ technique: 'brick' })
+
+    it('changes only the Brick block: Frame and beads keep their rows and columns', () => {
+      const project = framed({ technique: 'brick', frame: { row: 12, column: 3, rows: 6, columns: 4 }, beads: withColors({}, [{ row: 13, column: 4, color: '#111111' }]) })
+      const result = changeFrame(project, { brickBlock: 3 })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.brickBlock).toBe(3)
+      expect(result.project.frame).toEqual({ row: 12, column: 3, rows: 6, columns: 4 })
+      expect(result.project.beads).toEqual(project.beads)
+    })
+
+    it('takes in the rows above a Frame that no longer starts on a multiple of 2N', () => {
+      const project = framed({ technique: 'brick', frame: { row: 10, column: 3, rows: 6, columns: 4 } })
+      const result = changeFrame(project, { brickBlock: 3 })
+      expect(result.kind === 'changed' && result.project.frame).toEqual({ row: 6, column: 3, rows: 10, columns: 4 })
+    })
+
+    it('is no change to the Brick block it already has, and 1 when none is stored', () => {
+      const project = brick()
+      expect(changeFrame(project, { brickBlock: 1 })).toEqual({ kind: 'unchanged', project })
+      const three = { ...project, brickBlock: 3 }
+      expect(changeFrame(three, { brickBlock: 3 })).toEqual({ kind: 'unchanged', project: three })
+    })
+
+    it('keeps the value when the Technique is switched away and back', () => {
+      const three = { ...brick(), brickBlock: 3 }
+      const peyote = changeFrame(three, { technique: 'peyote' })
+      if (peyote.kind !== 'changed') throw new Error('expected a change')
+      const back = changeFrame(peyote.project, { technique: 'brick' })
+      expect(back.kind === 'changed' && back.project.brickBlock).toBe(3)
+    })
+
+    it('holds a value from 1 to 20', () => {
+      const high = changeFrame(brick(), { brickBlock: 99 })
+      expect(high.kind === 'changed' && high.project.brickBlock).toBe(20)
+    })
+
+    it('is refused once a pass is done (Row progress)', () => {
+      const started = framed({ technique: 'brick', rowProgress: woven('rows', 2, 0) })
+      expect(changeFrame(started, { brickBlock: 2 })).toEqual({ kind: 'refused', reason: 'locked' })
+    })
+  })
+
   describe('technique and the margin', () => {
     it('takes a bead in the row above an odd-row Frame into the Frame rather than moving it', () => {
       const odd = framed({ frame: { row: 11, column: 10, rows: 6, columns: 4 }, beads: withColors({}, [{ row: 10, column: 11, color: '#111111' }]) })
