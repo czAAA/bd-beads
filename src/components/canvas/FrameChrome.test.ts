@@ -24,13 +24,13 @@ function mountChrome(props: Partial<InstanceType<typeof FrameChrome>['$props']> 
 }
 
 describe('FrameChrome (ticket 473)', () => {
-  it('puts the Margin handle halfway down the top margin and the pencil out and up from the outline corner', () => {
+  it('puts the Margin handle halfway down the top margin and the pencil inside the outline corner', () => {
     const wrapper = mountChrome()
     const at = (testid: string) => wrapper.get(`[data-testid="${testid}"]`).element.closest('.frame-chrome__control')!.getAttribute('style')
     expect(at('frame-move-handle')).toContain('left: 200px')
     expect(at('frame-move-handle')).toContain('top: 75px')
-    expect(at('frame-edit-toggle')).toContain('left: 314px')
-    expect(at('frame-edit-toggle')).toContain('top: 36px')
+    expect(at('frame-edit-toggle')).toContain('left: 274px')
+    expect(at('frame-edit-toggle')).toContain('top: 76px')
   })
 
   it('names the handle Move Frame, and hands its press and keys on', async () => {
