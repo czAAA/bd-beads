@@ -46,14 +46,11 @@ describe('the Margin handle and the edit pencil (ticket 473)', () => {
     expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 260 } }).x).toBe(360)
   })
 
-  it('keeps the handle 32px from the canvas box sides and inside it vertically', () => {
+  it('does not pull the handle into the canvas box when the Frame is dragged over its edge', () => {
     const roomy = { ...anchor, box: { ...anchor.box, top: 200 } }
-    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: -190 } }).x).toBe(32)
-    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 390 } }).x).toBe(368)
-    const above = marginHandleCentre({ ...anchor, box: { ...anchor.box, top: -300 }, outer: { ...anchor.outer, top: -400 } })
-    expect(above.y).toBe(22)
-    const below = marginHandleCentre({ ...anchor, box: { ...anchor.box, top: 500 }, outer: { ...anchor.outer, top: 450 } })
-    expect(below.y).toBe(278)
+    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 390 } }).x).toBe(490)
+    expect(marginHandleCentre({ ...anchor, box: { ...anchor.box, top: -300 }, outer: { ...anchor.outer, top: -400 } }).y).toBe(-350)
+    expect(marginHandleCentre({ ...anchor, box: { ...anchor.box, top: 500 }, outer: { ...anchor.outer, top: 450 } }).y).toBe(475)
   })
 
   it('does not change size or place with the zoom: only the anchor moves it', () => {
@@ -72,10 +69,8 @@ describe('the Margin handle and the edit pencil (ticket 473)', () => {
 
   it('slides the handle out from under the Frame bar, to the side with the nearer room', () => {
     const bar = { left: 100, top: 12, width: 200, height: 120 }
-    const above = { ...anchor, box: { ...anchor.box, top: -300 }, outer: { ...anchor.outer, top: -400 } }
-    const handle = marginHandleCentre(above, bar)
-    expect(handle.x + 28).toBeLessThanOrEqual(bar.left)
-    expect(handle.y).toBe(22)
+    const handle = marginHandleCentre({ ...anchor, box: { ...anchor.box, top: 40 }, outer: { ...anchor.outer, top: 0 } }, bar)
+    expect(handle).toEqual({ x: 200, y: -10 })
   })
 
   it('puts the pencil inside the margin, 26px in and down from the outline corner, pinned to it', () => {
@@ -83,9 +78,9 @@ describe('the Margin handle and the edit pencil (ticket 473)', () => {
     expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, left: 150 } })).toEqual({ x: 324, y: 76 })
   })
 
-  it('keeps the pencil inside the canvas box', () => {
-    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, left: 350 } }).x).toBe(378)
-    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, top: -90 } }).y).toBe(22)
+  it('does not pull the pencil into the canvas box when the Frame is dragged over its edge', () => {
+    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, left: 350 } }).x).toBe(524)
+    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, top: -90 } }).y).toBe(-64)
   })
 })
 
