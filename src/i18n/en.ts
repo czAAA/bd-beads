@@ -364,7 +364,7 @@ export const en: Translations = {
     selectLabel: 'Select',
     eraseLabel: 'Eraser',
     handLabel: 'Hand',
-    pieceLabel: 'Piece',
+    pieceLabel: 'Select a Piece',
     selectAllLabel: 'Select all',
     copyButton: 'Copy',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
@@ -617,7 +617,7 @@ export const en: Translations = {
     fill: 'Right-click erases the area.',
     select: 'Then copy and paste, or remove.',
     erase: 'Delete empties what is selected.',
-    piece: 'Tap a bead to select its whole Piece.',
+    piece: 'Tap a bead to select it and everything it touches.',
     selectAll: 'Select every bead at once.',
     hand: 'Drag to move around the Canvas.',
     editFrame: 'Show or hide the handles and size buttons on the Frame.',
