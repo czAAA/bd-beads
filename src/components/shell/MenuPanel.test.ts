@@ -75,6 +75,14 @@ describe('MenuPanel (ticket 443)', () => {
     expect(position.findAll('[role="radio"]')).toHaveLength(0)
   })
 
+  it('in the sheet marks each language with a chip of its code instead of an icon', async () => {
+    const wrapper = mountIn(true)
+    await wrapper.get('[data-testid="menu-language"] button').trigger('click')
+    const ru = wrapper.get('[data-testid="language-ru"]')
+    expect(ru.get('.setting__chip').text()).toBe('RU')
+    expect(ru.find('[data-icon="globe"]').exists()).toBe(false)
+  })
+
   it('on the dropdown has the language switcher and the four theme segments', () => {
     const wrapper = mountIn(false)
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
