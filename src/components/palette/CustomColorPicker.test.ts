@@ -28,4 +28,12 @@ describe('CustomColorPicker, the Custom color button', () => {
 
     expect(glyph.attributes('style')).toBeFalsy()
   })
+
+  it('is an icon-only tile (hatched glyph with a +) named for assistive tech', () => {
+    const wrapper = mount(CustomColorPicker, { props: { selected: false, expanded: false } })
+
+    expect(wrapper.find('.custom-color-picker__plus').exists()).toBe(true)
+    expect(wrapper.get('button').attributes('aria-label')).toBeTruthy()
+    expect(wrapper.find('.custom-color-picker__label').exists()).toBe(false)
+  })
 })

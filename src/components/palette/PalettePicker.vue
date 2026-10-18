@@ -101,6 +101,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
       @keydown="onSwatchKeydown($event, color.id, index)"
     />
     <PickColorButton class="palette-picker__pick" />
+    <slot />
   </div>
 </template>
 
