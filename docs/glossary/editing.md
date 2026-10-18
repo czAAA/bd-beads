@@ -15,7 +15,7 @@ How big a Schema is: its Frame's width × height, counted in beads (a Project wi
 _Avoid_: dimensions, resolution, physical size, columns × rows
 
 **Rotate**:
-Turns the Selection a quarter turn clockwise about its centre; the turned rectangle becomes the Selection and the Frame is untouched (ADR 0052, which replaces the Frame turn of ADR 0026 and the view-only turn of ticket 171). It is a drawing edit: beads under the turned footprint are replaced, one Message says how many were covered with Undo, and the keep-out margin and finished rows trim it silently. On peyote and brick stitch the turned top row snaps to an even row. Turning the whole drawing is Select all, Rotate, then Set Frame again. It sits on the Selection bar, and its key is `Shift+R`. Not offered once Row progress is on and a pass is done (ticket 411).
+Turns the Selection a quarter turn clockwise about its centre; the turned rectangle becomes the Selection and the Frame is untouched (ADR 0052, which replaces the Frame turn of ADR 0026 and the view-only turn of ticket 171; both come back as their own controls, **Rotate Frame** and **Rotate canvas**, spec 0470, and this Rotate stays Selection-only). It is a drawing edit: beads under the turned footprint are replaced, one Message says how many were covered with Undo, and the keep-out margin and finished rows trim it silently. On peyote and brick stitch the turned top row snaps to an even row. Turning the whole drawing is Select all, Rotate, then Set Frame again. It sits on the Selection bar, and its key is `Shift+R`. Not offered once Row progress is on and a pass is done (ticket 411).
 _Avoid_: flip, spin, orientation
 
 **Beads needed**:
