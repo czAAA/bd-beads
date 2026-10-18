@@ -4,11 +4,13 @@ import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { PANEL_CONTEXT } from './panelContext'
+import IconButton from '../ui/IconButton.vue'
+import { useI18n } from '../../i18n/useI18n'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
 
-// The shell Menu, Project and the Frame bar open in (spec 0440, tickets 443, 475; MenuPanel and TopSheet cards): a
-// dropdown 4px under its button from 1024px, below that a Top sheet under the strip. Escape or a press outside closes
-// it, focus returns to the button; one shell stays mounted on swap.
+// The shell Menu, Project and the Frame bar open in (spec 0440, tickets 443, 475; MenuPanel, TopSheet cards): a dropdown
+// from 1024px, else a Top sheet under the strip. Escape or a press outside closes it; focus returns to the button.
+// A `sub` slot is one sub-view over the root (spec 0478): Back arrow, `subTitle`, pinned `footer`; resets on swap.
 const props = defineProps<{
   title: string
   /** The strip button this panel hangs from, by test id. */
@@ -23,13 +25,37 @@ const props = defineProps<{
   width?: string
   /** A press outside that still works the panel's own thing, so it goes through and the panel stays. */
   keepsPress?: (event: PointerEvent) => boolean
+  /** The sub-view's title; a panel with a `sub` slot gives one. */
+  subTitle?: string
+  /** Opens already on the sub-view; Escape then closes the panel instead of going back. */
+  startInSub?: boolean
 }>()
 const emit = defineEmits<{ close: [] }>()
 
 const wide = useMediaQuery('(min-width: 1024px)')
 const sheet = computed(() => !wide.value && !props.dropdown)
-const itemRole = computed(() => (wide.value && props.menu ? ('menuitem' as const) : undefined))
-provide(PANEL_CONTEXT, { sheet, itemRole, close: () => emit('close') })
+const { t } = useI18n()
+/** Whether the sub-view is showing, and whether the panel opened on it (so Escape closes rather than goes back). */
+const inSub = ref(props.startInSub ?? false)
+const openedInSub = props.startInSub ?? false
+const itemRole = computed(() => (wide.value && props.menu && !inSub.value ? ('menuitem' as const) : undefined))
+/** The row that opened the sub-view, found again by its test id to take focus back from Back. */
+let returnTestId: string | null = null
+const subBodyEl = ref<HTMLElement>()
+function openSub() {
+  returnTestId = document.activeElement?.getAttribute('data-testid') ?? null
+  inSub.value = true
+  void nextTick(focusEntry)
+}
+function goBack() {
+  inSub.value = false
+  const testId = returnTestId
+  void nextTick(() => {
+    const row = testId ? panelEl.value?.querySelector<HTMLElement>(`[data-testid="${testId}"]`) : null
+    ;(row ?? focusables()[0])?.focus({ preventScroll: true })
+  })
+}
+provide(PANEL_CONTEXT, { sheet, itemRole, close: () => emit('close'), openSub })
 
 const titleId = useId()
 const panelEl = ref<HTMLElement>()
@@ -75,10 +101,12 @@ function place() {
   }
 }
 watch([wide, () => props.anchor, () => props.dropdown], () => void nextTick(place))
+watch(() => props.anchor, () => (inSub.value = false))
 
 // Escape first ends an edit in progress: a cancellable field (the Project's rename) marks its form
 // `data-handles-escape` and hears a `panel-escape` event; with none, Escape closes the panel.
 function onEscape() {
+  if (inSub.value && !openedInSub) return goBack()
   const editing = document.activeElement?.closest('[data-handles-escape]')
   if (editing) editing.dispatchEvent(new CustomEvent('panel-escape'))
   else emit('close')
@@ -112,6 +140,12 @@ const FOCUSABLE = 'button:not(:disabled):not([aria-disabled="true"]), [href], in
 
 function focusables(): HTMLElement[] {
   return [...(panelEl.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
+}
+
+/** Focus on opening: the sub-view's first field (not its Back arrow), else the panel's first control. */
+function focusEntry() {
+  const first = inSub.value ? subBodyEl.value?.querySelector<HTMLElement>(FOCUSABLE) : focusables()[0]
+  ;(first ?? focusables()[0] ?? panelEl.value)?.focus({ preventScroll: true })
 }
 
 /** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab wraps
@@ -183,7 +217,7 @@ onMounted(() => {
   opener = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`)
   place()
   window.addEventListener('resize', measureSheet)
-  void nextTick(() => (focusables()[0] ?? panelEl.value)?.focus({ preventScroll: true }))
+  void nextTick(focusEntry)
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', measureSheet)
@@ -210,10 +244,18 @@ onBeforeUnmount(() => {
     @keydown="onKeydown"
     @focusout="onFocusOut"
   >
-    <h2 :id="titleId" class="panel-shell__title">{{ title }}</h2>
-    <div class="panel-shell__body" data-testid="panel-body">
-      <slot />
+    <header v-if="inSub" class="panel-shell__header">
+      <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" @click="goBack" />
+      <h2 :id="titleId" class="panel-shell__heading" data-testid="panel-sub-title">{{ subTitle }}</h2>
+    </header>
+    <h2 v-else :id="titleId" class="panel-shell__title">{{ title }}</h2>
+    <div ref="subBodyEl" class="panel-shell__body" data-testid="panel-body">
+      <slot v-if="inSub" name="sub" />
+      <slot v-else />
     </div>
+    <footer v-if="inSub && $slots.footer" class="panel-shell__footer" data-testid="panel-footer">
+      <slot name="footer" />
+    </footer>
     <div
       v-if="sheet"
       class="panel-shell__grab"
@@ -260,6 +302,26 @@ onBeforeUnmount(() => {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+.panel-shell__header {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-8);
+  padding-bottom: var(--space-8);
+}
+
+.panel-shell__heading {
+  margin: 0;
+  font: var(--type-title);
+  color: var(--ink);
+}
+
+.panel-shell__footer {
+  flex: none;
+  padding: var(--space-10) 0;
+  border-top: 1px solid var(--panel-rule);
 }
 
 .panel-shell__body {

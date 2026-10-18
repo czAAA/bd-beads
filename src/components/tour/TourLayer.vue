@@ -26,7 +26,7 @@ const { t, tour, announce } = useAppShell()
 
 /** For each control, the `data-tour` marks that can be it, the first showing wins; the later ones open it. */
 const CHAINS: Record<TourControl, string[]> = {
-  'new-project': ['new-project', 'phone-new-project', 'header-tools'],
+  'new-project': ['header-tools'],
   'tool-paint': ['tool-paint'],
   'tool-fill': ['tool-fill'],
   'tool-select': ['tool-select'],

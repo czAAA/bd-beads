@@ -18,6 +18,10 @@ _Avoid_: Dock (retired), toolbar, rail, tab bar
 The modal sheet of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Overview, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project sheet instead.
 _Avoid_: More, header menu
 
+**Panel sub-view**:
+A second level inside a dropdown panel (Menu, Project, Frame): the header shows a Back arrow and the sub-view's title, the body swaps to the sub-view and Back returns to the panel's root list. Built into the shared panel shell, so every panel inherits it. The first user is **New Project** (the Menu's accent-coloured row): the New Project form is a sub-view, not a sheet. Opening it leaves the open Project untouched until Create; Back and closing the panel discard the form's draft; Create and Convert image close the panel. The Menu opens straight on it while the library has no saved Project and from the empty-canvas bar's New Project button; otherwise it opens at the root. Escape pops a level, except when the sub-view was the starting view, where it closes the panel.
+_Avoid_: New Project sheet, New Project modal (gone)
+
 **Project sheet**:
 The modal sheet the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Save and Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
 _Avoid_: Pattern sheet, Tool sheet (gone)

@@ -21,7 +21,7 @@ beforeEach(() => {
 /** The phone New Project sheet's form: the wider tiers' hidden but mounted NewProjectForm (ticket 79) is an earlier
  * `form`, so scope to the sheet's. */
 async function createProjectViaPhoneSheet(wrapper: ReturnType<typeof mount>) {
-  const sheet = wrapper.findAll('[data-testid="bottom-sheet"]').find((s) => s.find('[data-testid="bead-select"]').exists())!
+  const sheet = wrapper.get('[data-testid="panel-body"]')
   await sheet.get('[data-testid="bead-select"]').setValue(cubeBead.id)
   await sheet.get('form').trigger('submit')
 }
@@ -40,6 +40,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-item-overview"]').exists()).toBe(true)
   })
 
@@ -49,7 +50,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
     await createProjectViaPhoneSheet(wrapper)
 
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(drawnProject(wrapper).frame).toBeUndefined() // a Canvas: its size is set in the Frame section (ticket 342)
     // After creation the Tool pill appears and the project-management bar goes.
     expect(wrapper.find('[data-testid="tool-pill"]').exists()).toBe(true)

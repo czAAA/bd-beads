@@ -1,8 +1,8 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import type { PhoneSheet } from './phoneSheet'
 
-// The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu, Project, New
-// Project and Saved Projects sheets. The Shortcuts-help boolean stays in the app shell: one boolean with no logic isn't
+// The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu, Project and Saved
+// Projects sheets. The Shortcuts-help boolean stays in the app shell: one boolean with no logic isn't
 // worth extracting.
 export function useOverlayVisibility(deps: { selectProject: (id: string, opened?: () => void) => void }) {
   /** Which bottom sheet is open (ticket 79, 295, 439), or none. Tapping the strip button of the open sheet closes
@@ -13,9 +13,17 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     openPhoneSheet.value = openPhoneSheet.value === sheet ? null : sheet
   }
 
-  /** New Project on the phone tier (PhoneForms card): its own full-height modal sheet, opened from the Project
-   * sheet. */
-  const phoneNewProjectOpen = ref(false)
+  /** Whether Menu opens on its New Project sub-view (the empty-canvas bar's button, spec 0478); Menu also does when
+   * the library is empty. Clears once the panel is gone or swapped. */
+  const menuOpensOnForm = ref(false)
+  watch(openPhoneSheet, (sheet) => {
+    if (sheet !== 'menu') menuOpensOnForm.value = false
+  }, { flush: 'sync' })
+
+  function openMenuOnForm() {
+    menuOpensOnForm.value = true
+    openPhoneSheet.value = 'menu'
+  }
 
   /** Saved Projects on the phone tier: a separate non-modal sheet, opened from the Project sheet's Saved Projects
    * icon. */
@@ -33,7 +41,8 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
   return {
     openPhoneSheet,
     onSelectPhoneSheet,
-    phoneNewProjectOpen,
+    menuOpensOnForm,
+    openMenuOnForm,
     phoneSavedProjectsOpen,
     onSelectProjectFromPhoneDrawer,
   }
