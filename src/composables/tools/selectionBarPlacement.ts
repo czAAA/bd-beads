@@ -83,18 +83,16 @@ const clampTo = (value: number, low: number, high: number) => (low > high ? (low
 const HANDLE_HIT_WIDTH_PX = 56
 const around = (centre: { x: number; y: number }, width: number, height: number): BarBox => ({ left: centre.x - width / 2, top: centre.y - height / 2, width, height })
 
-/** Where the Margin handle goes (ticket 473): halfway down the top margin, centred on its on-screen stretch, 32px
+/** Where the Margin handle goes (ticket 473): halfway down the top margin, centred on it however much is in view, 32px
  * from the box's sides and inside it vertically. Only its centre moves with the zoom; it slides clear of the edit
  * pencil and the Frame bar (`bar`) where they would cover it. */
 export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: number; y: number } {
   const { box, outer, viewport } = anchor
-  const visibleLeft = Math.max(outer.left, 0)
-  const visibleRight = Math.min(outer.left + outer.width, viewport.width)
   const keep = (x: number, y: number) => ({
     x: clampTo(x, HANDLE_SIDE_GAP_PX, viewport.width - HANDLE_SIDE_GAP_PX),
     y: clampTo(y, HANDLE_HIT_HEIGHT_PX / 2, viewport.height - HANDLE_HIT_HEIGHT_PX / 2),
   })
-  const natural = keep((visibleLeft + visibleRight) / 2, (box.top + outer.top) / 2)
+  const natural = keep(outer.left + outer.width / 2, (box.top + outer.top) / 2)
   const obstacles = [around(editPencilCentre(anchor), PENCIL_HIT_PX, PENCIL_HIT_PX), ...(bar ? [bar] : [])]
   const hits = (at: { x: number; y: number }) => obstacles.some((obstacle) => overlaps(around(at, HANDLE_HIT_WIDTH_PX, HANDLE_HIT_HEIGHT_PX), obstacle))
   if (!hits(natural)) return natural
