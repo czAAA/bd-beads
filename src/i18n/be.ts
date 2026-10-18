@@ -356,7 +356,7 @@ export const be: Translations = {
     selectLabel: 'Вылучэнне',
     eraseLabel: 'Гумка',
     handLabel: 'Рука',
-    pieceLabel: 'Кавалачак',
+    pieceLabel: 'Вылучыць кавалачак',
     selectAllLabel: 'Вылучыць усё',
     copyButton: 'Капіраваць',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
@@ -611,7 +611,7 @@ export const be: Translations = {
     fill: 'Правая кнопка мышы сцірае вобласць.',
     select: 'Потым скапіруйце і ўстаўце або выдаліце.',
     erase: 'Delete ачышчае вылучанае.',
-    piece: 'Дакраніцеся да бісерынкі, каб вылучыць увесь яе кавалачак.',
+    piece: 'Дакраніцеся да бісерынкі, каб вылучыць яе разам з усім, што да яе датыкаецца.',
     selectAll: 'Вылучае ўсе бісерынкі адразу.',
     hand: 'Перацягвайце, каб рухаць палатно.',
     editFrame: 'Паказаць або схаваць маркеры рамкі і кнопкі памеру.',

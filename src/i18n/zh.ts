@@ -354,7 +354,7 @@ export const zh: Translations = {
     selectLabel: '选择',
     eraseLabel: '橡皮擦',
     handLabel: '抓手',
-    pieceLabel: '小块',
+    pieceLabel: '选中小块',
     selectAllLabel: '全选',
     copyButton: '复制',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
@@ -601,7 +601,7 @@ export const zh: Translations = {
     fill: '右键擦除该区域。',
     select: '然后复制和粘贴，或删除。',
     erase: '按 Delete 清空所选内容。',
-    piece: '点按一颗珠子，选中它所在的整个小块。',
+    piece: '点按一颗珠子，选中它和与它相连的所有珠子。',
     selectAll: '一次选中所有珠子。',
     hand: '拖动以在画布上移动。',
     editFrame: '显示或隐藏边框的控点和大小按钮。',
