@@ -134,7 +134,7 @@ export function useSelectionGesture(
       return
     }
     const at = { row, column }
-    const picked = pieceSelectionAt(project.beads, project.technique, at, project.frame)
+    const picked = pieceSelectionAt(project.beads, project, at, project.frame)
     if (inMargin(project.frame, at) || (!picked && colorAt(project.beads, row, column))) {
       refusals.value += 1
       return

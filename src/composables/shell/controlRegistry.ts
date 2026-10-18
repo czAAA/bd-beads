@@ -149,7 +149,7 @@ const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlActio
   enabled: (deps) => {
     const project = deps.activeProject()
     if (!project?.frame || frameLocked(deps)) return false
-    return direction === 'out' || frameWithEdgeStep(project.technique, project.frame, edge, -1) !== project.frame
+    return direction === 'out' || frameWithEdgeStep(project, project.frame, edge, -1) !== project.frame
   },
   disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.frameEdgeInDisabled),
   group: 'canvas',
@@ -573,6 +573,11 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.changeTechnique,
     enabled: (deps: ControlDeps) => !frameLocked(deps),
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedTechnique,
+  }),
+  unkeyed('change-brick-block', (t) => t.form.brickBlockLabel, 'canvas', {
+    body: (t) => t.tooltips.brickBlock,
+    enabled: (deps: ControlDeps) => !frameLocked(deps),
+    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedBrickBlock,
   }),
   unkeyed('fit-to-drawing', (t) => t.frame.fitToDrawing, 'canvas', {
     body: (t) => t.tooltips.fitToDrawing,

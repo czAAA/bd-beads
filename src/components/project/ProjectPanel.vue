@@ -35,6 +35,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   rename: [name: string]
   'set-technique': [technique: Technique]
+  'set-brick-block': [brickBlock: number]
   'replace-bead': [beadId: string]
   save: []
   'export-png': []
@@ -127,7 +128,7 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
       </p>
     </section>
 
-    <FrameControls :project="project" @set-technique="emit('set-technique', $event)" />
+    <FrameControls :project="project" @set-technique="emit('set-technique', $event)" @set-brick-block="emit('set-brick-block', $event)" />
 
     <p class="project-panel__bead" data-testid="project-bead-row">
       <span class="project-panel__bead-label">{{ t.panels.project.bead }}</span>

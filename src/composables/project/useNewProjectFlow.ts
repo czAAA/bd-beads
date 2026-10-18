@@ -51,6 +51,7 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
           image,
           draft,
           technique: draft.technique,
+          brickBlock: draft.brickBlock,
           bead: geometry.bead,
           dimensions: { columns: geometry.columns, rows: geometry.rows },
         }

@@ -921,6 +921,7 @@ function wireAppShell(services: Services) {
     onStepFrameEdge: frameFlow.stepEdge,
     onResizeFrame: frameFlow.resizeTo,
     onSetTechnique: frameFlow.setTechnique,
+    onSetBrickBlock: frameFlow.setBrickBlock,
     onFitFrame: frameFlow.fit,
     onRemoveFrame: frameFlow.remove,
     removeFrameConfirmOpen: frameFlow.removeConfirmOpen,

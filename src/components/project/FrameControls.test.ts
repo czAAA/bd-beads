@@ -39,6 +39,32 @@ describe('FrameControls', () => {
     })
   })
 
+  describe('Brick block (ticket 477)', () => {
+    const brick = () => createProject({ technique: 'brick', brickBlock: 3, beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
+
+    it('shows the stepper only on Brick stitch, at the Project\'s number', () => {
+      expect(mount(FrameControls, { props: { project: framed() } }).find('[data-testid="frame-brick-block"]').exists()).toBe(false)
+      const wrapper = mount(FrameControls, { props: { project: brick() } })
+      expect(wrapper.find('[data-testid="frame-brick-block-value"]').text()).toBe('3')
+    })
+
+    it('emits the number it steps to', async () => {
+      const wrapper = mount(FrameControls, { props: { project: brick() } })
+      await wrapper.find('[data-testid="frame-brick-block-more"]').trigger('pointerdown')
+      await wrapper.find('[data-testid="frame-brick-block-more"]').trigger('pointerup')
+      expect(wrapper.emitted('set-brick-block')).toEqual([[4]])
+    })
+
+    it('is locked once Row progress is on and a pass is done, and does not emit', async () => {
+      const project = { ...brick(), rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
+      const wrapper = mount(FrameControls, { props: { project } })
+      expect(wrapper.find('[data-testid="frame-brick-block-more"]').attributes('aria-disabled')).toBe('true')
+      await wrapper.find('[data-testid="frame-brick-block-more"]').trigger('pointerdown')
+      await wrapper.find('[data-testid="frame-brick-block-more"]').trigger('pointerup')
+      expect(wrapper.emitted('set-brick-block')).toBeUndefined()
+    })
+  })
+
   it('shows the Estimated size warning as an always-visible Note, with no (i) button (ticket 328)', () => {
     const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 15, unit: 'mm' } })
     const wrapper = mount(FrameControls, { props: { project } })

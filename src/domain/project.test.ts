@@ -40,6 +40,17 @@ import { turnedClockwise } from '../testUtils/rotated'
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-round-11-0')!
 
+describe('createProject Brick block (ticket 477)', () => {
+  const input = { technique: 'brick' as const, beadId: 'toho-cube-1.5mm' }
+
+  it('stores a Brick block above 1, clamped to 20, and nothing for 1', () => {
+    expect(createProject({ ...input, brickBlock: 3 }).brickBlock).toBe(3)
+    expect(createProject({ ...input, brickBlock: 99 }).brickBlock).toBe(20)
+    expect(createProject({ ...input, brickBlock: 1 })).not.toHaveProperty('brickBlock')
+    expect(createProject(input)).not.toHaveProperty('brickBlock')
+  })
+})
+
 describe('createProject', () => {
   it('builds a Loom project with an empty grid sized from the physical dimensions', () => {
     const project = createProject({

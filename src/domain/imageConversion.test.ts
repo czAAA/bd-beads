@@ -196,7 +196,7 @@ describe('sampleLatticePacked', () => {
     const cells: (string | undefined)[] = []
     for (let row = 0; row < lattice.rows; row += 1) {
       for (let column = 0; column < lattice.columns; column += 1) {
-        const center = cellCenter(technique, { row, column }, bead.widthMm, bead.heightMm)
+        const center = cellCenter({ technique }, { row, column }, bead.widthMm, bead.heightMm)
         const pixel = sourcePixelAt(view, image, center.x - originXMm, center.y - originYMm)
         cells.push(pixel && pixelColorAt(image, pixel.x, pixel.y))
       }
