@@ -83,6 +83,7 @@ export const ru: Translations = {
     custom: 'Свой цвет',
   },
   panels: {
+    back: 'Назад',
     menu: {
       projects: 'Проекты',
       preferences: 'Настройки',

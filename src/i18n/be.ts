@@ -84,6 +84,7 @@ export const be: Translations = {
     custom: 'Свой колер',
   },
   panels: {
+    back: 'Назад',
     menu: {
       projects: 'Праекты',
       preferences: 'Налады',

@@ -25,13 +25,14 @@ export async function mountWithProject(widthMm: number, heightMm: number, option
   return wrapper
 }
 
-/** Raises the New Project sheet if needed, then submits Toho Cube 1.5mm beads. The form states no size (ticket 342). */
+/** Raises the New Project form if needed, then submits Toho Cube 1.5mm beads. The form states no size (ticket 342). */
 export async function createProjectViaForm(wrapper: ReturnType<typeof mount>, name?: string) {
   await openNewProject(wrapper)
-  const sheet = wrapper.findAll('[data-testid="bottom-sheet"]').find((candidate) => candidate.find('[data-testid="bead-select"]').exists())!
+  const sheet = wrapper.get('[data-testid="panel-body"]')
   if (name !== undefined) {
     await sheet.get('[data-testid="name-input"]').setValue(name)
   }
   await sheet.get('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
   await sheet.get('form').trigger('submit')
+  await nextTick()
 }

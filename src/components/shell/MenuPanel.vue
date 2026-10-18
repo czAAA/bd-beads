@@ -32,7 +32,6 @@ defineProps<{
   penSeen: boolean
 }>()
 const emit = defineEmits<{
-  'new-project': []
   import: [projects: Project[]]
   'import-result': [id: string, text: string, tone: 'success' | 'danger']
   'export-all': []
@@ -84,7 +83,8 @@ const sheet = computed(() => context?.sheet.value ?? false)
 <template>
   <div class="menu-panel" data-testid="menu-panel">
     <PanelSection :label="t.panels.menu.projects">
-      <PanelItem icon="plus" data-testid="menu-new-project" @select="emit('new-project')">{{ actions.newProject.name(t) }}</PanelItem>
+      <!-- New Project opens in this panel (spec 0478): the shell swaps to the sub-view the app shell fills. -->
+      <PanelItem icon="plus" accent stays data-testid="menu-new-project" @select="context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Import keeps the panel open until the file is read (its picker belongs to it), then the result is a toast and the panel goes. -->
       <div class="menu-panel__import" data-testid="menu-import">
         <ProjectImport toast-results :projects="projects" testid-prefix="menu-" @import="emit('import', $event)" @import-result="(id, text, tone) => emit('import-result', id, text, tone)" />

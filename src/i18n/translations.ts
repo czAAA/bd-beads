@@ -104,6 +104,8 @@ export interface Translations {
   colorNames: Record<string, string>
   /** The Menu and Project panels (spec 0440, ticket 443). */
   panels: {
+    /** The Back arrow of a Panel sub-view (spec 0478). */
+    back: string
     menu: {
       projects: string
       preferences: string
