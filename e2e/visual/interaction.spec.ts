@@ -356,6 +356,9 @@ test.describe('the bead-shaped pointer (ticket 353)', () => {
     const project = fixtureProject({ technique: 'peyote', blank: true })
     await openApp(page, [project])
     await setZoom(page, 100)
+    // With the Frame bar closed Space would show the keyboard cursor over the marker; open it, as editing did (ticket 473).
+    await page.getByTestId('frame-edit-toggle').click()
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
     const centre = await pointOn(page, 'peyote', false, 100, 3, 5)
     await page.mouse.move(centre.x, centre.y)
     await settle(page)
