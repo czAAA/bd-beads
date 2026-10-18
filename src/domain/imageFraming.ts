@@ -1,12 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
-import {
-  gridHeight,
-  gridWidth,
-  rowCycle,
-  rowPitch,
-  type GridDimensions,
-  type Technique,
-} from './grid'
+import { type GridDimensions } from './grid'
+import { gridHeight, gridWidth, rowCycle, rowPitch, type Technique } from './weave'
 
 /** The framing step of Convert image (ticket 58, ADR 0010): the frame is the Project at its real-world size, the
  * picture scaled and panned beneath it. All in frame millimetres, where a cell's true centre maps to a picture

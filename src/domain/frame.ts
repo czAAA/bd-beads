@@ -1,5 +1,6 @@
 import { beadBounds, forEachBead, type BeadMap, type Frame } from './canvas'
-import { rowCycle, type GridPosition, type Weave } from './grid'
+import { type GridPosition } from './grid'
+import { rowCycle, type Weave } from './weave'
 import { inMargin } from './margin'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is

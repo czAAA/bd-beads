@@ -1,6 +1,7 @@
 import { forEachBead, frameContains, hasBeads, colorAt, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { movedFrame, sameFrame } from './frame'
-import type { GridPosition, Technique } from './grid'
+import type { GridPosition } from './grid'
+import type { Technique } from './weave'
 import { carryNames, namedPieceCutBy } from './pieceNames'
 import { clampBrickBlock, rowProgressStarted, withBrickBlock, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'

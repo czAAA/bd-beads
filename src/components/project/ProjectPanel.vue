@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
 import { beadLabel, type Bead } from '../../domain/beads'
-import type { Technique } from '../../domain/grid'
+import type { Technique } from '../../domain/weave'
 import type { Project } from '../../domain/project'
 import { MAX_PROJECT_NAME, normalizeProjectName } from '../../domain/projectName'
 import { controlAction } from '../../composables/shell/controlRegistry'

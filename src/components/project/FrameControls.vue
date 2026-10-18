@@ -3,7 +3,7 @@ import { computed, useId } from 'vue'
 import AppNote from '../ui/AppNote.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BrickBlockField from './BrickBlockField.vue'
-import { TECHNIQUES, type Technique } from '../../domain/grid'
+import { describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
 import { resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { formatOtherUnit } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
@@ -45,7 +45,7 @@ const technique = computed({
 const techniqueOptions = computed(() => {
   const body = techniqueAction.body?.(t.value)
   const disabledBody = techniqueAction.disabledBody?.(t.value, deps.value)
-  return TECHNIQUES.map((value) => {
+  return TECHNIQUES.filter((value) => describeWeave({ technique: value }).switchable).map((value) => {
     const name = techniqueName(t.value, value)
     return { value, label: name, tooltip: { name, body, disabledBody } }
   })
@@ -71,7 +71,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
     </div>
 
     <BrickBlockField
-      v-if="project.technique === 'brick'"
+      v-if="describeWeave(project).hasBrickBlock"
       :model-value="project.brickBlock ?? 1"
       :disabled="!brickBlockAction.enabled?.(deps)"
       :disabled-body="brickBlockAction.disabledBody?.(t, deps)"

@@ -4,6 +4,7 @@ import { MARGIN, withMargin } from './margin'
 import { carryNames } from './pieceNames'
 import type { Project } from './project'
 import { selectionFrame, type Selection } from './selection'
+import { describeWeave } from './weave'
 
 // Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection's beads about its centre. Unlike the legacy
 // view-only turn it changes the data (peyote/brick contacts change). Frame, rulers and Row progress are untouched;
@@ -96,7 +97,7 @@ export function frameAreaSelection(frame: Frame): Selection {
  * Rotate Frame (ticket 471, ADR 0063): the Frame, its margin and the beads inside turned a quarter clockwise about their
  * centre, as Rotate does a Selection; Width and Height swap, outside beads stay unless covered. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
-  if (!project.frame) {
+  if (!project.frame || !describeWeave(project).quarterTurn) {
     return undefined
   }
   const turned = rotateSelection(project, frameAreaSelection(project.frame), MARGIN)

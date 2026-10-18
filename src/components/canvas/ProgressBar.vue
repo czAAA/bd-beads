@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { rowProgressPosition, type Project } from '../../domain/project'
+import { describeWeave } from '../../domain/weave'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
@@ -80,6 +81,7 @@ const directionLabel = computed(() =>
     <template v-else>
       <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
       <IconButton
+        v-if="describeWeave(project).rowDirection"
         variant="box"
         :action="actions.direction"
         :selected="columnWise"

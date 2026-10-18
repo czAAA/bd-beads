@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import type { Technique } from '../../src/domain/grid'
+import type { Technique } from '../../src/domain/weave'
 import type { Project, RowProgress } from '../../src/domain/project'
 import { copySelection, gridBox, selectTool, settle } from '../support/app'
 import { beadCentre } from '../support/projects'

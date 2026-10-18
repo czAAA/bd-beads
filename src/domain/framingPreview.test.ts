@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { computeGridDimensions, type Technique } from './grid'
+import { computeGridDimensions } from './grid'
+import { type Technique } from './weave'
 import { nearestColor } from './imageColors'
 import {
   NO_COLOR,

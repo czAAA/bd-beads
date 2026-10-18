@@ -1,5 +1,6 @@
 import { projectDimensions } from '../domain/project'
-import { rotationSwapsAxes, type Rotation, type Technique } from '../domain/grid'
+import { rotationSwapsAxes, type Rotation } from '../domain/grid'
+import { type Technique } from '../domain/weave'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
