@@ -489,6 +489,19 @@ describe('ProjectSurface', () => {
         expect(redShown()).toBe(false)
       })
 
+      it('ignores a press on a finished row while Row highlight is off, so turning it on again finds them dimmed (ticket 474)', async () => {
+        const project = weaving()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { rowMarks: false })
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...finishedCentre(project), pointerType: 'mouse', button: 0, buttons: 1 })
+
+        await wrapper.setProps({ rowMarks: true })
+        await nextTick()
+        await nextTick()
+        context.calls.length = 0
+        await wrapper.setProps({ project: { ...project } })
+        expect(redShown()).toBe(false)
+      })
+
       it('draws them at normal color while a mouse or a pen hovers a finished row, and dims them again when it leaves', async () => {
         const project = weaving()
         const { wrapper } = await mountSurface(project)
