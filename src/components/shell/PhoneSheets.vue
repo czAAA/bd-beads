@@ -2,7 +2,6 @@
 import BottomSheet from './BottomSheet.vue'
 import MenuPanel from './MenuPanel.vue'
 import PanelShell from './PanelShell.vue'
-import AppButton from '../ui/AppButton.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import ProjectList from '../project/ProjectList.vue'
@@ -141,9 +140,6 @@ const {
         @convert-image="(draft) => { startConvertImage(draft); openPhoneSheet = null }"
       />
     </template>
-    <template #footer>
-      <AppButton class="new-project-submit" type="submit" form="new-project-form" variant="primary" icon="plus">{{ t.form.submit }}</AppButton>
-    </template>
   </PanelShell>
 
   <!-- Saved Projects: a non-modal sheet opened from the Project sheet's Saved Projects icon. Selecting a project closes both this and the Project sheet. -->
@@ -158,10 +154,3 @@ const {
     />
   </BottomSheet>
 </template>
-
-<style scoped>
-.new-project-submit {
-  width: 100%;
-  height: var(--field-height);
-}
-</style>

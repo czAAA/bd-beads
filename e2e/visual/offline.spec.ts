@@ -40,7 +40,7 @@ async function createEditAndSave(page: Page, name: string): Promise<void> {
   // With an empty library Menu already opens on the form.
   if (!(await page.getByTestId('name-input').isVisible())) await page.getByTestId('menu-new-project').click()
   await page.getByTestId('name-input').fill(name)
-  await page.locator('[data-testid=panel-footer] button[type=submit]').click()
+  await page.locator('[data-testid=create-project]').click()
   await expect(page.getByTestId('project-surface')).toBeVisible()
   const surface = page.getByTestId('project-surface')
   const box = (await surface.boundingBox())!
@@ -104,7 +104,7 @@ test('asks the browser to keep the library at the first save, after the note, an
   // With an empty library Menu already opens on the form.
   if (!(await page.getByTestId('name-input').isVisible())) await page.getByTestId('menu-new-project').click()
   await page.getByTestId('name-input').fill('First save')
-  await page.locator('[data-testid=panel-footer] button[type=submit]').click()
+  await page.locator('[data-testid=create-project]').click()
   await expect(page.getByTestId('keep-note-modal')).toBeVisible()
   expect(await asked()).toBe(0)
 
