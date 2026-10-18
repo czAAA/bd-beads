@@ -4,6 +4,7 @@ The shell Menu and Project open in under 1024px: a sheet that slides down from u
 
 - **Anchor:** inside the canvas box, its top edge on the strip's bottom edge, the full width of the box. The strip is never covered: Menu and Project stay visible, and the open one stays lit (`ink` fill, `canvas` text).
 - **Material:** `overlay-fill`, no top or side edge, a 1px `overlay-line` bottom edge (2px `line-strong` in high contrast), bottom corners `top-sheet-radius` (18px), `elevation-3`, padding 8 10 0.
+- **Sub-view:** a panel's sub-view (New Project, MenuPanel card) takes the sheet's body under a Back header, with its footer button pinned above the handle; only the body scrolls.
 - **Height:** as tall as its content, at most the canvas box's height minus the strip and 40px. Longer content scrolls inside, with no visible scrollbar. The handle never scrolls.
 - **Handle:** at the bottom edge, a 36 × 4px `line-strong` bar, `radius-full`, 10px above and below. Dragging or tapping it up closes the sheet, as the ToolSheet's handle does downward.
 - **Scrim:** `scrim`, from under the strip to the bottom of the canvas box. It dims the drawing area, the tool pill and the Progress bar, not the strip. A tap on the scrim closes the sheet and reaches nothing under it (no stroke, fill or Frame starts).

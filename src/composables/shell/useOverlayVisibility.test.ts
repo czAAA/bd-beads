@@ -1,3 +1,4 @@
+import { nextTick } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { useOverlayVisibility } from './useOverlayVisibility'
 
@@ -10,7 +11,7 @@ describe('useOverlayVisibility', () => {
   it('starts with every overlay closed', () => {
     const overlays = setup()
     expect(overlays.openPhoneSheet.value).toBeNull()
-    expect(overlays.phoneNewProjectOpen.value).toBe(false)
+    expect(overlays.menuOpensOnForm.value).toBe(false)
     expect(overlays.phoneSavedProjectsOpen.value).toBe(false)
   })
 
@@ -27,6 +28,16 @@ describe('useOverlayVisibility', () => {
     onSelectPhoneSheet('project')
     onSelectPhoneSheet('menu')
     expect(openPhoneSheet.value).toBe('menu')
+  })
+
+  it('opens Menu on the form for the bar button, and forgets it once the panel is gone or swapped', async () => {
+    const { openPhoneSheet, menuOpensOnForm, openMenuOnForm } = setup()
+    openMenuOnForm()
+    expect(openPhoneSheet.value).toBe('menu')
+    expect(menuOpensOnForm.value).toBe(true)
+    openPhoneSheet.value = null
+    await nextTick()
+    expect(menuOpensOnForm.value).toBe(false)
   })
 
   it('opens the picked Project and closes both the Saved Projects sheet and the Project sheet', () => {

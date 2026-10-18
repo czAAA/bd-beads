@@ -2,6 +2,7 @@
 import BottomSheet from './BottomSheet.vue'
 import MenuPanel from './MenuPanel.vue'
 import PanelShell from './PanelShell.vue'
+import AppButton from '../ui/AppButton.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import ProjectList from '../project/ProjectList.vue'
@@ -9,8 +10,8 @@ import ProjectPanel from '../project/ProjectPanel.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { MIRROR_ENABLED } from '../../features'
 
-// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelShell, the New Project and Saved
-// Projects sheets that open from Menu, and Mirror's. Each panel only asks; the app shell does the work.
+// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelShell, New Project as the Menu's sub-view, the Saved
+// Projects sheet that opens from Menu, and Mirror's. Each panel only asks; the app shell does the work.
 const {
   t,
   projects,
@@ -57,7 +58,7 @@ const {
   toolPillPosition,
   shortcutsHelpOpen,
   tour,
-  phoneNewProjectOpen,
+  menuOpensOnForm,
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
 } = useAppShell()
@@ -83,13 +84,15 @@ const {
   <!--
     Menu and Project (spec 0440, ticket 443; MenuPanel, ProjectPanel and TopSheet cards): one shell, a dropdown from 1024px
     and a Top sheet under it, which stays mounted while the two swap. Menu is about the app and the device, Project about the
-    open Project; the New Project and Saved Projects sheets below open from Menu.
+    open Project; New Project is Menu's sub-view and the Saved Projects sheet below opens from it.
   -->
   <PanelShell
     v-if="openPhoneSheet === 'menu' || (openPhoneSheet === 'project' && activeProject)"
     :title="openPhoneSheet === 'menu' ? t.header.menuButton : t.header.projectSheetLabel"
     :anchor="openPhoneSheet === 'menu' ? 'strip-menu' : 'strip-project'"
     :menu="openPhoneSheet === 'menu'"
+    :sub-title="t.projects.newProjectButton"
+    :start-in-sub="menuOpensOnForm || projects.length === 0"
     @close="openPhoneSheet = null"
   >
     <MenuPanel
@@ -98,7 +101,6 @@ const {
       :projects="projects"
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
-      @new-project="phoneNewProjectOpen = true"
       @import="onImportProjects"
       @import-result="(id, text, tone) => { onImportToast(id, text, tone); openPhoneSheet = null }"
       @export-all="onExportLibraryFile"
@@ -131,17 +133,18 @@ const {
       @clear="onRequestDeleteAll"
       @delete="onRequestDelete"
     />
+    <template #sub>
+      <NewProjectForm
+        :decode-image="decodeImage"
+        @submit="(payload) => { onCreateProject(payload); openPhoneSheet = null }"
+        @draft="onNewProjectDraft"
+        @convert-image="(draft) => { startConvertImage(draft); openPhoneSheet = null }"
+      />
+    </template>
+    <template #footer>
+      <AppButton class="new-project-submit" type="submit" form="new-project-form" variant="primary" icon="plus">{{ t.form.submit }}</AppButton>
+    </template>
   </PanelShell>
-
-  <!-- New Project (PhoneForms card): its own full-height modal sheet from the Project sheet, the same form the wider tiers show inline. -->
-  <BottomSheet v-if="phoneNewProjectOpen" modal :title="t.projects.newProjectButton" @close="phoneNewProjectOpen = false">
-    <NewProjectForm
-      :decode-image="decodeImage"
-      @submit="(payload) => { onCreateProject(payload); phoneNewProjectOpen = false; openPhoneSheet = null }"
-      @draft="onNewProjectDraft"
-      @convert-image="(draft) => { startConvertImage(draft); phoneNewProjectOpen = false; openPhoneSheet = null }"
-    />
-  </BottomSheet>
 
   <!-- Saved Projects: a non-modal sheet opened from the Project sheet's Saved Projects icon. Selecting a project closes both this and the Project sheet. -->
   <BottomSheet v-if="phoneSavedProjectsOpen" :title="t.projects.heading" @close="phoneSavedProjectsOpen = false">
@@ -155,3 +158,10 @@ const {
     />
   </BottomSheet>
 </template>
+
+<style scoped>
+.new-project-submit {
+  width: 100%;
+  height: var(--field-height);
+}
+</style>

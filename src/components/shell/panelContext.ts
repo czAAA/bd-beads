@@ -6,6 +6,8 @@ export interface PanelContext {
   itemRole: Ref<'menuitem' | undefined>
   /** Closes the panel; a panel item that opens something else (a dialog, a sheet) calls it first. */
   close: () => void
+  /** Swaps the panel to its sub-view, under the sub-view's title and a Back arrow (spec 0478); the opener's row keeps focus to return to. */
+  openSub: () => void
 }
 
 /** What the panel shell shares with the Menu and Project panels below it (ticket 443). */
