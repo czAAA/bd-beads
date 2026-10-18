@@ -23,7 +23,7 @@ The modal sheet the Canvas strip's Project button opens (ticket 431): the open P
 _Avoid_: Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:
-The slim row along the top of the canvas box, at every width (tickets 425, 431, ADR 0055). Left to right: Menu, Project (each an icon and its word; Project only with a Project open), the Rulers toggle (`R`), Undo, Redo, zoom out, the zoom level, zoom in, Fit, then the Canvas color picker. It names nothing: no title, size line, printed-size estimate, icon or keyboard hint. On a phone Menu, Project and Canvas color stay in place and the middle scrolls sideways with touch-sized buttons. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. It replaced the draggable Zoom pill.
+The slim row along the top of the canvas box, at every width (tickets 425, 431, ADR 0055). Left to right: Menu, Project (each an icon and its word; Project only with a Project open), Rotate canvas (spec 0470), the Rulers toggle (`R`), Undo, Redo, zoom out, the zoom level, zoom in, Fit, then the Canvas color picker. It names nothing: no title, size line, printed-size estimate, icon or keyboard hint. On a phone Menu, Project and Canvas color stay in place and the middle scrolls sideways with touch-sized buttons. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. It replaced the draggable Zoom pill.
 _Avoid_: Zoom pill, Canvas header
 
 **Canvas hint**:
