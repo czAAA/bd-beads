@@ -123,6 +123,34 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
   })
 })
 
+describe('renderProject, Right-angle weave (ticket 482)', () => {
+  // A Frame of two Units across and one down at row 6, column 5, every bead painted; a bead is 20 long and 14 across.
+  const woven = (): Project => {
+    const project = createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } })
+    const cells = [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#e63746' })))
+    return { ...project, frame: { row: 6, column: 5, rows: 3, columns: 3, beads: withColors({}, cells) } }
+  }
+
+  it.each([
+    { space: 'open', open: true, origin: { row: 6, column: 5 } },
+    { space: 'Frame-only', open: false, origin: { row: 0, column: 0 } },
+  ])('puts every bead of the Frame where its line says, in $space space', ({ open, origin }) => {
+    const { beads } = render(woven(), open)
+
+    const painted = beads.filter(({ color }) => color !== null)
+    const expected = [0, 1, 2].flatMap((rowOffset) =>
+      [0, 1, 2]
+        .filter((columnOffset) => !(rowOffset % 2 === 0 && columnOffset === 2))
+        .map((columnOffset) => (rowOffset % 2 === 0 ? { x: (origin.column + columnOffset) * 34 + 14, y: (origin.row / 2 + rowOffset / 2) * 34, width: 20, height: 14 } : { x: (origin.column + columnOffset) * 34, y: (origin.row / 2 + (rowOffset - 1) / 2) * 34 + 14, width: 14, height: 20 })),
+    )
+    expect(painted.map(({ x, y, width, height }) => ({ x, y, width, height }))).toEqual(expected)
+  })
+
+  it('draws a Unit\'s beads once each, in the Frame and out', () => {
+    expect(render(woven(), true).beads.filter(({ color }) => color !== null)).toHaveLength(7)
+  })
+})
+
 describe('brick stitch inside a Frame', () => {
   it('draws no seam line between two rows, in either space', () => {
     const project = framedProject('brick')

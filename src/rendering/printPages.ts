@@ -1,4 +1,4 @@
-import { projectDimensions } from '../domain/project'
+import { countedDimensions, projectDimensions } from '../domain/project'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
@@ -181,7 +181,7 @@ export interface Span {
   last: number
 }
 
-type RulerShape = Pick<Project, 'frame' | 'beads' | 'rotation'>
+type RulerShape = Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique'>
 
 // Each quarter turn reverses one axis and swaps columns/rows (composing gridToRegion's per-turn mapping): across reads
 // reversed at 90°/180°, down at 180°/270°.
@@ -196,13 +196,13 @@ function downReversed(rotation: Rotation): boolean {
 /** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted
  * from its far end when the turn reverses this axis. */
 function acrossNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(project.rotation) ? projectDimensions(project).rows : projectDimensions(project).columns
+  const dimension = rotationSwapsAxes(project.rotation) ? countedDimensions(project).rows : countedDimensions(project).columns
   return acrossReversed(project.rotation) ? dimension - index : index + 1
 }
 
 /** The down-axis equivalent of acrossNumber. */
 function downNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(project.rotation) ? projectDimensions(project).columns : projectDimensions(project).rows
+  const dimension = rotationSwapsAxes(project.rotation) ? countedDimensions(project).columns : countedDimensions(project).rows
   return downReversed(project.rotation) ? dimension - index : index + 1
 }
 
@@ -210,7 +210,6 @@ function downNumber(project: RulerShape, index: number): number {
 // end), and a hairline every 10 beads. `every` is 10 on page 1; chart pages label every 5th bead in `muted`, 10th bold.
 export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10): void {
   const grid = displayedGrid(project)
-  const bead = CELL_SIZE_PX * zoom
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
 
   context.save()
@@ -224,12 +223,12 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
     context.fillText(String(value), x, y)
   }
   for (let index = across.first; index <= across.last; index += 1) {
-    const x = at.x + (index - across.first) * grid.stepAcross * zoom + bead / 2
+    const x = at.x + (index - across.first) * grid.stepAcross * zoom + (grid.beadAcross * zoom) / 2
     label(acrossNumber(project, index), x, at.y - gap)
     label(acrossNumber(project, index), x, at.y + at.height + gap)
   }
   for (let index = down.first; index <= down.last; index += 1) {
-    const y = at.y + (index - down.first) * grid.stepDown * zoom + bead / 2
+    const y = at.y + (index - down.first) * grid.stepDown * zoom + (grid.beadDown * zoom) / 2
     label(downNumber(project, index), at.x - gap, y)
     label(downNumber(project, index), at.x + at.width + gap, y)
   }

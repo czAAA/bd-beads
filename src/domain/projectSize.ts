@@ -1,6 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
 import { sizeOf, type Sized } from './canvas'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
+import { describeWeave, type Weave } from './weave'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 
@@ -11,9 +12,18 @@ export interface StatedSize {
   unit: SizeUnit
 }
 
-/** The grid a stated size works out to. mm/cm go through the chosen Bead's footprint once and are forgotten (ADR
- * 0026). */
-export function gridFromSize(size: StatedSize, bead: Bead): GridDimensions {
+const BEADS_WEAVE: Weave = { technique: 'loom' }
+
+/** The positions a stated size works out to. mm/cm go through the chosen Bead's footprint once and are forgotten (ADR
+ * 0026). Where the Technique counts Units (ticket 482) the size is whole Units, a Unit's pitch being a bead's length
+ * plus its width, and comes back as the positions they take. */
+export function gridFromSize(size: StatedSize, bead: Bead, weave: Weave = BEADS_WEAVE): GridDimensions {
+  const description = describeWeave(weave)
+  if (description.countsUnits) {
+    const { across } = description.stepMm(bead)
+    const units = (value: number) => Math.max(1, size.unit === 'beads' ? Math.round(value) : Math.ceil(toMillimeters(value, size.unit) / across - 1e-9))
+    return description.positionsOf({ columns: units(size.width), rows: units(size.height) })
+  }
   if (size.unit === 'beads') {
     return { columns: Math.max(1, Math.round(size.width)), rows: Math.max(1, Math.round(size.height)) }
   }
@@ -39,10 +49,13 @@ export interface EstimatedSizeMm {
 // A Project's Estimated size (CONTEXT.md, ADR 0026): Bead size times beads across and down, the exact inverse of
 // gridFromSize's mm conversion. Not Technique-aware (no peyote packing, slack, tension), hence only an estimate.
 // Width and height follow the rotated view, as summarizeProject's do.
-export function estimatedSizeMm(project: Sized & { rotation?: Rotation }, bead: Bead): EstimatedSizeMm {
+export function estimatedSizeMm(project: Sized & { rotation?: Rotation; technique?: Weave['technique'] }, bead: Bead): EstimatedSizeMm {
   const { columns, rows } = sizeOf(project)
-  const widthMm = columns * beadPitchMm(bead)
-  const heightMm = rows * bead.heightMm
+  const description = describeWeave({ technique: project.technique ?? 'loom' })
+  // Right-angle weave: the Units' own pitch, not a column of beads (ticket 482).
+  const { width: widthMm, height: heightMm } = description.countsUnits
+    ? description.blockExtent(columns, rows, beadPitchMm(bead), bead.heightMm)
+    : { width: columns * beadPitchMm(bead), height: rows * bead.heightMm }
   return project.rotation !== undefined && rotationSwapsAxes(project.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 
@@ -90,7 +103,11 @@ export function formatOtherUnit(
   unit: SchemaSizeUnit,
   labels: SizeUnitLabels & { beadsTemplate: string },
   locale: Locale = 'en',
+  technique: Weave['technique'] = 'loom',
 ): string {
-  if (unit === 'mm') return labels.beadsTemplate.replace('{columns}', String(grid.columns)).replace('{rows}', String(grid.rows))
-  return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), labels, locale)}`
+  if (unit === 'mm') {
+    const { columns, rows } = describeWeave({ technique }).unitsOf(grid)
+    return labels.beadsTemplate.replace('{columns}', String(columns)).replace('{rows}', String(rows))
+  }
+  return `≈ ${formatSizeMm(estimatedSizeMm({ ...grid, technique }, bead), labels, locale)}`
 }

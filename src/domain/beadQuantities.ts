@@ -4,6 +4,7 @@ import type { Locale } from './locale'
 import { findPaletteColorByHex } from './palette'
 import { forEachBead } from './canvas'
 import type { Project } from './project'
+import { describeWeave } from './weave'
 
 /** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
 export interface ColorQuantity {
@@ -22,8 +23,12 @@ export function computeColorQuantities(project: Project): ColorQuantity[] {
     return []
   }
 
-  forEachBead(project.frame.beads, (_row, _column, color) => {
-    counts.set(color, (counts.get(color) ?? 0) + 1)
+  const weave = describeWeave(project)
+  // Every real bead counts once; the empty end of a Right-angle weave line is no bead (ticket 482).
+  forEachBead(project.frame.beads, (row, column, color) => {
+    if (weave.hasPosition({ row, column }, { ...project.frame!, row: 0, column: 0 })) {
+      counts.set(color, (counts.get(color) ?? 0) + 1)
+    }
   })
 
   return [...counts.entries()]

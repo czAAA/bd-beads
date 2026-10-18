@@ -1,11 +1,12 @@
 import { beadLabel } from '../domain/beads'
 import { computeColorQuantities } from '../domain/beadQuantities'
 import { rotationSwapsAxes } from '../domain/grid'
-import { resolveProjectBead, type Project, projectDimensions } from '../domain/project'
+import { countedDimensions, resolveProjectBead, type Project } from '../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../domain/projectSize'
 import { beadsPerGram, formatPrintedGrams, printedGrams } from '../domain/printGrams'
 import { groupThousands } from '../domain/formatNumber'
 import { plural } from '../i18n/plural'
+import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
@@ -49,12 +50,12 @@ export function headerMaker(maker: string): string {
 export function printText(project: Project, t: Translations, locale: Locale, at: Date): PrintText {
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
-  const { columns, rows } = projectDimensions(project)
+  const { columns, rows } = countedDimensions(project)
   const [across, down] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
   const beadName = bead ? beadLabel(bead) : t.projects.unknownBeadLabel
-  const technique = { loom: t.form.techniqueLoom, peyote: t.form.techniquePeyote, brick: t.form.techniqueBrick }[project.technique]
+  const technique = techniqueName(t, project.technique)
   const grams = (count: number) => {
     const weight = printedGrams(count, bead)
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)

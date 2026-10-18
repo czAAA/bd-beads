@@ -1,6 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
 import { type GridDimensions } from './grid'
-import { gridHeight, gridWidth, rowCycle, rowPitch, type Technique } from './weave'
+import { describeWeave, rowCycle, type Technique } from './weave'
 
 /** The framing step of Convert image (ticket 58, ADR 0010): the frame is the Project at its real-world size, the
  * picture scaled and panned beneath it. All in frame millimetres, where a cell's true centre maps to a picture
@@ -37,10 +37,8 @@ export function frameSizeMm(
   dimensions: GridDimensions,
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>,
 ): FrameSizeMm {
-  return {
-    widthMm: gridWidth(technique, dimensions.columns, beadPitchMm(bead)),
-    heightMm: gridHeight(technique, dimensions.rows, bead.heightMm),
-  }
+  const { width, height } = describeWeave({ technique }).blockExtent(dimensions.columns, dimensions.rows, beadPitchMm(bead), bead.heightMm)
+  return { widthMm: width, heightMm: height }
 }
 
 /** Millimetres per source pixel at the smallest scale that still covers the frame (the framing step's 100%);
@@ -115,6 +113,7 @@ export const SLOW_FRAMING_CELLS: Record<Technique, number> = {
   loom: LOOM_SLOW_FRAMING_CELLS,
   peyote: PEYOTE_SLOW_FRAMING_CELLS,
   brick: BRICK_SLOW_FRAMING_CELLS,
+  rightAngle: PREVIEW_MAX_CELLS,
 }
 
 /** Whether a grid this size in this Technique risks slow framing (see SLOW_FRAMING_CELLS). `thresholds` defaults to
@@ -181,8 +180,11 @@ export function previewLattice({
   const overhangX = Math.max(-view.offsetXMm, view.offsetXMm + view.pictureWidthMm - frame.widthMm)
   const overhangY = Math.max(-view.offsetYMm, view.offsetYMm + view.pictureHeightMm - frame.heightMm)
 
-  const wantedColumns = Math.max(0, Math.ceil(overhangX / beadPitchMm(bead)))
-  const wantedRows = Math.max(0, Math.ceil(overhangY / rowPitch(technique, bead.heightMm)))
+  const description = describeWeave({ technique })
+  // A step of the positions: where Units are counted, a Unit is a column across and two rows down (ticket 482).
+  const step = description.stepMm(bead)
+  const wantedColumns = Math.max(0, Math.ceil(overhangX / step.across))
+  const wantedRows = Math.max(0, Math.ceil(overhangY / (step.down / description.rowsPerUnit)))
 
   const fit = marginFit(dimensions, wantedColumns, wantedRows)
   const frameColumn = Math.floor(wantedColumns * fit)

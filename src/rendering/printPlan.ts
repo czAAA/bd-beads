@@ -1,8 +1,8 @@
-import { projectDimensions } from '../domain/project'
+import { countedDimensions, projectDimensions } from '../domain/project'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
-import { type Technique } from '../domain/weave'
+import { describeWeave, type Technique } from '../domain/weave'
 import type { Project } from '../domain/project'
-import { CELL_SIZE_PX, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
+import { CELL_SIZE_PX, cellSizePx, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
 // PDF page layout (ticket 162, 185): page 1 whole, then 100 × 100-bead chart blocks, beads up to 7 mm; page px at 150
 // dpi.
@@ -92,16 +92,20 @@ type Shape = Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'>
 // way at zoom 1.
 export function displayedGrid(project: Shape) {
   const { technique, rotation } = project
-  const { columns, rows } = projectDimensions(project)
-  const pitch = rowPitchPx(technique)
+  const { columns, rows } = countedDimensions(project)
+  // Right-angle weave counts Units, whose pitch is the same each way (ticket 482).
+  const unit = describeWeave({ technique }).countsUnits ? cellSizePx(technique).width + cellSizePx(technique).height : undefined
+  const pitch = unit ?? rowPitchPx(technique)
+  const wide = unit ?? CELL_SIZE_PX
   return rotationSwapsAxes(rotation)
-    ? { across: rows, down: columns, stepAcross: pitch, stepDown: CELL_SIZE_PX }
-    : { across: columns, down: rows, stepAcross: CELL_SIZE_PX, stepDown: pitch }
+    ? { across: rows, down: columns, stepAcross: pitch, stepDown: wide, beadAcross: wide, beadDown: wide }
+    : { across: columns, down: rows, stepAcross: wide, stepDown: pitch, beadAcross: wide, beadDown: wide }
 }
 
 /** The displayed size of a block of beads `across` × `down`, at zoom 1. */
 function blockExtent(technique: Technique, rotation: Rotation, across: number, down: number): PageSize {
-  const [columns, rows] = rotationSwapsAxes(rotation) ? [down, across] : [across, down]
+  const counted = rotationSwapsAxes(rotation) ? { columns: down, rows: across } : { columns: across, rows: down }
+  const { columns, rows } = describeWeave({ technique }).positionsOf(counted)
   return displayedExtentPx(technique, columns, rows, 1, rotation)
 }
 

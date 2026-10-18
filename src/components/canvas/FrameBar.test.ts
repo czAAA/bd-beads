@@ -45,6 +45,28 @@ function pencilAt(rect: { left: number; top: number }, height = 300) {
   return { moveTo: (next: { left: number; top: number }) => (at = next) }
 }
 
+describe('FrameBar in Right-angle weave (ticket 482)', () => {
+  const woven = () => ({ ...framed({ row: 2, column: 3, rows: 7, columns: 5, beads: {} }), technique: 'rightAngle' as const })
+
+  it('shows the size in Units: 4 across and 3 down for 5 columns and 7 rows', () => {
+    const wrapper = mountBar(woven())
+
+    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('placeholder')).toBe('4')
+    expect(wrapper.get('[data-testid="frame-bar-height"]').attributes('placeholder')).toBe('3')
+    expect(wrapper.text()).toContain(en.frame.sizeUnitUnits)
+  })
+
+  it('takes a size typed in Units', async () => {
+    const wrapper = mountBar(woven())
+
+    await wrapper.get('[data-testid="frame-bar-width"]').setValue('6')
+    await wrapper.get('[data-testid="frame-bar-height"]').setValue('4')
+    await wrapper.get('[data-testid="frame-bar-height"]').trigger('keydown', { key: 'Enter' })
+
+    expect(wrapper.emitted('resize')).toEqual([[6, 4]])
+  })
+})
+
 describe('FrameBar (ticket 473)', () => {
   it('shows the size as two empty fields with the current size as placeholders, then the unit, Rotate and Remove Frame', () => {
     const wrapper = mountBar()
