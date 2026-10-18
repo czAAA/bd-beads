@@ -60,6 +60,15 @@ html:has(.app-shell),
 html:has(.app-shell) body {
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none;
   /* The Dock's own colour, so no band of page background shows below it where the screen is taller than the shell. */
   background: var(--canvas);
+}
+
+/* Pinned, not just unscrollable: a document that is the screen's own size has nothing for a drag on a popover or a
+   sheet to chain into, so no component can move the view off the Canvas strip (iPad Safari). */
+html:has(.app-shell) {
+  position: fixed;
+  inset: 0;
+  width: 100%;
 }

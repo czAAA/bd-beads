@@ -139,10 +139,9 @@ describe('encodeProject / decodeProject', () => {
   })
 
   it('leaves every non-grid field exactly as it was, including one added after this encoding', () => {
-    // Ticket 58's Image colors is such a field, and deliberately not this encoding's color table (ADR 0011): the two
-    // differ the moment a color is erased, so the encoding has to carry a field it knows nothing about, untouched.
+    // The encoding has to carry a field it knows nothing about, untouched.
     const base = paint(makeProject(3, 3), (row) => (row === 0 ? '#ff0000' : null))
-    const project = { ...base, imageColors: ['#ff0000', '#00ff00'] }
+    const project = { ...base, futureField: { a: 1 } }
 
     const decoded = decodeProject(JSON.parse(JSON.stringify(encodeProject(project))))
 
@@ -155,7 +154,7 @@ describe('encodeProject / decodeProject', () => {
     const encoded = encodeProject(project)
 
     // The table belongs to the encoded cells, not to the Project: nothing above the storage boundary should be able to
-    // mistake it for a Project field (see ADR 0009 and ADR 0011).
+    // mistake it for a Project field (see ADR 0009).
     expect(Object.keys(encoded)).not.toContain('colors')
     expect(encoded.encodedBeads.colors).toEqual(['#ff0000'])
   })

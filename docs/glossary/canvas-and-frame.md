@@ -3,7 +3,7 @@
 The Project, the Canvas, the Frame, Pieces, zoom and the rulers. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
 
 **Project**:
-Everything saved under one name: one Canvas holding the Frame (none or one), the Pieces and any unframed Schemas, plus the Technique, Bead, rotation, Row progress, Image colors, the Project's name and its Maker's name. What a person creates, opens, saves, lists in the library, exports as a file and shares. A Project with no Frame has no framed Schema yet (ADR 0028, ticket 262).
+Everything saved under one name: one Canvas holding the Frame (none or one), the Pieces and any unframed Schemas, plus the Technique, Bead, rotation, Row progress, the Project's name and its Maker's name. What a person creates, opens, saves, lists in the library, exports as a file and shares. A Project with no Frame has no framed Schema yet (ADR 0028, ticket 262).
 _Avoid_: design, drawing, chart, pattern, schema (for the whole saved thing)
 
 **Schema**:
