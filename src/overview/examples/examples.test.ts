@@ -77,8 +77,8 @@ describe('the carousel examples', () => {
     expect(wrapper.text()).toContain('Row done')
   })
 
-  it('row progress: shows the Row highlight toggle, pressed', () => {
-    expect(example('rowProgress').find('[data-testid="example-row-highlight"] svg').exists()).toBe(true)
+  it('row progress: shows the Row highlight switch, on', () => {
+    expect(example('rowProgress').find('[data-testid="example-row-highlight"]').exists()).toBe(true)
   })
 
   it('beads needed: lists the Tour Project colors and a total that adds up', () => {

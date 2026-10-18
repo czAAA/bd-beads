@@ -55,7 +55,7 @@ describe('App row progress', () => {
 
       await wrapper.find('[data-testid="progress-bar-direction"]').trigger('click')
 
-      expect(wrapper.find('[data-testid="progress-bar-direction"]').attributes('aria-pressed')).toBe('true')
+      expect(wrapper.find('[data-testid="progress-bar-direction"]').attributes('aria-checked')).toBe('true')
       expect(position(wrapper)).toMatch(/\b1\D+10\b/)
 
       await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
@@ -106,14 +106,14 @@ describe('App finished rows', () => {
 
     expect(colorAt(1, 4)).toBeNull()
     expect(undoDisabled(wrapper)).toBe(true)
-    expect(wrapper.get('[data-testid="progress-bar-highlight"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('[data-testid="progress-bar-highlight"]').attributes('aria-checked')).toBe('false')
   })
 
   it('keeps Row highlight off across a reload, in the device and not in the Project (ticket 474)', async () => {
     localStorage.setItem('openbeads:row-highlight', 'off')
     const wrapper = await mountWithProject(15, 30)
 
-    expect(wrapper.get('[data-testid="progress-bar-highlight"]').attributes('aria-pressed')).toBe('false')
+    expect(wrapper.get('[data-testid="progress-bar-highlight"]').attributes('aria-checked')).toBe('false')
     expect(JSON.stringify(loadProjects())).not.toContain('highlight')
   })
 
