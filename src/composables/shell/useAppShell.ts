@@ -574,7 +574,15 @@ function wireAppShell(services: Services) {
   })
 
   /** Rotate Frame: the Frame, its margin and the beads inside a quarter turn, one Undo step (ticket 471, ADR 0063). */
-  const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, showToast, onUndo, messages, locale: currentLocale })
+  const rotateFrameFlow = useRotateFrameFlow({
+    edit,
+    currentProject,
+    announce,
+    showToast,
+    onUndo,
+    messages,
+    locale: currentLocale,
+  })
 
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0063). */
   const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages })
