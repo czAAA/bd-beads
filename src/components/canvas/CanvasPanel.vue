@@ -105,7 +105,6 @@ const {
   onRotateCanvas,
   onSelectAll,
   toolPillPosition,
-  pillColorMode,
   toolPillPopoverOpen,
   recentsInPill,
   recentsInPopover,
@@ -113,11 +112,9 @@ const {
   selectedColorHex,
   selectedColorId,
   customColor,
-  selectedImageColor,
   onSelectTool,
   onSelectColor,
   onSelectCustomColor,
-  onSelectImageColor,
   onToggleRowDirection,
   onMoveRow,
   canRemoveSelectedLine,
@@ -152,7 +149,7 @@ const colorHex = computed(() => selectedColorHex() ?? undefined)
 const colorName = computed(() => {
   const id = selectedColorId.value
   if (id) return t.value.colorNames[id] ?? colorHex.value
-  return selectedImageColor.value || customColor.value ? t.value.colorNames.custom : undefined
+  return customColor.value ? t.value.colorNames.custom : undefined
 })
 
 /** Where the Tool pill is in the drawing area, so the Selection bar keeps clear of it (ticket 439). */
@@ -407,7 +404,6 @@ function techniqueWord(technique: Technique): string {
         <ToolPill
           v-if="activeProject && !framing"
           v-model:position="toolPillPosition"
-          v-model:color-mode="pillColorMode"
           v-model:popover-open="toolPillPopoverOpen"
           :active-tool="activeTool"
           :has-clipboard="hasClipboard()"
@@ -418,8 +414,6 @@ function techniqueWord(technique: Technique): string {
           :recents-in-popover="recentsInPopover"
           :selected-color-id="selectedColorId"
           :custom-color="customColor"
-          :selected-image-color="selectedImageColor"
-          :image-colors="activeProject.imageColors"
           :open-sheet="openPhoneSheet"
           @select-sheet="onSelectPhoneSheet"
           @select-tool="onSelectTool"
@@ -427,7 +421,6 @@ function techniqueWord(technique: Technique): string {
           @pick-recent="pickRecent"
           @select-color="onSelectColor"
           @select-custom-color="onSelectCustomColor"
-          @select-image-color="onSelectImageColor"
           @rect="pillRect = $event"
         />
       </div>

@@ -88,10 +88,6 @@ export interface Translations {
     /** The colour control's name; {name} is the chosen colour's name. */
     color: string
     popover: string
-    /** The popover's setting for what the pill shows. */
-    inPill: string
-    one: string
-    recentColors: string
     /** The popover's section of recent colours. */
     recent: string
     palette: string
@@ -646,9 +642,6 @@ export interface Translations {
     increaseColorsButton: string
     /** Prefix for how many colors this conversion actually found, e.g. "Colors found: 6". */
     foundColorsLabel: string
-    /** Names the Image colors swatches in the Colors group (CONTEXT.md's Image colors). */
-    imageColorsLabel: string
-    imageColorsShort: string
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
       heic: string
@@ -725,7 +718,6 @@ export interface Translations {
     customColor: string
     pickFromCanvas: string
     customColorFull: string
-    imageColorsDisabled: string
     nothingToUndo: string
     zoomOutLimit: string
     zoomInLimit: string

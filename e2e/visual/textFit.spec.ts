@@ -160,7 +160,7 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    // The colour popover and the Tool pill's Recent colors mode (ticket 439): both must fit whole at every width.
+    // The colour popover and the Tool pill's recents (ticket 439): both must fit whole at every width.
     name: 'colour popover',
     visit: async (page, measure) => {
       if (!(await shown(page, 'pill-color'))) return false

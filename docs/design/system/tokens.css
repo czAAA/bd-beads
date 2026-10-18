@@ -11,7 +11,7 @@
   --body: #4a4a4a; /* Secondary text such as Beads needed color names, on panel and elevated. */
   --muted: #6a6a6a; /* Labels and meta (DM Mono), inactive tab labels, chevrons, on panel, box and elevated (4.8:1 or more in both themes). */
   --subtle: #767676; /* "/ RU" in the language button and the inactive theme icon (4.5:1 on canvas). */
-  --faint: #a8a8a8; /* Disabled text and icons (Image colors while the Pattern has none). Exempt from contrast as disabled. */
+  --faint: #a8a8a8; /* Disabled text and icons (for example a disabled control). Exempt from contrast as disabled. */
   --line: #e5e5e5; /* Hairlines. */
   --line-soft: #ededed; /* Header bottom border; row dividers inside boxes (Beads needed rows, the Saved Patterns footer). */
   --line-strong: #c7c7c7; /* Button and select borders on the page, expand buttons, the Tools tab rule, thin scrollbar thumb; the overlay border in dark. Fields and Steppers use field-line. */
@@ -225,7 +225,7 @@
   --z-chrome: 20; /* Header, Dock, Progress bar when they overlap scrolling content. */
   --z-context-bar: 30; /* The Selection ContextBar above the Progress bar. */
   --z-sheet: 50; /* ToolSheets; the modal Pattern sheet and its scrim. */
-  --z-popover: 60; /* Menus, the Image colors popover, OverflowMenu. */
+  --z-popover: 60; /* Menus, OverflowMenu. */
   --z-toast: 70; /* Toast messages: above sheets so a result is never hidden, below modals. */
   --z-modal: 80; /* Modals and their scrim (scrim one below): confirmations, Keyboard shortcuts, New Pattern on phone. */
   --z-tour-dim: 84; /* The Tour's dim layer and its hole (v15): above modals so the Tour can guide inside New Pattern on the phone. */
@@ -254,7 +254,7 @@
   --text-title: 600 16px/24px var(--font-sans); /* Modal titles (Derived). */
   --text-control: 500 14px/20px var(--font-sans); /* Buttons, selects, row labels (Mirror, Size), box titles, "Row 12", "Pattern". */
   --text-body: 400 14px/20px var(--font-sans); /* Text, Beads needed rows, modal and message body. */
-  --text-tab: 500 13px/18px var(--font-sans); /* Tool tab labels under their icons; small buttons (Custom, Image colors). */
+  --text-tab: 500 13px/18px var(--font-sans); /* Tool tab labels under their icons; small buttons (Custom). */
   --text-pill: 500 13px/18px var(--font-sans); /* The Bead pill. */
   --text-small: 500 12px/15px var(--font-sans); /* Saved Pattern names under thumbnails; tooltips. */
   --text-label: 400 13px/18px var(--font-mono); /* Group labels ("tools", "colors", "edit"), "currently editing", "saved · this device". Lowercased by text-transform, never in the string. */

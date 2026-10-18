@@ -57,7 +57,7 @@ describe('a .openbeads file', () => {
     expect(await roundTrip(project)).toEqual(project)
   })
 
-  it('round-trips a Russian name, a Frame, Row progress, Image colors and a field this build does not know', async () => {
+  it('round-trips a Russian name, a Frame, Row progress and a field this build does not know', async () => {
     const project = {
       ...moveToRow(
         createProjectFromImage({
@@ -70,7 +70,6 @@ describe('a .openbeads file', () => {
             [{ color: null }, { color: '#ff0000' }, { color: '#0000ff' }],
             [{ color: '#0000ff' }, { color: null }, { color: '#00ff00' }],
           ],
-          imageColors: ['#ff0000', '#00ff00', '#0000ff'],
         }),
         2,
       ),

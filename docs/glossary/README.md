@@ -9,7 +9,7 @@ The domain language of bd-beads, one file per area. Each entry gives a term's me
 | [Row progress and Mirror](row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
 | [Tool pill and controls](toolbox.md) | Tool group, Tool pill layout, Tool pill, Menu, Canvas strip, Tool button, Tooltip, Note, Outside press |
 | [Editing a Schema](editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
-| [Import and rendering](import-and-rendering.md) | Convert image, Image colors, Project renderer, Drawing surface, Bead pointer |
+| [Import and rendering](import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
 | [Overview and Tour](overview-and-tour.md) | Overview, Tour |
 

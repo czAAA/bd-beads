@@ -75,20 +75,16 @@ describe('useNewProjectFlow', () => {
         ['a', 'a', undefined],
         [undefined, 'b', 'b'],
       ],
-      imageColors: [
-        { id: 'a', hex: '#111111' },
-        { id: 'b', hex: '#eeeeee' },
-      ],
     } as unknown as ConvertedImage
     flow.onConvertImageCreate(converted)
     expect(deps.addProject).toHaveBeenCalledOnce()
-    expect(deps.addProject.mock.calls[0][0]).toMatchObject({ frame: { columns: 3, rows: 2 }, imageColors: converted.imageColors })
+    expect(deps.addProject.mock.calls[0][0]).toMatchObject({ frame: { columns: 3, rows: 2 } })
     expect(deps.cancelConvertImage).toHaveBeenCalled()
   })
 
   it('creates nothing when not framing', () => {
     const { deps, flow } = setup()
-    flow.onConvertImageCreate({ grid: [], imageColors: [] } as unknown as ConvertedImage)
+    flow.onConvertImageCreate({ grid: [] } as unknown as ConvertedImage)
     expect(deps.addProject).not.toHaveBeenCalled()
   })
 })

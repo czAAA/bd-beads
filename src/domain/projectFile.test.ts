@@ -11,7 +11,6 @@ import {
 } from './projectFile'
 import {
   createProject,
-  createProjectFromImage,
   moveToRow,
   paintCells,
   withTechnique,
@@ -247,47 +246,5 @@ describe('importProjects', () => {
     const added = importProjects([incoming, incoming], [], () => 'fresh-id')
 
     expect(added.map((project) => project.id)).toEqual([incoming.id, 'fresh-id'])
-  })
-})
-
-describe('Image colors through a Project file (ticket 58)', () => {
-  function converted(): Project {
-    return createProjectFromImage({
-      name: 'Logo',
-      technique: 'peyote',
-      beadId: cubeBead.id,
-      size: { width: 4.5, height: 4.5, unit: 'mm' }, // 3 columns x 3 rows in 1.5mm cubes
-      grid: [
-        [{ color: '#ff0000' }, { color: '#00ff00' }, { color: null }],
-        [{ color: null }, { color: '#ff0000' }, { color: '#0000ff' }],
-        [{ color: '#0000ff' }, { color: null }, { color: '#00ff00' }],
-      ],
-      imageColors: ['#ff0000', '#00ff00', '#0000ff'],
-    })
-  }
-
-  it('exports and imports a converted Project with its Image colors intact', () => {
-    const project = converted()
-
-    const [restored] = parseProjectsFile(serializeProject(project)).projects
-
-    expect(restored).toEqual(project)
-    expect(restored!.imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
-  })
-
-  it('carries them through a whole-library file too', () => {
-    const project = converted()
-
-    const { projects } = parseProjectsFile(serializeLibrary([makeProject('Plain'), project]))
-
-    expect(projects[0]!.imageColors).toBeUndefined()
-    expect(projects[1]!.imageColors).toEqual(['#ff0000', '#00ff00', '#0000ff'])
-  })
-
-  it('leaves a Project created any other way without the field, rather than giving it an empty list', () => {
-    const [restored] = parseProjectsFile(serializeProject(makeProject())).projects
-
-    expect(restored!.imageColors).toBeUndefined()
-    expect('imageColors' in restored!).toBe(false)
   })
 })

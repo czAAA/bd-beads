@@ -26,7 +26,7 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 - **Schema size**: the Frame's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps every bead — see ADR 0026 and ADR 0007. There is no limit on size beyond what the device can hold (ADR 0019, which removed the cell cap)
 - **Bead quantities**: the per-color bead counts a Schema needs, counted straight from its painted colors (with an Estimated weight beside them) — see ADR 0007
 - **Project file**: the exported `.openbeads` file (JSON with the compact bead encoding, gzipped) holding one Project (`my-scarf_pr.openbeads`) or a whole library (`openbeads_lib.openbeads`) — the only way work moves between devices, per ADR 0001 and ADR 0048. Plain `.json` files from before ADR 0048 still import
-- **Convert image**: a second way to create a Project — from a picture rather than an empty grid, with the picture becoming the Schema, cropped to the Schema's real-world size (ADR 0010, amended by ADR 0026) with its colors saved as Image colors (ADR 0011)
+- **Convert image**: a second way to create a Project — from a picture rather than an empty grid, with the picture becoming the Schema, cropped to the Schema's real-world size (ADR 0010, amended by ADR 0026)
 - **Visual language**: how the app looks — light, dark and high contrast themes, tokens, layout, components, copy and artwork — is set by the design system in `docs/design/system/` (owned by the repo, baseline v18), entered through [DESIGN.md](DESIGN.md); see ADR 0021, amended by ADR 0030. The App shell layout below is the redesigned one (ticket 141); the redesign tickets restyle its parts
 - **App shell layout**: how the screen is arranged — the **Tool pill layout** at every width: the canvas box is the screen (6px from every edge), the Tool pill floating over its drawing area, sheets for the controls, the slim Canvas strip (ADR 0021, ADR 0032, ADR 0046, ADR 0059; the Toolbox layout was removed in ticket 412). The full arrangement is in [docs/layout.md](docs/layout.md)
 - **Text fit check**: the browser check, part of `npm run visual`, that no text or Tooltip is cut off or pokes out of its box in any language at any supported width; how it works and how to extend it is in [docs/testing.md](docs/testing.md#text-fit-check)
@@ -42,7 +42,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | [Row progress and Mirror](docs/glossary/row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
 | [Tool pill and controls](docs/glossary/toolbox.md) | Tool group, Tool pill layout, Tool pill, Menu, Canvas strip, Tool button, Tooltip, Note |
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Undo, Redo |
-| [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Image colors, Project renderer, Drawing surface, Bead pointer |
+| [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
 | [Overview and Tour](docs/glossary/overview-and-tour.md) | Overview, Tour |
 

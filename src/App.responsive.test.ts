@@ -64,6 +64,15 @@ describe('the page never scrolls under the app shell (ticket 320)', () => {
     const rule = base.match(/html:has\(\.app-shell\),\s*html:has\(\.app-shell\) body\s*\{([^}]*)\}/)
     expect(rule?.[1]).toMatch(/overflow:\s*hidden/)
     expect(rule?.[1]).toMatch(/height:\s*100%/)
+    expect(rule?.[1]).toMatch(/overscroll-behavior:\s*none/)
+  })
+
+  it('pins the document to the screen, so a drag on a popover has nothing to chain into', () => {
+    expect(base).toMatch(/html:has\(\.app-shell\)\s*\{[^}]*position:\s*fixed;[^}]*inset:\s*0/)
+  })
+
+  it('keeps the colour popover\'s own scroll from carrying on into the page', () => {
+    expect(source('tools/ColorPopover')).toMatch(/\.color-popover\s*\{[^}]*overscroll-behavior:\s*none/)
   })
 
   it('leaves the shell scrolling nothing itself, not even by script or by a focus (clip, not hidden)', () => {
