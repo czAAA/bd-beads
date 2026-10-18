@@ -71,7 +71,8 @@ const {
   /* Pinned to the screen, not sized by 100dvh: iOS's dvh can fall short of the screen and leave a band under the Dock. */
   position: fixed;
   inset: 0;
-  /* clip, not hidden: nothing, not even a focus() on a sheet placed off-screen, may scroll the shell and push the Canvas strip out of view (iPad Safari). */
+  /* clip, not hidden: nothing, not even a focus() on a sheet placed off-screen, may scroll the shell and push the Canvas strip out of view (iPad Safari). hidden stays as the fallback where clip is unknown (Safari before 16), with the sheets' preventScroll focus covering it there. */
+  overflow: hidden;
   overflow: clip;
   background: var(--canvas);
 }
