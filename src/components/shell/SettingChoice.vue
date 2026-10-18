@@ -11,7 +11,7 @@ import { PANEL_CONTEXT } from './panelContext'
 const props = defineProps<{
   label: string
   icon?: IconName
-  options: readonly { value: T; label: string; icon?: IconName; lang?: string; testid?: string }[]
+  options: readonly { value: T; label: string; icon?: IconName; chip?: string; lang?: string; testid?: string }[]
   /** Two choices sit on the row beside the label. */
   inline?: boolean
 }>()
@@ -69,7 +69,7 @@ function onKeydown(event: KeyboardEvent) {
         type="button"
         role="radio"
         class="ui-control setting__option"
-        :class="{ 'setting__option--current': option.value === value, 'setting__option--icon': option.icon }"
+        :class="{ 'setting__option--current': option.value === value, 'setting__option--icon': option.icon || option.chip }"
         :aria-checked="option.value === value"
         :tabindex="option.value === value ? 0 : -1"
         :lang="option.lang"
@@ -77,7 +77,10 @@ function onKeydown(event: KeyboardEvent) {
         :data-testid="option.testid"
         @click="value = option.value"
       >
-        <span class="setting__option-label"><AppIcon v-if="option.icon" :name="option.icon" :size="16" />{{ option.label }}</span>
+        <span class="setting__option-label">
+          <span v-if="option.chip" class="setting__chip" aria-hidden="true">{{ option.chip }}</span>
+          <AppIcon v-else-if="option.icon" :name="option.icon" :size="16" />{{ option.label }}
+        </span>
         <AppIcon v-if="option.value === value" class="setting__check" name="check" :size="18" />
       </button>
     </div>
@@ -196,6 +199,22 @@ function onKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: var(--space-10);
+}
+
+.setting__chip {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-width: 24px;
+  padding: 0 var(--space-4);
+  font: var(--type-meta);
+  font-weight: 600;
+  line-height: 16px;
+  color: var(--muted);
+  border: 1px solid currentcolor;
+  border-radius: var(--radius-sm);
 }
 
 .setting__option--icon {
