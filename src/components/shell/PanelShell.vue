@@ -35,7 +35,7 @@ const titleId = useId()
 const panelEl = ref<HTMLElement>()
 const anchorEl = ref<HTMLElement>()
 /** The buttons that open, swap or close a panel themselves, so a press on one is not a press outside. */
-const STRIP_BUTTONS = '[data-testid="strip-menu"], [data-testid="strip-project"], [data-testid="strip-frame"], [data-testid="frame-edit-toggle"]'
+const OPENERS = '[data-testid="strip-menu"], [data-testid="strip-project"], [data-testid="strip-frame"], [data-testid="frame-edit-toggle"]'
 
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
 /** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
@@ -63,6 +63,9 @@ function measureSheet() {
   scrimBox.value = { top: `${strip.bottom}px`, left: `${box.left}px`, width: `${box.width}px`, height: `${Math.max(0, box.bottom - strip.bottom)}px` }
 }
 
+/** The style the panel is placed with, as a dropdown or as the Top sheet. */
+const panelBox = computed(() => (sheet.value ? sheetBox.value : dropdownStyle.value))
+
 function place() {
   anchorEl.value = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? undefined
   if (!sheet.value) anchored.follow()
@@ -82,18 +85,20 @@ function onEscape() {
 }
 /** Whether the press just let through was one the panel keeps, so the focus it moves does not close it. */
 let keptPress = false
+let keptPressTimer: ReturnType<typeof setTimeout> | undefined
 useOverlayLayer({
   isOpen: () => true,
   root: () => panelEl.value,
   close: onEscape,
   // The strip's own buttons are left alone, since their click swaps or closes the panel.
-  isOpener: (target) => target.closest(STRIP_BUTTONS) !== null,
+  isOpener: (target) => target.closest(OPENERS) !== null,
   keepsPress: (event) => {
     const kept = props.keepsPress?.(event) ?? false
     // The focus it moves (onto the canvas) comes in this same task.
     if (kept) {
       keptPress = true
-      setTimeout(() => (keptPress = false))
+      clearTimeout(keptPressTimer)
+      keptPressTimer = setTimeout(() => (keptPress = false))
     }
     return kept
   },
@@ -142,7 +147,7 @@ function onKeydown(event: KeyboardEvent) {
 function onFocusOut(event: FocusEvent) {
   if (sheet.value || keptPress) return
   const next = event.relatedTarget
-  if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(STRIP_BUTTONS) && !next.closest('[popover]')) emit('close')
+  if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(OPENERS) && !next.closest('[popover]')) emit('close')
 }
 
 /** The Top sheet's handle: a tap or a drag up closes it. */
@@ -168,8 +173,9 @@ function onHandleUp() {
   if (offset < 4 || offset >= DRAG_CLOSE_PX) emit('close')
 }
 
-/** `place` again after the button moved with no scroll or resize (the edit pencil on a zoom). */
-defineExpose({ place })
+/** `place` again after the button moved with no scroll or resize (the edit pencil on a zoom); the panel's element and
+ * box, for what keeps clear of it. */
+defineExpose({ place, el: panelEl, box: panelBox })
 
 let opener: HTMLElement | null = null
 const pressClosed = usePressClosed()
@@ -181,6 +187,7 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', measureSheet)
+  clearTimeout(keptPressTimer)
   anchored.stop()
   const target = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? opener
   // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes.
@@ -194,7 +201,7 @@ onBeforeUnmount(() => {
     ref="panelEl"
     class="panel-shell"
     :class="sheet ? 'panel-shell--sheet' : 'panel-shell--dropdown'"
-    :style="sheet ? sheetBox : dropdownStyle"
+    :style="panelBox"
     :role="itemRole ? 'menu' : 'dialog'"
     :aria-modal="sheet ? 'true' : undefined"
     :aria-labelledby="titleId"
