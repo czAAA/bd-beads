@@ -60,7 +60,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 | `z-chrome` | 20 | Header, Dock, Progress bar when they overlap scrolling content. |
 | `z-context-bar` | 30 | The Selection ContextBar (anchored to the Selection since ticket 415). |
 | `z-sheet` | 50 | ToolSheets; the modal Pattern sheet and its scrim. |
-| `z-popover` | 60 | Menus, the Image colors popover, the HeaderMenu. |
+| `z-popover` | 60 | Menus, the HeaderMenu. |
 | `z-toast` | 70 | Toast messages: above sheets so a result is never hidden, below modals. |
 | `z-modal` | 80 | Modals and their scrim (scrim one below): confirmations, Keyboard shortcuts, New Pattern on phone. |
 | `z-tour-dim` | 84 | The Tour's dim layer and its hole (v15). |

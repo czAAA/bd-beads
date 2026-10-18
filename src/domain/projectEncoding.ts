@@ -2,8 +2,8 @@ import { forEachBead, type BeadMap } from './canvas'
 import type { Grid, GridProject, Project } from './project'
 
 // The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with a
-// bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex) and not
-// ticket 58's frozen Image colors (ADR 0011): it describes the beads as they stand now.
+// bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex): it
+// describes the beads as they stand now.
 interface EncodedBeads {
   /** Every distinct hex on the canvas, in the order the beads first use it. */
   colors: string[]
