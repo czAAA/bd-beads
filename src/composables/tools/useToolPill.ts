@@ -14,7 +14,8 @@ export interface ToolPillDeps {
 }
 
 // The Tool pill's own state (ticket 439, ADR 0059): docked edge, the eight recents, and whether the colour popover
-// is open. The first two are kept on this device like the theme (ADR 0020). A colour joins the recents at the front when the paint colour changes, with the one it replaced.
+// is open. The first two are kept on this device like the theme (ADR 0020). A colour joins the recents at the front
+// when the paint colour changes, with the one it replaced.
 export function useToolPill(deps: ToolPillDeps) {
   const position = deps.preferences.get('toolPillPosition')
   const recents = deps.preferences.get('recentColors')
