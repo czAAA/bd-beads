@@ -13,6 +13,7 @@ import {
   createProject,
   moveToRow,
   paintCells,
+  withBrickBlock,
   withTechnique,
   type Project,
   frameGrid,
@@ -48,6 +49,27 @@ describe('single-Project roundtrip', () => {
 
     expect(restored!.technique).toBe('brick')
     expect(restored).toEqual(project)
+  })
+
+  it('carries a Brick block through the file, and reads a file without one as 1 (ticket 477)', () => {
+    const project = withBrickBlock(withTechnique(decoratedProject(), 'brick'), 3)
+
+    const [restored] = parseProjectsFile(serializeProject(project)).projects
+
+    expect(restored!.brickBlock).toBe(3)
+    expect(restored).toEqual(project)
+
+    const file = JSON.parse(serializeProject(decoratedProject()))
+    expect(file.projects[0]).not.toHaveProperty('brickBlock')
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.brickBlock).toBeUndefined()
+  })
+
+  it('reads an unreadable Brick block as the default (ticket 477)', () => {
+    for (const bad of [0, 21, 2.5, 'two', null]) {
+      const file = JSON.parse(serializeProject(decoratedProject()))
+      file.projects[0].brickBlock = bad
+      expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.brickBlock).toBeUndefined()
+    }
   })
 
   it('carries the grid, technique, bead and row progress through the file', () => {

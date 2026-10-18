@@ -37,7 +37,7 @@ export function selectedAreaLine(frame: Frame | undefined, selection: Selection 
 
 /** The line the Selection covers, in the Frame or, with no Frame, in whichever Piece area it is a whole line of. */
 function selectedProjectLine(project: Project, selection: Selection | undefined): ProjectLine | undefined {
-  const areas = project.frame ? [project.frame] : pieceAreasOf(project.beads, project.technique)
+  const areas = project.frame ? [project.frame] : pieceAreasOf(project.beads, project)
   for (const area of areas) {
     const line = selectedAreaLine(area, selection)
     if (line) {

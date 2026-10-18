@@ -285,6 +285,34 @@ describe('useFrameFlow', () => {
     })
   })
 
+  describe('the Brick block (ticket 477)', () => {
+    const brick = { ...sized, technique: 'brick' as const }
+
+    it('changes the Brick block as one announced undo step, keeping every bead and the Frame row', () => {
+      const { deps, setBrickBlock } = setup(brick)
+      const before = deps.harness.project
+      setBrickBlock(3)
+      expect(deps.harness.project).toMatchObject({ brickBlock: 3, frame: before.frame, beads: before.beads })
+      expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.brickBlock ?? 1).toBe(1)
+      deps.harness.history.onRedo()
+      expect(deps.harness.project.brickBlock).toBe(3)
+    })
+
+    it('is no step for the number already used', () => {
+      const { deps, setBrickBlock } = setup(brick)
+      setBrickBlock(1)
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+    })
+
+    it('is refused once Row progress is on and a pass is done', () => {
+      const { deps, setBrickBlock } = setup(moveToRow(brick, 1))
+      setBrickBlock(2)
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+    })
+  })
+
   it('brings the Frame into view', () => {
     const { deps, bringIntoView } = setup()
     bringIntoView()

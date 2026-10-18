@@ -19,6 +19,31 @@ export function isOffsetTechnique(technique: Technique): boolean {
   return technique !== 'loom'
 }
 
+/** The most rows a Brick block may hold straight on top of each other (ticket 477). */
+export const MAX_BRICK_BLOCK = 20
+
+/** What decides which rows sit shifted: the Technique and, on brick stitch, the Brick block (ticket 477); absent
+ * means 1, every other row. A Project is one. */
+export interface Weave {
+  technique: Technique
+  brickBlock?: number
+}
+
+/** After how many rows the shift repeats: 1 for loom (it never shifts), 2 for peyote, 2N for brick stitch with a Brick
+ * block of N. Frame starts, edges and moves go by multiples of it. */
+export function rowCycle({ technique, brickBlock }: Weave): number {
+  if (technique === 'loom') {
+    return 1
+  }
+  return technique === 'brick' ? 2 * (brickBlock ?? 1) : 2
+}
+
+/** Whether a row's beads sit half a bead across: the second half of each cycle, whichever side of row 0 it is on. */
+export function isShiftedRow(weave: Weave, row: number): boolean {
+  const cycle = rowCycle(weave)
+  return cycle > 1 && Math.abs(Math.floor((row * 2) / cycle)) % 2 === 1
+}
+
 // A view-only quarter-turn (ticket 171, extending ticket 28): clockwise degrees. Purely cosmetic, like
 // Project.rotation: the grid never turns, only its on-screen (and printed/exported) presentation.
 export type Rotation = 0 | 90 | 180 | 270
@@ -79,8 +104,8 @@ export const CANVAS_MAX_PX = 900
 
 /** Horizontal offset for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by half
  * a cell so beads interlock instead of stacking in a straight grid. */
-export function rowOffset(technique: Technique, rowIndex: number, cellSize: number): number {
-  return isOffsetTechnique(technique) && Math.abs(rowIndex % 2) === 1 ? cellSize / 2 : 0
+export function rowOffset(weave: Weave, rowIndex: number, cellSize: number): number {
+  return isShiftedRow(weave, rowIndex) ? cellSize / 2 : 0
 }
 
 /** Total grid width, including the extra half-cell an offset technique's shifted rows take up. */
@@ -118,14 +143,14 @@ export interface CellCenter {
 // footprint, ticket 58, ADR 0010). Uses the Technique's real geometry: odd peyote/brick rows shift half a cell
 // (rowOffset), peyote rows pack tighter (rowPitch). The last row's centre is half a cell above gridHeight.
 export function cellCenter(
-  technique: Technique,
+  weave: Weave,
   { row, column }: GridPosition,
   cellWidth: number,
   cellHeight: number,
 ): CellCenter {
   return {
-    x: column * cellWidth + cellWidth / 2 + rowOffset(technique, row, cellWidth),
-    y: cellHeight / 2 + row * rowPitch(technique, cellHeight),
+    x: column * cellWidth + cellWidth / 2 + rowOffset(weave, row, cellWidth),
+    y: cellHeight / 2 + row * rowPitch(weave.technique, cellHeight),
   }
 }
 
@@ -143,9 +168,9 @@ export function positionKey(position: GridPosition): string {
 /** Columns in `toRow` whose cells visually overlap `column` of `fromRow`, given each row's horizontal offset. Loom
  * rows share one offset, so only the same column overlaps; offset techniques' rows interlock, so a row's cell
  * overlaps two columns of a differently-offset neighbor. */
-function overlappingColumns(technique: Technique, fromRow: number, toRow: number, column: number): number[] {
-  const fromOffset = rowOffset(technique, fromRow, 1)
-  const toOffset = rowOffset(technique, toRow, 1)
+function overlappingColumns(weave: Weave, fromRow: number, toRow: number, column: number): number[] {
+  const fromOffset = rowOffset(weave, fromRow, 1)
+  const toOffset = rowOffset(weave, toRow, 1)
 
   if (toOffset > fromOffset) {
     return [column - 1, column]
@@ -160,7 +185,7 @@ function overlappingColumns(technique: Technique, fromRow: number, toRow: number
  * above/below per the Technique's offset (ticket 06), so fill respects real adjacency. Only positions inside `bounds`
  * come back; with no bounds the canvas is open. */
 export function neighborsOf(
-  technique: Technique,
+  weave: Weave,
   bounds: GridBounds | undefined,
   position: GridPosition,
 ): GridPosition[] {
@@ -171,7 +196,7 @@ export function neighborsOf(
   ]
 
   for (const neighborRow of [row - 1, row + 1]) {
-    for (const c of overlappingColumns(technique, row, neighborRow, column)) {
+    for (const c of overlappingColumns(weave, row, neighborRow, column)) {
       candidates.push({ row: neighborRow, column: c })
     }
   }

@@ -1,5 +1,5 @@
 import type { Frame } from '../domain/canvas'
-import { isOffsetTechnique, rotationSwapsAxes, type GridPosition, type Rotation, type Technique } from '../domain/grid'
+import { isOffsetTechnique, isShiftedRow, rotationSwapsAxes, type GridPosition, type Rotation, type Technique, type Weave } from '../domain/grid'
 import { beadRoundness, type DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
@@ -45,16 +45,16 @@ export function rowTopPx(technique: Technique, row: number): number {
   return row * rowPitchPx(technique)
 }
 
-/** How far a row's beads are shifted sideways, in grid px: every other row in peyote and brick stitch, by half a
- * bead. */
-export function rowShiftPx(technique: Technique, row: number): number {
-  return isOffsetTechnique(technique) && Math.abs(row % 2) === 1 ? CELL_SIZE_PX / 2 : 0
+/** How far a row's beads are shifted sideways, in grid px: by half a bead in every other row of peyote, in every
+ * other block of rows of brick stitch (ticket 477). */
+export function rowShiftPx(weave: Weave, row: number): number {
+  return isShiftedRow(weave, row) ? CELL_SIZE_PX / 2 : 0
 }
 
 // How far a space's row has its beads shifted sideways, in grid px: by the bead's own row, whichever space the row is
 // numbered in (a Project with no Frame may start on an odd row).
-export function shiftOf(space: Space, technique: Technique, row: number): number {
-  return rowShiftPx(technique, space.toAbsolute.row + row)
+export function shiftOf(space: Space, weave: Weave, row: number): number {
+  return rowShiftPx(weave, space.toAbsolute.row + row)
 }
 
 /** The size of the drawn Project in grid px, before zoom and rotation. */
@@ -142,6 +142,8 @@ export function regionInGridSpace(extent: Extent, region: Region, zoom: number, 
 export interface SurfaceViewInput {
   space: Space
   technique: Technique
+  /** The Brick block (ticket 477); nothing is 1. */
+  brickBlock?: number
   rotation: Rotation
   zoom: number
   /** Where the viewport's top-left corner is in displayed space; nothing when left out. */
@@ -187,13 +189,14 @@ export interface SurfaceView {
 // The bead position of a point in grid space, in the rows and columns a space has: the row it falls in by the row
 // pitch, and (where rows nest) the one above it. A bound left out is no bound.
 function beadInGrid(
-  technique: Technique,
+  weave: Weave,
   space: Space,
   gridX: number,
   gridY: number,
   limits: { firstRow?: number; lastRow?: number; columns?: number },
 ): GridPosition | undefined {
   // Later rows are drawn over earlier ones, so try the lowest first.
+  const { technique } = weave
   const pitch = rowPitchPx(technique)
   const lowest = Math.min(limits.lastRow ?? Infinity, Math.floor(gridY / pitch))
   const highest = Math.max(limits.firstRow ?? -Infinity, Math.ceil((gridY - CELL_SIZE_PX) / pitch))
@@ -201,7 +204,7 @@ function beadInGrid(
 
   for (let row = lowest; row >= highest; row -= 1) {
     const offsetY = gridY - rowTopPx(technique, row)
-    const offsetX = gridX - shiftOf(space, technique, row)
+    const offsetX = gridX - shiftOf(space, weave, row)
     if (offsetY < 0 || offsetY >= CELL_SIZE_PX || (limits.columns !== undefined && offsetX < 0)) {
       continue
     }
@@ -238,7 +241,8 @@ function gridBox(technique: Technique, box: Frame): Region {
   }
 }
 
-export function surfaceView({ space, technique, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
+export function surfaceView({ space, technique, brickBlock, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
+  const weave: Weave = { technique, brickBlock }
   /** Grid space to displayed space, at a zoom: the matrix gridToRegion gives for a region at the origin. */
   const matrix = (at: number) => gridToRegion(space.extent, { x: 0, y: 0, width: 0, height: 0 }, at, rotation)
   const displayed = (x: number, y: number, at: number): Scroll => {
@@ -266,24 +270,24 @@ export function surfaceView({ space, technique, rotation, zoom, scroll = { x: 0,
     zoom,
     viewport,
     beadToPoint: ({ row, column }) => {
-      const at = displayed(shiftOf(space, technique, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2, rowTopPx(technique, row) + CELL_SIZE_PX / 2, zoom)
+      const at = displayed(shiftOf(space, weave, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2, rowTopPx(technique, row) + CELL_SIZE_PX / 2, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
     },
     beadBox: (box) => inViewport(displayedBox(box, zoom)),
     pointToBead: (point) => {
       const [gridX, gridY] = toGrid(point)
       if (space.open) {
-        return beadInGrid(technique, space, gridX, gridY, {})
+        return beadInGrid(weave, space, gridX, gridY, {})
       }
       if (gridX < 0 || gridY < 0 || gridY >= space.extent.height) {
         return undefined
       }
-      return beadInGrid(technique, space, gridX, gridY, { firstRow: 0, lastRow: space.rows - 1, columns: space.columns })
+      return beadInGrid(weave, space, gridX, gridY, { firstRow: 0, lastRow: space.rows - 1, columns: space.columns })
     },
     pointToCell: (point) => {
       const [gridX, gridY] = toGrid(point)
       const row = Math.round((gridY - CELL_SIZE_PX / 2) / rowPitchPx(technique))
-      return { row: row + 0, column: Math.floor((gridX - shiftOf(space, technique, row)) / CELL_SIZE_PX) }
+      return { row: row + 0, column: Math.floor((gridX - shiftOf(space, weave, row)) / CELL_SIZE_PX) }
     },
     frameBox: (frame) => {
       const shown = inViewport(displayedBox(frame, zoom))

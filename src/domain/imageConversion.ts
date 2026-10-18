@@ -160,6 +160,8 @@ interface SamplingInput {
   image: PixelData
   view: FramingView
   technique: Technique
+  /** The Brick block of the Project being made (ticket 477); nothing is 1. */
+  brickBlock?: number
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
 }
 
@@ -169,6 +171,7 @@ export function sampleLatticePacked({
   image,
   view,
   technique,
+  brickBlock,
   bead,
   lattice,
 }: SamplingInput & { lattice: PreviewLattice }): Int32Array {
@@ -192,7 +195,7 @@ export function sampleLatticePacked({
       continue
     }
 
-    const stagger = rowOffset(technique, row, cellWidth)
+    const stagger = rowOffset({ technique, brickBlock }, row, cellWidth)
     for (let column = 0; column < lattice.columns; column += 1) {
       const centerX = column * cellWidth + cellWidth / 2 + stagger
       const sourceX = Math.floor((centerX - originXMm - view.offsetXMm) / view.scaleMm)

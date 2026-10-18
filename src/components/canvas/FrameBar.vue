@@ -46,7 +46,7 @@ const lastEdge = ref<FrameEdge>()
 const cells = FRAME_EDGES.map((edge) => {
   const hold = useHoldRepeat((direction) => {
     const current = frame.value
-    if (!current || locked.value || frameWithEdgeStep(props.project.technique, current, edge, direction) === current) return false
+    if (!current || locked.value || frameWithEdgeStep(props.project, current, edge, direction) === current) return false
     lastEdge.value = edge
     emit('step', edge, direction)
     return true

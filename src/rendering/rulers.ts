@@ -1,5 +1,5 @@
 import type { Frame } from '../domain/canvas'
-import type { Technique } from '../domain/grid'
+import type { Technique, Weave } from '../domain/grid'
 import { pieceAreasOf } from '../domain/pieces'
 import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
@@ -53,7 +53,7 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique }
+export type RuledProject = { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number }
 
 // The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
 // near the viewport are chosen by the caller).
@@ -61,7 +61,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
     return [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
   }
-  return pieceAreasOf(project.beads, project.technique)
+  return pieceAreasOf(project.beads, project)
     .filter(hasGuides)
     .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
@@ -161,8 +161,9 @@ interface BoxLayout {
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
 // from 100 up turn. The Ruler step is worked out once per axis.
-function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
+  const { technique } = weave
   const margin = fontPx * 4
   const labels: RulerLabel[] = []
   const beads: RulerDot[] = []
@@ -237,7 +238,7 @@ function layBox(box: RuledBox, technique: Technique, surface: SurfaceView, viewp
 
   const columnsAt = (rowForShift: number, gridY: number, normal: [number, number]) => {
     for (let index = 0; index < box.columns; index += 1) {
-      const gridX = rowShiftPx(technique, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
+      const gridX = rowShiftPx(weave, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
       along('column', index, gridX, gridY, normal, { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }, box.column + index)
     }
   }
@@ -268,7 +269,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     const shown = surface.beadBox(box)
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
-  const laid = boxes.map((box) => layBox(box, project.technique, surface, viewport, scale))
+  const laid = boxes.map((box) => layBox(box, project, surface, viewport, scale))
   const everyLabel = laid.flatMap((box) => box.labels)
   const everyBead = laid.flatMap((box) => box.beads)
 

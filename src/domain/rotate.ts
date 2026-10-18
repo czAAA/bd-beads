@@ -16,8 +16,9 @@ export interface RotatedSelection {
 }
 
 /** The Selection turned a quarter about its centre: rows and columns swap, and on stitches whose rows alternate it
- * starts on an even row. */
-export function rotatedSelection(project: Pick<Project, 'technique'>, selection: Selection): Selection {
+ * starts on a multiple of the shift's cycle. `inset` is how far inside the Selection the row that must land on one
+ * begins: the margin, for the Frame inside Rotate Frame's area (ticket 477). */
+export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
   // way it rounds depends on which side is longer, so that four turns come back to where they began.
@@ -25,7 +26,7 @@ export function rotatedSelection(project: Pick<Project, 'technique'>, selection:
   const rowShift = difference >= 0 ? Math.floor(difference / 2) : -Math.floor(-difference / 2)
   const columnShift = difference >= 0 ? -Math.ceil(difference / 2) : Math.ceil(-difference / 2)
   return {
-    top: snapRow(project.technique, frame.row + rowShift),
+    top: snapRow(project, frame.row + rowShift + inset) - inset,
     left: frame.column + columnShift,
     rows: frame.columns,
     columns: frame.rows,
@@ -47,9 +48,9 @@ function beadsIn(project: Project, area: Frame): BeadChange[] {
 }
 
 /** The Project with the Selection turned a quarter clockwise, and the turned rectangle; covered beads are replaced. */
-export function rotateSelection(project: Project, selection: Selection): RotatedSelection {
+export function rotateSelection(project: Project, selection: Selection, inset = 0): RotatedSelection {
   const area = selectionFrame(selection)
-  const turned = rotatedSelection(project, selection)
+  const turned = rotatedSelection(project, selection, inset)
   const footprint = selectionFrame(turned)
 
   const turn = (row: number, column: number) => ({
@@ -98,7 +99,7 @@ export function rotateFrame(project: Project): Project | undefined {
   if (!project.frame) {
     return undefined
   }
-  const turned = rotateSelection(project, frameAreaSelection(project.frame))
+  const turned = rotateSelection(project, frameAreaSelection(project.frame), MARGIN)
   const frame: Frame = {
     row: turned.selection.top + MARGIN,
     column: turned.selection.left + MARGIN,

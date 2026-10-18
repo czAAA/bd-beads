@@ -83,6 +83,12 @@ describe('rotateSelection', () => {
     expect(turned).toMatchObject({ rows: 5, columns: 2 })
   })
 
+  it('snaps the turned top row to a multiple of 2N on brick stitch (ticket 477)', () => {
+    const turned = rotatedSelection({ technique: 'brick', brickBlock: 3 }, { top: 10, left: 10, rows: 2, columns: 5 })
+    expect(turned.top % 6).toBe(0)
+    expect(turned).toMatchObject({ rows: 5, columns: 2 })
+  })
+
   it('carries a Piece\'s name with its beads', () => {
     const named = withPieceName(withBeads(SELECTION_BEADS), { row: 10, column: 10 }, 'Fox')
     const result = rotateSelection(named, SELECTION)
@@ -148,6 +154,16 @@ describe('rotateFrame (ticket 471)', () => {
     expect(turned.frame!.row % 2).toBe(0)
     expect(turned.frame).toMatchObject({ rows: 4, columns: 5 })
     expect(positionsOf(turned.beads)).toHaveLength(1)
+  })
+
+  it('starts the turned Frame on a multiple of 2N rows on brick stitch with a Brick block of N (ticket 477)', () => {
+    for (const brickBlock of [2, 3, 5]) {
+      const brick = withBeads(withColors({}, [{ row: 30, column: 20, color: '#aa0000' }]), { technique: 'brick', brickBlock, frame: { row: 30, column: 20, rows: 7, columns: 4 } })
+      const turned = rotateFrame(brick)!
+      expect(turned.frame!.row % (2 * brickBlock)).toBe(0)
+      expect(turned.frame).toMatchObject({ rows: 4, columns: 7 })
+      expect(positionsOf(turned.beads)).toHaveLength(1)
+    }
   })
 
   it('does nothing without a Frame', () => {

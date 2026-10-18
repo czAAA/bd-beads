@@ -2,7 +2,7 @@ import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
 import { movedFrame, sameFrame } from './frame'
 import type { GridPosition, Technique } from './grid'
 import { carryNames, namedPieceCutBy } from './pieceNames'
-import { rowProgressStarted, withFrame, withTechnique, type Project } from './project'
+import { clampBrickBlock, rowProgressStarted, withBrickBlock, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): Set Frame, move, resize, Fit to drawing, Remove
@@ -20,6 +20,8 @@ export type FrameChange =
   /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and
    * column. */
   | { technique: Technique }
+  /** Change the Brick block of an open Project (ticket 477): the same, only the shift's rhythm changes. */
+  | { brickBlock: number }
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
@@ -94,7 +96,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
 
   if ('move' in change) {
     const frame = project.frame!
-    const moved = movedFrame(project.technique, frame, change.move.rows, change.move.columns)
+    const moved = movedFrame(project, frame, change.move.rows, change.move.columns)
     if (sameFrame(frame, moved)) {
       return { kind: 'unchanged', project }
     }
@@ -109,6 +111,13 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
       return { kind: 'unchanged', project }
     }
     return { kind: 'changed', project: carryNames(project, withTechnique(project, change.technique)) }
+  }
+
+  if ('brickBlock' in change) {
+    if (clampBrickBlock(change.brickBlock) === (project.brickBlock ?? 1)) {
+      return { kind: 'unchanged', project }
+    }
+    return { kind: 'changed', project: carryNames(project, withBrickBlock(project, change.brickBlock)) }
   }
 
   const next = 'set' in change ? change.set : undefined
