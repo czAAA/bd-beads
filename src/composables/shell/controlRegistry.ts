@@ -517,6 +517,19 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: hasFrame,
     disabledBody: (t: Translations) => t.tooltips.noFrameToRemove,
   }),
+  unkeyed('rotate-frame', (t) => t.frame.rotateFrameLabel, 'canvas', {
+    icon: 'rotate',
+    body: (t) => t.tooltips.rotateFrame,
+    enabled: (deps: ControlDeps) => hasFrame(deps) && !frameLocked(deps),
+    disabledBody: (t: Translations, deps: ControlDeps) => (hasFrame(deps) ? t.tooltips.rowProgressLockedRotate : t.tooltips.setFrameFirst),
+  }),
+  // A view setting like Row direction: allowed after a Row progress pass is done, so only an empty Canvas disables it (ticket 471).
+  unkeyed('rotate-canvas', (t) => t.canvas.rotateCanvasLabel, 'canvas', {
+    icon: 'rotate-canvas',
+    body: (t) => t.tooltips.rotateCanvas,
+    enabled: (deps: ControlDeps) => Object.keys(deps.activeProject()?.beads ?? {}).length > 0,
+    disabledBody: (t: Translations) => t.tooltips.noBeadsToRotate,
+  }),
   unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { icon: 'move-frame', body: (t) => t.tooltips.moveFrame }),
   unkeyed('reset-progress', (t) => t.rowProgress.resetButton, 'rowProgress', {
     icon: 'reset',

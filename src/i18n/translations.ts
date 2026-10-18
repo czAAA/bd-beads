@@ -179,6 +179,8 @@ export interface Translations {
     noFrame: string
     /** The Rulers toggle's name (Rulers card). */
     rulersLabel: string
+    rotateCanvasLabel: string
+    announceCanvasRotated: string
     /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of 5") and the eleven background names. */
     canvasColor: {
       label: string
@@ -537,6 +539,8 @@ export interface Translations {
     announceTechnique: string
     /** Announced after Rotate turned the Selection and covered no bead. */
     announceSelectionRotated: string
+    rotateFrameLabel: string
+    announceFrameRotated: string
     /** Export without a Frame opens a dialog with this title. */
     exportPromptTitle: string
     countNeedsFrame: string
@@ -720,6 +724,9 @@ export interface Translations {
     pasteDisabled: string
     pasteTool: string
     rotate: string
+    rotateCanvas: string
+    rotateFrame: string
+    noBeadsToRotate: string
     setFrameFirst: string
     fitToDrawing: string
     noBeadsToFit: string
