@@ -4,7 +4,7 @@ import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { inMargin, mayPlace, withMargin } from '../../domain/margin'
-import { beadColorAt, changedPositions, isInFinishedRow, type Project } from '../../domain/project'
+import { beadColorAt, changedPositions, isInFinishedRow, rowProgressOn, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
@@ -22,7 +22,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
 // canvases (beads and dots; overlay: see overlayRenderer), no board; `scroll` and `zoom` decide what shows.
 // It reads the view gestures (wheel, Ctrl/Cmd + wheel, Hand tool or middle drag) and reports them to useCanvasView.
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   project: Project
   /** How much the canvas is enlarged by; 1 is a bead 20 px across. */
   zoom: number
@@ -54,6 +54,8 @@ const props = defineProps<{
   inputMode?: InputMode
   /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
   showRulers?: boolean
+  /** Whether the Row progress look is drawn (ticket 474): finished rows dimmed, the current row ringed and lifted. */
+  rowMarks?: boolean
   /** Whether the Frame is being edited (Edit Frame, ticket 417): a drag moves or resizes it instead of drawing
    * beads, and its handles, margin outline and size tooltip show. */
   settingFrame?: boolean
@@ -77,7 +79,7 @@ const props = defineProps<{
   /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead
    * marker give way, and a chip by the pointer shows the color of the bead under it. */
   picking?: boolean
-}>()
+}>(), { rowMarks: true })
 
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number]
@@ -211,7 +213,7 @@ function measure(): void {
 }
 
 /** What the cells were last drawn from, to draw only what an edit changed. */
-let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; positionMarks: string; showFinished: boolean } | undefined
+let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; positionMarks: string; showFinished: boolean; rowMarks: boolean } | undefined
 
 /** Whether two Projects are laid out and dimmed alike, so that what differs between them is only which color each
  * bead holds. */
@@ -354,6 +356,9 @@ function oncePerFrame(draw: () => void): () => void {
 const hovered = ref(false)
 const finishedRestored = ref(false)
 const showFinished = computed(() => hovered.value || finishedRestored.value)
+
+/** Row marks are drawn unless the Row highlight toggle is off; the project's own Row progress decides the rest. */
+const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
 /** Where a mouse or a Pencil last was over the surface, so the hover can be asked again when the Project moves under
  * it. */
 let hoverPoint: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
@@ -380,7 +385,7 @@ function drawCells(): void {
   }
 
   const before = drawn
-  drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value }
+  drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value, rowMarks: marksShown.value }
   const bands =
     !resized &&
     before &&
@@ -393,16 +398,17 @@ function drawCells(): void {
     before.theme === theme.value &&
     before.positionMarks === positionMarks.value &&
     before.showFinished === showFinished.value &&
+    before.rowMarks === marksShown.value &&
     sameLayout(before.project, project)
       ? changedBands(before.project, project)
       : undefined
 
   if (bands === undefined) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value, rowMarks: marksShown.value })
     return
   }
   for (const rows of bands) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, positionMarks: positionMarks.value, showFinished: showFinished.value, rowMarks: marksShown.value })
   }
 }
 
@@ -445,6 +451,7 @@ function drawCellsOrMove(): void {
     before.theme === theme.value &&
     before.positionMarks === positionMarks.value &&
     before.showFinished === showFinished.value &&
+    before.rowMarks === marksShown.value &&
     props.zoom > 0 &&
     before.zoom > 0
   const heavy =
@@ -527,6 +534,7 @@ function drawOverlay(): void {
       zoom: props.zoom,
       pixelRatio,
       theme: theme.value,
+      rowMarks: marksShown.value,
       cursor: props.cursor,
       pointer: markerAt.value && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
@@ -553,7 +561,7 @@ watch([() => props.project, () => props.zoom, () => props.scroll], () => {
 
 // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make the
 // draw depend on every bead's property.
-watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, positionMarks, showFinished], oncePerFrame(drawCellsOrMove), { flush: 'post' })
+watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, positionMarks, showFinished, marksShown], oncePerFrame(drawCellsOrMove), { flush: 'post' })
 watch(
   [
     size,
@@ -569,6 +577,7 @@ watch(
     () => props.cursor,
     () => props.tourMarks,
     () => props.showRulers,
+    marksShown,
     () => props.settingFrame,
     sizeShown,
     handMoves,
@@ -822,8 +831,8 @@ function onPointerDown(event: PointerEvent): void {
   }
 
   if (event.button === 0) {
-    // A press on a finished row never draws (the lock), and toggles the finished rows between dimmed and normal.
-    if (isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
+    // A press on a finished row never draws (the lock), and, while its dimming shows, toggles the finished rows between dimmed and normal.
+    if (marksShown.value && isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
       finishedRestored.value = !finishedRestored.value
     }
     emit('cell-primary-down', bead.row, bead.column)

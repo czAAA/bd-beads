@@ -387,6 +387,7 @@ export interface Translations {
   rowProgress: {
     enabledLabel: string
     directionButton: string
+    highlightButton: string
     resetButton: string
     resetConfirmTitle: string
     resetConfirmMessage: string

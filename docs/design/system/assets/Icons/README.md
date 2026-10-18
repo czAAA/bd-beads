@@ -18,3 +18,5 @@ Ticket 0457 added `move-frame` (four arrowheads on short arms round a bead at 2.
 Ticket 413 added five for the Selection work. `piece` (the Piece tool) is a polygon of five bead corners, drawn at 3.2 so they read as the points you tap, joined by dashed bead edges (2.4, `0 4.09`), like Select's. `select-all` is Select's dashed bead square with the word "all" inside, drawn in strokes at 1.5 (a circle for the a and two stems), so it needs no font; the letters are small, so check them at 14 to 16px. `cut` is scissors: two ring handles and two crossing blades. `fill-selection` is Select's dashed bead square with a drop inside, the Selection bar's Fill, distinct from `fill`, the tool's bucket. `share` is an arrow leaving a rounded square; no card places it yet. Frame (from Selection) reuses `frame` and Save keeps `save`.
 
 One later addition: `name-piece` (a tag with a bead for its string hole, one closed stroke plus the bead at 2.6) is the Selection bar's Name button, so Name no longer shares `piece` with the Piece tool.
+
+Ticket 0474 added `row-highlight` (a rounded bar between two rules, one row picked out): the Progress bar's Row highlight toggle.

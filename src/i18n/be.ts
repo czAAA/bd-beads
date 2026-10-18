@@ -373,6 +373,7 @@ export const be: Translations = {
   rowProgress: {
     enabledLabel: 'Паказваць прагрэс па радках',
     directionButton: 'Павярнуць кірунак радоў',
+    highlightButton: 'Падсветка рада',
     resetButton: 'Скінуць прагрэс',
     resetConfirmTitle: 'Скінуць прагрэс?',
     resetConfirmMessage: 'Усе рады, пазначаныя гатовымі, знікнуць, і вы пачнеце з першага рада. Бісерыны застануцца.',

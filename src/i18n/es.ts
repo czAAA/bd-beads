@@ -372,6 +372,7 @@ export const es: Translations = {
   rowProgress: {
     enabledLabel: 'Mostrar progreso por filas',
     directionButton: 'Cambiar dirección de las filas',
+    highlightButton: 'Resaltar fila',
     resetButton: 'Reiniciar progreso',
     resetConfirmTitle: '¿Reiniciar el progreso?',
     resetConfirmMessage: 'Se borran todas las filas marcadas como hechas y empiezas de nuevo desde la primera. Las cuentas se quedan.',

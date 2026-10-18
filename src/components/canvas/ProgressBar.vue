@@ -9,14 +9,19 @@ import IconButton from '../ui/IconButton.vue'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
 // canvas box's bottom. On whenever there is a Frame (ADR 0055); without one it offers Fit to drawing. With a Frame:
-// Turn row direction, Reset, current row, share, Row not done / done, moving the pointer like the hotkeys (ticket 178).
-const props = defineProps<{ project: Project }>()
+// Turn row direction, Row highlight, Reset, current row, Row not done / done, moving the pointer like the hotkeys.
+const props = withDefaults(defineProps<{
+  project: Project
+  /** Whether the Canvas draws the Row progress look (ticket 474): pressed while it does. */
+  rowHighlight?: boolean
+}>(), { rowHighlight: true })
 
 const emit = defineEmits<{
   'move-row': [delta: number]
   /** Reset progress, which asks first (ticket 455); it is only enabled once a row is done. */
   'reset-progress': []
   'toggle-row-direction': []
+  'toggle-row-highlight': []
   /** The bar's own way to a Frame, shown while there is none to count rows on: Fit to drawing. */
   'fit-frame': []
 }>()
@@ -29,6 +34,7 @@ const actions = {
   reset: controlAction('reset-progress'),
   fitFrame: controlAction('fit-to-drawing'),
   direction: controlAction('row-direction'),
+  highlight: controlAction('row-highlight'),
   notDone: controlAction('row-not-done'),
   done: controlAction('row-done'),
 }
@@ -78,6 +84,13 @@ const directionLabel = computed(() =>
         :selected="columnWise"
         data-testid="progress-bar-direction"
         @click="emit('toggle-row-direction')"
+      />
+      <IconButton
+        variant="box"
+        :action="actions.highlight"
+        :selected="rowHighlight"
+        data-testid="progress-bar-highlight"
+        @click="emit('toggle-row-highlight')"
       />
       <IconButton
         variant="box"
