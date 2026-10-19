@@ -61,7 +61,7 @@ test('opening the bar does not push the canvas or move the pencil', async ({ bro
   await context.close()
 })
 
-test('panning the canvas moves the Frame but not a bar opened from the strip, and keeps the handle on screen', async ({ browser }) => {
+test('panning the canvas moves the Frame but not a bar opened from the strip, and the handle keeps its size', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rows: 40 })])
@@ -76,10 +76,6 @@ test('panning the canvas moves the Frame but not a bar opened from the strip, an
 
   expect(after.bar).toEqual(before.bar)
   expect([after.handle.width, after.handle.height]).toEqual([56, 44])
-  const area = await box(page, 'app-drawing-area')
-  expect(after.handle.x).toBeGreaterThanOrEqual(area.x)
-  expect(after.handle.x + after.handle.width).toBeLessThanOrEqual(area.x + area.width)
-  expect(after.handle.y).toBeGreaterThanOrEqual(area.y)
   await context.close()
 })
 

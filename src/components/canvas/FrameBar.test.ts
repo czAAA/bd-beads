@@ -149,11 +149,12 @@ describe('FrameBar (ticket 473)', () => {
     expect(wrapper.emitted('step')).toHaveLength(count)
   })
 
-  it('holds the size and Remove Frame alone once a pass is done', () => {
+  it('keeps the steppers, disabled, and drops Rotate once a pass is done', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
-    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('readonly')).toBeDefined()
+    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
-    for (const gone of ['frame-rotate', 'frame-edge-top-out', 'frame-bar-cell-top']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('asks its parent to remove and rotate, and passes keys up', async () => {

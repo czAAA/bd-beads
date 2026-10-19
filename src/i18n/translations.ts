@@ -711,6 +711,7 @@ export interface Translations {
     moveFrame: string
     /** The one reason shared by every control Row progress locks, each naming what it would change. */
     rowProgressLockedFrame: string
+    frameSizeLocked: string
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
