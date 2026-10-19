@@ -98,7 +98,7 @@ export function rotateLayerSelection(project: Project, selection: Selection): Ro
   const origin = positionOnCanvas(project, layer, { row: turned.top, column: turned.left })
   return {
     project: rotated,
-    selection: { ...turned, top: origin.row, left: origin.column },
+    selection: { ...turned, top: origin.row, left: origin.column, layer },
     covered: rotated === project ? 0 : coveredByRotation(before, after, local, turned),
   }
 }

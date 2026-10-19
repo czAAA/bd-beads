@@ -22,15 +22,17 @@ function setup(
   project: Project | null = makeProject(),
   { axes = NO_MIRROR_AXES, copyMode = false }: { axes?: MirrorAxisCounts; copyMode?: boolean } = {},
 ) {
+  const clipped: number[] = []
   const harness = editHarness(project ?? undefined)
   const gesture = useSelectionGesture(
     harness.currentProject,
     harness.edit,
     () => axes,
     () => copyMode,
+    (count) => clipped.push(count),
   )
   /** Counts the Edits that landed on the Project. */
-  return { gesture, commitGridChange: harness.replaceProject, harness }
+  return { gesture, commitGridChange: harness.replaceProject, harness, clipped }
 }
 
 /** Drags a Selection over the top-left cell and copies it, which arms paste mode (ticket 437). */
@@ -50,17 +52,17 @@ describe('useSelectionGesture in Right-angle weave (ticket 483)', () => {
   it('marks a Selection of whole Units: a press on one bead selects its Unit', () => {
     const { gesture } = setup(woven)
     gesture.beginPress(1, 1)
-    expect(gesture.selection.value).toEqual({ top: 0, left: 1, rows: 3, columns: 2 })
+    expect(gesture.selection.value).toMatchObject({ top: 0, left: 1, rows: 3, columns: 2 })
   })
 
   it('grows a dragged Selection to whole Units and keeps a press on the last line inside the Frame', () => {
     const { gesture } = setup(woven)
     gesture.beginPress(1, 0)
     gesture.extendPress(2, 2)
-    expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 3, columns: 3 })
+    expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 3, columns: 3 })
 
     gesture.beginPress(4, 3)
-    expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 3, columns: 2 })
+    expect(gesture.selection.value).toMatchObject({ top: 2, left: 2, rows: 3, columns: 2 })
   })
 })
 
@@ -75,7 +77,7 @@ describe('useSelectionGesture', () => {
 
       gesture.beginPress(1, 2)
 
-      expect(gesture.selection.value).toEqual({ top: 1, left: 2, rows: 1, columns: 1 })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 1, columns: 1 })
     })
 
     it('grows the Selection to wherever the drag has reached, in either direction', () => {
@@ -84,7 +86,7 @@ describe('useSelectionGesture', () => {
       gesture.beginPress(2, 2)
       gesture.extendPress(0, 1)
 
-      expect(gesture.selection.value).toEqual({ top: 0, left: 1, rows: 3, columns: 2 })
+      expect(gesture.selection.value).toMatchObject({ top: 0, left: 1, rows: 3, columns: 2 })
     })
 
     it('does nothing with no Project open', () => {
@@ -234,7 +236,7 @@ describe('useSelectionGesture', () => {
       gesture.endPress()
 
       expect(commitGridChange).not.toHaveBeenCalled()
-      expect(gesture.selection.value).toEqual({ top: 1, left: 1, rows: 2, columns: 2 })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 2, columns: 2 })
       expect(gesture.hasClipboard()).toBe(false)
     })
 
@@ -362,7 +364,7 @@ describe('useSelectionGesture', () => {
       gesture.beginPress(1, 1)
       gesture.endPress()
 
-      expect(gesture.selection.value).toEqual({ top: 1, left: 1, rows: 1, columns: 1 })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 1, columns: 1 })
       expect(commitGridChange).not.toHaveBeenCalled()
     })
 
@@ -450,7 +452,7 @@ describe('useSelectionGesture', () => {
       expect(frameGrid(harness.project)[0]![0]!.color).toBeNull()
       expect(frameGrid(harness.project)[1]![1]!.color).toBeNull()
       expect(frameGrid(harness.project)[3]![3]!.color).toBe(RED)
-      expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
+      expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 2, columns: 2 })
     })
 
     it('does nothing without a Selection', () => {
@@ -502,7 +504,7 @@ describe('useSelectionGesture', () => {
 
       gesture.tapPiece(1, 1)
 
-      expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
+      expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 2, columns: 2 })
     })
 
     it('a tap on empty space clears the Selection', () => {
@@ -530,7 +532,7 @@ describe('useSelectionGesture', () => {
       const framed = harness.currentProject()!
       harness.replaceProject({ ...framed, beads: framed.frame!.beads, frame: undefined })
       expect(gesture.selectAll()).toBe(true)
-      expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 4, columns: 4 })
+      expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 4, columns: 4 })
 
       const empty = setup(withFrame(makeProject(), undefined))
       expect(empty.gesture.selectAll()).toBe(false)
@@ -541,7 +543,55 @@ describe('useSelectionGesture', () => {
       const framed = withFrame(makeProject(), { row: 5, column: 6, rows: 7, columns: 8 })
       const { gesture } = setup(framed)
       expect(gesture.selectAll()).toBe(true)
-      expect(gesture.selection.value).toEqual({ top: 5, left: 6, rows: 7, columns: 8 })
+      expect(gesture.selection.value).toMatchObject({ top: 5, left: 6, rows: 7, columns: 8, layer: 'frame' })
+    })
+
+    it('Select all on the Canvas with no Frame is on the Canvas layer (ticket 491)', () => {
+      const { gesture } = setup(paintAt(withFrame(makeProject(), undefined), [{ row: 0, column: 0 }], RED, NO_MIRROR_AXES))
+      gesture.selectAll()
+      expect(gesture.selection.value).toMatchObject({ layer: 'canvas' })
+    })
+  })
+
+  describe('Copy and Paste between the layers (ticket 491)', () => {
+    const frame = { row: 10, column: 10, rows: 3, columns: 3 }
+    const sketch = () => {
+      const project = withFrame(makeProject(), frame)
+      return setup({ ...project, beads: { 0: { 0: RED, 1: RED, 2: RED, 3: RED } }, frame: { ...project.frame!, beads: { 0: { 0: RED } } } })
+    }
+
+    it('pastes Canvas beads into the Frame cell by cell, clipped to it, with the count in one Message and one Undo step', () => {
+      const { gesture, harness, clipped } = sketch()
+      gesture.beginPress(0, 0)
+      gesture.extendPress(0, 3)
+      gesture.endPress()
+      gesture.copy()
+      expect(gesture.pasteAt({ row: 11, column: 11 })).toBe(true)
+      expect(harness.currentProject()!.frame!.beads[1]).toEqual({ 1: RED, 2: RED })
+      expect(harness.currentProject()!.beads[11]).toBeUndefined()
+      expect(clipped).toEqual([2])
+      harness.history.onUndo()
+      expect(harness.currentProject()!.frame!.beads[1]).toBeUndefined()
+      expect(harness.history.canUndo.value).toBe(false)
+    })
+
+    it('pastes Frame beads onto the Canvas without a Message', () => {
+      const { gesture, harness, clipped } = sketch()
+      gesture.selectAll()
+      gesture.copy()
+      gesture.pasteAt({ row: 20, column: 20 })
+      expect(harness.currentProject()!.beads[20]?.[20]).toBe(RED)
+      expect(clipped).toEqual([])
+    })
+
+    it('says nothing when the whole block fits', () => {
+      const { gesture, clipped } = sketch()
+      gesture.beginPress(0, 0)
+      gesture.extendPress(0, 1)
+      gesture.endPress()
+      gesture.copy()
+      gesture.pasteAt({ row: 10, column: 10 })
+      expect(clipped).toEqual([])
     })
   })
 
@@ -549,17 +599,54 @@ describe('useSelectionGesture', () => {
     const frame = { row: 10, column: 10, rows: 4, columns: 6 }
     const framed = () => setup(withFrame(makeProject(), frame))
 
-    it('is any rectangle: a drag ends where the pointer does, across the Frame\'s edge too', () => {
+    it('a drag that begins in the Frame stops at its edge', () => {
       const { gesture } = framed()
       gesture.beginPress(11, 11)
-      gesture.extendPress(8, 12)
-      expect(gesture.selection.value).toEqual({ top: 8, left: 11, rows: 4, columns: 2 })
+      gesture.extendPress(8, 30)
+      expect(gesture.selection.value).toMatchObject({ top: 10, left: 11, rows: 2, columns: 5, layer: 'frame' })
+    })
+
+    it('a drag that begins on the Canvas does not step onto the Frame', () => {
+      const { gesture } = framed()
+      gesture.beginPress(8, 11)
+      gesture.extendPress(11, 12)
+      expect(gesture.selection.value).toMatchObject({ top: 8, left: 11, rows: 1, columns: 1, layer: 'canvas' })
+    })
+
+    it('moving a Frame Selection\'s outline keeps it inside the Frame', () => {
+      const { gesture } = framed()
+      gesture.beginPress(11, 11)
+      gesture.extendPress(12, 12)
+      gesture.endPress()
+      gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
+      gesture.dragAdjust({ row: 40, column: 40 })
+      expect(gesture.selection.value).toMatchObject({ top: 12, left: 14, rows: 2, columns: 2, layer: 'frame' })
+    })
+
+    it('Fill on a Frame Selection paints the Frame and leaves the Canvas under it', () => {
+      const { gesture, harness } = framed()
+      gesture.beginPress(11, 11)
+      gesture.extendPress(11, 11)
+      gesture.endPress()
+      gesture.fill(RED)
+      expect(harness.currentProject()!.frame!.beads[1]?.[1]).toBe(RED)
+      expect(harness.currentProject()!.beads[11]).toBeUndefined()
+    })
+
+    it('a resize handle on a Frame Selection stops at the Frame\'s edge too', () => {
+      const { gesture } = framed()
+      gesture.beginPress(11, 11)
+      gesture.extendPress(12, 12)
+      gesture.endPress()
+      gesture.beginAdjust({ kind: 'handle', edges: ['bottom', 'right'] } as never, { row: 12, column: 12 }, 'select')
+      gesture.dragAdjust({ row: 40, column: 40 })
+      expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 3, columns: 5, layer: 'frame' })
     })
 
     it('begins on a position right against the Frame', () => {
       const { gesture } = framed()
       gesture.beginPress(9, 11)
-      expect(gesture.selection.value).toEqual({ top: 9, left: 11, rows: 1, columns: 1 })
+      expect(gesture.selection.value).toMatchObject({ top: 9, left: 11, rows: 1, columns: 1 })
     })
 
     it('a Piece tap selects the tapped bead\'s side only', () => {
@@ -567,11 +654,11 @@ describe('useSelectionGesture', () => {
       const onCanvas = [{ row: 2, column: 2 }, { row: 2, column: 3 }, { row: 9, column: 11 }]
       const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame), inFrame, RED, NO_MIRROR_AXES), onCanvas, RED, NO_MIRROR_AXES))
       gesture.tapPiece(11, 11)
-      expect(gesture.selection.value).toEqual({ top: 11, left: 11, rows: 1, columns: 2 })
+      expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 1, columns: 2 })
       gesture.tapPiece(2, 2)
-      expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 1, columns: 2 })
+      expect(gesture.selection.value).toMatchObject({ top: 2, left: 2, rows: 1, columns: 2 })
       gesture.tapPiece(9, 11)
-      expect(gesture.selection.value).toEqual({ top: 9, left: 11, rows: 1, columns: 1 })
+      expect(gesture.selection.value).toMatchObject({ top: 9, left: 11, rows: 1, columns: 1 })
     })
   })
 
@@ -587,7 +674,7 @@ describe('useSelectionGesture', () => {
       gesture.beginPress(2, 2)
       gesture.extendPress(30, 30)
       gesture.endPress()
-      expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 29, columns: 29 })
+      expect(gesture.selection.value).toMatchObject({ top: 2, left: 2, rows: 29, columns: 29 })
       expect(gesture.copy()).toBe(true)
       expect(gesture.pastePreviewCells(harness.currentProject()!, { row: 40, column: 40 })).toHaveLength(1)
     })
@@ -627,7 +714,7 @@ describe('useSelectionGesture', () => {
       gesture.dragAdjust({ row: 3, column: 3 })
       gesture.endAdjust()
 
-      expect(gesture.selection.value).toEqual({ top: 1, left: 1, rows: 3, columns: 3 })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 1, rows: 3, columns: 3 })
     })
 
     it('dragging inside moves the outline and leaves the beads alone', () => {
@@ -644,7 +731,7 @@ describe('useSelectionGesture', () => {
       gesture.dragAdjust({ row: 1, column: 2 })
       gesture.endAdjust()
 
-      expect(gesture.selection.value).toEqual({ top: 1, left: 2, rows: 2, columns: 2 })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 2, columns: 2 })
       expect(harness.currentProject()!.beads).toBe(before)
     })
 
@@ -652,7 +739,7 @@ describe('useSelectionGesture', () => {
       const gesture = selected()
       gesture.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 }, 'select')
       gesture.endAdjust()
-      expect(gesture.selection.value).toEqual({ top: 2, left: 1, rows: 1, columns: 1 })
+      expect(gesture.selection.value).toMatchObject({ top: 2, left: 1, rows: 1, columns: 1 })
 
       const piece = selected()
       piece.beginAdjust({ kind: 'inside' }, { row: 2, column: 1 }, 'piece')

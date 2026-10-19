@@ -1,15 +1,20 @@
 import { computed, ref } from 'vue'
+import { layerAt, type Layer } from '../../domain/layers'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { beadColorAt, type Project } from '../../domain/project'
 import {
   selectAllSelection,
   copyLayerSelection,
+  dragFocusOnLayer,
+  withinFrame,
   movedSelection,
   paintLayerSelection,
+  pasteClippedCount,
   pasteOnLayer,
   pastedCellsOnLayer,
   pieceSelectionOnLayer,
+  selectionLayer,
   selectionBetween,
   selectionWithEdges,
   snapSelectionToUnits,
@@ -28,6 +33,8 @@ export function useSelectionGesture(
   edit: EditFn,
   mirrorAxisCounts: () => MirrorAxisCounts,
   mirrorCopyMode: () => boolean,
+  /** Told how many beads a Paste clipped to the Frame (ticket 491). */
+  onClipped: (count: number) => void,
 ) {
   /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces
    * it. */
@@ -48,13 +55,13 @@ export function useSelectionGesture(
   // A press on the Selection's handles or inside it (ticket 414): a handle resizes, the inside moves the outline,
   // neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do.
   let adjust:
-    | { kind: 'resize'; edges: FrameEdge[]; start: Selection }
+    | { kind: 'resize'; edges: FrameEdge[]; start: Selection; held: GridPosition }
     | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool: 'select' | 'piece' }
     | undefined
 
   // Where a Select press started and whether it has left that cell. Dragging marks a new Selection, a click in place
   // stamps the copy, so the press only records its anchor here and endPress decides which it was.
-  const selectPress = ref<{ anchor: GridPosition; moved: boolean } | null>(null)
+  const selectPress = ref<{ anchor: GridPosition; focus: GridPosition; layer: Layer; moved: boolean } | null>(null)
 
   /** A Selection grown to whole Units where the Technique has them (ticket 483), kept in the Frame it began in. */
   function snapped(next: Selection): Selection {
@@ -68,13 +75,14 @@ export function useSelectionGesture(
       return
     }
 
-    selectPress.value = { anchor: { row, column }, moved: false }
+    const layer = layerAt(project, { row, column })
+    selectPress.value = { anchor: { row, column }, focus: { row, column }, layer, moved: false }
 
     // With no active projection the press can only start a selection, so the marquee appears from the first cell. With
     // one active Paste claims the gesture, hence re-selecting a single cell takes a drag out and back: a click must
     // mean one thing, and stamping is it.
     if (!pasteProjectionActive.value) {
-      selection.value = snapped(selectionBetween({ row, column }, { row, column }))
+      selection.value = snapped(selectionBetween({ row, column }, { row, column }, layer))
     }
   }
 
@@ -91,7 +99,9 @@ export function useSelectionGesture(
     // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0057).
     if (pasteProjectionActive.value) return
     dropClipboard()
-    selection.value = snapped(selectionBetween(press.anchor, { row, column }))
+    // The drag stays on the layer it began on (ticket 491).
+    press.focus = dragFocusOnLayer(project, press.layer, { row, column }, press.focus)
+    selection.value = snapped(selectionBetween(press.anchor, press.focus, press.layer))
   }
 
   /** Ends a Select press: in paste mode, click or drag, one stamp at the press point (ticket 437); otherwise a drag
@@ -106,7 +116,16 @@ export function useSelectionGesture(
     }
 
     const block = copiedBlock.value!
-    edit('drawing', (current) => pasteOnLayer(current, block, press.anchor, mirrorAxisCounts(), mirrorCopyMode()))
+    stamp(block, press.anchor)
+  }
+
+  /** One Paste as one Edit; a Message says how many beads the Frame's edge clipped (ticket 491). */
+  function stamp(block: CopiedBlock, at: GridPosition) {
+    const axes = mirrorAxisCounts()
+    const copyMode = mirrorCopyMode()
+    const clipped = pasteClippedCount(currentProject()!, block, at, axes, copyMode)
+    const outcome = edit('drawing', (current) => pasteOnLayer(current, block, at, axes, copyMode))
+    if (clipped > 0 && outcome.kind === 'applied') onClipped(clipped)
   }
 
   /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, on
@@ -147,7 +166,7 @@ export function useSelectionGesture(
       return
     }
     if (target.kind === 'handle') {
-      adjust = { kind: 'resize', edges: target.edges, start }
+      adjust = { kind: 'resize', edges: target.edges, start, held: cell }
     } else if (target.kind === 'inside') {
       adjust = { kind: 'move', origin: cell, start, moved: false, tool }
     }
@@ -159,13 +178,20 @@ export function useSelectionGesture(
       return
     }
     if (adjust.kind === 'resize') {
-      selection.value = snapped(selectionWithEdges(adjust.start, adjust.edges, cell))
+      const project = currentProject()
+      const layer = project ? selectionLayer(project, adjust.start) : 'canvas'
+      const reached = project ? dragFocusOnLayer(project, layer, cell, adjust.held) : cell
+      adjust.held = reached
+      selection.value = snapped(selectionWithEdges(adjust.start, adjust.edges, reached))
       return
     }
     const rows = cell.row - adjust.origin.row
     const columns = cell.column - adjust.origin.column
     adjust.moved ||= rows !== 0 || columns !== 0
-    selection.value = movedSelection(adjust.start, rows, columns, currentProject())
+    const project = currentProject()
+    const moved = movedSelection(adjust.start, rows, columns, project)
+    // A Frame's Selection is moved within the Frame (ticket 491).
+    selection.value = project?.frame && selectionLayer(project, moved) === 'frame' ? withinFrame(moved, project.frame) : moved
   }
 
   /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
@@ -179,7 +205,8 @@ export function useSelectionGesture(
       tapPiece(done.origin.row, done.origin.column)
     } else {
       dropClipboard()
-      selection.value = snapped(selectionBetween(done.origin, done.origin))
+      const project = currentProject()
+      selection.value = snapped(selectionBetween(done.origin, done.origin, project && layerAt(project, done.origin)))
     }
   }
 
@@ -281,7 +308,7 @@ export function useSelectionGesture(
 
     const block = copiedBlock.value
     pasteDismissed.value = false
-    edit('drawing', (current) => pasteOnLayer(current, block, cell, mirrorAxisCounts(), mirrorCopyMode()))
+    stamp(block, cell)
     return true
   }
 

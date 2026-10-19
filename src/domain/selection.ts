@@ -14,6 +14,8 @@ export interface Selection {
   left: number
   rows: number
   columns: number
+  /** The layer the drag or tap began on (ADR 0066, ticket 491); absent: the one its top-left bead is on. */
+  layer?: Layer
 }
 
 /** The cells one Copy snapshotted (CONTEXT.md's Copy): colors, not grid positions, stamped wherever Paste is aimed. */
@@ -35,7 +37,7 @@ export interface PastedCell extends GridPosition {
 
 /** The Selection a drag from `anchor` to `focus` marks out, from either corner. The Canvas has no edge to clamp to
  * (ADR 0026). */
-export function selectionBetween(anchor: GridPosition, focus: GridPosition): Selection {
+export function selectionBetween(anchor: GridPosition, focus: GridPosition, layer?: Layer): Selection {
   const rowsSpanned = [anchor.row, focus.row]
   const columnsSpanned = [anchor.column, focus.column]
   const top = Math.min(...rowsSpanned)
@@ -46,6 +48,19 @@ export function selectionBetween(anchor: GridPosition, focus: GridPosition): Sel
     left,
     rows: Math.max(...rowsSpanned) - top + 1,
     columns: Math.max(...columnsSpanned) - left + 1,
+    ...(layer ? { layer } : {}),
+  }
+}
+
+/** Where a drag that began on `layer` may reach (ticket 491): on the Frame, the nearest cell inside it; on the Canvas, a
+ * cell under the Frame is not reached, so the drag stays at `held`. */
+export function dragFocusOnLayer(project: Pick<Project, 'frame'>, layer: Layer, cell: GridPosition, held: GridPosition): GridPosition {
+  const frame = project.frame
+  if (!frame) return cell
+  if (layer === 'canvas') return frameContains(frame, cell) ? held : cell
+  return {
+    row: Math.min(Math.max(cell.row, frame.row), frame.row + frame.rows - 1),
+    column: Math.min(Math.max(cell.column, frame.column), frame.column + frame.columns - 1),
   }
 }
 
@@ -92,7 +107,9 @@ export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition,
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
  * round every placed bead, or none on an empty canvas. */
 export function selectAllSelection(beads: BeadMap, frame: Frame | undefined): Selection | undefined {
-  return frame ? { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns } : allBeadsSelection(beads)
+  if (frame) return { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: 'frame' }
+  const all = allBeadsSelection(beads)
+  return all && { ...all, layer: 'canvas' }
 }
 
 /** The rectangle round every placed bead (ticket 414), or none on an empty canvas. */
@@ -127,7 +144,7 @@ export function selectionWithEdges(selection: Selection, edges: readonly FrameEd
   if (edges.includes('left')) left = Math.min(cell.column, right)
   if (edges.includes('right')) right = Math.max(cell.column, left)
 
-  return { top, left, rows: bottom - top + 1, columns: right - left + 1 }
+  return { ...selection, top, left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
 /** The Selection moved by whole beads, its size kept; its beads stay where they are. Where beads are laid in Units it
@@ -137,9 +154,17 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
   return { ...selection, top: selection.top + Math.round(rows / rowsPerUnit) * rowsPerUnit, left: selection.left + columns }
 }
 
+/** The Selection slid back inside `frame` when it was moved past an edge; as it is when it is larger than the Frame. */
+export function withinFrame(selection: Selection, frame: Frame): Selection {
+  const top = Math.max(frame.row, Math.min(selection.top, frame.row + frame.rows - selection.rows))
+  const left = Math.max(frame.column, Math.min(selection.left, frame.column + frame.columns - selection.columns))
+  return { ...selection, top, left }
+}
+
 /** The Selection grown to whole Units where the Technique has them (ticket 483), kept inside the Frame it started in. */
 export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Frame): Selection {
-  return describeWeave(weave).snapSelection(selection, frame)
+  const snapped = describeWeave(weave).snapSelection(selection, frame)
+  return selection.layer ? { ...snapped, layer: selection.layer } : snapped
 }
 
 /** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
@@ -284,13 +309,13 @@ function mirroredPasteBlock(
 /** The layer a Selection acts on (ADR 0066): the one its top-left bead is on. A Selection that begins in the Frame is the
  * Frame's; any other is the Canvas's. */
 export function selectionLayer(project: Pick<Project, 'frame'>, selection: Selection): Layer {
-  return layerAt(project, { row: selection.top, column: selection.left })
+  return selection.layer ?? layerAt(project, { row: selection.top, column: selection.left })
 }
 
 /** The Selection counted in a layer's own rows and columns. */
 export function selectionInLayer(project: Pick<Project, 'frame'>, layer: Layer, selection: Selection): Selection {
   const { row, column } = positionInLayer(project, layer, { row: selection.top, column: selection.left })
-  return { ...selection, top: row, left: column }
+  return { top: row, left: column, rows: selection.rows, columns: selection.columns }
 }
 
 /** Snapshots the drawn beads of a Selection on its layer (Copy). */
@@ -332,12 +357,13 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
 export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selection | undefined {
   const layer = layerAt(project, at)
   if (layer === 'canvas') {
-    return pieceSelectionAt(project.beads, project, at, project.frame)
+    const picked = pieceSelectionAt(project.beads, project, at, project.frame)
+    return picked && { ...picked, layer }
   }
   const view = layerView(project, 'frame')
   const picked = pieceSelectionAt(view.beads, view, positionInLayer(project, 'frame', at), view.frame)
   const origin = positionOnCanvas(project, 'frame', { row: picked?.top ?? 0, column: picked?.left ?? 0 })
-  return picked && { ...picked, top: origin.row, left: origin.column }
+  return picked && { ...picked, top: origin.row, left: origin.column, layer }
 }
 
 /** The cells a Paste at `at` would fill, as Canvas positions (the paste preview). */
@@ -347,4 +373,13 @@ export function pastedCellsOnLayer(project: Project, block: CopiedBlock, at: Gri
   return mirroredPastedCells(view, block, positionInLayer(project, layer, at), axes, copyMode)
     .filter((cell) => !view.frame || frameContains(view.frame, cell))
     .map((cell) => ({ ...cell, ...positionOnCanvas(project, layer, cell) }))
+}
+
+/** How many beads a Paste at `at` loses to the Frame's edge (ticket 491): those of a block landing in the Frame that fall
+ * outside it. None on the Canvas, which has no edge. */
+export function pasteClippedCount(project: Project, block: CopiedBlock, at: GridPosition, axes: MirrorAxisCounts, copyMode = false): number {
+  if (layerAt(project, at) !== 'frame') return 0
+  const view = layerView(project, 'frame')
+  const cells = mirroredPastedCells(view, block, positionInLayer(project, 'frame', at), axes, copyMode)
+  return cells.filter((cell) => !frameContains(view.frame!, cell)).length
 }

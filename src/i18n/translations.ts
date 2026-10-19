@@ -374,6 +374,7 @@ export interface Translations {
     copyButton: string
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: string
+    pasteClippedMessage: PluralForms
     cutButton: string
     /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage
      * (ADR 0012). */
