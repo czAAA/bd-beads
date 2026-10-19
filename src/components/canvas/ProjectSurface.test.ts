@@ -453,6 +453,88 @@ describe('ProjectSurface', () => {
     })
   })
 
+  describe('a stroke lasts from press to release (ticket 504)', () => {
+    const at = (project: Project, row: number, column: number) =>
+      surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row, column })
+
+    /** A point of the screen between beads, which a Netting layer has. */
+    function holeIn(view: ReturnType<typeof surfaceView>): { x: number; y: number } {
+      for (let y = 80; y < 400; y += 3) {
+        for (let x = 80; x < 400; x += 3) {
+          if (!view.pointToBead({ x, y })) return { x, y }
+        }
+      }
+      throw new Error('no hole found')
+    }
+
+    it('paints every bead along a fast swipe, with no gaps', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const from = at(project, 2, 1)
+      const to = at(project, 2, 8)
+
+      await surface.trigger('pointerdown', { clientX: from.x, clientY: from.y, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { clientX: to.x, clientY: to.y, buttons: 1 })
+
+      const moves = wrapper.emitted('cell-primary-move') as [number, number][]
+      expect(moves.map(([, column]) => column)).toEqual([2, 3, 4, 5, 6, 7, 8])
+    })
+
+    it('starts from empty background and paints from the first bead on its way', async () => {
+      const project = projectOf(20, 10, {}, 'netting')
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const view = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } })
+      const hole = holeIn(view)
+      const first = at(project, 3, 2)
+
+      await surface.trigger('pointerdown', { clientX: hole.x, clientY: hole.y, button: 0, buttons: 1 })
+      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+      await surface.trigger('pointermove', { clientX: first.x, clientY: first.y, buttons: 1 })
+
+      expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
+    })
+
+    it('carries on at the next bead after crossing empty background, for the erase button too', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const start = at(project, 3, 18)
+      const back = at(project, 3, 17)
+
+      await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
+      await surface.trigger('pointermove', { clientX: 990, clientY: 790, buttons: 2 })
+      await surface.trigger('pointermove', { clientX: back.x, clientY: back.y, buttons: 2 })
+
+      expect(wrapper.emitted('cell-secondary-move')).toContainEqual([3, 17])
+    })
+
+    it('ends at release', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const from = at(project, 2, 1)
+      const to = at(project, 2, 4)
+
+      await surface.trigger('pointerdown', { clientX: from.x, clientY: from.y, button: 0, buttons: 1 })
+      await surface.trigger('pointerup')
+      await surface.trigger('pointermove', { clientX: to.x, clientY: to.y, buttons: 1 })
+
+      expect(wrapper.emitted('cell-primary-move')).toBeUndefined()
+    })
+
+    it('lands a Fill press off a bead on the nearest bead', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { nearestOnPress: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 990, clientY: 790, button: 0, buttons: 1 })
+
+      expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
+    })
+  })
+
   describe('picking a color (ticket 403)', () => {
     const painted = (): Project => projectOf(20, 10, { beads: { 3: { 4: '#123456' } } })
     const at = (project: Project, row: number, column: number) =>
@@ -834,19 +916,18 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-secondary-down']).toBeUndefined()
     })
 
-    it('hovers each bead it moves onto, once, and continues a stroke with the button held', async () => {
+    it('hovers each bead it moves onto, once', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointermove', { ...centreOf(project, 0, 0), buttons: 0 })
       await surface.trigger('pointermove', { clientX: centreOf(project, 0, 0).clientX + 3, clientY: centreOf(project, 0, 0).clientY, buttons: 0 })
-      await surface.trigger('pointermove', { ...centreOf(project, 0, 1), buttons: 1 })
-      await surface.trigger('pointermove', { ...centreOf(project, 0, 2), buttons: 2 })
+      await surface.trigger('pointermove', { ...centreOf(project, 0, 1), buttons: 0 })
+      await surface.trigger('pointermove', { ...centreOf(project, 0, 2), buttons: 0 })
 
       expect(events(wrapper)['cell-hover']).toEqual([[0, 0], [0, 1], [0, 2]])
-      expect(events(wrapper)['cell-primary-move']).toEqual([[0, 1]])
-      expect(events(wrapper)['cell-secondary-move']).toEqual([[0, 2]])
+      expect(events(wrapper)['cell-primary-move']).toBeUndefined()
     })
 
     it('drags a touch or pen stroke across beads the same way a held mouse button does (ticket 60)', async () => {
@@ -887,7 +968,7 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { ...centreOf(project, 400, 9000, 1, { x: -2000, y: -2000 }), buttons: 1 })
 
       expect(events(wrapper)['cell-primary-down']).toEqual([[-40, -25]])
-      expect(events(wrapper)['cell-primary-move']).toEqual([[400, 9000]])
+      expect(events(wrapper)['cell-primary-move']!.at(-1)).toEqual([400, 9000])
     })
 
     it('says the hover is over when the pointer leaves', async () => {

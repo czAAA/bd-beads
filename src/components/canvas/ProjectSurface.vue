@@ -83,6 +83,8 @@ const props = withDefaults(defineProps<{
   /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead
    * marker give way, and a chip by the pointer shows the color of the bead under it. */
   picking?: boolean
+  /** Whether a press off a bead lands on the nearest bead instead of opening a stroke (Fill, ticket 504). */
+  nearestOnPress?: boolean
 }>(), { rowMarks: true })
 
 const emit = defineEmits<{
@@ -882,7 +884,20 @@ function onPointerDown(event: PointerEvent): void {
   overRefusedMargin.value = refusesMargin(bead)
   if (!bead) {
     lastBead = undefined
+    // A press on empty background still opens the stroke (ticket 504); Fill lands on the nearest bead instead.
+    if (event.button === 0 || event.button === 2) {
+      if (props.nearestOnPress) {
+        const near = cellUnder(event, 'canvas')
+        if (event.button === 0) emit('cell-primary-down', near.row, near.column)
+        else emit('cell-secondary-down', near.row, near.column)
+      } else {
+        stroke = { button: event.button, from: pointInSurface(event), last: undefined }
+      }
+    }
     return
+  }
+  if (event.button === 0 || event.button === 2) {
+    stroke = { button: event.button, from: pointInSurface(event), last: bead }
   }
   // A press also lands where its live-mirror counterparts or the pasted block under the pointer go (the preview cells).
   if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
@@ -956,6 +971,7 @@ function onPointerMove(event: PointerEvent): void {
   overRefusedMargin.value = refusesMargin(bead)
   placeMarker()
   placePickChip(event, bead)
+  continueStroke(event)
   if (isSameBead(bead, lastBead)) {
     return
   }
@@ -965,15 +981,43 @@ function onPointerMove(event: PointerEvent): void {
   }
 
   if (hoversFor(event)) emit('cell-hover', bead.row, bead.column)
-  if (event.buttons & 1) {
-    emit('cell-primary-move', bead.row, bead.column)
+}
+
+/** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
+let stroke: { button: number; from: { x: number; y: number }; last: GridPosition | undefined } | undefined
+
+/** How far apart, in px, a swipe is sampled for beads: finer than the smallest bead on screen. */
+const STROKE_SAMPLE_PX = 2
+
+/** Reports every bead on the straight line from the stroke's last sample to the pointer, found in position space. */
+function continueStroke(event: PointerEvent): void {
+  if (!stroke) return
+  if (!(event.buttons & (stroke.button === 0 ? 1 : 2))) {
+    stroke = undefined
+    return
   }
-  if (event.buttons & 2) {
-    emit('cell-secondary-move', bead.row, bead.column)
+  const to = pointInSurface(event)
+  const { x, y } = stroke.from
+  const steps = Math.max(1, Math.ceil(Math.hypot(to.x - x, to.y - y) / STROKE_SAMPLE_PX))
+  for (let step = 1; step <= steps; step++) {
+    const bead = surface.value.pointToBead({ x: x + ((to.x - x) * step) / steps, y: y + ((to.y - y) * step) / steps })
+    if (!bead || isSameBead(bead, stroke.last)) continue
+    const first = stroke.last === undefined
+    stroke.last = bead
+    if (stroke.button === 0) {
+      if (first) emit('cell-primary-down', bead.row, bead.column)
+      else emit('cell-primary-move', bead.row, bead.column)
+    } else if (first) {
+      emit('cell-secondary-down', bead.row, bead.column)
+    } else {
+      emit('cell-secondary-move', bead.row, bead.column)
+    }
   }
+  stroke.from = to
 }
 
 function onPointerEnd(event?: PointerEvent): void {
+  stroke = undefined
   releasePointer(event)
   dragging.value = false
   if (adjusting.value) {
