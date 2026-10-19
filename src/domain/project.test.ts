@@ -33,6 +33,10 @@ import {
   withFrameGrid,
   rowProgressOn,
   rowProgressStarted,
+  canvasWeave,
+  frameWeave,
+  withTechnique,
+  withFrameTechnique,
 } from './project'
 import { BEAD_CATALOG } from './beads'
 import { describeWeave } from './weave'
@@ -1119,7 +1123,7 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject(legacy)
 
-    expect(normalized.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
+    expect(normalized.frame).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
     expect(normalized.beads).toEqual({})
     expect(normalized).not.toHaveProperty('grid')
     expect(normalized).not.toHaveProperty('columns')
@@ -1269,7 +1273,7 @@ describe('createProjectFromImage', () => {
 
 describe('Row progress on the Frame (ticket 233)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  const framed: Project = { ...base, frame: { row: 10, column: 10, rows: 6, columns: 4, beads: {} }, rowProgress: { ...base.rowProgress, currentRow: 2 } }
+  const framed: Project = { ...base, frame: { technique: 'loom' as const, row: 10, column: 10, rows: 6, columns: 4, beads: {} }, rowProgress: { ...base.rowProgress, currentRow: 2 } }
 
   it('names the current row of the Frame, and nothing outside it (ticket 352)', () => {
     expect(isInCurrentRow(framed, { row: 12, column: 10 })).toBe(true)
@@ -1424,7 +1428,8 @@ describe('Netting Row progress (ticket 487)', () => {
   })
 
   it('reads a stored column direction as rows', () => {
-    const stored = { ...toggleRowDirection(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } })), technique: 'netting' as const }
+    const toggled = toggleRowDirection(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } }))
+    const stored = { ...toggled, technique: 'netting' as const, frame: { ...toggled.frame!, technique: 'netting' as const } }
     expect(normalizeProject(stored).rowProgress.direction).toBe('rows')
   })
 
@@ -1436,7 +1441,7 @@ describe('Netting Row progress (ticket 487)', () => {
 
 describe('resetRowProgress (ticket 455)', () => {
   it('takes both pointers back to the first row, keeping the direction and the beads', () => {
-    const project = toggleRowDirection({ ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } }), frame: { row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
+    const project = toggleRowDirection({ ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } }), frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
     const woven = moveToRow(project, 2)
     expect(rowProgressStarted(woven)).toBe(true)
     const reset = resetRowProgress(woven)
@@ -1485,5 +1490,78 @@ describe('the Frame as its own sheet (ADR 0066)', () => {
     expect(sameBeads(project, { ...project, beads: { ...project.beads }, frame: { ...project.frame!, beads: { ...project.frame!.beads } } })).toBe(true)
     expect(sameBeads(project, { ...project, beads: {} })).toBe(false)
     expect(sameBeads(project, { ...project, frame: { ...project.frame!, beads: {} } })).toBe(false)
+  })
+})
+
+describe('a Frame woven in its own Technique (ticket 492)', () => {
+  const canvasLoom = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
+  /** A loom Canvas with a peyote Frame of 4 × 6 at (10, 10). */
+  const peyoteOnLoom = (): Project => {
+    const base = canvasLoom()
+    return { ...base, frame: { ...base.frame!, technique: 'peyote', row: 10, column: 10 } }
+  }
+
+  it('is made in the Technique the Project was made in, and its Weave is the Frame\'s own', () => {
+    const brick = createProject({ technique: 'brick', brickBlock: 3, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
+    expect(brick.frame).toMatchObject({ technique: 'brick', brickBlock: 3 })
+    expect(frameWeave(peyoteOnLoom())).toEqual({ technique: 'peyote' })
+    expect(canvasWeave(peyoteOnLoom())).toEqual({ technique: 'loom' })
+  })
+
+  it('counts a Canvas with no Frame in the Canvas\'s own Weave', () => {
+    const { frame: _frame, ...open } = peyoteOnLoom()
+    expect(frameWeave(open)).toEqual({ technique: 'loom' })
+  })
+
+  it('counts its rows, passes and size in its own Weave: peyote\'s first line takes one pass and every later one two', () => {
+    const project = { ...peyoteOnLoom(), rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
+    expect(rowProgressPosition(project).total).toBe(11)
+    // Row 0 is pass 0, done; row 1 is pass 1 on its even positions and pass 2 on its odd.
+    expect(isInFinishedRow(project, { row: 10, column: 10 })).toBe(true)
+    expect(isInFinishedRow(project, { row: 11, column: 10 })).toBe(false)
+    expect(isInCurrentRow(project, { row: 11, column: 10 })).toBe(true)
+  })
+
+  it('is the Frame\'s own Weave that Turn row direction asks: a Netting Frame on a loom Canvas stays on rows', () => {
+    const base = peyoteOnLoom()
+    const netting = { ...base, frame: { ...base.frame!, technique: 'netting' as const } }
+    expect(toggleRowDirection(netting)).toBe(netting)
+    expect(toggleRowDirection({ ...base, frame: { ...base.frame!, technique: 'loom' as const } }).rowProgress.direction).toBe('columns')
+  })
+
+  it('switches the Canvas without touching the Frame, and the Frame without touching the Canvas', () => {
+    const peyote = withTechnique(canvasLoom(), 'peyote')
+    expect(peyote.technique).toBe('peyote')
+    expect(peyote.frame?.technique).toBe('loom')
+    const framePeyote = withFrameTechnique(canvasLoom(), 'peyote')
+    expect(framePeyote.technique).toBe('loom')
+    expect(framePeyote.frame?.technique).toBe('peyote')
+  })
+
+  it('keeps the Frame\'s Weave when it is resized, and gives a new one the Canvas\'s', () => {
+    const resized = withFrame(peyoteOnLoom(), { row: 10, column: 10, rows: 8, columns: 4 })
+    expect(resized.frame?.technique).toBe('peyote')
+    const { frame: _frame, ...open } = withTechnique(peyoteOnLoom(), 'brick')
+    expect(withFrame(open, { row: 0, column: 0, rows: 4, columns: 4 }).frame?.technique).toBe('brick')
+  })
+
+  it('moves its corner on the Canvas by as far as its own rows went, to the nearest position', () => {
+    // Four rows of peyote (3/4 of a bead each) are three Canvas rows: dragging the top edge up by 4 moves the corner up 3.
+    const grown = withFrame(peyoteOnLoom(), { row: 6, column: 10, rows: 10, columns: 4 })
+    expect(grown.frame).toMatchObject({ row: 7, rows: 10 })
+    // Alike, it is exactly the rectangle asked for.
+    const alike = withFrame(withTechnique(peyoteOnLoom(), 'peyote'), { row: 6, column: 10, rows: 10, columns: 4 })
+    expect(alike.frame).toMatchObject({ row: 6, rows: 10 })
+  })
+
+  it('reads a Frame stored without a Weave of its own as woven like the Project, and an unreadable one the same', () => {
+    const base = withTechnique(canvasLoom(), 'brick')
+    const { technique: _technique, ...bare } = base.frame!
+    expect(normalizeProject({ ...base, brickBlock: 2, frame: bare as never }).frame).toMatchObject({ technique: 'brick', brickBlock: 2 })
+    expect(normalizeProject({ ...base, frame: { ...base.frame!, technique: 'sideways' as never } }).frame?.technique).toBe('brick')
+  })
+
+  it('keeps a Frame\'s own Weave when it is read back', () => {
+    expect(normalizeProject(peyoteOnLoom()).frame?.technique).toBe('peyote')
   })
 })

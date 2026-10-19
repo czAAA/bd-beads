@@ -14,7 +14,7 @@ function layered(): Project {
   return {
     ...base,
     beads: withColors({}, [{ row: 11, column: 21, color: BLUE }, { row: 50, column: 50, color: BLUE }]),
-    frame: { row: 10, column: 20, rows: 3, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: BLUE }]) },
+    frame: { technique: 'loom' as const, row: 10, column: 20, rows: 3, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: BLUE }]) },
   }
 }
 
@@ -88,5 +88,30 @@ describe('shownBeads', () => {
   it('is the Canvas\'s own map when there is no Frame', () => {
     const { frame: _frame, ...bare } = layered()
     expect(shownBeads(bare)).toBe(bare.beads)
+  })
+})
+
+describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
+  it('hands a command the Frame\'s Weave, not the Canvas\'s', () => {
+    const base = layered()
+    const project: Project = { ...base, technique: 'brick', brickBlock: 3, frame: { ...base.frame!, technique: 'peyote' } }
+    const seen: Project[] = []
+    onLayer(project, 'frame', (view) => {
+      seen.push(view)
+      return view
+    })
+    expect(seen[0]).toMatchObject({ technique: 'peyote', frame: { technique: 'peyote' } })
+    expect(seen[0]).not.toHaveProperty('brickBlock')
+  })
+
+  it('hands a command the Canvas\'s Weave for the Canvas', () => {
+    const base = layered()
+    const project: Project = { ...base, technique: 'brick', brickBlock: 3, frame: { ...base.frame!, technique: 'peyote' } }
+    const seen: Project[] = []
+    onLayer(project, 'canvas', (view) => {
+      seen.push(view)
+      return view
+    })
+    expect(seen[0]).toMatchObject({ technique: 'brick', brickBlock: 3 })
   })
 })

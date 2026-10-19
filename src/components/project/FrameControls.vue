@@ -4,14 +4,14 @@ import AppNote from '../ui/AppNote.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BrickBlockField from './BrickBlockField.vue'
 import { describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
-import { resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
+import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { formatOtherUnit } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
-// The Frame's part of the Project panel (ProjectPanel and Frame cards, tickets 233, 443): the Technique choice and the
+// The Frame's part of the Project panel (ProjectPanel and Frame cards, tickets 233, 443, 492): the Frame's own Technique choice and the
 // Frame's Estimated size with its warning as a Note (ticket 328). Right-angle weave is fixed when the Project is made, so
 // it offers no choice (ticket 482). Once a Row progress pass is done the Technique is locked, with the reason under it.
 const props = defineProps<{ project: Project }>()
@@ -25,7 +25,7 @@ const locked = computed(() => rowProgressStarted(props.project))
 const bead = computed(() => resolveProjectBead(props.project))
 
 /** The unit the Estimated size leads with: kept on the device, never in the Project (ticket 342). */
-const { unit, countTemplate } = useSizeUnit(() => props.project.technique)
+const { unit, countTemplate } = useSizeUnit(() => frameWeave(props.project).technique)
 
 /** The Estimated size in the other unit: mm while the unit is beads, the bead count while it is mm. */
 const estimate = computed(() =>
@@ -39,7 +39,7 @@ const brickBlockAction = controlAction('change-brick-block')
 const techniqueAction = controlAction('change-technique')
 /** The Technique choice, set on the open Project: choosing another is one Undo step (ticket 351). */
 const technique = computed({
-  get: () => props.project.technique,
+  get: () => frameWeave(props.project).technique,
   set: (value: Technique) => emit('set-technique', value),
 })
 const techniqueOptions = computed(() => {
@@ -58,7 +58,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 <template>
   <div class="frame-controls" data-testid="frame-controls">
-    <div v-if="describeWeave(project).switchable" class="frame-controls__technique" data-testid="frame-technique-row">
+    <div v-if="project.frame && describeWeave(frameWeave(project)).switchable" class="frame-controls__technique" data-testid="frame-technique-row">
       <span :id="techniqueLabelId">{{ t.form.techniqueLabel }}</span>
       <SegmentedControl
         v-model="technique"
@@ -71,8 +71,8 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
     </div>
 
     <BrickBlockField
-      v-if="describeWeave(project).hasBrickBlock"
-      :model-value="project.brickBlock ?? 1"
+      v-if="project.frame && describeWeave(frameWeave(project)).hasBrickBlock"
+      :model-value="frameWeave(project).brickBlock ?? 1"
       :disabled="!brickBlockAction.enabled?.(deps)"
       :disabled-body="brickBlockAction.disabledBody?.(t, deps)"
       testid="frame-brick-block"

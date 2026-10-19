@@ -23,7 +23,7 @@ describe('App', () => {
   it('creates a project, renders its grid, and autosaves it without an explicit save action', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    expect(drawnProject(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(wrapper)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
 
     const saved = loadProjects()
     expect(saved).toHaveLength(1)
@@ -39,7 +39,7 @@ describe('App', () => {
     const afterReload = mount(App)
 
     expect(afterReload.find('[data-testid="bead-select"]').exists()).toBe(false)
-    expect(drawnProject(afterReload)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(afterReload)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
   })
 
   it('switches the open project when a different one is selected from the list', async () => {
@@ -53,7 +53,7 @@ describe('App', () => {
     await wrapper.find(`[data-testid="select-project-${firstId}"]`).trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(drawnProject(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(wrapper)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
   })
 
   it('removing the last remaining project falls back to the empty home screen', async () => {

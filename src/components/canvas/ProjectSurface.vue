@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import { changedPositions } from '../../domain/canvas'
+import { layerAt } from '../../domain/layers'
 import { sameFrame } from '../../domain/frame'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { beadColorAt, isInFinishedRow, rowProgressOn, type Project } from '../../domain/project'
-import { hasGuides, selectionFrame, type Selection } from '../../domain/selection'
+import { beadColorAt, canvasWeave, isInFinishedRow, rowProgressOn, sameWeave, type Project } from '../../domain/project'
+import { hasGuides, selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../rendering/gestureView'
@@ -17,7 +18,7 @@ import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { edgeScrollStep } from '../../composables/canvas/edgeScroll'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
-import { surfaceView, type Scroll } from '../../rendering/surfaceView'
+import { surfaceView, type Scroll, type ViewLayer } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
@@ -214,7 +215,9 @@ function sameLayout(a: Project, b: Project): boolean {
   const progress = (project: Project) => project.rowProgress
   return (
     a.technique === b.technique &&
+    (a.brickBlock ?? 1) === (b.brickBlock ?? 1) &&
     sameFrame(a.frame, b.frame) &&
+    (a.frame === undefined || b.frame === undefined || sameWeave(a.frame, b.frame)) &&
     a.rotation === b.rotation &&
     progress(a).direction === progress(b).direction &&
     progress(a).currentRow === progress(b).currentRow &&
@@ -229,6 +232,10 @@ const MOST_ROWS_WORTH_A_BAND = 40
 // Empty when nothing changed; undefined when so much did (Undo, Fill, Mirror current) that drawing all again is
 // cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
+  // The Frame's rows are not the Canvas's where it is woven otherwise (ticket 492): draw it all again.
+  if (after.frame && !sameWeave(canvasWeave(after), after.frame) && before.frame?.beads !== after.frame.beads) {
+    return undefined
+  }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
   const framed = (project: Project) => project.frame?.beads ?? {}
   const frameTop = after.frame?.row ?? 0
@@ -279,7 +286,7 @@ const space = computed(() => spaceOf(toRaw(props.project), true))
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: props.project.technique, brickBlock: props.project.brickBlock, netSize: props.project.netSize, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: props.project.technique, brickBlock: props.project.brickBlock, netSize: props.project.netSize, frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
@@ -300,7 +307,7 @@ watch(
       emit('selection-anchor', undefined)
       return
     }
-    const box = surface.value.beadBox(selectionFrame(selected))
+    const box = surface.value.beadBox(selectionFrame(selected), selectionLayer(props.project, selected))
     emit('selection-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
   },
   { immediate: true, flush: 'post' },
@@ -478,7 +485,7 @@ function drawCellsOrMove(): void {
 // Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left: over beads, for
 // a mouse or hovering pen (OS pointer hidden). None with a canvas-moving tool, while the
 // Frame is set, or for a finger (no hover).
-const markerAt = ref<{ x: number; y: number }>()
+const markerAt = ref<{ x: number; y: number; layer: ViewLayer }>()
 /** Whether the pointer last seen over the surface is one that draws and hovers: not a finger, not the one the input
  * mode keeps for moving the canvas. */
 let hoverDraws = false
@@ -487,7 +494,7 @@ let hoverDraws = false
  * moves under a still pointer. */
 function placeMarker(): void {
   const bead = hoverPoint && hoverDraws && !dragging.value && !framing.value ? beadUnder(hoverPoint) : undefined
-  markerAt.value = hoverPoint && bead ? pointInSurface(hoverPoint) : undefined
+  markerAt.value = hoverPoint && bead ? { ...pointInSurface(hoverPoint), layer: layerAt(props.project, bead) } : undefined
 }
 
 /** Takes the marker away, and keeps it away until the pointer moves again. */
@@ -675,8 +682,17 @@ function pointInSurface(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: 
 }
 
 /** The bead position nearest a pointer, wherever it is: dragging a Frame needs one even between beads. */
-function cellUnder(event: PointerEvent): GridPosition {
-  return surface.value.pointToCell(pointInSurface(event))
+function cellUnder(event: PointerEvent, layer: ViewLayer = gestureLayer): GridPosition {
+  return surface.value.pointToCell(pointInSurface(event), layer)
+}
+
+/** The layer whose geometry a held press is measured in (ticket 492): the Frame's for its resize handles and a
+ * Selection on it, the Canvas's for the Move handle and anything else. */
+let gestureLayer: ViewLayer = 'canvas'
+
+/** The layer a Selection acts on, for measuring a press on its handles. */
+function selectionViewLayer(): ViewLayer {
+  return props.selection ? selectionLayer(props.project, props.selection) : 'canvas'
 }
 
 /** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
@@ -711,7 +727,7 @@ function edgeScrollTick(): void {
     emit('pan', -dx, -dy)
     // After the parent has applied the pan, so the cell under the still pointer is the new one.
     void nextTick(() => {
-      if (framing.value) emit('frame-drag', surface.value.pointToCell(point))
+      if (framing.value) emit('frame-drag', surface.value.pointToCell(point, gestureLayer))
     })
   }
   edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
@@ -725,6 +741,7 @@ function pressMoveHandle(event: PointerEvent): void {
   framing.value = true
   hideMarker()
   rootEl.value?.setPointerCapture?.(event.pointerId)
+  gestureLayer = 'canvas'
   emit('frame-press', { kind: 'move' }, cellUnder(event))
   event.preventDefault()
 }
@@ -745,6 +762,7 @@ function onPointerDown(event: PointerEvent): void {
       framing.value = true
       hideMarker()
       rootEl.value?.setPointerCapture?.(event.pointerId)
+      gestureLayer = target.kind === 'handle' ? 'frame' : 'canvas'
       emit('frame-press', target, cellUnder(event))
       event.preventDefault()
       return
@@ -752,13 +770,14 @@ function onPointerDown(event: PointerEvent): void {
   }
   if (props.selecting && props.selection && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
     // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it.
-    const box = surface.value.beadBox(selectionFrame(props.selection))
+    const box = surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer())
     const point = pointInSurface(event)
     const target: FramePress = hasGuides(props.selection) ? boxPressAt(box, props.project.rotation, point, touchInput.value) : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
     if (target.kind !== 'outside') {
       adjusting.value = true
       hideMarker()
       rootEl.value?.setPointerCapture?.(event.pointerId)
+      gestureLayer = selectionViewLayer()
       emit('selection-press', target, cellUnder(event))
       event.preventDefault()
       return
@@ -809,7 +828,7 @@ function onPointerMove(event: PointerEvent): void {
     return
   }
   if (props.selecting && props.selection && event.pointerType !== 'touch' && hasGuides(props.selection)) {
-    const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection)), pointInSurface(event), false)
+    const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer()), pointInSurface(event), false)
     handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
   } else if (props.project.frame && event.pointerType !== 'touch' && !framing.value) {
     const target = framePress(event)

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { type Rotation } from '../domain/grid'
 import { type Technique } from '../domain/weave'
-import { createProject, type Project } from '../domain/project'
+import { createProject, weaveOf, type Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, type BeadShape } from './beadLook'
 import { renderProject } from './projectRenderer'
@@ -13,7 +13,7 @@ import { CELL_SIZE_PX, gridToRegion, rowShiftPx, rowTopPx, type Region } from '.
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 4, unit: 'beads' } })
   const cells = Array.from({ length: 12 }, (_, index) => ({ row: Math.floor(index / 3), column: index % 3, color: '#e63746' }))
-  const frame = { row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
+  const frame = { ...weaveOf(project), technique, row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
   return { ...project, technique, rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
 }
 
@@ -128,7 +128,7 @@ describe('renderProject, Right-angle weave (ticket 482)', () => {
   const woven = (): Project => {
     const project = createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } })
     const cells = [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#e63746' })))
-    return { ...project, frame: { row: 6, column: 5, rows: 3, columns: 3, beads: withColors({}, cells) } }
+    return { ...project, frame: { ...weaveOf(project), row: 6, column: 5, rows: 3, columns: 3, beads: withColors({}, cells) } }
   }
 
   it.each([
@@ -157,32 +157,10 @@ describe('brick stitch inside a Frame', () => {
   })
 })
 
-describe('a Project with no Frame whose top bead is on an odd row (regression)', () => {
-  it('shifts its rows by their own number, so an export looks like the editor', () => {
-    const base = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } })
-    const project: Project = {
-      ...base,
-      frame: undefined,
-      beads: withColors(base.beads, [
-        { row: 3, column: 0, color: '#e63746' },
-        { row: 4, column: 0, color: '#e63746' },
-      ]),
-    }
-
-    const painted = (open: boolean) => render(project, open).beads.filter(({ color }) => color !== null)
-    const editor = painted(true)
-    const exported = painted(false)
-
-    // Row 3 is odd, so it is the shifted one: half a bead right of row 4, which is not.
-    expect(editor.map(({ x }) => x)).toEqual([CELL_SIZE_PX / 2, 0])
-    expect(exported.map(({ x }) => x)).toEqual([CELL_SIZE_PX / 2, 0])
-  })
-})
-
 describe('the Frame on the Canvas (ADR 0066)', () => {
   it('fills no marks in the Frame, and runs them right up to its edge', () => {
     const project = framedProject('loom')
-    const { named } = render({ ...project, frame: { row: 6, column: 6, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
+    const { named } = render({ ...project, frame: { technique: 'loom' as const, row: 6, column: 6, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)
@@ -291,7 +269,7 @@ describe('renderProject, Netting (ticket 485)', () => {
   const woven = (): Project => {
     const project = createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } })
     const cells = Array.from({ length: 25 }, (_cell, at) => ({ row: Math.floor(at / 5), column: at % 5, color: '#e63746' }))
-    return { ...project, frame: { row: 4, column: 4, rows: 5, columns: 5, beads: withColors({}, cells) } }
+    return { ...project, frame: { ...weaveOf(project), row: 4, column: 4, rows: 5, columns: 5, beads: withColors({}, cells) } }
   }
   const mesh = [[0, 2], [1, 1], [1, 3], [2, 0], [2, 4], [3, 1], [3, 3], [4, 2]]
 
@@ -303,5 +281,54 @@ describe('renderProject, Netting (ticket 485)', () => {
 
     const painted = beads.filter(({ color }) => color !== null)
     expect(painted.map(({ x, y }) => ({ x, y }))).toEqual(mesh.map(([row, column]) => ({ x: (origin.column + column) * 15, y: (origin.row + row) * 15 })))
+  })
+})
+
+/** The Frame woven in `frame` over a Canvas woven in `canvas`: 3 across, 4 down, at row 6, column 5, every position painted. */
+function mixedProject(canvas: Technique, frame: Technique): Project {
+  const base = framedProject(canvas)
+  return { ...base, technique: canvas, frame: { ...base.frame!, technique: frame } }
+}
+
+describe.each<{ canvas: Technique; frame: Technique }>([
+  { canvas: 'loom', frame: 'peyote' },
+  { canvas: 'peyote', frame: 'loom' },
+  { canvas: 'loom', frame: 'brick' },
+])('a $frame Frame over a $canvas Canvas (ticket 492)', ({ canvas, frame }) => {
+  const origin = { x: 5 * CELL_SIZE_PX + rowShiftPx({ technique: canvas }, 6), y: rowTopPx(canvas, 6) }
+
+  it('draws the Frame\'s beads in its own Weave from the corner of the Canvas position it lies on, its first row straight', () => {
+    const painted = render(mixedProject(canvas, frame), true).beads.filter(({ color }) => color !== null)
+
+    expect(painted.map(({ x, y }) => ({ x, y }))).toEqual(
+      Array.from({ length: 12 }, (_, index) => {
+        const row = Math.floor(index / 3)
+        return { x: origin.x + rowShiftPx({ technique: frame }, row) + (index % 3) * CELL_SIZE_PX, y: origin.y + rowTopPx(frame, row) }
+      }),
+    )
+  })
+
+  it('draws it exactly as the Frame alone, only moved', () => {
+    const own = render(mixedProject(canvas, frame), false).beads.filter(({ color }) => color !== null)
+    const open = render(mixedProject(canvas, frame), true).beads.filter(({ color }) => color !== null)
+
+    expect(open.map(({ x, y }) => ({ x: x - origin.x, y: y - origin.y }))).toEqual(own.map(({ x, y }) => ({ x, y })))
+  })
+
+  it('counts Row progress in the Frame\'s Weave', () => {
+    const dimmed = render(mixedProject(canvas, frame), true).beads.filter(({ dimmed: faded }) => faded)
+
+    // Two passes done: whole rows 0 and 1 on loom and brick stitch; on peyote row 0 and the even beads of row 1.
+    expect(dimmed).toHaveLength(frame === 'peyote' ? 5 : 6)
+  })
+
+  it('hides the Canvas bead lying under the Frame, and draws the one beside it', () => {
+    const base = mixedProject(canvas, frame)
+    const project = { ...base, beads: withColors({}, [{ row: 6, column: 5, color: '#111111' }, { row: 6, column: 20, color: '#222222' }]) }
+
+    const colors = render(project, true).beads.map(({ color }) => color)
+
+    expect(colors).not.toContain('#111111')
+    expect(colors).toContain('#222222')
   })
 })

@@ -1,6 +1,7 @@
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { MirrorAxisCounts } from '../../domain/mirror'
+import { frameLayer, layerAt, positionInLayer, positionOnCanvas } from '../../domain/layers'
 import { isInFinishedRow, mirroredCells, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 
@@ -51,6 +52,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (tool !== 'paint') {
       // Fill is unaffected by mirror state (ticket 22), so its preview only ever shows the hovered cell itself.
       return [hovered]
+    }
+    // Mirror folds the Frame's own beads, counted in its Weave from its first position (ticket 492).
+    if (layerAt(project, hovered) === 'frame') {
+      const own = frameLayer(project)
+      return mirroredCells(own, positionInLayer(project, 'frame', hovered), deps.mirrorAxisCounts(), deps.mirrorCopyMode()).map((cell) => positionOnCanvas(project, 'frame', cell))
     }
     return mirroredCells(project, hovered, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
   }

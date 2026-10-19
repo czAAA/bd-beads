@@ -24,7 +24,7 @@ const block = (row: number, column: number, rows = 3, columns = 3): [number, num
   Array.from({ length: rows * columns }, (_, i) => [row + Math.floor(i / columns), column + (i % columns)])
 const project = (positions: [number, number][], frame?: Frame, technique: Technique = 'loom') => ({
   technique,
-  frame,
+  frame: frame && { ...frame, technique },
   beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
 })
 /** The Ruler layout of a Project in a view of the Canvas. */
@@ -63,7 +63,7 @@ describe('which boxes carry rulers', () => {
 
   it('is the Frame alone, on every side, once it is set, whatever pieces there are', () => {
     const { boxes } = layoutOf(project([...block(0, 0), ...block(10, 10)], { row: 2, column: 3, rows: 4, columns: 5 }))
-    expect(boxes).toEqual([{ row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'all' }])
+    expect(boxes).toEqual([{ technique: 'loom', row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'all' }])
   })
 
   it('leaves out a box far off screen', () => {
@@ -360,5 +360,29 @@ describe('rulers in Netting count diamonds (ticket 485)', () => {
     const row = labels.find((label) => label.axis === 'row' && label.text === '2')!
     expect(column.selection).toEqual({ top: 0, left: 4, rows: 7, columns: 5 })
     expect(row.selection).toEqual({ top: 2, left: 0, rows: 5, columns: 13 })
+  })
+})
+
+describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => {
+  // A peyote Frame of 3 rows × 4 columns at row 2, column 3 of a loom Canvas: its corner is at (60, 40).
+  const frame = { technique: 'peyote' as const, row: 2, column: 3, rows: 3, columns: 4 }
+  const subject = { technique: 'loom' as const, frame, beads: {} }
+  const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
+  const { labels } = rulerLayout(subject, surface, { fontPx: 11, numbers: true })
+
+  it('number the rows at the Frame\'s own pitch, from its corner', () => {
+    const rows = labels.filter((l) => l.axis === 'row' && l.x < 0 + 60)
+    expect(rows.map((l) => l.text)).toEqual(['1', '2', '3'])
+    expect(rows.map((l) => l.y)).toEqual([50, 65, 80])
+  })
+
+  it('number the columns across, the shifted second row not moving the top ruler', () => {
+    const columns = labels.filter((l) => l.axis === 'column' && l.y < 40)
+    expect(columns.map((l) => l.x)).toEqual([70, 90, 110, 130])
+  })
+
+  it('mark the row or column of the Frame a number selects by its Canvas positions', () => {
+    const second = labels.find((l) => l.axis === 'row' && l.text === '2')!
+    expect(second.selection).toMatchObject({ top: 3, left: 3, rows: 1, columns: 4 })
   })
 })

@@ -11,7 +11,7 @@ const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size:
 /** A 4 x 6 Frame at (20, 20) with a red bead in its first row, over a Canvas holding a green one under it. */
 const framed: Project = {
   ...base,
-  frame: { row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) },
+  frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) },
   beads: withColors({}, [{ row: 21, column: 21, color: GREEN }]),
 }
 
@@ -54,7 +54,7 @@ describe('useRotateFrameFlow (ticket 471, ADR 0066)', () => {
   })
 
   it('snaps the turned top row to an even row on peyote, as Rotate does', () => {
-    const peyote: Project = { ...framed, technique: 'peyote', frame: { row: 20, column: 20, rows: 4, columns: 9, beads: {} } }
+    const peyote: Project = { ...framed, technique: 'peyote', frame: { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 9, beads: {} } }
     const { harness, onRotateFrame } = setup(peyote)
     onRotateFrame()
     expect(harness.project.frame!.row % 2).toBe(0)

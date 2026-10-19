@@ -28,6 +28,8 @@ const {
   onRequestDeleteAllProjects,
   onSetTechnique,
   onSetBrickBlock,
+  onSetCanvasTechnique,
+  onSetCanvasBrickBlock,
   onFitFrame,
   replaceBeadCandidates,
   onRequestReplaceBead,
@@ -121,6 +123,8 @@ const {
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
       @set-brick-block="onSetBrickBlock"
+      @set-canvas-technique="onSetCanvasTechnique"
+      @set-canvas-brick-block="onSetCanvasBrickBlock"
       @replace-bead="onRequestReplaceBead"
       @save="onSave"
       @export-png="onExportPng"

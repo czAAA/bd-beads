@@ -5,7 +5,7 @@ import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { projectExtentPx } from './surfaceView'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows, beads: {} } })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
 describe('pngZoom (ticket 73)', () => {
   it('draws a bead at the legible size for an ordinary Project', () => {
