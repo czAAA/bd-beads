@@ -5,7 +5,7 @@ import { PANELS, type PanelId } from './panels'
 import { useI18n } from '../../i18n/useI18n'
 
 // The one place a PanelShell is mounted (ticket 510): shows the panel that is open, if it is one of `only`, set up from
-// its descriptor. The panel's content goes in the slots;.
+// its descriptor. The panel's content goes in the slots. Adding a panel is a descriptor in panels.ts and its content here or in PhoneSheets.
 const props = defineProps<{
   /** The open panel, or none. */
   open: PanelId | null
@@ -25,6 +25,7 @@ const panel = computed(() => (props.open && props.only.includes(props.open) ? PA
     :anchor="panel.anchor"
     :menu="panel.menu"
     :skips-fields="panel.skipsFields"
+    :width="panel.width"
     @close="emit('close')"
   >
     <template v-for="(_, name) in $slots" #[name]="slotProps">

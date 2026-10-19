@@ -8,7 +8,6 @@ import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ToolPill from '../tools/ToolPill.vue'
 import ConvertImageFrame from '../import/ConvertImageFrame.vue'
-import FrameBar from './FrameBar.vue'
 import FrameChrome from './FrameChrome.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
@@ -104,7 +103,6 @@ const {
   onProjectKey,
   onProjectKeyUp,
   onRotate,
-  onRotateFrame,
   onRotateCanvas,
   onSelectAll,
   toolPillPosition,
@@ -124,17 +122,13 @@ const {
   onRemoveSelectedLine,
   locale,
   settingFrame,
-  onResizeFrame,
-  frameBarShown,
   frameBarOpen,
   frameHandlesOn,
   onToggleFrameBar,
   surfaceInputMode,
   onFitFrame,
   onEditFrame,
-  onCloseFrameBar,
   onFrameKey,
-  onStepFrameEdge,
   onRemoveFrame,
   onResetProgress,
   frameDraftProject,
@@ -326,17 +320,6 @@ function techniqueWord(technique: Technique): string {
           @remove="onRemoveFrame"
           @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
-        />
-
-        <FrameBar
-          v-if="activeProject && frameBarShown && !framing"
-          :project="activeProject"
-          @step="onStepFrameEdge"
-          @resize="onResizeFrame"
-          @rotate="onRotateFrame"
-          @remove="onRemoveFrame"
-          @key="onFrameKey"
-          @close="onCloseFrameBar"
         />
 
         <div class="app-shell__canvas-row">
