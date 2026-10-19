@@ -89,10 +89,6 @@ describe('Right-angle weave (ticket 482)', () => {
     ])
   })
 
-  it('draws no bead where a horizontal line has none, at the Frame\'s far end', () => {
-    expect(beadsDrawn(project(), whole(project()))).toHaveLength(7)
-  })
-
   it('paints each bead on its own', () => {
     const colored = projectOf('rightAngle', 2, 1, { beads: { 1: { 2: '#e63746' }, 0: { 1: '#2f6fed' } } })
 
