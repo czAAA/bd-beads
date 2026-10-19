@@ -13,7 +13,9 @@ export const MAX_BRICK_BLOCK = 20
 
 /** The beads in one Netting loop, odd (ticket 485): the middle one is shared with the next row. */
 export const MIN_NET_SIZE = 3
+/** The most beads in a Netting loop. */
 export const MAX_NET_SIZE = 9
+/** The Net size a new Netting Project starts with. */
 export const DEFAULT_NET_SIZE = 3
 
 /** A Net size the Weave can lay out: odd, from 3 to 9; anything else is the default. */
@@ -69,6 +71,8 @@ const RIGHT_ANGLE_ASPECT = 0.7
 /** How far a Netting strand steps across and down per position, in beads: a bead on a diagonal sits a little over a
  * bead away from the next (0.75 · √2 ≈ 1.06). */
 const NETTING_STEP = 0.75
+/** A bead's face reaches half a cell from its centre: squared, in cells, for a round bead's hit test. */
+const BEAD_FACE_DISTANCE = 0.25
 
 const RULES: Record<Technique, TechniqueRules> = {
   loom: {
@@ -405,7 +409,7 @@ function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescri
     // A press lands on a bead only inside its round face.
     positionAt: (x, y, cellWidth, cellHeight) => {
       const found = nearest(x, y, cellWidth, cellHeight, 1)
-      return found && found.distance <= 0.25 ? found.position : undefined
+      return found && found.distance <= BEAD_FACE_DISTANCE ? found.position : undefined
     },
     nearestPosition: (x, y, cellWidth, cellHeight) => nearest(x, y, cellWidth, cellHeight, p + 1)?.position ?? { row: 0, column: 0 },
     rowsPerUnit: p,
