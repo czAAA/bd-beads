@@ -26,10 +26,10 @@ function setup(project: Project | null = sized) {
   return { deps: { ...deps, replaceProject: harness.replaceProject, harness }, ...useFrameFlow(deps) }
 }
 
-/** A flow whose Frame bar the weaver has opened, so the handles are on. */
+/** A flow whose handles the weaver has turned on with the edit pencil. */
 function setupEditing(project: Project | null = sized) {
   const flow = setup(project)
-  flow.toggleEdit()
+  flow.toggleHandles()
   return flow
 }
 
@@ -108,13 +108,13 @@ describe('useFrameFlow', () => {
 
   it('resizing is refused once Row progress is on and a pass is done (ticket 411)', () => {
     const locked = moveToRow(sized, 1)
-    const { deps, frameLocked, settingFrame, press, drag, release, stepEdge, toggleEdit, remove } = setup(locked)
+    const { deps, frameLocked, settingFrame, press, drag, release, stepEdge, toggleHandles, remove } = setup(locked)
     expect(frameLocked.value).toBe(true)
     press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 0, column: 0 })
     drag({ row: 1, column: 1 })
     release()
     stepEdge('right', 1)
-    toggleEdit()
+    toggleHandles()
     expect(settingFrame.value).toBe(false)
     expect(deps.replaceProject).not.toHaveBeenCalled()
     // Remove Frame is the way out: it asks first, and does nothing until confirmed (ticket 426).
@@ -187,36 +187,29 @@ describe('useFrameFlow', () => {
   })
 
   it('has the bar closed by default and toggles it (tickets 452, 473)', () => {
-    const { settingFrame, toggleEdit } = setup()
+    const { settingFrame, toggleHandles } = setup()
     expect(settingFrame.value).toBe(false)
-    toggleEdit()
+    toggleHandles()
     expect(settingFrame.value).toBe(true)
-    toggleEdit()
+    toggleHandles()
     expect(settingFrame.value).toBe(false)
-    toggleEdit()
+    toggleHandles()
     expect(settingFrame.value).toBe(true)
   })
 
-  it('remembers whether the edit pencil or the strip opened the bar, so it hangs from that one (ticket 475)', () => {
-    const { barFrom, toggleEdit } = setup()
-    toggleEdit('pencil')
-    expect(barFrom.value).toBe('pencil')
-    toggleEdit()
-    toggleEdit()
-    expect(barFrom.value).toBe('strip')
-  })
-
-  it('shows the bar only when opened, once a pass is done too, with no handles then, and closes it (tickets 473, 475)', () => {
+  it('shows the bar only when opened, apart from the handles, once a pass is done too, and closes it (tickets 473, 475, 510)', () => {
     const closed = setup()
     expect(closed.barShown.value).toBe(false)
-    closed.toggleEdit()
+    closed.toggleBar()
     expect(closed.barShown.value).toBe(true)
-    closed.closeEdit()
+    closed.closeBar()
     expect(closed.barShown.value).toBe(false)
     const done = setup(moveToRow(sized, 1))
     expect(done.barShown.value).toBe(false)
-    done.toggleEdit()
+    done.toggleBar()
     expect([done.barShown.value, done.settingFrame.value]).toEqual([true, false])
+    done.toggleHandles()
+    expect(done.settingFrame.value).toBe(false)
     expect(setup(open).barShown.value).toBe(false)
   })
 
@@ -239,8 +232,8 @@ describe('useFrameFlow', () => {
 
   it('has no edit with no Project open, with no Frame, or once Row progress holds the Frame; it is on again when the passes are reset (tickets 411, 452)', () => {
     for (const project of [null, open, moveToRow(sized, 1)]) {
-      const { settingFrame, toggleEdit } = setup(project)
-      toggleEdit()
+      const { settingFrame, toggleHandles } = setup(project)
+      toggleHandles()
       expect(settingFrame.value).toBe(false)
     }
   })
