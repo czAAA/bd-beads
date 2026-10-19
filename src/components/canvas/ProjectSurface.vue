@@ -171,6 +171,11 @@ function releasePointer(event?: PointerEvent) {
   if (activePointers.size === 0 && !wheeling) emit('pressing', false)
 }
 
+/** Capture lost or the window blurred: no pointer is down any more, so the bar must not stay away (ticket 503). */
+function dropPressedPointers() {
+  releasePointer()
+}
+
 function onFocus() {
   if (!pressed) emit('keyboard-focus', true)
 }
@@ -892,6 +897,8 @@ function onPointerDown(event: PointerEvent): void {
   }
 
   if (event.button === 0) {
+    // A press that starts a Selection is captured, so its release is delivered even off the canvas (ticket 503).
+    if (props.selecting) rootEl.value?.setPointerCapture?.(event.pointerId)
     // A press on a finished row never draws (the lock), and, while its dimming shows, toggles the finished rows between dimmed and normal.
     if (marksShown.value && isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
       finishedRestored.value = !finishedRestored.value
@@ -1025,6 +1032,7 @@ onMounted(() => {
     resizeObserver.observe(rootEl.value)
   }
   window.addEventListener('resize', measure, { passive: true })
+  window.addEventListener('blur', dropPressedPointers)
 })
 
 onBeforeUnmount(() => {
@@ -1037,6 +1045,7 @@ onBeforeUnmount(() => {
   pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
   resizeObserver?.disconnect()
   window.removeEventListener('resize', measure)
+  window.removeEventListener('blur', dropPressedPointers)
 })
 </script>
 
@@ -1072,6 +1081,7 @@ onBeforeUnmount(() => {
     @pointermove="onPointerMove"
     @pointerup="onPointerEnd"
     @pointercancel="onPointerCancel"
+    @lostpointercapture="onPointerEnd"
     @pointerleave="onPointerLeave"
     @wheel="onWheel"
     @contextmenu.prevent

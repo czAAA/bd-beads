@@ -366,6 +366,31 @@ describe('ProjectSurface', () => {
       }
     })
 
+    it('captures the pointer of a press that starts a Selection, so its release is delivered (ticket 503)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { selecting: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const capture = vi.fn()
+      Object.assign(surface.element, { setPointerCapture: capture })
+
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, pointerType: 'mouse', pointerId: 4, button: 0, buttons: 1 })
+
+      expect(capture).toHaveBeenCalledWith(4)
+    })
+
+    it('says the press is over when capture is lost or the window loses focus (ticket 503)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { selecting: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, pointerType: 'mouse', pointerId: 4, button: 0, buttons: 1 })
+      surface.element.dispatchEvent(Object.assign(new Event('lostpointercapture'), { pointerId: 4 }))
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, pointerType: 'mouse', pointerId: 4, button: 0, buttons: 1 })
+      window.dispatchEvent(new Event('blur'))
+
+      expect(wrapper.emitted('pressing')).toEqual([[true], [false], [true], [false]])
+    })
+
     it('keeps the browser from scrolling the page behind it', async () => {
       const { wrapper } = await mountSurface(projectOf(20, 10))
       const event = new WheelEvent('wheel', { deltaY: 40, cancelable: true, bubbles: true })
