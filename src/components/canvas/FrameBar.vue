@@ -1,30 +1,21 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import PanelHost from '../shell/PanelHost.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
-import { useElementSize } from '../../composables/ui/useElementSize'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { frameWeave, rowProgressStarted, type Project } from '../../domain/project'
 import { describeWeave } from '../../domain/weave'
-import { carriedFrameBarSpot, frameBarSpot, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame bar (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
-// edge. It is a panel like Menu and Project (PanelHost): from the strip's Frame button, or from the edit pencil that
-// opened it, which it follows; a press outside or Escape closes it, a Frame handle's press does not.
+// edge. It is a panel like Menu and Project (PanelHost): from the strip's Frame button only (the edit pencil on the Frame
+// shows the handles and is a separate control); a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
-  /** Where the Frame is on the canvas box: the bar is placed beside it once (ticket 500) and then follows the view only. */
-  anchor?: FrameAnchor
-  /** Whether the edit pencil opened the bar: it is then a dropdown at every width, not the Top sheet. */
-  fromPencil?: boolean
-  /** Whether a press outside grabs the Frame on the canvas (a resize handle), so the bar stays. */
-  grabsFrame?: (event: PointerEvent) => boolean
 }>()
 
 const emit = defineEmits<{
@@ -34,8 +25,6 @@ const emit = defineEmits<{
   remove: []
   key: [event: KeyboardEvent]
   close: []
-  /** The bar's rectangle in the drawing area's pixels, or none once it is gone: what the Move handle keeps clear of. */
-  rect: [rect: BarBox | undefined]
 }>()
 
 const { t } = useI18n()
@@ -58,54 +47,6 @@ const cells = FRAME_EDGES.map((edge) => {
   })
   return { edge, out: controlAction(`frame-edge-${edge}-out`), in: controlAction(`frame-edge-${edge}-in`), shrink: hold.handlers(-1), grow: hold.handlers(1) }
 })
-const barEl = ref<HTMLElement>()
-const size = useElementSize(barEl)
-const shell = ref<InstanceType<typeof PanelHost>>()
-const wide = useMediaQuery('(min-width: 1024px)')
-/** Where the bar hangs when the Frame is not known: under the edit pencil at every width, else the descriptor's strip button. */
-const placement = computed(() => (props.fromPencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : undefined))
-
-// Ticket 500: with the Frame known, the bar is placed once beside it (below, above, right, left), then only pan and zoom
-// carry it. Stepping or resizing the Frame leaves it where it is. The Top sheet under 1024px is not placed.
-const positioned = !!props.anchor && (wide.value || !!props.fromPencil)
-const barSize = ref<{ width: number; height: number }>()
-const placed = ref<{ left: number; top: number; origin?: BarBox }>()
-/** The bar's spot in the page's pixels, none until it is measured. */
-const at = computed(() => {
-  const view = props.anchor
-  const area = document.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
-  if (!placed.value || !barSize.value || !view || !area) return null
-  const { origin } = placed.value
-  const spot = origin && view.origin ? carriedFrameBarSpot(placed.value, origin, view.origin, barSize.value, view.viewport) : placed.value
-  return { left: area.left + spot.left, top: area.top + spot.top }
-})
-
-/** A press on the Move handle or the pencil, or one that grabs a resize handle, works the Frame: the bar stays. */
-function keepsPress(event: PointerEvent): boolean {
-  const onChrome = event.target instanceof Element && event.target.closest('[data-testid="frame-chrome"]') !== null
-  return onChrome || (props.grabsFrame?.(event) ?? false)
-}
-
-/** The panel's rectangle in the drawing area's pixels. */
-function measure(): BarBox | undefined {
-  const bar = shell.value?.el?.getBoundingClientRect()
-  const area = document.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
-  return bar && area && bar.width > 0 ? { left: bar.left - area.left, top: bar.top - area.top, width: bar.width, height: bar.height } : undefined
-}
-// The shell sets its box after mount and on every move, so it is measured once the box has reached the page.
-watch(
-  [size.width, size.height, () => shell.value?.box],
-  () =>
-    void nextTick(() => {
-      const rect = measure()
-      if (rect && !barSize.value) barSize.value = { width: rect.width, height: rect.height }
-      if (rect && positioned && !placed.value && props.anchor) placed.value = { ...frameBarSpot(props.anchor.box, rect, props.anchor.viewport), origin: props.anchor.origin }
-      emit('rect', rect)
-    }),
-  { immediate: true, flush: 'post' },
-)
-onBeforeUnmount(() => emit('rect', undefined))
-
 /** The width and height fields start empty (their placeholders show the current size), so a tablet's keyboard only opens
  * on a tap. They take whole numbers from 1 up; Enter or leaving both takes them, an empty one keeps its side, Escape clears. */
 const typedWidth = ref('')
@@ -152,16 +93,12 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
 <template>
   <PanelHost
-    ref="shell"
     open="frame"
     :only="['frame']"
-    :placement="placement"
-    :at="positioned ? at : undefined"
     width="min(calc(100vw - 2 * var(--frame-bar-gap)), var(--frame-bar-width))"
-    :keeps-press="keepsPress"
     @close="emit('close')"
   >
-    <div ref="barEl" class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
+    <div class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
       <div class="frame-bar__head">
         <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
         <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
