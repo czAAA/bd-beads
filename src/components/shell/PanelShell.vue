@@ -4,6 +4,7 @@ import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { PANEL_CONTEXT } from './panelContext'
+import { PANEL_OPENERS } from './panels'
 import IconButton from '../ui/IconButton.vue'
 import { useI18n } from '../../i18n/useI18n'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
@@ -69,7 +70,7 @@ const titleId = useId()
 const panelEl = ref<HTMLElement>()
 const anchorEl = ref<HTMLElement>()
 /** The buttons that open, swap or close a panel themselves, so a press on one is not a press outside. */
-const OPENERS = '[data-testid="strip-menu"], [data-testid="strip-project"], [data-testid="strip-frame"], [data-testid="frame-edit-toggle"]'
+const OPENERS = PANEL_OPENERS
 
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
 /** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
