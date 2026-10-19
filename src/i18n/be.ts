@@ -368,8 +368,6 @@ export const be: Translations = {
     pieceLabel: 'Вылучыць кавалачак',
     selectAllLabel: 'Вылучыць усё',
     copyButton: 'Капіраваць',
-    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
-    copyNothingMessage: 'У вылучэнні няма пацерак для капіравання.',
     pasteClippedMessage: {
       one: '{count} пацерка не змясцілася ў рамку.',
       few: '{count} пацеркі не змясціліся ў рамку.',
@@ -662,6 +660,8 @@ export const be: Translations = {
     zoomInLimit: 'Далей павялічваць няма куды.',
     nothingToRedo: 'Няма чаго паўтараць.',
     copyDisabled: 'Спачатку вылучыце вобласць.',
+    copyNoBeads: 'У вылучэнні няма пацерак для капіравання.',
+    cutNoBeads: 'У вылучэнні няма пацерак для выразання.',
     fillSelection: 'Залівае вылучэнне бягучым колерам.',
     frameFromSelection: 'Робіць вылучэнне рамкай.',
     pasteDisabled: 'Спачатку скапіруйце вобласць.',

@@ -367,8 +367,6 @@ export const es: Translations = {
     pieceLabel: 'Seleccionar un trozo',
     selectAllLabel: 'Seleccionar todo',
     copyButton: 'Copiar',
-    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
-    copyNothingMessage: 'No hay cuentas en la selección para copiar.',
     pasteClippedMessage: {
       one: 'No cupo {count} cuenta en el marco.',
       many: 'No cupieron {count} de cuentas en el marco.',
@@ -659,6 +657,8 @@ export const es: Translations = {
     zoomInLimit: 'Ya está acercado al máximo.',
     nothingToRedo: 'No hay nada que rehacer.',
     copyDisabled: 'Selecciona primero una zona.',
+    copyNoBeads: 'No hay cuentas en la selección para copiar.',
+    cutNoBeads: 'No hay cuentas en la selección para cortar.',
     fillSelection: 'Rellena la selección con el color actual.',
     frameFromSelection: 'Convierte la selección en el marco.',
     pasteDisabled: 'Copia primero una zona.',

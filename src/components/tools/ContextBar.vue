@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
@@ -11,7 +11,7 @@ import { controlAction, controlDeps, type ControlAction } from '../../composable
 import { rowProgressStarted, type Project } from '../../domain/project'
 import { describeWeave } from '../../domain/weave'
 import { canvasWeave, frameWeave } from '../../domain/project'
-import { selectionLayer, type Selection } from '../../domain/selection'
+import { copyLayerSelection, selectionLayer, type Selection } from '../../domain/selection'
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
 // clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
@@ -86,12 +86,29 @@ const deps = computed(() =>
   controlDeps({
     activeProject: () => props.project,
     hasSelection: () => props.selectionSummary !== undefined,
+    selectionHasBeads: () => !!props.selection && copyLayerSelection(props.project, props.selection) !== undefined,
     hasClipboard: () => !!props.hasClipboard,
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
     hasPaintColor: () => props.hasPaintColor,
   }),
 )
+
+/** A stylus tap that selects must not also press a bar button: the bar shows disabled, with no Tooltip, for this long
+ * after every new, resized or moved Selection (ticket 499). Keyboard shortcuts don't read it. */
+const ARMING_DELAY_MS = 350
+const armed = ref(false)
+let armingTimer: ReturnType<typeof setTimeout> | undefined
+watch(
+  () => props.selection && { ...props.selection },
+  () => {
+    armed.value = false
+    clearTimeout(armingTimer)
+    armingTimer = setTimeout(() => (armed.value = true), ARMING_DELAY_MS)
+  },
+  { immediate: true, deep: true },
+)
+onBeforeUnmount(() => clearTimeout(armingTimer))
 
 /** Touch gets the taller bar with bigger icons (ContextBar card). */
 const touch = useMediaQuery('(pointer: coarse)')
@@ -159,8 +176,8 @@ const placement = computed(() => {
 const placedStyle = computed(() => (placement.value ? { left: `${placement.value.left}px`, top: `${placement.value.top}px` } : undefined))
 
 /** A folded item is disabled by the same rule as its button would be, and says why on hover. */
-const isDisabled = (item: BarItem) => (item.action.enabled ? !item.action.enabled(deps.value) : false)
-const disabledReason = (item: BarItem) => (isDisabled(item) ? item.action.disabledBody?.(t.value, deps.value) : undefined)
+const isDisabled = (item: BarItem) => !armed.value || (item.action.enabled ? !item.action.enabled(deps.value) : false)
+const disabledReason = (item: BarItem) => (armed.value && isDisabled(item) ? item.action.disabledBody?.(t.value, deps.value) : undefined)
 
 /** Gesturing with a size to show: only the readout, no buttons. */
 const compact = computed(() => !!props.gesturing && !!props.sizeOnly && props.selectionSummary !== undefined)
@@ -189,6 +206,7 @@ const showing = computed(() => props.selectionSummary !== undefined)
         :icon-size="iconSize"
         :action="item.action"
         :deps="deps"
+        :disabled="armed ? undefined : true"
         :data-testid="`context-bar-${item.id}`"
         :data-tour="item.id === 'copy' || item.id === 'remove-line' ? item.id : undefined"
         @click="item.run()"

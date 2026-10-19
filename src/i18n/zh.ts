@@ -366,8 +366,6 @@ export const zh: Translations = {
     pieceLabel: '选中小块',
     selectAllLabel: '全选',
     copyButton: '复制',
-    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
-    copyNothingMessage: '所选区域内没有可复制的珠子。',
     pasteClippedMessage: {
       other: '{count} 颗珠子超出边框，未放入。',
     },
@@ -649,6 +647,8 @@ export const zh: Translations = {
     zoomInLimit: '已放大到最大。',
     nothingToRedo: '没有可重做的操作。',
     copyDisabled: '请先选择一个区域。',
+    copyNoBeads: '所选区域内没有可复制的珠子。',
+    cutNoBeads: '所选区域内没有可剪切的珠子。',
     fillSelection: '用当前颜色填充选区。',
     frameFromSelection: '将选区设为边框。',
     pasteDisabled: '请先复制一个区域。',

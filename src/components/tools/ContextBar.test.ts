@@ -1,15 +1,23 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ContextBar from './ContextBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, moveToRow, withFrame } from '../../domain/project'
+import { createProject, moveToRow, paintCells, withFrame } from '../../domain/project'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
+const drawn = paintCells(noFrame, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+const selection = { top: 0, left: 0, rows: 2, columns: 2 }
+const arm = () => vi.advanceTimersByTimeAsync(350)
 
 describe('ContextBar', () => {
   beforeEach(() => {
     localStorage.setItem('openbeads:locale', 'en')
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('is absent with neither a Selection nor an armed paste', () => {
@@ -26,14 +34,16 @@ describe('ContextBar', () => {
     const wrapper = mount(ContextBar, { props: { project, pasteArmed: false, canRemoveLine: false, selectActive: true, selectionSummary: '2×2' } })
     const first = wrapper.findAll('button[data-testid]')[0]!
     expect(first.attributes('data-testid')).toBe('context-bar-select-all')
+    await arm()
     await first.trigger('click')
     expect(wrapper.emitted('select-all')).toHaveLength(1)
   })
 
   it('shows the size readout, then Copy, Cut, Fill, Frame, Rotate and Clear selection, icon-only', async () => {
     const wrapper = mount(ContextBar, {
-      props: { project: noFrame, selectionSummary: '3×5 ≈ 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
+      props: { project: drawn, selection, selectionSummary: '3×5 ≈ 0.5 × 0.8 cm', pasteArmed: false, canRemoveLine: false },
     })
+    await arm()
 
     expect(wrapper.get('[data-testid="context-bar-size"]').text()).toBe('3×5 ≈ 0.5 × 0.8 cm')
     const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
@@ -55,6 +65,7 @@ describe('ContextBar', () => {
 
     const ids = wrapper.findAll('button[data-testid]').map((button) => button.attributes('data-testid'))
     expect(ids.slice(0, 3)).toEqual(['context-bar-copy', 'context-bar-cut', 'context-bar-paste'])
+    await arm()
     await wrapper.get('[data-testid="context-bar-paste"]').trigger('click')
     expect(wrapper.emitted('paste')).toHaveLength(1)
 
@@ -71,6 +82,31 @@ describe('ContextBar', () => {
     expect(wrapper.emitted('fill')).toBeUndefined()
   })
 
+  it('shows disabled with no Tooltip for 350 ms after each new Selection, then enables; a moved Selection restarts it (ticket 499)', async () => {
+    const wrapper = mount(ContextBar, { props: { project: drawn, selection, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false } })
+    const copy = () => wrapper.get('[data-testid="context-bar-copy"]')
+
+    expect(copy().attributes('aria-disabled')).toBe('true')
+    await vi.advanceTimersByTimeAsync(349)
+    expect(copy().attributes('aria-disabled')).toBe('true')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(copy().attributes('aria-disabled')).toBeUndefined()
+
+    await wrapper.setProps({ selection: { ...selection, rows: 3 } })
+    expect(copy().attributes('aria-disabled')).toBe('true')
+    await arm()
+    expect(copy().attributes('aria-disabled')).toBeUndefined()
+  })
+
+  it('disables Copy and Cut on a Selection with no drawn bead (ticket 499)', async () => {
+    const wrapper = mount(ContextBar, { props: { project: noFrame, selection, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false } })
+    await arm()
+
+    expect(wrapper.get('[data-testid="context-bar-copy"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="context-bar-cut"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="context-bar-fill"]').attributes('aria-disabled')).toBeUndefined()
+  })
+
   it('has no Add or Subtract toggle', () => {
     const wrapper = mount(ContextBar, { props: { project, selectionSummary: '1×1', pasteArmed: false, canRemoveLine: false } })
     expect(wrapper.text()).not.toMatch(/add|subtract/i)
@@ -81,11 +117,13 @@ describe('ContextBar', () => {
       props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true },
     })
 
+    await arm()
     expect(project.frame).toBeDefined()
     expect(wrapper.get('[data-testid="context-bar-frame"]').attributes('aria-label')).toBe('Frame')
     expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()
 
+    await arm()
     await wrapper.get('[data-testid="context-bar-remove-line"]').trigger('click')
     expect(wrapper.emitted('remove-line')).toHaveLength(1)
   })
@@ -93,6 +131,7 @@ describe('ContextBar', () => {
   it('keeps Name piece on the bar, with no Tool sheet to carry it (ticket 431)', async () => {
     const wrapper = mount(ContextBar, { props: { project, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, canNamePiece: true } })
 
+    await arm()
     await wrapper.get('[data-testid="context-bar-name-piece"]').trigger('click')
     expect(wrapper.emitted('name-piece')).toHaveLength(1)
   })
@@ -138,6 +177,7 @@ describe('ContextBar', () => {
   it('offers Rotate with a Selection, and not once a Row progress pass is done (tickets 411, 416)', async () => {
     const props = { selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true }
     const wrapper = mount(ContextBar, { props: { ...props, project } })
+    await arm()
     await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
     expect(wrapper.emitted('rotate')).toHaveLength(1)
 

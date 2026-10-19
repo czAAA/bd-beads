@@ -378,8 +378,6 @@ export const ru: Translations = {
     pieceLabel: 'Выделить кусочек',
     selectAllLabel: 'Выделить всё',
     copyButton: 'Копировать',
-    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
-    copyNothingMessage: 'В выделении нет бусин для копирования.',
     pasteClippedMessage: {
       one: '{count} бусина не поместилась в рамку.',
       few: '{count} бусины не поместились в рамку.',
@@ -672,6 +670,8 @@ export const ru: Translations = {
     zoomInLimit: 'Дальше увеличивать некуда.',
     nothingToRedo: 'Нечего повторять.',
     copyDisabled: 'Сначала выделите область.',
+    copyNoBeads: 'В выделении нет бусин для копирования.',
+    cutNoBeads: 'В выделении нет бусин для вырезания.',
     fillSelection: 'Заливает выделение текущим цветом.',
     frameFromSelection: 'Делает выделение рамкой.',
     pasteDisabled: 'Сначала скопируйте область.',

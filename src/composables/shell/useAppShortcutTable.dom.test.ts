@@ -8,6 +8,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     activeProject: () => undefined,
     activeTool: () => 'paint',
     hasSelection: () => false,
+    selectionHasBeads: () => false,
     canUndo: () => true,
     canRedo: () => true,
     hasClipboard: () => true,
