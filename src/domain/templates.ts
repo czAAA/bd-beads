@@ -1,4 +1,4 @@
-import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, FLAT_TECHNIQUES, TECHNIQUE_IDS, TECHNIQUES, type Technique } from './weave'
+import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, FLAT_TECHNIQUES, NARROW_TEMPLATE_TECHNIQUES, TECHNIQUES, type Technique } from './weave'
 import type { CreateProjectInput } from './project'
 
 /** The Templates New Project offers (ticket 493, spec 0488). The id is also the key of its copy (`templates.<id>` in
@@ -46,8 +46,8 @@ export const TEMPLATES: readonly Template[] = [
   },
   {
     id: 'earrings',
-    technique: TECHNIQUE_IDS.peyote,
-    techniques: [TECHNIQUE_IDS.peyote, TECHNIQUE_IDS.brick, TECHNIQUE_IDS.loom],
+    technique: NARROW_TEMPLATE_TECHNIQUES[0],
+    techniques: NARROW_TEMPLATE_TECHNIQUES,
     width: { default: 10, min: 10, max: 10, lock: true },
     height: { default: 48, min: 12, max: 120, presets: [32, 48, 64] },
   },

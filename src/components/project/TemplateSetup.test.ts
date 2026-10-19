@@ -32,7 +32,7 @@ describe('the Template setup', () => {
   it('offers only the Techniques the Template can be woven in', () => {
     const wrapper = mountSetup(templateById('earrings'))
 
-    expect(wrapper.findAll('[data-testid="template-technique"] [role="radio"]').map((option) => option.text())).toEqual(['Peyote', 'Brick stitch', 'Loom'])
+    expect(wrapper.findAll('[data-testid="template-technique"] [role="radio"]').map((option) => option.text())).toEqual(['Peyote', 'Loom', 'Brick stitch'])
   })
 
   it('hides the Technique choice when there is only one', () => {
