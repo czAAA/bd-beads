@@ -91,6 +91,17 @@ describe('renderOverlay', () => {
       expect(ringRects(calls)).toHaveLength(2)
     })
 
+    it('rings every bead of a line of Units in Right-angle weave, horizontal and vertical (ticket 484)', () => {
+      const project = projectOf('rightAngle', 3, 7, { currentRow: 1 })
+      project.frame!.beads = { 3: { 0: '#e63746', 1: '#e63746', 2: '#e63746' }, 4: { 0: '#e63746', 1: '#e63746' }, 2: { 0: '#e63746' } }
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      // Pass 1 weaves rows 3 and 4; the shared row 2 was woven in pass 0.
+      expect(ringRects(calls)).toHaveLength(5)
+    })
+
     it('keeps the last row\'s rings inside the Project, with no clamping needed', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 4 })
       const { context, calls } = recordingContext()
