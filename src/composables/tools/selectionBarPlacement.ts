@@ -92,6 +92,29 @@ export function editPencilCentre(anchor: FrameAnchor): { x: number; y: number } 
   return { x: within(box.left + box.width, PENCIL_HIT_PX, viewport.width), y: within(gutterY(anchor, PENCIL_HIT_PX), PENCIL_HIT_PX, viewport.height) }
 }
 
+/** Where Remove Frame goes (ticket 498): right after the edit pencil, one hit area to its right, or to its left when
+ * the canvas box has no room there; kept inside the canvas box. */
+export function removeFrameCentre(anchor: FrameAnchor): { x: number; y: number } {
+  const pencil = editPencilCentre(anchor)
+  const right = pencil.x + PENCIL_HIT_PX
+  const x = right + PENCIL_HIT_PX / 2 <= anchor.viewport.width ? right : pencil.x - PENCIL_HIT_PX
+  return { x: within(x, PENCIL_HIT_PX, anchor.viewport.width), y: pencil.y }
+}
+
+/** How far a Selection's handles reach past its edge, in screen px (a finger's 35). */
+const SELECTION_HANDLE_REACH_PX = 35
+
+/** Whether a control's hit area (`centre`, `size` square) lies where a Selection's handles can be pressed, so the
+ * handle wins the press (ticket 498). */
+export function overlapsSelectionHandles(centre: { x: number; y: number }, size: number, selection: BarBox): boolean {
+  const reach = SELECTION_HANDLE_REACH_PX
+  const handles: BarBox = { left: selection.left - reach, top: selection.top - reach, width: selection.width + 2 * reach, height: selection.height + 2 * reach }
+  const inside: BarBox = { left: selection.left + reach, top: selection.top + reach, width: selection.width - 2 * reach, height: selection.height - 2 * reach }
+  const hit = around(centre, size, size)
+  const coveredWhole = inside.width > 0 && inside.height > 0 && hit.left >= inside.left && hit.top >= inside.top && hit.left + hit.width <= inside.left + inside.width && hit.top + hit.height <= inside.top + inside.height
+  return overlaps(hit, handles) && !coveredWhole
+}
+
 /** Where the Move handle goes (ticket 473, ADR 0066): in the gutter above the Frame, centred on its top edge, or below
  * it when there is no room above; kept inside the canvas box. Only its centre moves with the zoom; it slides clear of
  * the edit pencil and the Frame bar (`bar`) where they would cover it. */
@@ -99,7 +122,7 @@ export function moveHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: number
   const { box, viewport } = anchor
   const pos = (x: number, y: number) => ({ x: within(x, HANDLE_HIT_WIDTH_PX, viewport.width), y: within(y, HANDLE_HIT_HEIGHT_PX, viewport.height) })
   const natural = pos(box.left + box.width / 2, gutterY(anchor, HANDLE_HIT_HEIGHT_PX))
-  const obstacles = [around(editPencilCentre(anchor), PENCIL_HIT_PX, PENCIL_HIT_PX), ...(bar ? [bar] : [])]
+  const obstacles = [around(editPencilCentre(anchor), PENCIL_HIT_PX, PENCIL_HIT_PX), around(removeFrameCentre(anchor), PENCIL_HIT_PX, PENCIL_HIT_PX), ...(bar ? [bar] : [])]
   const hits = (point: { x: number; y: number }) => obstacles.some((obstacle) => overlaps(around(point, HANDLE_HIT_WIDTH_PX, HANDLE_HIT_HEIGHT_PX), obstacle))
   if (!hits(natural)) return natural
   const halfW = HANDLE_HIT_WIDTH_PX / 2
