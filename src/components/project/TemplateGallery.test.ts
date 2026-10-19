@@ -35,9 +35,9 @@ describe('the Template gallery', () => {
     expect(wrapper.find('[data-testid="template-card-blank"] [data-testid="template-spec"]').exists()).toBe(false)
   })
 
-  it('shows a picture on each Template card until artwork fills the slot', () => {
+  it('shows a picture on each Template card with a generated sample', () => {
     const wrapper = mountGallery()
-    expect(wrapper.findAll('svg.template-picture')).toHaveLength(5)
+    expect(wrapper.findAll('canvas.template-picture')).toHaveLength(5)
   })
 
   it('tells which Template a tap chose', async () => {

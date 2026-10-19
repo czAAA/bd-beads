@@ -13,6 +13,7 @@ import FieldSelect from '../ui/form/FieldSelect.vue'
 import FormField from '../ui/form/FormField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
+import TemplatePicture from './TemplatePicture.vue'
 import BrickBlockField from './BrickBlockField.vue'
 
 // The Template setup (ticket 493, spec 0488; TemplateGallery card): Name, Bead, the allowed Techniques (no choice when
@@ -93,6 +94,13 @@ function onSubmit() {
 
 <template>
   <form id="template-setup-form" class="template-setup" novalidate data-testid="template-setup" @submit.prevent="onSubmit">
+    <div class="template-setup__sample">
+      <span class="template-setup__picture">
+        <TemplatePicture :technique="technique" :columns="template.width.default" :rows="template.height.default" :seed-text="template.id" />
+      </span>
+      <AppNote data-testid="template-sample-note">{{ t.templates.sampleNote }}</AppNote>
+    </div>
+
     <FormField :label="t.form.nameLabel" label-for="template-name-input" :aside="t.form.optional">
       <TextField
         id="template-name-input"
@@ -173,6 +181,18 @@ function onSubmit() {
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
+}
+
+.template-setup__sample {
+  display: flex;
+  gap: var(--space-12);
+  align-items: center;
+}
+
+.template-setup__picture {
+  flex: none;
+  width: 6rem;
+  height: 6rem;
 }
 
 .template-setup__side {

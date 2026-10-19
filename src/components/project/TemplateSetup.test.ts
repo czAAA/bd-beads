@@ -13,6 +13,13 @@ const mountSetup = (template: Template) => mount(TemplateSetup, { props: { templ
 const value = (wrapper: ReturnType<typeof mountSetup>, testId: string) => wrapper.get(`[data-testid="${testId}"]`).text()
 
 describe('the Template setup', () => {
+  it('shows a sample picture and says the Frame starts empty', () => {
+    const wrapper = mountSetup(templateById('gerdan'))
+
+    expect(wrapper.find('canvas.template-picture').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="template-sample-note"]').text()).toBe(en.templates.sampleNote)
+  })
+
   it('names the Template in the Name field and starts at its default size and Technique', () => {
     const wrapper = mountSetup(templateById('gerdan'))
 

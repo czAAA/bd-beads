@@ -164,6 +164,7 @@ export const pl: Translations = {
     galleryLabel: 'Zacznij od',
     presetsLabel: 'Zwykłe rozmiary',
     fixedNote: 'Ten bok jest stały.',
+    sampleNote: 'To tylko przykład. Rama zaczyna się pusta.',
     specLine: '{width} × {height} · {technique}',
     blank: { name: 'Puste płótno', description: 'Rysuj swobodnie, ramkę ustawisz później.' },
     gerdan: { name: 'Gerdan', description: 'Pleciony kołnierz-naszyjnik.' },
