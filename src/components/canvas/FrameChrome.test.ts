@@ -67,4 +67,21 @@ describe('FrameChrome (ticket 473)', () => {
     expect(wrapper.emitted('toggle')).toHaveLength(1)
     expect(wrapper.get('[data-testid="frame-move-handle"]').attributes('aria-disabled')).toBeUndefined()
   })
+
+  it('puts Remove Frame right after the pencil and asks to remove on a click (ticket 498)', async () => {
+    const wrapper = mountChrome()
+    const remove = wrapper.get('[data-testid="frame-chrome-remove"]')
+    expect(remove.element.closest('.frame-chrome__control')!.getAttribute('style')).toContain('left: 294px')
+    await remove.trigger('click')
+    expect(wrapper.emitted('remove')).toHaveLength(1)
+  })
+
+  it('lets a Selection\'s handles win the press where a control lies over them (ticket 498)', () => {
+    const selection = { left: 290, top: 40, width: 80, height: 80 }
+    const wrapper = mountChrome({ selection })
+    const yielding = (testid: string) => wrapper.get(`[data-testid="${testid}"]`).element.closest('.frame-chrome__control')!.classList.contains('frame-chrome__control--yielding')
+    expect(yielding('frame-edit-toggle')).toBe(true)
+    expect(yielding('frame-move-handle')).toBe(false)
+    expect(mountChrome().find('.frame-chrome__control--yielding').exists()).toBe(false)
+  })
 })

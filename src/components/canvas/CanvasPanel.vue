@@ -315,19 +315,22 @@ function techniqueWord(technique: Technique): string {
         <!-- The Frame's own controls (tickets 473, 475): the Move handle and edit pencil follow the Frame; the bar hangs
           from the pencil or the strip's Frame button, whichever opened it. -->
         <FrameChrome
-          v-if="activeProject && frameAnchor && !selection"
+          v-if="activeProject && frameAnchor"
           :project="activeProject"
           :anchor="frameAnchor"
           :editing="frameBarOpen"
           :pressing="surfacePressing"
           :bar="frameBarRect"
+          :selection="selectionAnchor?.box"
+          :pill="pillRect"
           @toggle="onEditFrame('pencil')"
+          @remove="onRemoveFrame"
           @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
         />
 
         <FrameBar
-          v-if="activeProject && frameBarShown && !selection && !framing"
+          v-if="activeProject && frameBarShown && !framing"
           :project="activeProject"
           :pencil="frameBarFrom === 'pencil' ? frameAnchor : undefined"
           :grabs-frame="(event: PointerEvent) => surfaceRef?.grabsFrame(event) ?? false"
