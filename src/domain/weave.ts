@@ -3,18 +3,8 @@ import type { Frame } from './canvas'
 import type { Selection } from './selection'
 import type { GridBounds, GridDimensions, GridPosition } from './grid'
 
-/** The weaving method, which determines a Project's grid geometry. */
-export type Technique = 'loom' | 'peyote' | 'brick' | 'rightAngle' | 'netting'
-
-/** Every Technique, in the order the choices are listed. */
-export const TECHNIQUES: readonly Technique[] = ['loom', 'peyote', 'brick', 'rightAngle', 'netting']
-
-/** The Techniques by name, for the few places that must pick one (a Template's own, the default), so none writes a
- * literal. */
-export const TECHNIQUE_IDS = { loom: 'loom', peyote: 'peyote', brick: 'brick', rightAngle: 'rightAngle', netting: 'netting' } as const satisfies Record<Technique, Technique>
-
-/** The Technique a new Project and an unframed Canvas start in. */
-export const DEFAULT_TECHNIQUE: Technique = TECHNIQUE_IDS.loom
+/** The weaving method, which determines a Project's grid geometry: a key of the config map below. */
+export type Technique = keyof typeof TECHNIQUE_RULES
 
 /** The most rows a Brick block may hold straight on top of each other (ticket 477). */
 export const MAX_BRICK_BLOCK = 20
@@ -57,6 +47,8 @@ interface TechniqueRules {
   overviewKey?: 'loom' | 'peyote' | 'brick'
   /** Whether the flat Templates (gerdan, bracelet, earrings, bag) can be woven in it. */
   flatTemplate: boolean
+  /** Whether it is the one a narrow, shifted-row Template (earrings) starts in. */
+  narrowTemplateDefault?: boolean
   /** Every other row (or block of rows) sits half a bead across. */
   shifted: boolean
   /** Distance from one row's top to the next, in bead heights: peyote rows nest into each other. */
@@ -91,7 +83,8 @@ const NETTING_STEP = 0.75
 /** A bead's face reaches half a cell from its centre: squared, in cells, for a round bead's hit test. */
 const BEAD_FACE_DISTANCE = 0.25
 
-const RULES: Record<Technique, TechniqueRules> = {
+/** The single config map: one entry per Technique. Adding a Technique is adding an entry here. */
+const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'techniqueLoom',
     overviewKey: 'loom',
@@ -110,6 +103,7 @@ const RULES: Record<Technique, TechniqueRules> = {
   },
   peyote: {
     nameKey: 'techniquePeyote',
+    narrowTemplateDefault: true,
     overviewKey: 'peyote',
     flatTemplate: true,
     shifted: true,
@@ -170,7 +164,15 @@ const RULES: Record<Technique, TechniqueRules> = {
     countsUnits: true,
     cellAspect: 1,
   },
-}
+} satisfies Record<string, TechniqueRules>
+
+const RULES: Record<Technique, TechniqueRules> = TECHNIQUE_RULES
+
+/** Every Technique, in the order the choices are listed: the config map's own order, so a new entry is listed too. */
+export const TECHNIQUES = Object.keys(TECHNIQUE_RULES) as readonly Technique[]
+
+/** The Technique a new Project and an unframed Canvas start in: the first listed. */
+export const DEFAULT_TECHNIQUE: Technique = TECHNIQUES[0]
 
 /** Everything the app asks about how a Weave is laid out; the only place that tells Techniques apart. */
 export interface WeaveDescription extends TechniqueRules {
@@ -606,6 +608,12 @@ export function techniqueNameKey(technique: Technique): TechniqueNameKey {
 
 /** The Techniques a flat Template (gerdan, bracelet, earrings, bag) can be woven in, in picker order. */
 export const FLAT_TECHNIQUES: readonly Technique[] = TECHNIQUES.filter((technique) => RULES[technique].flatTemplate)
+
+/** The Techniques an earrings Template offers: its default first, then the other flat ones. */
+export const NARROW_TEMPLATE_TECHNIQUES: readonly Technique[] = [
+  ...FLAT_TECHNIQUES.filter((technique) => RULES[technique].narrowTemplateDefault),
+  ...FLAT_TECHNIQUES.filter((technique) => !RULES[technique].narrowTemplateDefault),
+]
 
 /** The Techniques the overview's Techniques example shows, each with its label key. */
 export const OVERVIEW_TECHNIQUES: readonly { technique: Technique; label: 'loom' | 'peyote' | 'brick' }[] = TECHNIQUES.flatMap((technique) => {
