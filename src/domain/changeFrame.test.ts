@@ -253,13 +253,6 @@ describe('changeFrame', () => {
   })
 
   describe('variants', () => {
-    it('removes the Frame and its beads, and leaves the Canvas as it is', () => {
-      const project = framed({ frame: sheet(frame, withColors({}, [{ row: 0, column: 0, color: '#111111' }])), beads: withColors({}, [{ row: 10, column: 10, color: '#999999' }]) })
-      const result = changeFrame(project, { remove: true })
-      expect(result.kind === 'changed' && result.project.frame).toBeUndefined()
-      expect(result.kind === 'changed' && result.project.beads).toEqual(project.beads)
-    })
-
     it('removes a line of the Frame\'s beads, closing the gap', () => {
       const project = framed({ frame: sheet(frame, withColors({}, [{ row: 0, column: 0, color: '#111111' }, { row: 1, column: 0, color: '#222222' }])) })
       const result = changeFrame(project, { removeLine: { axis: 'row', index: 0 } })
@@ -402,12 +395,70 @@ describe('changeFrame', () => {
         expect(back.frame).toEqual(project.frame)
       })
 
-      it('is there again when Remove Frame takes the Frame away', () => {
+      it('is replaced by the Frame\'s beads when Remove Frame takes the Frame away', () => {
         const result = changeFrame(movedRight(framed({ frame: sheet(frame, frameBeads), beads: under }), 3), { remove: true })
         if (result.kind !== 'changed') throw new Error('expected a change')
-        expect(result.project.beads).toBe(under)
+        expect(colorAt(result.project.beads, 11, 16)).toBeNull()
+        expect(colorAt(result.project.beads, 10, 13)).toBe('#111111')
       })
     })
+  })
+})
+
+describe('Remove Frame keeps the Frame\'s beads (ticket 497)', () => {
+  const frameBeads = withColors({}, [
+    { row: 0, column: 0, color: '#111111' },
+    { row: 0, column: 1, color: '#111111' },
+    { row: 2, column: 3, color: '#222222' },
+  ])
+  const removed = (project: Project): Project => {
+    const result = changeFrame(project, { remove: true })
+    if (result.kind !== 'changed') throw new Error('expected a change')
+    return result.project
+  }
+
+  it('drops the Frame\'s beads onto the Canvas where the Frame was', () => {
+    const next = removed(framed({ frame: sheet(frame, frameBeads) }))
+    expect(next.frame).toBeUndefined()
+    expect(colorAt(next.beads, 10, 10)).toBe('#111111')
+    expect(colorAt(next.beads, 12, 13)).toBe('#222222')
+  })
+
+  it('clears the Canvas beads under the whole footprint, empty Frame positions included, and leaves the rest', () => {
+    const canvas = withColors({}, [{ row: 11, column: 11, color: '#999999' }, { row: 3, column: 3, color: '#888888' }])
+    const next = removed(framed({ frame: sheet(frame, frameBeads), beads: canvas }))
+    expect(colorAt(next.beads, 11, 11)).toBeNull()
+    expect(colorAt(next.beads, 3, 3)).toBe('#888888')
+  })
+
+  it('lands cell by cell in the Canvas\'s geometry on a Technique with offset rows', () => {
+    const next = removed(framed({ technique: 'peyote', frame: sheet({ ...frame, row: 12 }, frameBeads) }))
+    expect(colorAt(next.beads, 12, 10)).toBe('#111111')
+    expect(colorAt(next.beads, 14, 13)).toBe('#222222')
+  })
+
+  it('keeps the Frame\'s name on the Piece, the larger one when the beads form several', () => {
+    const next = removed(framed({ frame: { ...sheet(frame, frameBeads), name: 'Cherry' } }))
+    expect(next.pieceNames).toEqual([{ name: 'Cherry', row: 10, column: 10 }])
+    expect(next.frame).toBeUndefined()
+  })
+
+  it('names the larger Piece when the Frame\'s first bead is on the smaller one', () => {
+    const beads = withColors({}, [{ row: 0, column: 0, color: '#111111' }, { row: 2, column: 0, color: '#111111' }, { row: 2, column: 1, color: '#111111' }])
+    const next = removed(framed({ frame: { ...sheet(frame, beads), name: 'Cherry' } }))
+    expect(next.pieceNames).toEqual([{ name: 'Cherry', row: 12, column: 10 }])
+  })
+
+  it('yields its name to a named Canvas Piece it joins that is at least as large', () => {
+    const owl = withColors({}, [{ row: 9, column: 10, color: '#999999' }, { row: 9, column: 11, color: '#999999' }])
+    const lone = withColors({}, [{ row: 0, column: 0, color: '#111111' }])
+    const next = removed(framed({ frame: { ...sheet(frame, lone), name: 'Cherry' }, beads: owl, pieceNames: [{ name: 'Owl', row: 9, column: 10 }] }))
+    expect(next.pieceNames).toEqual([{ name: 'Owl', row: 9, column: 10 }])
+  })
+
+  it('clears the passes with the Frame', () => {
+    const next = removed(framed({ frame: sheet(frame, frameBeads), rowProgress: woven('rows', 3, 2) }))
+    expect(next.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
   })
 })
 
