@@ -12,6 +12,8 @@ Run typechecking regularly and single test files regularly. At the end run `npm 
 
 Once done, use /bd-review to review the work.
 
+After the PR is open, run `gh pr checks <number> --watch --fail-fast` in the background and report its result in your final message. If it fails, read it with `bash scripts/ci-failures.sh <number>`, fix, push and watch again; don't end on "CI not seen yet". If you update visual baselines, read the changed images first (`docs/testing.md`, Visual baselines).
+
 Commit your work to the ticket's branch, in its worktree (`CLAUDE.md`, Implementing tickets), never on `main`.
 
 End your final message with a `Skills used:` line listing every skill you invoked during the implementation (e.g. `bd-tdd`, `bd-review`), or `none`.
