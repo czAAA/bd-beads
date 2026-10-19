@@ -11,7 +11,7 @@ export const zh: Translations = {
     beadLabel: '珠子',
     techniqueLabel: '编织技法',
     techniqueLoom: '织机编织',
-    techniquePeyote: '佩奥特编织',
+    techniquePeyote: '佩奥特',
     techniqueBrick: '砖形编织',
     techniqueRightAngle: '直角编织',
     brickBlockLabel: '砖块行数',
