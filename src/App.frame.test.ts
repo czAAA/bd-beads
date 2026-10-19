@@ -154,10 +154,10 @@ describe('Edit Frame', () => {
     expect(beadColor(wrapper, { row: 2, column: 4 })).not.toBeNull()
   })
 
-  it('hangs from whichever opened it: a dropdown from the pencil at every width, the Top sheet from the strip (ticket 475)', async () => {
+  it('is the Top sheet under 1024px whatever opened it, and a dropdown from the pencil from 1024px (tickets 475, 510)', async () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
-    expect(wrapper.find('[data-testid="panel-dropdown"] [data-testid="frame-bar"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="top-sheet"] [data-testid="frame-bar"]').exists()).toBe(true)
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="strip-frame"]').trigger('click')
     await flushPromises()
