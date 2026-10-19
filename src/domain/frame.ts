@@ -96,9 +96,11 @@ export function parseFrameSize(text: string): { columns: number; rows: number } 
 export function frameResizedAround(weave: Weave, frame: Frame, columns: number, rows: number): Frame {
   const description = describeWeave(weave)
   const typed = description.positionsOf({ columns, rows })
-  const side = (n: number) => Math.min(MAX_TYPED_SIDE, Math.max(MIN_STEPPED_SIDE, Math.round(n)))
-  const wide = side(typed.columns)
-  const tall = description.snapBottom(0, side(typed.rows) - 1) + 1
+  const side = (n: number, fewest: number) => Math.min(MAX_TYPED_SIDE, Math.max(fewest, Math.round(n)))
+  // Where Units are counted a side may be a single Unit.
+  const fewest = description.countsUnits ? description.smallest : { columns: MIN_STEPPED_SIDE, rows: MIN_STEPPED_SIDE }
+  const wide = side(typed.columns, fewest.columns)
+  const tall = description.snapBottom(0, side(typed.rows, fewest.rows) - 1) + 1
   const left = Math.trunc((wide - frame.columns) / 2)
   const cycle = rowCycle(weave)
   const top = cycle > 1 ? cycle * Math.trunc((tall - frame.rows) / (2 * cycle)) : Math.trunc((tall - frame.rows) / 2)
