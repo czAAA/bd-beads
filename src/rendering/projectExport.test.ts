@@ -3,7 +3,8 @@ import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MAX_PIXELS, PNG_MARGIN_PX, pngBo
 import { PRINT_BOARD_PAD } from './printPlan'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { projectExtentPx } from './surfaceView'
+import { frameWeave } from '../domain/project'
+import { displayedExtentPx, projectExtentPx } from './surfaceView'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
@@ -27,6 +28,21 @@ describe('pngZoom (ticket 73)', () => {
     // The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183), so its border differs from the rest.
     expect((Math.ceil(width * zoom) + PNG_MARGIN_PX * 2) * (Math.ceil(height * zoom) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX)).toBeLessThanOrEqual(PNG_MAX_PIXELS)
     expect(zoom).toBeGreaterThan(0.5)
+  })
+})
+
+describe('pngZoom: Bead shape (ticket 509)', () => {
+  const real = { ...shape('peyote', 250, 250), beadId: 'miyuki-delica-11-0', beadShape: 'real' as const }
+
+  it('keeps a Real Project inside the pixel budget, measured on its own cells', () => {
+    const zoom = pngZoom(real)
+    const { width, height } = displayedExtentPx(real.technique, 250, 250, 1, 0, frameWeave(real).cell)
+
+    expect((Math.ceil(width * zoom) + PNG_MARGIN_PX * 2) * (Math.ceil(height * zoom) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX)).toBeLessThanOrEqual(PNG_MAX_PIXELS)
+  })
+
+  it('is the same zoom as Symmetric when the Project is Symmetric', () => {
+    expect(pngZoom({ ...real, beadShape: undefined })).toBe(pngZoom(shape('peyote', 250, 250)))
   })
 })
 
