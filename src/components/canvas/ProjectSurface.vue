@@ -176,6 +176,12 @@ function dropPressedPointers() {
   releasePointer()
 }
 
+/** A press ends wherever its pointer lifts or is cancelled, on the surface or not (a press that starts off the beads
+ * or the Selection is not captured): the window hears it, so no path can leave the bar away (ticket 503). */
+function onWindowPointerEnd(event: PointerEvent) {
+  releasePointer(event)
+}
+
 function onFocus() {
   if (!pressed) emit('keyboard-focus', true)
 }
@@ -1033,6 +1039,8 @@ onMounted(() => {
   }
   window.addEventListener('resize', measure, { passive: true })
   window.addEventListener('blur', dropPressedPointers)
+  window.addEventListener('pointerup', onWindowPointerEnd)
+  window.addEventListener('pointercancel', onWindowPointerEnd)
 })
 
 onBeforeUnmount(() => {
@@ -1046,6 +1054,8 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   window.removeEventListener('resize', measure)
   window.removeEventListener('blur', dropPressedPointers)
+  window.removeEventListener('pointerup', onWindowPointerEnd)
+  window.removeEventListener('pointercancel', onWindowPointerEnd)
 })
 </script>
 
