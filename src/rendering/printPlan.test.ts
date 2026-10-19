@@ -3,6 +3,7 @@ import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { A4_LANDSCAPE, A4_PORTRAIT, chartArea, continuation, mm, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_BLOCK_BEADS } from './printPlan'
+import { frameWeave } from '../domain/project'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
@@ -159,5 +160,21 @@ describe('planPrint: wide and long Projects (ticket 163; printed-output.md, Prin
     // Square-ish and thoroughly two-way-split Projects keep one part per page.
     expect(planPrint(shape('loom', 50, 50)).strip).toBe(false)
     expect(planPrint(shape('loom', 60, 80)).strip).toBe(false)
+  })
+})
+
+describe('planPrint: Bead shape (ticket 509)', () => {
+  const real = { ...shape('brick', 90, 100), beadId: 'miyuki-delica-11-0', beadShape: 'real' as const }
+
+  it('fits the chart to the Real cells: the whole Project still sits on the chart area', () => {
+    const plan = planPrint(real)
+    const { width, height } = displayedExtentPx('brick', 90, 100, plan.zoom, 0, frameWeave(real).cell)
+
+    expect(width).toBeLessThanOrEqual(plan.page.width)
+    expect(height).toBeLessThanOrEqual(plan.page.height)
+  })
+
+  it('differs from Symmetric, whose cells are square', () => {
+    expect(planPrint(real).zoom).not.toBe(planPrint(shape('brick', 90, 100)).zoom)
   })
 })
