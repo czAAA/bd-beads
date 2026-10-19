@@ -368,6 +368,12 @@ export const uk: Translations = {
     copyButton: 'Копіювати',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: 'У виділенні немає намистин для копіювання.',
+    pasteClippedMessage: {
+      one: '{count} намистина не вмістилася в рамку.',
+      few: '{count} намистини не вмістилися в рамку.',
+      many: '{count} намистин не вмістилося в рамку.',
+      other: '{count} намистини не вмістилися в рамку.',
+    },
     cutButton: 'Вирізати',
     saveButton: 'Зберегти',
     savedConfirmation: 'Збережено',

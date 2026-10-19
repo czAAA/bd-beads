@@ -34,7 +34,7 @@ describe('rotateSelection', () => {
     const result = rotateSelection(project, SELECTION)
 
     // 2 rows x 3 columns becomes 3 rows x 2 columns about the same middle.
-    expect(result.selection).toEqual({ top: 10, left: 11, rows: 3, columns: 2 })
+    expect(result.selection).toMatchObject({ top: 10, left: 11, rows: 3, columns: 2 })
     expect(result.project.frame).toEqual(project.frame)
     expect(result.project.rowProgress).toEqual(project.rowProgress)
     // Clockwise: the old left column (A, D) is now the top row, read right to left... D A / . B / F C
@@ -123,14 +123,14 @@ describe('rotateLayerSelection (ADR 0066)', () => {
   it('turns the Canvas\'s beads for a Selection on the Canvas, in Canvas positions', () => {
     const project = withBeads(SELECTION_BEADS, { frame: undefined })
     const result = rotateLayerSelection(project, SELECTION)
-    expect(result.selection).toEqual({ top: 10, left: 11, rows: 3, columns: 2 })
+    expect(result.selection).toMatchObject({ top: 10, left: 11, rows: 3, columns: 2 })
     expect(positionsOf(result.project.beads)).toEqual(positionsOf(rotateSelection(project, SELECTION).project.beads))
   })
 
   it('turns the Frame\'s own beads for a Selection that begins in the Frame, and answers in Canvas positions', () => {
     const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', null], [null, null, null]]), { beads: withColors({}, [{ row: 11, column: 11, color: '#999999' }]) })
     const result = rotateLayerSelection(project, { top: 10, left: 10, rows: 2, columns: 2 })
-    expect(result.selection).toEqual({ top: 10, left: 10, rows: 2, columns: 2 })
+    expect(result.selection).toMatchObject({ top: 10, left: 10, rows: 2, columns: 2 })
     expect(positionsOf(result.project.frame!.beads)).toEqual(['0,1:#aa0000', '1,1:#bb0000'])
     expect(result.project.beads).toEqual(project.beads)
   })

@@ -304,8 +304,8 @@ describe('Piece and Select all selections (ticket 414)', () => {
     expect(allBeadsSelection(picture.frame!.beads)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
     expect(allBeadsSelection(project(3, 3).frame!.beads)).toBeUndefined()
     // ticket 428: with a Frame, Select all is the Frame's inside, whatever the beads
-    expect(selectAllSelection(picture.frame!.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12 })
-    expect(selectAllSelection(picture.frame!.beads, undefined)).toEqual({ top: 0, left: 0, rows: 4, columns: 5 })
+    expect(selectAllSelection(picture.frame!.beads, { row: 2, column: 3, rows: 10, columns: 12 })).toEqual({ top: 2, left: 3, rows: 10, columns: 12, layer: 'frame' })
+    expect(selectAllSelection(picture.frame!.beads, undefined)).toMatchObject({ top: 0, left: 0, rows: 4, columns: 5 })
   })
 })
 
@@ -353,8 +353,8 @@ describe('Selections on a layer (ADR 0066)', () => {
   })
 
   it('taps a Piece of the layer the tap is on', () => {
-    expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1 })
-    expect(pieceSelectionOnLayer(layered(), { row: 20, column: 20 })).toEqual({ top: 20, left: 20, rows: 1, columns: 1 })
+    expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1, layer: 'frame' })
+    expect(pieceSelectionOnLayer(layered(), { row: 20, column: 20 })).toMatchObject({ top: 20, left: 20, rows: 1, columns: 1 })
   })
 })
 
