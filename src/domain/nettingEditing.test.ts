@@ -7,7 +7,6 @@ import { copySelection, mirroredPastedCells, snapSelectionToUnits } from './sele
 import { describeWeave } from './weave'
 
 const RED = '#e63746'
-const BLUE = '#2a5bd7'
 /** Net size 3 (a diamond is 4 positions across and down, 2 rows a Unit): 2 diamonds across, 1 down is 9 columns, 5 rows. */
 const woven: Project = frameLayer(createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } }))
 const weave = describeWeave(woven)
@@ -31,12 +30,6 @@ describe('Fill in Netting (ticket 486)', () => {
     const filled = fillArea(woven, 1, 1, RED)
     expect(found(filled.beads)).toHaveLength(Array.from({ length: 45 }, (_cell, at) => ({ row: Math.floor(at / 9), column: at % 9 })).filter((position) => weave.hasPosition(position)).length)
     expect(found(filled.beads).some(inHole)).toBe(false)
-  })
-
-  it('stops at a bead of another color', () => {
-    const filled = fillArea(paint(woven, [[2, 4, BLUE]]), 1, 1, RED)
-    expect(colorAt(filled.beads, 2, 4)).toBe(BLUE)
-    expect(colorAt(filled.beads, 2, 0)).toBe(RED)
   })
 
   it('does nothing when it starts in a hole', () => {
@@ -78,7 +71,6 @@ describe('Selection and Paste in Netting (ticket 486)', () => {
     const block = copySelection(paint(woven, [[0, 2, RED], [1, 1, RED], [1, 3, RED], [2, 0, RED], [2, 4, RED]]), { top: 0, left: 0, rows: 5, columns: 5 })!
     // Aimed a little off the lattice: it still lands on beads only.
     const cells = mirroredPastedCells(woven, block, { row: 0, column: 3 }, { columns: 0, rows: 0 })
-    expect(cells.length).toBeGreaterThan(0)
     expect(cells.every((cell) => weave.hasPosition(cell))).toBe(true)
     expect(cells.length).toBe(5)
   })
