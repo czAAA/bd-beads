@@ -8,7 +8,7 @@ Implement the work described by the user in the spec or tickets.
 
 Use /bd-tdd where possible, at pre-agreed seams.
 
-Run typechecking regularly and single test files regularly. At the end run `npm run check` and `npm run test:related -- <changed files>`; the full suite is CI's.
+Run typechecking regularly and single test files regularly. At the end run `npm run check` and `npm run test:related -- <changed files>`; then `npm run test:full` before opening the PR (it skips itself on a slow machine, where the full suite is CI's).
 
 Once done, use /bd-review to review the work.
 
