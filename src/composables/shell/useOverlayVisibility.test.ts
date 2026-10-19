@@ -10,39 +10,39 @@ function setup() {
 describe('useOverlayVisibility', () => {
   it('starts with every overlay closed', () => {
     const overlays = setup()
-    expect(overlays.openPhoneSheet.value).toBeNull()
+    expect(overlays.openPanel.value).toBeNull()
     expect(overlays.menuOpensOnForm.value).toBe(false)
     expect(overlays.phoneSavedProjectsOpen.value).toBe(false)
   })
 
   it('opens a phone sheet from its strip button, and closes it on the same button again', () => {
-    const { openPhoneSheet, onSelectPhoneSheet } = setup()
+    const { openPanel, onSelectPhoneSheet } = setup()
     onSelectPhoneSheet('menu')
-    expect(openPhoneSheet.value).toBe('menu')
+    expect(openPanel.value).toBe('menu')
     onSelectPhoneSheet('menu')
-    expect(openPhoneSheet.value).toBeNull()
+    expect(openPanel.value).toBeNull()
   })
 
   it('switches straight to another phone sheet from a different strip button', () => {
-    const { openPhoneSheet, onSelectPhoneSheet } = setup()
+    const { openPanel, onSelectPhoneSheet } = setup()
     onSelectPhoneSheet('project')
     onSelectPhoneSheet('menu')
-    expect(openPhoneSheet.value).toBe('menu')
+    expect(openPanel.value).toBe('menu')
   })
 
   it('opens Menu on the form for the bar button, and forgets it once the panel is gone or swapped', async () => {
-    const { openPhoneSheet, menuOpensOnForm, openMenuOnForm } = setup()
+    const { openPanel, menuOpensOnForm, openMenuOnForm } = setup()
     openMenuOnForm()
-    expect(openPhoneSheet.value).toBe('menu')
+    expect(openPanel.value).toBe('menu')
     expect(menuOpensOnForm.value).toBe(true)
-    openPhoneSheet.value = null
+    openPanel.value = null
     await nextTick()
     expect(menuOpensOnForm.value).toBe(false)
   })
 
   it('opens the picked Project and closes both the Saved Projects sheet and the Project sheet', () => {
-    const { selectProject, openPhoneSheet, phoneSavedProjectsOpen, onSelectProjectFromPhoneDrawer } = setup()
-    openPhoneSheet.value = 'project'
+    const { selectProject, openPanel, phoneSavedProjectsOpen, onSelectProjectFromPhoneDrawer } = setup()
+    openPanel.value = 'project'
     phoneSavedProjectsOpen.value = true
 
     onSelectProjectFromPhoneDrawer('abc')
@@ -52,6 +52,6 @@ describe('useOverlayVisibility', () => {
     expect(phoneSavedProjectsOpen.value).toBe(true)
     selectProject.mock.calls[0]![1]!()
     expect(phoneSavedProjectsOpen.value).toBe(false)
-    expect(openPhoneSheet.value).toBeNull()
+    expect(openPanel.value).toBeNull()
   })
 })

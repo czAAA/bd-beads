@@ -3,7 +3,7 @@ import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
-import PanelShell from '../shell/PanelShell.vue'
+import PanelHost from '../shell/PanelHost.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useElementSize } from '../../composables/ui/useElementSize'
@@ -15,7 +15,7 @@ import { carriedFrameBarSpot, frameBarSpot, type BarBox, type FrameAnchor } from
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame bar (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
-// edge. It is a panel like Menu and Project (PanelShell): from the strip's Frame button, or from the edit pencil that
+// edge. It is a panel like Menu and Project (PanelHost): from the strip's Frame button, or from the edit pencil that
 // opened it, which it follows; a press outside or Escape closes it, a Frame handle's press does not.
 const props = defineProps<{
   project: Project
@@ -60,12 +60,10 @@ const cells = FRAME_EDGES.map((edge) => {
 })
 const barEl = ref<HTMLElement>()
 const size = useElementSize(barEl)
-const shell = ref<InstanceType<typeof PanelShell>>()
+const shell = ref<InstanceType<typeof PanelHost>>()
 const wide = useMediaQuery('(min-width: 1024px)')
-/** Where the shell hangs the bar when the Frame is not known: under the edit pencil at every width, else from the strip. */
-const placement = computed(() =>
-  props.fromPencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : { anchor: 'strip-frame', align: 'start' as const, dropdown: false },
-)
+/** Where the bar hangs when the Frame is not known: under the edit pencil at every width, else the descriptor's strip button. */
+const placement = computed(() => (props.fromPencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : undefined))
 
 // Ticket 500: with the Frame known, the bar is placed once beside it (below, above, right, left), then only pan and zoom
 // carry it. Stepping or resizing the Frame leaves it where it is. The Top sheet under 1024px is not placed.
@@ -153,10 +151,11 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 </script>
 
 <template>
-  <PanelShell
+  <PanelHost
     ref="shell"
-    :title="t.frame.title"
-    v-bind="placement"
+    open="frame"
+    :only="['frame']"
+    :placement="placement"
     :at="positioned ? at : undefined"
     width="min(calc(100vw - 2 * var(--frame-bar-gap)), var(--frame-bar-width))"
     :keeps-press="keepsPress"
@@ -164,7 +163,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   >
     <div ref="barEl" class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
       <div class="frame-bar__head">
-        <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelShell). -->
+        <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
         <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
         <component
           :is="locked ? AppTooltip : 'div'"
@@ -260,7 +259,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         </div>
       </div>
     </div>
-  </PanelShell>
+  </PanelHost>
 </template>
 
 <style scoped>
