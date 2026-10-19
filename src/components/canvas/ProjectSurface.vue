@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import { changedPositions } from '../../domain/canvas'
 import { sameFrame } from '../../domain/frame'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
@@ -16,6 +16,7 @@ import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import { edgeScrollStep } from '../../composables/canvas/edgeScroll'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
@@ -771,6 +772,29 @@ function grabsFrame(event: PointerEvent): boolean {
   return framePress(event, event.pointerType === 'touch') !== undefined
 }
 
+/** While a Frame is dragged with the pointer at the edge, the view scrolls toward it each frame and the drag follows
+ * (the pointer is still, so no move event would say so). */
+let framePointer: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
+let edgeScrollFrame = 0
+function edgeScrollTick(): void {
+  edgeScrollFrame = 0
+  if (!framing.value) {
+    framePointer = undefined
+    return
+  }
+  if (!framePointer) return
+  const point = pointInSurface(framePointer)
+  const { dx, dy } = edgeScrollStep(point, size.value)
+  if (dx !== 0 || dy !== 0) {
+    emit('pan', -dx, -dy)
+    // After the parent has applied the pan, so the cell under the still pointer is the new one.
+    void nextTick(() => {
+      if (framing.value) emit('frame-drag', surface.value.pointToCell(point))
+    })
+  }
+  edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
+}
+
 /** A press on the Move handle's button over the canvas (ticket 455): the same grab as a press on the handle itself. */
 function pressMoveHandle(event: PointerEvent): void {
   if (!props.project.frame || event.button !== 0) return
@@ -878,6 +902,8 @@ function onPointerMove(event: PointerEvent): void {
     handleCursor.value = undefined
   }
   if (framing.value) {
+    framePointer = { clientX: event.clientX, clientY: event.clientY }
+    if (!edgeScrollFrame && typeof requestAnimationFrame === 'function') edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
     emit('frame-drag', cellUnder(event))
     return
   }
@@ -988,6 +1014,7 @@ onBeforeUnmount(() => {
   clearTimeout(refusedTimer)
   clearTimeout(sizeTimer)
   clearTimeout(settleTimer)
+  if (edgeScrollFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(edgeScrollFrame)
   if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
   pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
   resizeObserver?.disconnect()

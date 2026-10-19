@@ -154,7 +154,7 @@ const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlActio
     if (!project?.frame || frameLocked(deps)) return false
     return direction === 'out' || frameWithEdgeStep(project, project.frame, edge, -1) !== project.frame
   },
-  disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedFrame : t.tooltips.frameEdgeInDisabled),
+  disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.frameSizeLocked : t.tooltips.frameEdgeInDisabled),
   group: 'canvas',
   chords: [],
 })

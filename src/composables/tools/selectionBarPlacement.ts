@@ -69,52 +69,41 @@ export interface FrameAnchor extends SelectionAnchor {
   outer: BarBox
 }
 
-/** The Margin handle's hit area and the least gap its centre keeps from the canvas box's sides, mirroring the
- * `--frame-handle-hit-*` values (ticket 473). */
+/** The Margin handle's hit area, mirroring the `--frame-handle-hit-*` values (ticket 473). */
 const HANDLE_HIT_HEIGHT_PX = 44
-const HANDLE_SIDE_GAP_PX = 32
 /** The edit pencil's hit area and how far in and down its centre sits from the margin outline's top-right corner,
  * mirroring `--frame-edit-hit`. */
 const PENCIL_HIT_PX = 44
 const PENCIL_OFFSET_PX = 26
 
-const clampTo = (value: number, low: number, high: number) => (low > high ? (low + high) / 2 : Math.max(low, Math.min(value, high)))
-
 const HANDLE_HIT_WIDTH_PX = 56
 const around = (centre: { x: number; y: number }, width: number, height: number): BarBox => ({ left: centre.x - width / 2, top: centre.y - height / 2, width, height })
 
-/** Where the Margin handle goes (ticket 473): halfway down the top margin, centred on it however much is in view, 32px
- * from the box's sides and inside it vertically. Only its centre moves with the zoom; it slides clear of the edit
- * pencil and the Frame bar (`bar`) where they would cover it. */
+/** Where the Margin handle goes (ticket 473): halfway down the top margin, centred on it however much is in view. It
+ * is not pulled into the canvas box, so a Frame dragged over the edge takes it along. Only its centre moves with the
+ * zoom; it slides clear of the edit pencil and the Frame bar (`bar`) where they would cover it. */
 export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: number; y: number } {
-  const { box, outer, viewport } = anchor
-  const keep = (x: number, y: number) => ({
-    x: clampTo(x, HANDLE_SIDE_GAP_PX, viewport.width - HANDLE_SIDE_GAP_PX),
-    y: clampTo(y, HANDLE_HIT_HEIGHT_PX / 2, viewport.height - HANDLE_HIT_HEIGHT_PX / 2),
-  })
-  const natural = keep(outer.left + outer.width / 2, (box.top + outer.top) / 2)
+  const { box, outer } = anchor
+  const pos = (x: number, y: number) => ({ x, y })
+  const natural = pos(outer.left + outer.width / 2, (box.top + outer.top) / 2)
   const obstacles = [around(editPencilCentre(anchor), PENCIL_HIT_PX, PENCIL_HIT_PX), ...(bar ? [bar] : [])]
-  const hits = (at: { x: number; y: number }) => obstacles.some((obstacle) => overlaps(around(at, HANDLE_HIT_WIDTH_PX, HANDLE_HIT_HEIGHT_PX), obstacle))
+  const hits = (point: { x: number; y: number }) => obstacles.some((obstacle) => overlaps(around(point, HANDLE_HIT_WIDTH_PX, HANDLE_HIT_HEIGHT_PX), obstacle))
   if (!hits(natural)) return natural
   const halfW = HANDLE_HIT_WIDTH_PX / 2
   const halfH = HANDLE_HIT_HEIGHT_PX / 2
   const slides = obstacles.flatMap((o) => [
-    keep(o.left - halfW, natural.y),
-    keep(o.left + o.width + halfW, natural.y),
-    keep(natural.x, o.top - halfH),
-    keep(natural.x, o.top + o.height + halfH),
+    pos(o.left - halfW, natural.y),
+    pos(o.left + o.width + halfW, natural.y),
+    pos(natural.x, o.top - halfH),
+    pos(natural.x, o.top + o.height + halfH),
   ])
   const distance = (at: { x: number; y: number }) => Math.abs(at.x - natural.x) + Math.abs(at.y - natural.y)
   return slides.filter((at) => !hits(at)).sort((a, b) => distance(a) - distance(b))[0] ?? natural
 }
 
-/** Where the edit pencil goes (ticket 473): inside the margin, its hit area 4px in from the outline's top-right corner, pinned to it
- * and kept inside the canvas box. */
+/** Where the edit pencil goes (ticket 473): inside the margin, its hit area 4px in from the outline's top-right corner,
+ * pinned to it. Not pulled into the canvas box: a Frame dragged over the edge takes it along. */
 export function editPencilCentre(anchor: FrameAnchor): { x: number; y: number } {
-  const { outer, viewport } = anchor
-  const half = PENCIL_HIT_PX / 2
-  return {
-    x: clampTo(outer.left + outer.width - PENCIL_OFFSET_PX, half, viewport.width - half),
-    y: clampTo(outer.top + PENCIL_OFFSET_PX, half, viewport.height - half),
-  }
+  const { outer } = anchor
+  return { x: outer.left + outer.width - PENCIL_OFFSET_PX, y: outer.top + PENCIL_OFFSET_PX }
 }
