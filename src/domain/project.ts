@@ -20,7 +20,7 @@ import { sameFrame } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
-import { clampNetSize, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, type PassDirection, type Technique, type Weave } from './weave'
+import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -65,6 +65,8 @@ export interface Project {
    * other; fixed once it is created (ADR 0038). */
   netSize?: number
   beadId: string
+  /** The Bead shape (ADR 0068): how the Canvas draws each cell, for both layers. Absent means Symmetric. */
+  beadShape?: BeadShape
   /** What is painted on the Canvas, by position (ADR 0026); see BeadMap. No real-world size is stored: the
    * Estimated size is worked out from the Frame (estimatedSizeMm). */
   beads: BeadMap
@@ -98,6 +100,8 @@ export interface CreateProjectInput {
   brickBlock?: number
   /** The Net size of a new Netting Project (ticket 485); left out is the default. */
   netSize?: number
+  /** The Bead shape of a new Project; left out is Symmetric. */
+  beadShape?: BeadShape
   beadId: string
   /** How big the Frame is, in beads or mm/cm (converted once to a grid, not remembered; ADR 0026). Left out: a Canvas
    * with no Frame. */
@@ -120,14 +124,28 @@ export function weaveOf({ technique, brickBlock, netSize }: Weave): Weave {
 }
 
 /** The Canvas's Weave: the Project's own Technique, Brick block and Net size (ticket 492). */
-export function canvasWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>): Weave {
-  return weaveOf(project)
+export function canvasWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'> & ShapedBead): Weave {
+  return withCell(weaveOf(project), projectCell(project))
+}
+
+/** The Project with another Bead shape (ADR 0068): Symmetric is the default and is left unsaved. */
+export function withBeadShape(project: Project, shape: BeadShape): Project {
+  const { beadShape: _old, ...rest } = project
+  return shape === DEFAULT_BEAD_SHAPE ? rest : { ...rest, beadShape: shape }
+}
+
+/** What decides a Project's cell: its Bead and Bead shape (both optional, so a bare layout reads as Symmetric). */
+type ShapedBead = Partial<Pick<Project, 'beadId' | 'beadShape'>>
+
+/** How the Project's Bead is drawn: none in Symmetric, or for a Bead this device doesn't know. */
+export function projectCell(project: ShapedBead): BeadCell | undefined {
+  return beadCell(project.beadId ? findBead(project.beadId) : undefined, project.beadShape ?? DEFAULT_BEAD_SHAPE)
 }
 
 /** The Frame's Weave (ticket 492), which may differ from the Canvas's; a Canvas with no Frame counts its rows in its
  * own. The one place that says which Weave a Frame's rows, rulers, passes and exports are counted in. */
-export function frameWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'>): Weave {
-  return weaveOf(project.frame ?? project)
+export function frameWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & ShapedBead): Weave {
+  return withCell(weaveOf(project.frame ?? project), projectCell(project))
 }
 
 /** What a new Project's stated size and Bead work out to: the Bead, and the grid that implies. */
@@ -169,6 +187,7 @@ export function createProject(input: CreateProjectInput): Project {
     name,
     ...created,
     beadId: input.beadId,
+    ...(input.beadShape && input.beadShape !== DEFAULT_BEAD_SHAPE ? { beadShape: input.beadShape } : {}),
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
@@ -344,7 +363,7 @@ export function normalizeProject(stored: StoredProject): Project {
 
   const technique = project.technique
 
-  const { pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, ...withoutNames } = rest
+  const { pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
@@ -360,6 +379,8 @@ export function normalizeProject(stored: StoredProject): Project {
     ...placed,
     ...(brickBlock ? { brickBlock } : {}),
     ...(netSize ? { netSize } : {}),
+    // An unreadable or missing Bead shape reads as Symmetric, which is left unsaved.
+    ...(storedShape === 'real' ? { beadShape: storedShape } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
     rowProgress: {
       // Turn row direction isn't offered where a Technique is woven in rows only (ticket 487).
@@ -649,17 +670,19 @@ export interface UndoEntry {
   technique: Technique
   /** The Brick block the entry was taken with, so Undo undoes a change of it (ticket 477). */
   brickBlock?: number
+  /** The Bead shape the entry was taken with, so Undo undoes a change of it (ticket 508). */
+  beadShape?: BeadShape
   mirrorAxisCounts: MirrorAxisCounts
 }
 
 /** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
 export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, mirrorAxisCounts }
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape, mirrorAxisCounts }
 }
 
 /** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
@@ -667,6 +690,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     frame: entry.frame,
     technique: entry.technique,
     ...(entry.brickBlock ? { brickBlock: entry.brickBlock } : {}),
+    ...(entry.beadShape ? { beadShape: entry.beadShape } : {}),
     ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
   })
 }

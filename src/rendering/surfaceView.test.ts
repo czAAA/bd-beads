@@ -272,3 +272,26 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
     expect(view().beadStep('canvas').row.y).toBe(20)
   })
 })
+
+describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
+  const cell = { aspect: 1.3 / 1.6, roundness: 0.1 }
+  const TECHS: Technique[] = ['loom', 'peyote', 'brick', 'rightAngle']
+
+  it('puts each bead under its own centre in every Technique and rotation', () => {
+    for (const technique of TECHS) {
+      for (const rotation of ROTATIONS) {
+        const view = surfaceView({ space: OPEN_SPACE, technique, cell, rotation, zoom: 1.5, scroll: { x: 11, y: -7 } })
+        for (const position of [{ row: 0, column: 0 }, { row: 2, column: 1 }, { row: 4, column: 3 }]) {
+          expect(view.pointToBead(view.beadToPoint(position))).toEqual(position)
+        }
+      }
+    }
+  })
+
+  it('steps down by the Bead height, not the square', () => {
+    const real = surfaceView({ space: OPEN_SPACE, technique: 'loom', cell, rotation: 0, zoom: 1 }).beadStep().row
+    const symmetric = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1 }).beadStep().row
+    expect(real.y).toBeCloseTo(CELL_SIZE_PX * cell.aspect)
+    expect(symmetric.y).toBe(CELL_SIZE_PX)
+  })
+})

@@ -10,6 +10,11 @@ export const be: Translations = {
   form: {
     nameLabel: 'Назва',
     beadLabel: 'Бісерына',
+    beadShapeLabel: 'Форма бісерыны',
+    beadShapeSymmetric: 'Роўная',
+    beadShapeReal: 'Сапраўдная',
+    beadShapeSymmetricTip: 'Маляваць кожную бісерыну роўнай клеткай; змяняецца толькі выгляд палатна.',
+    beadShapeRealTip: 'Маляваць кожную бісерыну ў яе сапраўдных прапорцыях; змяняецца толькі выгляд палатна.',
     techniqueLabel: 'Тэхніка пляцення',
     techniqueLoom: 'Ткацтва',
     techniquePeyote: 'Мазаічнае пляценне',

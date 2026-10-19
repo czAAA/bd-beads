@@ -77,7 +77,7 @@ export interface PrintPlan {
 
 /** Wider than tall, as displayed (a turned Project's rows run across). */
 function isProjectWide(project: Shape): boolean {
-  const { width, height } = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation)
+  const { width, height } = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation, frameWeave(project).cell)
   return width > height
 }
 
@@ -86,7 +86,7 @@ export function orientedPage(project: Shape): PageSize {
   return isProjectWide(project) ? A4_LANDSCAPE : A4_PORTRAIT
 }
 
-type Shape = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'rotation'>
+type Shape = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
 
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
@@ -97,22 +97,23 @@ export function displayedGrid(project: Shape) {
   const { columns, rows } = countedDimensions(project)
   // Techniques that count Units step a whole Unit across and down (tickets 482, 485).
   const description = describeWeave(weave)
-  const cell = cellSizePx(technique)
+  const cell = cellSizePx(technique, weave.cell)
   const unit = description.countsUnits
     ? { across: description.origin({ row: 0, column: description.columnsPerUnit }, cell.width, cell.height).x, down: description.origin({ row: description.rowsPerUnit, column: 0 }, cell.width, cell.height).y }
     : undefined
-  const pitch = unit?.down ?? rowPitchPx(technique)
+  const pitch = unit?.down ?? rowPitchPx(technique, weave.cell)
   const wide = unit?.across ?? CELL_SIZE_PX
+  const tall = unit ? wide : cell.height
   return rotationSwapsAxes(rotation)
-    ? { across: rows, down: columns, stepAcross: pitch, stepDown: wide, beadAcross: wide, beadDown: wide }
-    : { across: columns, down: rows, stepAcross: wide, stepDown: pitch, beadAcross: wide, beadDown: wide }
+    ? { across: rows, down: columns, stepAcross: pitch, stepDown: wide, beadAcross: tall, beadDown: wide }
+    : { across: columns, down: rows, stepAcross: wide, stepDown: pitch, beadAcross: wide, beadDown: tall }
 }
 
 /** The displayed size of a block of beads `across` × `down`, at zoom 1. */
 function blockExtent(weave: Weave, rotation: Rotation, across: number, down: number): PageSize {
   const counted = rotationSwapsAxes(rotation) ? { columns: down, rows: across } : { columns: across, rows: down }
   const { columns, rows } = describeWeave(weave).positionsOf(counted)
-  return displayedExtentPx(weave.technique, columns, rows, 1, rotation)
+  return displayedExtentPx(weave.technique, columns, rows, 1, rotation, weave.cell)
 }
 
 /** A chart page's block, fixed (ticket 185): 100 beads a side, an edge block simply however many remain. */

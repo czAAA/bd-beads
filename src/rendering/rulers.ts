@@ -1,5 +1,5 @@
 import type { Frame } from '../domain/canvas'
-import { describeWeave, type Technique, type Weave } from '../domain/weave'
+import { describeWeave, withCell, type Technique, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/project'
 import { pieceAreasOf } from '../domain/pieces'
@@ -176,7 +176,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   // What the rulers count: beads, or Units where the Technique counts them (ticket 482).
   const counted = description.unitsOf(box)
   const count = description.countsUnits ? counted : { columns: box.columns, rows: box.rows }
-  const cell = cellSizePx(technique)
+  const cell = cellSizePx(technique, weave.cell)
   // A Unit's size across and down in grid px, and the positions a line of them spans (a Right-angle weave Unit spans its
   // column and the next, three lines; a diamond its whole width and height).
   const unitAcross = description.origin({ row: 0, column: description.columnsPerUnit }, cell.width, cell.height).x
@@ -184,8 +184,8 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   const span = description.positionsOf({ columns: 1, rows: 1 })
   const area = positionsBoxPx(weave, start.row, start.column, box.rows, box.columns)
   const lastRow = start.row + box.rows - 1
-  const bottom = description.countsUnits ? area.y + area.height : rowTopPx(technique, lastRow) + CELL_SIZE_PX
-  const right = description.countsUnits ? area.x + area.width : start.column * CELL_SIZE_PX + description.blockExtent(box.columns, 0, CELL_SIZE_PX, CELL_SIZE_PX).width
+  const bottom = description.countsUnits ? area.y + area.height : rowTopPx(technique, lastRow, weave.cell) + cell.height
+  const right = description.countsUnits ? area.x + area.width : start.column * CELL_SIZE_PX + description.blockExtent(box.columns, 0, CELL_SIZE_PX, cell.height).width
   const left = description.countsUnits ? area.x : start.column * CELL_SIZE_PX
 
   // The widest column numbers: the longest upright one (under 100) and the longest turned one.
@@ -262,14 +262,14 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   }
   const rowsAt = (gridX: number, normal: [number, number]) => {
     for (let index = 0; index < count.rows; index += 1) {
-      const gridY = description.countsUnits ? area.y + index * unitDown + unitDown / 2 : rowTopPx(technique, start.row + index) + CELL_SIZE_PX / 2
+      const gridY = description.countsUnits ? area.y + index * unitDown + unitDown / 2 : rowTopPx(technique, start.row + index, weave.cell) + cell.height / 2
       const first = box.row + index * description.rowsPerUnit
       const marked = description.countsUnits ? { top: first, left: box.column, rows: span.rows, columns: box.columns } : { top: first, left: box.column, rows: 1, columns: box.columns }
       along('row', index, gridX, gridY, normal, marked, first)
     }
   }
 
-  columnsAt(start.row, description.countsUnits ? area.y : rowTopPx(technique, start.row), [0, -1])
+  columnsAt(start.row, description.countsUnits ? area.y : rowTopPx(technique, start.row, weave.cell), [0, -1])
   rowsAt(left, [-1, 0])
   if (box.sides === 'all') {
     columnsAt(lastRow, bottom, [0, 1])
@@ -291,7 +291,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   })
   const laid = boxes.map((box) =>
     box.kind === 'frame' && project.frame
-      ? layBox(box, project.frame, { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
+      ? layBox(box, withCell(project.frame, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale),
   )
   const everyLabel = laid.flatMap((box) => box.labels)
