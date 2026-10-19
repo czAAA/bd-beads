@@ -2,7 +2,7 @@ import { positionKey, type GridPosition } from './grid'
 import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
 import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import type { FrameEdge } from './frame'
-import { describeWeave, type Weave } from './weave'
+import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
 import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type Layer } from './layers'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
@@ -150,7 +150,7 @@ export function selectionWithEdges(selection: Selection, edges: readonly FrameEd
 
 /** The Selection moved by whole beads, its size kept; its beads stay where they are. Where beads are laid in Units it
  * moves by whole Units down. */
-export function movedSelection(selection: Selection, rows: number, columns: number, weave: Weave = { technique: 'loom' }): Selection {
+export function movedSelection(selection: Selection, rows: number, columns: number, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Selection {
   const { rowsPerUnit } = describeWeave(weave)
   return { ...selection, top: selection.top + Math.round(rows / rowsPerUnit) * rowsPerUnit, left: selection.left + columns }
 }

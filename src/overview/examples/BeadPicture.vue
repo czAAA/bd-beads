@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { framedGrid, type Grid, type RowProgress, type Technique } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { HoverPreview } from '../../rendering/overlayRenderer'
@@ -26,7 +27,7 @@ const props = withDefaults(
     /** Drawn as an export is: light whatever the theme, on the print board (DESIGN.md §4.3). */
     print?: boolean
   }>(),
-  { technique: 'loom', print: false, rowProgress: undefined, selection: undefined, preview: undefined },
+  { technique: DEFAULT_TECHNIQUE, print: false, rowProgress: undefined, selection: undefined, preview: undefined },
 )
 
 const theme = useResolvedTheme()

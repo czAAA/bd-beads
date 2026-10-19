@@ -91,6 +91,20 @@ export default tseslint.config(
       ],
     },
   },
+  // A Technique is named only in the weave config (ticket 506); everything else reads it from there.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts', 'src/domain/weave.ts', 'src/i18n/**', 'src/testSetup.ts', 'src/testUtils/**'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "Literal[value=/^(loom|peyote|brick|rightAngle|netting)$/]",
+          message: 'Read the Technique from the weave config in domain/weave.ts (TECHNIQUE_IDS, DEFAULT_TECHNIQUE, describeWeave) instead of writing it as a literal (ticket 506).',
+        },
+      ],
+    },
+  },
   // The backend Worker (ticket 71) is its own module with its own runtime: the app reaches it over /api, never by
   // import. Placed before the folder rules below, which replace it for their files.
   {

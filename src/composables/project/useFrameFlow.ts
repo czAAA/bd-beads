@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import { describeWeave, type Technique } from '../../domain/weave'
+import { DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { canvasWeave, createProject, frameWeave, rowProgressStarted, weaveOf, withFrame, type CreateProjectInput, type Project } from '../../domain/project'
@@ -95,7 +95,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function describe(frame: Frame): string {
     const t = deps.messages()
     const project = deps.currentProject()
-    const { columns, rows } = describeWeave(project ? frameWeave(project) : { technique: 'loom' }).unitsOf(frame)
+    const { columns, rows } = describeWeave(project ? frameWeave(project) : { technique: DEFAULT_TECHNIQUE }).unitsOf(frame)
     return t.frame.announceSet.replace('{width}', String(columns)).replace('{height}', String(rows))
   }
 

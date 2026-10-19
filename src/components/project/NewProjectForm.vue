@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
-import { DEFAULT_NET_SIZE, describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
+import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -59,7 +59,7 @@ const emit = defineEmits<{
 
 const name = ref('')
 const beadId = ref(BEAD_CATALOG[0]!.id)
-const technique = ref<Technique>('loom')
+const technique = ref<Technique>(DEFAULT_TECHNIQUE)
 /** The Brick block (ticket 477): kept while another Technique is chosen, used by brick stitch only. */
 const brickBlock = ref(1)
 const netSize = ref(DEFAULT_NET_SIZE)
@@ -70,7 +70,7 @@ const makerName = ref('')
 const tourReset = useTourFormReset()
 if (tourReset) {
   watch(tourReset, () => {
-    technique.value = 'loom'
+    technique.value = DEFAULT_TECHNIQUE
     beadId.value = BEAD_CATALOG[0]!.id
   })
 }

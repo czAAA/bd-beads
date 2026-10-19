@@ -1,7 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
 import { sizeOf, type Sized } from './canvas'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
-import { describeWeave, type Weave } from './weave'
+import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 
@@ -12,7 +12,7 @@ export interface StatedSize {
   unit: SizeUnit
 }
 
-const BEADS_WEAVE: Weave = { technique: 'loom' }
+const BEADS_WEAVE: Weave = { technique: DEFAULT_TECHNIQUE }
 
 /** The positions a stated size works out to. mm/cm go through the chosen Bead's footprint once and are forgotten (ADR
  * 0026). Where the Technique counts Units (ticket 482) the size is whole Units, a Unit's pitch being a bead's length
@@ -53,7 +53,7 @@ export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Parti
   const { columns, rows } = sizeOf(project)
   // The Frame's own Weave when there is one (ticket 492): its size is what is measured.
   const woven = 'frame' in project && project.frame ? project.frame : project
-  const description = describeWeave({ technique: woven.technique ?? 'loom', netSize: woven.netSize })
+  const description = describeWeave({ technique: woven.technique ?? DEFAULT_TECHNIQUE, netSize: woven.netSize })
   // Right-angle weave: the Units' own pitch, not a column of beads (ticket 482).
   const { width: widthMm, height: heightMm } = description.countsUnits
     ? description.blockExtent(columns, rows, beadPitchMm(bead), bead.heightMm)
