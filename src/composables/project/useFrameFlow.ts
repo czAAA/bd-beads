@@ -3,7 +3,7 @@ import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { describeWeave, type Technique } from '../../domain/weave'
-import { changeCanvasWeave, changeFrame } from '../../domain/changeFrame'
+import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { canvasWeave, frameWeave, rowProgressStarted, withFrame, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -232,13 +232,16 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     else deps.announce(deps.messages().frame.announceNothingToFit)
   }
 
-  /** Whether the Remove frame confirmation is open: always asked first: the passes go with the Frame (tickets 426,
-   * 455). */
+  /** Whether the Remove frame confirmation is open: asked only when a pass is done, as the passes go with the Frame
+   * (tickets 426, 455, 497). */
   const removeConfirmOpen = ref(false)
 
-  /** Remove Frame: asks first (ticket 455). */
+  /** Remove Frame: asks first only when it would throw away a done pass (ticket 497); otherwise the Frame goes at once. */
   function remove(): void {
-    if (deps.currentProject()?.frame) removeConfirmOpen.value = true
+    const project = deps.currentProject()
+    if (!project?.frame) return
+    if (frameChangeDiscardsProgress(project, { remove: true })) removeConfirmOpen.value = true
+    else commit(undefined)
   }
 
   /** The Remove frame question answered No: nothing changes. */

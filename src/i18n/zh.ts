@@ -506,7 +506,7 @@ export const zh: Translations = {
     fitToDrawing: '贴合图形',
     removeFrame: '移除边框',
     removeConfirmTitle: '移除边框？',
-    removeConfirmMessage: '边框会移除，其中的珠子也会一并移除。已标记完成的行也会清除。此操作可以撤销。',
+    removeConfirmMessage: '已标记完成的行会随边框一起清除。其中的珠子会保留在画布上。此操作可以撤销。',
     removeConfirmButton: '移除边框',
     removeConfirmCancel: '取消',
     explainer: '边框标出哪些珠子成为图样。边框之外的珠子仍留在画布上。',
