@@ -4,8 +4,7 @@ import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
-import { copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
-import { ru } from './i18n/ru'
+import { pressBar, copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
 
 beforeEach(() => {
   localStorage.clear()
@@ -149,7 +148,7 @@ describe('App select, copy and paste', () => {
     await projectWithMotif(wrapper)
     await drag(wrapper, [0, 1])
 
-    await wrapper.find('[data-testid="context-bar-clear"]').trigger('click')
+    await pressBar(wrapper, 'clear')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(false)
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
@@ -162,7 +161,7 @@ describe('App select, copy and paste', () => {
     await projectWithMotif(wrapper)
     await selectAll(wrapper)
 
-    await wrapper.find('[data-testid="context-bar-clear"]').trigger('click')
+    await pressBar(wrapper, 'clear')
 
     expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
@@ -191,12 +190,12 @@ describe('App select, copy and paste', () => {
     }
 
     await tap({ row: 1, column: 1 })
-    await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
+    await pressBar(wrapper, 'frame')
     await flushPromises()
     expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
     // A Frame already set takes Frame again (ticket 407).
     await tap({ row: 1, column: 1 })
-    await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
+    await pressBar(wrapper, 'frame')
     await flushPromises()
     expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
   })
@@ -206,7 +205,7 @@ describe('App select, copy and paste', () => {
     await projectWithMotif(wrapper)
     await drag(wrapper, [0, 1, 5])
 
-    await wrapper.find('[data-testid="context-bar-fill"]').trigger('click')
+    await pressBar(wrapper, 'fill')
 
     const grid = frameGrid(loadProjects()[0]!)
     expect(grid[0]![1]!.color).not.toBeNull()
@@ -299,17 +298,6 @@ describe('App clipboard lifecycle (ticket 92)', () => {
     await flushPromises()
 
     expect(frameGrid(loadProjects()[0]!)[2]![2]!.color).toBe('#e63746')
-  })
-
-  it('Copy of a Selection with no drawn bead says so, copies nothing and keeps the Selection (ticket 437)', async () => {
-    const wrapper = await mountWithProject(6, 6)
-    await pickTool(wrapper, 'select')
-    await drag(wrapper, [0, 1])
-
-    await wrapper.find('[data-testid="context-bar-copy"]').trigger('click')
-
-    expect(wrapper.text()).toContain(ru.tools.copyNothingMessage)
-    expect(selectedBeadCount(wrapper)).toBeGreaterThan(0)
   })
 
   it('a drag in paste mode is one stamp at the press point and selects nothing (ticket 437)', async () => {

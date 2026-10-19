@@ -3,7 +3,7 @@ import { nextTick } from 'vue'
 import type { mount } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
-import { pickColor, pickTool } from './testUtils/pill'
+import { armSelectionBar, pressBar, pickColor, pickTool } from './testUtils/pill'
 
 beforeEach(() => {
   localStorage.clear()
@@ -28,11 +28,12 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     await drag(wrapper, [0, 1]) // a 1x2 row selection
 
     expect(wrapper.find('[data-testid="context-bar-size"]').text()).toMatch(/^2×1 ≈ /)
+    await armSelectionBar()
     expect(wrapper.find('[data-testid="context-bar-remove-line"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="context-bar-paste"]').exists()).toBe(false)
 
     // Copy clears the Selection and arms paste mode at once, so no bar remains, Select all included (ticket 437).
-    await wrapper.find('[data-testid="context-bar-copy"]').trigger('click')
+    await pressBar(wrapper, 'copy')
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
 
     // Escape leaves paste mode; with no Selection there is no bar, and no standalone Select all either (ticket 439).
@@ -50,7 +51,7 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     const before = selectedBeadCount(wrapper)
     expect(before).toBeGreaterThan(0)
 
-    await wrapper.find('[data-testid="context-bar-remove-line"]').trigger('click')
+    await pressBar(wrapper, 'remove-line')
     // A removed line shifts the grid up by one row; the Selection no longer applies (cleared by the command).
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
   })

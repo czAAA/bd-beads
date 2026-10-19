@@ -8,7 +8,7 @@ import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
 import { shownBeads } from '../../domain/layers'
-import { selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
+import { copyLayerSelection, selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
 import { rotationSwapsAxes } from '../../domain/grid'
@@ -336,11 +336,10 @@ function wireAppShell(services: Services) {
     if (selection.value) frameFlow.setTo(selectionFrame(selection.value))
   }
 
-  /** Copy (ticket 437, ADR 0057): keeps the drawn beads, clears the Selection and arms paste mode under Select; a
-   * Selection with no drawn bead says so. */
+  /** Copy (ticket 437, ADR 0057): keeps the drawn beads, clears the Selection and arms paste mode under Select; with
+   * no drawn bead the bar's button is disabled and the shortcut does nothing (ticket 499). */
   function onCopy() {
     if (copySelected()) selectTool('select')
-    else showToast('copy-nothing', t.value.tools.copyNothingMessage, 'info')
   }
 
   /** Cut (tickets 415, 447): copies and empties the Selection, then, as Copy does, arms paste mode under Select. */
@@ -698,6 +697,7 @@ function wireAppShell(services: Services) {
     activeProject: currentProject,
     activeTool: () => activeTool.value,
     hasSelection: () => !!selection.value,
+    selectionHasBeads: () => !!selection.value && !!currentProject() && copyLayerSelection(currentProject()!, selection.value) !== undefined,
     canUndo: () => canUndo.value,
     canRedo: () => canRedo.value,
     hasClipboard,
