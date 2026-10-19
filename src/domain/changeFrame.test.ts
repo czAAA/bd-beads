@@ -412,3 +412,22 @@ describe('changeFrame', () => {
     })
   })
 })
+
+describe('changeFrame in Netting (ticket 485)', () => {
+  const woven = () => createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+
+  it('does not switch to another Technique, or from one', () => {
+    expect(changeFrame(woven(), { technique: 'peyote' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+    const loom = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+    expect(changeFrame(loom, { technique: 'netting' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+  })
+
+  it('does not take out a single line, which is not a diamond', () => {
+    expect(changeFrame(woven(), { removeLine: { axis: 'row', index: 0 } })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+  })
+
+  it('moves in whole diamonds', () => {
+    const result = changeFrame(woven(), { move: { rows: 4, columns: 4 } })
+    expect(result.kind === 'changed' && result.project.frame).toMatchObject({ row: 4, column: 4, rows: 7, columns: 13 })
+  })
+})

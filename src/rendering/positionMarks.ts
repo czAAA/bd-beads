@@ -21,6 +21,8 @@ export interface MarkTileInput {
   technique: Technique
   /** The Brick block (ticket 477); nothing is 1. */
   brickBlock?: number
+  /** The Net size (ticket 485); nothing is the default. */
+  netSize?: number
   /** Device pixels per grid px: the zoom times the screen's pixel ratio. */
   deviceScale: number
   pixelRatio: number
@@ -28,7 +30,7 @@ export interface MarkTileInput {
 }
 
 /** How many rows a tile holds: the shift's cycle, and at least two. */
-function tileRows(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): number {
+function tileRows(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize'>): number {
   return Math.max(2, rowCycle(input))
 }
 
@@ -40,13 +42,12 @@ interface Tile {
 }
 
 /** What one tile holds: a bead across and a cycle of rows down, or the two beads of Right-angle weave that a Unit's
- * pitch repeats (ticket 482). */
-function tileOf(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): Tile {
+ * pitch repeats (ticket 482), or a net's diamond (ticket 485). */
+function tileOf(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize'>): Tile {
   const description = describeWeave(input)
   if (description.countsUnits) {
     const cell = cellSizePx(input.technique)
-    const side = cell.width + cell.height
-    return { size: { width: side, height: side }, beads: [0, 1].map((row) => description.box({ row, column: 0 }, cell.width, cell.height)) }
+    return description.tile(cell.width, cell.height)
   }
   const pitch = rowPitchPx(input.technique)
   return {

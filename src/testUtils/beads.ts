@@ -47,13 +47,14 @@ function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: n
   const root = surfaceRoot(wrapper)
   const technique = root.attributes('data-technique') as Technique
   const brickBlock = Number(root.attributes('data-brick-block') ?? 1)
+  const netSize = root.attributes('data-net-size') === undefined ? undefined : Number(root.attributes('data-net-size'))
   const rotation = Number(root.attributes('data-rotation')) as Rotation
   const zoom = Number(root.attributes('data-zoom'))
   const scrollX = Number(root.attributes('data-scroll-x'))
   const scrollY = Number(root.attributes('data-scroll-y'))
   const { row, column } = positionOf(wrapper, at)
 
-  const point = surfaceView({ space: OPEN_SPACE, technique, brickBlock, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
+  const point = surfaceView({ space: OPEN_SPACE, technique, brickBlock, netSize, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
   return { clientX: point.x, clientY: point.y }
 }
 

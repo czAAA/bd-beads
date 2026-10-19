@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
-import { describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
+import { DEFAULT_NET_SIZE, describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -20,6 +20,7 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import BrickBlockField from './BrickBlockField.vue'
+import NetSizeField from './NetSizeField.vue'
 import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -61,6 +62,7 @@ const beadId = ref(BEAD_CATALOG[0]!.id)
 const technique = ref<Technique>('loom')
 /** The Brick block (ticket 477): kept while another Technique is chosen, used by brick stitch only. */
 const brickBlock = ref(1)
+const netSize = ref(DEFAULT_NET_SIZE)
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
 /** The Tour's "Back to loom for your first Project" (ticket 80): Loom and the default Bead, with the Name left as
@@ -97,6 +99,7 @@ function currentInput(): CreateProjectInput {
     name: name.value.trim(),
     technique: technique.value,
     ...(describeWeave({ technique: technique.value }).hasBrickBlock && brickBlock.value > 1 ? { brickBlock: brickBlock.value } : {}),
+    ...(describeWeave({ technique: technique.value }).hasNetSize ? { netSize: netSize.value } : {}),
     beadId: beadId.value,
     makerName: makerName.value.trim(),
   }
@@ -111,7 +114,7 @@ function draftInput(): CreateProjectInput {
   return { ...currentInput(), ...(convertSize.value ? { size: convertSize.value } : {}) }
 }
 
-watch([name, beadId, technique, brickBlock, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
+watch([name, beadId, technique, brickBlock, netSize, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
@@ -229,6 +232,7 @@ function onDropImage(file: File) {
     </FormField>
 
     <BrickBlockField v-if="describeWeave({ technique }).hasBrickBlock" v-model="brickBlock" testid="brick-block" />
+    <NetSizeField v-if="describeWeave({ technique }).hasNetSize" v-model="netSize" testid="net-size" />
 
     <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus" data-testid="create-project">
       {{ t.form.submit }}
@@ -271,6 +275,7 @@ function onDropImage(file: File) {
       v-if="pendingImage && selectedBead"
       :bead="selectedBead"
       :technique="technique"
+      :net-size="netSize"
       :slow-framing-cell-thresholds="slowFramingCellThresholds"
       @confirm="onSizeConfirm"
       @cancel="pendingImage = undefined"

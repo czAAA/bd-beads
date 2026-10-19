@@ -17,6 +17,8 @@ const scenarios = [
   ...TECHNIQUES.map((technique) => ({ name: `${technique}-plain`, technique, rowProgress: undefined })),
   // Right-angle weave counts Units, so Row progress waits for ticket 484: 6 Units across and 4 down.
   { name: 'rightAngle-plain', technique: 'rightAngle' as const, rowProgress: undefined },
+  // Netting counts diamonds, so Row progress waits for ticket 487: 3 diamonds across and 3 down at Net size 3.
+  { name: 'netting-plain', technique: 'netting' as const, rowProgress: undefined },
   ...TECHNIQUES.map((technique) => ({
     name: `${technique}-progress-rows`,
     technique,
@@ -34,7 +36,7 @@ for (const scenario of scenarios) {
     const orientation = rotated ? 'rotated' : 'upright'
 
     test(`${scenario.name}, ${orientation}`, async ({ page }) => {
-      const size = scenario.technique === 'rightAngle' ? { columns: 7, rows: 9 } : {}
+      const size = scenario.technique === 'rightAngle' ? { columns: 7, rows: 9 } : scenario.technique === 'netting' ? { columns: 13, rows: 9 } : {}
       const project = fixtureProject({ technique: scenario.technique, rotation: rotated ? 90 : 0, rowProgress: scenario.rowProgress, ...size })
       await openApp(page, [project])
       await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)

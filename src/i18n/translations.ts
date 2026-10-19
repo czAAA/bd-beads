@@ -25,6 +25,11 @@ export interface Translations {
     techniquePeyote: string
     techniqueBrick: string
     techniqueRightAngle: string
+    techniqueNetting: string
+    netSizeLabel: string
+    netSizeLess: string
+    netSizeMore: string
+    netSizeValue: string
     brickBlockLabel: string
     brickBlockLess: string
     brickBlockMore: string

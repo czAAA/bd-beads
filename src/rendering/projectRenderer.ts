@@ -69,17 +69,10 @@ export function visibleBeads(
   }
 }
 
-// The positions of Right-angle weave touching a stretch of grid space (ticket 482): a Unit's pitch down is two rows, so
-// the lines either side of the ones in view are asked for as well.
+// The positions of a Technique that counts Units touching a stretch of grid space (tickets 482, 485).
 function visibleUnitBeads(weave: Weave, area: { left: number; right: number; top: number; bottom: number }) {
   const cell = cellSizePx(weave.technique)
-  const side = cell.width + cell.height
-  return {
-    firstRow: Math.floor(area.top / side) * 2 - 1,
-    lastRow: Math.floor(area.bottom / side) * 2 + 2,
-    first: Math.floor(area.left / side) - 1,
-    last: Math.floor(area.right / side) + 1,
-  }
+  return describeWeave(weave).visible(area, cell.width, cell.height)
 }
 
 // The beads touching a stretch of grid space on a Canvas (ADR 0026): as visibleBeads, but unbounded, so indices may be
@@ -114,7 +107,7 @@ export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, 
 }
 
 /** The parts of a Project the renderer reads. */
-export type DrawnProject = Pick<Project, 'technique' | 'brickBlock' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'>
+export type DrawnProject = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'>
 
 export interface RenderInput {
   // The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded).
@@ -155,7 +148,7 @@ function drawPositionMarks(
   context: DrawingContext,
   { project, space, area, zoom, pixelRatio, theme, style, margin }: { project: DrawnProject; space: Space; style: PositionMarkStyle; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
 ): void {
-  const pattern = positionMarkPattern(context, { style, technique: project.technique, brickBlock: project.brickBlock, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
+  const pattern = positionMarkPattern(context, { style, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
   if (!pattern) {
     return
   }
