@@ -193,7 +193,6 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.get('[data-testid="frame-chrome-remove"]').attributes('aria-disabled')).toBeUndefined()
 
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
-    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)

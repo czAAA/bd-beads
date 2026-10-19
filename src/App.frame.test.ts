@@ -239,7 +239,6 @@ describe('Edit Frame', () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
-    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(false)
@@ -276,7 +275,6 @@ describe('Fit and Remove frame, on the Progress bar and not in Project (ticket 4
 
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
-    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(savedFrame()).toBeUndefined()
 
     await key({ key: 'z', ctrlKey: true })
@@ -381,16 +379,13 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
   })
 
-  it('asks before removing the Frame even while no pass is done, and one Undo brings it back (ticket 455)', async () => {
+  it('removes the Frame at once while no pass is done, and one Undo brings it back (ticket 497)', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
 
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
-    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(true)
-    expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
-
-    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
+    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
     expect(savedFrame()).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-fit-frame"]').exists()).toBe(true)
@@ -446,7 +441,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('offers Rotate only until a pass is done: Row done hides it, Remove frame brings it back (tickets 411, 416, 426)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 0, column: 0, rows: 8, columns: 8, beads: {} } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 20, column: 20, rows: 8, columns: 8, beads: {} } })
     await selectAll(wrapper)
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
 
@@ -498,19 +493,22 @@ describe('The Frame is its own sheet of beads (ADR 0066)', () => {
     return { ...base, frame: { ...base.frame!, row: 20, column: 20 }, beads: withColors({}, [{ row: 20, column: 40, color: RED }, { row: 2, column: 2, color: RED }]) }
   }
 
-  it('removes the Frame\'s beads with it behind a confirmation that says so, leaves the Canvas, and one Undo brings both back', async () => {
-    const wrapper = await mountOpen({ ...sheet(), frame: { ...sheet().frame!, beads: { 0: { 0: RED } } } })
+  it('drops the Frame\'s beads onto the Canvas, clearing what lay under it, with no confirmation; one Undo brings back the Frame and the cleared beads', async () => {
+    const project = sheet()
+    const wrapper = await mountOpen({ ...project, beads: { ...project.beads, 21: { 21: RED } }, frame: { ...project.frame!, beads: { 0: { 0: RED } } } })
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
-    expect(wrapper.get('[data-testid="confirm-modal-message"]').text()).toBe(en.frame.removeConfirmMessage)
-    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+    await flushPromises()
 
+    expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
     expect(savedFrame()).toBeUndefined()
-    expect(loadProjects()[0]!.beads).toEqual(sheet().beads)
-    expect(beadColor(wrapper, { row: 20, column: 20 })).toBeNull()
+    expect(loadProjects()[0]!.beads).toEqual({ ...sheet().beads, 20: { 20: RED, 40: RED } })
+    expect(beadColor(wrapper, { row: 20, column: 20 })).toBe(RED)
+    expect(beadColor(wrapper, { row: 21, column: 21 })).toBeNull()
 
     await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 20, column: 20, rows: 3, columns: 3 })
     expect(savedFrameBeads()).toEqual({ 0: { 0: RED } })
+    expect(loadProjects()[0]!.beads[21]?.[21]).toBe(RED)
   })
 })
