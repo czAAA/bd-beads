@@ -44,8 +44,10 @@ export interface ControlDeps {
   onFillSelection: () => void
   onFrameFromSelection: () => void
   onToggleRulers: () => void
-  /** Starts Edit Frame (ticket 417). */
+  /** The edit pencil: shows or hides the Frame's handles (tickets 417, 510). */
   onEditFrame: () => void
+  /** The strip's Frame button: opens or closes the Frame bar (ticket 510). */
+  onToggleFrameBar: () => void
   /** 7 and Ctrl/⌘+A: selects the rectangle round every bead and switches to Select (ticket 414). */
   onSelectAll: () => void
   onCopy: () => void
@@ -294,7 +296,6 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'pencil',
     name: (t) => t.frame.editFrame,
     body: (t) => t.tooltips.editFrame,
-    // Open once a pass is done too, for the size and Remove Frame (ticket 475).
     enabled: hasFrame,
     disabledBody: (t) => t.tooltips.setFrameFirst,
     group: 'canvas',
@@ -306,14 +307,14 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'strip-frame',
     icon: 'frame',
     name: (t) => t.frame.title,
-    body: (t) => t.tooltips.editFrame,
+    body: (t) => t.tooltips.frameBar,
     // Open once a pass is done too, for the size and Remove Frame (ticket 475).
     enabled: hasFrame,
     disabledBody: (t) => t.tooltips.setFrameFirst,
     group: 'canvas',
     chords: [],
     needsProject: true,
-    run: (deps) => deps.onEditFrame(),
+    run: (deps) => deps.onToggleFrameBar(),
   },
   ...FRAME_EDGES.flatMap((edge) => [frameEdgeAction(edge, 'out'), frameEdgeAction(edge, 'in')]),
   {

@@ -53,6 +53,12 @@ async function toggleEdit(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
   await flushPromises()
 }
 
+/** The Frame button in the Canvas strip: opens the Frame bar, which is no part of the pencil (ticket 510). */
+async function toggleBar(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
+  await wrapper.get('[data-testid="strip-frame"]').trigger('click')
+  await flushPromises()
+}
+
 const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
 /** The rectangle of the saved Frame, its beads aside. */
 const savedFrame = () => {
@@ -87,16 +93,15 @@ describe('Edit Frame', () => {
     expect(wrapper.find('[data-testid="strip-frame"]').exists()).toBe(false)
 
     const framed = await mountOpen(framedProject())
-    expect(editing(framed)).toBe(false)
     expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('false')
     await toggleEdit(framed)
-    expect(editing(framed)).toBe(true)
     expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('true')
-    await toggleEdit(framed)
     expect(editing(framed)).toBe(false)
+    await toggleEdit(framed)
+    expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('false')
   })
 
-  it('opens and closes from the Frame button in the Canvas strip too: one switch with the pencil (ticket 473)', async () => {
+  it('opens and closes the bar from the Frame button in the Canvas strip, apart from the pencil (tickets 473, 510)', async () => {
     const wrapper = await mountOpen(framedProject())
     const button = () => wrapper.get('[data-testid="strip-frame"]')
     expect(button().text()).toBe('Frame')
@@ -105,15 +110,16 @@ describe('Edit Frame', () => {
     await flushPromises()
     expect(editing(wrapper)).toBe(true)
     expect(button().attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('true')
-    await toggleEdit(wrapper)
+    expect(wrapper.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('false')
+    await button().trigger('click')
+    await flushPromises()
     expect(editing(wrapper)).toBe(false)
     expect(button().attributes('aria-pressed')).toBe('false')
   })
 
   it('resizes to a typed size, growing both sides evenly, as one Undo step (ticket 473)', async () => {
     const wrapper = await mountOpen(bigFramedProject())
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     await wrapper.get('[data-testid="frame-bar-width"]').setValue('9')
     const field = wrapper.get('[data-testid="frame-bar-height"]')
     await field.setValue('7')
@@ -135,11 +141,11 @@ describe('Edit Frame', () => {
 
   it('closes like Menu and Project: Escape, or a press on the canvas that only closes it, and the next one draws (ticket 475)', async () => {
     const wrapper = await mountOpen(framedProject())
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     await key({ key: 'Escape' })
     expect(editing(wrapper)).toBe(false)
 
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     await pickTool(wrapper, 'paint')
     expect(editing(wrapper)).toBe(true)
     await pressBead(wrapper, { row: 2, column: 4 })
@@ -154,19 +160,17 @@ describe('Edit Frame', () => {
     expect(beadColor(wrapper, { row: 2, column: 4 })).not.toBeNull()
   })
 
-  it('is the Top sheet under 1024px whatever opened it, and a dropdown from the pencil from 1024px (tickets 475, 510)', async () => {
+  it('is the Top sheet under 1024px, like Menu and Project, and the pencil does not open it (tickets 475, 510)', async () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
-    expect(wrapper.find('[data-testid="top-sheet"] [data-testid="frame-bar"]').exists()).toBe(true)
-    await toggleEdit(wrapper)
-    await wrapper.get('[data-testid="strip-frame"]').trigger('click')
-    await flushPromises()
+    expect(editing(wrapper)).toBe(false)
+    await toggleBar(wrapper)
     expect(wrapper.find('[data-testid="top-sheet"] [data-testid="frame-bar"]').exists()).toBe(true)
   })
 
   it('is one panel at a time with Menu and Project (ticket 475)', async () => {
     const wrapper = await mountOpen(framedProject())
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await flushPromises()
     expect(editing(wrapper)).toBe(false)
@@ -211,7 +215,7 @@ describe('Edit Frame', () => {
 
   it('has a − and + on each edge of the bar: a press moves that edge one bead and is one Undo step, to a least of four beads (ticket 473)', async () => {
     const wrapper = await mountOpen(bigFramedProject())
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     const press = async (edge: string, direction: 'out' | 'in') => {
       await wrapper.get(`[data-testid="frame-edge-${edge}-${direction}"]`).trigger('click')
       await flushPromises()
@@ -252,12 +256,12 @@ describe('Edit Frame', () => {
     const wrapper = await mountOpen({ ...framedProject(), rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     expect(editing(wrapper)).toBe(false)
     expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-disabled')).toBeUndefined()
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     expect([wrapper.get('[data-testid="frame-bar-width"]').attributes('placeholder'), wrapper.get('[data-testid="frame-bar-height"]').attributes('placeholder')]).toEqual(['3', '2'])
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     expect(editing(wrapper)).toBe(false)
 
     await wrapper.get('[data-testid="frame-move-handle"]').trigger('keydown', { key: 'ArrowRight' })
@@ -312,7 +316,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
 
   it('turns the Frame and its beads from the Frame row, leaving Edit as it was, and one Undo turns it back (ticket 471)', async () => {
     const wrapper = await mountOpen(framedProject())
-    await toggleEdit(wrapper)
+    await toggleBar(wrapper)
     const wasEditing = editing(wrapper)
     await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
     await flushPromises()

@@ -560,7 +560,7 @@ function wireAppShell(services: Services) {
     visibleCentre,
   })
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0062). */
-  const editFrame = frameFlow.toggleEdit
+  const editFrame = frameFlow.toggleHandles
 
   /** Rotate: the Selection a quarter turn, with a Message saying how many beads it covered (ticket 416, ADR 0052). */
   const rotateFlow = useRotateSelectionFlow({
@@ -739,6 +739,7 @@ function wireAppShell(services: Services) {
     onToggleRulers: toggleRulers,
     onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
+    onToggleFrameBar: frameFlow.toggleBar,
     onCopy,
     pasteAtPointer,
     onSave,
@@ -906,12 +907,13 @@ function wireAppShell(services: Services) {
     ...removeLine,
     settingFrame: frameFlow.settingFrame,
     frameBarShown: frameFlow.barShown,
-    frameBarOpen: frameFlow.editOn,
-    frameBarFrom: frameFlow.barFrom,
+    frameBarOpen: frameFlow.barOpen,
+    frameHandlesOn: frameFlow.handlesOn,
     frameDraftProject: frameFlow.draftProject,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
-    onCloseFrameBar: frameFlow.closeEdit,
+    onToggleFrameBar: frameFlow.toggleBar,
+    onCloseFrameBar: frameFlow.closeBar,
     onFrameKey: (event: KeyboardEvent) => {
       if (frameFlow.onKey(event)) event.preventDefault()
     },
