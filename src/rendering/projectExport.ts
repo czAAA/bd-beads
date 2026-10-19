@@ -64,9 +64,9 @@ const PNG_STORY_RESERVE_PIXELS = 2_500_000
 
 // How far to enlarge the Project for a PNG: to a legible bead size, and no further than the pixel budget (less the
 // story's own room) allows.
-export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'>): number {
+export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): number {
   const wanted = PNG_BEAD_PX / CELL_SIZE_PX
-  const { width, height } = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation)
+  const { width, height } = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation, frameWeave(project).cell)
   if (width === 0 || height === 0) {
     return wanted
   }
@@ -86,7 +86,7 @@ export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' |
 // band to stay within the pixel budget (see pngZoom); redrawing the small story on every band is cheap.
 export async function exportProjectPng(project: Project, words: PrintText): Promise<Blob> {
   const zoom = pngZoom(project)
-  const displayed = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, zoom, project.rotation)
+  const displayed = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, zoom, project.rotation, frameWeave(project).cell)
   const beadsWidth = Math.ceil(displayed.width)
   const beadsHeight = Math.ceil(displayed.height)
   // The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183): room for the background name.

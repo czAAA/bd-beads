@@ -35,8 +35,8 @@ Every Bead color of every Bead line, offered for building a Palette; inside a Pr
 _Avoid_: color library, swatch catalog
 
 **Form factor**:
-The physical shape of a bead (e.g. round, cylinder/Delica, cube), which determines the shape of a project cell.
-_Avoid_: bead shape
+The physical shape of a bead (e.g. round, cylinder/Delica, cube). In a Real Bead shape it decides the outline of a project cell.
+_Avoid_: bead outline
 
 **Bead shape**: a Project setting, Symmetric or Real, chosen in the New Project form and the Project panel and saved with the file (older files and Templates read as Symmetric). Symmetric draws square cells, as before. Real draws each cell with the Bead's real proportions (width along the thread, height across it) and an outline from its Form factor: a rounded rectangle, so a Delica reads as a cylinder seen from the side. Applies to both layers, since a Project has one Bead. Grid positions, sizes counted in beads and Beads needed are the same in both.
 _Avoid_: cell shape

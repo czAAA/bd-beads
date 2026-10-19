@@ -9,6 +9,11 @@ export const pl: Translations = {
   form: {
     nameLabel: 'Nazwa',
     beadLabel: 'Koralik',
+    beadShapeLabel: 'Kształt koralika',
+    beadShapeSymmetric: 'Symetryczny',
+    beadShapeReal: 'Rzeczywisty',
+    beadShapeSymmetricTip: 'Rysuje każdy koralik jako równą komórkę; zmienia tylko wygląd płótna.',
+    beadShapeRealTip: 'Rysuje każdy koralik w prawdziwych proporcjach; zmienia tylko wygląd płótna.',
     techniqueLabel: 'Technika',
     techniqueLoom: 'Krosno',
     techniquePeyote: 'Peyote',

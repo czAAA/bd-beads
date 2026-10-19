@@ -2,7 +2,7 @@ import type { GridPosition, Rotation } from '../domain/grid'
 import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import { frameContains } from '../domain/canvas'
 import { MARGIN, withMargin } from '../domain/margin'
-import { canvasWeave, frameWeave, isInCurrentRow, isInFinishedRow, rowProgressOn, sameWeave, type Project } from '../domain/project'
+import { canvasWeave, frameWeave, isInCurrentRow, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../domain/project'
 import {
   BEAD_GAP_PX,
   brighten,
@@ -52,9 +52,9 @@ export function visibleBeads(
       columnsOf: () => ({ first: Math.max(0, range.first), last: Math.min(columns - 1, range.last) }),
     }
   }
-  const pitch = rowPitchPx(weave.technique)
-  // A bead reaches CELL_SIZE_PX below its row's top, so ask for a little more below.
-  const topRow = Math.max(0, Math.ceil((area.top - CELL_SIZE_PX) / pitch))
+  const pitch = rowPitchPx(weave.technique, weave.cell)
+  // A bead reaches its height below its row's top, so ask for a little more below.
+  const topRow = Math.max(0, Math.ceil((area.top - cellSizePx(weave.technique, weave.cell).height) / pitch))
   const bottomRow = Math.min(rows - 1, Math.floor(area.bottom / pitch))
 
   return {
@@ -72,7 +72,7 @@ export function visibleBeads(
 
 // The positions of a Technique that counts Units touching a stretch of grid space (tickets 482, 485).
 function visibleUnitBeads(weave: Weave, area: { left: number; right: number; top: number; bottom: number }) {
-  const cell = cellSizePx(weave.technique)
+  const cell = cellSizePx(weave.technique, weave.cell)
   return describeWeave(weave).visible(area, cell.width, cell.height)
 }
 
@@ -86,9 +86,9 @@ function visibleBeadsOpen(
     const range = visibleUnitBeads(weave, area)
     return { firstRow: range.firstRow, lastRow: range.lastRow, columnsOf: () => ({ first: range.first, last: range.last }) }
   }
-  const pitch = rowPitchPx(weave.technique)
+  const pitch = rowPitchPx(weave.technique, weave.cell)
   return {
-    firstRow: Math.ceil((area.top - CELL_SIZE_PX) / pitch),
+    firstRow: Math.ceil((area.top - cellSizePx(weave.technique, weave.cell).height) / pitch),
     lastRow: Math.floor(area.bottom / pitch),
     columnsOf: (row) => {
       const shift = rowShiftPx(weave, row)
@@ -110,7 +110,7 @@ export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, 
 }
 
 /** The parts of a Project the renderer reads. */
-export type DrawnProject = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'>
+export type DrawnProject = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
 
 export interface RenderInput {
   // The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded).
@@ -147,7 +147,7 @@ export interface RenderInput {
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
  * take in its drawn extent where it is woven otherwise and so draws larger or smaller than that. */
-function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'brickBlock' | 'netSize' | 'frame'>, margin = 0): Region | undefined {
+function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beadId' | 'beadShape'>, margin = 0): Region | undefined {
   const frame = project.frame
   if (!frame) {
     return undefined
@@ -160,9 +160,9 @@ function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'brickBlock'
     ? claimed
     : {
         x: grown.column * CELL_SIZE_PX,
-        y: rowTopPx(canvas.technique, grown.row),
-        width: projectExtentPx(canvas.technique, grown.columns, grown.rows).width,
-        height: projectExtentPx(canvas.technique, grown.columns, grown.rows).height,
+        y: rowTopPx(canvas.technique, grown.row, canvas.cell),
+        width: projectExtentPx(canvas.technique, grown.columns, grown.rows, canvas.cell).width,
+        height: projectExtentPx(canvas.technique, grown.columns, grown.rows, canvas.cell).height,
       }
   if (sameWeave(canvas, frame)) {
     return own
@@ -180,11 +180,12 @@ function drawPositionMarks(
   context: DrawingContext,
   { project, area, zoom, pixelRatio, theme, style, margin }: { project: DrawnProject; space: Space; style: PositionMarkStyle; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
 ): void {
-  const pattern = positionMarkPattern(context, { style, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
+  const pattern = positionMarkPattern(context, { style, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, cell: projectCell(project), deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
   if (!pattern) {
     return
   }
-  const pitch = rowPitchPx(project.technique)
+  const cellHeight = cellSizePx(project.technique, projectCell(project)).height
+  const pitch = rowPitchPx(project.technique, projectCell(project))
   const box = project.frame && withMargin(project.frame, margin)
   // The margin's box, between the marks just outside it: marks sit at the middle of each bead's cell, a row's shift
   // moves them half a bead right.
@@ -199,8 +200,8 @@ function drawPositionMarks(
       : {
           left: box.column * CELL_SIZE_PX + CELL_SIZE_PX / 4,
           right: (box.column + box.columns) * CELL_SIZE_PX + CELL_SIZE_PX / 4,
-          top: box.row * pitch + CELL_SIZE_PX / 2 - pitch / 2,
-          bottom: (box.row + box.rows - 1) * pitch + CELL_SIZE_PX / 2 + pitch / 2,
+          top: box.row * pitch + cellHeight / 2 - pitch / 2,
+          bottom: (box.row + box.rows - 1) * pitch + cellHeight / 2 + pitch / 2,
         })
   context.fillStyle = pattern
   // The pattern is scaled to the tile's whole pixels, so it is smoothed here; the beads are blitted as they are.
@@ -298,7 +299,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const { project, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, rows: band } = draw
   const weave = frameWeave(project)
   const description = describeWeave(weave)
-  const cornerRadius = beadRoundness(weave.technique) * CELL_SIZE_PX
+  const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   const { area } = draw
   const visible = visibleBeads(weave, space.columns, space.rows, { left: area.left - origin.x, right: area.right - origin.x, top: area.top - origin.y, bottom: area.bottom - origin.y })
   const firstRow = band ? Math.max(visible.firstRow, band.first - 1) : visible.firstRow
@@ -338,7 +339,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
   const { beads, frame, rotation } = project
   const weave = canvasWeave(project)
   const description = describeWeave(weave)
-  const cornerRadius = beadRoundness(weave.technique) * CELL_SIZE_PX
+  const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   const visible = visibleBeadsInSpace(weave, space, region, zoom, rotation)
   const firstRow = band ? Math.max(visible.firstRow, band.first - 1) : visible.firstRow
   const lastRow = band ? Math.min(visible.lastRow, band.last + 1) : visible.lastRow

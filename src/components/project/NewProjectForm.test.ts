@@ -136,6 +136,20 @@ describe('NewProjectForm', () => {
     expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'rightAngle' })
   })
 
+  it('offers Symmetric and Real, starts Symmetric and sends Real only when it is chosen (ticket 508)', async () => {
+    const wrapper = mount(NewProjectForm)
+
+    const options = wrapper.findAll('[data-testid="bead-shape-select"] [role="radio"]')
+    expect(options.map((option) => option.attributes('data-value'))).toEqual(['symmetric', 'real'])
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit')![0]![0]).not.toHaveProperty('beadShape')
+
+    await wrapper.find('[data-testid="bead-shape-select"] [data-value="real"]').trigger('click')
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit')![1]![0]).toMatchObject({ beadShape: 'real' })
+    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ beadShape: 'real' })
+  })
+
   it("emits the trimmed maker's name when one is typed, keeping it apart from the device-wide one (ticket 182)", async () => {
     const wrapper = mount(NewProjectForm)
 

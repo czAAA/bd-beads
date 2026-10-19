@@ -9,6 +9,11 @@ export const zh: Translations = {
   form: {
     nameLabel: '名称',
     beadLabel: '珠子',
+    beadShapeLabel: '珠子形状',
+    beadShapeSymmetric: '对称',
+    beadShapeReal: '真实',
+    beadShapeSymmetricTip: '把每颗珠子画成相同的方格，只改变画布的外观。',
+    beadShapeRealTip: '按真实比例绘制每颗珠子，只改变画布的外观。',
     techniqueLabel: '编织技法',
     techniqueLoom: '织机',
     techniquePeyote: '佩奥',

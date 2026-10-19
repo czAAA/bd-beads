@@ -7,7 +7,7 @@ import { inMargin, mayPlace } from '../../domain/margin'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { beadColorAt, canvasWeave, isInFinishedRow, rowProgressOn, sameWeave, type Project } from '../../domain/project'
+import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
@@ -311,7 +311,7 @@ const space = computed(() => spaceOf(toRaw(props.project), true))
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: props.project.technique, brickBlock: props.project.brickBlock, netSize: props.project.netSize, frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: props.project.technique, brickBlock: props.project.brickBlock, netSize: props.project.netSize, cell: projectCell(props.project), frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */

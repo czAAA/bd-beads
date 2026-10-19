@@ -7,6 +7,11 @@ export const en: Translations = {
   form: {
     nameLabel: 'Name',
     beadLabel: 'Bead',
+    beadShapeLabel: 'Bead shape',
+    beadShapeSymmetric: 'Symmetric',
+    beadShapeReal: 'Real',
+    beadShapeSymmetricTip: 'Draw every bead as an even cell; this changes only how the Canvas looks.',
+    beadShapeRealTip: 'Draw each bead in its real proportions; this changes only how the Canvas looks.',
     techniqueLabel: 'Technique',
     techniqueLoom: 'Loom',
     techniquePeyote: 'Peyote',
