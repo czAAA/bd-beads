@@ -136,11 +136,11 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toBeUndefined()
   })
 
-  it('removes the Frame at once while no pass is done, as nothing is thrown away (ticket 497)', () => {
+  it('asks before removing the Frame even while no pass is done', () => {
     const { removeConfirmOpen, remove, deps } = setup()
     remove()
-    expect(removeConfirmOpen.value).toBe(false)
-    expect(lastFrame(deps)).toBeUndefined()
+    expect(removeConfirmOpen.value).toBe(true)
+    expect(deps.replaceProject).not.toHaveBeenCalled()
   })
 
   it('removes the Frame once confirmed, and says so', () => {
