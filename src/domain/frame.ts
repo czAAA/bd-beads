@@ -1,6 +1,6 @@
 import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Frame } from './canvas'
 import type { GridPosition } from './grid'
-import { describeWeave, rowCycle, type Weave } from './weave'
+import { DEFAULT_TECHNIQUE, describeWeave, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
 import type { Project } from './project'
 
@@ -71,7 +71,7 @@ export function movedFrame(frame: Frame, rows: number, columns: number): Frame {
 
 /** The Frame with its size changed from the top-left corner, which stays where it is; never smaller than one bead
  * each way. */
-export function frameWithSize(frame: Frame, columns: number, rows: number, weave: Weave = { technique: 'loom' }): Frame {
+export function frameWithSize(frame: Frame, columns: number, rows: number, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Frame {
   const { smallest, snapBottom, snapRight } = describeWeave(weave)
   const tall = snapBottom(0, Math.max(smallest.rows, Math.round(rows)) - 1) + 1
   const wide = snapRight(0, Math.max(smallest.columns, Math.round(columns)) - 1) + 1

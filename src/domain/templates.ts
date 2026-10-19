@@ -1,4 +1,4 @@
-import { DEFAULT_NET_SIZE, TECHNIQUES, type Technique } from './weave'
+import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, FLAT_TECHNIQUES, TECHNIQUE_IDS, TECHNIQUES, type Technique } from './weave'
 import type { CreateProjectInput } from './project'
 
 /** The Templates New Project offers (ticket 493, spec 0488). The id is also the key of its copy (`templates.<id>` in
@@ -28,41 +28,39 @@ export interface Template {
   height: TemplateAxis
 }
 
-const FLAT_TECHNIQUES: readonly Technique[] = ['loom', 'peyote', 'brick']
-
 /** The registry, in the order the gallery shows it. The sizes are starting values, to be tuned against real pieces. */
 export const TEMPLATES: readonly Template[] = [
   {
     id: 'gerdan',
-    technique: 'loom',
+    technique: DEFAULT_TECHNIQUE,
     techniques: FLAT_TECHNIQUES,
     width: { default: 24, min: 8, max: 60, presets: [16, 24, 32] },
     height: { default: 80, min: 20, max: 200, presets: [60, 80, 100] },
   },
   {
     id: 'bracelet',
-    technique: 'loom',
+    technique: DEFAULT_TECHNIQUE,
     techniques: FLAT_TECHNIQUES,
     width: { default: 12, min: 4, max: 40, presets: [8, 12, 16] },
     height: { default: 90, min: 40, max: 200, presets: [70, 80, 90, 100, 110] },
   },
   {
     id: 'earrings',
-    technique: 'peyote',
-    techniques: ['peyote', 'brick', 'loom'],
+    technique: TECHNIQUE_IDS.peyote,
+    techniques: [TECHNIQUE_IDS.peyote, TECHNIQUE_IDS.brick, TECHNIQUE_IDS.loom],
     width: { default: 10, min: 10, max: 10, lock: true },
     height: { default: 48, min: 12, max: 120, presets: [32, 48, 64] },
   },
   {
     id: 'bag',
-    technique: 'loom',
+    technique: DEFAULT_TECHNIQUE,
     techniques: FLAT_TECHNIQUES,
     width: { default: 20, min: 8, max: 80, presets: [20, 30, 40] },
     height: { default: 40, min: 12, max: 120, presets: [30, 40, 60] },
   },
   {
     id: 'custom',
-    technique: 'loom',
+    technique: DEFAULT_TECHNIQUE,
     techniques: TECHNIQUES,
     width: { default: 24, min: 1, max: 200 },
     height: { default: 80, min: 1, max: 200 },
@@ -101,8 +99,8 @@ export function templateProjectInput(template: Template, choices: TemplateChoice
   return {
     name: choices.name,
     technique,
-    ...(technique === 'brick' && choices.brickBlock && choices.brickBlock > 1 ? { brickBlock: choices.brickBlock } : {}),
-    ...(technique === 'netting' ? { netSize: DEFAULT_NET_SIZE } : {}),
+    ...(describeWeave({ technique }).hasBrickBlock && choices.brickBlock && choices.brickBlock > 1 ? { brickBlock: choices.brickBlock } : {}),
+    ...(describeWeave({ technique }).hasNetSize ? { netSize: DEFAULT_NET_SIZE } : {}),
     beadId: choices.beadId,
     size: { width: clampAxis(template.width, choices.columns), height: clampAxis(template.height, choices.rows), unit: 'beads' },
   }

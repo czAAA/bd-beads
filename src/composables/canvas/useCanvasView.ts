@@ -4,6 +4,7 @@ import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { sameFrame } from '../../domain/frame'
 import { layerAt } from '../../domain/layers'
 import type { Project } from '../../domain/project'
+import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Scroll, type Size, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
 
@@ -124,7 +125,7 @@ export function useCanvasView(
     }
     const at = anchor ?? { x: viewport.value.width / 2, y: viewport.value.height / 2 }
     // Keeping a point still under a zoom does not depend on what is drawn, so a Project is not needed.
-    scroll.value = surfaceOf(currentProject() ?? { technique: 'loom', rotation: 0 }).scrollAfterZoom(at, next)
+    scroll.value = surfaceOf(currentProject() ?? { technique: DEFAULT_TECHNIQUE, rotation: 0 }).scrollAfterZoom(at, next)
     zoom.value = next
     isAtFit.value = false
   }

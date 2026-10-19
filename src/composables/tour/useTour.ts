@@ -9,6 +9,7 @@ import {
   type CreateProjectInput,
   type Project,
 } from '../../domain/project'
+import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import type { TourMarks } from '../../rendering/overlayRenderer'
 import type { Selection } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
@@ -54,7 +55,7 @@ export interface TourDeps {
 
 /** The size, Technique and Bead every Tour Project is made with (TourProject in the design system). */
 const TOUR_CREATE: Pick<CreateProjectInput, 'technique' | 'beadId' | 'size'> = {
-  technique: 'loom',
+  technique: DEFAULT_TECHNIQUE,
   beadId: BEAD_CATALOG[0]!.id,
   size: { width: TOUR_COLUMNS, height: TOUR_ROWS, unit: 'beads' },
 }

@@ -20,7 +20,7 @@ import { sameFrame } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
-import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, TECHNIQUES, type PassDirection, type Technique, type Weave } from './weave'
+import { clampNetSize, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, type PassDirection, type Technique, type Weave } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -161,7 +161,7 @@ export function createProject(input: CreateProjectInput): Project {
   const created = weaveOf({
     technique: input.technique,
     ...(input.brickBlock && input.brickBlock > 1 ? { brickBlock: clampBrickBlock(input.brickBlock) } : {}),
-    ...(input.technique === 'netting' ? { netSize: clampNetSize(input.netSize) } : {}),
+    ...(describeWeave({ technique: input.technique }).hasNetSize ? { netSize: clampNetSize(input.netSize) } : {}),
   })
 
   return {
@@ -260,7 +260,7 @@ export function frameGrid(project: Pick<Project, 'frame' | 'beads'>): Grid {
 
 /** A dense grid of cells as a Frame the size of the grid holding them: what the Convert image preview, the Overview's
  * pictures and a test's hand-made block of beads are drawn from. */
-export function framedGrid(grid: Grid, weave: Weave = { technique: 'loom' }): Pick<Project, 'beads' | 'frame'> {
+export function framedGrid(grid: Grid, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Pick<Project, 'beads' | 'frame'> {
   return {
     beads: {},
     frame: { row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))), ...weaveOf(weave) },
@@ -348,7 +348,7 @@ export function normalizeProject(stored: StoredProject): Project {
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
-  const netSize = technique === 'netting' ? clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) : undefined
+  const netSize = describeWeave({ technique }).hasNetSize ? clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) : undefined
   const canvas = weaveOf({ technique, brickBlock, netSize })
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
   const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...project.frame, beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
@@ -398,12 +398,12 @@ export function sameWeave(a: Weave, b: Weave): boolean {
 
 /** A stored Frame's Weave, or the Project's where it has none or an unreadable one. */
 function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
-  const technique = TECHNIQUES.includes(stored.technique as Technique) ? stored.technique! : undefined
+  const technique = isTechnique(stored.technique) ? stored.technique : undefined
   if (!technique) {
     return fallback
   }
   const brickBlock = readBrickBlock(stored.brickBlock)
-  const netSize = technique === 'netting' ? clampNetSize(typeof stored.netSize === 'number' ? stored.netSize : undefined) : undefined
+  const netSize = describeWeave({ technique }).hasNetSize ? clampNetSize(typeof stored.netSize === 'number' ? stored.netSize : undefined) : undefined
   return weaveOf({ technique, brickBlock, netSize })
 }
 
