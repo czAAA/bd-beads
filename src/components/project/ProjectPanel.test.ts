@@ -31,6 +31,17 @@ describe('ProjectPanel (ticket 443)', () => {
     expect(wrapper.get('[data-testid="save-button"]').classes()).toContain('app-button--primary')
   })
 
+  it('shows the Bead shape and asks for the other one (ticket 508)', async () => {
+    const wrapper = mountPanel()
+    const shape = wrapper.get('[data-testid="bead-shape"]')
+    expect(shape.get('[aria-checked="true"]').attributes('data-value')).toBe('symmetric')
+
+    await shape.get('[data-value="real"]').trigger('click')
+    expect(wrapper.emitted('set-bead-shape')).toEqual([['real']])
+    await wrapper.setProps({ project: { ...project, beadShape: 'real' } })
+    expect(wrapper.get('[data-testid="bead-shape"] [aria-checked="true"]').attributes('data-value')).toBe('real')
+  })
+
   it('has no Frame Edit, Fit or Remove, and no Frame explainer', () => {
     const wrapper = mountPanel()
     for (const gone of ['frame-edit', 'frame-fit', 'frame-remove', 'frame-explainer']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)

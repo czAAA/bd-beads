@@ -31,6 +31,16 @@ export interface Weave {
   technique: Technique
   brickBlock?: number
   netSize?: number
+  /** How the Bead is drawn when the Project's Bead shape is Real (ADR 0068); absent is Symmetric. Never stored with a
+   * layer: the Project's Bead and Bead shape decide it (`beadCell`). */
+  cell?: BeadCell
+}
+
+/** A Real cell: the Bead's height over its pitch along the thread, and how much of the cell's width its corners are
+ * rounded by, from the Bead's Form factor. */
+export interface BeadCell {
+  aspect: number
+  roundness: number
 }
 
 /** Which way a bead lies in its position. */
@@ -161,6 +171,33 @@ const TECHNIQUE_RULES = {
 
 const RULES: Record<Technique, TechniqueRules> = TECHNIQUE_RULES
 
+/** The Bead shape setting (ADR 0068): Symmetric draws a Technique's own cell, Real the Bead's. */
+export type BeadShape = 'symmetric' | 'real'
+
+/** The shape a Project, an old file or a Template without the setting has. */
+export const DEFAULT_BEAD_SHAPE: BeadShape = 'symmetric'
+
+/** Every Bead shape, in the order the choice lists them. */
+export const BEAD_SHAPES: readonly BeadShape[] = ['symmetric', 'real']
+
+/** How much of a bead's width its corners are rounded by, per Form factor: near sharp for a cylinder, a pill for a round
+ * bead, square for a cube. */
+const FORM_ROUNDNESS: Record<Bead['formFactor'], number> = { cylinder: 0.1, round: 0.5, cube: 0 }
+
+/** The one geometry function for a Bead's cell (ADR 0068): Symmetric is the Technique's own cell (undefined, so every
+ * rule below reads as before), Real the Bead's height over its pitch along the thread and its outline. */
+export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm' | 'formFactor'> | undefined, shape: BeadShape): BeadCell | undefined {
+  if (shape !== 'real' || !bead) {
+    return undefined
+  }
+  return { aspect: bead.heightMm / beadPitchMm(bead), roundness: FORM_ROUNDNESS[bead.formFactor] }
+}
+
+/** The Weave with the Bead's cell added (none, in Symmetric, leaves it as it is). */
+export function withCell(weave: Weave, cell: BeadCell | undefined): Weave {
+  return cell ? { ...weave, cell } : weave
+}
+
 /** Every Technique, in the order the choices are listed: the config map's own order, so a new entry is listed too. */
 export const TECHNIQUES = Object.keys(TECHNIQUE_RULES) as readonly Technique[]
 
@@ -251,7 +288,7 @@ interface Box {
 
 /** The Weave's description (ticket 481). */
 export function describeWeave(weave: Weave): WeaveDescription {
-  const rules = RULES[weave.technique]
+  const rules = weave.cell ? { ...RULES[weave.technique], cellAspect: weave.cell.aspect } : RULES[weave.technique]
   if (weave.technique === 'rightAngle') {
     return rightAngleDescription(rules)
   }
@@ -633,8 +670,8 @@ export function isShiftedRow(weave: Weave, row: number): boolean {
 
 /** How much of a bead's width its corners are rounded by, per Technique. The one place the look is decided: the
  * Surface view's hit test and the overlay read it too. */
-export function beadRoundness(technique: Technique): number {
-  return RULES[technique].roundness
+export function beadRoundness(technique: Technique, cell?: BeadCell): number {
+  return cell ? cell.roundness : RULES[technique].roundness
 }
 
 // Physical and px geometry both come from the grid units above, scaled by the cell size in the unit asked for.
@@ -670,7 +707,7 @@ export function gridHeight(technique: Technique, rows: number, cellSize: number)
 export function positionStep(weave: Weave): { across: number; down: number } {
   const description = describeWeave(weave)
   if (!description.countsUnits) {
-    return { across: 1, down: rowPitch(weave.technique, 1) }
+    return { across: 1, down: rowPitch(weave.technique, weave.cell?.aspect ?? 1) }
   }
   const unit = description.origin({ row: description.rowsPerUnit, column: description.columnsPerUnit }, 1, description.cellAspect)
   return { across: unit.x / description.columnsPerUnit, down: unit.y / description.rowsPerUnit }

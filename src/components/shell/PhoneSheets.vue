@@ -36,6 +36,7 @@ const {
   onSetBrickBlock,
   onSetCanvasTechnique,
   onSetCanvasBrickBlock,
+  onSetBeadShape,
   onFitFrame,
   replaceBeadCandidates,
   onRequestReplaceBead,
@@ -133,6 +134,7 @@ const chosenTemplate = ref<TemplateId>()
       @set-brick-block="onSetBrickBlock"
       @set-canvas-technique="onSetCanvasTechnique"
       @set-canvas-brick-block="onSetCanvasBrickBlock"
+      @set-bead-shape="onSetBeadShape"
       @replace-bead="onRequestReplaceBead"
       @save="onSave"
       @export-png="onExportPng"

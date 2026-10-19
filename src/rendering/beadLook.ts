@@ -329,7 +329,8 @@ function drawBeadShapes(context: DrawingContext, { x, y, size, width = size, hei
   const fill = dimmed ? finishedColor(own, theme, backdrop) : own
   const outerWidth = width - GAP_PX * 2
   const outerHeight = height - GAP_PX * 2
-  const outerRadius = Math.max(0, cornerRadius - GAP_PX)
+  // A corner is at most half the shorter side: a round bead drawn longer than wide is a pill.
+  const outerRadius = Math.min(Math.max(0, cornerRadius - GAP_PX), outerWidth / 2, outerHeight / 2)
 
   context.fillStyle = blendOver(isNearBlack(own) ? theme.rimOnBlack : theme.rim, fill)
   fillShape(context, x + GAP_PX, y + GAP_PX, outerWidth, outerHeight, outerRadius)

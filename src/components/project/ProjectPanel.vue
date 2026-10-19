@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
 import { beadLabel, type Bead } from '../../domain/beads'
-import type { Technique } from '../../domain/weave'
+import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain/weave'
 import type { Project } from '../../domain/project'
 import { MAX_PROJECT_NAME, normalizeProjectName } from '../../domain/projectName'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -15,6 +15,7 @@ import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import TextField from '../ui/form/TextField.vue'
 import PanelItem from '../shell/PanelItem.vue'
+import BeadShapeField from './BeadShapeField.vue'
 import CanvasSection from './CanvasSection.vue'
 import CanvasTechniqueRow from './CanvasTechniqueRow.vue'
 import FrameControls from './FrameControls.vue'
@@ -39,6 +40,7 @@ const emit = defineEmits<{
   'set-brick-block': [brickBlock: number]
   'set-canvas-technique': [technique: Technique]
   'set-canvas-brick-block': [brickBlock: number]
+  'set-bead-shape': [shape: BeadShape]
   'replace-bead': [beadId: string]
   save: []
   'export-png': []
@@ -58,6 +60,7 @@ const draft = ref('')
 const refused = ref(false)
 const fieldId = useId()
 const errorId = useId()
+const shapeLabelId = useId()
 const rename = controlAction('rename-project')
 const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
@@ -149,6 +152,11 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
       </MenuButton>
     </p>
 
+    <div class="project-panel__shape" data-testid="bead-shape-row">
+      <span :id="shapeLabelId">{{ t.form.beadShapeLabel }}</span>
+      <BeadShapeField :model-value="project.beadShape ?? DEFAULT_BEAD_SHAPE" :labelledby="shapeLabelId" small testid="bead-shape" @update:model-value="emit('set-bead-shape', $event)" />
+    </div>
+
     <CanvasTechniqueRow :project="project" @set-technique="emit('set-canvas-technique', $event)" @set-brick-block="emit('set-canvas-brick-block', $event)" />
 
     <CanvasSection />
@@ -188,6 +196,7 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
 .project-panel > :deep(.frame-controls),
 .project-panel > :deep(.canvas-technique),
 .project-panel__head,
+.project-panel__shape,
 .project-panel__bead {
   box-sizing: border-box;
   padding: 0 var(--space-12);
@@ -267,6 +276,14 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
   box-sizing: border-box;
   border: 1.5px dashed currentColor;
   border-radius: var(--radius-full);
+}
+
+.project-panel__shape {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  font: var(--type-control);
+  min-width: 0;
 }
 
 .project-panel__bead {

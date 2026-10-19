@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
-import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
+import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, type BeadShape, type Technique } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -19,6 +19,7 @@ import { useTourFormReset } from '../../composables/tour/useTour'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
+import BeadShapeField from './BeadShapeField.vue'
 import BrickBlockField from './BrickBlockField.vue'
 import NetSizeField from './NetSizeField.vue'
 import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
@@ -60,6 +61,8 @@ const emit = defineEmits<{
 const name = ref('')
 const beadId = ref(BEAD_CATALOG[0]!.id)
 const technique = ref<Technique>(DEFAULT_TECHNIQUE)
+/** The Bead shape (ADR 0068, ticket 508): how the Canvas draws each cell. */
+const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
 /** The Brick block (ticket 477): kept while another Technique is chosen, used by brick stitch only. */
 const brickBlock = ref(1)
 const netSize = ref(DEFAULT_NET_SIZE)
@@ -101,6 +104,7 @@ function currentInput(): CreateProjectInput {
     ...(describeWeave({ technique: technique.value }).hasBrickBlock && brickBlock.value > 1 ? { brickBlock: brickBlock.value } : {}),
     ...(describeWeave({ technique: technique.value }).hasNetSize ? { netSize: netSize.value } : {}),
     beadId: beadId.value,
+    ...(beadShape.value !== DEFAULT_BEAD_SHAPE ? { beadShape: beadShape.value } : {}),
     makerName: makerName.value.trim(),
   }
 }
@@ -114,7 +118,7 @@ function draftInput(): CreateProjectInput {
   return { ...currentInput(), ...(convertSize.value ? { size: convertSize.value } : {}) }
 }
 
-watch([name, beadId, technique, brickBlock, netSize, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
+watch([name, beadId, beadShape, technique, brickBlock, netSize, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
@@ -220,6 +224,10 @@ function onDropImage(file: File) {
           {{ bead.brand }} {{ bead.name }} {{ bead.size }}
         </option>
       </FieldSelect>
+    </FormField>
+
+    <FormField :label="t.form.beadShapeLabel" label-id="bead-shape-label">
+      <BeadShapeField v-model="beadShape" labelledby="bead-shape-label" testid="bead-shape-select" />
     </FormField>
 
     <FormField :label="t.form.techniqueLabel" label-id="technique-label">

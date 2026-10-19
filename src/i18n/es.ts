@@ -9,6 +9,11 @@ export const es: Translations = {
   form: {
     nameLabel: 'Nombre',
     beadLabel: 'Cuenta',
+    beadShapeLabel: 'Forma de la cuenta',
+    beadShapeSymmetric: 'Simétrica',
+    beadShapeReal: 'Real',
+    beadShapeSymmetricTip: 'Dibuja cada cuenta como una celda uniforme; solo cambia el aspecto del lienzo.',
+    beadShapeRealTip: 'Dibuja cada cuenta con sus proporciones reales; solo cambia el aspecto del lienzo.',
     techniqueLabel: 'Técnica',
     techniqueLoom: 'Telar',
     techniquePeyote: 'Peyote',
