@@ -198,6 +198,32 @@ describe('Menu', () => {
     expect(text(wrapper, 'project-name')).toBe('Heron')
   })
 
+  it('starts a Project from a Template: a card opens its setup, Back returns to the gallery, Create makes the Frame in place', async () => {
+    const wrapper = mountApp()
+    await openSheet(wrapper, 'strip-menu')
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="template-card-bracelet"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.templates.bracelet.name)
+    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(false)
+
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(true)
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
+
+    await wrapper.get('[data-testid="template-card-bracelet"]').trigger('click')
+    await wrapper.get('[data-testid="template-height-preset-100"]').trigger('click')
+    await wrapper.get('[data-testid="create-template-project"]').trigger('click')
+    await flushPromises()
+
+    expect(names()).toEqual([en.templates.bracelet.name, 'Moth'])
+    const made = loadProjects().find((project) => project.name === en.templates.bracelet.name)!
+    expect(made.technique).toBe('loom')
+    expect(made.frame).toMatchObject({ row: 0, column: 0, columns: 12, rows: 100, beads: {} })
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+  })
+
   it('discards the draft on Back', async () => {
     const wrapper = mountApp()
     await openSheet(wrapper, 'strip-menu')

@@ -88,4 +88,35 @@ describe('PanelShell sub-view', () => {
     expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="panel-back"]').exists()).toBe(false)
   })
+
+  it('stacks sub-views: a second level has its own title, and Back and Escape pop one level at a time', async () => {
+    const Deeper = defineComponent({
+      setup() {
+        const context = inject(PANEL_CONTEXT)!
+        return () => h('button', { type: 'button', 'data-testid': 'deeper-row', onClick: () => context.openSub('Setup') }, 'Deeper')
+      },
+    })
+    const wrapper = mount(PanelShell, {
+      attachTo: document.body,
+      props: { title: 'Menu', anchor: 'strip-menu', subTitle: 'New Project' },
+      slots: {
+        default: () => h(Root),
+        sub: (slot: { depth: number }) => (slot.depth === 1 ? h(Deeper) : h('input', { 'data-testid': 'setup-field' })),
+      },
+    })
+    await wrapper.get('[data-testid="root-row"]').trigger('click')
+    ;(wrapper.get('[data-testid="deeper-row"]').element as HTMLElement).focus()
+    await wrapper.get('[data-testid="deeper-row"]').trigger('click')
+    await nextTick()
+    expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe('Setup')
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="setup-field"]').element)
+
+    await escape()
+    expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe('New Project')
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="deeper-row"]').element)
+
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true)
+    expect(wrapper.emitted('close')).toBeUndefined()
+  })
 })

@@ -160,6 +160,18 @@ export const zh: Translations = {
     noSavedProjectsMessage: '还没有保存的项目',
     shownOf: '{shown} / {total}',
   },
+  templates: {
+    galleryLabel: '从模板开始',
+    presetsLabel: '常用尺寸',
+    fixedNote: '这一边不能更改。',
+    specLine: '{width} × {height} · {technique}',
+    blank: { name: '空白画布', description: '自由绘制，稍后再设边框。' },
+    gerdan: { name: '格尔丹', description: '编织的项圈项链。' },
+    bracelet: { name: '手链', description: '环绕手腕的窄带。' },
+    earrings: { name: '耳环', description: '一对耳坠，每只是一条窄带。' },
+    bag: { name: '包', description: '小手袋或小袋的一面。' },
+    custom: { name: '自定义图案', description: '任意尺寸，任意编织方式。' },
+  },
   canvas: {
     zoomInLabel: '放大',
     zoomOutLabel: '缩小',

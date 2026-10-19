@@ -13,6 +13,12 @@ interface FeatureCopy {
   tabLine?: string
 }
 
+/** A gallery card's name and its one-line description. */
+interface TemplateCopy {
+  name: string
+  description: string
+}
+
 export interface Translations {
   app: {
     title: string
@@ -183,6 +189,20 @@ export interface Translations {
     noSavedProjectsMessage: string
     /** Saved Projects' meta: how many of the library the box shows ("5 of 12"). */
     shownOf: string
+  }
+  /** The Template gallery and setup in New Project (ticket 493; TemplateGallery card). `specLine` is "24 × 80 · Loom". */
+  templates: {
+    galleryLabel: string
+    presetsLabel: string
+    /** Under a side the Template keeps fixed (earrings keep their width). */
+    fixedNote: string
+    specLine: string
+    blank: TemplateCopy
+    gerdan: TemplateCopy
+    bracelet: TemplateCopy
+    earrings: TemplateCopy
+    bag: TemplateCopy
+    custom: TemplateCopy
   }
   canvas: {
     zoomInLabel: string
