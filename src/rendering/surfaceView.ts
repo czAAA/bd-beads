@@ -269,7 +269,7 @@ function inRoundedCorner(x: number, y: number, radius: number): boolean {
 
 /** A box's rectangle in a layer's grid space: its beads, and the half bead an offset technique's shifted rows add on
  * the right. */
-function gridBox(weave: Weave, box: Frame): Region {
+export function gridBox(weave: Weave, box: Frame): Region {
   const { technique } = weave
   if (describeWeave(weave).countsUnits) {
     return positionsBoxPx(weave, box.row, box.column, box.rows, box.columns)

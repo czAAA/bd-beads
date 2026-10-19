@@ -56,6 +56,7 @@ const {
   bindCanvasScroll,
   zoom,
   scroll,
+  selectionRefusals,
   activeTool,
   showRulers,
   toggleRulers,
@@ -383,9 +384,12 @@ function techniqueWord(technique: Technique): string {
               :marker-hidden="spaceHeld"
               :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"
+              :blocks-margin="!colorPick?.picking.value && (activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive)"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
+              :selection-blocks-margin="selecting"
+              :selection-refusals="selectionRefusals"
               :selecting="selecting"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"

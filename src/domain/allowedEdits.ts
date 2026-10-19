@@ -3,11 +3,12 @@ import { forEachBead, withColors, type BeadChange } from './canvas'
 import { canvasWeave, frameWeave, keepFinishedRows, type Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
 import { describeWeave } from './weave'
+import { keepMarginClear } from './margin'
 
-/** What a drawing command did, minus finished rows (ticket 33), beads where the Weave has none and joins of named Pieces (ticket 406),
+/** What a drawing command did, minus finished rows (ticket 33), margin paint, beads where the Weave has none and joins of named Pieces (ticket 406),
  * with Piece names carried over; `before` itself when nothing is left. */
 export function keepAllowedEdits(before: Project, after: Project): Project {
-  const allowed = keepNamesApart(before, keepFinishedRows(before, keepWhereBeadsAre(before, after)))
+  const allowed = keepNamesApart(before, keepMarginClear(before, keepFinishedRows(before, keepWhereBeadsAre(before, after))))
   if (allowed === before) {
     // No bead is left to change, but a command that turned the Frame (Rotate Frame, ticket 471) still did: an empty Frame turns too.
     return sameFrame(before.frame, after.frame) ? before : { ...before, frame: after.frame, updatedAt: after.updatedAt }

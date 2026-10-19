@@ -13,7 +13,7 @@ export interface KeyboardCursorDeps {
   onHoverEnd: () => void
   announceCursor: () => void
   invokeToolAt: (cursor: GridPosition) => void
-  extendSelectionTo: (from: GridPosition, to: GridPosition) => void
+  extendSelectionTo: (from: GridPosition, to: GridPosition) => boolean
   finishExtending: () => void
   /** Set Frame's keys (arrows, Enter, Escape): true when it used the key. */
   onFrameKey?: (event: KeyboardEvent) => boolean
@@ -72,7 +72,8 @@ export function useKeyboardCursor(deps: KeyboardCursorDeps) {
     if (!project) return
     const next = { row, column }
     if (extend) {
-      deps.extendSelectionTo(beadCursor.value, next)
+      // The Selection stops one cell before the keep-out margin, and the cursor with it (ticket 433).
+      if (!deps.extendSelectionTo(beadCursor.value, next)) return
     } else {
       deps.finishExtending()
     }

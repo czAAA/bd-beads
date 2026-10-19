@@ -10,7 +10,7 @@ import { paintAt } from '../../testUtils/layers'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 const frame = base.frame!
 const inside = (row: number, column: number) => ({ row: frame.row + row, column: frame.column + column })
-const againstFrame = { row: frame.row - 1, column: frame.column }
+const marginCell = { row: frame.row - 1, column: frame.column }
 
 function paint(project: Project, at: { row: number; column: number }, color: string | null = '#ff0000') {
   return paintAt(project, [at], color, NO_MIRROR_AXES, false)
@@ -53,13 +53,14 @@ describe('useEdit', () => {
       expect(ctx.history.canUndo.value).toBe(false)
     })
 
-    it('keeps what lands against the Frame, and erasing there works too', () => {
+    it('drops what lands in the margin, but erasing there still works', () => {
       const ctx = editHarness(base)
-      expect(ctx.edit('drawing', (project) => paint(project, againstFrame))).toEqual({ kind: 'applied' })
-      expect(colorAt(ctx.project.beads, againstFrame.row, againstFrame.column)).toBe('#ff0000')
+      expect(ctx.edit('drawing', (project) => paint(project, marginCell))).toEqual({ kind: 'unchanged' })
 
-      expect(ctx.edit('drawing', (project) => paint(project, againstFrame, null))).toEqual({ kind: 'applied' })
-      expect(colorAt(ctx.project.beads, againstFrame.row, againstFrame.column)).toBeNull()
+      const withMarginBead: Project = { ...base, beads: paint(base, marginCell).beads }
+      const erasing = editHarness(withMarginBead)
+      expect(erasing.edit('drawing', (project) => paint(project, marginCell, null))).toEqual({ kind: 'applied' })
+      expect(colorAt(erasing.project.beads, marginCell.row, marginCell.column)).toBeNull()
     })
   })
 
@@ -203,9 +204,9 @@ describe('useEdit', () => {
     })
 
     it('that changed nothing is no Undo step, but still flushes', () => {
-      const ctx = editHarness(moveToRow(base, 1))
+      const ctx = editHarness(base)
       ctx.editing.beginStroke()
-      ctx.editing.strokeStep((project) => paint(project, inside(0, 0)))
+      ctx.editing.strokeStep((project) => paint(project, marginCell))
       ctx.editing.endStroke()
 
       expect(ctx.history.canUndo.value).toBe(false)

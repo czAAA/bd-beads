@@ -224,6 +224,8 @@ function wireAppShell(services: Services) {
    * isn't tied to a tool. */
   const {
     selection,
+    refusals: selectionRefusals,
+    refuse: refuseSelection,
     beginPress: beginSelectPress,
     extendPress: extendSelection,
     endPress: endSelectPress,
@@ -522,6 +524,7 @@ function wireAppShell(services: Services) {
     beginSelectPress,
     leavePasteMode,
     extendSelection,
+    refuseSelection,
     announce,
     colorWords,
   })
@@ -870,6 +873,7 @@ function wireAppShell(services: Services) {
     onFillSelection,
     hasPaintColor,
     onFrameFromSelection,
+    selectionRefusals,
     backOutOfSelect,
     previewCells,
     previewedMirrorAxisCounts,
