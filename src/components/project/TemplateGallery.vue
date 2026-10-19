@@ -87,6 +87,7 @@ function onKeydown(event: KeyboardEvent) {
             :technique="choice.template.technique"
             :columns="choice.template.width.default"
             :rows="choice.template.height.default"
+            :seed-text="choice.id"
           />
           <AppIcon v-else name="plus" :size="22" />
         </slot>
@@ -149,8 +150,8 @@ function onKeydown(event: KeyboardEvent) {
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
+  width: 4.5rem;
+  height: 4.5rem;
 }
 
 .template-gallery__text {

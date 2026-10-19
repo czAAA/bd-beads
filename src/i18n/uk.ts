@@ -164,6 +164,7 @@ export const uk: Translations = {
     galleryLabel: 'Почати з',
     presetsLabel: 'Звичайні розміри',
     fixedNote: 'Ця сторона не змінюється.',
+    sampleNote: 'Це лише приклад. Рамка починається порожньою.',
     specLine: '{width} × {height} · {technique}',
     blank: { name: 'Чисте полотно', description: 'Малюйте вільно, рамку задайте потім.' },
     gerdan: { name: 'Гердан', description: 'Плетене намисто-комір.' },
