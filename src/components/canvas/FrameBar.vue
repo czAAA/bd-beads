@@ -21,7 +21,7 @@ const props = defineProps<{
   project: Project
   /** Where the Frame is on the canvas box: the bar is placed beside it once (ticket 500) and then follows the view only. */
   anchor?: FrameAnchor
-  /** Whether the edit pencil opened the bar: it is then a dropdown at every width, not the Top sheet. */
+  /** Whether the edit pencil opened the bar: it then hangs from the pencil as a dropdown from 1024px. */
   fromPencil?: boolean
   /** Whether a press outside grabs the Frame on the canvas (a resize handle), so the bar stays. */
   grabsFrame?: (event: PointerEvent) => boolean
@@ -62,12 +62,12 @@ const barEl = ref<HTMLElement>()
 const size = useElementSize(barEl)
 const shell = ref<InstanceType<typeof PanelHost>>()
 const wide = useMediaQuery('(min-width: 1024px)')
-/** Where the bar hangs when the Frame is not known: under the edit pencil at every width, else the descriptor's strip button. */
-const placement = computed(() => (props.fromPencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : undefined))
+/** Where the bar hangs: from 1024px a dropdown under the edit pencil when it opened the bar; below that the Top sheet, like Menu and Project. */
+const placement = computed(() => (props.fromPencil && wide.value ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : undefined))
 
 // Ticket 500: with the Frame known, the bar is placed once beside it (below, above, right, left), then only pan and zoom
 // carry it. Stepping or resizing the Frame leaves it where it is. The Top sheet under 1024px is not placed.
-const positioned = !!props.anchor && (wide.value || !!props.fromPencil)
+const positioned = !!props.anchor && wide.value
 const barSize = ref<{ width: number; height: number }>()
 const placed = ref<{ left: number; top: number; origin?: BarBox }>()
 /** The bar's spot in the page's pixels, none until it is measured. */
