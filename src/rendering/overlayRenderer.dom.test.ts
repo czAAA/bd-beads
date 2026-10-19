@@ -658,3 +658,39 @@ describe('the bead cursor (ticket 159)', () => {
     expect(named('fill')).toHaveLength(0)
   })
 })
+
+describe('the overlay of a Frame woven in its own Technique (ticket 492)', () => {
+  /** A peyote Frame of 3 × 3 at row 2, column 3 of a loom Canvas, every bead painted, the first pass the current one. */
+  function mixed(): Project {
+    const base = projectOf('loom', 3, 3, { currentRow: 1 })
+    return { ...base, frame: { ...base.frame!, technique: 'peyote', row: 2, column: 3 } }
+  }
+
+  it('rings the current pass in the Frame\'s Weave, drawn from the corner of the Canvas position the Frame lies on', () => {
+    const project = mixed()
+    const { context, calls } = recordingContext()
+
+    renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
+
+    expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
+    // Pass 1 is row 1's even beads, columns 0 and 2: x 10 and 50, y 15 (peyote's second row, shifted half a bead).
+    const rings = ringRects(calls).map((call) => call.args as number[])
+    expect(rings.map(([x, y]) => [x! - 1, y! - 1])).toEqual([[10, 15], [50, 15]])
+  })
+
+  it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
+    const project = { ...mixed(), rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0, marks: false } }
+    const draw = (layer: 'canvas' | 'frame', top: number) => {
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left: 3, rows: 1, columns: 1, layer } })
+      return calls
+    }
+
+    const inFrame = draw('frame', 3)
+    expect(inFrame.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
+    expect(inFrame.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([10, 15, 20, 2])
+    const onCanvas = draw('canvas', 9)
+    expect(onCanvas.findIndex((call) => call.name === 'fillRect')).toBeLessThan(onCanvas.findIndex((call) => call.name === 'translate'))
+    expect(onCanvas.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([60, 180, 20, 2])
+  })
+})

@@ -49,9 +49,11 @@ export interface EstimatedSizeMm {
 // A Project's Estimated size (CONTEXT.md, ADR 0026): Bead size times beads across and down, the exact inverse of
 // gridFromSize's mm conversion. Not Technique-aware (no peyote packing, slack, tension), hence only an estimate.
 // Width and height follow the rotated view, as summarizeProject's do.
-export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Partial<Weave>, bead: Bead): EstimatedSizeMm {
+export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Partial<Weave> & { frame?: Weave }, bead: Bead): EstimatedSizeMm {
   const { columns, rows } = sizeOf(project)
-  const description = describeWeave({ technique: project.technique ?? 'loom', netSize: project.netSize })
+  // The Frame's own Weave when there is one (ticket 492): its size is what is measured.
+  const woven = 'frame' in project && project.frame ? project.frame : project
+  const description = describeWeave({ technique: woven.technique ?? 'loom', netSize: woven.netSize })
   // Right-angle weave: the Units' own pitch, not a column of beads (ticket 482).
   const { width: widthMm, height: heightMm } = description.countsUnits
     ? description.blockExtent(columns, rows, beadPitchMm(bead), bead.heightMm)

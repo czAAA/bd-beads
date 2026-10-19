@@ -141,7 +141,7 @@ describe('piece names', () => {
       const project = fox()
       const result = changeFrame(project, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
 
-      expect(result.kind === 'changed' && result.project.frame).toEqual({ row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
+      expect(result.kind === 'changed' && result.project.frame).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
       expect(result.kind === 'changed' && namedPieces(result.project)).toEqual([])
     })
 

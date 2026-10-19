@@ -82,7 +82,7 @@ export function useEdit(deps: EditDeps) {
     record(project)
     deps.replaceProject(updated)
     // A drawing command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
-    if (!sameFrame(project.frame, updated.frame)) {
+    if (!sameFrame(project.frame, updated.frame) || project.technique !== updated.technique) {
       deps.resetAfterFrameChange()
     }
     return { kind: 'applied' }
@@ -141,7 +141,7 @@ export function useEdit(deps: EditDeps) {
       return
     }
     deps.replaceProject(restoreSnapshot(project, snapshot))
-    if (!sameFrame(snapshot.frame, project.frame) || snapshot.technique !== project.technique) {
+    if (!sameFrame(snapshot.frame, project.frame) || snapshot.technique !== project.technique || snapshot.frame?.technique !== project.frame?.technique) {
       deps.resetAfterFrameChange()
     }
     deps.restoreMirrorAxisCounts(snapshot.mirrorAxisCounts)

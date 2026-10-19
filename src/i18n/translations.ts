@@ -140,6 +140,7 @@ export interface Translations {
       saveRefused: string
       tryAgain: string
       bead: string
+      canvasTechnique: string
       canvas: string
       whiteInContrast: string
       exportHeading: string
@@ -725,6 +726,7 @@ export interface Translations {
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
+    changeCanvasTechnique: string
     brickBlock: string
     rowProgressLockedBrickBlock: string
     rowProgressLockedRotate: string

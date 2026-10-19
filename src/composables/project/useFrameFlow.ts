@@ -1,11 +1,11 @@
 import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
-import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snapRow, type FrameEdge } from '../../domain/frame'
+import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { describeWeave, type Technique } from '../../domain/weave'
-import { changeFrame } from '../../domain/changeFrame'
+import { changeCanvasWeave, changeFrame } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { rowProgressStarted, withFrame, type Project } from '../../domain/project'
+import { canvasWeave, frameWeave, rowProgressStarted, withFrame, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -93,7 +93,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function describe(frame: Frame): string {
     const t = deps.messages()
     const project = deps.currentProject()
-    const { columns, rows } = describeWeave(project ?? { technique: 'loom' }).unitsOf(frame)
+    const { columns, rows } = describeWeave(project ? frameWeave(project) : { technique: 'loom' }).unitsOf(frame)
     return t.frame.announceSet.replace('{width}', String(columns)).replace('{height}', String(rows))
   }
 
@@ -129,6 +129,22 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     deps.announce(deps.messages().frame.announceBrickBlock.replace('{count}', String(brickBlock)))
   }
 
+  /** Weaves the Canvas in another Technique (ticket 492): any time, since Row progress belongs to the Frame; one Undo
+   * step. */
+  function setCanvasTechnique(technique: Technique): void {
+    const outcome = deps.edit('exempt', (project) => changeCanvasWeave(project, { technique }))
+    if (outcome.kind !== 'applied') return
+    const t = deps.messages()
+    deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
+  }
+
+  /** The Canvas with another Brick block (ticket 492). */
+  function setCanvasBrickBlock(brickBlock: number): void {
+    const outcome = deps.edit('exempt', (project) => changeCanvasWeave(project, { brickBlock }))
+    if (outcome.kind !== 'applied') return
+    deps.announce(deps.messages().frame.announceBrickBlock.replace('{count}', String(brickBlock)))
+  }
+
   function press(target: FramePress, cell: GridPosition): void {
     const project = deps.currentProject()
     const frame = project?.frame
@@ -145,14 +161,14 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!project || !gesture) return
     dragged = true
     if (gesture.kind === 'resize') {
-      draft.value = { frame: frameWithEdges(project, gesture.start, gesture.edges, cell) }
+      draft.value = { frame: frameWithEdges(frameWeave(project), gesture.start, gesture.edges, cell) }
     } else {
-      const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
+      const next = snappedMove(canvasWeave(project), cell.row - gesture.origin.row, cell.column - gesture.origin.column)
       // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left
       // alone.
       if (draft.value && next.rows === moved.rows && next.columns === moved.columns) return
       moved = next
-      draft.value = { frame: movedFrame(project, gesture.start, next.rows, next.columns), move: next }
+      draft.value = { frame: movedFrame(gesture.start, next.rows, next.columns), move: next }
     }
   }
 
@@ -184,7 +200,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function stepEdge(edge: FrameEdge, step: 1 | -1): void {
     const project = deps.currentProject()
     if (!project?.frame || locked.value) return
-    const next = frameWithEdgeStep(project, project.frame, edge, step)
+    const next = frameWithEdgeStep(frameWeave(project), project.frame, edge, step)
     if (next !== project.frame) commit(next)
   }
 
@@ -192,7 +208,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function resizeTo(columns: number, rows: number): void {
     const project = deps.currentProject()
     if (!project?.frame || locked.value) return
-    const next = frameResizedAround(project, project.frame, columns, rows)
+    const next = frameResizedAround(frameWeave(project), project.frame, columns, rows)
     if (!sameFrame(next, project.frame)) commit(next)
   }
 
@@ -244,11 +260,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!step || !project?.frame) return false
     if (event.shiftKey) {
-      const { rowsPerUnit, columnsPerUnit } = describeWeave(project)
-      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1] * columnsPerUnit, project.frame.rows + step[0] * rowsPerUnit, project))
+      const weave = frameWeave(project)
+      const { rowsPerUnit, columnsPerUnit } = describeWeave(weave)
+      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1] * columnsPerUnit, project.frame.rows + step[0] * rowsPerUnit, weave))
     } else {
-      const { frameStep, columnStep } = describeWeave(project)
-      moveBy(step[0] * frameStep, step[1] * columnStep)
+      moveBy(step[0], step[1])
     }
     return true
   }
@@ -277,6 +293,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     resizeTo,
     setTechnique,
     setBrickBlock,
+    setCanvasTechnique,
+    setCanvasBrickBlock,
     fit,
     setTo,
     remove,

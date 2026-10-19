@@ -1,4 +1,5 @@
 import type { GridDimensions, GridPosition } from './grid'
+import type { Weave } from './weave'
 
 // The painted beads of a Canvas (ADR 0026) by row, then column, then the color's hex. Only painted positions are
 // stored; rows and columns may be negative. Nested plain objects, so an edit copies only the rows it touched and shares
@@ -17,7 +18,9 @@ export interface Frame {
 /** The Frame as a Project holds it (ADR 0066): a rectangle laid on the Canvas that owns its own beads. The rectangle is
  * in Canvas positions; `beads` are counted from the Frame's own first row and column, so moving the Frame moves them
  * with it and changes nothing else. */
-export interface FrameSheet extends Frame {
+export interface FrameSheet extends Frame, Weave {
+  /** The Frame's own beads, counted from its first row and column. Its Technique, Brick block and Net size (Weave) are
+   * its own too (ticket 492): the Canvas is woven in another if the weaver likes. */
   beads: BeadMap
   /** The name of the Piece the Frame was made from (ticket 489), drawn under the Frame. Absent: unnamed. */
   name?: string

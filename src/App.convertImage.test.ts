@@ -125,7 +125,7 @@ describe('App Convert image creating the Project (ticket 58)', () => {
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
 
     expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
-    expect(drawnProject(wrapper)).toMatchObject({ frame: { rows: 20, columns: 10 } })
+    expect(drawnProject(wrapper)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
     // The left half of the picture is red, the right half blue.
     expect(beadColor(wrapper, 0)).toBe('#e63746')
     expect(beadColor(wrapper, 9)).toBe('#2f6fed')

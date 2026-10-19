@@ -12,7 +12,7 @@ function setup(frame?: { row: number; column: number; rows: number; columns: num
     size: { width: 3, height: 3, unit: 'beads' },
   })
   const { frame: _frame, ...open } = made
-  const project = frame === null ? (open as typeof made) : frame ? { ...made, frame: { ...frame, beads: {} } } : made
+  const project = frame === null ? (open as typeof made) : frame ? { ...made, frame: { ...frame, technique: made.technique, beads: {} } } : made
   return useA11yAnnouncer({
     messages: () => en,
     currentProject: () => project,

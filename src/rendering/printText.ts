@@ -1,7 +1,7 @@
 import { beadLabel } from '../domain/beads'
 import { computeColorQuantities } from '../domain/beadQuantities'
 import { rotationSwapsAxes } from '../domain/grid'
-import { countedDimensions, resolveProjectBead, type Project } from '../domain/project'
+import { countedDimensions, frameWeave, resolveProjectBead, type Project } from '../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../domain/projectSize'
 import { beadsPerGram, formatPrintedGrams, printedGrams } from '../domain/printGrams'
 import { groupThousands } from '../domain/formatNumber'
@@ -55,7 +55,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
   const beadName = bead ? beadLabel(bead) : t.projects.unknownBeadLabel
-  const technique = techniqueName(t, project.technique)
+  const technique = techniqueName(t, frameWeave(project).technique)
   const grams = (count: number) => {
     const weight = printedGrams(count, bead)
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)

@@ -2,7 +2,7 @@ import { frameContains, type Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { lineOfPass } from '../domain/weave'
 import { namedPieces } from '../domain/pieceNames'
-import { rowProgressOn } from '../domain/project'
+import { frameWeave, rowProgressOn } from '../domain/project'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -38,7 +38,7 @@ export interface RulerDrawInput {
 
 /** The box's line: a rounded rectangle just outside its outermost beads. */
 function strokeBoxLine(context: DrawingContext, box: RuledBox, surface: SurfaceView, theme: ProjectTheme): void {
-  const shown = surface.beadBox(box)
+  const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
   const outset = box.outset
   const isFrame = box.kind === 'frame'
   context.setLineDash([])
@@ -62,7 +62,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
-  const currentLine = lineOfPass(project, direction === 'rows' ? currentRow : currentColumn, direction)
+  const currentLine = lineOfPass(frameWeave(project), direction === 'rows' ? currentRow : currentColumn, direction)
   const current = rowMarks && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
   const onCursor = cursor !== undefined && (label.axis === 'row' ? cursor.row === label.position : cursor.column === label.position)
 
@@ -119,9 +119,11 @@ function drawPieceNames(context: DrawingContext, { project, surface, layout, the
   const frame = project.frame
   const covered = (piece: Frame) =>
     frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
-  const pieces: { name: string; row: number; column: number; rows: number; columns: number }[] = namedPieces(project).filter((piece) => !covered(piece))
+  const pieces: { name: string; row: number; column: number; rows: number; columns: number; layer: 'canvas' | 'frame' }[] = namedPieces(project)
+    .filter((piece) => !covered(piece))
+    .map((piece) => ({ ...piece, layer: 'canvas' as const }))
   if (project.frame?.name) {
-    pieces.push({ ...project.frame, name: project.frame.name })
+    pieces.push({ ...project.frame, name: project.frame.name, layer: 'frame' })
   }
   if (pieces.length === 0) {
     return
@@ -132,7 +134,7 @@ function drawPieceNames(context: DrawingContext, { project, surface, layout, the
   context.textAlign = 'left'
   context.textBaseline = 'top'
   for (const piece of pieces) {
-    const shown = surface.beadBox(piece)
+    const shown = surface.beadBox(piece, piece.layer)
     if (shown.x > surface.viewport.width || shown.y > surface.viewport.height || shown.x + shown.width < 0 || shown.y + shown.height < 0) {
       continue
     }

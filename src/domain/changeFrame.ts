@@ -1,10 +1,10 @@
 import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, type BeadMap, type Frame } from './canvas'
-import { movedFrame, sameFrame } from './frame'
+import { movedFrame, sameFrame, snappedMove } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { describeWeave, type Technique } from './weave'
 import { carryNames, namedPieceCutBy } from './pieceNames'
-import { clampBrickBlock, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withTechnique, type Project } from './project'
+import { canvasWeave, clampBrickBlock, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameTechnique, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
@@ -23,10 +23,9 @@ export type FrameChange =
   /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0062); allowed after Row progress has
    * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
-  /** Change the Technique of an open Project (ticket 351): only the geometry changes, every cell keeps its row and
-   * column. */
+  /** Change the Frame's Technique (tickets 351, 492): only the geometry changes, every cell keeps its row and column. */
   | { technique: Technique }
-  /** Change the Brick block of an open Project (ticket 477): the same, only the shift's rhythm changes. */
+  /** Change the Frame's Brick block (ticket 477): the same, only the shift's rhythm changes. */
   | { brickBlock: number }
 
 /** Why a change did not happen. */
@@ -65,10 +64,13 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
     return 'locked'
   }
   const frame = project.frame
-  if ('technique' in change && change.technique !== project.technique && (!describeWeave(project).switchable || !describeWeave({ technique: change.technique }).switchable)) {
+  if (('technique' in change || 'brickBlock' in change) && !frame) {
+    return 'no-frame'
+  }
+  if ('technique' in change && change.technique !== frame?.technique && (!describeWeave(frameWeave(project)).switchable || !describeWeave({ technique: change.technique }).switchable)) {
     return 'fixed-weave'
   }
-  if ('removeLine' in change && describeWeave(project).countsUnits) {
+  if ('removeLine' in change && describeWeave(frameWeave(project)).countsUnits) {
     return 'fixed-weave'
   }
   if ('removeLine' in change) {
@@ -109,7 +111,8 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
 
   if ('move' in change) {
     const frame = project.frame!
-    const moved = movedFrame(project, frame, change.move.rows, change.move.columns)
+    const by = snappedMove(canvasWeave(project), change.move.rows, change.move.columns)
+    const moved = movedFrame(frame, by.rows, by.columns)
     if (sameFrame(frame, moved)) {
       return { kind: 'unchanged', project }
     }
@@ -118,17 +121,17 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   }
 
   if ('technique' in change) {
-    if (change.technique === project.technique) {
+    if (change.technique === project.frame?.technique) {
       return { kind: 'unchanged', project }
     }
-    return { kind: 'changed', project: carryNames(project, withTechnique(project, change.technique)) }
+    return { kind: 'changed', project: withFrameTechnique(project, change.technique) }
   }
 
   if ('brickBlock' in change) {
-    if (clampBrickBlock(change.brickBlock) === (project.brickBlock ?? 1)) {
+    if (clampBrickBlock(change.brickBlock) === (project.frame?.brickBlock ?? 1)) {
       return { kind: 'unchanged', project }
     }
-    return { kind: 'changed', project: carryNames(project, withBrickBlock(project, change.brickBlock)) }
+    return { kind: 'changed', project: withFrameBrickBlock(project, change.brickBlock) }
   }
 
   if ('make' in change) {
@@ -208,4 +211,17 @@ export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): B
     result[to.row]![to.column] = color
   })
   return result
+}
+
+/** The Canvas woven in another Technique or Brick block (tickets 351, 492): its beads keep their row and column, the
+ * names of Pieces follow them. Row progress belongs to the Frame, so this is allowed at any time. A Technique that is
+ * fixed, or the same one, gives the same Project back. */
+export function changeCanvasWeave(project: Project, change: { technique: Technique } | { brickBlock: number }): Project {
+  if ('technique' in change) {
+    if (change.technique === project.technique || !describeWeave(project).switchable || !describeWeave({ technique: change.technique }).switchable) {
+      return project
+    }
+    return carryNames(project, withTechnique(project, change.technique))
+  }
+  return clampBrickBlock(change.brickBlock) === (project.brickBlock ?? 1) ? project : carryNames(project, withBrickBlock(project, change.brickBlock))
 }

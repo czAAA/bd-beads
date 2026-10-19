@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { withColors } from '../domain/canvas'
-import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
+import { createProject, weaveOf, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
@@ -26,7 +26,9 @@ function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = f
 function projectOf(technique: Technique, columns: number, rows: number, extra: Partial<Project> & { grid?: Grid } = {}): Project {
   const { grid, ...rest } = extra
   // Row marks are off here unless a test asks for them with `rowMarks` (a Frame turns Row progress on in the app).
-  const project = { ...createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...rest }
+  const made = { ...createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...rest }
+  // The Frame is woven as the Project is made, whatever the test overrides (ticket 492).
+  const project = made.frame && !rest.frame ? { ...made, frame: { ...made.frame, ...weaveOf(made) } } : made
   return grid ? withFrameGrid(project, grid) : project
 }
 
@@ -823,7 +825,7 @@ describe('the Frame covering the Canvas beads against it', () => {
   }
 
   it('hides the overhang of the beads just outside it, which nest into its edge rows in peyote', () => {
-    const frame = { row: 20, column: 20, rows: 4, columns: 4 }
+    const frame = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
     // A bead in the row just above the Frame (row 19): its bottom 5px lies inside the Frame's box.
     const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 19: { 22: '#ff0000' } } }
 
@@ -839,7 +841,7 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
     const base = projectOf('loom', 3, 2)
     return {
       ...base,
-      frame: { row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
+      frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
       beads: { 20: { 21: '#0000ff' }, 40: { 40: '#00ff00' } },
     }
   }
