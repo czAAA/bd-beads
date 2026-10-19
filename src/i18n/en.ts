@@ -162,6 +162,7 @@ export const en: Translations = {
     galleryLabel: 'Start from',
     presetsLabel: 'Usual sizes',
     fixedNote: 'This side is fixed.',
+    sampleNote: 'This is only an example. The Frame starts empty.',
     specLine: '{width} × {height} · {technique}',
     blank: { name: 'Blank canvas', description: 'Draw freely and set a Frame later.' },
     gerdan: { name: 'Gerdan', description: 'A woven collar necklace.' },
