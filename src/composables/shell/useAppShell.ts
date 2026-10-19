@@ -37,6 +37,7 @@ import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
 import { useMirrorState } from '../tools/useMirrorState'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
+import type { PhoneSheet } from './phoneSheet'
 import { useOverlayVisibility } from './useOverlayVisibility'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
@@ -546,7 +547,10 @@ function wireAppShell(services: Services) {
 
   /** Edit Frame: moving and resizing the Frame and stepping its edges, Fit to drawing and Remove Frame (tickets 233,
    * 417). */
+  /** The one panel open over the canvas (ticket 510): Menu, Project or the Frame bar, or Mirror's sheet. */
+  const openPanel = ref<PhoneSheet | null>(null)
   const frameFlow = useFrameFlow({
+    openPanel,
     currentProject,
     edit,
     announce,
@@ -650,14 +654,7 @@ function wireAppShell(services: Services) {
   })
 
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
-  const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch })
-  // Menu, Project and the Frame bar are one panel at a time (ticket 475).
-  watch(overlays.openPhoneSheet, (sheet) => {
-    if (sheet) frameFlow.closeEdit()
-  })
-  watch(frameFlow.editOn, (open) => {
-    if (open) overlays.openPhoneSheet.value = null
-  })
+  const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch, openPanel })
 
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
