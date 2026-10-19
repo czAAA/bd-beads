@@ -3,7 +3,7 @@ import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
 import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
-import { beadRoundness, describeWeave, lineOfPass, passCount, passOf } from '../domain/weave'
+import { beadRoundness, describeWeave, passCount, passLines, passOf } from '../domain/weave'
 import { rowProgressOn } from '../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
@@ -120,25 +120,25 @@ interface PassBead {
  * when the Frame has no such pass. */
 function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   const { technique } = project
-  const columnWise = project.rowProgress.direction === 'columns'
+  const direction = project.rowProgress.direction
+  const columnWise = direction === 'columns'
   const pass = columnWise ? project.rowProgress.currentColumn : project.rowProgress.currentRow
   const lines = columnWise ? space.columns : space.rows
-  if (!space.hasFrame || pass < 0 || pass >= passCount(technique, lines)) {
+  if (!space.hasFrame || pass < 0 || pass >= passCount(technique, lines, direction)) {
     return []
   }
-  const line = lineOfPass(technique, pass)
-
-  const beads: PassBead[] = []
   const length = columnWise ? space.rows : space.columns
-  for (let along = 0; along < length; along += 1) {
-    const row = space.origin.row + (columnWise ? along : line)
-    const column = space.origin.column + (columnWise ? line : along)
-    const { x, y, width, height } = positionBoxPx(space, project, row, column)
-    if (passOf(technique, line, along) === pass) {
-      // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
-      const color = beadInSpace(project, space, row, column)
-      if (color !== null) {
-        beads.push({ x, y, width, height, color })
+  const beads: PassBead[] = []
+  for (const line of passLines(technique, pass, direction)) {
+    for (let along = 0; along < length; along += 1) {
+      const row = space.origin.row + (columnWise ? along : line)
+      const column = space.origin.column + (columnWise ? line : along)
+      if (passOf(technique, line, along, direction) === pass) {
+        // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
+        const color = beadInSpace(project, space, row, column)
+        if (color !== null) {
+          beads.push({ ...positionBoxPx(space, project, row, column), color })
+        }
       }
     }
   }

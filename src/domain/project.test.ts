@@ -1359,6 +1359,43 @@ describe('peyote passes (ticket 347)', () => {
   })
 })
 
+describe('Right-angle weave Row progress (ticket 484)', () => {
+  /** A Frame of 2 columns by 3 lines of Units: 3 columns by 7 rows of positions. */
+  function rightAngle(direction: 'rows' | 'columns', pass: number) {
+    const project = createProject({ technique: 'rightAngle', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } })
+    return moveToRow(direction === 'columns' ? toggleRowDirection(project) : project, pass)
+  }
+
+  /** Which positions of the Frame are finished (or current, with `isInCurrentRow`), as "row,column"; a hole counts. */
+  function marked(project: ReturnType<typeof rightAngle>, test: typeof isInFinishedRow): string[] {
+    const { rows, columns } = project.frame!
+    return Array.from({ length: rows * columns }, (_, index) => ({ row: Math.floor(index / columns), column: index % columns }))
+      .filter((position) => test(project, position))
+      .map(({ row, column }) => `${row},${column}`)
+  }
+
+  it('counts lines of Units, down the rows and across the columns', () => {
+    expect(rowProgressPosition(rightAngle('rows', 0))).toEqual({ current: 0, total: 3 })
+    expect(rowProgressPosition(rightAngle('columns', 0))).toEqual({ current: 0, total: 2 })
+  })
+
+  it('weaves the first line of Units in three rows of positions, and each later one in the two below', () => {
+    expect(marked(rightAngle('rows', 0), isInCurrentRow).map((bead) => bead.split(',')[0])).toEqual(['0', '0', '0', '1', '1', '1', '2', '2', '2'])
+    expect(marked(rightAngle('rows', 1), isInCurrentRow).map((bead) => bead.split(',')[0])).toEqual(['3', '3', '3', '4', '4', '4'])
+  })
+
+  it('finishes every line of Units above the pointer, shared row included', () => {
+    expect(marked(rightAngle('rows', 0), isInFinishedRow)).toEqual([])
+    expect(marked(rightAngle('rows', 1), isInFinishedRow)).toHaveLength(9)
+    expect(marked(rightAngle('rows', 2), isInFinishedRow).every((bead) => Number(bead.split(',')[0]) <= 4)).toBe(true)
+  })
+
+  it('weaves a column of Units in its horizontal beads and the vertical beads either side of it', () => {
+    expect(marked(rightAngle('columns', 0), isInCurrentRow)).toEqual(['0,0', '1,0', '1,1', '2,0', '3,0', '3,1', '4,0', '5,0', '5,1', '6,0'])
+    expect(marked(rightAngle('columns', 1), isInCurrentRow)).toEqual(['0,1', '1,2', '2,1', '3,2', '4,1', '5,2', '6,1'])
+  })
+})
+
 describe('resetRowProgress (ticket 455)', () => {
   it('takes both pointers back to the first row, keeping the direction and the beads', () => {
     const project = toggleRowDirection({ ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } }), frame: { row: 0, column: 0, rows: 3, columns: 3, beads: {} } })

@@ -187,9 +187,9 @@ export interface WeaveDescription extends TechniqueRules {
   neighbors(bounds: GridBounds | undefined, position: GridPosition): GridPosition[]
   /** Row progress's passes: how many a number of lines takes, which pass weaves a bead, which line a pass works on. */
   passes: {
-    count(lines: number): number
-    of(line: number, along: number): number
-    lineOf(pass: number): number
+    count(lines: number, direction: PassDirection): number
+    of(line: number, along: number, direction: PassDirection): number
+    lineOf(pass: number, direction: PassDirection): number
   }
   /** Where a quarter turn or a mirror sends a position's bead within its block; undefined when a turn isn't offered. */
   turned(position: GridPosition): GridPosition | undefined
@@ -244,9 +244,9 @@ export function describeWeave(weave: Weave): WeaveDescription {
     center: (position, cellWidth, cellHeight) => cellCenter(weave, position, cellWidth, cellHeight),
     neighbors: (bounds, position) => neighborsOf(weave, bounds, position),
     passes: {
-      count: (lines) => passCount(weave.technique, lines),
-      of: (line, along) => passOf(weave.technique, line, along),
-      lineOf: (pass) => lineOfPass(weave.technique, pass),
+      count: (lines, direction) => passCount(weave.technique, lines, direction),
+      of: (line, along, direction) => passOf(weave.technique, line, along, direction),
+      lineOf: (pass, direction) => lineOfPass(weave.technique, pass, direction),
     },
     turned: (position) => (rules.quarterTurn ? position : undefined),
     mirrored: (position) => position,
@@ -357,9 +357,9 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
     },
     neighbors: (bounds, position) => rightAngleNeighbors(bounds, position),
     passes: {
-      count: (lines) => Math.max(0, lines),
-      of: (line) => line,
-      lineOf: (pass) => pass,
+      count: (lines, direction) => passCount('rightAngle', lines, direction),
+      of: (line, along, direction) => passOf('rightAngle', line, along, direction),
+      lineOf: (pass, direction) => lineOfPass('rightAngle', pass, direction),
     },
     turned: () => undefined,
     mirrored: (position) => position,
@@ -578,11 +578,17 @@ export function neighborsOf(weave: Weave, bounds: GridBounds | undefined, positi
   )
 }
 
-// Row progress counts passes, not lines (ticket 347); a line is a row or column of the Frame. Loom and brick stitch:
-// one pass per line. Peyote: the first line one pass, every later line two (even positions first, then odd).
+// Row progress counts passes, not lines (tickets 347, 484); a line is a row or column of the Frame, in positions. Peyote
+// takes two passes per later line; Right-angle weave one per line of Units, every bead of it, shared rows included.
+
+/** The way a pass runs: along the Frame's rows, or down its columns. */
+export type PassDirection = 'rows' | 'columns'
 
 /** How many passes weaving `lines` lines takes. */
-export function passCount(technique: Technique, lines: number): number {
+export function passCount(technique: Technique, lines: number, direction: PassDirection): number {
+  if (technique === 'rightAngle') {
+    return Math.max(0, direction === 'rows' ? Math.floor((lines - 1) / 2) : lines - 1)
+  }
   if (!RULES[technique].twoPasses || lines <= 0) {
     return Math.max(0, lines)
   }
@@ -591,7 +597,12 @@ export function passCount(technique: Technique, lines: number): number {
 
 /** The pass (zero-based) that weaves the bead at `along` (its position along its line) in line `line`; both counted
  * from the Frame's first. */
-export function passOf(technique: Technique, line: number, along: number): number {
+export function passOf(technique: Technique, line: number, along: number, direction: PassDirection): number {
+  if (technique === 'rightAngle') {
+    // Down a column the horizontal beads (even rows) belong to their own column, the vertical ones to the Unit left of them.
+    const isVertical = direction === 'columns' && along % 2 === 1
+    return Math.max(0, direction === 'rows' ? Math.floor((line - 1) / 2) : line - (isVertical ? 1 : 0))
+  }
   if (!RULES[technique].twoPasses || line === 0) {
     return line
   }
@@ -599,6 +610,20 @@ export function passOf(technique: Technique, line: number, along: number): numbe
 }
 
 /** The line a pass works on: what the rulers number and what the current-line marker sits on. */
-export function lineOfPass(technique: Technique, pass: number): number {
+export function lineOfPass(technique: Technique, pass: number, direction: PassDirection): number {
+  if (technique === 'rightAngle') {
+    return direction === 'rows' ? pass * 2 : pass
+  }
   return RULES[technique].twoPasses && pass > 0 ? Math.ceil(pass / 2) : pass
+}
+
+/** Every line (counted from the Frame's first) that holds a bead of a pass. */
+export function passLines(technique: Technique, pass: number, direction: PassDirection): number[] {
+  if (technique !== 'rightAngle') {
+    return [lineOfPass(technique, pass, direction)]
+  }
+  if (direction === 'columns') {
+    return [pass, pass + 1]
+  }
+  return pass === 0 ? [0, 1, 2] : [pass * 2 + 1, pass * 2 + 2]
 }
