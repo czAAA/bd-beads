@@ -62,7 +62,6 @@ const estimate = computed(() =>
     : undefined,
 )
 
-
 const slowFramingWarning = computed(() =>
   dimensions.value && isSlowFramingSize(props.technique, dimensions.value, props.slowFramingCellThresholds)
     ? t.value.convertImage.slowFramingWarning.replace('{technique}', techniqueName(t.value, props.technique))
