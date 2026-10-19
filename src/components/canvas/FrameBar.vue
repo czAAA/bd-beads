@@ -85,6 +85,8 @@ onBeforeUnmount(() => emit('rect', undefined))
 const typedWidth = ref('')
 const typedHeight = ref('')
 const sizeEdited = computed(() => typedWidth.value !== '' || typedHeight.value !== '')
+/** Whether a quarter turn is offered: not in Netting, where a turned diamond row isn't a row (ticket 486). */
+const turnable = computed(() => describeWeave(props.project).quarterTurn)
 const counted = computed(() => describeWeave(props.project).unitsOf(frame.value ?? { columns: 0, rows: 0 }))
 const sizeUnit = computed(() => (describeWeave(props.project).countsUnits ? t.value.frame.sizeUnitUnits : t.value.frame.sizeUnit))
 function clearSize(): void {
@@ -182,7 +184,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           <span class="frame-bar__unit">{{ sizeUnit }}</span>
         </component>
         <IconButton
-          v-if="!locked"
+          v-if="!locked && turnable"
           variant="secondary"
           :icon-size="18"
           :action="rotateAction"
@@ -191,7 +193,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           data-testid="frame-rotate"
           @click="emit('rotate')"
         />
-        <span v-if="!locked" class="frame-bar__divider" aria-hidden="true" />
+        <span v-if="!locked && turnable" class="frame-bar__divider" aria-hidden="true" />
         <IconButton
           variant="secondary"
           :icon-size="18"

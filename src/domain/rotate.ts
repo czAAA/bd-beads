@@ -1,3 +1,4 @@
+import type { GridPosition } from './grid'
 import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { snapRow } from './frame'
 import { layerView, onLayer, positionOnCanvas } from './layers'
@@ -21,16 +22,20 @@ export interface RotatedSelection {
  * begins (ticket 477). */
 export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
+  const weave = describeWeave(project)
+  // Whole Units turn: a Technique with none counts beads as its Units.
+  const units = weave.unitsOf(frame)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
   // way it rounds depends on which side is longer, so that four turns come back to where they began.
-  const difference = frame.rows - frame.columns
+  const difference = units.rows - units.columns
   const rowShift = difference >= 0 ? Math.floor(difference / 2) : -Math.floor(-difference / 2)
   const columnShift = difference >= 0 ? -Math.ceil(difference / 2) : Math.ceil(-difference / 2)
+  const turned = weave.positionsOf({ columns: units.rows, rows: units.columns })
   return {
-    top: snapRow(project, frame.row + rowShift + inset) - inset,
+    top: snapRow(project, frame.row + rowShift * weave.rowsPerUnit + inset) - inset,
     left: frame.column + columnShift,
-    rows: frame.columns,
-    columns: frame.rows,
+    rows: turned.rows,
+    columns: turned.columns,
   }
 }
 
@@ -54,15 +59,18 @@ export function rotateSelection(project: Project, selection: Selection, inset = 
   const turned = rotatedSelection(project, selection, inset)
   const footprint = selectionFrame(turned)
 
-  const turn = (row: number, column: number) => ({
-    row: turned.top + (column - selection.left),
-    column: turned.left + (selection.rows - 1 - (row - selection.top)),
-  })
+  const weave = describeWeave(project)
+  const block = { columns: selection.columns, rows: selection.rows }
+  const turn = (row: number, column: number): GridPosition | undefined => {
+    const to = weave.turned({ row: row - selection.top, column: column - selection.left }, block)
+    return to && { row: turned.top + to.row, column: turned.left + to.column }
+  }
 
-  const lifted = beadsIn(project, area)
+  // A bead that belongs to no whole Unit of the Selection (a horizontal bead past its last Unit) stays where it is.
+  const lifted = beadsIn(project, area).filter(({ row, column }) => turn(row, column))
   const covered = beadsIn(project, footprint)
   const cleared = withColors(project.beads, [...lifted, ...covered].map(({ row, column }) => ({ row, column, color: null })))
-  const beads = withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column), color })))
+  const beads = withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column)!, color })))
 
   const named = carryNames(project, { ...project, beads, updatedAt: Date.now() }, (position) => {
     if (frameContains(area, position)) {
@@ -117,12 +125,16 @@ export function rotateFrame(project: Project): Project | undefined {
     return undefined
   }
   const turned = rotatedSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns })
+  const weave = describeWeave(project)
+  const block = { columns: frame.columns, rows: frame.rows }
   const beads: BeadMap = {}
   forEachBead(frame.beads, (row, column, color) => {
-    // A bead at row r, column c lands on row c and column (rows - 1 - r) of the turned Frame.
-    const to = { row: column, column: frame.rows - 1 - row }
-    beads[to.row] ??= {}
-    beads[to.row]![to.column] = color
+    // A bead that belongs to no whole Unit of the Frame (a horizontal bead past its last Unit) is dropped.
+    const to = weave.turned({ row, column }, block)
+    if (to) {
+      beads[to.row] ??= {}
+      beads[to.row]![to.column] = color
+    }
   })
   return {
     ...project,

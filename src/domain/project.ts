@@ -655,6 +655,9 @@ export function fillArea(project: Project, row: number, column: number, color: s
   }
 
   const region = floodRegion(project, { row, column })
+  if (region.length === 0) {
+    return project
+  }
   return restoreBeads(project, withColors(project.beads, region.map((position) => ({ ...position, color }))))
 }
 
@@ -662,7 +665,7 @@ export function fillArea(project: Project, row: number, column: number, color: s
  * name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow): clearing
  * progress is the point. Returns the same instance if already so. */
 export function mirroredCells(
-  project: Pick<Project, 'frame'>,
+  project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
   position: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
@@ -671,19 +674,25 @@ export function mirroredCells(
   if (!frame || !frameContains(frame, position)) {
     return [position]
   }
-  const rows = mirrorCounterparts(position.row - frame.row, frame.rows, axes.rows, copyMode).map((row) => row + frame.row)
-  const columns = mirrorCounterparts(position.column - frame.column, frame.columns, axes.columns, copyMode).map(
-    (column) => column + frame.column,
-  )
+  // A bead folds with beads of its own kind (see Weave.lattice), so Right-angle weave keeps each lying as it does.
+  const weave = describeWeave(project)
+  const lattice = weave.lattice(position, frame)
+  if (!lattice) {
+    return [position]
+  }
+  const rows = mirrorCounterparts(lattice.row.index, lattice.row.count, axes.rows, copyMode)
+  const columns = mirrorCounterparts(lattice.column.index, lattice.column.count, axes.columns, copyMode)
 
   const seen = new Set<string>()
   const cells: GridPosition[] = []
   for (const row of rows) {
     for (const column of columns) {
-      const key = positionKey({ row, column })
-      if (!seen.has(key)) {
+      const cell = lattice.at(row, column)
+      const key = positionKey(cell)
+      // A copy never lands where the Weave has no bead: a net's hole (ticket 486).
+      if (!seen.has(key) && weave.hasPosition(cell, frame)) {
         seen.add(key)
-        cells.push({ row, column })
+        cells.push(cell)
       }
     }
   }
@@ -715,13 +724,14 @@ export function paintCells(
  * per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
 function paintedCountsByStrip(project: Project, frame: Frame, axis: 'columns' | 'rows', axisCount: number): number[] {
   const counts = new Array(axisCount + 1).fill(0)
-  const dimension = axis === 'columns' ? frame.columns : frame.rows
+  const weave = describeWeave(project)
   forEachBead(project.beads, (row, column) => {
-    if (!frameContains(frame, { row, column })) {
-      return
+    const position = { row, column }
+    const lattice = frameContains(frame, position) ? weave.lattice(position, frame) : undefined
+    if (lattice) {
+      const along = axis === 'columns' ? lattice.column : lattice.row
+      counts[stripOf(along.index, along.count, axisCount)]++
     }
-    const index = axis === 'columns' ? column - frame.column : row - frame.row
-    counts[stripOf(index, dimension, axisCount)]++
   })
   return counts
 }
@@ -739,27 +749,28 @@ export function mirrorCurrent(
   if (!frame) {
     return project
   }
-  const dimension = axis === 'columns' ? frame.columns : frame.rows
   const effectiveAxisCount = axisCount === 0 ? 1 : axisCount
 
   const counts = paintedCountsByStrip(project, frame, axis, effectiveAxisCount)
   const sourceStrip = counts.reduce((best, count, strip) => (count > counts[best]! ? strip : best), 0)
 
+  const weave = describeWeave(project)
   const changes: BeadChange[] = []
-  for (let rowOffset = 0; rowOffset < frame.rows; rowOffset++) {
-    for (let columnOffset = 0; columnOffset < frame.columns; columnOffset++) {
-      const index = axis === 'columns' ? columnOffset : rowOffset
-      if (stripOf(index, dimension, effectiveAxisCount) === sourceStrip) {
+  for (let row = frame.row; row < frame.row + frame.rows; row++) {
+    for (let column = frame.column; column < frame.column + frame.columns; column++) {
+      const lattice = weave.lattice({ row, column }, frame)
+      if (!lattice || !weave.hasPosition({ row, column }, frame)) {
         continue
       }
-      const sourceIndex = mirrorCounterpartInStrip(index, dimension, effectiveAxisCount, copyMode, sourceStrip)
-      const sourceRow = frame.row + (axis === 'columns' ? rowOffset : sourceIndex)
-      const sourceColumn = frame.column + (axis === 'columns' ? sourceIndex : columnOffset)
-      changes.push({
-        row: frame.row + rowOffset,
-        column: frame.column + columnOffset,
-        color: colorAt(project.beads, sourceRow, sourceColumn),
-      })
+      const along = axis === 'columns' ? lattice.column : lattice.row
+      if (stripOf(along.index, along.count, effectiveAxisCount) === sourceStrip) {
+        continue
+      }
+      const sourceIndex = mirrorCounterpartInStrip(along.index, along.count, effectiveAxisCount, copyMode, sourceStrip)
+      const source = axis === 'columns' ? lattice.at(lattice.row.index, sourceIndex) : lattice.at(sourceIndex, lattice.column.index)
+      if (weave.hasPosition(source, frame)) {
+        changes.push({ row, column, color: colorAt(project.beads, source.row, source.column) })
+      }
     }
   }
 
