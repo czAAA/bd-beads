@@ -28,6 +28,8 @@ export function useRowOps(deps: RowOpsDeps) {
     const project = deps.currentProject()
     if (project) {
       const turned = toggleRowDirection(project)
+      // A Technique woven in rows only has nothing to turn (ticket 487).
+      if (turned === project) return
       deps.replaceProject(turned)
       // Said once per change, whether the button or its key turned it (ticket 411).
       const t = deps.messages().rowProgress
