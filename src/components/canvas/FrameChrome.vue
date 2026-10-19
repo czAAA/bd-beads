@@ -19,6 +19,8 @@ const props = defineProps<{
   bar?: BarBox
   /** Where the Selection is, if there is one: its handles win a press where a control lies over them. */
   selection?: BarBox
+  /** Where the Tool pill is, so the controls keep clear of it. */
+  pill?: BarBox
 }>()
 
 const emit = defineEmits<{
@@ -34,15 +36,18 @@ const moveAction = controlAction('move-frame')
 const removeAction = controlAction('remove-frame')
 
 const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
-const handleAt = computed(() => place(moveHandleCentre(props.anchor, props.bar)))
+const handleAt = computed(() => place(moveHandleCentre(props.anchor, props.bar, props.pill)))
 const pencilAt = computed(() => place(editPencilCentre(props.anchor)))
-const removeAt = computed(() => place(removeFrameCentre(props.anchor)))
+const removeAt = computed(() => place(removeFrameCentre(props.anchor, props.pill)))
 
 const HIT_PX = 44 // the pencil's and Remove Frame's hit area; the Move handle's is a little wider
-const yields = (centre: { x: number; y: number }, size = HIT_PX) => !!props.selection && overlapsSelectionHandles(centre, size, props.selection)
-const handleYields = computed(() => yields(moveHandleCentre(props.anchor, props.bar), 56))
+const CHIP_PX = 32 // the chip itself, which the Tool pill's press wins over (the hit area round it may overlap)
+const overlapsPill = (centre: { x: number; y: number }) =>
+  !!props.pill && centre.x + CHIP_PX / 2 > props.pill.left && centre.x - CHIP_PX / 2 < props.pill.left + props.pill.width && centre.y + CHIP_PX / 2 > props.pill.top && centre.y - CHIP_PX / 2 < props.pill.top + props.pill.height
+const yields = (centre: { x: number; y: number }, size = HIT_PX) => (!!props.selection && overlapsSelectionHandles(centre, size, props.selection)) || overlapsPill(centre)
+const handleYields = computed(() => yields(moveHandleCentre(props.anchor, props.bar, props.pill), 56))
 const pencilYields = computed(() => yields(editPencilCentre(props.anchor)))
-const removeYields = computed(() => yields(removeFrameCentre(props.anchor)))
+const removeYields = computed(() => yields(removeFrameCentre(props.anchor, props.pill)))
 
 const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
 
@@ -95,7 +100,7 @@ function onHandlePress(event: PointerEvent): void {
         :action="removeAction"
         :deps="deps"
         class="frame-chrome__pencil"
-        data-testid="frame-remove"
+        data-testid="frame-chrome-remove"
         @click="emit('remove')"
       />
     </div>

@@ -70,7 +70,7 @@ describe('FrameChrome (ticket 473)', () => {
 
   it('puts Remove Frame right after the pencil and asks to remove on a click (ticket 498)', async () => {
     const wrapper = mountChrome()
-    const remove = wrapper.get('[data-testid="frame-remove"]')
+    const remove = wrapper.get('[data-testid="frame-chrome-remove"]')
     expect(remove.element.closest('.frame-chrome__control')!.getAttribute('style')).toContain('left: 294px')
     await remove.trigger('click')
     expect(wrapper.emitted('remove')).toHaveLength(1)

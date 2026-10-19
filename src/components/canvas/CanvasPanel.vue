@@ -322,6 +322,7 @@ function techniqueWord(technique: Technique): string {
           :pressing="surfacePressing"
           :bar="frameBarRect"
           :selection="selectionAnchor?.box"
+          :pill="pillRect"
           @toggle="onEditFrame('pencil')"
           @remove="onRemoveFrame"
           @move-press="surfaceRef?.pressMoveHandle($event)"
