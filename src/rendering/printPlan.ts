@@ -1,6 +1,6 @@
 import { countedDimensions, projectDimensions } from '../domain/project'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
-import { describeWeave, type Technique } from '../domain/weave'
+import { describeWeave, type Weave } from '../domain/weave'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, cellSizePx, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
@@ -86,27 +86,31 @@ export function orientedPage(project: Shape): PageSize {
   return isProjectWide(project) ? A4_LANDSCAPE : A4_PORTRAIT
 }
 
-type Shape = Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'>
+type Shape = Pick<Project, 'technique' | 'netSize' | 'frame' | 'beads' | 'rotation'>
 
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
 export function displayedGrid(project: Shape) {
   const { technique, rotation } = project
   const { columns, rows } = countedDimensions(project)
-  // Right-angle weave counts Units, whose pitch is the same each way (ticket 482).
-  const unit = describeWeave({ technique }).countsUnits ? cellSizePx(technique).width + cellSizePx(technique).height : undefined
-  const pitch = unit ?? rowPitchPx(technique)
-  const wide = unit ?? CELL_SIZE_PX
+  // Techniques that count Units step a whole Unit across and down (tickets 482, 485).
+  const description = describeWeave(project)
+  const cell = cellSizePx(technique)
+  const unit = description.countsUnits
+    ? { across: description.origin({ row: 0, column: description.columnsPerUnit }, cell.width, cell.height).x, down: description.origin({ row: description.rowsPerUnit, column: 0 }, cell.width, cell.height).y }
+    : undefined
+  const pitch = unit?.down ?? rowPitchPx(technique)
+  const wide = unit?.across ?? CELL_SIZE_PX
   return rotationSwapsAxes(rotation)
     ? { across: rows, down: columns, stepAcross: pitch, stepDown: wide, beadAcross: wide, beadDown: wide }
     : { across: columns, down: rows, stepAcross: wide, stepDown: pitch, beadAcross: wide, beadDown: wide }
 }
 
 /** The displayed size of a block of beads `across` × `down`, at zoom 1. */
-function blockExtent(technique: Technique, rotation: Rotation, across: number, down: number): PageSize {
+function blockExtent(weave: Weave, rotation: Rotation, across: number, down: number): PageSize {
   const counted = rotationSwapsAxes(rotation) ? { columns: down, rows: across } : { columns: across, rows: down }
-  const { columns, rows } = describeWeave({ technique }).positionsOf(counted)
-  return displayedExtentPx(technique, columns, rows, 1, rotation)
+  const { columns, rows } = describeWeave(weave).positionsOf(counted)
+  return displayedExtentPx(weave.technique, columns, rows, 1, rotation)
 }
 
 /** A chart page's block, fixed (ticket 185): 100 beads a side, an edge block simply however many remain. */
@@ -131,7 +135,7 @@ export function planPrint(project: Shape, page: PageSize = orientedPage(project)
   if (strip) return strip
 
   // The block, then the largest bead at which one fills the page; an edge block simply draws smaller, at the same zoom.
-  const part = blockExtent(project.technique, project.rotation, partAcross, partDown)
+  const part = blockExtent(project, project.rotation, partAcross, partDown)
   const zoom = Math.min(maxZoom, area.width / part.width, area.height / part.height)
 
   const parts: PrintPart[] = []
@@ -141,7 +145,7 @@ export function planPrint(project: Shape, page: PageSize = orientedPage(project)
       const firstDown = down * partDown
       const lastAcross = Math.min(grid.across, firstAcross + partAcross) - 1
       const lastDown = Math.min(grid.down, firstDown + partDown) - 1
-      const extent = blockExtent(project.technique, project.rotation, lastAcross - firstAcross + 1, lastDown - firstDown + 1)
+      const extent = blockExtent(project, project.rotation, lastAcross - firstAcross + 1, lastDown - firstDown + 1)
       parts.push({
         page: parts.length + 2,
         across,
@@ -169,7 +173,7 @@ type Grid = ReturnType<typeof displayedGrid>
  * paper. */
 function planStrips(project: Shape, page: PageSize, area: PageSize, grid: Grid, baseZoom: number, partAcross: number): PrintPlan | undefined {
   const partsAcross = Math.ceil(grid.across / partAcross)
-  const downExtent = blockExtent(project.technique, project.rotation, partAcross, grid.down).height * baseZoom
+  const downExtent = blockExtent(project, project.rotation, partAcross, grid.down).height * baseZoom
   if (downExtent >= area.height / 2) return undefined
 
   const stripHeight = PRINT_STRIP_LABEL + (PRINT_RULER + PRINT_BOARD_PAD) * 2 + downExtent
@@ -180,7 +184,7 @@ function planStrips(project: Shape, page: PageSize, area: PageSize, grid: Grid, 
   for (let across = 0; across < partsAcross; across += 1) {
     const firstAcross = across * partAcross
     const lastAcross = Math.min(grid.across, firstAcross + partAcross) - 1
-    const extent = blockExtent(project.technique, project.rotation, lastAcross - firstAcross + 1, grid.down)
+    const extent = blockExtent(project, project.rotation, lastAcross - firstAcross + 1, grid.down)
     parts.push({
       page: 2 + Math.floor(across / perSheet),
       across,

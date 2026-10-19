@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, describeWeave, gridHeight, gridWidth, lineOfPass, neighborsOf, passCount, passOf, rowCycle, rowOffset, rowPitch } from './weave'
+import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, lineOfPass, neighborsOf, passCount, passOf, rowCycle, rowOffset, rowPitch } from './weave'
 
 function sorted(positions: { row: number; column: number }[]) {
   return [...positions].sort((a, b) => a.row - b.row || a.column - b.column)
@@ -357,5 +357,135 @@ describe('describeWeave: Right-angle weave (ticket 482)', () => {
 
   it('measures a Unit in mm as the Bead\'s length plus its width, each way', () => {
     expect(description.stepMm({ widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 })).toEqual({ across: 1.6 + 0.1 + 1.3, down: 1.6 + 0.1 + 1.3 })
+  })
+})
+
+describe('describeWeave: Netting (ticket 485)', () => {
+  const nets = [3, 5, 7, 9].map((netSize) => ({ netSize, p: (netSize + 1) / 2, description: describeWeave({ technique: 'netting', netSize }) }))
+  const beadsIn = (description: ReturnType<typeof describeWeave>, rows: number, columns: number, top = 0, left = 0) =>
+    Array.from({ length: rows * columns }, (_cell, at) => ({ row: top + Math.floor(at / columns), column: left + (at % columns) })).filter((position) => description.hasPosition(position))
+
+  it('counts Units, steps by a whole diamond, offers no turn or row direction and is fixed once the Project is made', () => {
+    for (const { p, description } of nets) {
+      expect(description).toMatchObject({ countsUnits: true, frameStep: 2 * p, columnStep: 2 * p, rowsPerUnit: p, columnsPerUnit: 2 * p, switchable: false, quarterTurn: false, rowDirection: false, hasNetSize: true, hasBrickBlock: false })
+      expect(description.turned({ row: 1, column: 1 })).toBeUndefined()
+    }
+  })
+
+  it('reads a missing or odd-out Net size as the nearest odd one from 3 to 9', () => {
+    expect([undefined, 4, 5, 8, 12, 1].map(clampNetSize)).toEqual([3, 3, 5, 7, 9, 3])
+    expect(describeWeave({ technique: 'netting' })).toMatchObject({ frameStep: 4 })
+  })
+
+  it('lays a 3-bead net as a diamond tip, two edge beads, the side corners, two more and the bottom tip', () => {
+    const { description } = nets[0]!
+    expect(beadsIn(description, 5, 5)).toEqual([
+      { row: 0, column: 2 },
+      { row: 1, column: 1 },
+      { row: 1, column: 3 },
+      { row: 2, column: 0 },
+      { row: 2, column: 4 },
+      { row: 3, column: 1 },
+      { row: 3, column: 3 },
+      { row: 4, column: 2 },
+    ])
+  })
+
+  it('lays a 5-bead net with two beads along each strand between shared beads', () => {
+    const { description } = nets[1]!
+    expect(beadsIn(description, 7, 7).filter(({ row }) => row <= 3)).toEqual([
+      { row: 0, column: 3 },
+      { row: 1, column: 2 },
+      { row: 1, column: 4 },
+      { row: 2, column: 1 },
+      { row: 2, column: 5 },
+      { row: 3, column: 0 },
+      { row: 3, column: 6 },
+    ])
+  })
+
+  it('holds as many beads as its Net size in each diamond, shared beads once', () => {
+    for (const { netSize, p, description } of nets) {
+      // A cell of the lattice (2p each way) holds two diamonds.
+      expect(beadsIn(description, 2 * p, 2 * p)).toHaveLength(2 * netSize)
+    }
+  })
+
+  it('repeats the same lattice a diamond across and down, and above and left of row 0', () => {
+    for (const { p, description } of nets) {
+      for (let row = -3; row < 6; row += 1) {
+        for (let column = -3; column < 6; column += 1) {
+          expect(description.hasPosition({ row, column })).toBe(description.hasPosition({ row: row + 2 * p, column: column + 2 * p }))
+          expect(description.hasPosition({ row, column })).toBe(description.hasPosition({ row: row + 2 * p, column: column - 2 * p }))
+        }
+      }
+    }
+  })
+
+  it('draws every bead round and upright where it sits, never overlapping its neighbours', () => {
+    for (const { p, description } of nets) {
+      const beads = beadsIn(description, 4 * p, 4 * p).map((position) => description.center(position, 20, 20))
+      expect(description.orientationAt({ row: 0, column: p })).toBe('upright')
+      expect(description.box({ row: 1, column: p + 1 }, 20, 20)).toEqual({ x: (p + 1) * 15, y: 15, width: 20, height: 20 })
+      for (const [at, a] of beads.entries()) {
+        for (const b of beads.slice(at + 1)) {
+          expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(20)
+        }
+      }
+    }
+  })
+
+  it('has a Frame of whole diamonds: a diamond across and down is its width plus one and its height plus one', () => {
+    for (const { p, description } of nets) {
+      expect(description.positionsOf({ columns: 1, rows: 1 })).toEqual({ columns: 2 * p + 1, rows: 2 * p + 1 })
+      expect(description.positionsOf({ columns: 3, rows: 2 })).toEqual({ columns: 6 * p + 1, rows: 3 * p + 1 })
+      expect(description.unitsOf(description.positionsOf({ columns: 3, rows: 2 }))).toEqual({ columns: 3, rows: 2 })
+      expect(description.smallest).toEqual({ columns: 2 * p + 1, rows: 2 * p + 1 })
+    }
+  })
+
+  it('ends a Frame on a whole diamond across and down', () => {
+    const { description } = nets[0]!
+    expect(description.snapBottom(0, 4)).toBe(4)
+    expect(description.snapBottom(0, 5)).toBe(6)
+    expect(description.snapBottom(4, 4)).toBe(8)
+    expect(description.snapRight(0, 4)).toBe(4)
+    expect(description.snapRight(8, 9)).toBe(12)
+    expect(description.snapRight(8, 8)).toBe(12)
+  })
+
+  it('touches along the strands: four beads at a shared bead, two on a strand', () => {
+    const { description } = nets[0]!
+    expect(sorted(description.neighbors(undefined, { row: 1, column: 1 }))).toEqual([
+      { row: 0, column: 2 },
+      { row: 2, column: 0 },
+    ])
+    expect(sorted(description.neighbors(undefined, { row: 2, column: 0 }))).toEqual([
+      { row: 1, column: -1 },
+      { row: 1, column: 1 },
+      { row: 3, column: -1 },
+      { row: 3, column: 1 },
+    ])
+    expect(sorted(description.neighbors({ row: 0, column: 0, rows: 5, columns: 5 }, { row: 4, column: 2 }))).toEqual([
+      { row: 3, column: 1 },
+      { row: 3, column: 3 },
+    ])
+  })
+
+  it('finds the bead under a point, none in a hole, and the nearest bead from a hole', () => {
+    const { description } = nets[0]!
+    const at = description.center({ row: 1, column: 1 }, 20, 20)
+    expect(description.positionAt(at.x, at.y, 20, 20)).toEqual({ row: 1, column: 1 })
+    const hole = description.center({ row: 0, column: 0 }, 20, 20)
+    expect(description.hasPosition({ row: 0, column: 0 })).toBe(false)
+    expect(description.positionAt(hole.x, hole.y, 20, 20)).toBeUndefined()
+    expect(description.hasPosition(description.nearestPosition(hole.x, hole.y, 20, 20))).toBe(true)
+  })
+
+  it('measures a diamond in mm from the Bead, a strand step being three quarters of it', () => {
+    const bead = { widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 }
+    expect(nets[0]!.description.stepMm(bead).across).toBeCloseTo(4 * 0.75 * 1.7)
+    expect(nets[0]!.description.stepMm(bead).down).toBeCloseTo(2 * 0.75 * 1.3)
+    expect(nets[1]!.description.stepMm(bead).across).toBeCloseTo(6 * 0.75 * 1.7)
   })
 })

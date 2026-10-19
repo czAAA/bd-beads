@@ -354,6 +354,7 @@ function techniqueWord(technique: Technique): string {
               :image="framing.image"
               :technique="framing.technique"
               :brick-block="framing.brickBlock"
+              :net-size="framing.netSize"
               :bead="framing.bead"
               :dimensions="framing.dimensions"
               :zoom="convertZoom"

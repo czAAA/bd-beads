@@ -9,6 +9,8 @@ const props = withDefaults(
   defineProps<{
     min?: number
     max?: number
+    /** How far a press moves the number (Net size goes by two, ticket 485). */
+    stepBy?: number
     decreaseLabel: string
     /** The name of the number for screen readers, e.g. "Width": it is a button that opens the number for typing
      * (ticket 355). */
@@ -25,7 +27,7 @@ const props = withDefaults(
      * 342). */
     display?: string
   }>(),
-  { min: -Infinity, max: Infinity, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined, display: undefined },
+  { min: -Infinity, max: Infinity, stepBy: 1, tooltip: false, disabledBody: undefined, decreaseTestid: undefined, increaseTestid: undefined, valueTestid: undefined, display: undefined },
 )
 const value = defineModel<number>({ required: true })
 
@@ -61,7 +63,7 @@ function step(delta: number): boolean {
   return true
 }
 
-const hold = useHoldRepeat((direction) => step(direction))
+const hold = useHoldRepeat((direction) => step(direction * props.stepBy))
 const decreaseHandlers = hold.handlers(-1)
 const increaseHandlers = hold.handlers(1)
 

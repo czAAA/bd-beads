@@ -120,3 +120,15 @@ describe('computeColorQuantities in Right-angle weave (ticket 482)', () => {
     expect(computeColorQuantities(painted)).toMatchObject([{ hex: RED, count: 7 }])
   })
 })
+
+describe('computeColorQuantities in Netting (ticket 485)', () => {
+  it('counts every real bead once, shared beads included, and no hole', () => {
+    const woven = createProject({ technique: 'netting', netSize: 3, beadId: cubeBead.id, size: { width: 1, height: 1, unit: 'beads' } })
+    const everyPosition = Array.from({ length: 25 }, (_cell, at) => ({ row: Math.floor(at / 5), column: at % 5 }))
+
+    const painted = paintAt(woven, everyPosition, RED)
+
+    // One diamond: its tip, two beads on each side strand, the two side corners and the bottom tip.
+    expect(computeColorQuantities(painted)).toMatchObject([{ hex: RED, count: 8 }])
+  })
+})

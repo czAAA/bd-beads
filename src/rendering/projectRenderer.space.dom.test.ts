@@ -285,3 +285,23 @@ describe('Position marks tile styles', () => {
     expect(project.beads[0]?.[0]).toBe('#00f')
   })
 })
+
+describe('renderProject, Netting (ticket 485)', () => {
+  // A Frame of one diamond (5 by 5 positions) at row 4, column 4, every position painted; a strand step is 15.
+  const woven = (): Project => {
+    const project = createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } })
+    const cells = Array.from({ length: 25 }, (_cell, at) => ({ row: Math.floor(at / 5), column: at % 5, color: '#e63746' }))
+    return { ...project, frame: { row: 4, column: 4, rows: 5, columns: 5, beads: withColors({}, cells) } }
+  }
+  const mesh = [[0, 2], [1, 1], [1, 3], [2, 0], [2, 4], [3, 1], [3, 3], [4, 2]]
+
+  it.each([
+    { space: 'open', open: true, origin: { row: 4, column: 4 } },
+    { space: 'Frame-only', open: false, origin: { row: 0, column: 0 } },
+  ])('puts every bead of the Frame at its place on the mesh and none in a hole, in $space space', ({ open, origin }) => {
+    const { beads } = render(woven(), open)
+
+    const painted = beads.filter(({ color }) => color !== null)
+    expect(painted.map(({ x, y }) => ({ x, y }))).toEqual(mesh.map(([row, column]) => ({ x: (origin.column + column) * 15, y: (origin.row + row) * 15 })))
+  })
+})
