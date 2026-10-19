@@ -1,21 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { colorAt, type Frame } from './canvas'
+import { colorAt } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { createProject, paintCells, withFrame } from './project'
+import { createProject, paintCells } from './project'
 import { paintAt } from '../testUtils/layers'
 
-const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-const framed = withFrame(open, frame)
 const none = { columns: 0, rows: 0 }
 
 describe('what a drawing edit may leave', () => {
-  it('keeps a stroke against the Frame\'s edge: there is no margin to keep clear', () => {
-    const stroke = [{ row: 9, column: 10 }, { row: 12, column: 9 }, { row: 12, column: 16 }, { row: 14, column: 12 }]
-    const painted = keepAllowedEdits(framed, paintCells(framed, stroke, '#ff0000', none))
-    for (const { row, column } of stroke) expect(colorAt(painted.beads, row, column)).toBe('#ff0000')
-  })
-
   it('does nothing with no Frame', () => {
     const painted = paintCells(open, [{ row: 1, column: 1 }], '#ff0000', none)
     expect(keepAllowedEdits(open, painted).beads).toEqual(painted.beads)

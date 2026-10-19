@@ -1,5 +1,6 @@
 import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
+import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import { beadRoundness, describeWeave, passCount, passLines, passOf } from '../domain/weave'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
@@ -10,7 +11,7 @@ import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
-import { CELL_SIZE_PX, frameOriginPx, positionBoxPx, positionsBoxPx, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
+import { CELL_SIZE_PX, frameOriginPx, gridBox, positionBoxPx, positionsBoxPx, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -94,6 +95,12 @@ export interface OverlayInput {
   /** While the Frame is being set (Canvas only): its handles and the size tooltip's text. `touch` gives four larger
    * corner handles. */
   frameEditing?: { touch: boolean; tooltip: string }
+  /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or
+   * resized, and after a refused press. */
+  marginOutline?: number
+  /** How many positions wide the margin outline stands out from the Frame (ticket 459): wider when zoomed out.
+   * Defaults to `MARGIN`. */
+  margin?: number
 }
 
 /** The Tour's marks on the Project, dashed. */
@@ -449,6 +456,26 @@ function drawMirrorAxes(context: DrawingContext, weave: Weave, space: Space, cou
   context.globalAlpha = 1
 }
 
+/** The Frame margin's outline (ticket 276, Frame card): 1px dashed `line-strong` round its outer edge, radius 12,
+ * faded by `opacity`. Drawn in grid space, so its widths are divided by the zoom to stay screen px. */
+const MARGIN_OUTLINE_DASH_PX = [4, 3]
+const MARGIN_OUTLINE_RADIUS_PX = 12
+
+/** Strokes the box round the margin's drawn extent on the Canvas (ticket 372): peyote rows nest closer than a bead is
+ * tall, and offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
+function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Frame, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
+  const { x, y, width, height } = gridBox(weave, withMargin(frame, margin))
+  context.save()
+  context.globalAlpha = opacity
+  context.strokeStyle = theme.pieceLine
+  context.lineWidth = 1 / zoom
+  context.setLineDash(MARGIN_OUTLINE_DASH_PX.map((length) => length / zoom))
+  context.beginPath()
+  roundedRect(context, x, y, width, height, MARGIN_OUTLINE_RADIUS_PX / zoom)
+  context.stroke()
+  context.restore()
+}
+
 /** Whether a position of the Canvas is on the Frame (ticket 492): inside its rectangle of Canvas positions. */
 function onFrame(frame: FrameSheet | undefined, position: GridPosition): boolean {
   return frame !== undefined && frameContains(frame, position)
@@ -464,7 +491,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, pointer, rowMarks } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -474,7 +501,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
   const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!showRows && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !pointer) {
+  if (!showRows && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
 
@@ -494,6 +521,10 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const canvasDimmed = dimmed && offFrame(dimmed)
   const canvasCursor = cursor && !onFrame(frame, cursor) ? cursor : undefined
   const canvasMarks = marks && { cells: offFrame(marks.cells), boxes: marks.boxes.filter((box) => !onFrame(frame, { row: box.top, column: box.left })) }
+
+  if (space.open && marginOutline > 0 && project.frame) {
+    drawMarginOutline(context, canvasWeaveOf, project.frame, zoom, marginOutline, theme, margin)
+  }
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
   // over that, the marker lifted above its row, and Mirror's axes above everything.

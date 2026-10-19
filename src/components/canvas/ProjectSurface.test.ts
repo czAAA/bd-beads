@@ -107,7 +107,7 @@ describe('ProjectSurface', () => {
     expect(wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element.style.transform).toBe('')
   })
 
-  it('keeps redrawing on zoom and scroll after a Frame press while a draw is waiting', async () => {
+  it('keeps redrawing on zoom and scroll after a Frame press fades the margin outline in while a draw is waiting', async () => {
     const frames = new Map<number, () => void>()
     let next = 1
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.set(next, callback) && next++)
@@ -190,7 +190,7 @@ describe('ProjectSurface', () => {
     }
   })
 
-  it('fills the empty positions outside the Frame with marks as patterns, not as a shape each', async () => {
+  it('fills the empty positions outside the Frame and its margin with marks as patterns, not as a shape each', async () => {
     viewport = { width: 100, height: 100 }
     const framed = projectOf(2, 2)
     const open = { ...framed, frame: undefined }
@@ -727,19 +727,44 @@ describe('ProjectSurface', () => {
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
       wrapper.emitted() as Record<string, unknown[][]>
 
-    describe('against the Frame (ADR 0066)', () => {
+    describe('over the Frame margin (ticket 276)', () => {
       const framed = () => projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
 
-      it('gives a press on a bead right against the Frame to the tool, with no not-allowed cursor', async () => {
+      it('shows not-allowed over the margin for a tool that cannot place beads there, and the crosshair elsewhere', async () => {
         const project = framed()
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 })
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true })
         const surface = wrapper.find('[data-testid="project-surface"]')
 
-        await surface.trigger('pointermove', centreOf(project, 9, 10))
-        await surface.trigger('pointerdown', { ...centreOf(project, 9, 10), button: 0, buttons: 1 })
+        await surface.trigger('pointermove', centreOf(project, 8, 8))
+        expect(surface.classes()).toContain('project-surface--refused')
 
-        expect(surface.attributes('class')).not.toContain('refused')
-        expect(wrapper.emitted('cell-primary-down')).toEqual([[9, 10]])
+        await surface.trigger('pointermove', centreOf(project, 2, 2))
+        expect(surface.classes()).not.toContain('project-surface--refused')
+      })
+
+      it('always draws the margin outline with a Frame (ticket 452)', async () => {
+        await mountSurface(framed(), 1, { x: 0, y: 0 })
+        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
+      })
+
+      it('refuses a press whose mirrored counterpart lands in the margin, though the pressed bead is outside it', async () => {
+        const project = framed()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true, previewCells: [{ row: 2, column: 2 }, { row: 8, column: 8 }] })
+
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
+
+        // The outline fades in on the overlay once refused: a dashed stroke is drawn.
+        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
+      })
+
+      it('keeps its own cursor for Erase, which still works there', async () => {
+        const project = framed()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: false })
+        const surface = wrapper.find('[data-testid="project-surface"]')
+
+        await surface.trigger('pointermove', centreOf(project, 8, 8))
+
+        expect(surface.classes()).not.toContain('project-surface--refused')
       })
     })
 
@@ -977,6 +1002,20 @@ describe('ProjectSurface', () => {
       context.calls.length = 0
       await surface.trigger('pointercancel', { pointerType: 'pen' })
       await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
+      expect(marker()).toHaveLength(0)
+    })
+
+    it('goes when the canvas moves a refused margin under a still pointer', async () => {
+      const project = projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', blocksMargin: true })
+      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
+      const point = { clientX: at.x, clientY: at.y }
+      await surfaceOf(wrapper).trigger('pointermove', { ...point, pointerType: 'mouse', buttons: 0 })
+      await vi.waitFor(() => expect(marker()).toHaveLength(1))
+
+      context.calls.length = 0
+      await wrapper.setProps({ scroll: { x: 0, y: 40 } })
+      await vi.waitFor(() => expect(context.named('clearRect').length).toBeGreaterThan(0))
       expect(marker()).toHaveLength(0)
     })
   })

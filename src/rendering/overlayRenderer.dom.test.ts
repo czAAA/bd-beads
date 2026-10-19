@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
+import type { Frame } from '../domain/canvas'
+import { withMargin } from '../domain/margin'
 import { createProject, withFrameGrid, type Project, type RowProgress, type Technique } from '../domain/project'
 import { blendOver, DEFAULT_THEME, fadeOver } from './beadLook'
 import { beadRoundness } from '../domain/weave'
@@ -656,6 +658,56 @@ describe('the bead cursor (ticket 159)', () => {
     renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
     expect(named('fill')).toHaveLength(0)
+  })
+
+  describe('the Frame margin outline (ticket 276)', () => {
+    const framed = { ...projectOf('loom', 4, 4, { marks: false }), frame: { technique: 'loom' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } }
+
+    it('strokes a dashed 1px outline round the margin at the given opacity', () => {
+      const { context, calls, named } = recordingContext()
+
+      renderOverlay(context, { project: framed, space: spaceOf(framed, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 2, marginOutline: 0.5 })
+
+      expect(named('setLineDash')[0]!.args[0]).toEqual([2, 1.5])
+      const stroke = calls.find((call) => call.name === 'stroke')!
+      expect(stroke.globalAlpha).toBe(0.5)
+    })
+
+    // The margin's cells come from `withMargin`; the sizes are worked out here from the bead geometry (CELL_SIZE_PX 20), not from `projectExtentPx`.
+    const outline = (technique: Technique, frame: Frame) => {
+      const project = { ...projectOf(technique, 4, 4, { marks: false }), frame: { technique, ...frame, beads: {} } }
+      const { context, calls } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
+      const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
+      return { x, width, height, outer: withMargin(frame) }
+    }
+    const frame = { row: 5, column: 5, rows: 4, columns: 4 }
+
+    it.each([
+      ['loom', (rows: number, columns: number) => ({ width: columns * 20, height: rows * 20 })],
+      ['peyote', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * 15 })], // rows nest at three quarters of a bead; shifted rows add half a bead across
+      ['brick', (rows: number, columns: number) => ({ width: columns * 20 + 10, height: 20 + (rows - 1) * 20 })], // rows sit a bead apart
+    ] as const)('wraps the %s margin as drawn, not as a full-bead grid', (technique, sizeOf) => {
+      const { width, height, outer } = outline(technique, frame)
+
+      expect({ width, height }).toEqual(sizeOf(outer.rows, outer.columns))
+    })
+
+    it('starts at the margin\'s own column even when its first row is a shifted one', () => {
+      const shiftedFirstRow = { ...frame, row: 7, column: 8 }
+      const { x, outer } = outline('peyote', shiftedFirstRow)
+
+      expect(outer.row % 2).toBe(1)
+      expect(x).toBe(outer.column * 20)
+    })
+
+    it('draws nothing while it is faded out', () => {
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project: framed, space: spaceOf(framed, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 0 })
+
+      expect(calls.some((call) => call.name === 'stroke')).toBe(false)
+    })
   })
 })
 

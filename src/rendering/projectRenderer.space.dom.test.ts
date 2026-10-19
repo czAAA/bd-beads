@@ -157,16 +157,17 @@ describe('brick stitch inside a Frame', () => {
   })
 })
 
-describe('the Frame on the Canvas (ADR 0066)', () => {
-  it('fills no marks in the Frame, and runs them right up to its edge', () => {
+describe('the Frame margin on the Canvas (ticket 276)', () => {
+  it('fills no marks in the margin or the Frame, leaving a flat gap, and runs them right up to the margin', () => {
     const project = framedProject('loom')
-    const { named } = render({ ...project, frame: { technique: 'loom' as const, row: 6, column: 6, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
+    const { named } = render({ ...project, frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 500, height: 500 } })
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)
-    // The Frame is rows 6 to 9 and columns 6 to 8: x 120 to 180, y 120 to 200 (the marks' own edge sits 5 in from it).
-    expect(fills.filter(({ left, right, top, bottom }) => left < 185 && right > 125 && top < 200 && bottom > 120)).toEqual([])
-    expect(fills.some(({ right, top, bottom }) => right === 125 && top < 200 && bottom > 120)).toBe(true)
+    // The Frame is rows 10 to 13 and columns 10 to 12; its margin is 6 round it, rows 4 to 19 and columns 4 to 18: x 80 to 380, y 80 to 400 (the marks' own edge sits 5 in from it).
+    const touchesMargin = fills.filter(({ left, right, top, bottom }) => left < 385 && right > 85 && top < 400 && bottom > 80)
+    expect(touchesMargin).toEqual([])
+    expect(fills.some(({ right, top, bottom }) => right === 85 && top < 400 && bottom > 80)).toBe(true)
   })
 })
 
@@ -253,14 +254,14 @@ describe('Position marks tile styles', () => {
     expect(fills('squares')).toBeGreaterThan(fills('dots'))
   })
 
-  it('draws a Canvas bead against the Frame and leaves one under it undrawn, still held by the Project', () => {
+  it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {
     const base = framedProject('loom')
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 6, column: 4, color: '#00f' }, { row: 7, column: 6, color: '#00f' }]) }
+    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 0, column: 0, color: '#00f' }, { row: 14, column: 12, color: '#00f' }]) }
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
-    expect(beads.filter(({ color }) => color === '#00f')).toHaveLength(1)
-    expect(project.beads[7]?.[6]).toBe('#00f')
+    expect(beads).toHaveLength(12)
+    expect(project.beads[0]?.[0]).toBe('#00f')
   })
 })
 

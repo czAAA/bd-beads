@@ -4,7 +4,7 @@ The domain language of bd-beads, one file per area. Each entry gives a term's me
 
 | File | Terms |
 |---|---|
-| [Canvas and Frame](canvas-and-frame.md) | Project, Schema (Name Piece), Canvas, Grid, Position marks, Piece, Piece area, Frame, Edit Frame, Move handle, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
+| [Canvas and Frame](canvas-and-frame.md) | Project, Schema (Name Piece), Canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Edit Frame, Move handle, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
 | [Library, Palette and Beads](library-palette-beads.md) | Project library, Offline copy, Keep note, Maker's name, Palette, Bead, Bead color, Color catalog, Form factor, Technique, Right-angle weave, Netting, Net size, Unit |
 | [Row progress and Mirror](row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
 | [Tool pill and controls](toolbox.md) | Tool group, Tool pill layout, Tool pill, Menu, Canvas strip, Panel sub-view, New Project, Template, Template setup, Tool button, Tooltip, Note, Outside press |
