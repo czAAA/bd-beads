@@ -630,6 +630,7 @@ export const en: Translations = {
     noProgressToReset: 'No rows are marked as done yet.',
     moveFrame: 'Drag to move the Frame together with its beads.',
     rowProgressLockedFrame: 'Rows are marked done. Remove the Frame to change it.',
+    frameSizeLocked: 'Rows are marked done. Reset progress to change the Frame size.',
     fillNeedsColor: 'Pick a color first to fill the Selection.',
     rowProgressLockedTechnique: 'Rows are marked done. Remove the Frame to change the Technique.',
     changeTechnique: 'Weave the Schema in another Technique. Every bead keeps its row and column.',
