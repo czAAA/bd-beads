@@ -62,7 +62,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
-  const currentLine = lineOfPass(project.technique, direction === 'rows' ? currentRow : currentColumn)
+  const currentLine = lineOfPass(project.technique, direction === 'rows' ? currentRow : currentColumn, direction)
   const current = rowMarks && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
   const onCursor = cursor !== undefined && (label.axis === 'row' ? cursor.row === label.position : cursor.column === label.position)
 

@@ -20,7 +20,7 @@ import { sameFrame, snapRow } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
-import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type Technique } from './weave'
+import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type PassDirection, type Technique } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -40,7 +40,7 @@ export type Grid = Cell[][]
 
 /** Which way the weaver's rows run: along the grid's rows or down its columns (ticket 32). Separate from
  * Project.rotation, which only turns the picture; rotating swaps the axis, so the weaver flips this too. */
-type RowDirection = 'rows' | 'columns'
+type RowDirection = PassDirection
 
 /** Which row the weaver is on (see CONTEXT.md's Row progress entry); whether the overlay shows is worked out from
  * the Frame (rowProgressOn). */
@@ -207,8 +207,8 @@ function clampRow(row: number, passes: number): number {
 function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, technique: Technique): Project['rowProgress'] {
   return {
     ...rowProgress,
-    currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows)),
-    currentColumn: clampRow(rowProgress.currentColumn, passCount(technique, frame.columns)),
+    currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows, 'rows')),
+    currentColumn: clampRow(rowProgress.currentColumn, passCount(technique, frame.columns, 'columns')),
   }
 }
 
@@ -340,8 +340,8 @@ export function normalizeProject(stored: StoredProject): Project {
     rowProgress: {
       direction: rowProgress.direction ?? 'rows',
       // An old file's `enabled` and `decided` are read and dropped: Row progress follows the Frame (ticket 426, 434).
-      currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows)),
-      currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(technique, frame.columns)),
+      currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows, 'rows')),
+      currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(technique, frame.columns, 'columns')),
     },
     rotation: normalizeRotation(legacy),
   }
@@ -439,8 +439,8 @@ export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'fram
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   return direction === 'rows'
-    ? { current: currentRow, total: passCount(project.technique, frame?.rows ?? 0) }
-    : { current: currentColumn, total: passCount(project.technique, frame?.columns ?? 0) }
+    ? { current: currentRow, total: passCount(project.technique, frame?.rows ?? 0, 'rows') }
+    : { current: currentColumn, total: passCount(project.technique, frame?.columns ?? 0, 'columns') }
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
@@ -456,8 +456,8 @@ export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' |
   const relativeRow = row - frame.row
   const relativeColumn = column - frame.column
   return direction === 'rows'
-    ? passOf(project.technique, relativeRow, relativeColumn) < currentRow
-    : passOf(project.technique, relativeColumn, relativeRow) < currentColumn
+    ? passOf(project.technique, relativeRow, relativeColumn, 'rows') < currentRow
+    : passOf(project.technique, relativeColumn, relativeRow, 'columns') < currentColumn
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
@@ -471,8 +471,8 @@ export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 
   const relativeRow = row - frame.row
   const relativeColumn = column - frame.column
   return direction === 'rows'
-    ? passOf(project.technique, relativeRow, relativeColumn) === currentRow
-    : passOf(project.technique, relativeColumn, relativeRow) === currentColumn
+    ? passOf(project.technique, relativeRow, relativeColumn, 'rows') === currentRow
+    : passOf(project.technique, relativeColumn, relativeRow, 'columns') === currentColumn
 }
 
 /** Whether the Project has a bead on either layer. */
