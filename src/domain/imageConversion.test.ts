@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { computeGridDimensions, type GridDimensions } from './grid'
-import { cellCenter, rowPitch, type Technique } from './weave'
+import { cellCenter, describeWeave, rowPitch, type Technique } from './weave'
 import { channelsOf } from './imageColors'
 import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, type PreviewLattice } from './imageFraming'
 import {
@@ -256,6 +256,40 @@ describe('sampleLatticePacked', () => {
 
     expect(packed[0]).toBe(NO_COLOR)
     expect(packed[2 * 6 + 2]).not.toBe(NO_COLOR)
+  })
+})
+
+describe('sampling a Right-angle weave lattice (ticket 483)', () => {
+  it('takes each bead at its own centre, horizontal and vertical alike', () => {
+    // A cube bead is 1.5 mm, so a Unit is 3 mm a side; a picture pixel is 0.5 mm. 1 Unit across and down: 3 lines, 2 columns.
+    const image = coordinateImage(8, 8)
+    const view = { scaleMm: 0.5, offsetXMm: 0, offsetYMm: 0, pictureWidthMm: 4, pictureHeightMm: 4 }
+    const lattice: PreviewLattice = { columns: 2, rows: 3, frameColumn: 0, frameRow: 0 }
+    const sampled = sampleLattice({ image, view, technique: 'rightAngle', bead: cubeBead, lattice }).map((row) =>
+      row.map((hex) => (hex ? sampledPixel(hex) : undefined)),
+    )
+
+    // Centres in mm: a horizontal bead (1.5 + 0.75, 0.75); vertical beads (0.75, 2.25) and (3.75, 2.25); and so on.
+    expect(sampled[0]![0]).toEqual({ x: 4, y: 1 })
+    expect(sampled[1]![0]).toEqual({ x: 1, y: 4 })
+    expect(sampled[1]![1]).toEqual({ x: 7, y: 4 })
+    expect(sampled[2]![0]).toEqual({ x: 4, y: 7 })
+  })
+})
+
+describe('sampling a Netting lattice (ticket 486)', () => {
+  it('takes each bead at its own centre and leaves a hole without a color', () => {
+    const image = coordinateImage(16, 16)
+    const view = { scaleMm: 0.5, offsetXMm: 0, offsetYMm: 0, pictureWidthMm: 8, pictureHeightMm: 8 }
+    const lattice: PreviewLattice = { columns: 5, rows: 5, frameColumn: 0, frameRow: 0 }
+    const sampled = sampleLattice({ image, view, technique: 'netting', netSize: 3, bead: cubeBead, lattice })
+    const weave = describeWeave({ technique: 'netting', netSize: 3 })
+
+    for (let row = 0; row < 5; row++) {
+      for (let column = 0; column < 5; column++) {
+        expect(sampled[row]![column] !== undefined).toBe(weave.hasPosition({ row, column }))
+      }
+    }
   })
 })
 

@@ -1,5 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
 import type { Frame } from './canvas'
+import type { Selection } from './selection'
 import type { GridBounds, GridDimensions, GridPosition } from './grid'
 
 /** The weaving method, which determines a Project's grid geometry. */
@@ -121,7 +122,7 @@ const RULES: Record<Technique, TechniqueRules> = {
     hasBrickBlock: false,
     hasNetSize: false,
     switchable: false,
-    quarterTurn: false,
+    quarterTurn: true,
     rowDirection: true,
     twoPasses: false,
     countsUnits: true,
@@ -191,11 +192,29 @@ export interface WeaveDescription extends TechniqueRules {
     of(line: number, along: number, direction: PassDirection): number
     lineOf(pass: number, direction: PassDirection): number
   }
-  /** Where a quarter turn or a mirror sends a position's bead within its block; undefined when a turn isn't offered. */
-  turned(position: GridPosition): GridPosition | undefined
-  mirrored(position: GridPosition): GridPosition
+  /** Where a quarter turn clockwise sends the bead at `position`, both counted from the top-left of a block of
+   * `block` positions (a Selection, or the Frame with its margin); undefined when a turn isn't offered or the bead
+   * belongs to no whole Unit of the block (a horizontal bead past its last Unit). */
+  turned(position: GridPosition, block: GridDimensions): GridPosition | undefined
+  /** A bead's place among the beads Mirror folds it with, inside the Frame (horizontal and vertical beads fold among
+   * themselves in Right-angle weave, so a flip keeps each lying as it does); undefined for a position with no bead. */
+  lattice(position: GridPosition, frame: Frame): MirrorLattice | undefined
+  /** The Selection grown to whole Units (a Technique with none returns it as is): from an even row (a line of
+   * horizontal beads) to an even row, at least one Unit each way. `within` keeps a grown Selection that started
+   * inside it from leaving it. */
+  snapSelection(selection: Selection, within?: Frame): Selection
+  /** Where a block of beads, given by its beads' offsets from its top-left, lands when aimed at `topLeft`: nudged so its
+   * beads fall on beads of the Weave (a Technique whose positions aren't all beads); as aimed otherwise (ticket 486). */
+  fitBlock(topLeft: GridPosition, offsets: GridPosition[]): GridPosition
   /** The physical size, in mm, of one step across and one step down from a Bead. */
   stepMm(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'>): { across: number; down: number }
+}
+
+/** How a position sits among the beads it is mirrored with (see WeaveDescription.lattice). */
+interface MirrorLattice {
+  row: { index: number; count: number }
+  column: { index: number; count: number }
+  at(row: number, column: number): GridPosition
 }
 
 /** A rectangle in grid space. */
@@ -248,8 +267,14 @@ export function describeWeave(weave: Weave): WeaveDescription {
       of: (line, along, direction) => passOf(weave, line, along, direction),
       lineOf: (pass, direction) => lineOfPass(weave, pass, direction),
     },
-    turned: (position) => (rules.quarterTurn ? position : undefined),
-    mirrored: (position) => position,
+    turned: ({ row, column }, block) => (rules.quarterTurn ? { row: column, column: block.rows - 1 - row } : undefined),
+    lattice: (position, frame) => ({
+      row: { index: position.row - frame.row, count: frame.rows },
+      column: { index: position.column - frame.column, count: frame.columns },
+      at: (row, column) => ({ row: frame.row + row, column: frame.column + column }),
+    }),
+    snapSelection: (selection) => selection,
+    fitBlock: (topLeft) => topLeft,
     stepMm: (bead) => ({ across: beadPitchMm(bead), down: rowPitch(weave.technique, bead.heightMm) }),
   }
 }
@@ -258,6 +283,22 @@ const unitsOf = ({ columns, rows }: GridDimensions): GridDimensions => ({
   columns: Math.max(0, columns - 1),
   rows: Math.max(0, Math.floor((rows - 1) / 2)),
 })
+
+const inside = (frame: Frame, selection: Selection): boolean =>
+  selection.top >= frame.row &&
+  selection.left >= frame.column &&
+  selection.top + selection.rows <= frame.row + frame.rows &&
+  selection.left + selection.columns <= frame.column + frame.columns
+
+/** A grown Selection kept inside `within` when the Selection it grew from started inside it (ticket 483). */
+function keptWithin(box: Selection, from: Selection, within?: Frame): Selection {
+  if (!within || !inside(within, from)) {
+    return box
+  }
+  const pastBottom = Math.max(0, box.top + box.rows - (within.row + within.rows))
+  const pastRight = Math.max(0, box.left + box.columns - (within.column + within.columns))
+  return { ...box, top: box.top - pastBottom, left: box.left - pastRight }
+}
 
 const isHorizontalLine = (row: number): boolean => ((row % 2) + 2) % 2 === 0
 
@@ -361,8 +402,41 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
       of: (line, along, direction) => passOf(RIGHT_ANGLE, line, along, direction),
       lineOf: (pass, direction) => lineOfPass(RIGHT_ANGLE, pass, direction),
     },
-    turned: () => undefined,
-    mirrored: (position) => position,
+    turned: ({ row, column }, block) => {
+      const lines = Math.floor((block.rows - 1) / 2)
+      const line = Math.floor(row / 2)
+      if (isHorizontalLine(row)) {
+        return column < block.columns - 1 ? { row: 2 * column + 1, column: lines - line } : undefined
+      }
+      return { row: 2 * column, column: lines - line - 1 }
+    },
+    lattice: (position, frame) => {
+      const lines = Math.floor(frame.rows / 2)
+      const line = Math.floor((position.row - frame.row) / 2)
+      const column = position.column - frame.column
+      if (isHorizontalLine(position.row)) {
+        return column < frame.columns - 1
+          ? {
+              row: { index: line, count: lines + 1 },
+              column: { index: column, count: frame.columns - 1 },
+              at: (r, c) => ({ row: frame.row + 2 * r, column: frame.column + c }),
+            }
+          : undefined
+      }
+      return {
+        row: { index: line, count: lines },
+        column: { index: column, count: frame.columns },
+        at: (r, c) => ({ row: frame.row + 2 * r + 1, column: frame.column + c }),
+      }
+    },
+    snapSelection: (selection, within) => {
+      const top = selection.top - (((selection.top % 2) + 2) % 2)
+      const last = selection.top + selection.rows - 1
+      const bottom = Math.max(top + 2, last + (((last % 2) + 2) % 2))
+      const right = Math.max(selection.left + selection.columns - 1, selection.left + 1)
+      return keptWithin({ top, left: selection.left, rows: bottom - top + 1, columns: right - selection.left + 1 }, selection, within)
+    },
+    fitBlock: (topLeft) => topLeft,
     stepMm: (bead) => ({ across: beadPitchMm(bead) + bead.heightMm, down: beadPitchMm(bead) + bead.heightMm }),
   }
 }
@@ -459,7 +533,33 @@ function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescri
       lineOf: (pass, direction) => lineOfPass(netting, pass, direction),
     },
     turned: () => undefined,
-    mirrored: (position) => position,
+    lattice: (position, frame) => ({
+      row: { index: position.row - frame.row, count: frame.rows },
+      column: { index: position.column - frame.column, count: frame.columns },
+      at: (row, column) => ({ row: frame.row + row, column: frame.column + column }),
+    }),
+    snapSelection: (selection, within) => {
+      const top = selection.top - modulo(selection.top, p)
+      const left = selection.left - modulo(selection.left, p)
+      const lastRow = selection.top + selection.rows - 1
+      const lastColumn = selection.left + selection.columns - 1
+      const bottom = Math.max(top + period, lastRow + modulo(-lastRow, p))
+      const right = Math.max(left + period, lastColumn + modulo(-lastColumn, p))
+      return keptWithin({ top, left, rows: bottom - top + 1, columns: right - left + 1 }, selection, within)
+    },
+    // The nearest place within a step of where it was aimed that puts the most beads on beads of the mesh.
+    fitBlock: (topLeft, offsets) => {
+      let best = { position: topLeft, misses: Infinity, distance: Infinity }
+      for (let down = -p; down <= p; down += 1) {
+        for (let across = -p; across <= p; across += 1) {
+          const position = { row: topLeft.row + down, column: topLeft.column + across }
+          const misses = offsets.filter((offset) => !hasPosition({ row: position.row + offset.row, column: position.column + offset.column })).length
+          const distance = Math.abs(down) + Math.abs(across)
+          if (misses < best.misses || (misses === best.misses && distance < best.distance)) best = { position, misses, distance }
+        }
+      }
+      return best.position
+    },
     stepMm: (bead) => ({ across: period * NETTING_STEP * beadPitchMm(bead), down: p * NETTING_STEP * bead.heightMm }),
   }
 }
