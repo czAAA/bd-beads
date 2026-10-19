@@ -243,6 +243,7 @@ describe('Edit Frame', () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(false)
@@ -279,6 +280,7 @@ describe('Fit and Remove frame, on the Progress bar and not in Project (ticket 4
 
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(savedFrame()).toBeUndefined()
 
     await key({ key: 'z', ctrlKey: true })
@@ -383,11 +385,12 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
   })
 
-  it('removes the Frame at once while no pass is done, and one Undo brings it back (ticket 497)', async () => {
+  it('removes the Frame once confirmed even while no pass is done, and one Undo brings it back (ticket 497)', async () => {
     const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
 
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
     expect(savedFrame()).toBeUndefined()
@@ -497,11 +500,12 @@ describe('The Frame is its own sheet of beads (ADR 0066)', () => {
     return { ...base, frame: { ...base.frame!, row: 20, column: 20 }, beads: withColors({}, [{ row: 20, column: 40, color: RED }, { row: 2, column: 2, color: RED }]) }
   }
 
-  it('drops the Frame\'s beads onto the Canvas, clearing what lay under it, with no confirmation; one Undo brings back the Frame and the cleared beads', async () => {
+  it('drops the Frame\'s beads onto the Canvas, clearing what lay under it, once confirmed; one Undo brings back the Frame and the cleared beads', async () => {
     const project = sheet()
     const wrapper = await mountOpen({ ...project, beads: { ...project.beads, 21: { 21: RED } }, frame: { ...project.frame!, beads: { 0: { 0: RED } } } })
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
     await flushPromises()
 
     expect(wrapper.find('[data-testid="remove-frame-modal"]').exists()).toBe(false)
