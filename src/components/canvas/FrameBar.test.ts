@@ -4,6 +4,7 @@ import FrameBar from './FrameBar.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => {
   localStorage.clear()
@@ -11,6 +12,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  vi.unstubAllGlobals()
   vi.useRealTimers()
   vi.restoreAllMocks()
   document.body.innerHTML = ''
@@ -195,6 +197,7 @@ describe('FrameBar (ticket 473)', () => {
   }
   const origin = { left: 10, top: 20, width: 10, height: 10 }
   const mountPlaced = async (frameAnchor = { ...anchor, origin }) => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1024px)': true }).matchMedia)
     const wrapper = mount(FrameBar, { props: { project: framed(), anchor: frameAnchor, fromPencil: true }, attachTo: document.body })
     await flushPromises()
     return wrapper
