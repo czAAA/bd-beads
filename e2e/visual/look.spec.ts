@@ -17,8 +17,9 @@ const scenarios = [
   ...TECHNIQUES.map((technique) => ({ name: `${technique}-plain`, technique, rowProgress: undefined })),
   // Right-angle weave counts Units, so Row progress waits for ticket 484: 6 Units across and 4 down.
   { name: 'rightAngle-plain', technique: 'rightAngle' as const, rowProgress: undefined },
-  // Netting counts diamonds, so Row progress waits for ticket 487: 3 diamonds across and 3 down at Net size 3.
+  // Netting counts diamonds: 3 across and 3 down at Net size 3, woven in rows only (ticket 487).
   { name: 'netting-plain', technique: 'netting' as const, rowProgress: undefined },
+  { name: 'netting-progress-rows', technique: 'netting' as const, rowProgress: { direction: 'rows', currentRow: 1 } as const },
   ...TECHNIQUES.map((technique) => ({
     name: `${technique}-progress-rows`,
     technique,
