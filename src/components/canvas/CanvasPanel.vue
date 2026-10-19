@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import CanvasBackdrop from './CanvasBackdrop.vue'
 import CanvasHint from './CanvasHint.vue'
 import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
@@ -269,7 +268,6 @@ function techniqueWord(technique: Technique): string {
 
       <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Project). -->
       <div :ref="bindCanvasArea" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
-        <CanvasBackdrop v-if="activeProject && !framing" :word="techniqueWord(activeProject.technique)" />
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
