@@ -5,7 +5,7 @@ import App from './App.vue'
 import { beadColors, hoverBead, pressBead, pressRulerNumber, selectedBeadCount } from './testUtils/beads'
 import { createProject, type Technique } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
-import { pickColor, pickTool } from './testUtils/pill'
+import { armSelectionBar, pickColor, pickTool } from './testUtils/pill'
 
 // "Remove selected row/column" (ticket 123): a Select-tool drag across the Frame selects a whole row/column, removable
 // in one undo step. Ruler numbers are display-only (ticket 447): a press on one selects nothing.
@@ -75,6 +75,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
 
     await selectRow(wrapper, 0, 4)
 
+    await armSelectionBar()
     expect(removeLineButton(wrapper).attributes('aria-disabled')).toBeUndefined()
   })
 
@@ -84,6 +85,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     await paint(wrapper, 10, 'blue') // (3,1), below the row that's about to go
 
     await selectRow(wrapper, 1, 3) // row 2 (index 1), a middle row, no beads on it
+    await armSelectionBar()
     await removeLineButton(wrapper).trigger('click')
 
     expect(stored().frame!.rows).toBe(3)

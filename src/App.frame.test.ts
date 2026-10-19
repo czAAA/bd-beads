@@ -7,7 +7,7 @@ import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { beadColor, hoverBead, pressBead } from './testUtils/beads'
-import { closeSheet, openNewProject, openSavedProjects, openSheet, pickTool, rotate, selectAll } from './testUtils/pill'
+import { pressBar, closeSheet, openNewProject, openSavedProjects, openSheet, pickTool, rotate, selectAll } from './testUtils/pill'
 
 /** Edit Frame (tickets 233, 417, ADRs 0026, 0046, 0054) as the app shows it: moving and resizing the Frame, its edge steppers, the Project sheet's Frame controls and the keys. */
 
@@ -127,7 +127,7 @@ describe('Edit Frame', () => {
   it('does not open the bar when a Frame is set from a Selection (ticket 473)', async () => {
     const wrapper = await mountOpen()
     await selectAll(wrapper)
-    await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
+    await pressBar(wrapper, 'frame')
     await flushPromises()
     expect(savedFrame()).toBeDefined()
     expect(editing(wrapper)).toBe(false)

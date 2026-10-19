@@ -75,14 +75,23 @@ export async function openNewProject(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 }
 
+/** Waits out the Selection bar's arming delay (ticket 499); the bar is disabled until then. */
+export const armSelectionBar = () => new Promise((resolve) => setTimeout(resolve, 360))
+
+/** Presses a Selection bar button once it is armed. */
+export async function pressBar(wrapper: Wrapper, id: string): Promise<void> {
+  await armSelectionBar()
+  await wrapper.get(`[data-testid="context-bar-${id}"]`).trigger('click')
+}
+
 /** Copies the Selection with the Selection bar's Copy, which clears the Selection and arms paste mode (ticket 437). */
 export async function copySelection(wrapper: Wrapper): Promise<void> {
-  await wrapper.get('[data-testid="context-bar-copy"]').trigger('click')
+  await pressBar(wrapper, 'copy')
 }
 
 /** Rotates the Selection with the Selection bar's Rotate. */
 export async function rotate(wrapper: Wrapper): Promise<void> {
-  await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
+  await pressBar(wrapper, 'rotate')
 }
 
 /** Presses Clear this Project in the Project panel, which opens first; the confirmation it raises is the caller's. */

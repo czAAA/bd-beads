@@ -67,7 +67,7 @@ const name = computed(() => props.label ?? props.action?.name(t.value) ?? '')
 const iconName = computed(() => props.icon ?? props.action?.icon)
 const isDisabled = computed(() => props.disabled ?? (props.action?.enabled ? !props.action.enabled(props.deps as never) : false))
 const reason = computed(
-  () => props.disabledBody ?? (props.action?.disabledBody && props.deps ? props.action.disabledBody(t.value, props.deps as never) : undefined),
+  () => props.disabledBody ?? (props.disabled === true ? undefined : props.action?.disabledBody && props.deps ? props.action.disabledBody(t.value, props.deps as never) : undefined),
 )
 const key = computed(() => props.shortcut ?? props.hotkey ?? actionKey(props.action))
 const body = computed(() => {
