@@ -50,6 +50,25 @@ describe('useRotateSelectionFlow', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
+  it('in Right-angle weave turns whole Units: a horizontal bead becomes vertical, in one step Undo takes back (ticket 483)', () => {
+    const woven: Project = {
+      ...createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }),
+      frame: { row: 50, column: 50, rows: 9, columns: 9, beads: {} },
+      beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 1, column: 0, color: GREEN }]),
+    }
+    const { deps, harness, onRotate } = setup(woven, { top: 0, left: 0, rows: 5, columns: 4 })
+    onRotate()
+
+    expect(deps.selection.value).toEqual({ top: 0, left: 1, rows: 7, columns: 3 })
+    expect(colorAt(harness.project.beads, 1, 3)).toBe(RED)
+    expect(colorAt(harness.project.beads, 0, 2)).toBe(GREEN)
+    expect(colorAt(harness.project.beads, 0, 0)).toBeNull()
+
+    harness.history.onUndo()
+    expect(harness.project.beads).toEqual(woven.beads)
+    expect(harness.history.canUndo.value).toBe(false)
+  })
+
   it('only announces it when it covered no bead', () => {
     const { deps, onRotate } = setup()
     onRotate()

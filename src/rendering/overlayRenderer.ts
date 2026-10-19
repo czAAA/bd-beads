@@ -111,21 +111,20 @@ interface PassBead {
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
  * when the Frame has no such pass. */
 function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
-  const { technique } = project
   const direction = project.rowProgress.direction
   const columnWise = direction === 'columns'
   const pass = columnWise ? project.rowProgress.currentColumn : project.rowProgress.currentRow
   const lines = columnWise ? space.columns : space.rows
-  if (!space.hasFrame || pass < 0 || pass >= passCount(technique, lines, direction)) {
+  if (!space.hasFrame || pass < 0 || pass >= passCount(project, lines, direction)) {
     return []
   }
   const length = columnWise ? space.rows : space.columns
   const beads: PassBead[] = []
-  for (const line of passLines(technique, pass, direction)) {
+  for (const line of passLines(project, pass, direction)) {
     for (let along = 0; along < length; along += 1) {
       const row = space.origin.row + (columnWise ? along : line)
       const column = space.origin.column + (columnWise ? line : along)
-      if (passOf(technique, line, along, direction) === pass) {
+      if (passOf(project, line, along, direction) === pass) {
         // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
         const color = beadInSpace(project, space, row, column)
         if (color !== null) {

@@ -100,6 +100,18 @@ describe('renderOverlay', () => {
       expect(ringRects(calls)).toHaveLength(5)
     })
 
+    it('rings the beads of a row of diamonds in Netting, shared beads included (ticket 487)', () => {
+      const project = projectOf('netting', 2, 3, { currentRow: 1 }, 0, false)
+      const bead = '#e63746'
+      project.frame!.beads = { 4: { 2: bead }, 5: { 1: bead, 3: bead }, 6: { 0: bead, 4: bead } }
+      const { context, calls } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1 })
+
+      // Pass 1 weaves rows 5 and 6; the shared bead of row 4 was woven in pass 0.
+      expect(ringRects(calls)).toHaveLength(4)
+    })
+
     it('keeps the last row\'s rings inside the Project, with no clamping needed', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 4 })
       const { context, calls } = recordingContext()

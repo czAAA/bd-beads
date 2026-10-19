@@ -20,7 +20,7 @@ import { sameFrame, snapRow } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
-import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type PassDirection, type Technique } from './weave'
+import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type PassDirection, type Technique, type Weave } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -204,11 +204,11 @@ function clampRow(row: number, passes: number): number {
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame
  * change uses. */
-function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, technique: Technique): Project['rowProgress'] {
+function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, weave: Weave): Project['rowProgress'] {
   return {
     ...rowProgress,
-    currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows, 'rows')),
-    currentColumn: clampRow(rowProgress.currentColumn, passCount(technique, frame.columns, 'columns')),
+    currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
+    currentColumn: clampRow(rowProgress.currentColumn, passCount(weave, frame.columns, 'columns')),
   }
 }
 
@@ -330,18 +330,21 @@ export function normalizeProject(stored: StoredProject): Project {
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
+  const netSize = technique === 'netting' ? clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) : undefined
+  const weave: Weave = { technique, ...(netSize ? { netSize } : {}) }
 
   return {
     ...withoutNames,
     ...placed,
     ...(brickBlock ? { brickBlock } : {}),
-    ...(technique === 'netting' ? { netSize: clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) } : {}),
+    ...(netSize ? { netSize } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
     rowProgress: {
-      direction: rowProgress.direction ?? 'rows',
+      // Turn row direction isn't offered where a Technique is woven in rows only (ticket 487).
+      direction: describeWeave(weave).rowDirection ? (rowProgress.direction ?? 'rows') : 'rows',
       // An old file's `enabled` and `decided` are read and dropped: Row progress follows the Frame (ticket 426, 434).
-      currentRow: clampRow(rowProgress.currentRow, passCount(technique, frame.rows, 'rows')),
-      currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(technique, frame.columns, 'columns')),
+      currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
+      currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(weave, frame.columns, 'columns')),
     },
     rotation: normalizeRotation(legacy),
   }
@@ -368,7 +371,7 @@ export function withFrame(project: Project, rectangle: Frame | undefined): Proje
     beads: current ? shiftedBeads(current.beads, current.row - row, current.column - column, { rows, columns }) : {},
     ...(current?.name ? { name: current.name } : {}),
   }
-  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame, project.technique), updatedAt: Date.now() }
+  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame, project), updatedAt: Date.now() }
 }
 
 /** The Project woven in another Technique (ticket 351): grid, Bead and cells stay, only geometry changes. Offset
@@ -429,24 +432,27 @@ export function resetRowProgress(project: Project): Project {
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
  * alone. */
 export function toggleRowDirection(project: Project): Project {
+  if (!describeWeave(project).rowDirection) {
+    return project
+  }
   const direction = project.rowProgress.direction === 'rows' ? 'columns' : 'rows'
   return touch(project, { rowProgress: { ...project.rowProgress, direction } })
 }
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
-export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>): { current: number; total: number } {
+export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'netSize'>): { current: number; total: number } {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   return direction === 'rows'
-    ? { current: currentRow, total: passCount(project.technique, frame?.rows ?? 0, 'rows') }
-    : { current: currentColumn, total: passCount(project.technique, frame?.columns ?? 0, 'columns') }
+    ? { current: currentRow, total: passCount(project, frame?.rows ?? 0, 'rows') }
+    : { current: currentColumn, total: passCount(project, frame?.columns ?? 0, 'columns') }
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
  * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
  * Frame is set. */
-export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, { row, column }: GridPosition): boolean {
+export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'netSize'>, { row, column }: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   // The lock covers the Frame only: beads outside it stay editable whatever row the weaver is on.
@@ -456,13 +462,13 @@ export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' |
   const relativeRow = row - frame.row
   const relativeColumn = column - frame.column
   return direction === 'rows'
-    ? passOf(project.technique, relativeRow, relativeColumn, 'rows') < currentRow
-    : passOf(project.technique, relativeColumn, relativeRow, 'columns') < currentColumn
+    ? passOf(project, relativeRow, relativeColumn, 'rows') < currentRow
+    : passOf(project, relativeColumn, relativeRow, 'columns') < currentColumn
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
-export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique'>, { row, column }: GridPosition): boolean {
+export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'netSize'>, { row, column }: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   if (!frame || !frameContains(frame, { row, column })) {
@@ -471,8 +477,8 @@ export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 
   const relativeRow = row - frame.row
   const relativeColumn = column - frame.column
   return direction === 'rows'
-    ? passOf(project.technique, relativeRow, relativeColumn, 'rows') === currentRow
-    : passOf(project.technique, relativeColumn, relativeRow, 'columns') === currentColumn
+    ? passOf(project, relativeRow, relativeColumn, 'rows') === currentRow
+    : passOf(project, relativeColumn, relativeRow, 'columns') === currentColumn
 }
 
 /** Whether the Project has a bead on either layer. */
@@ -649,6 +655,9 @@ export function fillArea(project: Project, row: number, column: number, color: s
   }
 
   const region = floodRegion(project, { row, column })
+  if (region.length === 0) {
+    return project
+  }
   return restoreBeads(project, withColors(project.beads, region.map((position) => ({ ...position, color }))))
 }
 
@@ -656,7 +665,7 @@ export function fillArea(project: Project, row: number, column: number, color: s
  * name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow): clearing
  * progress is the point. Returns the same instance if already so. */
 export function mirroredCells(
-  project: Pick<Project, 'frame'>,
+  project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
   position: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
@@ -665,19 +674,25 @@ export function mirroredCells(
   if (!frame || !frameContains(frame, position)) {
     return [position]
   }
-  const rows = mirrorCounterparts(position.row - frame.row, frame.rows, axes.rows, copyMode).map((row) => row + frame.row)
-  const columns = mirrorCounterparts(position.column - frame.column, frame.columns, axes.columns, copyMode).map(
-    (column) => column + frame.column,
-  )
+  // A bead folds with beads of its own kind (see Weave.lattice), so Right-angle weave keeps each lying as it does.
+  const weave = describeWeave(project)
+  const lattice = weave.lattice(position, frame)
+  if (!lattice) {
+    return [position]
+  }
+  const rows = mirrorCounterparts(lattice.row.index, lattice.row.count, axes.rows, copyMode)
+  const columns = mirrorCounterparts(lattice.column.index, lattice.column.count, axes.columns, copyMode)
 
   const seen = new Set<string>()
   const cells: GridPosition[] = []
   for (const row of rows) {
     for (const column of columns) {
-      const key = positionKey({ row, column })
-      if (!seen.has(key)) {
+      const cell = lattice.at(row, column)
+      const key = positionKey(cell)
+      // A copy never lands where the Weave has no bead: a net's hole (ticket 486).
+      if (!seen.has(key) && weave.hasPosition(cell, frame)) {
         seen.add(key)
-        cells.push({ row, column })
+        cells.push(cell)
       }
     }
   }
@@ -709,13 +724,14 @@ export function paintCells(
  * per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
 function paintedCountsByStrip(project: Project, frame: Frame, axis: 'columns' | 'rows', axisCount: number): number[] {
   const counts = new Array(axisCount + 1).fill(0)
-  const dimension = axis === 'columns' ? frame.columns : frame.rows
+  const weave = describeWeave(project)
   forEachBead(project.beads, (row, column) => {
-    if (!frameContains(frame, { row, column })) {
-      return
+    const position = { row, column }
+    const lattice = frameContains(frame, position) ? weave.lattice(position, frame) : undefined
+    if (lattice) {
+      const along = axis === 'columns' ? lattice.column : lattice.row
+      counts[stripOf(along.index, along.count, axisCount)]++
     }
-    const index = axis === 'columns' ? column - frame.column : row - frame.row
-    counts[stripOf(index, dimension, axisCount)]++
   })
   return counts
 }
@@ -733,27 +749,28 @@ export function mirrorCurrent(
   if (!frame) {
     return project
   }
-  const dimension = axis === 'columns' ? frame.columns : frame.rows
   const effectiveAxisCount = axisCount === 0 ? 1 : axisCount
 
   const counts = paintedCountsByStrip(project, frame, axis, effectiveAxisCount)
   const sourceStrip = counts.reduce((best, count, strip) => (count > counts[best]! ? strip : best), 0)
 
+  const weave = describeWeave(project)
   const changes: BeadChange[] = []
-  for (let rowOffset = 0; rowOffset < frame.rows; rowOffset++) {
-    for (let columnOffset = 0; columnOffset < frame.columns; columnOffset++) {
-      const index = axis === 'columns' ? columnOffset : rowOffset
-      if (stripOf(index, dimension, effectiveAxisCount) === sourceStrip) {
+  for (let row = frame.row; row < frame.row + frame.rows; row++) {
+    for (let column = frame.column; column < frame.column + frame.columns; column++) {
+      const lattice = weave.lattice({ row, column }, frame)
+      if (!lattice || !weave.hasPosition({ row, column }, frame)) {
         continue
       }
-      const sourceIndex = mirrorCounterpartInStrip(index, dimension, effectiveAxisCount, copyMode, sourceStrip)
-      const sourceRow = frame.row + (axis === 'columns' ? rowOffset : sourceIndex)
-      const sourceColumn = frame.column + (axis === 'columns' ? sourceIndex : columnOffset)
-      changes.push({
-        row: frame.row + rowOffset,
-        column: frame.column + columnOffset,
-        color: colorAt(project.beads, sourceRow, sourceColumn),
-      })
+      const along = axis === 'columns' ? lattice.column : lattice.row
+      if (stripOf(along.index, along.count, effectiveAxisCount) === sourceStrip) {
+        continue
+      }
+      const sourceIndex = mirrorCounterpartInStrip(along.index, along.count, effectiveAxisCount, copyMode, sourceStrip)
+      const source = axis === 'columns' ? lattice.at(lattice.row.index, sourceIndex) : lattice.at(sourceIndex, lattice.column.index)
+      if (weave.hasPosition(source, frame)) {
+        changes.push({ row, column, color: colorAt(project.beads, source.row, source.column) })
+      }
     }
   }
 
