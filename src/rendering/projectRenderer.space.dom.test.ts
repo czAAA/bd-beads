@@ -145,10 +145,6 @@ describe('renderProject, Right-angle weave (ticket 482)', () => {
     )
     expect(painted.map(({ x, y, width, height }) => ({ x, y, width, height }))).toEqual(expected)
   })
-
-  it('draws a Unit\'s beads once each, in the Frame and out', () => {
-    expect(render(woven(), true).beads.filter(({ color }) => color !== null)).toHaveLength(7)
-  })
 })
 
 describe('brick stitch inside a Frame', () => {

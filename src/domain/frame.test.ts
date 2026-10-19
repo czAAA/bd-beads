@@ -228,6 +228,10 @@ describe('the Frame in Right-angle weave holds whole Units (ticket 482)', () => 
     expect(frameResizedAround(weave, frame, 6, 4)).toEqual({ row: 4, column: 2, rows: 9, columns: 7 })
   })
 
+  it('may be typed down to one Unit', () => {
+    expect(frameResizedAround(weave, frame, 1, 1)).toMatchObject({ columns: 2, rows: 3 })
+  })
+
   it('wraps what is drawn in whole Units', () => {
     const beads = withColors({}, [{ row: 3, column: 5, color: '#ff0000' }, { row: 6, column: 7, color: '#ff0000' }])
     expect(fitToDrawing({ ...weave, beads })).toEqual({ row: 2, column: 5, rows: 5, columns: 3 })
