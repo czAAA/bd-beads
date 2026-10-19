@@ -32,11 +32,14 @@ function setupEditing(project: Project | null = sized) {
   return flow
 }
 
+/** A Frame\'s rectangle alone, without its Weave. */
+const rect = ({ technique: _technique, ...rectangle }: { technique: string; row: number; column: number; rows: number; columns: number }) => rectangle
+
 /** The rectangle of the Frame the last change left (its beads and name aside). */
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
   const frame = deps.replaceProject.mock.calls.at(-1)?.[0].frame
   if (!frame) return undefined
-  const { beads: _beads, name: _name, ...rectangle } = frame
+  const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
   return rectangle
 }
 
@@ -57,7 +60,7 @@ describe('useFrameFlow', () => {
     const { deps, draftProject, press, drag, release } = setup(sized)
     press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
-    expect(draftProject.value?.frame).toEqual({ ...sizedRect, row: 1, column: 2, beads: {} })
+    expect(draftProject.value?.frame).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {} })
     release()
     expect(draftProject.value).toBe(deps.harness.project)
   })
@@ -217,7 +220,7 @@ describe('useFrameFlow', () => {
   })
 
   it('resizes to a typed size, both sides evenly, as one Undo step, and not once a pass is done (ticket 473)', () => {
-    const big = { ...sized, frame: { row: 4, column: 4, rows: 6, columns: 6, beads: {} } }
+    const big = { ...sized, frame: { technique: 'loom' as const, row: 4, column: 4, rows: 6, columns: 6, beads: {} } }
     const { deps, resizeTo } = setup(big)
     resizeTo(10, 8)
     expect(lastFrame(deps)).toEqual({ row: 3, column: 2, rows: 8, columns: 10 })
@@ -273,13 +276,13 @@ describe('useFrameFlow', () => {
       const { deps, setTechnique } = setup()
       const before = deps.harness.project
       setTechnique('peyote')
-      expect(deps.harness.project).toMatchObject({ technique: 'peyote', frame: before.frame, beads: before.beads })
+      expect(deps.harness.project).toMatchObject({ technique: 'loom', frame: { ...before.frame, technique: 'peyote' }, beads: before.beads })
       expect(deps.harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.technique).toBe('loom')
+      expect(deps.harness.project.frame?.technique).toBe('loom')
       deps.harness.history.onRedo()
-      expect(deps.harness.project.technique).toBe('peyote')
+      expect(deps.harness.project.frame?.technique).toBe('peyote')
     })
 
     it('is no step when the Technique is the one already used', () => {
@@ -296,19 +299,43 @@ describe('useFrameFlow', () => {
     })
   })
 
+  describe('the Canvas\'s Technique (ticket 492)', () => {
+    it('is changed as one announced Undo step, the Frame keeping its own', () => {
+      const { deps, setCanvasTechnique } = setup()
+      setCanvasTechnique('peyote')
+      expect(deps.harness.project).toMatchObject({ technique: 'peyote', frame: { technique: 'loom' } })
+      expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.technique).toBe('loom')
+    })
+
+    it('is allowed once Row progress has a pass done', () => {
+      const { deps, setCanvasTechnique } = setup(moveToRow(sized, 1))
+      setCanvasTechnique('brick')
+      expect(deps.harness.project.technique).toBe('brick')
+    })
+
+    it('changes the Brick block of the Canvas alone', () => {
+      const { deps, setCanvasBrickBlock } = setup({ ...sized, technique: 'brick' })
+      setCanvasBrickBlock(3)
+      expect(deps.harness.project.brickBlock).toBe(3)
+      expect(deps.harness.project.frame?.brickBlock).toBeUndefined()
+    })
+  })
+
   describe('the Brick block (ticket 477)', () => {
-    const brick = { ...sized, technique: 'brick' as const }
+    const brick = { ...sized, frame: { ...sized.frame!, technique: 'brick' as const } }
 
     it('changes the Brick block as one announced undo step, keeping every bead and the Frame row', () => {
       const { deps, setBrickBlock } = setup(brick)
       const before = deps.harness.project
       setBrickBlock(3)
-      expect(deps.harness.project).toMatchObject({ brickBlock: 3, frame: before.frame, beads: before.beads })
+      expect(deps.harness.project).toMatchObject({ frame: { ...before.frame, brickBlock: 3 }, beads: before.beads })
       expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.brickBlock ?? 1).toBe(1)
+      expect(deps.harness.project.frame?.brickBlock ?? 1).toBe(1)
       deps.harness.history.onRedo()
-      expect(deps.harness.project.brickBlock).toBe(3)
+      expect(deps.harness.project.frame?.brickBlock).toBe(3)
     })
 
     it('is no step for the number already used', () => {
@@ -347,15 +374,15 @@ describe('useFrameFlow', () => {
 
   describe('the edge steppers (ticket 417)', () => {
     it('moves one edge a bead at a time, each press one Undo step, the other edges staying', () => {
-      const big = { ...sized, frame: { row: 2, column: 2, rows: 6, columns: 6, beads: {} } }
+      const big = { ...sized, frame: { technique: 'loom' as const, row: 2, column: 2, rows: 6, columns: 6, beads: {} } }
       const { deps, stepEdge } = setup(big)
-      const frame = { row: 2, column: 2, rows: 6, columns: 6 }
+      const frame = { technique: 'loom' as const, row: 2, column: 2, rows: 6, columns: 6 }
       stepEdge('right', 1)
-      expect(lastFrame(deps)).toEqual({ ...frame, columns: frame.columns + 1 })
+      expect(lastFrame(deps)).toEqual({ ...rect(frame), columns: frame.columns + 1 })
       stepEdge('left', 1)
-      expect(lastFrame(deps)).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2 })
+      expect(lastFrame(deps)).toEqual({ ...rect(frame), column: frame.column - 1, columns: frame.columns + 2 })
       stepEdge('top', -1)
-      expect(lastFrame(deps)).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2, row: frame.row + 1, rows: frame.rows - 1 })
+      expect(lastFrame(deps)).toEqual({ ...rect(frame), column: frame.column - 1, columns: frame.columns + 2, row: frame.row + 1, rows: frame.rows - 1 })
       expect(deps.announce).toHaveBeenCalledTimes(3)
       deps.harness.history.onUndo()
       expect(deps.harness.project.frame).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2, beads: {} })
@@ -366,13 +393,13 @@ describe('useFrameFlow', () => {
     })
 
     it('is no step at four beads, and never shrinks the Frame past them (ticket 473)', () => {
-      const { deps, stepEdge } = setup({ ...sized, frame: { row: 2, column: 2, rows: 4, columns: 4, beads: {} } })
+      const { deps, stepEdge } = setup({ ...sized, frame: { technique: 'loom' as const, row: 2, column: 2, rows: 4, columns: 4, beads: {} } })
       for (const edge of ['top', 'bottom', 'left', 'right'] as const) stepEdge(edge, -1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
 
     it('steps the top edge by a pair of rows where rows alternate', () => {
-      const { deps, stepEdge } = setup({ ...sized, technique: 'peyote', frame: { row: 4, column: 0, rows: 6, columns: 3, beads: {} } })
+      const { deps, stepEdge } = setup({ ...sized, technique: 'peyote', frame: { technique: 'peyote' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } })
       stepEdge('top', 1)
       expect(lastFrame(deps)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
     })
@@ -387,7 +414,7 @@ describe('useFrameFlow', () => {
 
     it('does not refuse an edge over a named Schema: the Frame only covers the Canvas (ADR 0066)', () => {
       const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
-      const named = { ...open, frame: { row: 0, column: 0, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+      const named = { ...open, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
       const { deps, stepEdge } = setup(named)
       stepEdge('left', -1)
       expect(lastFrame(deps)).toMatchObject({ column: 1, columns: 5 })

@@ -1,9 +1,11 @@
 import type { Frame } from '../domain/canvas'
 import { describeWeave, type Technique, type Weave } from '../domain/weave'
+import type { GridPosition } from '../domain/grid'
+import { canvasWeave } from '../domain/project'
 import { pieceAreasOf } from '../domain/pieces'
 import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
-import { cellSizePx, CELL_SIZE_PX, positionsBoxPx, rowShiftPx, rowTopPx, type SurfaceView } from './surfaceView'
+import { cellSizePx, CELL_SIZE_PX, frameOriginPx, positionsBoxPx, rowShiftPx, rowTopPx, type SurfaceView, type ViewLayer } from './surfaceView'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
 // Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -53,7 +55,7 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Frame & { name?: string }; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number; netSize?: number }
+export type RuledProject = { frame?: Frame & Weave & { name?: string }; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number; netSize?: number }
 
 // The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
 // near the viewport are chosen by the caller).
@@ -61,7 +63,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
     return [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
   }
-  return pieceAreasOf(project.beads, project)
+  return pieceAreasOf(project.beads, canvasWeave(project))
     .filter(hasGuides)
     .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
@@ -161,9 +163,11 @@ interface BoxLayout {
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
 // from 100 up turn. The Ruler step is worked out once per axis.
-function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   const { technique } = weave
+  // The box counted from the layer's first position, and where that sits in grid px (ticket 492).
+  const start = { row: box.row - place.offset.row, column: box.column - place.offset.column }
   const margin = fontPx * 4
   const labels: RulerLabel[] = []
   const beads: RulerDot[] = []
@@ -178,11 +182,11 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
   const unitAcross = description.origin({ row: 0, column: description.columnsPerUnit }, cell.width, cell.height).x
   const unitDown = description.origin({ row: description.rowsPerUnit, column: 0 }, cell.width, cell.height).y
   const span = description.positionsOf({ columns: 1, rows: 1 })
-  const area = positionsBoxPx({ toAbsolute: { row: 0, column: 0 } }, weave, box.row, box.column, box.rows, box.columns)
-  const lastRow = box.row + box.rows - 1
+  const area = positionsBoxPx(weave, start.row, start.column, box.rows, box.columns)
+  const lastRow = start.row + box.rows - 1
   const bottom = description.countsUnits ? area.y + area.height : rowTopPx(technique, lastRow) + CELL_SIZE_PX
-  const right = description.countsUnits ? area.x + area.width : box.column * CELL_SIZE_PX + description.blockExtent(box.columns, 0, CELL_SIZE_PX, CELL_SIZE_PX).width
-  const left = description.countsUnits ? area.x : box.column * CELL_SIZE_PX
+  const right = description.countsUnits ? area.x + area.width : start.column * CELL_SIZE_PX + description.blockExtent(box.columns, 0, CELL_SIZE_PX, CELL_SIZE_PX).width
+  const left = description.countsUnits ? area.x : start.column * CELL_SIZE_PX
 
   // The widest column numbers: the longest upright one (under 100) and the longest turned one.
   const columnSizes = [labelBox(String(Math.min(count.columns, TURNED_FROM - 1)), false, fontPx)]
@@ -193,7 +197,7 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
   // Every number is centred on the line the dots stand on, so a 1-digit row number is as far from the beads as a
   // 2-digit one.
   const columnBand = { width: Math.max(...columnSizes.map((size) => size.width)), height: Math.max(...columnSizes.map((size) => size.height)) }
-  const { column: columnStepOnScreen, row: rowStepOnScreen } = surface.beadStep()
+  const { column: columnStepOnScreen, row: rowStepOnScreen } = surface.beadStep(place.layer)
   const lastOnly = surface.zoom < LAST_NUMBER_ONLY_BELOW_ZOOM
   const columnStep = lastOnly ? count.columns : rulerStep(columnStepOnScreen, columnSizes)
   const rowStep = lastOnly ? count.rows : rulerStep(rowStepOnScreen, [rowSize])
@@ -202,7 +206,7 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
 
   // Unit step outward from a side, in grid space and then once turned.
   const outward = (gridX: number, gridY: number, normal: [number, number]) => {
-    const { x, y } = surface.gridToPoint(gridX, gridY)
+    const { x, y } = surface.gridToPoint(place.origin.x + gridX, place.origin.y + gridY)
     const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
     return { x, y, nx, ny }
   }
@@ -251,21 +255,21 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
     for (let index = 0; index < count.columns; index += 1) {
       const gridX = description.countsUnits
         ? area.x + index * unitAcross + unitAcross / 2
-        : rowShiftPx(weave, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
+        : rowShiftPx(weave, rowForShift) + (start.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
       const marked = description.countsUnits ? { top: box.row, left: box.column + index * description.columnsPerUnit, rows: box.rows, columns: span.columns } : { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }
       along('column', index, gridX, gridY, normal, marked, box.column + index * description.columnsPerUnit)
     }
   }
   const rowsAt = (gridX: number, normal: [number, number]) => {
     for (let index = 0; index < count.rows; index += 1) {
-      const gridY = description.countsUnits ? area.y + index * unitDown + unitDown / 2 : rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2
+      const gridY = description.countsUnits ? area.y + index * unitDown + unitDown / 2 : rowTopPx(technique, start.row + index) + CELL_SIZE_PX / 2
       const first = box.row + index * description.rowsPerUnit
       const marked = description.countsUnits ? { top: first, left: box.column, rows: span.rows, columns: box.columns } : { top: first, left: box.column, rows: 1, columns: box.columns }
       along('row', index, gridX, gridY, normal, marked, first)
     }
   }
 
-  columnsAt(box.row, description.countsUnits ? area.y : rowTopPx(technique, box.row), [0, -1])
+  columnsAt(start.row, description.countsUnits ? area.y : rowTopPx(technique, start.row), [0, -1])
   rowsAt(left, [-1, 0])
   if (box.sides === 'all') {
     columnsAt(lastRow, bottom, [0, 1])
@@ -282,10 +286,14 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   const scale = rulerScale(surface.zoom, fontPx)
   const reach = scale.fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
   const boxes = ruledBoxes(project, scale).filter((box) => {
-    const shown = surface.beadBox(box)
+    const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
-  const laid = boxes.map((box) => layBox(box, project, surface, viewport, scale))
+  const laid = boxes.map((box) =>
+    box.kind === 'frame' && project.frame
+      ? layBox(box, project.frame, { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
+      : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale),
+  )
   const everyLabel = laid.flatMap((box) => box.labels)
   const everyBead = laid.flatMap((box) => box.beads)
 

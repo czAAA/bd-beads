@@ -1,8 +1,8 @@
 import type { Ref } from 'vue'
 import { rotateLayerSelection } from '../../domain/rotate'
-import { rowProgressStarted, type Project } from '../../domain/project'
+import { canvasWeave, frameWeave, rowProgressStarted, type Project } from '../../domain/project'
 import { describeWeave } from '../../domain/weave'
-import type { Selection } from '../../domain/selection'
+import { selectionLayer, type Selection } from '../../domain/selection'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
@@ -28,7 +28,7 @@ export function useRotateSelectionFlow(deps: RotateSelectionFlowDeps) {
     const selection = deps.selection.value
     const before = deps.currentProject()
     // Shift+R reaches here without asking the control, so the lock of ticket 411 is checked here too.
-    if (!selection || !before || rowProgressStarted(before) || !describeWeave(before).quarterTurn) {
+    if (!selection || !before || rowProgressStarted(before) || !describeWeave(selectionLayer(before, selection) === 'frame' ? frameWeave(before) : canvasWeave(before)).quarterTurn) {
       return
     }
 

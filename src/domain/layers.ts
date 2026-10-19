@@ -1,6 +1,6 @@
 import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, shiftedBeads, withColors, type BeadMap, type Frame, type FrameSheet } from './canvas'
 import type { GridPosition } from './grid'
-import type { Project } from './project'
+import { weaveOf, type Project } from './project'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
 // Eraser, Mirror, Paste, Selection fills) works on one Project's beads in one coordinate system; `onLayer` hands it
@@ -34,14 +34,14 @@ export function positionOnCanvas(project: Pick<Project, 'frame'>, layer: Layer, 
   return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
-/** The Frame's own beads as a Project of its own: its beads, a Frame at (0, 0) the size of the real one, and the
- * Project's Row progress, Technique and Brick block, so the commands that know a Frame (Mirror, Fill's limit, the Row
+/** The Frame's own beads as a Project of its own: its beads, a Frame at (0, 0) the size of the real one, the Project's
+ * Row progress and the Frame's own Weave (ticket 492), so the commands that know a Frame (Mirror, Fill's limit, the Row
  * progress lock) work on it as they always did. Piece names are the Canvas's. The Project must have a Frame. */
 export function frameLayer(project: Project): Project {
   const frame = project.frame!
-  const { pieceNames: _canvasNames, ...rest } = project
-  const own: FrameSheet = { row: 0, column: 0, rows: frame.rows, columns: frame.columns, beads: frame.beads }
-  return { ...rest, beads: frame.beads, frame: own }
+  const { pieceNames: _canvasNames, brickBlock: _canvasBlock, netSize: _canvasNet, ...rest } = project
+  const own: FrameSheet = { row: 0, column: 0, rows: frame.rows, columns: frame.columns, beads: frame.beads, ...weaveOf(frame) }
+  return { ...rest, ...weaveOf(frame), beads: frame.beads, frame: own }
 }
 
 /** The Canvas as a Project of its own: the Frame is not part of it. */

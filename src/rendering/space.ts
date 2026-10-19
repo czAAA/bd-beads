@@ -1,6 +1,6 @@
 import { colorAt } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
-import { projectDimensions, projectFrame } from '../domain/project'
+import { frameWeave, projectDimensions, projectFrame } from '../domain/project'
 import { type DrawnProject } from './projectRenderer'
 import { OPEN_EXTENT, projectExtentPx, type Extent } from './surfaceView'
 
@@ -14,8 +14,8 @@ export interface Space {
   columns: number
   rows: number
   hasFrame: boolean
-  // What to add to a position in this space to get the bead's own row and column: nothing on the Canvas, the Frame's
-  // first on its own.
+  // What to add to a position in this space to get the bead's address: nothing on the Canvas, the Frame's first on its
+  // own.
   toAbsolute: GridPosition
   /** The size of what is drawn, for the transform: nothing on the Canvas, the box round the Frame's beads on its
    * own. */
@@ -32,7 +32,7 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
     rows,
     hasFrame: !open || project.frame !== undefined,
     toAbsolute: open ? { row: 0, column: 0 } : { row: frame.row, column: frame.column },
-    extent: open ? OPEN_EXTENT : projectExtentPx(project.technique, columns, rows),
+    extent: open ? OPEN_EXTENT : projectExtentPx(frameWeave(project).technique, columns, rows),
   }
 }
 

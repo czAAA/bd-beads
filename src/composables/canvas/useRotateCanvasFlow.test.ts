@@ -8,7 +8,7 @@ import { useRotateCanvasFlow } from './useRotateCanvasFlow'
 const base = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 const framed: Project = {
   ...base,
-  frame: { row: 20, column: 20, rows: 5, columns: 6, beads: {} },
+  frame: { technique: 'loom' as const, row: 20, column: 20, rows: 5, columns: 6, beads: {} },
   beads: withColors({}, [{ row: 21, column: 22, color: '#e63746' }]),
 }
 

@@ -33,7 +33,7 @@ describe('useNamePieceFlow', () => {
   })
 
   it('is not available for a Selection that begins on the Frame: Pieces are the Canvas\'s (ADR 0066)', () => {
-    const framed: Project = { ...base, frame: { row: 0, column: 0, rows: 3, columns: 3, beads: { 0: { 0: R, 1: R } } }, beads: {} }
+    const framed: Project = { ...base, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: { 0: { 0: R, 1: R } } }, beads: {} }
     const harness = editHarness(framed)
     const flow = useNamePieceFlow({ currentProject: harness.currentProject, edit: harness.edit, selection: () => onFirstPiece })
     expect(flow.canNamePiece.value).toBe(false)

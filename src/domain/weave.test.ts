@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, lineOfPass, neighborsOf, passCount, passLines, passOf, rowCycle, rowOffset, rowPitch } from './weave'
+import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, lineOfPass, neighborsOf, passCount, passLines, passOf, positionStep, rowCycle, rowOffset, rowPitch } from './weave'
 
 function sorted(positions: { row: number; column: number }[]) {
   return [...positions].sort((a, b) => a.row - b.row || a.column - b.column)
@@ -551,5 +551,21 @@ describe('describeWeave: Netting (ticket 485)', () => {
     expect(nets[0]!.description.stepMm(bead).across).toBeCloseTo(4 * 0.75 * 1.7)
     expect(nets[0]!.description.stepMm(bead).down).toBeCloseTo(2 * 0.75 * 1.3)
     expect(nets[1]!.description.stepMm(bead).across).toBeCloseTo(6 * 0.75 * 1.7)
+  })
+})
+
+describe('positionStep (ticket 492)', () => {
+  it('is a bead across and a row pitch down for beads laid on rows', () => {
+    expect(positionStep({ technique: 'loom' })).toEqual({ across: 1, down: 1 })
+    expect(positionStep({ technique: 'peyote' })).toEqual({ across: 1, down: 0.75 })
+    expect(positionStep({ technique: 'brick' })).toEqual({ across: 1, down: 1 })
+  })
+
+  it('is a position of a Unit where beads are laid in Units', () => {
+    const net = positionStep({ technique: 'netting' })
+    expect(net.across).toBeGreaterThan(0)
+    expect(net.down).toBeGreaterThan(0)
+    const right = positionStep({ technique: 'rightAngle' })
+    expect(right.down).toBeGreaterThan(0)
   })
 })

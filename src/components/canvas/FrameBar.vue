@@ -8,7 +8,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
-import { rowProgressStarted, type Project } from '../../domain/project'
+import { frameWeave, rowProgressStarted, type Project } from '../../domain/project'
 import { describeWeave } from '../../domain/weave'
 import type { BarBox, FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useI18n } from '../../i18n/useI18n'
@@ -86,9 +86,9 @@ const typedWidth = ref('')
 const typedHeight = ref('')
 const sizeEdited = computed(() => typedWidth.value !== '' || typedHeight.value !== '')
 /** Whether a quarter turn is offered: not in Netting, where a turned diamond row isn't a row (ticket 486). */
-const turnable = computed(() => describeWeave(props.project).quarterTurn)
-const counted = computed(() => describeWeave(props.project).unitsOf(frame.value ?? { columns: 0, rows: 0 }))
-const sizeUnit = computed(() => (describeWeave(props.project).countsUnits ? t.value.frame.sizeUnitUnits : t.value.frame.sizeUnit))
+const turnable = computed(() => describeWeave(frameWeave(props.project)).quarterTurn)
+const counted = computed(() => describeWeave(frameWeave(props.project)).unitsOf(frame.value ?? { columns: 0, rows: 0 }))
+const sizeUnit = computed(() => (describeWeave(frameWeave(props.project)).countsUnits ? t.value.frame.sizeUnitUnits : t.value.frame.sizeUnit))
 function clearSize(): void {
   typedWidth.value = ''
   typedHeight.value = ''

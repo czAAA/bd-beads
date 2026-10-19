@@ -10,6 +10,8 @@ import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import { describeWeave } from '../../domain/weave'
+import { canvasWeave, frameWeave } from '../../domain/project'
+import { selectionLayer, type Selection } from '../../domain/selection'
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
 // clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
@@ -17,6 +19,8 @@ import { describeWeave } from '../../domain/weave'
 const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
+  /** The Selection itself: which layer it is on decides whether a quarter turn is offered (ticket 492). */
+  selection?: Selection
   /** The Selection's rectangle and the canvas box it is in, in the box's own pixels: where the bar anchors. */
   anchor?: SelectionAnchor
   /** A gesture, pan or pinch is running: the bar steps out of the way until it ends. */
@@ -57,6 +61,13 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+/** The Weave of the layer the Selection is on, the Canvas's when there is none. */
+const selectionWeave = computed(() => {
+  const project = props.project
+  if (!project) return { technique: 'loom' as const }
+  return props.selection && selectionLayer(project, props.selection) === 'frame' ? frameWeave(project) : canvasWeave(project)
+})
 
 const actions = {
   selectAll: controlAction('select-all'),
@@ -109,7 +120,7 @@ const items = computed<BarItem[]>(() => {
   list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Not offered once a Row progress pass is done (the Frame lock of ticket 411, ticket 416), nor where a quarter turn
   // isn't a row (Netting, ticket 486).
-  if (!props.project || (!rowProgressStarted(props.project) && describeWeave(props.project).quarterTurn)) list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
+  if (!props.project || (!rowProgressStarted(props.project) && describeWeave(selectionWeave.value).quarterTurn)) list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
   list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })
