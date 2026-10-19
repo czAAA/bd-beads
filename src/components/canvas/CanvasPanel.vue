@@ -332,7 +332,8 @@ function techniqueWord(technique: Technique): string {
         <FrameBar
           v-if="activeProject && frameBarShown && !framing"
           :project="activeProject"
-          :pencil="frameBarFrom === 'pencil' ? frameAnchor : undefined"
+          :anchor="frameAnchor"
+          :from-pencil="frameBarFrom === 'pencil'"
           :grabs-frame="(event: PointerEvent) => surfaceRef?.grabsFrame(event) ?? false"
           @step="onStepFrameEdge"
           @resize="onResizeFrame"

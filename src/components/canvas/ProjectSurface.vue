@@ -323,9 +323,11 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
   // some of it shows.
   const { width, height } = size.value
   if (box.x + box.width <= 0 || box.y + box.height <= 0 || box.x >= width || box.y >= height) return undefined
+  const origin = surface.value.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')
   return {
     box: { left: box.x, top: box.y, width: box.width, height: box.height },
     viewport: { ...size.value },
+    origin: { left: origin.x, top: origin.y, width: origin.width, height: origin.height },
   }
 })
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })

@@ -21,6 +21,9 @@ const props = defineProps<{
   align?: 'start' | 'end'
   /** A dropdown at every width, never the Top sheet: a button on the canvas, not in the strip. */
   dropdown?: boolean
+  /** Where the dropdown stands on the page (the Frame bar, ticket 500), instead of hanging from its button; none yet keeps it
+   * off screen while it is measured. */
+  at?: { left: number; top: number } | null
   /** The dropdown's width, when not `panel-width`. */
   width?: string
   /** A press outside that still works the panel's own thing, so it goes through and the panel stays. */
@@ -71,9 +74,10 @@ const OPENERS = '[data-testid="strip-menu"], [data-testid="strip-project"], [dat
 const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
 /** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
  * past that. */
+const placed = computed(() => (props.at === undefined ? anchored.style.value : { position: 'fixed', right: 'auto', ...(props.at ? { left: `${props.at.left}px`, top: `${props.at.top}px` } : { left: '-9999px', top: '0px' }) }))
 const dropdownStyle = computed(() => ({
-  ...anchored.style.value,
-  maxHeight: `calc(100dvh - ${Number.parseFloat(anchored.style.value.top ?? '0') || 0}px - ${16}px)`,
+  ...placed.value,
+  maxHeight: `calc(100dvh - ${Number.parseFloat(placed.value.top ?? '0') || 0}px - ${16}px)`,
   ...(props.width ? { width: props.width } : {}),
 }))
 
@@ -99,8 +103,9 @@ const panelBox = computed(() => (sheet.value ? sheetBox.value : dropdownStyle.va
 
 function place() {
   anchorEl.value = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? undefined
-  if (!sheet.value) anchored.follow()
-  else {
+  if (!sheet.value) {
+    if (props.at === undefined) anchored.follow()
+  } else {
     anchored.stop()
     measureSheet()
   }
