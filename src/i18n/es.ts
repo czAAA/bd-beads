@@ -160,6 +160,18 @@ export const es: Translations = {
     noSavedProjectsMessage: 'Aún no hay proyectos guardados',
     shownOf: '{shown} de {total}',
   },
+  templates: {
+    galleryLabel: 'Empezar con',
+    presetsLabel: 'Tamaños habituales',
+    fixedNote: 'Este lado es fijo.',
+    specLine: '{width} × {height} · {technique}',
+    blank: { name: 'Lienzo en blanco', description: 'Dibuja libremente y pon un Marco después.' },
+    gerdan: { name: 'Gerdan', description: 'Un collar tejido de cuello.' },
+    bracelet: { name: 'Pulsera', description: 'Una banda estrecha para la muñeca.' },
+    earrings: { name: 'Pendientes', description: 'Un par de colgantes, cada uno una tira estrecha.' },
+    bag: { name: 'Bolso', description: 'Un panel para un bolso o bolsita.' },
+    custom: { name: 'Esquema propio', description: 'Cualquier tamaño, en cualquier técnica.' },
+  },
   canvas: {
     zoomInLabel: 'Acercar',
     zoomOutLabel: 'Alejar',

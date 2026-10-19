@@ -158,6 +158,18 @@ export const en: Translations = {
     noSavedProjectsMessage: 'No Projects saved yet',
     shownOf: '{shown} of {total}',
   },
+  templates: {
+    galleryLabel: 'Start from',
+    presetsLabel: 'Usual sizes',
+    fixedNote: 'This side is fixed.',
+    specLine: '{width} × {height} · {technique}',
+    blank: { name: 'Blank canvas', description: 'Draw freely and set a Frame later.' },
+    gerdan: { name: 'Gerdan', description: 'A woven collar necklace.' },
+    bracelet: { name: 'Bracelet', description: 'A narrow band for the wrist.' },
+    earrings: { name: 'Earrings', description: 'A pair of drops, each a narrow strip.' },
+    bag: { name: 'Bag', description: 'A small purse or pouch panel.' },
+    custom: { name: 'Custom scheme', description: 'Any size, in any Technique.' },
+  },
   canvas: {
     zoomInLabel: 'Zoom in',
     zoomOutLabel: 'Zoom out',

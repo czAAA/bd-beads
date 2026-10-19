@@ -19,8 +19,20 @@ The modal sheet of app-wide settings and links (language, theme, Name on exports
 _Avoid_: More, header menu
 
 **Panel sub-view**:
-A second level inside a dropdown panel (Menu, Project, Frame): the header shows a Back arrow and the sub-view's title, the body swaps to the sub-view and Back returns to the panel's root list. Built into the shared panel shell, so every panel inherits it. The first user is **New Project** (the Menu's accent-coloured row): the New Project form is a sub-view, not a sheet. Opening it leaves the open Project untouched until Create; Back and closing the panel discard the form's draft; Create and Convert image close the panel. The Menu opens straight on it while the library has no saved Project and from the empty-canvas bar's New Project button; otherwise it opens at the root. Escape pops a level, except when the sub-view was the starting view, where it closes the panel.
+A level inside a dropdown panel (Menu, Project, Frame), stacked over its root (ticket 493): the header shows a Back arrow and the sub-view's title, the body swaps to the sub-view and Back returns one level, to the panel's root list from the first. Built into the shared panel shell, so every panel inherits it. The first user is **New Project** (the Menu's accent-coloured row): the New Project form is a sub-view, not a sheet. Opening it leaves the open Project untouched until Create; Back and closing the panel discard the form's draft; Create and Convert image close the panel. The Menu opens straight on it while the library has no saved Project and from the empty-canvas bar's New Project button; otherwise it opens at the root. Escape pops a level, except on the first level when it was the starting view, where it closes the panel.
 _Avoid_: New Project sheet, New Project modal (gone)
+
+**New Project**:
+The Menu's accent-coloured row and the Panel sub-view it opens (spec 0478). Its first block is the Template gallery: a **Blank canvas** tile, checked, and one card per **Template**; below it the form that makes a Canvas (Name, Maker's name, Bead, Technique, Create Project) and Convert image. A tap on a Template card pushes its **Template setup** one level deeper; Blank canvas, Convert image and Import work as before.
+_Avoid_: New Pattern, new project sheet
+
+**Template**:
+A named starting point for a Frame (ticket 493, spec 0488): Gerdan, Bracelet, Earrings, Bag or Custom scheme. One entry in a typed registry (`domain/templates.ts`): an id that is also the key of its copy, the Technique it is woven in by default, the Techniques it allows, and per side (width, height) a default, a minimum, a maximum, optional presets and an optional lock (Earrings keep their width). Sizes are in beads, Units in Right-angle weave and Netting, and are starting values. Bead crochet and Constructor are not Templates. Nothing in a Project records the Template it was made from. The gallery card shows its name, description, spec line ("24 × 80 · Loom") and a picture slot, a plain lattice in its Technique until artwork fills it.
+_Avoid_: preset, product, shape, pattern (for the starting point)
+
+**Template setup**:
+The sub-view a tap on a Template card opens: Name (the Template's name as its placeholder), Bead, Technique (only the allowed ones, no choice when there is one), Brick block for brick stitch, the unit (beads or Units, mm, cm), Width and Height as steppers with the Template's usual sizes as chips, a live Estimated size, and Create Project in the pinned footer. It states no Maker's name. Create makes a Project whose Frame is in place at the origin and empty, Row progress on, the Canvas in the Frame's Technique, named by what was typed or the Template's name.
+_Avoid_: Template form, Template dialog
 
 **Project sheet**:
 The modal sheet the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Save and Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.

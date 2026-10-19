@@ -160,6 +160,18 @@ export const pl: Translations = {
     noSavedProjectsMessage: 'Nie zapisano jeszcze żadnych projektów',
     shownOf: '{shown} z {total}',
   },
+  templates: {
+    galleryLabel: 'Zacznij od',
+    presetsLabel: 'Zwykłe rozmiary',
+    fixedNote: 'Ten bok jest stały.',
+    specLine: '{width} × {height} · {technique}',
+    blank: { name: 'Puste płótno', description: 'Rysuj swobodnie, ramkę ustawisz później.' },
+    gerdan: { name: 'Gerdan', description: 'Pleciony kołnierz-naszyjnik.' },
+    bracelet: { name: 'Bransoletka', description: 'Wąski pasek na nadgarstek.' },
+    earrings: { name: 'Kolczyki', description: 'Para zawieszek, każda wąskim paskiem.' },
+    bag: { name: 'Torba', description: 'Mała torebka lub saszetka.' },
+    custom: { name: 'Własny wzór', description: 'Dowolny rozmiar, dowolna technika.' },
+  },
   canvas: {
     zoomInLabel: 'Powiększ',
     zoomOutLabel: 'Pomniejsz',
