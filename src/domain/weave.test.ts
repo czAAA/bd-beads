@@ -316,7 +316,7 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     ['brick stitch, Brick block 3', { technique: 'brick' as const, brickBlock: 3 }, { frameStep: 6, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
   ])('%s', (_name, weave, expected) => {
     const description = describeWeave(weave)
-    expect(description).toMatchObject({ ...expected, switchable: true, quarterTurn: true, rowDirection: true })
+    expect(description).toMatchObject({ ...expected, quarterTurn: true, rowDirection: true })
     expect(description.hasPosition(here)).toBe(true)
     expect(description.orientationAt(here)).toBe('upright')
     expect(description.box(here, 2, 2)).toMatchObject({ width: 2, height: 2 })
@@ -347,7 +347,7 @@ describe('describeWeave: Right-angle weave (ticket 482)', () => {
   const box = (row: number, column: number) => description.box({ row, column }, 20, 14)
 
   it('counts Units, steps by a whole Unit and is fixed once the Project is made', () => {
-    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, switchable: false, quarterTurn: true, hasBrickBlock: false })
+    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, quarterTurn: true, hasBrickBlock: false })
   })
 
   it('lays horizontal beads lying along a line and vertical beads upright, round a hole one length square', () => {
@@ -431,7 +431,7 @@ describe('describeWeave: Netting (ticket 485)', () => {
 
   it('counts Units, steps by a whole diamond, offers no turn or row direction and is fixed once the Project is made', () => {
     for (const { p, description } of nets) {
-      expect(description).toMatchObject({ countsUnits: true, frameStep: 2 * p, columnStep: 2 * p, rowsPerUnit: p, columnsPerUnit: 2 * p, switchable: false, quarterTurn: false, rowDirection: false, hasNetSize: true, hasBrickBlock: false })
+      expect(description).toMatchObject({ countsUnits: true, frameStep: 2 * p, columnStep: 2 * p, rowsPerUnit: p, columnsPerUnit: 2 * p, quarterTurn: false, rowDirection: false, hasNetSize: true, hasBrickBlock: false })
       expect(description.turned({ row: 1, column: 1 }, { columns: 9, rows: 9 })).toBeUndefined()
     }
   })

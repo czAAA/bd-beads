@@ -593,6 +593,12 @@ export interface Translations {
     refusedCutsSchema: string
     /** `{technique}` is the new Technique's name. */
     announceTechnique: string
+    /** Changing a layer's Technique (ticket 507): `{technique}` is the new one, `{count}` the beads with no place in it. */
+    switchConfirmTitle: string
+    switchConfirmMessage: string
+    /** Asked of a layer with no beads when Netting needs its Net size. */
+    switchNetMessage: string
+    switchConfirmButton: string
     announceBrickBlock: string
     /** Announced after Rotate turned the Selection and covered no bead. */
     announceSelectionRotated: string

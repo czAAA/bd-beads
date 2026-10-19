@@ -1,8 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Frame, type FrameSheet } from './canvas'
+import { describeWeave } from './weave'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
-import { createProject, rowProgressOn, withFrame, type Project } from './project'
+import { createProject, rowProgressOn, switchLoss, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 6, columns: 4 }
 
@@ -19,10 +20,9 @@ const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3)
 describe('changeFrame in Right-angle weave (ticket 482)', () => {
   const woven = () => ({ ...createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }) })
 
-  it('does not switch to another Technique, or from one', () => {
-    expect(changeFrame(woven(), { technique: 'peyote' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
-    const loom = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
-    expect(changeFrame(loom, { technique: 'rightAngle' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+  it('switches the Frame to and from another Technique (ticket 507)', () => {
+    expect(changeFrame(woven(), { technique: 'peyote' }).kind).toBe('changed')
+    expect(changeFrame(framed(), { technique: 'rightAngle' }).kind).toBe('changed')
   })
 
   it('does not take out a single line, which is not a Unit', () => {
@@ -236,10 +236,40 @@ describe('changeFrame', () => {
       expect(result.beads).toEqual(started.beads)
     })
 
-    it('is the same Project for the Technique it has, and for one that is fixed', () => {
+    it('is the same Project for the Technique it has', () => {
       const project = framed()
       expect(changeCanvasWeave(project, { technique: 'loom' })).toBe(project)
-      expect(changeCanvasWeave(project, { technique: 'netting' })).toBe(project)
+    })
+
+    const TECHNIQUES_ALL = ['loom', 'peyote', 'brick', 'rightAngle', 'netting'] as const
+
+    it('switches between every ordered pair of Techniques, keeping the beads that have a position and dropping the rest (ticket 507)', () => {
+      for (const from of TECHNIQUES_ALL) {
+        for (const to of TECHNIQUES_ALL) {
+          if (from === to) continue
+          const start = framed({ technique: from, netSize: from === 'netting' ? 3 : undefined, beads: { 0: { 0: '#111111', 1: '#222222' }, 3: { 2: '#333333' } } })
+          const next = changeCanvasWeave(start, { technique: to, netSize: 3 })
+          const target = describeWeave({ technique: to, netSize: 3 })
+          expect(next.technique).toBe(to)
+          for (const [row, column, color] of [[0, 0, '#111111'], [0, 1, '#222222'], [3, 2, '#333333']] as const) {
+            expect(colorAt(next.beads, row, column)).toBe(target.hasPosition({ row, column }) ? color : null)
+          }
+          expect(next.frame).toBe(start.frame)
+        }
+      }
+    })
+
+    it('takes the Net size given for Netting, and leaves none behind when it leaves Netting', () => {
+      const net = changeCanvasWeave(framed(), { technique: 'netting', netSize: 7 })
+      expect(net.netSize).toBe(7)
+      expect(changeCanvasWeave(net, { technique: 'loom' }).netSize).toBeUndefined()
+    })
+
+    it('counts the beads a switch would drop', () => {
+      const project = framed({ beads: { 0: { 0: '#111111', 1: '#222222' } } })
+      // Netting of size 3 has no position at (0, 0) or (0, 1): both are holes.
+      expect(switchLoss(project, 'canvas', 'netting', 3)).toBe(2)
+      expect(switchLoss(project, 'canvas', 'peyote')).toBe(0)
     })
 
     it('changes the Brick block of a brick stitch Canvas', () => {
@@ -462,10 +492,17 @@ describe('Remove Frame keeps the Frame\'s beads (ticket 497)', () => {
 describe('changeFrame in Netting (ticket 485)', () => {
   const woven = () => createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
-  it('does not switch to another Technique, or from one', () => {
-    expect(changeFrame(woven(), { technique: 'peyote' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
-    const loom = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
-    expect(changeFrame(loom, { technique: 'netting' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+  it('switches the Frame to and from Netting, with its Net size (ticket 507)', () => {
+    expect(changeFrame(woven(), { technique: 'peyote' }).kind).toBe('changed')
+    const result = changeFrame(framed(), { technique: 'netting', netSize: 5 })
+    expect(result.kind === 'changed' && result.project.frame).toMatchObject({ technique: 'netting', netSize: 5 })
+  })
+
+  it('drops the Frame\'s beads that fall in a hole, counted from its own corner, and is blocked once a pass is done (ticket 507)', () => {
+    const start = framed({ frame: sheet(frame, { 0: { 0: '#111111' }, 1: { 1: '#222222' } }) })
+    const result = changeFrame(start, { technique: 'netting', netSize: 3 })
+    expect(result.kind === 'changed' && result.project.frame?.beads).toEqual({ 1: { 1: '#222222' } })
+    expect(changeFrame({ ...start, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }, { technique: 'netting', netSize: 3 })).toEqual({ kind: 'refused', reason: 'locked' })
   })
 
   it('does not take out a single line, which is not a diamond', () => {

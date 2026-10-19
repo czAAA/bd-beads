@@ -714,6 +714,7 @@ function wireAppShell(services: Services) {
       deleteAll.deleteAllConfirmOpen.value ||
       frameFlow.removeConfirmOpen.value ||
       frameFlow.replaceConfirmOpen.value ||
+      !!frameFlow.switchQuestion.value ||
       !!pendingColorRemovalId.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
       !!importSwitch.pendingImport.value ||
@@ -923,6 +924,10 @@ function wireAppShell(services: Services) {
     onSetTechnique: frameFlow.setTechnique,
     onSetBrickBlock: frameFlow.setBrickBlock,
     onSetCanvasTechnique: frameFlow.setCanvasTechnique,
+    switchQuestion: frameFlow.switchQuestion,
+    onSetSwitchNetSize: frameFlow.setSwitchNetSize,
+    onCancelSwitchTechnique: frameFlow.cancelSwitch,
+    onConfirmSwitchTechnique: frameFlow.confirmSwitch,
     onSetCanvasBrickBlock: frameFlow.setCanvasBrickBlock,
     onFitFrame: frameFlow.fit,
     onRemoveFrame: frameFlow.remove,
