@@ -256,6 +256,7 @@ function sampleUnitLattice({ image, view, description, cellWidth, cellHeight, la
   const packed = new Int32Array(lattice.rows * lattice.columns).fill(NO_COLOR)
   for (let row = 0; row < lattice.rows; row += 1) {
     for (let column = 0; column < lattice.columns; column += 1) {
+      if (!description.hasPosition({ row, column })) continue
       const { x, y } = description.center({ row, column }, cellWidth, cellHeight)
       const sourceX = Math.floor((x - originX - view.offsetXMm) / view.scaleMm)
       const sourceY = Math.floor((y - originY - view.offsetYMm) / view.scaleMm)

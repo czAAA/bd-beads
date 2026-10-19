@@ -12,6 +12,7 @@ import {
   pieceSelectionOnLayer,
   selectionBetween,
   selectionWithEdges,
+  snapSelectionToUnits,
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
@@ -55,6 +56,12 @@ export function useSelectionGesture(
   // stamps the copy, so the press only records its anchor here and endPress decides which it was.
   const selectPress = ref<{ anchor: GridPosition; moved: boolean } | null>(null)
 
+  /** A Selection grown to whole Units where the Technique has them (ticket 483), kept in the Frame it began in. */
+  function snapped(next: Selection): Selection {
+    const project = currentProject()
+    return project ? snapSelectionToUnits(project, next, project.frame) : next
+  }
+
   function beginPress(row: number, column: number) {
     const project = currentProject()
     if (!project) {
@@ -67,7 +74,7 @@ export function useSelectionGesture(
     // one active Paste claims the gesture, hence re-selecting a single cell takes a drag out and back: a click must
     // mean one thing, and stamping is it.
     if (!pasteProjectionActive.value) {
-      selection.value = selectionBetween({ row, column }, { row, column })
+      selection.value = snapped(selectionBetween({ row, column }, { row, column }))
     }
   }
 
@@ -84,7 +91,7 @@ export function useSelectionGesture(
     // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0057).
     if (pasteProjectionActive.value) return
     dropClipboard()
-    selection.value = selectionBetween(press.anchor, { row, column })
+    selection.value = snapped(selectionBetween(press.anchor, { row, column }))
   }
 
   /** Ends a Select press: in paste mode, click or drag, one stamp at the press point (ticket 437); otherwise a drag
@@ -116,7 +123,7 @@ export function useSelectionGesture(
       return
     }
     dropClipboard()
-    selection.value = picked
+    selection.value = picked && snapped(picked)
   }
 
   /** Select all (tickets 414, 428): the Selection becomes the Frame's inside, or without a Frame the rectangle round
@@ -152,13 +159,13 @@ export function useSelectionGesture(
       return
     }
     if (adjust.kind === 'resize') {
-      selection.value = selectionWithEdges(adjust.start, adjust.edges, cell)
+      selection.value = snapped(selectionWithEdges(adjust.start, adjust.edges, cell))
       return
     }
     const rows = cell.row - adjust.origin.row
     const columns = cell.column - adjust.origin.column
     adjust.moved ||= rows !== 0 || columns !== 0
-    selection.value = movedSelection(adjust.start, rows, columns)
+    selection.value = movedSelection(adjust.start, rows, columns, currentProject())
   }
 
   /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
@@ -172,7 +179,7 @@ export function useSelectionGesture(
       tapPiece(done.origin.row, done.origin.column)
     } else {
       dropClipboard()
-      selection.value = selectionBetween(done.origin, done.origin)
+      selection.value = snapped(selectionBetween(done.origin, done.origin))
     }
   }
 
