@@ -24,8 +24,9 @@ export type FrameChange =
   /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0062); allowed after Row progress has
    * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
-  /** Change the Frame's Technique (tickets 351, 492): only the geometry changes, every cell keeps its row and column. */
-  | { technique: Technique }
+  /** Change the Frame's Technique (tickets 351, 492, 507): the geometry changes, every bead keeps its row and column where
+   * the Technique has a position there and the rest are dropped. Netting takes its Net size here. */
+  | { technique: Technique; netSize?: number }
   /** Change the Frame's Brick block (ticket 477): the same, only the shift's rhythm changes. */
   | { brickBlock: number }
   /** Put a new empty Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
@@ -46,7 +47,7 @@ export type FrameChangeRefusal =
   /** The new Frame would cut through a named Piece (an unframed Schema) on the Canvas, which it must take whole or
    * leave whole (ticket 407). */
   | 'cuts-schema'
-  /** A Technique counted in Units is fixed when the Project is created (ADR 0038), and a line of it isn't a Unit. */
+  /** A line of a Technique counted in Units isn't a Unit (ADR 0038), so it can't be removed alone. */
   | 'fixed-weave'
 
 export type FrameChangeResult =
@@ -70,9 +71,6 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
   const frame = project.frame
   if (('technique' in change || 'brickBlock' in change) && !frame) {
     return 'no-frame'
-  }
-  if ('technique' in change && change.technique !== frame?.technique && (!describeWeave(frameWeave(project)).switchable || !describeWeave({ technique: change.technique }).switchable)) {
-    return 'fixed-weave'
   }
   if ('removeLine' in change && describeWeave(frameWeave(project)).countsUnits) {
     return 'fixed-weave'
@@ -136,7 +134,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     if (change.technique === project.frame?.technique) {
       return { kind: 'unchanged', project }
     }
-    return { kind: 'changed', project: withFrameTechnique(project, change.technique) }
+    return { kind: 'changed', project: withFrameTechnique(project, change.technique, change.netSize) }
   }
 
   if ('brickBlock' in change) {
@@ -269,15 +267,15 @@ export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): B
   return result
 }
 
-/** The Canvas woven in another Technique or Brick block (tickets 351, 492): its beads keep their row and column, the
- * names of Pieces follow them. Row progress belongs to the Frame, so this is allowed at any time. A Technique that is
- * fixed, or the same one, gives the same Project back. */
-export function changeCanvasWeave(project: Project, change: { technique: Technique } | { brickBlock: number }): Project {
+/** The Canvas woven in another Technique or Brick block (tickets 351, 492, 507): its beads keep their row and column
+ * where the Technique has a position there, the names of Pieces follow them. Row progress belongs to the Frame, so this
+ * is allowed at any time. The same Technique gives the same Project back. */
+export function changeCanvasWeave(project: Project, change: { technique: Technique; netSize?: number } | { brickBlock: number }): Project {
   if ('technique' in change) {
-    if (change.technique === project.technique || !describeWeave(project).switchable || !describeWeave({ technique: change.technique }).switchable) {
+    if (change.technique === project.technique) {
       return project
     }
-    return carryNames(project, withTechnique(project, change.technique))
+    return carryNames(project, withTechnique(project, change.technique, change.netSize))
   }
   return clampBrickBlock(change.brickBlock) === (project.brickBlock ?? 1) ? project : carryNames(project, withBrickBlock(project, change.brickBlock))
 }

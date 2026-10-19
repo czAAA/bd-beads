@@ -5,7 +5,7 @@ import { clampNetSize, MAX_NET_SIZE, MIN_NET_SIZE } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 
 /** The Net size stepper (ticket 485, Stepper card): the beads in a Netting loop, odd from 3 to 9. Shown by the New
- * Project form only, for Netting; it can't be changed once the Project is created (ADR 0038). */
+ * Project form and the Technique switch question, for Netting (ticket 507, ADR 0038). */
 defineProps<{ testid: string }>()
 const value = defineModel<number>({ required: true })
 // A typed even number settles on the odd one below it.
