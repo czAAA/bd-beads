@@ -249,7 +249,7 @@ describe('isSlowFramingSize', () => {
   })
 
   it('looks up the threshold per Technique, independently of the other two', () => {
-    const thresholds = { loom: 100, peyote: 100000, brick: 100000 }
+    const thresholds = { loom: 100, peyote: 100000, brick: 100000, rightAngle: 100000 }
     const dimensions = { columns: 20, rows: 6 } // 120 cells
 
     expect(isSlowFramingSize('loom', dimensions, thresholds)).toBe(true)

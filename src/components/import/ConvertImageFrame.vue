@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
-import { beadPitchMm, type Bead } from '../../domain/beads'
+import type { Bead } from '../../domain/beads'
 import { CANVAS_MAX_PX, type GridDimensions } from '../../domain/grid'
-import { rowPitch, type Technique } from '../../domain/weave'
+import { describeWeave, type Technique } from '../../domain/weave'
 import { approximatePreviewColors, exactPreviewColors } from '../../domain/framingPreview'
 import {
   MAX_IMAGE_COLORS,
@@ -261,7 +261,8 @@ const panRangeMm = computed(() => ({
 // under it in every Technique.
 const mmPerScreenPx = computed(() => {
   const step = surfaceView({ space: latticeSpace.value, technique: props.technique, brickBlock: props.brickBlock, rotation: 0, zoom: fitScale.value }).beadStep()
-  return { x: beadPitchMm(props.bead) / step.column.x, y: rowPitch(props.technique, props.bead.heightMm) / step.row.y }
+  const mm = describeWeave({ technique: props.technique }).stepMm(props.bead)
+  return { x: mm.across / step.column.x, y: mm.down / step.row.y }
 })
 
 const drag = ref<{ pointerId: number; x: number; y: number; pan: PanFraction } | null>(null)

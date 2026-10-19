@@ -107,3 +107,15 @@ describe('formatGrams', () => {
     expect(formatGrams(0.001, 'г', 'ru')).toBe('< 0,01 г')
   })
 })
+
+describe('computeColorQuantities in Right-angle weave (ticket 482)', () => {
+  it('counts every real bead once, shared sides included', () => {
+    const woven = createProject({ technique: 'rightAngle', beadId: cubeBead.id, size: { width: 2, height: 1, unit: 'beads' } })
+    const everyBead = [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column })))
+
+    const painted = paintCells(woven, everyBead, RED, { columns: 0, rows: 0 })
+
+    // Two Units across and one down: 2 + 3 + 2 beads, the Units' shared sides counted once.
+    expect(computeColorQuantities(painted)).toMatchObject([{ hex: RED, count: 7 }])
+  })
+})
