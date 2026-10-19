@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Bead } from '../../domain/beads'
-import type { Technique } from '../../domain/grid'
+import type { Technique } from '../../domain/weave'
 import { isSlowFramingSize } from '../../domain/imageFraming'
 import { formatOtherUnit, gridFromSize, isSizeStated, type StatedSize } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'

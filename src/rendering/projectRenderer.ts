@@ -1,10 +1,10 @@
-import type { GridPosition, Rotation, Technique, Weave } from '../domain/grid'
+import type { GridPosition, Rotation } from '../domain/grid'
+import { beadRoundness, gridWidth, type Technique, type Weave } from '../domain/weave'
 import { frameContains } from '../domain/canvas'
 import { MARGIN, withMargin } from '../domain/margin'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn, type Project } from '../domain/project'
 import {
   BEAD_GAP_PX,
-  beadRoundness,
   brighten,
   CURRENT_ROW_BRIGHTNESS,
   DEFAULT_THEME,
@@ -165,7 +165,7 @@ function drawPositionMarks(
     // between its beads.
     const { column, row, columns, rows } = project.frame
     const edge = BEAD_GAP_PX / 2
-    const shift = project.technique === 'loom' ? 0 : CELL_SIZE_PX / 2
+    const shift = gridWidth(project.technique, 0, CELL_SIZE_PX)
     strip(
       Math.max(column * CELL_SIZE_PX - edge, area.left),
       Math.max(row * pitch - edge, area.top),

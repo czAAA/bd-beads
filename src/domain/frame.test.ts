@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from './canvas'
-import { fitToDrawing, frameFromCells, frameWithEdges, frameResizedAround, frameWithEdgeStep, parseFrameSize, frameWithSize, movedFrame, sameFrame, snapRow } from './frame'
+import { fitToDrawing, frameFromCells, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow } from './frame'
 
 describe('frameFromCells', () => {
   it('covers the beads from one corner to the other, whichever way the drag went', () => {
@@ -145,16 +145,6 @@ describe('frameResizedAround (ticket 473)', () => {
 
   it('keeps each side between four and 999 beads', () => {
     expect(frameResizedAround({ technique: 'loom' }, frame, 1, 5000)).toMatchObject({ columns: 4, rows: 999 })
-  })
-})
-
-describe('parseFrameSize (ticket 473)', () => {
-  it('reads width and height with an x, ×, * or Cyrillic х between them', () => {
-    for (const text of ['20x120', ' 20 × 120 ', '20*120', '20X120', '20х120']) expect(parseFrameSize(text)).toEqual({ columns: 20, rows: 120 })
-  })
-
-  it('refuses anything else', () => {
-    for (const text of ['', '20', '20x', 'x120', '20x120x3', '-5x10', 'a x b']) expect(parseFrameSize(text)).toBeUndefined()
   })
 })
 

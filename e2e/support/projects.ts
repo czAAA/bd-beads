@@ -1,4 +1,5 @@
-import type { Rotation, Technique } from '../../src/domain/grid'
+import type { Rotation } from '../../src/domain/grid'
+import type { Technique } from '../../src/domain/weave'
 import { PALETTE } from '../../src/domain/palette'
 import { framedGrid, type Cell, type Project, type RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'

@@ -1,5 +1,6 @@
 import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Frame } from './canvas'
-import { rowCycle, type GridPosition, type Weave } from './grid'
+import type { GridPosition } from './grid'
+import { rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
 import type { Project } from './project'
 
@@ -76,12 +77,6 @@ export function frameWithEdgeStep(weave: Weave, frame: Frame, edge: FrameEdge, s
     case 'bottom':
       return step < 0 && frame.rows + step < MIN_STEPPED_SIDE ? frame : { ...frame, rows: frame.rows + step }
   }
-}
-
-/** The width and height typed as "20x120" (x, ×, * or the Cyrillic х between them), or none when it isn't one. */
-export function parseFrameSize(text: string): { columns: number; rows: number } | undefined {
-  const match = /^\s*(\d{1,4})\s*[x×*хХ]\s*(\d{1,4})\s*$/i.exec(text)
-  return match ? { columns: Number(match[1]), rows: Number(match[2]) } : undefined
 }
 
 /** The Frame resized to `columns` × `rows`, each side growing or shrinking evenly on both of its edges (ticket 473): an

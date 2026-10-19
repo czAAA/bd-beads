@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
-import type { Technique } from '../../domain/grid'
+import { describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -17,6 +17,7 @@ import { MAX_MAKER_NAME } from '../../domain/makerName'
 import type { StatedSize } from '../../domain/projectSize'
 import { useTourFormReset } from '../../composables/tour/useTour'
 import { controlAction } from '../../composables/shell/controlRegistry'
+import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import BrickBlockField from './BrickBlockField.vue'
 import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
@@ -88,18 +89,14 @@ onMounted(() => {
 const selectedBead = computed(() => BEAD_CATALOG.find((candidate) => candidate.id === beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
 
-const techniqueOptions = computed(() => [
-  { value: 'loom' as const, label: t.value.form.techniqueLoom },
-  { value: 'peyote' as const, label: t.value.form.techniquePeyote },
-  { value: 'brick' as const, label: t.value.form.techniqueBrick },
-])
+const techniqueOptions = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
 
 /** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342). */
 function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
     technique: technique.value,
-    ...(technique.value === 'brick' && brickBlock.value > 1 ? { brickBlock: brickBlock.value } : {}),
+    ...(describeWeave({ technique: technique.value }).hasBrickBlock && brickBlock.value > 1 ? { brickBlock: brickBlock.value } : {}),
     beadId: beadId.value,
     makerName: makerName.value.trim(),
   }
@@ -231,7 +228,7 @@ function onDropImage(file: File) {
       />
     </FormField>
 
-    <BrickBlockField v-if="technique === 'brick'" v-model="brickBlock" testid="brick-block" />
+    <BrickBlockField v-if="describeWeave({ technique }).hasBrickBlock" v-model="brickBlock" testid="brick-block" />
 
     <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus" data-testid="create-project">
       {{ t.form.submit }}

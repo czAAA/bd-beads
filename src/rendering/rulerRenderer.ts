@@ -1,6 +1,6 @@
 import { frameContains, type Frame } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
-import { lineOfPass } from '../domain/passes'
+import { lineOfPass } from '../domain/weave'
 import { namedPieces } from '../domain/pieceNames'
 import { rowProgressOn } from '../domain/project'
 import type { DrawingContext } from './beadLook'

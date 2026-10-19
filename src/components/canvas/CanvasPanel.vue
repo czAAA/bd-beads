@@ -19,7 +19,8 @@ import { useColorPick } from '../../composables/tools/usePalette'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import type { BarBox, FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import type { Technique } from '../../domain/grid'
+import type { Technique } from '../../domain/weave'
+import { techniqueName } from '../../i18n/techniqueName'
 import type { PillRect } from '../../domain/toolPill'
 import { hasGuides } from '../../domain/selection'
 import { hasProjectBeads, resolveProjectBead } from '../../domain/project'
@@ -230,8 +231,7 @@ const drawingStyle = computed(() => {
 
 /** The Technique's name, the background word behind the board (ticket 143). */
 function techniqueWord(technique: Technique): string {
-  const form = t.value.form
-  return technique === 'peyote' ? form.techniquePeyote : technique === 'brick' ? form.techniqueBrick : form.techniqueLoom
+  return techniqueName(t.value, technique)
 }
 </script>
 

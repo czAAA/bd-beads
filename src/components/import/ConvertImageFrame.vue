@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
 import { beadPitchMm, type Bead } from '../../domain/beads'
-import { CANVAS_MAX_PX, rowPitch, type GridDimensions, type Technique } from '../../domain/grid'
+import { CANVAS_MAX_PX, type GridDimensions } from '../../domain/grid'
+import { rowPitch, type Technique } from '../../domain/weave'
 import { approximatePreviewColors, exactPreviewColors } from '../../domain/framingPreview'
 import {
   MAX_IMAGE_COLORS,
