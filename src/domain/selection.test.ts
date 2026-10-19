@@ -177,7 +177,7 @@ describe('a stamp lands the anchor bead on the aimed cell (ticket 437)', () => {
   it('shifts the block back by the anchor, so no empty corner offsets it', () => {
     const block: CopiedBlock = { rows: 2, columns: 2, colors: [[null, RED], [BLUE, null]], anchor: { row: 0, column: 1 } }
 
-    expect(mirroredPastedCells(undefined, block, { row: 3, column: 3 }, { rows: 0, columns: 0 })).toEqual([
+    expect(mirroredPastedCells({ frame: undefined, technique: 'loom' }, block, { row: 3, column: 3 }, { rows: 0, columns: 0 })).toEqual([
       { row: 3, column: 3, color: RED },
       { row: 4, column: 2, color: BLUE },
     ])
@@ -192,7 +192,7 @@ describe('mirroredPastedCells and pasteOnLayer (ticket 50: Paste projects throug
     const at = { row: 1, column: 1 }
     const axes = { rows: 0, columns: 0 }
 
-    expect(mirroredPastedCells(target.frame, dot, at, axes)).toEqual(pastedCells(dot, at))
+    expect(mirroredPastedCells(target, dot, at, axes)).toEqual(pastedCells(dot, at))
   })
 
   it('aims the anchor bead, not the block corner, and mirrors the rest of the block around it (ticket 437)', () => {
@@ -267,7 +267,7 @@ describe('mirroredPastedCells and pasteOnLayer (ticket 50: Paste projects throug
     const at = { row: 0, column: 0 }
     const axes = { rows: 0, columns: 2 }
 
-    const preview = mirroredPastedCells(target.frame, motif, at, axes, true)
+    const preview = mirroredPastedCells(target, motif, at, axes, true)
     const stamped = pasteOnLayer(target, motif, at, axes, true)
 
     for (const cell of preview) {

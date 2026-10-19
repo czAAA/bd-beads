@@ -291,8 +291,7 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     expect(description.hasPosition(here)).toBe(true)
     expect(description.orientationAt(here)).toBe('upright')
     expect(description.box(here, 2, 2)).toMatchObject({ width: 2, height: 2 })
-    expect(description.turned(here)).toEqual(here)
-    expect(description.mirrored(here)).toEqual(here)
+    expect(description.turned({ row: 1, column: 2 }, { rows: 5, columns: 4 })).toEqual({ row: 2, column: 3 })
     expect(description.center(here, 2, 2)).toEqual(cellCenter(weave, here, 2, 2))
     expect(description.neighbors(dims, here)).toEqual(neighborsOf(weave, dims, here))
     expect(description.passes.count(5, 'rows')).toBe(passCount(weave.technique, 5, 'rows'))
@@ -306,11 +305,20 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
 describe('describeWeave: Right-angle weave (ticket 482)', () => {
   const weave = { technique: 'rightAngle' as const }
   const description = describeWeave(weave)
+
+  it('turns a block a quarter clockwise by Units, and leaves a horizontal bead past the last Unit', () => {
+    const block = { rows: 5, columns: 4 }
+    expect(description.turned({ row: 0, column: 0 }, block)).toEqual({ row: 1, column: 2 })
+    expect(description.turned({ row: 4, column: 2 }, block)).toEqual({ row: 5, column: 0 })
+    expect(description.turned({ row: 1, column: 0 }, block)).toEqual({ row: 0, column: 1 })
+    expect(description.turned({ row: 3, column: 3 }, block)).toEqual({ row: 6, column: 0 })
+    expect(description.turned({ row: 0, column: 3 }, block)).toBeUndefined()
+  })
   // A bead 20 long and 14 across: a Unit is 34 a side.
   const box = (row: number, column: number) => description.box({ row, column }, 20, 14)
 
   it('counts Units, steps by a whole Unit and is fixed once the Project is made', () => {
-    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, switchable: false, quarterTurn: false, hasBrickBlock: false })
+    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, switchable: false, quarterTurn: true, hasBrickBlock: false })
   })
 
   it('lays horizontal beads lying along a line and vertical beads upright, round a hole one length square', () => {
@@ -395,7 +403,7 @@ describe('describeWeave: Netting (ticket 485)', () => {
   it('counts Units, steps by a whole diamond, offers no turn or row direction and is fixed once the Project is made', () => {
     for (const { p, description } of nets) {
       expect(description).toMatchObject({ countsUnits: true, frameStep: 2 * p, columnStep: 2 * p, rowsPerUnit: p, columnsPerUnit: 2 * p, switchable: false, quarterTurn: false, rowDirection: false, hasNetSize: true, hasBrickBlock: false })
-      expect(description.turned({ row: 1, column: 1 })).toBeUndefined()
+      expect(description.turned({ row: 1, column: 1 }, { columns: 9, rows: 9 })).toBeUndefined()
     }
   })
 
