@@ -109,7 +109,7 @@ test('opened from the pencil, the bar stands inside the canvas box and is carrie
   await context.close()
 })
 
-test('the Frame\'s controls sit in a gutter just outside its edge, with no keep-out margin round it (ADR 0066)', async ({ browser }) => {
+test('the Frame\'s keep-out margin is outlined round it, and its controls sit in the gutter just outside the Frame\'s edge (ADR 0066)', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom' })])

@@ -21,6 +21,7 @@ import {
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
+import { clampOutOfMargin, inMargin, selectionAllowed } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -39,6 +40,9 @@ export function useSelectionGesture(
   /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces
    * it. */
   const selection = ref<Selection | undefined>()
+  /** How many times a Selection has been refused where the pointer cannot show it (a key or a tap, ticket 433): the
+   * canvas shows the not-allowed cue each time it grows. */
+  const refusals = ref(0)
 
   // What Copy last snapshotted, ready to stamp (ticket 92, ADR 0016): cleared only by a new Copy or a new Selection
   // (see copy/extendPress), not by a tool or Project switch or cancelling. An editing-session aid like the undo stack,
@@ -75,6 +79,11 @@ export function useSelectionGesture(
       return
     }
 
+    // A Selection cannot start in the keep-out margin (ticket 433): nothing begins (the pointer shows the cue itself, a
+    // key asks extendPress's caller to).
+    if (inMargin(project.frame, { row, column })) {
+      return
+    }
     const layer = layerAt(project, { row, column })
     selectPress.value = { anchor: { row, column }, focus: { row, column }, layer, moved: false }
 
@@ -87,21 +96,24 @@ export function useSelectionGesture(
   }
 
   // Grows the in-progress Selection to the cell the drag reached. A drag replaces the previous Selection and the copy
-  // with it (ticket 92).
-  function extendPress(row: number, column: number) {
+  // with it (ticket 92). Returns false when the margin held the cell back (ticket 433), which a key step takes as a
+  // refusal.
+  function extendPress(row: number, column: number): boolean {
     const project = currentProject()
     const press = selectPress.value
     if (!project || !press) {
-      return
+      return false
     }
 
     press.moved = true
     // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0057).
-    if (pasteProjectionActive.value) return
+    if (pasteProjectionActive.value) return false
     dropClipboard()
-    // The drag stays on the layer it began on (ticket 491).
-    press.focus = dragFocusOnLayer(project, press.layer, { row, column }, press.focus)
+    // The drag stays on the layer it began on (ticket 491), and out of the margin (ticket 433).
+    const focus = dragFocusOnLayer(project, press.layer, { row, column }, press.focus)
+    press.focus = clampOutOfMargin(project.frame, press.anchor, focus)
     selection.value = snapped(selectionBetween(press.anchor, press.focus, press.layer))
+    return press.focus.row === row && press.focus.column === column
   }
 
   /** Ends a Select press: in paste mode, click or drag, one stamp at the press point (ticket 437); otherwise a drag
@@ -129,8 +141,8 @@ export function useSelectionGesture(
   }
 
   /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, on
-   * the tapped bead's side of the Frame (ticket 433), and tapping empty space clears it. A tap on a bead with no Piece
-   * on this side changes nothing. */
+   * the tapped bead's side of the Frame's margin (ticket 433), and tapping empty space clears it. A tap in the
+   * margin is refused. */
   function tapPiece(row: number, column: number) {
     const project = currentProject()
     if (!project) {
@@ -138,7 +150,8 @@ export function useSelectionGesture(
     }
     const at = { row, column }
     const picked = pieceSelectionOnLayer(project, at)
-    if (!picked && beadColorAt(project, row, column)) {
+    if (inMargin(project.frame, at) || (!picked && beadColorAt(project, row, column))) {
+      refusals.value += 1
       return
     }
     dropClipboard()
@@ -182,7 +195,7 @@ export function useSelectionGesture(
       const layer = project ? selectionLayer(project, adjust.start) : 'canvas'
       const reached = project ? dragFocusOnLayer(project, layer, cell, adjust.held) : cell
       adjust.held = reached
-      selection.value = snapped(selectionWithEdges(adjust.start, adjust.edges, reached))
+      keepOutOfMargin(snapped(selectionWithEdges(adjust.start, adjust.edges, reached)))
       return
     }
     const rows = cell.row - adjust.origin.row
@@ -191,7 +204,13 @@ export function useSelectionGesture(
     const project = currentProject()
     const moved = movedSelection(adjust.start, rows, columns, project)
     // A Frame's Selection is moved within the Frame (ticket 491).
-    selection.value = project?.frame && selectionLayer(project, moved) === 'frame' ? withinFrame(moved, project.frame) : moved
+    keepOutOfMargin(project?.frame && selectionLayer(project, moved) === 'frame' ? withinFrame(moved, project.frame) : moved)
+  }
+
+  /** Takes a resized or moved Selection only if it covers none of the Frame's margin (ticket 428); otherwise the
+   * Selection stays as it was. */
+  function keepOutOfMargin(next: Selection) {
+    if (selectionAllowed(currentProject()?.frame, next)) selection.value = next
   }
 
   /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
@@ -342,6 +361,9 @@ export function useSelectionGesture(
 
   return {
     selection,
+    refusals,
+    /** Asks the canvas to show the not-allowed cue (ticket 433), for a refusal the pointer did not make itself. */
+    refuse: () => (refusals.value += 1),
     beginPress,
     extendPress,
     endPress,
