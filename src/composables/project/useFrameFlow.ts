@@ -31,24 +31,21 @@ type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Frame }
   | { kind: 'resize'; edges: FrameEdge[]; start: Frame }
 
-// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle opens the Frame bar and shows the
-// handles; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
+// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit pencil shows the handles and the strip's Frame
+// button opens the Frame bar; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
 // Move handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
-/** The control that opened the Frame bar, for it to hang from (ticket 475). */
-export type FrameBarOrigin = 'pencil' | 'strip'
-
 export function useFrameFlow(deps: FrameFlowDeps) {
   /** The weaver's choice on the edit toggle (the Frame bar open); false until they turn it on. Never saved. */
   const openPanel = deps.openPanel ?? ref<PhoneSheet | null>(null)
-  const editOn = computed({
+  const barOpen = computed({
     get: () => openPanel.value === 'frame',
     set: (on: boolean) => {
       if (on) openPanel.value = 'frame'
       else if (openPanel.value === 'frame') openPanel.value = null
     },
   })
-  /** Which control opened the bar: the edit pencil, or the strip's Frame button. */
-  const barFrom = ref<FrameBarOrigin>('strip')
+  /** The edit pencil's choice (ticket 510): the Frame's handles are on; false until they turn it on. Never saved. */
+  const handlesOn = ref(false)
   /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its
    * beads. */
   const draft = ref<{ frame: Frame; move?: { rows: number; columns: number } } | undefined>()
@@ -72,34 +69,40 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   })
 
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
-  const settingFrame = computed(() => !!deps.currentProject()?.frame && editOn.value && !locked.value)
+  const settingFrame = computed(() => !!deps.currentProject()?.frame && handlesOn.value && !locked.value)
 
   /** Whether the Frame bar shows: a Frame and the bar opened. Once a pass is done it holds the size and Remove Frame
    * alone (ticket 475: a panel that closes on a press outside cannot stay up for good). */
-  const barShown = computed(() => !!deps.currentProject()?.frame && editOn.value)
+  const barShown = computed(() => !!deps.currentProject()?.frame && barOpen.value)
 
   // The bar is closed whenever a Project opens or its Frame goes (ticket 473); a Frame made or a lock changing only
   // drops a drag in progress.
   watch(
     [() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame],
     ([id, framed], [previousId]) => {
-      if (id !== previousId || !framed) editOn.value = false
+      if (id !== previousId || !framed) {
+        barOpen.value = false
+        handlesOn.value = false
+      }
     },
     { flush: 'sync' },
   )
   watch([() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame, locked], cancel, { flush: 'sync' })
 
-  /** The edit toggle: nothing happens without a Frame. Once Row progress has started it opens the bar alone, with no
-   * handles. */
-  function toggleEdit(from: FrameBarOrigin = 'strip'): void {
-    if (!deps.currentProject()?.frame) return
-    editOn.value = !editOn.value
-    if (editOn.value) barFrom.value = from
+  /** The edit pencil: shows or hides the Frame's handles; nothing happens without a Frame. */
+  function toggleHandles(): void {
+    if (deps.currentProject()?.frame) handlesOn.value = !handlesOn.value
+  }
+
+  /** The strip's Frame button: opens or closes the Frame bar; nothing happens without a Frame. Once Row progress has
+   * started the bar still opens, for the size and Remove Frame. */
+  function toggleBar(): void {
+    if (deps.currentProject()?.frame) barOpen.value = !barOpen.value
   }
 
   /** The bar closed by Escape or a press outside it. */
-  function closeEdit(): void {
-    editOn.value = false
+  function closeBar(): void {
+    barOpen.value = false
   }
 
   function describe(frame: Frame): string {
@@ -340,10 +343,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
      * too, exactly as the release will leave them. */
     draftProject,
     frameLocked: locked,
-    editOn,
-    barFrom,
-    toggleEdit,
-    closeEdit,
+    barOpen,
+    handlesOn,
+    toggleHandles,
+    toggleBar,
+    closeBar,
     press,
     drag,
     release,

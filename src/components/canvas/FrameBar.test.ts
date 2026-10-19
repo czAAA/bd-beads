@@ -4,7 +4,6 @@ import FrameBar from './FrameBar.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
-import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => {
   localStorage.clear()
@@ -12,7 +11,6 @@ beforeEach(() => {
 })
 
 afterEach(() => {
-  vi.unstubAllGlobals()
   vi.useRealTimers()
   vi.restoreAllMocks()
   document.body.innerHTML = ''
@@ -31,10 +29,6 @@ function mountBar(project = framed()) {
   return mount(FrameBar, { props: { project }, attachTo: document.body })
 }
 
-const anchor = {
-  box: { left: 150, top: 100, width: 100, height: 60 },
-  viewport: { width: 400, height: 300 },
-}
 
 describe('FrameBar in Right-angle weave (ticket 482)', () => {
   const wovenBar = () => woven(framed({ row: 2, column: 3, rows: 7, columns: 5, beads: {} }), 'rightAngle')
@@ -187,84 +181,18 @@ describe('FrameBar (ticket 473)', () => {
     expect(wrapper.emitted('key')).toHaveLength(1)
   })
 
-  /** The drawing area and a bar `height` tall at its style's spot: jsdom lays nothing out, so both are given. */
-  function barAt(height = 60) {
-    document.body.innerHTML = '<div data-testid="app-drawing-area"></div>'
-    const box = (left: number, top: number, width: number, h: number) => ({ left, top, width, height: h, right: left + width, bottom: top + h, x: left, y: top, toJSON: () => ({}) })
-    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-      return this.dataset.testid === 'app-drawing-area' ? box(0, 0, 400, 300) : box(parseFloat(this.style.left) || 0, parseFloat(this.style.top) || 0, 44, height)
-    })
-  }
-  const origin = { left: 10, top: 20, width: 10, height: 10 }
-  const mountPlaced = async (frameAnchor = { ...anchor, origin }) => {
-    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1024px)': true }).matchMedia)
-    const wrapper = mount(FrameBar, { props: { project: framed(), anchor: frameAnchor, fromPencil: true }, attachTo: document.body })
+  it('opens without a field focused, so a tablet\'s keyboard stays down (ticket 510)', async () => {
+    const wrapper = mountBar()
     await flushPromises()
-    return wrapper
-  }
-  const spotOf = (wrapper: Awaited<ReturnType<typeof mountPlaced>>) => {
-    const style = wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style
-    return [style.left, style.top]
-  }
-
-  it('is placed once below the Frame, clear of its handles (ticket 500)', async () => {
-    barAt()
-    expect(spotOf(await mountPlaced())).toEqual(['178px', '195px'])
+    expect(document.activeElement?.tagName).not.toBe('INPUT')
+    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(true)
   })
 
-  it('goes above the Frame with no room below, then to its right (ticket 500)', async () => {
-    barAt()
-    const low = { box: { left: 150, top: 200, width: 100, height: 60 }, viewport: anchor.viewport, origin }
-    expect(spotOf(await mountPlaced(low))).toEqual(['178px', '105px'])
-    document.body.innerHTML = ''
-    barAt(250)
-    const tall = { box: { left: 20, top: 100, width: 100, height: 60 }, viewport: anchor.viewport, origin }
-    expect(spotOf(await mountPlaced(tall))).toEqual(['155px', '8px'])
-  })
-
-  it('stays put while the Frame is stepped or resized, and follows pan and zoom, kept inside the canvas box (ticket 500)', async () => {
-    barAt()
-    const wrapper = await mountPlaced()
-    await wrapper.setProps({ anchor: { ...anchor, box: { left: 120, top: 80, width: 160, height: 120 }, origin } })
+  it('closes on a press outside, the Frame\'s handles included (tickets 475, 510)', async () => {
+    document.body.insertAdjacentHTML('beforeend', '<button id="outside"></button>')
+    const wrapper = mountBar()
     await flushPromises()
-    expect(spotOf(wrapper)).toEqual(['178px', '195px'])
-
-    await wrapper.setProps({ anchor: { ...anchor, origin: { ...origin, left: -10, top: 10 } } })
-    await flushPromises()
-    expect(spotOf(wrapper)).toEqual(['158px', '185px'])
-
-    await wrapper.setProps({ anchor: { ...anchor, origin: { ...origin, left: 400, top: 10 } } })
-    await flushPromises()
-    expect(spotOf(wrapper)).toEqual(['348px', '185px'])
-  })
-
-  it('overlaps where it hides least when no side has room, and is not placed again while open (ticket 500)', async () => {
-    barAt(280)
-    const wrapper = await mountPlaced({ box: { left: 20, top: 10, width: 360, height: 280 }, viewport: anchor.viewport, origin })
-    const [left, top] = spotOf(wrapper)
-    expect(parseFloat(left)).toBeGreaterThanOrEqual(8)
-    expect(parseFloat(top)).toBe(10)
-    await wrapper.setProps({ anchor: { ...anchor, origin } })
-    await flushPromises()
-    expect(spotOf(wrapper)).toEqual([left, top])
-  })
-
-  it('closes on a press outside, but not on one that grabs the Frame, nor on the Move handle (ticket 475)', async () => {
-    document.body.insertAdjacentHTML('beforeend', '<button id="outside"></button><div data-testid="frame-chrome"><button id="handle"></button></div>')
-    let grabs = true
-    const wrapper = mount(FrameBar, { props: { project: framed(), grabsFrame: () => grabs }, attachTo: document.body })
-    await flushPromises()
-    const press = (id: string) => document.getElementById(id)!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true }))
-    ;(wrapper.get('[data-testid="frame-bar-width"]').element as HTMLInputElement).focus()
-    // A kept press moves focus out of the panel without closing it.
-    press('outside')
-    document.getElementById('outside')!.focus()
-    press('handle')
-    expect(wrapper.emitted('close')).toBeUndefined()
-    grabs = false
-    press('handle')
-    expect(wrapper.emitted('close')).toBeUndefined()
-    press('outside')
+    document.getElementById('outside')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true }))
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 })

@@ -358,7 +358,7 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
 
 // Tests read what was drawn from the layout the surface built.
-defineExpose({ rulerLayout: rulers, pressMoveHandle, grabsFrame })
+defineExpose({ rulerLayout: rulers, pressMoveHandle })
 
 /** Animation frames asked for and not yet run, so they can be cancelled with the surface. */
 const pendingFrames = new Set<number>()
@@ -793,12 +793,6 @@ function framePress(event: PointerEvent, touch = touchInput.value): FramePress |
   if (!props.settingFrame) return undefined
   const target = framePressAt(props.project.frame, surface.value, props.project.rotation, point, touch)
   return target.kind === 'handle' ? target : undefined
-}
-
-/** Whether a press on the surface would grab a resize handle, so the open Frame bar lets it through (ticket 475). */
-function grabsFrame(event: PointerEvent): boolean {
-  if (!(event.target instanceof Node) || !rootEl.value?.contains(event.target)) return false
-  return framePress(event, event.pointerType === 'touch') !== undefined
 }
 
 /** While a Frame is dragged with the pointer at the edge, the view scrolls toward it each frame and the drag follows
