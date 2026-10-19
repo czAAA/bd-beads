@@ -50,7 +50,7 @@ export function thumbnailPixels(project: Pick<Project, 'frame' | 'beads' | 'rota
             return [shownRow, shownColumn]
         }
       })()
-      const hex = colorAt(project.beads, frame.row + row, frame.column + column)
+      const hex = project.frame ? colorAt(project.frame.beads, row, column) : colorAt(project.beads, frame.row + row, frame.column + column)
       if (!hex) continue
       if (!colors.has(hex)) colors.set(hex, rgb(hex))
       const color = colors.get(hex)

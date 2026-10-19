@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, paintCells } from '../domain/project'
+import { createProject } from '../domain/project'
+import { paintAt } from '../testUtils/layers'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
 import { headerMaker, printText } from './printText'
@@ -10,7 +11,7 @@ const noMirror = { columns: 0, rows: 0 }
 function delicaProject(painted: number) {
   const base = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', name: 'Logo panel', size: { width: 80, height: 60, unit: 'beads' } })
   const cells = Array.from({ length: painted }, (_, index) => ({ row: Math.floor(index / 80), column: index % 80 }))
-  return paintCells(base, cells, '#e63746', noMirror)
+  return paintAt(base, cells, '#e63746', noMirror)
 }
 
 describe('printText (tickets 162, 164)', () => {

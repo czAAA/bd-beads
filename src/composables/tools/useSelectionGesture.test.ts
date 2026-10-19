@@ -3,7 +3,8 @@ import { editHarness } from '../../testUtils/editHarness'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
-import { createProject, frameGrid, paintCells, withFrame, type Project } from '../../domain/project'
+import { createProject, frameGrid, withFrame, type Project } from '../../domain/project'
+import { paintAt } from '../../testUtils/layers'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -14,7 +15,7 @@ function makeProject(): Project {
 }
 
 function paintedProject(): Project {
-  return paintCells(makeProject(), [{ row: 0, column: 0 }], RED, NO_MIRROR_AXES)
+  return paintAt(makeProject(), [{ row: 0, column: 0 }], RED, NO_MIRROR_AXES)
 }
 
 function setup(
@@ -415,7 +416,7 @@ describe('useSelectionGesture', () => {
 
   describe('deleteSelection', () => {
     it('clears the selected cells as one commit, leaving the Selection in place', () => {
-      const project = paintCells(makeProject(), [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
+      const project = paintAt(makeProject(), [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
       const { gesture, commitGridChange, harness } = setup(project)
       gesture.beginPress(0, 0)
       gesture.extendPress(1, 1)
@@ -469,7 +470,7 @@ describe('useSelectionGesture', () => {
     /** Two Pieces: a pair at the top left and a lone bead at (3, 3), on a 4 x 4 loom. */
     function twoPieces() {
       let project = makeProject()
-      project = paintCells(project, [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
+      project = paintAt(project, [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
       return setup(project)
     }
 
@@ -503,7 +504,8 @@ describe('useSelectionGesture', () => {
 
     it('Select all selects the rectangle round every bead without a Frame, and does nothing on an empty canvas', () => {
       const { gesture, harness } = twoPieces()
-      harness.replaceProject(withFrame(harness.currentProject()!, undefined))
+      const framed = harness.currentProject()!
+      harness.replaceProject({ ...framed, beads: framed.frame!.beads, frame: undefined })
       expect(gesture.selectAll()).toBe(true)
       expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 4, columns: 4 })
 
@@ -548,8 +550,9 @@ describe('useSelectionGesture', () => {
     })
 
     it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue', () => {
-      const beads = [{ row: 11, column: 11 }, { row: 11, column: 12 }, { row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
-      const { gesture } = setup(paintCells(withFrame(makeProject(), frame), beads, RED, NO_MIRROR_AXES))
+      const inFrame = [{ row: 11, column: 11 }, { row: 11, column: 12 }]
+      const onCanvas = [{ row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
+      const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame), inFrame, RED, NO_MIRROR_AXES), onCanvas, RED, NO_MIRROR_AXES))
       gesture.tapPiece(11, 11)
       expect(gesture.selection.value).toEqual({ top: 11, left: 11, rows: 1, columns: 2 })
       gesture.tapPiece(2, 2)
@@ -565,7 +568,7 @@ describe('useSelectionGesture', () => {
     const frame = { row: 10, column: 10, rows: 4, columns: 6 }
     const legacy = () => {
       const project = withFrame(makeProject(), frame)
-      return setup({ ...project, beads: { 8: { 11: RED }, 11: { 11: RED } } })
+      return setup({ ...project, beads: { 8: { 11: RED } }, frame: { ...project.frame!, beads: { 1: { 1: RED } } } })
     }
 
     it('no path can select a margin bead: drag, key and Piece tap all keep out', () => {
@@ -577,24 +580,24 @@ describe('useSelectionGesture', () => {
       expect(gesture.selection.value).toBeUndefined()
     })
 
-    it('a drag from outside across the whole Frame and its margin selects them, and Copy takes the beads, margin ones too', () => {
+    it('a drag from outside across the whole Frame and its margin selects them, and Copy takes the Canvas beads of its layer, margin ones too', () => {
       const { gesture, harness } = legacy()
       gesture.beginPress(2, 2)
       expect(gesture.extendPress(30, 30)).toBe(true)
       gesture.endPress()
       expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 29, columns: 29 })
       expect(gesture.copy()).toBe(true)
-      expect(gesture.pastePreviewCells(harness.currentProject()!, { row: 40, column: 40 })).toHaveLength(2)
+      expect(gesture.pastePreviewCells(harness.currentProject()!, { row: 40, column: 40 })).toHaveLength(1)
     })
 
-    it('Cut on a Selection round the whole Frame and its margin empties the margin bead too', () => {
+    it('Cut on a Selection that begins on the Canvas and goes round the whole Frame and its margin empties the margin bead too, and leaves the Frame', () => {
       const { gesture, harness } = legacy()
       gesture.beginPress(2, 2)
       gesture.extendPress(30, 30)
       gesture.endPress()
       gesture.cut()
       expect(harness.currentProject()!.beads[8]?.[11]).toBeUndefined()
-      expect(harness.currentProject()!.beads[11]?.[11]).toBeUndefined()
+      expect(harness.currentProject()!.frame!.beads[1]?.[1]).toBe(RED)
     })
 
     it('Cut and Clear selection leave a margin bead alone, while Erase still clears it', () => {
@@ -602,7 +605,7 @@ describe('useSelectionGesture', () => {
       gesture.selectAll()
       gesture.cut()
       expect(harness.currentProject()!.beads[8]?.[11]).toBe(RED)
-      expect(harness.currentProject()!.beads[11]?.[11]).toBeUndefined()
+      expect(harness.currentProject()!.frame!.beads[1]?.[1]).toBeUndefined()
     })
   })
 

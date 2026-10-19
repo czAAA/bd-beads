@@ -1,9 +1,9 @@
-import { colorAt, forEachBead, frameContains, withColors, type BeadChange, type Frame } from './canvas'
+import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { snapRow } from './frame'
-import { MARGIN, withMargin } from './margin'
+import { layerView, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
 import type { Project } from './project'
-import { selectionFrame, type Selection } from './selection'
+import { selectionFrame, selectionInLayer, selectionLayer, type Selection } from './selection'
 import { describeWeave } from './weave'
 
 // Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection's beads about its centre. Unlike the legacy
@@ -18,7 +18,7 @@ export interface RotatedSelection {
 
 /** The Selection turned a quarter about its centre: rows and columns swap, and on stitches whose rows alternate it
  * starts on a multiple of the shift's cycle. `inset` is how far inside the Selection the row that must land on one
- * begins: the margin, for the Frame inside Rotate Frame's area (ticket 477). */
+ * begins (ticket 477). */
 export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
@@ -73,6 +73,28 @@ export function rotateSelection(project: Project, selection: Selection, inset = 
   return { project: named, selection: turned }
 }
 
+/** A Selection turned on its layer (ADR 0066): the Canvas's as `rotateSelection` does it; the Frame's within the Frame,
+ * where what falls outside it is dropped. `covered` is how many beads of the layer outside the Selection it replaced. */
+export function rotateLayerSelection(project: Project, selection: Selection): RotatedSelection & { covered: number } {
+  const layer = selectionLayer(project, selection)
+  const local = selectionInLayer(project, layer, selection)
+  const before = layerView(project, layer)
+  let turned = local
+  const rotated = onLayer(project, layer, (view) => {
+    const result = rotateSelection(view, local)
+    turned = result.selection
+    // A Frame holds only its own cells.
+    return view.frame ? { ...result.project, beads: shiftedBeads(result.project.beads, 0, 0, view.frame) } : result.project
+  })
+  const after = layerView(rotated, layer)
+  const origin = positionOnCanvas(project, layer, { row: turned.top, column: turned.left })
+  return {
+    project: rotated,
+    selection: { ...turned, top: origin.row, left: origin.column },
+    covered: rotated === project ? 0 : coveredByRotation(before, after, local, turned),
+  }
+}
+
 /** How many beads outside the Selection the turn replaced: under the turned footprint, outside the old rectangle,
  * gone from `after`. */
 export function coveredByRotation(before: Project, after: Project, selection: Selection, turned: Selection): number {
@@ -87,25 +109,24 @@ export function coveredByRotation(before: Project, after: Project, selection: Se
   return covered
 }
 
-/** The Selection Rotate Frame turns: the Frame and its keep-out margin, the rectangle `selectionAllowed` takes. */
-export function frameAreaSelection(frame: Frame): Selection {
-  const area = withMargin(frame)
-  return { top: area.row, left: area.column, rows: area.rows, columns: area.columns }
-}
-
-/**
- * Rotate Frame (ticket 471, ADR 0063): the Frame, its margin and the beads inside turned a quarter clockwise about their
- * centre, as Rotate does a Selection; Width and Height swap, outside beads stay unless covered. No Frame: undefined. */
+/** Rotate Frame (ticket 471, ADR 0063, 0066): the Frame and its own beads turned a quarter clockwise about their centre,
+ * as Rotate does a Selection; Width and Height swap. The Canvas under it is not touched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
-  if (!project.frame || !describeWeave(project).quarterTurn) {
+  const frame = project.frame
+  if (!frame || !describeWeave(project).quarterTurn) {
     return undefined
   }
-  const turned = rotateSelection(project, frameAreaSelection(project.frame), MARGIN)
-  const frame: Frame = {
-    row: turned.selection.top + MARGIN,
-    column: turned.selection.left + MARGIN,
-    rows: turned.selection.rows - 2 * MARGIN,
-    columns: turned.selection.columns - 2 * MARGIN,
+  const turned = rotatedSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns })
+  const beads: BeadMap = {}
+  forEachBead(frame.beads, (row, column, color) => {
+    // A bead at row r, column c lands on row c and column (rows - 1 - r) of the turned Frame.
+    const to = { row: column, column: frame.rows - 1 - row }
+    beads[to.row] ??= {}
+    beads[to.row]![to.column] = color
+  })
+  return {
+    ...project,
+    frame: { ...frame, row: turned.top, column: turned.left, rows: turned.rows, columns: turned.columns, beads },
+    updatedAt: Date.now(),
   }
-  return { ...turned.project, frame }
 }

@@ -3,13 +3,13 @@ import { describe, expect, it } from 'vitest'
 import { beadsFromColors, forEachBead, withColors, type BeadMap } from './canvas'
 import { namedPieces, withPieceName } from './pieceNames'
 import { createProject, type Project } from './project'
-import { coveredByRotation, rotateFrame, rotateSelection, rotatedSelection } from './rotate'
+import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, rotatedSelection } from './rotate'
 import type { Selection } from './selection'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
 function withBeads(beads: BeadMap, extra: Partial<Project> = {}): Project {
-  return { ...base, beads, frame: { row: 0, column: 0, rows: 40, columns: 40 }, ...extra }
+  return { ...base, beads, frame: { row: 0, column: 0, rows: 40, columns: 40, beads: {} }, ...extra }
 }
 
 /** A 2 x 3 Selection at (10, 10) holding:  A B C / D . F  */
@@ -116,53 +116,84 @@ describe('coveredByRotation', () => {
   })
 })
 
-describe('rotateFrame (ticket 471)', () => {
-  const frame = { row: 20, column: 20, rows: 4, columns: 6 }
-  const framed = (beads: BeadMap, extra: Partial<Project> = {}): Project => withBeads(beads, { frame, ...extra })
+describe('rotateLayerSelection (ADR 0066)', () => {
+  const frame = { row: 10, column: 10, rows: 3, columns: 3 }
+  const inFrame = (beads: BeadMap, extra: Partial<Project> = {}): Project => ({ ...base, beads: {}, frame: { ...frame, beads }, ...extra })
 
-  it('turns the Frame with its margin about their centre, swapping Width and Height, and the beads inside with it', () => {
-    const project = framed(withColors({}, [{ row: 20, column: 20, color: '#aa0000' }, { row: 23, column: 25, color: '#bb0000' }]))
+  it('turns the Canvas\'s beads for a Selection on the Canvas, in Canvas positions', () => {
+    const project = withBeads(SELECTION_BEADS, { frame: undefined })
+    const result = rotateLayerSelection(project, SELECTION)
+    expect(result.selection).toEqual({ top: 10, left: 11, rows: 3, columns: 2 })
+    expect(positionsOf(result.project.beads)).toEqual(positionsOf(rotateSelection(project, SELECTION).project.beads))
+  })
+
+  it('turns the Frame\'s own beads for a Selection that begins in the Frame, and answers in Canvas positions', () => {
+    const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', null], [null, null, null]]), { beads: withColors({}, [{ row: 11, column: 11, color: '#999999' }]) })
+    const result = rotateLayerSelection(project, { top: 10, left: 10, rows: 2, columns: 2 })
+    expect(result.selection).toEqual({ top: 10, left: 10, rows: 2, columns: 2 })
+    expect(positionsOf(result.project.frame!.beads)).toEqual(['0,1:#aa0000', '1,1:#bb0000'])
+    expect(result.project.beads).toEqual(project.beads)
+  })
+
+  it('drops what the turn would put outside the Frame', () => {
+    const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', '#cc0000']]))
+    // A 1 x 3 row turned upright would stand 3 rows tall from row -1 to 1 about the Selection\'s middle, partly above the Frame.
+    const result = rotateLayerSelection(project, { top: 10, left: 10, rows: 1, columns: 3 })
+    expect(positionsOf(result.project.frame!.beads).every((entry) => Number(entry.split(',')[0]) >= 0)).toBe(true)
+    expect(positionsOf(result.project.frame!.beads)).toHaveLength(2)
+  })
+
+  it('counts the layer\'s beads outside the Selection that the turn replaced', () => {
+    const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', null], ['#dd0000', '#ee0000', null], [null, '#123456', null]]))
+    expect(rotateLayerSelection(project, { top: 10, left: 10, rows: 1, columns: 2 }).covered).toBe(1)
+  })
+})
+
+describe('rotateFrame (ticket 471, ADR 0066)', () => {
+  const frame = { row: 20, column: 20, rows: 4, columns: 6 }
+  const framed = (beads: BeadMap, extra: Partial<Project> = {}): Project => ({ ...base, beads: {}, frame: { ...frame, beads }, ...extra })
+
+  it('turns the Frame about its centre, swapping Width and Height, and its own beads with it', () => {
+    const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 3, column: 5, color: '#bb0000' }]))
     const turned = rotateFrame(project)!
 
-    // The 16 x 18 area at (14, 14) turns to 18 x 16 at (13, 15): the Frame is 6 rows by 4 columns at (19, 21).
-    expect(turned.frame).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
-    expect(positionsOf(turned.beads)).toEqual(['19,24:#aa0000', '24,21:#bb0000'])
+    // The 4 x 6 Frame at (20, 20) turns to 6 x 4 at (19, 21); its first bead goes to the top right, its last to the bottom left.
+    expect(turned.frame).toMatchObject({ row: 19, column: 21, rows: 6, columns: 4 })
+    expect(positionsOf(turned.frame!.beads)).toEqual(['0,3:#aa0000', '5,0:#bb0000'])
   })
 
   it('comes back after four turns', () => {
-    const project = framed(withColors({}, [{ row: 21, column: 22, color: '#aa0000' }]))
+    const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]))
     let turned = project
     for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
     expect(turned.frame).toEqual(project.frame)
-    expect(turned.beads).toEqual(project.beads)
   })
 
-  it('turns the beads in the margin with the Frame, and leaves a Piece outside the area where it is', () => {
-    const project = framed(withColors({}, [{ row: 16, column: 22, color: '#aa0000' }, { row: 2, column: 2, color: '#bb0000' }]))
-    expect(positionsOf(rotateFrame(project)!.beads)).toEqual(['2,2:#bb0000', '21,28:#aa0000'])
+  it('leaves the Canvas where it is, and keeps the Frame\'s name', () => {
+    const canvas = withColors({}, [{ row: 21, column: 22, color: '#999999' }])
+    const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]), { beads: canvas })
+    const named = { ...project, frame: { ...project.frame!, name: 'Leaf' } }
+    const turned = rotateFrame(named)!
+    expect(turned.beads).toBe(canvas)
+    expect(turned.frame!.name).toBe('Leaf')
   })
 
-  it('carries a Piece name with its beads', () => {
-    const named = withPieceName(framed(withColors({}, [{ row: 21, column: 22, color: '#aa0000' }])), { row: 21, column: 22 }, 'Leaf')
-    expect(namedPieces(rotateFrame(named)!).map((piece) => piece.name)).toEqual(['Leaf'])
-  })
-
-  it('starts the turned Frame on an even row on peyote, the whole area moving with it', () => {
+  it('starts the turned Frame on an even row on peyote', () => {
     // A 5 x 4 Frame at (20, 20): its turned top row falls on an odd row, so it snaps to the even row above.
-    const peyote = withBeads(withColors({}, [{ row: 20, column: 20, color: '#aa0000' }]), { technique: 'peyote', frame: { row: 20, column: 20, rows: 5, columns: 4 } })
+    const peyote = { ...framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }])), technique: 'peyote' as const, frame: { row: 20, column: 20, rows: 5, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
     const turned = rotateFrame(peyote)!
     expect(turned.frame!.row % 2).toBe(0)
     expect(turned.frame).toMatchObject({ rows: 4, columns: 5 })
-    expect(positionsOf(turned.beads)).toHaveLength(1)
+    expect(positionsOf(turned.frame!.beads)).toHaveLength(1)
   })
 
   it('starts the turned Frame on a multiple of 2N rows on brick stitch with a Brick block of N (ticket 477)', () => {
     for (const brickBlock of [2, 3, 5]) {
-      const brick = withBeads(withColors({}, [{ row: 30, column: 20, color: '#aa0000' }]), { technique: 'brick', brickBlock, frame: { row: 30, column: 20, rows: 7, columns: 4 } })
+      const brick = { ...base, technique: 'brick' as const, brickBlock, beads: {}, frame: { row: 30, column: 20, rows: 7, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
       const turned = rotateFrame(brick)!
       expect(turned.frame!.row % (2 * brickBlock)).toBe(0)
       expect(turned.frame).toMatchObject({ rows: 4, columns: 7 })
-      expect(positionsOf(turned.beads)).toHaveLength(1)
+      expect(positionsOf(turned.frame!.beads)).toHaveLength(1)
     }
   })
 

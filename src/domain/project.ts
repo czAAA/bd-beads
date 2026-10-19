@@ -2,17 +2,23 @@ import { beadLabel, findBead, type Bead } from './beads'
 import {
   beadBounds,
   beadsFromColors,
+  changedPositions,
   colorAt,
   colorsInFrame,
   forEachBead,
   frameContains,
   frameDimensions,
+  hasBeads,
+  shiftedBeads,
   withColors,
   type BeadChange,
   type BeadMap,
   type Frame,
+  type FrameSheet,
 } from './canvas'
 import { sameFrame, snapRow } from './frame'
+import { frameLayer } from './layers'
+import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
 import { MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type Technique } from './weave'
 import { normalizeMakerName } from './makerName'
@@ -59,13 +65,10 @@ export interface Project {
   /** What is painted on the Canvas, by position (ADR 0026); see BeadMap. No real-world size is stored: the
    * Estimated size is worked out from the Frame (estimatedSizeMm). */
   beads: BeadMap
-  /** Beads hidden under the Frame (ticket 476, ADR 0065): a Frame move that lands on beads keeps them here, by
-   * position, instead of clearing them. Not drawn, counted or exported; they come back into `beads` when the Frame
-   * leaves their cell (see domain/coveredBeads.ts). Absent when none. */
-  coveredBeads?: BeadMap
-  /** The Frame (CONTEXT.md): which beads are the Project. Absent on a Canvas with none; an old Project gets one the
-   * size of its old grid (see normalizeProject). */
-  frame?: Frame
+  /** The Frame (CONTEXT.md, ADR 0066): a sheet of its own beads laid over the Canvas, opaque to what lies under it. Its
+   * beads are the Project: Row progress, Export and Beads needed read them alone. Absent on a Canvas with none; an old
+   * Project gets one holding the beads inside its old Frame (see normalizeProject). */
+  frame?: FrameSheet
   rowProgress: RowProgress
   /** View-only turn (tickets 28, 171): the Project shown turned this many degrees clockwise. Never a data transform:
    * for Peyote/Brick the stagger is tied to weave direction, so transposing the grid would give an unweavable
@@ -141,7 +144,7 @@ export function createProject(input: CreateProjectInput): Project {
     ...(input.brickBlock && input.brickBlock > 1 ? { brickBlock: clampBrickBlock(input.brickBlock) } : {}),
     beadId: input.beadId,
     beads: {},
-    ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows } } : {}),
+    ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {} } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
     rotation: 0,
     ...(makerName ? { makerName } : {}),
@@ -168,12 +171,14 @@ export function createProjectFromImage(input: CreateProjectFromImageInput): Proj
 
   return {
     ...project,
-    beads: beadsFromColors(
-      Array.from({ length: frame.rows }, (_row, rowIndex) =>
-        Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
+    frame: {
+      ...frame,
+      beads: beadsFromColors(
+        Array.from({ length: frame.rows }, (_row, rowIndex) =>
+          Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
+        ),
       ),
-      frame,
-    ),
+    },
   }
 }
 
@@ -211,51 +216,44 @@ export function projectDimensions(project: Pick<Project, 'frame' | 'beads'>): Gr
 }
 
 /** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the
- * Tour's check, a test's expectation). Empty with no Frame and no beads. */
+ * Tour's check, a test's expectation). With no Frame, the box round the Canvas's beads; empty with none. */
 export function frameGrid(project: Pick<Project, 'frame' | 'beads'>): Grid {
-  return colorsInFrame(project.beads, projectFrame(project)).map((row) => row.map((color) => ({ color })))
+  const beads = project.frame ? project.frame.beads : project.beads
+  const area = project.frame ? { row: 0, column: 0, rows: project.frame.rows, columns: project.frame.columns } : projectFrame(project)
+  return colorsInFrame(beads, area).map((row) => row.map((color) => ({ color })))
 }
 
-/** A dense grid of cells as beads with a Frame the size of the grid: what the Convert image preview, the Overview's
+/** A dense grid of cells as a Frame the size of the grid holding them: what the Convert image preview, the Overview's
  * pictures and a test's hand-made block of beads are drawn from. */
 export function framedGrid(grid: Grid): Pick<Project, 'beads' | 'frame'> {
   return {
-    beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))),
-    frame: { row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length },
+    beads: {},
+    frame: { row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))) },
   }
 }
 
-/** The Project with its Frame's beads replaced by a dense grid of cells whose top-left sits at the Frame's; beads
- * outside the Frame stay as they are. */
+/** The Project with its Frame's beads replaced by a dense grid of cells; a Project with no Frame takes them on the
+ * Canvas from its origin, as the beads of a Canvas whose box round them is nothing. */
 export function withFrameGrid(project: Project, grid: Grid): Project {
-  const frame = projectFrame(project)
-  const outside = withColors(
-    project.beads,
-    colorsInFrame(project.beads, frame).flatMap((cells, rowOffset) =>
-      cells.map((_color, columnOffset) => ({ row: frame.row + rowOffset, column: frame.column + columnOffset, color: null })),
-    ),
-  )
-  return {
-    ...project,
-    beads: withColors(
-      outside,
-      grid.flatMap((cells, rowOffset) =>
-        cells.map((cell, columnOffset) => ({ row: frame.row + rowOffset, column: frame.column + columnOffset, color: cell.color })),
-      ),
-    ),
-  }
+  const beads = beadsFromColors(grid.map((row) => row.map((cell) => cell.color)))
+  return project.frame ? { ...project, frame: { ...project.frame, beads } } : { ...project, beads }
 }
 
-/** The color at a position on the Canvas: a hex, or null where nothing is painted. */
-export function beadColorAt(project: Pick<Project, 'beads'>, row: number, column: number): string | null {
-  return colorAt(project.beads, row, column)
+/** The color of the bead you see at a Canvas position: the Frame's own where the Frame lies over it, else the Canvas's
+ * (ADR 0066). A hex, or null where nothing is painted. */
+export function beadColorAt(project: Pick<Project, 'beads' | 'frame'>, row: number, column: number): string | null {
+  const frame = project.frame
+  return frame && frameContains(frame, { row, column }) ? colorAt(frame.beads, row - frame.row, column - frame.column) : colorAt(project.beads, row, column)
 }
 
 /** A Project as saved before the Canvas (ADR 0026): a fixed `columns` x `rows` grid instead of beads by position and
  * a Frame. Read by normalizeProject only, which gives it a Frame the size of the grid. */
 export type GridProject = Omit<Project, 'beads' | 'frame'> & { columns: number; rows: number; grid: Grid }
 
-function isGridProject(project: Project | GridProject): project is GridProject {
+/** A Project in any shape a store or file has held it in, for normalizeProject to read. */
+export type StoredProject = Project | GridProject | VersionThreeProject
+
+function isGridProject(project: StoredProject): project is GridProject {
   return Array.isArray((project as GridProject).grid)
 }
 
@@ -285,7 +283,17 @@ function normalizeRotation(project: ProjectWithLegacyFields): Rotation {
 /** Fills in fields added after a Project was saved, re-clamps the row pointer and drops dead fields (the color-to-bead
  * override, ADR 0007; the millimetre size, ADR 0026), so a Project from storage or a file is safe whatever version
  * wrote it, and never re-saves them. */
-export function normalizeProject(project: Project | GridProject): Project {
+export function normalizeProject(stored: StoredProject): Project {
+  // A Project from before the Canvas becomes beads by position with a Frame the size of its old grid; a Project from
+  // before the Frame was a sheet of its own has its Frame's beads lifted into it (versionThree.ts, temporary).
+  const upright: Project | VersionThreeProject = isGridProject(stored)
+    ? {
+        ...stored,
+        beads: beadsFromColors(stored.grid.map((row) => row.map((cell) => cell.color))),
+        frame: { row: 0, column: 0, columns: stored.columns, rows: stored.rows },
+      }
+    : stored
+  const project: Project = isVersionThree(upright) ? liftVersionThree(upright) : upright
   const rowProgress: Partial<RowProgress> & { currentRow: number } = project.rowProgress ?? { currentRow: 0 }
   const legacy = project as ProjectWithLegacyFields
   const {
@@ -299,13 +307,7 @@ export function normalizeProject(project: Project | GridProject): Project {
     ...rest
   } = legacy
 
-  // A Project saved before the Canvas becomes beads by position with a Frame the size of its old grid.
-  const placed = isGridProject(project)
-    ? {
-        beads: beadsFromColors(project.grid.map((row) => row.map((cell) => cell.color))),
-        frame: { row: 0, column: 0, columns: project.columns, rows: project.rows },
-      }
-    : { beads: project.beads ?? {}, ...(project.frame ? { frame: project.frame } : {}) }
+  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...project.frame, beads: project.frame.beads ?? {} } } : {}) }
   const frame = projectFrame(placed)
   const technique = project.technique
 
@@ -329,19 +331,28 @@ export function normalizeProject(project: Project | GridProject): Project {
   }
 }
 
-/** The Project with its Frame set, moved, resized or removed (ADR 0026). No bead changes. Row progress's pointers
- * stay inside the new Frame; an unchanged Frame returns the Project itself, so a gesture ending where it began is
- * no change. */
-export function withFrame(project: Project, frame: Frame | undefined): Project {
-  if (sameFrame(project.frame, frame)) {
+/** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
+ * place on the Canvas, those outside a smaller Frame are dropped, the Canvas is never touched, and a Frame set anew is
+ * empty. Row progress's pointers stay inside it; an unchanged Frame is the same Project (no change). */
+export function withFrame(project: Project, rectangle: Frame | undefined): Project {
+  if (sameFrame(project.frame, rectangle)) {
     return project
   }
-  const { frame: _previous, ...rest } = project
+  const { frame: current, ...rest } = project
   // With the Frame gone the passes are gone too (ticket 426).
-  const rowProgress = frame
-    ? clampPointer(project.rowProgress, frame, project.technique)
-    : { ...project.rowProgress, currentRow: 0, currentColumn: 0 }
-  return { ...rest, ...(frame ? { frame } : {}), rowProgress, updatedAt: Date.now() }
+  if (!rectangle) {
+    return { ...rest, rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 }, updatedAt: Date.now() }
+  }
+  const { row, column, rows, columns } = rectangle
+  const frame: FrameSheet = {
+    row,
+    column,
+    rows,
+    columns,
+    beads: current ? shiftedBeads(current.beads, current.row - row, current.column - column, { rows, columns }) : {},
+    ...(current?.name ? { name: current.name } : {}),
+  }
+  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame, project.technique), updatedAt: Date.now() }
 }
 
 /** The Project woven in another Technique (ticket 351): grid, Bead and cells stay, only geometry changes. Offset
@@ -373,7 +384,9 @@ function withWeave(project: Project, change: Partial<Pick<Project, 'technique' |
   if (!frame || top === frame.row) {
     return touch(project, change)
   }
-  return touch(project, { ...change, frame: { ...frame, row: top, rows: frame.rows + frame.row - top } })
+  // The Frame grows upwards, and its beads stay where they are on the Canvas: counted from its new first row.
+  const grown = frame.row - top
+  return touch(project, { ...change, frame: { ...frame, row: top, rows: frame.rows + grown, beads: shiftedBeads(frame.beads, grown, 0) } })
 }
 
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
@@ -446,36 +459,41 @@ export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 
     : passOf(project.technique, relativeColumn, relativeRow) === currentColumn
 }
 
-/** Every position whose color differs between two bead maps; a row both share is passed over unread. */
-export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[] {
-  const changed: GridPosition[] = []
-  const rows = new Set([...Object.keys(before), ...Object.keys(after)])
-  for (const key of rows) {
-    const row = Number(key)
-    const was = before[row]
-    const now = after[row]
-    if (was === now) {
-      continue
-    }
-    const columns = new Set([...Object.keys(was ?? {}), ...Object.keys(now ?? {})])
-    for (const columnKey of columns) {
-      const column = Number(columnKey)
-      if (was?.[column] !== now?.[column]) {
-        changed.push({ row, column })
-      }
-    }
-  }
-  return changed.sort((a, b) => a.row - b.row || a.column - b.column)
+/** Whether the Project has a bead on either layer. */
+export function hasProjectBeads(project: Pick<Project, 'beads' | 'frame'>): boolean {
+  return hasBeads(project.beads) || (project.frame !== undefined && hasBeads(project.frame.beads))
 }
 
-/** Takes back what a drawing command did to finished rows (ticket 33): those beads are already woven. Nothing left to
- * change returns `before` itself, the drawing commands' "unchanged" signal, so no undo step is recorded. */
+/** Every color on either layer, each once, in the order the layers hold them. */
+export function projectColors(project: Pick<Project, 'beads' | 'frame'>): string[] {
+  const colors = new Set<string>()
+  for (const beads of [project.beads, project.frame?.beads ?? {}]) {
+    forEachBead(beads, (_row, _column, color) => colors.add(color))
+  }
+  return [...colors]
+}
+
+/** Whether two states of a Project hold the same beads on both layers (ADR 0066). A layer neither touched costs
+ * nothing: its maps are the same object. */
+export function sameBeads(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project, 'beads' | 'frame'>): boolean {
+  const same = (x: BeadMap | undefined, y: BeadMap | undefined) => x === y || changedPositions(x ?? {}, y ?? {}).length === 0
+  return same(a.beads, b.beads) && same(a.frame?.beads, b.frame?.beads)
+}
+
+/** Takes back what a drawing command did to finished rows (ticket 33): those beads are already woven, and they are the
+ * Frame's, since the Canvas has no rows to finish (ADR 0066). Nothing left to change returns `before` itself, the
+ * drawing commands' "unchanged" signal, so no undo step is recorded. */
 export function keepFinishedRows(before: Project, after: Project): Project {
-  const reverts: BeadChange[] = changedPositions(before.beads, after.beads)
-    .filter((position) => isInFinishedRow(before, position))
-    .map(({ row, column }) => ({ row, column, color: colorAt(before.beads, row, column) }))
-  const beads = withColors(after.beads, reverts)
-  return changedPositions(before.beads, beads).length > 0 ? { ...after, beads } : before
+  const frame = before.frame
+  if (!frame || !after.frame || after.frame.beads === frame.beads) {
+    return sameBeads(before, after) ? before : after
+  }
+  const own = frameLayer(before)
+  const reverts: BeadChange[] = changedPositions(frame.beads, after.frame.beads)
+    .filter((position) => isInFinishedRow(own, position))
+    .map(({ row, column }) => ({ row, column, color: colorAt(frame.beads, row, column) }))
+  const kept = reverts.length === 0 ? after : { ...after, frame: { ...after.frame, beads: withColors(after.frame.beads, reverts) } }
+  return sameBeads(before, kept) ? before : kept
 }
 
 /** Points row progress at the given row in its current direction, clamped to the Project — used to advance a
@@ -498,11 +516,10 @@ export function restoreBeads(project: Project, beads: BeadMap): Project {
  * restoreSnapshot leaves applying them to the caller. All immutable, sharing structure. */
 export interface UndoEntry {
   beads: BeadMap
-  /** The beads hidden under the Frame as they were (ticket 476). */
-  coveredBeads?: BeadMap
   rowProgress: RowProgress
   beadId: string
-  frame: Frame | undefined
+  /** The Frame with its own beads, as they were (ADR 0066). */
+  frame: FrameSheet | undefined
   /** The Piece names as they were, so Undo and Redo of a naming or of a merge or split restore them (ticket 406). */
   pieceNames?: PieceName[]
   /** The Technique the entry was taken in, so Undo undoes a change of Technique (ticket 351). */
@@ -514,15 +531,14 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
 export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, coveredBeads: project.coveredBeads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, mirrorAxisCounts }
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, mirrorAxisCounts }
 }
 
 /** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, coveredBeads: _covered, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
-    ...(entry.coveredBeads ? { coveredBeads: entry.coveredBeads } : {}),
     rowProgress: entry.rowProgress,
     beadId: entry.beadId,
     frame: entry.frame,
@@ -546,14 +562,15 @@ function isInitialRowProgress(rowProgress: RowProgress): boolean {
  * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
  * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
-  if (Object.keys(project.beads).length === 0 && !project.coveredBeads && isInitialRowProgress(project.rowProgress)) {
+  if (!hasProjectBeads(project) && isInitialRowProgress(project.rowProgress)) {
     return project
   }
 
   // No bead is left, so no Piece is: a name would only wait for a bead painted at its anchor (ticket 406).
-  const { pieceNames: _names, coveredBeads: _covered, ...rest } = project
+  const { pieceNames: _names, ...rest } = project
   return touch(rest, {
     beads: {},
+    ...(project.frame ? { frame: { ...project.frame, beads: {} } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
 }

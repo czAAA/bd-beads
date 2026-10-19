@@ -3,7 +3,8 @@ import { editHarness } from '../../testUtils/editHarness'
 import { useMirrorState } from './useMirrorState'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { NO_MIRROR_AXES } from '../../domain/mirror'
-import { createProject, frameGrid, paintCells, type Project } from '../../domain/project'
+import { createProject, frameGrid, type Project } from '../../domain/project'
+import { paintAt } from '../../testUtils/layers'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 
@@ -103,7 +104,7 @@ describe('useMirrorState', () => {
 
     it('is what a "Mirror current" click on the hovered axis would actually change', () => {
       let project = makeProject()
-      project = paintCells(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      project = paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
       const mirror = useMirrorState(() => project, vi.fn())
 
       mirror.onHoverCurrent('horizontal')
@@ -115,7 +116,7 @@ describe('useMirrorState', () => {
 
   describe('mirrorCurrent', () => {
     it('commits as a drawing Edit, not a private copy, so Undo brings the grid back', () => {
-      const project = paintCells(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      const project = paintAt(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
       const harness = editHarness(project)
       const mirror = useMirrorState(harness.currentProject, harness.edit)
 
@@ -132,7 +133,7 @@ describe('useMirrorState', () => {
     })
 
     it('uses that direction own axis count and copy mode', () => {
-      const project = paintCells(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+      const project = paintAt(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
       const harness = editHarness(project)
       const mirror = useMirrorState(harness.currentProject, harness.edit)
       mirror.setAxisCount('columns', 1)

@@ -358,7 +358,7 @@ describe('renderProject', () => {
       for (let row = 0; row < frame.rows; row += 1) {
         beads[row] = Object.fromEntries(Array.from({ length: frame.columns }, (_, column) => [column, '#e63746']))
       }
-      return { ...project, beads }
+      return { ...project, frame: { ...frame, beads } }
     }
 
     it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
@@ -792,10 +792,51 @@ describe('the keep-out margin on the Canvas', () => {
   it('hides the overhang of the beads just outside it, which nest into its edge rows in peyote', () => {
     const frame = { row: 20, column: 20, rows: 4, columns: 4 }
     // A bead in the row just above the margin (row 13, the margin being rows 14 to 29): its bottom 5px lies inside the margin's outline.
-    const project = { ...projectOf('peyote', 4, 4), frame, beads: { 13: { 22: '#ff0000' } } }
+    const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 13: { 22: '#ff0000' } } }
 
     const cutOut = drawnWithMarginCutOut(project, [14 * 20, 14 * 15, 16 * 20 + 10, 15 * 15 + 20])
 
     expect(cutOut.get(`${22 * 20 + 10},${13 * 15}`)).toBe(true)
+  })
+})
+
+describe('the Frame over the Canvas (ADR 0066)', () => {
+  /** A 3 x 2 Frame at row 20, column 20 holding red in its first bead, over a Canvas with blue under the Frame and green beyond it. */
+  function layered(): Project {
+    const base = projectOf('loom', 3, 2)
+    return {
+      ...base,
+      frame: { row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
+      beads: { 20: { 21: '#0000ff' }, 40: { 40: '#00ff00' } },
+    }
+  }
+  const drawnOnCanvas = (project: Project): BeadShape[] => {
+    const beads: BeadShape[] = []
+    const drawBead: BeadDrawer = (_context, bead) => beads.push(bead)
+    renderProject(recordingContext().context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 2000, height: 2000 }, zoom: 1, rowMarks: false, drawBead })
+    return beads
+  }
+  const colorsAt = (beads: BeadShape[], row: number, column: number) => beads.filter((bead) => bead.x === column * 20 && bead.y === row * 20).map((bead) => bead.color)
+
+  it('draws the Frame\'s own cells at their place on the Canvas, beads and empty beads alike', () => {
+    const beads = drawnOnCanvas(layered())
+
+    expect(colorsAt(beads, 20, 20)).toEqual(['#ff0000'])
+    expect(colorsAt(beads, 21, 22)).toEqual([null])
+  })
+
+  it('does not draw the Canvas beads under the Frame, and still draws those beyond it', () => {
+    const beads = drawnOnCanvas(layered())
+
+    expect(colorsAt(beads, 20, 21)).toEqual([null])
+    expect(beads.some((bead) => bead.color === '#0000ff')).toBe(false)
+    expect(colorsAt(beads, 40, 40)).toEqual(['#00ff00'])
+  })
+
+  it('draws only the Frame\'s beads when the Project is drawn on its own, from the origin', () => {
+    const project = layered()
+    const beads = beadsDrawn(project, whole(project))
+
+    expect(beads.map((bead) => bead.color)).toEqual(['#ff0000', null, null, null, null, null])
   })
 })

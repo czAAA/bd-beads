@@ -6,6 +6,7 @@ import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
+import { shownBeads } from '../../domain/layers'
 import { selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
@@ -310,7 +311,7 @@ function wireAppShell(services: Services) {
     const project = currentProject()
     const current = selection.value
     if (!project || !current) return
-    if (selectionHoldsAllBeads(project.beads, current)) deleteAll.onRequestDeleteAll()
+    if (selectionHoldsAllBeads(shownBeads(project), current)) deleteAll.onRequestDeleteAll()
     else onEmptySelection()
   }
 
@@ -562,16 +563,8 @@ function wireAppShell(services: Services) {
     locale: currentLocale,
   })
 
-  /** Rotate Frame: the Frame, its margin and the beads inside a quarter turn, one Undo step (ticket 471, ADR 0063). */
-  const rotateFrameFlow = useRotateFrameFlow({
-    edit,
-    currentProject,
-    announce,
-    showToast,
-    onUndo,
-    messages,
-    locale: currentLocale,
-  })
+  /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0063, 0066). */
+  const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages })
 
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0063). */
   const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages })

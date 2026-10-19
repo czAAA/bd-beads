@@ -1,0 +1,58 @@
+{
+  "kind": "openbeads/project",
+  "version": 3,
+  "projects": [
+    {
+      "id": "v3-framed",
+      "name": "Framed over a sketch",
+      "technique": "loom",
+      "beadId": "toho-cube-1.5mm",
+      "rowProgress": {
+        "direction": "rows",
+        "currentRow": 1,
+        "currentColumn": 0
+      },
+      "createdAt": 1740000000000,
+      "updatedAt": 1740000001000,
+      "frame": {
+        "row": 6,
+        "column": 4,
+        "columns": 4,
+        "rows": 3
+      },
+      "rotation": 0,
+      "pieceNames": [
+        {
+          "name": "Ornament",
+          "row": 6,
+          "column": 4
+        },
+        {
+          "name": "Sketch",
+          "row": 20,
+          "column": 2
+        }
+      ],
+      "encodedBeads": {
+        "colors": [
+          "#c81e3c",
+          "#1e64c8",
+          "#1f1f1f"
+        ],
+        "rows": {
+          "6": "4:1,2,0,3",
+          "7": "5:3x2",
+          "20": "2:2x3"
+        }
+      },
+      "encodedCoveredBeads": {
+        "colors": [
+          "#c81e3c"
+        ],
+        "rows": {
+          "7": "4:1"
+        }
+      }
+    }
+  ]
+}

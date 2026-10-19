@@ -53,7 +53,7 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Frame; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number }
+export type RuledProject = { frame?: Frame & { name?: string }; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number }
 
 // The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
 // near the viewport are chosen by the caller).

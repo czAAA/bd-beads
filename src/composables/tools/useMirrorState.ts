@@ -1,8 +1,10 @@
 import { computed, ref } from 'vue'
 import type { GridPosition } from '../../domain/grid'
 import { clampAxisCount, NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
+import { onLayer } from '../../domain/layers'
 import { keepAllowedEdits } from '../../domain/margin'
-import { changedPositions, mirrorCurrent, type Project, projectDimensions } from '../../domain/project'
+import { changedPositions } from '../../domain/canvas'
+import { mirrorCurrent, type Project, projectDimensions } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
 /** Which "Mirror current" button an interaction names -- grid-space-neutral, since screen left-right/top-bottom is a
@@ -52,10 +54,17 @@ export function useMirrorState(
     }
 
     const axis = gridAxisOf(hovered)
-    const result = keepAllowedEdits(project, mirrorCurrent(project, axis, axisCounts.value[axis], copyMode.value))
+    const result = keepAllowedEdits(project, mirroredCurrent(project, axis))
+    const origin = project.frame ?? { row: 0, column: 0 }
 
-    return changedPositions(project.beads, result.beads)
+    // Mirror works on the Frame's beads, which are counted from its first row and column.
+    return changedPositions(project.frame?.beads ?? {}, result.frame?.beads ?? {}).map(({ row, column }) => ({ row: row + origin.row, column: column + origin.column }))
   })
+
+  /** "Mirror current" on the Frame, the only layer with strips to mirror (ADR 0066). */
+  function mirroredCurrent(project: Project, axis: 'columns' | 'rows'): Project {
+    return onLayer(project, 'frame', (view) => mirrorCurrent(view, axis, axisCounts.value[axis], copyMode.value))
+  }
 
   function onHoverCurrent(axis: MirrorCurrentAxis | null) {
     hoveredCurrentAxis.value = axis
@@ -83,7 +92,7 @@ export function useMirrorState(
   // does something. Commits as a drawing Edit (ticket 62).
   function mirrorCurrentAction(axis: MirrorCurrentAxis) {
     const gridAxis = gridAxisOf(axis)
-    edit('drawing', (project) => mirrorCurrent(project, gridAxis, axisCounts.value[gridAxis], copyMode.value))
+    edit('drawing', (project) => mirroredCurrent(project, gridAxis))
   }
 
   /** Restores axis counts from an Undo/Redo snapshot (SizeSnapshot.mirrorAxisCounts) -- not a Project field, so

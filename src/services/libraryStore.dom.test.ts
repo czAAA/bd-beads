@@ -139,9 +139,10 @@ describe('projectStorage', () => {
       saveProjects([makeProject()])
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
-      expect(stored.version).toBe(3)
+      expect(stored.version).toBe(4)
       expect(stored.patterns[0].grid).toBeUndefined()
       expect(stored.patterns[0].encodedBeads).toEqual({ colors: [], rows: {} })
+      expect(stored.patterns[0].frame.encodedBeads).toEqual({ colors: [], rows: {} })
     })
 
     it('reads a library saved in the old unversioned format back unchanged', () => {
@@ -160,7 +161,7 @@ describe('projectStorage', () => {
       saveProjects(loaded)
 
       expect(loaded).toEqual([legacy])
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(3)
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(4)
       expect(storedBytes()).toBeLessThan(legacyBytes / 10)
     })
 

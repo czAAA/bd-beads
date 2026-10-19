@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { withColors } from './domain/canvas'
+import { changeFrame } from './domain/changeFrame'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
@@ -53,11 +54,24 @@ async function toggleEdit(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
 }
 
 const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="project-surface"]')
-const savedFrame = () => loadProjects()[0]!.frame
+/** The rectangle of the saved Frame, its beads aside. */
+const savedFrame = () => {
+  const frame = loadProjects()[0]!.frame
+  if (!frame) return undefined
+  const { beads: _beads, name: _name, ...rectangle } = frame
+  return rectangle
+}
+const savedFrameBeads = () => loadProjects()[0]!.frame?.beads
 
-const framedProject = (): Project => ({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+/** The sketch with a Frame made round the beads in `rectangle`: they are the Frame's own (Frame from Selection). */
+const framedAround = (rectangle: { row: number; column: number; rows: number; columns: number }): Project => {
+  const made = changeFrame(unframedProject(), { make: rectangle })
+  if (made.kind !== 'changed') throw new Error('expected a Frame')
+  return made.project
+}
+const framedProject = (): Project => framedAround({ row: 2, column: 3, rows: 2, columns: 3 })
 /** A Frame big enough to step every edge in and out (ticket 473). */
-const bigFramedProject = (): Project => ({ ...unframedProject(), frame: { row: 1, column: 2, rows: 5, columns: 5 } })
+const bigFramedProject = (): Project => framedAround({ row: 1, column: 2, rows: 5, columns: 5 })
 /** Whether the Frame bar is up (ticket 473). */
 const editing = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find('[data-testid="frame-bar"]').exists()
 
@@ -280,13 +294,8 @@ describe('Fit and Remove frame, on the Progress bar and not in Project (ticket 4
 })
 
 describe('Rotate, Export and Row progress on the Frame', () => {
-  const framed = (): Project => ({
-    ...unframedProject(),
-    frame: { row: 2, column: 3, rows: 2, columns: 3 },
-  })
-
   it('turns the Selection and not the Frame, and one Undo turns it back (ticket 416)', async () => {
-    const wrapper = await mountOpen({ ...framed(), frame: { row: 0, column: 0, rows: 8, columns: 8 } })
+    const wrapper = await mountOpen(framedAround({ row: 0, column: 0, rows: 8, columns: 8 }))
     await pickTool(wrapper, 'select')
     await pressBead(wrapper, { row: 2, column: 3 }) // drag out the box round the beads (Select all would take the Frame's inside, ticket 428)
     await hoverBead(wrapper, { row: 3, column: 5 }, { buttons: 1 })
@@ -363,7 +372,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('opens with Row progress on for a saved Frame, whatever an older file stored', async () => {
-    const framed = { ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } }
+    const framed = { ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } }
     saveProjects([{ ...framed, rowProgress: { ...framed.rowProgress, enabled: false } as Project['rowProgress'] }])
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
@@ -373,7 +382,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('asks before removing the Frame even while no pass is done, and one Undo brings it back (ticket 455)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
 
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
@@ -392,7 +401,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
@@ -410,7 +419,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('asks before Remove frame throws away a done pass; one Undo brings the Frame and the progress back', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
@@ -437,7 +446,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('offers Rotate only until a pass is done: Row done hides it, Remove frame brings it back (tickets 411, 416, 426)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 0, column: 0, rows: 8, columns: 8 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 0, column: 0, rows: 8, columns: 8, beads: {} } })
     await selectAll(wrapper)
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
 
@@ -455,7 +464,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('says the new direction in a toast when D turns it, once per press', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3 } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
 
     await key({ key: 'd' })
     expect(wrapper.text()).toContain(en.rowProgress.directionToastColumns)
@@ -479,5 +488,29 @@ describe('New Project with the Frame optional', () => {
     expect(loadProjects()).toHaveLength(1)
     await openSavedProjects(wrapper)
     expect(wrapper.findAll('[data-testid="project-item"]')).toHaveLength(1)
+  })
+})
+
+describe('The Frame is its own sheet of beads (ADR 0066)', () => {
+  /** A 3 x 3 Frame at (20, 20), well clear of a Canvas sketch with a bead at (20, 40) and one at (2, 2). */
+  const sheet = (): Project => {
+    const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sheet', size: { width: 3, height: 3, unit: 'beads' } })
+    return { ...base, frame: { ...base.frame!, row: 20, column: 20 }, beads: withColors({}, [{ row: 20, column: 40, color: RED }, { row: 2, column: 2, color: RED }]) }
+  }
+
+  it('removes the Frame\'s beads with it behind a confirmation that says so, leaves the Canvas, and one Undo brings both back', async () => {
+    const wrapper = await mountOpen({ ...sheet(), frame: { ...sheet().frame!, beads: { 0: { 0: RED } } } })
+    await toggleEdit(wrapper)
+    await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
+    expect(wrapper.get('[data-testid="confirm-modal-message"]').text()).toBe(en.frame.removeConfirmMessage)
+    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+    expect(savedFrame()).toBeUndefined()
+    expect(loadProjects()[0]!.beads).toEqual(sheet().beads)
+    expect(beadColor(wrapper, { row: 20, column: 20 })).toBeNull()
+
+    await key({ key: 'z', ctrlKey: true })
+    expect(savedFrame()).toEqual({ row: 20, column: 20, rows: 3, columns: 3 })
+    expect(savedFrameBeads()).toEqual({ 0: { 0: RED } })
   })
 })

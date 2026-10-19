@@ -5,7 +5,7 @@ import type { Technique } from '../domain/weave'
 import { A4_LANDSCAPE, A4_PORTRAIT, chartArea, continuation, mm, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_BLOCK_BEADS } from './printPlan'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows } })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { row: 0, column: 0, columns, rows, beads: {} } })
 const beadMm = (zoom: number) => (CELL_SIZE_PX * zoom) / mm(1)
 
 describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
