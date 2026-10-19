@@ -87,6 +87,8 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="frame-edit-toggle"]').trigger('click')
+    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(false)
+    await wrapper.find('[data-testid="strip-frame"]').trigger('click')
     expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(true)
   })
 

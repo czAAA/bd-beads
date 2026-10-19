@@ -18,17 +18,10 @@ const props = defineProps<{
   anchor: string
   /** The Menu is a `menu` of items from 1024px; the Project panel holds fields and is a plain dialog. */
   menu?: boolean
-  /** Which edge lines up with the button; `end` hangs the panel to its left (the Frame bar from the edit pencil). */
-  align?: 'start' | 'end'
-  /** A dropdown at every width, never the Top sheet: a button on the canvas, not in the strip. */
-  dropdown?: boolean
-  /** Where the dropdown stands on the page (the Frame bar, ticket 500), instead of hanging from its button; none yet keeps it
-   * off screen while it is measured. */
-  at?: { left: number; top: number } | null
+  /** Opens without focusing a field, so a tablet's keyboard stays down (the Frame bar's size fields). */
+  skipsFields?: boolean
   /** The dropdown's width, when not `panel-width`. */
   width?: string
-  /** A press outside that still works the panel's own thing, so it goes through and the panel stays. */
-  keepsPress?: (event: PointerEvent) => boolean
   /** The first sub-view's title; a panel with a `sub` slot gives one. */
   subTitle?: string
   /** Opens already on the sub-view; Escape then closes the panel instead of going back. */
@@ -37,7 +30,7 @@ const props = defineProps<{
 const emit = defineEmits<{ close: [] }>()
 
 const wide = useMediaQuery('(min-width: 1024px)')
-const sheet = computed(() => !wide.value && !props.dropdown)
+const sheet = computed(() => !wide.value)
 const { t } = useI18n()
 /** One entry per sub-view pushed over the root, with the title it was opened with and the row that opened it (found
  * again by its test id to take focus back from Back). */
@@ -72,10 +65,10 @@ const anchorEl = ref<HTMLElement>()
 /** The buttons that open, swap or close a panel themselves, so a press on one is not a press outside. */
 const OPENERS = PANEL_OPENERS
 
-const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
+const anchored = useAnchoredPosition(anchorEl, panelEl, () => 'start')
 /** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
  * past that. */
-const placed = computed(() => (props.at === undefined ? anchored.style.value : { position: 'fixed', right: 'auto', ...(props.at ? { left: `${props.at.left}px`, top: `${props.at.top}px` } : { left: '-9999px', top: '0px' }) }))
+const placed = anchored.style
 const dropdownStyle = computed(() => ({
   ...placed.value,
   maxHeight: `calc(100dvh - ${Number.parseFloat(placed.value.top ?? '0') || 0}px - ${16}px)`,
@@ -105,13 +98,13 @@ const panelBox = computed(() => (sheet.value ? sheetBox.value : dropdownStyle.va
 function place() {
   anchorEl.value = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? undefined
   if (!sheet.value) {
-    if (props.at === undefined) anchored.follow()
+    anchored.follow()
   } else {
     anchored.stop()
     measureSheet()
   }
 }
-watch([wide, () => props.anchor, () => props.dropdown], () => void nextTick(place))
+watch([wide, () => props.anchor], () => void nextTick(place))
 watch(() => props.anchor, () => (stack.value = []))
 
 // Escape first ends an edit in progress: a cancellable field (the Project's rename) marks its form
@@ -122,25 +115,12 @@ function onEscape() {
   if (editing) editing.dispatchEvent(new CustomEvent('panel-escape'))
   else emit('close')
 }
-/** Whether the press just let through was one the panel keeps, so the focus it moves does not close it. */
-let keptPress = false
-let keptPressTimer: ReturnType<typeof setTimeout> | undefined
 useOverlayLayer({
   isOpen: () => true,
   root: () => panelEl.value,
   close: onEscape,
   // The strip's own buttons are left alone, since their click swaps or closes the panel.
   isOpener: (target) => target.closest(OPENERS) !== null,
-  keepsPress: (event) => {
-    const kept = props.keepsPress?.(event) ?? false
-    // The focus it moves (onto the canvas) comes in this same task.
-    if (kept) {
-      keptPress = true
-      clearTimeout(keptPressTimer)
-      keptPressTimer = setTimeout(() => (keptPress = false))
-    }
-    return kept
-  },
   onOutsidePress: () => {
     pressClosed.markPressClosed()
     emit('close')
@@ -156,6 +136,7 @@ function focusables(): HTMLElement[] {
 /** Focus on opening: the sub-view's first field (not its Back arrow), else the panel's first control. */
 function focusEntry() {
   const first = inSub.value ? subBodyEl.value?.querySelector<HTMLElement>(FOCUSABLE) : focusables()[0]
+  if (props.skipsFields) return void panelEl.value?.focus({ preventScroll: true })
   ;(first ?? focusables()[0] ?? panelEl.value)?.focus({ preventScroll: true })
 }
 
@@ -188,9 +169,9 @@ function onKeydown(event: KeyboardEvent) {
   list[next]?.focus({ preventScroll: true })
 }
 
-/** The Dropdown closes when focus leaves it with Tab, not with a press the panel keeps (a Frame handle on the canvas). */
+/** The Dropdown closes when focus leaves it with Tab, . */
 function onFocusOut(event: FocusEvent) {
-  if (sheet.value || keptPress) return
+  if (sheet.value) return
   const next = event.relatedTarget
   if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(OPENERS) && !next.closest('[popover]')) emit('close')
 }
@@ -232,7 +213,6 @@ onMounted(() => {
 })
 onBeforeUnmount(() => {
   window.removeEventListener('resize', measureSheet)
-  clearTimeout(keptPressTimer)
   anchored.stop()
   const target = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? opener
   // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes.
