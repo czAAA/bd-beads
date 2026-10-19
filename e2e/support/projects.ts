@@ -1,5 +1,5 @@
 import type { Rotation } from '../../src/domain/grid'
-import type { Technique } from '../../src/domain/weave'
+import { describeWeave, type Technique } from '../../src/domain/weave'
 import { PALETTE } from '../../src/domain/palette'
 import { framedGrid, type Cell, type Project, type RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'
@@ -43,6 +43,12 @@ export function fixtureProject({
   for (const { row, column, color } of override) {
     grid[row]![column] = { color }
   }
+  // A line of horizontal beads in Right-angle weave stops a column short: no bead is painted where there is none.
+  const weave = describeWeave({ technique })
+  const frame = { row: 0, column: 0, rows, columns }
+  grid.forEach((cells, row) => cells.forEach((_cell, column) => {
+    if (!weave.hasPosition({ row, column }, frame)) grid[row]![column] = { color: null }
+  }))
 
   return {
     id: `fixture-${technique}`,

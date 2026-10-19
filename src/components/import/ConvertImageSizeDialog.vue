@@ -29,7 +29,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-const { unit, unitOptions } = useSizeUnit()
+const { unit, unitOptions, countTemplate } = useSizeUnit(() => props.technique)
 
 /** What the fields hold: a number field hands back a number once it is typed into or stepped. */
 /** What the number fields ask for in each unit: whole beads from 1, or any mm above 0. */
@@ -49,13 +49,13 @@ const isStated = computed(
 )
 
 const dimensions = computed(() =>
-  isStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead) : undefined,
+  isStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead, { technique: props.technique }) : undefined,
 )
 
 /** The stated size in the other unit: "≈ 3.0 × 2.2 cm" for beads, "≈ 20×10 beads" for mm. */
 const estimate = computed(() =>
   dimensions.value
-    ? formatOtherUnit(dimensions.value, props.bead, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: t.value.form.estimateBeads }, locale.value)
+    ? formatOtherUnit(dimensions.value, props.bead, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value, props.technique)
     : undefined,
 )
 
@@ -63,6 +63,7 @@ const techniqueLabel = computed<Record<Technique, string>>(() => ({
   loom: t.value.form.techniqueLoom,
   peyote: t.value.form.techniquePeyote,
   brick: t.value.form.techniqueBrick,
+  rightAngle: t.value.form.techniqueRightAngle,
 }))
 
 const slowFramingWarning = computed(() =>

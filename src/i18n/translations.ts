@@ -24,6 +24,7 @@ export interface Translations {
     techniqueLoom: string
     techniquePeyote: string
     techniqueBrick: string
+    techniqueRightAngle: string
     brickBlockLabel: string
     brickBlockLess: string
     brickBlockMore: string
@@ -38,6 +39,7 @@ export interface Translations {
     unitLabel: string
     /** The unit a Project's size can be stated in when it is a count of beads (ADR 0026) — the default. */
     unitBeads: string
+    unitUnits: string
     unitMm: string
     unitCm: string
     /** This Project's own maker's name (ticket 182), overriding the device-wide one; blank by default. */
@@ -54,6 +56,7 @@ export interface Translations {
     or: string
     /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */
     estimateBeads: string
+    estimateUnits: string
   }
   /** Keyboard and screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
@@ -537,6 +540,7 @@ export interface Translations {
     sizeUnit: string
     widthLabel: string
     heightLabel: string
+    sizeUnitUnits: string
     fitToDrawing: string
     removeFrame: string
     /** The question before Remove frame throws away finished rows (ticket 426). */

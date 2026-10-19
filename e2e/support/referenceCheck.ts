@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Project } from '../../src/domain/project'
 import { isInCurrentRow, isInFinishedRow, projectFrame } from '../../src/domain/project'
+import { describeWeave } from '../../src/domain/weave'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
 import { LIGHT_THEME } from '../../src/rendering/beadLook'
@@ -18,7 +19,7 @@ import { type Region } from '../../src/rendering/surfaceView'
 // Share of blocks that may differ before the look counts as different: loom 2.5%, brick stitch 3.6%, peyote 5.5%
 // (anti-aliased rounded corners). A 2 px rim instead of 1 moves loom and brick by 4-8% at 100% and 300%, so it shows;
 // not in peyote or at 50%: the content check holds there.
-export const MAX_DIFFERING_BLOCKS = { loom: 0.03, brick: 0.04, peyote: 0.06 }
+export const MAX_DIFFERING_BLOCKS = { loom: 0.03, brick: 0.04, peyote: 0.06, rightAngle: 0.06 }
 const BLOCK_TOLERANCE = 48
 /** How far a bead's centre pixel may be from its expected color, per channel. */
 const CENTRE_TOLERANCE = 10
@@ -69,7 +70,7 @@ export function wrongBeads(
   const wrong: string[] = []
   for (let row = 0; row < project.frame!.rows; row += 1) {
     for (let column = 0; column < project.frame!.columns; column += 1) {
-      if (ignore.has(`(${row}, ${column})`)) {
+      if (ignore.has(`(${row}, ${column})`) || !describeWeave(project).hasPosition({ row, column }, project.frame)) {
         continue
       }
       const centre = beadCentre(project, box, zoom, { row, column })
