@@ -369,6 +369,12 @@ export const be: Translations = {
     copyButton: 'Капіраваць',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: 'У вылучэнні няма пацерак для капіравання.',
+    pasteClippedMessage: {
+      one: '{count} пацерка не змясцілася ў рамку.',
+      few: '{count} пацеркі не змясціліся ў рамку.',
+      many: '{count} пацерак не змясцілася ў рамку.',
+      other: '{count} пацеркі не змясціліся ў рамку.',
+    },
     cutButton: 'Выразаць',
     saveButton: 'Захаваць',
     savedConfirmation: 'Захавана',

@@ -367,6 +367,9 @@ export const zh: Translations = {
     copyButton: '复制',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: '所选区域内没有可复制的珠子。',
+    pasteClippedMessage: {
+      other: '{count} 颗珠子超出边框，未放入。',
+    },
     cutButton: '剪切',
     saveButton: '保存',
     savedConfirmation: '已保存',

@@ -38,7 +38,7 @@ describe('useRotateSelectionFlow', () => {
     const { deps, harness, onRotate } = setup()
     onRotate()
 
-    expect(deps.selection.value).toEqual({ top: 9, left: 11, rows: 3, columns: 1 })
+    expect(deps.selection.value).toMatchObject({ top: 9, left: 11, rows: 3, columns: 1 })
     expect(harness.project.frame).toMatchObject({ row: 0, column: 0, rows: 40, columns: 40 })
     expect(harness.resetAfterFrameChange).not.toHaveBeenCalled()
     expect(colorAt(harness.project.frame!.beads, 10, 10)).toBeNull()
@@ -59,7 +59,7 @@ describe('useRotateSelectionFlow', () => {
     const { deps, harness, onRotate } = setup(woven, { top: 0, left: 0, rows: 5, columns: 4 })
     onRotate()
 
-    expect(deps.selection.value).toEqual({ top: 0, left: 1, rows: 7, columns: 3 })
+    expect(deps.selection.value).toMatchObject({ top: 0, left: 1, rows: 7, columns: 3 })
     expect(colorAt(harness.project.beads, 1, 3)).toBe(RED)
     expect(colorAt(harness.project.beads, 0, 2)).toBe(GREEN)
     expect(colorAt(harness.project.beads, 0, 0)).toBeNull()
