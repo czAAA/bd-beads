@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import AppButton from '../ui/AppButton.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import PanelShell from '../shell/PanelShell.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -111,6 +112,9 @@ function onSizeFocusOut(event: FocusEvent): void {
   if (!(event.relatedTarget instanceof Node && (event.currentTarget as HTMLElement).contains(event.relatedTarget))) commitSize()
 }
 
+/** The Tooltip over the off size fields. */
+const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: t.value.tooltips.frameSizeLocked, announce: false }))
+
 // Top, Bottom, Left, Right is the cell order whatever the edges' own order is.
 const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cells.find((cell) => cell.edge === edge)!)
 </script>
@@ -127,7 +131,16 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
     <div ref="barEl" class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
       <div class="frame-bar__head">
         <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelShell). -->
-        <div class="frame-bar__size" :data-handles-escape="sizeEdited || undefined" @panel-escape="clearSize" @focusout="onSizeFocusOut">
+        <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
+        <component
+          :is="locked ? AppTooltip : 'div'"
+          v-bind="locked ? lockedTip : {}"
+          class="frame-bar__size"
+          :class="{ 'frame-bar__size--locked': locked }"
+          :data-handles-escape="sizeEdited || undefined"
+          @panel-escape="clearSize"
+          @focusout="onSizeFocusOut"
+        >
             <label class="frame-bar__field">
               <span class="frame-bar__label">{{ t.frame.widthLabel }}</span>
               <input
@@ -138,7 +151,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
                 pattern="[0-9]*"
                 autocomplete="off"
                 :placeholder="String(frame?.columns)"
-                :readonly="locked"
+                :disabled="locked"
                 data-testid="frame-bar-width"
                 @input="onSizeInput($event, 'width')"
                 @keydown="onSizeKey"
@@ -156,7 +169,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
                 pattern="[0-9]*"
                 autocomplete="off"
                 :placeholder="String(frame?.rows)"
-                :readonly="locked"
+                :disabled="locked"
                 data-testid="frame-bar-height"
                 @input="onSizeInput($event, 'height')"
                 @keydown="onSizeKey"
@@ -164,7 +177,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               />
             </label>
           <span class="frame-bar__unit">{{ t.frame.sizeUnit }}</span>
-        </div>
+        </component>
         <IconButton
           v-if="!locked"
           variant="secondary"
@@ -186,7 +199,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           @click="emit('remove')"
         />
       </div>
-      <div v-if="!locked" class="frame-bar__edges">
+      <div class="frame-bar__edges">
         <div v-for="cell in ordered" :key="cell.edge" class="frame-bar__cell" :class="{ 'frame-bar__cell--last': lastEdge === cell.edge }" :data-testid="`frame-bar-cell-${cell.edge}`">
           <span class="frame-bar__glyph" :class="[`frame-bar__glyph--${cell.edge}`, { 'frame-bar__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
           <span class="frame-bar__name">{{ t.frame.edgeName[cell.edge] }}</span>
@@ -259,7 +272,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-bar__input {
   box-sizing: border-box;
   width: 100%;
-  min-height: var(--frame-hit);
+  min-height: 2rem;
   padding: 0 var(--space-6);
   font: var(--type-title);
   font-size: 0.9375rem;
@@ -277,6 +290,16 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-bar__input:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+.frame-bar__size--locked {
+  cursor: not-allowed;
+}
+
+/* Off: a press goes to the group, so its Tooltip answers it. */
+.frame-bar__input:disabled {
+  color: var(--faint);
+  pointer-events: none;
 }
 
 .frame-bar__unit {

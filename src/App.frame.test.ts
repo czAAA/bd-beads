@@ -235,14 +235,15 @@ describe('Edit Frame', () => {
     expect(editing(wrapper)).toBe(false)
   })
 
-  it('opens once Row progress has started with the size and Remove alone, and the Margin handle still moves the Frame (tickets 452, 473, 475)', async () => {
+  it('opens once Row progress has started with the size, Remove and the disabled edge steppers, and the Margin handle still moves the Frame (tickets 452, 473, 475)', async () => {
     const wrapper = await mountOpen({ ...framedProject(), rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     expect(editing(wrapper)).toBe(false)
     expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-disabled')).toBeUndefined()
     await toggleEdit(wrapper)
     expect([wrapper.get('[data-testid="frame-bar-width"]').attributes('placeholder'), wrapper.get('[data-testid="frame-bar-height"]').attributes('placeholder')]).toEqual(['3', '2'])
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
-    for (const gone of ['frame-rotate', 'frame-edge-top-out', 'frame-bar-cell-left']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')
     await toggleEdit(wrapper)
     expect(editing(wrapper)).toBe(false)
 

@@ -622,6 +622,7 @@ export const es: Translations = {
     noProgressToReset: 'Aún no hay filas marcadas como hechas.',
     moveFrame: 'Arrastra para mover el marco junto con sus cuentas.',
     rowProgressLockedFrame: 'Hay filas hechas. Quita el marco para cambiarlo.',
+    frameSizeLocked: 'Hay filas hechas. Reinicia el progreso para cambiar el tamaño del marco.',
     fillNeedsColor: 'Elige primero un color para rellenar la selección.',
     rowProgressLockedTechnique: 'Hay filas hechas. Quita el marco para cambiar la técnica.',
     changeTechnique: 'Teje el esquema con otra técnica. Cada cuenta conserva su fila y su columna.',
