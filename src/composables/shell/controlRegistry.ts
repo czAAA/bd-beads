@@ -12,6 +12,8 @@ export interface ControlDeps {
   activeProject: () => Project | undefined
   activeTool: () => Tool
   hasSelection: () => boolean
+  /** The Selection holds at least one drawn bead: what Copy and Cut need. */
+  selectionHasBeads: () => boolean
   /** What the enabled states read (ticket 334): history, the clipboard and the Palette's added colors. */
   canUndo: () => boolean
   canRedo: () => boolean
@@ -407,8 +409,8 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'copy',
     icon: 'copy',
     name: (t) => t.tools.copyButton,
-    enabled: (deps) => deps.hasSelection(),
-    disabledBody: (t) => t.tooltips.copyDisabled,
+    enabled: (deps) => deps.hasSelection() && deps.selectionHasBeads(),
+    disabledBody: (t, deps) => (deps.hasSelection() ? t.tooltips.copyNoBeads : t.tooltips.copyDisabled),
     group: 'edit',
     chords: [{ key: 'c', mod: true, label: 'C' }],
     preventDefault: true,
@@ -428,8 +430,8 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'cut',
     icon: 'cut',
     name: (t) => t.tools.cutButton,
-    enabled: (deps) => deps.hasSelection(),
-    disabledBody: (t) => t.tooltips.copyDisabled,
+    enabled: (deps) => deps.hasSelection() && deps.selectionHasBeads(),
+    disabledBody: (t, deps) => (deps.hasSelection() ? t.tooltips.cutNoBeads : t.tooltips.copyDisabled),
     group: 'edit',
     chords: [{ key: 'x', mod: true, label: 'X' }],
     preventDefault: true,
@@ -658,7 +660,7 @@ export function chordSlots(chord: Chord): string[] {
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
  * passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'selectionHasBeads' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

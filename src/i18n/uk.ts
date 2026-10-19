@@ -379,8 +379,6 @@ export const uk: Translations = {
     pieceLabel: 'Виділити шматочок',
     selectAllLabel: 'Виділити все',
     copyButton: 'Копіювати',
-    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
-    copyNothingMessage: 'У виділенні немає намистин для копіювання.',
     pasteClippedMessage: {
       one: '{count} намистина не вмістилася в рамку.',
       few: '{count} намистини не вмістилися в рамку.',
@@ -673,6 +671,8 @@ export const uk: Translations = {
     zoomInLimit: 'Далі збільшувати нікуди.',
     nothingToRedo: 'Нічого повторювати.',
     copyDisabled: 'Спершу виділіть область.',
+    copyNoBeads: 'У виділенні немає намистин для копіювання.',
+    cutNoBeads: 'У виділенні немає намистин для вирізання.',
     fillSelection: 'Заливає виділення поточним кольором.',
     frameFromSelection: 'Робить виділення рамкою.',
     pasteDisabled: 'Спершу скопіюйте область.',

@@ -388,8 +388,6 @@ export const en: Translations = {
     pieceLabel: 'Select a Piece',
     selectAllLabel: 'Select all',
     copyButton: 'Copy',
-    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
-    copyNothingMessage: 'No beads in the selection to copy.',
     pasteClippedMessage: {
       one: '{count} bead was cut off by the Frame.',
       other: '{count} beads were cut off by the Frame.',
@@ -678,6 +676,8 @@ export const en: Translations = {
     zoomInLimit: 'Already zoomed in as far as it goes.',
     nothingToRedo: 'Nothing to redo.',
     copyDisabled: 'Select an area first.',
+    copyNoBeads: 'No beads in the selection to copy.',
+    cutNoBeads: 'No beads in the selection to cut.',
     fillSelection: 'Fill the Selection with the current color.',
     frameFromSelection: 'Make the Selection the Frame.',
     pasteDisabled: 'Copy an area first.',

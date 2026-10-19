@@ -379,8 +379,6 @@ export const pl: Translations = {
     pieceLabel: 'Zaznacz kawałek',
     selectAllLabel: 'Zaznacz wszystko',
     copyButton: 'Kopiuj',
-    /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
-    copyNothingMessage: 'W zaznaczeniu nie ma koralików do skopiowania.',
     pasteClippedMessage: {
       one: '{count} koralik nie zmieścił się w ramce.',
       few: '{count} koraliki nie zmieściły się w ramce.',
@@ -673,6 +671,8 @@ export const pl: Translations = {
     zoomInLimit: 'Powiększono już maksymalnie.',
     nothingToRedo: 'Nie ma czego ponowić.',
     copyDisabled: 'Najpierw zaznacz obszar.',
+    copyNoBeads: 'W zaznaczeniu nie ma koralików do skopiowania.',
+    cutNoBeads: 'W zaznaczeniu nie ma koralików do wycięcia.',
     fillSelection: 'Wypełnia zaznaczenie bieżącym kolorem.',
     frameFromSelection: 'Zamienia zaznaczenie w ramkę.',
     pasteDisabled: 'Najpierw skopiuj obszar.',
