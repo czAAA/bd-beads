@@ -35,6 +35,7 @@ import {
   rowProgressStarted,
 } from './project'
 import { BEAD_CATALOG } from './beads'
+import { describeWeave } from './weave'
 import { changedPositions } from './canvas'
 import { fillAt, mirrorFrame, paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
@@ -1393,6 +1394,43 @@ describe('Right-angle weave Row progress (ticket 484)', () => {
   it('weaves a column of Units in its horizontal beads and the vertical beads either side of it', () => {
     expect(marked(rightAngle('columns', 0), isInCurrentRow)).toEqual(['0,0', '1,0', '1,1', '2,0', '3,0', '3,1', '4,0', '5,0', '5,1', '6,0'])
     expect(marked(rightAngle('columns', 1), isInCurrentRow)).toEqual(['0,1', '1,2', '2,1', '3,2', '4,1', '5,2', '6,1'])
+  })
+})
+
+describe('Netting Row progress (ticket 487)', () => {
+  /** A Frame of 2 columns by 3 rows of diamonds at Net size 3: 5 columns by 9 rows of positions. */
+  function netting(pass: number) {
+    return moveToRow(createProject({ technique: 'netting', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } }), pass)
+  }
+
+  /** The rows of the Frame's positions, holes left out, that `test` holds for. */
+  function rowsMarked(project: ReturnType<typeof netting>, test: typeof isInFinishedRow): number[] {
+    const { rows, columns } = project.frame!
+    return Array.from({ length: rows * columns }, (_, index) => ({ row: Math.floor(index / columns), column: index % columns }))
+      .filter((position) => describeWeave(project).hasPosition(position) && test(project, position))
+      .map(({ row }) => row)
+  }
+
+  it('weaves the first row of diamonds whole, shared beads included, and each later one its lower sides', () => {
+    expect(new Set(rowsMarked(netting(0), isInCurrentRow))).toEqual(new Set([0, 1, 2, 3, 4]))
+    expect(new Set(rowsMarked(netting(1), isInCurrentRow))).toEqual(new Set([5, 6]))
+    expect(new Set(rowsMarked(netting(2), isInCurrentRow))).toEqual(new Set([7, 8]))
+  })
+
+  it('finishes every row of diamonds before the pointer', () => {
+    expect(rowsMarked(netting(0), isInFinishedRow)).toEqual([])
+    expect(Math.max(...rowsMarked(netting(1), isInFinishedRow))).toBe(4)
+    expect(Math.max(...rowsMarked(netting(2), isInFinishedRow))).toBe(6)
+  })
+
+  it('reads a stored column direction as rows', () => {
+    const stored = { ...toggleRowDirection(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } })), technique: 'netting' as const }
+    expect(normalizeProject(stored).rowProgress.direction).toBe('rows')
+  })
+
+  it('stays on rows: Turn row direction does nothing', () => {
+    const project = netting(1)
+    expect(toggleRowDirection(project)).toBe(project)
   })
 })
 
