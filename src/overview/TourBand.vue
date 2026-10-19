@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from 'vue'
 import { framedGrid } from '../domain/project'
+import { DEFAULT_TECHNIQUE } from '../domain/weave'
 import { TOUR_COLUMNS, TOUR_ROWS, tourFinishedGrid } from '../domain/tour'
 import type { DrawnProject } from '../rendering/projectRenderer'
 import { renderProject } from '../rendering/projectRenderer'
@@ -13,7 +14,7 @@ import { displayedExtentPx } from '../rendering/surfaceView'
 // the real Project renderer, taking only it and the theme. Turned a quarter so its 75 rows run left to right, row 1 at
 // the left.
 const PROJECT: DrawnProject = {
-  technique: 'loom',
+  technique: DEFAULT_TECHNIQUE,
   ...framedGrid(tourFinishedGrid()),
   rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 },
   rotation: 270,

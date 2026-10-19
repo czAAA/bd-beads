@@ -5,6 +5,7 @@ import type { Technique } from '../../domain/weave'
 import { isSlowFramingSize } from '../../domain/imageFraming'
 import { formatOtherUnit, gridFromSize, isSizeStated, type StatedSize } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
+import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -61,17 +62,9 @@ const estimate = computed(() =>
     : undefined,
 )
 
-const techniqueLabel = computed<Record<Technique, string>>(() => ({
-  loom: t.value.form.techniqueLoom,
-  peyote: t.value.form.techniquePeyote,
-  brick: t.value.form.techniqueBrick,
-  rightAngle: t.value.form.techniqueRightAngle,
-  netting: t.value.form.techniqueNetting,
-}))
-
 const slowFramingWarning = computed(() =>
   dimensions.value && isSlowFramingSize(props.technique, dimensions.value, props.slowFramingCellThresholds)
-    ? t.value.convertImage.slowFramingWarning.replace('{technique}', techniqueLabel.value[props.technique])
+    ? t.value.convertImage.slowFramingWarning.replace('{technique}', techniqueName(t.value, props.technique))
     : undefined,
 )
 
