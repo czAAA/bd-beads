@@ -5,12 +5,13 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import PanelShell from '../shell/PanelShell.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { frameWeave, rowProgressStarted, type Project } from '../../domain/project'
 import { describeWeave } from '../../domain/weave'
-import type { BarBox, FrameAnchor } from '../../composables/tools/selectionBarPlacement'
+import { carriedFrameBarSpot, frameBarSpot, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame bar (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
@@ -18,8 +19,10 @@ import { useI18n } from '../../i18n/useI18n'
 // opened it, which it follows; a press outside or Escape closes it, a Frame handle's press does not.
 const props = defineProps<{
   project: Project
-  /** Given when the edit pencil opened the bar: it hangs from the pencil and moves with it as this changes. */
-  pencil?: FrameAnchor
+  /** Where the Frame is on the canvas box: the bar is placed beside it once (ticket 500) and then follows the view only. */
+  anchor?: FrameAnchor
+  /** Whether the edit pencil opened the bar: it is then a dropdown at every width, not the Top sheet. */
+  fromPencil?: boolean
   /** Whether a press outside grabs the Frame on the canvas (a resize handle), so the bar stays. */
   grabsFrame?: (event: PointerEvent) => boolean
 }>()
@@ -58,11 +61,26 @@ const cells = FRAME_EDGES.map((edge) => {
 const barEl = ref<HTMLElement>()
 const size = useElementSize(barEl)
 const shell = ref<InstanceType<typeof PanelShell>>()
-watch(() => props.pencil, () => shell.value?.place(), { flush: 'post' })
-/** Where the shell hangs the bar: under the edit pencil, right edges lined up, at every width; else from the strip. */
+const wide = useMediaQuery('(min-width: 1024px)')
+/** Where the shell hangs the bar when the Frame is not known: under the edit pencil at every width, else from the strip. */
 const placement = computed(() =>
-  props.pencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : { anchor: 'strip-frame', align: 'start' as const, dropdown: false },
+  props.fromPencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : { anchor: 'strip-frame', align: 'start' as const, dropdown: false },
 )
+
+// Ticket 500: with the Frame known, the bar is placed once beside it (below, above, right, left), then only pan and zoom
+// carry it. Stepping or resizing the Frame leaves it where it is. The Top sheet under 1024px is not placed.
+const positioned = !!props.anchor && (wide.value || !!props.fromPencil)
+const barSize = ref<{ width: number; height: number }>()
+const placed = ref<{ left: number; top: number; origin?: BarBox }>()
+/** The bar's spot in the page's pixels, none until it is measured. */
+const at = computed(() => {
+  const view = props.anchor
+  const area = document.querySelector('[data-testid="app-drawing-area"]')?.getBoundingClientRect()
+  if (!placed.value || !barSize.value || !view || !area) return null
+  const { origin } = placed.value
+  const spot = origin && view.origin ? carriedFrameBarSpot(placed.value, origin, view.origin, barSize.value, view.viewport) : placed.value
+  return { left: area.left + spot.left, top: area.top + spot.top }
+})
 
 /** A press on the Move handle or the pencil, or one that grabs a resize handle, works the Frame: the bar stays. */
 function keepsPress(event: PointerEvent): boolean {
@@ -77,7 +95,17 @@ function measure(): BarBox | undefined {
   return bar && area && bar.width > 0 ? { left: bar.left - area.left, top: bar.top - area.top, width: bar.width, height: bar.height } : undefined
 }
 // The shell sets its box after mount and on every move, so it is measured once the box has reached the page.
-watch([size.width, size.height, () => shell.value?.box], () => void nextTick(() => emit('rect', measure())), { immediate: true, flush: 'post' })
+watch(
+  [size.width, size.height, () => shell.value?.box],
+  () =>
+    void nextTick(() => {
+      const rect = measure()
+      if (rect && !barSize.value) barSize.value = { width: rect.width, height: rect.height }
+      if (rect && positioned && !placed.value && props.anchor) placed.value = { ...frameBarSpot(props.anchor.box, rect, props.anchor.viewport), origin: props.anchor.origin }
+      emit('rect', rect)
+    }),
+  { immediate: true, flush: 'post' },
+)
 onBeforeUnmount(() => emit('rect', undefined))
 
 /** The width and height fields start empty (their placeholders show the current size), so a tablet's keyboard only opens
@@ -129,6 +157,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
     ref="shell"
     :title="t.frame.title"
     v-bind="placement"
+    :at="positioned ? at : undefined"
     width="min(calc(100vw - 2 * var(--frame-bar-gap)), var(--frame-bar-width))"
     :keeps-press="keepsPress"
     @close="emit('close')"

@@ -34,21 +34,6 @@ const anchor = {
   viewport: { width: 400, height: 300 },
 }
 
-/** The edit pencil on the page at `rect`, and the bar `height` tall: jsdom lays nothing out, so both are given. */
-function pencilAt(rect: { left: number; top: number }, height = 300) {
-  document.body.innerHTML = '<button data-testid="frame-edit-toggle"></button>'
-  const pencil = document.querySelector('button')!
-  const box = (left: number, top: number, width: number, h: number) => ({ left, top, width, height: h, right: left + width, bottom: top + h, x: left, y: top, toJSON: () => ({}) })
-  let at = rect
-  pencil.getBoundingClientRect = () => box(at.left, at.top, 44, 44)
-  vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockReturnValue(height)
-  // The bar reports itself where its style put it, so the place-and-correct pass leaves it there.
-  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
-    return box(parseFloat(this.style.left) || 0, parseFloat(this.style.top) || 0, 44, height)
-  })
-  return { moveTo: (next: { left: number; top: number }) => (at = next) }
-}
-
 describe('FrameBar in Right-angle weave (ticket 482)', () => {
   const wovenBar = () => woven(framed({ row: 2, column: 3, rows: 7, columns: 5, beads: {} }), 'rightAngle')
 
@@ -200,29 +185,65 @@ describe('FrameBar (ticket 473)', () => {
     expect(wrapper.emitted('key')).toHaveLength(1)
   })
 
-  it('hangs from the edit pencil that opened it, 4px under it, and above it with no room below (ticket 475)', async () => {
-    pencilAt({ left: 600, top: 100 })
-    const under = mount(FrameBar, { props: { project: framed(), pencil: anchor }, attachTo: document.body })
+  /** The drawing area and a bar `height` tall at its style's spot: jsdom lays nothing out, so both are given. */
+  function barAt(height = 60) {
+    document.body.innerHTML = '<div data-testid="app-drawing-area"></div>'
+    const box = (left: number, top: number, width: number, h: number) => ({ left, top, width, height: h, right: left + width, bottom: top + h, x: left, y: top, toJSON: () => ({}) })
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      return this.dataset.testid === 'app-drawing-area' ? box(0, 0, 400, 300) : box(parseFloat(this.style.left) || 0, parseFloat(this.style.top) || 0, 44, height)
+    })
+  }
+  const origin = { left: 10, top: 20, width: 10, height: 10 }
+  const mountPlaced = async (frameAnchor = { ...anchor, origin }) => {
+    const wrapper = mount(FrameBar, { props: { project: framed(), anchor: frameAnchor, fromPencil: true }, attachTo: document.body })
     await flushPromises()
-    const bar = () => under.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style
-    expect([bar().position, bar().top, bar().left]).toEqual(['fixed', '148px', '600px'])
-    under.unmount()
+    return wrapper
+  }
+  const spotOf = (wrapper: Awaited<ReturnType<typeof mountPlaced>>) => {
+    const style = wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style
+    return [style.left, style.top]
+  }
 
-    pencilAt({ left: 600, top: 600 })
-    const over = mount(FrameBar, { props: { project: framed(), pencil: anchor }, attachTo: document.body })
-    await flushPromises()
-    expect(over.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style.top).toBe('296px')
+  it('is placed once below the Frame, clear of its handles (ticket 500)', async () => {
+    barAt()
+    expect(spotOf(await mountPlaced())).toEqual(['178px', '195px'])
   })
 
-  it('follows the pencil as the canvas pans or zooms (ticket 475)', async () => {
-    const pencil = pencilAt({ left: 600, top: 100 })
-    const wrapper = mount(FrameBar, { props: { project: framed(), pencil: anchor }, attachTo: document.body })
+  it('goes above the Frame with no room below, then to its right (ticket 500)', async () => {
+    barAt()
+    const low = { box: { left: 150, top: 200, width: 100, height: 60 }, viewport: anchor.viewport, origin }
+    expect(spotOf(await mountPlaced(low))).toEqual(['178px', '105px'])
+    document.body.innerHTML = ''
+    barAt(250)
+    const tall = { box: { left: 20, top: 100, width: 100, height: 60 }, viewport: anchor.viewport, origin }
+    expect(spotOf(await mountPlaced(tall))).toEqual(['155px', '8px'])
+  })
+
+  it('stays put while the Frame is stepped or resized, and follows pan and zoom, kept inside the canvas box (ticket 500)', async () => {
+    barAt()
+    const wrapper = await mountPlaced()
+    await wrapper.setProps({ anchor: { ...anchor, box: { left: 120, top: 80, width: 160, height: 120 }, origin } })
     await flushPromises()
-    pencil.moveTo({ left: 500, top: 50 })
-    await wrapper.setProps({ pencil: { ...anchor, box: { ...anchor.box, left: 100 } } })
+    expect(spotOf(wrapper)).toEqual(['178px', '195px'])
+
+    await wrapper.setProps({ anchor: { ...anchor, origin: { ...origin, left: -10, top: 10 } } })
     await flushPromises()
-    const bar = wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style
-    expect([bar.top, bar.left]).toEqual(['98px', '500px'])
+    expect(spotOf(wrapper)).toEqual(['158px', '185px'])
+
+    await wrapper.setProps({ anchor: { ...anchor, origin: { ...origin, left: 400, top: 10 } } })
+    await flushPromises()
+    expect(spotOf(wrapper)).toEqual(['348px', '185px'])
+  })
+
+  it('overlaps where it hides least when no side has room, and is not placed again while open (ticket 500)', async () => {
+    barAt(280)
+    const wrapper = await mountPlaced({ box: { left: 20, top: 10, width: 360, height: 280 }, viewport: anchor.viewport, origin })
+    const [left, top] = spotOf(wrapper)
+    expect(parseFloat(left)).toBeGreaterThanOrEqual(8)
+    expect(parseFloat(top)).toBe(10)
+    await wrapper.setProps({ anchor: { ...anchor, origin } })
+    await flushPromises()
+    expect(spotOf(wrapper)).toEqual([left, top])
   })
 
   it('closes on a press outside, but not on one that grabs the Frame, nor on the Move handle (ticket 475)', async () => {

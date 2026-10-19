@@ -64,7 +64,10 @@ export function selectionBarPlacement(
 
 /** Where the Frame is on screen (tickets 427, 473): its line's box and the canvas box it sits in, in the canvas box's
  * pixels. The Move handle and the edit pencil are placed from it. */
-export type FrameAnchor = SelectionAnchor
+export interface FrameAnchor extends SelectionAnchor {
+  /** The Canvas's first bead cell on screen, whatever the Frame is: it moves with pan and zoom only, so what is carried with the view follows it (ticket 500). */
+  origin?: BarBox
+}
 
 /** The Move handle's hit area, mirroring the `--frame-handle-hit-*` values (ticket 473). */
 const HANDLE_HIT_HEIGHT_PX = 44
@@ -137,4 +140,49 @@ export function moveHandleCentre(anchor: FrameAnchor, bar?: BarBox, pill?: BarBo
   ])
   const distance = (at: { x: number; y: number }) => Math.abs(at.x - natural.x) + Math.abs(at.y - natural.y)
   return slides.filter((at) => !hits(at)).sort((a, b) => distance(a) - distance(b))[0] ?? natural
+}
+
+/** How far the Frame bar stands from the Frame's line: past the resize handles' reach (ticket 500). */
+const FRAME_BAR_GAP_PX = SELECTION_HANDLE_REACH_PX
+
+/** Where the Frame bar is first placed (ticket 500): beside the Frame on the first side with room, in the order below,
+ * above, right, left, inside the canvas box (`viewport`). With no room on any side it goes where it covers the Frame
+ * least. */
+export function frameBarSpot(frame: BarBox, bar: { width: number; height: number }, viewport: { width: number; height: number }): { left: number; top: number } {
+  const clamp = (value: number, size: number, limit: number) => Math.max(BAR_EDGE_PX, Math.min(value, limit - size - BAR_EDGE_PX))
+  const centredLeft = clamp(frame.left + frame.width / 2 - bar.width / 2, bar.width, viewport.width)
+  const centredTop = clamp(frame.top + frame.height / 2 - bar.height / 2, bar.height, viewport.height)
+  const below = { left: centredLeft, top: frame.top + frame.height + FRAME_BAR_GAP_PX }
+  const above = { left: centredLeft, top: frame.top - FRAME_BAR_GAP_PX - bar.height }
+  const right = { left: frame.left + frame.width + FRAME_BAR_GAP_PX, top: centredTop }
+  const left = { left: frame.left - FRAME_BAR_GAP_PX - bar.width, top: centredTop }
+  const fits = (spot: { left: number; top: number }) =>
+    spot.left >= BAR_EDGE_PX && spot.top >= BAR_EDGE_PX && spot.left + bar.width <= viewport.width - BAR_EDGE_PX && spot.top + bar.height <= viewport.height - BAR_EDGE_PX
+  const candidates = [below, above, right, left]
+  const roomy = candidates.find(fits)
+  if (roomy) return roomy
+  const covered = (spot: { left: number; top: number }) => {
+    const x = Math.max(0, Math.min(spot.left + bar.width, frame.left + frame.width) - Math.max(spot.left, frame.left))
+    const y = Math.max(0, Math.min(spot.top + bar.height, frame.top + frame.height) - Math.max(spot.top, frame.top))
+    return x * y
+  }
+  const clamped = candidates.map((spot) => ({ left: clamp(spot.left, bar.width, viewport.width), top: clamp(spot.top, bar.height, viewport.height) }))
+  return clamped.reduce((best, spot) => (covered(spot) < covered(best) ? spot : best))
+}
+
+/** Where a spot placed against `placedAt` stands once the view is at `now`: it keeps its place relative to the Canvas,
+ * so pan and zoom carry it, and is kept inside the canvas box (ticket 500). */
+export function carriedFrameBarSpot(
+  spot: { left: number; top: number },
+  placedAt: BarBox,
+  now: BarBox,
+  bar: { width: number; height: number },
+  viewport: { width: number; height: number },
+): { left: number; top: number } {
+  const scale = placedAt.width > 0 ? now.width / placedAt.width : 1
+  const clamp = (value: number, size: number, limit: number) => Math.max(BAR_EDGE_PX, Math.min(value, limit - size - BAR_EDGE_PX))
+  return {
+    left: clamp(now.left + (spot.left - placedAt.left) * scale, bar.width, viewport.width),
+    top: clamp(now.top + (spot.top - placedAt.top) * scale, bar.height, viewport.height),
+  }
 }
