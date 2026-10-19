@@ -170,7 +170,7 @@ describe('piece names', () => {
       expect(colors).toEqual([R, R, R, R])
     })
 
-    it('keeps the Schema and its name when the Frame moves to another Schema, and the Frame takes the other one with it when removed', () => {
+    it('keeps the Schema and its name when the Frame moves to another Schema, and the Frame lays the other one back on the Canvas, named, when removed', () => {
       const both = withPieceName(fox(), { row: 0, column: 10 }, 'Owl')
       const onFox = changeFrame(both, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
       if (onFox.kind !== 'changed') throw new Error('expected a change')
@@ -181,7 +181,7 @@ describe('piece names', () => {
       expect(onOwl.project.frame?.name).toBe('Owl')
       expect(onOwl.project.pieceNames?.map((entry) => entry.name)).toEqual(['Fox'])
       expect(removed.kind === 'changed' && removed.project.frame).toBeUndefined()
-      expect(removed.kind === 'changed' && removed.project.pieceNames?.map((entry) => entry.name)).toEqual(['Fox'])
+      expect(removed.kind === 'changed' && removed.project.pieceNames?.map((entry) => entry.name)).toEqual(['Fox', 'Owl'])
     })
   })
 })
