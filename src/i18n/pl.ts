@@ -368,6 +368,12 @@ export const pl: Translations = {
     copyButton: 'Kopiuj',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: 'W zaznaczeniu nie ma koralików do skopiowania.',
+    pasteClippedMessage: {
+      one: '{count} koralik nie zmieścił się w ramce.',
+      few: '{count} koraliki nie zmieściły się w ramce.',
+      many: '{count} koralików nie zmieściło się w ramce.',
+      other: '{count} koralika nie zmieściło się w ramce.',
+    },
     cutButton: 'Wytnij',
     saveButton: 'Zapisz',
     savedConfirmation: 'Zapisano',

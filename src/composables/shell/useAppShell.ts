@@ -1,6 +1,7 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt, type CreateProjectInput } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
+import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
@@ -244,7 +245,13 @@ function wireAppShell(services: Services) {
     clearSelection: resetSelection,
     pasteProjectionActive,
     hasClipboard,
-  } = useSelectionGesture(currentProject, edit, () => mirrorAxisCounts.value, () => mirrorCopyMode.value)
+  } = useSelectionGesture(
+    currentProject,
+    edit,
+    () => mirrorAxisCounts.value,
+    () => mirrorCopyMode.value,
+    (count) => showToast('paste-clipped', plural(locale.value, count, t.value.tools.pasteClippedMessage), 'info'),
+  )
 
   /** Touch has no Escape or right-click, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
    * 0057). */

@@ -379,6 +379,12 @@ export const ru: Translations = {
     copyButton: 'Копировать',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: 'В выделении нет бусин для копирования.',
+    pasteClippedMessage: {
+      one: '{count} бусина не поместилась в рамку.',
+      few: '{count} бусины не поместились в рамку.',
+      many: '{count} бусин не поместилось в рамку.',
+      other: '{count} бусины не поместились в рамку.',
+    },
     cutButton: 'Вырезать',
     saveButton: 'Сохранить',
     savedConfirmation: 'Сохранено',

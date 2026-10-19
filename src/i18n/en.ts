@@ -377,6 +377,10 @@ export const en: Translations = {
     copyButton: 'Copy',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: 'No beads in the selection to copy.',
+    pasteClippedMessage: {
+      one: '{count} bead was cut off by the Frame.',
+      other: '{count} beads were cut off by the Frame.',
+    },
     cutButton: 'Cut',
     saveButton: 'Save',
     savedConfirmation: 'Saved',

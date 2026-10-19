@@ -368,6 +368,11 @@ export const es: Translations = {
     copyButton: 'Copiar',
     /** Copy of a Selection with no drawn bead (ticket 437): nothing is copied. */
     copyNothingMessage: 'No hay cuentas en la selección para copiar.',
+    pasteClippedMessage: {
+      one: 'No cupo {count} cuenta en el marco.',
+      many: 'No cupieron {count} de cuentas en el marco.',
+      other: 'No cupieron {count} cuentas en el marco.',
+    },
     cutButton: 'Cortar',
     saveButton: 'Guardar',
     savedConfirmation: 'Guardado',
