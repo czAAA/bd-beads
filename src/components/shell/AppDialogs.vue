@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAppShell } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
+import SwitchTechniqueModal from '../project/SwitchTechniqueModal.vue'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
@@ -18,6 +19,10 @@ const {
   removeFrameConfirmOpen,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
+  switchQuestion,
+  onSetSwitchNetSize,
+  onCancelSwitchTechnique,
+  onConfirmSwitchTechnique,
   replaceFrameConfirmOpen,
   onCancelReplaceFrame,
   onConfirmReplaceFrame,
@@ -93,6 +98,14 @@ const {
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
     @cancel="onCancelRemoveFrame"
+  />
+
+  <SwitchTechniqueModal
+    v-if="switchQuestion"
+    :question="switchQuestion"
+    @update:net-size="onSetSwitchNetSize"
+    @confirm="onConfirmSwitchTechnique"
+    @cancel="onCancelSwitchTechnique"
   />
 
   <ConfirmModal

@@ -1,11 +1,11 @@
 import { computed, ref, watch } from 'vue'
-import type { Frame } from '../../domain/canvas'
+import { hasBeads, type Frame } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import { DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
-import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress } from '../../domain/changeFrame'
+import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
+import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress, frameChangeRefusal } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { canvasWeave, createProject, frameWeave, rowProgressStarted, weaveOf, withFrame, type CreateProjectInput, type Project } from '../../domain/project'
+import { canvasWeave, createProject, frameWeave, rowProgressStarted, switchLoss, weaveOf, withFrame, type CreateProjectInput, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -23,6 +23,10 @@ export interface FrameFlowDeps {
   /** The Canvas position under the middle of the view, or nothing until the area is measured. */
   visibleCentre: () => GridPosition | undefined
 }
+
+type Layer = 'canvas' | 'frame'
+
+const layerHasBeads = (project: Project, layer: Layer): boolean => hasBeads(layer === 'frame' ? (project.frame?.beads ?? {}) : project.beads)
 
 type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Frame }
@@ -114,13 +118,68 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return true
   }
 
-  /** Weaves the open Project in another Technique (ticket 351): the grid, the beads and the Frame stay, one Undo
-   * step. */
-  function setTechnique(technique: Technique): void {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, { technique }))
+  /** The Technique switch waiting on its question (ticket 507): a layer with drawn beads says what would be lost, and
+   * Netting asks for its Net size, before anything changes. */
+  const switchAsk = ref<{ layer: Layer; technique: Technique; netSize: number } | undefined>()
+
+  /** The open switch question as the dialog shows it: the new Technique's name, the beads that would be lost, the Net
+   * size asked for, and whether the layer has beads at all. */
+  const switchQuestion = computed(() => {
+    const ask = switchAsk.value
+    const project = deps.currentProject()
+    if (!ask || !project) return undefined
+    return {
+      technique: ask.technique,
+      lost: switchLoss(project, ask.layer, ask.technique, ask.netSize),
+      drawn: layerHasBeads(project, ask.layer),
+      asksNetSize: describeWeave({ technique: ask.technique }).hasNetSize,
+      netSize: ask.netSize,
+    }
+  })
+
+  function applySwitch(layer: Layer, technique: Technique, netSize?: number): void {
+    const outcome =
+      layer === 'frame'
+        ? deps.edit('frame', (project) => changeFrame(project, { technique, netSize }))
+        : deps.edit('exempt', (project) => changeCanvasWeave(project, { technique, netSize }))
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
     deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
+  }
+
+  /** Asks first when the layer has drawn beads or the Technique needs a Net size; otherwise switches at once. */
+  function askSwitch(layer: Layer, technique: Technique): void {
+    const project = deps.currentProject()
+    if (!project) return
+    const current = layer === 'frame' ? project.frame?.technique : project.technique
+    if (current === undefined || current === technique) return
+    if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
+    const weave = layer === 'frame' ? frameWeave(project) : canvasWeave(project)
+    const netSize = weave.netSize ?? DEFAULT_NET_SIZE
+    if (layerHasBeads(project, layer) || describeWeave({ technique }).hasNetSize) {
+      switchAsk.value = { layer, technique, netSize }
+      return
+    }
+    applySwitch(layer, technique)
+  }
+
+  function setSwitchNetSize(netSize: number): void {
+    if (switchAsk.value) switchAsk.value = { ...switchAsk.value, netSize }
+  }
+
+  function cancelSwitch(): void {
+    switchAsk.value = undefined
+  }
+
+  function confirmSwitch(): void {
+    const ask = switchAsk.value
+    switchAsk.value = undefined
+    if (ask) applySwitch(ask.layer, ask.technique, describeWeave({ technique: ask.technique }).hasNetSize ? ask.netSize : undefined)
+  }
+
+  /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, once a pass is done not at all. */
+  function setTechnique(technique: Technique): void {
+    askSwitch('frame', technique)
   }
 
   /** Weaves the open brick stitch Project with another Brick block (ticket 477): every bead keeps its cell, one Undo
@@ -131,13 +190,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     deps.announce(deps.messages().frame.announceBrickBlock.replace('{count}', String(brickBlock)))
   }
 
-  /** Weaves the Canvas in another Technique (ticket 492): any time, since Row progress belongs to the Frame; one Undo
-   * step. */
+  /** Weaves the Canvas in another Technique (tickets 492, 507): any time, since Row progress belongs to the Frame; one
+   * Undo step. */
   function setCanvasTechnique(technique: Technique): void {
-    const outcome = deps.edit('exempt', (project) => changeCanvasWeave(project, { technique }))
-    if (outcome.kind !== 'applied') return
-    const t = deps.messages()
-    deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
+    askSwitch('canvas', technique)
   }
 
   /** The Canvas with another Brick block (ticket 492). */
@@ -343,6 +399,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setTechnique,
     setBrickBlock,
     setCanvasTechnique,
+    switchQuestion,
+    setSwitchNetSize,
+    cancelSwitch,
+    confirmSwitch,
     setCanvasBrickBlock,
     fit,
     setTo,
