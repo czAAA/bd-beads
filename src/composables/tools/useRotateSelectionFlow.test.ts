@@ -14,7 +14,7 @@ const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size:
 const strip: Selection = { top: 10, left: 10, rows: 1, columns: 3 }
 const framed: Project = {
   ...base,
-  frame: { row: 0, column: 0, rows: 40, columns: 40, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) },
+  frame: { technique: 'loom' as const, row: 0, column: 0, rows: 40, columns: 40, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) },
   beads: {},
 }
 
@@ -53,7 +53,7 @@ describe('useRotateSelectionFlow', () => {
   it('in Right-angle weave turns whole Units: a horizontal bead becomes vertical, in one step Undo takes back (ticket 483)', () => {
     const woven: Project = {
       ...createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }),
-      frame: { row: 50, column: 50, rows: 9, columns: 9, beads: {} },
+      frame: { technique: 'loom' as const, row: 50, column: 50, rows: 9, columns: 9, beads: {} },
       beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 1, column: 0, color: GREEN }]),
     }
     const { deps, harness, onRotate } = setup(woven, { top: 0, left: 0, rows: 5, columns: 4 })
@@ -95,7 +95,7 @@ describe('useRotateSelectionFlow', () => {
 
   it('drops what the turn would put outside the Frame, and counts nothing for it', () => {
     // The Frame\'s top edge is row 10: the turn\'s top bead would stand on row 9, which the Frame does not hold.
-    const edge: Project = { ...framed, frame: { row: 10, column: 0, rows: 30, columns: 40, beads: withColors({}, [0, 1, 2].map((column) => ({ row: 0, column: 10 + column, color: RED }))) } }
+    const edge: Project = { ...framed, frame: { technique: 'loom' as const, row: 10, column: 0, rows: 30, columns: 40, beads: withColors({}, [0, 1, 2].map((column) => ({ row: 0, column: 10 + column, color: RED }))) } }
     const { deps, harness, onRotate } = setup(edge)
     onRotate()
     expect(Object.values(harness.project.frame!.beads).flatMap((row) => Object.keys(row))).toHaveLength(2)
@@ -103,7 +103,7 @@ describe('useRotateSelectionFlow', () => {
   })
 
   it('turns the Canvas\'s beads for a Selection that begins on the Canvas, and leaves the Frame', () => {
-    const sketch: Project = { ...framed, frame: { row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }
+    const sketch: Project = { ...framed, frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }
     const { harness, onRotate } = setup(sketch)
     onRotate()
     expect(colorAt(harness.project.beads, 9, 11)).toBe(RED)

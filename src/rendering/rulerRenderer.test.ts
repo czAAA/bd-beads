@@ -106,7 +106,7 @@ describe('the names under the Frame and the Pieces (ADR 0066)', () => {
 
   it('draws the Frame\'s name under it, and the name of a Canvas Piece beside it', () => {
     const { context, texts } = fakeContext()
-    drawRulers(context, drawn(named({ frame: { row: 0, column: 0, rows: 3, columns: 3, name: 'Cherry', beads: {} } }), { zoom: 1, numbers: false }))
+    drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, name: 'Cherry', beads: {} } }), { zoom: 1, numbers: false }))
 
     expect(texts).toContain('Cherry')
     expect(texts).toContain('Sketch')
@@ -114,7 +114,7 @@ describe('the names under the Frame and the Pieces (ADR 0066)', () => {
 
   it('leaves out the name of a Piece the Frame wholly covers', () => {
     const { context, texts } = fakeContext()
-    drawRulers(context, drawn(named({ frame: { row: 0, column: 0, rows: 3, columns: 3, beads: {} } }), { zoom: 1, numbers: false }))
+    drawRulers(context, drawn(named({ frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } }), { zoom: 1, numbers: false }))
 
     expect(texts).toContain('Sketch')
     expect(texts).not.toContain('Hidden')
@@ -122,7 +122,7 @@ describe('the names under the Frame and the Pieces (ADR 0066)', () => {
 })
 
 describe('the Ruler dots', () => {
-  const framed = { ...base, frame: { row: 0, column: 0, rows: 3, columns: 120, beads: {} } }
+  const framed = { ...base, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 120, beads: {} } }
   const radii = (fills: { rect: number[] }[]) => fills.filter((fill) => fill.rect.length === 5).map((fill) => fill.rect[2])
 
   it('draw a small dot for every bead without a number, in the number colours', () => {

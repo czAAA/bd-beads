@@ -1,5 +1,5 @@
 import { beadsInFrame, beadsOver, beadsWithout, frameContains, shiftedBeads, type BeadMap, type Frame } from './canvas'
-import type { Project } from './project'
+import { weaveOf, type Project } from './project'
 
 // TEMPORARY (ADR 0066, ticket 489; on ticket 391's cleanup list, removed with the public release): a Project as file
 // and library version 3 stored it, when the Frame was a rectangle of the Canvas's own beads and the beads it covered
@@ -34,7 +34,12 @@ export function liftVersionThree(stored: VersionThreeProject): Project {
   return {
     ...rest,
     beads,
-    frame: { ...frame, beads: shiftedBeads(beadsInFrame(stored.beads, frame), -frame.row, -frame.column), ...(named ? { name: named.name } : {}) },
+    frame: {
+      ...frame,
+      beads: shiftedBeads(beadsInFrame(stored.beads, frame), -frame.row, -frame.column),
+      ...weaveOf(rest),
+      ...(named ? { name: named.name } : {}),
+    },
     ...(kept?.length ? { pieceNames: kept } : {}),
   }
 }

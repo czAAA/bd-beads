@@ -87,10 +87,10 @@ describe('the Surface view maps beads and points both ways', () => {
     expect(view.pointToBead({ x: 10.5, y: 15.2 })).toEqual({ row: 0, column: 0 })
   })
 
-  it('keeps the parity of the Project’s own row in a space that starts on an odd one', () => {
-    const odd: Space = { ...FRAME_ONLY('peyote'), toAbsolute: { row: 1, column: 0 } }
-    const view = surfaceView({ space: odd, technique: 'peyote', rotation: 0, zoom: 1 })
-    expect(view.beadToPoint({ row: 0, column: 0 })).toEqual({ x: 20, y: 10 })
+  it('shifts a layer’s rows by their own number, its row 0 always straight (ticket 492)', () => {
+    const view = surfaceView({ space: FRAME_ONLY('peyote'), technique: 'peyote', rotation: 0, zoom: 1 })
+    expect(view.beadToPoint({ row: 0, column: 0 })).toEqual({ x: 10, y: 10 })
+    expect(view.beadToPoint({ row: 1, column: 0 })).toEqual({ x: 20, y: 25 })
   })
 })
 
@@ -224,5 +224,51 @@ describe('the Surface view in Netting (ticket 485)', () => {
   it('boxes a Frame\'s beads from the first position to the last', () => {
     const box = surfaceView({ space: OPEN_SPACE, technique: 'netting', rotation: 0, zoom: 1 }).beadBox({ row: 4, column: 4, rows: 5, columns: 9 })
     expect(box).toEqual({ x: 60, y: 60, width: 8 * 15 + 20, height: 4 * 15 + 20 })
+  })
+})
+
+describe('the Surface view with a Frame woven in its own Technique (ticket 492)', () => {
+  // A 4 × 4 peyote Frame at row 2, column 3 of a loom Canvas: its corner is the Canvas position (2, 3), at (60, 40).
+  const frame = { technique: 'peyote' as const, row: 2, column: 3, rows: 4, columns: 4 }
+  const view = (extra = {}) => surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1, ...extra })
+
+  it('lays the Frame\'s beads out in its own Weave from its corner: row 1 shifted half a bead and nested', () => {
+    expect(view().beadToPoint({ row: 2, column: 3 })).toEqual({ x: 70, y: 50 })
+    expect(view().beadToPoint({ row: 3, column: 3 })).toEqual({ x: 80, y: 65 })
+  })
+
+  it('lays the Canvas out in the Canvas\'s', () => {
+    expect(view().beadToPoint({ row: 0, column: 0 })).toEqual({ x: 10, y: 10 })
+    expect(view().beadToPoint({ row: 7, column: 8 })).toEqual({ x: 170, y: 150 })
+  })
+
+  it('says which bead of the Frame a point is on, as the Frame\'s position from its first', () => {
+    expect(view().pointToBead({ x: 70, y: 50 })).toEqual({ row: 2, column: 3 })
+    expect(view().pointToBead({ x: 80, y: 65 })).toEqual({ row: 3, column: 3 })
+  })
+
+  it('says which bead of the Canvas a point is on beside the Frame', () => {
+    expect(view().pointToBead({ x: 10, y: 10 })).toEqual({ row: 0, column: 0 })
+    expect(view().pointToBead({ x: 170, y: 150 })).toEqual({ row: 7, column: 8 })
+  })
+
+  it('answers none on the Canvas in the rectangle the Frame claims but does not reach, never the Canvas under the Frame', () => {
+    // Four peyote rows are 65 px tall; the claimed rectangle is 80 px: the strip below the Frame belongs to nothing.
+    expect(view().pointToBead({ x: 70, y: 40 + 70 })).toBeUndefined()
+  })
+
+  it('measures a block of the Frame in the Frame\'s Weave and a block of the Canvas in the Canvas\'s', () => {
+    expect(view().beadBox(frame, 'frame')).toMatchObject({ x: 60, y: 40, height: 65 })
+    expect(view().beadBox({ row: 0, column: 0, rows: 2, columns: 2 })).toMatchObject({ x: 0, y: 0, width: 40, height: 40 })
+  })
+
+  it('finds the cell nearest a point in the geometry asked for', () => {
+    expect(view().pointToCell({ x: 80, y: 65 }, 'frame')).toEqual({ row: 3, column: 3 })
+    expect(view().pointToCell({ x: 80, y: 65 }, 'canvas')).toEqual({ row: 3, column: 4 })
+  })
+
+  it('steps a layer by its own Weave', () => {
+    expect(view().beadStep('frame').row.y).toBe(15)
+    expect(view().beadStep('canvas').row.y).toBe(20)
   })
 })

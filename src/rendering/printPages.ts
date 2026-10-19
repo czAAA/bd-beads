@@ -1,4 +1,4 @@
-import { countedDimensions, projectDimensions } from '../domain/project'
+import { countedDimensions, frameWeave, projectDimensions } from '../domain/project'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
@@ -274,7 +274,7 @@ function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: numbe
 // tried and the larger Project wins: a slightly wider than tall one (peyote/brick rows sit closer than columns) fits
 // the side column far better, and picking by shape alone once left it tiny with the sheet empty.
 export function pageOneLayout(project: Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'>, page: PageSize) {
-  const wide = displayedExtentPx(project.technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation)
+  const wide = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation)
   const top = PRINT_MARGIN + mm(30)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const maxZoom = mm(7) / CELL_SIZE_PX
@@ -406,7 +406,7 @@ export function drawPageOne(project: Project, words: PrintText, plan: PrintPlan)
   }
 
   // The whole Project, on its board, with rulers every 10, the 10-bead lines and the parts dashed and numbered.
-  const whole = displayedExtentPx(project.technique, projectDimensions(project).columns, projectDimensions(project).rows, layout.zoom, project.rotation)
+  const whole = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, layout.zoom, project.rotation)
   drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board)
   const grid = displayedGrid(project)
   drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)

@@ -184,8 +184,8 @@ const frameTooltip = computed(() => {
   const frame = project?.frame
   if (!project || !frame) return ''
   const bead = resolveProjectBead(project)
-  const estimate = bead ? formatSizeMm(estimatedSizeMm({ ...frame, technique: project.technique }, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
-  const { columns, rows } = describeWeave(project).unitsOf(frame)
+  const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
+  const { columns, rows } = describeWeave(frame).unitsOf(frame)
   return t.value.frame.sizeTooltip.replace('{columns}', String(columns)).replace('{rows}', String(rows)).replace('{estimate}', estimate)
 })
 
@@ -288,6 +288,7 @@ function techniqueWord(technique: Technique): string {
         <ContextBar
           v-if="activeProject && !framing"
           :selection-summary="selectionSummary"
+          :selection="selection"
           :anchor="selectionAnchor"
           :gesturing="surfacePressing"
           :size-only="selectionGuided"

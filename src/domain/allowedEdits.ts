@@ -1,6 +1,6 @@
 import { sameFrame } from './frame'
 import { forEachBead, withColors, type BeadChange } from './canvas'
-import { keepFinishedRows, type Project } from './project'
+import { canvasWeave, frameWeave, keepFinishedRows, type Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
 import { describeWeave } from './weave'
 
@@ -18,7 +18,7 @@ export function keepAllowedEdits(before: Project, after: Project): Project {
 /** What an edit did, with every bead it newly painted where the Weave has no bead taken back (the empty end of a
  * Right-angle weave line, ticket 482). */
 function keepWhereBeadsAre(before: Project, after: Project): Project {
-  const weave = describeWeave(after)
+  const weave = describeWeave(canvasWeave(after))
   const frame = after.frame
   const reverts: BeadChange[] = []
   forEachBead(after.beads, (row, column, color) => {
@@ -32,9 +32,10 @@ function keepWhereBeadsAre(before: Project, after: Project): Project {
   }
   // The Frame's own beads sit at positions of the Frame itself, its top left being 0, 0.
   const own = { ...frame, row: 0, column: 0 }
+  const framedWeave = describeWeave(frameWeave(after))
   const framed: BeadChange[] = []
   forEachBead(frame.beads, (row, column, color) => {
-    if (!weave.hasPosition({ row, column }, own) && before.frame?.beads[row]?.[column] !== color) {
+    if (!framedWeave.hasPosition({ row, column }, own) && before.frame?.beads[row]?.[column] !== color) {
       framed.push({ row, column, color: before.frame?.beads[row]?.[column] ?? null })
     }
   })

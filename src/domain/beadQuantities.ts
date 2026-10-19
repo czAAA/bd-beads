@@ -23,7 +23,7 @@ export function computeColorQuantities(project: Project): ColorQuantity[] {
     return []
   }
 
-  const weave = describeWeave(project)
+  const weave = describeWeave(project.frame)
   // Every real bead counts once; the empty end of a Right-angle weave line is no bead (ticket 482).
   forEachBead(project.frame.beads, (row, column, color) => {
     if (weave.hasPosition({ row, column }, { ...project.frame!, row: 0, column: 0 })) {

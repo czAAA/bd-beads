@@ -616,6 +616,17 @@ export function gridHeight(technique: Technique, rows: number, cellSize: number)
   return cellSize + (rows - 1) * rowPitch(technique, cellSize)
 }
 
+/** How far one step across and one step down go in a Weave, in beads' widths: what converts a distance counted in one
+ * Weave's positions into another's (a Frame in a Technique other than the Canvas's, ticket 492). */
+export function positionStep(weave: Weave): { across: number; down: number } {
+  const description = describeWeave(weave)
+  if (!description.countsUnits) {
+    return { across: 1, down: rowPitch(weave.technique, 1) }
+  }
+  const unit = description.origin({ row: description.rowsPerUnit, column: description.columnsPerUnit }, 1, description.cellAspect)
+  return { across: unit.x / description.columnsPerUnit, down: unit.y / description.rowsPerUnit }
+}
+
 /** A point inside a grid's own footprint, in whatever unit the cell size was given in. */
 export interface CellCenter {
   x: number

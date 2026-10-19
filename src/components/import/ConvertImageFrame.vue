@@ -153,7 +153,7 @@ const drawnProject = computed(() => {
     technique: props.technique,
     brickBlock: props.brickBlock,
     netSize: props.netSize,
-    ...framedGrid(grid),
+    ...framedGrid(grid, { technique: props.technique, brickBlock: props.brickBlock, netSize: props.netSize }),
     rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
     rotation: 0 as const,
   }

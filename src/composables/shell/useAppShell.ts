@@ -918,6 +918,8 @@ function wireAppShell(services: Services) {
     onResizeFrame: frameFlow.resizeTo,
     onSetTechnique: frameFlow.setTechnique,
     onSetBrickBlock: frameFlow.setBrickBlock,
+    onSetCanvasTechnique: frameFlow.setCanvasTechnique,
+    onSetCanvasBrickBlock: frameFlow.setCanvasBrickBlock,
     onFitFrame: frameFlow.fit,
     onRemoveFrame: frameFlow.remove,
     removeFrameConfirmOpen: frameFlow.removeConfirmOpen,

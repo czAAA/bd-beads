@@ -186,7 +186,7 @@ describe('encodeProject / decodeProject', () => {
     const encoded = encodeProject({ ...paint(makeProject(2, 1), () => '#ff0000'), beads: { 5: { 5: '#00ff00' } } })
 
     expect(encoded.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
-    expect(encoded.frame).toEqual({ row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
+    expect(encoded.frame).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
   })
 
   it('still reads the grid-shaped cells an earlier build stored, as beads in a Frame the size of the grid', () => {
@@ -195,7 +195,7 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(read.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(read.frame).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
     expect(read.beads).toEqual({})
   })
 
@@ -210,7 +210,7 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(read.frame).toEqual({ row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
+    expect(read.frame).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
     expect(read.beads).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
     expect(read).not.toHaveProperty('coveredBeads')
   })
