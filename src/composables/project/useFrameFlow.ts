@@ -1,4 +1,4 @@
-import { computed, ref, watch } from 'vue'
+import { computed, ref, watch, type Ref } from 'vue'
 import type { Frame } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
@@ -11,6 +11,7 @@ import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from './useEdit'
+import type { PhoneSheet } from '../shell/phoneSheet'
 
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
@@ -22,6 +23,8 @@ export interface FrameFlowDeps {
   centreOn: (frame: Frame) => void
   /** The Canvas position under the middle of the view, or nothing until the area is measured. */
   visibleCentre: () => GridPosition | undefined
+  /** The app's one open panel (ticket 510): the Frame bar is open while it is 'frame'. Its own when none is given. */
+  openPanel?: Ref<PhoneSheet | null>
 }
 
 type Gesture =
@@ -36,7 +39,14 @@ export type FrameBarOrigin = 'pencil' | 'strip'
 
 export function useFrameFlow(deps: FrameFlowDeps) {
   /** The weaver's choice on the edit toggle (the Frame bar open); false until they turn it on. Never saved. */
-  const editOn = ref(false)
+  const openPanel = deps.openPanel ?? ref<PhoneSheet | null>(null)
+  const editOn = computed({
+    get: () => openPanel.value === 'frame',
+    set: (on: boolean) => {
+      if (on) openPanel.value = 'frame'
+      else if (openPanel.value === 'frame') openPanel.value = null
+    },
+  })
   /** Which control opened the bar: the edit pencil, or the strip's Frame button. */
   const barFrom = ref<FrameBarOrigin>('strip')
   /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its
