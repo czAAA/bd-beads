@@ -1,9 +1,11 @@
 import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Frame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
+import { sameFrame } from '../../domain/frame'
+import { layerAt } from '../../domain/layers'
 import type { Project } from '../../domain/project'
 import { OPEN_SPACE } from '../../rendering/space'
-import { surfaceView, type Scroll, type Size, type SurfaceView } from '../../rendering/surfaceView'
+import { surfaceView, type Scroll, type Size, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
 
 /** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and
  * BeadBoard cards). */
@@ -13,6 +15,11 @@ export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
  * bead, otherwise nothing. */
 export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Frame | undefined {
   return project.frame ?? beadBounds(project.beads)
+}
+
+/** The layer a block is measured in: the Frame's own for the Frame itself (ticket 492), the Canvas's for anything else. */
+function layerOfBox(project: Pick<Project, 'frame'>, box: Frame): ViewLayer {
+  return project.frame && sameFrame(box, project.frame) ? 'frame' : 'canvas'
 }
 
 // Where the Canvas is looked at from (ADR 0026): zoom and scroll over an endless field. `fit` shows the Frame (or all
@@ -28,8 +35,8 @@ export function useCanvasView(
   const isAtFit = ref(true)
 
   /** The Canvas as the view stands, or at another zoom. */
-  function surfaceOf(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'rotation'>): SurfaceView {
-    return surfaceView({ space: OPEN_SPACE, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
+  function surfaceOf(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'rotation'> & Partial<Pick<Project, 'frame'>>): SurfaceView {
+    return surfaceView({ space: OPEN_SPACE, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, frame: project.frame, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
   }
 
   function measured(): boolean {
@@ -51,8 +58,9 @@ export function useCanvasView(
       zoom.value = clampZoom(1)
       scroll.value = surfaceOf(project).scrollToCentre()
     } else {
-      zoom.value = clampZoom(surfaceOf(project).zoomToFit(box, FIT_MARGIN_PX))
-      scroll.value = surfaceOf(project).scrollToCentre(box)
+      const layer = layerOfBox(project, box)
+      zoom.value = clampZoom(surfaceOf(project).zoomToFit(box, FIT_MARGIN_PX, layer))
+      scroll.value = surfaceOf(project).scrollToCentre(box, layer)
     }
     isAtFit.value = true
   }
@@ -75,7 +83,7 @@ export function useCanvasView(
     if (!project) {
       return
     }
-    scroll.value = surfaceOf(project).scrollToCentre(box)
+    scroll.value = surfaceOf(project).scrollToCentre(box, layerOfBox(project, box))
     isAtFit.value = false
   }
 
@@ -86,7 +94,7 @@ export function useCanvasView(
     if (!project || !measured()) {
       return
     }
-    const bead = surfaceOf(project).beadBox({ ...position, rows: 1, columns: 1 })
+    const bead = surfaceOf(project).beadBox({ ...position, rows: 1, columns: 1 }, layerAt(project, position))
     const { width, height } = viewport.value
     let dx = 0
     let dy = 0

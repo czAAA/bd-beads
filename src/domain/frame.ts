@@ -4,8 +4,8 @@ import { describeWeave, rowCycle, type Weave } from './weave'
 import type { Project } from './project'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
-// drawn, on whole beads. Where rows alternate a Frame starts on a multiple of the shift's cycle (a pair of rows, or 2N
-// on brick stitch, ticket 477), so its first row sits where a woven piece's first row does.
+// drawn, on whole beads. Made from the Canvas it starts on a cycle of the Canvas's rows so lifted beads keep their stagger;
+// once made, its edges go by whole cycles of its own rows (tickets 477, 492).
 
 export type FrameEdge = 'top' | 'bottom' | 'left' | 'right'
 
@@ -37,38 +37,43 @@ export function frameFromCells(weave: Weave, a: GridPosition, b: GridPosition): 
 }
 
 // The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
-// the bead under the pointer. An edge never passes the opposite one, so a Frame stays at least one bead each way.
+// the bead under the pointer, in the Frame's own geometry. An edge never passes the opposite one, so a Frame stays at
+// least one bead each way. Worked out in the Frame's own rows, whose row 0 is always an unshifted one (ticket 492).
 export function frameWithEdges(weave: Weave, frame: Frame, edges: readonly FrameEdge[], cell: GridPosition): Frame {
-  let top = frame.row
-  let bottom = frame.row + frame.rows - 1
-  let left = frame.column
-  let right = frame.column + frame.columns - 1
+  let top = 0
+  let bottom = frame.rows - 1
+  let left = 0
+  let right = frame.columns - 1
+  const at = { row: cell.row - frame.row, column: cell.column - frame.column }
 
   const { smallest, snapBottom, snapRight } = describeWeave(weave)
-  if (edges.includes('top')) top = Math.min(snapRow(weave, cell.row), snapBottom(top, bottom) - smallest.rows + 1)
-  if (edges.includes('bottom')) bottom = snapBottom(top, Math.max(cell.row, top + smallest.rows - 1))
-  if (edges.includes('left')) left = Math.min(snapColumn(weave, cell.column), right - smallest.columns + 1)
-  if (edges.includes('right')) right = snapRight(left, Math.max(cell.column, left + smallest.columns - 1))
+  if (edges.includes('top')) top = Math.min(snapRow(weave, at.row), snapBottom(top, bottom) - smallest.rows + 1)
+  if (edges.includes('bottom')) bottom = snapBottom(top, Math.max(at.row, top + smallest.rows - 1))
+  if (edges.includes('left')) left = Math.min(snapColumn(weave, at.column), right - smallest.columns + 1)
+  if (edges.includes('right')) right = snapRight(left, Math.max(at.column, left + smallest.columns - 1))
 
-  return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
+  return { row: frame.row + top, column: frame.column + left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-/** The Frame moved by whole beads; where rows alternate whole cycles of rows, so its first row keeps its place in the
- * stagger. */
-export function movedFrame(weave: Weave, frame: Frame, rows: number, columns: number): Frame {
-  const cycle = rowCycle(weave)
-  const rowStep = cycle > 1 ? Math.sign(rows) * Math.round(Math.abs(rows) / cycle) * cycle : rows
-  const across = describeWeave(weave).columnStep
-  const columnStep = across > 1 ? Math.sign(columns) * Math.round(Math.abs(columns) / across) * across : columns
-  return { ...frame, row: frame.row + rowStep, column: frame.column + columnStep }
+/** A move counted in whole Canvas positions (ticket 492): the Frame's own first row is always an unshifted one, so no
+ * stagger is kept; where the Canvas counts Units the move goes by whole Units, so its corner stays on one. */
+export function snappedMove(canvas: Weave, rows: number, columns: number): { rows: number; columns: number } {
+  const { rowsPerUnit, columnStep, countsUnits } = describeWeave(canvas)
+  const by = (distance: number, step: number) => (countsUnits && step > 1 ? Math.sign(distance) * Math.round(Math.abs(distance) / step) * step : distance)
+  return { rows: by(rows, rowsPerUnit), columns: by(columns, columnStep) }
+}
+
+/** The Frame moved by whole Canvas positions. */
+export function movedFrame(frame: Frame, rows: number, columns: number): Frame {
+  return { ...frame, row: frame.row + rows, column: frame.column + columns }
 }
 
 /** The Frame with its size changed from the top-left corner, which stays where it is; never smaller than one bead
  * each way. */
 export function frameWithSize(frame: Frame, columns: number, rows: number, weave: Weave = { technique: 'loom' }): Frame {
   const { smallest, snapBottom, snapRight } = describeWeave(weave)
-  const tall = snapBottom(frame.row, frame.row + Math.max(smallest.rows, Math.round(rows)) - 1) - frame.row + 1
-  const wide = snapRight(frame.column, frame.column + Math.max(smallest.columns, Math.round(columns)) - 1) - frame.column + 1
+  const tall = snapBottom(0, Math.max(smallest.rows, Math.round(rows)) - 1) + 1
+  const wide = snapRight(0, Math.max(smallest.columns, Math.round(columns)) - 1) + 1
   return { ...frame, columns: wide, rows: tall }
 }
 

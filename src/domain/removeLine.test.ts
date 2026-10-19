@@ -9,7 +9,7 @@ import type { Selection } from './selection'
 function numbered(columns: number, rows: number, technique: Technique = 'loom'): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const colors = Array.from({ length: rows }, (_row, r) => Array.from({ length: columns }, (_cell, c) => `#0${r}0${c}00`))
-  return { ...base, frame: { row: 10, column: 20, columns, rows, beads: beadsFromColors(colors) } }
+  return { ...base, frame: { technique: 'loom' as const, row: 10, column: 20, columns, rows, beads: beadsFromColors(colors) } }
 }
 
 const rowOf = (project: Project, index: number): Selection => ({ top: project.frame!.row + index, left: project.frame!.column, rows: 1, columns: project.frame!.columns })

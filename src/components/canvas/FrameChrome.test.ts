@@ -15,7 +15,7 @@ const anchor = {
 }
 
 function framed(): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame: { row: 2, column: 3, rows: 4, columns: 5, beads: {} } }
+  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 4, columns: 5, beads: {} } }
 }
 
 function mountChrome(props: Partial<InstanceType<typeof FrameChrome>['$props']> = {}) {

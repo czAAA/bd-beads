@@ -16,11 +16,11 @@ import {
   type Frame,
   type FrameSheet,
 } from './canvas'
-import { sameFrame, snapRow } from './frame'
+import { sameFrame } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
-import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type PassDirection, type Technique, type Weave } from './weave'
+import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, TECHNIQUES, type PassDirection, type Technique, type Weave } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -114,6 +114,22 @@ const INITIAL_ROW_PROGRESS: RowProgress = { direction: 'rows', currentRow: 0, cu
  * stored, so setting a Frame needn't remember it; an old file's saved flag is ignored. */
 export const rowProgressOn = (project: Pick<Project, 'frame'>): boolean => project.frame !== undefined
 
+/** The Weave of a layer given as its Technique, Brick block and Net size: those and nothing else (a Frame carries more). */
+export function weaveOf({ technique, brickBlock, netSize }: Weave): Weave {
+  return { technique, ...(brickBlock ? { brickBlock } : {}), ...(netSize ? { netSize } : {}) }
+}
+
+/** The Canvas's Weave: the Project's own Technique, Brick block and Net size (ticket 492). */
+export function canvasWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>): Weave {
+  return weaveOf(project)
+}
+
+/** The Frame's Weave (ticket 492), which may differ from the Canvas's; a Canvas with no Frame counts its rows in its
+ * own. The one place that says which Weave a Frame's rows, rulers, passes and exports are counted in. */
+export function frameWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'>): Weave {
+  return weaveOf(project.frame ?? project)
+}
+
 /** What a new Project's stated size and Bead work out to: the Bead, and the grid that implies. */
 export interface ProjectGeometry extends GridDimensions {
   bead: Bead
@@ -142,15 +158,19 @@ export function createProject(input: CreateProjectInput): Project {
   const name = input.name?.trim() || beadLabel(bead)
   const makerName = normalizeMakerName(input.makerName ?? '')
 
-  return {
-    id: crypto.randomUUID(),
-    name,
+  const created = weaveOf({
     technique: input.technique,
     ...(input.brickBlock && input.brickBlock > 1 ? { brickBlock: clampBrickBlock(input.brickBlock) } : {}),
     ...(input.technique === 'netting' ? { netSize: clampNetSize(input.netSize) } : {}),
+  })
+
+  return {
+    id: crypto.randomUUID(),
+    name,
+    ...created,
     beadId: input.beadId,
     beads: {},
-    ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {} } } : {}),
+    ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
     rotation: 0,
     ...(makerName ? { makerName } : {}),
@@ -174,7 +194,7 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
   const frame = project.frame!
-  const weave = describeWeave(project)
+  const weave = describeWeave(frameWeave(project))
 
   return {
     ...project,
@@ -226,8 +246,8 @@ export function projectDimensions(project: Pick<Project, 'frame' | 'beads'>): Gr
 
 /** What the Frame measures in what the Technique counts (ticket 482): beads, or Units where it counts them. What the
  * person is told the size is, and what the rulers and the printed pages number. */
-export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'technique' | 'netSize'>): GridDimensions {
-  return describeWeave(project).unitsOf(projectDimensions(project))
+export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'technique' | 'brickBlock' | 'netSize'>): GridDimensions {
+  return describeWeave(frameWeave(project)).unitsOf(projectDimensions(project))
 }
 
 /** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the
@@ -240,10 +260,10 @@ export function frameGrid(project: Pick<Project, 'frame' | 'beads'>): Grid {
 
 /** A dense grid of cells as a Frame the size of the grid holding them: what the Convert image preview, the Overview's
  * pictures and a test's hand-made block of beads are drawn from. */
-export function framedGrid(grid: Grid): Pick<Project, 'beads' | 'frame'> {
+export function framedGrid(grid: Grid, weave: Weave = { technique: 'loom' }): Pick<Project, 'beads' | 'frame'> {
   return {
     beads: {},
-    frame: { row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))) },
+    frame: { row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))), ...weaveOf(weave) },
   }
 }
 
@@ -322,8 +342,6 @@ export function normalizeProject(stored: StoredProject): Project {
     ...rest
   } = legacy
 
-  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...project.frame, beads: project.frame.beads ?? {} } } : {}) }
-  const frame = projectFrame(placed)
   const technique = project.technique
 
   const { pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, ...withoutNames } = rest
@@ -331,7 +349,11 @@ export function normalizeProject(stored: StoredProject): Project {
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
   const netSize = technique === 'netting' ? clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) : undefined
-  const weave: Weave = { technique, ...(netSize ? { netSize } : {}) }
+  const canvas = weaveOf({ technique, brickBlock, netSize })
+  // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
+  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...project.frame, beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
+  const frame = projectFrame(placed)
+  const weave: Weave = frameWeave({ ...canvas, ...placed })
 
   return {
     ...withoutNames,
@@ -350,6 +372,41 @@ export function normalizeProject(stored: StoredProject): Project {
   }
 }
 
+/** A distance counted in the Frame's own rows and columns, as Canvas positions (ticket 492): the nearest whole ones,
+ * exactly the same where Frame and Canvas are woven alike. */
+export function canvasDistance(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, frame: Weave, rows: number, columns: number): GridPosition {
+  const canvas = canvasWeave(project)
+  if (sameWeave(canvas, frame)) {
+    return { row: rows, column: columns }
+  }
+  const own = positionStep(frame)
+  const target = positionStep(canvas)
+  return { row: Math.round((rows * own.down) / target.down), column: Math.round((columns * own.across) / target.across) }
+}
+
+/** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
+ * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas. */
+function resizedOrigin(project: Project, current: FrameSheet, rectangle: Frame): GridPosition {
+  const moved = canvasDistance(project, current, rectangle.row - current.row, rectangle.column - current.column)
+  return { row: current.row + moved.row, column: current.column + moved.column }
+}
+
+/** Whether two Weaves lay positions out alike. */
+export function sameWeave(a: Weave, b: Weave): boolean {
+  return a.technique === b.technique && (a.brickBlock ?? 1) === (b.brickBlock ?? 1) && (a.netSize ?? 0) === (b.netSize ?? 0)
+}
+
+/** A stored Frame's Weave, or the Project's where it has none or an unreadable one. */
+function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
+  const technique = TECHNIQUES.includes(stored.technique as Technique) ? stored.technique! : undefined
+  if (!technique) {
+    return fallback
+  }
+  const brickBlock = readBrickBlock(stored.brickBlock)
+  const netSize = technique === 'netting' ? clampNetSize(typeof stored.netSize === 'number' ? stored.netSize : undefined) : undefined
+  return weaveOf({ technique, brickBlock, netSize })
+}
+
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
  * place on the Canvas, those outside a smaller Frame are dropped, the Canvas is never touched, and a Frame set anew is
  * empty. Row progress's pointers stay inside it; an unchanged Frame is the same Project (no change). */
@@ -362,27 +419,41 @@ export function withFrame(project: Project, rectangle: Frame | undefined): Proje
   if (!rectangle) {
     return { ...rest, rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 }, updatedAt: Date.now() }
   }
-  const { row, column, rows, columns } = rectangle
+  const { rows, columns } = rectangle
+  const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
   const frame: FrameSheet = {
     row,
     column,
     rows,
     columns,
-    beads: current ? shiftedBeads(current.beads, current.row - row, current.column - column, { rows, columns }) : {},
+    beads: current ? shiftedBeads(current.beads, current.row - rectangle.row, current.column - rectangle.column, { rows, columns }) : {},
+    // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
+    ...weaveOf(current ?? project),
     ...(current?.name ? { name: current.name } : {}),
   }
-  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame, project), updatedAt: Date.now() }
+  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame, frame), updatedAt: Date.now() }
 }
 
-/** The Project woven in another Technique (ticket 351): grid, Bead and cells stay, only geometry changes. Offset
- * Techniques start their Frame on an even row, so a Frame on an odd one takes in the empty row above it. */
+/** The Canvas woven in another Technique (ticket 351, 492): its beads keep their row and column, only the geometry
+ * changes. The Frame is another layer and stays as it is. */
 export function withTechnique(project: Project, technique: Technique): Project {
-  return withWeave(project, { technique })
+  return touch(project, { technique })
 }
 
-/** The Project with its Brick block changed (ticket 477): the same cells, only the shift's rhythm changes. */
+/** The Project with the Canvas's Brick block changed (ticket 477): the same cells, only the shift's rhythm changes. */
 export function withBrickBlock(project: Project, brickBlock: number): Project {
-  return withWeave(project, { brickBlock: clampBrickBlock(brickBlock) })
+  return touch(project, { brickBlock: clampBrickBlock(brickBlock) })
+}
+
+/** The Frame woven in another Technique (ticket 492): its beads keep their row and column. Its local row 0 is always
+ * an unshifted one, so nothing else moves. A Project with no Frame is unchanged. */
+export function withFrameTechnique(project: Project, technique: Technique): Project {
+  return project.frame ? touch(project, { frame: { ...project.frame, technique } }) : project
+}
+
+/** The Frame with its Brick block changed (ticket 492). */
+export function withFrameBrickBlock(project: Project, brickBlock: number): Project {
+  return project.frame ? touch(project, { frame: { ...project.frame, brickBlock: clampBrickBlock(brickBlock) } }) : project
 }
 
 /** A stored Brick block if it is a whole number from 1 to MAX_BRICK_BLOCK, otherwise nothing (read as 1). */
@@ -393,19 +464,6 @@ function readBrickBlock(value: unknown): number | undefined {
 /** A Brick block as a whole number from 1 to MAX_BRICK_BLOCK. */
 export function clampBrickBlock(value: number): number {
   return Math.min(MAX_BRICK_BLOCK, Math.max(1, Math.round(value) || 1))
-}
-
-// A Frame whose first row is not the start of a cycle of the new weave takes in the empty rows above it.
-function withWeave(project: Project, change: Partial<Pick<Project, 'technique' | 'brickBlock'>>): Project {
-  const frame = project.frame
-  const changed = { ...project, ...change }
-  const top = frame ? snapRow(changed, frame.row) : 0
-  if (!frame || top === frame.row) {
-    return touch(project, change)
-  }
-  // The Frame grows upwards, and its beads stay where they are on the Canvas: counted from its new first row.
-  const grown = frame.row - top
-  return touch(project, { ...change, frame: { ...frame, row: top, rows: frame.rows + grown, beads: shiftedBeads(frame.beads, grown, 0) } })
 }
 
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
@@ -432,7 +490,7 @@ export function resetRowProgress(project: Project): Project {
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
  * alone. */
 export function toggleRowDirection(project: Project): Project {
-  if (!describeWeave(project).rowDirection) {
+  if (!describeWeave(frameWeave(project)).rowDirection) {
     return project
   }
   const direction = project.rowProgress.direction === 'rows' ? 'columns' : 'rows'
@@ -441,18 +499,19 @@ export function toggleRowDirection(project: Project): Project {
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
-export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'netSize'>): { current: number; total: number } {
+export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>): { current: number; total: number } {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
+  const weave = frameWeave(project)
   return direction === 'rows'
-    ? { current: currentRow, total: passCount(project, frame?.rows ?? 0, 'rows') }
-    : { current: currentColumn, total: passCount(project, frame?.columns ?? 0, 'columns') }
+    ? { current: currentRow, total: passCount(weave, frame?.rows ?? 0, 'rows') }
+    : { current: currentColumn, total: passCount(weave, frame?.columns ?? 0, 'columns') }
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
  * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
  * Frame is set. */
-export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'netSize'>, { row, column }: GridPosition): boolean {
+export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, { row, column }: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   // The lock covers the Frame only: beads outside it stay editable whatever row the weaver is on.
@@ -461,14 +520,15 @@ export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' |
   }
   const relativeRow = row - frame.row
   const relativeColumn = column - frame.column
+  const weave = frameWeave(project)
   return direction === 'rows'
-    ? passOf(project, relativeRow, relativeColumn, 'rows') < currentRow
-    : passOf(project, relativeColumn, relativeRow, 'columns') < currentColumn
+    ? passOf(weave, relativeRow, relativeColumn, 'rows') < currentRow
+    : passOf(weave, relativeColumn, relativeRow, 'columns') < currentColumn
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
-export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'netSize'>, { row, column }: GridPosition): boolean {
+export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, { row, column }: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   if (!frame || !frameContains(frame, { row, column })) {
@@ -476,9 +536,10 @@ export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 
   }
   const relativeRow = row - frame.row
   const relativeColumn = column - frame.column
+  const weave = frameWeave(project)
   return direction === 'rows'
-    ? passOf(project, relativeRow, relativeColumn, 'rows') === currentRow
-    : passOf(project, relativeColumn, relativeRow, 'columns') === currentColumn
+    ? passOf(weave, relativeRow, relativeColumn, 'rows') === currentRow
+    : passOf(weave, relativeColumn, relativeRow, 'columns') === currentColumn
 }
 
 /** Whether the Project has a bead on either layer. */

@@ -16,6 +16,7 @@ import MenuButton from '../ui/MenuButton.vue'
 import TextField from '../ui/form/TextField.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import CanvasSection from './CanvasSection.vue'
+import CanvasTechniqueRow from './CanvasTechniqueRow.vue'
 import FrameControls from './FrameControls.vue'
 import NameOnExportsRow from './NameOnExportsRow.vue'
 
@@ -36,6 +37,8 @@ const emit = defineEmits<{
   rename: [name: string]
   'set-technique': [technique: Technique]
   'set-brick-block': [brickBlock: number]
+  'set-canvas-technique': [technique: Technique]
+  'set-canvas-brick-block': [brickBlock: number]
   'replace-bead': [beadId: string]
   save: []
   'export-png': []
@@ -146,6 +149,8 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
       </MenuButton>
     </p>
 
+    <CanvasTechniqueRow :project="project" @set-technique="emit('set-canvas-technique', $event)" @set-brick-block="emit('set-canvas-brick-block', $event)" />
+
     <CanvasSection />
 
     <SaveExport
@@ -181,6 +186,7 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
 }
 
 .project-panel > :deep(.frame-controls),
+.project-panel > :deep(.canvas-technique),
 .project-panel__head,
 .project-panel__bead {
   box-sizing: border-box;

@@ -43,14 +43,9 @@ describe('frameWithEdges', () => {
 })
 
 describe('movedFrame', () => {
-  it('moves by whole beads, negative included', () => {
-    expect(movedFrame({ technique: 'loom' }, { row: 0, column: 0, rows: 3, columns: 4 }, -2, 5)).toEqual({ row: -2, column: 5, rows: 3, columns: 4 })
-  })
-
-  it('moves by pairs of rows where rows alternate, so the first row stays unshifted', () => {
-    expect(movedFrame({ technique: 'peyote' }, { row: 0, column: 0, rows: 3, columns: 4 }, 3, 1).row).toBe(4)
-    expect(movedFrame({ technique: 'peyote' }, { row: 0, column: 0, rows: 3, columns: 4 }, 1, 1).row).toBe(2)
-    expect(movedFrame({ technique: 'peyote' }, { row: 2, column: 0, rows: 3, columns: 4 }, -1, 0).row).toBe(0)
+  it('moves by whole Canvas positions, negative included, with no stagger kept (ticket 492)', () => {
+    expect(movedFrame({ row: 0, column: 0, rows: 3, columns: 4 }, -2, 5)).toEqual({ row: -2, column: 5, rows: 3, columns: 4 })
+    expect(movedFrame({ row: 2, column: 0, rows: 3, columns: 4 }, 1, 1)).toEqual({ row: 3, column: 1, rows: 3, columns: 4 })
   })
 })
 
@@ -72,13 +67,13 @@ describe('fitToDrawing', () => {
   })
 
   it('leaves out beads the current Frame covers', () => {
-    const current = { row: 20, column: 20, rows: 3, columns: 3, beads: {} }
+    const current = { technique: 'loom' as const, row: 20, column: 20, rows: 3, columns: 3, beads: {} }
     const withHidden = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
     expect(fitToDrawing({ technique: 'loom', beads: withHidden, frame: current })).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
   it('wraps the Frame\'s own beads with the Canvas beads that show, and leaves out those the Frame covers', () => {
-    const frame = { row: 20, column: 20, rows: 5, columns: 5, beads: withColors({}, [{ row: 4, column: 2, color: '#0f0' }]) }
+    const frame = { technique: 'loom' as const, row: 20, column: 20, rows: 5, columns: 5, beads: withColors({}, [{ row: 4, column: 2, color: '#0f0' }]) }
     const covered = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
     expect(fitToDrawing({ technique: 'loom', beads: covered, frame })).toEqual({ row: 1, column: -3, rows: 24, columns: 26 })
   })
@@ -166,16 +161,9 @@ describe('a Brick block (ticket 477)', () => {
     expect(snapRow({ technique: 'loom', brickBlock: 5 }, 7)).toBe(7)
   })
 
-  it('drags the top edge to a legal row', () => {
+  it('drags the top edge by a whole cycle of the Frame\'s own rows', () => {
     const frame = { row: 8, column: 0, rows: 12, columns: 4 }
-    expect(frameWithEdges(block3, frame, ['top'], { row: 3, column: 0 })).toEqual({ row: 0, column: 0, rows: 20, columns: 4 })
-  })
-
-  it('moves by whole cycles of rows', () => {
-    const frame = { row: 8, column: 2, rows: 6, columns: 4 }
-    expect(movedFrame(block2, frame, 3, 1)).toEqual({ row: 12, column: 3, rows: 6, columns: 4 })
-    expect(movedFrame(block2, frame, 1, 0)).toEqual({ row: 8, column: 2, rows: 6, columns: 4 })
-    expect(movedFrame(block2, frame, -2, 0)).toEqual({ row: 4, column: 2, rows: 6, columns: 4 })
+    expect(frameWithEdges(block3, frame, ['top'], { row: 3, column: 0 })).toEqual({ row: 2, column: 0, rows: 18, columns: 4 })
   })
 
   it('steps the top edge by a whole cycle and the bottom by a row', () => {
@@ -211,10 +199,6 @@ describe('the Frame in Right-angle weave holds whole Units (ticket 482)', () => 
     expect(frameWithEdges(weave, frame, ['bottom'], { row: 13, column: 4 })).toEqual({ ...frame, rows: 11 })
     expect(frameWithEdges(weave, frame, ['top'], { row: 1, column: 4 })).toEqual({ ...frame, row: 0, rows: 11 })
     expect(frameWithEdges(weave, frame, ['bottom'], { row: 0, column: 4 })).toEqual({ ...frame, rows: 3 })
-  })
-
-  it('moves by whole Units down and by columns across', () => {
-    expect(movedFrame(weave, frame, 3, 1)).toEqual({ ...frame, row: 8, column: 4 })
   })
 
   it('steps an edge by a Unit, or a column across', () => {
@@ -253,11 +237,6 @@ describe('the Frame in Netting holds whole diamonds (ticket 485)', () => {
     expect(frameWithEdges(weave, frame, ['left'], { row: 10, column: 1 })).toEqual({ ...frame, column: 0, columns: 13 })
     expect(frameWithEdges(weave, frame, ['bottom'], { row: 17, column: 10 })).toEqual({ ...frame, rows: 11 })
     expect(frameWithEdges(weave, frame, ['top'], { row: 5, column: 10 })).toEqual({ ...frame, row: 4, rows: 13 })
-  })
-
-  it('moves by whole diamonds across and down', () => {
-    expect(movedFrame(weave, frame, 4, 4)).toEqual({ ...frame, row: 12, column: 8 })
-    expect(movedFrame(weave, frame, 5, -3)).toEqual({ ...frame, row: 12, column: 0 })
   })
 
   it('steps an edge by a diamond across, or half a diamond down', () => {

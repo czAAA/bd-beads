@@ -125,15 +125,29 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="sheet-rotate"]').exists()).toBe(false)
   })
 
-  it('changes the Technique from the Project sheet as one Undo step (ticket 351)', async () => {
+  it('changes the Frame\'s Technique from the Project sheet as one Undo step, the Canvas keeping its own (tickets 351, 492)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.get('[data-testid="frame-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
 
     await wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').trigger('click')
 
-    expect(drawnProject(wrapper).technique).toBe('peyote')
+    expect(drawnProject(wrapper).frame?.technique).toBe('peyote')
+    expect(drawnProject(wrapper).technique).toBe('loom')
     expect(wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').attributes('aria-checked')).toBe('true')
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
+    expect(drawnProject(wrapper).frame?.technique).toBe('loom')
+  })
+
+  it('changes the Canvas\'s Technique from the Project sheet as one Undo step, the Frame keeping its own (ticket 492)', async () => {
+    const wrapper = await mountWithProject(15, 30)
+    await wrapper.find('[data-testid="strip-project"]').trigger('click')
+    expect(wrapper.get('[data-testid="canvas-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
+
+    await wrapper.get('[data-testid="canvas-technique"] [data-value="peyote"]').trigger('click')
+
+    expect(drawnProject(wrapper).technique).toBe('peyote')
+    expect(drawnProject(wrapper).frame?.technique).toBe('loom')
     await wrapper.get('[data-testid="strip-undo"]').trigger('click')
     expect(drawnProject(wrapper).technique).toBe('loom')
   })

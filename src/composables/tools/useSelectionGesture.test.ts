@@ -46,7 +46,7 @@ function copyTopLeft(gesture: ReturnType<typeof setup>['gesture']) {
 describe('useSelectionGesture in Right-angle weave (ticket 483)', () => {
   const woven: Project = {
     ...createProject({ technique: 'rightAngle', beadId: cubeBeadId, size: { width: 3, height: 2, unit: 'beads' } }),
-    frame: { row: 0, column: 0, rows: 5, columns: 4, beads: {} },
+    frame: { technique: 'loom' as const, row: 0, column: 0, rows: 5, columns: 4, beads: {} },
   }
 
   it('marks a Selection of whole Units: a press on one bead selects its Unit', () => {

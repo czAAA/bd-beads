@@ -314,7 +314,7 @@ describe('Selections on a layer (ADR 0066)', () => {
   const layered = (): Project => ({
     ...project(3, 3),
     beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3, color: BLUE }]),
-    frame: { row: 2, column: 2, rows: 3, columns: 3, beads: withColors({}, [{ row: 1, column: 1, color: RED }]) },
+    frame: { technique: 'loom' as const, row: 2, column: 2, rows: 3, columns: 3, beads: withColors({}, [{ row: 1, column: 1, color: RED }]) },
   })
 
   it('belongs to the layer its top-left bead is on', () => {

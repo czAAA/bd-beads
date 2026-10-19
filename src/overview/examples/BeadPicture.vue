@@ -35,7 +35,7 @@ const marksEl = ref<HTMLCanvasElement>()
 
 const project = computed(() => ({
   technique: props.technique,
-  ...framedGrid(props.grid),
+  ...framedGrid(props.grid, { technique: props.technique }),
   rowProgress: props.rowProgress ?? { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
   rotation: 0 as const,
 }))

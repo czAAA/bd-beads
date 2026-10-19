@@ -9,7 +9,7 @@ import type { Selection } from './selection'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
 function withBeads(beads: BeadMap, extra: Partial<Project> = {}): Project {
-  return { ...base, beads, frame: { row: 0, column: 0, rows: 40, columns: 40, beads: {} }, ...extra }
+  return { ...base, beads, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 40, columns: 40, beads: {} }, ...extra }
 }
 
 /** A 2 x 3 Selection at (10, 10) holding:  A B C / D . F  */
@@ -117,7 +117,7 @@ describe('coveredByRotation', () => {
 })
 
 describe('rotateLayerSelection (ADR 0066)', () => {
-  const frame = { row: 10, column: 10, rows: 3, columns: 3 }
+  const frame = { technique: 'loom' as const, row: 10, column: 10, rows: 3, columns: 3 }
   const inFrame = (beads: BeadMap, extra: Partial<Project> = {}): Project => ({ ...base, beads: {}, frame: { ...frame, beads }, ...extra })
 
   it('turns the Canvas\'s beads for a Selection on the Canvas, in Canvas positions', () => {
@@ -150,7 +150,7 @@ describe('rotateLayerSelection (ADR 0066)', () => {
 })
 
 describe('rotateFrame (ticket 471, ADR 0066)', () => {
-  const frame = { row: 20, column: 20, rows: 4, columns: 6 }
+  const frame = { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6 }
   const framed = (beads: BeadMap, extra: Partial<Project> = {}): Project => ({ ...base, beads: {}, frame: { ...frame, beads }, ...extra })
 
   it('turns the Frame about its centre, swapping Width and Height, and its own beads with it', () => {
@@ -180,18 +180,18 @@ describe('rotateFrame (ticket 471, ADR 0066)', () => {
 
   it('starts the turned Frame on an even row on peyote', () => {
     // A 5 x 4 Frame at (20, 20): its turned top row falls on an odd row, so it snaps to the even row above.
-    const peyote = { ...framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }])), technique: 'peyote' as const, frame: { row: 20, column: 20, rows: 5, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
+    const peyote = { ...framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }])), technique: 'peyote' as const, frame: { technique: 'peyote' as const, row: 20, column: 20, rows: 5, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
     const turned = rotateFrame(peyote)!
     expect(turned.frame!.row % 2).toBe(0)
     expect(turned.frame).toMatchObject({ rows: 4, columns: 5 })
     expect(positionsOf(turned.frame!.beads)).toHaveLength(1)
   })
 
-  it('starts the turned Frame on a multiple of 2N rows on brick stitch with a Brick block of N (ticket 477)', () => {
+  it('moves the turned Frame by whole cycles of its own rows on brick stitch with a Brick block of N (tickets 477, 492)', () => {
     for (const brickBlock of [2, 3, 5]) {
-      const brick = { ...base, technique: 'brick' as const, brickBlock, beads: {}, frame: { row: 30, column: 20, rows: 7, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
+      const brick = { ...base, technique: 'brick' as const, brickBlock, beads: {}, frame: { technique: 'brick' as const, brickBlock, row: 30, column: 20, rows: 7, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
       const turned = rotateFrame(brick)!
-      expect(turned.frame!.row % (2 * brickBlock)).toBe(0)
+      expect((turned.frame!.row - brick.frame.row) % (2 * brickBlock)).toBe(0)
       expect(turned.frame).toMatchObject({ rows: 4, columns: 7 })
       expect(positionsOf(turned.frame!.beads)).toHaveLength(1)
     }
