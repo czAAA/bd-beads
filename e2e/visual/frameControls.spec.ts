@@ -28,14 +28,16 @@ for (const zoom of [10, 100, 400]) {
     const handle = await box(page, 'frame-move-handle')
     const pencil = await box(page, 'frame-edit-toggle')
     const bar = await box(page, 'panel-dropdown')
-    const button = await box(page, 'strip-frame')
 
     expect([handle.width, handle.height]).toEqual([56, 44])
     expect([pencil.width, pencil.height]).toEqual([32, 32])
     expect(bar.width).toBeLessThanOrEqual(504)
-    // Dropped down from the strip's Frame button, 4px under it, like Menu and Project.
-    expect(Math.round(bar.y - (button.y + button.height))).toBe(4)
-    expect(Math.round(bar.x)).toBe(Math.round(button.x))
+    // Placed beside the Frame, inside the canvas box (ticket 500).
+    const area = await box(page, 'app-drawing-area')
+    expect(bar.x).toBeGreaterThanOrEqual(area.x)
+    expect(bar.y).toBeGreaterThanOrEqual(area.y)
+    expect(bar.x + bar.width).toBeLessThanOrEqual(area.x + area.width)
+    expect(bar.y + bar.height).toBeLessThanOrEqual(area.y + area.height)
     for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
       const step = await box(page, testid)
       expect([step.width, step.height]).toEqual([48, 48])
@@ -79,7 +81,7 @@ test('panning the canvas moves the Frame but not a bar opened from the strip, an
   await context.close()
 })
 
-test('opened from the pencil, the bar hangs from it, right edges lined up, and follows it as the canvas zooms', async ({ browser }) => {
+test('opened from the pencil, the bar stands inside the canvas box and is carried by a zoom (ticket 500)', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom' })])
@@ -89,14 +91,14 @@ test('opened from the pencil, the bar hangs from it, right edges lined up, and f
   await settle(page)
 
   const hangs = async () => {
-    const pencil = await box(page, 'frame-edit-toggle')
+    const area = await box(page, 'app-drawing-area')
     const bar = await box(page, 'panel-dropdown')
-    expect(Math.round(bar.y - (pencil.y + pencil.height))).toBe(4)
-    expect(Math.round(bar.x + bar.width)).toBe(Math.round(pencil.x + pencil.width))
+    expect(bar.x).toBeGreaterThanOrEqual(area.x)
+    expect(bar.x + bar.width).toBeLessThanOrEqual(area.x + area.width)
     return bar
   }
   const before = await hangs()
-  // A Ctrl+wheel zoom moves the pencil with no press, so the bar stays open and goes with it.
+  // A Ctrl+wheel zoom moves the Frame with no press, so the bar stays open and goes with it.
   const area = await box(page, 'app-drawing-area')
   await page.mouse.move(area.x + 120, area.y + area.height / 2)
   await page.keyboard.down('Control')
