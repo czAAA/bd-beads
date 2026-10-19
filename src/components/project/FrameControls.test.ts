@@ -58,6 +58,28 @@ describe('FrameControls', () => {
     })
   })
 
+  describe('Netting (ticket 485)', () => {
+    const woven = (netSize = 5) => createProject({ technique: 'netting', netSize, beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
+
+    it('never offers Netting as a switch from another Technique', () => {
+      const wrapper = mount(FrameControls, { props: { project: framed() } })
+      expect(wrapper.find('[data-testid="frame-technique"] [data-value="netting"]').exists()).toBe(false)
+    })
+
+    it('offers no switch to another Technique, and no Net size, on a Project woven in it', () => {
+      const wrapper = mount(FrameControls, { props: { project: woven() } })
+      expect(wrapper.find('[data-testid="frame-technique-row"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="frame-net-size"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="frame-brick-block"]').exists()).toBe(false)
+    })
+
+    it('works out the Estimated size from the diamond: 10 by 20 diamonds of Net size 5 and a last bead of 1.5 mm', () => {
+      const wrapper = mount(FrameControls, { props: { project: woven() } })
+      // 60 strand steps of 0.75 × 1.5 mm across and 63 down, plus the bead that closes the last.
+      expect(wrapper.get('[data-testid="size-estimate"]').text()).toBe('≈ 6.9 × 7.2 cm')
+    })
+  })
+
   describe('Brick block (ticket 477)', () => {
     const brick = () => createProject({ technique: 'brick', brickBlock: 3, beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
 

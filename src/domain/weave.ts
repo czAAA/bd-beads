@@ -3,19 +3,36 @@ import type { Frame } from './canvas'
 import type { GridBounds, GridDimensions, GridPosition } from './grid'
 
 /** The weaving method, which determines a Project's grid geometry. */
-export type Technique = 'loom' | 'peyote' | 'brick' | 'rightAngle'
+export type Technique = 'loom' | 'peyote' | 'brick' | 'rightAngle' | 'netting'
 
 /** Every Technique, in the order the choices are listed. */
-export const TECHNIQUES: readonly Technique[] = ['loom', 'peyote', 'brick', 'rightAngle']
+export const TECHNIQUES: readonly Technique[] = ['loom', 'peyote', 'brick', 'rightAngle', 'netting']
 
 /** The most rows a Brick block may hold straight on top of each other (ticket 477). */
 export const MAX_BRICK_BLOCK = 20
 
+/** The beads in one Netting loop, odd (ticket 485): the middle one is shared with the next row. */
+export const MIN_NET_SIZE = 3
+/** The most beads in a Netting loop. */
+export const MAX_NET_SIZE = 9
+/** The Net size a new Netting Project starts with. */
+export const DEFAULT_NET_SIZE = 3
+
+/** A Net size the Weave can lay out: odd, from 3 to 9; anything else is the default. */
+export function clampNetSize(value: number | undefined): number {
+  if (value === undefined || !Number.isFinite(value)) {
+    return DEFAULT_NET_SIZE
+  }
+  const size = Math.min(MAX_NET_SIZE, Math.max(MIN_NET_SIZE, Math.round(value)))
+  return size % 2 === 1 ? size : size - 1
+}
+
 /** What decides how a Project is laid out: the Technique and, on brick stitch, the Brick block (ticket 477); absent
- * means 1, every other row. A Project is one. */
+ * means 1, every other row. On Netting, the Net size (ticket 485); absent means the default. A Project is one. */
 export interface Weave {
   technique: Technique
   brickBlock?: number
+  netSize?: number
 }
 
 /** Which way a bead lies in its position. */
@@ -31,6 +48,8 @@ interface TechniqueRules {
   roundness: number
   /** Whether the Brick block setting applies. */
   hasBrickBlock: boolean
+  /** Whether the Net size setting applies. */
+  hasNetSize: boolean
   /** Whether an open Project can be switched to or from it. */
   switchable: boolean
   /** Whether Rotate and Rotate Frame are offered. */
@@ -49,6 +68,11 @@ const ROUNDED_BEAD_CORNER = 0.22
 const SHIFT = 0.5
 /** A Right-angle weave bead's diameter over its length as drawn (the Bead's real ratio is in mm). */
 const RIGHT_ANGLE_ASPECT = 0.7
+/** How far a Netting strand steps across and down per position, in beads: a bead on a diagonal sits a little over a
+ * bead away from the next (0.75 · √2 ≈ 1.06). */
+const NETTING_STEP = 0.75
+/** A bead's face reaches half a cell from its centre: squared, in cells, for a round bead's hit test. */
+const BEAD_FACE_DISTANCE = 0.25
 
 const RULES: Record<Technique, TechniqueRules> = {
   loom: {
@@ -56,6 +80,7 @@ const RULES: Record<Technique, TechniqueRules> = {
     rowPitch: 1,
     roundness: 0,
     hasBrickBlock: false,
+    hasNetSize: false,
     switchable: true,
     quarterTurn: true,
     rowDirection: true,
@@ -68,6 +93,7 @@ const RULES: Record<Technique, TechniqueRules> = {
     rowPitch: 0.75,
     roundness: ROUNDED_BEAD_CORNER,
     hasBrickBlock: false,
+    hasNetSize: false,
     switchable: true,
     quarterTurn: true,
     rowDirection: true,
@@ -80,6 +106,7 @@ const RULES: Record<Technique, TechniqueRules> = {
     rowPitch: 1,
     roundness: 0,
     hasBrickBlock: true,
+    hasNetSize: false,
     switchable: true,
     quarterTurn: true,
     rowDirection: true,
@@ -92,12 +119,26 @@ const RULES: Record<Technique, TechniqueRules> = {
     rowPitch: 1,
     roundness: ROUNDED_BEAD_CORNER,
     hasBrickBlock: false,
+    hasNetSize: false,
     switchable: false,
     quarterTurn: false,
     rowDirection: true,
     twoPasses: false,
     countsUnits: true,
     cellAspect: RIGHT_ANGLE_ASPECT,
+  },
+  netting: {
+    shifted: false,
+    rowPitch: NETTING_STEP,
+    roundness: 0.5,
+    hasBrickBlock: false,
+    hasNetSize: true,
+    switchable: false,
+    quarterTurn: false,
+    rowDirection: false,
+    twoPasses: false,
+    countsUnits: true,
+    cellAspect: 1,
   },
 }
 
@@ -118,8 +159,21 @@ export interface WeaveDescription extends TechniqueRules {
   positionAt(x: number, y: number, cellWidth: number, cellHeight: number): GridPosition | undefined
   /** The position whose bead is nearest a point of the grid, gaps included; only where beads aren't laid on rows. */
   nearestPosition(x: number, y: number, cellWidth: number, cellHeight: number): GridPosition
-  /** How many rows of positions one step down a Unit takes: 1, or 2 where lines alternate. */
+  /** How many rows of positions one step down a Unit takes: 1, 2 where lines alternate, a diamond's half height in a net. */
   rowsPerUnit: number
+  /** How many columns of positions one Unit takes across. */
+  columnsPerUnit: number
+  /** The columns a Frame's left edge and width go by: 1, or a diamond's width in a net, so its edges keep the lattice's phase. */
+  columnStep: number
+  /** The last column of a Frame that starts on `left` and reaches across to `right`, so it ends on a whole Unit. */
+  snapRight(left: number, right: number): number
+  /** The rows and columns of positions whose beads can touch a stretch of grid space, a little more than needed; only
+   * where beads aren't laid on rows. */
+  visible(area: { left: number; right: number; top: number; bottom: number }, cellWidth: number, cellHeight: number): { firstRow: number; lastRow: number; first: number; last: number }
+  /** The repeating tile of a Technique that counts Units: its size and the bead boxes it holds, from its top-left. */
+  tile(cellWidth: number, cellHeight: number): { size: { width: number; height: number }; beads: Box[] }
+  /** Where a Frame's top-left position sits from the grid's top-left, in the unit of the cell size passed. */
+  origin(position: GridPosition, cellWidth: number, cellHeight: number): CellCenter
   /** Positions a block of Units takes, and back: the Units a block of positions holds. */
   positionsOf(units: GridDimensions): GridDimensions
   unitsOf(positions: GridDimensions): GridDimensions
@@ -158,6 +212,9 @@ export function describeWeave(weave: Weave): WeaveDescription {
   if (weave.technique === 'rightAngle') {
     return rightAngleDescription(rules)
   }
+  if (weave.technique === 'netting') {
+    return nettingDescription(rules, clampNetSize(weave.netSize))
+  }
   return {
     ...rules,
     frameStep: rules.shifted ? 2 * (rules.hasBrickBlock ? (weave.brickBlock ?? 1) : 1) : 1,
@@ -174,6 +231,12 @@ export function describeWeave(weave: Weave): WeaveDescription {
     positionAt: () => undefined,
     nearestPosition: () => ({ row: 0, column: 0 }),
     rowsPerUnit: 1,
+    columnsPerUnit: 1,
+    columnStep: 1,
+    snapRight: (_left, right) => right,
+    visible: () => ({ firstRow: 0, lastRow: -1, first: 0, last: -1 }),
+    tile: (cellWidth, cellHeight) => ({ size: { width: cellWidth, height: cellHeight }, beads: [{ x: 0, y: 0, width: cellWidth, height: cellHeight }] }),
+    origin: (position, cellWidth, cellHeight) => ({ x: position.column * cellWidth, y: position.row * cellHeight }),
     positionsOf: (units) => units,
     unitsOf: (positions) => positions,
     snapBottom: (_top, bottom) => bottom,
@@ -269,6 +332,21 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
       return best!.position
     },
     rowsPerUnit: 2,
+    columnsPerUnit: 1,
+    columnStep: 1,
+    snapRight: (_left, right) => right,
+    tile: (length, width) => ({ size: { width: length + width, height: length + width }, beads: [0, 1].map((row) => box({ row, column: 0 }, length, width)) }),
+    // A Unit's pitch down is two rows, so the lines either side of the ones in view are asked for as well.
+    visible: (area, length, width) => {
+      const side = length + width
+      return {
+        firstRow: Math.floor(area.top / side) * 2 - 1,
+        lastRow: Math.floor(area.bottom / side) * 2 + 2,
+        first: Math.floor(area.left / side) - 1,
+        last: Math.floor(area.right / side) + 1,
+      }
+    },
+    origin: ({ row, column }, length, width) => ({ x: column * (length + width), y: (row / 2) * (length + width) }),
     positionsOf: ({ columns, rows }) => ({ columns: columns + 1, rows: rows * 2 + 1 }),
     unitsOf,
     snapBottom: (top, bottom) => Math.max(top + 2, bottom + (((bottom - top) % 2) + 2) % 2),
@@ -286,6 +364,100 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
     turned: () => undefined,
     mirrored: (position) => position,
     stepMm: (bead) => ({ across: beadPitchMm(bead) + bead.heightMm, down: beadPitchMm(bead) + bead.heightMm }),
+  }
+}
+
+const modulo = (value: number, by: number): number => ((value % by) + by) % by
+
+/** Netting, horizontal (ticket 485): beads on the two diagonals of a diamond mesh, p = (netSize + 1) / 2 positions from
+ * one shared bead to the next. A diamond is 2p wide and tall and holds `netSize` beads; a position off a diagonal is a
+ * hole, no position. A Frame starts on a multiple of 2p each way, so its lattice is the Canvas's. */
+function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescription {
+  const p = (netSize + 1) / 2
+  const period = 2 * p
+  const hasPosition = ({ row, column }: GridPosition): boolean =>
+    modulo(column - row - p, period) === 0 || modulo(column + row - p, period) === 0
+  const box = ({ row, column }: GridPosition, cellWidth: number, cellHeight: number): Box => ({
+    x: column * NETTING_STEP * cellWidth,
+    y: row * NETTING_STEP * cellHeight,
+    width: cellWidth,
+    height: cellHeight,
+  })
+  const extent = (count: number, cell: number): number => (count > 0 ? (count - 1) * NETTING_STEP * cell + cell : 0)
+  // The bead nearest a point, among the positions within `reach` steps of the one it falls on.
+  const nearest = (x: number, y: number, cellWidth: number, cellHeight: number, reach: number): { position: GridPosition; distance: number } | undefined => {
+    const column = Math.round((x - cellWidth / 2) / (NETTING_STEP * cellWidth))
+    const row = Math.round((y - cellHeight / 2) / (NETTING_STEP * cellHeight))
+    let best: { position: GridPosition; distance: number } | undefined
+    for (let r = row - reach; r <= row + reach; r += 1) {
+      for (let c = column - reach; c <= column + reach; c += 1) {
+        if (!hasPosition({ row: r, column: c })) continue
+        const { x: left, y: top } = box({ row: r, column: c }, cellWidth, cellHeight)
+        const distance = ((x - left - cellWidth / 2) / cellWidth) ** 2 + ((y - top - cellHeight / 2) / cellHeight) ** 2
+        if (!best || distance < best.distance) best = { position: { row: r, column: c }, distance }
+      }
+    }
+    return best
+  }
+  return {
+    ...rules,
+    frameStep: period,
+    hasPosition,
+    orientationAt: () => 'upright',
+    box,
+    blockExtent: (columns, rows, cellWidth, cellHeight) => ({ width: extent(columns, cellWidth), height: extent(rows, cellHeight) }),
+    // A press lands on a bead only inside its round face.
+    positionAt: (x, y, cellWidth, cellHeight) => {
+      const found = nearest(x, y, cellWidth, cellHeight, 1)
+      return found && found.distance <= BEAD_FACE_DISTANCE ? found.position : undefined
+    },
+    nearestPosition: (x, y, cellWidth, cellHeight) => nearest(x, y, cellWidth, cellHeight, p + 1)?.position ?? { row: 0, column: 0 },
+    rowsPerUnit: p,
+    columnsPerUnit: period,
+    columnStep: period,
+    snapRight: (left, right) => left + Math.max(period, Math.ceil((right - left) / period) * period),
+    tile: (cellWidth, cellHeight) => ({
+      size: { width: period * NETTING_STEP * cellWidth, height: period * NETTING_STEP * cellHeight },
+      beads: Array.from({ length: period * period }, (_cell, at) => ({ row: Math.floor(at / period), column: at % period }))
+        .filter(hasPosition)
+        .map((position) => box(position, cellWidth, cellHeight)),
+    }),
+    visible: (area, cellWidth, cellHeight) => ({
+      firstRow: Math.floor((area.top - cellHeight) / (NETTING_STEP * cellHeight)),
+      lastRow: Math.ceil(area.bottom / (NETTING_STEP * cellHeight)),
+      first: Math.floor((area.left - cellWidth) / (NETTING_STEP * cellWidth)),
+      last: Math.ceil(area.right / (NETTING_STEP * cellWidth)),
+    }),
+    origin: ({ row, column }, cellWidth, cellHeight) => ({ x: column * NETTING_STEP * cellWidth, y: row * NETTING_STEP * cellHeight }),
+    positionsOf: ({ columns, rows }) => ({ columns: columns * period + 1, rows: (rows + 1) * p + 1 }),
+    unitsOf: ({ columns, rows }) => ({
+      columns: Math.max(0, Math.floor((columns - 1) / period)),
+      rows: Math.max(0, Math.floor((rows - 1) / p) - 1),
+    }),
+    snapBottom: (top, bottom) => top + Math.max(2 * p, Math.ceil((bottom - top) / p) * p),
+    smallest: { columns: period + 1, rows: period + 1 },
+    center: (position, cellWidth, cellHeight) => {
+      const { x, y } = box(position, cellWidth, cellHeight)
+      return { x: x + cellWidth / 2, y: y + cellHeight / 2 }
+    },
+    neighbors: (bounds, { row, column }) => {
+      const candidates = [-1, 1].flatMap((down) => [-1, 1].map((across) => ({ row: row + down, column: column + across })))
+      const inside = (position: GridPosition): boolean =>
+        !bounds ||
+        (position.row >= (bounds.row ?? 0) &&
+          position.row < (bounds.row ?? 0) + bounds.rows &&
+          position.column >= (bounds.column ?? 0) &&
+          position.column < (bounds.column ?? 0) + bounds.columns)
+      return candidates.filter((position) => hasPosition(position) && inside(position))
+    },
+    passes: {
+      count: (lines) => Math.max(0, lines),
+      of: (line) => line,
+      lineOf: (pass) => pass,
+    },
+    turned: () => undefined,
+    mirrored: (position) => position,
+    stepMm: (bead) => ({ across: period * NETTING_STEP * beadPitchMm(bead), down: p * NETTING_STEP * bead.heightMm }),
   }
 }
 
@@ -382,7 +554,7 @@ function overlappingColumns(weave: Weave, fromRow: number, toRow: number, column
  * come back; with no bounds the canvas is open. */
 export function neighborsOf(weave: Weave, bounds: GridBounds | undefined, position: GridPosition): GridPosition[] {
   if (RULES[weave.technique].countsUnits) {
-    return rightAngleNeighbors(bounds, position)
+    return describeWeave(weave).neighbors(bounds, position)
   }
   const { row, column } = position
   const candidates: GridPosition[] = [

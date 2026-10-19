@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
+import { withColors } from '../domain/canvas'
 import { createProject, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
@@ -870,5 +871,42 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
     const beads = beadsDrawn(project, whole(project))
 
     expect(beads.map((bead) => bead.color)).toEqual(['#ff0000', null, null, null, null, null])
+  })
+})
+
+describe('Netting (ticket 485)', () => {
+  // One diamond at Net size 3: 5 columns and 5 rows of positions, 8 of them beads. A bead is 20 and a strand step 15.
+  const project = (extra: Partial<Project> = {}) => ({ ...createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } }), ...extra })
+
+  it('measures a block of positions as the steps between them plus one bead', () => {
+    expect(projectExtentPx('netting', 5, 5)).toEqual({ width: 4 * 15 + 20, height: 4 * 15 + 20 })
+  })
+
+  it('draws round beads, upright, at the places of the mesh and nothing in a hole', () => {
+    const woven = project()
+    const everyPosition = Array.from({ length: 25 }, (_cell, at) => ({ row: Math.floor(at / 5), column: at % 5, color: '#e63746' }))
+    const painted = { ...woven, frame: { ...woven.frame!, beads: withColors({}, everyPosition) } }
+
+    const beads = beadsDrawn(painted, whole(painted))
+
+    expect(beads.map(({ x, y, width, height }) => [x, y, width ?? 20, height ?? 20])).toEqual([
+      [30, 0, 20, 20],
+      [15, 15, 20, 20],
+      [45, 15, 20, 20],
+      [0, 30, 20, 20],
+      [60, 30, 20, 20],
+      [15, 45, 20, 20],
+      [45, 45, 20, 20],
+      [30, 60, 20, 20],
+    ])
+    expect(beads.every(({ cornerRadius }) => cornerRadius === 10)).toBe(true)
+    expect(beads.every(({ color }) => color === '#e63746')).toBe(true)
+  })
+
+  it('paints a bead on its own and leaves the others empty', () => {
+    const woven = project()
+    const colored = { ...woven, frame: { ...woven.frame!, beads: withColors({}, [{ row: 2, column: 0, color: '#2f6fed' }]) } }
+
+    expect(beadsDrawn(colored, whole(colored)).map(({ color }) => color)).toEqual([null, null, null, '#2f6fed', null, null, null, null])
   })
 })

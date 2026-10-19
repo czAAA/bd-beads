@@ -237,3 +237,49 @@ describe('the Frame in Right-angle weave holds whole Units (ticket 482)', () => 
     expect(fitToDrawing({ ...weave, beads })).toEqual({ row: 2, column: 5, rows: 5, columns: 3 })
   })
 })
+
+describe('the Frame in Netting holds whole diamonds (ticket 485)', () => {
+  const weave = { technique: 'netting' as const, netSize: 3 }
+  // Net size 3: a diamond is 4 positions across and down.
+  const frame = { row: 8, column: 4, rows: 9, columns: 9 }
+
+  it('starts on a diamond across and down, and ends on one, at least a diamond each way', () => {
+    expect(frameFromCells(weave, { row: 9, column: 5 }, { row: 14, column: 9 })).toEqual({ row: 8, column: 4, rows: 7, columns: 9 })
+    expect(frameFromCells(weave, { row: 2, column: 2 }, { row: 2, column: 2 })).toEqual({ row: 0, column: 0, rows: 5, columns: 5 })
+  })
+
+  it('drags an edge to the nearest whole diamond', () => {
+    expect(frameWithEdges(weave, frame, ['right'], { row: 10, column: 16 })).toEqual({ ...frame, columns: 13 })
+    expect(frameWithEdges(weave, frame, ['left'], { row: 10, column: 1 })).toEqual({ ...frame, column: 0, columns: 13 })
+    expect(frameWithEdges(weave, frame, ['bottom'], { row: 17, column: 10 })).toEqual({ ...frame, rows: 11 })
+    expect(frameWithEdges(weave, frame, ['top'], { row: 5, column: 10 })).toEqual({ ...frame, row: 4, rows: 13 })
+  })
+
+  it('moves by whole diamonds across and down', () => {
+    expect(movedFrame(weave, frame, 4, 4)).toEqual({ ...frame, row: 12, column: 8 })
+    expect(movedFrame(weave, frame, 5, -3)).toEqual({ ...frame, row: 12, column: 0 })
+  })
+
+  it('steps an edge by a diamond across, or half a diamond down', () => {
+    expect(frameWithEdgeStep(weave, frame, 'right', 1)).toEqual({ ...frame, columns: 13 })
+    expect(frameWithEdgeStep(weave, frame, 'left', 1)).toEqual({ ...frame, column: 0, columns: 13 })
+    expect(frameWithEdgeStep(weave, frame, 'bottom', 1)).toEqual({ ...frame, rows: 11 })
+    expect(frameWithEdgeStep(weave, frame, 'top', 1)).toEqual({ ...frame, row: 4, rows: 13 })
+    expect(frameWithEdgeStep(weave, { ...frame, columns: 5 }, 'right', -1)).toEqual({ ...frame, columns: 5 })
+  })
+
+  it('is resized to diamonds typed, each side growing evenly by whole diamonds', () => {
+    // 3 diamonds across (13 columns) and 2 rows of them down (7 rows).
+    expect(frameResizedAround(weave, frame, 3, 2)).toEqual({ row: 8, column: 4, rows: 7, columns: 13 })
+    expect(frameResizedAround(weave, frame, 1, 1)).toMatchObject({ columns: 5, rows: 5 })
+  })
+
+  it('is sized to diamonds from its corner', () => {
+    expect(frameWithSize(frame, 12, 8, weave)).toEqual({ ...frame, columns: 13, rows: 9 })
+  })
+
+  it('wraps what is drawn in whole diamonds', () => {
+    const beads = withColors({}, [{ row: 5, column: 5, color: '#ff0000' }, { row: 9, column: 9, color: '#ff0000' }])
+    expect(fitToDrawing({ ...weave, beads })).toEqual({ row: 4, column: 4, rows: 7, columns: 9 })
+  })
+})

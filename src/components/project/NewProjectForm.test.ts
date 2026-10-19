@@ -110,11 +110,11 @@ describe('NewProjectForm', () => {
     expect(events![0]![0]).toMatchObject({ name: 'My Bracelet' })
   })
 
-  it('lists Peyote, Brick stitch and Right-angle weave alongside Loom', () => {
+  it('lists Peyote, Brick stitch, Right-angle weave and Netting alongside Loom', () => {
     const wrapper = mount(NewProjectForm)
 
     const options = wrapper.findAll('[data-testid="technique-select"] [role="radio"]')
-    expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick', 'rightAngle'])
+    expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick', 'rightAngle', 'netting'])
   })
 
   it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
@@ -219,6 +219,51 @@ describe('NewProjectForm Brick block (ticket 477)', () => {
 
     await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
     expect(wrapper.find('[data-testid="brick-block-value"]').text()).toBe('2')
+  })
+})
+
+describe('NewProjectForm Net size (ticket 485)', () => {
+  const press = async (wrapper: ReturnType<typeof mount>, button: 'less' | 'more') => {
+    await wrapper.find(`[data-testid="net-size-${button}"]`).trigger('pointerdown')
+    await wrapper.find(`[data-testid="net-size-${button}"]`).trigger('pointerup')
+  }
+
+  it('shows the stepper only for Netting, at 3', async () => {
+    const wrapper = mount(NewProjectForm)
+    expect(wrapper.find('[data-testid="net-size"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="netting"]').trigger('click')
+    expect(wrapper.find('[data-testid="net-size-value"]').text()).toBe('3')
+    expect(wrapper.find('[data-testid="net-size-less"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="rightAngle"]').trigger('click')
+    expect(wrapper.find('[data-testid="net-size"]').exists()).toBe(false)
+  })
+
+  it('steps through the odd sizes from 3 to 9, and sends the number with the draft and the submit', async () => {
+    const wrapper = mount(NewProjectForm)
+    await wrapper.find('[data-testid="technique-select"] [data-value="netting"]').trigger('click')
+
+    await press(wrapper, 'more')
+    expect(wrapper.find('[data-testid="net-size-value"]').text()).toBe('5')
+    expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ technique: 'netting', netSize: 5 })
+    await press(wrapper, 'more')
+    await press(wrapper, 'more')
+    await press(wrapper, 'more')
+    expect(wrapper.find('[data-testid="net-size-value"]').text()).toBe('9')
+    expect(wrapper.find('[data-testid="net-size-more"]').attributes('disabled')).toBeDefined()
+
+    await wrapper.find('form').trigger('submit')
+    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'netting', netSize: 9 })
+  })
+
+  it('sends no Net size for another Technique', async () => {
+    const wrapper = mount(NewProjectForm)
+    await wrapper.find('[data-testid="technique-select"] [data-value="netting"]').trigger('click')
+    await press(wrapper, 'more')
+
+    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
+    expect(wrapper.emitted('draft')!.at(-1)![0]).not.toHaveProperty('netSize')
   })
 })
 

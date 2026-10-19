@@ -171,6 +171,8 @@ export interface SurfaceViewInput {
   technique: Technique
   /** The Brick block (ticket 477); nothing is 1. */
   brickBlock?: number
+  /** The Net size (ticket 485); nothing is the default. */
+  netSize?: number
   rotation: Rotation
   zoom: number
   /** Where the viewport's top-left corner is in displayed space; nothing when left out. */
@@ -272,8 +274,8 @@ function gridBox(space: Space, weave: Weave, box: Frame): Region {
   }
 }
 
-export function surfaceView({ space, technique, brickBlock, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
-  const weave: Weave = { technique, brickBlock }
+export function surfaceView({ space, technique, brickBlock, netSize, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
+  const weave: Weave = { technique, brickBlock, netSize }
   const description = describeWeave(weave)
   const cell = cellSizePx(technique)
   /** Grid space to displayed space, at a zoom: the matrix gridToRegion gives for a region at the origin. */
@@ -349,8 +351,10 @@ export function surfaceView({ space, technique, brickBlock, rotation, zoom, scro
     },
     beadStep: () => {
       const origin = displayed(0, 0, zoom)
-      const across = description.countsUnits ? cell.width + cell.height : CELL_SIZE_PX
-      const down = description.countsUnits ? cell.width + cell.height : rowPitchPx(technique)
+      // Where Units are counted a step is a whole Unit across and down.
+      const unit = description.origin({ row: description.rowsPerUnit, column: description.columnsPerUnit }, cell.width, cell.height)
+      const across = description.countsUnits ? unit.x : CELL_SIZE_PX
+      const down = description.countsUnits ? unit.y : rowPitchPx(technique)
       const column = displayed(across, 0, zoom)
       const row = displayed(0, down, zoom)
       return { column: { x: column.x - origin.x, y: column.y - origin.y }, row: { x: row.x - origin.x, y: row.y - origin.y } }

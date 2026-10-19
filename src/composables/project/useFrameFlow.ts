@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import type { Frame } from '../../domain/canvas'
-import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow, type FrameEdge } from '../../domain/frame'
+import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { describeWeave, type Technique } from '../../domain/weave'
 import { changeFrame } from '../../domain/changeFrame'
@@ -203,7 +203,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     const top = project ? snapRow(project, frame.row) : frame.row
     const bottom = project ? describeWeave(project).snapBottom(top, frame.row + frame.rows - 1) : frame.row + frame.rows - 1
-    commit({ ...frame, row: top, rows: bottom - top + 1 }, 'make')
+    const left = project ? snapColumn(project, frame.column) : frame.column
+    const right = project ? describeWeave(project).snapRight(left, frame.column + frame.columns - 1) : frame.column + frame.columns - 1
+    commit({ row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }, 'make')
   }
 
   function fit(): void {
@@ -242,10 +244,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!step || !project?.frame) return false
     if (event.shiftKey) {
-      const down = describeWeave(project).rowsPerUnit
-      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0] * down, project))
+      const { rowsPerUnit, columnsPerUnit } = describeWeave(project)
+      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1] * columnsPerUnit, project.frame.rows + step[0] * rowsPerUnit, project))
     } else {
-      moveBy(step[0], step[1])
+      const { frameStep, columnStep } = describeWeave(project)
+      moveBy(step[0] * frameStep, step[1] * columnStep)
     }
     return true
   }

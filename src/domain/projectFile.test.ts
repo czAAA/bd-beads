@@ -304,3 +304,25 @@ describe('importProjects', () => {
     expect(added.map((project) => project.id)).toEqual([incoming.id, 'fresh-id'])
   })
 })
+
+describe('Netting in a file (ticket 485)', () => {
+  const woven = (netSize: number) =>
+    paintAt(createProject({ technique: 'netting', netSize, beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }), [{ row: 1, column: 1 }], '#e63746')
+
+  it('keeps the Technique, the Net size and every bead through the file', () => {
+    for (const netSize of [3, 5, 9]) {
+      const project = woven(netSize)
+
+      const [restored] = parseProjectsFile(serializeProject(project)).projects
+
+      expect(restored).toEqual(project)
+      expect(restored).toMatchObject({ technique: 'netting', netSize })
+    }
+  })
+
+  it('reads a Net size that is not odd from 3 to 9 as 3', () => {
+    const file = serializeProject(woven(5)).replace('"netSize":5', '"netSize":4')
+
+    expect(parseProjectsFile(file).projects[0]!.netSize).toBe(3)
+  })
+})

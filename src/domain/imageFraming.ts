@@ -114,6 +114,7 @@ export const SLOW_FRAMING_CELLS: Record<Technique, number> = {
   peyote: PEYOTE_SLOW_FRAMING_CELLS,
   brick: BRICK_SLOW_FRAMING_CELLS,
   rightAngle: PREVIEW_MAX_CELLS,
+  netting: PREVIEW_MAX_CELLS,
 }
 
 /** Whether a grid this size in this Technique risks slow framing (see SLOW_FRAMING_CELLS). `thresholds` defaults to
@@ -164,6 +165,8 @@ export interface PreviewLatticeInput {
   technique: Technique
   /** The Brick block (ticket 477); nothing is 1. */
   brickBlock?: number
+  /** The Net size (ticket 485); nothing is the default. */
+  netSize?: number
 }
 
 /** The preview's lattice for a view: the frame plus the overhanging picture, capped at PREVIEW_MAX_CELLS. The margin
@@ -176,21 +179,22 @@ export function previewLattice({
   bead,
   technique,
   brickBlock,
+  netSize,
 }: PreviewLatticeInput): PreviewLattice {
   const overhangX = Math.max(-view.offsetXMm, view.offsetXMm + view.pictureWidthMm - frame.widthMm)
   const overhangY = Math.max(-view.offsetYMm, view.offsetYMm + view.pictureHeightMm - frame.heightMm)
 
-  const description = describeWeave({ technique })
-  // A step of the positions: where Units are counted, a Unit is a column across and two rows down (ticket 482).
+  const description = describeWeave({ technique, netSize })
+  // A step of the positions: where Units are counted, a Unit is `columnsPerUnit` columns across and `rowsPerUnit` rows down.
   const step = description.stepMm(bead)
-  const wantedColumns = Math.max(0, Math.ceil(overhangX / step.across))
+  const wantedColumns = Math.max(0, Math.ceil(overhangX / (step.across / description.columnsPerUnit)))
   const wantedRows = Math.max(0, Math.ceil(overhangY / (step.down / description.rowsPerUnit)))
 
   const fit = marginFit(dimensions, wantedColumns, wantedRows)
-  const frameColumn = Math.floor(wantedColumns * fit)
+  const frameColumn = description.columnStep * Math.floor((wantedColumns * fit) / description.columnStep)
   // Rounded down to whole cycles of the shift, so the frame keeps its place in it (see PreviewLattice.frameRow).
   // Loom has a cycle of 1 but its frame row has always been even.
-  const cycle = Math.max(2, rowCycle({ technique, brickBlock }))
+  const cycle = Math.max(2, rowCycle({ technique, brickBlock, netSize }))
   const frameRow = cycle * Math.floor((wantedRows * fit) / cycle)
 
   return {

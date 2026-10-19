@@ -9,7 +9,7 @@ import type { ProjectTheme } from './beadLook'
 /** How many beads are worth drawing for real on every move: a square bead is one unit of cost, a rounded one three
  * (measured, ticket 122). */
 const DRAWING_BUDGET = 15_000
-const COST_PER_BEAD: Record<Technique, number> = { loom: 1, brick: 1, peyote: 3, rightAngle: 3 }
+const COST_PER_BEAD: Record<Technique, number> = { loom: 1, brick: 1, peyote: 3, rightAngle: 3, netting: 3 }
 
 /** Whether a block of this many beads is too many to draw as beads on every move of a drag. */
 export function usesDraftLook(technique: Technique, beadCount: number): boolean {

@@ -19,7 +19,7 @@ export interface RotatedSelection {
 /** The Selection turned a quarter about its centre: rows and columns swap, and on stitches whose rows alternate it
  * starts on a multiple of the shift's cycle. `inset` is how far inside the Selection the row that must land on one
  * begins (ticket 477). */
-export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock'>, selection: Selection, inset = 0): Selection {
+export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
   // way it rounds depends on which side is longer, so that four turns come back to where they began.

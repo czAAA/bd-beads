@@ -342,3 +342,23 @@ describe('rulers in Right-angle weave count Units (ticket 482)', () => {
     expect(row.selection).toEqual({ top: 2, left: 0, rows: 3, columns: 5 })
   })
 })
+
+describe('rulers in Netting count diamonds (ticket 485)', () => {
+  // 3 diamonds across and 2 down at Net size 3: 13 columns, 7 rows.
+  const frame = { row: 0, column: 0, rows: 7, columns: 13 }
+  const layout = () => framed(frame, { technique: 'netting', viewport: { width: 2000, height: 2000 } })
+
+  it('numbers a diamond each, not a bead', () => {
+    const { labels } = layout()
+    expect(labels.filter((label) => label.axis === 'column').map((label) => label.text)).toEqual(['1', '2', '3', '1', '2', '3'])
+    expect(labels.filter((label) => label.axis === 'row').map((label) => label.text)).toEqual(['1', '2', '1', '2'])
+  })
+
+  it('marks out a diamond\'s columns, or its rows, when a number is pressed', () => {
+    const { labels } = layout()
+    const column = labels.find((label) => label.axis === 'column' && label.text === '2')!
+    const row = labels.find((label) => label.axis === 'row' && label.text === '2')!
+    expect(column.selection).toEqual({ top: 0, left: 4, rows: 7, columns: 5 })
+    expect(row.selection).toEqual({ top: 2, left: 0, rows: 5, columns: 13 })
+  })
+})
