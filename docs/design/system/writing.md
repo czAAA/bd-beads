@@ -325,3 +325,19 @@ Remove Frame? names what goes (Frame card, ConfirmDialogs card). The Russian is 
 | English | Russian |
 | --- | --- |
 | The Frame goes, and its beads go with it. Rows marked as done are cleared too. This can be undone. | Рамка уйдёт, и её бусины вместе с ней. Отмеченные готовыми ряды сотрутся тоже. Это действие можно отменить. |
+
+## Template copy (ticket 0493)
+
+The gallery's section label is "Start from". A Template is a card with a name and one short description; the spec line is "width × height · Technique" and is not translated beyond the Technique's name. Product names are common nouns, so Russian, Ukrainian and Belarusian write them lowercase in a sentence and capitalized as a card name. The note under a locked side says "This side is fixed." No em dashes.
+
+| English | Russian |
+| --- | --- |
+| Start from | Начать с |
+| Blank canvas: Draw freely and set a Frame later. | Чистый холст: Рисуйте свободно, рамку задайте потом. |
+| Gerdan: A woven collar necklace. | Гердан: Плетёное ожерелье-воротник. |
+| Bracelet: A narrow band for the wrist. | Браслет: Узкая лента на запястье. |
+| Earrings: A pair of drops, each a narrow strip. | Серьги: Пара подвесок, каждая узкой полосой. |
+| Bag: A small purse or pouch panel. | Сумка: Небольшая сумочка или кошелёк. |
+| Custom scheme: Any size, in any Technique. | Своя схема: Любой размер и любая техника. |
+| Usual sizes | Обычные размеры |
+| This side is fixed. | Эта сторона не меняется. |

@@ -10,7 +10,7 @@ import { usePressClosed } from '../../composables/shell/usePressClosed'
 
 // The shell Menu, Project and the Frame bar open in (spec 0440, tickets 443, 475; MenuPanel, TopSheet cards): a dropdown
 // from 1024px, else a Top sheet under the strip. Escape or a press outside closes it; focus returns to the button.
-// A `sub` slot is one sub-view over the root (spec 0478): Back arrow, `subTitle`, pinned `footer`; resets on swap.
+// A `sub` slot is a stack of sub-views (spec 0478, ticket 493): Back arrow, title, pinned `footer`; Back and Escape pop.
 const props = defineProps<{
   title: string
   /** The strip button this panel hangs from, by test id. */
@@ -25,7 +25,7 @@ const props = defineProps<{
   width?: string
   /** A press outside that still works the panel's own thing, so it goes through and the panel stays. */
   keepsPress?: (event: PointerEvent) => boolean
-  /** The sub-view's title; a panel with a `sub` slot gives one. */
+  /** The first sub-view's title; a panel with a `sub` slot gives one. */
   subTitle?: string
   /** Opens already on the sub-view; Escape then closes the panel instead of going back. */
   startInSub?: boolean
@@ -35,21 +35,26 @@ const emit = defineEmits<{ close: [] }>()
 const wide = useMediaQuery('(min-width: 1024px)')
 const sheet = computed(() => !wide.value && !props.dropdown)
 const { t } = useI18n()
-/** Whether the sub-view is showing, and whether the panel opened on it (so Escape closes rather than goes back). */
-const inSub = ref(props.startInSub ?? false)
+/** One entry per sub-view pushed over the root, with the title it was opened with and the row that opened it (found
+ * again by its test id to take focus back from Back). */
+interface SubLevel {
+  title?: string
+  returnTestId: string | null
+}
+const stack = ref<SubLevel[]>(props.startInSub ? [{ returnTestId: null }] : [])
+/** Whether a sub-view is showing, and whether the panel opened on its first (so Escape there closes rather than goes back). */
+const inSub = computed(() => stack.value.length > 0)
+const depth = computed(() => stack.value.length)
 const openedInSub = props.startInSub ?? false
+const currentTitle = computed(() => stack.value.at(-1)?.title ?? props.subTitle)
 const itemRole = computed(() => (wide.value && props.menu && !inSub.value ? ('menuitem' as const) : undefined))
-/** The row that opened the sub-view, found again by its test id to take focus back from Back. */
-let returnTestId: string | null = null
 const subBodyEl = ref<HTMLElement>()
-function openSub() {
-  returnTestId = document.activeElement?.getAttribute('data-testid') ?? null
-  inSub.value = true
+function openSub(title?: string) {
+  stack.value.push({ title, returnTestId: document.activeElement?.getAttribute('data-testid') ?? null })
   void nextTick(focusEntry)
 }
 function goBack() {
-  inSub.value = false
-  const testId = returnTestId
+  const testId = stack.value.pop()?.returnTestId
   void nextTick(() => {
     const row = testId ? panelEl.value?.querySelector<HTMLElement>(`[data-testid="${testId}"]`) : null
     ;(row ?? focusables()[0])?.focus({ preventScroll: true })
@@ -101,12 +106,12 @@ function place() {
   }
 }
 watch([wide, () => props.anchor, () => props.dropdown], () => void nextTick(place))
-watch(() => props.anchor, () => (inSub.value = false))
+watch(() => props.anchor, () => (stack.value = []))
 
 // Escape first ends an edit in progress: a cancellable field (the Project's rename) marks its form
 // `data-handles-escape` and hears a `panel-escape` event; with none, Escape closes the panel.
 function onEscape() {
-  if (inSub.value && !openedInSub) return goBack()
+  if (depth.value > (openedInSub ? 1 : 0)) return goBack()
   const editing = document.activeElement?.closest('[data-handles-escape]')
   if (editing) editing.dispatchEvent(new CustomEvent('panel-escape'))
   else emit('close')
@@ -246,15 +251,15 @@ onBeforeUnmount(() => {
   >
     <header v-if="inSub" class="panel-shell__header">
       <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" @click="goBack" />
-      <h2 :id="titleId" class="panel-shell__heading" data-testid="panel-sub-title">{{ subTitle }}</h2>
+      <h2 :id="titleId" class="panel-shell__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
     </header>
     <h2 v-else :id="titleId" class="panel-shell__title">{{ title }}</h2>
     <div ref="subBodyEl" class="panel-shell__body" data-testid="panel-body">
-      <slot v-if="inSub" name="sub" />
+      <slot v-if="inSub" name="sub" :depth="depth" />
       <slot v-else />
     </div>
     <footer v-if="inSub && $slots.footer" class="panel-shell__footer" data-testid="panel-footer">
-      <slot name="footer" />
+      <slot name="footer" :depth="depth" />
     </footer>
     <div
       v-if="sheet"
@@ -316,6 +321,10 @@ onBeforeUnmount(() => {
   margin: 0;
   font: var(--type-title);
   color: var(--ink);
+}
+
+.panel-shell__footer:empty {
+  display: none;
 }
 
 .panel-shell__footer {

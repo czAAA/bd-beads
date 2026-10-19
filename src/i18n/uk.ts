@@ -160,6 +160,18 @@ export const uk: Translations = {
     noSavedProjectsMessage: 'Збережених проєктів поки немає',
     shownOf: '{shown} з {total}',
   },
+  templates: {
+    galleryLabel: 'Почати з',
+    presetsLabel: 'Звичайні розміри',
+    fixedNote: 'Ця сторона не змінюється.',
+    specLine: '{width} × {height} · {technique}',
+    blank: { name: 'Чисте полотно', description: 'Малюйте вільно, рамку задайте потім.' },
+    gerdan: { name: 'Гердан', description: 'Плетене намисто-комір.' },
+    bracelet: { name: 'Браслет', description: 'Вузька стрічка на зап’ястя.' },
+    earrings: { name: 'Сережки', description: 'Пара підвісок, кожна вузькою смужкою.' },
+    bag: { name: 'Сумка', description: 'Невелика сумочка або гаманець.' },
+    custom: { name: 'Власна схема', description: 'Будь-який розмір і будь-яка техніка.' },
+  },
   canvas: {
     zoomInLabel: 'Збільшити',
     zoomOutLabel: 'Зменшити',
