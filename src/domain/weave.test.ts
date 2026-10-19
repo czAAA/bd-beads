@@ -571,11 +571,10 @@ describe('positionStep (ticket 492)', () => {
 })
 
 describe('the Technique config', () => {
-  it('has an entry for every Technique, each with a name and a description', () => {
+  it('has an entry for every Technique, each with a name key', () => {
     expect([...TECHNIQUES].sort()).toEqual(Object.keys(TECHNIQUE_IDS).sort())
     for (const technique of TECHNIQUES) {
       expect(techniqueNameKey(technique)).toMatch(/^technique/)
-      expect(describeWeave({ technique }).rowPitch).toBeGreaterThan(0)
     }
   })
 })

@@ -9,8 +9,8 @@ export type Technique = 'loom' | 'peyote' | 'brick' | 'rightAngle' | 'netting'
 /** Every Technique, in the order the choices are listed. */
 export const TECHNIQUES: readonly Technique[] = ['loom', 'peyote', 'brick', 'rightAngle', 'netting']
 
-/** The Techniques by name, for the few places that must pick one (a Template's own, the default); the one place
- * outside RULES that spells them. */
+/** The Techniques by name, for the few places that must pick one (a Template's own, the default), so none writes a
+ * literal. */
 export const TECHNIQUE_IDS = { loom: 'loom', peyote: 'peyote', brick: 'brick', rightAngle: 'rightAngle', netting: 'netting' } as const satisfies Record<Technique, Technique>
 
 /** The Technique a new Project and an unframed Canvas start in. */
