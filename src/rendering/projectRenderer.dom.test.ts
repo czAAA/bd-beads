@@ -67,6 +67,38 @@ describe('Technique geometry', () => {
   })
 })
 
+describe('Right-angle weave (ticket 482)', () => {
+  // Two Units across and one down: three lines, 2 + 3 + 2 beads. A bead is 20 long and 14 across, so a Unit is 34.
+  const project = () => projectOf('rightAngle', 2, 1)
+
+  it('measures a Unit as a bead length plus a bead width, and a block as its Units plus one bead width', () => {
+    expect(projectExtentPx('rightAngle', 3, 3)).toEqual({ width: 2 * 34 + 14, height: 34 + 14 })
+  })
+
+  it('draws horizontal beads lying along their line and vertical beads upright, each at its own place', () => {
+    const beads = beadsDrawn(project(), whole(project()))
+
+    expect(beads.map(({ x, y, width, height }) => [x, y, width, height])).toEqual([
+      [14, 0, 20, 14],
+      [48, 0, 20, 14],
+      [0, 14, 14, 20],
+      [34, 14, 14, 20],
+      [68, 14, 14, 20],
+      [14, 34, 20, 14],
+      [48, 34, 20, 14],
+    ])
+  })
+
+  it('paints each bead on its own', () => {
+    const base = projectOf('rightAngle', 2, 1)
+    const colored = { ...base, frame: { ...base.frame!, beads: { 1: { 2: '#e63746' }, 0: { 1: '#2f6fed' } } } }
+
+    const colors = beadsDrawn(colored, whole(colored)).map(({ color }) => color)
+
+    expect(colors).toEqual([null, '#2f6fed', null, null, '#e63746', null, null])
+  })
+})
+
 describe('renderProject', () => {
   it('places loom beads on a straight 20px grid, square', () => {
     const project = projectOf('loom', 3, 2)

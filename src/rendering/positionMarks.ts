@@ -1,6 +1,6 @@
-import { beadRoundness, isShiftedRow, rowCycle, type Technique } from '../domain/weave'
+import { beadRoundness, describeWeave, isShiftedRow, rowCycle, type Technique } from '../domain/weave'
 import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
-import { CELL_SIZE_PX, rowPitchPx } from './surfaceView'
+import { cellSizePx, CELL_SIZE_PX, rowPitchPx, type Region } from './surfaceView'
 
 // Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of
 // rows down: two for peyote/brick half-bead shifts, 2N with a Brick block of N) filled over the view, not a shape per position. A screen-size bitmap
@@ -32,23 +32,41 @@ function tileRows(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): numbe
   return Math.max(2, rowCycle(input))
 }
 
-/** The sideways shift of each row of a tile, in grid px. */
-function rowShifts(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): number[] {
-  return Array.from({ length: tileRows(input) }, (_row, row) => (isShiftedRow(input, row) ? CELL_SIZE_PX / 2 : 0))
+interface Tile {
+  /** The tile's size in grid px. */
+  size: { width: number; height: number }
+  /** The bead of each position the tile holds, in the order they are drawn. */
+  beads: Region[]
 }
 
-/** A tile's size in grid px: one bead across, a cycle of rows down. */
-function tileSizePx(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): { width: number; height: number } {
-  return { width: CELL_SIZE_PX, height: tileRows(input) * rowPitchPx(input.technique) }
+/** What one tile holds: a bead across and a cycle of rows down, or the two beads of Right-angle weave that a Unit's
+ * pitch repeats (ticket 482). */
+function tileOf(input: Pick<MarkTileInput, 'technique' | 'brickBlock'>): Tile {
+  const description = describeWeave(input)
+  if (description.countsUnits) {
+    const cell = cellSizePx(input.technique)
+    const side = cell.width + cell.height
+    return { size: { width: side, height: side }, beads: [0, 1].map((row) => description.box({ row, column: 0 }, cell.width, cell.height)) }
+  }
+  const pitch = rowPitchPx(input.technique)
+  return {
+    size: { width: CELL_SIZE_PX, height: tileRows(input) * pitch },
+    beads: Array.from({ length: tileRows(input) }, (_row, row) => ({
+      x: isShiftedRow(input, row) ? CELL_SIZE_PX / 2 : 0,
+      y: row * pitch,
+      width: CELL_SIZE_PX,
+      height: CELL_SIZE_PX,
+    })),
+  }
 }
 
 /** Draws every mark of one tile, and the copies that spill over its edges so that they wrap round. */
-function drawDots(context: DrawingContext, input: MarkTileInput, size: { width: number; height: number }): void {
-  const pitch = rowPitchPx(input.technique)
+function drawDots(context: DrawingContext, input: MarkTileInput, tile: Tile): void {
+  const { size } = tile
   const radius = DOT_DIAMETER_PX / 2 / (input.deviceScale / input.pixelRatio)
   context.fillStyle = input.color
   context.beginPath()
-  for (const [x, y] of rowShifts(input).map((shift, row) => [CELL_SIZE_PX / 2 + shift, row * pitch + CELL_SIZE_PX / 2] as const)) {
+  for (const [x, y] of tile.beads.map((bead) => [bead.x + bead.width / 2, bead.y + bead.height / 2] as const)) {
     for (const dx of [-size.width, 0, size.width]) {
       for (const dy of [-size.height, 0, size.height]) {
         context.moveTo(x + dx + radius, y + dy)
@@ -60,27 +78,27 @@ function drawDots(context: DrawingContext, input: MarkTileInput, size: { width: 
 }
 
 /** A rounded rectangle as a closed path (the corners cut by `radius`, 0 for square). */
-function squarePath(context: DrawingContext, x: number, y: number, size: number, radius: number): void {
+function squarePath(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {
   context.moveTo(x + radius, y)
-  context.arcTo(x + size, y, x + size, y + size, radius)
-  context.arcTo(x + size, y + size, x, y + size, radius)
-  context.arcTo(x, y + size, x, y, radius)
-  context.arcTo(x, y, x + size, y, radius)
+  context.arcTo(x + width, y, x + width, y + height, radius)
+  context.arcTo(x + width, y + height, x, y + height, radius)
+  context.arcTo(x, y + height, x, y, radius)
+  context.arcTo(x, y, x + width, y, radius)
   context.closePath()
 }
 
 // Draws a square for each tile position and the copies spilling over its edges, top row down as beads are: each first
 // clears the bead's own area (so overlapping peyote rows leave no outline showing through), then outlines the cell's
 // edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
-function drawSquares(context: DrawingContext, input: MarkTileInput, size: { width: number; height: number }): void {
-  const pitch = rowPitchPx(input.technique)
+function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile): void {
+  const { size } = tile
   const radius = beadRoundness(input.technique) * CELL_SIZE_PX
   const zoom = input.deviceScale / input.pixelRatio
-  const squares: { x: number; y: number }[] = []
-  for (const [x, y] of rowShifts(input).map((shift, row) => [shift, row * pitch] as const)) {
+  const squares: Region[] = []
+  for (const bead of tile.beads) {
     for (const dx of [-size.width, 0, size.width]) {
       for (const dy of [-size.height, 0, size.height]) {
-        squares.push({ x: x + dx, y: y + dy })
+        squares.push({ ...bead, x: bead.x + dx, y: bead.y + dy })
       }
     }
   }
@@ -88,15 +106,15 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, size: { widt
   context.strokeStyle = input.color
   context.lineWidth = Math.min(BEAD_GAP_PX, 1 / zoom)
   const inset = BEAD_GAP_PX / 2
-  for (const { x, y } of squares) {
+  for (const { x, y, width, height } of squares) {
     context.save()
     context.globalCompositeOperation = 'destination-out'
     context.beginPath()
-    squarePath(context, x + inset, y + inset, CELL_SIZE_PX - BEAD_GAP_PX, Math.max(0, radius - inset))
+    squarePath(context, x + inset, y + inset, width - BEAD_GAP_PX, height - BEAD_GAP_PX, Math.max(0, radius - inset))
     context.fill()
     context.restore()
     context.beginPath()
-    squarePath(context, x, y, CELL_SIZE_PX, radius)
+    squarePath(context, x, y, width, height, radius)
     context.stroke()
   }
 }
@@ -107,7 +125,8 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
   if (typeof document === 'undefined') {
     return undefined
   }
-  const size = tileSizePx(input)
+  const tileShape = tileOf(input)
+  const size = tileShape.size
   const width = Math.max(1, Math.round(size.width * input.deviceScale))
   const height = Math.max(1, Math.round(size.height * input.deviceScale))
   const key = [input.style, input.technique, width, height, input.pixelRatio, input.color].join('|')
@@ -124,9 +143,9 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
     if (own) {
       own.setTransform(width / size.width, 0, 0, height / size.height, 0, 0)
       if (input.style === 'squares') {
-        drawSquares(own, input, size)
+        drawSquares(own, input, tileShape)
       } else {
-        drawDots(own, input, size)
+        drawDots(own, input, tileShape)
       }
     }
     tile = own ? canvas : null

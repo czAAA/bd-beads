@@ -90,7 +90,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | Schema | 图样 | esquema | schemat |
 | Bead / beads | 珠子 | cuenta / cuentas | koralik / koraliki |
 | Technique | 编织技法 | técnica | technika |
-| Loom · Peyote · Brick stitch | 织机编织 · 佩奥特编织 · 砖形编织 | Telar · Peyote · Punto ladrillo | Krosno · Peyote · Ścieg ceglasty |
+| Loom · Peyote · Brick stitch | 织机编织 · 佩奥特 · 砖形编织 | Telar · Peyote · Punto ladrillo | Krosno · Peyote · Ścieg ceglasty |
 | Palette | 调色板 | paleta | paleta |
 | Row progress | 行进度 | progreso por filas | postęp rzędów |
 | Beads needed | 所需珠子 | Cuentas necesarias | Potrzebne koraliki |

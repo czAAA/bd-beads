@@ -9,6 +9,7 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { rowProgressStarted, type Project } from '../../domain/project'
+import { describeWeave } from '../../domain/weave'
 import type { BarBox, FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useI18n } from '../../i18n/useI18n'
 
@@ -84,15 +85,17 @@ onBeforeUnmount(() => emit('rect', undefined))
 const typedWidth = ref('')
 const typedHeight = ref('')
 const sizeEdited = computed(() => typedWidth.value !== '' || typedHeight.value !== '')
+const counted = computed(() => describeWeave(props.project).unitsOf(frame.value ?? { columns: 0, rows: 0 }))
+const sizeUnit = computed(() => (describeWeave(props.project).countsUnits ? t.value.frame.sizeUnitUnits : t.value.frame.sizeUnit))
 function clearSize(): void {
   typedWidth.value = ''
   typedHeight.value = ''
 }
 function commitSize(): void {
-  const columns = Number(typedWidth.value) || frame.value?.columns
-  const rows = Number(typedHeight.value) || frame.value?.rows
+  const columns = Number(typedWidth.value) || counted.value.columns
+  const rows = Number(typedHeight.value) || counted.value.rows
   // The size it already has is no step: re-centring it would shift a Frame whose rows alternate by a pair.
-  if (sizeEdited.value && columns && rows && (columns !== frame.value?.columns || rows !== frame.value?.rows)) emit('resize', columns, rows)
+  if (sizeEdited.value && columns && rows && (columns !== counted.value.columns || rows !== counted.value.rows)) emit('resize', columns, rows)
   clearSize()
 }
 /** Keeps digits only, as typed or pasted, and no leading zero. */
@@ -150,7 +153,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
                 inputmode="numeric"
                 pattern="[0-9]*"
                 autocomplete="off"
-                :placeholder="String(frame?.columns)"
+                :placeholder="String(counted.columns)"
                 :disabled="locked"
                 data-testid="frame-bar-width"
                 @input="onSizeInput($event, 'width')"
@@ -168,7 +171,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
                 inputmode="numeric"
                 pattern="[0-9]*"
                 autocomplete="off"
-                :placeholder="String(frame?.rows)"
+                :placeholder="String(counted.rows)"
                 :disabled="locked"
                 data-testid="frame-bar-height"
                 @input="onSizeInput($event, 'height')"
@@ -176,7 +179,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
                 @focus="($event.target as HTMLInputElement).select()"
               />
             </label>
-          <span class="frame-bar__unit">{{ t.frame.sizeUnit }}</span>
+          <span class="frame-bar__unit">{{ sizeUnit }}</span>
         </component>
         <IconButton
           v-if="!locked"

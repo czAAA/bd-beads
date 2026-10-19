@@ -12,8 +12,8 @@ import { useI18n } from '../../i18n/useI18n'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 
 // The Frame's part of the Project panel (ProjectPanel and Frame cards, tickets 233, 443): the Technique choice and the
-// Frame's Estimated size with its warning as a Note (ticket 328). Edit/Fit/Remove Frame live on the Selection and
-// Progress bars (spec 0440). Once a Row progress pass is done the Technique is locked, with the reason under it.
+// Frame's Estimated size with its warning as a Note (ticket 328). Right-angle weave is fixed when the Project is made, so
+// it offers no choice (ticket 482). Once a Row progress pass is done the Technique is locked, with the reason under it.
 const props = defineProps<{ project: Project }>()
 
 const emit = defineEmits<{ 'set-technique': [technique: Technique]; 'set-brick-block': [brickBlock: number] }>()
@@ -25,12 +25,12 @@ const locked = computed(() => rowProgressStarted(props.project))
 const bead = computed(() => resolveProjectBead(props.project))
 
 /** The unit the Estimated size leads with: kept on the device, never in the Project (ticket 342). */
-const { unit } = useSizeUnit()
+const { unit, countTemplate } = useSizeUnit(() => props.project.technique)
 
 /** The Estimated size in the other unit: mm while the unit is beads, the bead count while it is mm. */
 const estimate = computed(() =>
   bead.value && frame.value
-    ? formatOtherUnit(frame.value, bead.value, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: t.value.form.estimateBeads }, locale.value)
+    ? formatOtherUnit(frame.value, bead.value, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value, props.project.technique)
     : undefined,
 )
 
@@ -58,7 +58,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 <template>
   <div class="frame-controls" data-testid="frame-controls">
-    <div class="frame-controls__technique" data-testid="frame-technique-row">
+    <div v-if="describeWeave(project).switchable" class="frame-controls__technique" data-testid="frame-technique-row">
       <span :id="techniqueLabelId">{{ t.form.techniqueLabel }}</span>
       <SegmentedControl
         v-model="technique"
