@@ -1,4 +1,4 @@
-import { coveredByRotation, frameAreaSelection, rotateFrame } from '../../domain/rotate'
+import { coveredByRotation, frameAreaSelection, rotateFrame, turnedMargin } from '../../domain/rotate'
 import { rowProgressStarted, type Project } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -25,14 +25,15 @@ export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
     if (!before?.frame || rowProgressStarted(before)) {
       return
     }
-    const area = frameAreaSelection(before.frame)
+    const margin = turnedMargin(before)
+    const area = frameAreaSelection(before.frame, margin)
 
     const outcome = deps.edit('drawing', (project) => rotateFrame(project) ?? project)
 
     const after = deps.currentProject()
     // The turned area is the new Frame and its margin, which the Edit has already put in the Project.
     const covered =
-      outcome.kind === 'applied' && after?.frame ? coveredByRotation(before, after, area, frameAreaSelection(after.frame)) : 0
+      outcome.kind === 'applied' && after?.frame ? coveredByRotation(before, after, area, frameAreaSelection(after.frame, margin)) : 0
     const t = deps.messages()
     if (covered > 0) {
       const text = plural(deps.locale(), covered, t.frame.rotateCoveredMessage)
