@@ -535,6 +535,30 @@ describe('ProjectSurface', () => {
     })
   })
 
+  describe('Select anywhere (ticket 505)', () => {
+    it('starts a Selection from empty background and follows the drag to the nearest bead, off a bead or not', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selectAnywhere: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 990, clientY: 790, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { clientX: 1200, clientY: 900, buttons: 1 })
+
+      expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
+      expect(wrapper.emitted('cell-primary-move')).toHaveLength(1)
+    })
+
+    it('stops following once the button is released', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selectAnywhere: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 990, clientY: 790, button: 0, buttons: 1 })
+      await surface.trigger('pointerup')
+      await surface.trigger('pointermove', { clientX: 1200, clientY: 900, buttons: 1 })
+
+      expect(wrapper.emitted('cell-primary-move')).toBeUndefined()
+    })
+  })
+
   describe('picking a color (ticket 403)', () => {
     const painted = (): Project => projectOf(20, 10, { beads: { 3: { 4: '#123456' } } })
     const at = (project: Project, row: number, column: number) =>
