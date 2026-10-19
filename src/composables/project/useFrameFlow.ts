@@ -5,7 +5,7 @@ import type { GridPosition } from '../../domain/grid'
 import { describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { canvasWeave, frameWeave, rowProgressStarted, withFrame, type Project } from '../../domain/project'
+import { canvasWeave, createProject, frameWeave, rowProgressStarted, weaveOf, withFrame, type CreateProjectInput, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -20,6 +20,8 @@ export interface FrameFlowDeps {
   messages: () => Translations
   /** Brings a block of beads into the middle of the view. */
   centreOn: (frame: Frame) => void
+  /** The Canvas position under the middle of the view, or nothing until the area is measured. */
+  visibleCentre: () => GridPosition | undefined
 }
 
 type Gesture =
@@ -255,6 +257,50 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     commit(undefined)
   }
 
+  /** Whether the Replace Frame question is open; the pending Template choice waits behind it (ticket 495). */
+  const replaceConfirmOpen = ref(false)
+  let pendingTemplate: CreateProjectInput | undefined
+
+  /** Add Frame from Template and Replace Frame (ticket 495): an empty Frame in the Template's Technique, centred on what
+   * is on screen and snapped to a Canvas position, over whatever lies there. Replacing a Frame that holds beads asks first,
+   * as they go with it. */
+  function placeFromTemplate(input: CreateProjectInput): void {
+    const project = deps.currentProject()
+    if (!project || locked.value) return
+    if (project.frame && Object.keys(project.frame.beads).length > 0) {
+      pendingTemplate = input
+      replaceConfirmOpen.value = true
+      return
+    }
+    applyTemplate(input)
+  }
+
+  function applyTemplate(input: CreateProjectInput): void {
+    const made = createProject(input).frame!
+    const weave = weaveOf(made)
+    const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
+    const outcome = deps.edit('frame', (project) => {
+      const row = snapRow(canvasWeave(project), snapRow(weave, centre.row - Math.floor(made.rows / 2)))
+      const column = snapColumn(canvasWeave(project), snapColumn(weave, centre.column - Math.floor(made.columns / 2)))
+      return changeFrame(project, { place: { frame: { row, column, rows: made.rows, columns: made.columns }, weave } })
+    })
+    if (outcome.kind === 'applied') deps.announce(describe(deps.currentProject()!.frame!))
+  }
+
+  /** The Replace Frame question answered No: nothing changes. */
+  function cancelReplace(): void {
+    replaceConfirmOpen.value = false
+    pendingTemplate = undefined
+  }
+
+  /** The question answered Yes: the Frame goes and the new one is made, as one Undo step. */
+  function confirmReplace(): void {
+    replaceConfirmOpen.value = false
+    const input = pendingTemplate
+    pendingTemplate = undefined
+    if (input) applyTemplate(input)
+  }
+
   /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it
    * from its bottom-right. Whether the key was used. */
   function onKey(event: KeyboardEvent): boolean {
@@ -304,6 +350,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     removeConfirmOpen,
     cancelRemove,
     confirmRemove,
+    placeFromTemplate,
+    replaceConfirmOpen,
+    cancelReplace,
+    confirmReplace,
     onKey,
     bringIntoView,
   }

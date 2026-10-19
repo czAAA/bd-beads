@@ -87,6 +87,15 @@ export function useCanvasView(
     isAtFit.value = false
   }
 
+  /** The Canvas position under the middle of the view (ticket 495), or nothing until the area is measured. */
+  function visibleCentre(): GridPosition | undefined {
+    const project = currentProject()
+    if (!project || !measured()) {
+      return undefined
+    }
+    return surfaceOf(project).pointToCell({ x: viewport.value.width / 2, y: viewport.value.height / 2 }, 'canvas')
+  }
+
   /** Scrolls only as far as it takes to bring a bead into view, `margin` px clear of the viewport's edges: what
    * moving the keyboard cursor does. */
   function reveal(position: GridPosition, margin = 24): void {
@@ -158,6 +167,7 @@ export function useCanvasView(
     panBy,
     scrollBy,
     centreOn,
+    visibleCentre,
     reveal,
     isAtFit,
   }
