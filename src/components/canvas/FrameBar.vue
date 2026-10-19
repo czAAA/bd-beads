@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
-import PanelHost from '../shell/PanelHost.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
@@ -12,7 +11,7 @@ import { describeWeave } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame bar (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
-// edge. It is a panel like Menu and Project (PanelHost): from the strip's Frame button only (the edit pencil on the Frame
+// edge. It is the content of a panel like Menu and Project (mounted by PhoneSheets in a PanelHost): from the strip's Frame button only (the edit pencil on the Frame
 // shows the handles and is a separate control); a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
@@ -24,7 +23,6 @@ const emit = defineEmits<{
   rotate: []
   remove: []
   key: [event: KeyboardEvent]
-  close: []
 }>()
 
 const { t } = useI18n()
@@ -92,111 +90,104 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 </script>
 
 <template>
-  <PanelHost
-    open="frame"
-    :only="['frame']"
-    width="min(calc(100vw - 2 * var(--frame-bar-gap)), var(--frame-bar-width))"
-    @close="emit('close')"
-  >
-    <div class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
-      <div class="frame-bar__head">
-        <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
-        <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
-        <component
-          :is="locked ? AppTooltip : 'div'"
-          v-bind="locked ? lockedTip : {}"
-          class="frame-bar__size"
-          :class="{ 'frame-bar__size--locked': locked }"
-          :data-handles-escape="sizeEdited || undefined"
-          @panel-escape="clearSize"
-          @focusout="onSizeFocusOut"
-        >
-            <label class="frame-bar__field">
-              <span class="frame-bar__label">{{ t.frame.widthLabel }}</span>
-              <input
-                :value="typedWidth"
-                class="frame-bar__input"
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                autocomplete="off"
-                :placeholder="String(counted.columns)"
-                :disabled="locked"
-                data-testid="frame-bar-width"
-                @input="onSizeInput($event, 'width')"
-                @keydown="onSizeKey"
-                @focus="($event.target as HTMLInputElement).select()"
-              />
-            </label>
-          <span class="frame-bar__times" aria-hidden="true">×</span>
-            <label class="frame-bar__field">
-              <span class="frame-bar__label">{{ t.frame.heightLabel }}</span>
-              <input
-                :value="typedHeight"
-                class="frame-bar__input"
-                type="text"
-                inputmode="numeric"
-                pattern="[0-9]*"
-                autocomplete="off"
-                :placeholder="String(counted.rows)"
-                :disabled="locked"
-                data-testid="frame-bar-height"
-                @input="onSizeInput($event, 'height')"
-                @keydown="onSizeKey"
-                @focus="($event.target as HTMLInputElement).select()"
-              />
-            </label>
-          <span class="frame-bar__unit">{{ sizeUnit }}</span>
-        </component>
-        <IconButton
-          v-if="!locked && turnable"
-          variant="secondary"
-          :icon-size="18"
-          :action="rotateAction"
-          :deps="deps"
-          class="frame-bar__tool"
-          data-testid="frame-rotate"
-          @click="emit('rotate')"
-        />
-        <span v-if="!locked && turnable" class="frame-bar__divider" aria-hidden="true" />
-        <IconButton
-          variant="secondary"
-          :icon-size="18"
-          :action="removeAction"
-          :deps="deps"
-          class="frame-bar__tool frame-bar__tool--danger"
-          data-testid="frame-chrome-remove"
-          @click="emit('remove')"
-        />
-      </div>
-      <div class="frame-bar__edges">
-        <div v-for="cell in ordered" :key="cell.edge" class="frame-bar__cell" :class="{ 'frame-bar__cell--last': lastEdge === cell.edge }" :data-testid="`frame-bar-cell-${cell.edge}`">
-          <span class="frame-bar__glyph" :class="[`frame-bar__glyph--${cell.edge}`, { 'frame-bar__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
-          <span class="frame-bar__name">{{ t.frame.edgeName[cell.edge] }}</span>
-          <span class="frame-bar__pair">
-            <AppButton
-              class="frame-bar__step"
-              variant="secondary"
-              :action="cell.in"
-              :deps="deps"
-              :aria-label="cell.in.name(t)"
-              :data-testid="`frame-edge-${cell.edge}-in`"
-              v-on="cell.shrink"
-            >−</AppButton>
-            <AppButton
-              class="frame-bar__step"
-              variant="secondary"
-              :action="cell.out"
-              :deps="deps"
-              :aria-label="cell.out.name(t)"
-              :data-testid="`frame-edge-${cell.edge}-out`"
-              v-on="cell.grow"
-            >+</AppButton>
-          </span>
-        </div>
+  <div class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
+    <div class="frame-bar__head">
+      <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
+      <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
+      <component
+        :is="locked ? AppTooltip : 'div'"
+        v-bind="locked ? lockedTip : {}"
+        class="frame-bar__size"
+        :class="{ 'frame-bar__size--locked': locked }"
+        :data-handles-escape="sizeEdited || undefined"
+        @panel-escape="clearSize"
+        @focusout="onSizeFocusOut"
+      >
+          <label class="frame-bar__field">
+            <span class="frame-bar__label">{{ t.frame.widthLabel }}</span>
+            <input
+              :value="typedWidth"
+              class="frame-bar__input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="off"
+              :placeholder="String(counted.columns)"
+              :disabled="locked"
+              data-testid="frame-bar-width"
+              @input="onSizeInput($event, 'width')"
+              @keydown="onSizeKey"
+              @focus="($event.target as HTMLInputElement).select()"
+            />
+          </label>
+        <span class="frame-bar__times" aria-hidden="true">×</span>
+          <label class="frame-bar__field">
+            <span class="frame-bar__label">{{ t.frame.heightLabel }}</span>
+            <input
+              :value="typedHeight"
+              class="frame-bar__input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              autocomplete="off"
+              :placeholder="String(counted.rows)"
+              :disabled="locked"
+              data-testid="frame-bar-height"
+              @input="onSizeInput($event, 'height')"
+              @keydown="onSizeKey"
+              @focus="($event.target as HTMLInputElement).select()"
+            />
+          </label>
+        <span class="frame-bar__unit">{{ sizeUnit }}</span>
+      </component>
+      <IconButton
+        v-if="!locked && turnable"
+        variant="secondary"
+        :icon-size="18"
+        :action="rotateAction"
+        :deps="deps"
+        class="frame-bar__tool"
+        data-testid="frame-rotate"
+        @click="emit('rotate')"
+      />
+      <span v-if="!locked && turnable" class="frame-bar__divider" aria-hidden="true" />
+      <IconButton
+        variant="secondary"
+        :icon-size="18"
+        :action="removeAction"
+        :deps="deps"
+        class="frame-bar__tool frame-bar__tool--danger"
+        data-testid="frame-chrome-remove"
+        @click="emit('remove')"
+      />
+    </div>
+    <div class="frame-bar__edges">
+      <div v-for="cell in ordered" :key="cell.edge" class="frame-bar__cell" :class="{ 'frame-bar__cell--last': lastEdge === cell.edge }" :data-testid="`frame-bar-cell-${cell.edge}`">
+        <span class="frame-bar__glyph" :class="[`frame-bar__glyph--${cell.edge}`, { 'frame-bar__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
+        <span class="frame-bar__name">{{ t.frame.edgeName[cell.edge] }}</span>
+        <span class="frame-bar__pair">
+          <AppButton
+            class="frame-bar__step"
+            variant="secondary"
+            :action="cell.in"
+            :deps="deps"
+            :aria-label="cell.in.name(t)"
+            :data-testid="`frame-edge-${cell.edge}-in`"
+            v-on="cell.shrink"
+          >−</AppButton>
+          <AppButton
+            class="frame-bar__step"
+            variant="secondary"
+            :action="cell.out"
+            :deps="deps"
+            :aria-label="cell.out.name(t)"
+            :data-testid="`frame-edge-${cell.edge}-out`"
+            v-on="cell.grow"
+          >+</AppButton>
+        </span>
       </div>
     </div>
-  </PanelHost>
+  </div>
 </template>
 
 <style scoped>

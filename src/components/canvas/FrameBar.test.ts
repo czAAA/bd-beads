@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { h } from 'vue'
 import FrameBar from './FrameBar.vue'
+import PanelHost from '../shell/PanelHost.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
@@ -28,6 +30,15 @@ function woven(project: Project, technique: Project['technique'], extra: { netSi
 function mountBar(project = framed()) {
   return mount(FrameBar, { props: { project }, attachTo: document.body })
 }
+
+/** The bar in the panel PhoneSheets mounts it in (ticket 511): the panel's Escape and press-outside close it. */
+function mountPanel(project = framed()) {
+  return mount(
+    { render: () => h(PanelHost, { open: 'frame', only: ['frame'] }, { default: () => h(FrameBar, { project }) }) },
+    { attachTo: document.body },
+  )
+}
+const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent(PanelHost).emitted('close')
 
 
 describe('FrameBar in Right-angle weave (ticket 482)', () => {
@@ -96,16 +107,16 @@ describe('FrameBar (ticket 473)', () => {
   })
 
   it('clears what was typed on Escape, and closes on the next', async () => {
-    const wrapper = mountBar()
+    const wrapper = mountPanel()
     const width = wrapper.get('[data-testid="frame-bar-width"]')
     await width.setValue('9')
     ;(width.element as HTMLInputElement).focus()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     await flushPromises()
     expect((width.element as HTMLInputElement).value).toBe('')
-    expect(wrapper.emitted('close')).toBeUndefined()
+    expect(closed(wrapper)).toBeUndefined()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(closed(wrapper)).toHaveLength(1)
   })
 
   it('has the edge cells in the order Top, Bottom, Left, Right, each with − first and + second', () => {
@@ -190,9 +201,9 @@ describe('FrameBar (ticket 473)', () => {
 
   it('closes on a press outside, the Frame\'s handles included (tickets 475, 510)', async () => {
     document.body.insertAdjacentHTML('beforeend', '<button id="outside"></button>')
-    const wrapper = mountBar()
+    const wrapper = mountPanel()
     await flushPromises()
     document.getElementById('outside')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true }))
-    expect(wrapper.emitted('close')).toHaveLength(1)
+    expect(closed(wrapper)).toHaveLength(1)
   })
 })

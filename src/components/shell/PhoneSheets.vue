@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import BottomSheet from './BottomSheet.vue'
+import FrameBar from '../canvas/FrameBar.vue'
 import MenuPanel from './MenuPanel.vue'
 import PanelHost from './PanelHost.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
@@ -63,6 +64,14 @@ const {
   onMirrorCurrent,
   onMirrorCurrentHover,
   openPanel,
+  framing,
+  frameBarShown,
+  onStepFrameEdge,
+  onResizeFrame,
+  onRotateFrame,
+  onRemoveFrame,
+  onFrameKey,
+  onCloseFrameBar,
   toolPillPosition,
   shortcutsHelpOpen,
   tour,
@@ -91,6 +100,18 @@ const chosenTemplate = ref<TemplateId>()
       @mirror-current-hover="onMirrorCurrentHover"
     />
   </BottomSheet>
+
+  <!-- The Frame bar (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
+  <PanelHost v-if="activeProject && frameBarShown && !framing" open="frame" :only="['frame']" @close="onCloseFrameBar">
+    <FrameBar
+      :project="activeProject"
+      @step="onStepFrameEdge"
+      @resize="onResizeFrame"
+      @rotate="onRotateFrame"
+      @remove="onRemoveFrame"
+      @key="onFrameKey"
+    />
+  </PanelHost>
 
   <!--
     Menu and Project (spec 0440, ticket 443; MenuPanel, ProjectPanel and TopSheet cards): one panel host, a dropdown from 1024px
