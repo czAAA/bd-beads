@@ -10,6 +10,10 @@ import TemplatePicture from './TemplatePicture.vue'
 // The Template gallery at the top of New Project (ticket 493, spec 0488; TemplateGallery card): a Blank canvas tile and one
 // card per Template, in a radiogroup of one tab stop. Blank canvas is the choice the form below makes; a tap on a Template
 // card opens its setup (the panel's next sub-view). One column on a phone and in the dropdown, two in the Top sheet at width.
+const props = defineProps<{
+  /** Opened from the Project panel's Frame area (ticket 495): there is no Blank canvas to start from. */
+  withoutBlank?: boolean
+}>()
 const emit = defineEmits<{ choose: [id: TemplateId] }>()
 
 const { t } = useI18n()
@@ -17,7 +21,7 @@ const panel = inject(PANEL_CONTEXT, undefined)
 const rootEl = ref<HTMLElement>()
 
 type Choice = { id: 'blank' } | { id: TemplateId; template: Template }
-const choices = computed<Choice[]>(() => [{ id: 'blank' }, ...TEMPLATES.map((template) => ({ id: template.id, template }))])
+const choices = computed<Choice[]>(() => [...(props.withoutBlank ? [] : [{ id: 'blank' as const }]), ...TEMPLATES.map((template) => ({ id: template.id, template }))])
 
 function specLine(template: Template): string {
   return t.value.templates.specLine

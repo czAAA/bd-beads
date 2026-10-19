@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { BEAD_CATALOG, findBead } from '../../domain/beads'
-import type { CreateProjectInput } from '../../domain/project'
+import type { CreateProjectInput, Project } from '../../domain/project'
 import { formatMm, formatSizeMm, estimatedSizeMm } from '../../domain/projectSize'
 import { clampAxis, templateProjectInput, type Template, type TemplateAxis } from '../../domain/templates'
 import { describeWeave, type Technique } from '../../domain/weave'
@@ -16,16 +16,16 @@ import TextField from '../ui/form/TextField.vue'
 import TemplatePicture from './TemplatePicture.vue'
 import BrickBlockField from './BrickBlockField.vue'
 
-// The Template setup (ticket 493, spec 0488; TemplateGallery card): Name, Bead, the allowed Techniques (no choice when
-// there is one), Brick block, the unit, Width and Height with their usual sizes, and the Estimated size. Create is the
-// panel's pinned footer button, which submits this form by id.
-const props = defineProps<{ template: Template }>()
+// The Template setup (tickets 493, 495; TemplateGallery card): Name, Bead, Techniques, Brick block, unit, sizes and the
+// Estimated size; Create is the panel's pinned footer button. With a `project` it sets up a Frame on that open Project
+// instead: no Name or Bead, the Project's own Bead measures the size.
+const props = defineProps<{ template: Template; project?: Project }>()
 const emit = defineEmits<{ submit: [payload: CreateProjectInput] }>()
 
 const { t, locale } = useI18n()
 
 const name = ref('')
-const beadId = ref(BEAD_CATALOG[0]!.id)
+const beadId = ref(props.project?.beadId ?? BEAD_CATALOG[0]!.id)
 const technique = ref<Technique>(props.template.technique)
 const brickBlock = ref(1)
 const columns = ref(props.template.width.default)
@@ -44,7 +44,7 @@ const unitOptions = computed(() => [
 ])
 
 const techniqueOptions = computed(() => props.template.techniques.map((value) => ({ value, label: techniqueName(t.value, value) })))
-const bead = computed(() => findBead(beadId.value))
+const bead = computed(() => findBead(props.project?.beadId ?? beadId.value))
 
 /** The size the Frame will have, in the Bead's real measure. */
 const estimated = computed(() => {
@@ -101,7 +101,7 @@ function onSubmit() {
       <AppNote data-testid="template-sample-note">{{ t.templates.sampleNote }}</AppNote>
     </div>
 
-    <FormField :label="t.form.nameLabel" label-for="template-name-input" :aside="t.form.optional">
+    <FormField v-if="!project" :label="t.form.nameLabel" label-for="template-name-input" :aside="t.form.optional">
       <TextField
         id="template-name-input"
         v-model="name"
@@ -111,7 +111,7 @@ function onSubmit() {
       />
     </FormField>
 
-    <FormField :label="t.form.beadLabel" label-for="template-bead-select">
+    <FormField v-if="!project" :label="t.form.beadLabel" label-for="template-bead-select">
       <FieldSelect id="template-bead-select" v-model="beadId" data-testid="template-bead-select">
         <option v-for="option in BEAD_CATALOG" :key="option.id" :value="option.id">{{ option.brand }} {{ option.name }} {{ option.size }}</option>
       </FieldSelect>

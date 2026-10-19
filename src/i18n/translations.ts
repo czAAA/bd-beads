@@ -575,6 +575,11 @@ export interface Translations {
     removeConfirmMessage: string
     removeConfirmButton: string
     removeConfirmCancel: string
+    addFromTemplate: string
+    addFrameButton: string
+    replaceFrame: string
+    replaceConfirmTitle: string
+    replaceConfirmMessage: string
     /** The one line under a Frame control that says what the Frame is. */
     explainer: string
     /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 ≈ 2.1 × 2.1 cm". */
@@ -737,6 +742,9 @@ export interface Translations {
     frameEdgeInDisabled: string
     removeFrame: string
     noFrameToRemove: string
+    frameFromTemplate: string
+    replaceFrame: string
+    rowProgressLockedFrameFromTemplate: string
     resetProgress: string
     noProgressToReset: string
     moveFrame: string

@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, inject, useId } from 'vue'
+import AppButton from '../ui/AppButton.vue'
 import AppNote from '../ui/AppNote.vue'
+import { PANEL_CONTEXT } from '../shell/panelContext'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import BrickBlockField from './BrickBlockField.vue'
 import { describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
@@ -53,6 +55,10 @@ const techniqueOptions = computed(() => {
 
 const lockedNoteId = useId()
 
+// Add Frame from Template, or Replace Frame with one (ticket 495): the Template gallery and its setup are the panel's sub-views.
+const panel = inject(PANEL_CONTEXT, undefined)
+const templateAction = computed(() => controlAction(frame.value ? 'replace-frame' : 'add-frame-from-template'))
+
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 </script>
 
@@ -77,6 +83,15 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
       :disabled-body="brickBlockAction.disabledBody?.(t, deps)"
       testid="frame-brick-block"
       @update:model-value="emit('set-brick-block', $event)"
+    />
+
+    <AppButton
+      variant="secondary"
+      size="sm"
+      :action="templateAction"
+      :deps="deps"
+      data-testid="frame-from-template"
+      @click="panel?.openSub(templateAction.name(t))"
     />
 
     <p v-if="locked" :id="lockedNoteId" class="frame-controls__note" data-testid="frame-locked">{{ t.size.lockedReason }}</p>
