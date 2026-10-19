@@ -179,6 +179,13 @@ describe('FrameBar (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')
   })
 
+  it('does not offer Rotate in Netting (ticket 486)', () => {
+    const net = { ...framed({ row: 2, column: 3, rows: 5, columns: 9, beads: {} }), technique: 'netting' as const, netSize: 3 }
+    const wrapper = mountBar(net)
+    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
+  })
+
   it('asks its parent to remove and rotate, and passes keys up', async () => {
     const wrapper = mountBar()
     await wrapper.get('[data-testid="frame-rotate"]').trigger('click')

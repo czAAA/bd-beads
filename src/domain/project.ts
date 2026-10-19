@@ -649,6 +649,9 @@ export function fillArea(project: Project, row: number, column: number, color: s
   }
 
   const region = floodRegion(project, { row, column })
+  if (region.length === 0) {
+    return project
+  }
   return restoreBeads(project, withColors(project.beads, region.map((position) => ({ ...position, color }))))
 }
 
@@ -656,7 +659,7 @@ export function fillArea(project: Project, row: number, column: number, color: s
  * name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow): clearing
  * progress is the point. Returns the same instance if already so. */
 export function mirroredCells(
-  project: Pick<Project, 'frame' | 'technique' | 'brickBlock'>,
+  project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
   position: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
@@ -666,7 +669,8 @@ export function mirroredCells(
     return [position]
   }
   // A bead folds with beads of its own kind (see Weave.lattice), so Right-angle weave keeps each lying as it does.
-  const lattice = describeWeave(project).lattice(position, frame)
+  const weave = describeWeave(project)
+  const lattice = weave.lattice(position, frame)
   if (!lattice) {
     return [position]
   }
@@ -679,7 +683,8 @@ export function mirroredCells(
     for (const column of columns) {
       const cell = lattice.at(row, column)
       const key = positionKey(cell)
-      if (!seen.has(key)) {
+      // A copy never lands where the Weave has no bead: a net's hole (ticket 486).
+      if (!seen.has(key) && weave.hasPosition(cell, frame)) {
         seen.add(key)
         cells.push(cell)
       }
@@ -748,7 +753,7 @@ export function mirrorCurrent(
   for (let row = frame.row; row < frame.row + frame.rows; row++) {
     for (let column = frame.column; column < frame.column + frame.columns; column++) {
       const lattice = weave.lattice({ row, column }, frame)
-      if (!lattice) {
+      if (!lattice || !weave.hasPosition({ row, column }, frame)) {
         continue
       }
       const along = axis === 'columns' ? lattice.column : lattice.row
@@ -757,7 +762,9 @@ export function mirrorCurrent(
       }
       const sourceIndex = mirrorCounterpartInStrip(along.index, along.count, effectiveAxisCount, copyMode, sourceStrip)
       const source = axis === 'columns' ? lattice.at(lattice.row.index, sourceIndex) : lattice.at(sourceIndex, lattice.column.index)
-      changes.push({ row, column, color: colorAt(project.beads, source.row, source.column) })
+      if (weave.hasPosition(source, frame)) {
+        changes.push({ row, column, color: colorAt(project.beads, source.row, source.column) })
+      }
     }
   }
 
