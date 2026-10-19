@@ -1,6 +1,7 @@
 import type { Frame } from '../domain/canvas'
-import { isOffsetTechnique, isShiftedRow, rotationSwapsAxes, type GridPosition, type Rotation, type Technique, type Weave } from '../domain/grid'
-import { beadRoundness, type DrawingContext } from './beadLook'
+import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
+import { beadRoundness, gridWidth, isShiftedRow, rowPitch, type Technique, type Weave } from '../domain/weave'
+import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 
@@ -34,10 +35,7 @@ export interface Region {
 // Distance between row tops, in grid px: peyote rows nest closer than a bead is tall; brick stitch and loom rows stack
 // a full bead apart.
 export function rowPitchPx(technique: Technique): number {
-  if (technique === 'peyote') {
-    return CELL_SIZE_PX * 0.75
-  }
-  return CELL_SIZE_PX
+  return rowPitch(technique, CELL_SIZE_PX)
 }
 
 /** Where a row's beads start from the top of the Project, in grid px. */
@@ -60,7 +58,7 @@ export function shiftOf(space: Space, weave: Weave, row: number): number {
 /** The size of the drawn Project in grid px, before zoom and rotation. */
 export function projectExtentPx(technique: Technique, columns: number, rows: number): Extent {
   return {
-    width: columns * CELL_SIZE_PX + (isOffsetTechnique(technique) ? CELL_SIZE_PX / 2 : 0),
+    width: gridWidth(technique, columns, CELL_SIZE_PX),
     height: rows === 0 ? 0 : rowTopPx(technique, rows - 1) + CELL_SIZE_PX,
   }
 }
@@ -236,7 +234,7 @@ function gridBox(technique: Technique, box: Frame): Region {
   return {
     x: box.column * CELL_SIZE_PX,
     y: top,
-    width: box.columns * CELL_SIZE_PX + (isOffsetTechnique(technique) ? CELL_SIZE_PX / 2 : 0),
+    width: gridWidth(technique, box.columns, CELL_SIZE_PX),
     height: rowTopPx(technique, box.row + box.rows - 1) + CELL_SIZE_PX - top,
   }
 }

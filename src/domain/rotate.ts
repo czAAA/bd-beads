@@ -4,6 +4,7 @@ import { layerView, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
 import type { Project } from './project'
 import { selectionFrame, selectionInLayer, selectionLayer, type Selection } from './selection'
+import { describeWeave } from './weave'
 
 // Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection's beads about its centre. Unlike the legacy
 // view-only turn it changes the data (peyote/brick contacts change). Frame, rulers and Row progress are untouched;
@@ -112,7 +113,7 @@ export function coveredByRotation(before: Project, after: Project, selection: Se
  * as Rotate does a Selection; Width and Height swap. The Canvas under it is not touched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const frame = project.frame
-  if (!frame) {
+  if (!frame || !describeWeave(project).quarterTurn) {
     return undefined
   }
   const turned = rotatedSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns })

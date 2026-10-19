@@ -1,4 +1,4 @@
-import type { Technique } from '../domain/grid'
+import type { Technique } from '../domain/weave'
 import type { Translations } from './translations'
 
 /** A Technique's name in the current language (loom, peyote, brick stitch). */

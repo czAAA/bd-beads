@@ -2,7 +2,7 @@
 import { computed, useId } from 'vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
-import { MAX_BRICK_BLOCK } from '../../domain/grid'
+import { MAX_BRICK_BLOCK } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 

@@ -19,25 +19,16 @@ import {
 import { sameFrame, snapRow } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
-import {
-  MAX_BRICK_BLOCK,
-  neighborsOf,
-  positionKey,
-  rotationSwapsAxes,
-  type GridDimensions,
-  type GridPosition,
-  type Rotation,
-  type Technique,
-} from './grid'
+import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
+import { MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type Technique } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
-import { passCount, passOf } from './passes'
 import { gridFromSize, type StatedSize } from './projectSize'
 
 export type { MirrorAxisCounts } from './mirror'
 
-export type { Technique } from './grid'
+export type { Technique } from './weave'
 
 export interface Cell {
   color: string | null

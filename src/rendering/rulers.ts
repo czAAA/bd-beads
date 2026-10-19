@@ -1,5 +1,5 @@
 import type { Frame } from '../domain/canvas'
-import type { Technique, Weave } from '../domain/grid'
+import { gridWidth, type Technique, type Weave } from '../domain/weave'
 import { pieceAreasOf } from '../domain/pieces'
 import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
@@ -170,7 +170,7 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
 
   const lastRow = box.row + box.rows - 1
   const bottom = rowTopPx(technique, lastRow) + CELL_SIZE_PX
-  const right = box.column * CELL_SIZE_PX + box.columns * CELL_SIZE_PX + (technique === 'loom' ? 0 : CELL_SIZE_PX / 2)
+  const right = box.column * CELL_SIZE_PX + gridWidth(technique, box.columns, CELL_SIZE_PX)
   const left = box.column * CELL_SIZE_PX
 
   // The widest column numbers: the longest upright one (under 100) and the longest turned one.

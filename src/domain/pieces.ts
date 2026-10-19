@@ -1,5 +1,6 @@
 import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
-import { neighborsOf, rowCycle, type GridPosition, type Weave } from './grid'
+import { type GridPosition } from './grid'
+import { neighborsOf, rowCycle, type Weave } from './weave'
 
 /** A Piece (CONTEXT.md): beads that touch by a side or a corner. Pieces merge and split as beads change, so they are
  * never stored; worked out on demand (cached per set of beads). */
