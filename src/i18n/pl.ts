@@ -510,7 +510,7 @@ export const pl: Translations = {
     fitToDrawing: 'Dopasuj do rysunku',
     removeFrame: 'Usuń ramkę',
     removeConfirmTitle: 'Usunąć ramkę?',
-    removeConfirmMessage: 'Ramka zniknie razem ze swoimi koralikami. Rzędy oznaczone jako gotowe znikną też. Można to cofnąć.',
+    removeConfirmMessage: 'Rzędy oznaczone jako gotowe znikną razem z ramką. Jej koraliki zostaną na płótnie. Można to cofnąć.',
     removeConfirmButton: 'Usuń ramkę',
     removeConfirmCancel: 'Anuluj',
     explainer: 'Ramka zaznacza, które koraliki stają się schematem. Koraliki poza nią zostają na płótnie.',
