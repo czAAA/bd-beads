@@ -477,3 +477,27 @@ describe('changeFrame in Netting (ticket 485)', () => {
     expect(result.kind === 'changed' && result.project.frame).toMatchObject({ row: 4, column: 4, rows: 7, columns: 13 })
   })
 })
+
+describe('changeFrame placing a Frame (ticket 495)', () => {
+  const place = { frame: { row: 2, column: 3, rows: 8, columns: 5 }, weave: { technique: 'peyote' as const } }
+  const canvas = withColors({}, [{ row: 3, column: 4, color: '#123456' }])
+
+  it('puts an empty Frame in its own weave in place of the old one, leaving the Canvas as it is', () => {
+    const old = framed({ frame: sheet({ row: 0, column: 0, rows: 3, columns: 3 }, withColors({}, [{ row: 0, column: 0, color: '#111111' }])), beads: canvas })
+    const result = changeFrame(old, { place })
+    expect(result.kind).toBe('changed')
+    const next = (result as { project: Project }).project
+    expect(next.frame).toMatchObject({ row: 2, column: 3, rows: 8, columns: 5, technique: 'peyote', beads: {} })
+    expect(next.beads).toBe(canvas)
+    expect(next.technique).toBe('loom')
+  })
+
+  it('restarts Row progress at the first pass', () => {
+    const next = (changeFrame(framed({ rowProgress: woven('rows', 0, 0) }), { place }) as { project: Project }).project
+    expect(next.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
+  })
+
+  it('is refused once a pass is done', () => {
+    expect(changeFrame(framed({ rowProgress: woven('rows', 3, 2) }), { place })).toEqual({ kind: 'refused', reason: 'locked' })
+  })
+})

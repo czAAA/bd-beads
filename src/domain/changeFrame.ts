@@ -2,10 +2,10 @@ import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shif
 import { movedFrame, sameFrame, snappedMove } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
-import { describeWeave, type Technique } from './weave'
+import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { canvasWeave, clampBrickBlock, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameTechnique, withTechnique, type Project } from './project'
+import { canvasWeave, clampBrickBlock, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameTechnique, withTechnique, weaveOf, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
@@ -28,6 +28,9 @@ export type FrameChange =
   | { technique: Technique }
   /** Change the Frame's Brick block (ticket 477): the same, only the shift's rhythm changes. */
   | { brickBlock: number }
+  /** Put a new empty Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
+   * the Canvas under the new one is hidden, not changed. */
+  | { place: { frame: Frame; weave: Weave } }
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
@@ -121,6 +124,10 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return { kind: 'changed', project: { ...project, frame: { ...frame, row: moved.row, column: moved.column }, updatedAt: Date.now() } }
   }
 
+  if ('place' in change) {
+    return { kind: 'changed', project: placedFrame(project, change.place) }
+  }
+
   if ('remove' in change) {
     return project.frame ? { kind: 'changed', project: removedFrame(project) } : { kind: 'unchanged', project }
   }
@@ -173,6 +180,15 @@ function madeFrame(project: Project, rectangle: Frame): Project {
   const frame = { ...framed.frame!, beads: shiftedBeads(lifted, -rectangle.row, -rectangle.column), ...(named ? { name: named } : {}) }
   const carried = carryNames(project, { ...framed, frame })
   return first && previous?.name ? { ...carried, pieceNames: [...(carried.pieceNames ?? []), { name: previous.name, row: first.row + previous.row, column: first.column + previous.column }] } : carried
+}
+
+/** The Project with a new empty Frame at `place.frame`, woven as `place.weave`, instead of the one it had (ticket 495):
+ * Row progress starts at the first pass, and the Canvas keeps every bead. */
+function placedFrame(project: Project, place: { frame: Frame; weave: Weave }): Project {
+  const { frame: _previous, ...rest } = project
+  const { row, column, rows, columns } = place.frame
+  const frame = { row, column, rows, columns, beads: {}, ...weaveOf(place.weave) }
+  return { ...rest, frame, rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 }, updatedAt: Date.now() }
 }
 
 /** The Project without its Frame (ticket 497): the Frame's footprint on the Canvas is cleared and its beads dropped in,

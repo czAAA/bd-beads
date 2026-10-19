@@ -18,6 +18,9 @@ const {
   removeFrameConfirmOpen,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
+  replaceFrameConfirmOpen,
+  onCancelReplaceFrame,
+  onConfirmReplaceFrame,
   pendingColorRemovalHex,
   onCancelRemoveAddedColor,
   onConfirmRemoveAddedColor,
@@ -90,6 +93,17 @@ const {
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
     @cancel="onCancelRemoveFrame"
+  />
+
+  <ConfirmModal
+    v-if="replaceFrameConfirmOpen"
+    data-testid="replace-frame-modal"
+    :title="t.frame.replaceConfirmTitle"
+    :message="t.frame.replaceConfirmMessage"
+    :confirm-label="t.frame.replaceFrame"
+    :cancel-label="t.frame.removeConfirmCancel"
+    @confirm="onConfirmReplaceFrame"
+    @cancel="onCancelReplaceFrame"
   />
 
   <ConfirmModal

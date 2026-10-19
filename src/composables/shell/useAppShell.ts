@@ -153,7 +153,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, zoomPercent, stripZoomPercent } =
+  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, visibleCentre, zoomPercent, stripZoomPercent } =
     useCanvasFraming({
       currentProject,
       framing: () => framing.value,
@@ -550,6 +550,7 @@ function wireAppShell(services: Services) {
     showToast,
     messages,
     centreOn,
+    visibleCentre,
   })
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0062). */
   const editFrame = frameFlow.toggleEdit
@@ -712,6 +713,7 @@ function wireAppShell(services: Services) {
     anyDialogOpen: () =>
       deleteAll.deleteAllConfirmOpen.value ||
       frameFlow.removeConfirmOpen.value ||
+      frameFlow.replaceConfirmOpen.value ||
       !!pendingColorRemovalId.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
       !!importSwitch.pendingImport.value ||
@@ -774,6 +776,7 @@ function wireAppShell(services: Services) {
     resetMirrorState()
     deleteAll.onCancelDeleteAll()
     frameFlow.cancelRemove()
+    frameFlow.cancelReplace()
     replaceBead.onCancelReplaceBead()
     clearSavedConfirmation()
     pickingColor.value = false
@@ -925,6 +928,10 @@ function wireAppShell(services: Services) {
     removeFrameConfirmOpen: frameFlow.removeConfirmOpen,
     onCancelRemoveFrame: frameFlow.cancelRemove,
     onConfirmRemoveFrame: frameFlow.confirmRemove,
+    onPlaceFrameFromTemplate: frameFlow.placeFromTemplate,
+    replaceFrameConfirmOpen: frameFlow.replaceConfirmOpen,
+    onCancelReplaceFrame: frameFlow.cancelReplace,
+    onConfirmReplaceFrame: frameFlow.confirmReplace,
     onBringFrameIntoView: frameFlow.bringIntoView,
     ...replaceBead,
     ...importSwitch,
