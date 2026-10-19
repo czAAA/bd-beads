@@ -19,14 +19,21 @@ export function snapRow(weave: Weave, row: number): number {
   return row - (((row % cycle) + cycle) % cycle)
 }
 
+/** The column a Frame may start on: the column itself, or the nearest start of a diamond to its left where a net's
+ * lattice repeats across (ticket 485). */
+export function snapColumn(weave: Weave, column: number): number {
+  const step = describeWeave(weave).columnStep
+  return column - (((column % step) + step) % step)
+}
+
 /** The Frame covering the beads from one corner to the other, whichever way the drag went, snapped to a legal top
  * row. */
 export function frameFromCells(weave: Weave, a: GridPosition, b: GridPosition): Frame {
   const description = describeWeave(weave)
   const top = snapRow(weave, Math.min(a.row, b.row))
   const bottom = description.snapBottom(top, Math.max(a.row, b.row))
-  const left = Math.min(a.column, b.column)
-  const right = Math.max(a.column, b.column, left + description.smallest.columns - 1)
+  const left = snapColumn(weave, Math.min(a.column, b.column))
+  const right = description.snapRight(left, Math.max(a.column, b.column, left + description.smallest.columns - 1))
   return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
@@ -38,11 +45,11 @@ export function frameWithEdges(weave: Weave, frame: Frame, edges: readonly Frame
   let left = frame.column
   let right = frame.column + frame.columns - 1
 
-  const { smallest, snapBottom } = describeWeave(weave)
+  const { smallest, snapBottom, snapRight } = describeWeave(weave)
   if (edges.includes('top')) top = Math.min(snapRow(weave, cell.row), snapBottom(top, bottom) - smallest.rows + 1)
   if (edges.includes('bottom')) bottom = snapBottom(top, Math.max(cell.row, top + smallest.rows - 1))
-  if (edges.includes('left')) left = Math.min(cell.column, right - smallest.columns + 1)
-  if (edges.includes('right')) right = Math.max(cell.column, left + smallest.columns - 1)
+  if (edges.includes('left')) left = Math.min(snapColumn(weave, cell.column), right - smallest.columns + 1)
+  if (edges.includes('right')) right = snapRight(left, Math.max(cell.column, left + smallest.columns - 1))
 
   return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
@@ -52,15 +59,18 @@ export function frameWithEdges(weave: Weave, frame: Frame, edges: readonly Frame
 export function movedFrame(weave: Weave, frame: Frame, rows: number, columns: number): Frame {
   const cycle = rowCycle(weave)
   const rowStep = cycle > 1 ? Math.sign(rows) * Math.round(Math.abs(rows) / cycle) * cycle : rows
-  return { ...frame, row: frame.row + rowStep, column: frame.column + columns }
+  const across = describeWeave(weave).columnStep
+  const columnStep = across > 1 ? Math.sign(columns) * Math.round(Math.abs(columns) / across) * across : columns
+  return { ...frame, row: frame.row + rowStep, column: frame.column + columnStep }
 }
 
 /** The Frame with its size changed from the top-left corner, which stays where it is; never smaller than one bead
  * each way. */
 export function frameWithSize(frame: Frame, columns: number, rows: number, weave: Weave = { technique: 'loom' }): Frame {
-  const { smallest, snapBottom } = describeWeave(weave)
+  const { smallest, snapBottom, snapRight } = describeWeave(weave)
   const tall = snapBottom(frame.row, frame.row + Math.max(smallest.rows, Math.round(rows)) - 1) - frame.row + 1
-  return { ...frame, columns: Math.max(smallest.columns, Math.round(columns)), rows: tall }
+  const wide = snapRight(frame.column, frame.column + Math.max(smallest.columns, Math.round(columns)) - 1) - frame.column + 1
+  return { ...frame, columns: wide, rows: tall }
 }
 
 const MIN_STEPPED_SIDE = 4
@@ -70,17 +80,21 @@ const MAX_TYPED_SIDE = 999
 // ticket 417). Where rows alternate (peyote, brick stitch) the top edge goes by a whole cycle of rows so the first row
 // keeps its place, as dragging the top handle does. A step that would leave less than four beads each way changes nothing (ticket 473).
 export function frameWithEdgeStep(weave: Weave, frame: Frame, edge: FrameEdge, step: 1 | -1): Frame {
+  const description = describeWeave(weave)
   const rowStep = rowCycle(weave) * step
+  const columnStep = description.columnStep * step
+  // A net's smallest Frame is a diamond, wider than the four beads other Techniques keep.
+  const fewest = { columns: Math.max(MIN_STEPPED_SIDE, description.smallest.columns), rows: Math.max(MIN_STEPPED_SIDE, description.smallest.rows) }
   switch (edge) {
     case 'left':
-      return step < 0 && frame.columns + step < MIN_STEPPED_SIDE ? frame : { ...frame, column: frame.column - step, columns: frame.columns + step }
+      return step < 0 && frame.columns + columnStep < fewest.columns ? frame : { ...frame, column: frame.column - columnStep, columns: frame.columns + columnStep }
     case 'right':
-      return step < 0 && frame.columns + step < MIN_STEPPED_SIDE ? frame : { ...frame, columns: frame.columns + step }
+      return step < 0 && frame.columns + columnStep < fewest.columns ? frame : { ...frame, columns: frame.columns + columnStep }
     case 'top':
-      return step < 0 && frame.rows + rowStep < MIN_STEPPED_SIDE ? frame : { ...frame, row: frame.row - rowStep, rows: frame.rows + rowStep }
+      return step < 0 && frame.rows + rowStep < fewest.rows ? frame : { ...frame, row: frame.row - rowStep, rows: frame.rows + rowStep }
     case 'bottom': {
-      const down = describeWeave(weave).rowsPerUnit * step
-      return step < 0 && frame.rows + down < MIN_STEPPED_SIDE ? frame : { ...frame, rows: frame.rows + down }
+      const down = description.rowsPerUnit * step
+      return step < 0 && frame.rows + down < fewest.rows ? frame : { ...frame, rows: frame.rows + down }
     }
   }
 }
@@ -96,7 +110,8 @@ export function frameResizedAround(weave: Weave, frame: Frame, columns: number, 
   const fewest = description.countsUnits ? description.smallest : { columns: MIN_STEPPED_SIDE, rows: MIN_STEPPED_SIDE }
   const wide = side(typed.columns, fewest.columns)
   const tall = description.snapBottom(0, side(typed.rows, fewest.rows) - 1) + 1
-  const left = Math.trunc((wide - frame.columns) / 2)
+  const across = description.columnStep
+  const left = across > 1 ? across * Math.trunc((wide - frame.columns) / (2 * across)) : Math.trunc((wide - frame.columns) / 2)
   const cycle = rowCycle(weave)
   const top = cycle > 1 ? cycle * Math.trunc((tall - frame.rows) / (2 * cycle)) : Math.trunc((tall - frame.rows) / 2)
   return { row: frame.row - top, column: frame.column - left, rows: tall, columns: wide }
@@ -104,7 +119,7 @@ export function frameResizedAround(weave: Weave, frame: Frame, columns: number, 
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
  * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
-export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' | 'beads' | 'frame'>): Frame | undefined {
+export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'>): Frame | undefined {
   const frame = project.frame
   const shown = frame ? beadsOver(beadsWithout(project.beads, withMargin(frame)), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
   const bounds = beadBounds(shown)
@@ -113,8 +128,9 @@ export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' |
   }
   const top = snapRow(project, bounds.row)
   const bottom = describeWeave(project).snapBottom(top, bounds.row + bounds.rows - 1)
-  const { columns: smallest } = describeWeave(project).smallest
-  return { row: top, column: bounds.column, rows: bottom - top + 1, columns: Math.max(smallest, bounds.columns) }
+  const left = snapColumn(project, bounds.column)
+  const right = describeWeave(project).snapRight(left, Math.max(bounds.column + bounds.columns - 1, left + describeWeave(project).smallest.columns - 1))
+  return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
 export function sameFrame(a: Frame | undefined, b: Frame | undefined): boolean {

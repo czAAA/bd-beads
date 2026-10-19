@@ -53,7 +53,7 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Frame & { name?: string }; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number }
+export type RuledProject = { frame?: Frame & { name?: string }; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number; netSize?: number }
 
 // The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
 // near the viewport are chosen by the caller).
@@ -172,7 +172,12 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
   // What the rulers count: beads, or Units where the Technique counts them (ticket 482).
   const counted = description.unitsOf(box)
   const count = description.countsUnits ? counted : { columns: box.columns, rows: box.rows }
-  const unit = cellSizePx(technique).width + cellSizePx(technique).height
+  const cell = cellSizePx(technique)
+  // A Unit's size across and down in grid px, and the positions a line of them spans (a Right-angle weave Unit spans its
+  // column and the next, three lines; a diamond its whole width and height).
+  const unitAcross = description.origin({ row: 0, column: description.columnsPerUnit }, cell.width, cell.height).x
+  const unitDown = description.origin({ row: description.rowsPerUnit, column: 0 }, cell.width, cell.height).y
+  const span = description.positionsOf({ columns: 1, rows: 1 })
   const area = positionsBoxPx({ toAbsolute: { row: 0, column: 0 } }, weave, box.row, box.column, box.rows, box.columns)
   const lastRow = box.row + box.rows - 1
   const bottom = description.countsUnits ? area.y + area.height : rowTopPx(technique, lastRow) + CELL_SIZE_PX
@@ -245,23 +250,22 @@ function layBox(box: RuledBox, weave: Weave, surface: SurfaceView, viewport: { w
   const columnsAt = (rowForShift: number, gridY: number, normal: [number, number]) => {
     for (let index = 0; index < count.columns; index += 1) {
       const gridX = description.countsUnits
-        ? area.x + index * unit + unit / 2
+        ? area.x + index * unitAcross + unitAcross / 2
         : rowShiftPx(weave, rowForShift) + (box.column + index) * CELL_SIZE_PX + CELL_SIZE_PX / 2
-      // A Unit spans its column and the next.
-      const marked = description.countsUnits ? { top: box.row, left: box.column + index, rows: box.rows, columns: 2 } : { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }
-      along('column', index, gridX, gridY, normal, marked, box.column + index)
+      const marked = description.countsUnits ? { top: box.row, left: box.column + index * description.columnsPerUnit, rows: box.rows, columns: span.columns } : { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }
+      along('column', index, gridX, gridY, normal, marked, box.column + index * description.columnsPerUnit)
     }
   }
   const rowsAt = (gridX: number, normal: [number, number]) => {
     for (let index = 0; index < count.rows; index += 1) {
-      const gridY = description.countsUnits ? area.y + index * unit + unit / 2 : rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2
+      const gridY = description.countsUnits ? area.y + index * unitDown + unitDown / 2 : rowTopPx(technique, box.row + index) + CELL_SIZE_PX / 2
       const first = box.row + index * description.rowsPerUnit
-      const marked = description.countsUnits ? { top: first, left: box.column, rows: 3, columns: box.columns } : { top: first, left: box.column, rows: 1, columns: box.columns }
+      const marked = description.countsUnits ? { top: first, left: box.column, rows: span.rows, columns: box.columns } : { top: first, left: box.column, rows: 1, columns: box.columns }
       along('row', index, gridX, gridY, normal, marked, first)
     }
   }
 
-  columnsAt(box.row, rowTopPx(technique, box.row), [0, -1])
+  columnsAt(box.row, description.countsUnits ? area.y : rowTopPx(technique, box.row), [0, -1])
   rowsAt(left, [-1, 0])
   if (box.sides === 'all') {
     columnsAt(lastRow, bottom, [0, 1])

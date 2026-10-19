@@ -19,6 +19,8 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 const props = defineProps<{
   bead: Bead
   technique: Technique
+  /** The Net size of the Project being made (ticket 485); nothing is the default. */
+  netSize?: number
   slowFramingCellThresholds: Record<Technique, number>
 }>()
 
@@ -49,13 +51,13 @@ const isStated = computed(
 )
 
 const dimensions = computed(() =>
-  isStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead, { technique: props.technique }) : undefined,
+  isStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead, { technique: props.technique, netSize: props.netSize }) : undefined,
 )
 
 /** The stated size in the other unit: "≈ 3.0 × 2.2 cm" for beads, "≈ 20×10 beads" for mm. */
 const estimate = computed(() =>
   dimensions.value
-    ? formatOtherUnit(dimensions.value, props.bead, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value, props.technique)
+    ? formatOtherUnit(dimensions.value, props.bead, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value, { technique: props.technique, netSize: props.netSize })
     : undefined,
 )
 
@@ -64,6 +66,7 @@ const techniqueLabel = computed<Record<Technique, string>>(() => ({
   peyote: t.value.form.techniquePeyote,
   brick: t.value.form.techniqueBrick,
   rightAngle: t.value.form.techniqueRightAngle,
+  netting: t.value.form.techniqueNetting,
 }))
 
 const slowFramingWarning = computed(() =>

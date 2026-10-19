@@ -30,7 +30,7 @@ const { unit, countTemplate } = useSizeUnit(() => props.project.technique)
 /** The Estimated size in the other unit: mm while the unit is beads, the bead count while it is mm. */
 const estimate = computed(() =>
   bead.value && frame.value
-    ? formatOtherUnit(frame.value, bead.value, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value, props.project.technique)
+    ? formatOtherUnit(frame.value, bead.value, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value, props.project)
     : undefined,
 )
 

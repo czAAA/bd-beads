@@ -20,7 +20,7 @@ import { sameFrame, snapRow } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
-import { describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type PassDirection, type Technique } from './weave'
+import { clampNetSize, describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type PassDirection, type Technique } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -61,6 +61,9 @@ export interface Project {
    * rows shift half a bead. Absent means 1, every other row. Kept when the Technique is switched away from brick
    * stitch, and used by no other Technique. */
   brickBlock?: number
+  /** The Net size (ticket 485): the beads in a Netting loop, odd from 3 to 9. Present on a Netting Project and no
+   * other; fixed once it is created (ADR 0038). */
+  netSize?: number
   beadId: string
   /** What is painted on the Canvas, by position (ADR 0026); see BeadMap. No real-world size is stored: the
    * Estimated size is worked out from the Frame (estimatedSizeMm). */
@@ -93,6 +96,8 @@ export interface CreateProjectInput {
   technique: Technique
   /** The Brick block of a new brick stitch Project (ticket 477); left out or 1 shifts every other row. */
   brickBlock?: number
+  /** The Net size of a new Netting Project (ticket 485); left out is the default. */
+  netSize?: number
   beadId: string
   /** How big the Frame is, in beads or mm/cm (converted once to a grid, not remembered; ADR 0026). Left out: a Canvas
    * with no Frame. */
@@ -123,7 +128,7 @@ export function projectGeometry(input: CreateProjectInput & { size: StatedSize }
     return undefined
   }
 
-  return { bead, ...gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock }) }
+  return { bead, ...gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock, netSize: input.netSize }) }
 }
 
 export function createProject(input: CreateProjectInput): Project {
@@ -132,7 +137,7 @@ export function createProject(input: CreateProjectInput): Project {
     throw new Error(`Unknown bead id: ${input.beadId}`)
   }
 
-  const dimensions = input.size ? gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock }) : undefined
+  const dimensions = input.size ? gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock, netSize: input.netSize }) : undefined
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
   const makerName = normalizeMakerName(input.makerName ?? '')
@@ -142,6 +147,7 @@ export function createProject(input: CreateProjectInput): Project {
     name,
     technique: input.technique,
     ...(input.brickBlock && input.brickBlock > 1 ? { brickBlock: clampBrickBlock(input.brickBlock) } : {}),
+    ...(input.technique === 'netting' ? { netSize: clampNetSize(input.netSize) } : {}),
     beadId: input.beadId,
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {} } } : {}),
@@ -220,8 +226,8 @@ export function projectDimensions(project: Pick<Project, 'frame' | 'beads'>): Gr
 
 /** What the Frame measures in what the Technique counts (ticket 482): beads, or Units where it counts them. What the
  * person is told the size is, and what the rulers and the printed pages number. */
-export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'technique'>): GridDimensions {
-  return describeWeave({ technique: project.technique }).unitsOf(projectDimensions(project))
+export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'technique' | 'netSize'>): GridDimensions {
+  return describeWeave(project).unitsOf(projectDimensions(project))
 }
 
 /** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the
@@ -320,7 +326,7 @@ export function normalizeProject(stored: StoredProject): Project {
   const frame = projectFrame(placed)
   const technique = project.technique
 
-  const { pieceNames: _stored, brickBlock: storedBlock, ...withoutNames } = rest
+  const { pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, ...withoutNames } = rest
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
@@ -329,6 +335,7 @@ export function normalizeProject(stored: StoredProject): Project {
     ...withoutNames,
     ...placed,
     ...(brickBlock ? { brickBlock } : {}),
+    ...(technique === 'netting' ? { netSize: clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
     rowProgress: {
       direction: rowProgress.direction ?? 'rows',

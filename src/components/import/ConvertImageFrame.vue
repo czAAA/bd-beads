@@ -32,6 +32,8 @@ const props = defineProps<{
   technique: Technique
   /** The Brick block of the Project being made (ticket 477); nothing is 1. */
   brickBlock?: number
+  /** The Net size of the Project being made (ticket 485); nothing is the default. */
+  netSize?: number
   bead: Bead
   dimensions: GridDimensions
   /** A multiple of the scale at which the picture just covers the frame (see domain/imageFraming). */
@@ -100,6 +102,7 @@ function latticeFor(view: ReturnType<typeof framingView>) {
     bead: props.bead,
     technique: props.technique,
     brickBlock: props.brickBlock,
+    netSize: props.netSize,
   })
 }
 
@@ -109,6 +112,7 @@ function sampledFor(view: ReturnType<typeof framingView>, lattice: ReturnType<ty
     view,
     technique: props.technique,
     brickBlock: props.brickBlock,
+    netSize: props.netSize,
     bead: props.bead,
     lattice,
   })
@@ -148,6 +152,7 @@ const drawnProject = computed(() => {
   return {
     technique: props.technique,
     brickBlock: props.brickBlock,
+    netSize: props.netSize,
     ...framedGrid(grid),
     rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
     rotation: 0 as const,
@@ -158,7 +163,7 @@ const drawnProject = computed(() => {
 const latticeSpace = computed(() => spaceOf(drawnProject.value, false))
 
 /** The lattice seen upright and unscaled, with no scroll: where its beads are in the preview's own px. */
-const unscaledView = computed(() => surfaceView({ space: latticeSpace.value, technique: props.technique, brickBlock: props.brickBlock, rotation: 0, zoom: 1 }))
+const unscaledView = computed(() => surfaceView({ space: latticeSpace.value, technique: props.technique, brickBlock: props.brickBlock, netSize: props.netSize, rotation: 0, zoom: 1 }))
 
 /** The lattice at its natural bead size, in unscaled px. */
 const latticeExtent = computed(() => latticeSpace.value.extent)
@@ -173,6 +178,7 @@ const fitScale = computed(() =>
     space: latticeSpace.value,
     technique: props.technique,
     brickBlock: props.brickBlock,
+    netSize: props.netSize,
     rotation: 0,
     zoom: 1,
     viewport: { width: props.availableWidth || CANVAS_MAX_PX, height: Infinity },
@@ -260,8 +266,8 @@ const panRangeMm = computed(() => ({
 // piece (the Bead's width along a row, the Technique's row spacing down the page), so the point under the pointer stays
 // under it in every Technique.
 const mmPerScreenPx = computed(() => {
-  const step = surfaceView({ space: latticeSpace.value, technique: props.technique, brickBlock: props.brickBlock, rotation: 0, zoom: fitScale.value }).beadStep()
-  const mm = describeWeave({ technique: props.technique }).stepMm(props.bead)
+  const step = surfaceView({ space: latticeSpace.value, technique: props.technique, brickBlock: props.brickBlock, netSize: props.netSize, rotation: 0, zoom: fitScale.value }).beadStep()
+  const mm = describeWeave({ technique: props.technique, netSize: props.netSize }).stepMm(props.bead)
   return { x: mm.across / step.column.x, y: mm.down / step.row.y }
 })
 

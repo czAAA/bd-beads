@@ -289,7 +289,7 @@ const space = computed(() => spaceOf(toRaw(props.project), true))
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: props.project.technique, brickBlock: props.project.brickBlock, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: props.project.technique, brickBlock: props.project.brickBlock, netSize: props.project.netSize, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
@@ -1030,6 +1030,7 @@ onBeforeUnmount(() => {
     data-tour="board"
     :data-technique="project.technique"
     :data-brick-block="project.brickBlock"
+    :data-net-size="project.netSize"
     :data-rotation="project.rotation"
     :data-zoom="zoom"
     :data-scroll-x="scroll.x"

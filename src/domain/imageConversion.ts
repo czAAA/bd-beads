@@ -163,6 +163,8 @@ interface SamplingInput {
   technique: Technique
   /** The Brick block of the Project being made (ticket 477); nothing is 1. */
   brickBlock?: number
+  /** The Net size of the Project being made (ticket 485); nothing is the default. */
+  netSize?: number
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
 }
 
@@ -173,12 +175,13 @@ export function sampleLatticePacked({
   view,
   technique,
   brickBlock,
+  netSize,
   bead,
   lattice,
 }: SamplingInput & { lattice: PreviewLattice }): Int32Array {
   const cellWidth = beadPitchMm(bead)
   const cellHeight = bead.heightMm
-  const description = describeWeave({ technique, brickBlock })
+  const description = describeWeave({ technique, brickBlock, netSize })
   if (description.countsUnits) {
     return sampleUnitLattice({ image, view, description, cellWidth, cellHeight, lattice })
   }
@@ -249,8 +252,7 @@ function sampleUnitLattice({ image, view, description, cellWidth, cellHeight, la
   lattice: PreviewLattice
 }): Int32Array {
   // The frame's corner is its first Unit's: a line of vertical beads starts at the Unit's own edge.
-  const originX = lattice.frameColumn * (cellWidth + cellHeight)
-  const originY = (lattice.frameRow / 2) * (cellWidth + cellHeight)
+  const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, cellWidth, cellHeight)
   const packed = new Int32Array(lattice.rows * lattice.columns).fill(NO_COLOR)
   for (let row = 0; row < lattice.rows; row += 1) {
     for (let column = 0; column < lattice.columns; column += 1) {
