@@ -14,6 +14,25 @@ function framed(overrides: Partial<Project> = {}): Project {
 
 const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3) => ({ direction, currentRow, currentColumn })
 
+describe('changeFrame in Right-angle weave (ticket 482)', () => {
+  const woven = () => ({ ...createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }) })
+
+  it('does not switch to another Technique, or from one', () => {
+    expect(changeFrame(woven(), { technique: 'peyote' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+    const loom = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
+    expect(changeFrame(loom, { technique: 'rightAngle' })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+  })
+
+  it('does not take out a single line, which is not a Unit', () => {
+    expect(changeFrame(woven(), { removeLine: { axis: 'row', index: 0 } })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
+  })
+
+  it('still moves, in whole Units', () => {
+    const result = changeFrame(woven(), { move: { rows: 2, columns: 1 } })
+    expect(result.kind === 'changed' && result.project.frame).toMatchObject({ row: 2, column: 1, rows: 5, columns: 4 })
+  })
+})
+
 describe('changeFrame', () => {
   describe('refusals', () => {
     const changes: [string, FrameChange][] = [

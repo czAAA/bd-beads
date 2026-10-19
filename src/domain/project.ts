@@ -14,7 +14,7 @@ import {
 } from './canvas'
 import { sameFrame, snapRow } from './frame'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
-import { MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type Technique } from './weave'
+import { describeWeave, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, type Technique } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
@@ -116,7 +116,7 @@ export function projectGeometry(input: CreateProjectInput & { size: StatedSize }
     return undefined
   }
 
-  return { bead, ...gridFromSize(input.size, bead) }
+  return { bead, ...gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock }) }
 }
 
 export function createProject(input: CreateProjectInput): Project {
@@ -125,7 +125,7 @@ export function createProject(input: CreateProjectInput): Project {
     throw new Error(`Unknown bead id: ${input.beadId}`)
   }
 
-  const dimensions = input.size ? gridFromSize(input.size, bead) : undefined
+  const dimensions = input.size ? gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock }) : undefined
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
   const makerName = normalizeMakerName(input.makerName ?? '')
@@ -161,12 +161,15 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
   const frame = project.frame!
+  const weave = describeWeave(project)
 
   return {
     ...project,
     beads: beadsFromColors(
       Array.from({ length: frame.rows }, (_row, rowIndex) =>
-        Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
+        Array.from({ length: frame.columns }, (_cell, columnIndex) =>
+          weave.hasPosition({ row: rowIndex, column: columnIndex }, frame) ? input.grid[rowIndex]?.[columnIndex]?.color ?? null : null,
+        ),
       ),
       frame,
     ),
@@ -204,6 +207,12 @@ export function projectFrame(project: Pick<Project, 'frame' | 'beads'>): Frame {
  * zoom). */
 export function projectDimensions(project: Pick<Project, 'frame' | 'beads'>): GridDimensions {
   return frameDimensions(projectFrame(project))
+}
+
+/** What the Frame measures in what the Technique counts (ticket 482): beads, or Units where it counts them. What the
+ * person is told the size is, and what the rulers and the printed pages number. */
+export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'technique'>): GridDimensions {
+  return describeWeave({ technique: project.technique }).unitsOf(projectDimensions(project))
 }
 
 /** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the
@@ -578,6 +587,7 @@ function fillLimit(project: Pick<Project, 'beads' | 'frame'>, start: GridPositio
 function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, start: GridPosition): GridPosition[] {
   const targetColor = colorAt(project.beads, start.row, start.column)
   const limit = fillLimit(project, start)
+  const weave = describeWeave(project)
   const visited = new Set<string>()
   const region: GridPosition[] = []
 
@@ -590,7 +600,7 @@ function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, st
     }
     visited.add(key)
 
-    if (colorAt(project.beads, position.row, position.column) !== targetColor) {
+    if (!weave.hasPosition(position, project.frame) || colorAt(project.beads, position.row, position.column) !== targetColor) {
       continue
     }
     region.push(position)
@@ -727,7 +737,7 @@ export function summarizeProject(project: Project): string {
   if (!project.frame) {
     return project.name
   }
-  const { columns, rows } = projectDimensions(project)
+  const { columns, rows } = countedDimensions(project)
   const [width, height] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   return `${project.name} · ${width}×${height}`
 }

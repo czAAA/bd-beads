@@ -39,6 +39,25 @@ describe('FrameControls', () => {
     })
   })
 
+  describe('Right-angle weave (ticket 482)', () => {
+    const woven = () => createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
+
+    it('never offers Right-angle weave as a switch from another Technique', () => {
+      const wrapper = mount(FrameControls, { props: { project: framed() } })
+      expect(wrapper.find('[data-testid="frame-technique"] [data-value="rightAngle"]').exists()).toBe(false)
+    })
+
+    it('offers no switch to another Technique on a Project woven in it', () => {
+      const wrapper = mount(FrameControls, { props: { project: woven() } })
+      expect(wrapper.find('[data-testid="frame-technique-row"]').exists()).toBe(false)
+    })
+
+    it('works out the Estimated size from the Unit: 10 by 20 Units of 3 mm and a last bead of 1.5 mm', () => {
+      const wrapper = mount(FrameControls, { props: { project: woven() } })
+      expect(wrapper.get('[data-testid="size-estimate"]').text()).toBe('≈ 3.2 × 6.2 cm')
+    })
+  })
+
   describe('Brick block (ticket 477)', () => {
     const brick = () => createProject({ technique: 'brick', brickBlock: 3, beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
 

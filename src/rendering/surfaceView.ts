@@ -1,6 +1,6 @@
 import type { Frame } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
-import { beadRoundness, gridWidth, isShiftedRow, rowPitch, type Technique, type Weave } from '../domain/weave'
+import { beadRoundness, describeWeave, isShiftedRow, rowPitch, type Technique, type Weave } from '../domain/weave'
 import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
@@ -51,16 +51,45 @@ export function rowShiftPx(weave: Weave, row: number): number {
 
 // How far a space's row has its beads shifted sideways, in grid px: by the bead's own row, whichever space the row is
 // numbered in (a Project with no Frame may start on an odd row).
-export function shiftOf(space: Space, weave: Weave, row: number): number {
+export function shiftOf(space: Pick<Space, 'toAbsolute'>, weave: Weave, row: number): number {
   return rowShiftPx(weave, space.toAbsolute.row + row)
+}
+
+/** A bead's cell in grid px: square, except where the Technique draws beads longer than they are wide (ticket 482). */
+export function cellSizePx(technique: Technique): Size {
+  return { width: CELL_SIZE_PX, height: CELL_SIZE_PX * describeWeave({ technique }).cellAspect }
+}
+
+/** Where a position's bead is in a space, in grid px: its rectangle from the top-left. Beads of Right-angle weave
+ * are longer one way than the other, so every layer asks for the rectangle, not a square from a top-left corner. */
+export function positionBoxPx(space: Pick<Space, 'toAbsolute'>, weave: Weave, row: number, column: number): Region {
+  const description = describeWeave(weave)
+  if (description.countsUnits) {
+    const cell = cellSizePx(weave.technique)
+    return description.box({ row, column }, cell.width, cell.height)
+  }
+  return { x: shiftOf(space, weave, row) + column * CELL_SIZE_PX, y: rowTopPx(weave.technique, row), width: CELL_SIZE_PX, height: CELL_SIZE_PX }
+}
+
+/** The rectangle round beads from (`row`, `column`) down `rows` and across `columns`, in grid px: the union of the
+ * corner beads where beads aren't laid on rows. A line of Right-angle weave's horizontal beads stops a column short of
+ * the block, so its far corner is the one before. */
+export function positionsBoxPx(space: Pick<Space, 'toAbsolute'>, weave: Weave, row: number, column: number, rows: number, columns: number): Region {
+  const units = describeWeave(weave).countsUnits
+  const corners = [row, Math.min(row + 1, row + rows - 1), Math.max(row, row + rows - 2), row + rows - 1].flatMap((r) =>
+    [column, column + columns - (units && describeWeave(weave).orientationAt({ row: r, column }) === 'sideways' && columns > 1 ? 2 : 1)].map((c) =>
+      positionBoxPx(space, weave, r, c),
+    ),
+  )
+  const x = Math.min(...corners.map((box) => box.x))
+  const y = Math.min(...corners.map((box) => box.y))
+  return { x, y, width: Math.max(...corners.map((box) => box.x + box.width)) - x, height: Math.max(...corners.map((box) => box.y + box.height)) - y }
 }
 
 /** The size of the drawn Project in grid px, before zoom and rotation. */
 export function projectExtentPx(technique: Technique, columns: number, rows: number): Extent {
-  return {
-    width: gridWidth(technique, columns, CELL_SIZE_PX),
-    height: rows === 0 ? 0 : rowTopPx(technique, rows - 1) + CELL_SIZE_PX,
-  }
+  const cell = cellSizePx(technique)
+  return describeWeave({ technique }).blockExtent(columns, rows, cell.width, cell.height)
 }
 
 /** The size of the drawn Project as displayed: scaled by the zoom, and swapped at a quarter turn either way. */
@@ -229,18 +258,24 @@ function inRoundedCorner(x: number, y: number, radius: number): boolean {
 
 /** A box's rectangle in grid space: its beads, and the half bead an offset technique's shifted rows add on the
  * right. */
-function gridBox(technique: Technique, box: Frame): Region {
+function gridBox(space: Space, weave: Weave, box: Frame): Region {
+  const { technique } = weave
+  if (describeWeave(weave).countsUnits) {
+    return positionsBoxPx(space, weave, box.row, box.column, box.rows, box.columns)
+  }
   const top = rowTopPx(technique, box.row)
   return {
     x: box.column * CELL_SIZE_PX,
     y: top,
-    width: gridWidth(technique, box.columns, CELL_SIZE_PX),
+    width: describeWeave(weave).blockExtent(box.columns, 0, CELL_SIZE_PX, CELL_SIZE_PX).width,
     height: rowTopPx(technique, box.row + box.rows - 1) + CELL_SIZE_PX - top,
   }
 }
 
 export function surfaceView({ space, technique, brickBlock, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
   const weave: Weave = { technique, brickBlock }
+  const description = describeWeave(weave)
+  const cell = cellSizePx(technique)
   /** Grid space to displayed space, at a zoom: the matrix gridToRegion gives for a region at the origin. */
   const matrix = (at: number) => gridToRegion(space.extent, { x: 0, y: 0, width: 0, height: 0 }, at, rotation)
   const displayed = (x: number, y: number, at: number): Scroll => {
@@ -248,7 +283,7 @@ export function surfaceView({ space, technique, brickBlock, rotation, zoom, scro
     return { x: a * x + c * y + e, y: b * x + d * y + f }
   }
   const displayedBox = (box: Frame, at: number): Region => {
-    const grid = gridBox(technique, box)
+    const grid = gridBox(space, weave, box)
     const first = displayed(grid.x, grid.y, at)
     const last = displayed(grid.x + grid.width, grid.y + grid.height, at)
     return { x: Math.min(first.x, last.x), y: Math.min(first.y, last.y), width: Math.abs(last.x - first.x), height: Math.abs(last.y - first.y) }
@@ -268,12 +303,20 @@ export function surfaceView({ space, technique, brickBlock, rotation, zoom, scro
     zoom,
     viewport,
     beadToPoint: ({ row, column }) => {
-      const at = displayed(shiftOf(space, weave, row) + column * CELL_SIZE_PX + CELL_SIZE_PX / 2, rowTopPx(technique, row) + CELL_SIZE_PX / 2, zoom)
+      const box = positionBoxPx(space, weave, row, column)
+      const at = displayed(box.x + box.width / 2, box.y + box.height / 2, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
     },
     beadBox: (box) => inViewport(displayedBox(box, zoom)),
     pointToBead: (point) => {
       const [gridX, gridY] = toGrid(point)
+      if (description.countsUnits) {
+        const found = description.positionAt(gridX, gridY, cell.width, cell.height)
+        if (!found || space.open) return found
+        const within = found.row >= 0 && found.row < space.rows && found.column >= 0 && found.column < space.columns
+        // The last column of a Frame's horizontal lines holds no bead.
+        return within && description.hasPosition(found, { row: 0, column: 0, rows: space.rows, columns: space.columns }) ? found : undefined
+      }
       if (space.open) {
         return beadInGrid(weave, space, gridX, gridY, {})
       }
@@ -284,6 +327,7 @@ export function surfaceView({ space, technique, brickBlock, rotation, zoom, scro
     },
     pointToCell: (point) => {
       const [gridX, gridY] = toGrid(point)
+      if (description.countsUnits) return description.nearestPosition(gridX, gridY, cell.width, cell.height)
       const row = Math.round((gridY - CELL_SIZE_PX / 2) / rowPitchPx(technique))
       return { row: row + 0, column: Math.floor((gridX - shiftOf(space, weave, row)) / CELL_SIZE_PX) }
     },
@@ -305,8 +349,10 @@ export function surfaceView({ space, technique, brickBlock, rotation, zoom, scro
     },
     beadStep: () => {
       const origin = displayed(0, 0, zoom)
-      const column = displayed(CELL_SIZE_PX, 0, zoom)
-      const row = displayed(0, rowPitchPx(technique), zoom)
+      const across = description.countsUnits ? cell.width + cell.height : CELL_SIZE_PX
+      const down = description.countsUnits ? cell.width + cell.height : rowPitchPx(technique)
+      const column = displayed(across, 0, zoom)
+      const row = displayed(0, down, zoom)
       return { column: { x: column.x - origin.x, y: column.y - origin.y }, row: { x: row.x - origin.x, y: row.y - origin.y } }
     },
     gridToPoint: (x, y) => {

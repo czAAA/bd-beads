@@ -45,6 +45,26 @@ function pencilAt(rect: { left: number; top: number }, height = 300) {
   return { moveTo: (next: { left: number; top: number }) => (at = next) }
 }
 
+describe('FrameBar in Right-angle weave (ticket 482)', () => {
+  it('shows the size in Units: 4 across and 3 down for 5 columns and 7 rows', () => {
+    const project = { ...framed(), technique: 'rightAngle' as const, frame: { row: 2, column: 3, rows: 7, columns: 5 } }
+    const wrapper = mountBar(project)
+
+    expect((wrapper.get('[data-testid="frame-bar-size"]').element as HTMLInputElement).value).toBe('4 × 3')
+    expect(wrapper.text()).toContain(en.frame.sizeUnitUnits)
+  })
+
+  it('takes a size typed in Units', async () => {
+    const project = { ...framed(), technique: 'rightAngle' as const, frame: { row: 2, column: 3, rows: 7, columns: 5 } }
+    const wrapper = mountBar(project)
+
+    await wrapper.get('[data-testid="frame-bar-size"]').setValue('6x4')
+    await wrapper.get('[data-testid="frame-bar-size"]').trigger('keydown', { key: 'Enter' })
+
+    expect(wrapper.emitted('resize')).toEqual([[6, 4]])
+  })
+})
+
 describe('FrameBar (ticket 473)', () => {
   it('shows the size with its unit, and Rotate and Remove Frame', () => {
     const wrapper = mountBar()

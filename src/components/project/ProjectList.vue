@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 import { rotationSwapsAxes } from '../../domain/grid'
 import type { Project } from '../../domain/project'
-import { summarizeProject, projectDimensions } from '../../domain/project'
+import { summarizeProject, countedDimensions } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -52,7 +52,8 @@ const activeProject = computed(() => props.projects.find((project) => project.id
 function sizeOf(project: Project): string {
   // A Canvas with no Frame has no size to state (SavedPatterns card, v16; ADR 0026).
   if (!project.frame) return t.value.canvas.noFrame
-  return rotationSwapsAxes(project.rotation) ? `${projectDimensions(project).rows}×${projectDimensions(project).columns}` : `${projectDimensions(project).columns}×${projectDimensions(project).rows}`
+  const { columns, rows } = countedDimensions(project)
+  return rotationSwapsAxes(project.rotation) ? `${rows}×${columns}` : `${columns}×${rows}`
 }
 </script>
 

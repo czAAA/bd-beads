@@ -146,6 +146,26 @@ describe('single-Project roundtrip', () => {
   })
 })
 
+describe('Right-angle weave in a file (ticket 482)', () => {
+  const woven = () =>
+    paintCells(createProject({ technique: 'rightAngle', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }), [{ row: 1, column: 2 }], '#e63746', { columns: 0, rows: 0 })
+
+  it('keeps the Technique and every bead through the file', () => {
+    const project = woven()
+
+    const [restored] = parseProjectsFile(serializeProject(project)).projects
+
+    expect(restored).toEqual(project)
+    expect(restored!.technique).toBe('rightAngle')
+  })
+
+  it('is refused as an unknown Technique by an app that does not have it', () => {
+    const file = serializeProject(woven()).replace('"rightAngle"', '"herringbone"')
+
+    expect(() => parseProjectsFile(file)).toThrow()
+  })
+})
+
 describe('whole-library roundtrip', () => {
   it('restores every saved Project from one exported file', () => {
     const library = [decoratedProject(), makeProject('Owl')]

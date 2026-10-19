@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Frame } from './canvas'
-import { clampOutOfMargin, inMargin, keepAllowedEdits, MARGIN, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { clampOutOfMargin, inMargin, keepAllowedEdits, MARGIN, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
@@ -110,5 +110,22 @@ describe('a Selection never covers the margin (ticket 428)', () => {
     expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 2, column: 2 })).toEqual({ row: 2, column: 2 })
     // across in one direction only still cuts through the margin, so it is held back
     expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 30, column: 12 })).toEqual({ row: 3, column: 12 })
+  })
+})
+
+describe('Right-angle weave has no bead at the end of a horizontal line (ticket 482)', () => {
+  const woven = createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } })
+
+  it('refuses to place one there and leaves the vertical beads', () => {
+    expect(mayPlace(woven, { row: 0, column: 2 })).toBe(false)
+    expect(mayPlace(woven, { row: 0, column: 1 })).toBe(true)
+    expect(mayPlace(woven, { row: 1, column: 2 })).toBe(true)
+  })
+
+  it('takes back a bead an edit put there', () => {
+    const painted = paintCells(woven, [{ row: 0, column: 2 }, { row: 1, column: 2 }], '#ff0000', none)
+    const kept = keepAllowedEdits(woven, painted)
+    expect(colorAt(kept.beads, 0, 2)).toBeNull()
+    expect(colorAt(kept.beads, 1, 2)).toBe('#ff0000')
   })
 })

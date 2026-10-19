@@ -263,7 +263,7 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     expect(description).toMatchObject({ ...expected, switchable: true, quarterTurn: true, rowDirection: true })
     expect(description.hasPosition(here)).toBe(true)
     expect(description.orientationAt(here)).toBe('upright')
-    expect(description.extent).toEqual({ width: 1, height: 1 })
+    expect(description.box(here, 2, 2)).toMatchObject({ width: 2, height: 2 })
     expect(description.turned(here)).toEqual(here)
     expect(description.mirrored(here)).toEqual(here)
     expect(description.center(here, 2, 2)).toEqual(cellCenter(weave, here, 2, 2))
@@ -273,5 +273,89 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     expect(description.passes.lineOf(3)).toBe(lineOfPass(weave.technique, 3))
     expect(description.stepMm(bead).across).toBeCloseTo(1.7)
     expect(description.stepMm(bead).down).toBe(rowPitch(weave.technique, 1.3))
+  })
+})
+
+describe('describeWeave: Right-angle weave (ticket 482)', () => {
+  const weave = { technique: 'rightAngle' as const }
+  const description = describeWeave(weave)
+  // A bead 20 long and 14 across: a Unit is 34 a side.
+  const box = (row: number, column: number) => description.box({ row, column }, 20, 14)
+
+  it('counts Units, steps by a whole Unit and is fixed once the Project is made', () => {
+    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, switchable: false, quarterTurn: false, hasBrickBlock: false })
+  })
+
+  it('lays horizontal beads lying along a line and vertical beads upright, round a hole one length square', () => {
+    expect(box(0, 0)).toEqual({ x: 14, y: 0, width: 20, height: 14 })
+    expect(box(1, 0)).toEqual({ x: 0, y: 14, width: 14, height: 20 })
+    expect(box(1, 1)).toEqual({ x: 34, y: 14, width: 14, height: 20 })
+    expect(box(2, 0)).toEqual({ x: 14, y: 34, width: 20, height: 14 })
+    expect([0, 1, 2, 3].map((row) => description.orientationAt({ row, column: 0 }))).toEqual(['sideways', 'upright', 'sideways', 'upright'])
+  })
+
+  it('keeps the same pattern above row 0', () => {
+    expect(box(-1, 0)).toEqual({ x: 0, y: -20, width: 14, height: 20 })
+    expect(box(-2, 0)).toEqual({ x: 14, y: -34, width: 20, height: 14 })
+  })
+
+  it('has beads touching only at their corners, none overlapping', () => {
+    const boxes = [0, 1, 2, 3].flatMap((row) => [0, 1, 2].map((column) => box(row, column)))
+    for (const [index, a] of boxes.entries()) {
+      for (const b of boxes.slice(index + 1)) {
+        const across = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
+        const down = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)
+        expect(across > 0 && down > 0).toBe(false)
+      }
+    }
+  })
+
+  it('finds the bead under a point, and none in a hole or a corner gap', () => {
+    expect(description.positionAt(20, 5, 20, 14)).toEqual({ row: 0, column: 0 })
+    expect(description.positionAt(5, 25, 20, 14)).toEqual({ row: 1, column: 0 })
+    expect(description.positionAt(60, 5, 20, 14)).toEqual({ row: 0, column: 1 })
+    expect(description.positionAt(24, 24, 20, 14)).toBeUndefined()
+    expect(description.positionAt(5, 5, 20, 14)).toBeUndefined()
+  })
+
+  it('names the bead nearest a point in a gap', () => {
+    expect(description.nearestPosition(7, 20, 20, 14)).toEqual({ row: 1, column: 0 })
+    expect(description.nearestPosition(30, 8, 20, 14)).toEqual({ row: 0, column: 0 })
+  })
+
+  it('has one more vertical bead than horizontal ones on a line, so a Frame of Units takes one more column and two rows each', () => {
+    expect(description.positionsOf({ columns: 3, rows: 2 })).toEqual({ columns: 4, rows: 5 })
+    expect(description.unitsOf({ columns: 4, rows: 5 })).toEqual({ columns: 3, rows: 2 })
+    expect(description.blockExtent(4, 5, 20, 14)).toEqual({ width: 3 * 34 + 14, height: 2 * 34 + 14 })
+    const frame = { row: 0, column: 0, columns: 4, rows: 5 }
+    expect(description.hasPosition({ row: 0, column: 2 }, frame)).toBe(true)
+    expect(description.hasPosition({ row: 0, column: 3 }, frame)).toBe(false)
+    expect(description.hasPosition({ row: 1, column: 3 }, frame)).toBe(true)
+  })
+
+  it('makes a Frame end on a whole Unit', () => {
+    expect(description.snapBottom(0, 3)).toBe(4)
+    expect(description.snapBottom(0, 4)).toBe(4)
+    expect(description.snapBottom(4, 4)).toBe(6)
+  })
+
+  it('touches only the beads at its corners, each both ways', () => {
+    expect(sorted(description.neighbors(undefined, { row: 0, column: 2 }))).toEqual(
+      sorted([{ row: -1, column: 2 }, { row: -1, column: 3 }, { row: 1, column: 2 }, { row: 1, column: 3 }]),
+    )
+    expect(sorted(description.neighbors(undefined, { row: 1, column: 2 }))).toEqual(
+      sorted([{ row: 0, column: 1 }, { row: 0, column: 2 }, { row: 2, column: 1 }, { row: 2, column: 2 }]),
+    )
+    for (const row of [0, 1, 2, 3]) {
+      for (const column of [0, 1, 2]) {
+        for (const neighbor of description.neighbors(undefined, { row, column })) {
+          expect(description.neighbors(undefined, neighbor)).toContainEqual({ row, column })
+        }
+      }
+    }
+  })
+
+  it('measures a Unit in mm as the Bead\'s length plus its width, each way', () => {
+    expect(description.stepMm({ widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 })).toEqual({ across: 1.6 + 0.1 + 1.3, down: 1.6 + 0.1 + 1.3 })
   })
 })

@@ -8,6 +8,7 @@ import { useElementSize } from '../../composables/ui/useElementSize'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, parseFrameSize, type FrameEdge } from '../../domain/frame'
 import { rowProgressStarted, type Project } from '../../domain/project'
+import { describeWeave } from '../../domain/weave'
 import type { BarBox, FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useI18n } from '../../i18n/useI18n'
 
@@ -80,12 +81,14 @@ onBeforeUnmount(() => emit('rect', undefined))
 
 /** The size field: shows "columns × rows"; Enter or leaving it takes a typed "20x120", Escape puts the size back. */
 const typed = ref('')
-const shownSize = computed(() => t.value.frame.sizeValue.replace('{columns}', String(frame.value?.columns)).replace('{rows}', String(frame.value?.rows)))
+const counted = computed(() => describeWeave(props.project).unitsOf(frame.value ?? { columns: 0, rows: 0 }))
+const shownSize = computed(() => t.value.frame.sizeValue.replace('{columns}', String(counted.value.columns)).replace('{rows}', String(counted.value.rows)))
+const sizeUnit = computed(() => (describeWeave(props.project).countsUnits ? t.value.frame.sizeUnitUnits : t.value.frame.sizeUnit))
 watch(shownSize, (value) => (typed.value = value), { immediate: true })
 function commitSize(): void {
   const wanted = parseFrameSize(typed.value)
   // The size it already has is no step: re-centring it would shift a Frame whose rows alternate by a pair.
-  if (wanted && (wanted.columns !== frame.value?.columns || wanted.rows !== frame.value?.rows)) emit('resize', wanted.columns, wanted.rows)
+  if (wanted && (wanted.columns !== counted.value.columns || wanted.rows !== counted.value.rows)) emit('resize', wanted.columns, wanted.rows)
   typed.value = shownSize.value
 }
 function onSizeKey(event: KeyboardEvent): void {
@@ -125,7 +128,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               @blur="commitSize"
               @focus="($event.target as HTMLInputElement).select()"
             />
-            <span class="frame-bar__unit">{{ t.frame.sizeUnit }}</span>
+            <span class="frame-bar__unit">{{ sizeUnit }}</span>
           </span>
         </div>
         <IconButton
