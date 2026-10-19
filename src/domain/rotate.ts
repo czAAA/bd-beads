@@ -1,3 +1,4 @@
+import type { GridPosition } from './grid'
 import { colorAt, forEachBead, frameContains, withColors, type BeadChange, type Frame } from './canvas'
 import { snapRow } from './frame'
 import { MARGIN, withMargin } from './margin'
@@ -21,16 +22,20 @@ export interface RotatedSelection {
  * begins: the margin, for the Frame inside Rotate Frame's area (ticket 477). */
 export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
+  const weave = describeWeave(project)
+  // Whole Units turn: a Technique with none counts beads as its Units.
+  const units = weave.unitsOf(frame)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
   // way it rounds depends on which side is longer, so that four turns come back to where they began.
-  const difference = frame.rows - frame.columns
+  const difference = units.rows - units.columns
   const rowShift = difference >= 0 ? Math.floor(difference / 2) : -Math.floor(-difference / 2)
   const columnShift = difference >= 0 ? -Math.ceil(difference / 2) : Math.ceil(-difference / 2)
+  const turned = weave.positionsOf({ columns: units.rows, rows: units.columns })
   return {
-    top: snapRow(project, frame.row + rowShift + inset) - inset,
+    top: snapRow(project, frame.row + rowShift * weave.rowsPerUnit + inset) - inset,
     left: frame.column + columnShift,
-    rows: frame.columns,
-    columns: frame.rows,
+    rows: turned.rows,
+    columns: turned.columns,
   }
 }
 
@@ -54,15 +59,18 @@ export function rotateSelection(project: Project, selection: Selection, inset = 
   const turned = rotatedSelection(project, selection, inset)
   const footprint = selectionFrame(turned)
 
-  const turn = (row: number, column: number) => ({
-    row: turned.top + (column - selection.left),
-    column: turned.left + (selection.rows - 1 - (row - selection.top)),
-  })
+  const weave = describeWeave(project)
+  const block = { columns: selection.columns, rows: selection.rows }
+  const turn = (row: number, column: number): GridPosition | undefined => {
+    const to = weave.turned({ row: row - selection.top, column: column - selection.left }, block)
+    return to && { row: turned.top + to.row, column: turned.left + to.column }
+  }
 
-  const lifted = beadsIn(project, area)
+  // A bead that belongs to no whole Unit of the Selection (a horizontal bead past its last Unit) stays where it is.
+  const lifted = beadsIn(project, area).filter(({ row, column }) => turn(row, column))
   const covered = beadsIn(project, footprint)
   const cleared = withColors(project.beads, [...lifted, ...covered].map(({ row, column }) => ({ row, column, color: null })))
-  const beads = withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column), color })))
+  const beads = withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column)!, color })))
 
   const named = carryNames(project, { ...project, beads, updatedAt: Date.now() }, (position) => {
     if (frameContains(area, position)) {
@@ -87,9 +95,16 @@ export function coveredByRotation(before: Project, after: Project, selection: Se
   return covered
 }
 
+/** How much margin Rotate Frame turns with the Frame. The margin is as many beads on every side, which isn't the same
+ * length across and down where beads are laid in Units and would not turn into itself: there the Frame turns alone and
+ * beads in its margin stay (ticket 483). */
+export function turnedMargin(weave: Pick<Project, 'technique' | 'brickBlock'>): number {
+  return describeWeave(weave).countsUnits ? 0 : MARGIN
+}
+
 /** The Selection Rotate Frame turns: the Frame and its keep-out margin, the rectangle `selectionAllowed` takes. */
-export function frameAreaSelection(frame: Frame): Selection {
-  const area = withMargin(frame)
+export function frameAreaSelection(frame: Frame, margin = MARGIN): Selection {
+  const area = withMargin(frame, margin)
   return { top: area.row, left: area.column, rows: area.rows, columns: area.columns }
 }
 
@@ -100,12 +115,13 @@ export function rotateFrame(project: Project): Project | undefined {
   if (!project.frame || !describeWeave(project).quarterTurn) {
     return undefined
   }
-  const turned = rotateSelection(project, frameAreaSelection(project.frame), MARGIN)
+  const margin = turnedMargin(project)
+  const turned = rotateSelection(project, frameAreaSelection(project.frame, margin), margin)
   const frame: Frame = {
-    row: turned.selection.top + MARGIN,
-    column: turned.selection.left + MARGIN,
-    rows: turned.selection.rows - 2 * MARGIN,
-    columns: turned.selection.columns - 2 * MARGIN,
+    row: turned.selection.top + margin,
+    column: turned.selection.left + margin,
+    rows: turned.selection.rows - 2 * margin,
+    columns: turned.selection.columns - 2 * margin,
   }
   return { ...turned.project, frame }
 }
