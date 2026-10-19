@@ -391,6 +391,17 @@ describe('ProjectSurface', () => {
       expect(wrapper.emitted('pressing')).toEqual([[true], [false], [true], [false]])
     })
 
+    it('says the press is over when it ends anywhere in the window, even one that started off the beads (ticket 503)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { selecting: true })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: -500, clientY: -500, pointerType: 'touch', pointerId: 7, button: 0, buttons: 1 })
+      window.dispatchEvent(Object.assign(new Event('pointerup'), { pointerId: 7 }))
+
+      expect(wrapper.emitted('pressing')).toEqual([[true], [false]])
+    })
+
     it('keeps the browser from scrolling the page behind it', async () => {
       const { wrapper } = await mountSurface(projectOf(20, 10))
       const event = new WheelEvent('wheel', { deltaY: 40, cancelable: true, bubbles: true })
