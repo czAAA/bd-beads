@@ -161,6 +161,18 @@ export const be: Translations = {
     noSavedProjectsMessage: 'Захаваных праектаў пакуль няма',
     shownOf: '{shown} з {total}',
   },
+  templates: {
+    galleryLabel: 'Пачаць з',
+    presetsLabel: 'Звычайныя памеры',
+    fixedNote: 'Гэты бок не змяняецца.',
+    specLine: '{width} × {height} · {technique}',
+    blank: { name: 'Чыстае палатно', description: 'Малюйце свабодна, рамку задайце потым.' },
+    gerdan: { name: 'Гердан', description: 'Пляцёнае каралі-каўнер.' },
+    bracelet: { name: 'Бранзалетка', description: 'Вузкая стужка на запясце.' },
+    earrings: { name: 'Завушніцы', description: 'Пара падвесак, кожная вузкай паласой.' },
+    bag: { name: 'Сумка', description: 'Невялікая сумачка або кашалёк.' },
+    custom: { name: 'Уласная схема', description: 'Любы памер і любая тэхніка.' },
+  },
   canvas: {
     zoomInLabel: 'Павялічыць',
     zoomOutLabel: 'Паменшыць',

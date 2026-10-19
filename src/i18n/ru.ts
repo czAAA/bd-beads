@@ -160,6 +160,18 @@ export const ru: Translations = {
     noSavedProjectsMessage: 'Пока нет сохранённых проектов',
     shownOf: '{shown} из {total}',
   },
+  templates: {
+    galleryLabel: 'Начать с',
+    presetsLabel: 'Обычные размеры',
+    fixedNote: 'Эта сторона не меняется.',
+    specLine: '{width} × {height} · {technique}',
+    blank: { name: 'Чистый холст', description: 'Рисуйте свободно, рамку задайте потом.' },
+    gerdan: { name: 'Гердан', description: 'Плетёное ожерелье-воротник.' },
+    bracelet: { name: 'Браслет', description: 'Узкая лента на запястье.' },
+    earrings: { name: 'Серьги', description: 'Пара подвесок, каждая узкой полосой.' },
+    bag: { name: 'Сумка', description: 'Небольшая сумочка или кошелёк.' },
+    custom: { name: 'Своя схема', description: 'Любой размер и любая техника.' },
+  },
   canvas: {
     zoomInLabel: 'Увеличить',
     zoomOutLabel: 'Уменьшить',

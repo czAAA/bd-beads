@@ -4,8 +4,13 @@ import MenuPanel from './MenuPanel.vue'
 import PanelShell from './PanelShell.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
+import TemplateGallery from '../project/TemplateGallery.vue'
+import TemplateSetup from '../project/TemplateSetup.vue'
+import AppButton from '../ui/AppButton.vue'
 import ProjectList from '../project/ProjectList.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
+import { ref } from 'vue'
+import { templateById, type TemplateId } from '../../domain/templates'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { MIRROR_ENABLED } from '../../features'
 
@@ -63,6 +68,9 @@ const {
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
 } = useAppShell()
+
+/** The Template whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup sub-view. */
+const chosenTemplate = ref<TemplateId>()
 </script>
 
 <template>
@@ -136,13 +144,27 @@ const {
       @clear="onRequestDeleteAll"
       @delete="onRequestDelete"
     />
-    <template #sub>
-      <NewProjectForm
-        :decode-image="decodeImage"
+    <template #sub="{ depth }">
+      <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
+      <template v-if="depth === 1">
+        <TemplateGallery class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
+        <NewProjectForm
+          :decode-image="decodeImage"
+          @submit="(payload) => { onCreateProject(payload); openPhoneSheet = null }"
+          @draft="onNewProjectDraft"
+          @convert-image="(draft) => { startConvertImage(draft); openPhoneSheet = null }"
+        />
+      </template>
+      <TemplateSetup
+        v-else-if="chosenTemplate"
+        :template="templateById(chosenTemplate)"
         @submit="(payload) => { onCreateProject(payload); openPhoneSheet = null }"
-        @draft="onNewProjectDraft"
-        @convert-image="(draft) => { startConvertImage(draft); openPhoneSheet = null }"
       />
+    </template>
+    <template #footer="{ depth }">
+      <AppButton v-if="depth === 2" class="phone-sheets__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
+        {{ t.form.submit }}
+      </AppButton>
     </template>
   </PanelShell>
 
@@ -158,3 +180,14 @@ const {
     />
   </BottomSheet>
 </template>
+
+<style scoped>
+.phone-sheets__gallery {
+  margin-bottom: var(--space-16);
+}
+
+.phone-sheets__create {
+  width: 100%;
+  height: var(--field-height);
+}
+</style>
