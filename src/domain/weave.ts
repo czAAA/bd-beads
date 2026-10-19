@@ -244,9 +244,9 @@ export function describeWeave(weave: Weave): WeaveDescription {
     center: (position, cellWidth, cellHeight) => cellCenter(weave, position, cellWidth, cellHeight),
     neighbors: (bounds, position) => neighborsOf(weave, bounds, position),
     passes: {
-      count: (lines, direction) => passCount(weave.technique, lines, direction),
-      of: (line, along, direction) => passOf(weave.technique, line, along, direction),
-      lineOf: (pass, direction) => lineOfPass(weave.technique, pass, direction),
+      count: (lines, direction) => passCount(weave, lines, direction),
+      of: (line, along, direction) => passOf(weave, line, along, direction),
+      lineOf: (pass, direction) => lineOfPass(weave, pass, direction),
     },
     turned: (position) => (rules.quarterTurn ? position : undefined),
     mirrored: (position) => position,
@@ -357,9 +357,9 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
     },
     neighbors: (bounds, position) => rightAngleNeighbors(bounds, position),
     passes: {
-      count: (lines, direction) => passCount('rightAngle', lines, direction),
-      of: (line, along, direction) => passOf('rightAngle', line, along, direction),
-      lineOf: (pass, direction) => lineOfPass('rightAngle', pass, direction),
+      count: (lines, direction) => passCount(RIGHT_ANGLE, lines, direction),
+      of: (line, along, direction) => passOf(RIGHT_ANGLE, line, along, direction),
+      lineOf: (pass, direction) => lineOfPass(RIGHT_ANGLE, pass, direction),
     },
     turned: () => undefined,
     mirrored: (position) => position,
@@ -367,12 +367,15 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
   }
 }
 
+const RIGHT_ANGLE: Weave = { technique: 'rightAngle' }
+
 const modulo = (value: number, by: number): number => ((value % by) + by) % by
 
 /** Netting, horizontal (ticket 485): beads on the two diagonals of a diamond mesh, p = (netSize + 1) / 2 positions from
  * one shared bead to the next. A diamond is 2p wide and tall and holds `netSize` beads; a position off a diagonal is a
  * hole, no position. A Frame starts on a multiple of 2p each way, so its lattice is the Canvas's. */
 function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescription {
+  const netting: Weave = { technique: 'netting', netSize }
   const p = (netSize + 1) / 2
   const period = 2 * p
   const hasPosition = ({ row, column }: GridPosition): boolean =>
@@ -451,9 +454,9 @@ function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescri
       return candidates.filter((position) => hasPosition(position) && inside(position))
     },
     passes: {
-      count: (lines) => Math.max(0, lines),
-      of: (line) => line,
-      lineOf: (pass) => pass,
+      count: (lines, direction) => passCount(netting, lines, direction),
+      of: (line, along, direction) => passOf(netting, line, along, direction),
+      lineOf: (pass, direction) => lineOfPass(netting, pass, direction),
     },
     turned: () => undefined,
     mirrored: (position) => position,
@@ -578,14 +581,25 @@ export function neighborsOf(weave: Weave, bounds: GridBounds | undefined, positi
   )
 }
 
-// Row progress counts passes, not lines (tickets 347, 484); a line is a row or column of the Frame, in positions. Peyote
-// takes two passes per later line; Right-angle weave one per line of Units, every bead of it, shared rows included.
+// Row progress counts passes, not lines (tickets 347, 484, 487); a line is a row or column of the Frame, in positions.
+// Peyote takes two passes per later line; Right-angle weave one per line of Units; Netting one per row of diamonds
+// (the first all of it, each later one its lower sides, shared beads included). Every bead belongs to the first pass.
 
 /** The way a pass runs: along the Frame's rows, or down its columns. */
 export type PassDirection = 'rows' | 'columns'
 
+/** Positions from one shared bead down to the next in Netting (p, ticket 485). */
+const nettingStride = (weave: Weave): number => (clampNetSize(weave.netSize) + 1) / 2
+
+/** Whether passes are rows of diamonds: Netting is woven in rows only, so down its columns a pass is a plain line. */
+const isNettingRows = (weave: Weave, direction: PassDirection): boolean => weave.technique === 'netting' && direction === 'rows'
+
 /** How many passes weaving `lines` lines takes. */
-export function passCount(technique: Technique, lines: number, direction: PassDirection): number {
+export function passCount(weave: Weave, lines: number, direction: PassDirection): number {
+  const { technique } = weave
+  if (isNettingRows(weave, direction)) {
+    return Math.max(0, Math.floor((lines - 1) / nettingStride(weave)) - 1)
+  }
   if (technique === 'rightAngle') {
     return Math.max(0, direction === 'rows' ? Math.floor((lines - 1) / 2) : lines - 1)
   }
@@ -597,7 +611,12 @@ export function passCount(technique: Technique, lines: number, direction: PassDi
 
 /** The pass (zero-based) that weaves the bead at `along` (its position along its line) in line `line`; both counted
  * from the Frame's first. */
-export function passOf(technique: Technique, line: number, along: number, direction: PassDirection): number {
+export function passOf(weave: Weave, line: number, along: number, direction: PassDirection): number {
+  const { technique } = weave
+  if (isNettingRows(weave, direction)) {
+    // A bead belongs to the first row of diamonds it lies in; the rows start every p positions and are 2p tall.
+    return Math.max(0, Math.ceil(line / nettingStride(weave)) - 2)
+  }
   if (technique === 'rightAngle') {
     // Down a column the horizontal beads (even rows) belong to their own column, the vertical ones to the Unit left of them.
     const isVertical = direction === 'columns' && along % 2 === 1
@@ -610,7 +629,11 @@ export function passOf(technique: Technique, line: number, along: number, direct
 }
 
 /** The line a pass works on: what the rulers number and what the current-line marker sits on. */
-export function lineOfPass(technique: Technique, pass: number, direction: PassDirection): number {
+export function lineOfPass(weave: Weave, pass: number, direction: PassDirection): number {
+  const { technique } = weave
+  if (isNettingRows(weave, direction)) {
+    return pass * nettingStride(weave)
+  }
   if (technique === 'rightAngle') {
     return direction === 'rows' ? pass * 2 : pass
   }
@@ -618,9 +641,15 @@ export function lineOfPass(technique: Technique, pass: number, direction: PassDi
 }
 
 /** Every line (counted from the Frame's first) that holds a bead of a pass. */
-export function passLines(technique: Technique, pass: number, direction: PassDirection): number[] {
-  if (technique !== 'rightAngle') {
-    return [lineOfPass(technique, pass, direction)]
+export function passLines(weave: Weave, pass: number, direction: PassDirection): number[] {
+  if (isNettingRows(weave, direction)) {
+    const stride = nettingStride(weave)
+    const lastLine = (pass + 2) * stride
+    const firstLine = pass === 0 ? 0 : (pass + 1) * stride + 1
+    return Array.from({ length: lastLine - firstLine + 1 }, (_line, at) => firstLine + at)
+  }
+  if (weave.technique !== 'rightAngle') {
+    return [lineOfPass(weave, pass, direction)]
   }
   if (direction === 'columns') {
     return [pass, pass + 1]
