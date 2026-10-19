@@ -28,6 +28,7 @@ const {
   settledProject,
   onNewProjectDraft,
   onCreateProject,
+  onPlaceFrameFromTemplate,
   startConvertImage,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
@@ -145,8 +146,18 @@ const chosenTemplate = ref<TemplateId>()
       @delete="onRequestDelete"
     />
     <template #sub="{ depth }">
+      <!-- The Project panel's Frame area opens the gallery and the setup alone, to put a Frame on the open Project (ticket 495). -->
+      <template v-if="openPhoneSheet === 'project' && activeProject">
+        <TemplateGallery v-if="depth === 1" without-blank class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
+        <TemplateSetup
+          v-else-if="chosenTemplate"
+          :template="templateById(chosenTemplate)"
+          :project="activeProject"
+          @submit="(payload) => { onPlaceFrameFromTemplate(payload); openPhoneSheet = null }"
+        />
+      </template>
       <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
-      <template v-if="depth === 1">
+      <template v-else-if="depth === 1">
         <TemplateGallery class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
         <NewProjectForm
           :decode-image="decodeImage"
@@ -163,7 +174,7 @@ const chosenTemplate = ref<TemplateId>()
     </template>
     <template #footer="{ depth }">
       <AppButton v-if="depth === 2" class="phone-sheets__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
-        {{ t.form.submit }}
+        {{ openPhoneSheet === 'project' ? (activeProject?.frame ? t.frame.replaceFrame : t.frame.addFrameButton) : t.form.submit }}
       </AppButton>
     </template>
   </PanelShell>
