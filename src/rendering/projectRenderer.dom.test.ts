@@ -912,3 +912,49 @@ describe('Netting (ticket 485)', () => {
     expect(beadsDrawn(colored, whole(colored)).map(({ color }) => color)).toEqual([null, null, null, '#2f6fed', null, null, null, null])
   })
 })
+
+describe('Bead shape (ADR 0068)', () => {
+  const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
+  const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
+  const painted = (project: Project): Project => ({
+    ...project,
+    frame: { ...project.frame!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) },
+  })
+
+  it('draws the Symmetric cell exactly as the Technique had it', () => {
+    const project = painted(projectOf('peyote', 3, 3))
+    expect(drawnBeads({ ...project, beadShape: 'symmetric' })).toEqual(drawnBeads(project))
+  })
+
+  it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {
+    const real = { ...painted(projectOf('peyote', 3, 3, { beadId: 'miyuki-delica-11-0' })), beadShape: 'real' as const }
+    const beads = drawnBeads(real)
+    expect(beads).toHaveLength(9)
+    for (const bead of beads) {
+      expect(bead.width).toBe(20)
+      expect(bead.height).toBeCloseTo(20 * delicaCell.aspect)
+      expect(bead.cornerRadius).toBe(2)
+    }
+    const rows = [...new Set(beads.map((bead) => bead.y))]
+    expect(rows[1]! - rows[0]!).toBeCloseTo(0.75 * 20 * delicaCell.aspect)
+    expect(projectExtentPx('peyote', 3, 3, delicaCell).height).toBeCloseTo(20 * delicaCell.aspect * (1 + 2 * 0.75))
+  })
+
+  it('lays a Right-angle weave Unit out from the Bead, not from the Technique\'s own 0.7', () => {
+    const unit = (cell?: typeof delicaCell) => projectExtentPx('rightAngle', 3, 3, cell)
+    const flatter = projectExtentPx('rightAngle', 3, 3, { aspect: 0.7, roundness: 0.1 })
+    expect(flatter).toEqual(unit())
+    expect(unit(delicaCell)).not.toEqual(unit())
+  })
+})
+
+describe('a round Bead in Real shape is a pill (ADR 0068)', () => {
+  it('never rounds a corner past half the shorter side', () => {
+    const { context, calls } = recordingContext()
+    const drawn = { x: 0, y: 0, size: 20, width: 20, height: 26, cornerRadius: 10, color: '#111111', dimmed: false, deviceScale: 1, theme: DEFAULT_THEME }
+    drawFlatBead(context, drawn)
+    const radii = calls.filter((call) => call.name === 'roundRect').map((call) => call.args[4])
+    expect(radii.length).toBeGreaterThan(0)
+    for (const radius of radii) expect(radius as number).toBeLessThanOrEqual(10)
+  })
+})

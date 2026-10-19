@@ -32,7 +32,7 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
     rows,
     hasFrame: !open || project.frame !== undefined,
     toAbsolute: open ? { row: 0, column: 0 } : { row: frame.row, column: frame.column },
-    extent: open ? OPEN_EXTENT : projectExtentPx(frameWeave(project).technique, columns, rows),
+    extent: open ? OPEN_EXTENT : projectExtentPx(frameWeave(project).technique, columns, rows, frameWeave(project).cell),
   }
 }
 

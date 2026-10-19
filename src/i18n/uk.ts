@@ -9,6 +9,11 @@ export const uk: Translations = {
   form: {
     nameLabel: 'Назва',
     beadLabel: 'Бісерина',
+    beadShapeLabel: 'Форма бісерини',
+    beadShapeSymmetric: 'Рівна',
+    beadShapeReal: 'Справжня',
+    beadShapeSymmetricTip: 'Малювати кожну бісерину рівною клітинкою; змінюється лише вигляд полотна.',
+    beadShapeRealTip: 'Малювати кожну бісерину в її справжніх пропорціях; змінюється лише вигляд полотна.',
     techniqueLabel: 'Техніка плетіння',
     techniqueLoom: 'Ткацтво',
     techniquePeyote: 'Мозаїчне плетіння',

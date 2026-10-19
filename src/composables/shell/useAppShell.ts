@@ -31,6 +31,7 @@ import { useRotateSelectionFlow } from '../tools/useRotateSelectionFlow'
 import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
+import { useBeadShapeFlow } from '../project/useBeadShapeFlow'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
@@ -619,6 +620,8 @@ function wireAppShell(services: Services) {
     showToast,
   })
 
+  const beadShapeFlow = useBeadShapeFlow({ currentProject, edit })
+
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
   const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages })
 
@@ -929,6 +932,7 @@ function wireAppShell(services: Services) {
     onCancelSwitchTechnique: frameFlow.cancelSwitch,
     onConfirmSwitchTechnique: frameFlow.confirmSwitch,
     onSetCanvasBrickBlock: frameFlow.setCanvasBrickBlock,
+    onSetBeadShape: beadShapeFlow.setBeadShape,
     onFitFrame: frameFlow.fit,
     onRemoveFrame: frameFlow.remove,
     removeFrameConfirmOpen: frameFlow.removeConfirmOpen,

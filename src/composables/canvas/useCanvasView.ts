@@ -3,7 +3,7 @@ import { beadBounds, type Frame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { sameFrame } from '../../domain/frame'
 import { layerAt } from '../../domain/layers'
-import type { Project } from '../../domain/project'
+import { projectCell, type Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Scroll, type Size, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
@@ -36,8 +36,8 @@ export function useCanvasView(
   const isAtFit = ref(true)
 
   /** The Canvas as the view stands, or at another zoom. */
-  function surfaceOf(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'rotation'> & Partial<Pick<Project, 'frame'>>): SurfaceView {
-    return surfaceView({ space: OPEN_SPACE, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, frame: project.frame, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
+  function surfaceOf(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'rotation'> & Partial<Pick<Project, 'frame' | 'beadId' | 'beadShape'>>): SurfaceView {
+    return surfaceView({ space: OPEN_SPACE, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, cell: projectCell(project), frame: project.frame, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
   }
 
   function measured(): boolean {

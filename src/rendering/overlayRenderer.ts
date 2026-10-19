@@ -2,7 +2,7 @@ import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
 import { MARGIN, withMargin } from '../domain/margin'
 import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
-import { beadRoundness, describeWeave, passCount, passLines, passOf } from '../domain/weave'
+import { beadRoundness, describeWeave, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave, rowProgressOn } from '../domain/project'
 import { hasGuides, selectionFrame, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
@@ -11,7 +11,7 @@ import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
-import { CELL_SIZE_PX, frameOriginPx, gridBox, positionBoxPx, positionsBoxPx, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
+import { CELL_SIZE_PX, cellSizePx, frameOriginPx, gridBox, positionBoxPx, positionsBoxPx, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -155,7 +155,7 @@ function sizedLike(box: { width: number; height: number }): { width?: number; he
 }
 
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
-  const cornerRadius = beadRoundness(weave.technique) * CELL_SIZE_PX
+  const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   for (const bead of beads) {
     drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, ...sizedLike(bead), cornerRadius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
   }
@@ -165,7 +165,7 @@ function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], we
 // inside its cell so it never reaches a neighbour and two rings side by side stay two. No line joins them; one path,
 // one stroke.
 function drawBeadRings(context: DrawingContext, beads: readonly PassBead[], weave: Weave, theme: ProjectTheme): void {
-  const corner = beadRoundness(weave.technique) * CELL_SIZE_PX
+  const corner = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   const half = MARKER_RING_PX / 2
   context.strokeStyle = theme.marker
   context.lineWidth = MARKER_RING_PX
@@ -194,7 +194,7 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 function drawPreview(context: DrawingContext, weave: Weave, bounds: Frame | undefined, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = weave
   const inset = BEAD_GAP_PX / 2
-  const roundness = beadRoundness(technique) * CELL_SIZE_PX - inset
+  const roundness = beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset
 
   for (const cell of cells) {
     if (!inSpace(space, cell.row, cell.column) || !describeWeave(weave).hasPosition(cell, bounds)) {
@@ -228,8 +228,8 @@ interface BeadRect {
 // The beads of the next row that lie over this one as drawn (peyote's rows nest): none where rows stack. The next row
 // sits half a bead over, so two of its beads reach this one.
 function nextRowBeads(weave: Weave, space: Space, cell: GridPosition, bead: BeadRect): BeadRect[] {
-  const pitch = rowPitchPx(weave.technique)
-  if (pitch >= CELL_SIZE_PX) {
+  const pitch = rowPitchPx(weave.technique, weave.cell)
+  if (pitch >= cellSizePx(weave.technique, weave.cell).height) {
     return []
   }
   const shiftNow = shiftOf(weave, cell.row)
@@ -288,11 +288,11 @@ function outlineBead(context: DrawingContext, { x, y, width, height, radius }: B
 // The pointer's marker (ticket 353): a bead 90% of the drawn size, centred on the pointer and looking like the hover
 // preview. In the surface's px, so it follows zoom but not rotation; a pen has no CSS cursor, so one marker serves
 // both.
-function drawPointer(context: DrawingContext, technique: Technique, zoom: number, pixelRatio: number, pointer: BeadPointer, theme: ProjectTheme): void {
+function drawPointer(context: DrawingContext, technique: Technique, cell: BeadCell | undefined, zoom: number, pixelRatio: number, pointer: BeadPointer, theme: ProjectTheme): void {
   const size = Math.max(0, CELL_SIZE_PX * zoom * POINTER_SCALE - POINTER_TRIM_PX)
   const x = pointer.x - size / 2
   const y = pointer.y - size / 2
-  const radius = Math.max(0, beadRoundness(technique) * size)
+  const radius = Math.max(0, beadRoundness(technique, cell) * size)
 
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   if (pointer.color) {
@@ -336,7 +336,7 @@ function drawDimmed(
 ): void {
   const { technique } = weave
   const visible = visibleBeadsInSpace(weave, space, region, zoom, project.rotation, origin)
-  const cornerRadius = beadRoundness(technique) * CELL_SIZE_PX
+  const cornerRadius = beadRoundness(technique, weave.cell) * CELL_SIZE_PX
 
   for (const { row, column } of cells) {
     if (!inSpace(space, row, column) || row < visible.firstRow || row > visible.lastRow) {
@@ -373,7 +373,7 @@ function drawCursor(context: DrawingContext, weave: Weave, space: Space, cursor:
   const y = box.y - offset
   const across = box.width + offset * 2
   const down = box.height + offset * 2
-  const radius = beadRoundness(technique) * CELL_SIZE_PX + offset
+  const radius = beadRoundness(technique, weave.cell) * CELL_SIZE_PX + offset
 
   context.fillStyle = theme.cursor
   context.beginPath()
@@ -404,7 +404,7 @@ function drawTourMarks(context: DrawingContext, weave: Weave, space: Space, mark
   const { technique } = weave
   const { columns, rows } = space
   const inset = BEAD_GAP_PX / 2
-  const radius = Math.max(0, beadRoundness(technique) * CELL_SIZE_PX - inset)
+  const radius = Math.max(0, beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset)
 
   for (const { row, column } of marks.cells) {
     if (!inSpace(space, row, column)) {
@@ -442,9 +442,9 @@ function drawMirrorAxes(context: DrawingContext, weave: Weave, space: Space, cou
     return
   }
   const own = describeWeave(weave).countsUnits ? positionsBoxPx(weave, space.origin.row, space.origin.column, space.rows, space.columns) : undefined
-  const { width, height } = own ?? projectExtentPx(weave.technique, space.columns, space.rows)
+  const { width, height } = own ?? projectExtentPx(weave.technique, space.columns, space.rows, weave.cell)
   const left = own?.x ?? space.origin.column * CELL_SIZE_PX
-  const top = own?.y ?? rowTopPx(weave.technique, space.origin.row)
+  const top = own?.y ?? rowTopPx(weave.technique, space.origin.row, weave.cell)
   context.globalAlpha = AXIS_OPACITY
   context.fillStyle = theme.marker
   for (const fraction of axisLinePositions(counts.columns)) {
@@ -597,6 +597,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (pointer) {
     const pointerWeave = pointer.layer === 'frame' ? frameWeave(project) : canvasWeaveOf
-    drawPointer(context, pointerWeave.technique, zoom, pixelRatio, pointer, theme)
+    drawPointer(context, pointerWeave.technique, pointerWeave.cell, zoom, pixelRatio, pointer, theme)
   }
 }

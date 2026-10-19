@@ -1,4 +1,4 @@
-import { beadRoundness, describeWeave, isShiftedRow, rowCycle, type Technique } from '../domain/weave'
+import { beadRoundness, describeWeave, isShiftedRow, rowCycle, type BeadCell, type Technique } from '../domain/weave'
 import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
 import { cellSizePx, CELL_SIZE_PX, rowPitchPx, type Region } from './surfaceView'
 
@@ -23,6 +23,8 @@ export interface MarkTileInput {
   brickBlock?: number
   /** The Net size (ticket 485); nothing is the default. */
   netSize?: number
+  /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. */
+  cell?: BeadCell
   /** Device pixels per grid px: the zoom times the screen's pixel ratio. */
   deviceScale: number
   pixelRatio: number
@@ -30,7 +32,7 @@ export interface MarkTileInput {
 }
 
 /** How many rows a tile holds: the shift's cycle, and at least two. */
-function tileRows(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize'>): number {
+function tileRows(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize' | 'cell'>): number {
   return Math.max(2, rowCycle(input))
 }
 
@@ -43,20 +45,21 @@ interface Tile {
 
 /** What one tile holds: a bead across and a cycle of rows down, or the two beads of Right-angle weave that a Unit's
  * pitch repeats (ticket 482), or a net's diamond (ticket 485). */
-function tileOf(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize'>): Tile {
+function tileOf(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize' | 'cell'>): Tile {
   const description = describeWeave(input)
   if (description.countsUnits) {
-    const cell = cellSizePx(input.technique)
+    const cell = cellSizePx(input.technique, input.cell)
     return description.tile(cell.width, cell.height)
   }
-  const pitch = rowPitchPx(input.technique)
+  const { height: cellHeight } = cellSizePx(input.technique, input.cell)
+  const pitch = rowPitchPx(input.technique, input.cell)
   return {
     size: { width: CELL_SIZE_PX, height: tileRows(input) * pitch },
     beads: Array.from({ length: tileRows(input) }, (_row, row) => ({
       x: isShiftedRow(input, row) ? CELL_SIZE_PX / 2 : 0,
       y: row * pitch,
       width: CELL_SIZE_PX,
-      height: CELL_SIZE_PX,
+      height: cellHeight,
     })),
   }
 }
@@ -80,6 +83,7 @@ function drawDots(context: DrawingContext, input: MarkTileInput, tile: Tile): vo
 
 /** A rounded rectangle as a closed path (the corners cut by `radius`, 0 for square). */
 function squarePath(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {
+  radius = Math.min(radius, width / 2, height / 2)
   context.moveTo(x + radius, y)
   context.arcTo(x + width, y, x + width, y + height, radius)
   context.arcTo(x + width, y + height, x, y + height, radius)
@@ -93,7 +97,7 @@ function squarePath(context: DrawingContext, x: number, y: number, width: number
 // edge, centred in the gap it shares with its neighbour, at most 1 CSS px thick.
 function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile): void {
   const { size } = tile
-  const radius = beadRoundness(input.technique) * CELL_SIZE_PX
+  const radius = beadRoundness(input.technique, input.cell) * CELL_SIZE_PX
   const zoom = input.deviceScale / input.pixelRatio
   const squares: Region[] = []
   for (const bead of tile.beads) {
@@ -130,7 +134,8 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
   const size = tileShape.size
   const width = Math.max(1, Math.round(size.width * input.deviceScale))
   const height = Math.max(1, Math.round(size.height * input.deviceScale))
-  const key = [input.style, input.technique, width, height, input.pixelRatio, input.color].join('|')
+  // The tile's size is in the key too; the roundness is the only part of the cell it doesn't show.
+  const key = [input.style, input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color].join('|')
 
   let tile = tiles.get(key)
   if (tile === undefined) {

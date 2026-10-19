@@ -1,6 +1,6 @@
 import { frameContains, type Frame } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
-import { beadRoundness, describeWeave, isShiftedRow, rowPitch, type Technique, type Weave } from '../domain/weave'
+import { beadRoundness, describeWeave, isShiftedRow, rowPitch, type BeadCell, type Technique, type Weave } from '../domain/weave'
 import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
@@ -34,13 +34,13 @@ export interface Region {
 
 // Distance between row tops, in grid px: peyote rows nest closer than a bead is tall; brick stitch and loom rows stack
 // a full bead apart.
-export function rowPitchPx(technique: Technique): number {
-  return rowPitch(technique, CELL_SIZE_PX)
+export function rowPitchPx(technique: Technique, cell?: BeadCell): number {
+  return rowPitch(technique, cellSizePx(technique, cell).height)
 }
 
 /** Where a row's beads start from the top of the Project, in grid px. */
-export function rowTopPx(technique: Technique, row: number): number {
-  return row * rowPitchPx(technique)
+export function rowTopPx(technique: Technique, row: number, cell?: BeadCell): number {
+  return row * rowPitchPx(technique, cell)
 }
 
 /** How far a row's beads are shifted sideways, in grid px: by half a bead in every other row of peyote, in every
@@ -55,9 +55,10 @@ export function shiftOf(weave: Weave, row: number): number {
   return rowShiftPx(weave, row)
 }
 
-/** A bead's cell in grid px: square, except where the Technique draws beads longer than they are wide (ticket 482). */
-export function cellSizePx(technique: Technique): Size {
-  return { width: CELL_SIZE_PX, height: CELL_SIZE_PX * describeWeave({ technique }).cellAspect }
+/** A bead's cell in grid px: square, except where the Technique draws beads longer than they are wide (ticket 482) or
+ * the Bead shape is Real, which draws the Bead's own proportions (ADR 0068). */
+export function cellSizePx(technique: Technique, cell?: BeadCell): Size {
+  return { width: CELL_SIZE_PX, height: CELL_SIZE_PX * describeWeave({ technique, cell }).cellAspect }
 }
 
 /** Where a position's bead is in a space, in grid px: its rectangle from the top-left. Beads of Right-angle weave
@@ -65,10 +66,11 @@ export function cellSizePx(technique: Technique): Size {
 export function positionBoxPx(weave: Weave, row: number, column: number): Region {
   const description = describeWeave(weave)
   if (description.countsUnits) {
-    const cell = cellSizePx(weave.technique)
+    const cell = cellSizePx(weave.technique, weave.cell)
     return description.box({ row, column }, cell.width, cell.height)
   }
-  return { x: shiftOf(weave, row) + column * CELL_SIZE_PX, y: rowTopPx(weave.technique, row), width: CELL_SIZE_PX, height: CELL_SIZE_PX }
+  const { width, height } = cellSizePx(weave.technique, weave.cell)
+  return { x: shiftOf(weave, row) + column * width, y: rowTopPx(weave.technique, row, weave.cell), width, height }
 }
 
 /** The rectangle round beads from (`row`, `column`) down `rows` and across `columns`, in grid px: the union of the
@@ -87,14 +89,14 @@ export function positionsBoxPx(weave: Weave, row: number, column: number, rows: 
 }
 
 /** The size of the drawn Project in grid px, before zoom and rotation. */
-export function projectExtentPx(technique: Technique, columns: number, rows: number): Extent {
-  const cell = cellSizePx(technique)
-  return describeWeave({ technique }).blockExtent(columns, rows, cell.width, cell.height)
+export function projectExtentPx(technique: Technique, columns: number, rows: number, cell?: BeadCell): Extent {
+  const size = cellSizePx(technique, cell)
+  return describeWeave({ technique, cell }).blockExtent(columns, rows, size.width, size.height)
 }
 
 /** The size of the drawn Project as displayed: scaled by the zoom, and swapped at a quarter turn either way. */
-export function displayedExtentPx(technique: Technique, columns: number, rows: number, zoom: number, rotation: Rotation): Extent {
-  const { width, height } = projectExtentPx(technique, columns, rows)
+export function displayedExtentPx(technique: Technique, columns: number, rows: number, zoom: number, rotation: Rotation, cell?: BeadCell): Extent {
+  const { width, height } = projectExtentPx(technique, columns, rows, cell)
   return rotationSwapsAxes(rotation) ? { width: height * zoom, height: width * zoom } : { width: width * zoom, height: height * zoom }
 }
 
@@ -173,6 +175,8 @@ export interface SurfaceViewInput {
   brickBlock?: number
   /** The Net size (ticket 485); nothing is the default. */
   netSize?: number
+  /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. Both layers use it. */
+  cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
    * its top-left position's corner. Left out, the view is one layer: the Canvas, or the Frame alone in an own space. */
   frame?: Frame & Weave
@@ -235,22 +239,24 @@ function beadInGrid(
 ): GridPosition | undefined {
   // Later rows are drawn over earlier ones, so try the lowest first.
   const { technique } = weave
-  const pitch = rowPitchPx(technique)
+  const { cell } = weave
+  const { height } = cellSizePx(technique, cell)
+  const pitch = rowPitchPx(technique, cell)
   const lowest = Math.min(limits.lastRow ?? Infinity, Math.floor(gridY / pitch))
-  const highest = Math.max(limits.firstRow ?? -Infinity, Math.ceil((gridY - CELL_SIZE_PX) / pitch))
-  const radius = beadRoundness(technique) * CELL_SIZE_PX
+  const highest = Math.max(limits.firstRow ?? -Infinity, Math.ceil((gridY - height) / pitch))
+  const radius = beadRoundness(technique, cell) * CELL_SIZE_PX
 
   for (let row = lowest; row >= highest; row -= 1) {
-    const offsetY = gridY - rowTopPx(technique, row)
+    const offsetY = gridY - rowTopPx(technique, row, cell)
     const offsetX = gridX - shiftOf(weave, row)
-    if (offsetY < 0 || offsetY >= CELL_SIZE_PX || (limits.columns !== undefined && offsetX < 0)) {
+    if (offsetY < 0 || offsetY >= height || (limits.columns !== undefined && offsetX < 0)) {
       continue
     }
     const column = Math.floor(offsetX / CELL_SIZE_PX)
     if (limits.columns !== undefined && column >= limits.columns) {
       continue
     }
-    if (inRoundedCorner(offsetX - column * CELL_SIZE_PX, offsetY, radius)) {
+    if (inRoundedCorner(offsetX - column * CELL_SIZE_PX, offsetY, radius, height)) {
       continue
     }
     return { row, column }
@@ -258,12 +264,14 @@ function beadInGrid(
   return undefined
 }
 
-function inRoundedCorner(x: number, y: number, radius: number): boolean {
+function inRoundedCorner(x: number, y: number, wanted: number, height: number): boolean {
+  // A corner can't be rounder than half the shorter side (a pill).
+  const radius = Math.min(wanted, CELL_SIZE_PX / 2, height / 2)
   if (radius <= 0) {
     return false
   }
   const cornerX = x < radius ? radius : x > CELL_SIZE_PX - radius ? CELL_SIZE_PX - radius : x
-  const cornerY = y < radius ? radius : y > CELL_SIZE_PX - radius ? CELL_SIZE_PX - radius : y
+  const cornerY = y < radius ? radius : y > height - radius ? height - radius : y
   return (x - cornerX) ** 2 + (y - cornerY) ** 2 > radius ** 2
 }
 
@@ -274,12 +282,13 @@ export function gridBox(weave: Weave, box: Frame): Region {
   if (describeWeave(weave).countsUnits) {
     return positionsBoxPx(weave, box.row, box.column, box.rows, box.columns)
   }
-  const top = rowTopPx(technique, box.row)
+  const { height } = cellSizePx(technique, weave.cell)
+  const top = rowTopPx(technique, box.row, weave.cell)
   return {
     x: box.column * CELL_SIZE_PX,
     y: top,
-    width: describeWeave(weave).blockExtent(box.columns, 0, CELL_SIZE_PX, CELL_SIZE_PX).width,
-    height: rowTopPx(technique, box.row + box.rows - 1) + CELL_SIZE_PX - top,
+    width: describeWeave(weave).blockExtent(box.columns, 0, CELL_SIZE_PX, height).width,
+    height: rowTopPx(technique, box.row + box.rows - 1, weave.cell) + height - top,
   }
 }
 
@@ -290,14 +299,14 @@ export function layerExtentPx(weave: Weave, columns: number, rows: number): Exte
     const { width, height } = positionsBoxPx(weave, 0, 0, rows, columns)
     return { width, height }
   }
-  return projectExtentPx(weave.technique, columns, rows)
+  return projectExtentPx(weave.technique, columns, rows, weave.cell)
 }
 
 /** Where a Frame's first position sits on the Canvas, in grid px: the corner its own layout is drawn from (ticket 492). */
 export function frameOriginPx(canvas: Weave, frame: Pick<Frame, 'row' | 'column'>): Scroll {
   const description = describeWeave(canvas)
   if (description.countsUnits) {
-    const cell = cellSizePx(canvas.technique)
+    const cell = cellSizePx(canvas.technique, canvas.cell)
     return description.origin(frame, cell.width, cell.height)
   }
   const { x, y } = positionBoxPx(canvas, frame.row, frame.column)
@@ -316,13 +325,13 @@ interface Layer {
 }
 
 function layerOf(weave: Weave, origin: Scroll, offset: GridPosition, bounds?: Layer['bounds']): Layer {
-  return { weave, description: describeWeave(weave), cell: cellSizePx(weave.technique), origin, offset, ...(bounds ? { bounds } : {}) }
+  return { weave, description: describeWeave(weave), cell: cellSizePx(weave.technique, weave.cell), origin, offset, ...(bounds ? { bounds } : {}) }
 }
 
-export function surfaceView({ space, technique, brickBlock, netSize, frame, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
-  const canvasWeave: Weave = { technique, brickBlock, netSize }
+export function surfaceView({ space, technique, brickBlock, netSize, cell: beadShapeCell, frame, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
+  const canvasWeave: Weave = { technique, brickBlock, netSize, cell: beadShapeCell }
   const canvas = layerOf(canvasWeave, { x: 0, y: 0 }, { row: 0, column: 0 }, space.open ? undefined : { rows: space.rows, columns: space.columns })
-  const sheet = frame && space.open ? layerOf({ technique: frame.technique, brickBlock: frame.brickBlock, netSize: frame.netSize }, frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }, { rows: frame.rows, columns: frame.columns }) : undefined
+  const sheet = frame && space.open ? layerOf({ technique: frame.technique, brickBlock: frame.brickBlock, netSize: frame.netSize, cell: beadShapeCell }, frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }, { rows: frame.rows, columns: frame.columns }) : undefined
   const layerNamed = (name: ViewLayer | undefined): Layer => (name === 'frame' && sheet ? sheet : canvas)
   const layerAtAddress = (position: GridPosition): Layer => (frame && sheet && frameContains(frame, position) ? sheet : canvas)
   /** Grid space to displayed space, at a zoom: the matrix gridToRegion gives for a region at the origin. */
@@ -371,7 +380,7 @@ export function surfaceView({ space, technique, brickBlock, netSize, frame, rota
   const cellIn = (layer: Layer, gridX: number, gridY: number): GridPosition => {
     const { description, cell, weave } = layer
     if (description.countsUnits) return description.nearestPosition(gridX, gridY, cell.width, cell.height)
-    const row = Math.round((gridY - CELL_SIZE_PX / 2) / rowPitchPx(weave.technique))
+    const row = Math.round((gridY - cell.height / 2) / rowPitchPx(weave.technique, weave.cell))
     return { row: row + 0, column: Math.floor((gridX - shiftOf(weave, row)) / CELL_SIZE_PX) }
   }
 
@@ -427,7 +436,7 @@ export function surfaceView({ space, technique, brickBlock, netSize, frame, rota
       // Where Units are counted a step is a whole Unit across and down.
       const unit = description.origin({ row: description.rowsPerUnit, column: description.columnsPerUnit }, cell.width, cell.height)
       const across = description.countsUnits ? unit.x : CELL_SIZE_PX
-      const down = description.countsUnits ? unit.y : rowPitchPx(weave.technique)
+      const down = description.countsUnits ? unit.y : rowPitchPx(weave.technique, weave.cell)
       const column = displayed(across, 0, zoom)
       const row = displayed(0, down, zoom)
       return { column: { x: column.x - origin.x, y: column.y - origin.y }, row: { x: row.x - origin.x, y: row.y - origin.y } }

@@ -26,6 +26,11 @@ export interface Translations {
   form: {
     nameLabel: string
     beadLabel: string
+    beadShapeLabel: string
+    beadShapeSymmetric: string
+    beadShapeReal: string
+    beadShapeSymmetricTip: string
+    beadShapeRealTip: string
     techniqueLabel: string
     techniqueLoom: string
     techniquePeyote: string
