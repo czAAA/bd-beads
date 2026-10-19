@@ -2,10 +2,10 @@ import { positionKey, type GridPosition } from './grid'
 import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
 import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import type { FrameEdge } from './frame'
-import type { Weave } from './weave'
+import { describeWeave, type Weave } from './weave'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
-import { restoreBeads, type Project } from './project'
+import { mirroredCells, restoreBeads, type Project } from './project'
 
 /** A rectangular area of a Project's grid, marked out with the Select tool (CONTEXT.md's Selection): top-left corner
  * plus size in cells. */
@@ -130,14 +130,22 @@ export function selectionWithEdges(selection: Selection, edges: readonly FrameEd
   return { top, left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-/** The Selection moved by whole beads, its size kept; its beads stay where they are. */
-export function movedSelection(selection: Selection, rows: number, columns: number): Selection {
-  return { ...selection, top: selection.top + rows, left: selection.left + columns }
+/** The Selection moved by whole beads, its size kept; its beads stay where they are. Where beads are laid in Units it
+ * moves by whole Units down. */
+export function movedSelection(selection: Selection, rows: number, columns: number, weave: Weave = { technique: 'loom' }): Selection {
+  const { rowsPerUnit } = describeWeave(weave)
+  return { ...selection, top: selection.top + Math.round(rows / rowsPerUnit) * rowsPerUnit, left: selection.left + columns }
+}
+
+/** The Selection grown to whole Units where the Technique has them (ticket 483), kept inside the Frame it started in. */
+export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Frame): Selection {
+  return describeWeave(weave).snapSelection(selection, frame)
 }
 
 /** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
  * the first bead. */
 export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {
+  const { rowsPerUnit } = describeWeave(project)
   const drawn: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
     for (let column = selection.left; column < selection.left + selection.columns; column++) {
@@ -146,7 +154,8 @@ export function copySelection(project: Project, selection: Selection): CopiedBlo
   }
   if (drawn.length === 0) return undefined
 
-  const top = drawn[0].row
+  // Where beads are laid in Units the block starts on a Unit's line, so Paste can keep each bead lying as it does.
+  const top = drawn[0].row - (((drawn[0].row % rowsPerUnit) + rowsPerUnit) % rowsPerUnit)
   const bottom = Math.max(...drawn.map((cell) => cell.row))
   const left = Math.min(...drawn.map((cell) => cell.column))
   const right = Math.max(...drawn.map((cell) => cell.column))
@@ -154,7 +163,7 @@ export function copySelection(project: Project, selection: Selection): CopiedBlo
     Array.from({ length: right - left + 1 }, (_column, columnOffset) => colorAt(project.beads, top + rowOffset, left + columnOffset)),
   )
 
-  return { rows: colors.length, columns: colors[0].length, colors, anchor: { row: 0, column: drawn[0].column - left } }
+  return { rows: colors.length, columns: colors[0].length, colors, anchor: { row: drawn[0].row - top, column: drawn[0].column - left } }
 }
 
 /** Where a block's painted cells land with its top-left at `at`; empty cells are holes, nothing is clipped (ADR
@@ -199,14 +208,21 @@ function flippedBlock(block: CopiedBlock, flipRows: boolean, flipColumns: boolea
 // one placement per strip combination, flipped per mirrorBlockPlacements and run through pastedCells, so each copy
 // keeps its own hole and clipping rules and later copies win overlaps (paintCells' order).
 export function mirroredPastedCells(
-  frame: Frame | undefined,
+  project: Pick<Project, 'frame' | 'technique' | 'brickBlock'>,
   block: CopiedBlock,
   at: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
 ): PastedCell[] {
-  // `at` is where the block's anchor bead lands (ticket 437); the rest works from the block's top-left corner.
-  const topLeft = { row: at.row - block.anchor.row, column: at.column - block.anchor.column }
+  const { frame } = project
+  const { rowsPerUnit, countsUnits } = describeWeave(project)
+  // `at` is where the block's anchor bead lands (ticket 437); the rest works from the block's top-left corner, on a
+  // Unit's line where beads are laid in Units (ticket 483).
+  const row = at.row - block.anchor.row
+  const topLeft = { row: row - (((row % rowsPerUnit) + rowsPerUnit) % rowsPerUnit), column: at.column - block.anchor.column }
+  if (countsUnits) {
+    return unitMirroredPastedCells(project, block, topLeft, axes, copyMode)
+  }
   // Mirror's axes divide the Frame; with none, or none turned on, a stamp is only itself.
   if (!frame || (axes.columns === 0 && axes.rows === 0)) {
     return pastedCells(block, topLeft)
@@ -227,6 +243,24 @@ export function mirroredPastedCells(
   return [...cellsByPosition.values()]
 }
 
+/** Each bead of the block with its Mirror counterparts, as they fold among beads that lie alike (Weave.lattice); a later
+ * copy wins an overlap. */
+function unitMirroredPastedCells(
+  project: Pick<Project, 'frame' | 'technique' | 'brickBlock'>,
+  block: CopiedBlock,
+  topLeft: GridPosition,
+  axes: MirrorAxisCounts,
+  copyMode: boolean,
+): PastedCell[] {
+  const cellsByPosition = new Map<string, PastedCell>()
+  for (const cell of pastedCells(block, topLeft)) {
+    for (const copy of mirroredCells(project, cell, axes, copyMode)) {
+      cellsByPosition.set(positionKey(copy), { ...copy, color: cell.color })
+    }
+  }
+  return [...cellsByPosition.values()]
+}
+
 /** The Mirror-aware paste stamp (ticket 50): `block` at `at` plus every Mirror copy as one Project edit (one undo
  * step). */
 export function mirroredPasteBlock(
@@ -236,7 +270,7 @@ export function mirroredPasteBlock(
   axes: MirrorAxisCounts,
   copyMode = false,
 ): Project {
-  const cells = mirroredPastedCells(project.frame, block, at, axes, copyMode)
+  const cells = mirroredPastedCells(project, block, at, axes, copyMode)
   const changes: BeadChange[] = cells.map(({ row, column, color }) => ({ row, column, color }))
   const beads = withColors(project.beads, changes)
   return beads === project.beads ? project : restoreBeads(project, beads)
