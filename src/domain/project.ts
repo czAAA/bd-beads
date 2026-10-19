@@ -23,10 +23,8 @@ import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition,
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
-import { mirrorCounterpartInStrip, mirrorCounterparts, stripOf, type MirrorAxisCounts } from './mirror'
 import { gridFromSize, type StatedSize } from './projectSize'
 
-export type { MirrorAxisCounts } from './mirror'
 
 export type { Technique } from './weave'
 
@@ -257,7 +255,7 @@ export function projectFrame(project: Pick<Project, 'frame' | 'beads'>): Frame {
   return project.frame ?? beadBounds(project.beads) ?? { row: 0, column: 0, columns: 0, rows: 0 }
 }
 
-/** What the open Project's Frame measures in beads, for the grid-shaped helpers (mirror strips, adjacency, fit
+/** What the open Project's Frame measures in beads, for the grid-shaped helpers (adjacency, fit
  * zoom). */
 export function projectDimensions(project: Pick<Project, 'frame' | 'beads'>): GridDimensions {
   return frameDimensions(projectFrame(project))
@@ -656,8 +654,7 @@ export function restoreBeads(project: Project, beads: BeadMap): Project {
 }
 
 /** One entry on the editing-session undo stack (ADR 0036): a full snapshot of what an Edit can change (beads, Row
- * progress, Bead, Frame, Mirror's axis counts). Mirror's counts are a session setting, not a Project field, so
- * restoreSnapshot leaves applying them to the caller. All immutable, sharing structure. */
+ * progress, Bead, Frame, Technique). All immutable, sharing structure. */
 export interface UndoEntry {
   beads: BeadMap
   rowProgress: RowProgress
@@ -672,15 +669,14 @@ export interface UndoEntry {
   brickBlock?: number
   /** The Bead shape the entry was taken with, so Undo undoes a change of it (ticket 508). */
   beadShape?: BeadShape
-  mirrorAxisCounts: MirrorAxisCounts
 }
 
-/** The Project's state as an undo entry, with Mirror's axis counts as they are now. */
-export function snapshotOf(project: Project, mirrorAxisCounts: MirrorAxisCounts): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape, mirrorAxisCounts }
+/** The Project's state as an undo entry. */
+export function snapshotOf(project: Project): UndoEntry {
+  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
 }
 
-/** The Project with everything an undo entry holds put back (Mirror's axis counts aside; see UndoEntry). */
+/** The Project with everything an undo entry holds put back (see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   const { pieceNames: _current, brickBlock: _block, beadShape: _shape, ...rest } = project
   return touch(rest, {
@@ -786,120 +782,15 @@ export function fillArea(project: Project, row: number, column: number, color: s
   return restoreBeads(project, withColors(project.beads, region.map((position) => ({ ...position, color }))))
 }
 
-/** Resets the open Project to as first created (CONTEXT.md's Delete all): cells emptied, Row progress at the first row;
- * name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow): clearing
- * progress is the point. Returns the same instance if already so. */
-export function mirroredCells(
-  project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
-  position: GridPosition,
-  axes: MirrorAxisCounts,
-  copyMode = false,
-): GridPosition[] {
-  const frame = project.frame
-  if (!frame || !frameContains(frame, position)) {
-    return [position]
-  }
-  // A bead folds with beads of its own kind (see Weave.lattice), so Right-angle weave keeps each lying as it does.
-  const weave = describeWeave(project)
-  const lattice = weave.lattice(position, frame)
-  if (!lattice) {
-    return [position]
-  }
-  const rows = mirrorCounterparts(lattice.row.index, lattice.row.count, axes.rows, copyMode)
-  const columns = mirrorCounterparts(lattice.column.index, lattice.column.count, axes.columns, copyMode)
-
-  const seen = new Set<string>()
-  const cells: GridPosition[] = []
-  for (const row of rows) {
-    for (const column of columns) {
-      const cell = lattice.at(row, column)
-      const key = positionKey(cell)
-      // A copy never lands where the Weave has no bead: a net's hole (ticket 486).
-      if (!seen.has(key) && weave.hasPosition(cell, frame)) {
-        seen.add(key)
-        cells.push(cell)
-      }
-    }
-  }
-  return cells
-}
-
-/** Paints every position in `positions` plus each one's live-mirror counterparts (see mirroredCells) as a single
- * edit, so a whole stroke (ticket 24) is one undo step. Returns the same Project if nothing changes. Only the touched
- * rows are copied (see withColors). */
-export function paintCells(
-  project: Project,
-  positions: GridPosition[],
-  color: string | null,
-  axes: MirrorAxisCounts,
-  copyMode = false,
-): Project {
-  const targets = new Map<string, BeadChange>()
-  for (const position of positions) {
-    for (const cell of mirroredCells(project, position, axes, copyMode)) {
-      targets.set(positionKey(cell), { ...cell, color })
-    }
-  }
-
-  const beads = withColors(project.beads, targets.values())
+/** Paints every position in `positions` as a single edit, so a whole stroke (ticket 24) is one undo step. A position in
+ * the Frame where the Weave has no bead (a net's hole, ticket 486) is left alone. Returns the same Project if nothing
+ * changes. Only the touched rows are copied (see withColors). */
+export function paintCells(project: Project, positions: GridPosition[], color: string | null): Project {
+  const { frame } = project
+  const { hasPosition } = describeWeave(project)
+  const targets = positions.filter((position) => !frame || !frameContains(frame, position) || hasPosition(position, frame))
+  const beads = withColors(project.beads, targets.map((position) => ({ ...position, color })))
   return beads === project.beads ? project : restoreBeads(project, beads)
-}
-
-/** How many painted cells (non-null color) fall in each strip (0-indexed, 0..axisCount) of the Frame along `axis`,
- * per the same "as equal as possible" split domain/mirror.ts's strip math uses. */
-function paintedCountsByStrip(project: Project, frame: Frame, axis: 'columns' | 'rows', axisCount: number): number[] {
-  const counts = new Array(axisCount + 1).fill(0)
-  const weave = describeWeave(project)
-  forEachBead(project.beads, (row, column) => {
-    const position = { row, column }
-    const lattice = frameContains(frame, position) ? weave.lattice(position, frame) : undefined
-    if (lattice) {
-      const along = axis === 'columns' ? lattice.column : lattice.row
-      counts[stripOf(along.index, along.count, axisCount)]++
-    }
-  })
-  return counts
-}
-
-/** "Mirror current" (ticket 46, ADR 0006 amendment): a one-time sync along ONE direction using its own axis count.
- * The strip with the most painted cells (ties: lowest index) is copied onto the others (mirrorCounterpartInStrip).
- * No Frame: unchanged. A count of 0 acts as one center axis for this sync only, so the button always does something. */
-export function mirrorCurrent(
-  project: Project,
-  axis: 'columns' | 'rows',
-  axisCount: number,
-  copyMode: boolean,
-): Project {
-  const frame = project.frame
-  if (!frame) {
-    return project
-  }
-  const effectiveAxisCount = axisCount === 0 ? 1 : axisCount
-
-  const counts = paintedCountsByStrip(project, frame, axis, effectiveAxisCount)
-  const sourceStrip = counts.reduce((best, count, strip) => (count > counts[best]! ? strip : best), 0)
-
-  const weave = describeWeave(project)
-  const changes: BeadChange[] = []
-  for (let row = frame.row; row < frame.row + frame.rows; row++) {
-    for (let column = frame.column; column < frame.column + frame.columns; column++) {
-      const lattice = weave.lattice({ row, column }, frame)
-      if (!lattice || !weave.hasPosition({ row, column }, frame)) {
-        continue
-      }
-      const along = axis === 'columns' ? lattice.column : lattice.row
-      if (stripOf(along.index, along.count, effectiveAxisCount) === sourceStrip) {
-        continue
-      }
-      const sourceIndex = mirrorCounterpartInStrip(along.index, along.count, effectiveAxisCount, copyMode, sourceStrip)
-      const source = axis === 'columns' ? lattice.at(lattice.row.index, sourceIndex) : lattice.at(sourceIndex, lattice.column.index)
-      if (weave.hasPosition(source, frame)) {
-        changes.push({ row, column, color: colorAt(project.beads, source.row, source.column) })
-      }
-    }
-  }
-
-  return restoreBeads(project, withColors(project.beads, changes))
 }
 
 /** A short, language-neutral identifier for a Project in UI lists (names are proper nouns, not translated): its name

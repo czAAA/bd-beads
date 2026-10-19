@@ -15,7 +15,7 @@ A faint line just inside every bead's edge (0.75px), so where one bead ends and 
 _Avoid_: border, outline (the hover outline is another thing), grid line, gap
 
 **Drawing surface**:
-What the Project renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, the bead pointer, Selection, Mirror axes, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
+What the Project renderer draws on inside the canvas panel: a base layer holding the cells, and an overlay layer holding everything that comes and goes with the pointer — hover preview, the bead pointer, Selection, paste preview and the Row progress marker. It is not the "canvas" of the App shell layout, which is the panel that holds it.
 _Avoid_: canvas (that is the panel), bitmap, canvas element
 
 **Bead pointer** (ticket 353):

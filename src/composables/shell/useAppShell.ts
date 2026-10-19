@@ -11,8 +11,6 @@ import { shownBeads } from '../../domain/layers'
 import { copyLayerSelection, selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
-import { rotationSwapsAxes } from '../../domain/grid'
-import { gridAxisOfDirection } from '../../domain/mirror'
 import { useAppShortcutTable } from './useAppShortcutTable'
 import { usePageZoomLock } from './usePageZoomLock'
 import { useViewportGuard } from './useViewportGuard'
@@ -36,7 +34,6 @@ import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
-import { useMirrorState } from '../tools/useMirrorState'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import type { PhoneSheet } from './phoneSheet'
 import { useOverlayVisibility } from './useOverlayVisibility'
@@ -121,7 +118,7 @@ function wireAppShell(services: Services) {
   })
 
   // Convert image's framing step (ticket 58, ADR 0010): independent of the open Project, so nothing here touches
-  // replaceProject, undo, Mirror or the Row lock; framing over an open Project takes the canvas panel over until
+  // replaceProject, undo or the Row lock; framing over an open Project takes the canvas panel over until
   // Cancel.
   const {
     image: convertImageSource,
@@ -162,7 +159,7 @@ function wireAppShell(services: Services) {
       convertZoomPercent: () => convertZoomPercent.value,
     })
 
-  /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Mirror and Selection
+  /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
    * state declared below, through lazy arrows only called at runtime. */
   const {
     canUndo,
@@ -173,53 +170,21 @@ function wireAppShell(services: Services) {
     onRedo,
   } = useUndoHistory({
     currentProject,
-    mirrorAxisCounts: () => mirrorAxisCounts.value,
     restore: (snapshot) => editing.restore(snapshot),
   })
 
-  /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Mirror
-   * and Selection state declared below, through lazy arrows only called at runtime. */
+  /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Selection
+   * state declared below, through lazy arrows only called at runtime. */
   const editing = useEdit({
     currentProject,
     replaceProject,
     recordHistory,
-    mirrorAxisCounts: () => mirrorAxisCounts.value,
-    restoreMirrorAxisCounts: (counts) => restoreMirrorAxisCounts(counts),
     resetAfterFrameChange: () => {
-      clearMirrorAxisCounts()
       clearSelectionAndHover()
     },
     flushPendingSave,
   })
   const { edit } = editing
-
-  // Mirror's session state (ticket 62): ticket 174 hid its UI, so only the bookkeeping a Frame change and Project
-  // switch need remains; axis counts stay at NO_MIRROR_AXES, which keeps paint/fill/erase's live-mirror calls inert.
-  const {
-    axisCounts: mirrorAxisCounts,
-    copyMode: mirrorCopyMode,
-    previewedAxisCounts: previewedMirrorAxisCounts,
-    currentDimmedCells: mirrorCurrentDimmedCells,
-    onHoverCurrent: onMirrorCurrentHover,
-    setAxisCount: onSetMirrorAxisCount,
-    toggleCopyMode: onToggleMirrorCopyMode,
-    mirrorCurrent: onMirrorCurrent,
-    restoreAxisCounts: restoreMirrorAxisCounts,
-    clearAxisCounts: clearMirrorAxisCounts,
-    reset: resetMirrorState,
-  } = useMirrorState(currentProject, edit)
-
-  /** -/=/[/] (ADR 0006): steps the Left–right or Top–bottom axis count as seen on screen; a quarter turn swaps which
-   * grid-space axis each drives. */
-  function onStepMirrorAxis(direction: 'leftRight' | 'topBottom', delta: number) {
-    const project = currentProject()
-    if (!project) {
-      return
-    }
-
-    const axis = gridAxisOfDirection(direction, rotationSwapsAxes(project.rotation))
-    onSetMirrorAxisCount(axis, mirrorAxisCounts.value[axis] + delta)
-  }
 
   /** The Select tool's whole gesture (ticket 63): the Selection, the in-session clipboard, the in-progress press and
    * the Select-tool paste preview. Only ever called into while Select is the active tool, or from a command that
@@ -252,8 +217,6 @@ function wireAppShell(services: Services) {
   } = useSelectionGesture(
     currentProject,
     edit,
-    () => mirrorAxisCounts.value,
-    () => mirrorCopyMode.value,
     (count) => showToast('paste-clipped', plural(locale.value, count, t.value.tools.pasteClippedMessage), 'info'),
   )
 
@@ -450,8 +413,6 @@ function wireAppShell(services: Services) {
   const { strokeMode, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
-    mirrorAxisCounts: () => mirrorAxisCounts.value,
-    mirrorCopyMode: () => mirrorCopyMode.value,
     activeTool: () => activeTool.value,
     endSelectPress,
   })
@@ -492,8 +453,6 @@ function wireAppShell(services: Services) {
     spaceHeld: () => spaceHeld.value,
     strokeMode: () => strokeMode.value,
     selectedColorHex,
-    mirrorAxisCounts: () => mirrorAxisCounts.value,
-    mirrorCopyMode: () => mirrorCopyMode.value,
     pastePreviewCells,
     beginSelectPress,
     extendSelection,
@@ -548,7 +507,7 @@ function wireAppShell(services: Services) {
 
   /** Edit Frame: moving and resizing the Frame and stepping its edges, Fit to drawing and Remove Frame (tickets 233,
    * 417). */
-  /** The one panel open over the canvas (ticket 510): Menu, Project or the Frame bar, or Mirror's sheet. */
+  /** The one panel open over the canvas (ticket 510): Menu, Project or the Frame bar. */
   const openPanel = ref<PhoneSheet | null>(null)
   const frameFlow = useFrameFlow({
     openPanel,
@@ -755,9 +714,6 @@ function wireAppShell(services: Services) {
     onToggleRowDirection: rowOps.onToggleRowDirection,
     onMoveRow: rowOps.onMoveRow,
     onResetProgress: rowOps.onResetProgress,
-    onStepMirrorAxis,
-    onToggleMirrorCopyMode,
-    onMirrorCurrent,
     onZoomIn: () => zoomIn(),
     onZoomOut: () => zoomOut(),
     onFit: resetZoom,
@@ -776,9 +732,6 @@ function wireAppShell(services: Services) {
     // Selection resets here through the module's reset(); the clipboard deliberately survives a Project switch
     // (ticket 92, ADR 0016), unlike Undo/Redo history and Selection.
     resetSelection()
-    // Mirror's session state is an editing-session setting, reset on a Project switch (ticket 44/45 decision) --
-    // through this single reset point, per the ticket 62 decision, rather than a watcher of its own.
-    resetMirrorState()
     deleteAll.onCancelDeleteAll()
     frameFlow.cancelRemove()
     frameFlow.cancelReplace()
@@ -878,14 +831,6 @@ function wireAppShell(services: Services) {
     selectionRefusals,
     backOutOfSelect,
     previewCells,
-    previewedMirrorAxisCounts,
-    mirrorCurrentDimmedCells,
-    mirrorAxisCounts,
-    mirrorCopyMode,
-    onSetMirrorAxisCount,
-    onToggleMirrorCopyMode,
-    onMirrorCurrent,
-    onMirrorCurrentHover,
     endStroke,
     onCellPrimaryDown: unlessTourLocks(onCellPrimaryDown),
     onCellPrimaryMove: unlessTourLocks(onCellPrimaryMove),

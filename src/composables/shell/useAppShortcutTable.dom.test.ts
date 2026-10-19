@@ -48,9 +48,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onZoomIn: vi.fn(),
     onZoomOut: vi.fn(),
     onFit: vi.fn(),
-    onStepMirrorAxis: vi.fn(),
-    onToggleMirrorCopyMode: vi.fn(),
-    onMirrorCurrent: vi.fn(),
     ...overrides,
   }
   const wrapper = mount(

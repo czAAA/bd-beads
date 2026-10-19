@@ -1,12 +1,11 @@
 import { toRaw } from 'vue'
 import type { FrameChangeRefusal, FrameChangeResult } from '../../domain/changeFrame'
 import { keepAllowedEdits } from '../../domain/allowedEdits'
-import type { MirrorAxisCounts } from '../../domain/mirror'
 import { sameFrame } from '../../domain/frame'
 import { restoreSnapshot, sameBeads, snapshotOf, type Project, type UndoEntry } from '../../domain/project'
 import type { ReplaceOptions } from './useProjectLibrary'
 
-// The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Mirror, Rotate, Rotate Frame: lock
+// The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Rotate, Rotate Frame: lock
 // applied silently, a no-op is no step), frame (through changeFrame, which refuses; the session resets after),
 // exempt (Delete all, Replace Bead: no guards).
 type EditKind = 'drawing' | 'frame' | 'exempt'
@@ -34,10 +33,7 @@ export interface EditDeps {
   replaceProject: (project: Project, options?: ReplaceOptions) => void
   /** useUndoHistory's record: pushes one Undo step. */
   recordHistory: (entry: UndoEntry) => void
-  mirrorAxisCounts: () => MirrorAxisCounts
-  restoreMirrorAxisCounts: (counts: MirrorAxisCounts) => void
-  /** What a change of the Frame invalidates: Mirror's axis counts, the Selection and the hover, all built against
-   * the old Frame. */
+  /** What a change of the Frame invalidates: the Selection and the hover, all built against the old Frame. */
   resetAfterFrameChange: () => void
   /** Writes the save every stroke step deferred. */
   flushPendingSave: () => void
@@ -51,7 +47,7 @@ export function useEdit(deps: EditDeps) {
   let strokeBaseline: UndoEntry | undefined
 
   function record(project: Project) {
-    deps.recordHistory(snapshotOf(project, deps.mirrorAxisCounts()))
+    deps.recordHistory(snapshotOf(project))
   }
 
   const edit: EditFn = (kind, command) => {
@@ -91,7 +87,7 @@ export function useEdit(deps: EditDeps) {
   /** Starts a Paint/Eraser stroke: the baseline its one Undo step will go back to (ticket 55). */
   function beginStroke() {
     const project = deps.currentProject()
-    strokeBaseline = project && snapshotOf(project, deps.mirrorAxisCounts())
+    strokeBaseline = project && snapshotOf(project)
   }
 
   /** One step of a stroke: a drawing edit that lands on screen at once but defers its save and its Undo step to
@@ -133,8 +129,8 @@ export function useEdit(deps: EditDeps) {
     deps.flushPendingSave()
   }
 
-  /** Puts a snapshot back for Undo/Redo: replays history, so no guard applies. Mirror's counts come from the
-   * snapshot; a Frame or Technique that differs resets the rest. */
+  /** Puts a snapshot back for Undo/Redo: replays history, so no guard applies. A Frame or Technique that differs
+   * resets the rest. */
   function restore(snapshot: UndoEntry) {
     const project = deps.currentProject()
     if (!project) {
@@ -144,7 +140,6 @@ export function useEdit(deps: EditDeps) {
     if (!sameFrame(snapshot.frame, project.frame) || snapshot.technique !== project.technique || snapshot.frame?.technique !== project.frame?.technique) {
       deps.resetAfterFrameChange()
     }
-    deps.restoreMirrorAxisCounts(snapshot.mirrorAxisCounts)
   }
 
   return { edit, beginStroke, strokeStep, endStroke, cancelStroke, restore }

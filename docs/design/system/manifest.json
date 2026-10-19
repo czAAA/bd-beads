@@ -22,6 +22,7 @@
     "components/Dock/README.md",
     "components/EmptyCanvas/README.md",
     "components/EmptyPanels/README.md",
+    "components/FrameControls/README.md",
     "components/Glossary/README.md",
     "components/Header/README.md",
     "components/HeaderMenu/README.md",
@@ -34,7 +35,6 @@
     "components/Menu/README.md",
     "components/MenuPanel/README.md",
     "components/Message/README.md",
-    "components/MirrorSizeControls/README.md",
     "components/Modal/README.md",
     "components/Motion/README.md",
     "components/NameOnExports/README.md",
@@ -90,7 +90,7 @@
     {
       "name": "BeadBoard",
       "group": "Canvas",
-      "summary": "How a Pattern is drawn: beads on a rounded board, with rulers, the current-row marker, and the technique word and curve behind."
+      "summary": "How a Pattern is drawn: beads on a rounded board, with rulers and the current-row marker."
     },
     {
       "name": "BeadCursor",
@@ -168,6 +168,11 @@
       "summary": "Beads needed and Saved Patterns with nothing in them."
     },
     {
+      "name": "FrameControls",
+      "group": "Screens",
+      "summary": "The Frame disclosure row opened in place, and the Estimated size warning."
+    },
+    {
       "name": "Glossary",
       "group": "Writing",
       "summary": "The app's nouns in English and Russian, and the names of the 12 Palette colors."
@@ -226,11 +231,6 @@
       "name": "Message",
       "group": "Feedback",
       "summary": "A notice or toast: \"couldn't save\", import results and errors, confirmations of an action."
-    },
-    {
-      "name": "MirrorSizeControls",
-      "group": "Screens",
-      "summary": "The Mirror and Size disclosure rows opened in place, and the Estimated size warning."
     },
     {
       "name": "Modal",
@@ -405,7 +405,7 @@
     {
       "name": "ToolSheet",
       "group": "Responsive",
-      "summary": "The bottom sheet a Dock button opens on the phone, holding every option of that kind."
+      "summary": "The sheet a Dock button opens on the phone, holding every option of that kind."
     },
     {
       "name": "ToolTabs",
@@ -522,9 +522,6 @@
         "export.svg",
         "import.svg",
         "pdf.svg",
-        "mirror-horizontal.svg",
-        "mirror-vertical.svg",
-        "mirror-copy-mode.svg",
         "size.svg",
         "info.svg",
         "row-progress.svg",
@@ -619,18 +616,6 @@
         {
           "path": "assets/Icons/pdf.svg",
           "id": "543b89020c5fb0323f4e47e681650580"
-        },
-        {
-          "path": "assets/Icons/mirror-horizontal.svg",
-          "id": "231017d96cc75fc2ba4305809373a6ae"
-        },
-        {
-          "path": "assets/Icons/mirror-vertical.svg",
-          "id": "08ced04a6cf48c40b7fcede3c322facf"
-        },
-        {
-          "path": "assets/Icons/mirror-copy-mode.svg",
-          "id": "3c0fe37e6f7d4d0b869896135d0dd7d2"
         },
         {
           "path": "assets/Icons/size.svg",
@@ -889,24 +874,6 @@
         "store": "blob",
         "id": "424055a6ffc39dfac008b09700ac302c",
         "bytes": 234,
-        "type": "image/svg+xml"
-      },
-      "assets/Icons/mirror-copy-mode.svg": {
-        "store": "blob",
-        "id": "3c0fe37e6f7d4d0b869896135d0dd7d2",
-        "bytes": 350,
-        "type": "image/svg+xml"
-      },
-      "assets/Icons/mirror-horizontal.svg": {
-        "store": "blob",
-        "id": "231017d96cc75fc2ba4305809373a6ae",
-        "bytes": 330,
-        "type": "image/svg+xml"
-      },
-      "assets/Icons/mirror-vertical.svg": {
-        "store": "blob",
-        "id": "08ced04a6cf48c40b7fcede3c322facf",
-        "bytes": 329,
         "type": "image/svg+xml"
       },
       "assets/Icons/moon.svg": {

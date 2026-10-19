@@ -12,7 +12,6 @@ The bottom bar: the six tool tiles, the colour button and, where the device need
 - **Pen/Mouse toggle (ticket 325):** shows `pen-mode` (Pen mode) or `pen-mode-off` (Mouse mode) in `accent`, with no underline and no key; `aria-pressed` is true in Pen mode, and its Tooltip names the mode and what it does. It opens no sheet.
 - **Phones under 400px:** tiles are 44px wide and the digit badges are hidden, so all eight slots and both dividers fit 360px without scrolling.
 - **No Project open:** New Project and Import sit under the EmptyCanvas message; Menu is in the Canvas strip, which always shows.
-- Mirror (ticket 174) is hidden pending a redesign. If its flag is turned on its button sits after the colour button and the bar needs a fresh 360px check, since it would be a ninth slot.
 - The consumer provides the active tool, the current colour and which sheet is open.
 
 Hand-written from the responsive sign-off; static rendition.

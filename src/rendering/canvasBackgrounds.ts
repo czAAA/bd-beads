@@ -49,7 +49,7 @@ export function canvasBackgroundOf(theme: ResolvedTheme, choice: number): Canvas
 }
 
 /** Ash, the lightest dark background, needs its own greys to stay legible. */
-const ASH = { ruler: '#a0a0a0', emptyBead: '#3d3b38', word: '#353432' }
+const ASH = { ruler: '#a0a0a0', emptyBead: '#3d3b38' }
 
 function isAsh(theme: ResolvedTheme, choice: number): boolean {
   return canvasBackgroundOf(theme, choice)?.id === 'ash'
@@ -68,9 +68,4 @@ export function canvasTheme(theme: ResolvedTheme, choice: number): ProjectTheme 
     look.emptyBead = ASH.emptyBead
   }
   return look
-}
-
-/** The technique word's color on the chosen background, where it isn't the theme's own `word` token. */
-export function canvasWordColor(theme: ResolvedTheme, choice: number): string | undefined {
-  return isAsh(theme, choice) ? ASH.word : undefined
 }

@@ -36,6 +36,7 @@ const emit = defineEmits<{
   'import-result': [id: string, text: string, tone: 'success' | 'danger']
   'export-all': []
   'saved-projects': []
+  'new-project': []
   'delete-all': []
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
@@ -84,7 +85,7 @@ const sheet = computed(() => context?.sheet.value ?? false)
   <div class="menu-panel" data-testid="menu-panel">
     <PanelSection :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the sub-view the app shell fills. -->
-      <PanelItem icon="plus" accent stays data-testid="menu-new-project" @select="context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
+      <PanelItem icon="plus" accent stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Import keeps the panel open until the file is read (its picker belongs to it), then the result is a toast and the panel goes. -->
       <div class="menu-panel__import" data-testid="menu-import">
         <ProjectImport toast-results :projects="projects" testid-prefix="menu-" @import="emit('import', $event)" @import-result="(id, text, tone) => emit('import-result', id, text, tone)" />
@@ -96,8 +97,9 @@ const sheet = computed(() => context?.sheet.value ?? false)
         :disabled="projects.length === 0"
         :name="actions.savedProjects.name(t)"
         :disabled-body="t.projects.noSavedProjectsMessage"
+        stays
         data-testid="menu-saved-projects"
-        @select="emit('saved-projects')"
+        @select="emit('saved-projects'); context?.openSub()"
       >
         {{ actions.savedProjects.name(t) }}
       </PanelItem>

@@ -6,7 +6,6 @@ import { sameFrame } from '../../domain/frame'
 import { inMargin, mayPlace } from '../../domain/margin'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
-import type { MirrorAxisCounts } from '../../domain/mirror'
 import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -33,7 +32,7 @@ const props = withDefaults(defineProps<{
   /** Where the viewport's top-left corner is, in displayed px from the bead at row 0, column 0 (see the Surface
    * view). */
   scroll: Scroll
-  /** Beads to show a hover preview on (ticket 23): the hovered bead and its live-mirror counterparts, or a whole
+  /** Beads to show a hover preview on (ticket 23): the hovered bead, or a whole
    * copied block under the cursor (ticket 31). */
   previewCells?: PreviewCell[]
   /** The color to preview, faintly, on beads that carry none of their own; null for a neutral outline when no
@@ -41,10 +40,6 @@ const props = withDefaults(defineProps<{
   previewColor?: string | null
   /** The rectangle the Select tool has marked out, drawn as a marquee over those beads (ticket 31). */
   selection?: Selection
-  /** Mirror's per-direction axis counts (ticket 44): axis lines are drawn whenever a direction's count is above 0. */
-  mirrorAxisCounts?: MirrorAxisCounts
-  /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded. */
-  dimmedCells?: GridPosition[]
   /** The keyboard's bead cursor (ticket 159), drawn only while the surface has keyboard focus. */
   cursor?: GridPosition
   /** What the Tour marks on the Project (ticket 80), drawn dashed over the beads. */
@@ -254,7 +249,7 @@ function sameLayout(a: Project, b: Project): boolean {
 const MOST_ROWS_WORTH_A_BAND = 40
 
 // Bands of rows an edit changed, to draw just those (rows within two apart share a band; neighbours are drawn anyway).
-// Empty when nothing changed; undefined when so much did (Undo, Fill, Mirror current) that drawing all again is
+// Empty when nothing changed; undefined when so much did (Undo, Fill) that drawing all again is
 // cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
   // The Frame's rows are not the Canvas's where it is woven otherwise (ticket 492): draw it all again.
@@ -575,8 +570,6 @@ function drawOverlay(): void {
       pointer: markerAt.value && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
-      mirrorAxisCounts: props.mirrorAxisCounts,
-      dimmedCells: props.dimmedCells,
       tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
@@ -608,8 +601,6 @@ watch(
     () => props.previewColor,
     markerAt,
     () => props.selection,
-    () => props.mirrorAxisCounts,
-    () => props.dimmedCells,
     () => props.cursor,
     () => props.tourMarks,
     () => props.showRulers,
@@ -905,7 +896,7 @@ function onPointerDown(event: PointerEvent): void {
   if (event.button === 0 || event.button === 2) {
     stroke = { button: event.button, from: pointInSurface(event), last: bead }
   }
-  // A press also lands where its live-mirror counterparts or the pasted block under the pointer go (the preview cells).
+  // A press also lands where the pasted block under the pointer goes (the preview cells).
   if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
     refusePress()
     if (refusesSelectionStart(bead)) return

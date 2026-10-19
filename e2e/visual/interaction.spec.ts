@@ -11,8 +11,7 @@ import { beadCentre, fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 
 // The pointer tools on the Drawing surface in a real browser: hover preview matches references, and paint, erase, Fill,
-// Row progress lock, Undo, Space-drag pan and touch strokes change only the right beads (ticket 174 hid Mirror's UI
-// pending redesign).
+// Row progress lock, Undo, Space-drag pan and touch strokes change only the right beads.
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
 

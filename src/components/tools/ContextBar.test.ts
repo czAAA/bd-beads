@@ -6,7 +6,7 @@ import { createProject, moveToRow, paintCells, withFrame } from '../../domain/pr
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
-const drawn = paintCells(noFrame, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+const drawn = paintCells(noFrame, [{ row: 0, column: 0 }], '#e63746')
 const selection = { top: 0, left: 0, rows: 2, columns: 2 }
 const arm = () => vi.advanceTimersByTimeAsync(350)
 

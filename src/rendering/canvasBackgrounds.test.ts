@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { PROJECT_THEMES, PRINT_THEME } from './beadLook'
-import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, canvasWordColor, shownChoice } from './canvasBackgrounds'
+import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, shownChoice } from './canvasBackgrounds'
 
 const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as {
   color: { tokens: { name: string; value: Record<'light' | 'dark', string> }[] }
@@ -65,9 +65,7 @@ describe('Canvas color backgrounds', () => {
   it('gives Ash its own greys, and no other background', () => {
     const ash = canvasTheme('dark', 6)
     expect(ash).toMatchObject({ canvas: '#2c2b29', ruler: '#a0a0a0', emptyBead: '#3d3b38', positionMark: '#3d3b38' })
-    expect(canvasWordColor('dark', 6)).toBe('#353432')
     expect(canvasTheme('dark', 5).rim).toBe(PROJECT_THEMES.dark.rim)
-    expect(canvasWordColor('dark', 5)).toBeUndefined()
   })
 
   it.each([

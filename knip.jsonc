@@ -17,5 +17,5 @@
     "duplicates": "off"
   }
   // Unused exported types are reported on purpose: a type nothing imports is a public name nothing needs, and the
-  // fix is one word (drop `export`). MirrorControls.vue needs no ignore: its test imports it, so knip counts it used.
+  // fix is one word (drop `export`).
 }

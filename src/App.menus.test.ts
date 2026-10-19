@@ -161,7 +161,6 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)

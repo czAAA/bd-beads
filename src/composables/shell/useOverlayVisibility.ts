@@ -1,11 +1,10 @@
 import { ref, watch, type Ref } from 'vue'
 import type { PhoneSheet } from './phoneSheet'
 
-// The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu, Project and Saved
-// Projects sheets. The Shortcuts-help boolean stays in the app shell: one boolean with no logic isn't
+// The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu and Project panels. The Shortcuts-help boolean stays in the app shell: one boolean with no logic isn't
 // worth extracting.
 export function useOverlayVisibility(deps: { selectProject: (id: string, opened?: () => void) => void; openPanel?: Ref<PhoneSheet | null> }) {
-  /** Which panel or bottom sheet is open (tickets 79, 295, 439, 510), or none: opening one closes the others. Tapping the strip button of the open sheet closes
+  /** Which panel is open (tickets 79, 295, 439, 510), or none: opening one closes the others. Tapping the strip button of the open sheet closes
    * it, same as pressing it again. */
   const openPanel = deps.openPanel ?? ref<PhoneSheet | null>(null)
 
@@ -25,12 +24,13 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
     openPanel.value = 'menu'
   }
 
-  /** Saved Projects on the phone tier: a separate non-modal sheet, opened from the Project sheet's Saved Projects
-   * icon. */
+  /** Whether Menu's sub-view is Saved Projects rather than New Project. Clears once the panel is gone or swapped. */
   const phoneSavedProjectsOpen = ref(false)
+  watch(openPanel, () => {
+    phoneSavedProjectsOpen.value = false
+  }, { flush: 'sync' })
 
-  /** Picking a Project from the phone's Saved Projects sheet opens it and puts both the sheet and the Project sheet
-   * under it away. */
+  /** Picking a Project from Menu's Saved Projects opens it and puts the panel away. */
   function onSelectProjectFromPhoneDrawer(id: string) {
     deps.selectProject(id, () => {
       phoneSavedProjectsOpen.value = false

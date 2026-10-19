@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { layerAt, type Layer } from '../../domain/layers'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
-import type { MirrorAxisCounts } from '../../domain/mirror'
 import { beadColorAt, type Project } from '../../domain/project'
 import {
   selectAllSelection,
@@ -27,13 +26,11 @@ import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
 
 // The Select tool's whole gesture (ticket 63): the Selection, in-session clipboard, the in-progress press (click vs
-// drag) and the live paste preview. Like useMirrorState (ticket 62) it never reads the active tool (see
+// drag) and the live paste preview. It never reads the active tool (see
 // leaveSelectTool); Escape/right-click precedence stays in the shell, which calls cancel() last.
 export function useSelectionGesture(
   currentProject: () => Project | undefined,
   edit: EditFn,
-  mirrorAxisCounts: () => MirrorAxisCounts,
-  mirrorCopyMode: () => boolean,
   /** Told how many beads a Paste clipped to the Frame (ticket 491). */
   onClipped: (count: number) => void,
 ) {
@@ -133,10 +130,8 @@ export function useSelectionGesture(
 
   /** One Paste as one Edit; a Message says how many beads the Frame's edge clipped (ticket 491). */
   function stamp(block: CopiedBlock, at: GridPosition) {
-    const axes = mirrorAxisCounts()
-    const copyMode = mirrorCopyMode()
-    const clipped = pasteClippedCount(currentProject()!, block, at, axes, copyMode)
-    const outcome = edit('drawing', (current) => pasteOnLayer(current, block, at, axes, copyMode))
+    const clipped = pasteClippedCount(currentProject()!, block, at)
+    const outcome = edit('drawing', (current) => pasteOnLayer(current, block, at))
     if (clipped > 0 && outcome.kind === 'applied') onClipped(clipped)
   }
 
@@ -313,7 +308,7 @@ export function useSelectionGesture(
   function fill(color: string) {
     const sel = selection.value
     if (!currentProject() || !sel) return
-    edit('drawing', (current) => paintLayerSelection(current, sel, color, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => paintLayerSelection(current, sel, color))
   }
 
   // Ctrl/Cmd+V (ticket 92): pastes the clipboard block at `cell` as a Select click does (see endPress), but under any
@@ -332,7 +327,7 @@ export function useSelectionGesture(
   }
 
   // Del with Select active and a Selection (ticket 90): clears the selected cells (holes) as one undo step honouring
-  // the Row progress lock and Mirror, via paintCells with a null color as a Paint erase does. The Selection's own
+  // the Row progress lock, via paintCells with a null color as a Paint erase does. The Selection's own
   // rectangle is left alone.
   function deleteSelection() {
     const project = currentProject()
@@ -341,14 +336,14 @@ export function useSelectionGesture(
       return
     }
 
-    edit('drawing', (current) => paintLayerSelection(current, sel, null, mirrorAxisCounts(), mirrorCopyMode()))
+    edit('drawing', (current) => paintLayerSelection(current, sel, null))
   }
 
-  // The block Paste would stamp under the cursor, Mirror-projected (tickets 31/50): the shell's hover preview under
+  // The block Paste would stamp under the cursor (ticket 31): the shell's hover preview under
   // Select; empty with no active (undismissed) projection, since a click would then put nothing down.
   function pastePreviewCells(project: Project, hovered: GridPosition): PreviewCell[] {
     return pasteProjectionActive.value
-      ? pastedCellsOnLayer(project, copiedBlock.value!, hovered, mirrorAxisCounts(), mirrorCopyMode())
+      ? pastedCellsOnLayer(project, copiedBlock.value!, hovered)
       : []
   }
 

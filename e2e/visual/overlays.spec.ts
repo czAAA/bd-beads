@@ -9,7 +9,7 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFEREN
 import { SCENARIOS } from './scenarios'
 
 // Overlays that come with a tool vs the references: Selection marquee and paste preview, at 100% and 300% upright and
-// 100% rotated (ticket 174 hid Mirror's overlays with its UI). Scenarios (scenarios.ts) drive the app by its controls
+// 100% rotated. Scenarios (scenarios.ts) drive the app by its controls
 // and pointer coordinates. Hover, Row progress and the plain look are in interaction.spec.ts and look.spec.ts.
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const COVERED = /selection|paste-preview/

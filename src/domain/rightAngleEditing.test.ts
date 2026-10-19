@@ -1,9 +1,9 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { colorAt, forEachBead, withColors, type BeadMap } from './canvas'
-import { createProject, fillArea, mirrorCurrent, mirroredCells, weaveOf, type Project } from './project'
+import { createProject, fillArea, weaveOf, type Project } from './project'
 import { rotateFrame, rotateSelection } from './rotate'
-import { copySelection, mirroredPastedCells, movedSelection, snapSelectionToUnits, type Selection } from './selection'
+import { copySelection, stampedCells, movedSelection, snapSelectionToUnits, type Selection } from './selection'
 
 const RED = '#e63746'
 const BLUE = '#2a5bd7'
@@ -52,28 +52,6 @@ describe('Rotate in Right-angle weave (ticket 483)', () => {
   })
 })
 
-describe('Mirror in Right-angle weave (ticket 483)', () => {
-  const framed = woven
-
-  it('folds a bead among beads that lie alike, so a flip keeps each lying as it does', () => {
-    const across = { columns: 1, rows: 0 }
-    expect(mirroredCells(framed, { row: 0, column: 0 }, across)).toEqual([{ row: 0, column: 0 }, { row: 0, column: 2 }])
-    expect(mirroredCells(framed, { row: 1, column: 0 }, across)).toEqual([{ row: 1, column: 0 }, { row: 1, column: 3 }])
-    const down = { columns: 0, rows: 1 }
-    expect(mirroredCells(framed, { row: 0, column: 1 }, down)).toEqual([{ row: 0, column: 1 }, { row: 4, column: 1 }])
-    expect(mirroredCells(framed, { row: 1, column: 2 }, down)).toEqual([{ row: 1, column: 2 }, { row: 3, column: 2 }])
-  })
-
-  it('has no counterpart for the empty end of a line of horizontal beads', () => {
-    expect(mirroredCells(framed, { row: 0, column: 3 }, { columns: 1, rows: 1 })).toEqual([{ row: 0, column: 3 }])
-  })
-
-  it('"Mirror current" copies a strip onto the others in the same fold', () => {
-    const synced = mirrorCurrent(paint(framed, [[0, 0, RED], [1, 0, BLUE]]), 'columns', 1, false)
-    expect(found(synced.beads)).toEqual(['0,0:' + RED, '0,2:' + RED, '1,0:' + BLUE, '1,3:' + BLUE])
-  })
-})
-
 describe('Selection and Paste in Right-angle weave (ticket 483)', () => {
   it('grows a Selection to whole Units: from a line of horizontal beads to one, a Unit at least', () => {
     expect(snapSelectionToUnits(weave, { top: 1, left: 1, rows: 1, columns: 1 })).toEqual({ top: 0, left: 1, rows: 3, columns: 2 })
@@ -99,16 +77,10 @@ describe('Selection and Paste in Right-angle weave (ticket 483)', () => {
     const copied = copySelection(paint(woven, [[1, 1, RED], [2, 1, BLUE]]), { top: 0, left: 0, rows: 5, columns: 4 })!
     expect(copied.anchor).toEqual({ row: 1, column: 0 })
 
-    const cells = mirroredPastedCells(woven, copied, { row: 7, column: 5 }, { columns: 0, rows: 0 })
+    const cells = stampedCells(woven, copied, { row: 7, column: 5 })
     expect(cells).toEqual([{ row: 7, column: 5, color: RED }, { row: 8, column: 5, color: BLUE }])
     // Aimed one row off, it still lands on a vertical bead's line.
-    expect(mirroredPastedCells(woven, copied, { row: 8, column: 5 }, { columns: 0, rows: 0 })[0]).toMatchObject({ row: 7 })
-  })
-
-  it('pastes Mirror copies among beads that lie alike', () => {
-    const copied = copySelection(paint(woven, [[0, 0, RED]]), { top: 0, left: 0, rows: 5, columns: 4 })!
-    const cells = mirroredPastedCells(woven, copied, { row: 0, column: 0 }, { columns: 1, rows: 0 })
-    expect(cells).toEqual([{ row: 0, column: 0, color: RED }, { row: 0, column: 2, color: RED }])
+    expect(stampedCells(woven, copied, { row: 8, column: 5 })[0]).toMatchObject({ row: 7 })
   })
 })
 

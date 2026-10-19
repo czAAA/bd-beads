@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import { editHarness } from '../../testUtils/editHarness'
 import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { NO_MIRROR_AXES, type MirrorAxisCounts } from '../../domain/mirror'
 import { createProject, frameGrid, withFrame, type Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 
@@ -15,20 +14,15 @@ function makeProject(): Project {
 }
 
 function paintedProject(): Project {
-  return paintAt(makeProject(), [{ row: 0, column: 0 }], RED, NO_MIRROR_AXES)
+  return paintAt(makeProject(), [{ row: 0, column: 0 }], RED)
 }
 
-function setup(
-  project: Project | null = makeProject(),
-  { axes = NO_MIRROR_AXES, copyMode = false }: { axes?: MirrorAxisCounts; copyMode?: boolean } = {},
-) {
+function setup(project: Project | null = makeProject()) {
   const clipped: number[] = []
   const harness = editHarness(project ?? undefined)
   const gesture = useSelectionGesture(
     harness.currentProject,
     harness.edit,
-    () => axes,
-    () => copyMode,
     (count) => clipped.push(count),
   )
   /** Counts the Edits that landed on the Project. */
@@ -263,18 +257,6 @@ describe('useSelectionGesture', () => {
 
       expect(commitGridChange).toHaveBeenCalledTimes(2)
     })
-
-    it('stamps every Mirror copy of the block as one commit, using the supplied axis counts and copy mode', () => {
-      const project = paintedProject()
-      const { gesture, commitGridChange, harness } = setup(project, { axes: { columns: 1, rows: 0 }, copyMode: false })
-      copyTopLeft(gesture)
-
-      gesture.beginPress(0, 0)
-      gesture.endPress()
-
-      expect(commitGridChange).toHaveBeenCalledTimes(1)
-      expect(frameGrid(harness.project)[0]!.map((cell: { color: string | null }) => cell.color)).toEqual([RED, null, null, RED])
-    })
   })
 
   describe('Cut and Fill (ticket 415)', () => {
@@ -323,22 +305,6 @@ describe('useSelectionGesture', () => {
       const { gesture } = setup(project)
 
       expect(gesture.pastePreviewCells(project, { row: 0, column: 0 })).toEqual([])
-    })
-
-    it('shows every Mirror copy, honouring copy mode', () => {
-      const project = paintedProject()
-      const { gesture } = setup(project, { axes: { columns: 1, rows: 0 }, copyMode: true })
-      copyTopLeft(gesture)
-
-      const cells = gesture.pastePreviewCells(project, { row: 0, column: 0 })
-
-      expect(cells).toEqual(
-        expect.arrayContaining([
-          { row: 0, column: 0, color: RED },
-          { row: 0, column: 2, color: RED },
-        ]),
-      )
-      expect(cells).toHaveLength(2)
     })
   })
 
@@ -441,7 +407,7 @@ describe('useSelectionGesture', () => {
 
   describe('deleteSelection', () => {
     it('clears the selected cells as one commit, leaving the Selection in place', () => {
-      const project = paintAt(makeProject(), [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
+      const project = paintAt(makeProject(), [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED)
       const { gesture, commitGridChange, harness } = setup(project)
       gesture.beginPress(0, 0)
       gesture.extendPress(1, 1)
@@ -495,7 +461,7 @@ describe('useSelectionGesture', () => {
     /** Two Pieces: a pair at the top left and a lone bead at (3, 3), on a 4 x 4 loom. */
     function twoPieces() {
       let project = makeProject()
-      project = paintAt(project, [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED, NO_MIRROR_AXES)
+      project = paintAt(project, [{ row: 0, column: 0 }, { row: 1, column: 1 }, { row: 3, column: 3 }], RED)
       return setup(project)
     }
 
@@ -547,7 +513,7 @@ describe('useSelectionGesture', () => {
     })
 
     it('Select all on the Canvas with no Frame is on the Canvas layer (ticket 491)', () => {
-      const { gesture } = setup(paintAt(withFrame(makeProject(), undefined), [{ row: 0, column: 0 }], RED, NO_MIRROR_AXES))
+      const { gesture } = setup(paintAt(withFrame(makeProject(), undefined), [{ row: 0, column: 0 }], RED))
       gesture.selectAll()
       expect(gesture.selection.value).toMatchObject({ layer: 'canvas' })
     })
@@ -669,7 +635,7 @@ describe('useSelectionGesture', () => {
     it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue', () => {
       const inFrame = [{ row: 11, column: 11 }, { row: 11, column: 12 }]
       const onCanvas = [{ row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
-      const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame), inFrame, RED, NO_MIRROR_AXES), onCanvas, RED, NO_MIRROR_AXES))
+      const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame), inFrame, RED), onCanvas, RED))
       gesture.tapPiece(11, 11)
       expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 1, columns: 2 })
       gesture.tapPiece(2, 2)
