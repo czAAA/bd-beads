@@ -3,7 +3,7 @@ import type { FrameChangeRefusal, FrameChangeResult } from '../../domain/changeF
 import { keepAllowedEdits } from '../../domain/margin'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { sameFrame } from '../../domain/frame'
-import { restoreSnapshot, snapshotOf, type Project, type UndoEntry } from '../../domain/project'
+import { restoreSnapshot, sameBeads, snapshotOf, type Project, type UndoEntry } from '../../domain/project'
 import type { ReplaceOptions } from './useProjectLibrary'
 
 // The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Mirror, Rotate, Rotate Frame: lock
@@ -114,7 +114,7 @@ export function useEdit(deps: EditDeps) {
    * stroke was running. */
   function endStroke() {
     const project = deps.currentProject()
-    if (strokeBaseline && project && project.beads !== strokeBaseline.beads) {
+    if (strokeBaseline && project && !sameBeads(project, strokeBaseline)) {
       deps.recordHistory(strokeBaseline)
     }
     strokeBaseline = undefined
@@ -127,7 +127,7 @@ export function useEdit(deps: EditDeps) {
     const baseline = strokeBaseline
     const project = deps.currentProject()
     strokeBaseline = undefined
-    if (baseline && project && project.beads !== baseline.beads) {
+    if (baseline && project && !sameBeads(project, baseline)) {
       restore(baseline)
     }
     deps.flushPendingSave()

@@ -1,4 +1,4 @@
-import { normalizeProject, type GridProject, type Project } from '../domain/project'
+import { normalizeProject, type StoredProject } from '../domain/project'
 import { looksLikeProject, type ProjectFileContents } from '../domain/projectFile'
 
 const LEGACY_KINDS = ['bd-beads/pattern', 'bd-beads/library']
@@ -9,7 +9,7 @@ const LEGACY_VERSIONS = [1, 2, 3]
 interface LegacyProjectFile {
   kind: string
   version: number
-  patterns: (Project | GridProject)[]
+  patterns: StoredProject[]
 }
 
 // Reads a plain-JSON Project file as before ADR 0048 (`bd-beads/pattern`, `bd-beads/library`, key `patterns`); versions

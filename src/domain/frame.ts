@@ -1,7 +1,8 @@
-import { beadBounds, forEachBead, type BeadMap, type Frame } from './canvas'
-import { type GridPosition } from './grid'
+import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Frame } from './canvas'
+import type { GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
-import { inMargin } from './margin'
+import { withMargin } from './margin'
+import type { Project } from './project'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
 // drawn, on whole beads. Where rows alternate a Frame starts on a multiple of the shift's cycle (a pair of rows, or 2N
@@ -91,26 +92,17 @@ export function frameResizedAround(weave: Weave, frame: Frame, columns: number, 
   return { row: frame.row - top, column: frame.column - left, rows: tall, columns: wide }
 }
 
-/** The Frame that wraps every bead drawn (Fit to drawing), or undefined for an empty canvas. Beads the `current`
- * Frame's margin covers are not drawn, so they are not wrapped. */
-export function fitToDrawing(weave: Weave, beads: BeadMap, current?: Frame): Frame | undefined {
-  const bounds = beadBounds(current ? withoutMargin(beads, current) : beads)
+/** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
+ * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
+export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' | 'beads' | 'frame'>): Frame | undefined {
+  const frame = project.frame
+  const shown = frame ? beadsOver(beadsWithout(project.beads, withMargin(frame)), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
+  const bounds = beadBounds(shown)
   if (!bounds) {
     return undefined
   }
-  const top = snapRow(weave, bounds.row)
+  const top = snapRow(project, bounds.row)
   return { row: top, column: bounds.column, rows: bounds.row + bounds.rows - top, columns: bounds.columns }
-}
-
-function withoutMargin(beads: BeadMap, frame: Frame): BeadMap {
-  const shown: BeadMap = {}
-  forEachBead(beads, (row, column, color) => {
-    if (!inMargin(frame, { row, column })) {
-      shown[row] ??= {}
-      shown[row][column] = color
-    }
-  })
-  return shown
 }
 
 export function sameFrame(a: Frame | undefined, b: Frame | undefined): boolean {

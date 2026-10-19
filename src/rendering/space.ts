@@ -1,3 +1,4 @@
+import { colorAt } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { projectDimensions, projectFrame } from '../domain/project'
 import { type DrawnProject } from './projectRenderer'
@@ -33,6 +34,17 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
     toAbsolute: open ? { row: 0, column: 0 } : { row: frame.row, column: frame.column },
     extent: open ? OPEN_EXTENT : projectExtentPx(project.technique, columns, rows),
   }
+}
+
+/** The color of the bead drawn at a position of a space (ADR 0066): the Frame's own beads inside the Frame, which are
+ * counted from its first row and column whichever space it is drawn in, else the Canvas's. A hex, or null where
+ * nothing is painted. */
+export function beadInSpace(project: Pick<DrawnProject, 'beads' | 'frame'>, space: Space, row: number, column: number): string | null {
+  const frame = project.frame
+  const inside = row >= space.origin.row && row < space.origin.row + space.rows && column >= space.origin.column && column < space.origin.column + space.columns
+  return frame && inside
+    ? colorAt(frame.beads, row - space.origin.row, column - space.origin.column)
+    : colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column)
 }
 
 /** Whether a position can be drawn on: anywhere on the Canvas, inside the Project otherwise. */

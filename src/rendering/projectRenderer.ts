@@ -1,6 +1,6 @@
 import type { GridPosition, Rotation } from '../domain/grid'
 import { beadRoundness, gridWidth, type Technique, type Weave } from '../domain/weave'
-import { colorAt, frameContains } from '../domain/canvas'
+import { frameContains } from '../domain/canvas'
 import { MARGIN, withMargin } from '../domain/margin'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn, type Project } from '../domain/project'
 import {
@@ -14,7 +14,7 @@ import {
   type ProjectTheme,
 } from './beadLook'
 import { positionMarkPattern, type PositionMarkStyle } from './positionMarks'
-import type { Space } from './space'
+import { beadInSpace, type Space } from './space'
 import {
   CELL_SIZE_PX,
   gridToRegion,
@@ -275,7 +275,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       y: rowTopPx(technique, row),
       size: CELL_SIZE_PX,
       cornerRadius,
-      color: lightenCurrent(color ?? colorAt(beads, position.row, position.column), position),
+      color: lightenCurrent(color ?? beadInSpace(project, space, row, column), position),
       dimmed: rowMarks && !showFinished && isInFinishedRow(project, position),
       deviceScale: zoom * pixelRatio,
       theme: look,

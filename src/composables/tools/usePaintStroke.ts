@@ -1,4 +1,6 @@
 import { ref } from 'vue'
+import { frameContains } from '../../domain/canvas'
+import { layerAt, onLayer, type Layer } from '../../domain/layers'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { fillArea, paintCells, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
@@ -21,9 +23,12 @@ export interface PaintStrokeDeps {
 export function usePaintStroke(deps: PaintStrokeDeps) {
   /** 'paint'/'erase' while a stroke is in progress, else null. */
   const strokeMode = ref<'paint' | 'erase' | null>(null)
+  /** The layer the stroke began on, which it stays on however far the pointer goes (ADR 0066). */
+  let strokeLayer: Layer = 'canvas'
 
-  function beginStroke(mode: 'paint' | 'erase') {
+  function beginStroke(mode: 'paint' | 'erase', layer: Layer) {
     strokeMode.value = mode
+    strokeLayer = layer
     deps.edit.beginStroke()
   }
 
@@ -51,7 +56,13 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   // woven rows (ticket 33). The one caller that defers its save (ticket 55): a stroke touches hundreds of cells a
   // second. The cell lands in the library at once; endStroke makes the stroke one write.
   function paintStrokeCell(row: number, column: number, color: string | null) {
-    deps.edit.strokeStep((project) => paintCells(project, [{ row, column }], color, deps.mirrorAxisCounts(), deps.mirrorCopyMode()))
+    deps.edit.strokeStep((project) =>
+      onLayer(project, strokeLayer, (view, local) => {
+        const at = local({ row, column })
+        // The Frame holds only its own cells: a stroke that began in it leaves nothing where the pointer goes outside.
+        return view.frame && !frameContains(view.frame, at) ? view : paintCells(view, [at], color, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
+      }),
+    )
   }
 
   /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke, live-mirrored per
@@ -62,12 +73,16 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       return
     }
 
+    const layer = layerAt(project, { row, column })
     if (deps.activeTool() === 'fill') {
-      deps.edit.edit('drawing', (current) => fillArea(current, row, column, color))
+      deps.edit.edit('drawing', (current) => onLayer(current, layer, (view, local) => {
+        const at = local({ row, column })
+        return fillArea(view, at.row, at.column, color)
+      }))
       return
     }
 
-    beginStroke(mode)
+    beginStroke(mode, layer)
     paintStrokeCell(row, column, color)
   }
 

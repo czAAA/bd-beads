@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { PALETTE } from './palette'
 import { createProject, frameGrid, normalizeProject, withFrameGrid, type Grid, type Project } from './project'
-import { decodeProject, encodeProject } from './projectEncoding'
+import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -21,9 +21,14 @@ function paint(project: Project, color: (row: number, column: number) => string 
   return withFrameGrid(project, grid)
 }
 
-/** What a Project's beads look like stored: the color table plus each painted row's runs (see ADR 0009, ADR 0026). */
+/** What the Canvas's beads look like stored: the color table plus each painted row's runs (see ADR 0009, ADR 0026). */
 function encodedCells(project: Project) {
   return encodeProject(project).encodedBeads
+}
+
+/** The same for the Frame's own beads (ADR 0066), which `paint` draws. */
+function encodedFrameCells(project: Project) {
+  return encodeProject(project).frame!.encodedBeads
 }
 
 function roundTrip(project: Project): Project {
@@ -36,41 +41,42 @@ describe('the encoded beads', () => {
       (row + column) % 2 === 0 ? '#ff0000' : '#00ff00',
     )
 
-    expect(encodedCells(project).colors).toEqual(['#ff0000', '#00ff00'])
+    expect(encodedFrameCells(project).colors).toEqual(['#ff0000', '#00ff00'])
   })
 
   it('keep empty positions out of the color table', () => {
     const project = paint(makeProject(3, 1), (_row, column) => (column === 1 ? '#ff0000' : null))
 
-    expect(encodedCells(project).colors).toEqual(['#ff0000'])
+    expect(encodedFrameCells(project).colors).toEqual(['#ff0000'])
   })
 
   it('collapse a stretch of one color into a single run', () => {
     const project = paint(makeProject(40, 1), () => '#ff0000')
 
-    expect(encodedCells(project).rows).toEqual({ 0: '0:1x40' })
+    expect(encodedFrameCells(project).rows).toEqual({ 0: '0:1x40' })
   })
 
   it('write nothing at all for an empty canvas', () => {
     expect(encodedCells(makeProject(4, 3))).toEqual({ colors: [], rows: {} })
+    expect(encodedFrameCells(makeProject(4, 3))).toEqual({ colors: [], rows: {} })
   })
 
   it('give each painted row its own run list, starting at its first bead', () => {
     const project = paint(makeProject(2, 3), () => '#ff0000')
 
-    expect(encodedCells(project).rows).toEqual({ 0: '0:1x2', 1: '0:1x2', 2: '0:1x2' })
+    expect(encodedFrameCells(project).rows).toEqual({ 0: '0:1x2', 1: '0:1x2', 2: '0:1x2' })
   })
 
   it('spend a couple of characters on a bead nothing runs into', () => {
     const project = paint(makeProject(3, 1), (_row, column) => `#00000${column}`)
 
-    expect(encodedCells(project).rows).toEqual({ 0: '0:1,2,3' })
+    expect(encodedFrameCells(project).rows).toEqual({ 0: '0:1,2,3' })
   })
 
   it('write a gap between two beads of a row as a run of empties', () => {
     const project = paint(makeProject(6, 1), (_row, column) => (column === 1 || column === 4 ? '#ff0000' : null))
 
-    expect(encodedCells(project).rows).toEqual({ 0: '1:1,0x2,1' })
+    expect(encodedFrameCells(project).rows).toEqual({ 0: '1:1,0x2,1' })
   })
 
   it('cost one row for a bead far from the others, however far, negative positions included', () => {
@@ -156,7 +162,7 @@ describe('encodeProject / decodeProject', () => {
     // The table belongs to the encoded cells, not to the Project: nothing above the storage boundary should be able to
     // mistake it for a Project field (see ADR 0009).
     expect(Object.keys(encoded)).not.toContain('colors')
-    expect(encoded.encodedBeads.colors).toEqual(['#ff0000'])
+    expect(encoded.frame!.encodedBeads.colors).toEqual(['#ff0000'])
   })
 
   it('replaces the beads rather than storing them twice', () => {
@@ -165,22 +171,47 @@ describe('encodeProject / decodeProject', () => {
     expect(Object.keys(encoded)).not.toContain('beads')
   })
 
-  it('keeps the Frame, with beads outside it, through the round trip', () => {
+  it('keeps the Frame, with its own beads and name, and the Canvas beads beside it, through the round trip', () => {
+    const base = paint(makeProject(3, 3), () => '#ff0000')
     const project = {
-      ...paint(makeProject(3, 3), () => '#ff0000'),
-      frame: { row: 1, column: 1, columns: 2, rows: 2 },
+      ...base,
+      beads: { 9: { 9: '#00ff00' } },
+      frame: { ...base.frame!, row: 1, column: 1, name: 'Cherry' },
     }
 
     expect(roundTrip(project)).toEqual(project)
   })
 
-  it('still reads the grid-shaped cells an earlier build stored, as beads with a Frame the size of the grid', () => {
+  it('writes the Frame\'s beads inside the Frame, and the Canvas\'s beside it', () => {
+    const encoded = encodeProject({ ...paint(makeProject(2, 1), () => '#ff0000'), beads: { 5: { 5: '#00ff00' } } })
+
+    expect(encoded.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
+    expect(encoded.frame).toEqual({ row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
+  })
+
+  it('still reads the grid-shaped cells an earlier build stored, as beads in a Frame the size of the grid', () => {
     const { beads: _beads, frame: _frame, ...base } = makeProject(3, 2)
     const stored = { ...base, columns: 3, rows: 2, cells: { colors: ['#ff0000', '#00ff00'], runs: '1,0x3,2,0' } }
 
-    const read = normalizeProject(decodeProject(stored))
+    const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(read.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2 })
-    expect(read.beads).toEqual({ 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } })
+    expect(read.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(read.beads).toEqual({})
+  })
+
+  it('still reads what version 3 stored: the beads inside the Frame move into it, the covered ones become Canvas beads', () => {
+    const { beads: _beads, frame: _frame, ...base } = makeProject(2, 2)
+    const stored = {
+      ...base,
+      frame: { row: 10, column: 10, rows: 2, columns: 2 },
+      encodedBeads: { colors: ['#ff0000', '#00ff00'], rows: { 10: '10:1,0,2', 40: '40:2' } },
+      encodedCoveredBeads: { colors: ['#0000ff'], rows: { 11: '11:1' } },
+    }
+
+    const read = normalizeProject(decodeEarlierProject(stored))
+
+    expect(read.frame).toEqual({ row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
+    expect(read.beads).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
+    expect(read).not.toHaveProperty('coveredBeads')
   })
 })

@@ -9,9 +9,16 @@ import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
 
 /** A Project of this many beads, with any of its fields changed. */
+/** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
 function projectOf(columns: number, rows: number, extra: Partial<Project> = {}, technique: Technique = 'loom'): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
-  return { ...project, ...extra }
+  const { beads, ...rest } = extra
+  // Left out the Frame is the usual one; `frame: undefined` is a Canvas with none, and its beads are the Canvas's.
+  if ('frame' in extra && extra.frame === undefined) {
+    const { frame: _frame, ...open } = project
+    return { ...open, ...rest, beads: beads ?? {} }
+  }
+  return { ...project, ...rest, frame: { ...project.frame!, ...rest.frame, beads: beads ?? {} } }
 }
 
 /** How big the drawing area is on the screen. jsdom does no layout, so it is said here. */
@@ -721,7 +728,7 @@ describe('ProjectSurface', () => {
       wrapper.emitted() as Record<string, unknown[][]>
 
     describe('over the Frame margin (ticket 276)', () => {
-      const framed = () => projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4 } })
+      const framed = () => projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
 
       it('shows not-allowed over the margin for a tool that cannot place beads there, and the crosshair elsewhere', async () => {
         const project = framed()
@@ -999,7 +1006,7 @@ describe('ProjectSurface', () => {
     })
 
     it('goes when the canvas moves a refused margin under a still pointer', async () => {
-      const project = projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4 } })
+      const project = projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
       const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', blocksMargin: true })
       const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
       const point = { clientX: at.x, clientY: at.y }
@@ -1134,7 +1141,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
 })
 
 describe('ProjectSurface with a Frame', () => {
-  const framed = () => projectOf(8, 6, { frame: { row: 0, column: 0, columns: 8, rows: 6 } })
+  const framed = () => projectOf(8, 6, { frame: { row: 0, column: 0, columns: 8, rows: 6, beads: {} } })
 
   /** A press at a point of the viewport, then moves and a release. */
   async function gesture(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], from: [number, number], to: [number, number]) {

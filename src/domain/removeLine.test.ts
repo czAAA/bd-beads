@@ -5,12 +5,11 @@ import { createProject, moveToRow, type Project, type Technique } from './projec
 import { removeLineRefusal, removeSelectedLine as removeLineChange, selectedAreaLine } from './removeLine'
 import type { Selection } from './selection'
 
-/** A Project whose Frame sits at (10, 20) and whose beads are numbered #00 0N0 by position, so a shift shows. */
+/** A Project whose Frame sits at (10, 20) and whose own beads are numbered #00 0N0 by position, so a shift shows. */
 function numbered(columns: number, rows: number, technique: Technique = 'loom'): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
-  const frame = { row: 10, column: 20, columns, rows }
   const colors = Array.from({ length: rows }, (_row, r) => Array.from({ length: columns }, (_cell, c) => `#0${r}0${c}00`))
-  return { ...base, frame, beads: beadsFromColors(colors, frame) }
+  return { ...base, frame: { row: 10, column: 20, columns, rows, beads: beadsFromColors(colors) } }
 }
 
 const rowOf = (project: Project, index: number): Selection => ({ top: project.frame!.row + index, left: project.frame!.column, rows: 1, columns: project.frame!.columns })
@@ -41,24 +40,24 @@ describe('removeSelectedLine', () => {
     const before = numbered(3, 4)
     const removed = removeSelectedLine(before, rowOf(before, 1))
 
-    expect(removed.frame).toEqual({ row: 10, column: 20, rows: 3, columns: 3 })
-    expect(colorAt(removed.beads, 10, 20)).toBe('#000000')
-    expect(colorAt(removed.beads, 11, 20)).toBe('#020000')
-    expect(colorAt(removed.beads, 12, 22)).toBe('#030200')
-    expect(colorAt(removed.beads, 13, 20)).toBeNull()
+    expect(removed.frame).toMatchObject({ row: 10, column: 20, rows: 3, columns: 3 })
+    expect(colorAt(removed.frame!.beads, 0, 0)).toBe('#000000')
+    expect(colorAt(removed.frame!.beads, 1, 0)).toBe('#020000')
+    expect(colorAt(removed.frame!.beads, 2, 2)).toBe('#030200')
+    expect(colorAt(removed.frame!.beads, 3, 0)).toBeNull()
   })
 
   it('removes the selected column and shifts the columns after it left', () => {
     const before = numbered(4, 3)
     const removed = removeSelectedLine(before, columnOf(before, 2))
 
-    expect(removed.frame).toEqual({ row: 10, column: 20, rows: 3, columns: 3 })
-    expect(colorAt(removed.beads, 10, 21)).toBe('#000100')
-    expect(colorAt(removed.beads, 10, 22)).toBe('#000300')
-    expect(colorAt(removed.beads, 10, 23)).toBeNull()
+    expect(removed.frame).toMatchObject({ row: 10, column: 20, rows: 3, columns: 3 })
+    expect(colorAt(removed.frame!.beads, 0, 1)).toBe('#000100')
+    expect(colorAt(removed.frame!.beads, 0, 2)).toBe('#000300')
+    expect(colorAt(removed.frame!.beads, 0, 3)).toBeNull()
   })
 
-  it('leaves every bead outside the Frame where it is', () => {
+  it('leaves every bead of the Canvas where it is', () => {
     const before = numbered(3, 4)
     const outside = withColors(before.beads, [
       { row: 12, column: 40, color: '#111111' },

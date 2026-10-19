@@ -3,9 +3,10 @@ import { mirrorBlockPlacements, type MirrorAxisCounts } from './mirror'
 import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
+import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type Layer } from './layers'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
-import { restoreBeads, type Project } from './project'
+import { paintCells, restoreBeads, type Project } from './project'
 
 /** A rectangular area of a Project's grid, marked out with the Select tool (CONTEXT.md's Selection): top-left corner
  * plus size in cells. */
@@ -137,7 +138,7 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
 
 /** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
  * the first bead. */
-export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {
+function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {
   const drawn: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
     for (let column = selection.left; column < selection.left + selection.columns; column++) {
@@ -229,15 +230,85 @@ export function mirroredPastedCells(
 
 /** The Mirror-aware paste stamp (ticket 50): `block` at `at` plus every Mirror copy as one Project edit (one undo
  * step). */
-export function mirroredPasteBlock(
+function mirroredPasteBlock(
   project: Project,
   block: CopiedBlock,
   at: GridPosition,
   axes: MirrorAxisCounts,
   copyMode = false,
 ): Project {
-  const cells = mirroredPastedCells(project.frame, block, at, axes, copyMode)
+  const frame = project.frame
+  // A Frame holds only its own cells: what a stamp puts outside it is dropped (ADR 0066).
+  const cells = mirroredPastedCells(frame, block, at, axes, copyMode).filter((cell) => !frame || frameContains(frame, cell))
   const changes: BeadChange[] = cells.map(({ row, column, color }) => ({ row, column, color }))
   const beads = withColors(project.beads, changes)
   return beads === project.beads ? project : restoreBeads(project, beads)
+}
+
+/** The layer a Selection acts on (ADR 0066): the one its top-left bead is on. A Selection that begins in the Frame is the
+ * Frame's; any other is the Canvas's. */
+export function selectionLayer(project: Pick<Project, 'frame'>, selection: Selection): Layer {
+  return layerAt(project, { row: selection.top, column: selection.left })
+}
+
+/** The Selection counted in a layer's own rows and columns. */
+export function selectionInLayer(project: Pick<Project, 'frame'>, layer: Layer, selection: Selection): Selection {
+  const { row, column } = positionInLayer(project, layer, { row: selection.top, column: selection.left })
+  return { ...selection, top: row, left: column }
+}
+
+/** Snapshots the drawn beads of a Selection on its layer (Copy). */
+export function copyLayerSelection(project: Project, selection: Selection): CopiedBlock | undefined {
+  const layer = selectionLayer(project, selection)
+  return copySelection(layerView(project, layer), selectionInLayer(project, layer, selection))
+}
+
+/** Every position in a Selection on its layer: the Selection's rectangle, cut to the Frame when it is the Frame's. */
+function selectionCells(view: Project, selection: Selection): GridPosition[] {
+  const cells: GridPosition[] = []
+  for (let row = selection.top; row < selection.top + selection.rows; row++) {
+    for (let column = selection.left; column < selection.left + selection.columns; column++) {
+      if (!view.frame || frameContains(view.frame, { row, column })) {
+        cells.push({ row, column })
+      }
+    }
+  }
+  return cells
+}
+
+/** Every position of a Selection takes `color` (empty ones too; null clears them), live-mirrored on the Frame, on the
+ * Selection's layer: Fill (Selection) and Clear selection. */
+export function paintLayerSelection(project: Project, selection: Selection, color: string | null, axes: MirrorAxisCounts, copyMode = false): Project {
+  const layer = selectionLayer(project, selection)
+  const local = selectionInLayer(project, layer, selection)
+  return onLayer(project, layer, (view) => paintCells(view, selectionCells(view, local), color, axes, copyMode))
+}
+
+/** Paste on the layer the pointer is at: the block at `at`, with Mirror's copies on the Frame, cut to the Frame when it
+ * lands in it. */
+export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosition, axes: MirrorAxisCounts, copyMode = false): Project {
+  const layer = layerAt(project, at)
+  return onLayer(project, layer, (view, local) => mirroredPasteBlock(view, block, local(at), axes, copyMode))
+}
+
+/** The Selection a tap with the Piece tool makes at a position, on the layer the tap is on (ticket 414): the Piece of
+ * the Canvas's bead there, or of the Frame's own. In Canvas positions. */
+export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selection | undefined {
+  const layer = layerAt(project, at)
+  if (layer === 'canvas') {
+    return pieceSelectionAt(project.beads, project, at, project.frame)
+  }
+  const view = layerView(project, 'frame')
+  const picked = pieceSelectionAt(view.beads, view, positionInLayer(project, 'frame', at), view.frame)
+  const origin = positionOnCanvas(project, 'frame', { row: picked?.top ?? 0, column: picked?.left ?? 0 })
+  return picked && { ...picked, top: origin.row, left: origin.column }
+}
+
+/** The cells a Paste at `at` would fill, as Canvas positions (the paste preview). */
+export function pastedCellsOnLayer(project: Project, block: CopiedBlock, at: GridPosition, axes: MirrorAxisCounts, copyMode = false): PastedCell[] {
+  const layer = layerAt(project, at)
+  const view = layerView(project, layer)
+  return mirroredPastedCells(view.frame, block, positionInLayer(project, layer, at), axes, copyMode)
+    .filter((cell) => !view.frame || frameContains(view.frame, cell))
+    .map((cell) => ({ ...cell, ...positionOnCanvas(project, layer, cell) }))
 }

@@ -1,17 +1,22 @@
-import { forEachBead, frameContains, hasBeads, colorAt, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, type BeadMap, type Frame } from './canvas'
 import { movedFrame, sameFrame } from './frame'
+import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import type { Technique } from './weave'
 import { carryNames, namedPieceCutBy } from './pieceNames'
-import { clampBrickBlock, rowProgressStarted, withBrickBlock, withFrame, withTechnique, type Project } from './project'
+import { clampBrickBlock, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
-// The one operation behind every change of the Frame (ticket 361): Set Frame, move, resize, Fit to drawing, Remove
+// The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
 // Frame and Remove row/column. It owns the rules: Row progress's lock (only Remove Frame passes it, clearing the
-// passes), Row progress following the Frame. Beads left in the keep-out margin stay, covered.
+// passes), Row progress following the Frame. Beads left in the keep-out margin stay on the Canvas.
 export type FrameChange =
-  /** Set Frame, moving it, resizing it and Fit to drawing all reduce to this. */
+  /** Resize the Frame (the handles, the steppers, the typed size): its beads keep their place on the Canvas, those the
+   * Frame no longer holds are dropped. The Canvas is untouched. */
   | { set: Frame }
+  /** Frame from Selection and Fit to drawing (ADR 0066): the Frame becomes this rectangle and the Canvas's beads inside
+   * it move into it. A Frame already there lays its beads back on the Canvas first. */
+  | { make: Frame }
   | { remove: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
@@ -35,8 +40,8 @@ export type FrameChangeRefusal =
   | 'no-line'
   /** The Frame has only the one row or column asked for, and a Frame is never empty. */
   | 'only-line'
-  /** The new Frame would cut through a named Piece (an unframed Schema), which it must take whole or leave whole
-   * (ticket 407). */
+  /** The new Frame would cut through a named Piece (an unframed Schema) on the Canvas, which it must take whole or
+   * leave whole (ticket 407). */
   | 'cuts-schema'
 
 export type FrameChangeResult =
@@ -74,7 +79,7 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
   if ('move' in change && !frame) {
     return 'no-frame'
   }
-  if ('set' in change && namedPieceCutBy(project, change.set)) {
+  if ('make' in change && namedPieceCutBy(project, change.make)) {
     return 'cuts-schema'
   }
   return undefined
@@ -90,12 +95,8 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     const frame = project.frame!
     const { axis } = change.removeLine
     const smaller = { ...frame, rows: axis === 'row' ? frame.rows - 1 : frame.rows, columns: axis === 'column' ? frame.columns - 1 : frame.columns }
-    const beads = beadsWithoutLine(project.beads, frame, change.removeLine)
-    const covered = project.coveredBeads && beadsWithoutLine(project.coveredBeads, frame, change.removeLine)
-    const shifted = carryNames(project, uncovered(withCovered({ ...withFrame(project, smaller), beads }, covered)), (at) =>
-      shiftedByLine(frame, change.removeLine, at),
-    )
-    return { kind: 'changed', project: shifted }
+    const beads = beadsWithoutLine(frame.beads, { row: 0, column: 0, rows: frame.rows, columns: frame.columns }, change.removeLine)
+    return { kind: 'changed', project: withFrame({ ...project, frame: { ...frame, beads } }, smaller) }
   }
 
   if ('move' in change) {
@@ -104,15 +105,8 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     if (sameFrame(frame, moved)) {
       return { kind: 'unchanged', project }
     }
-    const { beads, covered } = layersWithFrameMoved(project, frame, moved)
-    const shifted = carryNames(project, uncovered(withCovered({ ...withFrame(project, moved), beads }, covered)), (at) => {
-      if (frameContains(frame, at)) {
-        return { row: at.row + moved.row - frame.row, column: at.column + moved.column - frame.column }
-      }
-      // A Piece the Frame lands on is hidden with its beads, so its name goes.
-      return frameContains(moved, at) ? undefined : at
-    })
-    return { kind: 'changed', project: shifted }
+    // The Frame carries its beads and the passes; the Canvas under the destination stays as it is, hidden (ADR 0066).
+    return { kind: 'changed', project: { ...project, frame: { ...frame, row: moved.row, column: moved.column }, updatedAt: Date.now() } }
   }
 
   if ('technique' in change) {
@@ -129,35 +123,49 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return { kind: 'changed', project: carryNames(project, withBrickBlock(project, change.brickBlock)) }
   }
 
+  if ('make' in change) {
+    const made = madeFrame(project, change.make)
+    return sameFrame(project.frame, made.frame) && sameBeads(project, made) && project.frame?.name === made.frame?.name
+      ? { kind: 'unchanged', project }
+      : { kind: 'changed', project: made }
+  }
+
   const next = 'set' in change ? change.set : undefined
   if (sameFrame(project.frame, next)) {
     return { kind: 'unchanged', project }
   }
-  return { kind: 'changed', project: uncovered(withFrame(project, next)) }
+  return { kind: 'changed', project: withFrame(project, next) }
 }
 
-function withCovered(project: Project, covered: BeadMap | undefined): Project {
-  const { coveredBeads: _previous, ...rest } = project
-  return covered && hasBeads(covered) ? { ...rest, coveredBeads: covered } : rest
+/** The Project with a Frame at `rectangle` holding the Canvas's beads inside it (ADR 0066). A Frame there before lays
+ * its beads on the Canvas where they stand, over what they covered. A named Piece the rectangle takes whole gives the
+ * Frame its name. */
+function madeFrame(project: Project, rectangle: Frame): Project {
+  const previous = project.frame
+  // What shows is lifted. Canvas beads hidden under a Frame there before stay on the Canvas; its own beads outside the
+  // new rectangle go back on it.
+  const hidden = previous ? beadsInFrame(beadsInFrame(project.beads, rectangle), previous) : {}
+  const left = previous ? beadsWithout(shiftedBeads(previous.beads, previous.row, previous.column), rectangle) : {}
+  const canvas = beadsOver(beadsOver(beadsWithout(project.beads, rectangle), hidden), left)
+  const lifted = beadsInFrame(shownBeads(project), rectangle)
+  const taken = project.pieceNames?.find((entry) => frameContains(rectangle, entry))?.name
+  const named = taken ?? previous?.name
+  // A Frame that moves to another named Schema leaves the one it held behind, named and unframed.
+  const first = previous && taken !== undefined && previous.name ? firstBead(previous.beads) : undefined
+  const { frame: _previous, ...rest } = project
+  const framed = withFrame({ ...rest, beads: canvas }, rectangle)
+  const frame = { ...framed.frame!, beads: shiftedBeads(lifted, -rectangle.row, -rectangle.column), ...(named ? { name: named } : {}) }
+  const carried = carryNames(project, { ...framed, frame })
+  return first && previous?.name ? { ...carried, pieceNames: [...(carried.pieceNames ?? []), { name: previous.name, row: first.row + previous.row, column: first.column + previous.column }] } : carried
 }
 
-/** The Project with every covered bead back that the Frame no longer sits on and nothing else now holds the cell of
- * (ticket 476, ADR 0065). Every Frame change ends here, so a bead comes back as soon as its cell is free. */
-function uncovered(project: Project): Project {
-  const covered = project.coveredBeads
-  if (!covered) {
-    return project
-  }
-  const back: BeadChange[] = []
-  const stay: BeadChange[] = []
-  forEachBead(covered, (row, column, color) => {
-    const hidden = (project.frame && frameContains(project.frame, { row, column })) || colorAt(project.beads, row, column)
-    ;(hidden ? stay : back).push({ row, column, color })
+/** The first bead of a map, reading row by row. */
+function firstBead(beads: BeadMap): GridPosition | undefined {
+  let found: GridPosition | undefined
+  forEachBead(beads, (row, column) => {
+    found ??= { row, column }
   })
-  if (back.length === 0) {
-    return project
-  }
-  return withCovered({ ...project, beads: withColors(project.beads, back) }, withColors({}, stay))
+  return found
 }
 
 /** Where a position goes when one line of `area` is taken out and the area's later beads shift up or left; undefined
@@ -192,32 +200,4 @@ export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): B
     result[to.row]![to.column] = color
   })
   return result
-}
-
-// The two bead layers after the Frame moves from `from` to `to`: its beads travel with it, and what lay under the
-// destination goes to the covered layer instead of being overwritten (ticket 476); the cells it left are emptied.
-// Beads in the margin elsewhere stay. The covered beads that are free again come back in `uncovered`.
-function layersWithFrameMoved(project: Project, from: Frame, to: Frame): { beads: BeadMap; covered: BeadMap } {
-  const beads: BeadMap = {}
-  const displaced: BeadChange[] = []
-  forEachBead(project.beads, (row, column, color) => {
-    if (frameContains(from, { row, column })) {
-      return
-    }
-    if (frameContains(to, { row, column })) {
-      displaced.push({ row, column, color })
-      return
-    }
-    beads[row] ??= {}
-    beads[row]![column] = color
-  })
-  forEachBead(project.beads, (row, column, color) => {
-    if (!frameContains(from, { row, column })) {
-      return
-    }
-    const landing = { row: row + to.row - from.row, column: column + to.column - from.column }
-    beads[landing.row] ??= {}
-    beads[landing.row]![landing.column] = color
-  })
-  return { beads, covered: withColors(project.coveredBeads ?? {}, displaced) }
 }

@@ -1,5 +1,6 @@
-import { forEachBead, type BeadMap } from './canvas'
+import { forEachBead, type BeadMap, type FrameSheet } from './canvas'
 import type { Grid, GridProject, Project } from './project'
+import type { VersionThreeProject } from './versionThree'
 
 // The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with a
 // bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex): it
@@ -12,9 +13,19 @@ interface EncodedBeads {
   rows: Record<string, string>
 }
 
-  /** Per row with a bead, keyed by row: `"<first column>:<runs>"`, runs as color-table indexes (`"3"`, `"3x40"`, 0 =
-   * gap). */
-export type EncodedProject = Omit<Project, 'beads' | 'coveredBeads'> & { encodedBeads: EncodedBeads; encodedCoveredBeads?: EncodedBeads }
+/** The Frame as stored (ADR 0066): its place and size, its name, and its own beads in the same compact form, counted
+ * from the Frame's first row and column. */
+type EncodedFrame = Omit<FrameSheet, 'beads'> & { encodedBeads: EncodedBeads }
+
+/** A Project as file and library version 4 store it: the Canvas's beads, and the Frame with its own. */
+export type EncodedProject = Omit<Project, 'beads' | 'frame'> & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
+
+/** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
+ * rectangle, the beads it covered beside them. */
+export type EncodedVersionThreeProject = Omit<VersionThreeProject, 'beads' | 'coveredBeads'> & {
+  encodedBeads: EncodedBeads
+  encodedCoveredBeads?: EncodedBeads
+}
 
 /** A Project as stored before the Canvas (ADR 0009's original shape): `columns` × `rows` cells as row-major runs.
  * Read only. */
@@ -143,14 +154,28 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
   )
 }
 
-export function encodeProject(project: Project): EncodedProject {
-  const { beads, coveredBeads, ...rest } = project
-  return { ...rest, encodedBeads: encodeBeads(beads), ...(coveredBeads ? { encodedCoveredBeads: encodeBeads(coveredBeads) } : {}) }
+function encodeFrame({ beads, ...place }: FrameSheet): EncodedFrame {
+  return { ...place, encodedBeads: encodeBeads(beads) }
 }
 
-/** The Project a stored value holds, whichever shape wrote it; a grid-shaped one still goes through normalizeProject
- * to get its Frame. */
-export function decodeProject(encoded: EncodedProject | EncodedGridProject): Project | GridProject {
+function decodeFrame({ encodedBeads, ...place }: EncodedFrame): FrameSheet {
+  return { ...place, beads: decodeBeads(encodedBeads) }
+}
+
+export function encodeProject(project: Project): EncodedProject {
+  const { beads, frame, ...rest } = project
+  return { ...rest, encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
+}
+
+/** The Project a version 4 value holds; it still goes through normalizeProject. */
+export function decodeProject(encoded: EncodedProject): Project {
+  const { encodedBeads, frame, ...rest } = encoded
+  return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
+}
+
+/** The Project a stored value of version 1 to 3 holds, whichever shape wrote it (temporary, see versionThree.ts); a
+ * grid-shaped one and a version 3 one still go through normalizeProject to become the Project of today. */
+export function decodeEarlierProject(encoded: EncodedVersionThreeProject | EncodedGridProject): VersionThreeProject | GridProject {
   if ('encodedBeads' in encoded) {
     const { encodedBeads, encodedCoveredBeads, ...rest } = encoded
     return { ...rest, beads: decodeBeads(encodedBeads), ...(encodedCoveredBeads ? { coveredBeads: decodeBeads(encodedCoveredBeads) } : {}) }

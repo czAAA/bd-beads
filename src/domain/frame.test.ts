@@ -68,21 +68,27 @@ describe('fitToDrawing', () => {
   ])
 
   it('wraps every bead drawn', () => {
-    expect(fitToDrawing({ technique: 'loom' }, beads)).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+    expect(fitToDrawing({ technique: 'loom', beads })).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
   it('leaves out beads the current Frame\'s margin covers', () => {
-    const current = { row: 20, column: 20, rows: 3, columns: 3 }
+    const current = { row: 20, column: 20, rows: 3, columns: 3, beads: {} }
     const withHidden = withColors(beads, [{ row: 18, column: 20, color: '#f00' }])
-    expect(fitToDrawing({ technique: 'loom' }, withHidden, current)).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+    expect(fitToDrawing({ technique: 'loom', beads: withHidden, frame: current })).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+  })
+
+  it('wraps the Frame\'s own beads with the Canvas beads that show, and leaves out those the Frame covers', () => {
+    const frame = { row: 20, column: 20, rows: 5, columns: 5, beads: withColors({}, [{ row: 4, column: 2, color: '#0f0' }]) }
+    const covered = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
+    expect(fitToDrawing({ technique: 'loom', beads: covered, frame })).toEqual({ row: 1, column: -3, rows: 24, columns: 26 })
   })
 
   it('starts on an even row where rows alternate, keeping the last row where it is', () => {
-    expect(fitToDrawing({ technique: 'peyote' }, beads)).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
+    expect(fitToDrawing({ technique: 'peyote', beads })).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
   })
 
   it('is nothing for an empty canvas', () => {
-    expect(fitToDrawing({ technique: 'loom' }, {})).toBeUndefined()
+    expect(fitToDrawing({ technique: 'loom', beads: {} })).toBeUndefined()
   })
 })
 
@@ -188,6 +194,6 @@ describe('a Brick block (ticket 477)', () => {
 
   it('fits to the drawing from a legal row', () => {
     const beads = withColors({}, [{ row: 9, column: 1, color: '#111111' }, { row: 13, column: 4, color: '#111111' }])
-    expect(fitToDrawing(block2, beads)).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
+    expect(fitToDrawing({ ...block2, beads })).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
   })
 })
