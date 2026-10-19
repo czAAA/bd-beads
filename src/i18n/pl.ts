@@ -659,7 +659,7 @@ export const pl: Translations = {
     pasteTool: 'Najedź, aby zobaczyć skopiowany fragment, i kliknij, aby go odcisnąć.',
     rotate: 'Obraca zaznaczenie o ćwierć obrotu.',
     rotateCanvas: 'Obraca całe płótno o ćwierć obrotu, nie ruszając koralików.',
-    rotateFrame: 'Obraca ramkę, jej margines i koraliki w środku o ćwierć obrotu.',
+    rotateFrame: 'Obraca ramkę i koraliki w środku o ćwierć obrotu.',
     noBeadsToRotate: 'Nie ma koralików do obrócenia.',
     setFrameFirst: 'Najpierw ustaw ramkę.',
     fitToDrawing: 'Dopasuj ramkę do wszystkich koralików.',

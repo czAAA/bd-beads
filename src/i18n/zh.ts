@@ -650,7 +650,7 @@ export const zh: Translations = {
     pasteTool: '悬停预览复制的图块，点击即可盖章。',
     rotate: '把选区转四分之一圈。',
     rotateCanvas: '把整个画布转四分之一圈，珠子都不动。',
-    rotateFrame: '把边框、它的边距和里面的珠子转四分之一圈。',
+    rotateFrame: '把边框和里面的珠子转四分之一圈。',
     noBeadsToRotate: '没有可旋转的珠子。',
     setFrameFirst: '请先设置边框。',
     fitToDrawing: '让边框贴合所有珠子。',

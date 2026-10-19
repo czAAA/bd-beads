@@ -271,7 +271,6 @@ The open canvas and the Frame. The action is always "Set Frame"; "Frame" alone n
 | Frame 1, bring it into view | Рамка 1, показать на экране |
 | Rotate, Set Frame first | Повернуть: сначала задайте рамку |
 | Pattern rotated. 1 piece was in the way and moved outside the Frame. · Undo | Схема повёрнута. 1 фрагмент мешал и сдвинут за рамку. · Отменить |
-| Frame set. 1 bead was in the margin and moved outside it. · Undo | Рамка задана. 1 бисеринка была в поле рамки и перемещена за его пределы. · Отменить |
 | Hand · Rulers | Рука · Линейки |
 | scroll or space drag to move · scroll to zoom | прокрутка или пробел и перетаскивание: сдвиг · прокрутка: масштаб |
 | Frame (optional) | Рамка (необязательно) |
@@ -302,13 +301,13 @@ Russian here is a proposal for review. The Technique explanation in Project is t
 
 ## Copy added in ticket 0473
 
-The Frame bar, the Margin handle and the edit pencil (Frame card). The Russian is proposed and not yet reviewed.
+The Frame bar, the Move handle and the edit pencil (Frame card). The Russian is proposed and not yet reviewed.
 
 | English | Russian |
 | --- | --- |
 | Frame (the Canvas strip button and the bar's label) | Рамка |
 | Edit Frame (the pencil) | Править рамку |
-| Move Frame (the Margin handle's name) | Переместить рамку |
+| Move Frame (the Move handle's name) | Переместить рамку |
 | Drag to move the Frame together with its beads. | Перетащите, чтобы переместить рамку вместе с бисером. |
 | Rotate Frame | Повернуть рамку |
 | Remove Frame · Remove Frame? | Убрать рамку · Убрать рамку? |

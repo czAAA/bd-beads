@@ -194,8 +194,7 @@ describe('App select, copy and paste', () => {
     await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
     await flushPromises()
     expect(loadProjects()[0]!.frame).toMatchObject({ row: 0, column: 0, rows: 2, columns: 2 })
-    // A Frame already set takes Frame again (ticket 407). The second Piece cannot be framed from here: a 6-bead margin (ADR 0056)
-    // fills this small Project, and a Selection cannot start in it.
+    // A Frame already set takes Frame again (ticket 407).
     await tap({ row: 1, column: 1 })
     await wrapper.get('[data-testid="context-bar-frame"]').trigger('click')
     await flushPromises()

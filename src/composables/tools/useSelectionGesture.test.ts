@@ -545,89 +545,68 @@ describe('useSelectionGesture', () => {
     })
   })
 
-  describe('the keep-out margin (ticket 428)', () => {
-    it('clamps a drag that ends in the margin to the Frame\'s edge', () => {
-      const { gesture } = setup(withFrame(makeProject(), { row: 10, column: 10, rows: 4, columns: 6 }))
-      gesture.beginPress(11, 11)
-      gesture.extendPress(8, 12)
-      expect(gesture.selection.value).toEqual({ top: 10, left: 11, rows: 2, columns: 2 })
-    })
-  })
-
-  describe('every path keeps out of the margin (ticket 433)', () => {
+  describe('a Selection against the Frame (ADR 0066)', () => {
     const frame = { row: 10, column: 10, rows: 4, columns: 6 }
     const framed = () => setup(withFrame(makeProject(), frame))
 
-    it('refuses a drag that starts in the margin', () => {
-      const { gesture } = framed()
-      gesture.beginPress(8, 11)
-      expect(gesture.extendPress(12, 12)).toBe(false)
-      expect(gesture.selection.value).toBeUndefined()
-    })
-
-    it('reports a drag the margin held back, and one that reached its cell', () => {
+    it('is any rectangle: a drag ends where the pointer does, across the Frame\'s edge too', () => {
       const { gesture } = framed()
       gesture.beginPress(11, 11)
-      expect(gesture.extendPress(11, 12)).toBe(true)
-      expect(gesture.extendPress(8, 12)).toBe(false)
+      gesture.extendPress(8, 12)
+      expect(gesture.selection.value).toEqual({ top: 8, left: 11, rows: 4, columns: 2 })
     })
 
-    it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue', () => {
+    it('begins on a position right against the Frame', () => {
+      const { gesture } = framed()
+      gesture.beginPress(9, 11)
+      expect(gesture.selection.value).toEqual({ top: 9, left: 11, rows: 1, columns: 1 })
+    })
+
+    it('a Piece tap selects the tapped bead\'s side only', () => {
       const inFrame = [{ row: 11, column: 11 }, { row: 11, column: 12 }]
-      const onCanvas = [{ row: 2, column: 2 }, { row: 2, column: 3 }, { row: 8, column: 11 }]
+      const onCanvas = [{ row: 2, column: 2 }, { row: 2, column: 3 }, { row: 9, column: 11 }]
       const { gesture } = setup(paintAt(paintAt(withFrame(makeProject(), frame), inFrame, RED, NO_MIRROR_AXES), onCanvas, RED, NO_MIRROR_AXES))
       gesture.tapPiece(11, 11)
       expect(gesture.selection.value).toEqual({ top: 11, left: 11, rows: 1, columns: 2 })
       gesture.tapPiece(2, 2)
       expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 1, columns: 2 })
-      const before = gesture.refusals.value
-      gesture.tapPiece(8, 11)
-      expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 1, columns: 2 })
-      expect(gesture.refusals.value).toBe(before + 1)
+      gesture.tapPiece(9, 11)
+      expect(gesture.selection.value).toEqual({ top: 9, left: 11, rows: 1, columns: 1 })
     })
   })
 
-  describe('a legacy Project with beads in the margin (ticket 433)', () => {
+  describe('a Canvas bead against the Frame (ADR 0066)', () => {
     const frame = { row: 10, column: 10, rows: 4, columns: 6 }
-    const legacy = () => {
+    const against = () => {
       const project = withFrame(makeProject(), frame)
-      return setup({ ...project, beads: { 8: { 11: RED } }, frame: { ...project.frame!, beads: { 1: { 1: RED } } } })
+      return setup({ ...project, beads: { 9: { 11: RED } }, frame: { ...project.frame!, beads: { 1: { 1: RED } } } })
     }
 
-    it('no path can select a margin bead: drag, key and Piece tap all keep out', () => {
-      const { gesture } = legacy()
-      gesture.beginPress(8, 11)
-      expect(gesture.extendPress(8, 11)).toBe(false)
-      expect(gesture.selection.value).toBeUndefined()
-      gesture.tapPiece(8, 11)
-      expect(gesture.selection.value).toBeUndefined()
-    })
-
-    it('a drag from outside across the whole Frame and its margin selects them, and Copy takes the Canvas beads of its layer, margin ones too', () => {
-      const { gesture, harness } = legacy()
+    it('a drag from outside across the whole Frame selects it, and Copy takes the Canvas beads of its layer', () => {
+      const { gesture, harness } = against()
       gesture.beginPress(2, 2)
-      expect(gesture.extendPress(30, 30)).toBe(true)
+      gesture.extendPress(30, 30)
       gesture.endPress()
       expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 29, columns: 29 })
       expect(gesture.copy()).toBe(true)
       expect(gesture.pastePreviewCells(harness.currentProject()!, { row: 40, column: 40 })).toHaveLength(1)
     })
 
-    it('Cut on a Selection that begins on the Canvas and goes round the whole Frame and its margin empties the margin bead too, and leaves the Frame', () => {
-      const { gesture, harness } = legacy()
+    it('Cut on a Selection that begins on the Canvas and goes round the whole Frame empties the bead against it, and leaves the Frame', () => {
+      const { gesture, harness } = against()
       gesture.beginPress(2, 2)
       gesture.extendPress(30, 30)
       gesture.endPress()
       gesture.cut()
-      expect(harness.currentProject()!.beads[8]?.[11]).toBeUndefined()
+      expect(harness.currentProject()!.beads[9]?.[11]).toBeUndefined()
       expect(harness.currentProject()!.frame!.beads[1]?.[1]).toBe(RED)
     })
 
-    it('Cut and Clear selection leave a margin bead alone, while Erase still clears it', () => {
-      const { gesture, harness } = legacy()
+    it('Cut on Select all empties the Frame and leaves the bead against it', () => {
+      const { gesture, harness } = against()
       gesture.selectAll()
       gesture.cut()
-      expect(harness.currentProject()!.beads[8]?.[11]).toBe(RED)
+      expect(harness.currentProject()!.beads[9]?.[11]).toBe(RED)
       expect(harness.currentProject()!.frame!.beads[1]?.[1]).toBeUndefined()
     })
   })

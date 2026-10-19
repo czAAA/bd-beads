@@ -9,7 +9,7 @@ import { en } from './i18n/en'
 import { beadColor, hoverBead, pressBead } from './testUtils/beads'
 import { closeSheet, openNewProject, openSavedProjects, openSheet, pickTool, rotate, selectAll } from './testUtils/pill'
 
-/** Edit Frame (tickets 233, 417, ADRs 0026, 0046, 0054) as the app shows it: moving and resizing the Frame, its margin steppers, the Project sheet's Frame controls and the keys. */
+/** Edit Frame (tickets 233, 417, ADRs 0026, 0046, 0054) as the app shows it: moving and resizing the Frame, its edge steppers, the Project sheet's Frame controls and the keys. */
 
 const RED = '#e63746'
 
@@ -47,7 +47,7 @@ async function key(init: KeyboardEventInit) {
   await flushPromises()
 }
 
-/** The edit pencil at the top-right corner of the margin outline (tickets 452, 473). */
+/** The edit pencil above the Frame's top-right corner (tickets 452, 473). */
 async function toggleEdit(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
   await wrapper.get('[data-testid="frame-edit-toggle"]').trigger('click')
   await flushPromises()
@@ -177,7 +177,7 @@ describe('Edit Frame', () => {
     expect(wrapper.findAll('[data-testid="panel-dropdown"], [data-testid="top-sheet"]')).toHaveLength(1)
   })
 
-  it('works from the keyboard on the Margin handle: arrows move the Frame and Shift resizes it', async () => {
+  it('works from the keyboard on the Move handle: arrows move the Frame and Shift resizes it', async () => {
     const wrapper = await mountOpen(framedProject())
     await toggleEdit(wrapper)
     const handle = wrapper.get('[data-testid="frame-move-handle"]')
@@ -249,7 +249,7 @@ describe('Edit Frame', () => {
     expect(editing(wrapper)).toBe(false)
   })
 
-  it('opens once Row progress has started with the size, Remove and the disabled edge steppers, and the Margin handle still moves the Frame (tickets 452, 473, 475)', async () => {
+  it('opens once Row progress has started with the size, Remove and the disabled edge steppers, and the Move handle still moves the Frame (tickets 452, 473, 475)', async () => {
     const wrapper = await mountOpen({ ...framedProject(), rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
     expect(editing(wrapper)).toBe(false)
     expect(wrapper.get('[data-testid="strip-frame"]').attributes('aria-disabled')).toBeUndefined()
@@ -319,7 +319,7 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
     await flushPromises()
 
-    // The 2 x 3 Frame at (2, 3) becomes 3 x 2 about the middle of it and its margin.
+    // The 2 x 3 Frame at (2, 3) becomes 3 x 2 about the middle of it.
     expect(savedFrame()).toEqual({ row: 2, column: 4, rows: 3, columns: 2 })
     expect(beadColor(wrapper, { row: 2, column: 3 })).toBeNull()
     expect(editing(wrapper)).toBe(wasEditing)

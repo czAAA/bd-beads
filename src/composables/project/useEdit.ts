@@ -1,13 +1,13 @@
 import { toRaw } from 'vue'
 import type { FrameChangeRefusal, FrameChangeResult } from '../../domain/changeFrame'
-import { keepAllowedEdits } from '../../domain/margin'
+import { keepAllowedEdits } from '../../domain/allowedEdits'
 import type { MirrorAxisCounts } from '../../domain/mirror'
 import { sameFrame } from '../../domain/frame'
 import { restoreSnapshot, sameBeads, snapshotOf, type Project, type UndoEntry } from '../../domain/project'
 import type { ReplaceOptions } from './useProjectLibrary'
 
 // The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Mirror, Rotate, Rotate Frame: lock
-// and margin applied silently, a no-op is no step), frame (through changeFrame, which refuses; the session resets after),
+// applied silently, a no-op is no step), frame (through changeFrame, which refuses; the session resets after),
 // exempt (Delete all, Replace Bead: no guards).
 type EditKind = 'drawing' | 'frame' | 'exempt'
 
@@ -44,7 +44,7 @@ export interface EditDeps {
 }
 
 // Edit (ADR 0036): every undoable change to the open Project goes through here, which applies the rules (row lock,
-// keep-out margin, one Undo step, session resets). Outside Edit: Row progress toggles, Row direction and the pointer.
+// beads where the Weave has none, one Undo step, session resets). Outside Edit: Row progress toggles, Row direction and the pointer.
 // Deps are read lazily.
 export function useEdit(deps: EditDeps) {
   /** What a stroke started from, taken at its start; undefined when none is in progress. */

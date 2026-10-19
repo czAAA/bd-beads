@@ -223,8 +223,6 @@ function wireAppShell(services: Services) {
    * isn't tied to a tool. */
   const {
     selection,
-    refusals: selectionRefusals,
-    refuse: refuseSelection,
     beginPress: beginSelectPress,
     extendPress: extendSelection,
     endPress: endSelectPress,
@@ -518,7 +516,6 @@ function wireAppShell(services: Services) {
     beginSelectPress,
     leavePasteMode,
     extendSelection,
-    refuseSelection,
     announce,
     colorWords,
   })
@@ -548,7 +545,7 @@ function wireAppShell(services: Services) {
     messages,
     centreOn,
   })
-  /** The edit toggle on the Frame's margin outline (ticket 452, ADR 0062). */
+  /** The edit pencil in the Frame's gutter (ticket 452, ADR 0062). */
   const editFrame = frameFlow.toggleEdit
 
   /** Rotate: the Selection a quarter turn, with a Message saying how many beads it covered (ticket 416, ADR 0052). */
@@ -863,7 +860,6 @@ function wireAppShell(services: Services) {
     onFillSelection,
     hasPaintColor,
     onFrameFromSelection,
-    selectionRefusals,
     backOutOfSelect,
     previewCells,
     previewedMirrorAxisCounts,
