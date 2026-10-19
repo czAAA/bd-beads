@@ -114,6 +114,7 @@
   --frame-handle-hit-height: 44px;
   --frame-edit-chip: 32px;
   --frame-edit-hit: 44px;
+  --frame-control-offset: 48px;
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;

@@ -17,7 +17,7 @@ function setup(hasSelection = false, settingFrame = ref(false)) {
     onHoverEnd: vi.fn(),
     announceCursor: vi.fn(),
     invokeToolAt: vi.fn(),
-    extendSelectionTo: vi.fn(() => true),
+    extendSelectionTo: vi.fn(),
     finishExtending: vi.fn(),
     settingFrame: () => settingFrame.value,
   }
@@ -78,15 +78,6 @@ describe('useKeyboardCursor', () => {
     expect(deps.extendSelectionTo).toHaveBeenCalledWith({ row: 0, column: 0 }, { row: 0, column: 1 })
     onProjectKeyUp(new KeyboardEvent('keyup', { key: 'Shift' }))
     expect(deps.finishExtending).toHaveBeenCalled()
-  })
-
-  it('keeps the cursor where it is when the Selection cannot grow into the margin (ticket 433)', () => {
-    const { deps, beadCursor, onProjectKey } = setup()
-    vi.mocked(deps.extendSelectionTo).mockReturnValueOnce(false)
-    onProjectKey(press('ArrowRight', { shiftKey: true }))
-    expect(beadCursor.value).toEqual({ row: 0, column: 0 })
-    onProjectKey(press('ArrowRight'))
-    expect(beadCursor.value).toEqual({ row: 0, column: 1 })
   })
 
   it('leaves the Project on Escape, unless a Selection is up', () => {

@@ -5,11 +5,10 @@ import { sameFrame } from '../../domain/frame'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import type { MirrorAxisCounts } from '../../domain/mirror'
-import { inMargin, mayPlace, withMargin } from '../../domain/margin'
 import { beadColorAt, isInFinishedRow, rowProgressOn, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
-import { boxPressAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
+import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../rendering/gestureView'
 import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
@@ -60,22 +59,13 @@ const props = withDefaults(defineProps<{
   /** Whether the Row progress look is drawn (ticket 474): finished rows dimmed, the current row ringed and lifted. */
   rowMarks?: boolean
   /** Whether the Frame is being edited (Edit Frame, ticket 417): a drag moves or resizes it instead of drawing
-   * beads, and its handles, margin outline and size tooltip show. */
+   * beads, and its handles and size tooltip show. */
   settingFrame?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 ≈ 2.1 × 2.1 cm"). */
   frameTooltip?: string
   /** Whether the bead-shaped pointer is held back although the pointer is over the beads: Space is down, so the grab
    * cursor shows (ticket 353). */
   markerHidden?: boolean
-  /** Whether the tool in hand cannot place beads in the Frame's margin (Paint, Fill, a Paste): the pointer shows
-   * `not-allowed` there, and a press there is refused (ticket 276). */
-  blocksMargin?: boolean
-  /** Whether the Select tool is in hand: the margin cannot be selected, so a press starting there is refused with
-   * `not-allowed` and starts no Selection (ticket 428, ADR 0055). */
-  selectionBlocksMargin?: boolean
-  /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket
-   * 433): each one shows the not-allowed cue, the margin outline for 1s. */
-  selectionRefusals?: number
   /** Whether Select or Piece is the tool in hand (ticket 414): the pointer is the native arrow, not the bead-shaped
    * marker, and the Selection shows its handles. */
   selecting?: boolean
@@ -118,8 +108,8 @@ const emit = defineEmits<{
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors.
    * Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
-  /** The Frame's rectangle and its margin's outer edge in the surface's pixels (tickets 417, 473), or none once it is
-   * out of view: where the Margin handle and the edit pencil sit. */
+  /** The Frame's rectangle in the surface's pixels (tickets 417, 473), or none once it is out of view: where the Move
+   * handle and the edit pencil sit in its gutter. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
   /** Whether a pointer is down on the surface (a gesture, pan or pinch is running): the Selection bar steps aside
    * meanwhile. */
@@ -316,20 +306,18 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** Where the Frame is on screen, none once it is out of view (tickets 417, 427, 452, 473): told to the Margin handle
- * and the edit pencil. */
+/** Where the Frame is on screen, none once it is out of view (tickets 417, 427, 452, 473): told to the Move handle and
+ * the edit pencil. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = props.project.frame
   if (!frame || size.value.width === 0) return undefined
   const box = surface.value.frameBox(frame)
-  const outer = surface.value.beadBox(withMargin(frame))
   // Scrolled wholly out of view, the Frame has no controls to keep on screen: they are clamped to the box only while
   // some of it shows.
   const { width, height } = size.value
-  if (outer.x + outer.width <= 0 || outer.y + outer.height <= 0 || outer.x >= width || outer.y >= height) return undefined
+  if (box.x + box.width <= 0 || box.y + box.height <= 0 || box.x >= width || box.y >= height) return undefined
   return {
     box: { left: box.x, top: box.y, width: box.width, height: box.height },
-    outer: { left: outer.x, top: outer.y, width: outer.width, height: outer.height },
     viewport: { ...size.value },
   }
 })
@@ -488,7 +476,7 @@ function drawCellsOrMove(): void {
 }
 
 // Where the bead-shaped marker stands for the pointer (ticket 353), in px from the surface's top-left: over beads, for
-// a mouse or hovering pen (OS pointer hidden). None over the refusing margin, with a canvas-moving tool, while the
+// a mouse or hovering pen (OS pointer hidden). None with a canvas-moving tool, while the
 // Frame is set, or for a finger (no hover).
 const markerAt = ref<{ x: number; y: number }>()
 /** Whether the pointer last seen over the surface is one that draws and hovers: not a finger, not the one the input
@@ -499,7 +487,7 @@ let hoverDraws = false
  * moves under a still pointer. */
 function placeMarker(): void {
   const bead = hoverPoint && hoverDraws && !dragging.value && !framing.value ? beadUnder(hoverPoint) : undefined
-  markerAt.value = hoverPoint && bead && !refusesMargin(bead) ? pointInSurface(hoverPoint) : undefined
+  markerAt.value = hoverPoint && bead ? pointInSurface(hoverPoint) : undefined
 }
 
 /** Takes the marker away, and keeps it away until the pointer moves again. */
@@ -508,7 +496,6 @@ function hideMarker(): void {
   markerAt.value = undefined
 }
 
-/** How visible the Frame margin's outline is, 0 to 1: animated further down, drawn by the overlay. */
 /** Whether a Frame gesture is in progress (a press that grabbed the Frame or drew a new one). */
 const framing = ref(false)
 /** Whether a Frame gesture is in progress or a stepper has just changed the size: the size tooltip shows only then
@@ -516,7 +503,7 @@ const framing = ref(false)
 const sizeFlash = ref(false)
 let sizeTimer: ReturnType<typeof setTimeout> | undefined
 const sizeShown = computed(() => framing.value || sizeFlash.value)
-/** The Frame's size tooltip follows a size change that did not come from a drag (a margin stepper, a key) for a
+/** The Frame's size tooltip follows a size change that did not come from a drag (an edge stepper, a key) for a
  * moment. */
 watch(
   () => [props.project.frame?.columns, props.project.frame?.rows],
@@ -527,7 +514,6 @@ watch(
     sizeTimer = setTimeout(() => (sizeFlash.value = false), SIZE_FLASH_MS)
   },
 )
-const marginOpacity = ref(props.project.frame ? 1 : 0)
 
 /** Draws the overlay: everything over the beads that comes and goes with a tool or the pointer. */
 function drawOverlay(): void {
@@ -556,7 +542,6 @@ function drawOverlay(): void {
       mirrorAxisCounts: props.mirrorAxisCounts,
       dimmedCells: props.dimmedCells,
       tourMarks: props.tourMarks,
-      marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
       selectionHandles: props.selecting ? { surface: surface.value, touch: touchInput.value } : undefined,
       rulers: { layout: rulers.value, surface: surface.value },
@@ -599,7 +584,6 @@ watch(
     () => props.selecting,
     () => props.picking,
     () => props.frameTooltip,
-    marginOpacity,
     touchInput,
     theme,
   ],
@@ -611,8 +595,6 @@ watch(
 // element, so the bead is worked out from the position (the Surface view's pointToBead), and only a change of bead is
 // news. Touch/pen keep implicit capture on the surface.
 const overBead = ref(false)
-/** Whether the pointer is over the Frame's margin with a tool that cannot place beads there. */
-const overRefusedMargin = ref(false)
 const dragging = ref(false)
 /** Whether the Selection's handles or inside are held (ticket 414). */
 const adjusting = ref(false)
@@ -620,55 +602,7 @@ const adjusting = ref(false)
 const handleCursor = ref<string>()
 let lastBead: GridPosition | undefined
 
-// The Frame margin's outline (ticket 276, Frame card): always shown with a Frame (ticket 452) and 1s after a refused
-// margin press, faded over --duration-fast, redrawn on the overlay frame by frame; with reduced motion shown and hidden
-// at once.
 const SIZE_FLASH_MS = 1200
-const MARGIN_FADE_MS = 120
-const REFUSED_PRESS_MS = 1000
-const refusedPress = ref(false)
-let refusedTimer: ReturnType<typeof setTimeout> | undefined
-let fadeFrame: number | undefined
-
-const marginOutlineWanted = computed(
-  () => props.project.frame !== undefined || refusedPress.value,
-)
-
-function reducedMotion(): boolean {
-  return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
-}
-
-watch(marginOutlineWanted, (wanted) => {
-  if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
-  const target = wanted ? 1 : 0
-  if (reducedMotion() || typeof requestAnimationFrame !== 'function') {
-    marginOpacity.value = target
-    return
-  }
-  const from = marginOpacity.value
-  // The fade starts at the first frame's own timestamp: it is not always on performance.now()'s clock.
-  let start: number | undefined
-  const step = (now: number) => {
-    start ??= now
-    const done = Math.min(1, (now - start) / MARGIN_FADE_MS)
-    marginOpacity.value = from + (target - from) * done
-    fadeFrame = done < 1 ? requestAnimationFrame(step) : undefined
-  }
-  fadeFrame = requestAnimationFrame(step)
-})
-
-watch(
-  () => props.selectionRefusals,
-  (now, before) => {
-    if (now !== undefined && now !== before) refusePress()
-  },
-)
-
-function refusePress(): void {
-  refusedPress.value = true
-  clearTimeout(refusedTimer)
-  refusedTimer = setTimeout(() => (refusedPress.value = false), REFUSED_PRESS_MS)
-}
 
 let lastPoint = { x: 0, y: 0 }
 
@@ -711,18 +645,6 @@ watch(
   },
 )
 
-/** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket
- * 428). */
-function refusesSelectionStart(bead: GridPosition): boolean {
-  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)
-}
-
-function refusesMargin(bead: GridPosition | undefined): boolean {
-  if (bead === undefined) return false
-  if (refusesSelectionStart(bead)) return true
-  return props.blocksMargin === true && !mayPlace(props.project, bead)
-}
-
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
   return a?.row === b?.row && a?.column === b?.column
 }
@@ -758,7 +680,7 @@ function cellUnder(event: PointerEvent): GridPosition {
 }
 
 /** What a press grabs of the Frame's chrome (ticket 452): a resize handle, only while edit is on; nothing otherwise,
- * so the tool gets the press. The Margin handle's own press comes through `pressMoveHandle`. */
+ * so the tool gets the press. The Move handle's own press comes through `pressMoveHandle`. */
 function framePress(event: PointerEvent, touch = touchInput.value): FramePress | undefined {
   const point = pointInSurface(event)
   if (!props.settingFrame) return undefined
@@ -856,15 +778,9 @@ function onPointerDown(event: PointerEvent): void {
   // A ruler number is display-only (ticket 447): the press goes to the active tool at that spot.
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
-  overRefusedMargin.value = refusesMargin(bead)
   if (!bead) {
     lastBead = undefined
     return
-  }
-  // A press also lands where its live-mirror counterparts or the pasted block under the pointer go (the preview cells).
-  if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
-    refusePress()
-    if (refusesSelectionStart(bead)) return
   }
 
   // A touch has not been over the bead before it lands on it: the hover comes first, as the bead's pointerenter did.
@@ -897,7 +813,7 @@ function onPointerMove(event: PointerEvent): void {
     handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
   } else if (props.project.frame && event.pointerType !== 'touch' && !framing.value) {
     const target = framePress(event)
-    handleCursor.value = target?.kind === 'move' ? 'grab' : target?.kind === 'handle' ? HANDLE_CURSORS[handleIdAt(surface.value.frameBox(props.project.frame), pointInSurface(event), false)!] : undefined
+    handleCursor.value = target?.kind === 'move' ? 'grab' : target?.kind === 'handle' ? HANDLE_CURSORS[frameHandleIdAt(props.project.frame, surface.value, pointInSurface(event), false)!] : undefined
   } else {
     handleCursor.value = undefined
   }
@@ -922,13 +838,11 @@ function onPointerMove(event: PointerEvent): void {
   // moves the canvas.
   if (handMoves.value || movesCanvas(event)) {
     overBead.value = false
-    overRefusedMargin.value = false
     hideMarker()
     return
   }
 
   overBead.value = bead !== undefined
-  overRefusedMargin.value = refusesMargin(bead)
   placeMarker()
   placePickChip(event, bead)
   if (isSameBead(bead, lastBead)) {
@@ -972,7 +886,6 @@ function onPointerLeave(): void {
   hoverPoint = undefined
   lastBead = undefined
   overBead.value = false
-  overRefusedMargin.value = false
   pickChip.value = undefined
   hideMarker()
   emit('hover-end')
@@ -1011,11 +924,9 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearTimeout(wheelTimer)
-  clearTimeout(refusedTimer)
   clearTimeout(sizeTimer)
   clearTimeout(settleTimer)
   if (edgeScrollFrame && typeof cancelAnimationFrame === 'function') cancelAnimationFrame(edgeScrollFrame)
-  if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
   pendingFrames.forEach((frame) => cancelAnimationFrame(frame))
   resizeObserver?.disconnect()
   window.removeEventListener('resize', measure)
@@ -1038,7 +949,6 @@ onBeforeUnmount(() => {
     :class="{
       'project-surface--over-bead': overBead && !handMoves && !picking && !selecting,
       'project-surface--picking': eyedropperShown,
-      'project-surface--refused': overRefusedMargin && !handMoves,
       'project-surface--moving': handMoves,
       'project-surface--dragging': dragging,
     }"
@@ -1092,12 +1002,6 @@ onBeforeUnmount(() => {
  * card, ticket 353). */
 .project-surface--over-bead {
   cursor: none;
-}
-
-/* Over the Frame's margin with a tool that cannot place beads there (Frame card, ticket 276); it wins over the bead
- * marker. */
-.project-surface--refused {
-  cursor: not-allowed;
 }
 
 /* The Hand tool and Space + drag (CanvasHint card): an open hand, closed while the canvas is being moved. */

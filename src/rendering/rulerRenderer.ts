@@ -9,7 +9,7 @@ import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
 import type { SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
-import { frameHandles } from './frameHandles'
+import { frameHandles, gutterHandles, type Handle } from './frameHandles'
 
 /** The mono stack every number and label on the canvas is set in. */
 const MONO_FONT = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
@@ -146,13 +146,13 @@ const TOOLTIP_PAD_X = 8
 const TOOLTIP_HEIGHT = 24
 const TOOLTIP_GAP = 10
 
-/** The handles round a box in the viewport's px: squares with a 1.5px `frameLine` edge, filled with the canvas. */
-function drawHandles(context: DrawingContext, box: { x: number; y: number; width: number; height: number }, theme: ProjectTheme, touch: boolean): void {
+/** The handles given, in the viewport's px: squares with a 1.5px `frameLine` edge, filled with the canvas. */
+function drawHandles(context: DrawingContext, handles: readonly Handle[], theme: ProjectTheme): void {
   context.setLineDash([])
   context.lineWidth = FRAME_LINE_PX
   context.strokeStyle = theme.frameLine
   context.fillStyle = theme.canvas
-  for (const handle of frameHandles(box, touch)) {
+  for (const handle of handles) {
     context.beginPath()
     context.roundRect(handle.x - handle.size / 2, handle.y - handle.size / 2, handle.size, handle.size, 2)
     context.fill()
@@ -163,7 +163,7 @@ function drawHandles(context: DrawingContext, box: { x: number; y: number; width
 /** The Selection's handles (ticket 414): the Frame's own squares, over a Selection's box in the viewport's px. */
 export function drawBoxHandles(context: DrawingContext, box: { x: number; y: number; width: number; height: number }, pixelRatio: number, theme: ProjectTheme, touch: boolean): void {
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
-  drawHandles(context, box, theme, touch)
+  drawHandles(context, frameHandles(box, touch), theme)
 }
 
 // What the Frame carries while being set (Frame card): its handles, the size tooltip at the bottom-right, in viewport
@@ -174,7 +174,7 @@ export function drawFrameEditing(context: DrawingContext, input: { frame: Frame;
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   const box = surface.frameBox(frame)
 
-  drawHandles(context, box, theme, touch)
+  drawHandles(context, gutterHandles(box, touch, viewport), theme)
 
   if (tooltip === '') {
     return

@@ -28,7 +28,7 @@ type Gesture =
 
 // Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit toggle opens the Frame bar and shows the
 // handles; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
-// Margin handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
+// Move handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
 /** The control that opened the Frame bar, for it to hang from (ticket 475). */
 export type FrameBarOrigin = 'pencil' | 'strip'
 
@@ -179,7 +179,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (outcome.kind === 'applied') deps.announce(deps.messages().frame.announceMoved)
   }
 
-  /** A margin stepper's press (ticket 417): one edge a bead out (1) or in (-1), one Undo step; a step that would
+  /** An edge stepper's press (ticket 417): one edge a bead out (1) or in (-1), one Undo step; a step that would
    * empty the Frame is none. */
   function stepEdge(edge: FrameEdge, step: 1 | -1): void {
     const project = deps.currentProject()

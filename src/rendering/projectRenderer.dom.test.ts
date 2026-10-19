@@ -807,9 +807,9 @@ describe('the bead look', () => {
   })
 })
 
-describe('the keep-out margin on the Canvas', () => {
+describe('the Frame covering the Canvas beads against it', () => {
   /** The clip in force at each drawn bead: whether it is an even-odd one with a rectangle at `box` cut out. */
-  function drawnWithMarginCutOut(project: Project, box: [number, number, number, number]): Map<string, boolean> {
+  function drawnWithFrameCutOut(project: Project, box: [number, number, number, number]): Map<string, boolean> {
     const { context, calls } = recordingContext()
     const cutOut = new Map<string, boolean>()
     const drawBead: BeadDrawer = (_context, bead) => {
@@ -824,12 +824,12 @@ describe('the keep-out margin on the Canvas', () => {
 
   it('hides the overhang of the beads just outside it, which nest into its edge rows in peyote', () => {
     const frame = { row: 20, column: 20, rows: 4, columns: 4 }
-    // A bead in the row just above the margin (row 13, the margin being rows 14 to 29): its bottom 5px lies inside the margin's outline.
-    const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 13: { 22: '#ff0000' } } }
+    // A bead in the row just above the Frame (row 19): its bottom 5px lies inside the Frame's box.
+    const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 19: { 22: '#ff0000' } } }
 
-    const cutOut = drawnWithMarginCutOut(project, [14 * 20, 14 * 15, 16 * 20 + 10, 15 * 15 + 20])
+    const cutOut = drawnWithFrameCutOut(project, [20 * 20, 20 * 15, 4 * 20 + 10, 15 * 15 + 20])
 
-    expect(cutOut.get(`${22 * 20 + 10},${13 * 15}`)).toBe(true)
+    expect(cutOut.get(`${22 * 20 + 10},${19 * 15}`)).toBe(true)
   })
 })
 

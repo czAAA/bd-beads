@@ -62,30 +62,43 @@ export function selectionBarPlacement(
   return clear.sort((a, b) => distance(a) - distance(b))[0] ?? preferred
 }
 
-/** Where the Frame is on screen (tickets 427, 473): its line's box and the margin's outer edge, in the canvas box's
- * pixels. The Margin handle and the edit pencil are placed from it. */
-export interface FrameAnchor extends SelectionAnchor {
-  /** The margin's outer edge, in the canvas box's pixels. */
-  outer: BarBox
-}
+/** Where the Frame is on screen (tickets 427, 473): its line's box and the canvas box it sits in, in the canvas box's
+ * pixels. The Move handle and the edit pencil are placed from it. */
+export type FrameAnchor = SelectionAnchor
 
-/** The Margin handle's hit area, mirroring the `--frame-handle-hit-*` values (ticket 473). */
+/** The Move handle's hit area, mirroring the `--frame-handle-hit-*` values (ticket 473). */
 const HANDLE_HIT_HEIGHT_PX = 44
-/** The edit pencil's hit area and how far in and down its centre sits from the margin outline's top-right corner,
- * mirroring `--frame-edit-hit`. */
-const PENCIL_HIT_PX = 44
-const PENCIL_OFFSET_PX = 26
-
 const HANDLE_HIT_WIDTH_PX = 56
+/** The edit pencil's hit area, mirroring `--frame-edit-hit`. */
+const PENCIL_HIT_PX = 44
+/** How far from the Frame's line the Move handle and the pencil stand, in screen px at every zoom (ADR 0066): past the
+ * resize handles' reach (a mouse's 24px from the line; a finger's corners reach 35) and their own half hit area. */
+const CONTROL_OFFSET_PX = 48 // `--frame-control-offset`
+
 const around = (centre: { x: number; y: number }, width: number, height: number): BarBox => ({ left: centre.x - width / 2, top: centre.y - height / 2, width, height })
 
-/** Where the Margin handle goes (ticket 473): halfway down the top margin, centred on it however much is in view. It
- * is not pulled into the canvas box, so a Frame dragged over the edge takes it along. Only its centre moves with the
- * zoom; it slides clear of the edit pencil and the Frame bar (`bar`) where they would cover it. */
-export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: number; y: number } {
-  const { box, outer } = anchor
-  const pos = (x: number, y: number) => ({ x, y })
-  const natural = pos(outer.left + outer.width / 2, (box.top + outer.top) / 2)
+/** The height a gutter control of hit height `size` stands at: above the Frame, or below it when the canvas box has no room above. */
+function gutterY({ box }: FrameAnchor, size: number): number {
+  return box.top - CONTROL_OFFSET_PX - size / 2 >= 0 ? box.top - CONTROL_OFFSET_PX : box.top + box.height + CONTROL_OFFSET_PX
+}
+
+/** `value` kept inside the canvas box along one axis, by a hit area of `size` centred on it. */
+const within = (value: number, size: number, limit: number) => Math.max(size / 2, Math.min(value, limit - size / 2))
+
+/** Where the edit pencil goes (ticket 473, ADR 0066): in the gutter above the Frame's top-right corner, or below its
+ * bottom-right corner when there is no room above; kept inside the canvas box. */
+export function editPencilCentre(anchor: FrameAnchor): { x: number; y: number } {
+  const { box, viewport } = anchor
+  return { x: within(box.left + box.width, PENCIL_HIT_PX, viewport.width), y: within(gutterY(anchor, PENCIL_HIT_PX), PENCIL_HIT_PX, viewport.height) }
+}
+
+/** Where the Move handle goes (ticket 473, ADR 0066): in the gutter above the Frame, centred on its top edge, or below
+ * it when there is no room above; kept inside the canvas box. Only its centre moves with the zoom; it slides clear of
+ * the edit pencil and the Frame bar (`bar`) where they would cover it. */
+export function moveHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: number; y: number } {
+  const { box, viewport } = anchor
+  const pos = (x: number, y: number) => ({ x: within(x, HANDLE_HIT_WIDTH_PX, viewport.width), y: within(y, HANDLE_HIT_HEIGHT_PX, viewport.height) })
+  const natural = pos(box.left + box.width / 2, gutterY(anchor, HANDLE_HIT_HEIGHT_PX))
   const obstacles = [around(editPencilCentre(anchor), PENCIL_HIT_PX, PENCIL_HIT_PX), ...(bar ? [bar] : [])]
   const hits = (point: { x: number; y: number }) => obstacles.some((obstacle) => overlaps(around(point, HANDLE_HIT_WIDTH_PX, HANDLE_HIT_HEIGHT_PX), obstacle))
   if (!hits(natural)) return natural
@@ -99,11 +112,4 @@ export function marginHandleCentre(anchor: FrameAnchor, bar?: BarBox): { x: numb
   ])
   const distance = (at: { x: number; y: number }) => Math.abs(at.x - natural.x) + Math.abs(at.y - natural.y)
   return slides.filter((at) => !hits(at)).sort((a, b) => distance(a) - distance(b))[0] ?? natural
-}
-
-/** Where the edit pencil goes (ticket 473): inside the margin, its hit area 4px in from the outline's top-right corner,
- * pinned to it. Not pulled into the canvas box: a Frame dragged over the edge takes it along. */
-export function editPencilCentre(anchor: FrameAnchor): { x: number; y: number } {
-  const { outer } = anchor
-  return { x: outer.left + outer.width - PENCIL_OFFSET_PX, y: outer.top + PENCIL_OFFSET_PX }
 }

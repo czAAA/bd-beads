@@ -21,8 +21,7 @@ function setup(tool: Tool = 'paint', changesGrid = true) {
     endStroke: vi.fn(),
     beginSelectPress: vi.fn(),
     leavePasteMode: vi.fn(),
-    extendSelection: vi.fn(() => true),
-    refuseSelection: vi.fn(),
+    extendSelection: vi.fn(),
     announce: vi.fn(),
     colorWords: () => 'Custom',
   }
@@ -65,14 +64,5 @@ describe('useToolAtCursor', () => {
     finishExtending()
     finishExtending()
     expect(deps.endStroke).toHaveBeenCalledTimes(1)
-  })
-
-  it('shows the not-allowed cue and reports a step the margin held back (ticket 433)', () => {
-    const { deps, extendSelectionTo } = setup()
-    vi.mocked(deps.extendSelection).mockReturnValueOnce(false)
-    expect(extendSelectionTo({ row: 0, column: 0 }, { row: 0, column: 1 })).toBe(false)
-    expect(deps.refuseSelection).toHaveBeenCalledTimes(1)
-    expect(extendSelectionTo({ row: 0, column: 0 }, { row: 0, column: 1 })).toBe(true)
-    expect(deps.refuseSelection).toHaveBeenCalledTimes(1)
   })
 })

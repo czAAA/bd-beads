@@ -9,7 +9,7 @@ import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
 // Frame and Remove row/column. It owns the rules: Row progress's lock (only Remove Frame passes it, clearing the
-// passes), Row progress following the Frame. Beads left in the keep-out margin stay on the Canvas.
+// passes), Row progress following the Frame.
 export type FrameChange =
   /** Resize the Frame (the handles, the steppers, the typed size): its beads keep their place on the Canvas, those the
    * Frame no longer holds are dropped. The Canvas is untouched. */

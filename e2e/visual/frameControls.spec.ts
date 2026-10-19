@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { openApp, settle, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** The Frame's Margin handle, edit pencil and Frame bar never scale with the zoom (ticket 473); the bar hangs from
+/** The Frame's Move handle, edit pencil and Frame bar never scale with the zoom (ticket 473); the bar hangs from
  * whichever opened it (ticket 475). Measured by their boxes, not compared with a picture. */
 
 type Box = { x: number; y: number; width: number; height: number }
@@ -104,5 +104,18 @@ test('opened from the pencil, the bar hangs from it, right edges lined up, and f
   await page.keyboard.up('Control')
   await settle(page)
   expect(await hangs()).not.toEqual(before)
+  await context.close()
+})
+
+test('the Frame\'s controls sit in a gutter just outside its edge, with no keep-out margin round it (ADR 0066)', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom' })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  await setZoom(page, 200)
+  await page.getByTestId('frame-edit-toggle').click()
+  await settle(page)
+  await page.mouse.move(5, 5)
+  await expect(page.getByTestId('app-canvas')).toHaveScreenshot('frame-gutter-controls.png', { maxDiffPixelRatio: 0.01 })
   await context.close()
 })

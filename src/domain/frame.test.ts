@@ -71,9 +71,9 @@ describe('fitToDrawing', () => {
     expect(fitToDrawing({ technique: 'loom', beads })).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
-  it('leaves out beads the current Frame\'s margin covers', () => {
+  it('leaves out beads the current Frame covers', () => {
     const current = { row: 20, column: 20, rows: 3, columns: 3, beads: {} }
-    const withHidden = withColors(beads, [{ row: 18, column: 20, color: '#f00' }])
+    const withHidden = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
     expect(fitToDrawing({ technique: 'loom', beads: withHidden, frame: current })).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
