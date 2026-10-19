@@ -402,9 +402,9 @@ describe('pieceSelectionAt with a Frame (ticket 433)', () => {
     ],
   )
 
-  it('takes the part on the tapped bead\'s side: the inside, or clear of the margin', () => {
+  it('takes the part on the tapped bead\'s side: the inside, or the Canvas outside the Frame', () => {
     expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 10 }, frame)).toEqual({ top: 12, left: 10, rows: 1, columns: 2 })
-    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 9 }, frame)).toBeUndefined()
+    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 9 }, frame)).toEqual({ top: 12, left: 8, rows: 1, columns: 2 })
   })
 })
 

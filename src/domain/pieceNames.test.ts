@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from './canvas'
-import { keepAllowedEdits } from './margin'
+import { keepAllowedEdits } from './allowedEdits'
 import { NO_MIRROR_AXES } from './mirror'
 import { carryNames, namedPieceCutBy, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
 import { createProject, deleteAll, frameGrid, restoreSnapshot, snapshotOf, type Project } from './project'

@@ -56,7 +56,6 @@ const {
   bindCanvasScroll,
   zoom,
   scroll,
-  selectionRefusals,
   activeTool,
   showRulers,
   toggleRulers,
@@ -174,8 +173,7 @@ const colorPick = useColorPick()
 
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on
  * release. */
-/** Whether Select or Piece is in hand: the pointer is the native arrow, and the margin cannot be selected (tickets
- * 414, 433). */
+/** Whether Select or Piece is in hand: the pointer is the native arrow, not the bead-shaped marker (ticket 414). */
 const selecting = computed(() => activeTool.value === 'select' || activeTool.value === 'piece')
 
 const shownProject = frameDraftProject
@@ -209,11 +207,10 @@ const selectionSummary = computed(() => {
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps
  * aside for the other (ticket 415). */
 const selectionAnchor = ref<SelectionAnchor>()
-/** Where the Frame and its margin are on the canvas box: the Margin handle and the edit pencil follow it (tickets
- * 473). */
+/** Where the Frame is on the canvas box: the Move handle and the edit pencil follow it (ticket 473). */
 const frameAnchor = ref<FrameAnchor>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
-/** Where the Frame bar is on the drawing area, for the Margin handle to keep clear of (ticket 473). */
+/** Where the Frame bar is on the drawing area, for the Move handle to keep clear of (ticket 473). */
 const frameBarRect = ref<BarBox>()
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
@@ -314,7 +311,7 @@ function techniqueWord(technique: Technique): string {
           @name-piece="onNamePiece"
         />
 
-        <!-- The Frame's own controls (tickets 473, 475): the Margin handle and edit pencil follow the Frame; the bar hangs
+        <!-- The Frame's own controls (tickets 473, 475): the Move handle and edit pencil follow the Frame; the bar hangs
           from the pencil or the strip's Frame button, whichever opened it. -->
         <FrameChrome
           v-if="activeProject && frameAnchor && !selection"
@@ -381,12 +378,9 @@ function techniqueWord(technique: Technique): string {
               :marker-hidden="spaceHeld"
               :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"
-              :blocks-margin="!colorPick?.picking.value && (activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive)"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
-              :selection-blocks-margin="selecting"
-              :selection-refusals="selectionRefusals"
               :selecting="selecting"
               :mirror-axis-counts="previewedMirrorAxisCounts"
               :dimmed-cells="mirrorCurrentDimmedCells"

@@ -21,7 +21,7 @@ export interface RotateSelectionFlowDeps {
 }
 
 // Rotate (CONTEXT.md, ADR 0052): a quarter turn of the Selection's beads about its centre as one drawing Edit (Undo
-// restores all). The keep-out margin and finished rows trim it silently, as Paste. The turned rectangle becomes the
+// restores all). Finished rows trim it silently, as Paste. The turned rectangle becomes the
 // Selection; a Message gives the count, with Undo. Deps are read lazily.
 export function useRotateSelectionFlow(deps: RotateSelectionFlowDeps) {
   function onRotate(): void {

@@ -658,7 +658,7 @@ export const es: Translations = {
     pasteTool: 'Pasa el cursor para ver la pieza copiada y haz clic para estamparla.',
     rotate: 'Gira la selección un cuarto de vuelta.',
     rotateCanvas: 'Gira todo el lienzo un cuarto de vuelta sin mover ninguna cuenta.',
-    rotateFrame: 'Gira el marco, su margen y las cuentas de dentro un cuarto de vuelta.',
+    rotateFrame: 'Gira el marco y las cuentas de dentro un cuarto de vuelta.',
     noBeadsToRotate: 'No hay cuentas que girar.',
     setFrameFirst: 'Define primero un marco.',
     fitToDrawing: 'Ajusta el marco a todas las cuentas.',

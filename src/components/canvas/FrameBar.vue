@@ -31,7 +31,7 @@ const emit = defineEmits<{
   remove: []
   key: [event: KeyboardEvent]
   close: []
-  /** The bar's rectangle in the drawing area's pixels, or none once it is gone: what the Margin handle keeps clear of. */
+  /** The bar's rectangle in the drawing area's pixels, or none once it is gone: what the Move handle keeps clear of. */
   rect: [rect: BarBox | undefined]
 }>()
 
@@ -64,7 +64,7 @@ const placement = computed(() =>
   props.pencil ? { anchor: 'frame-edit-toggle', align: 'end' as const, dropdown: true } : { anchor: 'strip-frame', align: 'start' as const, dropdown: false },
 )
 
-/** A press on the Margin handle or the pencil, or one that grabs a resize handle, works the Frame: the bar stays. */
+/** A press on the Move handle or the pencil, or one that grabs a resize handle, works the Frame: the bar stays. */
 function keepsPress(event: PointerEvent): boolean {
   const onChrome = event.target instanceof Element && event.target.closest('[data-testid="frame-chrome"]') !== null
   return onChrome || (props.grabsFrame?.(event) ?? false)
