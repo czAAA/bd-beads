@@ -259,6 +259,24 @@ describe('sampleLatticePacked', () => {
   })
 })
 
+describe('sampling a Right-angle weave lattice (ticket 483)', () => {
+  it('takes each bead at its own centre, horizontal and vertical alike', () => {
+    // A cube bead is 1.5 mm, so a Unit is 3 mm a side; a picture pixel is 0.5 mm. 1 Unit across and down: 3 lines, 2 columns.
+    const image = coordinateImage(8, 8)
+    const view = { scaleMm: 0.5, offsetXMm: 0, offsetYMm: 0, pictureWidthMm: 4, pictureHeightMm: 4 }
+    const lattice: PreviewLattice = { columns: 2, rows: 3, frameColumn: 0, frameRow: 0 }
+    const sampled = sampleLattice({ image, view, technique: 'rightAngle', bead: cubeBead, lattice }).map((row) =>
+      row.map((hex) => (hex ? sampledPixel(hex) : undefined)),
+    )
+
+    // Centres in mm: a horizontal bead (1.5 + 0.75, 0.75); vertical beads (0.75, 2.25) and (3.75, 2.25); and so on.
+    expect(sampled[0]![0]).toEqual({ x: 4, y: 1 })
+    expect(sampled[1]![0]).toEqual({ x: 1, y: 4 })
+    expect(sampled[1]![1]).toEqual({ x: 7, y: 4 })
+    expect(sampled[2]![0]).toEqual({ x: 4, y: 7 })
+  })
+})
+
 describe('input limits', () => {
   it('states them once, and derives the byte and pixel counts from what the UI advertises', () => {
     expect(IMAGE_MAX_MEGABYTES).toBe(10)

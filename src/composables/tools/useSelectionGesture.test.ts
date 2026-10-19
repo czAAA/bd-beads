@@ -40,6 +40,29 @@ function copyTopLeft(gesture: ReturnType<typeof setup>['gesture']) {
   gesture.copy()
 }
 
+describe('useSelectionGesture in Right-angle weave (ticket 483)', () => {
+  const woven: Project = {
+    ...createProject({ technique: 'rightAngle', beadId: cubeBeadId, size: { width: 3, height: 2, unit: 'beads' } }),
+    frame: { row: 0, column: 0, rows: 5, columns: 4 },
+  }
+
+  it('marks a Selection of whole Units: a press on one bead selects its Unit', () => {
+    const { gesture } = setup(woven)
+    gesture.beginPress(1, 1)
+    expect(gesture.selection.value).toEqual({ top: 0, left: 1, rows: 3, columns: 2 })
+  })
+
+  it('grows a dragged Selection to whole Units and keeps a press on the last line inside the Frame', () => {
+    const { gesture } = setup(woven)
+    gesture.beginPress(1, 0)
+    gesture.extendPress(2, 2)
+    expect(gesture.selection.value).toEqual({ top: 0, left: 0, rows: 3, columns: 3 })
+
+    gesture.beginPress(4, 3)
+    expect(gesture.selection.value).toEqual({ top: 2, left: 2, rows: 3, columns: 2 })
+  })
+})
+
 describe('useSelectionGesture', () => {
   it('starts with no Selection', () => {
     expect(setup().gesture.selection.value).toBeUndefined()
