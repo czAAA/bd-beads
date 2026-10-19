@@ -9,6 +9,7 @@ import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { rowProgressStarted, type Project } from '../../domain/project'
+import { describeWeave } from '../../domain/weave'
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
 // clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
@@ -106,8 +107,9 @@ const items = computed<BarItem[]>(() => {
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407).
   list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
-  // Not offered once a Row progress pass is done: the Frame lock of ticket 411 (ticket 416).
-  if (!props.project || !rowProgressStarted(props.project)) list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
+  // Not offered once a Row progress pass is done (the Frame lock of ticket 411, ticket 416), nor where a quarter turn
+  // isn't a row (Netting, ticket 486).
+  if ((!props.project || !rowProgressStarted(props.project)) && (!props.project || describeWeave(props.project).quarterTurn)) list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
   list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })

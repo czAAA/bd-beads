@@ -203,6 +203,9 @@ export interface WeaveDescription extends TechniqueRules {
    * horizontal beads) to an even row, at least one Unit each way. `within` keeps a grown Selection that started
    * inside it from leaving it. */
   snapSelection(selection: Selection, within?: Frame): Selection
+  /** Where a block of beads, given by its beads' offsets from its top-left, lands when aimed at `topLeft`: nudged so its
+   * beads fall on beads of the Weave (a Technique whose positions aren't all beads); as aimed otherwise (ticket 486). */
+  fitBlock(topLeft: GridPosition, offsets: GridPosition[]): GridPosition
   /** The physical size, in mm, of one step across and one step down from a Bead. */
   stepMm(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'>): { across: number; down: number }
 }
@@ -271,6 +274,7 @@ export function describeWeave(weave: Weave): WeaveDescription {
       at: (row, column) => ({ row: frame.row + row, column: frame.column + column }),
     }),
     snapSelection: (selection) => selection,
+    fitBlock: (topLeft) => topLeft,
     stepMm: (bead) => ({ across: beadPitchMm(bead), down: rowPitch(weave.technique, bead.heightMm) }),
   }
 }
@@ -285,6 +289,16 @@ const inside = (frame: Frame, selection: Selection): boolean =>
   selection.left >= frame.column &&
   selection.top + selection.rows <= frame.row + frame.rows &&
   selection.left + selection.columns <= frame.column + frame.columns
+
+/** A grown Selection kept inside `within` when the Selection it grew from started inside it (ticket 483). */
+function keptWithin(box: Selection, from: Selection, within?: Frame): Selection {
+  if (!within || !inside(within, from)) {
+    return box
+  }
+  const pastBottom = Math.max(0, box.top + box.rows - (within.row + within.rows))
+  const pastRight = Math.max(0, box.left + box.columns - (within.column + within.columns))
+  return { ...box, top: box.top - pastBottom, left: box.left - pastRight }
+}
 
 const isHorizontalLine = (row: number): boolean => ((row % 2) + 2) % 2 === 0
 
@@ -420,14 +434,9 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
       const last = selection.top + selection.rows - 1
       const bottom = Math.max(top + 2, last + (((last % 2) + 2) % 2))
       const right = Math.max(selection.left + selection.columns - 1, selection.left + 1)
-      const box = { top, left: selection.left, rows: bottom - top + 1, columns: right - selection.left + 1 }
-      if (!within || !inside(within, selection)) {
-        return box
-      }
-      const pastBottom = Math.max(0, box.top + box.rows - (within.row + within.rows))
-      const pastRight = Math.max(0, box.left + box.columns - (within.column + within.columns))
-      return { ...box, top: box.top - pastBottom, left: box.left - pastRight }
+      return keptWithin({ top, left: selection.left, rows: bottom - top + 1, columns: right - selection.left + 1 }, selection, within)
     },
+    fitBlock: (topLeft) => topLeft,
     stepMm: (bead) => ({ across: beadPitchMm(bead) + bead.heightMm, down: beadPitchMm(bead) + bead.heightMm }),
   }
 }
@@ -526,7 +535,28 @@ function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescri
       column: { index: position.column - frame.column, count: frame.columns },
       at: (row, column) => ({ row: frame.row + row, column: frame.column + column }),
     }),
-    snapSelection: (selection) => selection,
+    snapSelection: (selection, within) => {
+      const top = selection.top - modulo(selection.top, p)
+      const left = selection.left - modulo(selection.left, p)
+      const lastRow = selection.top + selection.rows - 1
+      const lastColumn = selection.left + selection.columns - 1
+      const bottom = Math.max(top + period, lastRow + modulo(-lastRow, p))
+      const right = Math.max(left + period, lastColumn + modulo(-lastColumn, p))
+      return keptWithin({ top, left, rows: bottom - top + 1, columns: right - left + 1 }, selection, within)
+    },
+    // The nearest place within a step of where it was aimed that puts the most beads on beads of the mesh.
+    fitBlock: (topLeft, offsets) => {
+      let best = { position: topLeft, misses: Infinity, distance: Infinity }
+      for (let down = -p; down <= p; down += 1) {
+        for (let across = -p; across <= p; across += 1) {
+          const position = { row: topLeft.row + down, column: topLeft.column + across }
+          const misses = offsets.filter((offset) => !hasPosition({ row: position.row + offset.row, column: position.column + offset.column })).length
+          const distance = Math.abs(down) + Math.abs(across)
+          if (misses < best.misses || (misses === best.misses && distance < best.distance)) best = { position, misses, distance }
+        }
+      }
+      return best.position
+    },
     stepMm: (bead) => ({ across: period * NETTING_STEP * beadPitchMm(bead), down: p * NETTING_STEP * bead.heightMm }),
   }
 }

@@ -209,7 +209,7 @@ function flippedBlock(block: CopiedBlock, flipRows: boolean, flipColumns: boolea
 // one placement per strip combination, flipped per mirrorBlockPlacements and run through pastedCells, so each copy
 // keeps its own hole and clipping rules and later copies win overlaps (paintCells' order).
 export function mirroredPastedCells(
-  project: Pick<Project, 'frame' | 'technique' | 'brickBlock'>,
+  project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
   block: CopiedBlock,
   at: GridPosition,
   axes: MirrorAxisCounts,
@@ -222,7 +222,8 @@ export function mirroredPastedCells(
   const row = at.row - block.anchor.row
   const topLeft = { row: row - (((row % rowsPerUnit) + rowsPerUnit) % rowsPerUnit), column: at.column - block.anchor.column }
   if (countsUnits) {
-    return unitMirroredPastedCells(project, block, topLeft, axes, copyMode)
+    const placed = describeWeave(project).fitBlock(topLeft, pastedCells(block, { row: 0, column: 0 }))
+    return unitMirroredPastedCells(project, block, placed, axes, copyMode)
   }
   // Mirror's axes divide the Frame; with none, or none turned on, a stamp is only itself.
   if (!frame || (axes.columns === 0 && axes.rows === 0)) {
@@ -247,14 +248,16 @@ export function mirroredPastedCells(
 /** Each bead of the block with its Mirror counterparts, as they fold among beads that lie alike (Weave.lattice); a later
  * copy wins an overlap. */
 function unitMirroredPastedCells(
-  project: Pick<Project, 'frame' | 'technique' | 'brickBlock'>,
+  project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
   block: CopiedBlock,
   topLeft: GridPosition,
   axes: MirrorAxisCounts,
   copyMode: boolean,
 ): PastedCell[] {
   const cellsByPosition = new Map<string, PastedCell>()
-  for (const cell of pastedCells(block, topLeft)) {
+  // A position that holds no bead (a hole in a net) takes nothing (ticket 486).
+  const { hasPosition } = describeWeave(project)
+  for (const cell of pastedCells(block, topLeft).filter((cell) => hasPosition(cell, project.frame))) {
     for (const copy of mirroredCells(project, cell, axes, copyMode)) {
       cellsByPosition.set(positionKey(copy), { ...copy, color: cell.color })
     }
