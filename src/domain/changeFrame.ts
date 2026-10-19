@@ -3,7 +3,8 @@ import { movedFrame, sameFrame } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { describeWeave, type Technique } from './weave'
-import { carryNames, namedPieceCutBy } from './pieceNames'
+import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
+import { numericKey, pieceBeadsAt } from './pieces'
 import { clampBrickBlock, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withTechnique, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -117,6 +118,10 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return { kind: 'changed', project: { ...project, frame: { ...frame, row: moved.row, column: moved.column }, updatedAt: Date.now() } }
   }
 
+  if ('remove' in change) {
+    return project.frame ? { kind: 'changed', project: removedFrame(project) } : { kind: 'unchanged', project }
+  }
+
   if ('technique' in change) {
     if (change.technique === project.technique) {
       return { kind: 'unchanged', project }
@@ -165,6 +170,41 @@ function madeFrame(project: Project, rectangle: Frame): Project {
   const frame = { ...framed.frame!, beads: shiftedBeads(lifted, -rectangle.row, -rectangle.column), ...(named ? { name: named } : {}) }
   const carried = carryNames(project, { ...framed, frame })
   return first && previous?.name ? { ...carried, pieceNames: [...(carried.pieceNames ?? []), { name: previous.name, row: first.row + previous.row, column: first.column + previous.column }] } : carried
+}
+
+/** The Project without its Frame (ticket 497): the Frame's footprint on the Canvas is cleared and its beads dropped in,
+ * so the picture looks as the Frame did. The Frame's name stays on the Piece its beads form (the larger one if several);
+ * the passes go with the Frame. */
+function removedFrame(project: Project): Project {
+  const frame = project.frame!
+  const dropped = shiftedBeads(frame.beads, frame.row, frame.column)
+  const beads = beadsOver(beadsWithout(project.beads, frame), dropped)
+  const canvas = carryNames(project, { ...withFrame(project, undefined), beads })
+  const name = frame.name
+  const landed = name ? largestPieceBead(beads, canvas, dropped) : undefined
+  if (!name || !landed) {
+    return canvas
+  }
+  const piece = new Set(pieceBeadsAt(beads, canvas, landed).map(numericKey))
+  const names = canvas.pieceNames ?? []
+  const rival = namedPieces(canvas).find((named) => names.some((entry) => entry.name === named.name && piece.has(numericKey(entry))))
+  if (rival && rival.beads >= piece.size) {
+    return canvas
+  }
+  return { ...canvas, pieceNames: [...names.filter((entry) => !piece.has(numericKey(entry))), { name, ...landed }] }
+}
+
+/** A bead of the largest Piece that `among` forms in `beads` (ties to the first read), or undefined when there is none. */
+function largestPieceBead(beads: BeadMap, weave: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, among: BeadMap): GridPosition | undefined {
+  const seen = new Set<number>()
+  let best: { at: GridPosition; size: number } | undefined
+  forEachBead(among, (row, column) => {
+    if (seen.has(numericKey({ row, column }))) return
+    const members = pieceBeadsAt(beads, weave, { row, column })
+    members.forEach((at) => seen.add(numericKey(at)))
+    if (!best || members.length > best.size) best = { at: { row, column }, size: members.length }
+  })
+  return best?.at
 }
 
 /** The first bead of a map, reading row by row. */

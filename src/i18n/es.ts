@@ -504,7 +504,7 @@ export const es: Translations = {
     fitToDrawing: 'Ajustar al dibujo',
     removeFrame: 'Quitar marco',
     removeConfirmTitle: '¿Quitar el marco?',
-    removeConfirmMessage: 'El marco se quita y sus cuentas se van con él. Las filas marcadas como hechas se borran también. Se puede deshacer.',
+    removeConfirmMessage: 'Las filas marcadas como hechas se borrarán con el marco. Sus cuentas se quedan en el lienzo. Se puede deshacer.',
     removeConfirmButton: 'Quitar marco',
     removeConfirmCancel: 'Cancelar',
     explainer: 'El marco señala qué cuentas pasan a ser el esquema. Las cuentas fuera de él se quedan en el lienzo.',
