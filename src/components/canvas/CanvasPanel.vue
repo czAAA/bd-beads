@@ -17,7 +17,7 @@ import ToastRegion from '../ui/ToastRegion.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { useColorPick } from '../../composables/tools/usePalette'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import type { BarBox, FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
+import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { Technique } from '../../domain/weave'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -127,7 +127,8 @@ const {
   onResizeFrame,
   frameBarShown,
   frameBarOpen,
-  frameBarFrom,
+  frameHandlesOn,
+  onToggleFrameBar,
   surfaceInputMode,
   onFitFrame,
   onEditFrame,
@@ -211,8 +212,6 @@ const selectionAnchor = ref<SelectionAnchor>()
 /** Where the Frame is on the canvas box: the Move handle and the edit pencil follow it (ticket 473). */
 const frameAnchor = ref<FrameAnchor>()
 /** The surface, so a press on the Move handle's button is handed to it as a press on the canvas (ticket 455). */
-/** Where the Frame bar is on the drawing area, for the Move handle to keep clear of (ticket 473). */
-const frameBarRect = ref<BarBox>()
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
 
@@ -264,7 +263,7 @@ function techniqueWord(technique: Technique): string {
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         @select-sheet="onSelectPhoneSheet"
-        @toggle-frame="onEditFrame"
+        @toggle-frame="onToggleFrameBar"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
         @undo="onUndo"
@@ -319,12 +318,11 @@ function techniqueWord(technique: Technique): string {
           v-if="activeProject && frameAnchor"
           :project="activeProject"
           :anchor="frameAnchor"
-          :editing="frameBarOpen"
+          :editing="frameHandlesOn"
           :pressing="surfacePressing"
-          :bar="frameBarRect"
           :selection="selectionAnchor?.box"
           :pill="pillRect"
-          @toggle="onEditFrame('pencil')"
+          @toggle="onEditFrame"
           @remove="onRemoveFrame"
           @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
@@ -333,16 +331,12 @@ function techniqueWord(technique: Technique): string {
         <FrameBar
           v-if="activeProject && frameBarShown && !framing"
           :project="activeProject"
-          :anchor="frameAnchor"
-          :from-pencil="frameBarFrom === 'pencil'"
-          :grabs-frame="(event: PointerEvent) => surfaceRef?.grabsFrame(event) ?? false"
           @step="onStepFrameEdge"
           @resize="onResizeFrame"
           @rotate="onRotateFrame"
           @remove="onRemoveFrame"
           @key="onFrameKey"
           @close="onCloseFrameBar"
-          @rect="frameBarRect = $event"
         />
 
         <div class="app-shell__canvas-row">
