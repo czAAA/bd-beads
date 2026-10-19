@@ -1,37 +1,64 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { describeWeave, type Technique } from '../../domain/weave'
+import { computed, onMounted, ref, watch } from 'vue'
+import { framedGrid } from '../../domain/project'
+import { generateOrnament, sampleColors, sampleSize, seedOf } from '../../domain/templateSample'
+import type { Technique } from '../../domain/weave'
+import { PROJECT_THEMES } from '../../rendering/beadLook'
+import { renderProject } from '../../rendering/projectRenderer'
+import { spaceOf } from '../../rendering/space'
+import { displayedExtentPx } from '../../rendering/surfaceView'
+import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
-// The plain picture a Template card carries until its artwork lands (ticket 493, 0494): a Frame-shaped lattice of bead
-// marks in the Template's Technique, so peyote and brick look offset and loom lines up. Decorative.
+// The decorated example on a Template card and in its setup (ticket 494, spec 0488; TemplateGallery card): a small
+// symmetric ornament in the Technique, drawn by the Project renderer in the Frame-only space and scaled to the slot.
+// Decorative.
 const props = defineProps<{
   technique: Technique
-  /** The Template's default size, whose shape the lattice takes. */
+  /** The Template's default size, whose shape the sample takes. */
   columns: number
   rows: number
+  /** Names the ornament: the same Template always gets the same one. */
+  seedText: string
 }>()
 
-const MAX_SIDE = 7
-const MIN_SIDE = 3
+/** The longest side of the drawing in CSS px; the slot scales it down or up, and it is drawn at twice that for a crisp edge. */
+const DRAWN_PX = 96
 
-/** The lattice's beads across and down: the Frame's own proportions, held to a few marks a side. */
-const lattice = computed(() => {
-  const long = Math.max(props.columns, props.rows)
-  const scale = MAX_SIDE / long
-  const across = Math.max(MIN_SIDE, Math.min(MAX_SIDE, Math.round(props.columns * scale)))
-  const down = Math.max(MIN_SIDE, Math.min(MAX_SIDE, Math.round(props.rows * scale)))
-  const shifted = describeWeave({ technique: props.technique }).shifted
-  const marks = Array.from({ length: down }, (_row, row) =>
-    Array.from({ length: across }, (_column, column) => ({ x: column + 0.5 + (shifted && row % 2 === 1 ? 0.5 : 0), y: row + 0.5, key: `${row}-${column}` })),
-  ).flat()
-  return { width: across + (shifted ? 0.5 : 0), height: down, marks }
+const theme = useResolvedTheme()
+const canvasEl = ref<HTMLCanvasElement>()
+
+const project = computed(() => {
+  const weave = { technique: props.technique }
+  const grid = generateOrnament(weave, sampleSize(props.columns, props.rows), seedOf(props.seedText), sampleColors(theme.value))
+  return {
+    ...weave,
+    ...framedGrid(grid.map((row) => row.map((color) => ({ color }))), weave),
+    rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
+    rotation: 0 as const,
+  }
 })
+const frame = computed(() => project.value.frame!)
+const unit = computed(() => displayedExtentPx(props.technique, frame.value.columns, frame.value.rows, 1, 0))
+const zoom = computed(() => DRAWN_PX / Math.max(unit.value.width, unit.value.height))
+const extent = computed(() => ({ width: unit.value.width * zoom.value, height: unit.value.height * zoom.value }))
+
+function draw() {
+  const canvas = canvasEl.value
+  const context = canvas?.getContext('2d')
+  if (!canvas || !context) return
+  const pixelRatio = 2
+  canvas.width = Math.round(extent.value.width * pixelRatio)
+  canvas.height = Math.round(extent.value.height * pixelRatio)
+  const region = { x: 0, y: 0, width: extent.value.width, height: extent.value.height }
+  renderProject(context, { project: project.value, space: spaceOf(project.value, false), region, zoom: zoom.value, pixelRatio, theme: PROJECT_THEMES[theme.value], rowMarks: false })
+}
+
+onMounted(draw)
+watch([project, zoom, theme], draw)
 </script>
 
 <template>
-  <svg class="template-picture" :viewBox="`0 0 ${lattice.width} ${lattice.height}`" aria-hidden="true" focusable="false">
-    <rect v-for="mark in lattice.marks" :key="mark.key" :x="mark.x - 0.4" :y="mark.y - 0.4" width="0.8" height="0.8" rx="0.2" />
-  </svg>
+  <canvas ref="canvasEl" class="template-picture" aria-hidden="true" data-testid="template-picture" />
 </template>
 
 <style scoped>
@@ -39,6 +66,10 @@ const lattice = computed(() => {
   display: block;
   width: 100%;
   height: 100%;
-  fill: var(--faint);
+  box-sizing: border-box;
+  padding: var(--space-4);
+  object-fit: contain;
+  background: var(--board);
+  border-radius: var(--radius-sm);
 }
 </style>

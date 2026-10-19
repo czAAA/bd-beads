@@ -196,6 +196,8 @@ export interface Translations {
     presetsLabel: string
     /** Under a side the Template keeps fixed (earrings keep their width). */
     fixedNote: string
+    /** Under the sample picture in a Template's setup: it decorates, the Frame is empty (ticket 494). */
+    sampleNote: string
     specLine: string
     blank: TemplateCopy
     gerdan: TemplateCopy

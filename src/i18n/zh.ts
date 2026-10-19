@@ -164,6 +164,7 @@ export const zh: Translations = {
     galleryLabel: '从模板开始',
     presetsLabel: '常用尺寸',
     fixedNote: '这一边不能更改。',
+    sampleNote: '这只是示例。画框一开始是空的。',
     specLine: '{width} × {height} · {technique}',
     blank: { name: '空白画布', description: '自由绘制，稍后再设边框。' },
     gerdan: { name: '格尔丹', description: '编织的项圈项链。' },

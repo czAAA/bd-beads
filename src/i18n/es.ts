@@ -164,6 +164,7 @@ export const es: Translations = {
     galleryLabel: 'Empezar con',
     presetsLabel: 'Tamaños habituales',
     fixedNote: 'Este lado es fijo.',
+    sampleNote: 'Es solo un ejemplo. El marco empieza vacío.',
     specLine: '{width} × {height} · {technique}',
     blank: { name: 'Lienzo en blanco', description: 'Dibuja libremente y pon un Marco después.' },
     gerdan: { name: 'Gerdan', description: 'Un collar tejido de cuello.' },

@@ -165,6 +165,7 @@ export const be: Translations = {
     galleryLabel: 'Пачаць з',
     presetsLabel: 'Звычайныя памеры',
     fixedNote: 'Гэты бок не змяняецца.',
+    sampleNote: 'Гэта толькі прыклад. Рамка пачынаецца пустой.',
     specLine: '{width} × {height} · {technique}',
     blank: { name: 'Чыстае палатно', description: 'Малюйце свабодна, рамку задайце потым.' },
     gerdan: { name: 'Гердан', description: 'Пляцёнае каралі-каўнер.' },

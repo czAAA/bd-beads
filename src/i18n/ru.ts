@@ -164,6 +164,7 @@ export const ru: Translations = {
     galleryLabel: 'Начать с',
     presetsLabel: 'Обычные размеры',
     fixedNote: 'Эта сторона не меняется.',
+    sampleNote: 'Это лишь пример. Рамка начинается пустой.',
     specLine: '{width} × {height} · {technique}',
     blank: { name: 'Чистый холст', description: 'Рисуйте свободно, рамку задайте потом.' },
     gerdan: { name: 'Гердан', description: 'Плетёное ожерелье-воротник.' },
