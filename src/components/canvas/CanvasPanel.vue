@@ -382,6 +382,7 @@ function techniqueWord(technique: Technique): string {
               :row-marks="rowHighlight"
               :moving="activeTool === 'hand'"
               :nearest-on-press="activeTool === 'fill'"
+              :select-anywhere="activeTool === 'select'"
               :marker-hidden="spaceHeld"
               :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"

@@ -85,6 +85,8 @@ const props = withDefaults(defineProps<{
   picking?: boolean
   /** Whether a press off a bead lands on the nearest bead instead of opening a stroke (Fill, ticket 504). */
   nearestOnPress?: boolean
+  /** Select is the tool (ticket 505): a press and a drag are read at the nearest bead position wherever the pointer is. */
+  selectAnywhere?: boolean
 }>(), { rowMarks: true })
 
 const emit = defineEmits<{
@@ -886,8 +888,12 @@ function onPointerDown(event: PointerEvent): void {
     lastBead = undefined
     // A press on empty background still opens the stroke (ticket 504); Fill lands on the nearest bead instead.
     if (event.button === 0 || event.button === 2) {
-      if (props.nearestOnPress) {
+      if (props.nearestOnPress || props.selectAnywhere) {
         const near = cellUnder(event, 'canvas')
+        if (props.selectAnywhere && event.button === 0) {
+          selectDrag = true
+          rootEl.value?.setPointerCapture?.(event.pointerId)
+        }
         if (event.button === 0) emit('cell-primary-down', near.row, near.column)
         else emit('cell-secondary-down', near.row, near.column)
       } else {
@@ -914,6 +920,7 @@ function onPointerDown(event: PointerEvent): void {
   if (event.button === 0) {
     // A press that starts a Selection is captured, so its release is delivered even off the canvas (ticket 503).
     if (props.selecting) rootEl.value?.setPointerCapture?.(event.pointerId)
+    selectDrag = props.selectAnywhere === true
     // A press on a finished row never draws (the lock), and, while its dimming shows, toggles the finished rows between dimmed and normal.
     if (marksShown.value && isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
       finishedRestored.value = !finishedRestored.value
@@ -971,6 +978,12 @@ function onPointerMove(event: PointerEvent): void {
   overRefusedMargin.value = refusesMargin(bead)
   placeMarker()
   placePickChip(event, bead)
+  if (selectDrag && event.buttons & 1) {
+    const near = cellUnder(event, 'canvas')
+    emit('cell-primary-move', near.row, near.column)
+    return
+  }
+  selectDrag = false
   continueStroke(event)
   if (isSameBead(bead, lastBead)) {
     return
@@ -982,6 +995,9 @@ function onPointerMove(event: PointerEvent): void {
 
   if (hoversFor(event)) emit('cell-hover', bead.row, bead.column)
 }
+
+/** A Select drag in progress (ticket 505): every move reports the nearest bead position, over a bead or not. */
+let selectDrag = false
 
 /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
 let stroke: { button: number; from: { x: number; y: number }; last: GridPosition | undefined } | undefined
@@ -1018,6 +1034,7 @@ function continueStroke(event: PointerEvent): void {
 
 function onPointerEnd(event?: PointerEvent): void {
   stroke = undefined
+  selectDrag = false
   releasePointer(event)
   dragging.value = false
   if (adjusting.value) {
