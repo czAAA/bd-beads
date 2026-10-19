@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import BottomSheet from './BottomSheet.vue'
 import MenuPanel from './MenuPanel.vue'
-import PanelShell from './PanelShell.vue'
+import PanelHost from './PanelHost.vue'
 import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import TemplateGallery from '../project/TemplateGallery.vue'
@@ -14,7 +14,7 @@ import { templateById, type TemplateId } from '../../domain/templates'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import { MIRROR_ENABLED } from '../../features'
 
-// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelShell, New Project as the Menu's sub-view, the Saved
+// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's sub-view, the Saved
 // Projects sheet that opens from Menu, and Mirror's. Each panel only asks; the app shell does the work.
 const {
   t,
@@ -61,7 +61,7 @@ const {
   onToggleMirrorCopyMode,
   onMirrorCurrent,
   onMirrorCurrentHover,
-  openPhoneSheet,
+  openPanel,
   toolPillPosition,
   shortcutsHelpOpen,
   tour,
@@ -76,9 +76,9 @@ const chosenTemplate = ref<TemplateId>()
 
 <template>
   <BottomSheet
-    v-if="MIRROR_ENABLED && openPhoneSheet === 'mirror' && activeProject"
+    v-if="MIRROR_ENABLED && openPanel === 'mirror' && activeProject"
     :title="t.toolbox.groups.mirror"
-    @close="openPhoneSheet = null"
+    @close="openPanel = null"
   >
     <MirrorControls
       :project="activeProject"
@@ -92,27 +92,26 @@ const chosenTemplate = ref<TemplateId>()
   </BottomSheet>
 
   <!--
-    Menu and Project (spec 0440, ticket 443; MenuPanel, ProjectPanel and TopSheet cards): one shell, a dropdown from 1024px
+    Menu and Project (spec 0440, ticket 443; MenuPanel, ProjectPanel and TopSheet cards): one panel host, a dropdown from 1024px
     and a Top sheet under it, which stays mounted while the two swap. Menu is about the app and the device, Project about the
     open Project; New Project is Menu's sub-view and the Saved Projects sheet below opens from it.
   -->
-  <PanelShell
-    v-if="openPhoneSheet === 'menu' || (openPhoneSheet === 'project' && activeProject)"
-    :title="openPhoneSheet === 'menu' ? t.header.menuButton : t.header.projectSheetLabel"
-    :anchor="openPhoneSheet === 'menu' ? 'strip-menu' : 'strip-project'"
-    :menu="openPhoneSheet === 'menu'"
+  <PanelHost
+    v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
+    :open="openPanel"
+    :only="['menu', 'project']"
     :sub-title="t.projects.newProjectButton"
     :start-in-sub="menuOpensOnForm || projects.length === 0"
-    @close="openPhoneSheet = null"
+    @close="openPanel = null"
   >
     <MenuPanel
-      v-if="openPhoneSheet === 'menu'"
+      v-if="openPanel === 'menu'"
       v-model:tools-position="toolPillPosition"
       :projects="projects"
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
       @import="onImportProjects"
-      @import-result="(id, text, tone) => { onImportToast(id, text, tone); openPhoneSheet = null }"
+      @import-result="(id, text, tone) => { onImportToast(id, text, tone); openPanel = null }"
       @export-all="onExportLibraryFile"
       @saved-projects="phoneSavedProjectsOpen = true"
       @delete-all="onRequestDeleteAllProjects"
@@ -139,7 +138,7 @@ const chosenTemplate = ref<TemplateId>()
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @export-project-file="onExportProjectFile"
-      @fit-frame="onFitFrame(); openPhoneSheet = null"
+      @fit-frame="onFitFrame(); openPanel = null"
       @save-maker-name="onSaveMakerName"
       @duplicate="onRequestDuplicate"
       @clear="onRequestDeleteAll"
@@ -147,13 +146,13 @@ const chosenTemplate = ref<TemplateId>()
     />
     <template #sub="{ depth }">
       <!-- The Project panel's Frame area opens the gallery and the setup alone, to put a Frame on the open Project (ticket 495). -->
-      <template v-if="openPhoneSheet === 'project' && activeProject">
+      <template v-if="openPanel === 'project' && activeProject">
         <TemplateGallery v-if="depth === 1" without-blank class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
         <TemplateSetup
           v-else-if="chosenTemplate"
           :template="templateById(chosenTemplate)"
           :project="activeProject"
-          @submit="(payload) => { onPlaceFrameFromTemplate(payload); openPhoneSheet = null }"
+          @submit="(payload) => { onPlaceFrameFromTemplate(payload); openPanel = null }"
         />
       </template>
       <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
@@ -161,23 +160,23 @@ const chosenTemplate = ref<TemplateId>()
         <TemplateGallery class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
         <NewProjectForm
           :decode-image="decodeImage"
-          @submit="(payload) => { onCreateProject(payload); openPhoneSheet = null }"
+          @submit="(payload) => { onCreateProject(payload); openPanel = null }"
           @draft="onNewProjectDraft"
-          @convert-image="(draft) => { startConvertImage(draft); openPhoneSheet = null }"
+          @convert-image="(draft) => { startConvertImage(draft); openPanel = null }"
         />
       </template>
       <TemplateSetup
         v-else-if="chosenTemplate"
         :template="templateById(chosenTemplate)"
-        @submit="(payload) => { onCreateProject(payload); openPhoneSheet = null }"
+        @submit="(payload) => { onCreateProject(payload); openPanel = null }"
       />
     </template>
     <template #footer="{ depth }">
       <AppButton v-if="depth === 2" class="phone-sheets__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
-        {{ openPhoneSheet === 'project' ? (activeProject?.frame ? t.frame.replaceFrame : t.frame.addFrameButton) : t.form.submit }}
+        {{ openPanel === 'project' ? (activeProject?.frame ? t.frame.replaceFrame : t.frame.addFrameButton) : t.form.submit }}
       </AppButton>
     </template>
-  </PanelShell>
+  </PanelHost>
 
   <!-- Saved Projects: a non-modal sheet opened from the Project sheet's Saved Projects icon. Selecting a project closes both this and the Project sheet. -->
   <BottomSheet v-if="phoneSavedProjectsOpen" :title="t.projects.heading" @close="phoneSavedProjectsOpen = false">

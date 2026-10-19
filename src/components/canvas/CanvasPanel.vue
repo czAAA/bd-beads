@@ -30,7 +30,7 @@ import { describeWeave } from '../../domain/weave'
 
 const {
   t,
-  openPhoneSheet,
+  openPanel,
   onSelectPhoneSheet,
   projects,
   onImportProjects,
@@ -259,7 +259,7 @@ function techniqueWord(technique: Technique): string {
         :frame-open="frameBarOpen"
         :can-undo="canUndo"
         :can-redo="canRedo"
-        :open-sheet="openPhoneSheet"
+        :open-sheet="openPanel"
         :zoom-percent="stripZoomPercent"
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
@@ -445,7 +445,7 @@ function techniqueWord(technique: Technique): string {
           :recents-in-popover="recentsInPopover"
           :selected-color-id="selectedColorId"
           :custom-color="customColor"
-          :open-sheet="openPhoneSheet"
+          :open-sheet="openPanel"
           @select-sheet="onSelectPhoneSheet"
           @select-tool="onSelectTool"
           @paste-mode="onPasteMode"
