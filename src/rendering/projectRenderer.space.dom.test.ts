@@ -179,16 +179,16 @@ describe('a Project with no Frame whose top bead is on an odd row (regression)',
   })
 })
 
-describe('the Frame margin on the Canvas (ticket 276)', () => {
-  it('fills no marks in the margin or the Frame, leaving a flat gap', () => {
+describe('the Frame on the Canvas (ADR 0066)', () => {
+  it('fills no marks in the Frame, and runs them right up to its edge', () => {
     const project = framedProject('loom')
     const { named } = render({ ...project, frame: { row: 6, column: 6, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 300, height: 300 } })
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)
-    // The Frame is rows 6 to 9 and columns 6 to 8; its margin is 3 round it, rows 3 to 12 and columns 3 to 11: x 60 to 240, y 60 to 260 (the marks' own edge sits 5 in from it).
-    const touchesMargin = fills.filter(({ left, right, top, bottom }) => left < 245 && right > 65 && top < 260 && bottom > 60)
-    expect(touchesMargin).toEqual([])
+    // The Frame is rows 6 to 9 and columns 6 to 8: x 120 to 180, y 120 to 200 (the marks' own edge sits 5 in from it).
+    expect(fills.filter(({ left, right, top, bottom }) => left < 185 && right > 125 && top < 200 && bottom > 120)).toEqual([])
+    expect(fills.some(({ right, top, bottom }) => right === 125 && top < 200 && bottom > 120)).toBe(true)
   })
 })
 
@@ -275,14 +275,14 @@ describe('Position marks tile styles', () => {
     expect(fills('squares')).toBeGreaterThan(fills('dots'))
   })
 
-  it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {
+  it('draws a Canvas bead against the Frame and leaves one under it undrawn, still held by the Project', () => {
     const base = framedProject('loom')
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 0, column: 0, color: '#00f' }, { row: 14, column: 12, color: '#00f' }]) }
+    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 6, column: 4, color: '#00f' }, { row: 7, column: 6, color: '#00f' }]) }
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
-    expect(beads).toHaveLength(12)
-    expect(project.beads[0]?.[0]).toBe('#00f')
+    expect(beads.filter(({ color }) => color === '#00f')).toHaveLength(1)
+    expect(project.beads[7]?.[6]).toBe('#00f')
   })
 })
 

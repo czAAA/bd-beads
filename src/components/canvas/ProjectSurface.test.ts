@@ -107,7 +107,7 @@ describe('ProjectSurface', () => {
     expect(wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element.style.transform).toBe('')
   })
 
-  it('keeps redrawing on zoom and scroll after a Frame press fades the margin outline in while a draw is waiting', async () => {
+  it('keeps redrawing on zoom and scroll after a Frame press while a draw is waiting', async () => {
     const frames = new Map<number, () => void>()
     let next = 1
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.set(next, callback) && next++)
@@ -190,7 +190,7 @@ describe('ProjectSurface', () => {
     }
   })
 
-  it('fills the empty positions outside the Frame and its margin with marks as patterns, not as a shape each', async () => {
+  it('fills the empty positions outside the Frame with marks as patterns, not as a shape each', async () => {
     viewport = { width: 100, height: 100 }
     const framed = projectOf(2, 2)
     const open = { ...framed, frame: undefined }
@@ -727,44 +727,19 @@ describe('ProjectSurface', () => {
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
       wrapper.emitted() as Record<string, unknown[][]>
 
-    describe('over the Frame margin (ticket 276)', () => {
+    describe('against the Frame (ADR 0066)', () => {
       const framed = () => projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
 
-      it('shows not-allowed over the margin for a tool that cannot place beads there, and the crosshair elsewhere', async () => {
+      it('gives a press on a bead right against the Frame to the tool, with no not-allowed cursor', async () => {
         const project = framed()
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true })
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 })
         const surface = wrapper.find('[data-testid="project-surface"]')
 
-        await surface.trigger('pointermove', centreOf(project, 8, 8))
-        expect(surface.classes()).toContain('project-surface--refused')
+        await surface.trigger('pointermove', centreOf(project, 9, 10))
+        await surface.trigger('pointerdown', { ...centreOf(project, 9, 10), button: 0, buttons: 1 })
 
-        await surface.trigger('pointermove', centreOf(project, 2, 2))
-        expect(surface.classes()).not.toContain('project-surface--refused')
-      })
-
-      it('always draws the margin outline with a Frame (ticket 452)', async () => {
-        await mountSurface(framed(), 1, { x: 0, y: 0 })
-        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
-      })
-
-      it('refuses a press whose mirrored counterpart lands in the margin, though the pressed bead is outside it', async () => {
-        const project = framed()
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true, previewCells: [{ row: 2, column: 2 }, { row: 8, column: 8 }] })
-
-        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
-
-        // The outline fades in on the overlay once refused: a dashed stroke is drawn.
-        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
-      })
-
-      it('keeps its own cursor for Erase, which still works there', async () => {
-        const project = framed()
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: false })
-        const surface = wrapper.find('[data-testid="project-surface"]')
-
-        await surface.trigger('pointermove', centreOf(project, 8, 8))
-
-        expect(surface.classes()).not.toContain('project-surface--refused')
+        expect(surface.attributes('class')).not.toContain('refused')
+        expect(wrapper.emitted('cell-primary-down')).toEqual([[9, 10]])
       })
     })
 
@@ -1004,20 +979,6 @@ describe('ProjectSurface', () => {
       await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
       expect(marker()).toHaveLength(0)
     })
-
-    it('goes when the canvas moves a refused margin under a still pointer', async () => {
-      const project = projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', blocksMargin: true })
-      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
-      const point = { clientX: at.x, clientY: at.y }
-      await surfaceOf(wrapper).trigger('pointermove', { ...point, pointerType: 'mouse', buttons: 0 })
-      await vi.waitFor(() => expect(marker()).toHaveLength(1))
-
-      context.calls.length = 0
-      await wrapper.setProps({ scroll: { x: 0, y: 40 } })
-      await vi.waitFor(() => expect(context.named('clearRect').length).toBeGreaterThan(0))
-      expect(marker()).toHaveLength(0)
-    })
   })
 
   describe('the hover preview', () => {
@@ -1151,26 +1112,26 @@ describe('ProjectSurface with a Frame', () => {
     await surface.trigger('pointerup', { clientX: to[0], clientY: to[1], pointerId: 1 })
   }
 
-  /** A press on the Margin handle's button, handed to the surface the way FrameChrome does (ticket 473). */
-  function pressMarginHandle(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], at: [number, number], pointerType = 'mouse'): void {
+  /** A press on the Move handle's button, handed to the surface the way FrameChrome does (ticket 473). */
+  function pressMoveHandle(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], at: [number, number], pointerType = 'mouse'): void {
     const event = { button: 0, clientX: at[0], clientY: at[1], pointerId: 1, pointerType, isPrimary: true, preventDefault: () => {} }
     ;(wrapper.vm as unknown as { pressMoveHandle(event: PointerEvent): void }).pressMoveHandle(event as unknown as PointerEvent)
   }
 
   it('reports the Frame\'s place always, with edit on or off', async () => {
     const { wrapper } = await mountSurface(framed(), 1)
-    expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toMatchObject({ box: { left: expect.any(Number) }, outer: { left: expect.any(Number) } })
+    expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toMatchObject({ box: { left: expect.any(Number) } })
   })
 
-  it('reports no Frame place once the Frame and its margin are scrolled wholly out of view, so no control stays on screen', async () => {
+  it('reports no Frame place once the Frame is scrolled wholly out of view, so no control stays on screen', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 5000, y: 5000 }, { settingFrame: true })
     expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toBeUndefined()
   })
 
   it('reports a press on a resize handle, the drag and the release, and draws no bead', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
-    // The bottom-right handle stands on the corner of the Frame's line, 7px outside its beads (8 × 6 beads of 20px).
-    await gesture(wrapper, [167, 127], [180, 140])
+    // The bottom-right handle stands in the gutter, 7.5px out from the corner of the Frame's line, which is 7px outside its beads (8 × 6 beads of 20px).
+    await gesture(wrapper, [175, 135], [185, 145])
 
     expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'handle', edges: ['bottom', 'right'] }])
     expect(wrapper.emitted('frame-drag')).toHaveLength(1)
@@ -1186,12 +1147,12 @@ describe('ProjectSurface with a Frame', () => {
     expect(wrapper.emitted('cell-primary-down')).toBeDefined()
   })
 
-  it('has no resize handle to grab when edit is off, but the Margin handle always works (tickets 452, 473)', async () => {
+  it('has no resize handle to grab when edit is off, but the Move handle always works (tickets 452, 473)', async () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
     await gesture(wrapper, [167, 127], [167, 127])
     expect(wrapper.emitted('frame-press')).toBeUndefined()
 
-    pressMarginHandle(wrapper, [60, 50])
+    pressMoveHandle(wrapper, [60, 50])
     const surface = wrapper.find('[data-testid="project-surface"]')
     await surface.trigger('pointermove', { buttons: 1, clientX: 60, clientY: 60, pointerId: 1 })
     expect(wrapper.emitted('frame-press')!.map(([target]) => target)).toEqual([{ kind: 'move' }])
@@ -1203,7 +1164,7 @@ describe('ProjectSurface with a Frame', () => {
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
     vi.stubGlobal('cancelAnimationFrame', () => {})
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
-    pressMarginHandle(wrapper, [60, 50])
+    pressMoveHandle(wrapper, [60, 50])
     const surface = wrapper.find('[data-testid="project-surface"]')
     await surface.trigger('pointermove', { buttons: 1, clientX: 999, clientY: 400, pointerId: 1 })
     const drags = wrapper.emitted('frame-drag')!.length
@@ -1222,7 +1183,7 @@ describe('ProjectSurface with a Frame', () => {
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
     vi.stubGlobal('cancelAnimationFrame', () => {})
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
-    pressMarginHandle(wrapper, [60, 50])
+    pressMoveHandle(wrapper, [60, 50])
     await wrapper.find('[data-testid="project-surface"]').trigger('pointermove', { buttons: 1, clientX: 500, clientY: 400, pointerId: 1 })
     frames.splice(0).forEach((frame) => frame())
     await nextTick()
@@ -1248,7 +1209,7 @@ describe('ProjectSurface with a Frame', () => {
     const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
     const surface = wrapper.find('[data-testid="project-surface"]')
 
-    pressMarginHandle(wrapper, [60, 50], 'touch')
+    pressMoveHandle(wrapper, [60, 50], 'touch')
     await surface.trigger('pointerdown', { button: 0, clientX: 105, clientY: 75, pointerId: 2, pointerType: 'touch', isPrimary: false })
 
     expect(wrapper.emitted('frame-press')).toHaveLength(1)

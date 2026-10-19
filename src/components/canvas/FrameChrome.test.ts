@@ -11,7 +11,6 @@ beforeEach(() => {
 
 const anchor = {
   box: { left: 150, top: 100, width: 100, height: 60 },
-  outer: { left: 100, top: 50, width: 200, height: 160 },
   viewport: { width: 400, height: 300 },
 }
 
@@ -24,13 +23,13 @@ function mountChrome(props: Partial<InstanceType<typeof FrameChrome>['$props']> 
 }
 
 describe('FrameChrome (ticket 473)', () => {
-  it('puts the Margin handle halfway down the top margin and the pencil inside the outline corner', () => {
+  it('puts the Move handle and the pencil in the gutter above the Frame', () => {
     const wrapper = mountChrome()
     const at = (testid: string) => wrapper.get(`[data-testid="${testid}"]`).element.closest('.frame-chrome__control')!.getAttribute('style')
     expect(at('frame-move-handle')).toContain('left: 200px')
-    expect(at('frame-move-handle')).toContain('top: 75px')
-    expect(at('frame-edit-toggle')).toContain('left: 274px')
-    expect(at('frame-edit-toggle')).toContain('top: 76px')
+    expect(at('frame-move-handle')).toContain('top: 52px')
+    expect(at('frame-edit-toggle')).toContain('left: 250px')
+    expect(at('frame-edit-toggle')).toContain('top: 52px')
   })
 
   it('names the handle Move Frame, and hands its press and keys on', async () => {

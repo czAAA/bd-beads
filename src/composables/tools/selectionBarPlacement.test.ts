@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { editPencilCentre, marginHandleCentre, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
+import { editPencilCentre, moveHandleCentre, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
 const viewport = { width: 400, height: 300 }
@@ -29,58 +29,50 @@ describe('selectionBarPlacement (ticket 415)', () => {
 })
 
 
-describe('the Margin handle and the edit pencil (ticket 473)', () => {
+describe('the Move handle and the edit pencil in the Frame\'s gutter (ticket 473, ADR 0066)', () => {
   const anchor = {
     box: { left: 150, top: 100, width: 100, height: 60 },
-    outer: { left: 100, top: 50, width: 200, height: 160 },
     viewport,
   }
 
-  it('puts the handle halfway down the top margin, centred on it', () => {
-    expect(marginHandleCentre(anchor)).toEqual({ x: 200, y: 75 })
+  it('puts the handle in the gutter above the Frame, centred on its top edge', () => {
+    expect(moveHandleCentre(anchor)).toEqual({ x: 200, y: 52 })
   })
 
-  it('stays on the margin\'s own centre while it is partly out of view, not sliding into the visible part', () => {
-    const roomy = { ...anchor, box: { ...anchor.box, top: 200 } }
-    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: -60 } }).x).toBe(40)
-    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 260 } }).x).toBe(360)
+  it('keeps the handle and the pencil inside the canvas box when the Frame is dragged over its edge', () => {
+    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, left: -60 } }).x).toBe(28)
+    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, left: 390 } }).x).toBeLessThanOrEqual(viewport.width - 28)
+    expect(editPencilCentre({ ...anchor, box: { ...anchor.box, left: 350 } }).x).toBe(viewport.width - 22)
+    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, top: -300 } }).y).toBe(22)
   })
 
-  it('does not pull the handle into the canvas box when the Frame is dragged over its edge', () => {
-    const roomy = { ...anchor, box: { ...anchor.box, top: 200 } }
-    expect(marginHandleCentre({ ...roomy, outer: { ...roomy.outer, left: 390 } }).x).toBe(490)
-    expect(marginHandleCentre({ ...anchor, box: { ...anchor.box, top: -300 }, outer: { ...anchor.outer, top: -400 } }).y).toBe(-350)
-    expect(marginHandleCentre({ ...anchor, box: { ...anchor.box, top: 500 }, outer: { ...anchor.outer, top: 450 } }).y).toBe(475)
+  it('flips below the Frame when there is no room above it', () => {
+    const low = { ...anchor, box: { ...anchor.box, top: 20 } }
+    expect(moveHandleCentre(low).y).toBe(128)
+    expect(editPencilCentre(low).y).toBe(128)
   })
 
   it('does not change size or place with the zoom: only the anchor moves it', () => {
-    const panned = marginHandleCentre({ ...anchor, outer: { ...anchor.outer, left: 120, top: 70 }, box: { ...anchor.box, left: 170, top: 120 } })
-    expect(panned).toEqual({ x: 220, y: 95 })
+    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, left: 170, top: 120 } })).toEqual({ x: 220, y: 72 })
   })
 
   it('slides the handle clear of the pencil on a small Frame, where their hit areas would meet', () => {
-    const small = { ...anchor, box: { left: 190, top: 100, width: 20, height: 20 }, outer: { left: 170, top: 80, width: 60, height: 60 } }
+    const small = { ...anchor, box: { left: 190, top: 100, width: 20, height: 20 } }
     const pencil = editPencilCentre(small)
-    const handle = marginHandleCentre(small)
+    const handle = moveHandleCentre(small)
     const clearX = Math.abs(handle.x - pencil.x) >= 28 + 22
     const clearY = Math.abs(handle.y - pencil.y) >= 22 + 22
     expect(clearX || clearY).toBe(true)
   })
 
   it('slides the handle out from under the Frame bar, to the side with the nearer room', () => {
-    const bar = { left: 100, top: 12, width: 200, height: 120 }
-    const handle = marginHandleCentre({ ...anchor, box: { ...anchor.box, top: 40 }, outer: { ...anchor.outer, top: 0 } }, bar)
-    expect(handle).toEqual({ x: 200, y: -10 })
+    const bar = { left: 100, top: 12, width: 200, height: 60 }
+    expect(moveHandleCentre(anchor, bar)).toEqual({ x: 200, y: 94 })
   })
 
-  it('puts the pencil inside the margin, 26px in and down from the outline corner, pinned to it', () => {
-    expect(editPencilCentre(anchor)).toEqual({ x: 274, y: 76 })
-    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, left: 150 } })).toEqual({ x: 324, y: 76 })
-  })
-
-  it('does not pull the pencil into the canvas box when the Frame is dragged over its edge', () => {
-    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, left: 350 } }).x).toBe(524)
-    expect(editPencilCentre({ ...anchor, outer: { ...anchor.outer, top: -90 } }).y).toBe(-64)
+  it('puts the pencil in the gutter above the Frame\'s top-right corner', () => {
+    expect(editPencilCentre(anchor)).toEqual({ x: 250, y: 52 })
+    expect(editPencilCentre({ ...anchor, box: { ...anchor.box, left: 200 } })).toEqual({ x: 300, y: 52 })
   })
 })
 

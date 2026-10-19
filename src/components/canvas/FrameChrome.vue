@@ -2,12 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import IconButton from '../ui/IconButton.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { editPencilCentre, marginHandleCentre, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
+import { editPencilCentre, moveHandleCentre, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { Project } from '../../domain/project'
 
-// What a Frame always carries on the canvas (tickets 452, 473, ADR 0062): the Margin handle and the edit pencil. They
-// never scale with the zoom; only their centres follow the Frame, kept in the canvas box. The handle hands its press to
-// the canvas to drag; arrows move the Frame with its beads, Shift+arrows resize.
+// What a Frame always carries on the canvas (tickets 452, 473, ADR 0062): the Move handle and the edit pencil, in the
+// gutter just outside its edge. They never scale with the zoom; only their centres follow the Frame, kept in the canvas
+// box. The handle hands its press to the canvas to drag; arrows move the Frame, Shift+arrows resize.
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
@@ -30,7 +30,7 @@ const toggleAction = controlAction('edit-frame')
 const moveAction = controlAction('move-frame')
 
 const place = (at: { x: number; y: number }) => ({ left: `${at.x}px`, top: `${at.y}px` })
-const handleAt = computed(() => place(marginHandleCentre(props.anchor, props.bar)))
+const handleAt = computed(() => place(moveHandleCentre(props.anchor, props.bar)))
 const pencilAt = computed(() => place(editPencilCentre(props.anchor)))
 
 const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
@@ -96,7 +96,7 @@ function onHandlePress(event: PointerEvent): void {
   pointer-events: auto;
 }
 
-/* The Margin handle's press goes on to the canvas to drag. */
+/* The Move handle's press goes on to the canvas to drag. */
 .frame-chrome__control :deep(.frame-chrome__handle) {
   width: var(--frame-handle-hit-width);
   height: var(--frame-handle-hit-height);

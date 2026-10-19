@@ -4,7 +4,6 @@ import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type B
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
 import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type Layer } from './layers'
-import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells, restoreBeads, type Project } from './project'
 
@@ -73,21 +72,21 @@ function selectionOfBox(box: Frame): Selection {
 
 // The Selection a tap with the Piece tool makes (ticket 414): the bounding rectangle of the tapped bead's Piece (other
 // Pieces' beads inside it are in too); none on an empty position. With a Frame (ticket 433) only the part on the
-// tapped bead's side counts, trimmed to a legal rectangle; a tap in the margin selects nothing.
+// tapped bead's side counts: the Frame covers the Canvas's beads under it.
 export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Frame): Selection | undefined {
   const members = pieceBeadsAt(beads, weave, at).filter((member) => {
     if (!frame) return true
     if (frameContains(frame, at)) return frameContains(frame, member)
-    return !frameContains(withMargin(frame), member)
+    return !frameContains(frame, member)
   })
-  if (members.length === 0 || inMargin(frame, at)) {
+  if (members.length === 0) {
     return undefined
   }
   const rows = members.map((member) => member.row)
   const columns = members.map((member) => member.column)
   const top = Math.min(...rows)
   const left = Math.min(...columns)
-  return trimToAllowed(frame, { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }, at)
+  return { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }
 }
 
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle

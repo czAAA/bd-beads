@@ -70,7 +70,7 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'bric
 }
 
 /** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
- * A Frame frames a Schema whole or not at all, as the margin is kept clear of new beads. */
+ * A Frame frames a Schema whole or not at all. */
 export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize' | 'pieceNames'>, frame: Frame): string | undefined {
   for (const { name, row, column } of project.pieceNames ?? []) {
     const members = pieceBeadsAt(project.beads, project, { row, column })
@@ -198,8 +198,7 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
   return { ...rest, ...(next.length > 0 ? { pieceNames: next } : {}) }
 }
 
-/** What a drawing edit did, with every bead that would join two named Pieces taken back (refused like the margin,
- * so a name is never dropped). `after` itself when it joins none. */
+/** What a drawing edit did, with every bead that would join two named Pieces taken back (so a name is never dropped). `after` itself when it joins none. */
 export function keepNamesApart(before: Project, after: Project): Project {
   if ((before.pieceNames?.length ?? 0) < 2 || after.beads === before.beads) {
     return after

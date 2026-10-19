@@ -345,7 +345,7 @@ describe('useFrameFlow', () => {
     expect(deps.showToast).not.toHaveBeenCalled()
   })
 
-  describe('the margin steppers (ticket 417)', () => {
+  describe('the edge steppers (ticket 417)', () => {
     it('moves one edge a bead at a time, each press one Undo step, the other edges staying', () => {
       const big = { ...sized, frame: { row: 2, column: 2, rows: 6, columns: 6, beads: {} } }
       const { deps, stepEdge } = setup(big)

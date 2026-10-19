@@ -11,7 +11,7 @@ export interface RotateCanvasFlowDeps {
 
 /**
  * Rotate canvas (ticket 471, ADR 0063): each press turns the picture a quarter clockwise via `Project.rotation`. A view
- * setting like Row direction, saved with the Project but no Edit: no Undo step, no lock or margin rule. */
+ * setting like Row direction, saved with the Project but no Edit: no Undo step, no lock rule. */
 export function useRotateCanvasFlow(deps: RotateCanvasFlowDeps) {
   function onRotateCanvas(): void {
     const project = deps.currentProject()

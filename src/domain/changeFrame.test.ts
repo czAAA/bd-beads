@@ -2,7 +2,6 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Frame, type FrameSheet } from './canvas'
 import { changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
-import { inMargin } from './margin'
 import { createProject, rowProgressOn, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 6, columns: 4 }
@@ -146,8 +145,8 @@ describe('changeFrame', () => {
     })
   })
 
-  describe('margin', () => {
-    it('leaves beads the new Frame reaches where they are on the Canvas, undrawn in the margin', () => {
+  describe('beads against the Frame', () => {
+    it('leaves beads next to the new Frame where they are on the Canvas', () => {
       const open = framed()
       delete open.frame
       const beads = withColors(open.beads, [
@@ -159,7 +158,6 @@ describe('changeFrame', () => {
       const result = changeFrame({ ...open, beads }, { make: frame })
       if (result.kind !== 'changed') throw new Error('expected a change')
       expect(result.project.beads).toEqual(beads)
-      expect(inMargin(frame, { row: 8, column: 10 })).toBe(true)
     })
   })
 

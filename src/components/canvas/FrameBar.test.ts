@@ -26,7 +26,6 @@ function mountBar(project = framed()) {
 
 const anchor = {
   box: { left: 150, top: 100, width: 100, height: 60 },
-  outer: { left: 100, top: 50, width: 200, height: 160 },
   viewport: { width: 400, height: 300 },
 }
 
@@ -208,13 +207,13 @@ describe('FrameBar (ticket 473)', () => {
     const wrapper = mount(FrameBar, { props: { project: framed(), pencil: anchor }, attachTo: document.body })
     await flushPromises()
     pencil.moveTo({ left: 500, top: 50 })
-    await wrapper.setProps({ pencil: { ...anchor, outer: { ...anchor.outer, left: 0 } } })
+    await wrapper.setProps({ pencil: { ...anchor, box: { ...anchor.box, left: 100 } } })
     await flushPromises()
     const bar = wrapper.get<HTMLElement>('[data-testid="panel-dropdown"]').element.style
     expect([bar.top, bar.left]).toEqual(['98px', '500px'])
   })
 
-  it('closes on a press outside, but not on one that grabs the Frame, nor on the Margin handle (ticket 475)', async () => {
+  it('closes on a press outside, but not on one that grabs the Frame, nor on the Move handle (ticket 475)', async () => {
     document.body.insertAdjacentHTML('beforeend', '<button id="outside"></button><div data-testid="frame-chrome"><button id="handle"></button></div>')
     let grabs = true
     const wrapper = mount(FrameBar, { props: { project: framed(), grabsFrame: () => grabs }, attachTo: document.body })

@@ -666,7 +666,7 @@ export const en: Translations = {
     pasteTool: 'Hover to preview the copied piece, then stamp it with a click.',
     rotate: 'Turn the Selection a quarter turn.',
     rotateCanvas: 'Turn the whole Canvas a quarter turn, leaving every bead where it is.',
-    rotateFrame: 'Turn the Frame, its margin and the beads inside a quarter turn.',
+    rotateFrame: 'Turn the Frame and the beads inside a quarter turn.',
     noBeadsToRotate: 'There are no beads to turn.',
     setFrameFirst: 'Set a Frame first.',
     fitToDrawing: 'Fit the Frame around every bead.',

@@ -753,11 +753,6 @@ body {
 .p-dk.cur .kc,.m-tbar b.on .kc{color:var(--accent-strong)}
 .p-dock.rail .p-dk .kc{right:8px}
 [data-theme="contrast"] .kc{color:var(--ink)}
-/* v18: the Frame's margin, six bead positions of clear space on every side */
-.bb-frame-clear { position: absolute; box-sizing: border-box; background: var(--box); border-radius: 12px; pointer-events: none; }
-.bb-frame-margin { position: absolute; box-sizing: border-box; border: 1px dashed var(--line-strong); border-radius: 12px; pointer-events: none; opacity: 1; transition: opacity var(--duration-fast, 120ms) var(--ease-standard, ease); }
-.bb-frame-margin[hidden] { display: block; opacity: 0; }
-[data-theme="contrast"] .bb-frame-margin { border-width: 2px; }
 .bb-frame-num { min-width: 22px; height: 22px; box-sizing: border-box; padding: 0 6px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--elevated); font: 400 12px/20px var(--font-mono); color: var(--ink); cursor: pointer; }
 .bb-disclosure--split { cursor: default; }
 .bb-disclosure--split .bb-disclosure-main { display: flex; align-items: center; gap: var(--space-8); background: none; border: 0; padding: 0; font: inherit; color: inherit; cursor: pointer; }
