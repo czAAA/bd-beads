@@ -728,7 +728,7 @@ describe('ProjectSurface', () => {
       wrapper.emitted() as Record<string, unknown[][]>
 
     describe('against the Frame (ADR 0066)', () => {
-      const framed = () => projectOf(4, 4, { frame: { row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
+      const framed = () => projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
 
       it('gives a press on a bead right against the Frame to the tool, with no not-allowed cursor', async () => {
         const project = framed()
@@ -1102,7 +1102,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
 })
 
 describe('ProjectSurface with a Frame', () => {
-  const framed = () => projectOf(8, 6, { frame: { row: 0, column: 0, columns: 8, rows: 6, beads: {} } })
+  const framed = () => projectOf(8, 6, { frame: { technique: 'loom' as const, row: 0, column: 0, columns: 8, rows: 6, beads: {} } })
 
   /** A press at a point of the viewport, then moves and a release. */
   async function gesture(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], from: [number, number], to: [number, number]) {

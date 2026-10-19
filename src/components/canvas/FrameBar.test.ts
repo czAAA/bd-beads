@@ -16,8 +16,13 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-function framed(frame = { row: 2, column: 3, rows: 6, columns: 5, beads: {} }): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame }
+function framed(frame: { row: number; column: number; rows: number; columns: number; beads: Record<number, Record<number, string>> } = { row: 2, column: 3, rows: 6, columns: 5, beads: {} }): Project {
+  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame: { ...frame, technique: 'loom' } }
+}
+
+/** The Project with its Canvas and its Frame woven in a Technique (ticket 492). */
+function woven(project: Project, technique: Project['technique'], extra: { netSize?: number } = {}): Project {
+  return { ...project, technique, ...extra, frame: project.frame && { ...project.frame, technique, ...extra } }
 }
 
 function mountBar(project = framed()) {
@@ -45,10 +50,10 @@ function pencilAt(rect: { left: number; top: number }, height = 300) {
 }
 
 describe('FrameBar in Right-angle weave (ticket 482)', () => {
-  const woven = () => ({ ...framed({ row: 2, column: 3, rows: 7, columns: 5, beads: {} }), technique: 'rightAngle' as const })
+  const wovenBar = () => woven(framed({ row: 2, column: 3, rows: 7, columns: 5, beads: {} }), 'rightAngle')
 
   it('shows the size in Units: 4 across and 3 down for 5 columns and 7 rows', () => {
-    const wrapper = mountBar(woven())
+    const wrapper = mountBar(wovenBar())
 
     expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('placeholder')).toBe('4')
     expect(wrapper.get('[data-testid="frame-bar-height"]').attributes('placeholder')).toBe('3')
@@ -56,7 +61,7 @@ describe('FrameBar in Right-angle weave (ticket 482)', () => {
   })
 
   it('takes a size typed in Units', async () => {
-    const wrapper = mountBar(woven())
+    const wrapper = mountBar(wovenBar())
 
     await wrapper.get('[data-testid="frame-bar-width"]').setValue('6')
     await wrapper.get('[data-testid="frame-bar-height"]').setValue('4')
@@ -179,7 +184,7 @@ describe('FrameBar (ticket 473)', () => {
   })
 
   it('does not offer Rotate in Netting (ticket 486)', () => {
-    const net = { ...framed({ row: 2, column: 3, rows: 5, columns: 9, beads: {} }), technique: 'netting' as const, netSize: 3 }
+    const net = woven(framed({ row: 2, column: 3, rows: 5, columns: 9, beads: {} }), 'netting', { netSize: 3 })
     const wrapper = mountBar(net)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)

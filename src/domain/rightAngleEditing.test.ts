@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { colorAt, forEachBead, withColors, type BeadMap } from './canvas'
-import { createProject, fillArea, mirrorCurrent, mirroredCells, type Project } from './project'
+import { createProject, fillArea, mirrorCurrent, mirroredCells, weaveOf, type Project } from './project'
 import { rotateFrame, rotateSelection } from './rotate'
 import { copySelection, mirroredPastedCells, movedSelection, snapSelectionToUnits, type Selection } from './selection'
 
@@ -9,7 +9,7 @@ const RED = '#e63746'
 const BLUE = '#2a5bd7'
 const base = createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 /** 3 Units across, 2 down: 5 lines, 4 columns, at the origin. */
-const woven: Project = { ...base, frame: { row: 0, column: 0, rows: 5, columns: 4, beads: {} }, beads: {} }
+const woven: Project = { ...base, frame: { ...weaveOf(base), row: 0, column: 0, rows: 5, columns: 4, beads: {} }, beads: {} }
 const weave = { technique: 'rightAngle' as const }
 
 const found = (beads: BeadMap): string[] => {
@@ -45,7 +45,7 @@ describe('Rotate in Right-angle weave (ticket 483)', () => {
   })
 
   it('turns the Frame as Units, swapping its Units across and down, with its own beads', () => {
-    const project: Project = { ...woven, frame: { row: 10, column: 10, rows: 5, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) } }
+    const project: Project = { ...woven, frame: { ...weaveOf(woven), row: 10, column: 10, rows: 5, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) } }
     const turned = rotateFrame(project)!
     expect(turned.frame).toMatchObject({ row: 10, column: 11, rows: 7, columns: 3 })
     expect(colorAt(turned.frame!.beads, 1, 2)).toBe(RED)

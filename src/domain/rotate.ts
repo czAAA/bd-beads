@@ -3,7 +3,7 @@ import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type Bea
 import { snapRow } from './frame'
 import { layerView, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
-import type { Project } from './project'
+import { canvasDistance, frameWeave, type Project } from './project'
 import { selectionFrame, selectionInLayer, selectionLayer, type Selection } from './selection'
 import { describeWeave } from './weave'
 
@@ -121,11 +121,13 @@ export function coveredByRotation(before: Project, after: Project, selection: Se
  * as Rotate does a Selection; Width and Height swap. The Canvas under it is not touched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const frame = project.frame
-  if (!frame || !describeWeave(project).quarterTurn) {
+  const own = frame && frameWeave(project)
+  if (!frame || !own || !describeWeave(own).quarterTurn) {
     return undefined
   }
-  const turned = rotatedSelection(project, { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns })
-  const weave = describeWeave(project)
+  // Turned in the Frame's own rows (its first is 0), then placed on the Canvas by as far as its corner moved.
+  const turned = rotatedSelection(own, { top: 0, left: 0, rows: frame.rows, columns: frame.columns })
+  const weave = describeWeave(own)
   const block = { columns: frame.columns, rows: frame.rows }
   const beads: BeadMap = {}
   forEachBead(frame.beads, (row, column, color) => {
@@ -136,9 +138,10 @@ export function rotateFrame(project: Project): Project | undefined {
       beads[to.row]![to.column] = color
     }
   })
+  const moved = canvasDistance(project, own, turned.top, turned.left)
   return {
     ...project,
-    frame: { ...frame, row: turned.top, column: turned.left, rows: turned.rows, columns: turned.columns, beads },
+    frame: { ...frame, row: frame.row + moved.row, column: frame.column + moved.column, rows: turned.rows, columns: turned.columns, beads },
     updatedAt: Date.now(),
   }
 }

@@ -55,7 +55,7 @@ export function fixtureProject({
     name: `Fixture ${technique}`,
     technique,
     beadId: 'toho-cube-1.5mm',
-    ...framedGrid(grid),
+    ...framedGrid(grid, { technique }),
     rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress },
     rotation,
     createdAt: 1_700_000_000_000,

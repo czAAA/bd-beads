@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { framedGrid, type Grid, type Project, type RowProgress } from './project'
+import { framedGrid, weaveOf, type Grid, type Project, type RowProgress } from './project'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
 import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
 import { readProjectsFile } from '../services/projectFileCodec'
@@ -12,10 +12,13 @@ import libraryV2OverCap from './fixtures/library-v2-over-cap.json?raw'
 import libraryFileV3 from './fixtures/library-file-v3-openbeads.json?raw'
 import libraryFileV3Framed from './fixtures/library-file-v3-framed-covered.json?raw'
 import libraryFileV4 from './fixtures/library-file-v4-openbeads.json?raw'
+import libraryFileV4Weave from './fixtures/library-file-v4-openbeads-frame-weave.json?raw'
 import libraryV3 from './fixtures/library-v3.json?raw'
 import libraryV4 from './fixtures/library-v4.json?raw'
+import libraryV4Weave from './fixtures/library-v4-frame-weave.json?raw'
 import projectFileV3Framed from './fixtures/project-file-v3-framed-covered.json?raw'
 import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
+import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
@@ -48,7 +51,7 @@ function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pic
   const { grid: cells, ...rest } = fields
   return {
     beadId: BEAD,
-    ...framedGrid(cells),
+    ...framedGrid(cells, weaveOf(fields)),
     rowProgress: noProgress,
     rotation: 0,
     createdAt: 0,
@@ -157,6 +160,7 @@ const framedOverSketch: Project = {
   beadId: BEAD,
   beads: { 7: { 4: COLORS.R! }, 20: { 2: COLORS.B!, 3: COLORS.B!, 4: COLORS.B! } },
   frame: {
+    technique: 'loom',
     row: 6,
     column: 4,
     columns: 4,
@@ -214,13 +218,13 @@ describe('stored-data compatibility', () => {
     })
 
     it('opens a version 4 library as it is, and saves it back byte for byte', () => {
-      localStorage.setItem(STORAGE_KEY, libraryV4)
+      localStorage.setItem(STORAGE_KEY, libraryV4Weave)
 
       const opened = loadProjects()
       expect(opened).toEqual([framedOverSketch, unframedSketch])
       saveProjects(opened)
 
-      expect(localStorage.getItem(STORAGE_KEY)).toBe(libraryV4.trim())
+      expect(localStorage.getItem(STORAGE_KEY)).toBe(libraryV4Weave.trim())
     })
 
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
@@ -282,9 +286,18 @@ describe('stored-data compatibility', () => {
     })
 
     it('writes a version 4 file back byte for byte', () => {
-      const [framed] = parseProjectsFile(projectFileV4).projects
-      expect(serializeProject(framed!)).toBe(projectFileV4.trim())
-      expect(serializeLibrary(parseProjectsFile(libraryFileV4).projects)).toBe(libraryFileV4.trim())
+      const [framed] = parseProjectsFile(projectFileV4Weave).projects
+      expect(serializeProject(framed!)).toBe(projectFileV4Weave.trim())
+      expect(serializeLibrary(parseProjectsFile(libraryFileV4Weave).projects)).toBe(libraryFileV4Weave.trim())
+    })
+
+    it('gives the Frame of a file written before it had a Weave of its own the Project\'s (ticket 492)', () => {
+      expect(parseProjectsFile(projectFileV4).projects).toEqual([framedOverSketch])
+    })
+
+    it('gives the Frame of a version 3 file the Project\'s Weave, Brick block included (ticket 492)', async () => {
+      const [framed] = (await readProjectsFile(new File([await gzipJson(projectFileV3Framed)], 'd.openbeads'))).projects
+      expect(framed!.frame).toMatchObject({ technique: framed!.technique })
     })
 
     it('opens a Project file that holds a Brick block (ticket 477), and one without as 1', async () => {

@@ -58,7 +58,7 @@ const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find
 const savedFrame = () => {
   const frame = loadProjects()[0]!.frame
   if (!frame) return undefined
-  const { beads: _beads, name: _name, ...rectangle } = frame
+  const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
   return rectangle
 }
 const savedFrameBeads = () => loadProjects()[0]!.frame?.beads
@@ -372,7 +372,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('opens with Row progress on for a saved Frame, whatever an older file stored', async () => {
-    const framed = { ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } }
+    const framed = { ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }
     saveProjects([{ ...framed, rowProgress: { ...framed.rowProgress, enabled: false } as Project['rowProgress'] }])
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
@@ -382,7 +382,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('asks before removing the Frame even while no pass is done, and one Undo brings it back (ticket 455)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
 
     await toggleEdit(wrapper)
     await wrapper.get('[data-testid="frame-chrome-remove"]').trigger('click')
@@ -401,7 +401,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
@@ -419,7 +419,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('asks before Remove frame throws away a done pass; one Undo brings the Frame and the progress back', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
@@ -446,7 +446,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('offers Rotate only until a pass is done: Row done hides it, Remove frame brings it back (tickets 411, 416, 426)', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 0, column: 0, rows: 8, columns: 8, beads: {} } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 0, column: 0, rows: 8, columns: 8, beads: {} } })
     await selectAll(wrapper)
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(true)
 
@@ -464,7 +464,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
   })
 
   it('says the new direction in a toast when D turns it, once per press', async () => {
-    const wrapper = await mountOpen({ ...unframedProject(), frame: { row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+    const wrapper = await mountOpen({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
 
     await key({ key: 'd' })
     expect(wrapper.text()).toContain(en.rowProgress.directionToastColumns)
