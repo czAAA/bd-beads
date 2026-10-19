@@ -59,8 +59,6 @@ interface TechniqueRules {
   hasBrickBlock: boolean
   /** Whether the Net size setting applies. */
   hasNetSize: boolean
-  /** Whether an open Project can be switched to or from it. */
-  switchable: boolean
   /** Whether Rotate and Rotate Frame are offered. */
   quarterTurn: boolean
   /** Whether Turn row direction is offered. */
@@ -94,7 +92,6 @@ const TECHNIQUE_RULES = {
     roundness: 0,
     hasBrickBlock: false,
     hasNetSize: false,
-    switchable: true,
     quarterTurn: true,
     rowDirection: true,
     twoPasses: false,
@@ -111,7 +108,6 @@ const TECHNIQUE_RULES = {
     roundness: ROUNDED_BEAD_CORNER,
     hasBrickBlock: false,
     hasNetSize: false,
-    switchable: true,
     quarterTurn: true,
     rowDirection: true,
     twoPasses: true,
@@ -127,7 +123,6 @@ const TECHNIQUE_RULES = {
     roundness: 0,
     hasBrickBlock: true,
     hasNetSize: false,
-    switchable: true,
     quarterTurn: true,
     rowDirection: true,
     twoPasses: false,
@@ -142,7 +137,6 @@ const TECHNIQUE_RULES = {
     roundness: ROUNDED_BEAD_CORNER,
     hasBrickBlock: false,
     hasNetSize: false,
-    switchable: false,
     quarterTurn: true,
     rowDirection: true,
     twoPasses: false,
@@ -157,7 +151,6 @@ const TECHNIQUE_RULES = {
     roundness: 0.5,
     hasBrickBlock: false,
     hasNetSize: true,
-    switchable: false,
     quarterTurn: false,
     rowDirection: false,
     twoPasses: false,

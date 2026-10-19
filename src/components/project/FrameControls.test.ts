@@ -16,11 +16,11 @@ function framed() {
 
 describe('FrameControls', () => {
   describe('Technique (ticket 351)', () => {
-    it('offers loom, peyote and brick stitch, marking the one the Project uses', () => {
+    it('offers all five Techniques, marking the one the Project uses', () => {
       const wrapper = mount(FrameControls, { props: { project: framed() } })
       const options = wrapper.findAll('[data-testid="frame-technique"] [role="radio"]')
-      expect(options.map((o) => o.text())).toEqual([en.form.techniqueLoom, en.form.techniquePeyote, en.form.techniqueBrick])
-      expect(options.map((o) => o.attributes('aria-checked'))).toEqual(['true', 'false', 'false'])
+      expect(options.map((o) => o.text())).toEqual([en.form.techniqueLoom, en.form.techniquePeyote, en.form.techniqueBrick, en.form.techniqueRightAngle, en.form.techniqueNetting])
+      expect(options.map((o) => o.attributes('aria-checked'))).toEqual(['true', 'false', 'false', 'false', 'false'])
     })
 
     it('emits the Technique that is chosen', async () => {
@@ -42,14 +42,9 @@ describe('FrameControls', () => {
   describe('Right-angle weave (ticket 482)', () => {
     const woven = () => createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
 
-    it('never offers Right-angle weave as a switch from another Technique', () => {
-      const wrapper = mount(FrameControls, { props: { project: framed() } })
-      expect(wrapper.find('[data-testid="frame-technique"] [data-value="rightAngle"]').exists()).toBe(false)
-    })
-
-    it('offers no switch to another Technique on a Project woven in it', () => {
+    it('offers a switch to another Technique on a Project woven in it (ticket 507)', () => {
       const wrapper = mount(FrameControls, { props: { project: woven() } })
-      expect(wrapper.find('[data-testid="frame-technique-row"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="frame-technique-row"]').exists()).toBe(true)
     })
 
     it('works out the Estimated size from the Unit: 10 by 20 Units of 3 mm and a last bead of 1.5 mm', () => {
@@ -61,14 +56,9 @@ describe('FrameControls', () => {
   describe('Netting (ticket 485)', () => {
     const woven = (netSize = 5) => createProject({ technique: 'netting', netSize, beadId: 'toho-cube-1.5mm', size: { width: 10, height: 20, unit: 'beads' } })
 
-    it('never offers Netting as a switch from another Technique', () => {
-      const wrapper = mount(FrameControls, { props: { project: framed() } })
-      expect(wrapper.find('[data-testid="frame-technique"] [data-value="netting"]').exists()).toBe(false)
-    })
-
-    it('offers no switch to another Technique, and no Net size, on a Project woven in it', () => {
+    it('offers a switch to another Technique, and no Net size, on a Project woven in it (ticket 507)', () => {
       const wrapper = mount(FrameControls, { props: { project: woven() } })
-      expect(wrapper.find('[data-testid="frame-technique-row"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="frame-technique-row"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="frame-net-size"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="frame-brick-block"]').exists()).toBe(false)
     })

@@ -47,7 +47,7 @@ const technique = computed({
 const techniqueOptions = computed(() => {
   const body = techniqueAction.body?.(t.value)
   const disabledBody = techniqueAction.disabledBody?.(t.value, deps.value)
-  return TECHNIQUES.filter((value) => describeWeave({ technique: value }).switchable).map((value) => {
+  return TECHNIQUES.map((value) => {
     const name = techniqueName(t.value, value)
     return { value, label: name, tooltip: { name, body, disabledBody } }
   })
@@ -64,7 +64,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 <template>
   <div class="frame-controls" data-testid="frame-controls">
-    <div v-if="project.frame && describeWeave(frameWeave(project)).switchable" class="frame-controls__technique" data-testid="frame-technique-row">
+    <div v-if="project.frame" class="frame-controls__technique" data-testid="frame-technique-row">
       <span :id="techniqueLabelId">{{ t.form.techniqueLabel }}</span>
       <SegmentedControl
         v-model="technique"
