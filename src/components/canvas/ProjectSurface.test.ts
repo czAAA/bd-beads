@@ -1191,6 +1191,37 @@ describe('ProjectSurface with a Frame', () => {
     expect(wrapper.emitted('frame-drag')).toHaveLength(1)
   })
 
+  it('scrolls the view toward the edge a dragged Frame touches, and moves the Frame with it', async () => {
+    const frames: Array<() => void> = []
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
+    pressMarginHandle(wrapper, [60, 50])
+    const surface = wrapper.find('[data-testid="project-surface"]')
+    await surface.trigger('pointermove', { buttons: 1, clientX: 999, clientY: 400, pointerId: 1 })
+    const drags = wrapper.emitted('frame-drag')!.length
+
+    frames.splice(0).forEach((frame) => frame())
+    await nextTick()
+
+    const [dx, dy] = wrapper.emitted('pan')!.at(-1) as number[]
+    expect(dx).toBeLessThan(0)
+    expect(Math.abs(dy)).toBe(0)
+    expect(wrapper.emitted('frame-drag')!.length).toBe(drags + 1)
+  })
+
+  it('does not scroll the view while the dragged Frame is away from the edges', async () => {
+    const frames: Array<() => void> = []
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
+    pressMarginHandle(wrapper, [60, 50])
+    await wrapper.find('[data-testid="project-surface"]').trigger('pointermove', { buttons: 1, clientX: 500, clientY: 400, pointerId: 1 })
+    frames.splice(0).forEach((frame) => frame())
+    await nextTick()
+    expect(wrapper.emitted('pan')).toBeUndefined()
+  })
+
   it('draws beads as usual with no Frame', async () => {
     const { wrapper } = await mountSurface(projectOf(4, 3, { frame: undefined }), 1)
     await gesture(wrapper, [25, 15], [25, 15])
