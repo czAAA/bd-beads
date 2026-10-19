@@ -9,7 +9,7 @@ import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { rowProgressStarted, type Project } from '../../domain/project'
-import { describeWeave } from '../../domain/weave'
+import { DEFAULT_TECHNIQUE, describeWeave } from '../../domain/weave'
 import { canvasWeave, frameWeave } from '../../domain/project'
 import { copyLayerSelection, selectionLayer, type Selection } from '../../domain/selection'
 
@@ -65,7 +65,7 @@ const { t } = useI18n()
 /** The Weave of the layer the Selection is on, the Canvas's when there is none. */
 const selectionWeave = computed(() => {
   const project = props.project
-  if (!project) return { technique: 'loom' as const }
+  if (!project) return { technique: DEFAULT_TECHNIQUE }
   return props.selection && selectionLayer(project, props.selection) === 'frame' ? frameWeave(project) : canvasWeave(project)
 })
 
