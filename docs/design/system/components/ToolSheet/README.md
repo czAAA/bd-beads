@@ -1,6 +1,6 @@
 # ToolSheet
 
-The bottom sheet a Dock button or the Canvas strip's Menu or Project button opens, holding every option of that kind.
+The sheet a Dock button or the Canvas strip's Menu or Project button opens, holding every option of that kind.
 
 - **Tools (gone, ticket 431):** the Tool sheet and its tiles are removed; the six tool tiles are in the Dock (Dock card). Remove line and Name piece are on the Context bar only; Select all is its button. **Delete all** (`danger`) moved to the bottom of the Project sheet, with its usual confirmation.
 - **Colour:** replaced by the colour popover anchored to the Tool pill (ToolPill card); until that ships, the Palette as 5-column swatches (selected: `ring`), Custom colour.

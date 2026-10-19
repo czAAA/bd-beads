@@ -17,8 +17,6 @@ import { useColorPick } from '../../composables/tools/usePalette'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import type { Technique } from '../../domain/weave'
-import { techniqueName } from '../../i18n/techniqueName'
 import type { PillRect } from '../../domain/toolPill'
 import { hasGuides } from '../../domain/selection'
 import { hasProjectBeads, resolveProjectBead } from '../../domain/project'
@@ -88,8 +86,6 @@ const {
   hasPaintColor,
   onNamePiece,
   previewCells,
-  previewedMirrorAxisCounts,
-  mirrorCurrentDimmedCells,
   onCellPrimaryDown,
   onCellPrimaryMove,
   onCellSecondaryDown,
@@ -217,14 +213,8 @@ const canvasBackground = useCanvasBackground()
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   if (!color) return undefined
-  const word = canvasBackground.wordColor.value
-  return { '--canvas-bg': color, ...(word ? { '--word': word } : {}) }
+  return { '--canvas-bg': color }
 })
-
-/** The Technique's name, the background word behind the board (ticket 143). */
-function techniqueWord(technique: Technique): string {
-  return techniqueName(t.value, technique)
-}
 </script>
 
 <template>
@@ -368,8 +358,6 @@ function techniqueWord(technique: Technique): string {
               :selection-blocks-margin="selecting"
               :selection-refusals="selectionRefusals"
               :selecting="selecting"
-              :mirror-axis-counts="previewedMirrorAxisCounts"
-              :dimmed-cells="mirrorCurrentDimmedCells"
               :cursor="cursorShown ? beadCursor : undefined"
               :tour-marks="tour.marks.value"
               :label="projectLabel"
@@ -420,8 +408,6 @@ function techniqueWord(technique: Technique): string {
           :recents-in-popover="recentsInPopover"
           :selected-color-id="selectedColorId"
           :custom-color="customColor"
-          :open-sheet="openPanel"
-          @select-sheet="onSelectPhoneSheet"
           @select-tool="onSelectTool"
           @paste-mode="onPasteMode"
           @pick-recent="pickRecent"
@@ -505,8 +491,7 @@ function techniqueWord(technique: Technique): string {
 }
 
 /* The drawing area (ticket 143): the box under the strip, sized for the fit zoom, so it takes a share (flex-basis 0),
- * never the Project's size. The backdrop fills it behind everything; later siblings are positioned too, so they paint
- * over it. */
+ * never the Project's size. Its children are positioned, so they stack in order. */
 .app-shell__drawing {
   position: relative;
   background: var(--canvas-bg, transparent);
@@ -519,7 +504,7 @@ function techniqueWord(technique: Technique): string {
 
 /* CanvasHint is excluded: it floats over the top-centre, and so are the context bar, the Frame's chrome, and
  * the Tool pill's layer, which float over the beads. */
-.app-shell__drawing > :not(.canvas-backdrop):not(.app-shell__canvas-hint):not(.context-bar):not(.frame-chrome):not(.tool-pill-layer) {
+.app-shell__drawing > :not(.app-shell__canvas-hint):not(.context-bar):not(.frame-chrome):not(.tool-pill-layer) {
   position: relative;
 }
 

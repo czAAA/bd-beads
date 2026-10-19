@@ -6,7 +6,6 @@ import {
   deleteAll,
   isInCurrentRow,
   isInFinishedRow,
-  mirroredCells,
   mostRecentlyUpdated,
   moveToRow,
   normalizeProject,
@@ -41,7 +40,7 @@ import {
 import { BEAD_CATALOG } from './beads'
 import { describeWeave } from './weave'
 import { changedPositions } from './canvas'
-import { fillAt, mirrorFrame, paintAt } from '../testUtils/layers'
+import { fillAt, paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
@@ -264,7 +263,7 @@ describe('restoreBeads', () => {
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     }), updatedAt: 0 }
-    const snapshot = paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }).beads
+    const snapshot = paintAt(project, [{ row: 0, column: 0 }], '#e63746').beads
 
     const restored = restoreBeads(project, snapshot)
 
@@ -346,123 +345,6 @@ describe('fillArea', () => {
   })
 })
 
-describe('mirroredCells', () => {
-  function grid4x4() {
-    return createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 6, height: 6, unit: 'mm' },
-    })
-  }
-
-  it('is just the cell itself when neither direction has an axis', () => {
-    expect(mirroredCells(grid4x4(), { row: 1, column: 2 }, { columns: 0, rows: 0 })).toEqual([
-      { row: 1, column: 2 },
-    ])
-  })
-
-  it('reflects left-right across the exact center for one column axis', () => {
-    expect(mirroredCells(grid4x4(), { row: 1, column: 0 }, { columns: 1, rows: 0 })).toEqual([
-      { row: 1, column: 0 },
-      { row: 1, column: 3 },
-    ])
-  })
-
-  it('reflects top-bottom across the exact center for one row axis', () => {
-    expect(mirroredCells(grid4x4(), { row: 0, column: 2 }, { columns: 0, rows: 1 })).toEqual([
-      { row: 0, column: 2 },
-      { row: 3, column: 2 },
-    ])
-  })
-
-  it('reflects into all four quadrant counterparts when both directions have one axis', () => {
-    expect(mirroredCells(grid4x4(), { row: 0, column: 0 }, { columns: 1, rows: 1 })).toEqual([
-      { row: 0, column: 0 },
-      { row: 0, column: 3 },
-      { row: 3, column: 0 },
-      { row: 3, column: 3 },
-    ])
-  })
-
-  it('deduplicates down to 2 cells when a cell sits on the exact center of an odd dimension', () => {
-    // A 3-column project: column 1 is its own horizontal mirror.
-    const project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 4.5, height: 6, unit: 'mm' },
-    })
-
-    expect(mirroredCells(project, { row: 0, column: 1 }, { columns: 1, rows: 1 })).toEqual([
-      { row: 0, column: 1 },
-      { row: 3, column: 1 },
-    ])
-  })
-
-  it.each(['loom', 'peyote', 'brick'] as const)(
-    'mirrors by row/column index the same way regardless of Technique (%s)',
-    (technique) => {
-      // The strip math only ever looks at row/column indices, never at a Technique's rendering offsets, so every
-      // Technique's grid mirrors identically for the same dimensions.
-      const project = createProject({
-        technique,
-        beadId: cubeBead.id,
-        size: { width: 6, height: 6, unit: 'mm' },
-      })
-
-      expect(mirroredCells(project, { row: 1, column: 0 }, { columns: 1, rows: 0 })).toEqual([
-        { row: 1, column: 0 },
-        { row: 1, column: 3 },
-      ])
-    },
-  )
-
-  it('covers every strip combination when both directions have more than 1 axis', () => {
-    // 6 columns, 2 column-axes -> 3 column strips [0,1] [2,3] [4,5]; 1 row-axis over 4 rows -> 2 row strips.
-    const project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 9, height: 6, unit: 'mm' },
-    })
-    expect(project.frame!.columns).toBe(6)
-    expect(project.frame!.rows).toBe(4)
-
-    const cells = mirroredCells(project, { row: 0, column: 0 }, { columns: 2, rows: 1 })
-
-    // 3 column counterparts x 2 row counterparts = 6 distinct cells.
-    expect(cells).toHaveLength(6)
-    expect(cells).toEqual(
-      expect.arrayContaining([
-        { row: 0, column: 0 },
-        { row: 3, column: 0 },
-      ]),
-    )
-  })
-
-  it('copy mode (ticket 45) repeats the same relative cell instead of mirror-imaging, in both directions', () => {
-    // 6 columns, 2 column-axes -> strips [0,1] [2,3] [4,5]; painting the first cell of strip0 copies onto the
-    // first cell of strips 1 and 2 (columns 2, 4) rather than mirroring (which would land on 3 and 4).
-    const project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 9, height: 6, unit: 'mm' },
-    })
-
-    const mirrored = mirroredCells(project, { row: 0, column: 0 }, { columns: 2, rows: 0 })
-    const copied = mirroredCells(project, { row: 0, column: 0 }, { columns: 2, rows: 0 }, true)
-
-    expect(mirrored).toEqual([
-      { row: 0, column: 0 },
-      { row: 0, column: 3 },
-      { row: 0, column: 4 },
-    ])
-    expect(copied).toEqual([
-      { row: 0, column: 0 },
-      { row: 0, column: 2 },
-      { row: 0, column: 4 },
-    ])
-  })
-})
-
 describe('paintCells', () => {
   function makeProject(technique: Technique = 'loom') {
     return createProject({
@@ -472,209 +354,40 @@ describe('paintCells', () => {
     })
   }
 
-  it('paints every given position when no axis is on', () => {
-    const project = makeProject()
+  it.each(['loom', 'peyote', 'brick'] as const)('paints every given position, whatever the Technique (%s)', (technique) => {
+    const project = makeProject(technique)
 
-    const painted = paintAt(
-      project,
-      [{ row: 0, column: 0 }, { row: 1, column: 1 }],
-      '#e63746',
-      { columns: 0, rows: 0 },
-    )
+    const painted = paintAt(project, [{ row: 0, column: 0 }, { row: 1, column: 1 }], '#e63746')
 
     expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
     expect(frameGrid(painted)[1]![1]!.color).toBe('#e63746')
     expect(frameGrid(painted)[0]![1]!.color).toBeNull()
   })
 
-  it.each(['loom', 'peyote', 'brick'] as const)('paints every counterpart regardless of Technique (%s)', (technique) => {
-    const project = makeProject(technique)
-
-    const painted = paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
-
-    expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(painted)[0]![3]!.color).toBe('#e63746')
-  })
-
-  it('paints every counterpart across every strip', () => {
-    const project = makeProject()
-
-    const painted = paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
-
-    expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(painted)[0]![3]!.color).toBe('#e63746')
-  })
-
   it('erases with a null color the same way it paints', () => {
-    const project = paintAt(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+    const project = paintAt(makeProject(), [{ row: 0, column: 0 }], '#e63746')
 
-    const erased = paintAt(project, [{ row: 0, column: 0 }], null, { columns: 1, rows: 0 })
+    const erased = paintAt(project, [{ row: 0, column: 0 }], null)
 
     expect(frameGrid(erased)[0]![0]!.color).toBeNull()
-    expect(frameGrid(erased)[0]![3]!.color).toBeNull()
   })
 
   it('returns the same Project instance, unchanged, when every touched cell is already that color', () => {
     const project = makeProject()
 
-    expect(paintAt(project, [{ row: 0, column: 0 }], null, { columns: 0, rows: 0 })).toBe(project)
-  })
-
-  it('paints the same relative cell in every strip, unflipped, in copy mode (ticket 45)', () => {
-    const project = makeProject() // 4 columns
-
-    const painted = paintAt(
-      project,
-      [{ row: 0, column: 0 }],
-      '#e63746',
-      { columns: 1, rows: 0 },
-      true,
-    )
-
-    expect(frameGrid(painted)[0]![0]!.color).toBe('#e63746')
-    expect(frameGrid(painted)[0]![2]!.color).toBe('#e63746') // copy mode: same relative cell, not the mirrored (3)
-    expect(frameGrid(painted)[0]![3]!.color).toBeNull()
+    expect(paintAt(project, [{ row: 0, column: 0 }], null)).toBe(project)
   })
 
   it('does not mutate the original project', () => {
     const project = makeProject()
 
-    paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 1, rows: 0 })
+    paintAt(project, [{ row: 0, column: 0 }], '#e63746')
 
     expect(frameGrid(project)[0]![0]!.color).toBeNull()
   })
 })
 
-describe('mirrorCurrent ("Mirror current", ticket 46)', () => {
-  function makeProject() {
-    // 4 columns x 4 rows.
-    return createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 6, height: 6, unit: 'mm' },
-    })
-  }
-
-  it('with axisCount 0, a blank grid stays blank (single center axis, nothing to sync)', () => {
-    const blank = makeProject()
-
-    expect(frameGrid(mirrorFrame(blank, 'columns', 0, false))).toEqual(frameGrid(blank))
-  })
-
-  it('with axisCount 0, syncs the fuller half onto the emptier one across the center', () => {
-    let painted = paintAt(makeProject(), [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-    painted = paintAt(painted, [{ row: 1, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-
-    const synced = mirrorFrame(painted, 'columns', 0, false)
-
-    // 4 columns, axisCount 0 acts as 1 axis (2 strips of 2): [0,1] holds both painted cells and is the source,
-    // copied onto [2,3] mirrored (column 2 <- column 1, column 3 <- column 0).
-    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual(['#e63746', null, null, '#e63746'])
-    expect(frameGrid(synced)[1]!.map((cell) => cell.color)).toEqual(['#e63746', null, null, '#e63746'])
-    expect(frameGrid(synced)[2]!.map((cell) => cell.color)).toEqual([null, null, null, null])
-  })
-
-  it('copies the fullest strip onto every other strip, mirrored by default, with N axes', () => {
-    // 6 columns, 1 row, 2 axes -> 3 strips [0,1] [2,3] [4,5]. Paint the middle strip.
-    let project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 9, height: 1.5, unit: 'mm' },
-    })
-    expect(project.frame!.columns).toBe(6)
-    project = paintAt(project, [{ row: 0, column: 2 }], '#e63746', { columns: 0, rows: 0 })
-    project = paintAt(project, [{ row: 0, column: 3 }], '#2f6fed', { columns: 0, rows: 0 })
-
-    const synced = mirrorFrame(project, 'columns', 2, false)
-
-    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual([
-      '#2f6fed',
-      '#e63746',
-      '#e63746',
-      '#2f6fed',
-      '#2f6fed',
-      '#e63746',
-    ])
-  })
-
-  it('copies unflipped (same relative cell in every strip) with copy mode on', () => {
-    let project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 9, height: 1.5, unit: 'mm' },
-    })
-    project = paintAt(project, [{ row: 0, column: 2 }], '#e63746', { columns: 0, rows: 0 })
-    project = paintAt(project, [{ row: 0, column: 3 }], '#2f6fed', { columns: 0, rows: 0 })
-
-    const synced = mirrorFrame(project, 'columns', 2, true)
-
-    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual([
-      '#e63746',
-      '#2f6fed',
-      '#e63746',
-      '#2f6fed',
-      '#e63746',
-      '#2f6fed',
-    ])
-  })
-
-  it('breaks a tie between equally-painted strips in favor of the lowest (leftmost/topmost) one', () => {
-    // 6 columns, 2 axes -> strips [0,1] [2,3] [4,5]. Strip0 and strip2 each get one painted cell; strip1 stays
-    // blank. Strip0 (index 0) should win the tie over strip2 (index 2).
-    let project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 9, height: 1.5, unit: 'mm' },
-    })
-    project = paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-    project = paintAt(project, [{ row: 0, column: 4 }], '#2f6fed', { columns: 0, rows: 0 })
-
-    const synced = mirrorFrame(project, 'columns', 2, false)
-
-    // Strip0's own cells stay exactly as painted (it's the source); strip1/strip2 both take strip0's color.
-    expect(frameGrid(synced)[0]!.map((cell) => cell.color)).toEqual([
-      '#e63746',
-      null,
-      null,
-      '#e63746',
-      '#e63746',
-      null,
-    ])
-  })
-
-  it('acts along rows the same way it acts along columns', () => {
-    let project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 1.5, height: 9, unit: 'mm' },
-    })
-    expect(project.frame!.rows).toBe(6)
-    project = paintAt(project, [{ row: 2, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-    project = paintAt(project, [{ row: 3, column: 0 }], '#2f6fed', { columns: 0, rows: 0 })
-
-    const synced = mirrorFrame(project, 'rows', 2, false)
-
-    expect(frameGrid(synced).map((row) => row[0]!.color)).toEqual([
-      '#2f6fed',
-      '#e63746',
-      '#e63746',
-      '#2f6fed',
-      '#2f6fed',
-      '#e63746',
-    ])
-  })
-
-  it('does not mutate the original project', () => {
-    let project = makeProject()
-    project = paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-
-    mirrorFrame(project, 'columns', 1, false)
-
-    expect(frameGrid(project)[0]![3]!.color).toBeNull()
-  })
-})
-
-describe('changedPositions ("Mirror current" hover preview, ticket 47)', () => {
+describe('changedPositions', () => {
   it('is empty for two identical grids', () => {
     const project = createProject({
       technique: 'loom',
@@ -691,25 +404,12 @@ describe('changedPositions ("Mirror current" hover preview, ticket 47)', () => {
       beadId: cubeBead.id,
       size: { width: 6, height: 6, unit: 'mm' },
     })
-    const after = paintAt(paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 }), [{ row: 2, column: 1 }], '#2f6fed', { columns: 0, rows: 0 })
+    const after = paintAt(paintAt(project, [{ row: 0, column: 0 }], '#e63746'), [{ row: 2, column: 1 }], '#2f6fed')
 
     expect(changedPositions(project.frame!.beads, after.frame!.beads)).toEqual([
       { row: 0, column: 0 },
       { row: 2, column: 1 },
     ])
-  })
-
-  it('is what mirrorCurrent + keepFinishedRows would actually change, matching the hover preview App.vue derives', () => {
-    let project = createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 6, height: 6, unit: 'mm' },
-    })
-    project = paintAt(project, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
-
-    const result = mirrorFrame(project, 'columns', 1, false)
-
-    expect(changedPositions(project.frame!.beads, result.frame!.beads)).toEqual([{ row: 0, column: 3 }])
   })
 })
 
@@ -843,8 +543,7 @@ describe('row direction', () => {
 })
 
 describe('keepFinishedRows', () => {
-  const NO_MIRROR = { columns: 0, rows: 0 }
-
+  
   /** 10 columns x 20 rows, with the overlay on and rows 0-2 finished. */
   function onRowThree() {
     return moveToRow(
@@ -859,7 +558,6 @@ describe('keepFinishedRows', () => {
       before,
       [{ row: 2, column: 5 }, { row: 3, column: 5 }, { row: 9, column: 5 }],
       '#e63746',
-      NO_MIRROR,
     )
 
     const kept = keepFinishedRows(before, edited)
@@ -871,14 +569,14 @@ describe('keepFinishedRows', () => {
 
   it('hands back the Project it started from when the edit only touched finished rows, so nothing counts as changed', () => {
     const before = onRowThree()
-    const edited = paintAt(before, [{ row: 0, column: 0 }, { row: 2, column: 9 }], '#e63746', NO_MIRROR)
+    const edited = paintAt(before, [{ row: 0, column: 0 }, { row: 2, column: 9 }], '#e63746')
 
     expect(keepFinishedRows(before, edited)).toBe(before)
   })
 
   it('locks the finished columns instead once rows run down them', () => {
     const before = moveToRow(toggleRowDirection(onRowThree()), 2)
-    const edited = paintAt(before, [{ row: 15, column: 1 }, { row: 15, column: 2 }], '#e63746', NO_MIRROR)
+    const edited = paintAt(before, [{ row: 15, column: 1 }, { row: 15, column: 2 }], '#e63746')
 
     const kept = keepFinishedRows(before, edited)
 
@@ -889,19 +587,9 @@ describe('keepFinishedRows', () => {
   it('locks nothing without a Frame', () => {
     const { frame: _frame, ...unframed } = onRowThree()
     const before = unframed as Project
-    const edited = paintAt(before, [{ row: 0, column: 0 }], '#e63746', NO_MIRROR)
+    const edited = paintAt(before, [{ row: 0, column: 0 }], '#e63746')
 
     expect(frameGrid(keepFinishedRows(before, edited))[0]![0]!.color).toBe('#e63746')
-  })
-
-  it('keeps the current-row half of a live-mirrored pair, dropping the half that lands on a finished row (ADR 0006)', () => {
-    const before = onRowThree() // 20 rows, rows 0-2 finished; a top-bottom axis of 1 mirrors row r <-> row 19-r
-    const edited = paintAt(before, [{ row: 17, column: 5 }], '#e63746', { columns: 0, rows: 1 })
-
-    const kept = keepFinishedRows(before, edited)
-
-    expect(frameGrid(kept)[17]![5]!.color).toBe('#e63746')
-    expect(frameGrid(kept)[2]![5]!.color).toBeNull()
   })
 })
 
@@ -937,7 +625,6 @@ describe('deleteAll', () => {
       createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } }),
       [{ row: 0, column: 0 }, { row: 5, column: 5 }],
       '#e63746',
-      { columns: 0, rows: 0 },
     )
     const rotated = turnedClockwise(painted)
     const turned = toggleRowDirection(rotated)
@@ -1005,7 +692,7 @@ describe('replaceBead', () => {
     })
     for (let row = 0; row < project.frame!.rows; row++) {
       for (let column = 0; column < project.frame!.columns; column++) {
-        project = paintAt(project, [{ row: row, column: column }], `r${row}c${column}`, { columns: 0, rows: 0 })
+        project = paintAt(project, [{ row: row, column: column }], `r${row}c${column}`)
       }
     }
     return project
@@ -1066,13 +753,11 @@ describe('replaceBead', () => {
 describe('snapshotOf and restoreSnapshot', () => {
   it('put back everything an Edit can change: the grid, Row progress, the Bead and the Frame', () => {
     const before = moveToRow(createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 8, height: 4, unit: 'beads' } }), 3)
-    const counts = { columns: 1, rows: 0 }
-    const snapshot = snapshotOf(before, counts)
+    const snapshot = snapshotOf(before)
     const changed = withFrame(replaceBead(deleteAll(before), cubeBead), { row: 0, column: 0, columns: 2, rows: 5 })
 
     const restored = restoreSnapshot(changed, snapshot)
 
-    expect(snapshot.mirrorAxisCounts).toBe(counts)
     expect(restored.beads).toBe(before.beads)
     expect(restored.rowProgress).toEqual(before.rowProgress)
     expect(restored.beadId).toBe(before.beadId)
@@ -1083,7 +768,7 @@ describe('snapshotOf and restoreSnapshot', () => {
     const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined)
     const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
 
-    expect(restoreSnapshot(framed, snapshotOf(before, { columns: 0, rows: 0 })).frame).toBeUndefined()
+    expect(restoreSnapshot(framed, snapshotOf(before)).frame).toBeUndefined()
   })
 })
 
@@ -1093,8 +778,8 @@ describe('the Frame in an undo entry (ADR 0066)', () => {
     const drawn = { ...base, frame: { ...base.frame!, beads: { 1: { 1: '#abcdef' } } } }
     const none = { ...base, frame: undefined }
 
-    expect(restoreSnapshot(base, snapshotOf(drawn, { columns: 0, rows: 0 })).frame?.beads).toEqual({ 1: { 1: '#abcdef' } })
-    expect(restoreSnapshot(drawn, snapshotOf(none, { columns: 0, rows: 0 })).frame).toBeUndefined()
+    expect(restoreSnapshot(base, snapshotOf(drawn)).frame?.beads).toEqual({ 1: { 1: '#abcdef' } })
+    expect(restoreSnapshot(drawn, snapshotOf(none)).frame).toBeUndefined()
   })
 
   it('goes empty with Delete all, the Canvas with it', () => {

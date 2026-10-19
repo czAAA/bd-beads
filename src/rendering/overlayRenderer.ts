@@ -1,7 +1,6 @@
 import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
 import { MARGIN, withMargin } from '../domain/margin'
-import { axisLinePositions, type MirrorAxisCounts } from '../domain/mirror'
 import { beadRoundness, describeWeave, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave, rowProgressOn } from '../domain/project'
@@ -9,9 +8,9 @@ import { hasGuides, selectionFrame, selectionLayer as selectionLayerOf, type Sel
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
-import { visibleBeadsInSpace, type DrawnProject } from './projectRenderer'
+import type { DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
-import { CELL_SIZE_PX, cellSizePx, frameOriginPx, gridBox, positionBoxPx, positionsBoxPx, projectExtentPx, rowPitchPx, rowTopPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
+import { CELL_SIZE_PX, cellSizePx, frameOriginPx, gridBox, positionBoxPx, positionsBoxPx, rowPitchPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -31,8 +30,7 @@ const PREVIEW_OUTLINE_PX = 2
 
 /** The hover preview (ticket 23): where paint would land, or a pasted block under the cursor. */
 export interface HoverPreview {
-  /** The beads it is on: the hovered one and its live-mirror counterparts, or every bead of a block about to be
-   * pasted. */
+  /** The beads it is on: the hovered one, or every bead of a block about to be pasted. */
   cells: readonly PreviewCell[]
   /** The color to show on beads that carry none of their own; none for a neutral outline (no color selected). */
   color: string | null
@@ -76,11 +74,6 @@ export interface OverlayInput {
   /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four
    * larger ones. Without it the Selection has no handles. */
   selectionHandles?: { surface: SurfaceView; touch: boolean }
-  /** Mirror's per-direction axis counts (ticket 44): a line for each axis, whenever a direction's count is above 0. */
-  mirrorAxisCounts?: MirrorAxisCounts
-  /** Beads a hovered "Mirror current" button would overwrite (ticket 47): drawn faded, existing content stepping
-   * back. */
-  dimmedCells?: readonly GridPosition[]
   /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Project has keyboard focus. */
   cursor?: GridPosition
   /** What the Tour marks on the Project (ticket 80): beads to paint or erase, and frames to select or paste into. */
@@ -320,44 +313,6 @@ function drawSelection(context: DrawingContext, weave: Weave, space: Space, sele
   context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
 }
 
-// The beads a hovered "Mirror current" button would overwrite, faded (ticket 47): existing content stepping back. Each
-// is drawn as the bead it is, faded over the paper, which covers the bead under it on the cells layer.
-function drawDimmed(
-  context: DrawingContext,
-  project: DrawnProject,
-  weave: Weave,
-  space: Space,
-  origin: { x: number; y: number },
-  cells: readonly GridPosition[],
-  region: Region,
-  zoom: number,
-  pixelRatio: number,
-  theme: ProjectTheme,
-): void {
-  const { technique } = weave
-  const visible = visibleBeadsInSpace(weave, space, region, zoom, project.rotation, origin)
-  const cornerRadius = beadRoundness(technique, weave.cell) * CELL_SIZE_PX
-
-  for (const { row, column } of cells) {
-    if (!inSpace(space, row, column) || row < visible.firstRow || row > visible.lastRow) {
-      continue
-    }
-    const box = positionBoxPx(weave, row, column)
-    drawFlatBead(context, {
-      x: box.x,
-      y: box.y,
-      size: CELL_SIZE_PX,
-      ...sizedLike(box),
-      cornerRadius,
-      color: beadInSpace(project, space, row, column),
-      dimmed: true,
-      backdrop: theme.background,
-      deviceScale: zoom * pixelRatio,
-      theme,
-    })
-  }
-}
-
 // The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px in high
 // contrast), following its corners. Drawn last, over everything, so never hidden.
 function drawCursor(context: DrawingContext, weave: Weave, space: Space, cursor: GridPosition, theme: ProjectTheme): void {
@@ -433,29 +388,6 @@ function drawTourMarks(context: DrawingContext, weave: Weave, space: Space, mark
   }
 }
 
-/** Mirror's axis lines (ticket 44): super-thin but clearly visible, drawn over the whole Project whatever the tool. */
-const AXIS_OPACITY = 0.65
-const AXIS_PX = 2
-
-function drawMirrorAxes(context: DrawingContext, weave: Weave, space: Space, counts: MirrorAxisCounts, theme: ProjectTheme): void {
-  if (!space.hasFrame) {
-    return
-  }
-  const own = describeWeave(weave).countsUnits ? positionsBoxPx(weave, space.origin.row, space.origin.column, space.rows, space.columns) : undefined
-  const { width, height } = own ?? projectExtentPx(weave.technique, space.columns, space.rows, weave.cell)
-  const left = own?.x ?? space.origin.column * CELL_SIZE_PX
-  const top = own?.y ?? rowTopPx(weave.technique, space.origin.row, weave.cell)
-  context.globalAlpha = AXIS_OPACITY
-  context.fillStyle = theme.marker
-  for (const fraction of axisLinePositions(counts.columns)) {
-    context.fillRect(left + fraction * width - AXIS_PX / 2, top, AXIS_PX, height)
-  }
-  for (const fraction of axisLinePositions(counts.rows)) {
-    context.fillRect(left, top + fraction * height - AXIS_PX / 2, width, AXIS_PX)
-  }
-  context.globalAlpha = 1
-}
-
 /** The Frame margin's outline (ticket 276, Frame card): 1px dashed `line-strong` round its outer edge, radius 12,
  * faded by `opacity`. Drawn in grid space, so its widths are divided by the zoom to stay screen px. */
 const MARGIN_OUTLINE_DASH_PX = [4, 3]
@@ -491,17 +423,15 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, mirrorAxisCounts, dimmedCells, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
   const showRows = rowMarks ?? rowProgressOn(project)
-  const axes = mirrorAxisCounts && (mirrorAxisCounts.columns > 0 || mirrorAxisCounts.rows > 0) ? mirrorAxisCounts : undefined
-  const dimmed = dimmedCells && dimmedCells.length > 0 ? dimmedCells : undefined
   const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
   const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!showRows && !preview && !selection && !axes && !dimmed && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
+  if (!showRows && !preview && !selection && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
 
@@ -518,7 +448,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const ownLayer: 'canvas' | 'frame' = space.open ? (selection ? selectionLayerOf(project, selection) : 'canvas') : 'frame'
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasPreview = preview && { ...preview, cells: offFrame(preview.cells) }
-  const canvasDimmed = dimmed && offFrame(dimmed)
   const canvasCursor = cursor && !onFrame(frame, cursor) ? cursor : undefined
   const canvasMarks = marks && { cells: offFrame(marks.cells), boxes: marks.boxes.filter((box) => !onFrame(frame, { row: box.top, column: box.left })) }
 
@@ -527,9 +456,8 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
-  // over that, the marker lifted above its row, and Mirror's axes above everything.
+  // over that, and the marker lifted above its row.
   if (space.open) {
-    if (canvasDimmed?.length) drawDimmed(context, project, canvasWeaveOf, space, { x: 0, y: 0 }, canvasDimmed, region, zoom, pixelRatio, theme)
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, theme)
     if (canvasPreview?.cells.length) drawPreview(context, canvasWeaveOf, project.frame, space, canvasPreview.cells, canvasPreview, theme)
     if (canvasMarks && (canvasMarks.cells.length > 0 || canvasMarks.boxes.length > 0)) drawTourMarks(context, canvasWeaveOf, space, canvasMarks, theme)
@@ -551,16 +479,11 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (showRows) {
       drawLiftedBeads(context, inPass, sheetWeave, zoom, pixelRatio, theme)
     }
-    const sheetDimmed = dimmed && onSheet(dimmed)
-    if (sheetDimmed?.length) drawDimmed(context, project, sheetWeave, sheetSpace, origin, sheetDimmed, region, zoom, pixelRatio, theme)
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme)
     const sheetCells = preview && onSheet(preview.cells)
     if (preview && sheetCells?.length) drawPreview(context, sheetWeave, sheetBounds, sheetSpace, sheetCells, preview, theme)
     if (inPass.length > 0) {
       drawBeadRings(context, inPass, sheetWeave, theme)
-    }
-    if (axes) {
-      drawMirrorAxes(context, sheetWeave, sheetSpace, axes, theme)
     }
     const sheetMarks = marks && { cells: onSheet(marks.cells), boxes: frame ? [] : marks.boxes }
     if (sheetMarks && (sheetMarks.cells.length > 0 || sheetMarks.boxes.length > 0)) drawTourMarks(context, sheetWeave, sheetSpace, sheetMarks, theme)

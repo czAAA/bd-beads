@@ -4,7 +4,6 @@ import { createProject, type Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
 
-const NO_MIRROR = { columns: 0, rows: 0 }
 
 function projectOf(columns: number, rows: number, extra: Partial<Project> = {}): Project {
   return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...extra }
@@ -48,7 +47,7 @@ describe('useCanvasView', () => {
   })
 
   it('fits what is drawn when there is no Frame, and puts the origin in the middle of an empty canvas', () => {
-    const painted = paintAt({ ...projectOf(2, 2), frame: undefined }, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
+    const painted = paintAt({ ...projectOf(2, 2), frame: undefined }, [{ row: 50, column: 80 }], '#e63746')
     expect(fitBox(painted)).toEqual({ row: 50, column: 80, rows: 1, columns: 1 })
     expect(fitBox({ ...projectOf(2, 2), frame: undefined })).toBeUndefined()
 
@@ -145,7 +144,7 @@ describe('useCanvasView', () => {
     view.fit()
     const before = { ...view.scroll.value }
 
-    current.value = paintAt(empty, [{ row: 50, column: 80 }], '#e63746', NO_MIRROR)
+    current.value = paintAt(empty, [{ row: 50, column: 80 }], '#e63746')
     await nextTick()
 
     expect(view.scroll.value).toEqual(before)

@@ -64,14 +64,8 @@ export async function openDockSheet(page: Page, dock: DockSheetButton): Promise<
   await settle(page)
 }
 
-/** Closes whatever is open: a bottom sheet (New Project, Saved Projects) with its Close button, then Menu or Project
- * with the strip button that lit it; does nothing with none open. */
+/** Closes whatever is open: Menu or Project with the strip button that lit it; does nothing with none open. */
 export async function closeSheet(page: Page): Promise<void> {
-  const close = page.getByTestId('sheet-close')
-  while ((await close.count()) > 0) {
-    await close.last().click()
-    await settle(page)
-  }
   const lit = page.locator('[data-testid="strip-menu"][aria-pressed="true"], [data-testid="strip-project"][aria-pressed="true"]')
   if ((await lit.count()) > 0) {
     await lit.first().click()

@@ -141,24 +141,6 @@
           "size": 234,
           "type": "image/svg+xml"
         },
-        "mirror-copy-mode.svg": {
-          "blob": "3c0fe37e6f7d4d0b869896135d0dd7d2",
-          "name": "mirror-copy-mode.svg",
-          "size": 350,
-          "type": "image/svg+xml"
-        },
-        "mirror-horizontal.svg": {
-          "blob": "231017d96cc75fc2ba4305809373a6ae",
-          "name": "mirror-horizontal.svg",
-          "size": 330,
-          "type": "image/svg+xml"
-        },
-        "mirror-vertical.svg": {
-          "blob": "08ced04a6cf48c40b7fcede3c322facf",
-          "name": "mirror-vertical.svg",
-          "size": 329,
-          "type": "image/svg+xml"
-        },
         "moon.svg": {
           "blob": "12828d3432e271adfdf349dddb73ed9a",
           "name": "moon.svg",
@@ -328,9 +310,6 @@
         "export.svg",
         "import.svg",
         "pdf.svg",
-        "mirror-horizontal.svg",
-        "mirror-vertical.svg",
-        "mirror-copy-mode.svg",
         "size.svg",
         "info.svg",
         "row-progress.svg",

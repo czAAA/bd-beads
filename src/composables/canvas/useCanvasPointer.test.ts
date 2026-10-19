@@ -20,8 +20,6 @@ function setup(options: Options = {}) {
     spaceHeld: () => options.spaceHeld ?? false,
     strokeMode: () => options.strokeMode ?? null,
     selectedColorHex: () => (options.color === undefined ? '#ff0000' : options.color),
-    mirrorAxisCounts: () => ({ columns: 0, rows: 0 }),
-    mirrorCopyMode: () => false,
     pastePreviewCells: vi.fn(() => [{ row: 9, column: 9 }]),
     beginSelectPress: vi.fn(),
     extendSelection: vi.fn(),

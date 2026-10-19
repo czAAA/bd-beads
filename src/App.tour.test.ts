@@ -10,7 +10,7 @@ import { openSheet } from './testUtils/pill'
 
 import { ru } from './i18n/ru'
 
-vi.mock('./features', () => ({ TOUR_ENABLED: true, MIRROR_ENABLED: false }))
+vi.mock('./features', () => ({ TOUR_ENABLED: true }))
 
 beforeEach(() => {
   localStorage.clear()

@@ -132,7 +132,7 @@ export function sizeOf(sized: Sized): GridDimensions {
   return box ? { columns: box.columns, rows: box.rows } : { columns: 0, rows: 0 }
 }
 
-/** A Frame's size, as the dimensions the grid-shaped helpers (mirror strips, adjacency, fit zoom) take. */
+/** A Frame's size, as the dimensions the grid-shaped helpers (adjacency, fit zoom) take. */
 export function frameDimensions(frame: Frame): GridDimensions {
   return { columns: frame.columns, rows: frame.rows }
 }

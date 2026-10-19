@@ -98,8 +98,9 @@ describe('MenuPanel (ticket 443)', () => {
     await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
     await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
     await wrapper.get('[data-testid="menu-tools-position"] [data-value="left"]').trigger('click')
-    expect(['export-all', 'saved-projects', 'delete-all'].map((name) => panel.emitted(name)?.length)).toEqual([1, 1, 1])
-    expect(openSub).toHaveBeenCalledOnce()
+    expect(['new-project', 'export-all', 'saved-projects', 'delete-all'].map((name) => panel.emitted(name)?.length)).toEqual([1, 1, 1, 1])
+    // New Project and Saved Projects each open a sub-view.
+    expect(openSub).toHaveBeenCalledTimes(2)
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
   })
 })

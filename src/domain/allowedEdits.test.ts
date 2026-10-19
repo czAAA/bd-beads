@@ -5,11 +5,10 @@ import { createProject, paintCells } from './project'
 import { paintAt } from '../testUtils/layers'
 
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-const none = { columns: 0, rows: 0 }
 
 describe('what a drawing edit may leave', () => {
   it('does nothing with no Frame', () => {
-    const painted = paintCells(open, [{ row: 1, column: 1 }], '#ff0000', none)
+    const painted = paintCells(open, [{ row: 1, column: 1 }], '#ff0000')
     expect(keepAllowedEdits(open, painted).beads).toEqual(painted.beads)
   })
 })

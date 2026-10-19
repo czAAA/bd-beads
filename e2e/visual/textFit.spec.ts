@@ -41,13 +41,12 @@ async function reveal(page: Page, testid: string): Promise<boolean> {
     await page.getByTestId(dock).click()
     await settle(page)
     if (await shown(page, testid)) return true
-    // Saved Projects is a sheet of its own, opened from Menu's own item (PhoneSheets card).
+    // Saved Projects is a sub-view of Menu, opened from Menu's own item (PhoneSheets card).
     if (testid === 'project-list' && (await shown(page, 'menu-saved-projects'))) {
       await page.getByTestId('menu-saved-projects').click()
       await settle(page)
       if (await shown(page, testid)) return true
     }
-    await page.getByTestId('sheet-close').click().catch(() => {})
     if (await shown(page, dock)) await page.getByTestId(dock).click().catch(() => {})
   }
   return false

@@ -1,6 +1,6 @@
 # DisclosureRow
 
-A full-width row for a rarely used Tool group (Mirror, Frame) that opens its controls in place.
+A full-width row for a rarely used Tool group (Frame) that opens its controls in place.
 
 - Padding 10 0; 1px `panel-rule` above the first row and below every row.
 - Icon (16), label (`control`), the current values right-aligned (`meta`, e.g. "↔ 1 · ↕ 0", "3.4 × 3.0 cm", "not set"), then a 16px chevron in `muted`.

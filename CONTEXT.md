@@ -22,7 +22,6 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 - **Palette** and **Bead catalog**: kept as separate concepts — a cell's color is not required to match a real Bead — see ADR 0002, amended by ADR 0007 (dropped the color-to-bead mapping; a Project now has exactly one Bead)
 - **Technique**: determines a Project's grid geometry (loom, peyote, brick stitch)
 - **Row progress**: an in-editor overlay for tracking which rows are already woven, running along the grid's rows or down its columns (Row direction), with finished rows locked against drawing
-- **Mirror**: a symmetric-drawing aid, live while painting — see ADR 0006
 - **Schema size**: the Frame's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps every bead — see ADR 0026 and ADR 0007. There is no limit on size beyond what the device can hold (ADR 0019, which removed the cell cap)
 - **Bead quantities**: the per-color bead counts a Schema needs, counted straight from its painted colors (with an Estimated weight beside them) — see ADR 0007
 - **Project file**: the exported `.openbeads` file (JSON with the compact bead encoding, gzipped) holding one Project (`my-scarf_pr.openbeads`) or a whole library (`openbeads_lib.openbeads`) — the only way work moves between devices, per ADR 0001 and ADR 0048. Plain `.json` files from before ADR 0048 still import
@@ -39,7 +38,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 |---|---|
 | [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, Canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Edit Frame, Move handle, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
 | [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Bead, Bead color, Color catalog, Form factor, Bead shape, Technique, Right-angle weave, Netting, Net size, Unit |
-| [Row progress and Mirror](docs/glossary/row-progress-and-mirror.md) | Row progress, Pass, Row direction, Progress bar, Mirror |
+| [Row progress](docs/glossary/row-progress.md) | Row progress, Pass, Row direction, Progress bar |
 | [Tool pill and controls](docs/glossary/toolbox.md) | Tool group, Tool pill layout, Tool pill, Menu, Panel sub-view, Canvas strip, Tool button, Tooltip, Note |
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer |
@@ -56,7 +55,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 
 | Folder | What is there | Start with |
 |---|---|---|
-| `domain/` | Pure logic and data: Project, Frame, Pieces, Techniques, Row progress, Mirror, Selection, history, encodings and file formats | `project.ts`, `changeFrame.ts`, `projectFile.ts` |
+| `domain/` | Pure logic and data: Project, Frame, Pieces, Techniques, Row progress, Selection, history, encodings and file formats | `project.ts`, `changeFrame.ts`, `projectFile.ts` |
 | `rendering/` | Drawing on a canvas, shared by the editor, previews and exports: the Project, overlays, rulers, print pages | `projectRenderer.ts`, `overlayRenderer.ts` |
 | `services/` | The only code that reaches outside the page: the Project library in localStorage, preferences, image decoding, file download | `index.ts`, `libraryStore.ts` |
 | `composables/<feature>/` | The app's behavior, one composable per concern; user flows are `use<Name>Flow` | `shell/useAppShell.ts` (wires them all), `project/useEdit.ts`, `shell/controlRegistry.ts` |

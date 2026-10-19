@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import BottomSheet from './BottomSheet.vue'
 import FrameBar from '../canvas/FrameBar.vue'
 import MenuPanel from './MenuPanel.vue'
 import PanelHost from './PanelHost.vue'
-import MirrorControls from '../tools/MirrorControls.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
 import TemplateGallery from '../project/TemplateGallery.vue'
 import TemplateSetup from '../project/TemplateSetup.vue'
@@ -13,18 +11,16 @@ import ProjectPanel from '../project/ProjectPanel.vue'
 import { ref } from 'vue'
 import { templateById, type TemplateId } from '../../domain/templates'
 import { useAppShell } from '../../composables/shell/useAppShell'
-import { MIRROR_ENABLED } from '../../features'
 
-// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's sub-view, the Saved
-// Projects sheet that opens from Menu, and Mirror's. Each panel only asks; the app shell does the work.
+// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's sub-view, and Saved Projects as another. Each panel only asks; the app shell does the work.
 const {
   t,
   projects,
   activeProjectId,
+  onRequestRemove,
   activeProject,
   saveFailed,
   unsaved,
-  onRequestRemove,
   activeBeadLabel,
   settledProject,
   onNewProjectDraft,
@@ -57,12 +53,6 @@ const {
   inputMode,
   setInputMode,
   inputModeAvailable,
-  mirrorAxisCounts,
-  mirrorCopyMode,
-  onSetMirrorAxisCount,
-  onToggleMirrorCopyMode,
-  onMirrorCurrent,
-  onMirrorCurrentHover,
   openPanel,
   framing,
   frameBarShown,
@@ -85,22 +75,6 @@ const chosenTemplate = ref<TemplateId>()
 </script>
 
 <template>
-  <BottomSheet
-    v-if="MIRROR_ENABLED && openPanel === 'mirror' && activeProject"
-    :title="t.toolbox.groups.mirror"
-    @close="openPanel = null"
-  >
-    <MirrorControls
-      :project="activeProject"
-      :mirror-axis-counts="mirrorAxisCounts"
-      :mirror-copy-mode="mirrorCopyMode"
-      @set-mirror-axis-count="onSetMirrorAxisCount"
-      @toggle-mirror-copy-mode="onToggleMirrorCopyMode"
-      @mirror-current="onMirrorCurrent"
-      @mirror-current-hover="onMirrorCurrentHover"
-    />
-  </BottomSheet>
-
   <!-- The Frame bar (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
   <PanelHost v-if="activeProject && frameBarShown && !framing" open="frame" :only="['frame']" @close="onCloseFrameBar">
     <FrameBar
@@ -122,7 +96,7 @@ const chosenTemplate = ref<TemplateId>()
     v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
     :open="openPanel"
     :only="['menu', 'project']"
-    :sub-title="t.projects.newProjectButton"
+    :sub-title="phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
     :start-in-sub="menuOpensOnForm || projects.length === 0"
     @close="openPanel = null"
   >
@@ -135,6 +109,7 @@ const chosenTemplate = ref<TemplateId>()
       @import="onImportProjects"
       @import-result="(id, text, tone) => { onImportToast(id, text, tone); openPanel = null }"
       @export-all="onExportLibraryFile"
+      @new-project="phoneSavedProjectsOpen = false"
       @saved-projects="phoneSavedProjectsOpen = true"
       @delete-all="onRequestDeleteAllProjects"
       @update:input-mode="setInputMode"
@@ -178,6 +153,16 @@ const chosenTemplate = ref<TemplateId>()
           @submit="(payload) => { onPlaceFrameFromTemplate(payload); openPanel = null }"
         />
       </template>
+      <!-- Saved Projects: Menu's other sub-view. Picking a Project opens it and closes the panel. -->
+      <ProjectList
+        v-else-if="phoneSavedProjectsOpen && depth === 1"
+        :projects="projects"
+        :active-project-id="activeProjectId"
+        @select="onSelectProjectFromPhoneDrawer"
+        @remove="onRequestRemove"
+        @export-project="onExportProjectFile"
+        @export-library="onExportLibraryFile"
+      />
       <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
       <template v-else-if="depth === 1">
         <TemplateGallery class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
@@ -200,18 +185,6 @@ const chosenTemplate = ref<TemplateId>()
       </AppButton>
     </template>
   </PanelHost>
-
-  <!-- Saved Projects: a non-modal sheet opened from the Project sheet's Saved Projects icon. Selecting a project closes both this and the Project sheet. -->
-  <BottomSheet v-if="phoneSavedProjectsOpen" :title="t.projects.heading" @close="phoneSavedProjectsOpen = false">
-    <ProjectList
-      :projects="projects"
-      :active-project-id="activeProjectId"
-      @select="onSelectProjectFromPhoneDrawer"
-      @remove="onRequestRemove"
-      @export-project="onExportProjectFile"
-      @export-library="onExportLibraryFile"
-    />
-  </BottomSheet>
 </template>
 
 <style scoped>

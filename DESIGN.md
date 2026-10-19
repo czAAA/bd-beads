@@ -17,7 +17,7 @@ guideline file for the topic (§3). Use tokens; never type a color, size, durati
 - **Flat, with hairlines.** Light uses hairlines and a few soft shadows; dark uses surface steps; high contrast uses
   borders.
 - **Strict type roles.** Inter for anything you read or press; DM Mono, lowercase, for labels and meta; Instrument
-  Serif italic only for the technique word (behind the canvas and on exports) and the maker's name on exports.
+  Serif italic only for the technique word and the maker's name on exports.
 - **Nothing borrowed.** No company or product names, logos or imagery.
 
 The design system's [README](docs/design/system/README.md) states these in full.
@@ -88,14 +88,13 @@ Tickets written before the v13 rewrite cite `DESIGN.md §N`. They now resolve he
 | §4.1 | Header | `Header`, `BeadPill`, `OverflowMenu` cards |
 | §4.2 | Left column | `Toolbox`, `SaveBox`, `BeadsNeeded`, `SavedPatterns` cards |
 | §4.3 | Canvas box | `CanvasStrip`, `BeadBoard`, `ProgressBar` cards |
-| §4.4 | Background highlight | `BeadBoard` card; `word` and `curve` tokens |
 | §5 | Components | the component cards |
 | §5.1 | Buttons and selects | `Button`, `InteractionStates` cards; `interaction-and-motion.md` |
 | §5.2 | Bead pill, language switcher | `BeadPill`, `Header` cards |
 | §5.3 | Theme toggle | `ThemeToggle` card |
 | §5.4 | Tool tabs | `ToolTabs` card |
 | §5.5 | Palette swatches | `PaletteSwatches`, `ColorPickers` cards |
-| §5.6 | Disclosure row | `DisclosureRow`, `MirrorSizeControls` cards |
+| §5.6 | Disclosure row | `DisclosureRow`, `FrameControls` cards |
 | §5.7 | Tool group | `Toolbox` card |
 | §5.8 | Expandable panel | `BeadsNeeded`, `SavedPatternsExpanded` cards |
 | §5.9 | Saved Pattern thumbnail | `SavedPatterns` card |
@@ -220,14 +219,14 @@ A map for the implementation tickets (136–168, and 75–83).
 | Bead drawing | white background, paper rim, grey dimmed rows | the board, per-theme `ProjectTheme`, light rows fade toward the board | 140 |
 | Layout | Toolbox rail or New Pattern form on the left; panels below the canvas; the page scrolls | one 358px left column of four boxes scrolling on its own; the canvas box fills the rest | 141 |
 | Header | ticket 02 header | brand, currently editing, Bead pill, Replace bead, imports, New Pattern, EN / RU, theme, shortcuts | 142 |
-| Canvas box | zoom cluster in the panel's corner | strip with zoom, board, background word and curve | 143 |
+| Canvas box | zoom cluster in the panel's corner | strip with zoom, board | 143 |
 | Row progress | toggles in the Toolbox; bar placed by Pattern shape, hidden while off | one Progress bar along the canvas box's bottom, always shown | 144 |
 | Saved Patterns | a list of every Pattern | 5 most recently saved as round thumbnails, expandable; needs a last-saved order | 145, 147 |
 | Beads needed | a list with a total | expandable panel, total in the title, a grams column (needs beads per gram in the catalog) | 146, and the grams feature ticket |
 | Save and export | in the Toolbox's Edit group | a save box with Export ▾ menu | 148 |
 | New Pattern form, Convert image | ticket 02 look | restyled Toolbox-like panel | 149, 150 |
 | Panels and pickers, messages, modals | ticket 02 look | Modal, Menu, Message cards | 151, 76 |
-| Toolbox | groups with a 4-per-row grid | tool tabs, swatches, Edit row, Mirror and Size disclosure rows | 75 |
+| Toolbox | groups with a 4-per-row grid | tool tabs, swatches, Edit row, Frame disclosure row | 75 |
 | States, a11y | partial | interaction states, empty/loading/error, keyboard painting, screen readers, forced colors | 157–160 |
 | Exports | today's PDF and PNG | page 1, chart pages, wide and long Patterns, name on exports | 161–164 |
 | Copy | today's strings | `writing.md` audit | 165 |
