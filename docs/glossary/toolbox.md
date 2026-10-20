@@ -3,7 +3,7 @@
 The Tool pill and the controls and surfaces around it. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md). The Toolbox, the rail of controls that sat in the left column, is gone (ticket 412): its controls live in the Tool pill, the Context bar, the Project and Menu sheets and the Canvas strip (the Zoom pill is gone, ticket 425).
 
 **Tool group**:
-A titled set of related controls — Tools (Paint, Fill, Select, Piece, Eraser, Hand; Select all is not a Tool: it is the Selection bar's first item and Ctrl/⌘+A, tickets 414, 428, 439), Colors, Edit, Mirror, Row progress. The Tool pill, the sheets and the keyboard shortcuts help gather the same controls under the same names.
+A titled set of related controls — Tools (Paint, Fill, Select, Piece, Eraser, Hand; Select all is not a Tool: it is the Selection bar's first item and Ctrl/⌘+A, tickets 414, 428, 439), Colors, Edit, Row progress. The Tool pill, the sheets and the keyboard shortcuts help gather the same controls under the same names.
 _Avoid_: subbox, card, section, panel
 
 **Tool pill layout** (formerly **Dock layout**):

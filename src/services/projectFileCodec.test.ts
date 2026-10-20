@@ -28,7 +28,7 @@ describe('a .openbeads file', () => {
   })
 
   it('round-trips a Custom colour and hexes outside the Palette', async () => {
-    const painted = paintAt(makeProject(), [{ row: 1, column: 1 }, { row: 1, column: 2 }], '#123456', { columns: 0, rows: 0 })
+    const painted = paintAt(makeProject(), [{ row: 1, column: 1 }, { row: 1, column: 2 }], '#123456')
     expect(await roundTrip(painted)).toEqual(painted)
   })
 
@@ -38,7 +38,7 @@ describe('a .openbeads file', () => {
   })
 
   it('round-trips a single bead', async () => {
-    const one = paintAt({ ...makeProject(), beads: {}, frame: undefined } as Project, [{ row: 5, column: 7 }], '#abcdef', { columns: 0, rows: 0 })
+    const one = paintAt({ ...makeProject(), beads: {}, frame: undefined } as Project, [{ row: 5, column: 7 }], '#abcdef')
     expect(await roundTrip(one)).toEqual(one)
   })
 
@@ -46,7 +46,7 @@ describe('a .openbeads file', () => {
     let project = makeProject()
     const cells = Array.from({ length: 6 }, (_, i) => ({ row: 0, column: i }))
     for (const [i, cell] of cells.entries()) {
-      project = paintAt(project, [cell], `#${(i + 1).toString(16).repeat(6)}`, { columns: 0, rows: 0 })
+      project = paintAt(project, [cell], `#${(i + 1).toString(16).repeat(6)}`)
     }
     expect(await roundTrip(project)).toEqual(project)
   })
@@ -81,7 +81,7 @@ describe('a .openbeads file', () => {
   })
 
   it('is a fraction of the plain JSON', async () => {
-    const bigger = paintAt(makeProject(), [{ row: 3, column: 3 }], '#e63746', { columns: 0, rows: 0 })
+    const bigger = paintAt(makeProject(), [{ row: 3, column: 3 }], '#e63746')
     expect((await packProjectFile(bigger)).byteLength).toBeLessThan(serializeLibrary([bigger]).length)
   })
 })
@@ -102,7 +102,7 @@ describe('refusing a file', () => {
 
 describe('a plain .json file from before ADR 0048 (deprecated)', () => {
   it('still imports', async () => {
-    const project = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746', { columns: 0, rows: 0 })
+    const project = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746')
     const file = JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [project] }, null, 2)
     expect((await readProjectsFile(asFile(file))).projects).toEqual([project])
     const library = JSON.stringify({ kind: 'bd-beads/library', version: 2, patterns: [project] })

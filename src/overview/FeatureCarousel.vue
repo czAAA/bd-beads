@@ -12,8 +12,7 @@ import FeatureExample from './examples/FeatureExample.vue'
 // feature's example (ticket 218) to the room it leaves.
 const { t } = useI18n()
 
-/** The features in the order the design system lists them, each with its Icons v2 icon. Mirror is left out while its
- * controls are hidden (ticket 174). */
+/** The features in the order the design system lists them, each with its Icons v2 icon. */
 const FEATURES: { key: keyof Translations['overview']['features']; icon: IconName }[] = [
   { key: 'techniques', icon: 'grid' },
   { key: 'projectEditing', icon: 'paint' },

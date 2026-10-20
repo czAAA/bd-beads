@@ -31,7 +31,7 @@ function makeProject(name = 'Fox'): Project {
 }
 
 function decoratedProject(): Project {
-  const painted = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746', { columns: 0, rows: 0 })
+  const painted = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746')
   return moveToRow(painted, 4)
 }
 
@@ -277,7 +277,7 @@ describe('importProjects', () => {
 
   it('keeps a same-identity local Project and brings the imported one in alongside it', () => {
     const local = decoratedProject()
-    const incoming = paintAt(local, [{ row: 0, column: 0 }], '#2f6fed', { columns: 0, rows: 0 })
+    const incoming = paintAt(local, [{ row: 0, column: 0 }], '#2f6fed')
 
     const added = importProjects([incoming], [local], () => 'fresh-id')
 

@@ -14,7 +14,7 @@ import {
   selectionHoldsAllBeads,
   selectionWithEdges,
   pasteOnLayer,
-  mirroredPastedCells,
+  stampedCells,
   pastedCells,
   selectionBetween,
   type CopiedBlock,
@@ -177,112 +177,54 @@ describe('a stamp lands the anchor bead on the aimed cell (ticket 437)', () => {
   it('shifts the block back by the anchor, so no empty corner offsets it', () => {
     const block: CopiedBlock = { rows: 2, columns: 2, colors: [[null, RED], [BLUE, null]], anchor: { row: 0, column: 1 } }
 
-    expect(mirroredPastedCells({ frame: undefined, technique: 'loom' }, block, { row: 3, column: 3 }, { rows: 0, columns: 0 })).toEqual([
+    expect(stampedCells({ frame: undefined, technique: 'loom' }, block, { row: 3, column: 3 })).toEqual([
       { row: 3, column: 3, color: RED },
       { row: 4, column: 2, color: BLUE },
     ])
   })
 })
 
-describe('mirroredPastedCells and pasteOnLayer (ticket 50: Paste projects through Mirror)', () => {
+describe('stampedCells and pasteOnLayer', () => {
   const dot: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]], anchor: { row: 0, column: 0 } }
 
-  it('with both axis counts at 0, behaves exactly like a single unmirrored pastedCells stamp', () => {
+  it('stamps the block once, as a plain pastedCells would', () => {
     const target = painted(['....', '....', '....', '....'])
     const at = { row: 1, column: 1 }
-    const axes = { rows: 0, columns: 0 }
 
-    expect(mirroredPastedCells(target, dot, at, axes)).toEqual(pastedCells(dot, at))
+    expect(stampedCells(target, dot, at)).toEqual(pastedCells(dot, at))
   })
 
-  it('aims the anchor bead, not the block corner, and mirrors the rest of the block around it (ticket 437)', () => {
+  it('aims the anchor bead, not the block corner (ticket 437)', () => {
     const target = painted(['......', '......', '......', '......'])
     const lean: CopiedBlock = { rows: 1, columns: 2, colors: [[null, RED]], anchor: { row: 0, column: 1 } }
 
-    const result = pasteOnLayer(target, lean, { row: 2, column: 1 }, { rows: 0, columns: 1 })
+    const result = pasteOnLayer(target, lean, { row: 2, column: 1 })
 
-    expect(picture(result)).toEqual(['......', '......', '.r..r.', '......'])
+    expect(picture(result)).toEqual(['......', '......', '.r....', '......'])
   })
 
-  it('with a single center axis on, stamps both the aimed spot and its one mirrored counterpart', () => {
-    const target = painted(['......', '......', '......', '......'])
-
-    // 6-wide grid, mirrored across columns (axisCount 1): column 1 <-> column 4.
-    const result = pasteOnLayer(target, dot, { row: 2, column: 1 }, { rows: 0, columns: 1 })
-
-    expect(picture(result)).toEqual(['......', '......', '.r..r.', '......'])
-  })
-
-  it('with N axes and copy mode off, stamps every strip, each copy independently flipped', () => {
-    const motif: CopiedBlock = {
-      rows: 1,
-      columns: 2,
-      colors: [[RED, null]],
-      anchor: { row: 0, column: 0 },
-    }
-    // 6-wide grid, 2 axes -> strips [0,1] [2,3] [4,5]. Anchored at column 0 (spanning 0,1): strip0 stamps as-is
-    // (r at 0, hole at 1); strip1 mirrors flipped (hole lands at 2, r lands at 3); strip2 translates unflipped
-    // (r at 4, hole at 5) -- see the mirror.test.ts placements test this mirrors.
-    const target = painted(['bbbbbb'], { r: RED, b: BLUE })
-
-    const result = pasteOnLayer(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 })
-
-    expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbbrrb'])
-  })
-
-  it('with copy mode on, translates every copy without flipping', () => {
+  it('leaves the block’s own holes as holes', () => {
     const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
     const target = painted(['bbbbbb'], { r: RED, b: BLUE })
 
-    const result = pasteOnLayer(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 2 }, true)
+    const result = pasteOnLayer(target, motif, { row: 0, column: 0 })
 
-    expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbrbrb'])
+    expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbbbbb'])
   })
 
-  it('leaves each copy’s own holes as holes, independently of the others', () => {
-    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
-    const target = painted(['bbbbbb'], { r: RED, b: BLUE })
-
-    const result = pasteOnLayer(target, motif, { row: 0, column: 0 }, { rows: 0, columns: 1 })
-
-    // Column 0->r, column1 is a hole (stays b); mirrored at columns 4/5 (6-wide, single axis): column5->r,
-    // column4 is a hole (stays b).
-    expect(picture(result, { r: RED, b: BLUE })).toEqual(['rbbbbr'])
-  })
-
-  it('clips each copy independently when it reaches past the grid’s edge', () => {
+  it('clips what runs past the grid’s edge', () => {
     const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, RED]], anchor: { row: 0, column: 0 } }
-    // 6-wide grid, single axis (strips [0,1,2] [3,4,5]). Anchored at column 5 -- the block's own placement already
-    // runs one cell past the grid's right edge; its mirror image runs one cell past the *left* edge instead.
     const target = painted(['......'])
 
-    const result = pasteOnLayer(target, motif, { row: 0, column: 5 }, { rows: 0, columns: 1 })
+    const result = pasteOnLayer(target, motif, { row: 0, column: 5 })
 
-    expect(picture(result)).toEqual(['r....r'])
+    expect(picture(result)).toEqual(['.....r'])
   })
 
-  it('honours copy mode in the preview the same way it does in the stamp', () => {
-    const motif: CopiedBlock = { rows: 1, columns: 2, colors: [[RED, null]], anchor: { row: 0, column: 0 } }
-    const target = painted(['bbbbbb'], { r: RED, b: BLUE })
-    const at = { row: 0, column: 0 }
-    const axes = { rows: 0, columns: 2 }
+  it('returns the same Project, untouched, when the stamp would change nothing', () => {
+    const target = painted(['r.....'])
 
-    const preview = mirroredPastedCells(target, motif, at, axes, true)
-    const stamped = pasteOnLayer(target, motif, at, axes, true)
-
-    for (const cell of preview) {
-      expect(frameGrid(stamped)[cell.row]![cell.column]!.color).toBe(cell.color)
-    }
-  })
-
-  it('returns the same Project, untouched, when every copy’s stamp would change nothing', () => {
-    // 6-wide grid, 2 axes: a dot at column 0 lands on columns [0, 3, 4] (see mirror.test.ts's mirrorCounterparts
-    // table for this exact dimension/axis-count) -- all three already red here.
-    const target = painted(['r..rr.'])
-
-    const result = pasteOnLayer(target, dot, { row: 0, column: 0 }, { rows: 0, columns: 2 })
-
-    expect(result).toBe(target)
+    expect(pasteOnLayer(target, dot, { row: 0, column: 0 })).toBe(target)
   })
 })
 
@@ -329,24 +271,24 @@ describe('Selections on a layer (ADR 0066)', () => {
   })
 
   it('fills the Frame\'s cells only, in the Frame, whatever the Selection reaches', () => {
-    const filled = paintLayerSelection(layered(), { top: 3, left: 3, rows: 5, columns: 5 }, RED, { columns: 0, rows: 0 })
+    const filled = paintLayerSelection(layered(), { top: 3, left: 3, rows: 5, columns: 5 }, RED)
     expect(filled.frame!.beads[2]).toEqual({ 1: RED, 2: RED })
     expect(filled.beads).toEqual(layered().beads)
   })
 
   it('pastes on the layer the pointer is at, and clips to the Frame there', () => {
     const block: CopiedBlock = { rows: 1, columns: 3, colors: [[RED, RED, RED]], anchor: { row: 0, column: 0 } }
-    const inFrame = pasteOnLayer(layered(), block, { row: 3, column: 3 }, { columns: 0, rows: 0 })
+    const inFrame = pasteOnLayer(layered(), block, { row: 3, column: 3 })
     expect(inFrame.beads).toEqual(layered().beads)
     expect(inFrame.frame!.beads[1]).toEqual({ 1: RED, 2: RED })
-    const onCanvas = pasteOnLayer(layered(), block, { row: 30, column: 9 }, { columns: 0, rows: 0 })
+    const onCanvas = pasteOnLayer(layered(), block, { row: 30, column: 9 })
     expect(onCanvas.beads[30]).toEqual({ 9: RED, 10: RED, 11: RED })
     expect(onCanvas.frame).toEqual(layered().frame)
   })
 
   it('shows the paste preview where the paste would land, in Canvas positions and clipped to the Frame', () => {
     const block: CopiedBlock = { rows: 1, columns: 3, colors: [[RED, RED, RED]], anchor: { row: 0, column: 0 } }
-    expect(pastedCellsOnLayer(layered(), block, { row: 3, column: 3 }, { columns: 0, rows: 0 })).toEqual([
+    expect(pastedCellsOnLayer(layered(), block, { row: 3, column: 3 })).toEqual([
       { row: 3, column: 3, color: RED },
       { row: 3, column: 4, color: RED },
     ])

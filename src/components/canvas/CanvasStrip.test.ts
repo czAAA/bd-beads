@@ -1,6 +1,5 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
-import CanvasBackdrop from './CanvasBackdrop.vue'
 import type { Project } from '../../domain/project'
 import CanvasStrip from './CanvasStrip.vue'
 import { en } from '../../i18n/en'
@@ -69,17 +68,6 @@ describe('CanvasStrip', () => {
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="strip-rulers"]').exists()).toBe(false)
-  })
-})
-
-describe('CanvasBackdrop', () => {
-  it('shows the word and the curve as decoration only, hidden from assistive tech', () => {
-    const wrapper = mount(CanvasBackdrop, { props: { word: 'Loom' } })
-
-    expect(wrapper.attributes('aria-hidden')).toBe('true')
-    expect(wrapper.text()).toBe('Loom')
-    expect(wrapper.find('path').attributes('d')).toBe('M-20 640 C 200 740, 380 420, 560 380 S 860 520, 1020 60')
-    expect(wrapper.find('button, a, input, [tabindex]').exists()).toBe(false)
   })
 })
 

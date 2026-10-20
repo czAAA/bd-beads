@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest'
-import { NO_MIRROR_AXES } from '../../domain/mirror'
 import { createProject, type Project, frameGrid, withFrameGrid } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 
@@ -45,7 +44,7 @@ describe('useUndoHistory', () => {
     expect(ctx.replaceProject).not.toHaveBeenCalled()
   })
 
-  it('restores Mirror axis counts from the snapshot, and clears the Selection when the Frame differs', () => {
+  it('clears the Selection when the Frame differs', () => {
     const ctx = editHarness(newProject())
     ctx.history.record({
       beads: ctx.project.beads,
@@ -53,10 +52,8 @@ describe('useUndoHistory', () => {
       beadId: ctx.project.beadId,
       technique: ctx.project.technique,
       frame: { technique: 'loom' as const, row: 0, column: 0, columns: 5, rows: 5, beads: {} },
-      mirrorAxisCounts: NO_MIRROR_AXES,
     })
     ctx.history.onUndo()
-    expect(ctx.restoreMirrorAxisCounts).toHaveBeenCalledWith(NO_MIRROR_AXES)
     expect(ctx.resetAfterFrameChange).toHaveBeenCalled()
   })
 

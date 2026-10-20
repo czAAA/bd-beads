@@ -60,7 +60,7 @@ describe('ProjectImport import', () => {
 
   it('brings in a Project that clashes with a local one under a new identity, keeping both', async () => {
     const local = makeProject('Fox')
-    const incoming = paintAt(local, [{ row: 0, column: 0 }], '#e63746', { columns: 0, rows: 0 })
+    const incoming = paintAt(local, [{ row: 0, column: 0 }], '#e63746')
     const wrapper = mount(ProjectImport, { props: { projects: [local] } })
 
     await pickFile(wrapper, serializeProject(incoming))

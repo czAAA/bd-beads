@@ -3,7 +3,6 @@ import { changeFrame } from '../../domain/changeFrame'
 import { colorAt } from '../../domain/canvas'
 import { beadColorAt, deleteAll, createProject, moveToRow, replaceBead, rowProgressOn, type Project } from '../../domain/project'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { NO_MIRROR_AXES } from '../../domain/mirror'
 import { editHarness } from '../../testUtils/editHarness'
 import { paintAt } from '../../testUtils/layers'
 
@@ -13,7 +12,7 @@ const inside = (row: number, column: number) => ({ row: frame.row + row, column:
 const marginCell = { row: frame.row - 1, column: frame.column }
 
 function paint(project: Project, at: { row: number; column: number }, color: string | null = '#ff0000') {
-  return paintAt(project, [at], color, NO_MIRROR_AXES, false)
+  return paintAt(project, [at], color)
 }
 
 describe('useEdit', () => {
@@ -41,7 +40,7 @@ describe('useEdit', () => {
     it('leaves finished rows alone and keeps the rest of the edit', () => {
       const woven = moveToRow(base, 1)
       const ctx = editHarness(woven)
-      ctx.edit('drawing', (project) => paintAt(project, [inside(0, 0), inside(1, 0)], '#ff0000', NO_MIRROR_AXES, false))
+      ctx.edit('drawing', (project) => paintAt(project, [inside(0, 0), inside(1, 0)], '#ff0000'))
 
       expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBeNull()
       expect(beadColorAt(ctx.project, inside(1, 0).row, inside(1, 0).column)).toBe('#ff0000')
@@ -65,19 +64,16 @@ describe('useEdit', () => {
   })
 
   describe('a frame change', () => {
-    it('applies it once, resets the session once, and Undo restores the Frame and Mirror’s counts', () => {
-      const counts = { columns: 1, rows: 0 }
-      const ctx = editHarness(base, { mirrorAxisCounts: counts })
+    it('applies it once, resets the session once, and Undo restores the Frame', () => {
+      const ctx = editHarness(base)
       const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...frame, rows: frame.rows + 1 } }))
 
       expect(outcome).toEqual({ kind: 'applied' })
       expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1, columns: frame.columns })
       expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(1)
-      expect(ctx.mirrorAxisCounts.current).toEqual(NO_MIRROR_AXES)
 
       ctx.history.onUndo()
       expect(ctx.project.frame).toEqual(frame)
-      expect(ctx.mirrorAxisCounts.current).toEqual(counts)
     })
 
     it('hands back the refusal and records nothing', () => {

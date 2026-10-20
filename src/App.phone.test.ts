@@ -7,6 +7,7 @@ import { drawnProject, pressBead } from './testUtils/beads'
 import { chooseCustomColor } from './testUtils/pill'
 import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
+import { en } from './i18n/en'
 
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
 
@@ -97,7 +98,6 @@ describe('App at the phone tier (ticket 79)', () => {
 
     await wrapper.find('[data-testid="pill-tool-erase"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="pill-tool-erase"]').classes()).toContain('icon-btn--selected')
     expect(wrapper.find('[data-testid="pill-tool"]').exists()).toBe(false)
   })
@@ -221,11 +221,10 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(btn.text()).toContain('1')
 
     await btn.trigger('click')
-    // Menu closes and a bottom sheet opens with the project list.
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-    const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
-    expect(sheets.length).toBeGreaterThan(0)
-    expect(sheets[sheets.length - 1]!.find('[data-testid="project-list"]').exists()).toBe(true)
+    // Menu swaps to its Saved Projects sub-view.
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe(en.projects.heading)
+    expect(wrapper.find('[data-testid="panel-body"] [data-testid="project-list"]').exists()).toBe(true)
   })
 
   it('exports a Project file and the whole library from the Saved Projects sheet (ticket 385)', async () => {
@@ -233,9 +232,8 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-saved-projects"]').trigger('click')
 
-    // Scoped to the Saved Projects sheet, the last one rendered: another ProjectList has its own panel-expand too.
-    const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
-    const savedProjectsSheet = sheets[sheets.length - 1]!
+    // Scoped to the Saved Projects sub-view: another ProjectList has its own panel-expand too.
+    const savedProjectsSheet = wrapper.get('[data-testid="panel-body"]')
     await savedProjectsSheet.find('[data-testid="panel-expand"]').trigger('click')
 
     await savedProjectsSheet.find('[data-testid="export-project"]').trigger('click')
@@ -257,15 +255,12 @@ describe('App at the phone tier (ticket 79)', () => {
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-saved-projects"]').trigger('click')
 
-    // The saved-projects sheet is the last bottom-sheet rendered; scope the click to it so
-    // we avoid the always-mounted (but hidden) AppDrawer ProjectList in the DOM.
-    const sheets = wrapper.findAll('[data-testid="bottom-sheet"]')
-    const savedProjectsSheet = sheets[sheets.length - 1]!
+    // Scope the click to the sub-view, avoiding the always-mounted (but hidden) AppDrawer ProjectList in the DOM.
+    const savedProjectsSheet = wrapper.get('[data-testid="panel-body"]')
     await savedProjectsSheet.findAll('[data-testid^="select-project-"]')[1]!.trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     // Both sheets should be gone.
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 

@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest'
-import { NO_MIRROR_AXES } from '../../domain/mirror'
 import { beadColorAt, createProject, moveToRow, type Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import type { Tool } from '../../domain/tool'
@@ -14,8 +13,6 @@ function setup(tool: Tool = 'paint', initial?: Project) {
   const stroke = usePaintStroke({
     currentProject: harness.currentProject,
     edit: harness.editing,
-    mirrorAxisCounts: () => NO_MIRROR_AXES,
-    mirrorCopyMode: () => false,
     activeTool: () => tool,
     endSelectPress,
   })
@@ -40,7 +37,7 @@ describe('usePaintStroke', () => {
   it('cancels an erase stroke and a drag over several beads, and ends a Select press', () => {
     const { stroke, harness, endSelectPress, at, frame } = setup('paint', undefined)
     const { row, column } = frame
-    harness.edit('drawing', (project) => paintAt(project, [{ row, column }], '#0000ff', NO_MIRROR_AXES, false))
+    harness.edit('drawing', (project) => paintAt(project, [{ row, column }], '#0000ff'))
     const painted = harness.project.frame!.beads
 
     stroke.beginOrCommitPress('erase', null, row, column)

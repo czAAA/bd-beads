@@ -70,16 +70,12 @@ describe('App', () => {
     expect(loadProjects()).toHaveLength(0)
   })
 
-  it('puts the open Project\'s Technique behind the board, and the strip above it, in the canvas box (ticket 143)', async () => {
+  it('puts the strip above the board in the canvas box (ticket 143)', async () => {
     const wrapper = mount(App)
-    expect(wrapper.find('[data-testid="canvas-backdrop"]').exists()).toBe(false)
-
     await createProjectViaForm(wrapper)
 
     const canvas = wrapper.find('[data-testid="app-canvas"]')
     expect(canvas.element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
-    expect(canvas.find('[data-testid="canvas-backdrop"]').attributes('aria-hidden')).toBe('true')
-    expect(canvas.find('[data-testid="canvas-backdrop"]').text()).not.toBe('')
   })
 
   it('paints a cell with the selected palette color', async () => {

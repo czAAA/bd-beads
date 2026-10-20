@@ -17,7 +17,7 @@ export function nextRotation(rotation: Rotation): Rotation {
 }
 
 // Whether this rotation swaps which grid axis runs across the screen: true for a quarter turn either way (90°/270°),
-// false for 0°/180°. The rule every on-screen axis mapping shares (Estimated size, Row direction, Mirror, the Frame's
+// false for 0°/180°. The rule every on-screen axis mapping shares (Estimated size, Row direction, the Frame's
 // Width and Height).
 export function rotationSwapsAxes(rotation: Rotation): boolean {
   return rotation === 90 || rotation === 270

@@ -531,29 +531,12 @@ export interface Translations {
     importedLabel: string
     importErrorLabel: string
   }
-  mirror: {
-    mirrorCurrentHorizontalButton: string
-    mirrorCurrentVerticalButton: string
-    /** The two per-direction axis counters (ticket 44), named for what they do on screen -- rotating the Project
-     * swaps which grid axis each shows. */
-    leftRightLabel: string
-    topBottomLabel: string
-    decreaseLeftRightButton: string
-    increaseLeftRightButton: string
-    decreaseTopBottomButton: string
-    increaseTopBottomButton: string
-    /** Mirror's copy-mode switch (ticket 45): one switch for both directions. */
-    copyModeLabel: string
-    /** The Mirror row's line holding the two Mirror current buttons (ticket 75). */
-    mirrorCurrentLabel: string
-  }
   /** Titles of the Toolbox's five Tool groups (CONTEXT.md), shown in each group's top-left corner (ticket 40). */
   toolbox: {
     groups: {
       tools: string
       colors: string
       edit: string
-      mirror: string
       rowProgress: string
     }
   }

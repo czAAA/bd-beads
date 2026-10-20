@@ -9,16 +9,11 @@ import {
   type History,
   type HistoryStep,
 } from '../../domain/history'
-import type { MirrorAxisCounts } from '../../domain/mirror'
 import { snapshotOf, type Project, type UndoEntry } from '../../domain/project'
 
-/** What the history needs from the app shell: the open Project, Mirror's live axis counts, and Edit's way of putting
- * a snapshot back. */
+/** What the history needs from the app shell: the open Project and Edit's way of putting a snapshot back. */
 export interface UndoHistoryDeps {
   currentProject: () => Project | undefined
-  /** Mirror's live axis counts, recorded with the snapshot of the current state so a Redo/Undo through it
-   * round-trips (ADR 0036). */
-  mirrorAxisCounts: () => MirrorAxisCounts
   /** Edit's restore: writes the snapshot back and runs the session resets, without Edit's guards (ADR 0036). */
   restore: (snapshot: UndoEntry) => void
 }
@@ -48,7 +43,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
 
   function onUndo() {
     const project = deps.currentProject()
-    const step = project && undoStep(history.value, snapshotOf(project, deps.mirrorAxisCounts()))
+    const step = project && undoStep(history.value, snapshotOf(project))
     if (step) {
       applyHistoryStep(step)
     }
@@ -58,7 +53,7 @@ export function useUndoHistory(deps: UndoHistoryDeps) {
    * drawing, so it's not blocked by the Row progress lock. */
   function onRedo() {
     const project = deps.currentProject()
-    const step = project && redoStep(history.value, snapshotOf(project, deps.mirrorAxisCounts()))
+    const step = project && redoStep(history.value, snapshotOf(project))
     if (step) {
       applyHistoryStep(step)
     }

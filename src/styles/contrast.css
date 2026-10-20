@@ -40,10 +40,6 @@
     forced-color-adjust: none;
   }
 
-  html:root .canvas-backdrop {
-    display: none;
-  }
-
   html:root :where(button, select, input, [role='switch'], [role='radio'], a):focus-visible {
     outline: 2px solid Highlight;
   }

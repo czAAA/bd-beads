@@ -1,17 +1,14 @@
 import { ref } from 'vue'
 import { frameContains } from '../../domain/canvas'
 import { layerAt, onLayer, type Layer } from '../../domain/layers'
-import type { MirrorAxisCounts } from '../../domain/mirror'
 import { fillArea, paintCells, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Edit } from '../project/useEdit'
 
-/** What a stroke needs from the app shell: the open Project, Edit and its stroke calls, Mirror and the active Tool. */
+/** What a stroke needs from the app shell: the open Project, Edit and its stroke calls and the active Tool. */
 export interface PaintStrokeDeps {
   currentProject: () => Project | undefined
   edit: Pick<Edit, 'edit' | 'beginStroke' | 'strokeStep' | 'endStroke' | 'cancelStroke'>
-  mirrorAxisCounts: () => MirrorAxisCounts
-  mirrorCopyMode: () => boolean
   activeTool: () => Tool
   /** A Select press ends on the same mouseup as a stroke does. */
   endSelectPress: () => void
@@ -52,7 +49,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     deps.edit.cancelStroke()
   }
 
-  // Paints (or, with a null color, erases) one cell of a stroke, live-mirrored per the Mirror axis counts, skipping
+  // Paints (or, with a null color, erases) one cell of a stroke, skipping
   // woven rows (ticket 33). The one caller that defers its save (ticket 55): a stroke touches hundreds of cells a
   // second. The cell lands in the library at once; endStroke makes the stroke one write.
   function paintStrokeCell(row: number, column: number, color: string | null) {
@@ -60,13 +57,12 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       onLayer(project, strokeLayer, (view, local) => {
         const at = local({ row, column })
         // The Frame holds only its own cells: a stroke that began in it leaves nothing where the pointer goes outside.
-        return view.frame && !frameContains(view.frame, at) ? view : paintCells(view, [at], color, deps.mirrorAxisCounts(), deps.mirrorCopyMode())
+        return view.frame && !frameContains(view.frame, at) ? view : paintCells(view, [at], color)
       }),
     )
   }
 
-  /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke, live-mirrored per
-   * cell. */
+  /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke. */
   function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: number, column: number) {
     const project = deps.currentProject()
     if (!project) {

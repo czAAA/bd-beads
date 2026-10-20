@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { NO_MIRROR_AXES } from './mirror'
 import { carryNames, namedPieceCutBy, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
 import { createProject, deleteAll, frameGrid, restoreSnapshot, snapshotOf, type Project } from './project'
 import { removeSelectedLine } from './removeLine'
@@ -120,10 +119,10 @@ describe('piece names', () => {
   it('is restored by Undo and Redo with the beads', () => {
     const base = projectWith(row(0, 0, 3))
     const named = withPieceName(base, { row: 0, column: 0 }, 'Fox')
-    const undone = restoreSnapshot(named, snapshotOf(base, NO_MIRROR_AXES))
+    const undone = restoreSnapshot(named, snapshotOf(base))
     expect(undone.pieceNames).toBeUndefined()
 
-    const redone = restoreSnapshot(undone, snapshotOf(named, NO_MIRROR_AXES))
+    const redone = restoreSnapshot(undone, snapshotOf(named))
     expect(redone.pieceNames).toEqual([{ row: 0, column: 0, name: 'Fox' }])
   })
 

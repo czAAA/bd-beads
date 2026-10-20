@@ -257,9 +257,6 @@ export interface WeaveDescription extends TechniqueRules {
    * `block` positions (a Selection, or the Frame with its margin); undefined when a turn isn't offered or the bead
    * belongs to no whole Unit of the block (a horizontal bead past its last Unit). */
   turned(position: GridPosition, block: GridDimensions): GridPosition | undefined
-  /** A bead's place among the beads Mirror folds it with, inside the Frame (horizontal and vertical beads fold among
-   * themselves in Right-angle weave, so a flip keeps each lying as it does); undefined for a position with no bead. */
-  lattice(position: GridPosition, frame: Frame): MirrorLattice | undefined
   /** The Selection grown to whole Units (a Technique with none returns it as is): from an even row (a line of
    * horizontal beads) to an even row, at least one Unit each way. `within` keeps a grown Selection that started
    * inside it from leaving it. */
@@ -269,13 +266,6 @@ export interface WeaveDescription extends TechniqueRules {
   fitBlock(topLeft: GridPosition, offsets: GridPosition[]): GridPosition
   /** The physical size, in mm, of one step across and one step down from a Bead. */
   stepMm(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'>): { across: number; down: number }
-}
-
-/** How a position sits among the beads it is mirrored with (see WeaveDescription.lattice). */
-interface MirrorLattice {
-  row: { index: number; count: number }
-  column: { index: number; count: number }
-  at(row: number, column: number): GridPosition
 }
 
 /** A rectangle in grid space. */
@@ -329,11 +319,6 @@ export function describeWeave(weave: Weave): WeaveDescription {
       lineOf: (pass, direction) => lineOfPass(weave, pass, direction),
     },
     turned: ({ row, column }, block) => (rules.quarterTurn ? { row: column, column: block.rows - 1 - row } : undefined),
-    lattice: (position, frame) => ({
-      row: { index: position.row - frame.row, count: frame.rows },
-      column: { index: position.column - frame.column, count: frame.columns },
-      at: (row, column) => ({ row: frame.row + row, column: frame.column + column }),
-    }),
     snapSelection: (selection) => selection,
     fitBlock: (topLeft) => topLeft,
     stepMm: (bead) => ({ across: beadPitchMm(bead), down: rowPitch(weave.technique, bead.heightMm) }),
@@ -471,25 +456,6 @@ function rightAngleDescription(rules: TechniqueRules): WeaveDescription {
       }
       return { row: 2 * column, column: lines - line - 1 }
     },
-    lattice: (position, frame) => {
-      const lines = Math.floor(frame.rows / 2)
-      const line = Math.floor((position.row - frame.row) / 2)
-      const column = position.column - frame.column
-      if (isHorizontalLine(position.row)) {
-        return column < frame.columns - 1
-          ? {
-              row: { index: line, count: lines + 1 },
-              column: { index: column, count: frame.columns - 1 },
-              at: (r, c) => ({ row: frame.row + 2 * r, column: frame.column + c }),
-            }
-          : undefined
-      }
-      return {
-        row: { index: line, count: lines },
-        column: { index: column, count: frame.columns },
-        at: (r, c) => ({ row: frame.row + 2 * r + 1, column: frame.column + c }),
-      }
-    },
     snapSelection: (selection, within) => {
       const top = selection.top - (((selection.top % 2) + 2) % 2)
       const last = selection.top + selection.rows - 1
@@ -594,11 +560,6 @@ function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescri
       lineOf: (pass, direction) => lineOfPass(netting, pass, direction),
     },
     turned: () => undefined,
-    lattice: (position, frame) => ({
-      row: { index: position.row - frame.row, count: frame.rows },
-      column: { index: position.column - frame.column, count: frame.columns },
-      at: (row, column) => ({ row: frame.row + row, column: frame.column + column }),
-    }),
     snapSelection: (selection, within) => {
       const top = selection.top - modulo(selection.top, p)
       const left = selection.left - modulo(selection.left, p)

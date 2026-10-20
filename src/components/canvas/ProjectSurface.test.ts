@@ -242,7 +242,7 @@ describe('ProjectSurface', () => {
       expect(context.named('rect').map((call) => call.args)).toEqual([[0, 240, 400, 20]])
     })
 
-    it('draws a band for each cluster of changed rows, as a Mirror stroke changes rows far apart', async () => {
+    it('draws a band for each cluster of changed rows, as a change to rows far apart', async () => {
       viewport = { width: 400, height: 600 }
       const project = projectOf(20, 30)
       const { wrapper } = await mountSurface(project)
@@ -889,7 +889,7 @@ describe('ProjectSurface', () => {
         await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
       })
 
-      it('refuses a press whose mirrored counterpart lands in the margin, though the pressed bead is outside it', async () => {
+      it('refuses a press whose preview lands in the margin, though the pressed bead is outside it', async () => {
         const project = framed()
         const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true, previewCells: [{ row: 2, column: 2 }, { row: 8, column: 8 }] })
 
@@ -1212,26 +1212,6 @@ describe('ProjectSurface', () => {
       context.calls.length = 0
       await wrapper.setProps({ selection: undefined })
       expect(context.named('fillRect')).toHaveLength(0)
-    })
-
-    it('draws Mirror\'s axis lines when a direction has an axis', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10))
-      context.calls.length = 0
-
-      await wrapper.setProps({ mirrorAxisCounts: { columns: 1, rows: 0 } })
-
-      expect(context.named('fillRect').map((call) => call.args)).toEqual([[199, 0, 2, 200]])
-    })
-
-    it('draws the beads a "Mirror current" hover would overwrite, faded', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10))
-      context.calls.length = 0
-
-      await wrapper.setProps({ dimmedCells: [{ row: 0, column: 0 }, { row: 0, column: 1 }] })
-
-      // A faded bead is a bitmap, made once for both (two rectangles on the bitmap's own canvas) and blitted for each.
-      expect(context.named('drawImage')).toHaveLength(2)
-      expect(context.named('rect')).toHaveLength(0)
     })
   })
 })

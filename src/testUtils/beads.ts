@@ -126,16 +126,6 @@ export function previewedBeads(wrapper: Anywhere): (GridPosition & { color: stri
   })
 }
 
-/** Mirror's axis counts as the surface draws them: a line for each. */
-export function mirrorAxes(wrapper: Anywhere): { columns: number; rows: number } {
-  return surface(wrapper).props('mirrorAxisCounts') ?? { columns: 0, rows: 0 }
-}
-
-/** The beads the "Mirror current" hover dims. */
-export function dimmedBeads(wrapper: Anywhere): GridPosition[] {
-  return surface(wrapper).props('dimmedCells') ?? []
-}
-
 // How far the weaver has got, as the surface draws it: the rows (or columns) behind the pointer are finished, dimmed;
 // the one at it is outlined.
 export function rowProgressView(wrapper: Anywhere) {
