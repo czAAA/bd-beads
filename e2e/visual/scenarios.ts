@@ -16,7 +16,7 @@ export interface Scenario {
   name: string
   technique: Technique
   rowProgress?: Partial<RowProgress>
-  /** Runs once, at 100%, before any screenshot: makes the state (a Selection, a copied block, a Mirror axis). */
+  /** Runs once, at 100%, before any screenshot: makes the state (a Selection, a copied block). */
   prepare?: (page: Page, context: Context) => Promise<void>
   /** Runs at each zoom, once the zoom has settled and before the screenshot: puts the pointer where the state needs
    * it. */
@@ -102,8 +102,7 @@ export const SCENARIOS: Scenario[] = [
     overlaid: [...beadsIn(1, 1, 3, 4), ...beadsIn(5, 8, 3, 4)],
   })),
 
-  // The paint preview on the hovered bead (ticket 174 hid Mirror's own UI, and with it its live-mirror preview
-  // scenarios, pending its own redesign).
+  // The paint preview on the hovered bead.
   ...perTechnique((technique) => ({
     name: `${technique}-hover-paint`,
     place: (page, context) => pointerOnBead(page, context, 3, 5),

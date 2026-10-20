@@ -3,7 +3,7 @@ import type { GridPosition } from './grid'
 import { weaveOf, type Project } from './project'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
-// Eraser, Mirror, Paste, Selection fills) works on one Project's beads in one coordinate system; `onLayer` hands it
+// Eraser, Paste, Selection fills) works on one Project's beads in one coordinate system; `onLayer` hands it
 // the layer as a Project of its own, so none of them has to know there are two.
 
 /** The layer a bead belongs to: the Canvas, or the Frame laid over it. */
@@ -35,7 +35,7 @@ export function positionOnCanvas(project: Pick<Project, 'frame'>, layer: Layer, 
 }
 
 /** The Frame's own beads as a Project of its own: its beads, a Frame at (0, 0) the size of the real one, the Project's
- * Row progress and the Frame's own Weave (ticket 492), so the commands that know a Frame (Mirror, Fill's limit, the Row
+ * Row progress and the Frame's own Weave (ticket 492), so the commands that know a Frame (Fill's limit, the Row
  * progress lock) work on it as they always did. Piece names are the Canvas's. The Project must have a Frame. */
 export function frameLayer(project: Project): Project {
   const frame = project.frame!

@@ -33,15 +33,6 @@ describe('an edit shares the rows it leaves alone', () => {
     expect(frameGrid(painted)[2]!.map((cell) => cell.color)).toEqual(['#2f6fed', null, null, '#e63746', null, null])
   })
 
-  it('paintCells copies each row a mirrored stroke reaches, and no others', () => {
-    const project = blank(6, 6)
-
-    const painted = paintAt(project, [{ row: 1, column: 1 }], '#e63746', { columns: 0, rows: 1 })
-
-    // One top-to-bottom axis: row 1 mirrors to row 4.
-    expect([0, 1, 2, 3, 4, 5].map((row) => painted.frame!.beads[row] !== project.frame!.beads[row])).toEqual([false, true, false, false, true, false])
-  })
-
   it('paintCells hands back the Project itself when nothing changes', () => {
     const project = paintAt(blank(6, 5), [{ row: 1, column: 1 }], '#e63746')
 

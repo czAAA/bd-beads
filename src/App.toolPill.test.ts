@@ -117,7 +117,6 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
 
     await wrapper.get('[data-testid="pill-color"]').trigger('click')
     expect(popover().exists()).toBe(true)
-    expect(wrapper.find('[data-testid="bottom-sheet"]').exists()).toBe(false)
 
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()

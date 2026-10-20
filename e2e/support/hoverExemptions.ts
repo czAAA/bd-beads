@@ -17,7 +17,6 @@ export const INFO_POPOVERS: InfoPopover[] = []
 // state can show.
 export const UNREACHED: Record<string, string> = {
   AppMenuItem: 'ticket 439: a disabled item\'s reason Tooltip stopped being opened by any screen once the Colour sheet and Select all button went; not yet traced to the state that showed it, so a follow-up should add a screen for it and delete this entry',
-  MirrorControls: 'not mounted anywhere in the app today (ticket 79 pulled it out of the Toolbox for a Mirror ToolSheet that is not built); only its own unit test renders it',
   // A false positive of the source scan (TOOLTIP_MAKERS treats every IconButton as one): the notice row's close
   // button (AppMessage.vue) gives IconButton neither `tooltip` nor `action`, so IconButton's own tooltipProps is
   // always undefined there -- it renders a plain button, never AppTooltip. Nothing a screen could ever open.

@@ -12,8 +12,6 @@ import IconButton from '../ui/IconButton.vue'
 import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
 import { PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
-import { MIRROR_ENABLED } from '../../features'
-import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 
 // The Tool pill (ticket 439, ADR 0059; ToolPill card): the tools floating over the drawing area, replacing the Dock:
 // grip, six tool tiles, a divider, the colour control. It docks to one of four edges (drag, or the grip's arrow keys).
@@ -35,9 +33,6 @@ const props = defineProps<{
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
-  /** Which bottom sheet is open: the dormant Mirror button (MIRROR_ENABLED, ticket 174) shows lit while its sheet
-   * is. */
-  openSheet?: PhoneSheet | null
 }>()
 
 const emit = defineEmits<{
@@ -49,7 +44,6 @@ const emit = defineEmits<{
   'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
-  'select-sheet': [sheet: PhoneSheet]
   /** Where the pill is in the drawing area's pixels (undefined when it cannot be measured): the Selection bar keeps
    * clear of it. */
   rect: [rect: PillRect | undefined]
@@ -67,7 +61,6 @@ const pasteAction = controlAction('tool-paste')
 /** Paste mode runs under Select, but the Paste tile is the one lit then (ticket 447). */
 const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && props.pasteArmed && props.hasClipboard)
 const colorAction = controlAction('pill-colors')
-const mirrorAction = MIRROR_ENABLED ? controlAction('pill-mirror') : undefined
 const colorLabel = computed(() => t.value.toolPill.color.replace('{name}', props.colorName ?? ''))
 
 /** The tool tiles and the colour control are one Tab stop (the active tool); the arrows move along them. */
@@ -245,18 +238,6 @@ watch(
           <span class="tool-pill__recent-swatch" :style="{ backgroundColor: hex }" />
         </button>
       </template>
-
-      <IconButton
-        v-if="mirrorAction"
-        class="tool-pill__stop"
-        variant="pill"
-        :action="mirrorAction"
-        icon="mirror-horizontal"
-        :selected="openSheet === 'mirror'"
-        :tabindex="-1"
-        data-testid="pill-mirror"
-        @click="emit('select-sheet', 'mirror')"
-      />
 
     </div>
 

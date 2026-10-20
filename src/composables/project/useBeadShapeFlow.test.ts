@@ -30,9 +30,9 @@ describe('useBeadShapeFlow (ticket 508)', () => {
 
   it('is taken back by Undo and redone by Redo', () => {
     const { flow, project } = setup()
-    const before = snapshotOf(project(), { columns: 0, rows: 0 } as never)
+    const before = snapshotOf(project())
     flow.setBeadShape('real')
-    const after = snapshotOf(project(), { columns: 0, rows: 0 } as never)
+    const after = snapshotOf(project())
     expect(restoreSnapshot(project(), before).beadShape).toBeUndefined()
     expect(restoreSnapshot(project(), after).beadShape).toBe('real')
   })

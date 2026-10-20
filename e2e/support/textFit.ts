@@ -31,7 +31,7 @@ const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"], [data-testid="example-pap
 
 /** Not checked: user-typed text (a long Project name may ellipsize) and the drawing's furniture (backdrop word,
  * ruler numbers). */
-const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid="project-name"], [data-testid="canvas-strip-title"], [data-testid="canvas-backdrop"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
+const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid="project-name"], [data-testid="canvas-strip-title"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
 
 // Measures every visible text against the box meant to hold it and returns the misfits (ticket 229; see `measure`):
 // text partly outside a clipping ancestor, its own box or the viewport, an ellipsized element with more content than

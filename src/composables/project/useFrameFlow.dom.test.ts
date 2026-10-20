@@ -11,7 +11,7 @@ const open = withFrame(sized, undefined)
 const sizedRect = { row: 0, column: 0, rows: 3, columns: 4 }
 
 function setup(project: Project | null = sized) {
-  const harness = editHarness(project ?? undefined, { mirrorAxisCounts: { columns: 1, rows: 0 } })
+  const harness = editHarness(project ?? undefined)
   const deps = {
     currentProject: harness.currentProject,
     edit: harness.edit,

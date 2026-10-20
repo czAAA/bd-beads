@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, type Project, frameGrid } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
-import { NO_MIRROR_AXES } from '../../domain/mirror'
 import { loadProjects } from '../../services/libraryStore'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'
 import { useProjectLibrary } from './useProjectLibrary'
@@ -22,7 +21,7 @@ function makeProject(overrides: Partial<Project> = {}): Project {
 
 /** One painted cell, the way a stroke's per-cell commit arrives at replaceProject. */
 function withPaintedCell(project: Project, row: number, column: number): Project {
-  return paintAt(project, [{ row, column }], '#e63746', NO_MIRROR_AXES, false)
+  return paintAt(project, [{ row, column }], '#e63746')
 }
 
 beforeEach(() => {
