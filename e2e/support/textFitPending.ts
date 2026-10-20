@@ -20,9 +20,6 @@ const ALL_PENDING: PendingEntry[] = [
   { screen: 'Overview', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { screen: 'Overview carousel', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...', 'Ткачество'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
   { screen: 'Tour', texts: ['Увеличить', 'Сотрите лишнюю бисеринку'], at: { ru: [320] }, fixedBy: '231' },
-  // Saved Projects is reachable at every width only from ticket 385 on (the Dock's own nested sheet, not the Toolbox's
-  // always-wide column); its "Export all" button is narrower there in some languages than the Toolbox ever gave it.
-  { screen: 'Saved Projects expanded', texts: 'any', at: { ru: [390, 360, 320], uk: [320], be: [320], pl: [320] }, fixedBy: 'unassigned' },
 ]
 
 /** The Tour's entries wait while it is switched off (ticket 247): its screen isn't visited, so they would read as
