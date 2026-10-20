@@ -5,7 +5,7 @@ import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { canvasWeave, createProject, frameWeave, rowProgressStarted, switchLoss, weaveOf, withFrame, type CreateProjectInput, type Project } from '../../domain/project'
+import { canvasWeave, createProject, frameWeave, rowProgressStarted, switchLoss, weaveOf, type CreateProjectInput, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -62,8 +62,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const draftProject = computed(() => {
     const project = deps.currentProject()
     if (!project || !draft.value) return project
-    if (!draft.value.move) return withFrame(project, draft.value.frame)
-    const outcome = changeFrame(project, { move: draft.value.move })
+    // Shown as the release will leave it: a resize that shrinks the Frame already lays its given-up beads on the Canvas.
+    const outcome = changeFrame(project, draft.value.move ? { move: draft.value.move } : { set: draft.value.frame })
     return outcome.kind === 'changed' ? outcome.project : project
   })
 
