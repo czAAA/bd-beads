@@ -156,4 +156,18 @@ describe('usePaintStroke', () => {
       expect(harness.project.frame!.beads).toEqual({})
     })
   })
+
+  it('leaves a stroke on the layer it began on when the pointer crosses to the other (ADR 0070)', () => {
+    const { stroke, harness, frame } = setup()
+    const { row, column } = frame
+
+    stroke.beginOrCommitPress('paint', '#ff0000', row, column, 'frame')
+    stroke.paintStrokeCell(row, column + 1, '#ff0000', 'canvas')
+    stroke.paintStrokeCell(row, column + 2, '#ff0000', 'frame')
+    stroke.endStroke()
+
+    expect(harness.project.frame!.beads[0]).toEqual({ 0: '#ff0000', 2: '#ff0000' })
+    expect(harness.project.beads).toEqual({})
+  })
 })
+

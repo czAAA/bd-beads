@@ -20,7 +20,8 @@ import {
   type CopiedBlock,
   type Selection,
 } from '../../domain/selection'
-import { clampOutOfMargin, inMargin, selectionAllowed } from '../../domain/margin'
+import { footprintOf } from '../../domain/footprint'
+import { clampOutOfMargin, inMargin, marginBoxFor, selectionAllowed } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -70,19 +71,20 @@ export function useSelectionGesture(
     return project ? snapSelectionToUnits(project, next, project.frame) : next
   }
 
-  function beginPress(row: number, column: number) {
+  function beginPress(row: number, column: number, named?: Layer) {
     const project = currentProject()
     if (!project) {
       return
     }
+    const at = { row, column, ...(named ? { layer: named } : {}) }
 
     // A Selection cannot start in the keep-out margin (ticket 433): nothing begins (the pointer shows the cue itself, a
     // key asks extendPress's caller to).
-    if (inMargin(project.frame, { row, column })) {
+    if (inMargin(footprintOf(project), at)) {
       return
     }
-    const layer = layerAt(project, { row, column })
-    selectPress.value = { anchor: { row, column }, focus: { row, column }, layer, moved: false }
+    const layer = layerAt(project, at)
+    selectPress.value = { anchor: at, focus: at, layer, moved: false }
 
     // With no active projection the press can only start a selection, so the marquee appears from the first cell. With
     // one active Paste claims the gesture, hence re-selecting a single cell takes a drag out and back: a click must
@@ -95,7 +97,7 @@ export function useSelectionGesture(
   // Grows the in-progress Selection to the cell the drag reached. A drag replaces the previous Selection and the copy
   // with it (ticket 92). Returns false when the margin held the cell back (ticket 433), which a key step takes as a
   // refusal.
-  function extendPress(row: number, column: number): boolean {
+  function extendPress(row: number, column: number, named?: Layer): boolean {
     const project = currentProject()
     const press = selectPress.value
     if (!project || !press) {
@@ -107,8 +109,8 @@ export function useSelectionGesture(
     if (pasteProjectionActive.value) return false
     dropClipboard()
     // The drag stays on the layer it began on (ticket 491), and out of the margin (ticket 433).
-    const focus = dragFocusOnLayer(project, press.layer, { row, column }, press.focus)
-    press.focus = clampOutOfMargin(project.frame, press.anchor, focus)
+    const focus = dragFocusOnLayer(project, press.layer, { row, column, ...(named ? { layer: named } : {}) }, press.focus)
+    press.focus = clampOutOfMargin(marginBoxFor(project, press.layer), press.anchor, focus)
     selection.value = snapped(selectionBetween(press.anchor, press.focus, press.layer))
     return press.focus.row === row && press.focus.column === column
   }
@@ -138,14 +140,14 @@ export function useSelectionGesture(
   /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, on
    * the tapped bead's side of the Frame's margin (ticket 433), and tapping empty space clears it. A tap in the
    * margin is refused. */
-  function tapPiece(row: number, column: number) {
+  function tapPiece(row: number, column: number, named?: Layer) {
     const project = currentProject()
     if (!project) {
       return
     }
-    const at = { row, column }
+    const at = { row, column, ...(named ? { layer: named } : {}) }
     const picked = pieceSelectionOnLayer(project, at)
-    if (inMargin(project.frame, at) || (!picked && beadColorAt(project, row, column))) {
+    if (inMargin(footprintOf(project), at) || (!picked && beadColorAt(project, row, column, named))) {
       refusals.value += 1
       return
     }
@@ -205,7 +207,8 @@ export function useSelectionGesture(
   /** Takes a resized or moved Selection only if it covers none of the Frame's margin (ticket 428); otherwise the
    * Selection stays as it was. */
   function keepOutOfMargin(next: Selection) {
-    if (selectionAllowed(currentProject()?.frame, next)) selection.value = next
+    const project = currentProject()
+    if (selectionAllowed(project && marginBoxFor(project, selectionLayer(project, next)), next)) selection.value = next
   }
 
   /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */

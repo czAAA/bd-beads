@@ -62,9 +62,15 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
 // ordinary Projects (a few dozen columns/rows) zoomed below 100%. Bigger Projects open fit-to-box.
 export const CANVAS_MAX_PX = 900
 
+/** The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. */
+export type Layer = 'canvas' | 'frame'
+
 export interface GridPosition {
   row: number
   column: number
+  /** The layer a pointer hit named (ADR 0070): where the Frame draws shorter than the rows it names, a Frame bead and a
+   * Canvas bead share a position. Left out where the position alone says it. */
+  layer?: Layer
 }
 
 // A cell to show a hover preview on (ticket 23). `color` overrides the single preview color for this cell, making the

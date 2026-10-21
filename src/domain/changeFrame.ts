@@ -2,6 +2,7 @@ import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shif
 import { movedFrame, sameFrame, snappedMove } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
+import { footprintOf } from './footprint'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
@@ -168,17 +169,20 @@ function resizedFrame(project: Project, rectangle: Frame | undefined): Project {
   if (!before || !after) {
     return resized
   }
-  const given = (position: GridPosition) => frameContains(before, position) && !frameContains(after, position)
+  const givenBead = (position: GridPosition) => frameContains(before, position) && !frameContains(after, position)
+  const was = footprintOf(project)!
+  const now = footprintOf(resized)!
+  const givenCanvas = (position: GridPosition) => frameContains(was, position) && !frameContains(now, position)
   const dropped: BeadMap = {}
   forEachBead(shiftedBeads(before.beads, before.row, before.column), (row, column, color) => {
-    if (given({ row, column })) {
+    if (givenBead({ row, column })) {
       dropped[row] ??= {}
       dropped[row]![column] = color
     }
   })
   const cleared: BeadChange[] = []
   forEachBead(project.beads, (row, column) => {
-    if (given({ row, column })) {
+    if (givenCanvas({ row, column })) {
       cleared.push({ row, column, color: null })
     }
   })
@@ -195,7 +199,7 @@ function madeFrame(project: Project, rectangle: Frame): Project {
   const previous = project.frame
   // What shows is lifted. Canvas beads hidden under a Frame there before stay on the Canvas; its own beads outside the
   // new rectangle go back on it.
-  const hidden = previous ? beadsInFrame(beadsInFrame(project.beads, rectangle), previous) : {}
+  const hidden = previous ? beadsInFrame(beadsInFrame(project.beads, rectangle), footprintOf(project)!) : {}
   const left = previous ? beadsWithout(shiftedBeads(previous.beads, previous.row, previous.column), rectangle) : {}
   const canvas = beadsOver(beadsOver(beadsWithout(project.beads, rectangle), hidden), left)
   const lifted = beadsInFrame(shownBeads(project), rectangle)
@@ -225,7 +229,7 @@ function placedFrame(project: Project, place: { frame: Frame; weave: Weave }): P
 function removedFrame(project: Project): Project {
   const frame = project.frame!
   const dropped = shiftedBeads(frame.beads, frame.row, frame.column)
-  const beads = beadsOver(beadsWithout(project.beads, frame), dropped)
+  const beads = beadsOver(beadsWithout(project.beads, footprintOf(project)!), dropped)
   const canvas = carryNames(project, { ...withFrame(project, undefined), beads })
   const name = frame.name
   const landed = name ? largestPieceBead(beads, canvas, dropped) : undefined

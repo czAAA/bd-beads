@@ -69,19 +69,19 @@ describe('useCanvasPointer', () => {
     it('paints with the selected color under Paint', () => {
       const { deps, onCellPrimaryDown } = setup()
       onCellPrimaryDown(1, 2)
-      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 1, 2)
+      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 1, 2, undefined)
     })
 
     it('erases under the Eraser, with no color needed', () => {
       const { deps, onCellPrimaryDown } = setup({ tool: 'erase', color: null })
       onCellPrimaryDown(1, 2)
-      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('erase', null, 1, 2)
+      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('erase', null, 1, 2, undefined)
     })
 
     it('starts a selection under Select', () => {
       const { deps, onCellPrimaryDown } = setup({ tool: 'select' })
       onCellPrimaryDown(1, 2)
-      expect(deps.beginSelectPress).toHaveBeenCalledWith(1, 2)
+      expect(deps.beginSelectPress).toHaveBeenCalledWith(1, 2, undefined)
       expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
     })
 
@@ -89,7 +89,7 @@ describe('useCanvasPointer', () => {
       const { deps, onCellPrimaryDown, onCellHover, previewCells } = setup({ tool: 'piece' })
       onCellHover(1, 1)
       onCellPrimaryDown(1, 1)
-      expect(deps.tapPiece).toHaveBeenCalledWith(1, 1)
+      expect(deps.tapPiece).toHaveBeenCalledWith(1, 1, undefined)
       expect(deps.beginSelectPress).not.toHaveBeenCalled()
       expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
       expect(previewCells.value).toEqual([])
@@ -109,19 +109,19 @@ describe('useCanvasPointer', () => {
     it('paints along a paint stroke', () => {
       const { deps, onCellPrimaryMove } = setup({ strokeMode: 'paint' })
       onCellPrimaryMove(1, 1)
-      expect(deps.paintStrokeCell).toHaveBeenCalledWith(1, 1, '#ff0000')
+      expect(deps.paintStrokeCell).toHaveBeenCalledWith(1, 1, '#ff0000', undefined)
     })
 
     it('erases along an erase stroke', () => {
       const { deps, onCellPrimaryMove } = setup({ strokeMode: 'erase' })
       onCellPrimaryMove(1, 1)
-      expect(deps.paintStrokeCell).toHaveBeenCalledWith(1, 1, null)
+      expect(deps.paintStrokeCell).toHaveBeenCalledWith(1, 1, null, undefined)
     })
 
     it('extends the selection under Select', () => {
       const { deps, onCellPrimaryMove } = setup({ tool: 'select' })
       onCellPrimaryMove(1, 1)
-      expect(deps.extendSelection).toHaveBeenCalledWith(1, 1)
+      expect(deps.extendSelection).toHaveBeenCalledWith(1, 1, undefined)
     })
 
     it('does nothing with no stroke running, no color, or Space held', () => {
@@ -137,9 +137,17 @@ describe('useCanvasPointer', () => {
     it('erases under Paint, and again along the drag', () => {
       const { deps, onCellSecondaryDown, onCellSecondaryMove } = setup({ strokeMode: 'erase' })
       onCellSecondaryDown(2, 2)
-      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('erase', null, 2, 2)
+      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('erase', null, 2, 2, undefined)
       onCellSecondaryMove(2, 3)
-      expect(deps.paintStrokeCell).toHaveBeenCalledWith(2, 3, null)
+      expect(deps.paintStrokeCell).toHaveBeenCalledWith(2, 3, null, undefined)
+    })
+
+    it('hands the layer the pointer hit to the tool, which a position alone cannot say (ADR 0070)', () => {
+      const { deps, onCellPrimaryDown, onCellPrimaryMove } = setup({ strokeMode: 'paint' })
+      onCellPrimaryDown(4, 1, 'frame')
+      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 4, 1, 'frame')
+      onCellPrimaryMove(4, 2, 'canvas')
+      expect(deps.paintStrokeCell).toHaveBeenCalledWith(4, 2, '#ff0000', 'canvas')
     })
 
     it('backs out of Select rather than erasing under it', () => {

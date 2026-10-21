@@ -1,3 +1,4 @@
+import { footprintOf } from './footprint'
 import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Frame } from './canvas'
 import type { GridPosition } from './grid'
 import { DEFAULT_TECHNIQUE, describeWeave, rowCycle, type Weave } from './weave'
@@ -126,7 +127,8 @@ export function frameResizedAround(weave: Weave, frame: Frame, columns: number, 
  * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
 export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'>): Frame | undefined {
   const frame = project.frame
-  const shown = frame ? beadsOver(beadsWithout(project.beads, withMargin(frame)), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
+  const covered = footprintOf(project)
+  const shown = frame && covered ? beadsOver(beadsWithout(project.beads, withMargin(covered)), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
   const bounds = beadBounds(shown)
   if (!bounds) {
     return undefined
