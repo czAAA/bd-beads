@@ -78,18 +78,15 @@ if (tourReset) {
   })
 }
 
-/** The form's own root, so the Name input can be found and focused without a global id lookup (ticket 181). */
-const formEl = ref<HTMLFormElement>()
+const nameField = ref<InstanceType<typeof TextField>>()
 
-/** Focused and its text selected as soon as the form opens (ticket 181), to encourage naming — scoped to this form's
- * own root, since a phone and a wider tier can both have one mounted at once (one hidden by CSS). */
-onMounted(() => {
-  const input = formEl.value?.querySelector<HTMLInputElement>('#name-input')
-  // preventScroll: a focus met before the sheet is placed must not scroll the app shell's clipped ancestors, which
-  // nothing scrolls back and which hides the Canvas strip (iPad Safari, first New Project after a load).
-  input?.focus({ preventScroll: true })
-  input?.select()
-})
+/** Focuses and selects the Name (ticket 181), to encourage naming; on a touch device it waits for a tap, so the
+ * keyboard stays down (ticket 515). */
+function focusName() {
+  nameField.value?.focus({ select: true })
+}
+defineExpose({ focusName })
+onMounted(focusName)
 
 const selectedBead = computed(() => BEAD_CATALOG.find((candidate) => candidate.id === beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
@@ -200,9 +197,9 @@ function onDropImage(file: File) {
     It states no size (ticket 342): a Project starts as a Canvas and its size is set in the Frame
     sheet. Convert image still needs one, so choosing a picture opens its own size step before framing.
   -->
-  <form id="new-project-form" ref="formEl" class="new-project-form" novalidate @submit.prevent="onSubmit">
+  <form id="new-project-form" class="new-project-form" novalidate @submit.prevent="onSubmit">
     <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
-      <TextField id="name-input" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
+      <TextField id="name-input" ref="nameField" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
     </FormField>
 
     <!-- This Project's own maker's name (ticket 182): blank by default, overriding the device-wide one only if set. -->

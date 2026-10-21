@@ -14,7 +14,7 @@ const props = defineProps<{
   /** Opened from the Project panel's Frame area (ticket 495): there is no Blank canvas to start from. */
   withoutBlank?: boolean
 }>()
-const emit = defineEmits<{ choose: [id: TemplateId] }>()
+const emit = defineEmits<{ choose: [id: TemplateId]; 'choose-blank': [] }>()
 
 const { t } = useI18n()
 const panel = inject(PANEL_CONTEXT, undefined)
@@ -33,7 +33,7 @@ function specLine(template: Template): string {
 /** Blank canvas is what the form below makes, so choosing it only takes the reader there. */
 function onChoose(choice: Choice) {
   if (choice.id === 'blank') {
-    rootEl.value?.parentElement?.querySelector<HTMLInputElement>('#name-input')?.focus()
+    emit('choose-blank')
     return
   }
   emit('choose', choice.id)

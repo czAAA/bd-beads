@@ -40,6 +40,14 @@ describe('the Template gallery', () => {
     expect(wrapper.findAll('canvas.template-picture')).toHaveLength(5)
   })
 
+  it('tells when Blank canvas was picked, leaving the focus to the form (ticket 515)', async () => {
+    const wrapper = mountGallery()
+    await wrapper.get('[data-testid="template-card-blank"]').trigger('click')
+
+    expect(wrapper.emitted('choose-blank')).toHaveLength(1)
+    expect(wrapper.emitted('choose')).toBeUndefined()
+  })
+
   it('tells which Template a tap chose', async () => {
     const wrapper = mountGallery()
     await wrapper.get('[data-testid="template-card-bracelet"]').trigger('click')
