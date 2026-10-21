@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import NewProjectForm from './NewProjectForm.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import {
   IMAGE_MAX_BYTES,
   IMAGE_MAX_MEGABYTES,
@@ -68,6 +69,20 @@ describe('NewProjectForm', () => {
     expect(input.selectionEnd).toBe(input.value.length)
 
     wrapper.unmount()
+  })
+
+  it('leaves the Name unfocused on a touch device until it is tapped, so the keyboard stays down (ticket 515)', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = mount(NewProjectForm, { attachTo: document.body })
+    const input = wrapper.find('[data-testid="name-input"]')
+
+    expect(document.activeElement).not.toBe(input.element)
+    await input.trigger('pointerdown')
+    wrapper.vm.focusName()
+    expect(document.activeElement).toBe(input.element)
+
+    wrapper.unmount()
+    vi.unstubAllGlobals()
   })
 
   it('has no Frame, Unit, Width or Height fields: the size is set afterwards in the Frame section (ticket 342)', () => {

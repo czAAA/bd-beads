@@ -72,6 +72,7 @@ const {
 
 /** The Template whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup sub-view. */
 const chosenTemplate = ref<TemplateId>()
+const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
 </script>
 
 <template>
@@ -165,8 +166,9 @@ const chosenTemplate = ref<TemplateId>()
       />
       <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
       <template v-else-if="depth === 1">
-        <TemplateGallery class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
+        <TemplateGallery class="phone-sheets__gallery" @choose="chosenTemplate = $event" @choose-blank="newProjectForm?.focusName()" />
         <NewProjectForm
+          ref="newProjectForm"
           :decode-image="decodeImage"
           @submit="(payload) => { onCreateProject(payload); openPanel = null }"
           @draft="onNewProjectDraft"
