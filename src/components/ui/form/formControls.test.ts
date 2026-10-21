@@ -7,6 +7,7 @@ import NumberField from './NumberField.vue'
 import SegmentedControl from './SegmentedControl.vue'
 import AppStepper from './AppStepper.vue'
 import TextField from './TextField.vue'
+import { fakeMatchMedia } from '../../../testUtils/fakeMatchMedia'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
@@ -62,6 +63,32 @@ describe('TextField and NumberField', () => {
     expect(beads.find('input').attributes('inputmode')).toBe('numeric')
 
     expect(mount(NumberField, { props: { unit: 'mm' } }).find('input').attributes('inputmode')).toBe('decimal')
+  })
+})
+
+describe('TextField focus (ticket 515)', () => {
+  const mountField = () => mount(TextField, { attachTo: document.body, props: { modelValue: 'Name' } })
+
+  it('focuses and selects on a mouse device', () => {
+    const wrapper = mountField()
+    wrapper.vm.focus({ select: true })
+    const input = wrapper.find('input').element
+    expect(document.activeElement).toBe(input)
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 4])
+    wrapper.unmount()
+  })
+
+  it('does nothing on a touch device unless the field was tapped', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = mountField()
+    wrapper.vm.focus({ select: true })
+    expect(document.activeElement).not.toBe(wrapper.find('input').element)
+
+    await wrapper.find('input').trigger('pointerdown')
+    wrapper.vm.focus({ select: true })
+    expect(document.activeElement).toBe(wrapper.find('input').element)
+    wrapper.unmount()
+    vi.unstubAllGlobals()
   })
 })
 

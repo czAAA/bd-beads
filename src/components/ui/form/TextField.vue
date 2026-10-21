@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useId } from 'vue'
+import { ref, useId } from 'vue'
 
 // A single-line input (ticket 149): a `unit` is a label on the top border that cuts it (ticket 224) and reaches screen
 // readers once, as the description; attributes go to the <input> itself.
@@ -7,17 +7,33 @@ defineOptions({ inheritAttrs: false })
 withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean }>(), { unit: undefined })
 const value = defineModel<string | number>()
 const unitId = useId()
+const input = ref<HTMLInputElement>()
+// Set by a press on the field, cleared when it loses focus: a focus after it is the person's own (ticket 515).
+const tapped = ref(false)
+
+/** Focuses the field, selecting its text when asked. On a touch device nothing happens unless the person tapped the
+ * field, so the virtual keyboard stays down (ticket 515); `preventScroll` keeps a clipped ancestor from scrolling. */
+function focus(options: { select?: boolean } = {}) {
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+  if (touch && !tapped.value) return
+  input.value?.focus({ preventScroll: true })
+  if (options.select) input.value?.select()
+}
+defineExpose({ focus })
 </script>
 
 <template>
   <span class="text-field" :class="{ 'text-field--invalid': invalid, 'text-field--disabled': disabled }">
     <input
+      ref="input"
       v-model="value"
       class="ui-control text-field__input"
       :disabled="disabled"
       :aria-invalid="invalid || undefined"
       :aria-describedby="unit ? unitId : undefined"
       v-bind="$attrs"
+      @pointerdown="tapped = true"
+      @blur="tapped = false"
     />
     <span v-if="unit" :id="unitId" class="text-field__unit" aria-hidden="true">{{ unit }}</span>
   </span>
