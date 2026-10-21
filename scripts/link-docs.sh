@@ -6,6 +6,12 @@ set -euo pipefail
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 PARENT=$(dirname "$ROOT")
+# A ticket worktree lives in <parent>/bd-beads-worktrees/<name>: the docs repo is one folder further out.
+OUT=""
+if [ "$(basename "$PARENT")" = "bd-beads-worktrees" ]; then
+  PARENT=$(dirname "$PARENT")
+  OUT="../"
+fi
 DOCS_NAME=${DOCS_NAME:-bd-beads-docs}
 DOCS="$PARENT/$DOCS_NAME"
 PATHS=(.scratch docs/adr docs/research docs/specs docs/operations.md reports research_notes)
@@ -19,9 +25,9 @@ fi
 failed=0
 for p in "${PATHS[@]}"; do
   link="$ROOT/$p"
-  # one "../" per folder of $p, then out of the checkout: works from every sibling worktree
+  # one "../" per folder of $p, then out of the checkout: works from the checkout and from worktrees in bd-beads-worktrees/
   up=$(printf '../%.0s' $(seq 0 $(( $(grep -o / <<<"$p" | wc -l) ))))
-  want="${up}${DOCS_NAME}/$p"
+  want="${up}${OUT}${DOCS_NAME}/$p"
   if [ ! -e "$DOCS/$p" ]; then
     echo "skip   $p (not in $DOCS_NAME)"
     continue
