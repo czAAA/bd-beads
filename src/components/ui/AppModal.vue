@@ -72,12 +72,23 @@ function onFocusIn(event: FocusEvent) {
   }
 }
 
+const NON_TEXT_INPUTS = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'color', 'file', 'image'])
+
+/** A control that raises the virtual keyboard when focused. */
+function isTextEntry(el: HTMLElement | undefined): boolean {
+  if (el instanceof HTMLTextAreaElement) return true
+  return el instanceof HTMLInputElement && !NON_TEXT_INPUTS.has(el.type)
+}
+
 onMounted(() => {
   opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-  const start =
+  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
+  let start =
     props.initialFocus === 'dialog'
       ? dialogEl.value
       : (dialogEl.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0] ?? dialogEl.value)
+  // On a touch device a start on a text entry starts on the dialog, so the keyboard waits for a tap (ticket 516).
+  if (touch && isTextEntry(start)) start = dialogEl.value
   start?.focus({ preventScroll: true })
   document.addEventListener('focusin', onFocusIn)
 })
