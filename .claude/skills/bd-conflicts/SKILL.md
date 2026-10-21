@@ -3,7 +3,7 @@ name: bd-conflicts
 description: "Use when a branch or its PR conflicts with main, or a git merge/rebase conflict is in progress. Resolves without losing functionality, verifies with checks and tests, then updates the PR."
 ---
 
-1. **Start from a safe state.** Work in the branch's worktree (`git worktree list`; a ticket's is `../bd-beads-<ticket>/`). On `main`, stop: there is nothing to resolve. If a merge/rebase is already in progress, skip to step 2. Otherwise check that the work is committed and pushed: `git status` is clean and `git log @{u}..HEAD` is empty (no upstream: stop and say so). If not, stop and tell the user what is uncommitted or unpushed. Then `git fetch origin main` and `git merge origin/main` into the current branch, so the conflicts land on this branch's PR (`gh pr view`). Merge, don't rebase: no force-push.
+1. **Start from a safe state.** Work in the branch's worktree (`git worktree list`; a ticket's is `../bd-beads-worktrees/bd-beads-<ticket>/`). On `main`, stop: there is nothing to resolve. If a merge/rebase is already in progress, skip to step 2. Otherwise check that the work is committed and pushed: `git status` is clean and `git log @{u}..HEAD` is empty (no upstream: stop and say so). If not, stop and tell the user what is uncommitted or unpushed. Then `git fetch origin main` and `git merge origin/main` into the current branch, so the conflicts land on this branch's PR (`gh pr view`). Merge, don't rebase: no force-push.
 
 2. **See the conflicts.** List the conflicting files and read the history on both sides.
 
