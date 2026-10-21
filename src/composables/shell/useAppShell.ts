@@ -7,7 +7,7 @@ import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
-import { shownBeads } from '../../domain/layers'
+import { shownBeads, type Layer } from '../../domain/layers'
 import { copyLayerSelection, selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
@@ -396,10 +396,10 @@ function wireAppShell(services: Services) {
 
   /** Pick color from canvas (ticket 398): the next press on a bead takes its color (an empty cell does nothing); a
    * tool choice or Escape ends it. */
-  function pickColorAt(row: number, column: number): boolean {
+  function pickColorAt(row: number, column: number, layer?: Layer): boolean {
     if (!pickingColor.value) return false
     const project = currentProject()
-    const hex = project ? beadColorAt(project, row, column) : null
+    const hex = project ? beadColorAt(project, row, column, layer) : null
     if (hex) {
       pickingColor.value = false
       onSelectCustomColor(hex)

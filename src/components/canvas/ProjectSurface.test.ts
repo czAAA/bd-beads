@@ -920,6 +920,20 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-primary-down']).toEqual([[3, 5]])
     })
 
+    it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0070)', async () => {
+      // 48 peyote rows over a loom Canvas cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
+      const project = projectOf(11, 48, { frame: { technique: 'peyote', row: 0, column: 0, rows: 48, columns: 11, beads: {} } })
+      const { wrapper } = await mountSurface(project)
+      const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: project.frame, rotation: 0, zoom: 1 })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, 'frame').x, clientY: view.beadToPoint({ row: 38, column: 3 }, 'frame').y }, button: 0, buttons: 1 })
+      await surface.trigger('pointerup', { button: 0 })
+      await surface.trigger('pointerdown', { ...{ clientX: view.beadToPoint({ row: 38, column: 3 }, 'canvas').x, clientY: view.beadToPoint({ row: 38, column: 3 }, 'canvas').y }, button: 0, buttons: 1 })
+
+      expect(events(wrapper)['cell-primary-down']).toEqual([[38, 3, 'frame'], [38, 3]])
+    })
+
     it('does not hover again for a press on the bead the pointer was already over', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)

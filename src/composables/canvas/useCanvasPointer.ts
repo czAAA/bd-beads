@@ -1,5 +1,6 @@
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
+import type { Layer } from '../../domain/layers'
 import { isInFinishedRow, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 
@@ -13,18 +14,18 @@ export interface CanvasPointerDeps {
   strokeMode: () => 'paint' | 'erase' | null
   selectedColorHex: () => string | null
   pastePreviewCells: (project: Project, hovered: GridPosition) => PreviewCell[]
-  beginSelectPress: (row: number, column: number) => void
-  extendSelection: (row: number, column: number) => void
+  beginSelectPress: (row: number, column: number, layer?: Layer) => void
+  extendSelection: (row: number, column: number, layer?: Layer) => void
   backOutOfSelect: () => void
   /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty
    * space. */
-  tapPiece: (row: number, column: number) => void
-  beginOrCommitPress: (mode: 'paint' | 'erase', color: string | null, row: number, column: number) => void
-  paintStrokeCell: (row: number, column: number, color: string | null) => void
+  tapPiece: (row: number, column: number, layer?: Layer) => void
+  beginOrCommitPress: (mode: 'paint' | 'erase', color: string | null, row: number, column: number, layer?: Layer) => void
+  paintStrokeCell: (row: number, column: number, color: string | null, layer?: Layer) => void
   /** Pastes at a cell; true when something was pasted. */
   pasteAt: (cell: GridPosition | undefined) => boolean
   /** Pick color from canvas (ticket 398): true when it is on and took this press. */
-  pickColorAt: (row: number, column: number) => boolean
+  pickColorAt: (row: number, column: number, layer?: Layer) => boolean
 }
 
 /** Mouse, touch and pen input on the Project (tickets 22-25, 31, 33, 92, 95, 176, 206; ADR 0020): hover preview and
@@ -57,8 +58,8 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !isInFinishedRow(project, cell))
   })
 
-  function onCellHover(row: number, column: number) {
-    hoveredCell.value = { row, column }
+  function onCellHover(row: number, column: number, layer?: Layer) {
+    hoveredCell.value = { row, column, ...(layer ? { layer } : {}) }
   }
 
   function onHoverEnd() {
@@ -73,7 +74,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     }
   }
 
-  function onCellPrimaryDown(row: number, column: number) {
+  function onCellPrimaryDown(row: number, column: number, layer?: Layer) {
     if (deps.spaceHeld()) {
       // Space+drag pans the canvas (ticket 95): never a paint/fill/erase/select, regardless of the active tool.
       return
@@ -83,7 +84,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    if (deps.pickColorAt(row, column)) {
+    if (deps.pickColorAt(row, column, layer)) {
       return
     }
 
@@ -93,19 +94,19 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
     if (tool === 'select') {
-      deps.beginSelectPress(row, column)
+      deps.beginSelectPress(row, column, layer)
       return
     }
     // Piece never drags: a tap selects the bead's Piece (ticket 414).
     if (tool === 'piece') {
-      deps.tapPiece(row, column)
+      deps.tapPiece(row, column, layer)
       return
     }
 
     // Eraser (ticket 176): single-bead erase by default, so it works on touch without a right-click. Right-click stays
     // (see onCellSecondaryDown): the only way to erase without leaving Paint, or flood-erase without leaving Fill.
     if (tool === 'erase') {
-      deps.beginOrCommitPress('erase', null, row, column)
+      deps.beginOrCommitPress('erase', null, row, column, layer)
       return
     }
 
@@ -114,22 +115,22 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    deps.beginOrCommitPress('paint', color, row, column)
+    deps.beginOrCommitPress('paint', color, row, column, layer)
   }
 
-  function onCellPrimaryMove(row: number, column: number) {
+  function onCellPrimaryMove(row: number, column: number, layer?: Layer) {
     if (deps.spaceHeld()) {
       return
     }
 
     if (deps.activeTool() === 'select') {
-      deps.extendSelection(row, column)
+      deps.extendSelection(row, column, layer)
       return
     }
 
     const mode = deps.strokeMode()
     if (mode === 'erase') {
-      deps.paintStrokeCell(row, column, null)
+      deps.paintStrokeCell(row, column, null, layer)
       return
     }
 
@@ -142,13 +143,13 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    deps.paintStrokeCell(row, column, color)
+    deps.paintStrokeCell(row, column, color, layer)
   }
 
   /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill,
    * single-cell/dragged-line erase under Paint and Eraser -- the latter now redundant with Eraser's own primary
    * press (ticket 176), and kept for Paint/Fill where it's the only erase available without switching tools. */
-  function onCellSecondaryDown(row: number, column: number) {
+  function onCellSecondaryDown(row: number, column: number, layer?: Layer) {
     if (deps.spaceHeld()) {
       return
     }
@@ -165,10 +166,10 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    deps.beginOrCommitPress('erase', null, row, column)
+    deps.beginOrCommitPress('erase', null, row, column, layer)
   }
 
-  function onCellSecondaryMove(row: number, column: number) {
+  function onCellSecondaryMove(row: number, column: number, layer?: Layer) {
     if (deps.spaceHeld()) {
       return
     }
@@ -177,7 +178,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    deps.paintStrokeCell(row, column, null)
+    deps.paintStrokeCell(row, column, null, layer)
   }
 
   return {

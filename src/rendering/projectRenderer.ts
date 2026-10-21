@@ -1,6 +1,7 @@
 import type { GridPosition, Rotation } from '../domain/grid'
 import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import { frameContains } from '../domain/canvas'
+import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
 import { canvasWeave, frameWeave, isInCurrentRow, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../domain/project'
 import {
@@ -154,7 +155,7 @@ function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'brickBlock'
   }
   const canvas = canvasWeave(project)
   // With a `margin` the box also takes in the keep-out margin (ticket 501), which the Canvas draws nothing in.
-  const grown = withMargin(frame, margin)
+  const grown = withMargin(footprintOf(project)!, margin)
   const claimed = positionsBoxPx(canvas, grown.row, grown.column, grown.rows, grown.columns)
   const own = describeWeave(canvas).countsUnits
     ? claimed
@@ -186,7 +187,7 @@ function drawPositionMarks(
   }
   const cellHeight = cellSizePx(project.technique, projectCell(project)).height
   const pitch = rowPitchPx(project.technique, projectCell(project))
-  const box = project.frame && withMargin(project.frame, margin)
+  const box = project.frame && withMargin(footprintOf(project)!, margin)
   // The margin's box, between the marks just outside it: marks sit at the middle of each bead's cell, a row's shift
   // moves them half a bead right.
   const footprint = frameFootprintPx(project)
@@ -337,6 +338,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin } = draw
   const { beads, frame, rotation } = project
+  const covered = footprintOf(project)
   const weave = canvasWeave(project)
   const description = describeWeave(weave)
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
@@ -364,7 +366,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
     const stored = beads[row]!
     for (const column of Object.keys(stored).map(Number).filter((column) => column >= first && column <= last).sort((a, b) => a - b)) {
       // The keep-out margin covers any bead that lies in it (ticket 261): it stays in the Project, undrawn.
-      if (frame && frameContains(withMargin(frame, margin), { row, column })) {
+      if (covered && frameContains(withMargin(covered, margin), { row, column })) {
         continue
       }
       // The last column of a line's horizontal beads holds no bead (Right-angle weave).
