@@ -1,6 +1,7 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppModal from './AppModal.vue'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 function mountModal(props: Record<string, unknown> = {}, body = '<p>Body</p>') {
   return mount(AppModal, {
@@ -21,6 +22,7 @@ function tab(from: Element, shiftKey = false): KeyboardEvent {
 
 describe('AppModal', () => {
   afterEach(() => {
+    vi.unstubAllGlobals()
     document.body.innerHTML = ''
   })
 
@@ -62,6 +64,39 @@ describe('AppModal', () => {
 
     const marked = mountModal({}, '<input data-testid="field" data-autofocus />')
     expect(document.activeElement).toBe(marked.find('[data-testid="field"]').element)
+  })
+
+  describe('on a touch device (ticket 516)', () => {
+    const touch = () => vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+
+    it.each(['<input data-autofocus />', '<textarea data-autofocus></textarea>', '<input type="number" data-autofocus />'])(
+      'starts on the dialog, not on a text entry: %s',
+      (body) => {
+        touch()
+        const wrapper = mountModal({}, body)
+        expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
+      },
+    )
+
+    it('starts on the dialog when the first control is a text entry', () => {
+      touch()
+      const wrapper = mountModal({}, '<input />')
+      expect(document.activeElement).toBe(wrapper.find('[role="dialog"]').element)
+    })
+
+    it('still starts on a control that raises no keyboard', () => {
+      touch()
+      const wrapper = mountModal({}, '<input type="checkbox" data-testid="box" data-autofocus />')
+      expect(document.activeElement).toBe(wrapper.find('[data-testid="box"]').element)
+    })
+
+    it('Tab from the dialog still enters the trap at the first control', () => {
+      touch()
+      const wrapper = mountModal({}, '<input data-testid="field" />')
+      const event = tab(wrapper.find('[role="dialog"]').element, true)
+      expect(event.defaultPrevented).toBe(true)
+      expect(document.activeElement).toBe(wrapper.find('[data-testid="last"]').element)
+    })
   })
 
   it('can start focus on the dialog itself, for a panel that is read rather than answered', () => {
