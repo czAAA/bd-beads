@@ -562,3 +562,23 @@ describe('changeFrame placing a Frame (ticket 495)', () => {
     expect(changeFrame(framed({ rowProgress: woven('rows', 3, 2) }), { place })).toEqual({ kind: 'refused', reason: 'locked' })
   })
 })
+
+describe('changing the Technique of a Frame over a Canvas woven alike (ADR 0070)', () => {
+  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
+  const withStrayBead = { ...base, beads: withColors({}, [{ row: 40, column: 3, color: '#e63746' }]), frame: sheet({ row: 0, column: 0, rows: 48, columns: 11 }) }
+
+  it('leaves a Canvas bead in the rows it names but no longer covers, to be drawn on and erased', () => {
+    const result = changeFrame(withStrayBead, { technique: 'peyote' })
+    if (result.kind !== 'changed') throw new Error('expected a change')
+    expect(colorAt(result.project.beads, 40, 3)).toBe('#e63746')
+  })
+
+  it('lays the Frame\'s beads on the Canvas where they stand when it is removed, over what is in those rows', () => {
+    const peyote = changeFrame({ ...withStrayBead, frame: { ...withStrayBead.frame, beads: withColors({}, [{ row: 40, column: 3, color: '#2f6fed' }]) } }, { technique: 'peyote' })
+    if (peyote.kind !== 'changed') throw new Error('expected a change')
+    const removed = changeFrame(peyote.project, { remove: true })
+    if (removed.kind !== 'changed') throw new Error('expected a change')
+    expect(colorAt(removed.project.beads, 40, 3)).toBe('#2f6fed')
+  })
+})
+

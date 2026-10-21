@@ -2,9 +2,10 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
 import { changedPositions } from '../../domain/canvas'
 import { layerAt } from '../../domain/layers'
+import { footprintOf } from '../../domain/footprint'
 import { sameFrame } from '../../domain/frame'
 import { inMargin, mayPlace } from '../../domain/margin'
-import type { GridPosition, PreviewCell } from '../../domain/grid'
+import type { GridPosition, Layer, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../../domain/project'
 import { hasGuides, selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
@@ -85,11 +86,11 @@ const props = withDefaults(defineProps<{
 }>(), { rowMarks: true })
 
 const emit = defineEmits<{
-  'cell-primary-down': [row: number, column: number]
-  'cell-primary-move': [row: number, column: number]
-  'cell-secondary-down': [row: number, column: number]
-  'cell-secondary-move': [row: number, column: number]
-  'cell-hover': [row: number, column: number]
+  'cell-primary-down': [row: number, column: number, layer?: Layer]
+  'cell-primary-move': [row: number, column: number, layer?: Layer]
+  'cell-secondary-down': [row: number, column: number, layer?: Layer]
+  'cell-secondary-move': [row: number, column: number, layer?: Layer]
+  'cell-hover': [row: number, column: number, layer?: Layer]
   'hover-end': []
   /** A key pressed while the Project has focus (ticket 159): App.vue moves the bead cursor and uses the tool. */
   'cursor-key': [event: KeyboardEvent]
@@ -689,7 +690,7 @@ function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPositi
     return undefined
   }
   const box = root.getBoundingClientRect()
-  return surface.value.pointToBead({ x: event.clientX - box.left, y: event.clientY - box.top })
+  return surface.value.pointToHit({ x: event.clientX - box.left, y: event.clientY - box.top })
 }
 
 /** The color chip beside the eyedropper (ticket 403): what a press would take, live over beads; none over an empty
@@ -698,7 +699,7 @@ const pickChip = ref<{ x: number; y: number; hex: string; flipX: boolean; flipY:
 
 function placePickChip(event: PointerEvent, bead: GridPosition | undefined): void {
   const shown = eyedropperShown.value && bead && event.pointerType !== 'touch' && !movesCanvas(event)
-  const hex = shown ? beadColorAt(props.project, bead.row, bead.column) : null
+  const hex = shown ? beadColorAt(props.project, bead.row, bead.column, bead.layer) : null
   const box = rootEl.value?.getBoundingClientRect()
   if (!hex || !box) {
     pickChip.value = undefined
@@ -725,7 +726,7 @@ watch(
 /** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket
  * 428). */
 function refusesSelectionStart(bead: GridPosition): boolean {
-  return props.selectionBlocksMargin === true && inMargin(props.project.frame, bead)
+  return props.selectionBlocksMargin === true && inMargin(footprintOf(props.project), bead)
 }
 
 function refusesMargin(bead: GridPosition | undefined): boolean {
@@ -734,8 +735,15 @@ function refusesMargin(bead: GridPosition | undefined): boolean {
   return props.blocksMargin === true && !mayPlace(props.project, bead)
 }
 
+/** A bead's row and column for an event, and its layer only where the position alone would name the other one (ADR 0070):
+ * where the Frame draws shorter than the rows it names. */
+function cellArguments(bead: GridPosition): [row: number, column: number, layer?: Layer] {
+  const named = bead.layer
+  return named && named !== layerAt(props.project, { row: bead.row, column: bead.column }) ? [bead.row, bead.column, named] : [bead.row, bead.column]
+}
+
 function isSameBead(a: GridPosition | undefined, b: GridPosition | undefined): boolean {
-  return a?.row === b?.row && a?.column === b?.column
+  return a?.row === b?.row && a?.column === b?.column && a?.layer === b?.layer
 }
 
 // A finger has no true hover: its "hover" arrives glued to a press or drag, flashing a preview of what a same-instant
@@ -905,7 +913,7 @@ function onPointerDown(event: PointerEvent): void {
   // A touch has not been over the bead before it lands on it: the hover comes first, as the bead's pointerenter did.
   if (!isSameBead(bead, lastBead)) {
     lastBead = bead
-    if (hoversFor(event)) emit('cell-hover', bead.row, bead.column)
+    if (hoversFor(event)) emit('cell-hover', ...cellArguments(bead))
   }
 
   if (event.button === 0) {
@@ -916,9 +924,9 @@ function onPointerDown(event: PointerEvent): void {
     if (marksShown.value && isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
       finishedRestored.value = !finishedRestored.value
     }
-    emit('cell-primary-down', bead.row, bead.column)
+    emit('cell-primary-down', ...cellArguments(bead))
   } else if (event.button === 2) {
-    emit('cell-secondary-down', bead.row, bead.column)
+    emit('cell-secondary-down', ...cellArguments(bead))
   }
 }
 
@@ -984,7 +992,7 @@ function onPointerMove(event: PointerEvent): void {
     return
   }
 
-  if (hoversFor(event)) emit('cell-hover', bead.row, bead.column)
+  if (hoversFor(event)) emit('cell-hover', ...cellArguments(bead))
 }
 
 /** A Select drag in progress (ticket 505): every move reports the nearest bead position, over a bead or not. */
@@ -1007,17 +1015,17 @@ function continueStroke(event: PointerEvent): void {
   const { x, y } = stroke.from
   const steps = Math.max(1, Math.ceil(Math.hypot(to.x - x, to.y - y) / STROKE_SAMPLE_PX))
   for (let step = 1; step <= steps; step++) {
-    const bead = surface.value.pointToBead({ x: x + ((to.x - x) * step) / steps, y: y + ((to.y - y) * step) / steps })
+    const bead = surface.value.pointToHit({ x: x + ((to.x - x) * step) / steps, y: y + ((to.y - y) * step) / steps })
     if (!bead || isSameBead(bead, stroke.last)) continue
     const first = stroke.last === undefined
     stroke.last = bead
     if (stroke.button === 0) {
-      if (first) emit('cell-primary-down', bead.row, bead.column)
-      else emit('cell-primary-move', bead.row, bead.column)
+      if (first) emit('cell-primary-down', ...cellArguments(bead))
+      else emit('cell-primary-move', ...cellArguments(bead))
     } else if (first) {
-      emit('cell-secondary-down', bead.row, bead.column)
+      emit('cell-secondary-down', ...cellArguments(bead))
     } else {
-      emit('cell-secondary-move', bead.row, bead.column)
+      emit('cell-secondary-move', ...cellArguments(bead))
     }
   }
   stroke.from = to

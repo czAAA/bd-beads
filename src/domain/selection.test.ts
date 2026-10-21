@@ -4,6 +4,7 @@ import {
   allBeadsSelection,
   selectAllSelection,
   copyLayerSelection,
+  dragFocusOnLayer,
   hasGuides,
   paintLayerSelection,
   pastedCellsOnLayer,
@@ -356,3 +357,17 @@ describe('hasGuides', () => {
     expect([[1, 5], [5, 1], [2, 3]].map(([rows, columns]) => hasGuides({ rows, columns }))).toEqual([true, true, true])
   })
 })
+
+describe('dragFocusOnLayer for a Frame that draws shorter than the rows it names (ADR 0070)', () => {
+  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
+  const project: Project = { ...base, frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: {} } }
+
+  it('holds a Canvas drag off a Frame bead that shares its position with the strip', () => {
+    expect(dragFocusOnLayer(project, 'canvas', { row: 40, column: 3, layer: 'frame' }, { row: 50, column: 3 })).toEqual({ row: 50, column: 3 })
+  })
+
+  it('lets a Canvas drag into the strip', () => {
+    expect(dragFocusOnLayer(project, 'canvas', { row: 40, column: 3, layer: 'canvas' }, { row: 50, column: 3 })).toEqual({ row: 40, column: 3, layer: 'canvas' })
+  })
+})
+

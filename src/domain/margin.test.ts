@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Frame } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { clampOutOfMargin, inMargin, MARGIN, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { clampOutOfMargin, inMargin, MARGIN, marginBoxFor, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
 const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
@@ -121,3 +121,27 @@ describe('mayPlace (ticket 501)', () => {
     expect(mayPlace(framed, { row: 10 - MARGIN - 1, column: 10 })).toBe(true)
   })
 })
+
+describe('the margin of a Frame that draws shorter than the rows it names (ADR 0070)', () => {
+  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
+  const peyote = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
+  const woven = { ...peyote, frame: { ...peyote.frame!, technique: 'peyote' as const } }
+
+  it('hangs off what the Frame draws, so it is joined to it', () => {
+    // The Frame covers 36 loom rows: the 6 below are the margin, the rows after those are free Canvas.
+    expect(mayPlace(woven, { row: 36, column: 3 })).toBe(false)
+    expect(mayPlace(woven, { row: 41, column: 3 })).toBe(false)
+    expect(mayPlace(woven, { row: 42, column: 3 })).toBe(true)
+  })
+
+  it('never calls a Frame bead margin, whatever its position says', () => {
+    expect(mayPlace(woven, { row: 40, column: 3, layer: 'frame' })).toBe(true)
+  })
+
+  it('measures from the Frame\'s own rectangle for what is on the Frame, and the footprint for the Canvas', () => {
+    expect(marginBoxFor(woven, 'frame')).toEqual(woven.frame)
+    expect(marginBoxFor(woven, 'canvas')).toMatchObject({ row: 0, column: 0, rows: 36, columns: 11 })
+    expect(marginBoxFor({ ...woven, frame: undefined }, 'canvas')).toBeUndefined()
+  })
+})
+

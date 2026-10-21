@@ -52,7 +52,11 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   // Paints (or, with a null color, erases) one cell of a stroke, skipping
   // woven rows (ticket 33). The one caller that defers its save (ticket 55): a stroke touches hundreds of cells a
   // second. The cell lands in the library at once; endStroke makes the stroke one write.
-  function paintStrokeCell(row: number, column: number, color: string | null) {
+  function paintStrokeCell(row: number, column: number, color: string | null, layer?: Layer) {
+    // The pointer is over the other layer, where this one's positions are not (ADR 0070): nothing lands.
+    if (layer && layer !== strokeLayer) {
+      return
+    }
     deps.edit.strokeStep((project) =>
       onLayer(project, strokeLayer, (view, local) => {
         const at = local({ row, column })
@@ -63,13 +67,13 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   }
 
   /** Fill acts immediately, in one click, on either button (ticket 25); Paint starts a stroke. */
-  function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: number, column: number) {
+  function beginOrCommitPress(mode: 'paint' | 'erase', color: string | null, row: number, column: number, named?: Layer) {
     const project = deps.currentProject()
     if (!project) {
       return
     }
 
-    const layer = layerAt(project, { row, column })
+    const layer = layerAt(project, { row, column, ...(named ? { layer: named } : {}) })
     if (deps.activeTool() === 'fill') {
       deps.edit.edit('drawing', (current) => onLayer(current, layer, (view, local) => {
         const at = local({ row, column })

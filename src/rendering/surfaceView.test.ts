@@ -252,9 +252,16 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
     expect(view().pointToBead({ x: 170, y: 150 })).toEqual({ row: 7, column: 8 })
   })
 
-  it('answers none on the Canvas in the rectangle the Frame claims but does not reach, never the Canvas under the Frame', () => {
-    // Four peyote rows are 65 px tall; the claimed rectangle is 80 px: the strip below the Frame belongs to nothing.
-    expect(view().pointToBead({ x: 70, y: 40 + 70 })).toBeUndefined()
+  it('answers the Canvas in the rows the Frame claims but does not reach (ADR 0070)', () => {
+    // Four peyote rows are 65 px tall; the rectangle they name is 80 px: the strip below the Frame is Canvas, the same
+    // position as the Frame's own last row.
+    expect(view().pointToBead({ x: 70, y: 40 + 70 })).toEqual({ row: 5, column: 3 })
+  })
+
+  it('says which layer a point is on where a Frame bead and a Canvas bead share a position', () => {
+    expect(view().pointToHit({ x: 70, y: 40 + 55 })).toEqual({ row: 5, column: 3, layer: 'frame' })
+    expect(view().pointToHit({ x: 70, y: 40 + 70 })).toEqual({ row: 5, column: 3, layer: 'canvas' })
+    expect(view().pointToHit({ x: 10, y: 10 })).toEqual({ row: 0, column: 0, layer: 'canvas' })
   })
 
   it('measures a block of the Frame in the Frame\'s Weave and a block of the Canvas in the Canvas\'s', () => {

@@ -2,7 +2,8 @@ import { type GridPosition } from './grid'
 import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import type { FrameEdge } from './frame'
 import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
-import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type Layer } from './layers'
+import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type Layer, type Placed } from './layers'
+import { footprintOf } from './footprint'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells, restoreBeads, type Project } from './project'
@@ -54,10 +55,10 @@ export function selectionBetween(anchor: GridPosition, focus: GridPosition, laye
 
 /** Where a drag that began on `layer` may reach (ticket 491): on the Frame, the nearest cell inside it; on the Canvas, a
  * cell under the Frame is not reached, so the drag stays at `held`. */
-export function dragFocusOnLayer(project: Pick<Project, 'frame'>, layer: Layer, cell: GridPosition, held: GridPosition): GridPosition {
+export function dragFocusOnLayer(project: Placed, layer: Layer, cell: GridPosition, held: GridPosition): GridPosition {
   const frame = project.frame
   if (!frame) return cell
-  if (layer === 'canvas') return frameContains(frame, cell) ? held : cell
+  if (layer === 'canvas') return cell.layer === 'frame' || frameContains(footprintOf(project)!, cell) ? held : cell
   return {
     row: Math.min(Math.max(cell.row, frame.row), frame.row + frame.rows - 1),
     column: Math.min(Math.max(cell.column, frame.column), frame.column + frame.columns - 1),
@@ -242,7 +243,7 @@ function stampBlock(project: Project, block: CopiedBlock, at: GridPosition): Pro
 
 /** The layer a Selection acts on (ADR 0066): the one its top-left bead is on. A Selection that begins in the Frame is the
  * Frame's; any other is the Canvas's. */
-export function selectionLayer(project: Pick<Project, 'frame'>, selection: Selection): Layer {
+export function selectionLayer(project: Placed, selection: Selection): Layer {
   return selection.layer ?? layerAt(project, { row: selection.top, column: selection.left })
 }
 
@@ -290,7 +291,7 @@ export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosit
 export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selection | undefined {
   const layer = layerAt(project, at)
   if (layer === 'canvas') {
-    const picked = pieceSelectionAt(project.beads, project, at, project.frame)
+    const picked = pieceSelectionAt(project.beads, project, at, footprintOf(project))
     return picked && { ...picked, layer }
   }
   const view = layerView(project, 'frame')

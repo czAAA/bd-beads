@@ -1,4 +1,6 @@
+import { footprintOf } from './footprint'
 import { sameFrame } from './frame'
+import type { Layer, Placed } from './layers'
 import { forEachBead, frameContains, withColors, type BeadChange, type Frame } from './canvas'
 import type { GridPosition } from './grid'
 import { isInFinishedRow, sameBeads, type Project } from './project'
@@ -16,16 +18,23 @@ export function withMargin(frame: Frame, margin: number = MARGIN): Frame {
   return { row: frame.row - margin, column: frame.column - margin, rows: frame.rows + 2 * margin, columns: frame.columns + 2 * margin }
 }
 
+/** The rectangle the margin's rules measure from for something on a layer (ADR 0070): the Frame's own rectangle for what
+ * is on the Frame, where a Selection stays inside it, and the footprint for what is on the Canvas, which is held off it. */
+export function marginBoxFor(project: Placed, layer: Layer): Frame | undefined {
+  return layer === 'frame' ? project.frame : footprintOf(project)
+}
+
 /** Whether a bead may be placed at a position: not in a row the weaver has finished (ticket 33), and not in the
  * Frame's margin (ticket 261). The one statement of the rule, which an Edit enforces and a press asks to show it is
  * refused. */
-export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, position: GridPosition, margin: number = MARGIN): boolean {
-  return !isInFinishedRow(project, position) && !inMargin(project.frame, position, margin)
+export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>, position: GridPosition, margin: number = MARGIN): boolean {
+  return !isInFinishedRow(project, position) && !inMargin(footprintOf(project), position, margin)
 }
 
-/** Whether a position lies in the Frame's margin: within MARGIN of the Frame, but not in it. */
+/** Whether a position lies in the Frame's margin: within MARGIN of the Frame's footprint (ADR 0070), but not in it. A
+ * position that names the Frame's layer is in the Frame, whatever its number says. */
 export function inMargin(frame: Frame | undefined, position: GridPosition, margin: number = MARGIN): boolean {
-  return !!frame && frameContains(withMargin(frame, margin), position) && !frameContains(frame, position)
+  return !!frame && position.layer !== 'frame' && frameContains(withMargin(frame, margin), position) && !frameContains(frame, position)
 }
 
 /** The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, wholly
@@ -115,9 +124,9 @@ export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition,
 /** What an edit did, with every bead it newly painted in the margin taken back (erasing there stays); nothing left
  * to change returns `before` itself, the drawing commands' "unchanged" signal. */
 export function keepMarginClear(before: Project, after: Project): Project {
-  const frame = before.frame
+  const frame = footprintOf(before)
   // A command that turned the Frame (Rotate Frame, ticket 471) brings its margin with it: beads in the old one are its own.
-  if (!frame || !sameFrame(frame, after.frame)) {
+  if (!frame || !sameFrame(before.frame, after.frame)) {
     return after
   }
   const reverts: BeadChange[] = []

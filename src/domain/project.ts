@@ -19,7 +19,7 @@ import {
 import { sameFrame } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
-import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Rotation } from './grid'
+import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
@@ -293,9 +293,9 @@ export function withFrameGrid(project: Project, grid: Grid): Project {
 
 /** The color of the bead you see at a Canvas position: the Frame's own where the Frame lies over it, else the Canvas's
  * (ADR 0066). A hex, or null where nothing is painted. */
-export function beadColorAt(project: Pick<Project, 'beads' | 'frame'>, row: number, column: number): string | null {
+export function beadColorAt(project: Pick<Project, 'beads' | 'frame'>, row: number, column: number, layer?: Layer): string | null {
   const frame = project.frame
-  return frame && frameContains(frame, { row, column }) ? colorAt(frame.beads, row - frame.row, column - frame.column) : colorAt(project.beads, row, column)
+  return frame && (layer ? layer === 'frame' : frameContains(frame, { row, column })) ? colorAt(frame.beads, row - frame.row, column - frame.column) : colorAt(project.beads, row, column)
 }
 
 /** A Project as saved before the Canvas (ADR 0026): a fixed `columns` x `rows` grid instead of beads by position and
@@ -570,15 +570,15 @@ export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'fram
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
  * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
  * Frame is set. */
-export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, { row, column }: GridPosition): boolean {
+export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, position: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   // The lock covers the Frame only: beads outside it stay editable whatever row the weaver is on.
-  if (!frame || !frameContains(frame, { row, column })) {
+  if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
     return false
   }
-  const relativeRow = row - frame.row
-  const relativeColumn = column - frame.column
+  const relativeRow = position.row - frame.row
+  const relativeColumn = position.column - frame.column
   const weave = frameWeave(project)
   return direction === 'rows'
     ? passOf(weave, relativeRow, relativeColumn, 'rows') < currentRow
@@ -587,14 +587,14 @@ export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' |
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
-export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, { row, column }: GridPosition): boolean {
+export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, position: GridPosition): boolean {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
-  if (!frame || !frameContains(frame, { row, column })) {
+  if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
     return false
   }
-  const relativeRow = row - frame.row
-  const relativeColumn = column - frame.column
+  const relativeRow = position.row - frame.row
+  const relativeColumn = position.column - frame.column
   const weave = frameWeave(project)
   return direction === 'rows'
     ? passOf(weave, relativeRow, relativeColumn, 'rows') === currentRow
