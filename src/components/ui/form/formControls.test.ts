@@ -92,6 +92,25 @@ describe('TextField focus (ticket 515)', () => {
   })
 })
 
+describe('TextField select-on-focus and compact (ticket 517)', () => {
+  it('selects its text whenever it takes focus, only when asked', () => {
+    const selecting = mount(TextField, { attachTo: document.body, props: { modelValue: 'Name', selectOnFocus: true } })
+    selecting.find('input').element.focus()
+    const input = selecting.find('input').element
+    expect([input.selectionStart, input.selectionEnd]).toEqual([0, 4])
+    selecting.unmount()
+
+    const plain = mount(TextField, { attachTo: document.body, props: { modelValue: 'Name' } })
+    plain.find('input').element.focus()
+    expect(plain.find('input').element.selectionStart).toBe(plain.find('input').element.selectionEnd)
+    plain.unmount()
+  })
+
+  it('draws the compact variant', () => {
+    expect(mount(TextField, { props: { compact: true } }).classes()).toContain('text-field--compact')
+  })
+})
+
 describe('SegmentedControl', () => {
   const options = [
     { value: 'loom', label: 'Loom' },
