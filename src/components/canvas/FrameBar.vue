@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import AppButton from '../ui/AppButton.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
+import TextField from '../ui/form/TextField.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
@@ -66,12 +67,15 @@ function commitSize(): void {
   clearSize()
 }
 /** Keeps digits only, as typed or pasted, and no leading zero. */
-function onSizeInput(event: Event, side: 'width' | 'height'): void {
+const onlyDigits = (text: string): string => text.replace(/\D/g, '').replace(/^0+/, '').slice(0, 3)
+function setSize(side: 'width' | 'height', text: string): void {
+  if (side === 'width') typedWidth.value = onlyDigits(text)
+  else typedHeight.value = onlyDigits(text)
+}
+/** A refused character leaves the state as it was, so the field is put back to the state by hand. */
+function cleanSizeInput(event: Event): void {
   const input = event.target as HTMLInputElement
-  const digits = input.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 3)
-  input.value = digits
-  if (side === 'width') typedWidth.value = digits
-  else typedHeight.value = digits
+  input.value = onlyDigits(input.value)
 }
 function onSizeKey(event: KeyboardEvent): void {
   event.stopPropagation()
@@ -105,9 +109,10 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       >
           <label class="frame-bar__field">
             <span class="frame-bar__label">{{ t.frame.widthLabel }}</span>
-            <input
-              :value="typedWidth"
-              class="frame-bar__input"
+            <TextField
+              :model-value="typedWidth"
+              compact
+              select-on-focus
               type="text"
               inputmode="numeric"
               pattern="[0-9]*"
@@ -115,17 +120,18 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               :placeholder="String(counted.columns)"
               :disabled="locked"
               data-testid="frame-bar-width"
-              @input="onSizeInput($event, 'width')"
+              @update:model-value="setSize('width', String($event))"
+              @input="cleanSizeInput"
               @keydown="onSizeKey"
-              @focus="($event.target as HTMLInputElement).select()"
             />
           </label>
         <span class="frame-bar__times" aria-hidden="true">×</span>
           <label class="frame-bar__field">
             <span class="frame-bar__label">{{ t.frame.heightLabel }}</span>
-            <input
-              :value="typedHeight"
-              class="frame-bar__input"
+            <TextField
+              :model-value="typedHeight"
+              compact
+              select-on-focus
               type="text"
               inputmode="numeric"
               pattern="[0-9]*"
@@ -133,9 +139,9 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               :placeholder="String(counted.rows)"
               :disabled="locked"
               data-testid="frame-bar-height"
-              @input="onSizeInput($event, 'height')"
+              @update:model-value="setSize('height', String($event))"
+              @input="cleanSizeInput"
               @keydown="onSizeKey"
-              @focus="($event.target as HTMLInputElement).select()"
             />
           </label>
         <span class="frame-bar__unit">{{ sizeUnit }}</span>
@@ -230,37 +236,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   color: var(--muted);
 }
 
-.frame-bar__input {
-  box-sizing: border-box;
-  width: 100%;
-  min-height: 2rem;
-  padding: 0 var(--space-6);
-  font: var(--type-title);
-  font-size: 0.9375rem;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
-}
-
-.frame-bar__input::placeholder {
-  color: var(--muted);
-  opacity: 1;
-}
-
-.frame-bar__input:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-
 .frame-bar__size--locked {
   cursor: not-allowed;
-}
-
-/* Off: a press goes to the group, so its Tooltip answers it. */
-.frame-bar__input:disabled {
-  color: var(--faint);
-  pointer-events: none;
 }
 
 .frame-bar__unit {

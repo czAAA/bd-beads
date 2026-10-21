@@ -2,9 +2,12 @@
 import { ref, useId } from 'vue'
 
 // A single-line input (ticket 149): a `unit` is a label on the top border that cuts it (ticket 224) and reaches screen
-// readers once, as the description; attributes go to the <input> itself.
+// readers once, as the description; attributes go to the <input> itself. `compact` is the 2rem field of the Frame bar
+// (ticket 517); `selectOnFocus` selects the text whenever the field takes focus.
 defineOptions({ inheritAttrs: false })
-withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean }>(), { unit: undefined })
+withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean }>(), {
+  unit: undefined,
+})
 const value = defineModel<string | number>()
 const unitId = useId()
 const input = ref<HTMLInputElement>()
@@ -23,7 +26,7 @@ defineExpose({ focus })
 </script>
 
 <template>
-  <span class="text-field" :class="{ 'text-field--invalid': invalid, 'text-field--disabled': disabled }">
+  <span class="text-field" :class="{ 'text-field--invalid': invalid, 'text-field--disabled': disabled, 'text-field--compact': compact }">
     <input
       ref="input"
       v-model="value"
@@ -33,6 +36,7 @@ defineExpose({ focus })
       :aria-describedby="unit ? unitId : undefined"
       v-bind="$attrs"
       @pointerdown="tapped = true"
+      @focus="selectOnFocus && input?.select()"
       @blur="tapped = false"
     />
     <span v-if="unit" :id="unitId" class="text-field__unit" aria-hidden="true">{{ unit }}</span>
@@ -61,6 +65,25 @@ defineExpose({ focus })
 
 .text-field--invalid {
   border-color: var(--danger);
+}
+
+.text-field--compact {
+  height: auto;
+  min-height: 2rem;
+  padding: 0 var(--space-6);
+  background: var(--surface);
+  border-color: var(--line-strong);
+}
+
+.text-field--compact .text-field__input {
+  font: var(--type-title);
+  font-size: 0.9375rem;
+}
+
+/* Off: a press goes to the group around it, so its Tooltip answers it. */
+.text-field--compact.text-field--disabled {
+  border-color: var(--line-strong);
+  pointer-events: none;
 }
 
 .text-field--disabled {
