@@ -299,11 +299,35 @@ describe('changeFrame', () => {
       expect(colorAt(result.project.frame!.beads, 7, 4)).toBe('#222222')
     })
 
-    it('drops the beads a smaller Frame no longer holds, and leaves the Canvas alone', () => {
-      const canvas = withColors({}, [{ row: 50, column: 50, color: '#999999' }])
+    it('drops the beads a smaller Frame gives up onto the Canvas at their places (ticket 513)', () => {
+      const canvas = withColors({}, [{ row: 50, column: 50, color: '#999999' }, { row: 14, column: 11, color: '#888888' }, { row: 12, column: 12, color: '#777777' }])
       const result = changeFrame(framed({ frame: sheet(frame, beads), beads: canvas }), { set: { row: 10, column: 10, rows: 3, columns: 4 } })
       if (result.kind !== 'changed') throw new Error('expected a change')
       expect(result.project.frame!.beads).toEqual(withColors({}, [{ row: 0, column: 0, color: '#111111' }]))
+      // The strip (rows 13-15) is cleared of the Canvas's own bead, then the Frame's bead from it lands; the rest stays.
+      expect(result.project.beads).toEqual(withColors({}, [{ row: 50, column: 50, color: '#999999' }, { row: 12, column: 12, color: '#777777' }, { row: 15, column: 13, color: '#222222' }]))
+    })
+
+    it('drops the beads of a side given up from the left too, clearing the Canvas under empty positions', () => {
+      const canvas = withColors({}, [{ row: 11, column: 10, color: '#999999' }])
+      const result = changeFrame(framed({ frame: sheet(frame, beads), beads: canvas }), { set: { row: 10, column: 11, rows: 6, columns: 3 } })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(result.project.beads).toEqual(withColors({}, [{ row: 10, column: 10, color: '#111111' }]))
+      expect(result.project.frame!.beads).toEqual(withColors({}, [{ row: 5, column: 2, color: '#222222' }]))
+    })
+
+    it('drops onto the Canvas in a peyote Frame whose top edge shrinks', () => {
+      const peyote = { ...sheet(frame, beads), technique: 'peyote' as const }
+      const result = changeFrame(framed({ frame: peyote }), { set: { row: 12, column: 10, rows: 4, columns: 4 } })
+      if (result.kind !== 'changed') throw new Error('expected a change')
+      expect(colorAt(result.project.beads, result.project.frame!.row - 2, 10)).toBe('#111111')
+      expect(colorAt(result.project.frame!.beads, 3, 3)).toBe('#222222')
+    })
+
+    it('leaves the Canvas alone when the Frame only grows', () => {
+      const canvas = withColors({}, [{ row: 17, column: 10, color: '#999999' }])
+      const result = changeFrame(framed({ frame: sheet(frame, beads), beads: canvas }), { set: { ...frame, rows: 9 } })
+      if (result.kind !== 'changed') throw new Error('expected a change')
       expect(result.project.beads).toBe(canvas)
     })
 

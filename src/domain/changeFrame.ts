@@ -1,4 +1,4 @@
-import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, type BeadMap, type Frame } from './canvas'
+import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
 import { movedFrame, sameFrame, snappedMove } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
@@ -13,7 +13,7 @@ import type { AreaLine } from './removeLine'
 // passes), Row progress following the Frame.
 export type FrameChange =
   /** Resize the Frame (the handles, the steppers, the typed size): its beads keep their place on the Canvas, those the
-   * Frame no longer holds are dropped. The Canvas is untouched. */
+   * Frame no longer holds are dropped onto the Canvas where they stand (ticket 513), over what is there. */
   | { set: Frame }
   /** Frame from Selection and Fit to drawing (ADR 0066): the Frame becomes this rectangle and the Canvas's beads inside
    * it move into it. A Frame already there lays its beads back on the Canvas first. */
@@ -155,7 +155,37 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   if (sameFrame(project.frame, next)) {
     return { kind: 'unchanged', project }
   }
-  return { kind: 'changed', project: withFrame(project, next) }
+  return { kind: 'changed', project: resizedFrame(project, next) }
+}
+
+/** The Project with its Frame set to `rectangle` (ticket 513): the strip the Frame gives up is laid on the Canvas as
+ * Remove Frame lays the whole Frame (ticket 497), the Canvas under it cleared first, empty positions included.
+ * Growing leaves the Canvas alone. */
+function resizedFrame(project: Project, rectangle: Frame | undefined): Project {
+  const resized = withFrame(project, rectangle)
+  const before = project.frame
+  const after = resized.frame
+  if (!before || !after) {
+    return resized
+  }
+  const given = (position: GridPosition) => frameContains(before, position) && !frameContains(after, position)
+  const dropped: BeadMap = {}
+  forEachBead(shiftedBeads(before.beads, before.row, before.column), (row, column, color) => {
+    if (given({ row, column })) {
+      dropped[row] ??= {}
+      dropped[row]![column] = color
+    }
+  })
+  const cleared: BeadChange[] = []
+  forEachBead(project.beads, (row, column) => {
+    if (given({ row, column })) {
+      cleared.push({ row, column, color: null })
+    }
+  })
+  if (!cleared.length && !Object.keys(dropped).length) {
+    return resized
+  }
+  return carryNames(project, { ...resized, beads: beadsOver(withColors(project.beads, cleared), dropped) })
 }
 
 /** The Project with a Frame at `rectangle` holding the Canvas's beads inside it (ADR 0066). A Frame there before lays

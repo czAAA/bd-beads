@@ -97,6 +97,28 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ ...sizedRect, rows: 6, columns: 7 })
   })
 
+  it('drops what a shrinking handle drag gives up once, on release, as one Undo step (ticket 513)', () => {
+    const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 2, column: 3, color: '#2a9d8f' }])
+    const start = { ...sized, frame: { ...sized.frame!, beads: own } }
+    const { deps, draftProject, press, drag, release } = setupEditing(start)
+    press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
+    drag({ row: 2, column: 2 })
+    expect(deps.replaceProject).not.toHaveBeenCalled()
+    expect(draftProject.value?.beads).toEqual(withColors({}, [{ row: 2, column: 3, color: '#2a9d8f' }]))
+    release()
+    expect(deps.replaceProject).toHaveBeenCalledTimes(1)
+    expect(deps.harness.project.beads).toEqual(withColors({}, [{ row: 2, column: 3, color: '#2a9d8f' }]))
+    deps.harness.history.onUndo()
+    expect(deps.harness.project).toMatchObject({ beads: {}, frame: start.frame })
+  })
+
+  it('drops what a smaller typed size gives up onto the Canvas (ticket 513)', () => {
+    const own = withColors({}, [{ row: 5, column: 5, color: '#2a9d8f' }])
+    const { deps, resizeTo } = setup({ ...sized, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 6, columns: 6, beads: own } })
+    resizeTo(4, 4)
+    expect(deps.harness.project.beads).toEqual(own)
+  })
+
   it('changes no bead and is no step when the Frame did not change', () => {
     const { deps, press, drag, release } = setup()
     press({ kind: 'move' }, { row: 1, column: 1 })
@@ -457,14 +479,27 @@ describe('useFrameFlow', () => {
       }
     })
 
-    it('does not refuse an edge over a named Schema: the Frame only covers the Canvas (ADR 0066)', () => {
+    it('does not refuse an edge over a named Schema: the Frame covers the Canvas, and a strip it gives up clears it (ADR 0066, ticket 513)', () => {
       const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
       const named = { ...open, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
       const { deps, stepEdge } = setup(named)
       stepEdge('left', -1)
       expect(lastFrame(deps)).toMatchObject({ column: 1, columns: 5 })
-      expect(deps.harness.project.beads).toBe(beads)
+      expect(deps.harness.project.beads).toEqual(withColors({}, [1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' }))))
       expect(deps.showToast).not.toHaveBeenCalled()
+    })
+
+    it('drops the beads a shrunk edge gives up onto the Canvas, and one Undo brings them back (ticket 513)', () => {
+      const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 0, column: 5, color: '#2a9d8f' }])
+      const canvas = withColors({}, [{ row: 0, column: 5, color: '#111111' }])
+      const start = { ...open, beads: canvas, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 6, beads: own } }
+      const { deps, stepEdge } = setup(start)
+      stepEdge('right', -1)
+      expect(deps.harness.project.beads).toEqual(withColors({}, [{ row: 0, column: 5, color: '#2a9d8f' }]))
+      expect(deps.harness.project.frame!.beads).toEqual(withColors({}, [{ row: 0, column: 0, color: '#e63746' }]))
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.beads).toEqual(canvas)
+      expect(deps.harness.project.frame).toEqual(start.frame)
     })
   })
   describe('Add Frame from Template and Replace Frame (ticket 495)', () => {
