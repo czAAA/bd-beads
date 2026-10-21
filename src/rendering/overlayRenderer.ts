@@ -1,5 +1,6 @@
 import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
+import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
@@ -408,9 +409,11 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Frame, 
   context.restore()
 }
 
-/** Whether a position of the Canvas is on the Frame (ticket 492): inside its rectangle of Canvas positions. */
-function onFrame(frame: FrameSheet | undefined, position: GridPosition): boolean {
-  return frame !== undefined && frameContains(frame, position)
+/** Whether a position of the Canvas is on the Frame (ticket 492): the layer it names, or else whether it lies under what
+ * the Frame draws (ADR 0070). */
+function onFrame(frame: FrameSheet | undefined, covered: Frame | undefined, position: GridPosition): boolean {
+  if (frame === undefined) return false
+  return position.layer ? position.layer === 'frame' && frameContains(frame, position) : covered !== undefined && frameContains(covered, position)
 }
 
 /** The Frame's positions counted from its own first (ticket 492): a position of the Canvas that lies on it, or the cell
@@ -440,19 +443,20 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   context.imageSmoothingEnabled = false
 
   const frame = space.open ? project.frame : undefined
+  const covered = footprintOf(project)
   const canvasWeaveOf = canvasWeave(project)
   const frameSpace = frame ? spaceOf(project, false) : undefined
 
   // The Canvas's items: all of them when it is the only layer, else those not on the Frame.
-  const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, cell))
+  const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, covered, cell))
   const ownLayer: 'canvas' | 'frame' = space.open ? (selection ? selectionLayerOf(project, selection) : 'canvas') : 'frame'
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasPreview = preview && { ...preview, cells: offFrame(preview.cells) }
-  const canvasCursor = cursor && !onFrame(frame, cursor) ? cursor : undefined
-  const canvasMarks = marks && { cells: offFrame(marks.cells), boxes: marks.boxes.filter((box) => !onFrame(frame, { row: box.top, column: box.left })) }
+  const canvasCursor = cursor && !onFrame(frame, covered, cursor) ? cursor : undefined
+  const canvasMarks = marks && { cells: offFrame(marks.cells), boxes: marks.boxes.filter((box) => !onFrame(frame, covered, { row: box.top, column: box.left })) }
 
   if (space.open && marginOutline > 0 && project.frame) {
-    drawMarginOutline(context, canvasWeaveOf, project.frame, zoom, marginOutline, theme, margin)
+    drawMarginOutline(context, canvasWeaveOf, covered!, zoom, marginOutline, theme, margin)
   }
 
   // From the bottom up, in the order the DOM grid stacked them: a bead faded, the Selection on it, the hover preview
@@ -470,7 +474,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const sheetWeave = frameWeave(project)
     const origin = frame ? frameOriginPx(canvasWeaveOf, frame) : { x: 0, y: 0 }
     const local = <T extends GridPosition>(cell: T): T => (frame ? inFrameTerms(frame, cell) : cell)
-    const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, cell)).map(local) : [...cells])
+    const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, covered, cell)).map(local) : [...cells])
     const sheetBounds = space.open ? { row: 0, column: 0, rows: sheetSpace.rows, columns: sheetSpace.columns } : project.frame
     const sheetSelection = selection && ownLayer === 'frame' ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column } : selection) : undefined
     context.save()
@@ -487,7 +491,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     }
     const sheetMarks = marks && { cells: onSheet(marks.cells), boxes: frame ? [] : marks.boxes }
     if (sheetMarks && (sheetMarks.cells.length > 0 || sheetMarks.boxes.length > 0)) drawTourMarks(context, sheetWeave, sheetSpace, sheetMarks, theme)
-    const sheetCursor = cursor && (frame ? onFrame(frame, cursor) : true) ? local(cursor) : undefined
+    const sheetCursor = cursor && (frame ? onFrame(frame, covered, cursor) : true) ? local(cursor) : undefined
     if (sheetCursor) drawCursor(context, sheetWeave, sheetSpace, sheetCursor, theme)
     context.restore()
   }

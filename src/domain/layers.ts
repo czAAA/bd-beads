@@ -1,18 +1,27 @@
 import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, shiftedBeads, withColors, type BeadMap, type Frame, type FrameSheet } from './canvas'
-import type { GridPosition } from './grid'
+import type { GridPosition, Layer } from './grid'
+
+export type { Layer }
+import { footprintOf } from './footprint'
 import { weaveOf, type Project } from './project'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
 // Eraser, Paste, Selection fills) works on one Project's beads in one coordinate system; `onLayer` hands it
 // the layer as a Project of its own, so none of them has to know there are two.
 
-/** The layer a bead belongs to: the Canvas, or the Frame laid over it. */
-export type Layer = 'canvas' | 'frame'
 
-/** Which layer a press at a Canvas position lands on (ADR 0066): inside the Frame's rectangle it is the Frame, anywhere
- * else the Canvas. The one place that decides; a stroke asks once, at its press, and keeps the answer. */
-export function layerAt(project: Pick<Project, 'frame'>, position: GridPosition): Layer {
-  return project.frame && frameContains(project.frame, position) ? 'frame' : 'canvas'
+/** What `layerAt` needs of a Project (ADR 0070): the Frame, and the Weaves that say how much of the Canvas it covers. */
+export type Placed = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+
+/** Which layer a press at a Canvas position lands on (ADR 0066, 0070): the one the pointer's hit named, else under what
+ * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its
+ * press, and keeps the answer. */
+export function layerAt(project: Placed, position: GridPosition): Layer {
+  if (position.layer) {
+    return position.layer === 'frame' && project.frame ? 'frame' : 'canvas'
+  }
+  const covered = footprintOf(project)
+  return covered && frameContains(covered, position) ? 'frame' : 'canvas'
 }
 
 /** A Canvas position in a layer's own coordinates: the Frame's are counted from its first row and column. */
@@ -23,9 +32,9 @@ export function positionInLayer(project: Pick<Project, 'frame'>, layer: Layer, p
 
 /** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies. For what
  * asks about the picture as a whole (Select all, Fit to drawing); the same map back when there is no Frame. */
-export function shownBeads(project: Pick<Project, 'beads' | 'frame'>): BeadMap {
+export function shownBeads(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): BeadMap {
   const frame = project.frame
-  return frame ? beadsOver(beadsWithout(project.beads, frame), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
+  return frame ? beadsOver(beadsWithout(project.beads, footprintOf(project)!), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
 }
 
 /** A position of a layer's own, back on the Canvas. */
@@ -80,7 +89,8 @@ export function onLayer(project: Project, layer: Layer, command: (view: Project,
   if (made.beads === project.beads) {
     return project
   }
-  const beads = frame ? keepUnderFrame(project.beads, made.beads, frame) : made.beads
+  const covered = footprintOf(project)
+  const beads = covered ? keepUnderFrame(project.beads, made.beads, covered) : made.beads
   // Everything the command did was under the Frame, so nothing is left of it.
   if (beads !== made.beads && changedPositions(project.beads, beads).length === 0) {
     return project

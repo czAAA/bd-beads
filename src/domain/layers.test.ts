@@ -24,7 +24,7 @@ describe('layerAt', () => {
     expect(layerAt(project, { row: 12, column: 23 })).toBe('frame')
     expect(layerAt(project, { row: 13, column: 20 })).toBe('canvas')
     expect(layerAt(project, { row: 10, column: 24 })).toBe('canvas')
-    expect(layerAt({ frame: undefined }, { row: 10, column: 20 })).toBe('canvas')
+    expect(layerAt({ ...project, frame: undefined }, { row: 10, column: 20 })).toBe('canvas')
   })
 
   it('counts a position in the Frame from its first bead, and back', () => {
@@ -112,5 +112,33 @@ describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
       return view
     })
     expect(seen[0]).toMatchObject({ technique: 'brick', brickBlock: 3 })
+  })
+})
+
+describe('a Frame that draws shorter than the rows it names (ADR 0070)', () => {
+  // 48 peyote rows over a loom Canvas: the Frame covers the first 36 Canvas rows, the other 12 it names are Canvas.
+  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
+  const project: Project = { ...base, frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) } }
+
+  it('says a position under the drawing is the Frame\'s, and one in the strip the Canvas\'s', () => {
+    expect(layerAt(project, { row: 20, column: 3 })).toBe('frame')
+    expect(layerAt(project, { row: 40, column: 3 })).toBe('canvas')
+  })
+
+  it('takes the layer a pointer hit named over what the position says', () => {
+    expect(layerAt(project, { row: 40, column: 2, layer: 'frame' })).toBe('frame')
+    expect(layerAt(project, { row: 20, column: 3, layer: 'canvas' })).toBe('canvas')
+  })
+
+  it('lets a bead be drawn in the strip and keeps it, as the Canvas\'s', () => {
+    const painted = onLayer(project, 'canvas', (view, local) => paintCells(view, [local({ row: 44, column: 3 })], RED))
+    expect(beadColorAt(painted, 44, 3, 'canvas')).toBe(RED)
+    expect(painted.frame!.beads).toBe(project.frame!.beads)
+  })
+
+  it('draws on the Frame\'s own last rows, which share a position with the strip', () => {
+    const painted = onLayer(project, 'frame', (view, local) => paintCells(view, [local({ row: 41, column: 2 })], RED))
+    expect(painted.frame!.beads[41]?.[2]).toBe(RED)
+    expect(painted.beads).toBe(project.beads)
   })
 })
