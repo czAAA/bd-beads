@@ -7,8 +7,8 @@ type Wrapper = ReturnType<typeof mount>
 
 type Sheet = 'strip-project' | 'strip-menu'
 
-/** Opens Menu or Project (CanvasStrip and TopSheet cards, ticket 443): the strip's button toggles, so an open panel
- * is left alone and the other is swapped in. Under 1024px, as every test starts, it is the Top sheet. */
+/** Opens Menu or Project (CanvasStrip card, ticket 443): the strip's button toggles, so an open panel
+ * is left alone and the other is swapped in. */
 export async function openSheet(wrapper: Wrapper, dock: Sheet): Promise<void> {
   const button = wrapper.get(`[data-testid="${dock}"]`)
   const panelOpen = wrapper.find('[data-testid="panel-body"]').exists()
@@ -102,22 +102,10 @@ export async function deleteAll(wrapper: Wrapper): Promise<void> {
   await wrapper.get('[data-testid="project-clear"]').trigger('click')
 }
 
-/** Picks a language in Menu (tickets 368, 443): the panel opens first; the Top sheet lists every language, the
- * dropdown has the switcher. */
+/** Picks a language in Menu (tickets 368, 443): the panel opens first, then the switcher. */
 export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
   await openSheet(wrapper, 'strip-menu')
-  if (wrapper.find('[data-testid="language-switcher"]').exists()) await chooseLanguage(wrapper, locale)
-  else {
-    await openChoice(wrapper, 'menu-language')
-    await wrapper.get(`[data-testid="language-${locale}"]`).trigger('click')
-  }
-}
-
-/** Unfolds one of the sheet Menu's choices (its header is a button, folded to the current choice) unless it is
- * already open (or absent). */
-export async function openChoice(wrapper: Wrapper, testid: string): Promise<void> {
-  const header = wrapper.find(`[data-testid="${testid}"] .setting__header`)
-  if (header.exists() && header.attributes('aria-expanded') !== 'true') await header.trigger('click')
+  await chooseLanguage(wrapper, locale)
 }
 
 /** Opens Saved Projects, the sheet Menu's item raises, unless it is already up. */

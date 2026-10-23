@@ -47,7 +47,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Header menu, Overview and the Tour (v15)
 
-- **Menu and Project (spec 0440):** under 1024px both open as a Top sheet sliding down from under the Canvas strip, with a scrim; the strip's two buttons stay visible and lit. Choices are one per line (Language, Theme, Tools position, Input), each folded to its current choice until tapped. Rows grow with their content and never have a fixed height. From 1024px they are dropdowns under their buttons. See the TopSheet, MenuPanel and ProjectPanel cards.
+- **Menu and Project (spec 0440):** both open as a dropdown under their buttons on every screen size (ADR 0071), with the same rows, sizes and animation; the strip's two buttons stay lit. On a narrow screen the dropdown is held 8px from the screen's edge, and a tall panel scrolls inside the room below its button. Rows grow with their content and never have a fixed height. See the MenuPanel and ProjectPanel cards.
 - **Overview:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Overview card.
 - **Tour placement:** docked above the Dock, reaching sheet controls through their Dock button. When a control can't be brought on screen, the card is centred with no pointer. See the TourStep card.
 

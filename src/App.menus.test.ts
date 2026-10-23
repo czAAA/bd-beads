@@ -5,11 +5,9 @@ import App from './App.vue'
 import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { fakeMatchMedia } from './testUtils/fakeMatchMedia'
-import { openChoice, openSheet } from './testUtils/pill'
+import { openSheet } from './testUtils/pill'
 
-/** Menu and Project (spec 0440, ticket 443): one happy path per flow; under 1024px both open as a Top sheet, one
- * test covers the dropdown. */
+/** Menu and Project (spec 0440, ticket 443): one happy path per flow; both open as a dropdown on every screen size. */
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 10, height: 10, unit: 'beads' } })
 
@@ -31,14 +29,14 @@ function mountApp() {
 const names = () => loadProjects().map((project) => project.name).sort()
 const text = (wrapper: ReturnType<typeof mountApp>, testId: string) => wrapper.get(`[data-testid="${testId}"]`).text()
 
-describe('Menu and Project open as a dropdown from 1024px and a Top sheet under it', () => {
-  it('opens as a Top sheet under the strip with a scrim that leaves Menu and Project clickable, and swaps one for the other', async () => {
+describe('Menu and Project open as a dropdown on every screen size', () => {
+  it('opens as a dropdown with no scrim, and swaps one for the other', async () => {
     const wrapper = mountApp()
     await openSheet(wrapper, 'strip-menu')
 
-    expect(wrapper.find('[data-testid="top-sheet"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="top-sheet-scrim"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('menu')
+    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="theme-toggle"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBe('true')
 
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
@@ -46,19 +44,6 @@ describe('Menu and Project open as a dropdown from 1024px and a Top sheet under 
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).not.toBe('true')
-  })
-
-  it('opens as a dropdown with no scrim from 1024px, with the same sections', async () => {
-    const media = fakeMatchMedia({ '(min-width: 1024px)': true })
-    vi.stubGlobal('matchMedia', media.matchMedia)
-    const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
-
-    expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('menu')
-    expect(wrapper.find('[data-testid="top-sheet"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="top-sheet-scrim"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="theme-toggle"]').exists()).toBe(true)
   })
 
   it('closes on Escape and on a press outside, and gives focus back to the button', async () => {
@@ -104,7 +89,6 @@ describe('Menu', () => {
     const wrapper = mountApp()
     await openSheet(wrapper, 'strip-menu')
 
-    await openChoice(wrapper, 'menu-tools-position')
     await wrapper.get('[data-testid="menu-tools-position"] [data-value="top"]').trigger('click')
 
     expect(localStorage.getItem('openbeads:tool-pill-position')).toBe('top')
@@ -123,7 +107,6 @@ describe('Menu', () => {
     await openSheet(wrapper, 'strip-menu')
 
     expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
-    await openChoice(wrapper, 'menu-input-mode')
     await wrapper.get('[data-testid="menu-input-mode"] [data-value="mouse"]').trigger('click')
     expect(localStorage.getItem('openbeads:input-mode')).toBe('mouse')
   })
@@ -257,9 +240,8 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
   })
 
-  it('opens Menu on the form from the empty-canvas bar button, in the dropdown from 1024px too', async () => {
+  it('opens Menu on the form from the empty-canvas bar button', async () => {
     saveProjects([])
-    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1024px)': true }).matchMedia)
     const wrapper = mountApp()
     await wrapper.get('[data-testid="phone-bar-new-project"]').trigger('click')
 

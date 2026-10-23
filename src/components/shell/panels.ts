@@ -9,7 +9,7 @@ export interface PanelDescriptor {
   title: (t: Translations) => string
   /** The strip button the panel hangs from, by test id. */
   anchor: string
-  /** A `menu` of items from 1024px; the others hold fields and are plain dialogs. */
+  /** A `menu` of items; the others hold fields and are plain dialogs. */
   menu: boolean
   /** Opens without focusing a field, so a tablet's keyboard stays down. */
   skipsFields: boolean
