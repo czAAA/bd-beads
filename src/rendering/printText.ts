@@ -1,5 +1,7 @@
 import { beadLabel } from '../domain/beads'
 import { computeColorQuantities } from '../domain/beadQuantities'
+import { createPalette } from '../domain/palette'
+import { listedColorName } from '../i18n/colorName'
 import { rotationSwapsAxes } from '../domain/grid'
 import { countedDimensions, frameWeave, resolveProjectBead, type Project } from '../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../domain/projectSize'
@@ -61,7 +63,8 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)
   }
 
-  const quantities = computeColorQuantities(project)
+  const palette = createPalette(project.palette)
+  const quantities = computeColorQuantities(project, palette)
   const total = quantities.reduce((sum, quantity) => sum + quantity.count, 0)
   const perGram = bead && beadsPerGram(bead)
   const date = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' }).format(at)
@@ -83,7 +86,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     estimatedSize: estimate ? `≈ ${estimate}` : '',
     colors: quantities.map((quantity) => ({
       hex: quantity.hex,
-      name: (quantity.colorId && t.colorNames[quantity.colorId]) || quantity.hex.toUpperCase(),
+      name: listedColorName(t, palette.byId(quantity.colorId), quantity.hex),
       beads: groupThousands(quantity.count, locale),
       grams: grams(quantity.count),
     })),

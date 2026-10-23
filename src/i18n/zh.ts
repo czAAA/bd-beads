@@ -93,7 +93,6 @@ export const zh: Translations = {
     pink: '粉色',
     brown: '棕色',
     grey: '灰色',
-    custom: '自定义',
   },
   panels: {
     back: '返回',

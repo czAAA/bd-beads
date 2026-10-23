@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
-import { PALETTE, addedColorId, defaultPaletteIds } from './domain/palette'
+import { BUILT_IN_COLORS, addedColorId, defaultPaletteIds } from './domain/palette'
 import { createProject } from './domain/project'
 import { en } from './i18n/en'
 import { loadProjects, saveProjects } from './services/libraryStore'
@@ -70,27 +70,27 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     await flushPromises()
     await openColorPopover(wrapper)
     await choose(wrapper, '#123456')
-    expect(await total(wrapper)).toBe(PALETTE.length + 1)
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 1)
     const added = await swatch(wrapper, addedColorId('#123456'))
     expect(added.attributes('aria-pressed')).toBe('true')
     expect(added.element.closest('.swatch')!.querySelector('.app-tooltip__key')).toBeNull() // an added color has no key chip
     expect(storedAdded()).toEqual([addedColorId('#123456')])
 
     await paint(wrapper, 0)
-    expect(await total(wrapper)).toBe(PALETTE.length + 1)
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 1)
     const reloaded = mount(App, { attachTo: document.body })
     await openColorPopover(reloaded)
-    expect(await total(reloaded)).toBe(PALETTE.length + 1)
+    expect(await total(reloaded)).toBe(BUILT_IN_COLORS.length + 1)
   })
 
   it('selects the matching swatch for a built-in hex and adds nothing', async () => {
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)
-    await choose(wrapper, PALETTE[3]!.hex)
+    await choose(wrapper, BUILT_IN_COLORS[3]!.hex)
     await paint(wrapper)
-    expect(await total(wrapper)).toBe(PALETTE.length)
-    expect((await swatch(wrapper, PALETTE[3]!.id)).attributes('aria-pressed')).toBe('true')
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length)
+    expect((await swatch(wrapper, BUILT_IN_COLORS[3]!.id)).attributes('aria-pressed')).toBe('true')
   })
 
   it('has no cap: a hundred added colors all join, and nothing says the Palette is full', async () => {
@@ -100,7 +100,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     await openColorPopover(wrapper)
     await choose(wrapper, '#fedcba')
     await paint(wrapper)
-    expect(await total(wrapper)).toBe(PALETTE.length + 101)
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 101)
     expect(storedAdded()).toHaveLength(101)
     expect(wrapper.find('[data-testid="custom-color-button"]').attributes('disabled')).toBeUndefined()
     expect(wrapper.findAll('[data-testid="toast"]')).toHaveLength(0)
@@ -113,7 +113,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     await flushPromises()
     await openColorPopover(wrapper)
     await choose(wrapper, '#123456')
-    expect(loadProjects().map((project) => project.palette.length).sort()).toEqual([PALETTE.length, PALETTE.length + 1])
+    expect(loadProjects().map((project) => project.palette.length).sort()).toEqual([BUILT_IN_COLORS.length, BUILT_IN_COLORS.length + 1])
   })
 
   it('Undo takes a swatch that joined back out', async () => {
@@ -160,7 +160,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await (await removeButton(wrapper)).trigger('click')
     expect(modal(wrapper).exists()).toBe(true)
     expect(wrapper.find('[data-testid="confirm-modal-message"]').text()).toContain('#123456')
-    expect(await total(wrapper)).toBe(PALETTE.length + 2)
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 2)
     expect((await swatch(wrapper, addedColorId('#123456'))).attributes('aria-pressed')).toBe('true')
     expect(storedAdded()).toEqual([addedColorId('#123456'), addedColorId('#abcdef')])
   })
@@ -176,7 +176,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await (await removeButton(wrapper)).trigger('click')
     await dismiss(wrapper)
     expect(modal(wrapper).exists()).toBe(false)
-    expect(await total(wrapper)).toBe(PALETTE.length + 1)
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 1)
     expect(wrapper.text()).not.toContain(en.palette.removed)
   })
 
@@ -189,8 +189,8 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await (await removeButton(wrapper)).trigger('click')
     await confirm(wrapper)
     expect(modal(wrapper).exists()).toBe(false)
-    expect(storedPalette()).toHaveLength(PALETTE.length + 1)
-    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
+    expect(storedPalette()).toHaveLength(BUILT_IN_COLORS.length + 1)
+    expect(wrapper.find('[data-color-id="black"]').attributes('aria-pressed')).toBe('true')
     expect(storedAdded()).toEqual([addedColorId('#abcdef')])
     expect(wrapper.text()).toContain(en.palette.removed)
     const reloaded = mount(App)
@@ -206,9 +206,9 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await openColorPopover(wrapper)
     await (await swatch(wrapper, addedColorId('#123456'))).trigger('keydown', { key: 'Backspace' })
     expect(modal(wrapper).exists()).toBe(true)
-    expect(await total(wrapper)).toBe(PALETTE.length + 1)
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 1)
     await confirm(wrapper)
-    expect(await total(wrapper)).toBe(PALETTE.length)
+    expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length)
   })
 
   it('Undo in the toast puts the swatch back where it stood, selected again', async () => {
@@ -245,7 +245,7 @@ describe('the Palette is slots (ticket 398)', () => {
   })
 
   it('keeps no empty slot when an added color between others is removed', async () => {
-    seedPalette(['#123456', '#abcdef'], ['red', 'added-123456', 'black'])
+    seedPalette(['#123456', '#abcdef'], ['red', 'added-123456', 'black', 'white'])
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)

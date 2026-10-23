@@ -1,9 +1,12 @@
+import { createPalette, defaultPaletteIds } from './palette'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from './beadQuantities'
 import { createProject, type Project } from './project'
 import { paintAt } from '../testUtils/layers'
+
+const palette = createPalette(defaultPaletteIds())
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -27,7 +30,7 @@ function painted(cells: [row: number, column: number, color: string][]): Project
 
 describe('computeColorQuantities', () => {
   it('finds nothing to buy for an unpainted Project', () => {
-    expect(computeColorQuantities(blankProject())).toEqual([])
+    expect(computeColorQuantities(blankProject(), palette)).toEqual([])
   })
 
   it('counts how many beads each painted color needs', () => {
@@ -37,6 +40,7 @@ describe('computeColorQuantities', () => {
         [0, 1, RED],
         [1, 0, BLUE],
       ]),
+      palette,
     )
 
     expect(quantities).toEqual([
@@ -52,13 +56,14 @@ describe('computeColorQuantities', () => {
         [1, 0, RED],
         [1, 1, RED],
       ]),
+      palette,
     )
 
     expect(quantities.map((quantity) => quantity.colorId)).toEqual(['red', 'blue'])
   })
 
   it('still counts a color that is not in the Palette, flagging that it has no palette identity', () => {
-    const quantities = computeColorQuantities(painted([[0, 0, '#123456']]))
+    const quantities = computeColorQuantities(painted([[0, 0, '#123456']]), palette)
 
     expect(quantities).toEqual([{ colorId: null, hex: '#123456', count: 1 }])
   })
@@ -117,7 +122,7 @@ describe('computeColorQuantities in Right-angle weave (ticket 482)', () => {
     const painted = paintAt(woven, everyBead, RED)
 
     // Two Units across and one down: 2 + 3 + 2 beads, the Units' shared sides counted once.
-    expect(computeColorQuantities(painted)).toMatchObject([{ hex: RED, count: 7 }])
+    expect(computeColorQuantities(painted, palette)).toMatchObject([{ hex: RED, count: 7 }])
   })
 })
 
@@ -129,6 +134,6 @@ describe('computeColorQuantities in Netting (ticket 485)', () => {
     const painted = paintAt(woven, everyPosition, RED)
 
     // One diamond: its tip, two beads on each side strand, the two side corners and the bottom tip.
-    expect(computeColorQuantities(painted)).toMatchObject([{ hex: RED, count: 8 }])
+    expect(computeColorQuantities(painted, palette)).toMatchObject([{ hex: RED, count: 8 }])
   })
 })

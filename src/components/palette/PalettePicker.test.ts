@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PalettePicker from './PalettePicker.vue'
-import { PALETTE } from '../../domain/palette'
+import { BUILT_IN_COLORS } from '../../domain/palette'
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
@@ -12,22 +12,22 @@ describe('PalettePicker', () => {
   it('renders one swatch per palette color', () => {
     const wrapper = mount(PalettePicker)
 
-    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(PALETTE.length)
+    expect(wrapper.findAll('[data-testid="palette-swatch"]')).toHaveLength(BUILT_IN_COLORS.length)
   })
 
   it('emits select with the clicked color id', async () => {
     const wrapper = mount(PalettePicker)
 
-    await wrapper.find(`[data-color-id="${PALETTE[2]!.id}"]`).trigger('click')
+    await wrapper.find(`[data-color-id="${BUILT_IN_COLORS[2]!.id}"]`).trigger('click')
 
-    expect(wrapper.emitted('select')).toEqual([[PALETTE[2]!.id]])
+    expect(wrapper.emitted('select')).toEqual([[BUILT_IN_COLORS[2]!.id]])
   })
 
   it('marks the selected color as pressed', () => {
-    const wrapper = mount(PalettePicker, { props: { selectedColorId: PALETTE[0]!.id } })
+    const wrapper = mount(PalettePicker, { props: { selectedColorId: BUILT_IN_COLORS[0]!.id } })
 
-    const selected = wrapper.find(`[data-color-id="${PALETTE[0]!.id}"]`)
-    const other = wrapper.find(`[data-color-id="${PALETTE[1]!.id}"]`)
+    const selected = wrapper.find(`[data-color-id="${BUILT_IN_COLORS[0]!.id}"]`)
+    const other = wrapper.find(`[data-color-id="${BUILT_IN_COLORS[1]!.id}"]`)
 
     expect(selected.attributes('aria-pressed')).toBe('true')
     expect(other.attributes('aria-pressed')).toBe('false')
@@ -37,7 +37,7 @@ describe('PalettePicker', () => {
     const wrapper = mount(PalettePicker)
 
     const swatches = wrapper.findAll('[data-testid="palette-swatch"]')
-    PALETTE.forEach((color, index) => {
+    BUILT_IN_COLORS.forEach((color, index) => {
       expect(swatches[index]!.attributes('aria-label')).toBe(`${ru.palette.colorLabel} ${index + 1}, ${ru.colorNames[color.id]}`)
     })
   })
@@ -61,6 +61,6 @@ describe('PalettePicker', () => {
     await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
 
     expect(tooltip.get('.app-tooltip__name').text()).toBe(ru.palette.colorLabel)
-    expect(tooltip.get('.app-tooltip__body').text()).toBe(PALETTE[0]!.hex)
+    expect(tooltip.get('.app-tooltip__body').text()).toBe(BUILT_IN_COLORS[0]!.hex)
   })
 })

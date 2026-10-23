@@ -1,6 +1,6 @@
 import { computed, ref, watch } from 'vue'
 import { provideRecentColors } from './usePalette'
-import { RECENT_SHORTCUTS, normalizeHex, slotsBesideRecents, type PaletteColor } from '../../domain/palette'
+import { RECENT_SHORTCUTS, normalizeHex, type Palette } from '../../domain/palette'
 import { RECENTS_IN_PILL, pushRecentColor, recentsBeside } from '../../domain/toolPill'
 import type { DevicePreferences } from '../../services/devicePreferences'
 
@@ -9,7 +9,7 @@ export interface ToolPillDeps {
   preferences: DevicePreferences
   /** The current paint color's hex, or null when none is chosen. */
   selectedColorHex: () => string | null
-  palette: () => readonly PaletteColor[]
+  palette: () => Palette
   onSelectColor: (colorId: string) => void
   onSelectCustomColor: (hex: string) => void
 }
@@ -40,7 +40,7 @@ export function useToolPill(deps: ToolPillDeps) {
   function pickRecent(hex: string) {
     const color = normalizeHex(hex)
     if (!color) return
-    const swatch = deps.palette().find((candidate) => candidate.hex === color)
+    const swatch = deps.palette().byHex(color)
     if (swatch) deps.onSelectColor(swatch.id)
     else deps.onSelectCustomColor(color)
   }
@@ -53,9 +53,8 @@ export function useToolPill(deps: ToolPillDeps) {
       if (hex) pickRecent(hex)
       return
     }
-    const palette = deps.palette()
-    const slot = slotsBesideRecents(palette, recentsInPill.value)[key - RECENT_SHORTCUTS]
-    if (slot !== undefined) deps.onSelectColor(palette[slot]!.id)
+    const shown = deps.palette().besideRecents(recentsInPill.value)[key - RECENT_SHORTCUTS]
+    if (shown) deps.onSelectColor(shown.color.id)
   }
 
   return {

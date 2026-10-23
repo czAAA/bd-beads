@@ -3,7 +3,8 @@ import { computed, nextTick, ref } from 'vue'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMoveColor, usePalette, useRecentColors, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
-import { PALETTE_SHORTCUTS, RECENT_SHORTCUTS, isAddedColorId, slotsBesideRecents } from '../../domain/palette'
+import { PALETTE_SHORTCUTS, RECENT_SHORTCUTS, isAddedColorId } from '../../domain/palette'
+import { colorName } from '../../i18n/colorName'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
@@ -18,7 +19,7 @@ const palette = usePalette()
 const recents = useRecentColors()
 /** The swatches shown, with the slot each holds: a color that is one of the pill's recent chips is shown there only
  * (ticket 529) and comes back in its slot when it drops out. Shift+4…0 follow this order. */
-const shown = computed(() => slotsBesideRecents(palette.value, recents.value).map((slot) => ({ color: palette.value[slot]!, slot })))
+const shown = computed(() => palette.value.besideRecents(recents.value))
 const closePanel = useClosePopoverOnPick()
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
@@ -85,7 +86,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
       v-for="({ color, slot }, index) in shown"
       :key="color.id"
       :color="color.hex"
-      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${slot + 1}, ${t.colorNames[color.id] ?? color.hex}`"
+      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${slot + 1}, ${colorName(t, color)}`"
       :selected="color.id === selectedColorId"
       :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
       :remove-label="removeAdded && isAddedColorId(color.id) ? t.palette.removeSwatch.replace('{hex}', color.hex) : undefined"
