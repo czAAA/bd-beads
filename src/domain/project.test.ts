@@ -12,6 +12,7 @@ import {
   rotateCanvas,
   keepFinishedRows,
   replaceBead,
+  setPalette,
   resolveProjectBead,
   restoreBeads,
   restoreSnapshot,
@@ -38,6 +39,7 @@ import {
   withFrameTechnique,
 } from './project'
 import { BEAD_CATALOG } from './beads'
+import { BUILT_IN_COLORS, addedColorId } from './palette'
 import { describeWeave } from './weave'
 import { changedPositions } from './canvas'
 import { fillAt, paintAt } from '../testUtils/layers'
@@ -679,6 +681,64 @@ describe('deleteAll', () => {
     })
 
     expect(deleteAll(fresh)).toBe(fresh)
+  })
+})
+
+describe('a Project\'s default colors follow its Bead (ticket 0528)', () => {
+  const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki-delica-11-0')!
+  const input = { technique: 'loom', size: { width: 4, height: 2, unit: 'beads' } } as const
+  const tealId = addedColorId('#2fb6ae')
+
+  it('starts a new Project on its Bead\'s built-in colors', () => {
+    expect(createProject({ ...input, beadId: delica.id }).palette).toHaveLength(16)
+    expect(createProject({ ...input, beadId: roundBead.id }).palette).toHaveLength(12)
+  })
+
+  it('moves the Palette with the Bead and leaves every painted cell as it was', () => {
+    const before = paintAt(createProject({ ...input, beadId: roundBead.id }), [{ row: 0, column: 0 }], '#2fb6ae')
+    const after = replaceBead(before, delica)
+    expect(after.palette).toHaveLength(16 + 1)
+    expect(after.palette).toContain(tealId)
+    expect(after.beads).toBe(before.beads)
+  })
+
+  it('undoes the Bead and the Palette together', () => {
+    const before = createProject({ ...input, beadId: roundBead.id })
+    const after = replaceBead(before, delica)
+    const undone = restoreSnapshot(after, snapshotOf(before))
+    expect(undone.beadId).toBe(roundBead.id)
+    expect(undone.palette).toEqual(before.palette)
+  })
+
+  it('goes A to B to A with no duplicates and the same built-in colors', () => {
+    const start = createProject({ ...input, beadId: roundBead.id })
+    const back = replaceBead(replaceBead(start, delica), roundBead)
+    expect(back.palette.slice(0, 12)).toEqual(start.palette)
+    expect(new Set(back.palette).size).toBe(back.palette.length)
+  })
+
+  it('does not bring back an old default the maker removed on the way', () => {
+    const away = replaceBead(createProject({ ...input, beadId: roundBead.id }), delica)
+    const removed = setPalette(away, away.palette.filter((id) => id !== tealId))
+    expect(removed.removedDefaults).toEqual(['#2fb6ae'])
+    const back = replaceBead(removed, roundBead)
+    expect(back.palette).not.toContain('teal')
+    expect(back.palette).not.toContain(tealId)
+  })
+
+  it('remembers a removal in the undo snapshot, so Undo brings the color and the memory back', () => {
+    const away = replaceBead(createProject({ ...input, beadId: roundBead.id }), delica)
+    const removed = setPalette(away, away.palette.filter((id) => id !== tealId))
+    const undone = restoreSnapshot(removed, snapshotOf(away))
+    expect(undone.palette).toContain(tealId)
+    expect(undone.removedDefaults).toBeUndefined()
+  })
+
+  it('opens a Project stored with the twelve on a Delica bead with the same colors shown', () => {
+    const stored = { ...createProject({ ...input, beadId: delica.id }), palette: BUILT_IN_COLORS.map((color) => color.id) }
+    const opened = normalizeProject(stored)
+    expect(opened.palette).toHaveLength(12)
+    expect(opened.palette).toContain(tealId)
   })
 })
 

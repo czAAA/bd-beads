@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { defaultPaletteIds } from './palette'
+import { addedColorId, defaultPaletteIds } from './palette'
 import { framedGrid, weaveOf, type Grid, type Project, type RowProgress } from './project'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
 import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
@@ -19,6 +19,7 @@ import libraryV4 from './fixtures/library-v4.json?raw'
 import libraryV4Weave from './fixtures/library-v4-frame-weave.json?raw'
 import projectFileV3Framed from './fixtures/project-file-v3-framed-covered.json?raw'
 import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
+import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
@@ -290,11 +291,18 @@ describe('stored-data compatibility', () => {
       expect((await readProjectsFile(new File([await gzipJson(libraryFileV4)], 'g.openbeads'))).projects).toEqual([framedOverSketch, unframedSketch])
     })
 
-    it('reads a version 4 file and writes it back as version 5 with the built-in Palette (ticket 0525)', () => {
+    it('reads a version 4 file and writes it back as version 6 with the built-in Palette (ticket 0525)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 5, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 6, projects: [{ palette: defaultPaletteIds() }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
+    })
+
+    it('opens a version 5 file written on Delica with the twelve and an added color showing the same swatches (ticket 0528)', () => {
+      const [project] = parseProjectsFile(projectFileV5Delica).projects
+      expect(project!.palette).toEqual(['black', 'white', 'red', 'orange', 'yellow', 'green', addedColorId('#2fb6ae'), 'blue', 'purple', 'pink', 'brown', 'grey', 'added-123456'])
+      expect(project!.removedDefaults).toBeUndefined()
+      expect(parseProjectsFile(serializeProject(project!)).projects).toEqual([project])
     })
 
     it('gives the Frame of a file written before it had a Weave of its own the Project\'s (ticket 492)', () => {

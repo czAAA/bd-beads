@@ -1,6 +1,6 @@
 import { beadLabel } from '../domain/beads'
 import { computeColorQuantities } from '../domain/beadQuantities'
-import { createPalette } from '../domain/palette'
+import { projectPalette } from '../domain/palette'
 import { listedColorName } from '../i18n/colorName'
 import { rotationSwapsAxes } from '../domain/grid'
 import { countedDimensions, frameWeave, resolveProjectBead, type Project } from '../domain/project'
@@ -63,7 +63,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)
   }
 
-  const palette = createPalette(project.palette)
+  const palette = projectPalette(project)
   const quantities = computeColorQuantities(project, palette)
   const total = quantities.reduce((sum, quantity) => sum + quantity.count, 0)
   const perGram = bead && beadsPerGram(bead)

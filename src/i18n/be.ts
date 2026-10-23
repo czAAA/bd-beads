@@ -94,6 +94,11 @@ export const be: Translations = {
     pink: 'Ружовы',
     brown: 'Карычневы',
     grey: 'Шэры',
+    beige: 'Бэжавы',
+    gold: 'Залаты',
+    silver: 'Сярэбраны',
+    crystal: 'Празрысты',
+    iridescent: 'Пераліўны',
   },
   panels: {
     back: 'Назад',
