@@ -326,8 +326,6 @@ export const be: Translations = {
       other: '{count} пацеркі не змясціліся ў рамку.',
     },
     cutButton: 'Выразаць',
-    saveButton: 'Захаваць',
-    savedConfirmation: 'Захавана',
     pasteLabel: 'Уставіць',
     removeLineButton: 'Выдаліць вылучаны рад/слупок',
     removeLineShort: 'Выдаліць лінію',
@@ -397,7 +395,6 @@ export const be: Translations = {
     lastPart: 'Апошняя частка',
   },
   saveBox: {
-    saveButton: 'Захаваць праект',
     exportButton: 'Экспартаваць',
     savedState: 'захавана · гэта прылада',
     failedState: 'не захавана · гэта прылада',
@@ -476,12 +473,7 @@ export const be: Translations = {
     countNeedsFrame: 'Задайце рамку, каб палічыць бісер.',
     progressSelectToSet: 'Вылучыце, каб задаць',
     progressFrameWord: 'рамку',
-    rotateCoveredMessage: {
-      one: '{count} бісерына перакрыта.',
-      few: '{count} бісерыны перакрыта.',
-      many: '{count} бісерын перакрыта.',
-      other: '{count} бісерыны перакрыта.',
-    },
+    rotateCoveredMessage: 'Павернуты фрагмент апынуўся паверх існуючых бусін.',
   },
   size: {
     estimateLabel: 'Прыблізны памер',
@@ -628,7 +620,6 @@ export const be: Translations = {
     colors: 'Наладзьце колеры для малявання.',
     newProject: 'Пачаць з пустога палатна.',
     importFile: 'Адкрыць праект з файла.',
-    saveProject: 'Захаваць у файл на гэтай прыладзе.',
     changeName: 'Змяніць імя майстра пры экспарце.',
     convertImage: 'Ператварыць малюнак у схему.',
     list: (names) => `${names.join(', ')}.`,

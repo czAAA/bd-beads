@@ -321,8 +321,6 @@ export const zh: Translations = {
       other: '{count} 颗珠子超出边框，未放入。',
     },
     cutButton: '剪切',
-    saveButton: '保存',
-    savedConfirmation: '已保存',
     pasteLabel: '粘贴',
     removeLineButton: '删除所选行/列',
     removeLineShort: '删除行列',
@@ -391,7 +389,6 @@ export const zh: Translations = {
     lastPart: '最后一部分',
   },
   saveBox: {
-    saveButton: '保存项目',
     exportButton: '导出',
     savedState: '已保存 · 此设备',
     failedState: '未保存 · 此设备',
@@ -470,9 +467,7 @@ export const zh: Translations = {
     countNeedsFrame: '设置边框后才能计数。',
     progressSelectToSet: '选择以设置',
     progressFrameWord: '边框',
-    rotateCoveredMessage: {
-      other: '{count} 颗珠子被覆盖。',
-    },
+    rotateCoveredMessage: '旋转后的片段落在了已有的珠子上方。',
   },
   size: {
     estimateLabel: '估算尺寸',
@@ -615,7 +610,6 @@ export const zh: Translations = {
     colors: '设置用于涂色的颜色。',
     newProject: '开始一块空白画布。',
     importFile: '从文件打开项目。',
-    saveProject: '保存为此设备上的文件。',
     changeName: '更改印在导出文件上的制作者姓名。',
     convertImage: '把图片变成图样。',
     list: (names) => `${names.join('、')}。`,

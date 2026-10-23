@@ -380,11 +380,6 @@ export interface Translations {
     copyButton: string
     pasteClippedMessage: PluralForms
     cutButton: string
-    /** The Edit group's Save (ticket 115): reassurance that the edit is on this device, not a new kind of storage
-     * (ADR 0012). */
-    saveButton: string
-    /** The brief confirmation Save shows once storage took the write. */
-    savedConfirmation: string
     /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names
      * it. */
     pasteLabel: string
@@ -474,7 +469,6 @@ export interface Translations {
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */
   saveBox: {
-    saveButton: string
     exportButton: string
     /** The label row: the library's save state on this device. */
     savedState: string
@@ -578,9 +572,8 @@ export interface Translations {
      * accusative where the language has one). */
     progressSelectToSet: string
     progressFrameWord: string
-    /** The Message after Rotate turned the Selection onto beads ("{count}" of them, ADR 0052): the singular and
-     * plural of the sentence. */
-    rotateCoveredMessage: PluralForms
+    /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
+    rotateCoveredMessage: string
   }
   size: {
     /** Names the Estimated size readout for assistive technology. */
@@ -762,7 +755,6 @@ export interface Translations {
     colors: string
     newProject: string
     importFile: string
-    saveProject: string
     changeName: string
     convertImage: string
     /** "A, B, C." from the item names. */

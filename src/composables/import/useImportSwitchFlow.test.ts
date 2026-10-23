@@ -16,7 +16,6 @@ function setup(options: { open?: boolean; saved?: boolean } = {}) {
     addProjects: vi.fn(),
     openProject: vi.fn(),
     saveNow: vi.fn(() => options.saved ?? true),
-    showToast: vi.fn(),
   }
   return { deps, ...useImportSwitchFlow(deps) }
 }
@@ -83,11 +82,5 @@ describe('useImportSwitchFlow', () => {
     const { importSaveRefused, onSaveBeforeImportSwitch } = setup({ saved: true })
     onSaveBeforeImportSwitch()
     expect(importSaveRefused.value).toBe(false)
-  })
-
-  it('passes an import result on as a toast', () => {
-    const { deps, onImportToast } = setup()
-    onImportToast('import-result', 'Imported 2', 'success')
-    expect(deps.showToast).toHaveBeenCalledWith('import-result', 'Imported 2', 'success')
   })
 })

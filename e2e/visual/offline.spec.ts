@@ -45,8 +45,6 @@ async function createEditAndSave(page: Page, name: string): Promise<void> {
   const surface = page.getByTestId('project-surface')
   const box = (await surface.boundingBox())!
   await page.mouse.click(box.x + 20, box.y + 20)
-  await openStripPanel(page, 'strip-project')
-  await page.getByTestId('save-button').click()
   await expect.poll(() => savedNames(page)).toContain(name)
 }
 

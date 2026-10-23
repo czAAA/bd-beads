@@ -15,7 +15,7 @@ describe('useOverlayVisibility', () => {
     expect(overlays.phoneSavedProjectsOpen.value).toBe(false)
   })
 
-  it('opens a phone sheet from its strip button, and closes it on the same button again', () => {
+  it('opens a panel from its strip button, and closes it on the same button again', () => {
     const { openPanel, onSelectPanel } = setup()
     onSelectPanel('menu')
     expect(openPanel.value).toBe('menu')
@@ -23,7 +23,7 @@ describe('useOverlayVisibility', () => {
     expect(openPanel.value).toBeNull()
   })
 
-  it('switches straight to another phone sheet from a different strip button', () => {
+  it('switches straight to another panel from a different strip button', () => {
     const { openPanel, onSelectPanel } = setup()
     onSelectPanel('project')
     onSelectPanel('menu')

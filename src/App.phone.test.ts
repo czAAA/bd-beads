@@ -9,7 +9,7 @@ import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
 import { en } from './i18n/en'
 
-vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
+vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -201,12 +201,12 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)
   })
 
-  it('shows the Project panel\'s Save box for the open Project', async () => {
+  it('shows the Project panel\'s exports for the open Project', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
     const panel = wrapper.find('[data-testid="panel-dropdown"]')
-    expect(panel.find('[data-testid="save-button"]').exists()).toBe(true)
+    expect(panel.find('[data-testid="save-box"]').exists()).toBe(true)
     expect(panel.find('[data-testid="panel-bead"]').exists()).toBe(true)
   })
 
@@ -285,7 +285,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(panel.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
     expect(panel.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
     expect(panel.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
-    expect(panel.find('[data-testid="save-button"]').exists()).toBe(false)
+    expect(panel.find('[data-testid="save-box"]').exists()).toBe(false)
     expect(panel.find('[data-testid="project-panel"]').exists()).toBe(false)
   })
 })

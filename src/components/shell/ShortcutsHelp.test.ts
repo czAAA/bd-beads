@@ -46,7 +46,6 @@ describe('ShortcutsHelp', () => {
     expect(text).toContain(ru.shortcutsHelp.zoomCanvas)
     expect(text).toContain(ru.shortcutsHelp.paletteColors)
     expect(text).toContain(ru.tools.pasteLabel)
-    expect(text).toContain(ru.tools.saveButton)
   })
 
   it('lists the keys the registry lists, one row per action', () => {

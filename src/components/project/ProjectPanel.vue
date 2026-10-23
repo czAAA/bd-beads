@@ -168,7 +168,6 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
       :has-frame="project.frame !== undefined"
       :exporting="exporting"
       :project-name="project.name"
-      @save="emit('save')"
       @export-png="emit('export-png')"
       @export-pdf="emit('export-pdf')"
       @export-project-file="emit('export-project-file')"

@@ -7,7 +7,7 @@ import MenuButton from '../ui/MenuButton.vue'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 
-// Save and export in the Project panel (ProjectPanel and SaveBox cards, tickets 148, 443): Save Project, then PNG | PDF
+// Save and export in the Project panel (ProjectPanel and SaveBox cards, tickets 148, 443): Save Project, PNG | PDF
 // | Project file. It only asks; the app does the work. With no Frame, PNG and PDF open the "Set Frame to export" prompt
 // (Fit to drawing, or a Frame from a Selection, ticket 417).
 defineProps<{
@@ -20,7 +20,6 @@ defineProps<{
   projectName?: string
 }>()
 const emit = defineEmits<{
-  save: []
   'export-png': []
   'export-pdf': []
   'export-project-file': []
@@ -29,15 +28,13 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const context = inject(PANEL_CONTEXT, undefined)
-const saveAction = controlAction('save')
 const png = controlAction('export-png')
 const pdf = controlAction('export-pdf')
 const file = controlAction('export-project-file')
 </script>
 
 <template>
-  <section class="save-export" role="group" :aria-label="t.saveBox.saveButton" data-testid="save-box">
-    <AppButton class="save-export__save" variant="primary" size="lg" :action="saveAction" data-testid="save-button" @click="emit('save')">{{ t.saveBox.saveButton }}</AppButton>
+  <section class="save-export" role="group" :aria-label="t.panels.project.exportHeading" data-testid="save-box">
     <span class="save-export__label">{{ t.panels.project.exportHeading }}</span>
     <div class="save-export__buttons">
       <template v-if="hasFrame">
@@ -71,14 +68,6 @@ const file = controlAction('export-project-file')
   flex-direction: column;
   gap: var(--space-8);
   padding: var(--space-4) var(--space-12);
-}
-
-.save-export :deep(.app-button-wrap) {
-  display: flex;
-}
-
-.save-export :deep(.save-export__save) {
-  width: 100%;
 }
 
 .save-export__label {

@@ -12,7 +12,7 @@ import { describeWeave } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame panel (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
-// edge. It is the content of a panel like Menu and Project (mounted by PhoneSheets in a PanelHost): from the strip's Frame button only (the edit pencil on the Frame
+// edge. It is the content of a panel like Menu and Project (mounted by AppPanels in a PanelHost): from the strip's Frame button only (the edit pencil on the Frame
 // shows the handles and is a separate control); a press outside or Escape closes it.
 const props = defineProps<{
   project: Project

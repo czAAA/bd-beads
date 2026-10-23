@@ -31,7 +31,7 @@ function mountBar(project = framed()) {
   return mount(FramePanel, { props: { project }, attachTo: document.body })
 }
 
-/** The bar in the panel PhoneSheets mounts it in (ticket 511): the panel's Escape and press-outside close it. */
+/** The bar in the panel AppPanels mounts it in (ticket 511): the panel's Escape and press-outside close it. */
 function mountPanel(project = framed()) {
   return mount(
     { render: () => h(PanelHost, { open: 'frame', only: ['frame'] }, { default: () => h(FramePanel, { project }) }) },

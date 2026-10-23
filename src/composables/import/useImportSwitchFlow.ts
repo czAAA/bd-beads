@@ -1,8 +1,7 @@
 import { computed, ref } from 'vue'
 import { mostRecentlyUpdated, type Project } from '../../domain/project'
-import type { MessageTone } from '../ui/useToasts'
 
-/** What importing needs from the app shell: the library's add and open, its manual save, and the toast region. */
+/** What importing needs from the app shell: the library's add and open, and its manual save. */
 export interface ImportSwitchFlowDeps {
   currentProject: () => Project | undefined
   addProjects: (projects: Project[]) => void
@@ -10,7 +9,6 @@ export interface ImportSwitchFlowDeps {
   openProject: (id: string) => void
   /** Writes the library now; false when the device refused it. */
   saveNow: () => boolean
-  showToast: (id: string, text: string, tone: MessageTone) => void
 }
 
 /** Project import and the keep / save-and-switch / switch decision when a Project is open (tickets 154, 200; ADR
@@ -68,12 +66,6 @@ export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
     importSaveRefused.value = !deps.saveNow()
   }
 
-  /** A toast for the More menu's own ProjectImport (ticket 168): there is no room beside its buttons in there, so a
-   * result arrives above the bottom toolbar instead (ImportResult card). */
-  function onImportToast(id: string, text: string, tone: MessageTone) {
-    deps.showToast(id, text, tone)
-  }
-
   return {
     pendingImport,
     pendingImportOpens,
@@ -82,6 +74,5 @@ export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
     onKeepCurrentAfterImport,
     onSwitchToImported,
     onSaveBeforeImportSwitch,
-    onImportToast,
   }
 }

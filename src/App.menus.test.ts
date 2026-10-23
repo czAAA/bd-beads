@@ -303,7 +303,10 @@ describe('Project', () => {
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
     })
-    await wrapper.get('[data-testid="save-button"]').trigger('click')
+    await wrapper.get('[data-testid="project-rename"]').trigger('click')
+    await flushPromises()
+    await wrapper.get<HTMLInputElement>('[data-testid="project-rename-input"]').setValue('Owl')
+    await wrapper.get('[data-testid="project-rename-form"]').trigger('submit')
     await flushPromises()
     expect(text(wrapper, 'save-state')).toContain('Not saved. ')
     expect(wrapper.find('[data-testid="save-try-again"]').exists()).toBe(true)

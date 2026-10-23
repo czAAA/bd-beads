@@ -11,15 +11,6 @@ beforeEach(() => {
 const mountBox = (props: Record<string, unknown> = {}) => mount(SaveExport, { props: { hasFrame: true, ...props }, attachTo: document.body })
 
 describe('SaveExport (ticket 443)', () => {
-  it('has Save Project as the one primary button, and asks for a save', async () => {
-    const wrapper = mountBox()
-    const save = wrapper.get('[data-testid="save-button"]')
-    expect(save.text()).toBe(en.saveBox.saveButton)
-    expect(save.classes()).toContain('app-button--primary')
-    await save.trigger('click')
-    expect(wrapper.emitted('save')).toHaveLength(1)
-  })
-
   it('has PNG, PDF and Project file buttons that each ask for their export', async () => {
     const wrapper = mountBox()
     expect(['export-png', 'export-pdf', 'export-project-file'].map((id) => wrapper.get(`[data-testid="${id}"]`).text())).toEqual(['PNG', 'PDF', 'Project file'])
