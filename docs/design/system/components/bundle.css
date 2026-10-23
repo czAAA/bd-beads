@@ -57,6 +57,9 @@
   --color-slider-height: 20px;
   --color-thumb-size: 18px;
   --swatch-remove-stroke: 3;
+  --swatch-edit-remove-size: 16px;
+  --swatch-edit-remove-stroke: 2.5;
+  --swatch-faded-opacity: 0.35;
   --swatch-mark-halo: 1px;
   --swatch-mark-dark: #000000;
   --swatch-mark-light: #ffffff;
