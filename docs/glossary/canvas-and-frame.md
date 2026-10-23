@@ -24,7 +24,7 @@ _Avoid_: grid dots, background dots
 
 **Piece**:
 A small, independent set of beads that touch by a side or a corner, drawn on the Canvas. Pieces form, merge and split as beads are painted and erased. Each Piece belongs to exactly one Piece area. A Piece that has a Frame or a name is a Schema.
-_Avoid_: island, cluster, group, shape, fragment
+_Avoid_: island, cluster, group, shape, fragment (a fragment is a Selection: a rectangle that may hold beads of several Pieces)
 
 **Piece area**:
 The rectangle around one or more Pieces, with, while there is no Frame, its own rulers. Each Piece's area counts as everything within one bead outside its own bounds; Piece areas whose rectangles overlap, lie inside or touch once that margin is included join, repeated until none do, so Pieces with one empty bead between them share one rectangle and one set of rulers while two or more empty beads keep them apart, and a large Piece never shows smaller Pieces' rectangles inside or against its own. The margin only decides what joins; the drawn rectangle stays around the beads. A Piece area shows its rectangle and rulers only when its joined rectangle spans more than 4 beads in total (width times height, so a single row of 5 counts and 2x2 does not); smaller ones are not drawn, and beads, Pieces, Export and Beads needed are unchanged. Forms, merges and splits as beads are painted and erased. With no Frame, a whole row or column of one can be selected by a Select-tool drag across it and removed with Remove row/column. The Rulers toggle shows or hides it; the Frame is never hidden by it.
