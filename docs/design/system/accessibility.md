@@ -36,7 +36,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 - Tab order: Skip to Pattern (visible on focus), header, Toolbox, save box, Beads needed, Saved Patterns, canvas strip, the Pattern, Progress bar.
 - One stop per group; arrow keys inside the tool tiles, swatches and segmented controls (roving tabindex). The Pattern is one stop with a bead cursor: arrows move, Space or Enter paints.
-- Modals and the modal Pattern and Menu sheets trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
+- Modals and the modal Pattern and Menu panels trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 
 ## Painting with the keyboard

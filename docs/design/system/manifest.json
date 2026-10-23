@@ -134,7 +134,7 @@
     {
       "name": "ContextBar",
       "group": "Responsive",
-      "summary": "A floating bar above the Progress bar under 1024px that offers what a Selection can do, and the Frame bar."
+      "summary": "A floating bar above the Progress bar under 1024px that offers what a Selection can do, and the Frame panel."
     },
     {
       "name": "ContrastAudit",
@@ -384,7 +384,7 @@
     {
       "name": "TemplateGallery",
       "group": "Screens",
-      "summary": "The Templates New Project starts from: a radiogroup of cards above the form, and the setup sub-view with its sizes, presets and Estimated size."
+      "summary": "The Templates New Project starts from: a radiogroup of cards above the form, and the setup subpanel with its sizes, presets and Estimated size."
     },
     {
       "name": "TextField",

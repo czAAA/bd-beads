@@ -20,7 +20,7 @@ beforeEach(() => {
 
 const swatches = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('[data-testid="palette-swatch"]')
 
-/** The Palette's swatches, in the Color sheet: picking a color closes the sheet, so it opens again when it is gone. */
+/** The Palette's swatches, in the Color popover: picking a color closes the popover, so it opens again when it is gone. */
 async function palette(wrapper: ReturnType<typeof mount>) {
   if (swatches(wrapper).length === 0) {
     await openColorPopover(wrapper)
@@ -210,7 +210,7 @@ describe('the Palette is slots (ticket 398)', () => {
     await flushPromises()
     expect((await ids(wrapper)).slice(0, 3)).toEqual(['white', 'black', 'red'])
     expect(JSON.parse(localStorage.getItem(PALETTE_ORDER_KEY)!).slice(0, 2)).toEqual(['white', 'black'])
-    await wrapper.get('[data-testid="color-popover-close"]').trigger('click') // a shortcut waits while a sheet is open
+    await wrapper.get('[data-testid="color-popover-close"]').trigger('click') // a shortcut waits while a popover is open
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '!', shiftKey: true, bubbles: true }))
     await flushPromises()
     expect((await palette(wrapper))[0]!.attributes('aria-pressed')).toBe('true')
@@ -240,7 +240,7 @@ describe('Pick color from canvas (ticket 398)', () => {
     await paint(wrapper, 0)
     await (await palette(wrapper))[0]!.trigger('click') // red again
     await palette(wrapper)
-    await wrapper.get('[data-testid="pick-color-button"]').trigger('click') // picking closes the sheet
+    await wrapper.get('[data-testid="pick-color-button"]').trigger('click') // picking closes the popover
     await palette(wrapper)
     const button = wrapper.get('[data-testid="pick-color-button"]')
     expect(button.attributes('aria-pressed')).toBe('true')

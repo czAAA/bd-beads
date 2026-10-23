@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { openApp, openDockSheet } from '../support/app'
+import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
 /** The Canvas section open on a non-default background (tickets 252, 443): Linen in light, Ash (lightest dark, own
@@ -14,7 +14,7 @@ for (const [scheme, choice, name] of [
     await page.addInitScript((value) => localStorage.setItem('openbeads:canvas-background', value), String(choice))
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
-    await openDockSheet(page, 'strip-project')
+    await openStripPanel(page, 'strip-project')
     await expect(page.getByTestId('canvas-color-picker')).toBeVisible()
     await page.mouse.move(5, 5)
     await expect(page.getByTestId('app-canvas')).toHaveScreenshot(`canvas-color-${name}.png`, { maxDiffPixelRatio: 0.01 })

@@ -5,7 +5,7 @@ import { createProject } from './domain/project'
 import { saveProjects } from './services/libraryStore'
 import { beadColor, pressBead } from './testUtils/beads'
 import { en } from './i18n/en'
-import { closeSheet, openSheet } from './testUtils/pill'
+import { closePanel, openPanel } from './testUtils/pill'
 
 /** Pen mode and Mouse mode (tickets 325, 326, 443): which pointer draws and which one moves the canvas, and the Menu's Input row that picks, which shows once a pen is seen. */
 
@@ -35,7 +35,7 @@ const bead = (row: number, column: number) => ({ row, column })
 
 /** The Menu's Input row (ticket 443): Pen | Mouse, which opens Menu first. */
 async function inputRow(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
-  await openSheet(wrapper, 'strip-menu')
+  await openPanel(wrapper, 'strip-menu')
   return wrapper.find('[data-testid="menu-input-mode"]')
 }
 const chosen = (row: Awaited<ReturnType<typeof inputRow>>) => row.findAll('[role="radio"]').find((option) => option.attributes('aria-checked') === 'true')?.text()
@@ -64,7 +64,7 @@ describe('a pen appearing', () => {
   it('shows no Input row before a pen is seen, and a finger and a mouse draw as before', async () => {
     const wrapper = await mountOpen()
     expect((await inputRow(wrapper)).exists()).toBe(false)
-    await closeSheet(wrapper)
+    await closePanel(wrapper)
 
     await pressBead(wrapper, bead(1, 1), { pointerType: 'touch' })
     await pressBead(wrapper, bead(2, 2), { pointerType: 'mouse' })
@@ -78,7 +78,7 @@ describe('a pen appearing', () => {
     await pressBead(wrapper, bead(1, 1), { pointerType: 'pen' })
     expect(beadColor(wrapper, bead(1, 1))).not.toBeNull()
     expect(chosen(await inputRow(wrapper))).toBe(en.panels.menu.pen)
-    await closeSheet(wrapper)
+    await closePanel(wrapper)
 
     // A finger resting on the screen no longer paints.
     await pressBead(wrapper, bead(3, 3), { pointerType: 'touch' })

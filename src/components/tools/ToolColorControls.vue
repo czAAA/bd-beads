@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
 import { usePalette } from '../../composables/tools/usePalette'
-import { useCloseSheetOnPick } from '../shell/sheetContext'
+import { useClosePopoverOnPick } from '../shell/pickContext'
 import CustomColorPanel from '../palette/CustomColorPanel.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
@@ -26,7 +26,7 @@ const customColorSelected = computed(() => !props.selectedColorId && !!props.cus
 // outside, Escape, Enter) hands it up once and closes the sheet holding this control; picking a Palette swatch instead
 // closes the picker with nothing taken.
 const palette = usePalette()
-const closeSheet = useCloseSheetOnPick()
+const closePanel = useClosePopoverOnPick()
 const pickerOpen = ref(false)
 const panel = ref<InstanceType<typeof CustomColorPanel>>()
 const customButton = ref<InstanceType<typeof CustomColorPicker>>()
@@ -44,7 +44,7 @@ function selectColor(colorId: string) {
 
 function leave() {
   pickerOpen.value = false
-  closeSheet()
+  closePanel()
 }
 
 function toggle() {

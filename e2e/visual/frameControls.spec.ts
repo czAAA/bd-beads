@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { openApp, settle, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** The Frame's Move handle, edit pencil never scale with the zoom (ticket 473); the Frame bar hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
+/** The Frame's Move handle, edit pencil never scale with the zoom (ticket 473); the Frame panel hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
 
 type Box = { x: number; y: number; width: number; height: number }
 

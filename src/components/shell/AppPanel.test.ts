@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, inject, nextTick } from 'vue'
-import PanelShell from './PanelShell.vue'
+import AppPanel from './AppPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
 
-/** The shell's sub-view (spec 0478): Back, title swap, reset, Escape levels, focus. */
+/** The shell's subpanel (spec 0478): Back, title swap, reset, Escape levels, focus. */
 
 const Root = defineComponent({
   setup() {
@@ -14,7 +14,7 @@ const Root = defineComponent({
 })
 
 function mountShell(props: Record<string, unknown> = {}) {
-  return mount(PanelShell, {
+  return mount(AppPanel, {
     attachTo: document.body,
     props: { title: 'Menu', anchor: 'strip-menu', subTitle: 'New Project', ...props },
     slots: {
@@ -34,8 +34,8 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
-describe('PanelShell sub-view', () => {
-  it('swaps the body for the sub-view under a Back arrow and its title, with the footer pinned', async () => {
+describe('AppSubpanel', () => {
+  it('swaps the body for the subpanel under a Back arrow and its title, with the footer pinned', async () => {
     const wrapper = mountShell()
     expect(wrapper.find('[data-testid="panel-back"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="panel-footer"]').exists()).toBe(false)
@@ -68,7 +68,7 @@ describe('PanelShell sub-view', () => {
     expect(wrapper.emitted('close')).toHaveLength(1)
   })
 
-  it('opens on the sub-view when asked and then closes on Escape instead of going back', async () => {
+  it('opens on the subpanel when asked and then closes on Escape instead of going back', async () => {
     const wrapper = mountShell({ startInSub: true })
     await nextTick()
     expect(wrapper.find('[data-testid="field"]').exists()).toBe(true)
@@ -89,14 +89,14 @@ describe('PanelShell sub-view', () => {
     expect(wrapper.find('[data-testid="panel-back"]').exists()).toBe(false)
   })
 
-  it('stacks sub-views: a second level has its own title, and Back and Escape pop one level at a time', async () => {
+  it('stacks subpanels: a second level has its own title, and Back and Escape pop one level at a time', async () => {
     const Deeper = defineComponent({
       setup() {
         const context = inject(PANEL_CONTEXT)!
         return () => h('button', { type: 'button', 'data-testid': 'deeper-row', onClick: () => context.openSub('Setup') }, 'Deeper')
       },
     })
-    const wrapper = mount(PanelShell, {
+    const wrapper = mount(AppPanel, {
       attachTo: document.body,
       props: { title: 'Menu', anchor: 'strip-menu', subTitle: 'New Project' },
       slots: {

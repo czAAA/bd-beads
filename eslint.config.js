@@ -94,7 +94,7 @@ export default tseslint.config(
   },
   // Ticket 520: no code raises a touch device's keyboard by itself. The allowlist is TextField (the focus helper) and the
   // runtime guard (touchFocusGuard, which has to name text fields); tests build their own fields. The managers of focus
-  // (AppModal, PanelShell, menus, roving focus) focus buttons and containers, which the rule does not match by name.
+  // (AppModal, AppPanel, menus, roving focus) focus buttons and containers, which the rule does not match by name.
   {
     files: ['src/**/*.{ts,vue}'],
     ignores: ['**/*.test.ts', 'src/testSetup.ts', 'src/testUtils/**', 'src/components/ui/form/TextField.vue', 'src/services/touchFocusGuard.ts'],

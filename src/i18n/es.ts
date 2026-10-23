@@ -225,7 +225,7 @@ export const es: Translations = {
     overviewItem: 'Resumen',
     tourItem: 'Hacer el recorrido',
     sourceItem: 'Código fuente',
-    projectSheetLabel: 'Proyecto',
+    projectPanelLabel: 'Proyecto',
   },
   overview: {
     pageTitle: 'Resumen',
@@ -640,7 +640,7 @@ export const es: Translations = {
     selectAll: 'Selecciona todas las cuentas a la vez.',
     hand: 'Arrastra para moverte por el lienzo.',
     editFrame: 'Muestra u oculta los tiradores del marco.',
-    frameBar: 'Abre el tamaño del marco, girar y quitar.',
+    framePanel: 'Abre el tamaño del marco, girar y quitar.',
     frameEdgeOut: 'Amplía el marco una cuenta por este lado.',
     frameEdgeIn: 'Reduce el marco una cuenta por este lado.',
     frameEdgeInDisabled: 'El marco ya no se puede reducir más por este lado.',

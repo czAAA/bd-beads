@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
-import FrameBar from './FrameBar.vue'
+import FramePanel from './FramePanel.vue'
 import PanelHost from '../shell/PanelHost.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
@@ -28,46 +28,46 @@ function woven(project: Project, technique: Project['technique'], extra: { netSi
 }
 
 function mountBar(project = framed()) {
-  return mount(FrameBar, { props: { project }, attachTo: document.body })
+  return mount(FramePanel, { props: { project }, attachTo: document.body })
 }
 
 /** The bar in the panel PhoneSheets mounts it in (ticket 511): the panel's Escape and press-outside close it. */
 function mountPanel(project = framed()) {
   return mount(
-    { render: () => h(PanelHost, { open: 'frame', only: ['frame'] }, { default: () => h(FrameBar, { project }) }) },
+    { render: () => h(PanelHost, { open: 'frame', only: ['frame'] }, { default: () => h(FramePanel, { project }) }) },
     { attachTo: document.body },
   )
 }
 const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent(PanelHost).emitted('close')
 
 
-describe('FrameBar in Right-angle weave (ticket 482)', () => {
+describe('FramePanel in Right-angle weave (ticket 482)', () => {
   const wovenBar = () => woven(framed({ row: 2, column: 3, rows: 7, columns: 5, beads: {} }), 'rightAngle')
 
   it('shows the size in Units: 4 across and 3 down for 5 columns and 7 rows', () => {
     const wrapper = mountBar(wovenBar())
 
-    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('placeholder')).toBe('4')
-    expect(wrapper.get('[data-testid="frame-bar-height"]').attributes('placeholder')).toBe('3')
+    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('placeholder')).toBe('4')
+    expect(wrapper.get('[data-testid="frame-panel-height"]').attributes('placeholder')).toBe('3')
     expect(wrapper.text()).toContain(en.frame.sizeUnitUnits)
   })
 
   it('takes a size typed in Units', async () => {
     const wrapper = mountBar(wovenBar())
 
-    await wrapper.get('[data-testid="frame-bar-width"]').setValue('6')
-    await wrapper.get('[data-testid="frame-bar-height"]').setValue('4')
-    await wrapper.get('[data-testid="frame-bar-height"]').trigger('keydown', { key: 'Enter' })
+    await wrapper.get('[data-testid="frame-panel-width"]').setValue('6')
+    await wrapper.get('[data-testid="frame-panel-height"]').setValue('4')
+    await wrapper.get('[data-testid="frame-panel-height"]').trigger('keydown', { key: 'Enter' })
 
     expect(wrapper.emitted('resize')).toEqual([[6, 4]])
   })
 })
 
-describe('FrameBar (ticket 473)', () => {
+describe('FramePanel (ticket 473)', () => {
   it('shows the size as two empty fields with the current size as placeholders, then the unit, Rotate and Remove Frame', () => {
     const wrapper = mountBar()
-    const width = wrapper.get('[data-testid="frame-bar-width"]')
-    const height = wrapper.get('[data-testid="frame-bar-height"]')
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
+    const height = wrapper.get('[data-testid="frame-panel-height"]')
     expect([(width.element as HTMLInputElement).value, (height.element as HTMLInputElement).value]).toEqual(['', ''])
     expect([width.attributes('placeholder'), height.attributes('placeholder')]).toEqual(['5', '6'])
     expect(wrapper.text()).toContain('beads')
@@ -77,8 +77,8 @@ describe('FrameBar (ticket 473)', () => {
 
   it('takes digits only, no zero, on Enter; an empty field keeps its side; the fields empty again', async () => {
     const wrapper = mountBar()
-    const width = wrapper.get('[data-testid="frame-bar-width"]')
-    const height = wrapper.get('[data-testid="frame-bar-height"]')
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
+    const height = wrapper.get('[data-testid="frame-panel-height"]')
     await width.setValue('2a0-')
     expect((width.element as HTMLInputElement).value).toBe('20')
     await height.setValue('0')
@@ -93,8 +93,8 @@ describe('FrameBar (ticket 473)', () => {
 
   it('takes the size when focus leaves both fields, not when it moves between them, and ignores the size it has', async () => {
     const wrapper = mountBar()
-    const width = wrapper.get('[data-testid="frame-bar-width"]')
-    const height = wrapper.get('[data-testid="frame-bar-height"]')
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
+    const height = wrapper.get('[data-testid="frame-panel-height"]')
     await width.setValue('9')
     await width.trigger('focusout', { relatedTarget: height.element })
     expect(wrapper.emitted('resize')).toBeUndefined()
@@ -108,7 +108,7 @@ describe('FrameBar (ticket 473)', () => {
 
   it('clears what was typed on Escape, and closes on the next', async () => {
     const wrapper = mountPanel()
-    const width = wrapper.get('[data-testid="frame-bar-width"]')
+    const width = wrapper.get('[data-testid="frame-panel-width"]')
     await width.setValue('9')
     ;(width.element as HTMLInputElement).focus()
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
@@ -121,8 +121,8 @@ describe('FrameBar (ticket 473)', () => {
 
   it('has the edge cells in the order Top, Bottom, Left, Right, each with − first and + second', () => {
     const wrapper = mountBar()
-    const cells = wrapper.findAll('.frame-bar__cell')
-    expect(cells.map((cell) => cell.get('.frame-bar__name').text())).toEqual([en.frame.edgeName.top, en.frame.edgeName.bottom, en.frame.edgeName.left, en.frame.edgeName.right])
+    const cells = wrapper.findAll('.frame-panel__cell')
+    expect(cells.map((cell) => cell.get('.frame-panel__name').text())).toEqual([en.frame.edgeName.top, en.frame.edgeName.bottom, en.frame.edgeName.left, en.frame.edgeName.right])
     for (const edge of ['top', 'bottom', 'left', 'right'] as const) {
       const out = wrapper.get(`[data-testid="frame-edge-${edge}-out"]`)
       const inward = wrapper.get(`[data-testid="frame-edge-${edge}-in"]`)
@@ -139,8 +139,8 @@ describe('FrameBar (ticket 473)', () => {
     await wrapper.get('[data-testid="frame-edge-left-out"]').trigger('click')
     await wrapper.get('[data-testid="frame-edge-top-in"]').trigger('click')
     expect(wrapper.emitted('step')).toEqual([['left', 1], ['top', -1]])
-    expect(wrapper.get('[data-testid="frame-bar-cell-top"]').classes()).toContain('frame-bar__cell--last')
-    expect(wrapper.get('[data-testid="frame-bar-cell-left"]').classes()).not.toContain('frame-bar__cell--last')
+    expect(wrapper.get('[data-testid="frame-panel-cell-top"]').classes()).toContain('frame-panel__cell--last')
+    expect(wrapper.get('[data-testid="frame-panel-cell-left"]').classes()).not.toContain('frame-panel__cell--last')
   })
 
   it('disables the − at four beads with the reason, and a press is no step', async () => {
@@ -169,7 +169,7 @@ describe('FrameBar (ticket 473)', () => {
 
   it('keeps the steppers, disabled, and drops Rotate once a pass is done', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
-    expect(wrapper.get('[data-testid="frame-bar-width"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')
@@ -196,7 +196,7 @@ describe('FrameBar (ticket 473)', () => {
     const wrapper = mountBar()
     await flushPromises()
     expect(document.activeElement?.tagName).not.toBe('INPUT')
-    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(true)
   })
 
   it('closes on a press outside, the Frame\'s handles included (tickets 475, 510)', async () => {

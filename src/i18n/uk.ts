@@ -225,7 +225,7 @@ export const uk: Translations = {
     overviewItem: 'Огляд',
     tourItem: 'Пройти навчання',
     sourceItem: 'Вихідний код',
-    projectSheetLabel: 'Проєкт',
+    projectPanelLabel: 'Проєкт',
   },
   overview: {
     pageTitle: 'Огляд',
@@ -642,7 +642,7 @@ export const uk: Translations = {
     selectAll: 'Виділяє всі намистини одразу.',
     hand: 'Перетягуйте, щоб рухати полотно.',
     editFrame: 'Показати або сховати маркери рамки.',
-    frameBar: 'Відкрити розмір рамки, поворот і видалення.',
+    framePanel: 'Відкрити розмір рамки, поворот і видалення.',
     frameEdgeOut: 'Збільшити рамку на одну бісеринку з цього боку.',
     frameEdgeIn: 'Зменшити рамку на одну бісеринку з цього боку.',
     frameEdgeInDisabled: 'З цього боку рамку вже не можна зменшити.',
