@@ -1,9 +1,9 @@
 import { computed, inject, provide, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { PALETTE, addUsedColor, defaultPaletteIds, moveSlot, paletteColors, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type PaletteColor, type PaletteIds } from '../../domain/palette'
+import { addUsedColor, createPalette, defaultPaletteIds, moveSlot, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteIds } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
-const paletteKey: InjectionKey<ComputedRef<readonly PaletteColor[]>> = Symbol('palette')
+const paletteKey: InjectionKey<ComputedRef<Palette>> = Symbol('palette')
 
 /** What the Palette needs from the app shell: the open Project and Edit, the one way an undoable change reaches it
  * (ADR 0036). */
@@ -12,10 +12,10 @@ export interface ProjectPaletteDeps {
   edit: EditFn
 }
 
-/** The Palette (CONTEXT.md, ticket 0525, ADR 0002): the open Project's twelve built-in colors and the Custom colors
- * that joined it, in slot order. Every change is an Edit, so Undo covers it. Call once from the shell. */
+/** The Palette (CONTEXT.md, ticket 0525, ADR 0002): the open Project's own colors, built-in and the Custom
+ * ones that joined it, in slot order (see Palette). Every change is an Edit, so Undo covers it. Call once from the shell. */
 export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) {
-  const palette = computed(() => paletteColors(currentProject()?.palette ?? defaultPaletteIds()))
+  const palette = computed(() => createPalette(currentProject()?.palette ?? defaultPaletteIds()))
   provide(paletteKey, palette)
 
   function setPalette(ids: PaletteIds) {
@@ -47,7 +47,7 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
 
   /** A swatch dragged (or nudged) from one slot to another (ticket 398); its Shift+key follows the slot it lands in. */
   function moveColor(from: number, to: number) {
-    setPalette(moveSlot(palette.value.map((color) => color.id), from, to))
+    setPalette(moveSlot(palette.value.colors.map((color) => color.id), from, to))
   }
 
   return { palette, addUsed, removeAdded, moveColor }
@@ -66,9 +66,9 @@ export function useRemoveAddedColor(): ((colorId: string) => void) | undefined {
   return inject(removeKey, undefined)
 }
 
-/** The Palette for a swatch component: the built-in colors alone when no app shell provides one. */
-export function usePalette(): ComputedRef<readonly PaletteColor[]> {
-  return inject(paletteKey, () => computed(() => PALETTE), true)
+/** The Palette for a swatch component: a new Project's when no app shell provides one (mounted alone). */
+export function usePalette(): ComputedRef<Palette> {
+  return inject(paletteKey, () => computed(() => createPalette(defaultPaletteIds())), true)
 }
 
 const moveKey: InjectionKey<(from: number, to: number) => void> = Symbol('moveColor')

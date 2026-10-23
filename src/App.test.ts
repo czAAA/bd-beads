@@ -162,17 +162,17 @@ describe('App', () => {
     expect(grid[1]![1]!.color).toBe('#e63746')
   })
 
-  it('opens ready to paint with red selected by default, no swatch click needed first (ticket 27)', async () => {
+  it('opens ready to paint with the Palette’s first color selected by default, no swatch click needed first (ticket 27)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
     await openColorPopover(wrapper)
-    expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-color-id="black"]').attributes('aria-pressed')).toBe('true')
     await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
 
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#1a1a1a')
   })
 
   it('paints with a Custom color exactly like a Palette color once one is chosen (ticket 43)', async () => {

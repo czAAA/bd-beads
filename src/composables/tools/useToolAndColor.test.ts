@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
-import { findPaletteColor } from '../../domain/palette'
-import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from './useToolAndColor'
+import { createPalette, defaultPaletteIds } from '../../domain/palette'
+import { useToolAndColor } from './useToolAndColor'
 
 function setup() {
-  const deps = { leaveSelectTool: vi.fn() }
+  const palette = createPalette(defaultPaletteIds())
+  const deps = { leaveSelectTool: vi.fn(), palette: () => palette }
   return { deps, ...useToolAndColor(deps) }
 }
 
@@ -15,10 +16,10 @@ const colorPicks: [string, (flow: ReturnType<typeof setup>) => void][] = [
 
 describe('useToolAndColor', () => {
   it('starts on Paint with the Palette’s default color', () => {
-    const { activeTool, selectedColorId, selectedColorHex, previewColor } = setup()
+    const { deps, activeTool, selectedColorId, selectedColorHex, previewColor } = setup()
     expect(activeTool.value).toBe('paint')
-    expect(selectedColorId.value).toBe(DEFAULT_PALETTE_COLOR_ID)
-    expect(selectedColorHex()).toBe(findPaletteColor(DEFAULT_PALETTE_COLOR_ID)!.hex)
+    expect(selectedColorId.value).toBe(deps.palette().defaultColorId)
+    expect(selectedColorHex()).toBe(deps.palette().byId(selectedColorId.value)!.hex)
     expect(previewColor.value).toBe(selectedColorHex())
   })
 

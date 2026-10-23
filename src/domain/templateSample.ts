@@ -1,4 +1,4 @@
-import { findPaletteColor } from './palette'
+import { findBuiltInColor } from './palette'
 import { describeWeave, type Weave } from './weave'
 
 // The decorated example on a Template card and in its setup (ticket 494, spec 0488): a small symmetric ornament, made
@@ -28,7 +28,7 @@ const SAMPLE_COLOR_IDS: Readonly<Record<SampleTheme, readonly string[]>> = {
 
 /** The four colors of a theme's sample, ground first. */
 export function sampleColors(theme: SampleTheme): string[] {
-  return SAMPLE_COLOR_IDS[theme].map((id) => findPaletteColor(id)!.hex)
+  return SAMPLE_COLOR_IDS[theme].map((id) => findBuiltInColor(id)!.hex)
 }
 
 /** A number from text, so a Template's id always gives the same ornament. */

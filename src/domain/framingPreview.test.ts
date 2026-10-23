@@ -1,3 +1,4 @@
+import { createPalette, defaultPaletteIds } from './palette'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
@@ -78,7 +79,7 @@ describe('exactPreviewColors', () => {
         const lattice = previewLattice({ view, frame, dimensions, bead, technique })
 
         const packed = sampleLatticePacked({ image, view, technique, bead, lattice })
-        const converted = convertPackedFrame(packed, lattice, dimensions, maxColors)
+        const converted = convertPackedFrame(createPalette(defaultPaletteIds()), packed, lattice, dimensions, maxColors)
         const expected = Array.from({ length: lattice.rows }, (_row, row) =>
           Array.from({ length: lattice.columns }, (_cell, column) => {
             const inFrame = converted.grid[row - lattice.frameRow]?.[column - lattice.frameColumn]

@@ -52,7 +52,7 @@ import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, useProjectPalette } from '../tools/usePalette'
-import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from '../tools/useToolAndColor'
+import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { useUndoHistory } from '../project/useUndoHistory'
@@ -333,21 +333,22 @@ function wireAppShell(services: Services) {
     const wasSelected = selectedColorId.value === colorId
     const restore = removeAdded(colorId)
     if (!restore) return
-    if (wasSelected) onSelectColor(DEFAULT_PALETTE_COLOR_ID)
+    const fallback = palette.value.defaultColorId
+    if (wasSelected && fallback) onSelectColor(fallback)
     // One toast per swatch, so removing a second doesn't take the first one's Undo away.
     showToast(`palette-removed-${colorId}`, t.value.palette.removed, 'info', {
       label: t.value.palette.undoButton,
       run: () => {
         // Selected again only if nothing else was chosen since.
         restore()
-        if (wasSelected && selectedColorId.value === DEFAULT_PALETTE_COLOR_ID) onSelectColor(colorId)
+        if (wasSelected && selectedColorId.value === fallback) onSelectColor(colorId)
       },
     })
   }
 
   /** The added swatch whose removal awaits confirmation (ticket 304); undefined when no such dialog is open. */
   const pendingColorRemovalId = ref<string>()
-  const pendingColorRemovalHex = computed(() => palette.value.find((color) => color.id === pendingColorRemovalId.value)?.hex)
+  const pendingColorRemovalHex = computed(() => palette.value.byId(pendingColorRemovalId.value)?.hex)
   function onRequestRemoveAddedColor(colorId: string) {
     pendingColorRemovalId.value = colorId
   }
@@ -456,6 +457,7 @@ function wireAppShell(services: Services) {
     messages,
     currentProject,
     beadCursor: () => beadCursor.value,
+    palette: () => palette.value,
   })
 
   const { invokeToolAt, extendSelectionTo, finishExtending } = useToolAtCursor({
@@ -612,7 +614,7 @@ function wireAppShell(services: Services) {
     canUndo: () => canUndo.value,
     canRedo: () => canRedo.value,
     hasClipboard,
-    paletteColorIdAt: (slot) => palette.value[slot]?.id,
+    paletteColorIdAt: (slot) => palette.value.hotkeyed[slot]?.id,
     cancelColorPick: () => {
       const was = pickingColor.value
       pickingColor.value = false

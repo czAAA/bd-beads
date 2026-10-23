@@ -1,5 +1,5 @@
 import { computed, ref, watch } from 'vue'
-import { normalizeHex, type PaletteColor } from '../../domain/palette'
+import { normalizeHex, type Palette } from '../../domain/palette'
 import { RECENTS_IN_PILL, RECENTS_IN_POPOVER, pushRecentColor, recentsBeside } from '../../domain/toolPill'
 import type { DevicePreferences } from '../../services/devicePreferences'
 
@@ -8,7 +8,7 @@ export interface ToolPillDeps {
   preferences: DevicePreferences
   /** The current paint color's hex, or null when none is chosen. */
   selectedColorHex: () => string | null
-  palette: () => readonly PaletteColor[]
+  palette: () => Palette
   onSelectColor: (colorId: string) => void
   onSelectCustomColor: (hex: string) => void
 }
@@ -38,7 +38,7 @@ export function useToolPill(deps: ToolPillDeps) {
   function pickRecent(hex: string) {
     const color = normalizeHex(hex)
     if (!color) return
-    const swatch = deps.palette().find((candidate) => candidate.hex === color)
+    const swatch = deps.palette().byHex(color)
     if (swatch) deps.onSelectColor(swatch.id)
     else deps.onSelectCustomColor(color)
   }

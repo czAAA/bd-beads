@@ -30,7 +30,7 @@ const closePanel = useClosePopoverOnPick()
 const pickerOpen = ref(false)
 const panel = ref<InstanceType<typeof CustomColorPanel>>()
 const customButton = ref<InstanceType<typeof CustomColorPicker>>()
-const paintHex = computed(() => palette.value.find((color) => color.id === props.selectedColorId)?.hex)
+const paintHex = computed(() => palette.value.byId(props.selectedColorId)?.hex)
 
 function take(hex: string) {
   emit('select-custom-color', hex)

@@ -1,6 +1,6 @@
 import type { Rotation } from '../../src/domain/grid'
 import { describeWeave, type Technique } from '../../src/domain/weave'
-import { PALETTE, defaultPaletteIds } from '../../src/domain/palette'
+import { BUILT_IN_COLORS, defaultPaletteIds } from '../../src/domain/palette'
 import { framedGrid, type Cell, type Project, type RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
@@ -36,8 +36,8 @@ export function fixtureProject({
 }: FixtureOptions): Project {
   const grid: Cell[][] = Array.from({ length: rows }, (_row, row) =>
     Array.from({ length: columns }, (_cell, column) => {
-      const slot = (row * 3 + column * 5 + Math.floor(row / 3)) % (PALETTE.length - 3)
-      return { color: blank || slot === PALETTE.length - 4 ? null : PALETTE[slot]!.hex }
+      const slot = (row * 3 + column * 5 + Math.floor(row / 3)) % (BUILT_IN_COLORS.length - 3)
+      return { color: blank || slot === BUILT_IN_COLORS.length - 4 ? null : BUILT_IN_COLORS[slot]!.hex }
     }),
   )
   for (const { row, column, color } of override) {

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
-import { PALETTE } from './palette'
+import { BUILT_IN_COLORS } from './palette'
 import { createProject, frameGrid, normalizeProject, withFrameGrid, type Grid, type Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 
@@ -93,7 +93,7 @@ describe('the encoded beads', () => {
 describe('encodeProject / decodeProject', () => {
   it('round-trips a painted grid', () => {
     const project = paint(makeProject(8, 5), (row, column) =>
-      (row + column) % 3 === 0 ? PALETTE[0]!.hex : null,
+      (row + column) % 3 === 0 ? BUILT_IN_COLORS[0]!.hex : null,
     )
 
     expect(roundTrip(project)).toEqual(project)
@@ -101,7 +101,7 @@ describe('encodeProject / decodeProject', () => {
 
   it('round-trips a Custom color the Palette has never had', () => {
     const custom = '#a1b2c3'
-    expect(PALETTE.some((color) => color.hex === custom)).toBe(false)
+    expect(BUILT_IN_COLORS.some((color) => color.hex === custom)).toBe(false)
     const project = paint(makeProject(4, 4), (row, column) => (row === column ? custom : null))
 
     expect(roundTrip(project)).toEqual(project)
@@ -109,7 +109,7 @@ describe('encodeProject / decodeProject', () => {
 
   it('round-trips an imported Project painted entirely in hexes outside the Palette', () => {
     const imported = ['#010203', '#040506', '#070809', '#0a0b0c']
-    expect(imported.every((hex) => !PALETTE.some((color) => color.hex === hex))).toBe(true)
+    expect(imported.every((hex) => !BUILT_IN_COLORS.some((color) => color.hex === hex))).toBe(true)
     const project = paint(makeProject(6, 6), (row, column) => imported[(row + column) % imported.length]!)
 
     expect(roundTrip(project)).toEqual(project)

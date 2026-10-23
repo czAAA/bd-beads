@@ -93,7 +93,6 @@ export const es: Translations = {
     pink: 'Rosa',
     brown: 'Marrón',
     grey: 'Gris',
-    custom: 'Personalizado',
   },
   panels: {
     back: 'Atrás',

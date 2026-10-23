@@ -1,21 +1,21 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { PALETTE, addUsedColor, addedColorId, defaultPaletteIds, findPaletteColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor } from './palette'
+import { BUILT_IN_COLORS, addUsedColor, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
 
-describe('PALETTE', () => {
+describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
-    const ids = PALETTE.map((color) => color.id)
+    const ids = BUILT_IN_COLORS.map((color) => color.id)
     expect(new Set(ids).size).toBe(ids.length)
   })
 })
 
-describe('findPaletteColor', () => {
+describe('findBuiltInColor', () => {
   it('finds a color by id', () => {
-    expect(findPaletteColor('red')?.hex).toBe('#e63746')
+    expect(findBuiltInColor('red')?.hex).toBe('#e63746')
   })
 
   it('returns undefined for an unknown id', () => {
-    expect(findPaletteColor('not-a-color')).toBeUndefined()
+    expect(findBuiltInColor('not-a-color')).toBeUndefined()
   })
 })
 
@@ -25,18 +25,18 @@ describe('addUsedColor (ticket 227, 0525)', () => {
     expect(first.outcome).toBe('added')
     expect(first.ids.at(-1)).toBe(addedColorId('#123456'))
     expect(addUsedColor(first.ids, '#123456')).toMatchObject({ ids: first.ids, outcome: 'known' })
-    expect(addUsedColor(first.ids, PALETTE[0]!.hex.toUpperCase())).toEqual({ ids: first.ids, outcome: 'known', colorId: 'black' })
+    expect(addUsedColor(first.ids, BUILT_IN_COLORS[0]!.hex.toUpperCase())).toEqual({ ids: first.ids, outcome: 'known', colorId: 'black' })
   })
 
   it('keeps the order of first use', () => {
     const next = addUsedColor(addUsedColor(defaultPaletteIds(), '#111111').ids, '#222222').ids
-    expect(paletteColors(next).slice(PALETTE.length).map((c) => c.hex)).toEqual(['#111111', '#222222'])
+    expect(paletteColors(next).slice(BUILT_IN_COLORS.length).map((c) => c.hex)).toEqual(['#111111', '#222222'])
   })
 
   it('has no cap', () => {
     const many = Array.from({ length: 100 }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`)
     const all = many.reduce((palette, hex) => addUsedColor(palette, hex).ids, defaultPaletteIds() as readonly string[])
-    expect(paletteColors(all)).toHaveLength(PALETTE.length + 100)
+    expect(paletteColors(all)).toHaveLength(BUILT_IN_COLORS.length + 100)
   })
 
   it('ignores what is not a color', () => {
@@ -48,7 +48,7 @@ describe('removing an added color (ticket 228)', () => {
   const three = [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#222222'), addedColorId('#333333')]
 
   it('takes it out and says which slot it stood in', () => {
-    expect(removeAddedColor(three, addedColorId('#222222'))).toEqual({ ids: [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#333333')], slot: PALETTE.length + 1 })
+    expect(removeAddedColor(three, addedColorId('#222222'))).toEqual({ ids: [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#333333')], slot: BUILT_IN_COLORS.length + 1 })
     expect(removeAddedColor(three, addedColorId('#999999'))).toBeUndefined()
   })
 
@@ -64,7 +64,7 @@ describe('removing an added color (ticket 228)', () => {
 })
 
 describe('a stored Palette (ticket 0525)', () => {
-  it('is the built-in twelve when there is none, or it is unreadable', () => {
+  it('is the built-in colors when there is none, or it is unreadable', () => {
     expect(normalizePaletteIds(undefined)).toEqual(defaultPaletteIds())
     expect(normalizePaletteIds('red')).toEqual(defaultPaletteIds())
   })
@@ -72,14 +72,56 @@ describe('a stored Palette (ticket 0525)', () => {
   it('follows the stored order, an added color standing between built-in ones', () => {
     const order = ['red', addedColorId('#111111'), 'black']
     const result = normalizePaletteIds(order)
-    expect(result.slice(0, 3)).toEqual(order)
-    expect(result).toHaveLength(PALETTE.length + 1)
+    expect(result).toEqual(order)
   })
 
-  it('drops what it cannot read and what repeats, and appends a built-in color it lacks', () => {
-    const result = normalizePaletteIds(['red', 'red', 'added-zzzzzz', 7, 'nonsense', addedColorId('#111111')])
-    expect(result.slice(0, 2)).toEqual(['red', addedColorId('#111111')])
-    expect(result).toHaveLength(PALETTE.length + 1)
+  it('drops what it cannot read and what repeats, and does not re-add a built-in color it leaves out', () => {
+    expect(normalizePaletteIds(['red', 'red', 'added-zzzzzz', 7, 'nonsense', addedColorId('#111111')])).toEqual(['red', addedColorId('#111111')])
+  })
+
+  it('opens an older build\'s twelve unchanged', () => {
+    expect(normalizePaletteIds(defaultPaletteIds())).toEqual(defaultPaletteIds())
+  })
+})
+
+describe('createPalette (ticket 0530)', () => {
+  const brand: readonly PaletteColor[] = [
+    { id: 'brand-a', hex: '#102030', literalName: 'Ocean 7' },
+    { id: 'brand-b', hex: '#ffeedd' },
+    { id: 'brand-c', hex: '#405060' },
+  ]
+  const ids = ['brand-a', addedColorId('#00ff00'), 'brand-b', 'brand-c']
+
+  it('holds the built-in and added colors in slot order, from a set that is not today\'s twelve', () => {
+    expect(createPalette(ids, brand).colors.map((color) => color.id)).toEqual(ids)
+    expect(createPalette([], brand).colors).toEqual([])
+  })
+
+  it('finds a color by id or by hex, whatever the hex\'s case', () => {
+    const palette = createPalette(ids, brand)
+    expect(palette.byId('brand-b')?.hex).toBe('#ffeedd')
+    expect(palette.byId(null)).toBeUndefined()
+    expect(palette.byHex('#FFEEDD')?.id).toBe('brand-b')
+    expect(palette.byHex('#000000')).toBeUndefined()
+  })
+
+  it('finds the color nearest a hex, added ones included', () => {
+    const palette = createPalette(ids, brand)
+    expect(palette.nearest('#101010')?.id).toBe('brand-a')
+    expect(palette.nearest('#10f010')?.id).toBe(addedColorId('#00ff00'))
+    expect(createPalette([], brand).nearest('#101010')).toBeUndefined()
+  })
+
+  it('defaults to the first built-in color, with no red needed', () => {
+    expect(createPalette(ids, brand).defaultColorId).toBe('brand-a')
+    expect(createPalette([addedColorId('#00ff00'), 'brand-c'], brand).defaultColorId).toBe('brand-c')
+  })
+
+  it('gives hotkeys to the first slots only', () => {
+    const many: PaletteColor[] = Array.from({ length: 16 }, (_, i) => ({ id: `c${i}`, hex: `#0000${i.toString(16).padStart(2, '0')}` }))
+    const palette = createPalette(many.map((color) => color.id), many)
+    expect(palette.colors).toHaveLength(16)
+    expect(palette.hotkeyed.map((color) => color.id)).toEqual(many.slice(0, PALETTE_SHORTCUTS.length).map((color) => color.id))
   })
 })
 
