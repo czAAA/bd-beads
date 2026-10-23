@@ -17,8 +17,6 @@ export function isVerticalPill(position: PillPosition): boolean {
 export const RECENT_COLORS_KEPT = 8
 /** Recents the pill shows beside the chosen colour. */
 export const RECENTS_IN_PILL = 3
-/** Recents the colour popover offers. */
-export const RECENTS_IN_POPOVER = 6
 
 /** The recent colours with `hex` moved to the front (added when new), capped at what the device keeps. */
 export function pushRecentColor(recents: readonly string[], hex: string): string[] {

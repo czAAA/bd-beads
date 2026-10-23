@@ -117,11 +117,11 @@ describe('createPalette (ticket 0530)', () => {
     expect(createPalette([addedColorId('#00ff00'), 'brand-c'], brand).defaultColorId).toBe('brand-c')
   })
 
-  it('gives hotkeys to the first slots only', () => {
+  it('holds a Palette of any size, 16 swatches for 16 colors', () => {
     const many: PaletteColor[] = Array.from({ length: 16 }, (_, i) => ({ id: `c${i}`, hex: `#0000${i.toString(16).padStart(2, '0')}` }))
     const palette = createPalette(many.map((color) => color.id), many)
     expect(palette.colors).toHaveLength(16)
-    expect(palette.hotkeyed.map((color) => color.id)).toEqual(many.slice(0, PALETTE_SHORTCUTS.length).map((color) => color.id))
+    expect(palette.besideRecents([])).toHaveLength(16)
   })
 })
 
@@ -146,5 +146,25 @@ describe('moveSlot (ticket 398)', () => {
   it('leaves the ids alone for a move that goes nowhere', () => {
     expect(moveSlot(['a', 'b'], 1, 1)).toEqual(['a', 'b'])
     expect(moveSlot(['a', 'b'], 0, 5)).toEqual(['a', 'b'])
+  })
+})
+
+describe('PALETTE_SHORTCUTS', () => {
+  it('are Shift+1…9 and Shift+0, nothing else (ticket 529)', () => {
+    expect(PALETTE_SHORTCUTS.map((shortcut) => shortcut.keyLabel)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
+  })
+})
+
+describe('Palette.besideRecents', () => {
+  const palette = createPalette(defaultPaletteIds())
+
+  it('keeps every slot when no recent is in the Palette', () => {
+    expect(palette.besideRecents(['#123456']).map(({ slot }) => slot)).toEqual(palette.colors.map((_color, slot) => slot))
+  })
+
+  it('leaves out the slots holding a recent and keeps the order of the rest, each with its slot', () => {
+    const shown = palette.besideRecents([palette.colors[2]!.hex, palette.colors[0]!.hex])
+    expect(shown.slice(0, 2).map(({ color, slot }) => [color.id, slot])).toEqual([[palette.colors[1]!.id, 1], [palette.colors[3]!.id, 3]])
+    expect(shown.map(({ slot }) => slot)).not.toContain(0)
   })
 })

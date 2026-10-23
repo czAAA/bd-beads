@@ -42,14 +42,15 @@ describe('PalettePicker', () => {
     })
   })
 
-  it("shows each swatch's Shift+key shortcut as the key chip of its tooltip, in Palette order (tickets 88, 333)", async () => {
+  it("shows the Shift+key of the first seven swatches, 4…9 then 0, since Shift+1…3 are the recents (tickets 88, 333, 529)", async () => {
     const wrapper = mount(PalettePicker)
-    const shortcuts = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'Q', 'W']
+    const shortcuts = ['4', '5', '6', '7', '8', '9', '0']
 
     const tooltips = wrapper.findAll('.app-tooltip')
     for (const [index, tooltip] of tooltips.entries()) {
       await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
-      expect(tooltip.get('.app-tooltip__key').text()).toBe(`Shift+${shortcuts[index]}`)
+      if (index < shortcuts.length) expect(tooltip.get('.app-tooltip__key').text()).toBe(`Shift+${shortcuts[index]}`)
+      else expect(tooltip.find('.app-tooltip__key').exists()).toBe(false)
     }
   })
 

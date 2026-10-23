@@ -552,7 +552,7 @@ export const pl: Translations = {
     panCanvas: 'Przesuń płótno',
     canvasGroup: 'Płótno',
     zoomCanvas: 'Powiększ płótno',
-    paletteColors: 'Wybierz kolor palety, w kolejności palety',
+    paletteColors: 'Wybierz kolor: 1–3 ostatnie kolory, potem paleta po kolei',
     keyHints: 'Pokazuj podpowiedzi klawiszy',
     keyHintsOn: 'Wł.',
     keyHintsOff: 'Wył.',

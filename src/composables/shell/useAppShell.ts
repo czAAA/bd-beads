@@ -614,7 +614,7 @@ function wireAppShell(services: Services) {
     canUndo: () => canUndo.value,
     canRedo: () => canRedo.value,
     hasClipboard,
-    paletteColorIdAt: (slot) => palette.value.hotkeyed[slot]?.id,
+    onPickColorKey: toolPill.pickByKey,
     cancelColorPick: () => {
       const was = pickingColor.value
       pickingColor.value = false

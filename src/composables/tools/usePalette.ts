@@ -1,4 +1,4 @@
-import { computed, inject, provide, type ComputedRef, type InjectionKey, type Ref } from 'vue'
+import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import { addUsedColor, createPalette, defaultPaletteIds, moveSlot, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteIds } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
@@ -69,6 +69,19 @@ export function useRemoveAddedColor(): ((colorId: string) => void) | undefined {
 /** The Palette for a swatch component: a new Project's when no app shell provides one (mounted alone). */
 export function usePalette(): ComputedRef<Palette> {
   return inject(paletteKey, () => computed(() => createPalette(defaultPaletteIds())), true)
+}
+
+const recentsKey: InjectionKey<Readonly<Ref<readonly string[]>>> = Symbol('recentColors')
+
+/** The app shell hands out the recents the Tool pill shows as chips (ticket 529): the Palette leaves those colors out
+ * while they are there. */
+export function provideRecentColors(recents: Readonly<Ref<readonly string[]>>) {
+  provide(recentsKey, recents)
+}
+
+/** The colors the pill's chips hold; none when mounted alone. */
+export function useRecentColors(): Readonly<Ref<readonly string[]>> {
+  return inject(recentsKey, () => ref<readonly string[]>([]), true)
 }
 
 const moveKey: InjectionKey<(from: number, to: number) => void> = Symbol('moveColor')
