@@ -44,7 +44,7 @@ async function discover(page: Page, seen: Set<string>): Promise<Trigger[]> {
     for (const wrapper of document.querySelectorAll('.app-tooltip')) {
       if (isHidden(wrapper)) continue
       const rect = wrapper.getBoundingClientRect()
-      // Wholly off the screen: the sheets waiting to open, which the screens open and then look again.
+      // Wholly off the screen: the panels waiting to open, which the screens open and then look again.
       if (rect.width === 0 || rect.height === 0 || rect.right <= 0 || rect.left >= window.innerWidth) continue
       const control = wrapper.querySelector('button, a, input, [tabindex]') ?? wrapper
       const label = control.getAttribute('data-testid') ?? control.getAttribute('aria-label') ?? control.textContent?.trim().slice(0, 30) ?? ''
@@ -187,11 +187,11 @@ export async function findHoverMisfits(page: Page, seen: Set<string>): Promise<H
 
   // Long press, as on a touch screen: all of them at once, since each bubble is measured where it opens.
   await page.evaluate(() => {
-    const sheet = document.querySelector('.panel-shell')
+    const panel = document.querySelector('.app-panel')
     for (const wrapper of document.querySelectorAll('[data-hover-probe]')) {
-      // Under an open sheet a press outside it closes it (ticket 402, in the capture phase, so not bubbling doesn't
-      // hide it): only what is in the sheet can be long-pressed.
-      if (sheet && !sheet.contains(wrapper)) continue
+      // Under an open panel a press outside it closes it (ticket 402, in the capture phase, so not bubbling doesn't
+      // hide it): only what is in the panel can be long-pressed.
+      if (panel && !panel.contains(wrapper)) continue
       // At the Tooltip itself and no further (not bubbling): a press the page at large sees would close the menu a
       // trigger is under.
       wrapper.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', bubbles: false, isPrimary: true }))

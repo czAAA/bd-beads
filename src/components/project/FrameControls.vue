@@ -55,7 +55,7 @@ const techniqueOptions = computed(() => {
 
 const lockedNoteId = useId()
 
-// Add Frame from Template, or Replace Frame with one (ticket 495): the Template gallery and its setup are the panel's sub-views.
+// Add Frame from Template, or Replace Frame with one (ticket 495): the Template gallery and its setup are the panel's subpanels.
 const panel = inject(PANEL_CONTEXT, undefined)
 const templateAction = computed(() => controlAction(frame.value ? 'replace-frame' : 'add-frame-from-template'))
 

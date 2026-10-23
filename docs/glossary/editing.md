@@ -67,7 +67,7 @@ The Selection bar's Fill: every position in the Selection, empty ones too, takes
 _Avoid_: paint selection
 
 **Clear selection**:
-Empties every bead of the Selection's layer in it as one undo step (Del, the Selection bar's last button; ticket 415). If the Selection holds every placed bead (Select all), it opens the Delete all confirmation and runs Delete all instead, so Row progress resets and no finished row is left behind. Not Clear, the Project sheet's whole-diagram wipe, though both end in the same confirmation when everything is selected.
+Empties every bead of the Selection's layer in it as one undo step (Del, the Selection bar's last button; ticket 415). If the Selection holds every placed bead (Select all), it opens the Delete all confirmation and runs Delete all instead, so Row progress resets and no finished row is left behind. Not Clear, the Project panel's whole-diagram wipe, though both end in the same confirmation when everything is selected.
 _Avoid_: delete selection, empty selection
 
 **Frame (from Selection)**:

@@ -9,7 +9,7 @@ type Sheet = 'strip-project' | 'strip-menu'
 
 /** Opens Menu or Project (CanvasStrip card, ticket 443): the strip's button toggles, so an open panel
  * is left alone and the other is swapped in. */
-export async function openSheet(wrapper: Wrapper, dock: Sheet): Promise<void> {
+export async function openPanel(wrapper: Wrapper, dock: Sheet): Promise<void> {
   const button = wrapper.get(`[data-testid="${dock}"]`)
   const panelOpen = wrapper.find('[data-testid="panel-body"]').exists()
   if (!panelOpen || button.attributes('aria-pressed') !== 'true') {
@@ -21,7 +21,7 @@ export async function openSheet(wrapper: Wrapper, dock: Sheet): Promise<void> {
 }
 
 /** Puts the open Menu or Project away with the strip button that lit it. */
-export async function closeSheet(wrapper: Wrapper): Promise<void> {
+export async function closePanel(wrapper: Wrapper): Promise<void> {
   const lit = wrapper.find('[data-testid="strip-menu"][aria-pressed="true"], [data-testid="strip-project"][aria-pressed="true"]')
   if (lit.exists()) await lit.trigger('click')
 }
@@ -55,7 +55,7 @@ export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void
   await swatch().trigger('click')
 }
 
-/** Raises the New Project form (the Menu panel's sub-view) via the project bar's button, or Menu's when a Project is open; no-op
+/** Raises the New Project form (the Menu panel's subpanel) via the project bar's button, or Menu's when a Project is open; no-op
  * if up. */
 export async function openNewProject(wrapper: Wrapper): Promise<void> {
   if (wrapper.find('[data-testid="bead-select"]').exists()) {
@@ -71,7 +71,7 @@ export async function openNewProject(wrapper: Wrapper): Promise<void> {
     await bar.trigger('click')
     return
   }
-  await openSheet(wrapper, 'strip-menu')
+  await openPanel(wrapper, 'strip-menu')
   await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 }
 
@@ -97,14 +97,14 @@ export async function rotate(wrapper: Wrapper): Promise<void> {
 /** Presses Clear this Project in the Project panel, which opens first; the confirmation it raises is the caller's. */
 export async function deleteAll(wrapper: Wrapper): Promise<void> {
   if (!wrapper.find('[data-testid="project-clear"]').exists()) {
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
   }
   await wrapper.get('[data-testid="project-clear"]').trigger('click')
 }
 
 /** Picks a language in Menu (tickets 368, 443): the panel opens first, then the switcher. */
 export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promise<void> {
-  await openSheet(wrapper, 'strip-menu')
+  await openPanel(wrapper, 'strip-menu')
   await chooseLanguage(wrapper, locale)
 }
 
@@ -113,7 +113,7 @@ export async function openSavedProjects(wrapper: Wrapper): Promise<void> {
   if (wrapper.find('[data-testid="project-list"]').exists()) {
     return
   }
-  await openSheet(wrapper, 'strip-menu')
+  await openPanel(wrapper, 'strip-menu')
   await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
 }
 
@@ -125,11 +125,11 @@ export function toolState(wrapper: Wrapper, tool: Tool): { pressed: boolean; sel
 
 /** Reads one element of the Project panel (ProjectPanel card), closing it again so the next canvas press isn't
  * swallowed. */
-export async function sheetRead(wrapper: Wrapper, testId: string): Promise<{ exists: boolean; text: string }> {
-  await openSheet(wrapper, 'strip-project')
+export async function panelRead(wrapper: Wrapper, testId: string): Promise<{ exists: boolean; text: string }> {
+  await openPanel(wrapper, 'strip-project')
   const element = wrapper.find(`[data-testid="${testId}"]`)
   const read = { exists: element.exists(), text: element.exists() ? element.text() : '' }
-  await closeSheet(wrapper)
+  await closePanel(wrapper)
   return read
 }
 

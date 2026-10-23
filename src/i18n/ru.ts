@@ -225,7 +225,7 @@ export const ru: Translations = {
     overviewItem: 'Обзор',
     tourItem: 'Пройти обучение',
     sourceItem: 'Исходный код',
-    projectSheetLabel: 'Проект',
+    projectPanelLabel: 'Проект',
   },
   overview: {
     pageTitle: 'Обзор',
@@ -653,7 +653,7 @@ export const ru: Translations = {
     selectAll: 'Выделяет все бусины сразу.',
     hand: 'Перетаскивайте, чтобы двигать полотно.',
     editFrame: 'Показать или скрыть маркеры рамки.',
-    frameBar: 'Открыть размер рамки, поворот и удаление.',
+    framePanel: 'Открыть размер рамки, поворот и удаление.',
     frameEdgeOut: 'Увеличить рамку на одну бусину с этой стороны.',
     frameEdgeIn: 'Уменьшить рамку на одну бусину с этой стороны.',
     frameEdgeInDisabled: 'С этой стороны рамку уже нельзя уменьшить.',

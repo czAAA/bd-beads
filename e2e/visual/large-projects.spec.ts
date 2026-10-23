@@ -6,7 +6,7 @@ import { PNG } from 'pngjs'
 import { PALETTE } from '../../src/domain/palette'
 import { createProject } from '../../src/domain/project'
 import { parseProjectsFile } from '../../src/domain/projectFile'
-import { currentZoomPercent, openApp, openDockSheet, openNewProjectForm, projectBox, savedProject, settle, stateConvertSize } from '../support/app'
+import { currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, savedProject, settle, stateConvertSize } from '../support/app'
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -77,8 +77,8 @@ for (const { columns, rows } of SIZES) {
 
       // The whole Project goes out in a Project file, and reads back the same. Export Project is in Saved Projects'
       // footer (ticket 147; ExpandablePanel), which only renders once expanded. Saved Projects is a sheet of its own,
-      // opened from the Project sheet (PhoneSheets card).
-      await openDockSheet(page, 'strip-menu')
+      // opened from the Project panel (PhoneForms card).
+      await openStripPanel(page, 'strip-menu')
       await page.getByTestId('menu-saved-projects').click()
       await settle(page)
       await page.getByTestId('project-list').getByTestId('panel-expand').click()

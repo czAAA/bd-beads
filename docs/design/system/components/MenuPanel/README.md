@@ -1,6 +1,6 @@
 # MenuPanel
 
-The body of the Menu: what is about the app and the device. It renders as a dropdown under its strip button on every screen size (ADR 0071). The Project body is the ProjectPanel card. The Frame bar (Frame card) opens in the same shell, so Menu, Project and Frame are one panel at a time and close the same way; it alone can also hang from a button on the canvas (the edit pencil). (Spec 0440, tickets 0443, 0475.)
+The body of the Menu: what is about the app and the device. It renders as a dropdown under its strip button on every screen size (ADR 0071). The Project body is the ProjectPanel card. The Frame panel (Frame card) opens in the same shell, so Menu, Project and Frame are one panel at a time and close the same way; it alone can also hang from a button on the canvas (the edit pencil). (Spec 0440, tickets 0443, 0475.)
 
 ## Panel (the dropdown)
 
@@ -17,9 +17,9 @@ Each is a `role="group"` named by its label. Sections are split by a 1px `line-s
 3. **Help:** Keyboard shortcuts (the key `?` as its value; only when a keyboard is attached), Overview.
 4. **About:** Source code (the external-link icon at the right; opens the repository in a new tab; the AGPL-3.0 network clause needs a hosted copy to link to its source, ticket 269) and Version (a non-interactive row, the number in `meta`).
 
-## Sub-view (spec 0478)
+## Subpanel (spec 0478)
 
-A panel can push **sub-views** over its root, as a stack (ticket 0493): New Project's gallery pushes a Template's setup one level deeper (TemplateGallery card), under that Template's name; Back and Escape pop one level, and focus returns to the card that opened it. The footer slot holds the setup's Create Project. The rest of this section describes the first level. A panel can push one **sub-view** over its root. Menu's New Project row (it keeps the panel open) swaps the body to the New Project form under a header: a `chevron-left` Back icon button (plain, 8px gap) and the sub-view's title in `title`, 8px above the body. Back returns to the list and puts focus on the row it came from; Escape does the same, and closes the panel when the sub-view was the opening view (an empty library, or the empty-canvas bar's New Project button). Focus enters on the first field. The dropdown keeps `panel-width`; the header stays pinned while the body scrolls. The form ends with the primary Create Project button (full width, `field-height`), then an "or" rule and Convert image with its limits line. A panel's `footer` slot (a pinned row, a 1px `panel-rule` above, 10px padding) remains for other sub-views. Closing the panel, or swapping to another, resets to the list and drops the draft. The open Project stays open until Create. The panel is a `dialog` while the sub-view shows.
+A panel can push **subpanels** over its root, as a stack (ticket 0493): New Project's gallery pushes a Template's setup one level deeper (TemplateGallery card), under that Template's name; Back and Escape pop one level, and focus returns to the card that opened it. The footer slot holds the setup's Create Project. The rest of this section describes the first level. A panel can push one **subpanel** over its root. Menu's New Project row (it keeps the panel open) swaps the body to the New Project form under a header: a `chevron-left` Back icon button (plain, 8px gap) and the subpanel's title in `title`, 8px above the body. Back returns to the list and puts focus on the row it came from; Escape does the same, and closes the panel when the subpanel was the opening view (an empty library, or the empty-canvas bar's New Project button). Focus enters on the first field. The dropdown keeps `panel-width`; the header stays pinned while the body scrolls. The form ends with the primary Create Project button (full width, `field-height`), then an "or" rule and Convert image with its limits line. A panel's `footer` slot (a pinned row, a 1px `panel-rule` above, 10px padding) remains for other subpanels. Closing the panel, or swapping to another, resets to the list and drops the draft. The open Project stays open until Create. The panel is a `dialog` while the subpanel shows.
 
 There is no Tour item while the Tour is off (`TOUR_ENABLED`); turning it back on adds "Take the tour" after Overview in Help. Nothing repeats a tool: Rulers, Undo, Redo and zoom live on the Canvas strip, Mirror in the pill and its sheet.
 
@@ -37,7 +37,7 @@ A preference that is always visible as its choices, in a SegmentedControl (small
 - **Three or more stack under their label,** the control taking the full width, 8px below the label. Theme (four icon-only segments: Light, Dark, System, High contrast; each has an accessible name; the one word is "System" in both places) and Tools position (Left | Top | Right | Bottom).
 - The selected segment sits on `elevated` with a `line-strong` edge; in high contrast it is the `ink` fill with white text. Not `accent`: the one accent is for the next action.
 - **Input** shows only once a pen has been seen (ticket 326), and is absent otherwise, not disabled. Pen draws with the tip and pans with touch; Mouse treats the pen as a mouse. It replaces the pill's Pen/Mouse toggle.
-- **Tools position** replaces the Menu sheet's "Tools position" row and is the keyboard route to the pill's four edges (ToolPill card). It follows the device, like Theme.
+- **Tools position** replaces the Menu panel's "Tools position" row and is the keyboard route to the pill's four edges (ToolPill card). It follows the device, like Theme.
 
 ## Keyboard and screen readers
 

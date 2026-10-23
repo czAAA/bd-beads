@@ -249,7 +249,7 @@ function controlWords(control: TourControl): { name: string; place: string } | u
   const { tools, toolbox, palette, colorNames, projects, frame, a11y, rowProgress, saveBox, header } = t.value
   const groups = toolbox.groups
   const words: Partial<Record<TourControl, { name: string; place: string }>> = {
-    'new-project': { name: projects.newProjectButton, place: header.projectSheetLabel },
+    'new-project': { name: projects.newProjectButton, place: header.projectPanelLabel },
     'tool-paint': { name: tools.paintLabel, place: groups.tools },
     'tool-fill': { name: tools.fillLabel, place: groups.tools },
     'tool-select': { name: tools.selectLabel, place: groups.tools },
@@ -264,7 +264,7 @@ function controlWords(control: TourControl): { name: string; place: string } | u
     'progress-switch': { name: rowProgress.enabledLabel, place: groups.rowProgress },
     'progress-next': { name: rowProgress.nextButton, place: groups.rowProgress },
     'progress-previous': { name: rowProgress.previousButton, place: groups.rowProgress },
-    export: { name: saveBox.exportButton, place: header.projectSheetLabel },
+    export: { name: saveBox.exportButton, place: header.projectPanelLabel },
   }
   return words[control]
 }

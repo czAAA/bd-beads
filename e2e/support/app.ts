@@ -53,18 +53,18 @@ export async function settle(page: Page): Promise<void> {
 }
 
 /** One of the Canvas strip's panels (CanvasStrip card): Menu or Project, a dropdown. */
-type DockSheetButton = 'strip-project' | 'strip-menu'
+type StripPanelButton = 'strip-project' | 'strip-menu'
 
 /** Opens Menu or Project (CanvasStrip card), closing whatever is open first — the strip buttons toggle, so clicking one
  * while its panel is open would close it instead. */
-export async function openDockSheet(page: Page, dock: DockSheetButton): Promise<void> {
-  await closeSheet(page)
+export async function openStripPanel(page: Page, dock: StripPanelButton): Promise<void> {
+  await closePanel(page)
   await page.getByTestId(dock).click()
   await settle(page)
 }
 
 /** Closes whatever is open: Menu or Project with the strip button that lit it; does nothing with none open. */
-export async function closeSheet(page: Page): Promise<void> {
+export async function closePanel(page: Page): Promise<void> {
   const lit = page.locator('[data-testid="strip-menu"][aria-pressed="true"], [data-testid="strip-project"][aria-pressed="true"]')
   if ((await lit.count()) > 0) {
     await lit.first().click()
@@ -92,7 +92,7 @@ export async function copySelection(page: Page): Promise<void> {
   await settle(page)
 }
 
-/** Opens the New Project form (the Menu panel's sub-view). With no Project open Menu opens on it by itself; if it
+/** Opens the New Project form (the Menu panel's subpanel). With no Project open Menu opens on it by itself; if it
  * has been closed since, the empty canvas's New Project button brings it back. */
 export async function openNewProjectForm(page: Page): Promise<void> {
   const form = page.getByTestId('bead-select')
@@ -157,12 +157,12 @@ export async function stateConvertSize(page: Page, columns: number, rows: number
   await page.getByTestId('convert-size-continue').click()
 }
 
-/** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project sheet. */
+/** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project panel. */
 export async function savedProject(page: Page): Promise<Project> {
-  await openDockSheet(page, 'strip-project')
+  await openStripPanel(page, 'strip-project')
   await page.getByTestId('save-button').click()
   const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)
-  await closeSheet(page)
+  await closePanel(page)
   const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
   return normalizeProject(decodeProject(library.patterns[0]!))
 }

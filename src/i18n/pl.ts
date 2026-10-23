@@ -225,7 +225,7 @@ export const pl: Translations = {
     overviewItem: 'Przegląd',
     tourItem: 'Zacznij oprowadzanie',
     sourceItem: 'Kod źródłowy',
-    projectSheetLabel: 'Projekt',
+    projectPanelLabel: 'Projekt',
   },
   overview: {
     pageTitle: 'Przegląd',
@@ -642,7 +642,7 @@ export const pl: Translations = {
     selectAll: 'Zaznacza wszystkie koraliki naraz.',
     hand: 'Przeciągnij, aby przesuwać się po płótnie.',
     editFrame: 'Pokaż lub ukryj uchwyty ramki.',
-    frameBar: 'Otwórz rozmiar ramki, obrót i usuwanie.',
+    framePanel: 'Otwórz rozmiar ramki, obrót i usuwanie.',
     frameEdgeOut: 'Powiększ ramkę o jeden koralik z tej strony.',
     frameEdgeIn: 'Zmniejsz ramkę o jeden koralik z tej strony.',
     frameEdgeInDisabled: 'Z tej strony ramki nie można już zmniejszyć.',

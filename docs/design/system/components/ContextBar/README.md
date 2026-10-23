@@ -23,9 +23,9 @@ A Selection is always **one rectangle** (ticket 414). It is made three ways: the
 
 Design reference: the "Selection bar on the canvas" board of the design canvas (rectangle, a piece, select all, touch).
 
-## Frame bar (retired)
+## Frame panel (retired)
 
-The Frame bar of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove Frame and Done) is gone (ticket 427, ADR 0055). Fit to drawing and Remove frame live in the Progress bar; Edit Frame ends with Esc, Enter or a tap outside the Frame, and the Frame's size shows in its tooltip.
+The Frame panel of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove Frame and Done) is gone (ticket 427, ADR 0055). Fit to drawing and Remove frame live in the Progress bar; Edit Frame ends with Esc, Enter or a tap outside the Frame, and the Frame's size shows in its tooltip.
 
 ## What the app does differently
 

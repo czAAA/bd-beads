@@ -210,11 +210,11 @@ test.describe('the pointer tools', () => {
     expect(await cursorOfSurface(page)).toBe('grab')
     await page.keyboard.up('Space')
     await settle(page)
-    // Read last: savedProject opens and closes the Project sheet, which hands focus back to its button.
+    // Read last: savedProject opens and closes the Project panel, which hands focus back to its button.
     expect(paintedCells(await savedProject(page))).toHaveLength(1)
   })
 
-  test('Space pans after a press on the canvas closes the Project sheet, and that press paints nothing (ticket 424)', async ({ page }) => {
+  test('Space pans after a press on the canvas closes the Project panel, and that press paints nothing (ticket 424)', async ({ page }) => {
     await openBlank(page)
     await selectTool(page, 'paint')
     await page.getByTestId('strip-project').click()
@@ -355,7 +355,7 @@ test.describe('the bead-shaped pointer (ticket 353)', () => {
     const project = fixtureProject({ technique: 'peyote', blank: true })
     await openApp(page, [project])
     await setZoom(page, 100)
-    // With the Frame bar closed Space would show the keyboard cursor over the marker; open it, as editing did (ticket 473).
+    // With the Frame panel closed Space would show the keyboard cursor over the marker; open it, as editing did (ticket 473).
     await page.getByTestId('strip-frame').click()
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
     const centre = await pointOn(page, 'peyote', false, 100, 3, 5)

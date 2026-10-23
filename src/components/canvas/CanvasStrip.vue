@@ -6,7 +6,7 @@ import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import IconButton from '../ui/IconButton.vue'
-import type { PhoneSheet } from '../../composables/shell/phoneSheet'
+import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip (tickets 143, 431, 473, ADR 0055; CanvasStrip card): Menu, Project and Frame, then
 // Rotate · Rulers · Undo · Redo · zoom · Fit. Names nothing. While framing a picture it holds Menu and the framing
@@ -14,9 +14,9 @@ import type { PhoneSheet } from '../../composables/shell/phoneSheet'
 const props = defineProps<{
   project?: Project
   /** The open sheet, so Menu and Project show lit while theirs is open. */
-  openSheet?: PhoneSheet | null
+  openPanel?: OpenPanel | null
   rulers?: boolean
-  /** Whether the Frame bar is open, so the Frame button shows lit. */
+  /** Whether the Frame panel is open, so the Frame button shows lit. */
   frameOpen?: boolean
   canUndo?: boolean
   canRedo?: boolean
@@ -26,7 +26,7 @@ const props = defineProps<{
   zoomMaxPercent?: number
 }>()
 const emit = defineEmits<{
-  'select-sheet': [sheet: 'menu' | 'project']
+  'select-panel': [sheet: 'menu' | 'project']
   'toggle-frame': []
   'rotate-canvas': []
   'toggle-rulers': []
@@ -60,21 +60,21 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 
 <template>
   <div class="canvas-strip no-page-pan" data-testid="canvas-strip">
-    <div class="canvas-strip__sheets">
+    <div class="canvas-strip__panels">
       <AppButton
         variant="text"
         :action="actions.menu"
-        :selected="openSheet === 'menu' ? true : undefined"
+        :selected="openPanel === 'menu' ? true : undefined"
         data-testid="strip-menu"
-        @click="emit('select-sheet', 'menu')"
+        @click="emit('select-panel', 'menu')"
       />
       <AppButton
         v-if="project"
         variant="text"
         :action="actions.project"
-        :selected="openSheet === 'project' ? true : undefined"
+        :selected="openPanel === 'project' ? true : undefined"
         data-testid="strip-project"
-        @click="emit('select-sheet', 'project')"
+        @click="emit('select-panel', 'project')"
       />
       <AppButton
         v-if="project?.frame"
@@ -125,7 +125,7 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 }
 
 /* Menu, Project and Frame stay at the left edge of the strip, even on a phone. */
-.canvas-strip__sheets {
+.canvas-strip__panels {
   display: flex;
   flex: none;
   align-items: center;

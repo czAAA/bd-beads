@@ -7,7 +7,7 @@ import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
-import { useCloseSheetOnPick } from '../shell/sheetContext'
+import { useClosePopoverOnPick } from '../shell/pickContext'
 
 const props = defineProps<{ selectedColorId?: string }>()
 const emit = defineEmits<{
@@ -15,7 +15,7 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const palette = usePalette()
-const closeSheet = useCloseSheetOnPick()
+const closePanel = useClosePopoverOnPick()
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
 const gridEl = ref<HTMLElement>()
@@ -58,7 +58,7 @@ async function nudge(slot: number, by: number) {
 function pick(colorId: string) {
   if (drag.consumeDrag()) return
   emit('select', colorId)
-  closeSheet()
+  closePanel()
 }
 
 function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
