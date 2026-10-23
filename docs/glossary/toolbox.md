@@ -7,7 +7,7 @@ A titled set of related controls — Tools (Paint, Fill, Select, Piece, Eraser, 
 _Avoid_: subbox, card, section, panel
 
 **Tool pill layout** (formerly **Dock layout**):
-The main layout at every width (ADR 0046, ADR 0059): the canvas box is the screen, 6px from every screen edge, with the Canvas strip on top, the drawing area and the Progress bar as its footer, and the Tool pill floating over the drawing area; sheets for the controls; no header, no left column. Menu and Project open from the Canvas strip (ticket 431). It is the only layout (ticket 412 removed the Toolbox layout and its flag; ticket 439 removed the Dock).
+The main layout at every width (ADR 0046, ADR 0059): the canvas box is the screen, flush with every screen edge (the safe-area inset where larger), with the Canvas strip on top, the drawing area and the Progress bar as its footer, and the Tool pill floating over the drawing area; sheets for the controls; no header, no left column. Menu and Project open from the Canvas strip (ticket 431). It is the only layout (ticket 412 removed the Toolbox layout and its flag; ticket 439 removed the Dock).
 _Avoid_: phone layout, mobile layout, touch layout, Dock layout
 
 **Tool pill** (replaces the retired **Dock**):

@@ -57,7 +57,7 @@ describe('popoverPlacement', () => {
     expect(popoverPlacement(tile, right, size, 'right', screen, 6, 6).left).toBe(746 - 6 - 288)
   })
 
-  it('is clamped screen-edge inside the screen along the pill', () => {
+  it('is clamped float-edge inside the screen along the pill', () => {
     const pill = { left: 0, top: 540, width: 100, height: 48 }
     const tile = { left: 0, top: 544, width: 40, height: 40 }
     expect(popoverPlacement(tile, pill, size, 'bottom', screen, 6, 6).left).toBe(6)
