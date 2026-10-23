@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
-import { beadColorAt, type CreateProjectInput } from '../../domain/project'
+import { beadColorAt } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
@@ -56,7 +56,6 @@ import { provideColorPick, provideMoveColor, provideRemoveAddedColor, useAddedCo
 import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
-import { provideTourFormReset, useTour } from '../tour/useTour'
 import { useUndoHistory } from '../project/useUndoHistory'
 
 // The app's composition root (ADR 0020): wires every composable the shell uses into one flat context; nothing here
@@ -136,7 +135,7 @@ function wireAppShell(services: Services) {
   } = useConvertImage()
 
   /** New-Project creation, blank or from Convert image, and the framing step's gate (tickets 58, 196). */
-  const { framing, newProjectDraft, onNewProjectDraft, onCreateProject, onConvertImageCreate } = useNewProjectFlow({
+  const { framing, onNewProjectDraft, onCreateProject, onConvertImageCreate } = useNewProjectFlow({
     addProject,
     convertImage: () => convertImageSource.value,
     cancelConvertImage,
@@ -621,39 +620,6 @@ function wireAppShell(services: Services) {
   /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
   const shortcutsHelpOpen = ref(false)
 
-  /** The Tour (ticket 80): walks this editor through the same commit paths; needs whether the Project is open to
-   * drawing and Create's hand-off. Dim layer: TourLayer. */
-  const tour = useTour({
-    store: services.tourStore,
-    currentProject,
-    hasProject: (id) => projects.value.some((project) => project.id === id),
-    openProject: onSelectProject,
-    openNewProjectForm: onNewProject,
-    activeTool: () => activeTool.value,
-    selectedColorId: () => selectedColorId.value,
-    selection: () => selection.value,
-    pasteArmed: () => pasteProjectionActive.value,
-    edit,
-    replaceProject,
-    undo: onUndo,
-    clearSelection: clearSelectionAndHover,
-    draftName: () => newProjectDraft.value?.name,
-    createProject: onCreateProject,
-    showToast,
-    messages,
-  })
-  provideTourFormReset(tour.formResetTick)
-
-  /** While the Tour points somewhere other than the Project, the Project only scrolls and zooms: nothing on it
-   * draws. */
-  function unlessTourLocks<Args extends unknown[]>(handler: (...args: Args) => void) {
-    return (...args: Args) => {
-      if (!tour.canvasLocked.value) {
-        handler(...args)
-      }
-    }
-  }
-
   usePageZoomLock()
   useViewportGuard()
   useAppShortcutTable({
@@ -763,7 +729,7 @@ function wireAppShell(services: Services) {
     // Creating a Project, and framing a picture for one
     framing,
     onNewProjectDraft,
-    onCreateProject: (payload: CreateProjectInput) => onCreateProject(tour.normalizeCreate(payload)),
+    onCreateProject,
     onConvertImageCreate,
     startConvertImage,
     cancelConvertImage,
@@ -832,18 +798,17 @@ function wireAppShell(services: Services) {
     backOutOfSelect,
     previewCells,
     endStroke,
-    onCellPrimaryDown: unlessTourLocks(onCellPrimaryDown),
-    onCellPrimaryMove: unlessTourLocks(onCellPrimaryMove),
-    onCellSecondaryDown: unlessTourLocks(onCellSecondaryDown),
-    onCellSecondaryMove: unlessTourLocks(onCellSecondaryMove),
+    onCellPrimaryDown,
+    onCellPrimaryMove,
+    onCellSecondaryDown,
+    onCellSecondaryMove,
     onCellHover,
     onHoverEnd,
     beadCursor,
     cursorShown,
     onProjectKeyboardFocus,
-    onProjectKey: unlessTourLocks(onProjectKey),
+    onProjectKey,
     onProjectKeyUp,
-    tour,
     ...rowOps,
     onRotate: rotateFlow.onRotate,
     onRotateFrame: rotateFrameFlow.onRotateFrame,

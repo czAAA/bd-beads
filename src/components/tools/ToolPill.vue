@@ -182,7 +182,6 @@ watch(
         :accent="isActive(tile.tool)"
         :tabindex="roving.tabIndexFor(isActive(tile.tool))"
         :data-testid="`pill-tool-${tile.tool}`"
-        :data-tour="`tool-${tile.tool}`"
         @click="emit('select-tool', tile.tool)"
       />
 
@@ -216,7 +215,6 @@ watch(
         :aria-expanded="popoverOpen"
         :tabindex="-1"
         data-testid="pill-color"
-        data-tour="dock-color"
         @click="toggleColor"
       >
         <span class="tool-pill__swatch" :style="{ backgroundColor: colorHex ?? 'transparent' }">

@@ -81,7 +81,7 @@ describe('the carousel examples', () => {
     expect(example('rowProgress').find('[data-testid="example-row-highlight"]').exists()).toBe(true)
   })
 
-  it('beads needed: lists the Tour Project colors and a total that adds up', () => {
+  it('beads needed: lists the gold pattern colors and a total that adds up', () => {
     const wrapper = example('beadsNeeded')
     const numbers = wrapper.findAll('.beads__number').map((el) => Number(el.text()))
     const total = numbers.pop()!

@@ -2,21 +2,16 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { isEditorChosen, markEditorChosen, overviewUrl, shouldOpenOverview } from './overviewRoute'
 
 describe('shouldOpenOverview', () => {
-  it.each([
-    ['untouched', true],
-    ['running', true],
-    ['finished', false],
-    ['off', false],
-  ] as const)('with an empty library and the Tour %s: %s', (tour, expected) => {
-    expect(shouldOpenOverview(true, tour, false)).toBe(expected)
+  it('opens it for an empty library', () => {
+    expect(shouldOpenOverview(true, false)).toBe(true)
   })
 
   it('never opens it once Projects are saved', () => {
-    expect(shouldOpenOverview(false, 'untouched', false)).toBe(false)
+    expect(shouldOpenOverview(false, false)).toBe(false)
   })
 
   it('never opens it after the visitor chose the editor', () => {
-    expect(shouldOpenOverview(true, 'untouched', true)).toBe(false)
+    expect(shouldOpenOverview(true, true)).toBe(false)
   })
 })
 

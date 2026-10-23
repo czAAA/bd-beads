@@ -72,9 +72,6 @@
     "components/ToolSheet/README.md",
     "components/ToolTabs/README.md",
     "components/Toolbox/README.md",
-    "components/TourPattern/README.md",
-    "components/TourPattern/tour-pattern.json",
-    "components/TourStep/README.md",
     "components/WritingPatterns/README.md",
     "components/bundle.css",
     "forms-and-states.md",
@@ -415,16 +412,6 @@
       "name": "Toolbox",
       "group": "Toolbox",
       "summary": "The first box of the left column: Tool groups Tools, Colors and Edit, then the Mirror and Size disclosure rows."
-    },
-    {
-      "name": "TourPattern",
-      "group": "Onboarding",
-      "summary": "The finished Pattern every Tour builds: 10 columns × 75 rows, loom, the default Bead, Palette Yellow #f2c94c and Black #1a1a1a only; five gold rhombuses with a…"
-    },
-    {
-      "name": "TourStep",
-      "group": "Onboarding",
-      "summary": "The Tour: eleven steps inside the real editor; each step card names the tool it teaches, points at one control with a grey dotted line, lights that control in…"
     },
     {
       "name": "WritingPatterns",

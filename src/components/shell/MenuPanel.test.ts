@@ -53,9 +53,8 @@ describe('MenuPanel (ticket 443)', () => {
     expect(pen.get('[data-testid="menu-input-mode"]').text()).toContain(en.panels.menu.pen)
   })
 
-  it('has the Tour item only while the Tour is on, and Source code opening a new tab, and the version as text', () => {
+  it('has Source code opening a new tab, and the version as text', () => {
     const wrapper = mountIn()
-    expect(wrapper.find('[data-testid="menu-item-tour"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="menu-item-source"]').attributes('target')).toBe('_blank')
     expect(wrapper.get('[data-testid="menu-version"]').text()).toContain(en.panels.menu.version)
   })

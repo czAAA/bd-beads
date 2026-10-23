@@ -75,5 +75,5 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
     deps.cancelConvertImage()
   }
 
-  return { framing, newProjectDraft, onNewProjectDraft, onCreateProject, onConvertImageCreate }
+  return { framing, onNewProjectDraft, onCreateProject, onConvertImageCreate }
 }

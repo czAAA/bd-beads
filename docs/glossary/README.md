@@ -11,6 +11,6 @@ The domain language of bd-beads, one file per area. Each entry gives a term's me
 | [Editing a Schema](editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Copy, Paste, Undo, Redo |
 | [Import and rendering](import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
-| [Overview and Tour](overview-and-tour.md) | Overview, Tour |
+| [Overview](overview.md) | Overview |
 
 Add a new term to the file of its area, and to this table. `CONTEXT.md` keeps the short core (Quick start, Key concepts, Where to start) and points here.

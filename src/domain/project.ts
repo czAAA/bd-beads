@@ -267,8 +267,8 @@ export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'te
   return describeWeave(frameWeave(project)).unitsOf(projectDimensions(project))
 }
 
-/** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (the
- * Tour's check, a test's expectation). With no Frame, the box round the Canvas's beads; empty with none. */
+/** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (a
+ * test's expectation). With no Frame, the box round the Canvas's beads; empty with none. */
 export function frameGrid(project: Pick<Project, 'frame' | 'beads'>): Grid {
   const beads = project.frame ? project.frame.beads : project.beads
   const area = project.frame ? { row: 0, column: 0, rows: project.frame.rows, columns: project.frame.columns } : projectFrame(project)

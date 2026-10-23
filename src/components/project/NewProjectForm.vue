@@ -15,7 +15,6 @@ import {
 import { SLOW_FRAMING_CELLS } from '../../domain/imageFraming'
 import { MAX_MAKER_NAME } from '../../domain/makerName'
 import type { StatedSize } from '../../domain/projectSize'
-import { useTourFormReset } from '../../composables/tour/useTour'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
@@ -68,15 +67,6 @@ const brickBlock = ref(1)
 const netSize = ref(DEFAULT_NET_SIZE)
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
-/** The Tour's "Back to loom for your first Project" (ticket 80): Loom and the default Bead, with the Name left as
- * typed. */
-const tourReset = useTourFormReset()
-if (tourReset) {
-  watch(tourReset, () => {
-    technique.value = DEFAULT_TECHNIQUE
-    beadId.value = BEAD_CATALOG[0]!.id
-  })
-}
 
 const nameField = ref<InstanceType<typeof TextField>>()
 

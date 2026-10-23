@@ -223,7 +223,6 @@ export const pl: Translations = {
   header: {
     menuButton: 'Menu',
     overviewItem: 'Przegląd',
-    tourItem: 'Zacznij oprowadzanie',
     sourceItem: 'Kod źródłowy',
     projectPanelLabel: 'Projekt',
   },
@@ -238,7 +237,7 @@ export const pl: Translations = {
     whatsInside: 'Co jest w środku',
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
-    notes: { you: 'ty', onUs: 'na nasz koszt', elevenSteps: 'jedenaście małych kroków', youllMakeThis: 'to zrobisz' },
+    notes: { you: 'ty', onUs: 'na nasz koszt' },
     coffee: { title: 'Jedna osoba', text: 'openbeads robi jedna osoba, koralik po koraliku, i jest darmowe. Jeśli oszczędziło ci wieczór liczenia, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
     plans: {
       label: 'plany',
@@ -275,71 +274,6 @@ export const pl: Translations = {
       maker: 'Maria K.',
       projectFile: 'Plik projektu',
       names: ['Złoty pasek', 'Mak', 'Serce', 'Wzgórza', 'Paski', 'Kratka'],
-    },
-  },
-  tour: {
-    stepLabel: 'Oprowadzanie, krok {n} z {total}: {title}',
-    progress: '{n} z {total}',
-    next: 'Dalej',
-    skip: 'Pomiń oprowadzanie',
-    backToLoom: 'Wróć do krosna, aby zrobić pierwszy projekt',
-    backToLoomName: 'Wróć do krosna, aby zrobić pierwszy projekt',
-    backToLoomNote: 'Potem: Krosno, domyślny koralik i 10×75 koralików, z zachowaną nazwą twórcy. Teraz naciśnij Utwórz projekt.',
-    selectLineHint: 'Zaznacz rząd lub kolumnę, naciskając jego numer na linijce.',
-    offScreen: 'Tego przycisku nie ma na ekranie. Dalej wykona ten krok za ciebie.',
-    skipToast: 'Oprowadzanie odłożone na później. Wróć do niego w dowolnej chwili z menu.',
-    pointer: 'Dalej: {control}, w {place}.',
-    steps: {
-      create: {
-        title: 'Zacznij projekt',
-        body: 'Każdy projekt zaczyna się tutaj. Nadaj mu nazwę, a potem wypróbuj technikę, koralik i jednostki: rozmiar aktualizuje się na bieżąco.',
-      },
-      fill: {
-        title: 'Wypełnij tło',
-        body: 'Wypełnienie koloruje od razu cały obszar jednego koloru. Wybierz Wypełnij i czerń, a potem wypełnij projekt.',
-      },
-      outline: {
-        title: 'Namaluj obrys',
-        body: 'Maluj układa jeden koralik naraz. Wybierz Maluj i żółty, a potem pomaluj 22 zaznaczone koraliki: obrys pierwszego rombu.',
-      },
-      rhombus: {
-        title: 'Wypełnij romb',
-        body: 'Wypełnij zatrzymuje się na obrysie, więc zmienia się tylko środek. Zostaw żółty, wybierz Wypełnij i wypełnij wnętrze rombu.',
-      },
-      eye: {
-        title: 'Namaluj oko',
-        body: 'Wybierz Maluj i czerń, a potem pomaluj 16 zaznaczonych koralików w środku: mały pierścień i jego środek.',
-      },
-      copy: {
-        title: 'Skopiuj romb',
-        body: 'Zaznacz rysuje ramkę wokół koralików, których chcesz użyć ponownie. Zaznacz romb, naciśnij Kopiuj, a potem wklej go w każdy z czterech obrysów poniżej.',
-      },
-      finish: {
-        title: 'Resztę dokończymy my',
-        body: 'Małe złote koraliki między rombami i zaokrąglone końce trafią na miejsce jedną zmianą, więc jedno Cofnij wycofa wszystkie. Naciśnij Dalej, aby zobaczyć.',
-      },
-      erase: {
-        title: 'Wymaż zabłąkany koralik',
-        body: 'Gumka opróżnia koralik. Jeden koralik leży poza zaokrąglonym rogiem: wybierz Gumkę i usuń go.',
-      },
-      'remove-line': {
-        title: 'Usuń linię',
-        body: 'Usuń linię wycina cały rząd lub kolumnę. Zaznacz rząd lub kolumnę po numerze, usuń ją, a potem naciśnij Cofnij, aby ją przywrócić.',
-      },
-      size: {
-        title: 'Zmień ramkę',
-        body: 'Ramka zaznacza, które koraliki tworzą schemat, a jej rozmiar można zmienić w każdej chwili. Otwórz Ramkę, dodaj kolumnę, spójrz na schemat, a potem naciśnij Cofnij.',
-      },
-      rows: {
-        title: 'Śledź swoje rzędy',
-        body: 'Postęp rzędów zapamiętuje, gdzie jesteś, kiedy pleciesz. Włącz go, naciśnij Rząd gotowy trzy razy, a potem raz Rząd niegotowy, aby znów otworzyć rząd 3.',
-      },
-    },
-    final: {
-      title: 'Twój pierwszy projekt jest gotowy',
-      body: 'Zabierz go do krosna: Eksport tworzy PDF do druku, PNG albo plik projektu. Aby przejść całość jeszcze raz, otwórz menu i wybierz Zacznij oprowadzanie.',
-      keepEditing: 'Edytuj dalej',
-      export: 'Eksportuj',
     },
   },
   pieceName: {

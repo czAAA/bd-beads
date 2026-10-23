@@ -18,7 +18,7 @@ export interface Env {
   PUBLIC_ORIGIN?: string
   /** The git commit of the deploy, passed by the deploy workflow with `--var VERSION:<sha>`. */
   VERSION?: string
-  /** Set by hand in the dashboard, never in `wrangler.jsonc`: comma-separated features switched off (features.ts). */
+  /** Set by hand in the dashboard, never in `wrangler.jsonc`: comma-separated features switched off (worker/src/features.ts). */
   DISABLED_FEATURES?: string
 
   /** The account and this Worker's own script name, databases and bucket, for watchdog/analytics.ts (the runtime

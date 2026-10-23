@@ -221,7 +221,6 @@ export const en: Translations = {
   header: {
     menuButton: 'Menu',
     overviewItem: 'Overview',
-    tourItem: 'Take the tour',
     sourceItem: 'Source code',
     projectPanelLabel: 'Project',
   },
@@ -236,7 +235,7 @@ export const en: Translations = {
     whatsInside: "What's inside",
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
-    notes: { you: 'you', onUs: 'on us', elevenSteps: 'eleven small steps', youllMakeThis: "you'll make this" },
+    notes: { you: 'you', onUs: 'on us' },
     coffee: { title: 'Made by one person', text: "openbeads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
     plans: {
       label: 'plans',
@@ -273,82 +272,6 @@ export const en: Translations = {
       maker: 'Maria K.',
       projectFile: 'Project file',
       names: ['Gold strip', 'Poppy', 'Heart', 'Hills', 'Stripes', 'Checks'],
-    },
-  },
-  tour: {
-    stepLabel: 'Tour, step {n} of {total}: {title}',
-    progress: '{n} of {total}',
-    next: 'Next',
-    skip: 'Skip tour',
-    backToLoom: 'Back to loom for your first Project',
-    backToLoomName: 'Back to loom for your first Project',
-    backToLoomNote: 'Then: Loom, the default Bead and 10×75 beads, with your name kept. Now press Create Project.',
-    selectLineHint: 'Select a row or column by pressing its number on the ruler.',
-    offScreen: "This control isn't on screen. Next does this step for you.",
-    skipToast: 'Tour put aside for now. Pick it up from the menu any time.',
-    pointer: 'Next: {control}, in {place}.',
-    steps: {
-      create: {
-        title: 'Start a Project',
-        body:
-          'Every Project starts here. Give yours a name, then try a Technique, a Bead and the units: the size updates as you go.',
-      },
-      fill: {
-        title: 'Fill the background',
-        body:
-          'Fill colors a whole area of one color at once. Choose Fill and black, then fill the Project.',
-      },
-      outline: {
-        title: 'Paint the outline',
-        body:
-          'Paint places one bead at a time. Choose Paint and yellow, then paint the 22 marked beads: the outline of the first rhombus.',
-      },
-      rhombus: {
-        title: 'Fill the rhombus',
-        body:
-          'Fill stops at the outline, so only the inside changes. Keep yellow, choose Fill and fill inside the rhombus.',
-      },
-      eye: {
-        title: 'Paint the eye',
-        body:
-          'Choose Paint and black, then paint the 16 marked beads inside: a small ring and its centre.',
-      },
-      copy: {
-        title: 'Copy the rhombus',
-        body:
-          'Select draws a frame around beads you want to reuse. Select the rhombus, press Copy, then paste it into each of the four outlines below.',
-      },
-      finish: {
-        title: "We'll finish the rest",
-        body:
-          'The small gold beads between the rhombuses and the rounded ends go in as one change, so one Undo would take them all back. Press Next to watch.',
-      },
-      erase: {
-        title: 'Erase the stray bead',
-        body:
-          'Erase empties a bead. One bead sits outside the rounded corner: choose Erase and remove it.',
-      },
-      'remove-line': {
-        title: 'Remove a line',
-        body:
-          'Remove line takes out a whole row or column. Select a row or column by its number, remove it, then press Undo to bring it back.',
-      },
-      size: {
-        title: 'Change the Frame',
-        body:
-          'The Frame marks which beads are the Schema, and its size can change at any time. Open Frame, add a column, look at the Schema, then press Undo.',
-      },
-      rows: {
-        title: 'Track your rows',
-        body:
-          'Row progress keeps your place while you weave. Turn it on, press Row done three times, then Row not done once to open row 3 again.',
-      },
-    },
-    final: {
-      title: 'Your first Project is ready',
-      body: 'Take it to the loom: Export makes a PDF to print, a PNG or the Project file. To walk through again, open the menu and choose Take the tour.',
-      keepEditing: 'Keep editing',
-      export: 'Export',
     },
   },
   pieceName: {

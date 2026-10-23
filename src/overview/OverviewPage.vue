@@ -10,9 +10,7 @@ import DrawnLayer from './DrawnLayer.vue'
 import CoffeeTile from './CoffeeTile.vue'
 import FeatureCarousel from './FeatureCarousel.vue'
 import PlanTiles from './PlanTiles.vue'
-import TourBand from './TourBand.vue'
 import { provideI18n } from '../i18n/useI18n'
-import { TOUR_ENABLED } from '../features'
 
 // The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads. The header is the
 // editor's own (no Keyboard shortcuts), then the slogan, two ways in, and tickets 217/219/220/221's sections. It only
@@ -23,7 +21,7 @@ const props = defineProps<{
   /** This page's own address, for the header menu's Overview item. */
   overviewHref: string
 }>()
-const emit = defineEmits<{ makeFirstProject: []; openEditor: []; takeTour: [] }>()
+const emit = defineEmits<{ makeFirstProject: []; openEditor: [] }>()
 
 const { t } = provideI18n()
 watchEffect(() => {
@@ -35,7 +33,7 @@ const sloganFirst = computed(() => t.value.overview.sloganLead.split(' ')[0]!)
 const sloganRest = computed(() => t.value.overview.sloganLead.slice(sloganFirst.value.length))
 
 /** The header Menu's items by name; its Tooltip lists them (ticket 334). */
-const menuItems = computed(() => [t.value.header.overviewItem, ...(TOUR_ENABLED ? [t.value.header.tourItem] : [])])
+const menuItems = computed(() => [t.value.header.overviewItem])
 
 const isNew = computed(() => props.projectCount === 0)
 const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{count}', String(props.projectCount)))
@@ -52,9 +50,6 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
         <MenuButton :label="t.header.menuButton" icon="menu" icon-only :items="menuItems" data-testid="header-menu">
           <AppMenuItem icon="bead" :href="overviewHref" current data-testid="menu-item-overview">
             {{ t.header.overviewItem }}
-          </AppMenuItem>
-          <AppMenuItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="emit('takeTour')">
-            {{ t.header.tourItem }}
           </AppMenuItem>
         </MenuButton>
       </span>
@@ -90,12 +85,6 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
               <AppButton size="lg" data-testid="overview-open-editor" @click="emit('openEditor')">
                 {{ t.overview.openEditor }}
               </AppButton>
-              <span class="overview__aside overview__aside--steps" aria-hidden="true" data-testid="overview-note-steps">
-                <span class="overview__note">{{ t.overview.notes.elevenSteps }}</span>
-                <svg class="overview__arrow" width="64" height="26" viewBox="0 0 64 26">
-                  <path d="M4 10 C 22 2, 42 6, 58 18 M47 20 L59 19 L55 8" />
-                </svg>
-              </span>
             </span>
           </template>
           <template v-else>
@@ -104,12 +93,6 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
             </AppButton>
             <p class="overview__saved" data-testid="overview-saved">{{ projectsSaved }}</p>
           </template>
-        </div>
-        <div v-if="isNew && TOUR_ENABLED" class="overview__band">
-          <TourBand />
-          <p class="overview__note overview__note--gold" aria-hidden="true" data-testid="overview-note-make-this">
-            {{ t.overview.notes.youllMakeThis }}
-          </p>
         </div>
       </section>
 
@@ -380,47 +363,6 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   align-items: center;
   justify-content: center;
   gap: var(--space-12);
-}
-
-/* "eleven small steps": only from 1024, where there is room left of the buttons. */
-.overview__aside--steps {
-  display: none;
-}
-
-@media (min-width: 1024px) {
-  .overview__aside--steps {
-    display: block;
-    position: absolute;
-    top: 0;
-    right: calc(100% + var(--space-8));
-  }
-
-  .overview__aside--steps .overview__note {
-    top: 0.25rem;
-    right: 4.75rem;
-  }
-
-  .overview__aside--steps .overview__arrow {
-    position: absolute;
-    top: 0.875rem;
-    right: 0;
-  }
-}
-
-.overview__band {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 55rem;
-  margin-top: var(--space-24);
-}
-
-.overview__note--gold {
-  position: static;
-  margin: var(--space-8) 0 0;
-  color: var(--note-gold);
-  text-align: center;
 }
 
 .overview__saved {

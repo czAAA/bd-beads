@@ -1,5 +1,4 @@
 import type { Locale } from '../domain/locale'
-import type { TourStepId } from '../domain/tour'
 import type { PluralForms } from './plural'
 
 export type { Locale }
@@ -259,32 +258,12 @@ export interface Translations {
   header: {
     menuButton: string
     overviewItem: string
-    tourItem: string
     /** The HeaderMenu's link to the repository (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted
      * copy to offer one. */
     sourceItem: string
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill,
      * Beads needed, Saved Projects, New Project, Import. */
     projectPanelLabel: string
-  }
-  /** The Tour (ticket 80; TourStep card): the step card's words, step by step, and what it says when it moves. */
-  tour: {
-    /** The card's accessible name. */
-    stepLabel: string
-    progress: string
-    next: string
-    skip: string
-    backToLoom: string
-    backToLoomName: string
-    backToLoomNote: string
-    /** Shown in Remove line's step until a whole row or column is selected. */
-    selectLineHint: string
-    offScreen: string
-    skipToast: string
-    /** The polite status line when the pointer moves: "Next: Yellow, in Colors." */
-    pointer: string
-    steps: Record<TourStepId, { title: string; body: string }>
-    final: { title: string; body: string; keepEditing: string; export: string }
   }
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
   overview: {
@@ -300,7 +279,7 @@ export interface Translations {
     previousFeature: string
     nextFeature: string
     /** The hand-written notes of the hero (Overview card); decorative, hidden from screen readers. */
-    notes: { you: string; onUs: string; elevenSteps: string; youllMakeThis: string }
+    notes: { you: string; onUs: string }
     /** The coffee tile (ticket 219; Overview card). */
     coffee: { title: string; text: string; button: string }
     /** The plan tiles (ticket 220; Overview card): placeholders until accounts and payment exist. */
