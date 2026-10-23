@@ -104,7 +104,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 </template>
 
 <style scoped>
-/* As wide as the sheet it sits in, so everything below wraps inside that width rather than setting its own. */
+/* As wide as the panel it sits in, so everything below wraps inside that width rather than setting its own. */
 .frame-controls {
   display: flex;
   flex-direction: column;

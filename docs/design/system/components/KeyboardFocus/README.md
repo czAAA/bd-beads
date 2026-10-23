@@ -9,4 +9,4 @@ The Tab order across the desktop layout and the keyboard rules: one stop per gro
 
 Hand-written from the Phase C sign-off.
 
-- **Menu and Project (spec 0440):** the strip buttons are `aria-haspopup="menu"` with `aria-expanded`. The dropdown is a `role="menu"`: arrows, Home and End move, Enter chooses, Escape or Tab closes and focus returns to the button. The Top sheet is a modal dialog with a focus trap. A pencil opens its field with focus in it; Enter saves, Escape cancels and focus returns to the pencil.
+- **Menu and Project (spec 0440):** the strip buttons are `aria-haspopup="menu"` with `aria-expanded`. The dropdown is a `role="menu"`: arrows, Home and End move, Enter chooses, Escape or Tab closes and focus returns to the button, on every screen size. A pencil opens its field with focus in it; Enter saves, Escape cancels and focus returns to the pencil.

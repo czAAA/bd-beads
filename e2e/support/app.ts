@@ -52,8 +52,7 @@ export async function settle(page: Page): Promise<void> {
   await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))))
 }
 
-/** One of the Canvas strip's panels (CanvasStrip card): Menu or Project, a dropdown from 1024px and a Top sheet
- * under it. */
+/** One of the Canvas strip's panels (CanvasStrip card): Menu or Project, a dropdown. */
 type DockSheetButton = 'strip-project' | 'strip-menu'
 
 /** Opens Menu or Project (CanvasStrip card), closing whatever is open first — the strip buttons toggle, so clicking one
