@@ -70,7 +70,7 @@ describe('the control registry', () => {
   it('gives every action that can be disabled a reason, in both languages', () => {
     for (const control of CONTROLS.filter((c) => c.enabled)) {
       const project = { beads: {}, rowProgress: { currentRow: 0, currentColumn: 0 } } as never
-      const deps = { activeProject: () => project, addedColorCount: () => 0, hasSelection: () => true } as never
+      const deps = { activeProject: () => project, hasSelection: () => true } as never
       for (const t of [en, ru]) expect(control.disabledBody?.(t, deps).trim(), control.id).toBeTruthy()
     }
   })

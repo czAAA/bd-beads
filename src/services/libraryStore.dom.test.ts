@@ -262,4 +262,44 @@ describe('projectStorage', () => {
       expect(storedBytes()).toBeLessThan(5 * 1024)
     })
   })
+
+  // TEMPORARY (ticket 0525): removed at the public release (ticket 0391), with the migration it tests.
+  describe('the device\'s old Palette (temporary, ticket 0525)', () => {
+    const stripPalette = (project: Project) => {
+      const { palette: _palette, ...stored } = project
+      return stored
+    }
+    const keepOnDevice = () => {
+      localStorage.setItem('openbeads:added-colors', JSON.stringify(['#123456', '#abcdef']))
+      localStorage.setItem('openbeads:palette-order', JSON.stringify(['red', 'added-123456', 'black']))
+    }
+    const saveWithoutPalette = (...projects: Project[]) => {
+      saveProjects(projects)
+      const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+      stored.patterns = stored.patterns.map((project: Project) => stripPalette(project))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
+    }
+
+    it('goes into a Project saved without a Palette, once, and the device keys are removed', () => {
+      keepOnDevice()
+      saveWithoutPalette(makeProject())
+
+      const [opened] = loadProjects()
+
+      expect(opened!.palette.slice(0, 3)).toEqual(['red', 'added-123456', 'black'])
+      expect(opened!.palette).toHaveLength(14)
+      expect(localStorage.getItem('openbeads:added-colors')).toBeNull()
+      expect(localStorage.getItem('openbeads:palette-order')).toBeNull()
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns[0].palette).toContain('added-abcdef')
+      expect(loadProjects()[0]!.palette).toEqual(opened!.palette)
+    })
+
+    it('leaves a Project that has its own Palette alone, and the keys where they are', () => {
+      keepOnDevice()
+      saveProjects([makeProject()])
+
+      expect(loadProjects()[0]!.palette).toHaveLength(12)
+      expect(localStorage.getItem('openbeads:added-colors')).not.toBeNull()
+    })
+  })
 })

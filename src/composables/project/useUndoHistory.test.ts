@@ -49,6 +49,7 @@ describe('useUndoHistory', () => {
     ctx.history.record({
       beads: ctx.project.beads,
       rowProgress: ctx.project.rowProgress,
+      palette: ctx.project.palette,
       beadId: ctx.project.beadId,
       technique: ctx.project.technique,
       frame: { technique: 'loom' as const, row: 0, column: 0, columns: 5, rows: 5, beads: {} },
