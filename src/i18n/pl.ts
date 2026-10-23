@@ -325,8 +325,6 @@ export const pl: Translations = {
       other: '{count} koralika nie zmieściło się w ramce.',
     },
     cutButton: 'Wytnij',
-    saveButton: 'Zapisz',
-    savedConfirmation: 'Zapisano',
     pasteLabel: 'Wklej',
     removeLineButton: 'Usuń zaznaczony rząd/kolumnę',
     removeLineShort: 'Usuń linię',
@@ -396,7 +394,6 @@ export const pl: Translations = {
     lastPart: 'Ostatnia część',
   },
   saveBox: {
-    saveButton: 'Zapisz projekt',
     exportButton: 'Eksportuj',
     savedState: 'zapisano · to urządzenie',
     failedState: 'nie zapisano · to urządzenie',
@@ -475,12 +472,7 @@ export const pl: Translations = {
     countNeedsFrame: 'Ustaw ramkę, aby policzyć koraliki.',
     progressSelectToSet: 'Zaznacz, aby ustawić',
     progressFrameWord: 'ramkę',
-    rotateCoveredMessage: {
-      one: 'Zakryto {count} koralik.',
-      few: 'Zakryto {count} koraliki.',
-      many: 'Zakryto {count} koralików.',
-      other: 'Zakryto {count} koralika.',
-    },
+    rotateCoveredMessage: 'Obrócony fragment wylądował na istniejących koralikach.',
   },
   size: {
     estimateLabel: 'Szacunkowy rozmiar',
@@ -627,7 +619,6 @@ export const pl: Translations = {
     colors: 'Ustaw kolory do malowania.',
     newProject: 'Zacznij puste płótno.',
     importFile: 'Otwórz projekt z pliku.',
-    saveProject: 'Zapisz do pliku na tym urządzeniu.',
     changeName: 'Zmień imię twórcy drukowane w eksportach.',
     convertImage: 'Zamień obraz w schemat.',
     list: (names) => `${names.join(', ')}.`,

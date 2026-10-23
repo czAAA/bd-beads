@@ -50,7 +50,6 @@ export interface ControlDeps {
   onSelectAll: () => void
   onCopy: () => void
   pasteAtPointer: (event: KeyboardEvent) => void
-  onSave: () => void
   onRotate: () => void
   /** Whether Remove row/column applies right now: a whole row or column is selected and Row progress is off. */
   canRemoveSelectedLine: () => boolean
@@ -375,18 +374,6 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrame,
   }),
   {
-    id: 'save',
-    icon: 'save',
-    name: (t) => t.tools.saveButton,
-    body: (t) => t.tooltips.saveProject,
-    group: 'edit',
-    chords: [{ key: 's', mod: true, label: 'S' }],
-    preventDefault: true,
-    allowWhileTyping: true,
-    needsProject: true,
-    run: (deps) => deps.onSave(),
-  },
-  {
     id: 'rotate',
     icon: 'rotate',
     name: (t) => t.palette.rotateButton,
@@ -539,7 +526,7 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('strip-project', (t) => t.header.projectPanelLabel, 'edit', {
     icon: 'pattern',
-    body: (t) => t.tooltips.list([t.form.techniqueLabel, t.saveBox.saveButton, t.panels.project.exportHeading, t.panels.project.duplicate]),
+    body: (t) => t.tooltips.list([t.form.techniqueLabel, t.panels.project.exportHeading, t.panels.project.duplicate]),
   }),
   unkeyed('strip-menu', (t) => t.header.menuButton, 'edit', {
     icon: 'menu',

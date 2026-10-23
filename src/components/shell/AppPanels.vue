@@ -38,14 +38,13 @@ const {
   replaceBeadCandidates,
   onRequestReplaceBead,
   onImportProjects,
-  onImportToast,
   decodeImage,
   exporting,
   onExportPng,
   onExportPdf,
   onExportProjectFile,
   onExportLibraryFile,
-  onSave,
+  saveNow,
   onSaveMakerName,
   onRenameProject,
   onRequestDuplicate,
@@ -107,7 +106,6 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
       @import="onImportProjects"
-      @import-result="(id, text, tone) => { onImportToast(id, text, tone); openPanel = null }"
       @export-all="onExportLibraryFile"
       @new-project="phoneSavedProjectsOpen = false"
       @saved-projects="phoneSavedProjectsOpen = true"
@@ -131,7 +129,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       @set-canvas-brick-block="onSetCanvasBrickBlock"
       @set-bead-shape="onSetBeadShape"
       @replace-bead="onRequestReplaceBead"
-      @save="onSave"
+      @save="saveNow"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @export-project-file="onExportProjectFile"

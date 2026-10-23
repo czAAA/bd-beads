@@ -30,7 +30,6 @@ const {
   onSelectPanel,
   projects,
   onImportProjects,
-  onImportToast,
   openMenuOnForm,
   activeProject,
   projectLabel,
@@ -385,7 +384,7 @@ const drawingStyle = computed(() => {
             <EmptyCanvas v-else>
               <div class="app-shell__empty-actions" data-testid="phone-project-bar">
                 <AppButton variant="primary" icon="plus" :action="newProjectAction" data-testid="phone-bar-new-project" @click="openMenuOnForm" />
-                <ProjectImport compact toast-results :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" @import-result="onImportToast" />
+                <ProjectImport compact :projects="projects" testid-prefix="phone-bar-" @import="onImportProjects" />
               </div>
             </EmptyCanvas>
           </div>

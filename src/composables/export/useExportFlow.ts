@@ -5,7 +5,7 @@ import { libraryFileName, projectExportFileName, projectFileName } from '../../d
 import type { Locale, Translations } from '../../i18n/translations'
 import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
-import { downloadFile as browserDownloadFile, sharesFromTap as browserSharesFromTap, type DownloadFile } from '../../services/fileDownload'
+import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
 import type { MessageTone, Toast } from '../ui/useToasts'
 
@@ -19,9 +19,6 @@ export interface ExportFlowDeps {
   replaceProject: (project: Project) => void
   /** How a file is handed over (ADR 0020); the browser's by default. */
   downloadFile?: DownloadFile
-  /** Whether handing over this file opens a share sheet, which only a fresh tap may start (ticket 306); the
-   * browser's by default. */
-  sharesFromTap?: (fileName: string, type: string) => boolean
   /** Shows a toast with an action (useToasts). */
   showToast?: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
 }
@@ -30,7 +27,6 @@ export interface ExportFlowDeps {
  * maker's name (ADR 0060). Deps are lazy. */
 export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
-  const sharesFromTap = deps.sharesFromTap ?? browserSharesFromTap
 
   /** The open Project's maker's name for the PDF and PNG exports (ADR 0060; CONTEXT.md); empty when none is set. */
   const makerName = computed(() => deps.currentProject()?.makerName ?? '')
@@ -47,15 +43,16 @@ export function useExportFlow(deps: ExportFlowDeps) {
    * Project takes a moment, so the buttons wait until it is done. */
   const exporting = ref<'png' | 'pdf' | undefined>()
 
-  /** Makes a file and hands it over. Safari shares only from a tap, so where sharing needs one the toast's action is
-   * the new tap (ticket 306). */
+  /** Makes a file and hands it over inside the tap, then says it is ready (ticket 523). Safari shares only from a
+   * fresh tap, so when it refuses because the build took too long the toast's action is the new tap (ticket 306). */
   async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string) {
     const contents = await make()
-    if (deps.showToast && sharesFromTap(fileName, type)) {
-      deps.showToast(toastId, ready, 'success', { label: deps.messages().saveBox.readySave, run: () => downloadFile(fileName, contents, type) })
-    } else {
-      downloadFile(fileName, contents, type)
+    const outcome = await downloadFile(fileName, contents, type)
+    if (outcome === 'cancelled') {
+      return
     }
+    const retry = outcome === 'refused' ? { label: deps.messages().saveBox.readySave, run: () => void downloadFile(fileName, contents, type) } : undefined
+    deps.showToast?.(toastId, ready, 'success', retry)
   }
 
   async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {

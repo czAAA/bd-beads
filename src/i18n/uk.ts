@@ -325,8 +325,6 @@ export const uk: Translations = {
       other: '{count} намистини не вмістилися в рамку.',
     },
     cutButton: 'Вирізати',
-    saveButton: 'Зберегти',
-    savedConfirmation: 'Збережено',
     pasteLabel: 'Вставити',
     removeLineButton: 'Видалити виділений ряд/стовпець',
     removeLineShort: 'Видалити лінію',
@@ -396,7 +394,6 @@ export const uk: Translations = {
     lastPart: 'Остання частина',
   },
   saveBox: {
-    saveButton: 'Зберегти проєкт',
     exportButton: 'Експортувати',
     savedState: 'збережено · цей пристрій',
     failedState: 'не збережено · цей пристрій',
@@ -475,12 +472,7 @@ export const uk: Translations = {
     countNeedsFrame: 'Задайте рамку, щоб порахувати бісер.',
     progressSelectToSet: 'Виділіть, щоб задати',
     progressFrameWord: 'рамку',
-    rotateCoveredMessage: {
-      one: '{count} бісерину перекрито.',
-      few: '{count} бісерини перекрито.',
-      many: '{count} бісерин перекрито.',
-      other: '{count} бісерини перекрито.',
-    },
+    rotateCoveredMessage: 'Повернутий фрагмент опинився поверх наявних намистин.',
   },
   size: {
     estimateLabel: 'Приблизний розмір',
@@ -627,7 +619,6 @@ export const uk: Translations = {
     colors: 'Налаштуйте кольори для малювання.',
     newProject: 'Почати з порожнього полотна.',
     importFile: 'Відкрити проєкт із файлу.',
-    saveProject: 'Зберегти у файл на цьому пристрої.',
     changeName: 'Змінити ім’я майстра під час експорту.',
     convertImage: 'Перетворити картинку на схему.',
     list: (names) => `${names.join(', ')}.`,
