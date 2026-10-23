@@ -1,14 +1,14 @@
 import type { Bead } from './beads'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
-import { findPaletteColorByHex } from './palette'
+import type { Palette } from './palette'
 import { forEachBead } from './canvas'
 import type { Project } from './project'
 import { describeWeave } from './weave'
 
 /** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
 export interface ColorQuantity {
-  /** The Palette color this is, or null for a hex the Palette doesn't know (e.g. from an older imported file). */
+  /** The Palette color this is, or null for a hex the Project's Palette doesn't hold (e.g. a removed swatch). */
   colorId: string | null
   hex: string
   count: number
@@ -17,7 +17,7 @@ export interface ColorQuantity {
 // How many beads of each color the Project needs, counted off its painted cells, most-needed first. Unpainted cells and
 // colors painted nowhere aren't listed. Only the Frame's beads count (ADR 0026): with no Frame there is nothing to
 // count.
-export function computeColorQuantities(project: Project): ColorQuantity[] {
+export function computeColorQuantities(project: Project, palette: Palette): ColorQuantity[] {
   const counts = new Map<string, number>()
   if (!project.frame) {
     return []
@@ -32,7 +32,7 @@ export function computeColorQuantities(project: Project): ColorQuantity[] {
   })
 
   return [...counts.entries()]
-    .map(([hex, count]) => ({ colorId: findPaletteColorByHex(hex)?.id ?? null, hex, count }))
+    .map(([hex, count]) => ({ colorId: palette.byHex(hex)?.id ?? null, hex, count }))
     .sort((a, b) => b.count - a.count || a.hex.localeCompare(b.hex))
 }
 

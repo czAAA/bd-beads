@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import type { Technique } from '../../src/domain/weave'
 import type { Project } from '../../src/domain/project'
-import { PALETTE } from '../../src/domain/palette'
+import { BUILT_IN_COLORS } from '../../src/domain/palette'
 import { gridBox, openApp, projectBox, savedProject, selectTool, setZoom, settle } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
@@ -13,7 +13,7 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFEREN
 // The pointer tools on the Drawing surface in a real browser: hover preview matches references, and paint, erase, Fill,
 // Row progress lock, Undo, Space-drag pan and touch strokes change only the right beads.
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
-const DEFAULT_COLOR = PALETTE.find((color) => color.id === 'red')!.hex
+const DEFAULT_COLOR = BUILT_IN_COLORS[0]!.hex
 
 /** Where the pointer goes to be on a bead, at the zoom the page is at. */
 async function pointOn(page: Page, technique: Technique, rotated: boolean, zoomPercent: number, row: number, column: number) {

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
-import { PALETTE } from '../../src/domain/palette'
+import { BUILT_IN_COLORS } from '../../src/domain/palette'
 import { createProject } from '../../src/domain/project'
 import { parseProjectsFile } from '../../src/domain/projectFile'
 import { currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, savedProject, settle, stateConvertSize } from '../support/app'
@@ -13,7 +13,7 @@ import { fixturePicture } from '../support/picture'
 // Ticket 108: with the size limit gone (ADR 0019), 70 × 250 and 250 × 250 Projects can be created, edited, saved,
 // reloaded, exported and undone, and a full device says so and keeps the edit on screen. Real browser, default
 // renderer.
-const RED = PALETTE.find((color) => color.id === 'red')!.hex
+const RED = BUILT_IN_COLORS[0]!.hex
 const SIZES = [
   { columns: 70, rows: 250 },
   { columns: 250, rows: 250 },

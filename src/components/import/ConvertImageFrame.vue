@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
+import { createPalette, defaultPaletteIds } from '../../domain/palette'
 import type { Bead } from '../../domain/beads'
 import { CANVAS_MAX_PX, type GridDimensions } from '../../domain/grid'
 import { describeWeave, type Technique } from '../../domain/weave'
@@ -121,9 +122,12 @@ function sampledFor(view: ReturnType<typeof framingView>, lattice: ReturnType<ty
 const restLattice = computed(() => latticeFor(restView.value))
 const restSampled = computed(() => sampledFor(restView.value, restLattice.value))
 
+/** The Palette the new Project starts with: the picture snaps to it. */
+const newProjectPalette = createPalette(defaultPaletteIds())
+
 /** The Project this would create: the frame's block of that same pass, reduced to at most maxColors colors. */
 const converted = computed(() =>
-  convertPackedFrame(restSampled.value, restLattice.value, props.dimensions, props.maxColors),
+  convertPackedFrame(newProjectPalette, restSampled.value, restLattice.value, props.dimensions, props.maxColors),
 )
 
 /** Whether the picture is away from where the exact conversion was made, which is the only time the beads are

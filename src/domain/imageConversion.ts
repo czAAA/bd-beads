@@ -2,6 +2,7 @@ import { beadPitchMm, type Bead } from './beads'
 import { type GridDimensions } from './grid'
 import { describeWeave, rowPitch, rowOffset, type Technique } from './weave'
 import { resolveImageColors } from './imageColors'
+import type { Palette } from './palette'
 import {
   type FramingView,
   type ImageSize,
@@ -223,7 +224,11 @@ export interface ConvertedImage {
 
 /** Reduces the frame's raw colors (undefined for an empty cell) to at most `maxColors` and offers them to the
  * Palette; see convertPackedFrame. */
-function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColors: number): ConvertedImage {
+function reduceFrame(
+  palette: Palette,
+  raw: readonly (readonly (string | undefined)[])[],
+  maxColors: number,
+): ConvertedImage {
   const counts = new Map<string, number>()
   for (const row of raw) {
     for (const hex of row) {
@@ -233,7 +238,7 @@ function reduceFrame(raw: readonly (readonly (string | undefined)[])[], maxColor
     }
   }
 
-  const { mapping, colors } = resolveImageColors(counts, maxColors)
+  const { mapping, colors } = resolveImageColors(palette, counts, maxColors)
   const grid: Grid = raw.map((row) =>
     row.map<Cell>((hex) => ({ color: hex === undefined ? null : mapping.get(hex) ?? hex })),
   )
@@ -271,6 +276,7 @@ function sampleUnitLattice({ image, view, description, cellWidth, cellHeight, la
 /** The Project's grid and Image colors from an already-sampled lattice (see sampleLatticePacked): only the frame's
  * cells take part, so panning the picture never changes the colors inside the frame. */
 export function convertPackedFrame(
+  palette: Palette,
   sampled: Int32Array,
   lattice: PreviewLattice,
   dimensions: GridDimensions,
@@ -279,6 +285,7 @@ export function convertPackedFrame(
   const hexes = new Map<number, string>()
 
   return reduceFrame(
+    palette,
     Array.from({ length: dimensions.rows }, (_row, row) =>
       Array.from({ length: dimensions.columns }, (_cell, column) => {
         const color = sampled[(row + lattice.frameRow) * lattice.columns + column + lattice.frameColumn]!

@@ -1,11 +1,16 @@
+import { nearestColor } from './imageColors'
+
 export interface PaletteColor {
   id: string
   hex: string
+  /** A brand's own name, the same in every language; absent, the name is the translation of `id` (`colorNames`). */
+  literalName?: string
 }
 
-/** The twelve built-in colors (see CONTEXT.md's Palette entry), independent of the bead catalog; Custom colors that
- * were used join them (ticket 227, ADR 0002). */
-export const PALETTE: readonly PaletteColor[] = [
+/** The built-in colors a Palette starts from (see CONTEXT.md's Palette entry), today the twelve, independent of the bead
+ * catalog; Custom colors that were used join them (ticket 227, ADR 0002). Handed to createPalette, so ticket 0528 can
+ * swap the set without touching a caller. */
+export const BUILT_IN_COLORS: readonly PaletteColor[] = [
   { id: 'black', hex: '#1a1a1a' },
   { id: 'white', hex: '#ffffff' },
   { id: 'red', hex: '#e63746' },
@@ -20,11 +25,12 @@ export const PALETTE: readonly PaletteColor[] = [
   { id: 'grey', hex: '#9aa0a6' },
 ]
 
-export function findPaletteColor(id: string): PaletteColor | undefined {
-  return PALETTE.find((color) => color.id === id)
+/** A built-in color by id, for the fixed artwork (Templates, the overview) that names the colors it draws with. */
+export function findBuiltInColor(id: string): PaletteColor | undefined {
+  return BUILT_IN_COLORS.find((color) => color.id === id)
 }
 
-/** Shift+1..9, Shift+0, Q, W (ticket 88), one per PALETTE entry: the physical key (`KeyboardEvent.code`; shifted `.key`
+/** Shift+1..9, Shift+0, Q, W (ticket 88), one per first Palette slot: the physical key (`KeyboardEvent.code`; shifted `.key`
  * values like "!" vary by layout) and its label. The one source App.vue's dispatcher and PalettePicker.vue read. */
 export interface PaletteShortcut {
   code: string
@@ -45,12 +51,6 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
   { code: 'KeyQ', keyLabel: 'Q' },
   { code: 'KeyW', keyLabel: 'W' },
 ]
-
-/** The Palette color a painted cell holds, looked up by the hex the grid stores; undefined for a hex from outside
- * the Palette. */
-export function findPaletteColorByHex(hex: string): PaletteColor | undefined {
-  return PALETTE.find((color) => color.hex === hex)
-}
 
 /** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for
  * anything else. */
@@ -76,9 +76,9 @@ export function isAddedColorId(colorId: string): boolean {
  * built-in ones and the added ones alike. */
 export type PaletteIds = readonly string[]
 
-/** What a new Project's Palette is: the twelve built-in colors, in their order. */
+/** What a new Project's Palette is: the built-in colors, in their order. */
 export function defaultPaletteIds(): string[] {
-  return PALETTE.map((color) => color.id)
+  return BUILT_IN_COLORS.map((color) => color.id)
 }
 
 /** The hex an added swatch's id stands for; undefined for anything that isn't one. */
@@ -86,19 +86,19 @@ function addedColorHex(colorId: string): string | undefined {
   return isAddedColorId(colorId) ? normalizeHex(`#${colorId.slice(ADDED_PREFIX.length)}`) : undefined
 }
 
-/** The swatches a stored Palette names, in its order: an id that is neither built-in nor an added color's is dropped, a
- * repeated one counts once, and a built-in color it leaves out follows (the twelve are never missing). */
-export function paletteColors(ids: PaletteIds): PaletteColor[] {
+/** The swatches a stored Palette names, in its order: an id that is neither built-in nor an added color's is dropped and
+ * a repeated one counts once. What is stored is what is shown: a built-in color it leaves out stays out. */
+export function paletteColors(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): PaletteColor[] {
   const placed = new Set<string>()
   const colors: PaletteColor[] = []
   for (const id of ids) {
-    const color = findPaletteColor(id) ?? paletteColorForAdded(id)
+    const color = builtIns.find((builtIn) => builtIn.id === id) ?? paletteColorForAdded(id)
     if (color && !placed.has(color.id)) {
       placed.add(color.id)
       colors.push(color)
     }
   }
-  return [...colors, ...PALETTE.filter((color) => !placed.has(color.id))]
+  return colors
 }
 
 function paletteColorForAdded(id: string): PaletteColor | undefined {
@@ -106,10 +106,44 @@ function paletteColorForAdded(id: string): PaletteColor | undefined {
   return hex ? { id: addedColorId(hex), hex } : undefined
 }
 
-/** A stored Palette read back whatever it holds (see paletteColors), as the ids to keep. */
+/** A stored Palette read back whatever it holds (see paletteColors), as the ids to keep. A missing or unreadable one
+ * is a new Project's Palette. */
 export function normalizePaletteIds(stored: unknown): string[] {
-  const ids = Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : []
-  return paletteColors(ids).map((color) => color.id)
+  if (!Array.isArray(stored)) return defaultPaletteIds()
+  return paletteColors(stored.filter((id): id is string => typeof id === 'string')).map((color) => color.id)
+}
+
+/** A Project's Palette as every reader asks it (ticket 0530): the swatches in slot order and the questions about them.
+ * Built from the stored ids, so nothing reads the built-in set directly. */
+export interface Palette {
+  colors: readonly PaletteColor[]
+  /** The swatch with this id; undefined for none (or no id). */
+  byId: (id: string | null | undefined) => PaletteColor | undefined
+  /** The swatch a painted cell holds, by the hex the grid stores; undefined for a hex from outside the Palette. */
+  byHex: (hex: string) => PaletteColor | undefined
+  /** The swatch nearest `hex` (the closest, not the first in range, so slot order doesn't matter); undefined for an
+   * empty Palette. */
+  nearest: (hex: string) => PaletteColor | undefined
+  /** The color a Project opens ready to paint with: the first built-in swatch (the first of any, if none is). */
+  defaultColorId: string | undefined
+  /** The swatches that have a Shift+key slot; a Palette longer than the keys has swatches without one. */
+  hotkeyed: readonly PaletteColor[]
+}
+
+/** The Palette the stored ids name. `builtIns` is the set the ids are resolved against (ticket 0528 swaps it). */
+export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): Palette {
+  const colors = paletteColors(ids, builtIns)
+  return {
+    colors,
+    byId: (id) => colors.find((color) => color.id === id),
+    byHex: (hex) => colors.find((color) => color.hex === hex.toLowerCase()),
+    nearest: (hex) => {
+      const nearest = nearestColor(colors.map((color) => color.hex), hex)
+      return colors.find((color) => color.hex === nearest)
+    },
+    defaultColorId: (colors.find((color) => !isAddedColorId(color.id)) ?? colors[0])?.id,
+    hotkeyed: colors.slice(0, PALETTE_SHORTCUTS.length),
+  }
 }
 
 export type AddUsedColorOutcome = 'added' | 'known'

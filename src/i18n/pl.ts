@@ -93,7 +93,6 @@ export const pl: Translations = {
     pink: 'Różowy',
     brown: 'Brązowy',
     grey: 'Szary',
-    custom: 'Własny',
   },
   panels: {
     back: 'Wstecz',

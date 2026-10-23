@@ -1,3 +1,4 @@
+import { createPalette, defaultPaletteIds } from './palette'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
@@ -97,7 +98,7 @@ function convertImage(
   input: Omit<Parameters<typeof sampleLatticePacked>[0], 'lattice'> & { dimensions: GridDimensions; maxColors: number },
 ): ConvertedImage {
   const lattice: PreviewLattice = { columns: input.dimensions.columns, rows: input.dimensions.rows, frameColumn: 0, frameRow: 0 }
-  return convertPackedFrame(sampleLatticePacked({ ...input, lattice }), lattice, input.dimensions, input.maxColors)
+  return convertPackedFrame(createPalette(defaultPaletteIds()), sampleLatticePacked({ ...input, lattice }), lattice, input.dimensions, input.maxColors)
 }
 
 /** The pixel of the picture under a point in the frame's own millimetres, as the sampling arithmetic reads it. */
@@ -543,7 +544,7 @@ describe('convertPackedFrame', () => {
     const lattice = previewLattice({ view, frame, dimensions, bead: cubeBead, technique })
 
     const sampled = sampleLatticePacked({ image, view, technique, bead: cubeBead, lattice })
-    const fromPreview = convertPackedFrame(sampled, lattice, dimensions, 4096)
+    const fromPreview = convertPackedFrame(createPalette(defaultPaletteIds()), sampled, lattice, dimensions, 4096)
     const direct = convertImage({ image, view, technique, bead: cubeBead, dimensions, maxColors: 4096 })
 
     expect(lattice.frameColumn).toBeGreaterThan(0)

@@ -93,7 +93,6 @@ export const ru: Translations = {
     pink: 'Розовый',
     brown: 'Коричневый',
     grey: 'Серый',
-    custom: 'Свой цвет',
   },
   panels: {
     back: 'Назад',

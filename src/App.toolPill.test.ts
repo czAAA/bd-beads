@@ -5,7 +5,7 @@ import { mountWithProject } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
 import { openPanel, pickColor, pickTool } from './testUtils/pill'
 import { frameGrid } from './domain/project'
-import { PALETTE } from './domain/palette'
+import { BUILT_IN_COLORS } from './domain/palette'
 import App from './App.vue'
 
 beforeEach(() => {
@@ -153,7 +153,7 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
     expect(localStorage.getItem('openbeads:recent-colors')!.split(',')).toHaveLength(4) // red, blue, green, yellow
     await recents[0]!.trigger('click') // green: used just before yellow
     expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Green')
-    expect(localStorage.getItem('openbeads:recent-colors')!.split(',')[0]).toBe(PALETTE.find((color) => color.id === 'green')!.hex)
+    expect(localStorage.getItem('openbeads:recent-colors')!.split(',')[0]).toBe(BUILT_IN_COLORS.find((color) => color.id === 'green')!.hex)
   })
 
   it('has no standalone Select all: it is on Ctrl+A and, once a Selection exists, the Selection bar (ticket 439)', async () => {

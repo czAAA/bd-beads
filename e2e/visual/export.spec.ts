@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PRINT_THEME } from '../../src/rendering/beadLook'
-import { PALETTE } from '../../src/domain/palette'
+import { BUILT_IN_COLORS } from '../../src/domain/palette'
 import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
 import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
 import { openApp, openStripPanel } from '../support/app'
@@ -71,7 +71,7 @@ test('PNG export draws each bead in its color, at a legible size, on the print b
   // The middle of the bead in row 3, column 2 (the gap and rim are at its edge, so the middle is all its color).
   const painted = frameGrid(project)[3]![2]!.color
   expect(hex(png, PNG_MARGIN_PX + 2 * PNG_BEAD_PX + PNG_BEAD_PX / 2, PNG_MARGIN_PX + 3 * PNG_BEAD_PX + PNG_BEAD_PX / 2)).toBe(painted ?? PRINT_THEME.emptyBead)
-  expect(PALETTE.some((color) => color.hex === painted)).toBe(true)
+  expect(BUILT_IN_COLORS.some((color) => color.hex === painted)).toBe(true)
   // The story tells its own words below the chart.
   expect(nonWhiteIn(png, 0, chartHeight, png.width, png.height - chartHeight)).toBe(true)
 })

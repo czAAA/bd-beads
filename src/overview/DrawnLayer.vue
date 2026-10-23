@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import AppLogo from '../components/ui/AppLogo.vue'
-import { findPaletteColor } from '../domain/palette'
+import { findBuiltInColor } from '../domain/palette'
 import { beadsOf, DRAWINGS, LAYERS, LETTER_COLORS, TIERS, type Doodle, type Placement, type SectionName } from './drawnLayer'
 
 // The drawn layer behind one Overview section (ticket 221; Overview card): bead drawings and X1 marks at 8% `accent`.
@@ -11,7 +11,7 @@ const props = defineProps<{ section: SectionName }>()
 
 function fillOf(letter: string): string {
   const name = LETTER_COLORS[letter]!
-  return name === 'accent' || name === 'muted' ? `var(--${name})` : findPaletteColor(name)!.hex
+  return name === 'accent' || name === 'muted' ? `var(--${name})` : findBuiltInColor(name)!.hex
 }
 
 function shape(d: Doodle) {

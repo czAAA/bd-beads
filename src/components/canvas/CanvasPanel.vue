@@ -13,7 +13,8 @@ import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
-import { useColorPick } from '../../composables/tools/usePalette'
+import { useColorPick, usePalette } from '../../composables/tools/usePalette'
+import { colorName } from '../../i18n/colorName'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -148,10 +149,11 @@ watch(
 /** The chosen colour as the pill's colour control shows it: its hex and its name (a Palette colour's own, "Custom"
  * for a one-off). */
 const colorHex = computed(() => selectedColorHex() ?? undefined)
-const colorName = computed(() => {
+const palette = usePalette()
+const colorLabel = computed(() => {
   const id = selectedColorId.value
-  if (id) return t.value.colorNames[id] ?? colorHex.value
-  return customColor.value ? t.value.colorNames.custom : undefined
+  if (id) return colorName(t.value, palette.value.byId(id))
+  return customColor.value ? colorName(t.value, undefined) : undefined
 })
 
 /** Where the Tool pill is in the drawing area, so the Selection bar keeps clear of it (ticket 439). */
@@ -400,7 +402,7 @@ const drawingStyle = computed(() => {
           :has-clipboard="hasClipboard()"
           :paste-armed="pasteProjectionActive"
           :color-hex="colorHex"
-          :color-name="colorName"
+          :color-name="colorLabel"
           :recents-in-pill="recentsInPill"
           :recents-in-popover="recentsInPopover"
           :selected-color-id="selectedColorId"

@@ -4,6 +4,7 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMoveColor, usePalette, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
 import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
+import { colorName } from '../../i18n/colorName'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
@@ -23,7 +24,7 @@ const roving = useRovingFocus(gridEl, '.palette-picker__swatch')
 const removeAdded = useRemoveAddedColor()
 
 function isStop(colorId: string, index: number): boolean {
-  const selected = palette.value.some((color) => color.id === props.selectedColorId)
+  const selected = palette.value.byId(props.selectedColorId)
   return selected ? colorId === props.selectedColorId : index === 0
 }
 
@@ -40,15 +41,15 @@ const drag = useSwatchDrag(
   (from, to) => moveColor?.(from, to),
   (x, y) => {
     const id = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-color-id]')?.dataset.colorId
-    const slot = palette.value.findIndex((color) => color.id === id)
+    const slot = palette.value.colors.findIndex((color) => color.id === id)
     return slot < 0 ? undefined : slot
   },
 )
 
 async function nudge(slot: number, by: number) {
   const target = slot + by
-  if (!moveColor || target < 0 || target >= palette.value.length) return
-  const colorId = palette.value[slot]!.id
+  if (!moveColor || target < 0 || target >= palette.value.colors.length) return
+  const colorId = palette.value.colors[slot]!.id
   moveColor(slot, target)
   await nextTick()
   gridEl.value?.querySelector<HTMLElement>(`[data-color-id="${colorId}"]`)?.focus()
@@ -78,10 +79,10 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
 <template>
   <div ref="gridEl" class="palette-picker" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
     <AppSwatch
-      v-for="(color, index) in palette"
+      v-for="(color, index) in palette.colors"
       :key="color.id"
       :color="color.hex"
-      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${index + 1}, ${t.colorNames[color.id] ?? color.hex}`"
+      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${index + 1}, ${colorName(t, color)}`"
       :selected="color.id === selectedColorId"
       :hotkey="PALETTE_SHORTCUTS[index] ? `Shift+${PALETTE_SHORTCUTS[index].keyLabel}` : undefined"
       :remove-label="removeAdded && isAddedColorId(color.id) ? t.palette.removeSwatch.replace('{hex}', color.hex) : undefined"
