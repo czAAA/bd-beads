@@ -52,10 +52,6 @@ export function findPaletteColorByHex(hex: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.hex === hex)
 }
 
-/** How many Custom colors can join the Palette; with the twelve built-in ones it tops out at 40 swatches (ticket
- * 227; the Message card). */
-export const MAX_ADDED_COLORS = 28
-
 /** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for
  * anything else. */
 export function normalizeHex(hex: string): string | undefined {
@@ -63,71 +59,93 @@ export function normalizeHex(hex: string): string | undefined {
   return /^#[0-9a-f]{6}$/.test(lower) ? lower : undefined
 }
 
+const ADDED_PREFIX = 'added-'
+
 /** The id an added swatch is known by: its hex, so the same color is the same swatch on every device. */
 export function addedColorId(hex: string): string {
-  return `added-${hex.slice(1)}`
+  return `${ADDED_PREFIX}${hex.slice(1)}`
 }
 
 /** Whether a Palette color joined from a Custom color (and so can be removed) rather than being one of the twelve
  * built-in ones. */
 export function isAddedColorId(colorId: string): boolean {
-  return colorId.startsWith('added-')
+  return colorId.startsWith(ADDED_PREFIX)
 }
 
-/** The whole Palette: the built-in colors, then each added one in the order it was first used. */
-export function paletteWith(added: readonly string[]): PaletteColor[] {
-  return [...PALETTE, ...added.map((hex) => ({ id: addedColorId(hex), hex }))]
+/** A Project's Palette as it is stored (ticket 0525, ADR 0002): the id of every swatch in slot order, the twelve
+ * built-in ones and the added ones alike. */
+export type PaletteIds = readonly string[]
+
+/** What a new Project's Palette is: the twelve built-in colors, in their order. */
+export function defaultPaletteIds(): string[] {
+  return PALETTE.map((color) => color.id)
 }
 
-export type AddUsedColorOutcome = 'added' | 'known' | 'full'
-
-/** A Custom color just painted a cell: added colors with it appended on first use. 'known' if the hex is already a
- * swatch, 'full' at 28 added; either way `added` is unchanged. */
-export function addUsedColor(
-  added: readonly string[],
-  hex: string,
-): { added: readonly string[]; outcome: AddUsedColorOutcome } {
-  const normalized = normalizeHex(hex)
-  if (!normalized || paletteWith(added).some((color) => color.hex === normalized)) {
-    return { added, outcome: 'known' }
-  }
-  if (added.length >= MAX_ADDED_COLORS) {
-    return { added, outcome: 'full' }
-  }
-  return { added: [...added, normalized], outcome: 'added' }
+/** The hex an added swatch's id stands for; undefined for anything that isn't one. */
+function addedColorHex(colorId: string): string | undefined {
+  return isAddedColorId(colorId) ? normalizeHex(`#${colorId.slice(ADDED_PREFIX.length)}`) : undefined
 }
 
-/** An added color taken out of the Palette (ticket 228): the colors without it, and where it stood, so Undo can put
- * it back. */
-export function removeAddedColor(
-  added: readonly string[],
-  hex: string,
-): { added: readonly string[]; index: number } | undefined {
-  const index = added.indexOf(hex)
-  return index < 0 ? undefined : { added: added.filter((_, i) => i !== index), index }
-}
-
-/** Undo of a removal: the color back at the place it stood (or last, when the Palette has since changed length). */
-export function restoreAddedColor(added: readonly string[], hex: string, index: number): readonly string[] {
-  if (added.includes(hex) || added.length >= MAX_ADDED_COLORS) return added
-  return [...added.slice(0, index), hex, ...added.slice(index)]
-}
-
-/** The Palette in slot order (ticket 398): `order` is the ids a person arranged. A slot whose color is gone closes up;
- * a color `order` doesn't name yet follows in default order. */
-export function orderedPalette(added: readonly string[], order: readonly string[]): PaletteColor[] {
-  const all = paletteWith(added)
-  const byId = new Map(all.map((color) => [color.id, color]))
+/** The swatches a stored Palette names, in its order: an id that is neither built-in nor an added color's is dropped, a
+ * repeated one counts once, and a built-in color it leaves out follows (the twelve are never missing). */
+export function paletteColors(ids: PaletteIds): PaletteColor[] {
   const placed = new Set<string>()
-  const result: PaletteColor[] = []
-  for (const id of order) {
-    const color = byId.get(id)
-    if (color && !placed.has(id)) {
-      placed.add(id)
-      result.push(color)
+  const colors: PaletteColor[] = []
+  for (const id of ids) {
+    const color = findPaletteColor(id) ?? paletteColorForAdded(id)
+    if (color && !placed.has(color.id)) {
+      placed.add(color.id)
+      colors.push(color)
     }
   }
-  return [...result, ...all.filter((color) => !placed.has(color.id))]
+  return [...colors, ...PALETTE.filter((color) => !placed.has(color.id))]
+}
+
+function paletteColorForAdded(id: string): PaletteColor | undefined {
+  const hex = addedColorHex(id)
+  return hex ? { id: addedColorId(hex), hex } : undefined
+}
+
+/** A stored Palette read back whatever it holds (see paletteColors), as the ids to keep. */
+export function normalizePaletteIds(stored: unknown): string[] {
+  const ids = Array.isArray(stored) ? stored.filter((id): id is string => typeof id === 'string') : []
+  return paletteColors(ids).map((color) => color.id)
+}
+
+export type AddUsedColorOutcome = 'added' | 'known'
+
+/** A Custom color just chosen or painted: the Palette with it in the last slot on first use. 'known' if the hex is
+ * already a swatch, or isn't a color; either way `ids` is unchanged. There is no cap. */
+export function addUsedColor(ids: PaletteIds, hex: string): { ids: PaletteIds; outcome: AddUsedColorOutcome; colorId?: string } {
+  const normalized = normalizeHex(hex)
+  if (!normalized) return { ids, outcome: 'known' }
+  const known = paletteColors(ids).find((color) => color.hex === normalized)
+  if (known) return { ids, outcome: 'known', colorId: known.id }
+  const colorId = addedColorId(normalized)
+  return { ids: [...paletteColors(ids).map((color) => color.id), colorId], outcome: 'added', colorId }
+}
+
+/** An added color taken out of the Palette (ticket 228): the ids without it, and the slot it stood in, so Undo can put
+ * it back. Undefined for a built-in color or one that isn't there. */
+export function removeAddedColor(ids: PaletteIds, colorId: string): { ids: PaletteIds; slot: number } | undefined {
+  const all = paletteColors(ids).map((color) => color.id)
+  const slot = all.indexOf(colorId)
+  return slot < 0 || !isAddedColorId(colorId) ? undefined : { ids: all.filter((id) => id !== colorId), slot }
+}
+
+/** Undo of a removal: the color back in the slot it stood in (or last, when the Palette has since got shorter). */
+export function restoreAddedColor(ids: PaletteIds, colorId: string, slot: number): PaletteIds {
+  const all = paletteColors(ids).map((color) => color.id)
+  return all.includes(colorId) ? ids : [...all.slice(0, slot), colorId, ...all.slice(slot)]
+}
+
+/** The ids of the added colors a device kept before the Palette belonged to a Project (temporary, ticket 0525), laid
+ * out in the slot order it kept: the Palette that device's Projects were painted with. */
+export function paletteFromDevice(added: readonly string[], order: readonly string[]): string[] {
+  const kept = new Set(added.map(addedColorId))
+  const placed = order.filter((id) => !isAddedColorId(id) || kept.has(id))
+  const unplaced = [...defaultPaletteIds(), ...kept].filter((id) => !placed.includes(id))
+  return paletteColors([...placed, ...unplaced]).map((color) => color.id)
 }
 
 /** A slot's color dragged to another slot: the ids with it taken out and put at `to`, the ones between shifting by

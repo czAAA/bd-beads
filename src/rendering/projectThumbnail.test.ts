@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { thumbnailPixels } from './projectThumbnail'
 import type { Rotation } from '../domain/grid'
+import { defaultPaletteIds } from '../domain/palette'
 import { framedGrid, type Project } from '../domain/project'
 
 function project(grid: (string | null)[][], rotation: Rotation = 0): Project {
@@ -11,6 +12,7 @@ function project(grid: (string | null)[][], rotation: Rotation = 0): Project {
     beadId: 'toho-cube-1.5mm',
     ...framedGrid(grid.map((row) => row.map((color) => ({ color })))),
     rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 },
+    palette: defaultPaletteIds(),
     rotation,
     createdAt: 0,
     updatedAt: 0,

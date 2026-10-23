@@ -21,6 +21,7 @@ import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
+import { defaultPaletteIds, normalizePaletteIds, type PaletteIds } from './palette'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { gridFromSize, type StatedSize } from './projectSize'
@@ -73,6 +74,9 @@ export interface Project {
    * Project gets one holding the beads inside its old Frame (see normalizeProject). */
   frame?: FrameSheet
   rowProgress: RowProgress
+  /** The Palette (ADR 0002, ticket 0525): the id of every swatch in slot order, the twelve built-in colors and the added
+   * ones, so the Project opens with the same Palette on every device. */
+  palette: PaletteIds
   /** View-only turn (tickets 28, 171): the Project shown turned this many degrees clockwise. Never a data transform:
    * for Peyote/Brick the stagger is tied to weave direction, so transposing the grid would give an unweavable
    * schema. */
@@ -189,6 +193,7 @@ export function createProject(input: CreateProjectInput): Project {
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
+    palette: defaultPaletteIds(),
     rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
@@ -387,6 +392,8 @@ export function normalizeProject(stored: StoredProject): Project {
       currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(weave, frame.columns, 'columns')),
     },
+    // A Project saved before the Palette belonged to it (or with an unreadable one) starts from the built-in twelve.
+    palette: normalizePaletteIds(legacy.palette),
     rotation: normalizeRotation(legacy),
   }
 }
@@ -658,6 +665,8 @@ export function restoreBeads(project: Project, beads: BeadMap): Project {
 export interface UndoEntry {
   beads: BeadMap
   rowProgress: RowProgress
+  /** The Palette as it was, so Undo and Redo of adding, removing or moving a swatch restore it (ticket 0525). */
+  palette: PaletteIds
   beadId: string
   /** The Frame with its own beads, as they were (ADR 0066). */
   frame: FrameSheet | undefined
@@ -673,7 +682,7 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
+  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry). */
@@ -682,6 +691,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
+    palette: entry.palette,
     beadId: entry.beadId,
     frame: entry.frame,
     technique: entry.technique,
