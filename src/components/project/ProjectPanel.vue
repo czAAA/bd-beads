@@ -59,6 +59,7 @@ const renaming = ref(false)
 const draft = ref('')
 const refused = ref(false)
 const fieldId = useId()
+const renameField = ref<InstanceType<typeof TextField>>()
 const errorId = useId()
 const shapeLabelId = useId()
 const rename = controlAction('rename-project')
@@ -71,7 +72,8 @@ function startRename() {
   draft.value = props.project.name
   refused.value = false
   renaming.value = true
-  void nextTick(() => document.getElementById(fieldId)?.focus())
+  // The person tapped the pencil to type, so the keyboard rises on a touch device too (ticket 520).
+  void nextTick(() => renameField.value?.focus({ asked: true }))
 }
 
 function commitRename() {
@@ -103,6 +105,7 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
         <div class="project-panel__rename-row">
           <TextField
             :id="fieldId"
+            ref="renameField"
             v-model="draft"
             type="text"
             :maxlength="MAX_PROJECT_NAME"
