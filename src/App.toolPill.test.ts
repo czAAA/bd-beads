@@ -156,6 +156,57 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
     expect(localStorage.getItem('openbeads:recent-colors')!.split(',')[0]).toBe(PALETTE.find((color) => color.id === 'green')!.hex)
   })
 
+  describe('ten color hotkeys, three of them recents (ticket 529)', () => {
+    const hexOf = (id: string) => PALETTE.find((color) => color.id === id)!.hex
+    const shiftKey = (digit: number) => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: `Digit${digit}`, key: '!', shiftKey: true, bubbles: true }))
+      return nextTick()
+    }
+    const painting = (wrapper: Awaited<ReturnType<typeof mountWithProject>>) => wrapper.get('[data-testid="pill-color"]').attributes('aria-label')
+
+    it('Shift+1 picks the previous color, and again the one before that: never the same color twice in a row', async () => {
+      const wrapper = await mountWithProject(15, 30)
+      await pickColor(wrapper, 'blue')
+      await pickColor(wrapper, 'green')
+      await shiftKey(1)
+      expect(painting(wrapper)).toBe('Color, Blue')
+      await shiftKey(1)
+      expect(painting(wrapper)).toBe('Color, Green')
+    })
+
+    it('Shift+4 picks the first Palette color that is not a recent chip, and Q and W pick nothing', async () => {
+      const wrapper = await mountWithProject(15, 30)
+      await pickColor(wrapper, 'blue')
+      await pickColor(wrapper, 'green') // chips: blue, then red, the color the Project started with
+      await wrapper.get('[data-testid="pill-color"]').trigger('click')
+      const firstShown = wrapper.get('[data-color-id]').attributes('data-color-id')!
+      expect(firstShown).not.toBe('blue')
+      expect(firstShown).not.toBe('red')
+      await wrapper.get('[data-testid="pill-color"]').trigger('click') // close
+      await shiftKey(4)
+      await wrapper.get('[data-testid="pill-color"]').trigger('click')
+      expect(wrapper.get(`[data-color-id="${firstShown}"]`).attributes('aria-pressed')).toBe('true')
+      await wrapper.get('[data-testid="pill-color"]').trigger('click')
+      const before = painting(wrapper)
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyQ', key: 'Q', shiftKey: true, bubbles: true }))
+      window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyW', key: 'W', shiftKey: true, bubbles: true }))
+      await nextTick()
+      expect(painting(wrapper)).toBe(before)
+    })
+
+    it('shows a recent color as a chip only: the popover Palette leaves it out, and has no recents row', async () => {
+      const wrapper = await mountWithProject(15, 30)
+      await pickColor(wrapper, 'blue')
+      await pickColor(wrapper, 'green')
+      await wrapper.get('[data-testid="pill-color"]').trigger('click')
+      expect(wrapper.find('[data-testid="color-popover-recents"]').exists()).toBe(false)
+      expect(wrapper.find('[data-color-id="blue"]').exists()).toBe(false)
+      expect(wrapper.find('[data-color-id="red"]').exists()).toBe(false)
+      expect(wrapper.find('[data-color-id="green"]').exists()).toBe(true)
+      expect(wrapper.findAll('[data-testid="pill-recent"]')[0]!.attributes('aria-label')).toContain(hexOf('blue'))
+    })
+  })
+
   it('has no standalone Select all: it is on Ctrl+A and, once a Selection exists, the Selection bar (ticket 439)', async () => {
     const wrapper = await mountWithProject(6, 6)
     await pickTool(wrapper, 'select')

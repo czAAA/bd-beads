@@ -101,7 +101,6 @@ const {
   toolPillPosition,
   toolPillPopoverOpen,
   recentsInPill,
-  recentsInPopover,
   pickRecent,
   selectedColorHex,
   selectedColorId,
@@ -402,7 +401,6 @@ const drawingStyle = computed(() => {
           :color-hex="colorHex"
           :color-name="colorName"
           :recents-in-pill="recentsInPill"
-          :recents-in-popover="recentsInPopover"
           :selected-color-id="selectedColorId"
           :custom-color="customColor"
           @select-tool="onSelectTool"

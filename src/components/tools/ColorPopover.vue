@@ -9,7 +9,7 @@ import { PICK_CLOSE } from '../shell/pickContext'
 import ToolColorControls from './ToolColorControls.vue'
 
 // The colour popover (ticket 439, ADR 0059; ToolPill card): the Colour sheet's replacement on every device. Head with
-// the chosen colour, the recent chips, then the Palette with Pick color and Custom color.
+// the chosen colour, then the Palette with Pick color and Custom color.
 // Beside the pill, clamped to the screen. Choosing, Close, Escape or a press outside closes it.
 const props = defineProps<{
   /** The colour tile that opened it, and the pill it is part of: where the popover is placed. */
@@ -20,12 +20,10 @@ const props = defineProps<{
   colorName?: string
   selectedColorId?: string
   customColor?: string
-  recents: readonly string[]
 }>()
 
 const emit = defineEmits<{
   close: []
-  'pick-recent': [hex: string]
   'select-color': [colorId: string]
   'select-custom-color': [hex: string]
 }>()
@@ -87,21 +85,6 @@ onBeforeUnmount(() => {
       <span class="color-popover__name" data-testid="color-popover-name">{{ colorName }}</span>
       <span v-if="colorHex" class="color-popover__hex">{{ colorHex }}</span>
       <IconButton class="color-popover__close" variant="plain" :action="closeAction" :label="t.toolPill.close" :icon-size="16" data-testid="color-popover-close" @click="emit('close')" />
-    </div>
-
-    <div v-if="recents.length" class="color-popover__section">
-      <span class="color-popover__label">{{ t.toolPill.recent }}</span>
-      <div class="color-popover__recents" data-testid="color-popover-recents">
-        <button
-          v-for="hex in recents"
-          :key="hex"
-          type="button"
-          class="ui-control color-popover__chip"
-          :aria-label="t.toolPill.useColor.replace('{color}', hex)"
-          :style="{ backgroundColor: hex }"
-          @click="emit('pick-recent', hex); emit('close')"
-        />
-      </div>
     </div>
 
     <div class="color-popover__section">
@@ -193,20 +176,5 @@ onBeforeUnmount(() => {
 .color-popover__label {
   font: var(--type-meta-small);
   color: var(--muted);
-}
-
-.color-popover__recents {
-  display: flex;
-  gap: var(--space-6);
-}
-
-.color-popover__chip {
-  flex: 1 1 0;
-  height: var(--space-32);
-  min-width: 0;
-  padding: 0;
-  border: 0;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 </style>

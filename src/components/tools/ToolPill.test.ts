@@ -4,7 +4,7 @@ import ToolPill from './ToolPill.vue'
 
 const TOOL_IDS = ['paint', 'fill', 'select', 'erase', 'hand', 'piece']
 
-const base = { activeTool: 'paint', position: 'bottom', recentsInPill: [], recentsInPopover: [], popoverOpen: false, colorHex: '#e63746', colorName: 'Red' } as const
+const base = { activeTool: 'paint', position: 'bottom', recentsInPill: [], popoverOpen: false, colorHex: '#e63746', colorName: 'Red' } as const
 
 describe('ToolPill (ticket 439)', () => {
   afterEach(() => vi.restoreAllMocks())
