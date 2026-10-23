@@ -4,7 +4,7 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 
 ## Layout
 
-- **The canvas box is the screen.** It sits `screen-edge` (12px) from every screen edge; where `env(safe-area-inset-*)` is larger, the inset wins on that side. Inside it, top to bottom: the Canvas strip, the drawing area, the Progress bar as a footer. The Progress bar and the Canvas strip keep their specs; nothing sits below the canvas box any more.
+- **The canvas box is the screen.** It is flush with every screen edge; only `env(safe-area-inset-*)` (notch, rounded corners, home indicator) sits round it, with square corners, no border and no shadow. Inside it, top to bottom: the Canvas strip, the drawing area, the Progress bar as a footer. The Progress bar and the Canvas strip keep their specs; nothing sits below the canvas box any more.
 - **The pill floats over the drawing area**, `pill-gap` (6px) in from the drawing area's edge on the side it is docked to, centred along that edge. The drawing runs behind it: the pill takes no width or height from the canvas. It never covers the Canvas strip or the Progress bar.
 - **Four positions:** left, top, right, bottom (default: bottom, just above the Progress bar). On left or right the pill is vertical and its contents run top to bottom.
 - **Length:** as long as its content. If that is longer than the edge (a phone, top or bottom, with recents), the pill scrolls along its length with no scrollbar, like the Canvas strip.
@@ -32,7 +32,7 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 Replaces the Colour sheet on every device, phones included.
 
 - `--popover-width` (288px) wide, `--pill-popover-radius` (24px) corners, `overlay-fill`, 1px `overlay-line`, `elevation-3`, padding 12px 14px 14px, 12px between sections.
-- **Placement:** beside the pill toward the canvas, `pill-gap` away, centred on the tile that opened it and clamped `screen-edge` inside the screen. It never sits under the pill or off-screen. Opens with the pop motion (`duration-slow`, `ease-out`, from 94% scale), none under reduced motion.
+- **Placement:** beside the pill toward the canvas, `pill-gap` away, centred on the tile that opened it and clamped `float-edge` inside the screen. It never sits under the pill or off-screen. Opens with the pop motion (`duration-slow`, `ease-out`, from 94% scale), none under reduced motion.
 - **Contents, top to bottom:** a head (the chosen colour as a 20px `radius-sm` swatch, its name, its hex in `meta-small` `muted`, Close); "recent", six chips; "palette", the PaletteSwatches grid with Pick color from canvas as its last tile; then Custom and Image colors side by side (ColorPickers).
 - Picking a colour chooses it and closes the popover; Escape, Close, or a press outside close it too, and a press outside only closes.
 
