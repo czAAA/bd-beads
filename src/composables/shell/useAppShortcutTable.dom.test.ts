@@ -15,7 +15,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
     cancelColorPick: () => false,
-    paletteColorIdAt: () => undefined,
+    onPickColorKey: vi.fn(),
     backOutOfSelect: vi.fn(() => false),
     onUndo: vi.fn(),
     onRedo: vi.fn(),
@@ -194,13 +194,6 @@ describe('useAppShortcutTable', () => {
     picking.wrapper.unmount()
   })
 
-  it('Shift+1 selects whichever color stands in the first slot (ticket 398)', () => {
-    const slots = mountTable({ paletteColorIdAt: (slot) => ['white', 'red'][slot] })
-    press({ code: 'Digit2', key: '@', shiftKey: true })
-    expect(slots.deps.onSelectColor).toHaveBeenCalledWith('red')
-    slots.wrapper.unmount()
-  })
-
   it('Escape leaves the tool alone when it dismissed something', () => {
     const backed = mountTable({ activeTool: () => 'select', backOutOfSelect: vi.fn(() => true) })
     press({ key: 'Escape' })
@@ -227,11 +220,15 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('Shift plus 1..9, 0, Q and W pick the Palette slots in order (ticket 88)', () => {
-    const codes = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0', 'KeyQ', 'KeyW']
-    const { deps, wrapper } = mountTable({ paletteColorIdAt: (slot) => `slot-${slot}` })
+  it('Shift plus 1..9 and 0 hand their key index on, and Q and W no longer pick a color (tickets 88, 529)', () => {
+    const codes = ['Digit1', 'Digit2', 'Digit3', 'Digit4', 'Digit5', 'Digit6', 'Digit7', 'Digit8', 'Digit9', 'Digit0']
+    const { deps, wrapper } = mountTable()
     for (const code of codes) press({ code, shiftKey: true })
-    expect(vi.mocked(deps.onSelectColor).mock.calls.map(([id]) => id)).toEqual(codes.map((_c, slot) => `slot-${slot}`))
+    expect(vi.mocked(deps.onPickColorKey).mock.calls.map(([key]) => key)).toEqual(codes.map((_c, key) => key))
+    press({ code: 'KeyQ', key: 'Q', shiftKey: true })
+    press({ code: 'KeyW', key: 'W', shiftKey: true })
+    expect(deps.onPickColorKey).toHaveBeenCalledTimes(10)
+    expect(deps.onSelectColor).not.toHaveBeenCalled()
     wrapper.unmount()
   })
 
@@ -295,7 +292,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while typing in a form field, except those marked to', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => ({ frame: {} }) as never, hasSelection: () => true, paletteColorIdAt: () => 'red' })
+    const { deps, wrapper } = mountTable({ activeProject: () => ({ frame: {} }) as never, hasSelection: () => true, onPickColorKey: vi.fn() })
     const field = document.createElement('input')
     document.body.appendChild(field)
     for (const init of [
@@ -312,7 +309,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while a dialog is open, except Escape', () => {
-    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => ({ frame: {} }) as never, paletteColorIdAt: () => 'red' })
+    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => ({ frame: {} }) as never, onPickColorKey: vi.fn() })
     for (const init of [{ key: '1' }, { key: '?' }, { key: 'Enter' }, { key: 'r' }, { key: 'p' }, { code: 'Digit1', shiftKey: true }]) press(init)
     for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()

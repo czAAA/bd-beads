@@ -37,6 +37,17 @@ async function palette(wrapper: ReturnType<typeof mount>) {
   return swatches(wrapper)
 }
 
+/** How many Palette colors there are, the ones shown as the pill's recent chips included (ticket 529). */
+async function total(wrapper: ReturnType<typeof mount>) {
+  return (await palette(wrapper)).length + wrapper.findAll('[data-testid="pill-recent"]').length
+}
+
+/** One Palette swatch by id: the position shifts as the pill's recent chips take colors out of the popover (ticket 529). */
+async function swatch(wrapper: ReturnType<typeof mount>, colorId: string) {
+  await palette(wrapper)
+  return wrapper.get(`[data-color-id="${colorId}"]`)
+}
+
 async function removeButton(wrapper: ReturnType<typeof mount>) {
   await palette(wrapper)
   return wrapper.find('[data-testid="palette-swatch-remove"]')
@@ -59,18 +70,17 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     await flushPromises()
     await openColorPopover(wrapper)
     await choose(wrapper, '#123456')
-    const all = (await palette(wrapper))
-    expect(all).toHaveLength(PALETTE.length + 1)
-    const added = all[PALETTE.length]!
+    expect(await total(wrapper)).toBe(PALETTE.length + 1)
+    const added = await swatch(wrapper, addedColorId('#123456'))
     expect(added.attributes('aria-pressed')).toBe('true')
     expect(added.element.closest('.swatch')!.querySelector('.app-tooltip__key')).toBeNull() // an added color has no key chip
     expect(storedAdded()).toEqual([addedColorId('#123456')])
 
     await paint(wrapper, 0)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
+    expect(await total(wrapper)).toBe(PALETTE.length + 1)
     const reloaded = mount(App, { attachTo: document.body })
     await openColorPopover(reloaded)
-    expect((await palette(reloaded))).toHaveLength(PALETTE.length + 1)
+    expect(await total(reloaded)).toBe(PALETTE.length + 1)
   })
 
   it('selects the matching swatch for a built-in hex and adds nothing', async () => {
@@ -79,8 +89,8 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     await openColorPopover(wrapper)
     await choose(wrapper, PALETTE[3]!.hex)
     await paint(wrapper)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length)
-    expect((await palette(wrapper))[3]!.attributes('aria-pressed')).toBe('true')
+    expect(await total(wrapper)).toBe(PALETTE.length)
+    expect((await swatch(wrapper, PALETTE[3]!.id)).attributes('aria-pressed')).toBe('true')
   })
 
   it('has no cap: a hundred added colors all join, and nothing says the Palette is full', async () => {
@@ -90,7 +100,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     await openColorPopover(wrapper)
     await choose(wrapper, '#fedcba')
     await paint(wrapper)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + 101)
+    expect(await total(wrapper)).toBe(PALETTE.length + 101)
     expect(storedAdded()).toHaveLength(101)
     expect(wrapper.find('[data-testid="custom-color-button"]').attributes('disabled')).toBeUndefined()
     expect(wrapper.findAll('[data-testid="toast"]')).toHaveLength(0)
@@ -121,8 +131,8 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
 describe('an added swatch can be removed (ticket 228)', () => {
   const seed = (hexes: string[]) => seedPalette(hexes)
   /** The × shows on the active added swatch and on a hovered or focused one (ticket 333), so the swatch is selected before it is used. */
-  const selectAdded = async (wrapper: ReturnType<typeof mount>, index = 0) => {
-    await (await palette(wrapper))[PALETTE.length + index]!.trigger('click')
+  const selectAdded = async (wrapper: ReturnType<typeof mount>, hex = '#123456') => {
+    await (await swatch(wrapper, addedColorId(hex))).trigger('click')
     await palette(wrapper)
   }
 
@@ -136,7 +146,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await openColorPopover(wrapper)
     await (await palette(wrapper))[0]!.trigger('click')
     expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(0)
-    await selectAdded(wrapper, 1)
+    await selectAdded(wrapper, '#abcdef')
     expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
     expect((await removeButton(wrapper)).attributes('aria-label')).toBe(en.palette.removeSwatch.replace('{hex}', '#abcdef'))
   })
@@ -150,8 +160,8 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await (await removeButton(wrapper)).trigger('click')
     expect(modal(wrapper).exists()).toBe(true)
     expect(wrapper.find('[data-testid="confirm-modal-message"]').text()).toContain('#123456')
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + 2)
-    expect((await palette(wrapper))[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
+    expect(await total(wrapper)).toBe(PALETTE.length + 2)
+    expect((await swatch(wrapper, addedColorId('#123456'))).attributes('aria-pressed')).toBe('true')
     expect(storedAdded()).toEqual([addedColorId('#123456'), addedColorId('#abcdef')])
   })
 
@@ -166,7 +176,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await (await removeButton(wrapper)).trigger('click')
     await dismiss(wrapper)
     expect(modal(wrapper).exists()).toBe(false)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
+    expect(await total(wrapper)).toBe(PALETTE.length + 1)
     expect(wrapper.text()).not.toContain(en.palette.removed)
   })
 
@@ -175,17 +185,18 @@ describe('an added swatch can be removed (ticket 228)', () => {
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)
-    await (await palette(wrapper))[PALETTE.length]!.trigger('click')
+    await (await swatch(wrapper, addedColorId('#123456'))).trigger('click')
     await (await removeButton(wrapper)).trigger('click')
     await confirm(wrapper)
     expect(modal(wrapper).exists()).toBe(false)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
+    expect(storedPalette()).toHaveLength(PALETTE.length + 1)
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
     expect(storedAdded()).toEqual([addedColorId('#abcdef')])
     expect(wrapper.text()).toContain(en.palette.removed)
     const reloaded = mount(App)
     await openColorPopover(reloaded)
-    expect((await palette(reloaded))).toHaveLength(PALETTE.length + 1)
+    expect(reloaded.find(`[data-color-id="${addedColorId('#123456')}"]`).exists()).toBe(false)
+    expect(reloaded.find(`[data-color-id="${addedColorId('#abcdef')}"]`).exists()).toBe(true)
   })
 
   it('Delete or Backspace on a focused added swatch opens the same confirmation', async () => {
@@ -193,11 +204,11 @@ describe('an added swatch can be removed (ticket 228)', () => {
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)
-    await (await palette(wrapper))[PALETTE.length]!.trigger('keydown', { key: 'Backspace' })
+    await (await swatch(wrapper, addedColorId('#123456'))).trigger('keydown', { key: 'Backspace' })
     expect(modal(wrapper).exists()).toBe(true)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
+    expect(await total(wrapper)).toBe(PALETTE.length + 1)
     await confirm(wrapper)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length)
+    expect(await total(wrapper)).toBe(PALETTE.length)
   })
 
   it('Undo in the toast puts the swatch back where it stood, selected again', async () => {
@@ -205,12 +216,11 @@ describe('an added swatch can be removed (ticket 228)', () => {
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)
-    await (await palette(wrapper))[PALETTE.length]!.trigger('click')
+    await (await swatch(wrapper, addedColorId('#123456'))).trigger('click')
     await (await removeButton(wrapper)).trigger('click')
     await confirm(wrapper)
     await wrapper.find('[data-testid="toast-action"]').trigger('click')
-    expect((await palette(wrapper)).map((swatch) => swatch.attributes('aria-label')).slice(PALETTE.length)).toEqual(['#123456', '#abcdef'])
-    expect((await palette(wrapper))[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
+    expect((await swatch(wrapper, addedColorId('#123456'))).attributes('aria-pressed')).toBe('true')
     expect(storedAdded()).toEqual([addedColorId('#123456'), addedColorId('#abcdef')])
   })
 })
@@ -218,7 +228,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
 describe('the Palette is slots (ticket 398)', () => {
   const ids = async (wrapper: ReturnType<typeof mount>) => (await palette(wrapper)).map((swatch) => swatch.attributes('data-color-id'))
 
-  it('moves a swatch to another slot, and Shift+1 follows the slot', async () => {
+  it('moves a swatch to another slot, and Shift+4 follows the first slot', async () => {
     const wrapper = mount(App, { attachTo: document.body })
     await flushPromises()
     await openColorPopover(wrapper)
@@ -228,7 +238,7 @@ describe('the Palette is slots (ticket 398)', () => {
     expect((await ids(wrapper)).slice(0, 3)).toEqual(['white', 'black', 'red'])
     expect(storedPalette().slice(0, 2)).toEqual(['white', 'black'])
     await wrapper.get('[data-testid="color-popover-close"]').trigger('click') // a shortcut waits while a popover is open
-    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '!', shiftKey: true, bubbles: true }))
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit4', key: '$', shiftKey: true, bubbles: true }))
     await flushPromises()
     expect((await palette(wrapper))[0]!.attributes('aria-pressed')).toBe('true')
     expect((await palette(wrapper))[0]!.attributes('data-color-id')).toBe('white')
@@ -266,6 +276,6 @@ describe('Pick color from canvas (ticket 398)', () => {
     await flushPromises()
     await palette(wrapper)
     expect(wrapper.get('[data-testid="pick-color-button"]').attributes('aria-pressed')).toBe('false')
-    expect((await palette(wrapper))[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
+    expect((await swatch(wrapper, addedColorId('#123456'))).attributes('aria-pressed')).toBe('true')
   })
 })

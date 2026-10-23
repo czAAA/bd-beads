@@ -89,7 +89,7 @@ describe('App keyboard shortcuts', () => {
     const wrapper = await mountApp(15, 30)
     await pickTool(wrapper, 'select')
 
-    await pressKey({ code: 'Digit2', shiftKey: true })
+    await pressKey({ code: 'Digit5', shiftKey: true })
     await click(wrapper, 0)
 
     expect(toolState(wrapper, 'paint').pressed).toBe(true)

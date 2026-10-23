@@ -553,7 +553,7 @@ export const ru: Translations = {
     panCanvas: 'Двигать полотно',
     canvasGroup: 'Полотно',
     zoomCanvas: 'Менять масштаб полотна',
-    paletteColors: 'Выбрать цвет палитры, по порядку палитры',
+    paletteColors: 'Выбрать цвет: 1–3 недавние цвета, затем палитра по порядку',
     keyHints: 'Показывать подсказки клавиш',
     keyHintsOn: 'Вкл',
     keyHintsOff: 'Выкл',
