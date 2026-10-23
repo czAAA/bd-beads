@@ -554,7 +554,7 @@ export const be: Translations = {
     panCanvas: 'Рухаць палатно',
     canvasGroup: 'Палатно',
     zoomCanvas: 'Змяняць маштаб палатна',
-    paletteColors: 'Абраць колер палітры, па парадку палітры',
+    paletteColors: 'Абраць колер: 1–3 нядаўнія колеры, далей палітра па парадку',
     keyHints: 'Паказваць падказкі клавіш',
     keyHintsOn: 'Укл.',
     keyHintsOff: 'Выкл.',

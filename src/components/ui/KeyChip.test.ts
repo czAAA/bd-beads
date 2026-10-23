@@ -6,7 +6,7 @@ import AppTooltip from './AppTooltip.vue'
 import { resetKeyHintsDevice, useKeyHints } from '../../composables/ui/useKeyHints'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
-const PILL_PROPS = { activeTool: 'paint', position: 'bottom', recentsInPill: [], recentsInPopover: [], popoverOpen: false } as const
+const PILL_PROPS = { activeTool: 'paint', position: 'bottom', recentsInPill: [], popoverOpen: false } as const
 const QUERY = '(any-pointer: fine) and (any-hover: hover)'
 
 function onDevice(keyboardLikely: boolean) {

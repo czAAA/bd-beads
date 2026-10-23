@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { PALETTE, addUsedColor, addedColorId, defaultPaletteIds, findPaletteColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor } from './palette'
+import { PALETTE, PALETTE_SHORTCUTS, addUsedColor, addedColorId, defaultPaletteIds, findPaletteColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor, slotsBesideRecents } from './palette'
 
 describe('PALETTE', () => {
   it('has no duplicate ids', () => {
@@ -104,5 +104,26 @@ describe('moveSlot (ticket 398)', () => {
   it('leaves the ids alone for a move that goes nowhere', () => {
     expect(moveSlot(['a', 'b'], 1, 1)).toEqual(['a', 'b'])
     expect(moveSlot(['a', 'b'], 0, 5)).toEqual(['a', 'b'])
+  })
+})
+
+describe('PALETTE_SHORTCUTS', () => {
+  it('are Shift+1…9 and Shift+0, nothing else (ticket 529)', () => {
+    expect(PALETTE_SHORTCUTS.map((shortcut) => shortcut.keyLabel)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'])
+  })
+})
+
+describe('slotsBesideRecents', () => {
+  const palette = paletteColors(defaultPaletteIds())
+
+  it('keeps every slot when no recent is in the Palette', () => {
+    expect(slotsBesideRecents(palette, ['#123456'])).toEqual(palette.map((_color, slot) => slot))
+  })
+
+  it('leaves out the slots holding a recent and keeps the order of the rest', () => {
+    const slots = slotsBesideRecents(palette, [palette[2]!.hex, palette[0]!.hex])
+    expect(slots).not.toContain(0)
+    expect(slots).not.toContain(2)
+    expect(slots.slice(0, 2)).toEqual([1, 3])
   })
 })
