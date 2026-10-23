@@ -1,66 +1,56 @@
-import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { PALETTE, addUsedColor, addedColorId, isAddedColorId, moveSlot, orderedPalette, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type PaletteColor } from '../../domain/palette'
-import type { AddedColorsStore } from '../../services/addedColorsStore'
+import { computed, inject, provide, type ComputedRef, type InjectionKey, type Ref } from 'vue'
+import { PALETTE, addUsedColor, defaultPaletteIds, moveSlot, paletteColors, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type PaletteColor, type PaletteIds } from '../../domain/palette'
+import type { Project } from '../../domain/project'
+import type { EditFn } from '../project/useEdit'
 
 const paletteKey: InjectionKey<ComputedRef<readonly PaletteColor[]>> = Symbol('palette')
 
-/** The Palette (CONTEXT.md, ticket 227, ADR 0002): built-in colors plus Custom colors added by painting, kept on the
- * device. Call once from the shell. */
-export function useAddedColors(store: AddedColorsStore) {
-  const added = ref<readonly string[]>(store.load())
-  /** The slots' order as arranged (ticket 398); the colors it doesn't name yet follow in the default order. */
-  const order = ref<readonly string[]>(store.loadOrder())
-  const palette = computed(() => orderedPalette(added.value, order.value))
+/** What the Palette needs from the app shell: the open Project and Edit, the one way an undoable change reaches it
+ * (ADR 0036). */
+export interface ProjectPaletteDeps {
+  currentProject: () => Project | undefined
+  edit: EditFn
+}
 
-  /** Slots are what the order keeps: an added color joins the last one, a removed one's slot closes up. */
-  function setOrder(ids: readonly string[]) {
-    order.value = ids
-    store.saveOrder(ids)
-  }
-
+/** The Palette (CONTEXT.md, ticket 0525, ADR 0002): the open Project's twelve built-in colors and the Custom colors
+ * that joined it, in slot order. Every change is an Edit, so Undo covers it. Call once from the shell. */
+export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) {
+  const palette = computed(() => paletteColors(currentProject()?.palette ?? defaultPaletteIds()))
   provide(paletteKey, palette)
 
-  /** A Custom color has painted a cell: it joins the Palette on first use. Hands back what happened and the swatch
-   * it is. */
-  function addUsed(hex: string): { outcome: AddUsedColorOutcome; colorId?: string } {
-    const result = addUsedColor(added.value, hex)
-    if (result.outcome === 'added') {
-      const ids = palette.value.map((color) => color.id)
-      added.value = result.added
-      store.save(result.added)
-      setOrder([...ids, addedColorId(result.added.at(-1)!)])
-    }
-    return { outcome: result.outcome, colorId: palette.value.find((color) => color.hex === hex.toLowerCase())?.id }
+  function setPalette(ids: PaletteIds) {
+    edit('exempt', (project) => ({ ...project, palette: ids, updatedAt: Date.now() }))
   }
 
-  /** An added swatch is taken out of the Palette (ticket 228). Hands back how to put it back (false when it can't:
-   * the Palette has filled up since), or undefined for a color that isn't an added one. */
-  function removeAdded(colorId: string): (() => boolean) | undefined {
-    const hex = palette.value.find((color) => color.id === colorId && isAddedColorId(color.id))?.hex
-    const removal = hex ? removeAddedColor(added.value, hex) : undefined
-    if (!hex || !removal) return undefined
-    const ids = palette.value.map((color) => color.id)
-    const slot = ids.indexOf(colorId)
-    added.value = removal.added
-    store.save(removal.added)
-    setOrder(ids.filter((id) => id !== colorId))
+  /** A Custom color has been chosen or painted: it joins the Palette on first use, in the last slot. Hands back whether
+   * it joined and the swatch it is. */
+  function addUsed(hex: string): { outcome: AddUsedColorOutcome; colorId?: string } {
+    const project = currentProject()
+    if (!project) return { outcome: 'known' }
+    const { ids, outcome, colorId } = addUsedColor(project.palette, hex)
+    if (outcome === 'added') setPalette(ids)
+    return { outcome, colorId }
+  }
+
+  /** An added swatch is taken out of the Palette (ticket 228). Hands back how to put it back, or undefined for a color
+   * that isn't an added one. */
+  function removeAdded(colorId: string): (() => void) | undefined {
+    const project = currentProject()
+    const removal = project && removeAddedColor(project.palette, colorId)
+    if (!removal) return undefined
+    setPalette(removal.ids)
     return () => {
-      const restored = restoreAddedColor(added.value, hex, removal.index)
-      if (!restored.includes(hex)) return false
-      const current = palette.value.map((color) => color.id)
-      added.value = restored
-      store.save(restored)
-      setOrder([...current.slice(0, slot), colorId, ...current.slice(slot)])
-      return true
+      const now = currentProject()
+      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot))
     }
   }
 
   /** A swatch dragged (or nudged) from one slot to another (ticket 398); its Shift+key follows the slot it lands in. */
   function moveColor(from: number, to: number) {
-    setOrder(moveSlot(palette.value.map((color) => color.id), from, to))
+    setPalette(moveSlot(palette.value.map((color) => color.id), from, to))
   }
 
-  return { palette, addedCount: computed(() => added.value.length), addUsed, removeAdded, moveColor }
+  return { palette, addUsed, removeAdded, moveColor }
 }
 
 const removeKey: InjectionKey<(colorId: string) => void> = Symbol('removeAddedColor')

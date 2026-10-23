@@ -12,7 +12,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     canUndo: () => true,
     canRedo: () => true,
     hasClipboard: () => true,
-    addedColorCount: () => 0,
     hasOpenLayer: () => false,
     anyDialogOpen: () => false,
     cancelColorPick: () => false,

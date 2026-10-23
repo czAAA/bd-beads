@@ -1,6 +1,6 @@
 import type { Rotation } from '../../src/domain/grid'
 import { describeWeave, type Technique } from '../../src/domain/weave'
-import { PALETTE } from '../../src/domain/palette'
+import { PALETTE, defaultPaletteIds } from '../../src/domain/palette'
 import { framedGrid, type Cell, type Project, type RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
@@ -57,6 +57,7 @@ export function fixtureProject({
     beadId: 'toho-cube-1.5mm',
     ...framedGrid(grid, { technique }),
     rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress },
+    palette: defaultPaletteIds(),
     rotation,
     createdAt: 1_700_000_000_000,
     updatedAt: 1_700_000_000_000,
