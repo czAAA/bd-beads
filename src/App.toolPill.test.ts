@@ -5,7 +5,7 @@ import { mountWithProject } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
 import { openPanel, pickColor, pickTool } from './testUtils/pill'
 import { frameGrid } from './domain/project'
-import { PALETTE } from './domain/palette'
+import { BUILT_IN_COLORS } from './domain/palette'
 import App from './App.vue'
 
 beforeEach(() => {
@@ -153,11 +153,11 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
     expect(localStorage.getItem('openbeads:recent-colors')!.split(',')).toHaveLength(4) // red, blue, green, yellow
     await recents[0]!.trigger('click') // green: used just before yellow
     expect(wrapper.get('[data-testid="pill-color"]').attributes('aria-label')).toBe('Color, Green')
-    expect(localStorage.getItem('openbeads:recent-colors')!.split(',')[0]).toBe(PALETTE.find((color) => color.id === 'green')!.hex)
+    expect(localStorage.getItem('openbeads:recent-colors')!.split(',')[0]).toBe(BUILT_IN_COLORS.find((color) => color.id === 'green')!.hex)
   })
 
   describe('ten color hotkeys, three of them recents (ticket 529)', () => {
-    const hexOf = (id: string) => PALETTE.find((color) => color.id === id)!.hex
+    const hexOf = (id: string) => BUILT_IN_COLORS.find((color) => color.id === id)!.hex
     const shiftKey = (digit: number) => {
       window.dispatchEvent(new KeyboardEvent('keydown', { code: `Digit${digit}`, key: '!', shiftKey: true, bubbles: true }))
       return nextTick()
@@ -177,7 +177,7 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
     it('Shift+4 picks the first Palette color that is not a recent chip, and Q and W pick nothing', async () => {
       const wrapper = await mountWithProject(15, 30)
       await pickColor(wrapper, 'blue')
-      await pickColor(wrapper, 'green') // chips: blue, then red, the color the Project started with
+      await pickColor(wrapper, 'green') // chips: blue, then black, the color the Project started with
       await wrapper.get('[data-testid="pill-color"]').trigger('click')
       const firstShown = wrapper.get('[data-color-id]').attributes('data-color-id')!
       expect(firstShown).not.toBe('blue')
@@ -201,7 +201,7 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
       await wrapper.get('[data-testid="pill-color"]').trigger('click')
       expect(wrapper.find('[data-testid="color-popover-recents"]').exists()).toBe(false)
       expect(wrapper.find('[data-color-id="blue"]').exists()).toBe(false)
-      expect(wrapper.find('[data-color-id="red"]').exists()).toBe(false)
+      expect(wrapper.find('[data-color-id="black"]').exists()).toBe(false)
       expect(wrapper.find('[data-color-id="green"]').exists()).toBe(true)
       expect(wrapper.findAll('[data-testid="pill-recent"]')[0]!.attributes('aria-label')).toContain(hexOf('blue'))
     })

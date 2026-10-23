@@ -1,7 +1,8 @@
 import { nextTick, ref } from 'vue'
 import type { GridPosition } from '../../domain/grid'
-import { PALETTE } from '../../domain/palette'
+import type { Palette } from '../../domain/palette'
 import { beadColorAt, type Project } from '../../domain/project'
+import { colorName } from '../../i18n/colorName'
 import type { Translations } from '../../i18n/translations'
 
 /** What announcing needs from the app shell: the language, the open Project and the bead cursor. */
@@ -9,6 +10,7 @@ export interface A11yAnnouncerDeps {
   messages: () => Translations
   currentProject: () => Project | undefined
   beadCursor: () => GridPosition
+  palette: () => Palette
 }
 
 // Screen-reader announcements (tickets 159, 192; ADR 0020): the one polite live-region message per action, such as the
@@ -25,12 +27,11 @@ export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {
     })
   }
 
-  /** A bead color in words: the Palette's name for it, "Custom" for any other color, "empty" for none. */
+  /** A bead color in words: the Palette's name for it, "Custom color" for any other, "empty" for none. */
   function colorWords(hex: string | null | undefined): string {
     const t = deps.messages()
     if (!hex) return t.a11y.emptyBead
-    const color = PALETTE.find((entry) => entry.hex.toLowerCase() === hex.toLowerCase())
-    return color ? (t.colorNames[color.id] ?? hex) : t.colorNames.custom!
+    return colorName(t, deps.palette().byHex(hex))
   }
 
   // Says the bead cursor's row, column and color. With a Frame the numbers are the Frame's own (rulers count from 1 at

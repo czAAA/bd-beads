@@ -1,5 +1,5 @@
 import type { mount } from '@vue/test-utils'
-import { findPaletteColor } from '../domain/palette'
+import { findBuiltInColor } from '../domain/palette'
 import type { Locale } from '../domain/locale'
 import type { Tool } from '../domain/tool'
 import { chooseLanguage } from './chooseLanguage'
@@ -58,7 +58,7 @@ export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void
     await swatch().trigger('click')
     return
   }
-  const hex = findPaletteColor(colorId)?.hex
+  const hex = findBuiltInColor(colorId)?.hex
   const chip = wrapper.findAll('[data-testid="pill-recent"]').find((candidate) => candidate.attributes('aria-label')?.includes(hex ?? '?'))
   if (!chip) throw new Error(`no swatch or recent chip for ${colorId}`)
   await wrapper.get('[data-testid="color-popover-close"]').trigger('click')

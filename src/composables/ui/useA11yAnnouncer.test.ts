@@ -1,6 +1,6 @@
 import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
-import { PALETTE } from '../../domain/palette'
+import { BUILT_IN_COLORS, createPalette, defaultPaletteIds } from '../../domain/palette'
 import { createProject } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useA11yAnnouncer } from './useA11yAnnouncer'
@@ -17,6 +17,7 @@ function setup(frame?: { row: number; column: number; rows: number; columns: num
     messages: () => en,
     currentProject: () => project,
     beadCursor: () => cursor,
+    palette: () => createPalette(defaultPaletteIds()),
   })
 }
 
@@ -31,9 +32,9 @@ describe('useA11yAnnouncer', () => {
 
   it('names a bead color from the Palette, else Custom, else empty', () => {
     const { colorWords } = setup()
-    const first = PALETTE[0]!
+    const first = BUILT_IN_COLORS[0]!
     expect(colorWords(first.hex.toUpperCase())).toBe(en.colorNames[first.id])
-    expect(colorWords('#123457')).toBe(en.colorNames.custom)
+    expect(colorWords('#123457')).toBe(en.palette.customColorLabel)
     expect(colorWords(null)).toBe(en.a11y.emptyBead)
   })
 

@@ -1,9 +1,9 @@
-import { findPaletteColor } from '../../domain/palette'
+import { findBuiltInColor } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
 
 // The gold-and-black ten-column pattern the Overview shows: the Gold strip's thumbnail and the Beads needed list.
 // Artwork, not a Project the app keeps. Letters: Y gold, K black, `.` empty.
-const COLORS: Readonly<Record<string, string>> = { Y: findPaletteColor('yellow')!.hex, K: findPaletteColor('black')!.hex }
+const COLORS: Readonly<Record<string, string>> = { Y: findBuiltInColor('yellow')!.hex, K: findBuiltInColor('black')!.hex }
 
 const ROWS = [
   '.KKKKKKKK.',

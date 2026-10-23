@@ -1,5 +1,5 @@
 import { fromHex, type Rgb } from './color'
-import { PALETTE } from './palette'
+import type { Palette } from './palette'
 
 /** The colors a Convert image (ticket 58) takes from a picture: reduced to a buyable count, then no dithering, each
  * snapped to its nearest Palette color (ticket 177, amending ADR 0011), so Image colors are a Palette subset. */
@@ -9,7 +9,7 @@ function channelHex(value: number): string {
   return Math.round(value).toString(16).padStart(2, '0')
 }
 
-/** The `#rrggbb` a grid cell stores, lowercase — the same shape PALETTE's own hexes are written in. */
+/** The `#rrggbb` a grid cell stores, lowercase — the same shape a Palette's own hexes are written in. */
 export function toHex({ r, g, b }: Rgb): string {
   return `#${channelHex(r)}${channelHex(g)}${channelHex(b)}`
 }
@@ -42,13 +42,10 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
   return best
 }
 
-const PALETTE_HEXES: readonly string[] = PALETTE.map((color) => color.hex)
-
 /** The Palette color nearest `hex` (ticket 177, amending ADR 0011): unconditional, no threshold. The *nearest*, not
- * the first in range, so the answer doesn't depend on Palette order. */
-export function snapToPalette(hex: string): string {
-  // PALETTE is never empty, so nearestColor always finds a match.
-  return nearestColor(PALETTE_HEXES, hex)!
+ * the first in range, so the answer doesn't depend on Palette order. An empty Palette leaves the color as it is. */
+export function snapToPalette(palette: Palette, hex: string): string {
+  return palette.nearest(hex)?.hex ?? hex
 }
 
 /** One color of a picture and how many cells sampled it, the unit median cut works in. */
@@ -149,8 +146,9 @@ function boxColor(box: readonly WeightedColor[]): string {
 }
 
 /** The Image colors (CONTEXT.md, ADR 0011 as amended by ticket 177) for sampled cell colors, ordered by coverage. At
- * most `maxColors` distinct colors skip median cut; each box then snaps to the Palette, so `colors` can be shorter. */
+ * most `maxColors` distinct colors skip median cut; each box then snaps to the given Palette, so `colors` can be shorter. */
 export function resolveImageColors(
+  palette: Palette,
   counts: ReadonlyMap<string, number>,
   maxColors: number,
 ): ResolvedImageColors {
@@ -166,7 +164,7 @@ export function resolveImageColors(
   const coverage = new Map<string, number>()
 
   for (const box of boxes) {
-    const resolved = snapToPalette(boxColor(box))
+    const resolved = snapToPalette(palette, boxColor(box))
     for (const color of box) {
       mapping.set(color.hex, resolved)
       coverage.set(resolved, (coverage.get(resolved) ?? 0) + color.count)

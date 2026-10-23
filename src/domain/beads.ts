@@ -6,7 +6,7 @@ export interface Bead {
   name: string
   size: string
   formFactor: FormFactor
-  /** The bead's own color, e.g. a PALETTE hex value; null for the seeded catalog entries, which predate this field. */
+  /** The bead's own color, e.g. a BUILT_IN_COLORS hex value; null for the seeded catalog entries, which predate this field. */
   color: string | null
   // Bead footprint in millimeters, to convert a physical size into a grid. `widthMm` runs along the thread (length
   // through the hole), `heightMm` across it (diameter): on a loom, peyote and brick stitch the thread passes along a

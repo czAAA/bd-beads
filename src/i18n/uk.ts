@@ -93,7 +93,6 @@ export const uk: Translations = {
     pink: 'Рожевий',
     brown: 'Коричневий',
     grey: 'Сірий',
-    custom: 'Власний колір',
   },
   panels: {
     back: 'Назад',

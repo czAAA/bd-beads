@@ -94,7 +94,6 @@ export const be: Translations = {
     pink: 'Ружовы',
     brown: 'Карычневы',
     grey: 'Шэры',
-    custom: 'Свой колер',
   },
   panels: {
     back: 'Назад',

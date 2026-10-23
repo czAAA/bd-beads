@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { findBead } from '../../domain/beads'
-import { findPaletteColorByHex } from '../../domain/palette'
+import { createPalette, defaultPaletteIds } from '../../domain/palette'
+import { listedColorName } from '../../i18n/colorName'
 import { formatPrintedGrams, printedGrams } from '../../domain/printGrams'
 import { GOLD_GRID } from './goldProject'
 import { useI18n } from '../../i18n/useI18n'
@@ -12,6 +13,7 @@ import ExampleFrame from './ExampleFrame.vue'
 const { t, locale } = useI18n()
 
 const BEAD = findBead('miyuki-delica-11-0')
+const palette = createPalette(defaultPaletteIds())
 
 const lines = computed(() => {
   const counts = new Map<string, number>()
@@ -19,7 +21,7 @@ const lines = computed(() => {
   const weigh = (count: number) => `≈ ${formatPrintedGrams(printedGrams(count, BEAD) ?? 0, locale.value, t.value.quantities.gramsUnit)}`
   const colors = [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
-    .map(([hex, count]) => ({ hex, name: t.value.colorNames[findPaletteColorByHex(hex)?.id ?? ''] ?? hex, count, grams: weigh(count) }))
+    .map(([hex, count]) => ({ hex, name: listedColorName(t.value, palette.byHex(hex), hex), count, grams: weigh(count) }))
   const total = colors.reduce((sum, line) => sum + line.count, 0)
   return { colors, total, totalGrams: weigh(total) }
 })

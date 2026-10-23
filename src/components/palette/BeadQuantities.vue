@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, toRaw } from 'vue'
+import { createPalette, defaultPaletteIds } from '../../domain/palette'
+import { listedColorName } from '../../i18n/colorName'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
@@ -21,7 +23,8 @@ const { t, locale } = useI18n()
 // Read from the Project itself, not through the library's reactive wrapper: a Project is replaced whole by every edit,
 // so its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is
 // slow.
-const quantities = computed(() => (props.project ? computeColorQuantities(toRaw(props.project)) : []))
+const palette = computed(() => createPalette(props.project?.palette ?? defaultPaletteIds()))
+const quantities = computed(() => (props.project ? computeColorQuantities(toRaw(props.project), palette.value) : []))
 
 /** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for five rows before
  * expanding. */
@@ -51,9 +54,8 @@ const avgWeightLabel = computed(() => {
 
 const totalCount = computed(() => quantities.value.reduce((sum, quantity) => sum + quantity.count, 0))
 
-/** A color's name: the Palette's word for it, or its hex for a color from outside the Palette. */
-function colorName(colorId: string | null | undefined, hex: string): string {
-  return (colorId && t.value.colorNames[colorId]) || hex.toUpperCase()
+function nameOf(colorId: string | null, hex: string): string {
+  return listedColorName(t.value, palette.value.byId(colorId), hex)
 }
 
 const expanded = ref(false)
@@ -107,7 +109,7 @@ const expanded = ref(false)
         <tr v-for="quantity in quantities" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
           <td class="bead-quantities__color">
             <span class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
-            {{ colorName(quantity.colorId, quantity.hex) }}
+            {{ nameOf(quantity.colorId, quantity.hex) }}
           </td>
           <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
             {{ groupThousands(quantity.count, locale) }}
