@@ -30,6 +30,43 @@ const maxCommentLines = {
   },
 }
 
+// Ticket 520: nothing raises a touch device's keyboard by itself. A text field is focused through TextField's `focus()`
+// (an object argument with `select` or `asked`), never `.select()`, a native `.focus()` on something that looks like a
+// field, or an input made in code or `contenteditable` (what the template lint of ticket 519 cannot see).
+const TEXT_TAGS = /^(input|textarea)$/i
+const fieldLooking = /input|field|textarea|getElementById/i
+const noSelfRaisedKeyboard = {
+  meta: { type: 'problem', schema: [], messages: { focus: 'Focus a text field with TextField\'s focus({ select | asked }), so a touch device\'s keyboard rises only on a tap (ticket 520).', make: 'Make a text field with <TextField> in a template, not in code or contenteditable (ticket 520).' } },
+  create(context) {
+    const source = context.sourceCode
+    const tag = (node) => node && node.type === 'Literal' && typeof node.value === 'string' && TEXT_TAGS.test(node.value)
+    const editable = (text) => /contenteditable/i.test(text)
+    return {
+      CallExpression(node) {
+        const callee = node.callee
+        if (callee.type === 'Identifier' && callee.name === 'h' && tag(node.arguments[0])) return context.report({ node, messageId: 'make' })
+        if (callee.type !== 'MemberExpression' || callee.property.type !== 'Identifier') return
+        const name = callee.property.name
+        if (name === 'createElement' && tag(node.arguments[0])) return context.report({ node, messageId: 'make' })
+        if (name === 'select' && node.arguments.length === 0) return context.report({ node, messageId: 'focus' })
+        if (name !== 'focus') return
+        const first = node.arguments[0]
+        const helper = first && first.type === 'ObjectExpression' && first.properties.some((p) => p.key && ['select', 'asked'].includes(p.key.name))
+        if (!helper && fieldLooking.test(source.getText(callee.object))) context.report({ node, messageId: 'focus' })
+      },
+      Literal(node) {
+        if (typeof node.value === 'string' && editable(node.value)) context.report({ node, messageId: 'make' })
+      },
+      TemplateElement(node) {
+        if (editable(node.value.raw)) context.report({ node, messageId: 'make' })
+      },
+      Identifier(node) {
+        if (/^contenteditable$/i.test(node.name)) context.report({ node, messageId: 'make' })
+      },
+    }
+  },
+}
+
 export default tseslint.config(
   {
     ignores: ['dist/**', 'test-results/**', 'playwright-report/**'],
@@ -54,6 +91,15 @@ export default tseslint.config(
       // Toolbox predates this rule; renaming it is out of scope here.
       'vue/multi-word-component-names': ['error', { ignores: ['Toolbox'] }],
     },
+  },
+  // Ticket 520: no code raises a touch device's keyboard by itself. The allowlist is TextField (the focus helper) and the
+  // runtime guard (touchFocusGuard, which has to name text fields); tests build their own fields. The managers of focus
+  // (AppModal, PanelShell, menus, roving focus) focus buttons and containers, which the rule does not match by name.
+  {
+    files: ['src/**/*.{ts,vue}'],
+    ignores: ['**/*.test.ts', 'src/testSetup.ts', 'src/testUtils/**', 'src/components/ui/form/TextField.vue', 'src/services/touchFocusGuard.ts'],
+    plugins: { keyboard: { rules: { 'no-self-raised-keyboard': noSelfRaisedKeyboard } } },
+    rules: { 'keyboard/no-self-raised-keyboard': 'error' },
   },
   // Every hotkey chip is drawn by KeyChip (ticket 438), and every text field by TextField (ticket 519), so the keyboard
   // handling lives in one place. `vue/no-restricted-syntax` is one rule: a later block replaces an earlier one for the

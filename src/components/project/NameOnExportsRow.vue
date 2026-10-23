@@ -16,11 +16,13 @@ const { t } = useI18n()
 const draft = ref(props.name)
 const editing = ref(false)
 const inputId = useId()
+const nameField = ref<InstanceType<typeof TextField>>()
 
 function edit() {
   draft.value = props.name
   editing.value = true
-  void nextTick(() => document.getElementById(inputId)?.focus())
+  // The person tapped the pencil to type, so the keyboard rises on a touch device too (ticket 520).
+  void nextTick(() => nameField.value?.focus({ asked: true }))
 }
 
 /** Saves what is typed; a set name that was left unchanged stays as it was. */
@@ -42,6 +44,7 @@ function commit() {
       <template #aside>{{ draft.length }}/{{ MAX_MAKER_NAME }}</template>
       <TextField
         :id="inputId"
+        ref="nameField"
         :data-handles-escape="name ? '' : undefined"
         @panel-escape="draft = name; editing = false"
         v-model="draft"
