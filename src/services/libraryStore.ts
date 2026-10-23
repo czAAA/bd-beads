@@ -8,6 +8,8 @@ import {
   type EncodedProject,
   type EncodedVersionThreeProject,
 } from '../domain/projectEncoding'
+import { paletteFromDevice } from '../domain/palette'
+import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDevicePaletteOrder } from './legacyDevicePalette'
 import { readKey } from './storageKeys'
 
 const STORAGE_KEY = 'openbeads:patterns'
@@ -77,6 +79,26 @@ function keepUnreadable(raw: string): void {
   }
 }
 
+// TEMPORARY (ticket 0525): removed at the public release (ticket 0391). A Project stored before the Palette belonged to
+// it is given the added colors and slot order this device kept, once: they are written into the library, and only then
+// are the device keys removed.
+function withDevicePalette(stored: StoredProject[]): StoredProject[] {
+  const withoutPalette = stored.filter((project) => (project as Partial<Project>).palette === undefined)
+  const added = readDeviceAddedColors(localStorage)
+  const order = readDevicePaletteOrder(localStorage)
+  if (withoutPalette.length === 0 || (added.length === 0 && order.length === 0)) return stored
+  const palette = paletteFromDevice(added, order)
+  const migrated = stored.map((project) => (withoutPalette.includes(project) ? { ...project, palette } : project))
+  try {
+    saveProjects(migrated.map(normalizeProject))
+    localStorage.removeItem(ADDED_COLORS_KEY)
+    localStorage.removeItem(PALETTE_ORDER_KEY)
+  } catch {
+    // No room to write: the device keys stay, and the next load tries again.
+  }
+  return migrated
+}
+
 // Reads the whole library in any stored format (see READERS); the next save rewrites it in the current one. For an
 // unreadable value (bad JSON, wrong shape, newer version) returns no Projects, after keeping the bytes aside (see
 // UNREADABLE_KEY) so they survive.
@@ -91,7 +113,7 @@ export function loadProjects(): Project[] {
     const version = versionOf(parsed)
     const read = version === undefined ? undefined : READERS[version]
     if (read) {
-      return read(parsed).map(withName).map(normalizeProject)
+      return withDevicePalette(read(parsed).map(withName)).map(normalizeProject)
     }
   } catch {
     // Unparseable, or not the shape the version it claims implies — the same situation either way: unreadable here.

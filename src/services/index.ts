@@ -1,7 +1,6 @@
 import type { DecodeImage } from '../domain/imageConversion'
 import { downloadFile, type DownloadFile } from './fileDownload'
 import { decodeImageFile } from './imageDecode'
-import { browserAddedColorsStore, type AddedColorsStore } from './addedColorsStore'
 import { browserLibraryStore, type LibraryStore } from './libraryStore'
 import { browserDevicePreferences, type DevicePreferences } from './devicePreferences'
 import { browserAppUpdates, type AppUpdates } from './offlineShell'
@@ -14,7 +13,6 @@ export interface Services {
   libraryStore: LibraryStore
   downloadFile: DownloadFile
   decodeImage: DecodeImage
-  addedColorsStore: AddedColorsStore
   devicePreferences: DevicePreferences
   tourStore: TourStore
   appUpdates: AppUpdates
@@ -25,7 +23,6 @@ export const browserServices: Services = {
   libraryStore: browserLibraryStore,
   downloadFile,
   decodeImage: decodeImageFile,
-  addedColorsStore: browserAddedColorsStore,
   devicePreferences: browserDevicePreferences,
   tourStore: browserTourStore,
   appUpdates: browserAppUpdates,
