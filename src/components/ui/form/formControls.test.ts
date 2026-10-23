@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import FileButton from './FileButton.vue'
 import FormField from './FormField.vue'
 import NumberField from './NumberField.vue'
@@ -232,6 +232,7 @@ describe('AppStepper', () => {
         max: 4,
         ...props,
       },
+      attachTo: document.body,
     })
     return { wrapper, value }
   }
@@ -306,6 +307,16 @@ describe('AppStepper', () => {
       expect(input.attributes('inputmode')).toBe('numeric')
       expect(input.attributes('aria-label')).toBe('Colors')
       expect(input.element.value).toBe('3')
+    })
+
+    it('focuses and selects the number when tapped, also on a touch device (ticket 518)', async () => {
+      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+      const { wrapper, input } = await open(12)
+      await nextTick()
+      expect(document.activeElement).toBe(input.element)
+      expect([input.element.selectionStart, input.element.selectionEnd]).toEqual([0, 2])
+      wrapper.unmount()
+      vi.unstubAllGlobals()
     })
 
     it('commits on Enter', async () => {

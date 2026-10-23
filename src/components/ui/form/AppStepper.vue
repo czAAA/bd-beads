@@ -2,6 +2,7 @@
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useHoldRepeat } from '../../../composables/ui/useHoldRepeat'
 import AppTooltip from '../AppTooltip.vue'
+import TextField from './TextField.vue'
 
 /** The − value + control (ticket 149; Stepper card): hold a button to repeat (ticket 355), tap the number to type it
  * (Enter/blur commits, Escape cancels, clamped), `disabled` shows its reason. */
@@ -44,7 +45,7 @@ const reasoned = computed(() => props.disabled && props.disabledBody !== undefin
 
 const editing = ref(false)
 const draft = ref('')
-const input = useTemplateRef<HTMLInputElement>('input')
+const input = useTemplateRef<InstanceType<typeof TextField>>('input')
 const valueButton = useTemplateRef<HTMLButtonElement>('valueButton')
 
 function clamp(n: number) {
@@ -76,8 +77,8 @@ async function startEditing(event: Event) {
   draft.value = String(value.value)
   editing.value = true
   await nextTick()
-  input.value?.focus()
-  input.value?.select()
+  // The person tapped the number to type, so the keyboard rises on a touch device too (ticket 518).
+  input.value?.focus({ select: true, asked: true })
 }
 
 /** A plain number, whole or decimal; hex, exponents and the like are not a value (a decimal is rounded to a whole
@@ -140,11 +141,11 @@ watch(
       >
         {{ display ?? value }}
       </button>
-      <input
+      <TextField
         v-if="editing"
         ref="input"
         v-model="draft"
-        class="stepper__input"
+        bare
         type="text"
         inputmode="numeric"
         autocomplete="off"
@@ -254,24 +255,15 @@ watch(
   visibility: hidden;
 }
 
-.stepper__value-button:focus-visible,
-.stepper__input:focus {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: var(--focus-offset);
-}
-
-.stepper__input {
+/* The typed number's own focus ring is the TextField's. */
+.stepper__value :deep(.text-field--bare) {
   position: absolute;
   inset: 0;
-  box-sizing: border-box;
-  width: 100%;
-  min-width: 0;
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  text-align: center;
-  background: var(--elevated);
-  border: 0;
+}
+
+.stepper__value-button:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
 }
 
 .stepper--disabled {

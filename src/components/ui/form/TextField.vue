@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
 
-// A single-line input (ticket 149): a `unit` is a label on the top border that cuts it (ticket 224) and reaches screen
-// readers once, as the description; attributes go to the <input> itself. `compact` is the 2rem field of the Frame bar
-// (ticket 517); `selectOnFocus` selects the text whenever the field takes focus.
+// A single-line input (ticket 149): a `unit` labels and cuts the top border (ticket 224) and is read once, as the
+// description. Attributes go to the <input>. `compact` is the 2rem Frame bar field (ticket 517), `selectOnFocus` selects
+// on every focus, `bare` has no frame, for a field over a control that has one (Stepper, ticket 518).
 defineOptions({ inheritAttrs: false })
-withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean }>(), {
+withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean; bare?: boolean }>(), {
   unit: undefined,
 })
 const value = defineModel<string | number>()
@@ -15,10 +15,11 @@ const input = ref<HTMLInputElement>()
 const tapped = ref(false)
 
 /** Focuses the field, selecting its text when asked. On a touch device nothing happens unless the person tapped the
- * field, so the virtual keyboard stays down (ticket 515); `preventScroll` keeps a clipped ancestor from scrolling. */
-function focus(options: { select?: boolean } = {}) {
+ * field, so the virtual keyboard stays down (ticket 515), unless the person `asked` for it by tapping something that opens
+ * this field (ticket 518); `preventScroll` keeps a clipped ancestor from scrolling. */
+function focus(options: { select?: boolean; asked?: boolean } = {}) {
   const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
-  if (touch && !tapped.value) return
+  if (touch && !tapped.value && !options.asked) return
   input.value?.focus({ preventScroll: true })
   if (options.select) input.value?.select()
 }
@@ -26,7 +27,7 @@ defineExpose({ focus })
 </script>
 
 <template>
-  <span class="text-field" :class="{ 'text-field--invalid': invalid, 'text-field--disabled': disabled, 'text-field--compact': compact }">
+  <span class="text-field" :class="{ 'text-field--invalid': invalid, 'text-field--disabled': disabled, 'text-field--compact': compact, 'text-field--bare': bare }">
     <input
       ref="input"
       v-model="value"
@@ -61,6 +62,24 @@ defineExpose({ focus })
   border-color: var(--ink);
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: 2px;
+}
+
+.text-field--bare {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  background: var(--elevated);
+  border: 0;
+  border-radius: 0;
+}
+
+.text-field--bare:focus-within {
+  outline-offset: var(--focus-offset);
+}
+
+.text-field--bare .text-field__input {
+  font: inherit;
+  text-align: center;
 }
 
 .text-field--invalid {
