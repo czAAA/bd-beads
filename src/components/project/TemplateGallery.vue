@@ -9,7 +9,7 @@ import TemplatePicture from './TemplatePicture.vue'
 
 // The Template gallery at the top of New Project (ticket 493, spec 0488; TemplateGallery card): a Blank canvas tile and one
 // card per Template, in a radiogroup of one tab stop. Blank canvas is the choice the form below makes; a tap on a Template
-// card opens its setup (the panel's next sub-view). One column on a phone and in the dropdown, two in the Top sheet at width.
+// card opens its setup (the panel's next sub-view). One column.
 const props = defineProps<{
   /** Opened from the Project panel's Frame area (ticket 495): there is no Blank canvas to start from. */
   withoutBlank?: boolean
@@ -66,7 +66,6 @@ function onKeydown(event: KeyboardEvent) {
   <div
     ref="rootEl"
     class="template-gallery"
-    :class="{ 'template-gallery--sheet': panel?.sheet.value }"
     role="radiogroup"
     :aria-label="t.templates.galleryLabel"
     data-testid="template-gallery"
@@ -110,13 +109,6 @@ function onKeydown(event: KeyboardEvent) {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-8);
-}
-
-/* The Top sheet at width has room for two columns. */
-@media (min-width: 40rem) {
-  .template-gallery--sheet {
-    grid-template-columns: 1fr 1fr;
-  }
 }
 
 .template-gallery__card {

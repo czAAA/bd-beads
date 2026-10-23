@@ -5,7 +5,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
 import { PANEL_CONTEXT } from './panelContext'
 
-// One row of a panel (MenuPanel card): `item-height` tall (44 to 48px in the Top sheet or on a coarse pointer), icon,
+// One row of a panel (MenuPanel card): `item-height` tall (44px on a coarse pointer), icon,
 // label, optional value. `accent` colors it as the panel's main action (New Project). A button, or a link with `href` (`external` opens a new tab). `danger` colors it for Delete. A
 // disabled item is `aria-disabled` so it keeps its Tooltip saying why. `closes` shuts the panel before `select` runs.
 defineOptions({ inheritAttrs: false })

@@ -11,4 +11,4 @@ How things move: four durations, three easings, and the rules that keep motion o
 
 Hand-written from the Phase B sign-off; the tokens and classes live in `components/bundle.css`.
 
-- **Menu and Project (spec 0440):** the dropdown fades in over `duration-base` with a 4px move and out in 150ms; the Top sheet slides on `transform` over `duration-slow` with `ease-out`, its scrim fading over `duration-base`. Under reduced motion both only fade.
+- **Menu and Project (spec 0440):** the dropdown fades in over `duration-base` with a 4px move and out in 150ms, on every screen size. Under reduced motion it only fades.

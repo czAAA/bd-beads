@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, nextTick, useId } from 'vue'
+import { computed, nextTick, useId } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { canvasBackgrounds } from '../../rendering/canvasBackgrounds'
@@ -9,7 +9,6 @@ import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import AppIcon from '../ui/AppIcon.vue'
 import AppSwatch from '../ui/AppSwatch.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
-import { PANEL_CONTEXT } from '../shell/panelContext'
 
 // The Canvas section of the Project panel (ProjectPanel and CanvasBackground cards, tickets 252, 348, 443): Canvas
 // background swatches (five light, six dark; a radio group applying at once) and the Position marks, Dots | Squares.
@@ -17,11 +16,9 @@ import { PANEL_CONTEXT } from '../shell/panelContext'
 const { t } = useI18n()
 const theme = useResolvedTheme()
 const canvas = useCanvasBackground()
-const context = inject(PANEL_CONTEXT, undefined)
 
 const swatches = computed(() => canvasBackgrounds(theme.value))
 const current = computed(() => canvas.background.value)
-const sheet = computed(() => context?.sheet.value ?? false)
 
 const marks = computed({
   get: () => canvas.positionMarks.value,
@@ -66,7 +63,7 @@ function onSwatchKeydown(event: KeyboardEvent, index: number) {
 </script>
 
 <template>
-  <section class="canvas-section" :class="{ 'canvas-section--sheet': sheet }" role="group" :aria-labelledby="headingId" data-testid="canvas-section">
+  <section class="canvas-section" role="group" :aria-labelledby="headingId" data-testid="canvas-section">
     <h3 :id="headingId" class="canvas-section__heading">{{ t.panels.project.canvas }}</h3>
     <div v-if="swatches.length" class="canvas-section__swatches" role="radiogroup" :aria-label="t.canvas.canvasColor.label" data-testid="canvas-color-picker">
       <AppSwatch
@@ -104,10 +101,6 @@ function onSwatchKeydown(event: KeyboardEvent, index: number) {
   gap: var(--space-8);
   padding: var(--space-4) var(--space-12);
   color: var(--ink);
-}
-
-.canvas-section--sheet {
-  --swatch-size: 34px;
 }
 
 .canvas-section__heading {
@@ -153,10 +146,6 @@ function onSwatchKeydown(event: KeyboardEvent, index: number) {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-8);
-}
-
-.canvas-section--sheet .canvas-section__marks {
-  margin-top: 18px;
 }
 
 .canvas-section__label {

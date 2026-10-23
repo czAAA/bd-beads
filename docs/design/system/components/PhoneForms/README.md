@@ -2,7 +2,7 @@
 
 New Pattern and Convert image framing on a phone.
 
-- New Project is the Menu panel's sub-view (MenuPanel card), in the Top sheet on a phone: the primary Create Project button sits under the fields, then "or" and Convert image with its limits line; the system keyboard and pickers do the rest. There is no modal sheet for it (spec 0478).
+- New Project is the Menu panel's sub-view (MenuPanel card), in the dropdown on a phone too: the primary Create Project button sits under the fields, then "or" and Convert image with its limits line; the system keyboard and pickers do the rest. There is no modal sheet for it (spec 0478).
 - The Template gallery (TemplateGallery card) is the first block of that sub-view, one column of cards above the fields; a card pushes the Template's setup one level deeper, with Create Project in the pinned footer, and Back returns to the gallery (ticket 0493).
 - Framing takes the whole screen: header with close, the picture, then the controls and Create / Cancel at the bottom, in thumb reach.
 
