@@ -32,7 +32,7 @@ for (const [name, width, height] of WIDTHS) {
       expect(box.y - (button.y + button.height), id).toBeLessThan(12)
       expect(box.x, id).toBeGreaterThanOrEqual(0)
       expect(box.x + box.width, id).toBeLessThanOrEqual(width)
-      if (box.x + box.width < width - 16) expect(box.x, id).toBeCloseTo(button.x, 0)
+      if (box.x + box.width < width - 8) expect(box.x, id).toBeCloseTo(button.x, 0)
     }
     await context.close()
   })
