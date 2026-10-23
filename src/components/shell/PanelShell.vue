@@ -2,21 +2,20 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, useId, watch } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { PANEL_CONTEXT } from './panelContext'
 import { PANEL_OPENERS } from './panels'
 import IconButton from '../ui/IconButton.vue'
 import { useI18n } from '../../i18n/useI18n'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
 
-// The shell Menu, Project and the Frame bar open in (spec 0440, tickets 443, 475; MenuPanel, TopSheet cards): a dropdown
-// from 1024px, else a Top sheet under the strip. Escape or a press outside closes it; focus returns to the button.
+// The shell Menu, Project and the Frame bar open in (spec 0440, tickets 443, 475; MenuPanel card): a dropdown under the
+// button on every device and screen size. Escape or a press outside closes it; focus returns to the button.
 // A `sub` slot is a stack of sub-views (spec 0478, ticket 493): Back arrow, title, pinned `footer`; Back and Escape pop.
 const props = defineProps<{
   title: string
   /** The strip button this panel hangs from, by test id. */
   anchor: string
-  /** The Menu is a `menu` of items from 1024px; the Project panel holds fields and is a plain dialog. */
+  /** The Menu is a `menu` of items; the Project panel holds fields and is a plain dialog. */
   menu?: boolean
   /** Opens without focusing a field, so a tablet's keyboard stays down (the Frame bar's size fields). */
   skipsFields?: boolean
@@ -29,8 +28,6 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ close: [] }>()
 
-const wide = useMediaQuery('(min-width: 1024px)')
-const sheet = computed(() => !wide.value)
 const { t } = useI18n()
 /** One entry per sub-view pushed over the root, with the title it was opened with and the row that opened it (found
  * again by its test id to take focus back from Back). */
@@ -44,7 +41,7 @@ const inSub = computed(() => stack.value.length > 0)
 const depth = computed(() => stack.value.length)
 const openedInSub = props.startInSub ?? false
 const currentTitle = computed(() => stack.value.at(-1)?.title ?? props.subTitle)
-const itemRole = computed(() => (wide.value && props.menu && !inSub.value ? ('menuitem' as const) : undefined))
+const itemRole = computed(() => (props.menu && !inSub.value ? ('menuitem' as const) : undefined))
 const subBodyEl = ref<HTMLElement>()
 function openSub(title?: string) {
   stack.value.push({ title, returnTestId: document.activeElement?.getAttribute('data-testid') ?? null })
@@ -57,7 +54,7 @@ function goBack() {
     ;(row ?? focusables()[0])?.focus({ preventScroll: true })
   })
 }
-provide(PANEL_CONTEXT, { sheet, itemRole, close: () => emit('close'), openSub })
+provide(PANEL_CONTEXT, { itemRole, close: () => emit('close'), openSub })
 
 const titleId = useId()
 const panelEl = ref<HTMLElement>()
@@ -75,37 +72,14 @@ const dropdownStyle = computed(() => ({
   ...(props.width ? { width: props.width } : {}),
 }))
 
-/** The Top sheet's box: from the strip's bottom edge down to 40px above the canvas box's bottom, the box's full
- * width. */
-const sheetBox = ref<Record<string, string>>({})
-const scrimBox = ref<Record<string, string>>({})
-function measureSheet() {
-  const strip = document.querySelector('[data-testid="canvas-strip"]')?.getBoundingClientRect()
-  const box = document.querySelector('[data-testid="app-canvas"]')?.getBoundingClientRect()
-  if (!strip || !box) return
-  sheetBox.value = {
-    top: `${strip.bottom}px`,
-    left: `${box.left}px`,
-    width: `${box.width}px`,
-    maxHeight: `${Math.max(0, box.bottom - strip.bottom - 40)}px`,
-  }
-  scrimBox.value = { top: `${strip.bottom}px`, left: `${box.left}px`, width: `${box.width}px`, height: `${Math.max(0, box.bottom - strip.bottom)}px` }
-}
-
-/** The style the panel is placed with, as a dropdown or as the Top sheet. */
-const panelBox = computed(() => (sheet.value ? sheetBox.value : dropdownStyle.value))
-
 function place() {
   anchorEl.value = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? undefined
-  if (!sheet.value) {
-    anchored.follow()
-  } else {
-    anchored.stop()
-    measureSheet()
-  }
+  anchored.follow()
 }
-watch([wide, () => props.anchor], () => void nextTick(place))
-watch(() => props.anchor, () => (stack.value = []))
+watch(() => props.anchor, () => {
+  stack.value = []
+  void nextTick(place)
+})
 
 // Escape first ends an edit in progress: a cancellable field (the Project's rename) marks its form
 // `data-handles-escape` and hears a `panel-escape` event; with none, Escape closes the panel.
@@ -140,27 +114,14 @@ function focusEntry() {
   ;(first ?? focusables()[0] ?? panelEl.value)?.focus({ preventScroll: true })
 }
 
-/** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab wraps
- * in the Top sheet and leaves the dropdown. */
+/** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab is
+ * left to the browser: it leaves the dropdown. */
 function onKeydown(event: KeyboardEvent) {
   // A key the content already used (the Frame bar's arrows move the Frame) is not a move through the panel.
   if (event.defaultPrevented) return
   const target = event.target as HTMLElement
   const list = focusables()
-  if (event.key === 'Tab') {
-    if (!sheet.value) return
-    const first = list[0]
-    const last = list.at(-1)
-    if (!first || !last) return event.preventDefault()
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault()
-      last.focus({ preventScroll: true })
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault()
-      first.focus({ preventScroll: true })
-    }
-    return
-  }
+  if (event.key === 'Tab') return
   const own = target.closest('input, textarea, [role="radiogroup"], [aria-haspopup]') !== null
   if (own || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
   event.preventDefault()
@@ -169,50 +130,24 @@ function onKeydown(event: KeyboardEvent) {
   list[next]?.focus({ preventScroll: true })
 }
 
-/** The Dropdown closes when focus leaves it with Tab, . */
+/** The dropdown closes when focus leaves it with Tab. */
 function onFocusOut(event: FocusEvent) {
-  if (sheet.value) return
   const next = event.relatedTarget
   if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(OPENERS) && !next.closest('[popover]')) emit('close')
 }
 
-/** The Top sheet's handle: a tap or a drag up closes it. */
-const DRAG_CLOSE_PX = 60
-let dragStartY: number | null = null
-let dragOffset = 0
-function onHandleDown(event: PointerEvent) {
-  dragStartY = event.clientY
-  dragOffset = 0
-  ;(event.currentTarget as HTMLElement).setPointerCapture?.(event.pointerId)
-}
-function onHandleMove(event: PointerEvent) {
-  if (dragStartY === null || !panelEl.value) return
-  dragOffset = Math.max(0, dragStartY - event.clientY)
-  panelEl.value.style.transform = `translateY(${-dragOffset}px)`
-}
-function onHandleUp() {
-  if (dragStartY === null) return
-  const offset = dragOffset
-  dragStartY = null
-  dragOffset = 0
-  if (panelEl.value) panelEl.value.style.transform = ''
-  if (offset < 4 || offset >= DRAG_CLOSE_PX) emit('close')
-}
-
 /** `place` again after the button moved with no scroll or resize (the edit pencil on a zoom); the panel's element and
  * box, for what keeps clear of it. */
-defineExpose({ place, el: panelEl, box: panelBox })
+defineExpose({ place, el: panelEl, box: dropdownStyle })
 
 let opener: HTMLElement | null = null
 const pressClosed = usePressClosed()
 onMounted(() => {
   opener = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`)
   place()
-  window.addEventListener('resize', measureSheet)
   void nextTick(focusEntry)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('resize', measureSheet)
   anchored.stop()
   const target = document.querySelector<HTMLElement>(`[data-testid="${props.anchor}"]`) ?? opener
   // A dialog the panel opened (Duplicate, Delete) takes focus itself and gives it back when it closes.
@@ -221,17 +156,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div v-if="sheet" class="top-sheet-scrim" :style="scrimBox" data-testid="top-sheet-scrim" />
   <div
     ref="panelEl"
-    class="panel-shell"
-    :class="sheet ? 'panel-shell--sheet' : 'panel-shell--dropdown'"
-    :style="panelBox"
+    class="panel-shell panel-shell--dropdown"
+    :style="dropdownStyle"
     :role="itemRole ? 'menu' : 'dialog'"
-    :aria-modal="sheet ? 'true' : undefined"
     :aria-labelledby="titleId"
     tabindex="-1"
-    :data-testid="sheet ? 'top-sheet' : 'panel-dropdown'"
+    data-testid="panel-dropdown"
     @keydown="onKeydown"
     @focusout="onFocusOut"
   >
@@ -247,18 +179,6 @@ onBeforeUnmount(() => {
     <footer v-if="inSub && $slots.footer" class="panel-shell__footer" data-testid="panel-footer">
       <slot name="footer" :depth="depth" />
     </footer>
-    <div
-      v-if="sheet"
-      class="panel-shell__grab"
-      data-testid="sheet-handle"
-      aria-hidden="true"
-      @pointerdown="onHandleDown"
-      @pointermove="onHandleMove"
-      @pointerup="onHandleUp"
-      @pointercancel="onHandleUp"
-    >
-      <div class="panel-shell__handle" />
-    </div>
   </div>
 </template>
 
@@ -341,60 +261,16 @@ onBeforeUnmount(() => {
   animation: panel-in var(--duration-base) var(--ease-out);
 }
 
-/* The Top sheet (TopSheet card): its box is set from the strip and the canvas box; bottom corners rounded, the
- * handle at the bottom. */
-.panel-shell--sheet {
-  --panel-item-height: 2.875rem;
-  z-index: var(--z-sheet);
-  padding: var(--space-8) var(--space-10) 0;
-  border-width: 0 0 1px;
-  border-radius: 0 0 var(--top-sheet-radius) var(--top-sheet-radius);
-  animation: top-sheet-in var(--duration-slow) var(--ease-out);
-}
-
-:root[data-theme='contrast'] .panel-shell--sheet {
-  border-width: 0 0 2px;
-}
-
 @media (pointer: coarse) {
   .panel-shell {
     --panel-item-height: 2.75rem;
   }
 }
 
-.top-sheet-scrim {
-  position: fixed;
-  z-index: calc(var(--z-sheet) - 1);
-  background: var(--scrim);
-  animation: panel-fade var(--duration-base) var(--ease-out);
-  pointer-events: none;
-}
-
-.panel-shell__grab {
-  flex: none;
-  padding: var(--space-10) 0;
-  touch-action: none;
-  cursor: grab;
-}
-
-.panel-shell__handle {
-  width: 2.25rem;
-  height: 4px;
-  margin: 0 auto;
-  background: var(--line-strong);
-  border-radius: var(--radius-full);
-}
-
 @keyframes panel-in {
   from {
     opacity: 0;
     transform: translateY(-4px);
-  }
-}
-
-@keyframes top-sheet-in {
-  from {
-    transform: translateY(-100%);
   }
 }
 
@@ -405,8 +281,7 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .panel-shell--dropdown,
-  .panel-shell--sheet {
+  .panel-shell--dropdown {
     animation: panel-fade var(--duration-base) var(--ease-out);
   }
 }

@@ -205,7 +205,7 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
-    const sheet = wrapper.find('[data-testid="top-sheet"]')
+    const sheet = wrapper.find('[data-testid="panel-dropdown"]')
     expect(sheet.find('[data-testid="save-button"]').exists()).toBe(true)
     expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
   })
@@ -268,23 +268,19 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
-    const sheet = wrapper.get('[data-testid="top-sheet"]')
+    const sheet = wrapper.get('[data-testid="panel-dropdown"]')
     expect(sheet.get('[data-testid="project-name"]').text()).not.toBe('')
     expect(sheet.get('[data-testid="save-state"]').text()).toBe('saved · this device')
     expect(sheet.find('[data-testid="save-state"] svg').exists()).toBe(true)
     expect(sheet.get('[data-testid="phone-sheet-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
-  it('opens the Menu from the Canvas strip as a Top sheet with language, theme, Overview and the source link, and nothing about the Project (tickets 295, 443)', async () => {
+  it('opens the Menu from the Canvas strip as a dropdown with language, theme, Overview and the source link, and nothing about the Project (tickets 295, 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
-    const sheet = wrapper.get('[data-testid="top-sheet"]')
-    expect(wrapper.find('[data-testid="top-sheet-scrim"]').exists()).toBe(true)
-    // Under 1024px the choices are folded rows, not the dropdown's switcher, and none is open until tapped.
-    expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(false)
-    expect(sheet.findAll('[aria-expanded="false"]').length).toBeGreaterThanOrEqual(3)
-    expect(sheet.findAll('[role="radiogroup"]')).toHaveLength(0)
+    const sheet = wrapper.get('[data-testid="panel-dropdown"]')
+    expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(true)
     expect(sheet.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(false)
     expect(sheet.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
     expect(sheet.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')

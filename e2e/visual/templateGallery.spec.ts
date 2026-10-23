@@ -2,13 +2,12 @@ import { expect, test } from '@playwright/test'
 import { openApp, openDockSheet } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** The Template gallery at the top of New Project (ticket 493, 494): the Menu's dropdown in each theme, high contrast too, and the Top sheet at
- * phone width. */
+/** The Template gallery at the top of New Project (ticket 493, 494): the Menu's dropdown in each theme, high contrast too, and at phone width. */
 for (const [name, scheme, viewport, panel] of [
   ['light', 'light', { width: 1400, height: 900 }, 'panel-dropdown'],
   ['dark', 'dark', { width: 1400, height: 900 }, 'panel-dropdown'],
   ['contrast', 'light', { width: 1400, height: 900 }, 'panel-dropdown'],
-  ['phone', 'light', { width: 390, height: 800 }, 'top-sheet'],
+  ['phone', 'light', { width: 390, height: 800 }, 'panel-dropdown'],
 ] as const) {
   test(`Template gallery, ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: scheme, viewport, reducedMotion: 'reduce', ...(name === 'contrast' ? { contrast: 'more' as const } : {}) })

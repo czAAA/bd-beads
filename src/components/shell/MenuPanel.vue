@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import type { InputMode } from '../../domain/inputMode'
 import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
@@ -8,8 +7,6 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { TOUR_ENABLED } from '../../features'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { overviewUrl } from '../../overview/overviewRoute'
-import { useThemePick } from '../../theme/useThemePick'
-import type { ThemePick } from '../../theme/theme'
 import ProjectImport from '../import/ProjectImport.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import PanelItem from './PanelItem.vue'
@@ -22,8 +19,7 @@ import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 
 // The body of Menu (spec 0440, ticket 443; MenuPanel card): what is about the app and the device, in four sections
-// (Projects, Preferences, Help, About). The same rows fill the dropdown and the Top sheet, where the choices become one
-// option per line. It only asks: the app shell does the work.
+// (Projects, Preferences, Help, About). It only asks: the app shell does the work.
 defineProps<{
   projects: Project[]
   toolsPosition: PillPosition
@@ -44,8 +40,7 @@ const emit = defineEmits<{
   tour: []
 }>()
 
-const { t, locale, setLocale } = useI18n()
-const { pick, setPick } = useThemePick()
+const { t } = useI18n()
 const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
 
@@ -61,13 +56,6 @@ const actions = {
 }
 const version = __APP_VERSION__
 
-const languageOptions = computed(() => LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], chip: localeCode(code), lang: code, testid: `language-${code}` })))
-const themeOptions = computed<{ value: ThemePick; label: string; icon: 'device' | 'sun' | 'moon' | 'contrast' }[]>(() => [
-  { value: 'device', icon: 'device', label: t.value.theme.matchDevice },
-  { value: 'light', icon: 'sun', label: t.value.theme.light },
-  { value: 'dark', icon: 'moon', label: t.value.theme.dark },
-  { value: 'contrast', icon: 'contrast', label: t.value.theme.contrast },
-])
 const positionOptions = computed(() => [
   { value: 'left' as const, icon: 'position-left' as const, label: t.value.toolPill.left },
   { value: 'top' as const, icon: 'position-top' as const, label: t.value.toolPill.top },
@@ -78,7 +66,6 @@ const inputOptions = computed(() => [
   { value: 'pen' as const, label: t.value.panels.menu.pen, icon: 'pen-mode' as const },
   { value: 'mouse' as const, label: t.value.panels.menu.mouse, icon: 'pen-mode-off' as const },
 ])
-const sheet = computed(() => context?.sheet.value ?? false)
 </script>
 
 <template>
@@ -117,13 +104,11 @@ const sheet = computed(() => context?.sheet.value ?? false)
     </PanelSection>
 
     <PanelSection :label="t.panels.menu.preferences">
-      <SettingChoice v-if="sheet" :model-value="locale" :label="t.languageSwitcher.ariaLabel" icon="globe" :options="languageOptions" data-testid="menu-language" @update:model-value="setLocale" />
-      <div v-else class="menu-panel__row">
+      <div class="menu-panel__row">
         <span class="menu-panel__label"><AppIcon name="globe" :size="16" />{{ t.languageSwitcher.ariaLabel }}</span>
         <LanguageSwitcher />
       </div>
-      <SettingChoice v-if="sheet" :model-value="pick" :label="t.theme.groupLabel" icon="sun" :options="themeOptions" @update:model-value="setPick" />
-      <div v-else class="menu-panel__stack">
+      <div class="menu-panel__stack">
         <span class="menu-panel__label"><AppIcon name="sun" :size="16" />{{ t.theme.groupLabel }}</span>
         <ThemeToggle />
       </div>

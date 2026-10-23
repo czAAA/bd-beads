@@ -89,8 +89,8 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
   </PanelHost>
 
   <!--
-    Menu and Project (spec 0440, ticket 443; MenuPanel, ProjectPanel and TopSheet cards): one panel host, a dropdown from 1024px
-    and a Top sheet under it, which stays mounted while the two swap. Menu is about the app and the device, Project about the
+    Menu and Project (spec 0440, ticket 443; MenuPanel and ProjectPanel cards): one panel host, a dropdown at every width,
+    which stays mounted while the two swap. Menu is about the app and the device, Project about the
     open Project; New Project is Menu's sub-view and the Saved Projects sheet below opens from it.
   -->
   <PanelHost
