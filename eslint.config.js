@@ -55,14 +55,25 @@ export default tseslint.config(
       'vue/multi-word-component-names': ['error', { ignores: ['Toolbox'] }],
     },
   },
-  // Every hotkey chip is drawn by KeyChip (ticket 438), so it follows the device and the Keyboard shortcuts switch.
-  {
-    files: ['src/**/*.vue'],
-    ignores: ['src/components/ui/KeyChip.vue'],
-    rules: {
-      'vue/no-restricted-syntax': ['error', { selector: "VElement[name='kbd']", message: 'Draw a key chip with <KeyChip> (ticket 438).' }],
-    },
-  },
+  // Every hotkey chip is drawn by KeyChip (ticket 438), and every text field by TextField (ticket 519), so the keyboard
+  // handling lives in one place. `vue/no-restricted-syntax` is one rule: a later block replaces an earlier one for the
+  // files it matches, so each exemption lists the selectors that still apply to its files.
+  ...(() => {
+    const kbd = { selector: "VElement[name='kbd']", message: 'Draw a key chip with <KeyChip> (ticket 438).' };
+    const textEntry = {
+      selector: "VElement[name=/^(input|textarea)$/]:not(:has(VAttribute[directive=false][key.name='type'][value.value='file']))",
+      message: 'Use <TextField> for text entry (ticket 519).',
+    };
+    const block = (ignores, selectors) => ({ files: ['src/**/*.vue'], ignores, rules: { 'vue/no-restricted-syntax': ['error', ...selectors] } });
+    // The file inputs open a picker, not a keyboard, so only these two components may hold a bare <input type="file">.
+    const fileInputs = ['src/components/ui/form/FileButton.vue', 'src/components/import/ProjectImport.vue'];
+    return [
+      block(['src/components/ui/KeyChip.vue', 'src/components/ui/form/TextField.vue'], [kbd, textEntry]),
+      { files: ['src/components/ui/KeyChip.vue'], rules: { 'vue/no-restricted-syntax': ['error', textEntry] } },
+      { files: ['src/components/ui/form/TextField.vue'], rules: { 'vue/no-restricted-syntax': ['error', kbd] } },
+      ...fileInputs.map((f) => ({ files: [f], rules: { 'vue/no-restricted-syntax': ['error', kbd] } })),
+    ];
+  })(),
   // One overlay registry (ticket 449, ADR 0061): a press outside an overlay is handled by useOverlayLayer alone, so no
   // other code listens to raw document/window pointerdown, mousedown or click. The canvas gestures (pan, pinch,
   // page-zoom lock, pen mode) and the click swallowers are the exceptions.
