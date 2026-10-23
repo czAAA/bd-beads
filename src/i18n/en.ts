@@ -223,7 +223,7 @@ export const en: Translations = {
     overviewItem: 'Overview',
     tourItem: 'Take the tour',
     sourceItem: 'Source code',
-    projectSheetLabel: 'Project',
+    projectPanelLabel: 'Project',
   },
   overview: {
     pageTitle: 'Overview',
@@ -647,7 +647,7 @@ export const en: Translations = {
     selectAll: 'Select every bead at once.',
     hand: 'Drag to move around the Canvas.',
     editFrame: 'Show or hide the handles on the Frame.',
-    frameBar: 'Open the Frame’s size, Rotate and Remove.',
+    framePanel: 'Open the Frame’s size, Rotate and Remove.',
     frameEdgeOut: 'Grow the Frame by one bead on this side.',
     frameEdgeIn: 'Shrink the Frame by one bead on this side.',
     frameEdgeInDisabled: 'The Frame can’t get any smaller on this side.',

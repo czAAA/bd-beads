@@ -1,5 +1,5 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
-import { copySelection, currentZoomPercent, openApp, openDockSheet, openNewProjectForm, projectBox, selectTool, settle, stateConvertSize } from '../support/app'
+import { copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, stateConvertSize } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -107,7 +107,7 @@ function libraryFor(columns: number, rows: number) {
 }
 
 async function openProject(page: Page, id: string): Promise<void> {
-  await openDockSheet(page, 'strip-menu')
+  await openStripPanel(page, 'strip-menu')
   await page.getByTestId('menu-saved-projects').click()
   await settle(page)
   await page.getByTestId(`select-project-${id}`).click()

@@ -19,7 +19,7 @@ export interface OverlayLayerOptions {
   /** Whether a target is the overlay's own opener, which toggles the overlay itself. */
   isOpener?: (target: Element) => boolean
   /** Whether a press outside still works the overlay's own thing, so it goes through and the overlay stays (the
-   * Frame bar's handles on the canvas, ticket 475). */
+   * Frame panel's handles on the canvas, ticket 475). */
   keepsPress?: (event: PointerEvent) => boolean
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import FrameBar from '../canvas/FrameBar.vue'
+import FramePanel from '../canvas/FramePanel.vue'
 import MenuPanel from './MenuPanel.vue'
 import PanelHost from './PanelHost.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
@@ -12,7 +12,7 @@ import { ref } from 'vue'
 import { templateById, type TemplateId } from '../../domain/templates'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
-// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's sub-view, and Saved Projects as another. Each panel only asks; the app shell does the work.
+// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and Saved Projects as another. Each panel only asks; the app shell does the work.
 const {
   t,
   projects,
@@ -55,13 +55,13 @@ const {
   inputModeAvailable,
   openPanel,
   framing,
-  frameBarShown,
+  framePanelShown,
   onStepFrameEdge,
   onResizeFrame,
   onRotateFrame,
   onRemoveFrame,
   onFrameKey,
-  onCloseFrameBar,
+  onCloseFramePanel,
   toolPillPosition,
   shortcutsHelpOpen,
   tour,
@@ -70,15 +70,15 @@ const {
   onSelectProjectFromPhoneDrawer,
 } = useAppShell()
 
-/** The Template whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup sub-view. */
+/** The Template whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup subpanel. */
 const chosenTemplate = ref<TemplateId>()
 const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
 </script>
 
 <template>
-  <!-- The Frame bar (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
-  <PanelHost v-if="activeProject && frameBarShown && !framing" open="frame" :only="['frame']" @close="onCloseFrameBar">
-    <FrameBar
+  <!-- The Frame panel (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
+  <PanelHost v-if="activeProject && framePanelShown && !framing" open="frame" :only="['frame']" @close="onCloseFramePanel">
+    <FramePanel
       :project="activeProject"
       @step="onStepFrameEdge"
       @resize="onResizeFrame"
@@ -91,7 +91,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
   <!--
     Menu and Project (spec 0440, ticket 443; MenuPanel and ProjectPanel cards): one panel host, a dropdown at every width,
     which stays mounted while the two swap. Menu is about the app and the device, Project about the
-    open Project; New Project is Menu's sub-view and the Saved Projects sheet below opens from it.
+    open Project; New Project is Menu's subpanel and the Saved Projects sheet below opens from it.
   -->
   <PanelHost
     v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
@@ -146,7 +146,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
     <template #sub="{ depth }">
       <!-- The Project panel's Frame area opens the gallery and the setup alone, to put a Frame on the open Project (ticket 495). -->
       <template v-if="openPanel === 'project' && activeProject">
-        <TemplateGallery v-if="depth === 1" without-blank class="phone-sheets__gallery" @choose="chosenTemplate = $event" />
+        <TemplateGallery v-if="depth === 1" without-blank class="app-panels__gallery" @choose="chosenTemplate = $event" />
         <TemplateSetup
           v-else-if="chosenTemplate"
           :template="templateById(chosenTemplate)"
@@ -154,7 +154,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
           @submit="(payload) => { onPlaceFrameFromTemplate(payload); openPanel = null }"
         />
       </template>
-      <!-- Saved Projects: Menu's other sub-view. Picking a Project opens it and closes the panel. -->
+      <!-- Saved Projects: Menu's other subpanel. Picking a Project opens it and closes the panel. -->
       <ProjectList
         v-else-if="phoneSavedProjectsOpen && depth === 1"
         :projects="projects"
@@ -166,7 +166,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       />
       <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
       <template v-else-if="depth === 1">
-        <TemplateGallery class="phone-sheets__gallery" @choose="chosenTemplate = $event" @choose-blank="newProjectForm?.focusName()" />
+        <TemplateGallery class="app-panels__gallery" @choose="chosenTemplate = $event" @choose-blank="newProjectForm?.focusName()" />
         <NewProjectForm
           ref="newProjectForm"
           :decode-image="decodeImage"
@@ -182,7 +182,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       />
     </template>
     <template #footer="{ depth }">
-      <AppButton v-if="depth === 2" class="phone-sheets__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
+      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
         {{ openPanel === 'project' ? (activeProject?.frame ? t.frame.replaceFrame : t.frame.addFrameButton) : t.form.submit }}
       </AppButton>
     </template>
@@ -190,11 +190,11 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
 </template>
 
 <style scoped>
-.phone-sheets__gallery {
+.app-panels__gallery {
   margin-bottom: var(--space-16);
 }
 
-.phone-sheets__create {
+.app-panels__create {
   width: 100%;
   height: var(--field-height);
 }

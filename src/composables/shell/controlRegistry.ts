@@ -45,8 +45,8 @@ export interface ControlDeps {
   onToggleRulers: () => void
   /** The edit pencil: shows or hides the Frame's handles (tickets 417, 510). */
   onEditFrame: () => void
-  /** The strip's Frame button: opens or closes the Frame bar (ticket 510). */
-  onToggleFrameBar: () => void
+  /** The strip's Frame button: opens or closes the Frame panel (ticket 510). */
+  onToggleFramePanel: () => void
   /** 7 and Ctrl/⌘+A: selects the rectangle round every bead and switches to Select (ticket 414). */
   onSelectAll: () => void
   onCopy: () => void
@@ -142,7 +142,7 @@ const hasBeads = (deps: ControlDeps) => {
 }
 const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
-/** One of the Frame bar's steppers (tickets 417, 473): an edge a bead out or in, named for its edge. Moving in stops
+/** One of the Frame panel's steppers (tickets 417, 473): an edge a bead out or in, named for its edge. Moving in stops
  * at four beads. */
 const frameEdgeAction = (edge: FrameEdge, direction: 'out' | 'in'): ControlAction => ({
   id: `frame-edge-${edge}-${direction}`,
@@ -233,14 +233,14 @@ export const CONTROLS: readonly ControlAction[] = [
     id: 'strip-frame',
     icon: 'frame',
     name: (t) => t.frame.title,
-    body: (t) => t.tooltips.frameBar,
+    body: (t) => t.tooltips.framePanel,
     // Open once a pass is done too, for the size and Remove Frame (ticket 475).
     enabled: hasFrame,
     disabledBody: (t) => t.tooltips.setFrameFirst,
     group: 'canvas',
     chords: [],
     needsProject: true,
-    run: (deps) => deps.onToggleFrameBar(),
+    run: (deps) => deps.onToggleFramePanel(),
   },
   ...FRAME_EDGES.flatMap((edge) => [frameEdgeAction(edge, 'out'), frameEdgeAction(edge, 'in')]),
   {
@@ -543,7 +543,7 @@ export const CONTROLS: readonly ControlAction[] = [
     body: (t) => t.tooltips.pickFromCanvas,
     shownKey: 'Esc',
   }),
-  unkeyed('strip-project', (t) => t.header.projectSheetLabel, 'edit', {
+  unkeyed('strip-project', (t) => t.header.projectPanelLabel, 'edit', {
     icon: 'pattern',
     body: (t) => t.tooltips.list([t.form.techniqueLabel, t.saveBox.saveButton, t.panels.project.exportHeading, t.panels.project.duplicate]),
   }),

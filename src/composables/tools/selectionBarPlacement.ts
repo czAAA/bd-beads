@@ -122,7 +122,7 @@ export function overlapsSelectionHandles(centre: { x: number; y: number }, size:
 
 /** Where the Move handle goes (ticket 473, ADR 0066): in the gutter above the Frame, centred on its top edge, or below
  * it when there is no room above; kept inside the canvas box. Only its centre moves with the zoom; it slides clear of
- * the edit pencil and the Frame bar (`bar`) where they would cover it. */
+ * the edit pencil and the Frame panel (`bar`) where they would cover it. */
 export function moveHandleCentre(anchor: FrameAnchor, bar?: BarBox, pill?: BarBox): { x: number; y: number } {
   const { box, viewport } = anchor
   const pos = (x: number, y: number) => ({ x: within(x, HANDLE_HIT_WIDTH_PX, viewport.width), y: within(y, HANDLE_HIT_HEIGHT_PX, viewport.height) })

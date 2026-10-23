@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import PanelShell from './PanelShell.vue'
+import AppPanel from './AppPanel.vue'
 import { PANELS, type PanelId } from './panels'
 import { useI18n } from '../../i18n/useI18n'
 
-// The one place a PanelShell is mounted (ticket 510): shows the panel that is open, if it is one of `only`, set up from
-// its descriptor. The panel's content goes in the slots. Adding a panel is a descriptor in panels.ts and its content here or in PhoneSheets.
+// The one place an AppPanel is mounted (ticket 510): shows the panel that is open, if it is one of `only`, set up from
+// its descriptor. The panel's content goes in the slots. Adding a panel is a descriptor in panels.ts and its content here or in AppPanels.
 const props = defineProps<{
   /** The open panel, or none. */
   open: PanelId | null
@@ -19,7 +19,7 @@ const panel = computed(() => (props.open && props.only.includes(props.open) ? PA
 </script>
 
 <template>
-  <PanelShell
+  <AppPanel
     v-if="panel"
     :title="panel.title(t)"
     :anchor="panel.anchor"
@@ -31,5 +31,5 @@ const panel = computed(() => (props.open && props.only.includes(props.open) ? PA
     <template v-for="(_, name) in $slots" #[name]="slotProps">
       <slot :name="name" v-bind="slotProps ?? {}" />
     </template>
-  </PanelShell>
+  </AppPanel>
 </template>

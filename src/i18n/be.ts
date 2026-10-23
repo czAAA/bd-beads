@@ -226,7 +226,7 @@ export const be: Translations = {
     overviewItem: 'Агляд',
     tourItem: 'Прайсці навучанне',
     sourceItem: 'Зыходны код',
-    projectSheetLabel: 'Праект',
+    projectPanelLabel: 'Праект',
   },
   overview: {
     pageTitle: 'Агляд',
@@ -643,7 +643,7 @@ export const be: Translations = {
     selectAll: 'Вылучае ўсе бісерынкі адразу.',
     hand: 'Перацягвайце, каб рухаць палатно.',
     editFrame: 'Паказаць або схаваць маркеры рамкі.',
-    frameBar: 'Адкрыць памер рамкі, паварот і выдаленне.',
+    framePanel: 'Адкрыць памер рамкі, паварот і выдаленне.',
     frameEdgeOut: 'Павялічыць рамку на адну бісерыну з гэтага боку.',
     frameEdgeIn: 'Паменшыць рамку на адну бісерыну з гэтага боку.',
     frameEdgeInDisabled: 'З гэтага боку рамку ўжо нельга паменшыць.',

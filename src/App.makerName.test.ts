@@ -6,7 +6,7 @@ import { LEGACY_MAKER_NAME_KEY } from './services/legacyMakerName'
 import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { openSheet } from './testUtils/pill'
+import { openPanel } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -23,7 +23,7 @@ function mountApp() {
 }
 
 async function openProject(wrapper: ReturnType<typeof mountApp>) {
-  await openSheet(wrapper, 'strip-project')
+  await openPanel(wrapper, 'strip-project')
   await flushPromises()
 }
 

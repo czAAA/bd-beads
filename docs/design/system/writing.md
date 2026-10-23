@@ -301,7 +301,7 @@ Russian here is a proposal for review. The Technique explanation in Project is t
 
 ## Copy added in ticket 0473
 
-The Frame bar, the Move handle and the edit pencil (Frame card). The Russian is proposed and not yet reviewed.
+The Frame panel, the Move handle and the edit pencil (Frame card). The Russian is proposed and not yet reviewed.
 
 | English | Russian |
 | --- | --- |

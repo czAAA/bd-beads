@@ -16,17 +16,17 @@ describe('useOverlayVisibility', () => {
   })
 
   it('opens a phone sheet from its strip button, and closes it on the same button again', () => {
-    const { openPanel, onSelectPhoneSheet } = setup()
-    onSelectPhoneSheet('menu')
+    const { openPanel, onSelectPanel } = setup()
+    onSelectPanel('menu')
     expect(openPanel.value).toBe('menu')
-    onSelectPhoneSheet('menu')
+    onSelectPanel('menu')
     expect(openPanel.value).toBeNull()
   })
 
   it('switches straight to another phone sheet from a different strip button', () => {
-    const { openPanel, onSelectPhoneSheet } = setup()
-    onSelectPhoneSheet('project')
-    onSelectPhoneSheet('menu')
+    const { openPanel, onSelectPanel } = setup()
+    onSelectPanel('project')
+    onSelectPanel('menu')
     expect(openPanel.value).toBe('menu')
   })
 
@@ -40,7 +40,7 @@ describe('useOverlayVisibility', () => {
     expect(menuOpensOnForm.value).toBe(false)
   })
 
-  it('opens the picked Project and closes both the Saved Projects sheet and the Project sheet', () => {
+  it('opens the picked Project and closes both the Saved Projects sheet and the Project panel', () => {
     const { selectProject, openPanel, phoneSavedProjectsOpen, onSelectProjectFromPhoneDrawer } = setup()
     openPanel.value = 'project'
     phoneSavedProjectsOpen.value = true

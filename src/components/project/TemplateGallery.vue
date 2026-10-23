@@ -9,7 +9,7 @@ import TemplatePicture from './TemplatePicture.vue'
 
 // The Template gallery at the top of New Project (ticket 493, spec 0488; TemplateGallery card): a Blank canvas tile and one
 // card per Template, in a radiogroup of one tab stop. Blank canvas is the choice the form below makes; a tap on a Template
-// card opens its setup (the panel's next sub-view). One column.
+// card opens its setup (the panel's next subpanel). One column.
 const props = defineProps<{
   /** Opened from the Project panel's Frame area (ticket 495): there is no Blank canvas to start from. */
   withoutBlank?: boolean

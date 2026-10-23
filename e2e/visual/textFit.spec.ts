@@ -11,7 +11,7 @@ import { findTextMisfits } from '../support/textFit'
 import { HEIGHTS, LOCALES, WIDTHS } from '../support/textFitMatrix'
 import { unexplained, type Found } from '../support/textFitPending'
 
-const PHONE_SHEETS = ['strip-project', 'strip-menu']
+const STRIP_PANELS = ['strip-project', 'strip-menu']
 
 type Measure = (detail?: string) => Promise<void>
 interface Screen {
@@ -33,15 +33,15 @@ const wholeOnScreen = async (locator: Locator): Promise<boolean> => {
 const vis = (page: Page, testid: string): Locator => page.locator(`[data-testid="${testid}"]:visible`).first()
 const shown = async (page: Page, testid: string): Promise<boolean> => (await vis(page, testid).count()) > 0 && (await wholeOnScreen(vis(page, testid)))
 
-/** Brings the control into view the way a person would at this width: it is already there, or in one of the phone sheets. Returns false when no way leads to it. */
+/** Brings the control into view the way a person would at this width: it is already there, or in one of the phone panels. Returns false when no way leads to it. */
 async function reveal(page: Page, testid: string): Promise<boolean> {
   if (await shown(page, testid)) return true
-  for (const dock of PHONE_SHEETS) {
+  for (const dock of STRIP_PANELS) {
     if (!(await shown(page, dock))) break
     await page.getByTestId(dock).click()
     await settle(page)
     if (await shown(page, testid)) return true
-    // Saved Projects is a sub-view of Menu, opened from Menu's own item (PhoneSheets card).
+    // Saved Projects is a subpanel of Menu, opened from Menu's own item (PhoneForms card).
     if (testid === 'project-list' && (await shown(page, 'menu-saved-projects'))) {
       await page.getByTestId('menu-saved-projects').click()
       await settle(page)
@@ -148,10 +148,10 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'phone sheets',
+    name: 'phone panels',
     visit: async (page, measure) => {
       if (!(await shown(page, 'tool-pill'))) return false
-      for (const dock of PHONE_SHEETS) {
+      for (const dock of STRIP_PANELS) {
         await click(page, dock)
         await measure(dock.replace('strip-', ''))
         await click(page, dock)
@@ -173,7 +173,7 @@ const SCREENS: Screen[] = [
   {
     name: 'keyboard shortcuts',
     visit: async (page, measure) => {
-      // The wide tier's own button (AppHeader), or the Dock Menu sheet's item to the same ShortcutsHelp.
+      // The wide tier's own button (AppHeader), or the Dock Menu panel's item to the same ShortcutsHelp.
       if (await shown(page, 'shortcuts-button')) {
         await click(page, 'shortcuts-button')
       } else {

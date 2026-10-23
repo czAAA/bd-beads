@@ -19,12 +19,12 @@ beforeEach(() => {
   vi.mocked(downloadFile).mockClear()
 })
 
-/** The phone New Project sheet's form: the wider tiers' hidden but mounted NewProjectForm (ticket 79) is an earlier
- * `form`, so scope to the sheet's. */
-async function createProjectViaPhoneSheet(wrapper: ReturnType<typeof mount>) {
-  const sheet = wrapper.get('[data-testid="panel-body"]')
-  await sheet.get('[data-testid="bead-select"]').setValue(cubeBead.id)
-  await sheet.get('form').trigger('submit')
+/** The phone New Project panel's form: the wider tiers' hidden but mounted NewProjectForm (ticket 79) is an earlier
+ * `form`, so scope to the panel's. */
+async function createProjectViaPanel(wrapper: ReturnType<typeof mount>) {
+  const panel = wrapper.get('[data-testid="panel-body"]')
+  await panel.get('[data-testid="bead-select"]').setValue(cubeBead.id)
+  await panel.get('form').trigger('submit')
 }
 
 describe('App at the phone tier (ticket 79)', () => {
@@ -48,7 +48,7 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = mount(App)
     await wrapper.find('[data-testid="phone-bar-new-project"]').trigger('click')
 
-    await createProjectViaPhoneSheet(wrapper)
+    await createProjectViaPanel(wrapper)
 
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(drawnProject(wrapper).frame).toBeUndefined() // a Canvas: its size is set in the Frame section (ticket 342)
@@ -77,7 +77,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
   })
 
-  it('has no Frame slot in the Tool pill; the edit pencil sits on the Frame, with the Frame bar closed and no sheet or ContextBar (tickets 417, 473)', async () => {
+  it('has no Frame slot in the Tool pill; the edit pencil sits on the Frame, with the Frame panel closed and no panel or ContextBar (tickets 417, 473)', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="pill-frame"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="progress-bar-edit-frame"]').exists()).toBe(false)
@@ -85,15 +85,15 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-edit-toggle"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(false)
 
     await wrapper.find('[data-testid="frame-edit-toggle"]').trigger('click')
-    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(false)
     await wrapper.find('[data-testid="strip-frame"]').trigger('click')
-    expect(wrapper.find('[data-testid="frame-bar"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(true)
   })
 
-  it('picks a tool straight from the Tool pill, with no sheet in between (tickets 397, 431)', async () => {
+  it('picks a tool straight from the Tool pill, with no panel in between (tickets 397, 431)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
     await wrapper.find('[data-testid="pill-tool-erase"]').trigger('click')
@@ -118,7 +118,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="pill-tool-fill"]').classes()).toContain('icon-btn--selected')
   })
 
-  it('keeps Rotate, Copy and Paste off the Project sheet: they are on the Selection bar (tickets 415, 416)', async () => {
+  it('keeps Rotate, Copy and Paste off the Project panel: they are on the Selection bar (tickets 415, 416)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
@@ -127,7 +127,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="sheet-rotate"]').exists()).toBe(false)
   })
 
-  it('changes the Frame\'s Technique from the Project sheet as one Undo step, the Canvas keeping its own (tickets 351, 492)', async () => {
+  it('changes the Frame\'s Technique from the Project panel as one Undo step, the Canvas keeping its own (tickets 351, 492)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.get('[data-testid="frame-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
@@ -141,7 +141,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(drawnProject(wrapper).frame?.technique).toBe('loom')
   })
 
-  it('changes the Canvas\'s Technique from the Project sheet as one Undo step, the Frame keeping its own (ticket 492)', async () => {
+  it('changes the Canvas\'s Technique from the Project panel as one Undo step, the Frame keeping its own (ticket 492)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.get('[data-testid="canvas-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
@@ -165,7 +165,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(frameGrid(drawnProject(wrapper))[0]![0]!.color).toBe('#e63746')
   })
 
-  it('undoes and redoes from the Zoom pill, and the Project sheet does not hold them (tickets 295, 296)', async () => {
+  it('undoes and redoes from the Zoom pill, and the Project panel does not hold them (tickets 295, 296)', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBeDefined()
     expect(wrapper.get('[data-testid="strip-redo"]').attributes('aria-disabled')).toBeDefined()
@@ -201,13 +201,13 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)
   })
 
-  it('shows the Project sheet\'s Save box for the open Project', async () => {
+  it('shows the Project panel\'s Save box for the open Project', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
-    const sheet = wrapper.find('[data-testid="panel-dropdown"]')
-    expect(sheet.find('[data-testid="save-button"]').exists()).toBe(true)
-    expect(sheet.find('[data-testid="phone-sheet-bead"]').exists()).toBe(true)
+    const panel = wrapper.find('[data-testid="panel-dropdown"]')
+    expect(panel.find('[data-testid="save-button"]').exists()).toBe(true)
+    expect(panel.find('[data-testid="panel-bead"]').exists()).toBe(true)
   })
 
   it('enables the Saved Projects icon and opens a drawer when projects exist', async () => {
@@ -221,26 +221,26 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(btn.text()).toContain('1')
 
     await btn.trigger('click')
-    // Menu swaps to its Saved Projects sub-view.
+    // Menu swaps to its Saved Projects subpanel.
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe(en.projects.heading)
     expect(wrapper.find('[data-testid="panel-body"] [data-testid="project-list"]').exists()).toBe(true)
   })
 
-  it('exports a Project file and the whole library from the Saved Projects sheet (ticket 385)', async () => {
+  it('exports a Project file and the whole library from the Saved Projects panel (ticket 385)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-saved-projects"]').trigger('click')
 
-    // Scoped to the Saved Projects sub-view: another ProjectList has its own panel-expand too.
-    const savedProjectsSheet = wrapper.get('[data-testid="panel-body"]')
-    await savedProjectsSheet.find('[data-testid="panel-expand"]').trigger('click')
+    // Scoped to the Saved Projects subpanel: another ProjectList has its own panel-expand too.
+    const savedProjectsPanel = wrapper.get('[data-testid="panel-body"]')
+    await savedProjectsPanel.find('[data-testid="panel-expand"]').trigger('click')
 
-    await savedProjectsSheet.find('[data-testid="export-project"]').trigger('click')
+    await savedProjectsPanel.find('[data-testid="export-project"]').trigger('click')
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
 
     vi.mocked(downloadFile).mockClear()
-    await savedProjectsSheet.find('[data-testid="export-library"]').trigger('click')
+    await savedProjectsPanel.find('[data-testid="export-library"]').trigger('click')
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
   })
 
@@ -250,17 +250,17 @@ describe('App at the phone tier (ticket 79)', () => {
     await createProjectViaForm(wrapper)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-new-project"]').trigger('click')
-    await createProjectViaPhoneSheet(wrapper)
+    await createProjectViaPanel(wrapper)
     // Now two projects saved; open Menu and the saved-projects drawer.
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-saved-projects"]').trigger('click')
 
-    // Scope the click to the sub-view, avoiding the always-mounted (but hidden) AppDrawer ProjectList in the DOM.
-    const savedProjectsSheet = wrapper.get('[data-testid="panel-body"]')
-    await savedProjectsSheet.findAll('[data-testid^="select-project-"]')[1]!.trigger('click')
+    // Scope the click to the subpanel, avoiding the always-mounted (but hidden) AppDrawer ProjectList in the DOM.
+    const savedProjectsPanel = wrapper.get('[data-testid="panel-body"]')
+    await savedProjectsPanel.findAll('[data-testid^="select-project-"]')[1]!.trigger('click')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    // Both sheets should be gone.
+    // Both panels should be gone.
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
@@ -268,24 +268,24 @@ describe('App at the phone tier (ticket 79)', () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
-    const sheet = wrapper.get('[data-testid="panel-dropdown"]')
-    expect(sheet.get('[data-testid="project-name"]').text()).not.toBe('')
-    expect(sheet.get('[data-testid="save-state"]').text()).toBe('saved · this device')
-    expect(sheet.find('[data-testid="save-state"] svg').exists()).toBe(true)
-    expect(sheet.get('[data-testid="phone-sheet-bead"]').text()).toBe('TOHO Cube 1.5mm')
+    const panel = wrapper.get('[data-testid="panel-dropdown"]')
+    expect(panel.get('[data-testid="project-name"]').text()).not.toBe('')
+    expect(panel.get('[data-testid="save-state"]').text()).toBe('saved · this device')
+    expect(panel.find('[data-testid="save-state"] svg').exists()).toBe(true)
+    expect(panel.get('[data-testid="panel-bead"]').text()).toBe('TOHO Cube 1.5mm')
   })
 
   it('opens the Menu from the Canvas strip as a dropdown with language, theme, Overview and the source link, and nothing about the Project (tickets 295, 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
-    const sheet = wrapper.get('[data-testid="panel-dropdown"]')
-    expect(sheet.find('[data-testid="language-switcher"]').exists()).toBe(true)
-    expect(sheet.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(false)
-    expect(sheet.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
-    expect(sheet.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
-    expect(sheet.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
-    expect(sheet.find('[data-testid="save-button"]').exists()).toBe(false)
-    expect(sheet.find('[data-testid="project-panel"]').exists()).toBe(false)
+    const panel = wrapper.get('[data-testid="panel-dropdown"]')
+    expect(panel.find('[data-testid="language-switcher"]').exists()).toBe(true)
+    expect(panel.find('[data-testid="menu-item-name-on-exports-change"]').exists()).toBe(false)
+    expect(panel.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
+    expect(panel.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
+    expect(panel.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
+    expect(panel.find('[data-testid="save-button"]').exists()).toBe(false)
+    expect(panel.find('[data-testid="project-panel"]').exists()).toBe(false)
   })
 })

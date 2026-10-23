@@ -3,7 +3,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppMessage from '../ui/AppMessage.vue'
 import AppDialogs from './AppDialogs.vue'
 import CanvasPanel from '../canvas/CanvasPanel.vue'
-import PhoneSheets from './PhoneSheets.vue'
+import AppPanels from './AppPanels.vue'
 import TourLayer from '../tour/TourLayer.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
@@ -50,7 +50,7 @@ const {
       <CanvasPanel />
     </div>
 
-    <PhoneSheets />
+    <AppPanels />
 
     <AppDialogs />
 

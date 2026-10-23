@@ -2,7 +2,7 @@
 import { ref, useId } from 'vue'
 
 // A single-line input (ticket 149): a `unit` labels and cuts the top border (ticket 224) and is read once, as the
-// description. Attributes go to the <input>. `compact` is the 2rem Frame bar field (ticket 517), `selectOnFocus` selects
+// description. Attributes go to the <input>. `compact` is the 2rem Frame panel field (ticket 517), `selectOnFocus` selects
 // on every focus, `bare` has no frame, for a field over a control that has one (Stepper, ticket 518).
 defineOptions({ inheritAttrs: false })
 withDefaults(defineProps<{ unit?: string; invalid?: boolean; disabled?: boolean; compact?: boolean; selectOnFocus?: boolean; bare?: boolean }>(), {

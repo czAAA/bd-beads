@@ -8,35 +8,35 @@ import IconButton from '../ui/IconButton.vue'
 import { useI18n } from '../../i18n/useI18n'
 import { usePressClosed } from '../../composables/shell/usePressClosed'
 
-// The shell Menu, Project and the Frame bar open in (spec 0440, tickets 443, 475; MenuPanel card): a dropdown under the
+// The shell Menu, Project and the Frame panel open in (spec 0440, tickets 443, 475; MenuPanel card): a dropdown under the
 // button on every device and screen size. Escape or a press outside closes it; focus returns to the button.
-// A `sub` slot is a stack of sub-views (spec 0478, ticket 493): Back arrow, title, pinned `footer`; Back and Escape pop.
+// A `sub` slot is a stack of subpanels (spec 0478, ticket 493): Back arrow, title, pinned `footer`; Back and Escape pop.
 const props = defineProps<{
   title: string
   /** The strip button this panel hangs from, by test id. */
   anchor: string
   /** The Menu is a `menu` of items; the Project panel holds fields and is a plain dialog. */
   menu?: boolean
-  /** Opens without focusing a field, so a tablet's keyboard stays down (the Frame bar's size fields). */
+  /** Opens without focusing a field, so a tablet's keyboard stays down (the Frame panel's size fields). */
   skipsFields?: boolean
   /** The dropdown's width, when not `panel-width`. */
   width?: string
-  /** The first sub-view's title; a panel with a `sub` slot gives one. */
+  /** The first subpanel's title; a panel with a `sub` slot gives one. */
   subTitle?: string
-  /** Opens already on the sub-view; Escape then closes the panel instead of going back. */
+  /** Opens already on the subpanel; Escape then closes the panel instead of going back. */
   startInSub?: boolean
 }>()
 const emit = defineEmits<{ close: [] }>()
 
 const { t } = useI18n()
-/** One entry per sub-view pushed over the root, with the title it was opened with and the row that opened it (found
+/** One entry per subpanel pushed over the root, with the title it was opened with and the row that opened it (found
  * again by its test id to take focus back from Back). */
 interface SubLevel {
   title?: string
   returnTestId: string | null
 }
 const stack = ref<SubLevel[]>(props.startInSub ? [{ returnTestId: null }] : [])
-/** Whether a sub-view is showing, and whether the panel opened on its first (so Escape there closes rather than goes back). */
+/** Whether a subpanel is showing, and whether the panel opened on its first (so Escape there closes rather than goes back). */
 const inSub = computed(() => stack.value.length > 0)
 const depth = computed(() => stack.value.length)
 const openedInSub = props.startInSub ?? false
@@ -107,7 +107,7 @@ function focusables(): HTMLElement[] {
   return [...(panelEl.value?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? [])]
 }
 
-/** Focus on opening: the sub-view's first field (not its Back arrow), else the panel's first control. */
+/** Focus on opening: the subpanel's first field (not its Back arrow), else the panel's first control. */
 function focusEntry() {
   const first = inSub.value ? subBodyEl.value?.querySelector<HTMLElement>(FOCUSABLE) : focusables()[0]
   if (props.skipsFields) return void panelEl.value?.focus({ preventScroll: true })
@@ -117,7 +117,7 @@ function focusEntry() {
 /** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab is
  * left to the browser: it leaves the dropdown. */
 function onKeydown(event: KeyboardEvent) {
-  // A key the content already used (the Frame bar's arrows move the Frame) is not a move through the panel.
+  // A key the content already used (the Frame panel's arrows move the Frame) is not a move through the panel.
   if (event.defaultPrevented) return
   const target = event.target as HTMLElement
   const list = focusables()
@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
 <template>
   <div
     ref="panelEl"
-    class="panel-shell panel-shell--dropdown"
+    class="app-panel app-panel--dropdown"
     :style="dropdownStyle"
     :role="itemRole ? 'menu' : 'dialog'"
     :aria-labelledby="titleId"
@@ -167,23 +167,23 @@ onBeforeUnmount(() => {
     @keydown="onKeydown"
     @focusout="onFocusOut"
   >
-    <header v-if="inSub" class="panel-shell__header">
+    <header v-if="inSub" class="app-panel__header">
       <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" @click="goBack" />
-      <h2 :id="titleId" class="panel-shell__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
+      <h2 :id="titleId" class="app-panel__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
     </header>
-    <h2 v-else :id="titleId" class="panel-shell__title">{{ title }}</h2>
-    <div ref="subBodyEl" class="panel-shell__body" data-testid="panel-body">
+    <h2 v-else :id="titleId" class="app-panel__title">{{ title }}</h2>
+    <div ref="subBodyEl" class="app-panel__body" data-testid="panel-body">
       <slot v-if="inSub" name="sub" :depth="depth" />
       <slot v-else />
     </div>
-    <footer v-if="inSub && $slots.footer" class="panel-shell__footer" data-testid="panel-footer">
+    <footer v-if="inSub && $slots.footer" class="app-panel__footer" data-testid="panel-footer">
       <slot name="footer" :depth="depth" />
     </footer>
   </div>
 </template>
 
 <style scoped>
-.panel-shell {
+.app-panel {
   --panel-item-height: var(--item-height);
   position: fixed;
   box-sizing: border-box;
@@ -196,16 +196,16 @@ onBeforeUnmount(() => {
   box-shadow: var(--elevation-3);
 }
 
-.panel-shell:focus {
+.app-panel:focus {
   outline: none;
 }
 
-:root[data-theme='contrast'] .panel-shell {
+:root[data-theme='contrast'] .app-panel {
   border: 2px solid var(--line-strong);
   box-shadow: none;
 }
 
-.panel-shell__title {
+.app-panel__title {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.panel-shell__header {
+.app-panel__header {
   display: flex;
   flex: none;
   align-items: center;
@@ -223,23 +223,23 @@ onBeforeUnmount(() => {
   padding-bottom: var(--space-8);
 }
 
-.panel-shell__heading {
+.app-panel__heading {
   margin: 0;
   font: var(--type-title);
   color: var(--ink);
 }
 
-.panel-shell__footer:empty {
+.app-panel__footer:empty {
   display: none;
 }
 
-.panel-shell__footer {
+.app-panel__footer {
   flex: none;
   padding: var(--space-10) 0;
   border-top: 1px solid var(--panel-rule);
 }
 
-.panel-shell__body {
+.app-panel__body {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
@@ -247,24 +247,24 @@ onBeforeUnmount(() => {
   scrollbar-width: none;
 }
 
-.panel-shell__body::-webkit-scrollbar {
+.app-panel__body::-webkit-scrollbar {
   display: none;
 }
 
 /* The dropdown (MenuPanel card): `panel-width`, under the button, over everything but dialogs; taller than the
  * window, it scrolls inside. */
-.panel-shell--dropdown {
+.app-panel--dropdown {
   z-index: var(--z-popover);
   width: var(--panel-width);
   /* Never wider than the screen less the 8px gutter the position keeps (the phone's larger rem makes 21.25rem nearly 390px). */
-  max-width: calc(100vw - 2 * var(--frame-bar-gap));
+  max-width: calc(100vw - 2 * var(--frame-panel-gap));
   padding: var(--space-8);
   border-radius: var(--radius-lg);
   animation: panel-in var(--duration-base) var(--ease-out);
 }
 
 @media (pointer: coarse) {
-  .panel-shell {
+  .app-panel {
     --panel-item-height: 2.75rem;
   }
 }
@@ -283,7 +283,7 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .panel-shell--dropdown {
+  .app-panel--dropdown {
     animation: panel-fade var(--duration-base) var(--ease-out);
   }
 }

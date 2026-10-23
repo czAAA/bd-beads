@@ -6,7 +6,7 @@ import { PRINT_THEME } from '../../src/rendering/beadLook'
 import { PALETTE } from '../../src/domain/palette'
 import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
 import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
-import { openApp, openDockSheet } from '../support/app'
+import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { displayedExtentPx } from '../../src/rendering/surfaceView'
 
@@ -14,9 +14,9 @@ import { displayedExtentPx } from '../../src/rendering/surfaceView'
  * too-big Project comes out whole. */
 
 /** Picks an export from the save box's Export menu (ticket 148) and waits for the file it hands over. Save box sits
- * in the Dock's Project sheet. */
+ * in the Dock's Project panel. */
 async function downloadOf(page: Page, testId: string): Promise<{ name: string; bytes: Buffer }> {
-  await openDockSheet(page, 'strip-project')
+  await openStripPanel(page, 'strip-project')
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByTestId(testId).click()])
   return { name: download.suggestedFilename(), bytes: await readFile((await download.path())!) }
 }

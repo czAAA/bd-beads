@@ -10,7 +10,7 @@ import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites } from './testUtils/storageWrites'
-import { openSheet, pickColor } from './testUtils/pill'
+import { openPanel, pickColor } from './testUtils/pill'
 
 beforeEach(() => {
   localStorage.clear()
@@ -28,7 +28,7 @@ function makeProject(name: string): Project {
 /** Picks a file for the import control: the project bar's with no Project open, Menu's otherwise. */
 async function pick(wrapper: Wrapper, contents: string) {
   if (!wrapper.find('[data-testid="phone-bar-import-file"]').exists()) {
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
   }
   const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="menu-import-file"]')
   Object.defineProperty(input.element, 'files', {
@@ -42,7 +42,7 @@ async function pick(wrapper: Wrapper, contents: string) {
 const modal = (wrapper: Wrapper) => wrapper.find('[data-testid="import-switch-modal"]')
 /** The open Project's summary line, in the Project panel. */
 const openName = async (wrapper: Wrapper) => {
-  await openSheet(wrapper, 'strip-project')
+  await openPanel(wrapper, 'strip-project')
   return wrapper.find('[data-testid="project-name"]').text()
 }
 const libraryNames = () => loadProjects().map((project) => project.name).sort()

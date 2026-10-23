@@ -71,7 +71,7 @@ const inputOptions = computed(() => [
 <template>
   <div class="menu-panel" data-testid="menu-panel">
     <PanelSection :label="t.panels.menu.projects">
-      <!-- New Project opens in this panel (spec 0478): the shell swaps to the sub-view the app shell fills. -->
+      <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
       <PanelItem icon="plus" accent stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Import keeps the panel open until the file is read (its picker belongs to it), then the result is a toast and the panel goes. -->
       <div class="menu-panel__import" data-testid="menu-import">

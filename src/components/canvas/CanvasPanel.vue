@@ -27,7 +27,7 @@ import { describeWeave } from '../../domain/weave'
 const {
   t,
   openPanel,
-  onSelectPhoneSheet,
+  onSelectPanel,
   projects,
   onImportProjects,
   onImportToast,
@@ -117,9 +117,9 @@ const {
   onRemoveSelectedLine,
   locale,
   settingFrame,
-  frameBarOpen,
+  framePanelOpen,
   frameHandlesOn,
-  onToggleFrameBar,
+  onToggleFramePanel,
   surfaceInputMode,
   onFitFrame,
   onEditFrame,
@@ -238,15 +238,15 @@ const drawingStyle = computed(() => {
         class="app-shell__canvas-strip"
         :project="framing ? undefined : activeProject"
         :rulers="showRulers"
-        :frame-open="frameBarOpen"
+        :frame-open="framePanelOpen"
         :can-undo="canUndo"
         :can-redo="canRedo"
-        :open-sheet="openPanel"
+        :open-panel="openPanel"
         :zoom-percent="stripZoomPercent"
         :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
         :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
-        @select-sheet="onSelectPhoneSheet"
-        @toggle-frame="onToggleFrameBar"
+        @select-panel="onSelectPanel"
+        @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
         @undo="onUndo"

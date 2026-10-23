@@ -102,7 +102,7 @@ export interface Translations {
   toolPill: {
     /** The grip button's name: it moves the pill with the arrow keys. */
     move: string
-    /** The Menu sheet's setting and its group name. */
+    /** The Menu panel's setting and its group name. */
     position: string
     left: string
     top: string
@@ -123,7 +123,7 @@ export interface Translations {
   colorNames: Record<string, string>
   /** The Menu and Project panels (spec 0440, ticket 443). */
   panels: {
-    /** The Back arrow of a Panel sub-view (spec 0478). */
+    /** The Back arrow of a Subpanel (spec 0478). */
     back: string
     menu: {
       projects: string
@@ -265,7 +265,7 @@ export interface Translations {
     sourceItem: string
     /** The Dock's sixth button and the sheet it opens (ticket 79; Dock/ToolSheet cards): Save/Export, the Bead pill,
      * Beads needed, Saved Projects, New Project, Import. */
-    projectSheetLabel: string
+    projectPanelLabel: string
   }
   /** The Tour (ticket 80; TourStep card): the step card's words, step by step, and what it says when it moves. */
   tour: {
@@ -546,12 +546,12 @@ export interface Translations {
     title: string
     editFrame: string
     moveHandle: string
-    /** The Frame bar's stepper names, by the edge they move (tickets 417, 473): a bead out, a bead in. */
+    /** The Frame panel's stepper names, by the edge they move (tickets 417, 473): a bead out, a bead in. */
     edgeOut: Record<'top' | 'bottom' | 'left' | 'right', string>
     edgeIn: Record<'top' | 'bottom' | 'left' | 'right', string>
-    /** The Frame bar's edge cells' labels (ticket 473). */
+    /** The Frame panel's edge cells' labels (ticket 473). */
     edgeName: Record<'top' | 'bottom' | 'left' | 'right', string>
-    /** The Frame bar's size: a width and a height field (each shows the current number as a placeholder), then the unit "beads" in a quieter colour. */
+    /** The Frame panel's size: a width and a height field (each shows the current number as a placeholder), then the unit "beads" in a quieter colour. */
     sizeUnit: string
     widthLabel: string
     heightLabel: string
@@ -730,7 +730,7 @@ export interface Translations {
     selectAll: string
     hand: string
     editFrame: string
-    frameBar: string
+    framePanel: string
     /** The margin steppers' Tooltips (ticket 417), and why Shrink is off at one bead. */
     frameEdgeOut: string
     frameEdgeIn: string

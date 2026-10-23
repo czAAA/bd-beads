@@ -35,7 +35,7 @@ import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
 import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
-import type { PhoneSheet } from './phoneSheet'
+import type { OpenPanel } from './openPanel'
 import { useOverlayVisibility } from './useOverlayVisibility'
 import { useUpdatePrompt } from './useUpdatePrompt'
 import { usePaintStroke } from '../tools/usePaintStroke'
@@ -507,8 +507,8 @@ function wireAppShell(services: Services) {
 
   /** Edit Frame: moving and resizing the Frame and stepping its edges, Fit to drawing and Remove Frame (tickets 233,
    * 417). */
-  /** The one panel open over the canvas (ticket 510): Menu, Project or the Frame bar. */
-  const openPanel = ref<PhoneSheet | null>(null)
+  /** The one panel open over the canvas (ticket 510): Menu, Project or the Frame panel. */
+  const openPanel = ref<OpenPanel | null>(null)
   const frameFlow = useFrameFlow({
     openPanel,
     currentProject,
@@ -701,7 +701,7 @@ function wireAppShell(services: Services) {
     onToggleRulers: toggleRulers,
     onToggleRowHighlight: toggleRowHighlight,
     onEditFrame: editFrame,
-    onToggleFrameBar: frameFlow.toggleBar,
+    onToggleFramePanel: frameFlow.toggleBar,
     onCopy,
     pasteAtPointer,
     onSave,
@@ -854,14 +854,14 @@ function wireAppShell(services: Services) {
     onConfirmRemoveAddedColor,
     ...removeLine,
     settingFrame: frameFlow.settingFrame,
-    frameBarShown: frameFlow.barShown,
-    frameBarOpen: frameFlow.barOpen,
+    framePanelShown: frameFlow.barShown,
+    framePanelOpen: frameFlow.barOpen,
     frameHandlesOn: frameFlow.handlesOn,
     frameDraftProject: frameFlow.draftProject,
     frameLocked: frameFlow.frameLocked,
     onEditFrame: editFrame,
-    onToggleFrameBar: frameFlow.toggleBar,
-    onCloseFrameBar: frameFlow.closeBar,
+    onToggleFramePanel: frameFlow.toggleBar,
+    onCloseFramePanel: frameFlow.closeBar,
     onFrameKey: (event: KeyboardEvent) => {
       if (frameFlow.onKey(event)) event.preventDefault()
     },

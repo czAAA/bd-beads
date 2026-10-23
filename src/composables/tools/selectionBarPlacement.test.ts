@@ -65,7 +65,7 @@ describe('the Move handle and the edit pencil in the Frame\'s gutter (ticket 473
     expect(clearX || clearY).toBe(true)
   })
 
-  it('slides the handle out from under the Frame bar, to the side with the nearer room', () => {
+  it('slides the handle out from under the Frame panel, to the side with the nearer room', () => {
     const bar = { left: 100, top: 12, width: 200, height: 60 }
     expect(moveHandleCentre(anchor, bar)).toEqual({ x: 200, y: 94 })
   })

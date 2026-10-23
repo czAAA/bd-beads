@@ -8,4 +8,4 @@ A single-line text input with its label, hint and error.
 
 Hand-written from the Phase A sign-off (forms, screens and states); static rendition.
 
-Compact variant (ticket 517, the app only): the Frame bar's width and height boxes are 2rem high (not 40px), `surface` fill, 1px `line-strong`, 6px padding and 15px `title` text, because they sit in a toolbar. Off, they ignore presses so the group's Tooltip answers.
+Compact variant (ticket 517, the app only): the Frame panel's width and height boxes are 2rem high (not 40px), `surface` fill, 1px `line-strong`, 6px padding and 15px `title` text, because they sit in a toolbar. Off, they ignore presses so the group's Tooltip answers.

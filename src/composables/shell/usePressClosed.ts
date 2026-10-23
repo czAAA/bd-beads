@@ -1,4 +1,4 @@
-// A panel closed by a press outside (PanelShell) swallows that press, so focus stays put. Handing focus
+// A panel closed by a press outside (AppPanel) swallows that press, so focus stays put. Handing focus
 // back to the opener would make Space press that button instead of panning the canvas (ticket 424). Escape and the
 // close button still hand focus back.
 export function usePressClosed() {
