@@ -59,7 +59,7 @@ function place() {
     props.position,
     { width: window.innerWidth, height: window.innerHeight },
     px('--pill-gap'),
-    px('--screen-edge'),
+    px('--float-edge'),
   )
   style.value = { left: `${left}px`, top: `${top}px` }
 }
@@ -130,7 +130,7 @@ onBeforeUnmount(() => {
   gap: var(--space-12);
   box-sizing: border-box;
   width: var(--popover-width);
-  max-height: calc(100dvh - 2 * var(--screen-edge));
+  max-height: calc(100dvh - 2 * var(--float-edge));
   padding: var(--space-12) var(--space-14) var(--space-14);
   overflow-y: auto;
   /* Its own scroll stops at its ends: a drag past them must not carry on into the page. */

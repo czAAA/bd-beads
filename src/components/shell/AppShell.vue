@@ -114,20 +114,21 @@ const {
   padding: var(--space-8) var(--space-16) 0;
 }
 
-/* Body (tickets 383, 439, ADR 0046): the canvas box is the screen, `screen-edge` (12px) from every edge or the
- * safe-area inset if larger. */
+/* Body (tickets 383, 439, 513, ADR 0046): the canvas box is the screen, flush with every edge except where the device's
+ * safe-area inset (notch, rounded corners, home indicator) takes room. */
 .app-shell__body {
   display: grid;
   flex: 1 1 auto;
   grid-template-columns: minmax(0, 1fr);
   min-height: 0;
   position: relative;
-  --body-inset: max(var(--screen-edge), env(safe-area-inset-top)) max(var(--screen-edge), env(safe-area-inset-right)) max(var(--screen-edge), env(safe-area-inset-bottom)) max(var(--screen-edge), env(safe-area-inset-left));
+  --body-inset: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   padding: var(--body-inset);
 }
 
-/* Ticket 450: a transparent frame over the body's padding with `touch-action: none`, so a drag there pans nothing. A
- * frame, not touch-action on the body, which would reach the canvas box too. */
+/* Ticket 450, 513: a transparent frame over the body's padding (the safe-area band; nothing on a device without an
+ * inset) with `touch-action: none`, so a drag there pans nothing. A frame,
+ * not touch-action on the body, which would reach the canvas box too. */
 .app-shell__body::before {
   content: '';
   position: absolute;

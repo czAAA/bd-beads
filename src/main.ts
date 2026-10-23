@@ -11,8 +11,10 @@ import App from './App.vue'
 import { loadProjects } from './services/libraryStore'
 import { loadTourStatus } from './services/tourStore'
 import { startOfflineShell } from './services/offlineShell'
+import { installTouchFocusGuard } from './services/touchFocusGuard'
 import { isEditorChosen, overviewUrl, shouldOpenOverview } from './overview/overviewRoute'
 
+installTouchFocusGuard()
 followDeviceTheme(window, document.documentElement, currentThemePick)
 
 // A new visitor (an empty Project library, the Tour neither finished nor turned off) is sent to the Overview first (ticket 77).

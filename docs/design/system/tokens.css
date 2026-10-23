@@ -208,7 +208,7 @@
   --header-height-phone: 52px; /* Header on a phone; 44px in landscape. */
   --dock-height: 48px; /* Phone-layout Dock (icon-only, every orientation), plus env(safe-area-inset-bottom). */
   --dock-max-width: 480px; /* The Dock's widest, centred. */
-  --screen-edge: 12px; /* Screen edge to the canvas box on every side (ToolPill layout); a larger env(safe-area-inset-*) wins on that side. */
+  --float-edge: 12px; /* Screen edge to what floats over the screen (the colour popover): the canvas box itself is flush, with only env(safe-area-inset-*) round it. */
   --pill-gap: 6px; /* The Tool pill's inset from the drawing area's edge (between the Canvas strip and the Progress bar), and from the colour popover. */
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
   --panel-width: 340px; /* The Menu, Project and Frame bar dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
