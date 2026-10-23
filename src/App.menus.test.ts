@@ -82,7 +82,6 @@ describe('Menu', () => {
     expect(projects.at(-1)).toBe(en.panels.menu.deleteAll)
     expect(text(wrapper, 'menu-export-all')).toContain('.openbeads')
     expect(text(wrapper, 'menu-saved-projects')).toContain('1')
-    expect(wrapper.find('[data-testid="menu-item-tour"]').exists()).toBe(false)
   })
 
   it('moves the pill from Tools position, applied at once', async () => {

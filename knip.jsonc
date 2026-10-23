@@ -7,11 +7,6 @@
   // test-only Worker its harness bundles (knip finds the Worker itself through wrangler.jsonc).
   "entry": ["index.html", "overview/index.html", "src/testUtils/*.ts", "e2e/support/*.ts", "worker/test/fixtureWorker.ts"],
   "project": ["src/**/*.{ts,vue}", "e2e/**/*.ts", "worker/**/*.ts", "*.ts"],
-  "ignore": [
-    // The switched-off Tour (ticket 80, TOUR_ENABLED in src/features.ts) is left alone until it is decided.
-    "src/composables/tour/**",
-    "src/domain/tour.ts"
-  ],
   "rules": {
     // Deliberate aliases: the three per-Technique slow-framing thresholds (imageFraming.ts), DEFAULT_THEME (beadLook.ts).
     "duplicates": "off"

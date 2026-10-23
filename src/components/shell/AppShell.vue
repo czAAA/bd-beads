@@ -4,7 +4,6 @@ import AppMessage from '../ui/AppMessage.vue'
 import AppDialogs from './AppDialogs.vue'
 import CanvasPanel from '../canvas/CanvasPanel.vue'
 import AppPanels from './AppPanels.vue'
-import TourLayer from '../tour/TourLayer.vue'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
 const {
@@ -54,7 +53,6 @@ const {
 
     <AppDialogs />
 
-    <TourLayer />
   </div>
 </template>
 

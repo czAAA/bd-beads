@@ -77,8 +77,6 @@ export interface OverlayInput {
   selectionHandles?: { surface: SurfaceView; touch: boolean }
   /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Project has keyboard focus. */
   cursor?: GridPosition
-  /** What the Tour marks on the Project (ticket 80): beads to paint or erase, and frames to select or paste into. */
-  tourMarks?: TourMarks
   // Where positions live, from `spaceOf`, as the base layer was drawn. On the Canvas (ADR 0026) any position can carry
   // a preview, Selection or cursor; in Frame-only space (default) the Project is the Frame alone, drawn from its first
   // bead.
@@ -95,12 +93,6 @@ export interface OverlayInput {
   /** How many positions wide the margin outline stands out from the Frame (ticket 459): wider when zoomed out.
    * Defaults to `MARGIN`. */
   margin?: number
-}
-
-/** The Tour's marks on the Project, dashed. */
-export interface TourMarks {
-  cells: readonly GridPosition[]
-  boxes: readonly Selection[]
 }
 
 /** A bead the current pass weaves: its cell, top left, and its color. */
@@ -338,57 +330,6 @@ function drawCursor(context: DrawingContext, weave: Weave, space: Space, cursor:
   context.fill('evenodd')
 }
 
-/** The Tour's dashed marks (ticket 80): dark under gold, so a mark reads on a gold bead as well as on a black one. */
-const TOUR_DASH_PX = [4, 3]
-const TOUR_MARK_PX = 2
-const TOUR_UNDERLAY_PX = 4.5
-
-function strokeTourMark(context: DrawingContext, theme: ProjectTheme, draw: () => void): void {
-  context.lineCap = 'butt'
-  context.setLineDash([])
-  context.strokeStyle = theme.outline
-  context.lineWidth = TOUR_UNDERLAY_PX
-  draw()
-  context.setLineDash(TOUR_DASH_PX)
-  context.strokeStyle = theme.tourMark
-  context.lineWidth = TOUR_MARK_PX
-  draw()
-  context.setLineDash([])
-}
-
-function drawTourMarks(context: DrawingContext, weave: Weave, space: Space, marks: TourMarks, theme: ProjectTheme): void {
-  const { technique } = weave
-  const { columns, rows } = space
-  const inset = BEAD_GAP_PX / 2
-  const radius = Math.max(0, beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset)
-
-  for (const { row, column } of marks.cells) {
-    if (!inSpace(space, row, column)) {
-      continue
-    }
-    const box = positionBoxPx(weave, row, column)
-    const x = box.x + inset
-    const y = box.y + inset
-    strokeTourMark(context, theme, () => {
-      context.beginPath()
-      roundedRect(context, x, y, box.width - BEAD_GAP_PX, box.height - BEAD_GAP_PX, radius)
-      context.stroke()
-    })
-  }
-
-  for (const box of marks.boxes) {
-    const bottom = (space.open ? box.top + box.rows : Math.min(box.top + box.rows, rows)) - 1
-    const right = (space.open ? box.left + box.columns : Math.min(box.left + box.columns, columns)) - 1
-    const { x: left, y: top, height } = positionsBoxPx(weave, box.top, box.left, bottom - box.top + 1, right - box.left + 1)
-    const width = (right - box.left + 1) * CELL_SIZE_PX
-    strokeTourMark(context, theme, () => {
-      context.beginPath()
-      roundedRect(context, left - 1, top - 1, width + 2, height + 2, 4)
-      context.stroke()
-    })
-  }
-}
-
 /** The Frame margin's outline (ticket 276, Frame card): 1px dashed `line-strong` round its outer edge, radius 12,
  * faded by `opacity`. Drawn in grid space, so its widths are divided by the zoom to stay screen px. */
 const MARGIN_OUTLINE_DASH_PX = [4, 3]
@@ -426,15 +367,14 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, cursor, tourMarks, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, cursor, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
   const showRows = rowMarks ?? rowProgressOn(project)
-  const marks = tourMarks && (tourMarks.cells.length > 0 || tourMarks.boxes.length > 0) ? tourMarks : undefined
   const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!showRows && !preview && !selection && !cursor && !marks && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
+  if (!showRows && !preview && !selection && !cursor && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
 
@@ -453,7 +393,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasPreview = preview && { ...preview, cells: offFrame(preview.cells) }
   const canvasCursor = cursor && !onFrame(frame, covered, cursor) ? cursor : undefined
-  const canvasMarks = marks && { cells: offFrame(marks.cells), boxes: marks.boxes.filter((box) => !onFrame(frame, covered, { row: box.top, column: box.left })) }
 
   if (space.open && marginOutline > 0 && project.frame) {
     drawMarginOutline(context, canvasWeaveOf, covered!, zoom, marginOutline, theme, margin)
@@ -464,7 +403,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   if (space.open) {
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, theme)
     if (canvasPreview?.cells.length) drawPreview(context, canvasWeaveOf, project.frame, space, canvasPreview.cells, canvasPreview, theme)
-    if (canvasMarks && (canvasMarks.cells.length > 0 || canvasMarks.boxes.length > 0)) drawTourMarks(context, canvasWeaveOf, space, canvasMarks, theme)
     if (canvasCursor) drawCursor(context, canvasWeaveOf, space, canvasCursor, theme)
   }
 
@@ -489,8 +427,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (inPass.length > 0) {
       drawBeadRings(context, inPass, sheetWeave, theme)
     }
-    const sheetMarks = marks && { cells: onSheet(marks.cells), boxes: frame ? [] : marks.boxes }
-    if (sheetMarks && (sheetMarks.cells.length > 0 || sheetMarks.boxes.length > 0)) drawTourMarks(context, sheetWeave, sheetSpace, sheetMarks, theme)
     const sheetCursor = cursor && (frame ? onFrame(frame, covered, cursor) : true) ? local(cursor) : undefined
     if (sheetCursor) drawCursor(context, sheetWeave, sheetSpace, sheetCursor, theme)
     context.restore()

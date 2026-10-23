@@ -1,5 +1,3 @@
-import type { TourStatus } from '../services/tourStore'
-
 /** Where the Overview lives under the app's base path: a folder with its own index.html, so the Worker's static
  * assets serve it (ADR 0014). */
 const OVERVIEW_PATH = 'overview/'
@@ -8,9 +6,9 @@ const OVERVIEW_PATH = 'overview/'
 const EDITOR_CHOSEN_KEY = 'openbeads:editor-chosen'
 
 // Whether the main address sends the visitor to the Overview (ticket 77): only when this device's library is empty,
-// the Tour has been neither finished nor turned off, and they haven't just chosen the editor from the Overview.
-export function shouldOpenOverview(libraryEmpty: boolean, tour: TourStatus, editorChosen: boolean): boolean {
-  return libraryEmpty && !editorChosen && (tour === 'untouched' || tour === 'running')
+// and they haven't just chosen the editor from the Overview.
+export function shouldOpenOverview(libraryEmpty: boolean, editorChosen: boolean): boolean {
+  return libraryEmpty && !editorChosen
 }
 
 export function overviewUrl(base: string): string {

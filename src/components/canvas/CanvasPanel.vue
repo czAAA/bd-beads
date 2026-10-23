@@ -72,7 +72,6 @@ const {
   spaceHeld,
   spacePanning,
   previewColor,
-  tour,
   selection,
   pasteProjectionActive,
   onCopy,
@@ -311,7 +310,7 @@ const drawingStyle = computed(() => {
         />
 
         <div class="app-shell__canvas-row">
-          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" data-tour="canvas" :class="{ 'app-shell__canvas-scroll--empty': !activeProject && !framing }">
+          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject && !framing }">
             <!--
               Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Project
               open yet" placeholder otherwise occupies — and ahead of the open Project too, since framing can be
@@ -359,7 +358,6 @@ const drawingStyle = computed(() => {
               :selection-refusals="selectionRefusals"
               :selecting="selecting"
               :cursor="cursorShown ? beadCursor : undefined"
-              :tour-marks="tour.marks.value"
               :label="projectLabel"
               @cursor-key="onProjectKey"
               @keyup="onProjectKeyUp"

@@ -45,11 +45,10 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 - The drawing surface resizes once the layout settles (a debounced ResizeObserver), never on every scroll or animation frame. Sheets slide with `transform`, so the canvas does not resize when they open (ADR 0018).
 - Check with ticket 103's performance run at the phone sizes in portrait and landscape, and at 2240px on the Core i3 reference (ticket 83).
 
-## Header menu, Overview and the Tour (v15)
+## Header menu and Overview (v15)
 
 - **Menu and Project (spec 0440):** both open as a dropdown under their buttons on every screen size (ADR 0071), with the same rows, sizes and animation; the strip's two buttons stay lit. On a narrow screen the dropdown is held 8px from the screen's edge, and a tall panel scrolls inside the room below its button. Rows grow with their content and never have a fixed height. See the MenuPanel and ProjectPanel cards.
 - **Overview:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Overview card.
-- **Tour placement:** docked above the Dock, reaching sheet controls through their Dock button. When a control can't be brought on screen, the card is centred with no pointer. See the TourStep card.
 
 ## Open canvas and Frame (v16)
 

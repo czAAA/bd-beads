@@ -4,7 +4,6 @@ import type { InputMode } from '../../domain/inputMode'
 import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { TOUR_ENABLED } from '../../features'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { overviewUrl } from '../../overview/overviewRoute'
 import ProjectImport from '../import/ProjectImport.vue'
@@ -37,7 +36,6 @@ const emit = defineEmits<{
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
   shortcuts: []
-  tour: []
 }>()
 
 const { t } = useI18n()
@@ -135,8 +133,6 @@ const inputOptions = computed(() => [
     <PanelSection :label="t.panels.menu.help">
       <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">{{ t.header.overviewItem }}</PanelItem>
-      <!-- The Tour is switched off (TOUR_ENABLED, ticket 247): no item until it is turned back on. -->
-      <PanelItem v-if="TOUR_ENABLED" icon="info" data-testid="menu-item-tour" @select="emit('tour')">{{ t.header.tourItem }}</PanelItem>
     </PanelSection>
 
     <PanelSection :label="t.panels.menu.about">

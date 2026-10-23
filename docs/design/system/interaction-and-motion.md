@@ -32,19 +32,6 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 - Toasts leave after 5s unless hovered or focused; errors stay until closed.
 - **Reduced motion** (`prefers-reduced-motion: reduce`): nothing slides or scales. Sheets, menus and modals fade in 120ms, the row marker jumps, the loading beads stand still. Colour and opacity feedback stay.
 
-## The Tour (v15)
-
-| Layer | Arrives | Leaves |
-| --- | --- | --- |
-| Dim layer | opacity, `--duration-base`, `--ease-out` | opacity, 150ms, `--ease-in` |
-| Hole and gold highlight moving to the next control | `transform`, `--duration-base`, `--ease-standard` | |
-| Grey dotted pointer | opacity, `--duration-fast`, after the card lands | at once, with the card |
-| Step card | opacity and an 8px move toward the control, `--duration-base`, `--ease-out`; between steps `--ease-standard`, text cross-fades in `--duration-fast` | opacity, 150ms, `--ease-in` |
-
-- The gold highlight stays on the control until it is pressed, then moves on; it never pulses. Under reduced motion every Tour layer fades in 120ms and the hole jumps.
-- The dim layer blocks presses outside the holes and the card; wheel, trackpad pinch and two-finger touch over the canvas box still scroll and zoom the Pattern.
-- The Overview's steam and carousel scroll animate only with reduced motion off; its drawings never move.
-
 ## Open canvas and Frame (v16)
 
 - **Moving the canvas** follows the pointer or the wheel directly, with no easing and no inertia of its own (the device's own scroll inertia is kept). Space + drag and the Hand tool show the grab cursor, and the grabbing cursor while dragging.

@@ -4,8 +4,6 @@ import OverviewPage from './OverviewPage.vue'
 import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
 
-vi.mock('../features', () => ({ TOUR_ENABLED: true }))
-
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
 
 function page(projectCount = 0) {
@@ -36,15 +34,11 @@ describe('OverviewPage', () => {
   })
 
   describe('the hero band and notes', () => {
-    it('shows the Tour Project band and the notes to a new visitor, all hidden from screen readers', () => {
+    it('shows the notes, hidden from screen readers', () => {
       const wrapper = page()
-      expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="tour-band"]').attributes('aria-hidden')).toBe('true')
       for (const [id, text] of [
         ['you', 'you'],
         ['on-us', 'on us'],
-        ['steps', 'eleven small steps'],
-        ['make-this', "you'll make this"],
       ]) {
         const note = wrapper.find(`[data-testid="overview-note-${id}"]`)
         expect(note.text()).toBe(text)
@@ -58,20 +52,10 @@ describe('OverviewPage', () => {
       expect(slogan.text().replace('you', '')).toBe('Draw. Joy. Weave.')
     })
 
-    it('has the Russian notes', async () => {
-      const wrapper = page()
-      await chooseLanguage(wrapper, 'ru')
-      expect(wrapper.find('[data-testid="overview-note-make-this"]').text()).toBe('её вы и сделаете')
-      expect(wrapper.find('[data-testid="overview-note-steps"]').text()).toBe('одиннадцать коротких шагов')
-    })
-
-    it('shows only "you" and "on us" once Projects are saved, not the band or the first-time notes', () => {
+    it('shows "you" and "on us" once Projects are saved too', () => {
       const wrapper = page(2)
-      expect(wrapper.find('[data-testid="tour-band"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="overview-note-you"]').text()).toBe('you')
       expect(wrapper.find('[data-testid="overview-note-on-us"]').text()).toBe('on us')
-      expect(wrapper.find('[data-testid="overview-note-steps"]').exists()).toBe(false)
-      expect(wrapper.find('[data-testid="overview-note-make-this"]').exists()).toBe(false)
       expect(wrapper.find('[data-testid="overview-slogan"]').text().replace('you', '')).toBe('Draw. Joy. Weave.')
     })
   })
@@ -105,7 +89,7 @@ describe('OverviewPage', () => {
     const wrapper = page()
     const button = wrapper.find('[data-testid="header-menu"]')
     expect(button.attributes('aria-expanded')).toBe('false')
-    expect(wrapper.text()).toContain('Overview, Take the tour.')
+    expect(wrapper.text()).toContain('Overview.')
     await button.trigger('click')
     expect(button.attributes('aria-expanded')).toBe('true')
   })

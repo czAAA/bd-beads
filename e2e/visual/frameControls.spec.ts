@@ -64,7 +64,7 @@ test('panning the canvas moves the Frame but not a bar opened from the strip, an
   await page.getByTestId('strip-frame').click()
 
   const before = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
-  await page.locator('[data-tour="canvas"]').evaluate((element) => element.scrollBy(300, 200))
+  await page.locator('.app-shell__canvas-scroll').evaluate((element) => element.scrollBy(300, 200))
   await page.waitForTimeout(100)
   const after = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
 
