@@ -1,5 +1,5 @@
 import type { Grid } from '../../domain/project'
-import { tourFinishedGrid } from '../../domain/tour'
+import { GOLD_GRID } from './goldProject'
 
 // The small bead drawings of the Overview carousel's examples (ticket 218; Overview card): a heart, poppy, landscape,
 // stripes and checks, as letters. Artwork, not Projects the app keeps, in the design system preview's colors.
@@ -81,5 +81,5 @@ export const STRIPES: Grid = gridFrom(12, 12, (column, row) => ((column + row) %
 
 export const CHECKS: Grid = gridFrom(12, 12, (column, row) => ((Math.floor(column / 2) + Math.floor(row / 2)) % 2 ? 'K' : 'I'))
 
-/** The first 30 rows of the Tour Project: the Gold strip's thumbnail. */
-export const GOLD_STRIP: Grid = tourFinishedGrid().slice(0, 30)
+/** The first 30 rows of the gold pattern: the Gold strip's thumbnail. */
+export const GOLD_STRIP: Grid = GOLD_GRID.slice(0, 30)

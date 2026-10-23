@@ -9,8 +9,6 @@ import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
 import { loadProjects } from '../services/libraryStore'
 import { startOfflineShell } from '../services/offlineShell'
-import { saveTourProgress, saveTourStatus } from '../services/tourStore'
-import { TOUR_ENABLED } from '../features'
 import { markEditorChosen, overviewUrl } from './overviewRoute'
 import OverviewPage from './OverviewPage.vue'
 
@@ -30,19 +28,8 @@ createApp({
     h(OverviewPage, {
       projectCount: loadProjects().length,
       overviewHref: overviewUrl(base),
-      onMakeFirstProject: () => {
-        if (TOUR_ENABLED) {
-          saveTourStatus('running')
-        }
-        goToEditor()
-      },
+      onMakeFirstProject: goToEditor,
       onOpenEditor: goToEditor,
-      // The menu's Take the tour starts over from step 1, whatever was done before.
-      onTakeTour: () => {
-        saveTourProgress({ done: [] })
-        saveTourStatus('running')
-        goToEditor()
-      },
     }),
 }).mount('#app')
 

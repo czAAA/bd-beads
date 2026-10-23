@@ -222,7 +222,6 @@ export const zh: Translations = {
   header: {
     menuButton: '菜单',
     overviewItem: '概览',
-    tourItem: '开始导览',
     sourceItem: '源代码',
     projectPanelLabel: '项目',
   },
@@ -237,7 +236,7 @@ export const zh: Translations = {
     whatsInside: '功能一览',
     previousFeature: '上一个功能',
     nextFeature: '下一个功能',
-    notes: { you: '你', onUs: '我们请客', elevenSteps: '十一小步', youllMakeThis: '你会做出这个' },
+    notes: { you: '你', onUs: '我们请客' },
     coffee: { title: '一个人做的', text: 'openbeads 由一个人一颗一颗珠子做出来，并且免费。如果它帮你省下一晚上的数珠子，请我喝杯咖啡就是最好的感谢。', button: '请我喝咖啡' },
     plans: {
       label: '方案',
@@ -274,71 +273,6 @@ export const zh: Translations = {
       maker: '玛丽亚 K.',
       projectFile: '项目文件',
       names: ['金色条纹', '虞美人', '爱心', '山丘', '条纹', '格子'],
-    },
-  },
-  tour: {
-    stepLabel: '导览，第 {n} 步，共 {total} 步：{title}',
-    progress: '{n} / {total}',
-    next: '下一步',
-    skip: '跳过导览',
-    backToLoom: '返回织机，创建你的第一个项目',
-    backToLoomName: '返回织机，创建你的第一个项目',
-    backToLoomNote: '然后：织机、默认珠子和 10×75 颗，保留你的姓名。现在点击“创建项目”。',
-    selectLineHint: '点击标尺上的数字来选择一行或一列。',
-    offScreen: '这个控件不在屏幕上。“下一步”会替你完成这一步。',
-    skipToast: '导览已暂时搁置。随时可以从菜单重新开始。',
-    pointer: '下一步：{place}中的{control}。',
-    steps: {
-      create: {
-        title: '开始一个项目',
-        body: '每个项目都从这里开始。给它起个名字，然后试试编织技法、珠子和单位：尺寸会随之更新。',
-      },
-      fill: {
-        title: '填充背景',
-        body: '“填充”会一次填满同一种颜色的整片区域。选择“填充”和黑色，然后填充项目。',
-      },
-      outline: {
-        title: '涂出轮廓',
-        body: '“涂色”一次放置一颗珠子。选择“涂色”和黄色，然后涂满 22 颗标记的珠子：第一个菱形的轮廓。',
-      },
-      rhombus: {
-        title: '填充菱形',
-        body: '“填充”会在轮廓处停下，所以只有内部会改变。保持黄色，选择“填充”，在菱形内部填充。',
-      },
-      eye: {
-        title: '涂出眼睛',
-        body: '选择“涂色”和黑色，然后涂满里面标记的 16 颗珠子：一个小圆环和它的中心。',
-      },
-      copy: {
-        title: '复制菱形',
-        body: '“选择”会在你想重复使用的珠子周围画出框。选中菱形，点击“复制”，然后粘贴到下面的四个轮廓中。',
-      },
-      finish: {
-        title: '其余的由我们完成',
-        body: '菱形之间的小金珠和圆角的末端会作为一次修改放入，所以一次“撤销”就能全部收回。点击“下一步”观看。',
-      },
-      erase: {
-        title: '擦除多余的珠子',
-        body: '“擦除”会清空一颗珠子。有一颗珠子落在圆角之外：选择“擦除”并移除它。',
-      },
-      'remove-line': {
-        title: '删除一行',
-        body: '“删除行列”会去掉整行或整列。通过编号选择一行或一列，删除它，然后点击“撤销”把它找回来。',
-      },
-      size: {
-        title: '更改边框',
-        body: '边框标出哪些珠子属于图样，它的大小可以随时更改。打开“边框”，增加一列，看看图样，然后点击“撤销”。',
-      },
-      rows: {
-        title: '记录你的行',
-        body: '行进度在你编织时记住进度。打开它，点击“行已完成”三次，再点击一次“行未完成”，重新打开第 3 行。',
-      },
-    },
-    final: {
-      title: '你的第一个项目完成了',
-      body: '带着它去织机吧：“导出”可以生成用于打印的 PDF、PNG 或项目文件。想再走一遍，请打开菜单并选择“开始导览”。',
-      keepEditing: '继续编辑',
-      export: '导出',
     },
   },
   pieceName: {

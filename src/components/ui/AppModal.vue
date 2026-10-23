@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
-import { inTourCard } from '../../composables/ui/tourDom'
 
 // The design system's Modal (ticket 76; Modal and ConfirmDialogs cards): a centered dialog over a scrim, 420 or 560px.
 // The parent mounts it with `v-if` and decides what cancelling means; Escape and (unless `backdrop` is `swallow`) a
@@ -67,7 +66,7 @@ function onKeydown(event: KeyboardEvent) {
 /** Focus that leaves the dialog some other way (a click on the page behind, say) is brought back. */
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
-  if (dialogEl.value && target && !dialogEl.value.contains(target) && !inTourCard(target)) {
+  if (dialogEl.value && target && !dialogEl.value.contains(target)) {
     ;(focusables()[0] ?? dialogEl.value).focus({ preventScroll: true })
   }
 }

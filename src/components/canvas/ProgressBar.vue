@@ -134,7 +134,6 @@ const directionLabel = computed(() =>
           icon="arrow-up"
           :disabled="position.current === 0"
           data-testid="progress-bar-previous"
-          data-tour="progress-previous"
           @click="emit('move-row', -1)"
         />
         <AppButton
@@ -145,7 +144,6 @@ const directionLabel = computed(() =>
           trailing-icon="arrow-down"
           :disabled="position.current >= position.total"
           data-testid="progress-bar-next"
-          data-tour="progress-next"
           @click="emit('move-row', 1)"
         />
       </div>

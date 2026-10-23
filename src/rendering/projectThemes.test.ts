@@ -22,7 +22,6 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finishe
   marker: 'marker',
   outline: 'bead-outline',
   cursor: 'focus-ring',
-  tourMark: 'tour-highlight',
 }
 
 describe('ProjectTheme', () => {

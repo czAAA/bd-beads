@@ -83,9 +83,6 @@ export interface ProjectTheme {
   /** The keyboard's bead cursor ring (`focus-ring`) and its width: 2px, 3px in high contrast (BeadCursor card). */
   cursor: string
   cursorWidth: number
-  /** The dashed outline the Tour puts on beads to paint and on frames to select or paste into (`tour-highlight`;
-   * black in high contrast). */
-  tourMark: string
 }
 
 /** How much of a finished bead's own color shows over the board while finished rows are dimmed (ticket 352). */
@@ -108,7 +105,6 @@ export const LIGHT_THEME: ProjectTheme = {
   finished: { grey: false, opacity: FINISHED_OPACITY },
   cursor: '#c23604',
   cursorWidth: 2,
-  tourMark: '#f2c94c',
 }
 
 /** The dark theme: a white rim, so two beads of one color stay apart. */
@@ -128,7 +124,6 @@ export const DARK_THEME: ProjectTheme = {
   finished: { grey: false, opacity: FINISHED_OPACITY },
   cursor: '#faff69',
   cursorWidth: 2,
-  tourMark: '#f2c94c',
 }
 
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
@@ -148,7 +143,6 @@ const CONTRAST_THEME: ProjectTheme = {
   finished: { grey: false, opacity: FINISHED_OPACITY },
   cursor: '#000000',
   cursorWidth: 3,
-  tourMark: '#000000',
 }
 
 /** PNG and PDF exports and the Convert image preview: always light, whatever the app's theme, on the `print-board`. */

@@ -93,7 +93,6 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
       :aria-keyshortcuts="removeAdded && isAddedColorId(color.id) ? 'Delete Backspace' : undefined"
       :tabindex="roving.tabIndexFor(isStop(color.id, index))"
       data-testid="palette-swatch"
-      :data-tour="`color-${color.id}`"
       :data-color-id="color.id"
       @select="pick(color.id)"
       @remove="remove(color.id)"

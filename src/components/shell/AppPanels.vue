@@ -64,7 +64,6 @@ const {
   onCloseFramePanel,
   toolPillPosition,
   shortcutsHelpOpen,
-  tour,
   menuOpensOnForm,
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
@@ -115,7 +114,6 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       @delete-all="onRequestDeleteAllProjects"
       @update:input-mode="setInputMode"
       @shortcuts="shortcutsHelpOpen = true"
-      @tour="tour.start()"
     />
     <ProjectPanel
       v-else-if="activeProject"

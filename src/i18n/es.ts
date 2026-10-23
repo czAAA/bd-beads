@@ -223,7 +223,6 @@ export const es: Translations = {
   header: {
     menuButton: 'Menú',
     overviewItem: 'Resumen',
-    tourItem: 'Hacer el recorrido',
     sourceItem: 'Código fuente',
     projectPanelLabel: 'Proyecto',
   },
@@ -238,7 +237,7 @@ export const es: Translations = {
     whatsInside: 'Qué incluye',
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
-    notes: { you: 'tú', onUs: 'va por nosotros', elevenSteps: 'once pasitos', youllMakeThis: 'harás esto' },
+    notes: { you: 'tú', onUs: 'va por nosotros' },
     coffee: { title: 'Una sola persona', text: 'openbeads lo hace una sola persona, cuenta a cuenta, y es gratis. Si te ahorró una tarde de contar, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
     plans: {
       label: 'planes',
@@ -275,71 +274,6 @@ export const es: Translations = {
       maker: 'María K.',
       projectFile: 'Archivo de proyecto',
       names: ['Franja dorada', 'Amapola', 'Corazón', 'Colinas', 'Rayas', 'Cuadros'],
-    },
-  },
-  tour: {
-    stepLabel: 'Recorrido, paso {n} de {total}: {title}',
-    progress: '{n} de {total}',
-    next: 'Siguiente',
-    skip: 'Omitir recorrido',
-    backToLoom: 'Volver al telar para tu primer proyecto',
-    backToLoomName: 'Volver al telar para tu primer proyecto',
-    backToLoomNote: 'Luego: Telar, la cuenta predeterminada y 10×75 cuentas, con tu nombre. Ahora pulsa Crear proyecto.',
-    selectLineHint: 'Selecciona una fila o columna pulsando su número en la regla.',
-    offScreen: 'Este control no está en pantalla. Siguiente hace este paso por ti.',
-    skipToast: 'Recorrido aparcado por ahora. Retómalo cuando quieras desde el menú.',
-    pointer: 'Siguiente: {control}, en {place}.',
-    steps: {
-      create: {
-        title: 'Emtrozo un proyecto',
-        body: 'Todo proyecto emtrozo aquí. Ponle un nombre y prueba una técnica, una cuenta y las unidades: el tamaño se actualiza sobre la marcha.',
-      },
-      fill: {
-        title: 'Rellena el fondo',
-        body: 'Rellenar colorea de una vez toda una zona de un mismo color. Elige Rellenar y negro, y rellena el proyecto.',
-      },
-      outline: {
-        title: 'Pinta el contorno',
-        body: 'Pintar coloca una cuenta cada vez. Elige Pintar y amarillo, y pinta las 22 cuentas marcadas: el contorno del primer rombo.',
-      },
-      rhombus: {
-        title: 'Rellena el rombo',
-        body: 'Rellenar se detiene en el contorno, así que solo cambia el interior. Mantén el amarillo, elige Rellenar y rellena dentro del rombo.',
-      },
-      eye: {
-        title: 'Pinta el ojo',
-        body: 'Elige Pintar y negro, y pinta las 16 cuentas marcadas del interior: un pequeño anillo y su centro.',
-      },
-      copy: {
-        title: 'Copia el rombo',
-        body: 'Seleccionar dibuja un marco alrededor de las cuentas que quieres reutilizar. Selecciona el rombo, pulsa Copiar y pégalo en cada uno de los cuatro contornos de abajo.',
-      },
-      finish: {
-        title: 'Terminamos el resto',
-        body: 'Las pequeñas cuentas doradas entre los rombos y los extremos redondeados entran como un solo cambio, así que un solo Deshacer las quita todas. Pulsa Siguiente para verlo.',
-      },
-      erase: {
-        title: 'Borra la cuenta suelta',
-        body: 'Borrar vacía una cuenta. Una cuenta queda fuera de la esquina redondeada: elige Borrar y quítala.',
-      },
-      'remove-line': {
-        title: 'Quita una línea',
-        body: 'Quitar línea elimina una fila o columna entera. Selecciona una fila o columna por su número, quítala y pulsa Deshacer para recuperarla.',
-      },
-      size: {
-        title: 'Cambia el marco',
-        body: 'El marco señala qué cuentas forman el esquema, y su tamaño se puede cambiar en cualquier momento. Abre Marco, añade una columna, mira el esquema y pulsa Deshacer.',
-      },
-      rows: {
-        title: 'Sigue tus filas',
-        body: 'El progreso por filas guarda tu sitio mientras tejes. Actívalo, pulsa Fila terminada tres veces y luego Fila sin terminar una vez para volver a abrir la fila 3.',
-      },
-    },
-    final: {
-      title: 'Tu primer proyecto está listo',
-      body: 'Llévalo al telar: Exportar crea un PDF para imprimir, un PNG o el archivo del proyecto. Para repasarlo otra vez, abre el menú y elige Hacer el recorrido.',
-      keepEditing: 'Seguir editando',
-      export: 'Exportar',
     },
   },
   pieceName: {

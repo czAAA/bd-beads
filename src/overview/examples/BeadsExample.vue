@@ -3,19 +3,19 @@ import { computed } from 'vue'
 import { findBead } from '../../domain/beads'
 import { findPaletteColorByHex } from '../../domain/palette'
 import { formatPrintedGrams, printedGrams } from '../../domain/printGrams'
-import { tourFinishedGrid } from '../../domain/tour'
+import { GOLD_GRID } from './goldProject'
 import { useI18n } from '../../i18n/useI18n'
 import BeadPicture from './BeadPicture.vue'
 import ExampleFrame from './ExampleFrame.vue'
 
-/** Beads needed (ticket 218): the Tour Project and its shopping list, counted off the Project and weighed as the exports weigh. */
+/** Beads needed (ticket 218): the gold pattern and its shopping list, counted off the Project and weighed as the exports weigh. */
 const { t, locale } = useI18n()
-const GRID = tourFinishedGrid()
+
 const BEAD = findBead('miyuki-delica-11-0')
 
 const lines = computed(() => {
   const counts = new Map<string, number>()
-  for (const cell of GRID.flat()) if (cell.color) counts.set(cell.color, (counts.get(cell.color) ?? 0) + 1)
+  for (const cell of GOLD_GRID.flat()) if (cell.color) counts.set(cell.color, (counts.get(cell.color) ?? 0) + 1)
   const weigh = (count: number) => `≈ ${formatPrintedGrams(printedGrams(count, BEAD) ?? 0, locale.value, t.value.quantities.gramsUnit)}`
   const colors = [...counts.entries()]
     .sort((a, b) => b[1] - a[1])
@@ -27,7 +27,7 @@ const lines = computed(() => {
 
 <template>
   <ExampleFrame>
-    <BeadPicture :grid="GRID" :zoom="0.2" />
+    <BeadPicture :grid="GOLD_GRID" :zoom="0.2" />
     <div class="beads">
       <h4 class="beads__heading">{{ t.quantities.heading }} · {{ lines.total }}</h4>
       <div v-for="line in lines.colors" :key="line.hex" class="beads__row">

@@ -53,8 +53,6 @@
   --bead-empty: #d8d2cc; /* An empty bead position on the board (Derived). */
   --position-mark: #d8d2cc;  /* A Position mark on the open canvas: the dot, or the outline of the square, at an empty position outside the Frame (starts from bead-empty). */
   --bead-outline: #1f1f1f; /* Hover outline when no color is chosen. */
-  --tour-highlight: #f2c94c; /* The Tour: the 2.5px ring (with an 8px glow at 38%) on the control to use next, the tool tile tint and the current bead in the step strand. 3px ink ring, no glow, in high contrast. */
-  --note-gold: #c99a14; /* Overview only: the decorative note under the Tour Pattern band. About 2.5:1 on white, so never for text that carries meaning. */
   --elevation-1: 0 4px 12px rgba(0,0,0,.04); /* Card: save box, Beads needed, Saved Patterns. Dark uses surface steps instead. */
   --elevation-2: 0 12px 24px -4px rgba(0,0,0,.08); /* The canvas box. */
   --elevation-3: 0 16px 48px -8px rgba(0,0,0,.12); /* Modals, menus, messages (Derived). Dark adds a 1px line-strong border instead. */
@@ -113,8 +111,6 @@
   --bead-empty: #3c3c3c;
   --position-mark: #3c3c3c;
   --bead-outline: #ffffff;
-  --tour-highlight: #f2c94c;
-  --note-gold: #f2c94c;
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;
@@ -173,8 +169,6 @@
   --bead-empty: #b8b0a8;
   --position-mark: #b8b0a8;
   --bead-outline: #000000;
-  --tour-highlight: #000000;
-  --note-gold: #000000;
   --elevation-1: none;
   --elevation-2: none;
   --elevation-3: none;
@@ -227,9 +221,6 @@
   --z-popover: 60; /* Menus, OverflowMenu. */
   --z-toast: 70; /* Toast messages: above sheets so a result is never hidden, below modals. */
   --z-modal: 80; /* Modals and their scrim (scrim one below): confirmations, Keyboard shortcuts, New Pattern on phone. */
-  --z-tour-dim: 84; /* The Tour's dim layer and its hole (v15): above modals so the Tour can guide inside New Pattern on the phone. */
-  --z-tour-connector: 85; /* The Tour's ring of beads around the hole and the connector to the card. */
-  --z-tour-card: 86; /* The Tour's step card and final card; below tooltips. */
   --z-tooltip: 90; /* Tooltips: always on top, never interactive. */
   --print-page-width: 210mm; /* A4 portrait. */
   --print-page-height: 297mm; /* A4 portrait. */
