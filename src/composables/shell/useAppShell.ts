@@ -46,7 +46,6 @@ import { useStorageAskFlow } from '../project/useStorageAskFlow'
 import { useSavedProjectConfirms } from '../project/useSavedProjectConfirms'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
-import { useSaveFlow } from '../export/useSaveFlow'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
 import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
@@ -105,16 +104,6 @@ function wireAppShell(services: Services) {
 
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
   useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
-
-  /** Save and its "Saved" confirmation (tickets 115, 119, 195). */
-  const { onSave, clearSavedConfirmation } = useSaveFlow({
-    currentProject,
-    saveNow,
-    messages,
-    showToast,
-    dismissToast,
-    downloadFile: services.downloadFile,
-  })
 
   // Convert image's framing step (ticket 58, ADR 0010): independent of the open Project, so nothing here touches
   // replaceProject, undo or the Row lock; framing over an open Project takes the canvas panel over until
@@ -516,7 +505,7 @@ function wireAppShell(services: Services) {
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0062). */
   const editFrame = frameFlow.toggleHandles
 
-  /** Rotate: the Selection a quarter turn, with a Message saying how many beads it covered (ticket 416, ADR 0052). */
+  /** Rotate: the Selection a quarter turn, with a Message saying when it covered beads (ticket 416, ADR 0052). */
   const rotateFlow = useRotateSelectionFlow({
     edit,
     currentProject,
@@ -525,7 +514,6 @@ function wireAppShell(services: Services) {
     showToast,
     onUndo,
     messages,
-    locale: currentLocale,
   })
 
   /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0063, 0066). */
@@ -559,7 +547,6 @@ function wireAppShell(services: Services) {
       activeProjectId.value = id
     },
     saveNow,
-    showToast,
   })
 
   /** Exporting as a file, PNG or PDF, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
@@ -664,7 +651,6 @@ function wireAppShell(services: Services) {
     onToggleFramePanel: frameFlow.toggleBar,
     onCopy,
     pasteAtPointer,
-    onSave,
     onRotate: rotateFlow.onRotate,
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
@@ -696,7 +682,6 @@ function wireAppShell(services: Services) {
     frameFlow.cancelRemove()
     frameFlow.cancelReplace()
     replaceBead.onCancelReplaceBead()
-    clearSavedConfirmation()
     pickingColor.value = false
   })
 
@@ -854,7 +839,7 @@ function wireAppShell(services: Services) {
     ...storageAsk,
     ...exportFlow,
     ...namePiece,
-    onSave,
+    saveNow,
     ...overlays,
     shortcutsHelpOpen,
     // The decoder Convert image reads a picked picture with, for the components that take a file

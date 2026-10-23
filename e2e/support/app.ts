@@ -1,4 +1,4 @@
-import type { Locator, Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { STORAGE_KEY, storedLibrary } from './projects'
 import { normalizeProject, type Project } from '../../src/domain/project'
 import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
@@ -157,12 +157,10 @@ export async function stateConvertSize(page: Page, columns: number, rows: number
   await page.getByTestId('convert-size-continue').click()
 }
 
-/** The Project the app has saved, read back the way it is stored: Save sits in the Dock's Project panel. */
+/** The Project the app has saved, read back the way it is stored. Edits reach the device on their own (ticket 523). */
 export async function savedProject(page: Page): Promise<Project> {
-  await openStripPanel(page, 'strip-project')
-  await page.getByTestId('save-button').click()
+  await expect.poll(() => page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)).not.toBeNull()
   const stored = await page.evaluate((key) => localStorage.getItem(key), STORAGE_KEY)
-  await closePanel(page)
   const library = JSON.parse(stored!) as { patterns: EncodedProject[] }
   return normalizeProject(decodeProject(library.patterns[0]!))
 }

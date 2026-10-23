@@ -321,8 +321,6 @@ export const en: Translations = {
       other: '{count} beads were cut off by the Frame.',
     },
     cutButton: 'Cut',
-    saveButton: 'Save',
-    savedConfirmation: 'Saved',
     pasteLabel: 'Paste',
     removeLineButton: 'Remove selected row/column',
     removeLineShort: 'Remove line',
@@ -392,7 +390,6 @@ export const en: Translations = {
     lastPart: 'Last part',
   },
   saveBox: {
-    saveButton: 'Save Project',
     exportButton: 'Export',
     savedState: 'saved · this device',
     failedState: 'not saved · this device',
@@ -471,10 +468,7 @@ export const en: Translations = {
     countNeedsFrame: 'Set Frame to count beads.',
     progressSelectToSet: 'Select to set a',
     progressFrameWord: 'Frame',
-    rotateCoveredMessage: {
-      one: '{count} bead covered.',
-      other: '{count} beads covered.',
-    },
+    rotateCoveredMessage: 'The turned fragment landed on top of existing beads.',
   },
   size: {
     estimateLabel: 'Estimated size',
@@ -621,7 +615,6 @@ export const en: Translations = {
     colors: 'Set up the colors to paint with.',
     newProject: 'Start an empty Canvas.',
     importFile: 'Open a Project from a file.',
-    saveProject: 'Save to a file on this device.',
     changeName: "Change the maker's name printed on exports.",
     convertImage: 'Turn a picture into a Schema.',
     list: (names) => `${names.join(', ')}.`,

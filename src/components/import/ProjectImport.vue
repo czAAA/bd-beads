@@ -12,21 +12,15 @@ const props = withDefaults(
   defineProps<{
     /** Every Project saved on this device, for spotting import collisions. */
     projects: Project[]
-    // Icons only, each name kept as tooltip and accessible name: the header's first step when it runs out of room
-    // (ticket 142; `writing.md`, Fitting longer text), or the whole look inside the iPad mini More menu (ticket 168),
-    // where `toastResults` also applies.
+    // Icons only, each name kept as tooltip and accessible name: the Menu's look and the empty canvas's (ticket 142;
+    // `writing.md`, Fitting longer text).
     compact?: boolean
-    // The iPad mini tier's More menu (ticket 168; OverflowMenu card): a result doesn't fit beside the button there, so
-    // it is emitted as `import-result` for the app shell to toast above the bottom toolbar. The header's instance
-    // leaves this off and keeps the inline result.
-    toastResults?: boolean
-    /** A second, simultaneously-mounted instance (the More menu's, alongside the header's own) needs its own
+    /** A second, simultaneously-mounted instance (the Menu's, alongside the empty canvas's) needs its own
      * testids. */
     testidPrefix?: string
   }>(),
   {
     compact: false,
-    toastResults: false,
     testidPrefix: '',
   },
 )
@@ -34,8 +28,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   /** The Projects a file turned out to hold, ready to be saved locally, already given fresh ids where they collided. */
   import: [projects: Project[]]
-  /** `toastResults` only: a toast id, its text and tone, ready for the app shell's own `useToasts`. */
-  'import-result': [id: string, text: string, tone: 'success' | 'danger']
 }>()
 
 const fileInputId = useId()
@@ -61,10 +53,8 @@ async function onImportFile(event: Event): Promise<void> {
     const added = importProjects(contents.projects, props.projects)
     importedCount.value = added.length
     emit('import', added)
-    if (props.toastResults) emit('import-result', 'import-file', `${t.value.transfer.importedLabel}: ${added.length}`, 'success')
   } catch {
     importFailed.value = true
-    if (props.toastResults) emit('import-result', 'import-file', t.value.transfer.importErrorLabel, 'danger')
   } finally {
     // Clear the input so re-picking the same file still counts as a change.
     input.value = ''
@@ -109,14 +99,13 @@ async function onImportFile(event: Event): Promise<void> {
 
   <!--
     One line beside the buttons, no shadow and no close (ImportResult card); role="status" / "alert" so it is
-    announced as it appears, since the file picker has already closed by then. The iPad mini tier's More menu
-    (`toastResults`) emits the same words as a toast instead (ticket 168): there is no room beside these buttons in
-    a menu, and results arrive above the bottom toolbar there.
+    announced as it appears, since the file picker has already closed by then. The Menu panel stays open after an
+    import so this is where the person reads the result (ticket 523).
   -->
-  <p v-if="!toastResults && importedCount !== null" class="project-import__result" role="status" data-testid="import-result">
+  <p v-if="importedCount !== null" class="project-import__result" role="status" data-testid="import-result">
     {{ t.transfer.importedLabel }}: {{ importedCount }}
   </p>
-  <p v-if="!toastResults && importFailed" class="project-import__error" role="alert" data-testid="import-error">
+  <p v-if="importFailed" class="project-import__error" role="alert" data-testid="import-error">
     <AppIcon name="warning" :size="16" />{{ t.transfer.importErrorLabel }}
   </p>
 </template>

@@ -324,8 +324,6 @@ export const es: Translations = {
       other: 'No cupieron {count} cuentas en el marco.',
     },
     cutButton: 'Cortar',
-    saveButton: 'Guardar',
-    savedConfirmation: 'Guardado',
     pasteLabel: 'Pegar',
     removeLineButton: 'Quitar fila/columna seleccionada',
     removeLineShort: 'Quitar línea',
@@ -395,7 +393,6 @@ export const es: Translations = {
     lastPart: 'Última parte',
   },
   saveBox: {
-    saveButton: 'Guardar proyecto',
     exportButton: 'Exportar',
     savedState: 'guardado · este dispositivo',
     failedState: 'sin guardar · este dispositivo',
@@ -474,11 +471,7 @@ export const es: Translations = {
     countNeedsFrame: 'Define el marco para contar las cuentas.',
     progressSelectToSet: 'Selecciona para definir el',
     progressFrameWord: 'marco',
-    rotateCoveredMessage: {
-      one: 'Se cubrió {count} cuenta.',
-      many: 'Se cubrieron {count} de cuentas.',
-      other: 'Se cubrieron {count} cuentas.',
-    },
+    rotateCoveredMessage: 'El fragmento girado quedó sobre cuentas existentes.',
   },
   size: {
     estimateLabel: 'Tamaño estimado',
@@ -625,7 +618,6 @@ export const es: Translations = {
     colors: 'Prepara los colores con los que pintar.',
     newProject: 'Emtrozo un lienzo vacío.',
     importFile: 'Abre un proyecto desde un archivo.',
-    saveProject: 'Guarda en un archivo en este dispositivo.',
     changeName: 'Cambia el nombre de quien lo hace que se imprime en las exportaciones.',
     convertImage: 'Convierte una imagen en un esquema.',
     list: (names) => `${names.join(', ')}.`,

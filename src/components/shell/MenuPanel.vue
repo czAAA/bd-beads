@@ -28,7 +28,6 @@ defineProps<{
 }>()
 const emit = defineEmits<{
   import: [projects: Project[]]
-  'import-result': [id: string, text: string, tone: 'success' | 'danger']
   'export-all': []
   'saved-projects': []
   'new-project': []
@@ -71,9 +70,9 @@ const inputOptions = computed(() => [
     <PanelSection :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
       <PanelItem icon="plus" accent stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
-      <!-- Import keeps the panel open until the file is read (its picker belongs to it), then the result is a toast and the panel goes. -->
+      <!-- Import keeps the panel open after the file is read and shows the result inline (ticket 523). -->
       <div class="menu-panel__import" data-testid="menu-import">
-        <ProjectImport toast-results :projects="projects" testid-prefix="menu-" @import="emit('import', $event)" @import-result="(id, text, tone) => emit('import-result', id, text, tone)" />
+        <ProjectImport :projects="projects" testid-prefix="menu-" @import="emit('import', $event)" />
       </div>
       <PanelItem icon="export" value=".openbeads" data-testid="menu-export-all" @select="emit('export-all')">{{ actions.exportAll.name(t) }}</PanelItem>
       <PanelItem

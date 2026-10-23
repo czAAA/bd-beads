@@ -22,9 +22,9 @@ function mountPanel(props: Record<string, unknown> = {}) {
 }
 
 describe('ProjectPanel (ticket 443)', () => {
-  it('has the name with a pencil, then Technique, the Bead line, Canvas, Save and exports, the Name row, Duplicate and Delete', () => {
+  it('has the name with a pencil, then Technique, the Bead line, Canvas, the exports, the Name row, Duplicate and Delete', () => {
     const wrapper = mountPanel()
-    const order = ['project-name', 'frame-technique', 'project-bead-row', 'canvas-section', 'save-button', 'export-png', 'export-pdf', 'export-project-file', 'project-name-on-exports', 'project-duplicate', 'project-delete']
+    const order = ['project-name', 'frame-technique', 'project-bead-row', 'canvas-section', 'export-png', 'export-pdf', 'export-project-file', 'project-name-on-exports', 'project-duplicate', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -32,7 +32,6 @@ describe('ProjectPanel (ticket 443)', () => {
     expect(wrapper.get('[data-testid="project-rename"]').attributes('aria-label')).toBe('Rename Moth')
     expect(wrapper.get('[data-testid="project-bead-row"]').text()).toContain('TOHO Cube 1.5mm')
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
-    expect(wrapper.get('[data-testid="save-button"]').classes()).toContain('app-button--primary')
   })
 
   it('shows the Bead shape and asks for the other one (ticket 508)', async () => {

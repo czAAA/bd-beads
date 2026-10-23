@@ -28,7 +28,6 @@ function setup(project: Project | null = framed, selection: Selection | null = s
     showToast: vi.fn(),
     onUndo: vi.fn(),
     messages: () => en,
-    locale: () => 'en' as const,
   }
   return { deps, harness, ...useRotateSelectionFlow(deps) }
 }
@@ -76,7 +75,7 @@ describe('useRotateSelectionFlow', () => {
     expect(deps.showToast).not.toHaveBeenCalled()
   })
 
-  it('says how many beads it covered, once, with an Undo that undoes the one step', () => {
+  it('says so once when it covered beads, with an Undo that undoes the one step', () => {
     const covering: Project = { ...framed, frame: { ...framed.frame!, beads: withColors(framed.frame!.beads, [{ row: 9, column: 11, color: GREEN }, { row: 11, column: 11, color: GREEN }]) } }
     const { deps, harness, onRotate } = setup(covering)
     onRotate()
@@ -84,7 +83,7 @@ describe('useRotateSelectionFlow', () => {
     expect(deps.showToast).toHaveBeenCalledTimes(1)
     const [id, text, tone, action] = deps.showToast.mock.calls[0]!
     expect(id).toBe('selection-rotated')
-    expect(text).toBe('2 beads covered.')
+    expect(text).toBe(en.frame.rotateCoveredMessage)
     expect(tone).toBe('info')
     action.run()
     expect(deps.onUndo).toHaveBeenCalledTimes(1)
@@ -93,7 +92,7 @@ describe('useRotateSelectionFlow', () => {
     expect(harness.project.frame).toEqual(covering.frame)
   })
 
-  it('drops what the turn would put outside the Frame, and counts nothing for it', () => {
+  it('drops what the turn would put outside the Frame, and says nothing for it', () => {
     // The Frame\'s top edge is row 10: the turn\'s top bead would stand on row 9, which the Frame does not hold.
     const edge: Project = { ...framed, frame: { technique: 'loom' as const, row: 10, column: 0, rows: 30, columns: 40, beads: withColors({}, [0, 1, 2].map((column) => ({ row: 0, column: 10 + column, color: RED }))) } }
     const { deps, harness, onRotate } = setup(edge)

@@ -81,13 +81,13 @@ describe('ProjectImport import', () => {
   })
 })
 
-describe('ProjectImport toastResults and testidPrefix (ticket 168: the iPad mini tier\'s More menu)', () => {
+describe('ProjectImport testidPrefix (ticket 168)', () => {
   beforeEach(() => {
     localStorage.setItem('openbeads:locale', 'en')
   })
 
-  it('emits import-result instead of drawing the inline result, and prefixes its testids', async () => {
-    const wrapper = mount(ProjectImport, { props: { projects: [], toastResults: true, testidPrefix: 'menu-' } })
+  it('prefixes its testids and shows the inline result', async () => {
+    const wrapper = mount(ProjectImport, { props: { projects: [], testidPrefix: 'menu-' } })
     const input = wrapper.find<HTMLInputElement>('[data-testid="menu-import-file"]')
     Object.defineProperty(input.element, 'files', {
       configurable: true,
@@ -96,15 +96,6 @@ describe('ProjectImport toastResults and testidPrefix (ticket 168: the iPad mini
     await input.trigger('change')
     await settleImport()
 
-    expect(wrapper.find('[data-testid="import-result"]').exists()).toBe(false)
-    expect(wrapper.emitted('import-result')).toEqual([['import-file', 'Projects imported: 1', 'success']])
-  })
-
-  it('emits a danger import-result for a failed file', async () => {
-    const wrapper = mount(ProjectImport, { props: { projects: [], toastResults: true } })
-
-    await pickFile(wrapper, 'not json')
-    expect(wrapper.find('[data-testid="import-error"]').exists()).toBe(false)
-    expect(wrapper.emitted('import-result')![0]).toEqual(['import-file', 'Could not import that file', 'danger'])
+    expect(wrapper.find('[data-testid="import-result"]').text()).toContain('1')
   })
 })

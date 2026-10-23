@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { downloadFile, sharesFromTap } from './fileDownload'
+import { downloadFile } from './fileDownload'
 
 const IPAD_UA = 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
 
@@ -68,17 +68,24 @@ describe('downloadFile', () => {
 
   it('falls back to a link when sharing fails, but not when the person closes the sheet', async () => {
     stubLinkDownload()
-    const failing = vi.fn().mockRejectedValue(new DOMException('no', 'NotAllowedError'))
+    const failing = vi.fn().mockRejectedValue(new DOMException('no', 'DataError'))
     stubBrowser(IPAD_UA, { share: failing, canShare: () => true })
-    downloadFile('a.json', '{}')
-    await vi.waitFor(() => expect(linkClicks).toEqual(['a.json']))
+    await expect(downloadFile('a.json', '{}')).resolves.toBe('handed')
+    expect(linkClicks).toEqual(['a.json'])
 
     linkClicks.length = 0
     const dismissed = vi.fn().mockRejectedValue(new DOMException('cancelled', 'AbortError'))
     stubBrowser(IPAD_UA, { share: dismissed, canShare: () => true })
-    downloadFile('a.json', '{}')
-    await Promise.resolve()
-    await Promise.resolve()
+    await expect(downloadFile('a.json', '{}')).resolves.toBe('cancelled')
+    expect(linkClicks).toEqual([])
+  })
+
+  it('reports a share the browser refused for want of a fresh tap, without downloading (ticket 523)', async () => {
+    stubLinkDownload()
+    const stale = vi.fn().mockRejectedValue(new DOMException('no gesture', 'NotAllowedError'))
+    stubBrowser(IPAD_UA, { share: stale, canShare: () => true })
+
+    await expect(downloadFile('a.json', '{}')).resolves.toBe('refused')
     expect(linkClicks).toEqual([])
   })
 
@@ -91,20 +98,5 @@ describe('downloadFile', () => {
 
     expect(share).not.toHaveBeenCalled()
     expect(linkClicks).toEqual(['a.json'])
-  })
-})
-
-describe('sharesFromTap', () => {
-  afterEach(() => vi.unstubAllGlobals())
-
-  it('is true only on an iPad that can share the file', () => {
-    stubBrowser(IPAD_UA, { share: vi.fn().mockResolvedValue(undefined), canShare: () => true })
-    expect(sharesFromTap('a.png', 'image/png')).toBe(true)
-
-    stubBrowser(IPAD_UA, { share: vi.fn().mockResolvedValue(undefined), canShare: () => false })
-    expect(sharesFromTap('a.png', 'image/png')).toBe(false)
-
-    stubBrowser('Mozilla/5.0 (X11; Linux x86_64) Chrome/120', { share: vi.fn().mockResolvedValue(undefined), canShare: () => true })
-    expect(sharesFromTap('a.png', 'image/png')).toBe(false)
   })
 })

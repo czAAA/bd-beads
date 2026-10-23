@@ -325,8 +325,6 @@ export const ru: Translations = {
       other: '{count} бусины не поместились в рамку.',
     },
     cutButton: 'Вырезать',
-    saveButton: 'Сохранить',
-    savedConfirmation: 'Сохранено',
     pasteLabel: 'Вставить',
     removeLineButton: 'Удалить выделенный ряд/столбец',
     removeLineShort: 'Удалить линию',
@@ -396,7 +394,6 @@ export const ru: Translations = {
     lastPart: 'Последняя часть',
   },
   saveBox: {
-    saveButton: 'Сохранить проект',
     exportButton: 'Экспортировать',
     savedState: 'сохранено · это устройство',
     failedState: 'не сохранено · это устройство',
@@ -475,12 +472,7 @@ export const ru: Translations = {
     countNeedsFrame: 'Задайте рамку, чтобы посчитать бисер.',
     progressSelectToSet: 'Выделите, чтобы задать',
     progressFrameWord: 'рамку',
-    rotateCoveredMessage: {
-      one: '{count} бусина перекрыта.',
-      few: '{count} бусины перекрыты.',
-      many: '{count} бусин перекрыто.',
-      other: '{count} бусины перекрыты.',
-    },
+    rotateCoveredMessage: 'Повёрнутый фрагмент оказался поверх существующих бусин.',
   },
   size: {
     estimateLabel: 'Примерный размер',
@@ -627,7 +619,6 @@ export const ru: Translations = {
     colors: 'Настройте цвета для рисования.',
     newProject: 'Начать с пустого полотна.',
     importFile: 'Открыть проект из файла.',
-    saveProject: 'Сохранить в файл на этом устройстве.',
     changeName: 'Изменить имя мастера при экспорте.',
     convertImage: 'Превратить картинку в схему.',
     list: (names) => `${names.join(', ')}.`,

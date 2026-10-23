@@ -39,7 +39,7 @@ The subpanel a tap on a Template card opens: Name (the Template's name as its pl
 _Avoid_: Template form, Template dialog
 
 **Project panel**:
-The Project panel: the modal dropdown the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Save and Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
+The Project panel: the modal dropdown the Canvas strip's Project button opens (ticket 431): the open Project's name, size and save state, Bead and Replace bead, the Frame's Technique, Export, Beads needed, New Project, Import and Saved Projects, and last **Delete all** (the Project's whole drawing, behind its usual confirmation). Remove line and Name piece are on the Context bar only.
 _Avoid_: Project sheet, Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:
