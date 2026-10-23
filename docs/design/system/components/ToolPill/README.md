@@ -33,7 +33,7 @@ Replaces the Colour sheet on every device, phones included.
 
 - `--popover-width` (288px) wide, `--pill-popover-radius` (24px) corners, `overlay-fill`, 1px `overlay-line`, `elevation-3`, padding 12px 14px 14px, 12px between sections.
 - **Placement:** beside the pill toward the canvas, `pill-gap` away, centred on the tile that opened it and clamped `float-edge` inside the screen. It never sits under the pill or off-screen. Opens with the pop motion (`duration-slow`, `ease-out`, from 94% scale), none under reduced motion.
-- **Contents, top to bottom:** a head (the chosen colour as a 20px `radius-sm` swatch, its name, its hex in `meta-small` `muted`, Close); "palette", the PaletteSwatches grid (without the colours that are one of the pill's three recents while they are; no recents row here) with Pick color from canvas as its last tile; then Custom and Image colors side by side (ColorPickers).
+- **Contents, top to bottom:** a head (the chosen colour as a 20px `radius-sm` swatch, its name, its hex in `meta-small` `muted`, the **Edit palette** pencil, Close); "palette" (in Edit palette followed by the **Remove all** bin), the PaletteSwatches grid (without the colours that are one of the pill's three recents while they are; no recents row here) with Pick color from canvas as its last tile; then Custom and Image colors side by side (ColorPickers).
 - Picking a colour chooses it and closes the popover; Escape, Close, or a press outside close it too, and a press outside only closes.
 
 ## Moving the pill
@@ -49,3 +49,8 @@ Replaces the Colour sheet on every device, phones included.
 - On a busy Canvas colour the pill's border and shadow separate it; in high contrast it takes the 1px `line-strong` border.
 
 Hand-written from the Tool pill proposal (2026-10-16); static rendition.
+
+### Edit palette in the head and the "palette" label (ticket 0531)
+
+- **Pencil:** a plain 16px `IconButton` with the `pencil` icon, between the hex and Close, the same look as Close (`muted`, `hover-fill`, `ink` on hover). Shown only while the Palette has an added color. Tip "Edit palette" («Изменить палитру»); in the mode its tip is "Done editing" («Готово»), it is `aria-pressed="true"` and shows its icon in `accent` with `press-fill`, like the Pen/Mouse toggle. Pressing it again leaves the mode. What the mode does to the swatches is in the PaletteSwatches card.
+- **Remove all:** only in the mode, a plain 16px `IconButton` with the `delete` bin icon, 6px after the word "palette" on the same line (the label keeps `meta-small` `muted`). Tip "Remove all custom colors" («Убрать все свои цвета»). It asks first (PaletteSwatches card). With no added color left the mode ends, so it never shows disabled.
