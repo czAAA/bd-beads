@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
-import { useMoveColor, usePalette, useRemoveAddedColor } from '../../composables/tools/usePalette'
+import { useMoveColor, usePalette, useRecentColors, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
-import { PALETTE_SHORTCUTS, isAddedColorId } from '../../domain/palette'
+import { PALETTE_SHORTCUTS, RECENT_SHORTCUTS, isAddedColorId, slotsBesideRecents } from '../../domain/palette'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
@@ -15,6 +15,10 @@ const emit = defineEmits<{
 }>()
 const { t } = useI18n()
 const palette = usePalette()
+const recents = useRecentColors()
+/** The swatches shown, with the slot each holds: a color that is one of the pill's recent chips is shown there only
+ * (ticket 529) and comes back in its slot when it drops out. Shift+4…0 follow this order. */
+const shown = computed(() => slotsBesideRecents(palette.value, recents.value).map((slot) => ({ color: palette.value[slot]!, slot })))
 const closePanel = useClosePopoverOnPick()
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
@@ -23,7 +27,7 @@ const roving = useRovingFocus(gridEl, '.palette-picker__swatch')
 const removeAdded = useRemoveAddedColor()
 
 function isStop(colorId: string, index: number): boolean {
-  const selected = palette.value.some((color) => color.id === props.selectedColorId)
+  const selected = shown.value.some(({ color }) => color.id === props.selectedColorId)
   return selected ? colorId === props.selectedColorId : index === 0
 }
 
@@ -33,23 +37,23 @@ function remove(colorId: string) {
   removeAdded?.(colorId)
 }
 
-// Rearranging (ticket 398): drag a swatch to another slot, or move it with Alt+Left/Right. Each slot owns its
-// Shift+key, so the swatch landing in the first is Shift+1.
+// Rearranging (ticket 398): drag a swatch to another slot, or move it with Alt+Left/Right. The shown swatches own
+// Shift+4…0 in order, so the swatch landing in the first shown slot is Shift+4.
 const moveColor = useMoveColor()
 const drag = useSwatchDrag(
-  (from, to) => moveColor?.(from, to),
+  (from, to) => moveColor?.(shown.value[from]!.slot, shown.value[to]!.slot),
   (x, y) => {
     const id = document.elementFromPoint(x, y)?.closest<HTMLElement>('[data-color-id]')?.dataset.colorId
-    const slot = palette.value.findIndex((color) => color.id === id)
-    return slot < 0 ? undefined : slot
+    const position = shown.value.findIndex(({ color }) => color.id === id)
+    return position < 0 ? undefined : position
   },
 )
 
-async function nudge(slot: number, by: number) {
-  const target = slot + by
-  if (!moveColor || target < 0 || target >= palette.value.length) return
-  const colorId = palette.value[slot]!.id
-  moveColor(slot, target)
+async function nudge(position: number, by: number) {
+  const target = shown.value[position + by]
+  if (!moveColor || !target) return
+  const colorId = shown.value[position]!.color.id
+  moveColor(shown.value[position]!.slot, target.slot)
   await nextTick()
   gridEl.value?.querySelector<HTMLElement>(`[data-color-id="${colorId}"]`)?.focus()
 }
@@ -61,11 +65,11 @@ function pick(colorId: string) {
   closePanel()
 }
 
-function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
+function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number) {
   if (event.altKey && (event.key === 'ArrowLeft' || event.key === 'ArrowRight')) {
     event.preventDefault()
     event.stopPropagation()
-    void nudge(slot, event.key === 'ArrowLeft' ? -1 : 1)
+    void nudge(position, event.key === 'ArrowLeft' ? -1 : 1)
     return
   }
   if (!removeAdded || !isAddedColorId(colorId) || (event.key !== 'Delete' && event.key !== 'Backspace')) return
@@ -78,12 +82,12 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, slot: number) {
 <template>
   <div ref="gridEl" class="palette-picker" role="group" @keydown="roving.onKeydown" :aria-label="t.palette.pickerLabel" data-testid="palette-picker">
     <AppSwatch
-      v-for="(color, index) in palette"
+      v-for="({ color, slot }, index) in shown"
       :key="color.id"
       :color="color.hex"
-      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${index + 1}, ${t.colorNames[color.id] ?? color.hex}`"
+      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${slot + 1}, ${t.colorNames[color.id] ?? color.hex}`"
       :selected="color.id === selectedColorId"
-      :hotkey="PALETTE_SHORTCUTS[index] ? `Shift+${PALETTE_SHORTCUTS[index].keyLabel}` : undefined"
+      :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
       :remove-label="removeAdded && isAddedColorId(color.id) ? t.palette.removeSwatch.replace('{hex}', color.hex) : undefined"
       class="palette-picker__swatch"
       :class="{

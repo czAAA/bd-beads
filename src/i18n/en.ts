@@ -549,7 +549,7 @@ export const en: Translations = {
     panCanvas: 'Move the Canvas',
     canvasGroup: 'Canvas',
     zoomCanvas: 'Zoom the Canvas',
-    paletteColors: 'Select a Palette color, in Palette order',
+    paletteColors: 'Select a color: 1 to 3 the recent colors, then the Palette in order',
     keyHints: 'Show key hints',
     keyHintsOn: 'On',
     keyHintsOff: 'Off',

@@ -24,7 +24,7 @@ export function findPaletteColor(id: string): PaletteColor | undefined {
   return PALETTE.find((color) => color.id === id)
 }
 
-/** Shift+1..9, Shift+0, Q, W (ticket 88), one per PALETTE entry: the physical key (`KeyboardEvent.code`; shifted `.key`
+/** Shift+1..9 and Shift+0 (tickets 88, 529): the physical key (`KeyboardEvent.code`; shifted `.key`
  * values like "!" vary by layout) and its label. The one source App.vue's dispatcher and PalettePicker.vue read. */
 export interface PaletteShortcut {
   code: string
@@ -42,9 +42,20 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
   { code: 'Digit8', keyLabel: '8' },
   { code: 'Digit9', keyLabel: '9' },
   { code: 'Digit0', keyLabel: '0' },
-  { code: 'KeyQ', keyLabel: 'Q' },
-  { code: 'KeyW', keyLabel: 'W' },
 ]
+
+/** The first keys, Shift+1…3, pick the recent colors, not Palette slots (ticket 529). */
+export const RECENT_SHORTCUTS = 3
+
+/** The slots of `palette` the colour popover shows and Shift+4…0 reach: every slot but the ones holding one of the
+ * `recents` (the pill's chips, which show and key those colors instead), in slot order. */
+export function slotsBesideRecents(palette: readonly PaletteColor[], recents: readonly string[]): number[] {
+  const slots: number[] = []
+  palette.forEach((color, slot) => {
+    if (!recents.includes(color.hex)) slots.push(slot)
+  })
+  return slots
+}
 
 /** The Palette color a painted cell holds, looked up by the hex the grid stores; undefined for a hex from outside
  * the Palette. */

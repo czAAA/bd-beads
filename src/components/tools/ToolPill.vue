@@ -4,10 +4,12 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useToolPillDrag } from '../../composables/tools/useToolPillDrag'
+import { PALETTE_SHORTCUTS } from '../../domain/palette'
 import { PILL_POSITIONS, isVerticalPill, pillPositionForKey, type PillPosition, type PillRect } from '../../domain/toolPill'
 import type { Tool } from '../../domain/tool'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
@@ -29,7 +31,6 @@ const props = defineProps<{
   /** The colours used before the chosen one, newest first: what the pill shows beside it. */
   recentsInPill: readonly string[]
   /** The colours the popover offers back. */
-  recentsInPopover: readonly string[]
   popoverOpen: boolean
   selectedColorId?: string
   customColor?: string
@@ -223,18 +224,28 @@ watch(
       </IconButton>
 
       <template v-if="showRecents">
-        <button
-          v-for="hex in recentsInPill"
+        <AppTooltip
+          v-for="(hex, index) in recentsInPill"
           :key="hex"
-          type="button"
-          class="ui-control tool-pill__stop tool-pill__recent"
-          :aria-label="t.toolPill.useColor.replace('{color}', hex)"
-          :tabindex="-1"
-          data-testid="pill-recent"
-          @click="emit('pick-recent', hex)"
+          :name="`${t.toolPill.recent} ${index + 1}`"
+          :body="hex"
+          :hotkey="`Shift+${PALETTE_SHORTCUTS[index]?.keyLabel}`"
+          :announce="false"
         >
-          <span class="tool-pill__recent-swatch" :style="{ backgroundColor: hex }" />
-        </button>
+          <template #default="{ describedby }">
+            <button
+              type="button"
+              class="ui-control tool-pill__stop tool-pill__recent"
+              :aria-label="`${t.toolPill.recent} ${index + 1}, ${t.toolPill.useColor.replace('{color}', hex)}`"
+              :aria-describedby="describedby"
+              :tabindex="-1"
+              data-testid="pill-recent"
+              @click="emit('pick-recent', hex)"
+            >
+              <span class="tool-pill__recent-swatch" :style="{ backgroundColor: hex }" />
+            </button>
+          </template>
+        </AppTooltip>
       </template>
 
     </div>
@@ -248,9 +259,7 @@ watch(
       :color-name="colorName"
       :selected-color-id="selectedColorId"
       :custom-color="customColor"
-      :recents="recentsInPopover"
       @close="emit('update:popoverOpen', false)"
-      @pick-recent="emit('pick-recent', $event)"
       @select-color="emit('select-color', $event)"
       @select-custom-color="emit('select-custom-color', $event)"
     />
