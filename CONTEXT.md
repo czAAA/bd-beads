@@ -43,7 +43,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
-| [Overview and Tour](docs/glossary/overview-and-tour.md) | Overview, Tour |
+| [Overview](docs/glossary/overview.md) | Overview |
 
 ## How to run it
 
@@ -59,7 +59,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | `rendering/` | Drawing on a canvas, shared by the editor, previews and exports: the Project, overlays, rulers, print pages | `projectRenderer.ts`, `overlayRenderer.ts` |
 | `services/` | The only code that reaches outside the page: the Project library in localStorage, preferences, image decoding, file download | `index.ts`, `libraryStore.ts` |
 | `composables/<feature>/` | The app's behavior, one composable per concern; user flows are `use<Name>Flow` | `shell/useAppShell.ts` (wires them all), `project/useEdit.ts`, `shell/controlRegistry.ts` |
-| `components/<feature>/` | The Vue components for each feature: `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell`, `tour` | `shell/AppShell.vue` |
+| `components/<feature>/` | The Vue components for each feature: `canvas`, `tools`, `palette`, `export`, `import`, `project`, `shell` | `shell/AppShell.vue` |
 | `components/ui/`, `composables/ui/` | Primitives every feature builds on: `IconButton`, `AppButton`, `MenuButton`, `AppSwatch`, `AppNote`, `AppTooltip`, modals, menus, form fields; generic composables | `controlAction.ts` |
 | `i18n/` | One typed dictionary per language (English, Russian, Ukrainian, Belarusian, Chinese, Spanish, Polish), plurals, the language switch | `translations.ts`, `en.ts`, `ru.ts`, `uk.ts`, `be.ts`, `zh.ts`, `es.ts`, `pl.ts` |
 | `theme/` | Light, dark and high contrast, following the device | `theme.ts` |
@@ -68,4 +68,4 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | `pwa/` | The offline shell's service worker, which `vite.pwa.ts` writes into the build as `sw.js` with the list of built files (ADR 0045); its page-side half is `services/offlineShell.ts` | `serviceWorker.js` |
 | `testUtils/` | Shared test helpers ([docs/testing.md](docs/testing.md)) | `seedProject.ts`, `editHarness.ts` |
 
-Entry files: `src/main.ts` (picks the Overview or the editor, mounts `App.vue`), `src/App.vue` (pure composition, ADR 0020), `src/features.ts` (switched-off features). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).
+Entry files: `src/main.ts` (picks the Overview or the editor, mounts `App.vue`), `src/App.vue` (pure composition, ADR 0020). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).

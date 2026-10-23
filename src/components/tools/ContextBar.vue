@@ -208,7 +208,6 @@ const showing = computed(() => props.selectionSummary !== undefined)
         :deps="deps"
         :disabled="armed ? undefined : true"
         :data-testid="`context-bar-${item.id}`"
-        :data-tour="item.id === 'copy' || item.id === 'remove-line' ? item.id : undefined"
         @click="item.run()"
       />
     </template>

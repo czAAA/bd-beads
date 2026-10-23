@@ -1,4 +1,3 @@
-import { TOUR_ENABLED } from '../../src/features'
 import type { TextMisfit } from './textFit'
 
 // Text that does not fit its box yet (ticket 229): `screen`, `texts` (or 'any'), widths per language, `fixedBy`
@@ -11,7 +10,7 @@ export interface PendingEntry {
   fixedBy: string
 }
 
-const ALL_PENDING: PendingEntry[] = [
+export const PENDING: PendingEntry[] = [
   { screen: 'Overview', texts: ['Ткачество, мозаика, кирпич: каждая рисуется как ложится б...'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Бесплатный аккаунт'], at: { ru: [1900, 1280, 1024, 844, 820, 768, 390, 360, 320] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Создать бесплатный аккаунт'], at: { ru: [1024, 844, 820, 768, 320] }, fixedBy: '231' },
@@ -19,12 +18,7 @@ const ALL_PENDING: PendingEntry[] = [
   { screen: 'Overview', texts: ['Три способа работать'], at: { ru: [390, 360, 320] }, fixedBy: '231' },
   { screen: 'Overview', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { screen: 'Overview carousel', texts: ['Кисть, заливка и ластик, копирование и вставка, отмена лю...', 'Отмечайте готовые ряды и продолжайте с того места, где ос...', 'Ткачество'], at: { ru: [1900, 1280, 1024] }, fixedBy: '231' },
-  { screen: 'Tour', texts: ['Увеличить', 'Сотрите лишнюю бисеринку'], at: { ru: [320] }, fixedBy: '231' },
 ]
-
-/** The Tour's entries wait while it is switched off (ticket 247): its screen isn't visited, so they would read as
- * stale. */
-export const PENDING = ALL_PENDING.filter((entry) => TOUR_ENABLED || entry.screen !== 'Tour')
 
 export type Found = TextMisfit & { screen: string }
 

@@ -1,10 +1,9 @@
 import { onBeforeUnmount, watch } from 'vue'
-import { inTourCard } from './tourDom'
 import { swallowNextClick } from './swallowNextClick'
 
 // The overlay registry (ticket 76 Escape; ticket 449, ADR 0061 press outside). Every open overlay is a layer on one
 // stack; two capture listeners act on the top-most only: Escape closes it, a press outside closes it (click swallowed).
-// Exempt: the opener, a dialog raised from it, the Tour card.
+// Exempt: the opener, a dialog raised from it.
 export interface OverlayLayerOptions {
   /** Whether the overlay is open; it is a layer only while this holds. */
   isOpen: () => boolean
@@ -37,7 +36,7 @@ function onKeyDown(event: KeyboardEvent) {
 
 /** Whether the press lands in something the layer must leave alone. */
 function isExempt(top: OverlayLayerOptions, target: Element): boolean {
-  if (inTourCard(target) || top.isOpener?.(target)) return true
+  if (top.isOpener?.(target)) return true
   // A dialog raised from the layer is its own business, unless it is one of the layers beneath (then it is outside).
   const dialog = target.closest(DIALOG)
   return dialog !== null && !layers.some((layer) => layer.root()?.contains(dialog))

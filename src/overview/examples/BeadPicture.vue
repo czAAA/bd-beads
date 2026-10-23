@@ -79,7 +79,7 @@ watch([theme, () => props.print, project, () => props.zoom, () => props.selectio
 </template>
 
 <style scoped>
-/* The board the beads lie on, as in the editor and the Tour band. */
+/* The board the beads lie on, as in the editor. */
 .bead-picture {
   position: relative;
   display: inline-block;

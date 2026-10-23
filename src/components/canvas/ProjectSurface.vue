@@ -12,7 +12,7 @@ import { hasGuides, selectionFrame, selectionLayer, type Selection } from '../..
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../rendering/gestureView'
-import { renderOverlay, type TourMarks } from '../../rendering/overlayRenderer'
+import { renderOverlay } from '../../rendering/overlayRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
@@ -43,8 +43,6 @@ const props = withDefaults(defineProps<{
   selection?: Selection
   /** The keyboard's bead cursor (ticket 159), drawn only while the surface has keyboard focus. */
   cursor?: GridPosition
-  /** What the Tour marks on the Project (ticket 80), drawn dashed over the beads. */
-  tourMarks?: TourMarks
   /** The Project's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
   label?: string
   /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held); Edit Frame takes the drag
@@ -571,7 +569,6 @@ function drawOverlay(): void {
       pointer: markerAt.value && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
-      tourMarks: props.tourMarks,
       marginOutline: marginOpacity.value,
       frameEditing: props.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
       selectionHandles: props.selecting ? { surface: surface.value, touch: touchInput.value } : undefined,
@@ -603,7 +600,6 @@ watch(
     markerAt,
     () => props.selection,
     () => props.cursor,
-    () => props.tourMarks,
     () => props.showRulers,
     marksShown,
     () => props.settingFrame,
@@ -1118,7 +1114,6 @@ onBeforeUnmount(() => {
     ref="rootEl"
     class="project-surface"
     data-testid="project-surface"
-    data-tour="board"
     :data-technique="project.technique"
     :data-brick-block="project.brickBlock"
     :data-net-size="project.netSize"
