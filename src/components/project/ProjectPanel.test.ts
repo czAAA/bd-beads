@@ -1,9 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import ProjectPanel from './ProjectPanel.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/project'
 import { en } from '../../i18n/en'
+
+afterEach(() => vi.unstubAllGlobals())
 
 beforeEach(() => {
   localStorage.clear()
@@ -64,6 +68,14 @@ describe('ProjectPanel (ticket 443)', () => {
     expect(state().find('svg').attributes('data-icon')).toBe('warning')
     await wrapper.get('[data-testid="save-try-again"]').trigger('click')
     expect(wrapper.emitted('save')).toHaveLength(1)
+  })
+
+  it('opens the keyboard when the pencil is tapped on a touch device (ticket 520)', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = mountPanel()
+    await wrapper.get('[data-testid="project-rename"]').trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="project-rename-input"]').element)
   })
 
   it('renames: the pencil opens a field with Save and Cancel and a counter; Enter saves', async () => {
