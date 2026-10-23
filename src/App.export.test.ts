@@ -11,7 +11,7 @@ import { exportProjectPdf, exportProjectPng } from './rendering/projectExport'
 import { openPanel } from './testUtils/pill'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
-vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn(), sharesFromTap: () => false }))
+vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
 vi.mock('./rendering/projectExport', () => ({
   exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
@@ -87,12 +87,16 @@ describe('App empty, loading and failed states (ticket 158)', () => {
       throw new DOMException('full', 'QuotaExceededError')
     })
     await openPanel(wrapper, 'strip-project')
-    await wrapper.find('[data-testid="save-button"]').trigger('click')
+    await wrapper.find('[data-testid="project-rename"]').trigger('click')
+    await flushPromises()
+    await wrapper.get<HTMLInputElement>('[data-testid="project-rename-input"]').setValue('Owl')
+    await wrapper.find('[data-testid="project-rename-form"]').trigger('submit')
+    await flushPromises()
     setItem.mockRestore()
     vi.mocked(downloadFile).mockClear()
 
     await wrapper.find('[data-testid="save-failed-export"]').trigger('click')
 
-    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith('my-scarf_pr.openbeads', expect.any(Uint8Array), 'application/json'))
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
   })
 })

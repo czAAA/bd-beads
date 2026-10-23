@@ -139,9 +139,10 @@ describe('useExportFlow', () => {
   })
 })
 
-describe('useExportFlow where sharing needs a fresh tap (ticket 306)', () => {
-  function setupShare(sharesFromTap: boolean) {
+describe('useExportFlow toasts (ticket 523)', () => {
+  function setupToasts(handOver?: 'handed' | 'refused' | 'cancelled') {
     const toasts: { id: string; text: string; action?: { label: string; run: () => void } }[] = []
+    downloadFile.mockReturnValue(handOver)
     const flow = useExportFlow({
       currentProject: () => project,
       projects: () => [project],
@@ -149,51 +150,42 @@ describe('useExportFlow where sharing needs a fresh tap (ticket 306)', () => {
       locale: () => 'en' as const,
       replaceProject: () => {},
       downloadFile,
-      sharesFromTap: () => sharesFromTap,
       showToast: (id, text, _tone, action) => toasts.push({ id, text, action }),
     })
     return { flow, toasts }
   }
 
-  it('hands the file over only from the toast action, never after the wait', async () => {
-    const { flow, toasts } = setupShare(true)
+  it('hands the file over in the tap, then says it is ready, with no action', async () => {
+    const { flow, toasts } = setupToasts('handed')
     await flow.onExportPng()
 
-    expect(downloadFile).not.toHaveBeenCalled()
-    expect(toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyPng])
-    toasts[0]!.action!.run()
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+    expect(toasts).toEqual([{ id: 'export-png', text: en.saveBox.readyPng, action: undefined }])
   })
 
-  it('shares nothing when the toast is dismissed', async () => {
-    const { flow } = setupShare(true)
+  it('names the PDF and the file in their toasts', async () => {
+    const { flow, toasts } = setupToasts()
     await flow.onExportPdf()
+    await flow.onExportProjectFile()
 
-    expect(downloadFile).not.toHaveBeenCalled()
+    expect(toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyPdf, en.saveBox.readyFile])
   })
 
-  it('names the PDF in its toast', async () => {
-    const { flow, toasts } = setupShare(true)
-    await flow.onExportPdf()
-
-    expect(toasts[0]!.text).toBe(en.saveBox.readyPdf)
-  })
-
-  it('downloads at once, with no toast, off the share path', async () => {
-    const { flow, toasts } = setupShare(false)
+  it('says nothing when the person closed the share sheet', async () => {
+    const { flow, toasts } = setupToasts('cancelled')
     await flow.onExportPng()
 
-    expect(downloadFile).toHaveBeenCalledOnce()
     expect(toasts).toEqual([])
   })
 
-  it('hands the Project file over only from the toast action too, as packing it takes the tap', async () => {
-    const { flow, toasts } = setupShare(true)
-    await flow.onExportProjectFile()
+  it('keeps a Save action when the share was refused for a stale tap, and hands the file over again from it', async () => {
+    const { flow, toasts } = setupToasts('refused')
+    await flow.onExportPng()
 
-    expect(downloadFile).not.toHaveBeenCalled()
-    expect(toasts.map((toast) => toast.text)).toEqual([en.saveBox.readyFile])
+    expect(toasts).toHaveLength(1)
+    expect(toasts[0]!.action!.label).toBe(en.saveBox.readySave)
+    downloadFile.mockClear()
     toasts[0]!.action!.run()
-    expect(downloadFile).toHaveBeenCalledWith(projectFileName(project), expect.any(Uint8Array), 'application/json')
+    expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
   })
 })

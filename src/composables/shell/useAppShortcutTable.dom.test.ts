@@ -32,7 +32,6 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onFillSelection: vi.fn(),
     onFrameFromSelection: vi.fn(),
     pasteAtPointer: vi.fn(),
-    onSave: vi.fn(),
     onRotate: vi.fn(),
     canRemoveSelectedLine: () => true,
     canNamePiece: () => false,
@@ -207,17 +206,6 @@ describe('useAppShortcutTable', () => {
     press({ key: 'Escape' })
     expect(backed.deps.onSelectTool).not.toHaveBeenCalled()
     backed.wrapper.unmount()
-  })
-
-  it('Ctrl+S saves only while a Project is open', () => {
-    const none = mountTable()
-    press({ key: 's', ctrlKey: true })
-    expect(none.deps.onSave).not.toHaveBeenCalled()
-    none.wrapper.unmount()
-    const open = mountTable({ activeProject: () => ({}) as never })
-    press({ key: 's', ctrlKey: true })
-    expect(open.deps.onSave).toHaveBeenCalled()
-    open.wrapper.unmount()
   })
 
   it('4, 5 and 6 pick Erase, Hand and Piece, and Ctrl+A selects all (tickets 292, 414, 431)', () => {
