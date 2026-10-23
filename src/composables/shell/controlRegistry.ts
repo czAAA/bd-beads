@@ -1,7 +1,7 @@
 import { type Chord } from '../../domain/chord'
 import type { IconName } from '../../components/ui/icons'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
-import { MAX_ADDED_COLORS, PALETTE_SHORTCUTS } from '../../domain/palette'
+import { PALETTE_SHORTCUTS } from '../../domain/palette'
 import { hasProjectBeads, rowProgressOn, rowProgressStarted, type Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
@@ -17,7 +17,6 @@ export interface ControlDeps {
   canUndo: () => boolean
   canRedo: () => boolean
   hasClipboard: () => boolean
-  addedColorCount: () => number
   /** The Palette color standing in a slot (ticket 398): Shift+1 is slot 1, wherever its color was moved to. */
   paletteColorIdAt: (slot: number) => string | undefined
   /** A menu or popover layer is open (useOverlayLayer). */
@@ -140,7 +139,6 @@ const hasBeads = (deps: ControlDeps) => {
   const project = deps.activeProject()
   return project !== undefined && hasProjectBeads(project)
 }
-const maxAdded = (text: string) => text.replace('{max}', String(MAX_ADDED_COLORS))
 
 /** One of the Frame panel's steppers (tickets 417, 473): an edge a bead out or in, named for its edge. Moving in stops
  * at four beads. */
@@ -533,11 +531,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('position-marks-squares', (t) => t.canvas.canvasColor.positionMarks.squares, 'canvas', { icon: 'position-squares', body: (t) => t.canvas.canvasColor.positionMarks.squaresBody }),
   unkeyed('canvas-color', (t) => t.canvas.canvasColor.label, 'canvas', { body: (t) => t.tooltips.canvasColor }),
   unkeyed('clear', (t) => t.deleteAll.button, 'edit', { icon: 'delete', body: (t) => t.tooltips.clear }),
-  unkeyed('custom-color', (t) => t.palette.customColorLabel, 'colors', {
-    body: (t) => maxAdded(t.tooltips.customColor),
-    enabled: (deps: ControlDeps) => deps.addedColorCount() < MAX_ADDED_COLORS,
-    disabledBody: (t: Translations) => maxAdded(t.tooltips.customColorFull),
-  }),
+  unkeyed('custom-color', (t) => t.palette.customColorLabel, 'colors', { body: (t) => t.tooltips.customColor }),
   unkeyed('pick-color', (t) => t.palette.pickFromCanvasLabel, 'colors', {
     icon: 'eyedropper',
     body: (t) => t.tooltips.pickFromCanvas,
@@ -599,7 +593,7 @@ export function chordSlots(chord: Chord): string[] {
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
  * passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'addedColorCount' | 'hasSelection' | 'selectionHasBeads' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

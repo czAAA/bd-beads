@@ -52,7 +52,7 @@ import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
-import { provideColorPick, provideMoveColor, provideRemoveAddedColor, useAddedColors } from '../tools/usePalette'
+import { provideColorPick, provideMoveColor, provideRemoveAddedColor, useProjectPalette } from '../tools/usePalette'
 import { DEFAULT_PALETTE_COLOR_ID, useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
@@ -235,8 +235,8 @@ function wireAppShell(services: Services) {
     hoveredCell.value = undefined
   }
 
-  /** The Palette: the built-in colors and the Custom colors that joined it, kept on the device (ticket 227). */
-  const { palette, addedCount, addUsed, removeAdded, moveColor } = useAddedColors(services.addedColorsStore)
+  /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
+  const { palette, addUsed, removeAdded, moveColor } = useProjectPalette({ currentProject, edit })
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
   const {
@@ -350,7 +350,8 @@ function wireAppShell(services: Services) {
       label: t.value.palette.undoButton,
       run: () => {
         // Selected again only if nothing else was chosen since.
-        if (restore() && wasSelected && selectedColorId.value === DEFAULT_PALETTE_COLOR_ID) onSelectColor(colorId)
+        restore()
+        if (wasSelected && selectedColorId.value === DEFAULT_PALETTE_COLOR_ID) onSelectColor(colorId)
       },
     })
   }
@@ -372,18 +373,11 @@ function wireAppShell(services: Services) {
   provideRemoveAddedColor(onRequestRemoveAddedColor)
   provideMoveColor(moveColor)
 
-  /** A Custom color that has just painted a cell joins the Palette on its first use (ticket 227); at the limit it
-   * still paints, and the user is told once per color. */
-  let limitToldFor: string | undefined
+  /** A Custom color that is about to paint a cell joins the Palette on its first use (ticket 227). */
   function onPaintColorUsed(hex: string) {
     if (selectedColorId.value) return
     const { outcome, colorId } = addUsed(hex)
-    if (outcome === 'added' && colorId) {
-      onCustomColorAdded(colorId)
-    } else if (outcome === 'full' && limitToldFor !== hex) {
-      limitToldFor = hex
-      showToast('palette-full', t.value.palette.limitReached, 'info')
-    }
+    if (outcome === 'added' && colorId) onCustomColorAdded(colorId)
   }
 
   /** A Custom color was picked (ticket 398): it becomes the paint color and, with a slot free, joins the Palette at
@@ -458,8 +452,9 @@ function wireAppShell(services: Services) {
     backOutOfSelect,
     tapPiece,
     beginOrCommitPress: (mode, color, row, column) => {
-      beginOrCommitPress(mode, color, row, column)
+      // Before the press, so the Palette's Undo step comes before the stroke's own.
       if (mode === 'paint' && color) onPaintColorUsed(color)
+      beginOrCommitPress(mode, color, row, column)
     },
     paintStrokeCell,
     pasteAt: pasteAtCell,
@@ -630,7 +625,6 @@ function wireAppShell(services: Services) {
     canUndo: () => canUndo.value,
     canRedo: () => canRedo.value,
     hasClipboard,
-    addedColorCount: () => addedCount.value,
     paletteColorIdAt: (slot) => palette.value[slot]?.id,
     cancelColorPick: () => {
       const was = pickingColor.value

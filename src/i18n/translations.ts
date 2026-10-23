@@ -355,7 +355,6 @@ export interface Translations {
     /** The preview swatch's name: the color the picker would take. */
     previewLabel: string
     pickFromCanvasLabel: string
-    limitReached: string
     /** The toast after an added swatch is removed (ticket 228); its Undo is `undoButton`. */
     removed: string
     /** A removal button's accessible name; `{hex}` is the swatch's color. */
@@ -740,7 +739,6 @@ export interface Translations {
     clear: string
     customColor: string
     pickFromCanvas: string
-    customColorFull: string
     nothingToUndo: string
     zoomOutLimit: string
     zoomInLimit: string

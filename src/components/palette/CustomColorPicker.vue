@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { usePalette } from '../../composables/tools/usePalette'
-import { isAddedColorId } from '../../domain/palette'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import AppTooltip from '../ui/AppTooltip.vue'
 
@@ -25,16 +23,9 @@ const buttonEl = ref<HTMLButtonElement>()
 
 defineExpose({ focus: () => buttonEl.value?.focus() })
 
-/** Its Tooltip (ticket 335) comes from the registry's Custom color action; a full Palette still lets a color be
- * painted with. */
-const palette = usePalette()
+/** Its Tooltip (ticket 335) comes from the registry's Custom color action. */
 const action = controlAction('custom-color')
-const tooltip = computed(() => {
-  const deps = controlDeps({ activeProject: () => undefined, addedColorCount: () => palette.value.filter((color) => isAddedColorId(color.id)).length })
-  return action.enabled?.(deps) === false
-    ? { name: action.name(t.value), disabled: true as const, disabledBody: action.disabledBody!(t.value, deps), announce: false }
-    : { name: action.name(t.value), body: action.body?.(t.value), announce: false }
-})
+const tooltip = computed(() => ({ name: action.name(t.value), body: action.body?.(t.value), announce: false }))
 </script>
 
 <template>

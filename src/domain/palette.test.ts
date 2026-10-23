@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { MAX_ADDED_COLORS, PALETTE, addUsedColor, addedColorId, findPaletteColor, moveSlot, orderedPalette, paletteWith, removeAddedColor, restoreAddedColor } from './palette'
+import { PALETTE, addUsedColor, addedColorId, defaultPaletteIds, findPaletteColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor } from './palette'
 
 describe('PALETTE', () => {
   it('has no duplicate ids', () => {
@@ -19,67 +19,79 @@ describe('findPaletteColor', () => {
   })
 })
 
-describe('addUsedColor (ticket 227)', () => {
+describe('addUsedColor (ticket 227, 0525)', () => {
   it('appends a new color, and leaves a built-in or already-added hex alone', () => {
-    const first = addUsedColor([], '#123456')
-    expect(first).toEqual({ added: ['#123456'], outcome: 'added' })
-    expect(addUsedColor(first.added, '#123456').outcome).toBe('known')
-    expect(addUsedColor(first.added, PALETTE[0]!.hex.toUpperCase())).toEqual({ added: first.added, outcome: 'known' })
+    const first = addUsedColor(defaultPaletteIds(), '#123456')
+    expect(first.outcome).toBe('added')
+    expect(first.ids.at(-1)).toBe(addedColorId('#123456'))
+    expect(addUsedColor(first.ids, '#123456')).toMatchObject({ ids: first.ids, outcome: 'known' })
+    expect(addUsedColor(first.ids, PALETTE[0]!.hex.toUpperCase())).toEqual({ ids: first.ids, outcome: 'known', colorId: 'black' })
   })
 
   it('keeps the order of first use', () => {
-    const added = addUsedColor(addUsedColor([], '#111111').added, '#222222').added
-    expect(paletteWith(added).slice(PALETTE.length).map((c) => c.hex)).toEqual(['#111111', '#222222'])
-    expect(paletteWith(added)[PALETTE.length]!.id).toBe(addedColorId('#111111'))
+    const next = addUsedColor(addUsedColor(defaultPaletteIds(), '#111111').ids, '#222222').ids
+    expect(paletteColors(next).slice(PALETTE.length).map((c) => c.hex)).toEqual(['#111111', '#222222'])
   })
 
-  it('stops at the limit', () => {
-    const full = Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`)
-    expect(addUsedColor(full, '#fedcba')).toEqual({ added: full, outcome: 'full' })
-    expect(addUsedColor(full, full[3]!).outcome).toBe('known')
+  it('has no cap', () => {
+    const many = Array.from({ length: 100 }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`)
+    const all = many.reduce((palette, hex) => addUsedColor(palette, hex).ids, defaultPaletteIds() as readonly string[])
+    expect(paletteColors(all)).toHaveLength(PALETTE.length + 100)
+  })
+
+  it('ignores what is not a color', () => {
+    expect(addUsedColor(defaultPaletteIds(), 'blue').outcome).toBe('known')
   })
 })
 
 describe('removing an added color (ticket 228)', () => {
-  it('takes it out and says where it stood', () => {
-    expect(removeAddedColor(['#111111', '#222222', '#333333'], '#222222')).toEqual({ added: ['#111111', '#333333'], index: 1 })
-    expect(removeAddedColor(['#111111'], '#999999')).toBeUndefined()
+  const three = [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#222222'), addedColorId('#333333')]
+
+  it('takes it out and says which slot it stood in', () => {
+    expect(removeAddedColor(three, addedColorId('#222222'))).toEqual({ ids: [...defaultPaletteIds(), addedColorId('#111111'), addedColorId('#333333')], slot: PALETTE.length + 1 })
+    expect(removeAddedColor(three, addedColorId('#999999'))).toBeUndefined()
   })
 
-  it('restores it at its place, or not at all when it is back or the Palette is full', () => {
-    expect(restoreAddedColor(['#111111', '#333333'], '#222222', 1)).toEqual(['#111111', '#222222', '#333333'])
-    expect(restoreAddedColor(['#111111'], '#111111', 0)).toEqual(['#111111'])
-    const full = Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`)
-    expect(restoreAddedColor(full, '#fedcba', 0)).toEqual(full)
+  it('never removes a built-in color', () => {
+    expect(removeAddedColor(three, 'red')).toBeUndefined()
   })
-})
 
-describe('the Palette limit', () => {
-  it('lets 28 colors be added, 40 swatches in all (the Message card)', () => {
-    expect(MAX_ADDED_COLORS).toBe(28)
-    expect(paletteWith(Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`))).toHaveLength(40)
+  it('restores it in its slot, or not at all when it is back', () => {
+    const without = removeAddedColor(three, addedColorId('#222222'))!
+    expect(restoreAddedColor(without.ids, addedColorId('#222222'), without.slot)).toEqual(three)
+    expect(restoreAddedColor(three, addedColorId('#222222'), 0)).toEqual(three)
   })
 })
 
-describe('orderedPalette (ticket 398)', () => {
-  const ids = (colors: { id: string }[]) => colors.map((c) => c.id)
-
-  it('is the default order with no saved order', () => {
-    expect(ids(orderedPalette(['#111111'], []))).toEqual(ids(paletteWith(['#111111'])))
+describe('a stored Palette (ticket 0525)', () => {
+  it('is the built-in twelve when there is none, or it is unreadable', () => {
+    expect(normalizePaletteIds(undefined)).toEqual(defaultPaletteIds())
+    expect(normalizePaletteIds('red')).toEqual(defaultPaletteIds())
   })
 
-  it('follows the saved order, an added color standing between built-in ones', () => {
+  it('follows the stored order, an added color standing between built-in ones', () => {
     const order = ['red', addedColorId('#111111'), 'black']
-    const result = ids(orderedPalette(['#111111'], order))
+    const result = normalizePaletteIds(order)
     expect(result.slice(0, 3)).toEqual(order)
     expect(result).toHaveLength(PALETTE.length + 1)
   })
 
-  it('closes up over a color that was removed and appends one the order lacks', () => {
-    const order = ['red', addedColorId('#999999'), 'black']
-    const result = ids(orderedPalette(['#111111'], order))
-    expect(result.slice(0, 2)).toEqual(['red', 'black'])
-    expect(result.at(-1)).toBe(addedColorId('#111111'))
+  it('drops what it cannot read and what repeats, and appends a built-in color it lacks', () => {
+    const result = normalizePaletteIds(['red', 'red', 'added-zzzzzz', 7, 'nonsense', addedColorId('#111111')])
+    expect(result.slice(0, 2)).toEqual(['red', addedColorId('#111111')])
+    expect(result).toHaveLength(PALETTE.length + 1)
+  })
+})
+
+describe('paletteFromDevice (temporary, ticket 0525)', () => {
+  it('lays the device\'s added colors out in its slot order', () => {
+    const order = ['red', addedColorId('#111111'), 'black']
+    expect(paletteFromDevice(['#111111', '#222222'], order).slice(0, 3)).toEqual(order)
+    expect(paletteFromDevice(['#111111', '#222222'], order).at(-1)).toBe(addedColorId('#222222'))
+  })
+
+  it('closes up over a color that was removed', () => {
+    expect(paletteFromDevice([], ['red', addedColorId('#999999')])).not.toContain(addedColorId('#999999'))
   })
 })
 
