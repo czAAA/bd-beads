@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { BUILT_IN_COLORS, addUsedColor, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
+import { BUILT_IN_COLORS, addUsedColor, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -166,5 +166,102 @@ describe('Palette.besideRecents', () => {
     const shown = palette.besideRecents([palette.colors[2]!.hex, palette.colors[0]!.hex])
     expect(shown.slice(0, 2).map(({ color, slot }) => [color.id, slot])).toEqual([[palette.colors[1]!.id, 1], [palette.colors[3]!.id, 3]])
     expect(shown.map(({ slot }) => slot)).not.toContain(0)
+  })
+})
+
+describe('defaultPalette (ticket 0528)', () => {
+  const delica = defaultPalette('miyuki-delica-11-0')
+
+  it('gives Miyuki its 16 family colors, human names only', () => {
+    expect(delica).toHaveLength(16)
+    expect(delica.map((color) => color.id)).toEqual(expect.arrayContaining(['beige', 'gold', 'silver', 'crystal', 'iridescent']))
+    expect(delica.map((color) => color.id)).not.toContain('teal')
+    expect(delica.every((color) => /^[a-z]+$/.test(color.id))).toBe(true)
+  })
+
+  it('gives a brand without a set, and a Bead the catalog lacks, the twelve', () => {
+    expect(defaultPalette('toho-round-11-0')).toBe(BUILT_IN_COLORS)
+    expect(defaultPalette('toho-cube-1.5mm')).toBe(BUILT_IN_COLORS)
+    expect(defaultPalette('a-custom-bead')).toBe(BUILT_IN_COLORS)
+  })
+
+  it('keeps one hex per id across sets, so a shared color is one color', () => {
+    for (const color of delica) {
+      const twin = BUILT_IN_COLORS.find((other) => other.id === color.id)
+      if (twin) expect(twin.hex).toBe(color.hex)
+    }
+  })
+})
+
+describe('paletteForBead (ticket 0528)', () => {
+  const twelve = BUILT_IN_COLORS
+  const miyuki = defaultPalette('miyuki-delica-11-0')
+  const ids = (colors: readonly PaletteColor[]) => colors.map((color) => color.id)
+  const redHex = findBuiltInColor('red')!.hex
+  const custom = addedColorId('#123456')
+
+  it('makes the new Bead\'s colors the built-in ones and the old ones added colors after the added ones', () => {
+    const moved = paletteForBead([...ids(twelve), custom], [], twelve, miyuki)
+    expect(moved.slice(0, 16)).toEqual(ids(miyuki))
+    expect(moved[16]).toBe(custom)
+    expect(moved.slice(17)).toEqual([addedColorId(findBuiltInColor('teal')!.hex)])
+  })
+
+  it('keeps a hex that is in both once, as a built-in color', () => {
+    const moved = paletteForBead(ids(twelve), [], twelve, miyuki)
+    expect(moved.filter((id) => id === 'red' || id === addedColorId(redHex))).toEqual(['red'])
+  })
+
+  it('promotes the old colors back and demotes the others without duplicates (A to B to A)', () => {
+    const away = paletteForBead([...ids(twelve), custom], [], twelve, miyuki)
+    const back = paletteForBead(away, [], miyuki, twelve)
+    expect(back.slice(0, 12)).toEqual(ids(twelve))
+    expect(new Set(back).size).toBe(back.length)
+    expect(back).toContain(custom)
+    expect(back.filter((id) => id.startsWith('added-'))).toEqual([custom, ...ids(miyuki).filter((id) => !ids(twelve).includes(id)).map((id) => addedColorId(miyuki.find((c) => c.id === id)!.hex))])
+  })
+
+  it('does not put back a default the maker removed', () => {
+    const away = paletteForBead(ids(twelve), [], twelve, miyuki)
+    const beige = addedColorId('#e6d5b8')
+    const trimmed = away.filter((id) => id !== addedColorId(findBuiltInColor('teal')!.hex))
+    const back = paletteForBead(trimmed, ['#2fb6ae'], miyuki, twelve)
+    expect(back).not.toContain('teal')
+    expect(back).not.toContain(addedColorId('#2fb6ae'))
+    expect(back).toContain(beige)
+  })
+
+  it('leaves the Palette as it is between two Beads with the same set', () => {
+    const arranged = [...ids(twelve).reverse(), custom]
+    expect(paletteForBead(arranged, [], twelve, twelve)).toEqual(arranged)
+  })
+})
+
+describe('removedDefaultsAfter (ticket 0528)', () => {
+  const teal = addedColorId('#2fb6ae')
+
+  it('remembers a default color that left the Palette as an added color', () => {
+    expect(removedDefaultsAfter(['red', teal], ['red'], [])).toEqual(['#2fb6ae'])
+  })
+
+  it('does not remember a Custom color that is no Bead\'s default', () => {
+    expect(removedDefaultsAfter([addedColorId('#123456')], [], [])).toEqual([])
+  })
+
+  it('forgets a color once it is back in the Palette', () => {
+    expect(removedDefaultsAfter(['red'], ['red', teal], ['#2fb6ae'])).toEqual([])
+  })
+})
+
+describe('a stored Palette against a Bead\'s set (ticket 0528)', () => {
+  it('keeps a color of the twelve that the set lacks, as an added color', () => {
+    const stored = BUILT_IN_COLORS.map((color) => color.id)
+    const read = normalizePaletteIds(stored, defaultPalette('miyuki-delica-11-0'))
+    expect(read).toContain(addedColorId('#2fb6ae'))
+    expect(read).toHaveLength(12)
+  })
+
+  it('starts a missing Palette from the set', () => {
+    expect(normalizePaletteIds(undefined, defaultPalette('miyuki-delica-11-0'))).toHaveLength(16)
   })
 })

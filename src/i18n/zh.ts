@@ -93,6 +93,11 @@ export const zh: Translations = {
     pink: '粉色',
     brown: '棕色',
     grey: '灰色',
+    beige: '米色',
+    gold: '金色',
+    silver: '银色',
+    crystal: '透明',
+    iridescent: '虹彩',
   },
   panels: {
     back: '返回',

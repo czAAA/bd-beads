@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, toRaw } from 'vue'
-import { createPalette, defaultPaletteIds } from '../../domain/palette'
+import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import { listedColorName } from '../../i18n/colorName'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { resolveProjectBead, type Project } from '../../domain/project'
@@ -23,7 +23,7 @@ const { t, locale } = useI18n()
 // Read from the Project itself, not through the library's reactive wrapper: a Project is replaced whole by every edit,
 // so its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is
 // slow.
-const palette = computed(() => createPalette(props.project?.palette ?? defaultPaletteIds()))
+const palette = computed(() => (props.project ? projectPalette(props.project) : createPalette(defaultPaletteIds())))
 const quantities = computed(() => (props.project ? computeColorQuantities(toRaw(props.project), palette.value) : []))
 
 /** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for five rows before

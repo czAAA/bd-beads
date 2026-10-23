@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
-import { createPalette, defaultPaletteIds } from '../../domain/palette'
+import { defaultPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import type { Bead } from '../../domain/beads'
 import { CANVAS_MAX_PX, type GridDimensions } from '../../domain/grid'
 import { describeWeave, type Technique } from '../../domain/weave'
@@ -123,7 +123,7 @@ const restLattice = computed(() => latticeFor(restView.value))
 const restSampled = computed(() => sampledFor(restView.value, restLattice.value))
 
 /** The Palette the new Project starts with: the picture snaps to it. */
-const newProjectPalette = createPalette(defaultPaletteIds())
+const newProjectPalette = projectPalette({ palette: defaultPaletteIds(defaultPalette(props.bead.id)), beadId: props.bead.id })
 
 /** The Project this would create: the frame's block of that same pass, reduced to at most maxColors colors. */
 const converted = computed(() =>
