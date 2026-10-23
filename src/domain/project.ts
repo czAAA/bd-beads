@@ -21,7 +21,7 @@ import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
-import { defaultPaletteIds, normalizePaletteIds, type PaletteIds } from './palette'
+import { defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteIds, paletteForBead, removedDefaultsAfter, type PaletteIds } from './palette'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { gridFromSize, type StatedSize } from './projectSize'
@@ -77,6 +77,9 @@ export interface Project {
   /** The Palette (ADR 0002, ticket 0525): the id of every swatch in slot order, the twelve built-in colors and the added
    * ones, so the Project opens with the same Palette on every device. */
   palette: PaletteIds
+  /** The default colors the maker removed after a change of Bead made them added colors (ticket 0528), as hexes, so a
+   * change back does not put them back. Absent when none. */
+  removedDefaults?: string[]
   /** View-only turn (tickets 28, 171): the Project shown turned this many degrees clockwise. Never a data transform:
    * for Peyote/Brick the stagger is tied to weave direction, so transposing the grid would give an unweavable
    * schema. */
@@ -193,7 +196,7 @@ export function createProject(input: CreateProjectInput): Project {
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
-    palette: defaultPaletteIds(),
+    palette: defaultPaletteIds(defaultPalette(input.beadId)),
     rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
@@ -365,8 +368,9 @@ export function normalizeProject(stored: StoredProject): Project {
   } = legacy
 
   const technique = project.technique
+  const removedDefaults = readRemovedDefaults(legacy.removedDefaults)
 
-  const { pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
+  const { removedDefaults: _removed, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
@@ -392,10 +396,18 @@ export function normalizeProject(stored: StoredProject): Project {
       currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(weave, frame.columns, 'columns')),
     },
-    // A Project saved before the Palette belonged to it (or with an unreadable one) starts from the built-in twelve.
-    palette: normalizePaletteIds(legacy.palette),
+    // A Project saved before the Palette belonged to it (or with an unreadable one) starts from its Bead's built-in colors.
+    palette: normalizePaletteIds(legacy.palette, defaultPalette(project.beadId)),
+    ...(removedDefaults.length > 0 ? { removedDefaults } : {}),
     rotation: normalizeRotation(legacy),
   }
+}
+
+/** The removed default colors a stored Project holds: the valid hexes, each once; none for anything else. */
+function readRemovedDefaults(stored: unknown): string[] {
+  if (!Array.isArray(stored)) return []
+  const hexes = stored.flatMap((hex) => (typeof hex === 'string' ? (normalizeHex(hex) ?? []) : []))
+  return [...new Set(hexes)]
 }
 
 /** A distance counted in the Frame's own rows and columns, as Canvas positions (ticket 492): the nearest whole ones,
@@ -667,6 +679,8 @@ export interface UndoEntry {
   rowProgress: RowProgress
   /** The Palette as it was, so Undo and Redo of adding, removing or moving a swatch restore it (ticket 0525). */
   palette: PaletteIds
+  /** The removed default colors as they were (ticket 0528), restored with the Palette they belong to. */
+  removedDefaults?: string[]
   beadId: string
   /** The Frame with its own beads, as they were (ADR 0066). */
   frame: FrameSheet | undefined
@@ -682,12 +696,12 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
+  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
@@ -698,6 +712,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     ...(entry.brickBlock ? { brickBlock: entry.brickBlock } : {}),
     ...(entry.beadShape ? { beadShape: entry.beadShape } : {}),
     ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
+    ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
   })
 }
 
@@ -728,10 +743,20 @@ export function deleteAll(project: Project): Project {
   })
 }
 
-/** Swaps the Project's Bead for another catalog entry (ticket 48, ADR 0007). Nothing else changes: the grid is the
- * Project's size and only the Estimated size depends on the Bead; resizeProject restores the old size. */
+/** Swaps the Project's Bead for another catalog entry (ticket 48, ADR 0007). The grid is the Project's size and only
+ * the Estimated size depends on the Bead (resizeProject restores the old size); the Palette follows the Bead in the
+ * same change (ticket 0528, see paletteForBead), and painted cells keep their hex. */
 export function replaceBead(project: Project, bead: Bead): Project {
-  return touch(project, { beadId: bead.id })
+  const palette = paletteForBead(project.palette, project.removedDefaults ?? [], defaultPalette(project.beadId), defaultPalette(bead.id))
+  return touch(project, { beadId: bead.id, palette })
+}
+
+/** The Project with a new Palette (adding, removing or moving a swatch); the default colors that left it are
+ * remembered as removed (ticket 0528). */
+export function setPalette(project: Project, palette: PaletteIds): Project {
+  const removed = removedDefaultsAfter(project.palette, palette, project.removedDefaults ?? [])
+  const { removedDefaults: _removed, ...rest } = project
+  return touch(rest, { palette, ...(removed.length > 0 ? { removedDefaults: removed } : {}) })
 }
 
 /** Where a Fill stops (ADR 0026): the Frame when it starts inside one, else the box round the Frame and every bead,

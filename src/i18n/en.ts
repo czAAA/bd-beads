@@ -91,6 +91,11 @@ export const en: Translations = {
     pink: 'Pink',
     brown: 'Brown',
     grey: 'Gray',
+    beige: 'Beige',
+    gold: 'Gold',
+    silver: 'Silver',
+    crystal: 'Crystal',
+    iridescent: 'Iridescent',
   },
   panels: {
     back: 'Back',

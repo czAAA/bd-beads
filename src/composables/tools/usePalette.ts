@@ -1,6 +1,6 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { addUsedColor, createPalette, defaultPaletteIds, moveSlot, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteIds } from '../../domain/palette'
-import type { Project } from '../../domain/project'
+import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteIds } from '../../domain/palette'
+import { setPalette as withPalette, type Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
 const paletteKey: InjectionKey<ComputedRef<Palette>> = Symbol('palette')
@@ -15,11 +15,14 @@ export interface ProjectPaletteDeps {
 /** The Palette (CONTEXT.md, ticket 0525, ADR 0002): the open Project's own colors, built-in and the Custom
  * ones that joined it, in slot order (see Palette). Every change is an Edit, so Undo covers it. Call once from the shell. */
 export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) {
-  const palette = computed(() => createPalette(currentProject()?.palette ?? defaultPaletteIds()))
+  const palette = computed(() => {
+    const project = currentProject()
+    return project ? projectPalette(project) : createPalette(defaultPaletteIds())
+  })
   provide(paletteKey, palette)
 
   function setPalette(ids: PaletteIds) {
-    edit('exempt', (project) => ({ ...project, palette: ids, updatedAt: Date.now() }))
+    edit('exempt', (project) => withPalette(project, ids))
   }
 
   /** A Custom color has been chosen or painted: it joins the Palette on first use, in the last slot. Hands back whether
@@ -27,7 +30,7 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
   function addUsed(hex: string): { outcome: AddUsedColorOutcome; colorId?: string } {
     const project = currentProject()
     if (!project) return { outcome: 'known' }
-    const { ids, outcome, colorId } = addUsedColor(project.palette, hex)
+    const { ids, outcome, colorId } = addUsedColor(project.palette, hex, defaultPalette(project.beadId))
     if (outcome === 'added') setPalette(ids)
     return { outcome, colorId }
   }
@@ -36,12 +39,12 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
    * that isn't an added one. */
   function removeAdded(colorId: string): (() => void) | undefined {
     const project = currentProject()
-    const removal = project && removeAddedColor(project.palette, colorId)
+    const removal = project && removeAddedColor(project.palette, colorId, defaultPalette(project.beadId))
     if (!removal) return undefined
     setPalette(removal.ids)
     return () => {
       const now = currentProject()
-      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot))
+      if (now) setPalette(restoreAddedColor(now.palette, colorId, removal.slot, defaultPalette(now.beadId)))
     }
   }
 
