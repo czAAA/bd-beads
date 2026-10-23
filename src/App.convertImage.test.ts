@@ -43,7 +43,7 @@ function twoBlocks(width = 8, height = 8): PixelData {
   return { width, height, data: new Uint8ClampedArray(rgba.flat()) }
 }
 
-/** Raises the New Project sheet. The form states no size (ticket 342): all it has to settle before a picture is the
+/** Raises the New Project panel. The form states no size (ticket 342): all it has to settle before a picture is the
  * Bead. */
 async function pickBead(wrapper: ReturnType<typeof mount>, beadId = cubeBead.id) {
   await openNewProject(wrapper)

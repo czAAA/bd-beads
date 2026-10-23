@@ -11,7 +11,7 @@ import { frameWeave, rowProgressStarted, type Project } from '../../domain/proje
 import { describeWeave } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 
-// The Frame bar (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
+// The Frame panel (tickets 473, 475; Frame card): the Frame's size (a width and a height field, typeable), Rotate and Remove, and a − and + pair per
 // edge. It is the content of a panel like Menu and Project (mounted by PhoneSheets in a PanelHost): from the strip's Frame button only (the edit pencil on the Frame
 // shows the handles and is a separate control); a press outside or Escape closes it.
 const props = defineProps<{
@@ -94,21 +94,21 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 </script>
 
 <template>
-  <div class="frame-bar" role="group" :aria-label="t.frame.title" data-testid="frame-bar" @keydown="emit('key', $event)">
-    <div class="frame-bar__head">
+  <div class="frame-panel" role="group" :aria-label="t.frame.title" data-testid="frame-panel" @keydown="emit('key', $event)">
+    <div class="frame-panel__head">
       <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
       <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
       <component
         :is="locked ? AppTooltip : 'div'"
         v-bind="locked ? lockedTip : {}"
-        class="frame-bar__size"
-        :class="{ 'frame-bar__size--locked': locked }"
+        class="frame-panel__size"
+        :class="{ 'frame-panel__size--locked': locked }"
         :data-handles-escape="sizeEdited || undefined"
         @panel-escape="clearSize"
         @focusout="onSizeFocusOut"
       >
-          <label class="frame-bar__field">
-            <span class="frame-bar__label">{{ t.frame.widthLabel }}</span>
+          <label class="frame-panel__field">
+            <span class="frame-panel__label">{{ t.frame.widthLabel }}</span>
             <TextField
               :model-value="typedWidth"
               compact
@@ -119,15 +119,15 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               autocomplete="off"
               :placeholder="String(counted.columns)"
               :disabled="locked"
-              data-testid="frame-bar-width"
+              data-testid="frame-panel-width"
               @update:model-value="setSize('width', String($event))"
               @input="cleanSizeInput"
               @keydown="onSizeKey"
             />
           </label>
-        <span class="frame-bar__times" aria-hidden="true">×</span>
-          <label class="frame-bar__field">
-            <span class="frame-bar__label">{{ t.frame.heightLabel }}</span>
+        <span class="frame-panel__times" aria-hidden="true">×</span>
+          <label class="frame-panel__field">
+            <span class="frame-panel__label">{{ t.frame.heightLabel }}</span>
             <TextField
               :model-value="typedHeight"
               compact
@@ -138,13 +138,13 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               autocomplete="off"
               :placeholder="String(counted.rows)"
               :disabled="locked"
-              data-testid="frame-bar-height"
+              data-testid="frame-panel-height"
               @update:model-value="setSize('height', String($event))"
               @input="cleanSizeInput"
               @keydown="onSizeKey"
             />
           </label>
-        <span class="frame-bar__unit">{{ sizeUnit }}</span>
+        <span class="frame-panel__unit">{{ sizeUnit }}</span>
       </component>
       <IconButton
         v-if="!locked && turnable"
@@ -152,28 +152,28 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         :icon-size="18"
         :action="rotateAction"
         :deps="deps"
-        class="frame-bar__tool"
+        class="frame-panel__tool"
         data-testid="frame-rotate"
         @click="emit('rotate')"
       />
-      <span v-if="!locked && turnable" class="frame-bar__divider" aria-hidden="true" />
+      <span v-if="!locked && turnable" class="frame-panel__divider" aria-hidden="true" />
       <IconButton
         variant="secondary"
         :icon-size="18"
         :action="removeAction"
         :deps="deps"
-        class="frame-bar__tool frame-bar__tool--danger"
+        class="frame-panel__tool frame-panel__tool--danger"
         data-testid="frame-chrome-remove"
         @click="emit('remove')"
       />
     </div>
-    <div class="frame-bar__edges">
-      <div v-for="cell in ordered" :key="cell.edge" class="frame-bar__cell" :class="{ 'frame-bar__cell--last': lastEdge === cell.edge }" :data-testid="`frame-bar-cell-${cell.edge}`">
-        <span class="frame-bar__glyph" :class="[`frame-bar__glyph--${cell.edge}`, { 'frame-bar__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
-        <span class="frame-bar__name">{{ t.frame.edgeName[cell.edge] }}</span>
-        <span class="frame-bar__pair">
+    <div class="frame-panel__edges">
+      <div v-for="cell in ordered" :key="cell.edge" class="frame-panel__cell" :class="{ 'frame-panel__cell--last': lastEdge === cell.edge }" :data-testid="`frame-panel-cell-${cell.edge}`">
+        <span class="frame-panel__glyph" :class="[`frame-panel__glyph--${cell.edge}`, { 'frame-panel__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />
+        <span class="frame-panel__name">{{ t.frame.edgeName[cell.edge] }}</span>
+        <span class="frame-panel__pair">
           <AppButton
-            class="frame-bar__step"
+            class="frame-panel__step"
             variant="secondary"
             :action="cell.in"
             :deps="deps"
@@ -182,7 +182,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             v-on="cell.shrink"
           >−</AppButton>
           <AppButton
-            class="frame-bar__step"
+            class="frame-panel__step"
             variant="secondary"
             :action="cell.out"
             :deps="deps"
@@ -197,20 +197,20 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 </template>
 
 <style scoped>
-.frame-bar {
+.frame-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--frame-bar-gap);
+  gap: var(--frame-panel-gap);
   color: var(--ink);
 }
 
-.frame-bar__head {
+.frame-panel__head {
   display: flex;
   align-items: center;
   gap: var(--space-4);
 }
 
-.frame-bar__size {
+.frame-panel__size {
   display: flex;
   flex: 1;
   align-items: flex-end;
@@ -218,7 +218,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   min-width: 0;
 }
 
-.frame-bar__field {
+.frame-panel__field {
   display: flex;
   flex: 1 1 5rem;
   flex-direction: column;
@@ -226,56 +226,56 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   min-width: 0;
 }
 
-.frame-bar__label {
+.frame-panel__label {
   font: var(--type-meta-tiny);
   color: var(--muted);
 }
 
-.frame-bar__times {
+.frame-panel__times {
   padding-bottom: var(--space-4);
   color: var(--muted);
 }
 
-.frame-bar__size--locked {
+.frame-panel__size--locked {
   cursor: not-allowed;
 }
 
-.frame-bar__unit {
+.frame-panel__unit {
   padding-bottom: var(--space-4);
   color: var(--muted);
 }
 
-.frame-bar__divider {
+.frame-panel__divider {
   align-self: stretch;
   width: 1px;
   margin: 0 var(--space-4);
   background: var(--line-strong);
 }
 
-.frame-bar__head :deep(.frame-bar__tool) {
+.frame-panel__head :deep(.frame-panel__tool) {
   width: var(--frame-hit);
   height: var(--frame-hit);
   border-radius: var(--radius-md);
 }
 
-.frame-bar__head :deep(.frame-bar__tool--danger) {
+.frame-panel__head :deep(.frame-panel__tool--danger) {
   color: var(--danger);
 }
 
-.frame-bar__edges {
+.frame-panel__edges {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: var(--frame-bar-gap);
+  gap: var(--frame-panel-gap);
 }
 
 /* Narrow: the four cells stack two by two. */
 @media (max-width: 560px) {
-  .frame-bar__edges {
+  .frame-panel__edges {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-.frame-bar__cell {
+.frame-panel__cell {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -286,13 +286,13 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   border-radius: var(--radius-md);
 }
 
-.frame-bar__cell--last {
+.frame-panel__cell--last {
   border: 2px solid var(--accent-strong);
   padding: calc(var(--space-6) - 1px);
 }
 
 /* A square with the edge this cell moves ruled thick. */
-.frame-bar__glyph {
+.frame-panel__glyph {
   box-sizing: border-box;
   width: 16px;
   height: 16px;
@@ -300,37 +300,37 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   border-radius: 2px;
 }
 
-.frame-bar__glyph--top {
+.frame-panel__glyph--top {
   border-top: 4px solid var(--ink);
 }
 
-.frame-bar__glyph--bottom {
+.frame-panel__glyph--bottom {
   border-bottom: 4px solid var(--ink);
 }
 
-.frame-bar__glyph--left {
+.frame-panel__glyph--left {
   border-left: 4px solid var(--ink);
 }
 
-.frame-bar__glyph--right {
+.frame-panel__glyph--right {
   border-right: 4px solid var(--ink);
 }
 
-.frame-bar__glyph--last {
+.frame-panel__glyph--last {
   border-color: var(--accent);
 }
 
-.frame-bar__name {
+.frame-panel__name {
   font: var(--type-small);
   font-weight: 600;
 }
 
-.frame-bar__pair {
+.frame-panel__pair {
   display: flex;
   gap: var(--frame-stepper-gap);
 }
 
-.frame-bar__cell :deep(.frame-bar__step) {
+.frame-panel__cell :deep(.frame-panel__step) {
   width: var(--frame-hit);
   min-width: 0;
   height: var(--frame-hit);
@@ -342,7 +342,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   touch-action: manipulation;
 }
 
-.frame-bar__cell :deep(.frame-bar__step[aria-disabled='true']) {
+.frame-panel__cell :deep(.frame-panel__step[aria-disabled='true']) {
   color: var(--faint);
   background: var(--surface);
 }

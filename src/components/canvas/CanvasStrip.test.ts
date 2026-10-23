@@ -29,7 +29,7 @@ describe('CanvasStrip', () => {
   })
 
   it('shows Menu and Project as icon + text, and asks for their sheets (ticket 431)', async () => {
-    const wrapper = mount(CanvasStrip, { props: { project, openSheet: 'project' } })
+    const wrapper = mount(CanvasStrip, { props: { project, openPanel: 'project' } })
 
     expect(wrapper.get('[data-testid="strip-menu"]').text()).toBe('Menu')
     expect(wrapper.find('[data-testid="strip-menu"] svg').exists()).toBe(true)
@@ -39,7 +39,7 @@ describe('CanvasStrip', () => {
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
-    expect(wrapper.emitted('select-sheet')).toEqual([['menu'], ['project']])
+    expect(wrapper.emitted('select-panel')).toEqual([['menu'], ['project']])
   })
 
   it('names nothing: no title, size line, estimate, grid icon or hint', () => {

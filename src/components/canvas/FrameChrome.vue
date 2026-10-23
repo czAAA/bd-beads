@@ -11,11 +11,11 @@ import type { Project } from '../../domain/project'
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
-  /** Whether the Frame bar is open. */
+  /** Whether the Frame panel is open. */
   editing: boolean
   /** Whether a pointer is down on the canvas, so the handle knows when its drag has ended. */
   pressing: boolean
-  /** Where the Frame bar is, so the handle slides clear of it. */
+  /** Where the Frame panel is, so the handle slides clear of it. */
   bar?: BarBox
   /** Where the Selection is, if there is one: its handles win a press where a control lies over them. */
   selection?: BarBox

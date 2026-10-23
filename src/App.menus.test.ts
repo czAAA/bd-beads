@@ -5,7 +5,7 @@ import App from './App.vue'
 import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { openSheet } from './testUtils/pill'
+import { openPanel } from './testUtils/pill'
 
 /** Menu and Project (spec 0440, ticket 443): one happy path per flow; both open as a dropdown on every screen size. */
 
@@ -32,7 +32,7 @@ const text = (wrapper: ReturnType<typeof mountApp>, testId: string) => wrapper.g
 describe('Menu and Project open as a dropdown on every screen size', () => {
   it('opens as a dropdown with no scrim, and swaps one for the other', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
 
     expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('menu')
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
@@ -63,8 +63,8 @@ describe('Menu and Project open as a dropdown on every screen size', () => {
 
   it('has no fixed height on its rows, so a stacked row is not clipped', async () => {
     const wrapper = mountApp()
-    for (const sheet of ['strip-menu', 'strip-project'] as const) {
-      await openSheet(wrapper, sheet)
+    for (const panel of ['strip-menu', 'strip-project'] as const) {
+      await openPanel(wrapper, panel)
       for (const row of wrapper.findAll('[data-testid="panel-body"] :is([class*="panel-item"], [class*="setting"], [class*="menu-panel__"], [class*="name-row"], [class*="save-export"]):not(svg)')) expect(row.attributes('style') ?? '').not.toMatch(/(^|;|\s)height:/)
     }
   })
@@ -73,7 +73,7 @@ describe('Menu and Project open as a dropdown on every screen size', () => {
 describe('Menu', () => {
   it('holds Projects, Preferences, Help and About in that order, with Delete all Projects last in Projects', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
 
     const sections = wrapper.findAll('[data-testid="menu-panel"] [role="group"]').filter((group) => group.find('h3').exists())
     expect(sections.map((section) => section.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
@@ -87,7 +87,7 @@ describe('Menu', () => {
 
   it('moves the pill from Tools position, applied at once', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
 
     await wrapper.get('[data-testid="menu-tools-position"] [data-value="top"]').trigger('click')
 
@@ -97,14 +97,14 @@ describe('Menu', () => {
   it('has no Pen/Mouse in the pill, and no Input row in Menu until a pen has been seen', async () => {
     const wrapper = mountApp()
     expect(wrapper.find('[data-testid="pill-input-mode"]').exists()).toBe(false)
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(false)
   })
 
   it('has an Input row once a pen has been seen, where Pen | Mouse is chosen and kept', async () => {
     localStorage.setItem('openbeads:pen-seen', 'yes')
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
 
     expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
     await wrapper.get('[data-testid="menu-input-mode"] [data-value="mouse"]').trigger('click')
@@ -114,7 +114,7 @@ describe('Menu', () => {
   it('deletes every Project after a confirmation, and lands on the empty state; Cancel keeps them', async () => {
     saveProjects([moth(), { ...moth(), id: 'other', name: 'Other' }])
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     expect(text(wrapper, 'menu-delete-all')).toBe(en.panels.menu.deleteAll)
 
     await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
@@ -124,7 +124,7 @@ describe('Menu', () => {
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
     expect(loadProjects()).toHaveLength(2)
 
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -135,9 +135,9 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
   })
 
-  it('opens New Project as a sub-view in the Menu, and Back returns to the list with the Project untouched', async () => {
+  it('opens New Project as a subpanel in the Menu, and Back returns to the list with the Project untouched', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     const open = wrapper.get('[data-testid="strip-project"]').text()
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 
@@ -153,7 +153,7 @@ describe('Menu', () => {
 
   it('goes back one level on Escape, then closes', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
@@ -167,7 +167,7 @@ describe('Menu', () => {
 
   it('creates the Project from the Create button, switches to it and closes the panel', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
     await wrapper.get('[data-testid="name-input"]').setValue('Heron')
     expect(wrapper.find('[data-testid="create-project"]').exists()).toBe(true)
@@ -176,13 +176,13 @@ describe('Menu', () => {
 
     expect(names()).toEqual(['Heron', 'Moth'])
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     expect(text(wrapper, 'project-name')).toBe('Heron')
   })
 
   it('starts a Project from a Template: a card opens its setup, Back returns to the gallery, Create makes the Frame in place', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
     expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(true)
 
@@ -208,7 +208,7 @@ describe('Menu', () => {
 
   it('discards the draft on Back', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-menu')
+    await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
     await wrapper.get('[data-testid="name-input"]').setValue('Heron')
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
@@ -264,7 +264,7 @@ describe('Menu', () => {
 describe('Project', () => {
   it('renames from the pencil on Enter, saved at once; an empty name is refused and Escape changes nothing', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     expect(text(wrapper, 'project-name')).toBe('Moth')
     expect(wrapper.get('[data-testid="project-rename"]').attributes('aria-label')).toBe('Rename Moth')
 
@@ -297,7 +297,7 @@ describe('Project', () => {
 
   it('shows the save state: saved, then failed with the reason and Try again', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     expect(text(wrapper, 'save-state')).toBe(en.saveBox.savedState)
     expect(wrapper.get('[data-testid="save-state"]').attributes('aria-live')).toBe('polite')
 
@@ -318,7 +318,7 @@ describe('Project', () => {
   it('duplicates through the popup with the suggested name, keeps Row progress and opens the copy; Cancel changes nothing', async () => {
     saveProjects([{ ...moth(), rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }])
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
 
     await wrapper.get('[data-testid="project-duplicate"]').trigger('click')
     await flushPromises()
@@ -330,7 +330,7 @@ describe('Project', () => {
     await wrapper.get('[data-testid="duplicate-cancel"]').trigger('click')
     expect(names()).toEqual(['Moth'])
 
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     await wrapper.get('[data-testid="project-duplicate"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="duplicate-confirm"]').trigger('click')
@@ -339,13 +339,13 @@ describe('Project', () => {
     expect(names()).toEqual(['Moth', 'Moth 2'])
     const copy = loadProjects().find((project) => project.name === 'Moth 2')!
     expect(copy.rowProgress.currentRow).toBe(2)
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     expect(text(wrapper, 'project-name')).toBe('Moth 2')
   })
 
   it('clears this Project from its own item, after the usual confirmation, and keeps the Project', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     expect(text(wrapper, 'project-clear')).toBe(en.panels.project.clear)
 
     await wrapper.get('[data-testid="project-clear"]').trigger('click')
@@ -361,7 +361,7 @@ describe('Project', () => {
   it('deletes after a confirmation naming the Project, and lands on the empty state', async () => {
     saveProjects([moth(), { ...moth(), id: 'other', name: 'Other' }])
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     const open = text(wrapper, 'project-name')
 
     await wrapper.get('[data-testid="project-delete"]').trigger('click')
@@ -373,7 +373,7 @@ describe('Project', () => {
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
     expect(loadProjects()).toHaveLength(2)
 
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
     await wrapper.get('[data-testid="project-delete"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -388,7 +388,7 @@ describe('Project', () => {
   it('holds the Canvas color and Position marks, which left the strip, and has no Frame Edit, Fit or Remove', async () => {
     const wrapper = mountApp()
     expect(wrapper.find('[data-testid="canvas-color-button"]').exists()).toBe(false)
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
 
     await wrapper.get('[data-testid="canvas-color-linen"]').trigger('click')
     expect(localStorage.getItem('openbeads:canvas-background')).toBe('2')
@@ -399,7 +399,7 @@ describe('Project', () => {
 
   it('sets the Maker\'s name from the row onto this Project', async () => {
     const wrapper = mountApp()
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
 
     await wrapper.get('[data-testid="maker-name-input"]').setValue('Maria')
     await wrapper.get('[data-testid="maker-name-input"]').trigger('keydown', { key: 'Enter' })

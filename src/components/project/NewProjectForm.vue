@@ -192,7 +192,7 @@ function onDropImage(file: File) {
 
 <template>
   <!--
-    The New Project form (ticket 149; NewProjectForm card), in the Menu panel's sub-view: Name (optional), Maker's
+    The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: Name (optional), Maker's
     name (ticket 182, also optional and blank by default), Bead, Technique, then the Create Project button, "or" and Convert image.
     It states no size (ticket 342): a Project starts as a Canvas and its size is set in the Frame
     sheet. Convert image still needs one, so choosing a picture opens its own size step before framing.

@@ -11,7 +11,7 @@ import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from './useEdit'
-import type { PhoneSheet } from '../shell/phoneSheet'
+import type { OpenPanel } from '../shell/openPanel'
 
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
@@ -23,8 +23,8 @@ export interface FrameFlowDeps {
   centreOn: (frame: Frame) => void
   /** The Canvas position under the middle of the view, or nothing until the area is measured. */
   visibleCentre: () => GridPosition | undefined
-  /** The app's one open panel (ticket 510): the Frame bar is open while it is 'frame'. Its own when none is given. */
-  openPanel?: Ref<PhoneSheet | null>
+  /** The app's one open panel (ticket 510): the Frame panel is open while it is 'frame'. Its own when none is given. */
+  openPanel?: Ref<OpenPanel | null>
 }
 
 type Layer = 'canvas' | 'frame'
@@ -36,11 +36,11 @@ type Gesture =
   | { kind: 'resize'; edges: FrameEdge[]; start: Frame }
 
 // Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit pencil shows the handles and the strip's Frame
-// button opens the Frame bar; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
+// button opens the Frame panel; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
 // Move handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
 export function useFrameFlow(deps: FrameFlowDeps) {
-  /** The weaver's choice on the edit toggle (the Frame bar open); false until they turn it on. Never saved. */
-  const openPanel = deps.openPanel ?? ref<PhoneSheet | null>(null)
+  /** The weaver's choice on the edit toggle (the Frame panel open); false until they turn it on. Never saved. */
+  const openPanel = deps.openPanel ?? ref<OpenPanel | null>(null)
   const barOpen = computed({
     get: () => openPanel.value === 'frame',
     set: (on: boolean) => {
@@ -75,7 +75,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
   const settingFrame = computed(() => !!deps.currentProject()?.frame && handlesOn.value && !locked.value)
 
-  /** Whether the Frame bar shows: a Frame and the bar opened. Once a pass is done it holds the size and Remove Frame
+  /** Whether the Frame panel shows: a Frame and the bar opened. Once a pass is done it holds the size and Remove Frame
    * alone (ticket 475: a panel that closes on a press outside cannot stay up for good). */
   const barShown = computed(() => !!deps.currentProject()?.frame && barOpen.value)
 
@@ -98,7 +98,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (deps.currentProject()?.frame) handlesOn.value = !handlesOn.value
   }
 
-  /** The strip's Frame button: opens or closes the Frame bar; nothing happens without a Frame. Once Row progress has
+  /** The strip's Frame button: opens or closes the Frame panel; nothing happens without a Frame. Once Row progress has
    * started the bar still opens, for the size and Remove Frame. */
   function toggleBar(): void {
     if (deps.currentProject()?.frame) barOpen.value = !barOpen.value
@@ -275,7 +275,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (next !== project.frame) commit(next)
   }
 
-  /** The size typed into the Frame bar (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step. */
+  /** The size typed into the Frame panel (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step. */
   function resizeTo(columns: number, rows: number): void {
     const project = deps.currentProject()
     if (!project?.frame || locked.value) return

@@ -9,7 +9,7 @@ import { createProject, type Project, frameGrid } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { serializeLibrary } from './domain/projectFile'
 import { mountWithProject } from './testUtils/seedProject'
-import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openSheet, pickColor, sheetRead } from './testUtils/pill'
+import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openPanel, pickColor, panelRead } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -18,9 +18,9 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
-/** Picks a Bead from the Project sheet's Replace bead menu, which opens the sheet for it and leaves it open. */
+/** Picks a Bead from the Project panel's Replace bead menu, which opens the sheet for it and leaves it open. */
 async function pickReplacement(wrapper: ReturnType<typeof mount>, beadId: string) {
-  await openSheet(wrapper, 'strip-project')
+  await openPanel(wrapper, 'strip-project')
   await wrapper.get('[data-testid="phone-replace-bead-select"]').trigger('click')
   await wrapper.get(`[data-testid="phone-replace-bead-${beadId}"]`).trigger('click')
 }
@@ -200,20 +200,20 @@ describe('App header bead', () => {
   it("shows the open Project's Bead label in the header", async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    expect((await sheetRead(wrapper, 'phone-sheet-bead')).text).toBe('TOHO Cube 1.5mm')
+    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Cube 1.5mm')
   })
 })
 
 describe('App replace bead', () => {
   it('is picked from an app-drawn menu, not a native select, whose picker swallowed the pick on an iPad mini (ticket 442)', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await openSheet(wrapper, 'strip-project')
+    await openPanel(wrapper, 'strip-project')
 
     expect(wrapper.find('select').exists()).toBe(false)
     expect(wrapper.get('[data-testid="phone-replace-bead-select"]').element.tagName).toBe('BUTTON')
   })
 
-  it('opens the confirmation with Cancel focused first from the Project sheet', async () => {
+  it('opens the confirmation with Cancel focused first from the Project panel', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickReplacement(wrapper, 'toho-round-11-0')
 
@@ -262,7 +262,7 @@ describe('App replace bead', () => {
     expect(loadedProject().frame!.columns).toBe(10)
     expect(loadedProject().frame!.rows).toBe(20)
     expect(loadedProject()).not.toHaveProperty('widthMm')
-    expect((await sheetRead(wrapper, 'phone-sheet-bead')).text).toBe('TOHO Round 11/0')
+    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Round 11/0')
   })
 
   it('is one undo step: a single Undo restores the previous Bead, and Redo swaps it back', async () => {
@@ -313,10 +313,10 @@ describe('App bead quantities', () => {
     const wrapper = await mountWithProject(15, 30)
     await projectWithPaintedCells(wrapper)
 
-    expect((await sheetRead(wrapper, 'quantity-count-red')).text).toBe('2')
-    expect((await sheetRead(wrapper, 'quantity-count-blue')).text).toBe('1')
-    expect((await sheetRead(wrapper, 'bead-quantities')).exists).toBe(true)
-    await openSheet(wrapper, 'strip-project')
+    expect((await panelRead(wrapper, 'quantity-count-red')).text).toBe('2')
+    expect((await panelRead(wrapper, 'quantity-count-blue')).text).toBe('1')
+    expect((await panelRead(wrapper, 'bead-quantities')).exists).toBe(true)
+    await openPanel(wrapper, 'strip-project')
     expect(wrapper.find('[data-testid="bead-quantities"] select').exists()).toBe(false)
   })
 })
@@ -325,22 +325,22 @@ describe('App estimated weight (ticket 155)', () => {
   it('follows painting and erasing, and Replace bead', async () => {
     localStorage.setItem('openbeads:locale', 'en')
     const wrapper = await mountWithProject(15, 30)
-    expect((await sheetRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
+    expect((await panelRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
 
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect((await sheetRead(wrapper, 'quantity-weight-red')).text).toBe('0.01 g')
+    expect((await panelRead(wrapper, 'quantity-weight-red')).text).toBe('0.01 g')
 
     await pickReplacement(wrapper, 'toho-round-11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-    expect((await sheetRead(wrapper, 'quantity-weight-red')).text).toBe('< 0.01 g')
-    expect((await sheetRead(wrapper, 'quantities-weight-note')).text).toContain('about 0.0091 g')
+    expect((await panelRead(wrapper, 'quantity-weight-red')).text).toBe('< 0.01 g')
+    expect((await panelRead(wrapper, 'quantities-weight-note')).text).toContain('about 0.0091 g')
 
     await pressBead(wrapper, 0, { button: 2 })
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect((await sheetRead(wrapper, 'quantity-weight-red')).exists).toBe(false)
-    expect((await sheetRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
+    expect((await panelRead(wrapper, 'quantity-weight-red')).exists).toBe(false)
+    expect((await panelRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
   })
 })
 
@@ -357,7 +357,7 @@ describe('App project transfer', () => {
   /** Picks the file in the import control the person has in reach: the project bar's with no Project open, Menu's otherwise. */
   async function importFile(wrapper: ReturnType<typeof mount>, contents: string) {
     if (!wrapper.find('[data-testid="phone-bar-import-file"]').exists()) {
-      await openSheet(wrapper, 'strip-menu')
+      await openPanel(wrapper, 'strip-menu')
     }
     const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="menu-import-file"]')
     Object.defineProperty(input.element, 'files', {
@@ -384,7 +384,7 @@ describe('App project transfer', () => {
 
     await importFile(wrapper, serializeLibrary([makeProject('Fox')]))
 
-    expect((await sheetRead(wrapper, 'project-name')).text).toContain('Fox')
+    expect((await panelRead(wrapper, 'project-name')).text).toContain('Fox')
     await openSavedProjects(wrapper)
     expect(wrapper.find('[data-testid="project-list-empty"]').exists()).toBe(false)
   })

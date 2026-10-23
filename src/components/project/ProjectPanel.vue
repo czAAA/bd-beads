@@ -141,7 +141,7 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
 
     <p class="project-panel__bead" data-testid="project-bead-row">
       <span class="project-panel__bead-label">{{ t.panels.project.bead }}</span>
-      <span class="project-panel__bead-name" data-testid="phone-sheet-bead">{{ beadName }}</span>
+      <span class="project-panel__bead-name" data-testid="panel-bead">{{ beadName }}</span>
       <!-- A menu, not a native select (ticket 442): the iPad's picker swallowed the pick, and the menu works the same everywhere. -->
       <MenuButton class="project-panel__replace" variant="in-box" :label="t.replaceBead.selectLabel" data-testid="phone-replace-bead-select">
         <AppMenuItem

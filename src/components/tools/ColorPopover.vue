@@ -5,7 +5,7 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
-import { SHEET_CLOSE } from '../shell/sheetContext'
+import { PICK_CLOSE } from '../shell/pickContext'
 import ToolColorControls from './ToolColorControls.vue'
 
 // The colour popover (ticket 439, ADR 0059; ToolPill card): the Colour sheet's replacement on every device. Head with
@@ -35,7 +35,7 @@ const rootEl = ref<HTMLElement>()
 const style = ref<Record<string, string>>({ visibility: 'hidden' })
 const closeAction = controlAction('close')
 
-provide(SHEET_CLOSE, () => emit('close'))
+provide(PICK_CLOSE, () => emit('close'))
 useOverlayLayer({
   isOpen: () => true,
   root: () => rootEl.value,

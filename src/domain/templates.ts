@@ -80,7 +80,7 @@ export function clampAxis(axis: TemplateAxis, value: number): number {
   return Math.min(axis.max, Math.max(axis.min, Math.round(value) || axis.default))
 }
 
-/** What the setup sub-view asks for: the choices on top of the Template. */
+/** What the setup subpanel asks for: the choices on top of the Template. */
 export interface TemplateChoices {
   /** Defaults to the Template's own; one it doesn't allow falls back to it. */
   technique?: Technique

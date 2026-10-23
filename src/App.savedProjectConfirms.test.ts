@@ -5,7 +5,7 @@ import { pressBead } from './testUtils/beads'
 import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { refuseStorageWrites } from './testUtils/storageWrites'
-import { openSavedProjects, openSheet, pickColor } from './testUtils/pill'
+import { openSavedProjects, openPanel, pickColor } from './testUtils/pill'
 import { createProjectViaForm } from './testUtils/seedProject'
 
 beforeEach(() => {
@@ -35,7 +35,7 @@ const click = async (wrapper: Wrapper, testId: string) => {
 }
 /** The open Project's summary line, in the Project panel. */
 const openName = async (wrapper: Wrapper) => {
-  await openSheet(wrapper, 'strip-project')
+  await openPanel(wrapper, 'strip-project')
   return wrapper.find('[data-testid="project-name"]').text()
 }
 const names = () => loadProjects().map((project) => project.name).sort()

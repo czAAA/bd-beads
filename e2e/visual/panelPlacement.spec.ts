@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
-import { openApp, closeSheet, settle } from '../support/app'
+import { openApp, closePanel, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** Menu, Project and the Frame bar are one panel (tickets 510, 511), placed by PanelShell alone: a dropdown under its own
+/** Menu, Project and the Frame panel are one panel (tickets 510, 511), placed by AppPanel alone: a dropdown under its own
  * button on every screen size, the same for all three wherever they are mounted. */
 
 const WIDTHS = [
@@ -20,7 +20,7 @@ for (const [name, width, height] of WIDTHS) {
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     for (const id of ['strip-menu', 'strip-project', 'strip-frame'] as const) {
-      await closeSheet(page)
+      await closePanel(page)
       const button = (await page.getByTestId(id).boundingBox())!
       await page.getByTestId(id).click()
       await settle(page)

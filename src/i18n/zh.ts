@@ -224,7 +224,7 @@ export const zh: Translations = {
     overviewItem: '概览',
     tourItem: '开始导览',
     sourceItem: '源代码',
-    projectSheetLabel: '项目',
+    projectPanelLabel: '项目',
   },
   overview: {
     pageTitle: '概览',
@@ -630,7 +630,7 @@ export const zh: Translations = {
     selectAll: '一次选中所有珠子。',
     hand: '拖动以在画布上移动。',
     editFrame: '显示或隐藏边框的控点。',
-    frameBar: '打开边框的大小、旋转和移除。',
+    framePanel: '打开边框的大小、旋转和移除。',
     frameEdgeOut: '在这一侧把边框扩大一颗珠子。',
     frameEdgeIn: '在这一侧把边框缩小一颗珠子。',
     frameEdgeInDisabled: '这一侧的边框已无法再缩小。',
