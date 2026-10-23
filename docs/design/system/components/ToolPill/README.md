@@ -24,7 +24,7 @@ The tools as a floating pill over the canvas, replacing the Dock (picked from th
 ## Colour control
 
 - **The tile:** one 40px tile with the chosen colour as a 22px round swatch carrying a 14px `palette` icon in the mark that reads on it (`swatch-mark-dark` or `swatch-mark-light`), ringed (`ring`, 2px gap in the pill's fill). Tap: opens the colour popover. The pill's length never changes.
-- **Recents:** after the swatch tile, the three colours used before it as 18px swatches on 30px-long tiles (30px tall when vertical). A recent swatch picks that colour at once; the swatch tile (with its palette icon) opens the popover. A pick moves the colour to the front of the recents (eight kept, on the device). Only while there is room: if the whole pill would be longer than its edge (a phone upright, a short window), the recents drop away and only the swatch tile stays, and they return when there is room again.
+- **Recents:** after the swatch tile, the three colours used before it as 18px swatches on 30px-long tiles (30px tall when vertical). A recent swatch picks that colour at once (Shift+1, 2 and 3 do the same for the first, second and third, named "Recent 1" to "Recent 3" in the tooltip and the accessible name); the swatch tile (with its palette icon) opens the popover. A pick moves the colour to the front of the recents (eight kept, on the device). Only while there is room: if the whole pill would be longer than its edge (a phone upright, a short window), the recents drop away and only the swatch tile stays, and they return when there is room again.
 - No key opens the colour control; the swatch tile's accessible name is "Color, <colour name>" with `aria-expanded`.
 
 ## Colour popover
@@ -33,7 +33,7 @@ Replaces the Colour sheet on every device, phones included.
 
 - `--popover-width` (288px) wide, `--pill-popover-radius` (24px) corners, `overlay-fill`, 1px `overlay-line`, `elevation-3`, padding 12px 14px 14px, 12px between sections.
 - **Placement:** beside the pill toward the canvas, `pill-gap` away, centred on the tile that opened it and clamped `float-edge` inside the screen. It never sits under the pill or off-screen. Opens with the pop motion (`duration-slow`, `ease-out`, from 94% scale), none under reduced motion.
-- **Contents, top to bottom:** a head (the chosen colour as a 20px `radius-sm` swatch, its name, its hex in `meta-small` `muted`, Close); "recent", six chips; "palette", the PaletteSwatches grid with Pick color from canvas as its last tile; then Custom and Image colors side by side (ColorPickers).
+- **Contents, top to bottom:** a head (the chosen colour as a 20px `radius-sm` swatch, its name, its hex in `meta-small` `muted`, Close); "palette", the PaletteSwatches grid (without the colours that are one of the pill's three recents while they are; no recents row here) with Pick color from canvas as its last tile; then Custom and Image colors side by side (ColorPickers).
 - Picking a colour chooses it and closes the popover; Escape, Close, or a press outside close it too, and a press outside only closes.
 
 ## Moving the pill

@@ -551,7 +551,7 @@ export const es: Translations = {
     panCanvas: 'Mover el lienzo',
     canvasGroup: 'Lienzo',
     zoomCanvas: 'Hacer zoom en el lienzo',
-    paletteColors: 'Elegir un color de la paleta, en el orden de la paleta',
+    paletteColors: 'Elegir un color: 1 a 3 los colores recientes, luego la paleta en orden',
     keyHints: 'Mostrar atajos de teclado',
     keyHintsOn: 'Sí',
     keyHintsOff: 'No',

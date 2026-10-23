@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
-import { normalizeHex, type Palette } from '../../domain/palette'
-import { RECENTS_IN_PILL, RECENTS_IN_POPOVER, pushRecentColor, recentsBeside } from '../../domain/toolPill'
+import { provideRecentColors } from './usePalette'
+import { RECENT_SHORTCUTS, normalizeHex, type Palette } from '../../domain/palette'
+import { RECENTS_IN_PILL, pushRecentColor, recentsBeside } from '../../domain/toolPill'
 import type { DevicePreferences } from '../../services/devicePreferences'
 
 /** What the Tool pill needs from the app shell: the paint color and the ways to choose one. Read lazily. */
@@ -32,7 +33,8 @@ export function useToolPill(deps: ToolPillDeps) {
   )
 
   const recentsInPill = computed(() => recentsBeside(recents.value, deps.selectedColorHex(), RECENTS_IN_PILL))
-  const recentsInPopover = computed(() => recentsBeside(recents.value, deps.selectedColorHex(), RECENTS_IN_POPOVER))
+
+  provideRecentColors(recentsInPill)
 
   /** A recent colour is chosen the way it was first: as a Palette swatch, or else a Custom color. */
   function pickRecent(hex: string) {
@@ -43,11 +45,23 @@ export function useToolPill(deps: ToolPillDeps) {
     else deps.onSelectCustomColor(color)
   }
 
+  /** Shift+1…3 pick the pill's chips; the keys after them pick the Palette's colors that are not a chip, in slot order
+   * (ticket 529). A key with nothing behind it does nothing. */
+  function pickByKey(key: number) {
+    if (key < RECENT_SHORTCUTS) {
+      const hex = recentsInPill.value[key]
+      if (hex) pickRecent(hex)
+      return
+    }
+    const shown = deps.palette().besideRecents(recentsInPill.value)[key - RECENT_SHORTCUTS]
+    if (shown) deps.onSelectColor(shown.color.id)
+  }
+
   return {
     toolPillPosition: position,
     toolPillPopoverOpen: popoverOpen,
     recentsInPill,
-    recentsInPopover,
     pickRecent,
+    pickByKey,
   }
 }

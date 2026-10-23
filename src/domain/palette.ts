@@ -30,7 +30,7 @@ export function findBuiltInColor(id: string): PaletteColor | undefined {
   return BUILT_IN_COLORS.find((color) => color.id === id)
 }
 
-/** Shift+1..9, Shift+0, Q, W (ticket 88), one per first Palette slot: the physical key (`KeyboardEvent.code`; shifted `.key`
+/** Shift+1..9 and Shift+0 (tickets 88, 529): the physical key (`KeyboardEvent.code`; shifted `.key`
  * values like "!" vary by layout) and its label. The one source App.vue's dispatcher and PalettePicker.vue read. */
 export interface PaletteShortcut {
   code: string
@@ -48,9 +48,10 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
   { code: 'Digit8', keyLabel: '8' },
   { code: 'Digit9', keyLabel: '9' },
   { code: 'Digit0', keyLabel: '0' },
-  { code: 'KeyQ', keyLabel: 'Q' },
-  { code: 'KeyW', keyLabel: 'W' },
 ]
+
+/** The first keys, Shift+1…3, pick the recent colors, not Palette slots (ticket 529). */
+export const RECENT_SHORTCUTS = 3
 
 /** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for
  * anything else. */
@@ -126,8 +127,10 @@ export interface Palette {
   nearest: (hex: string) => PaletteColor | undefined
   /** The color a Project opens ready to paint with: the first built-in swatch (the first of any, if none is). */
   defaultColorId: string | undefined
-  /** The swatches that have a Shift+key slot; a Palette longer than the keys has swatches without one. */
-  hotkeyed: readonly PaletteColor[]
+  /** The swatches the colour popover shows and Shift+4…0 reach (ticket 529): every slot but the ones holding one of the
+   * `recents` (the pill's chips show and key those instead), in slot order, each with the slot it stands in. A Palette
+   * longer than the keys has swatches without one. */
+  besideRecents: (recents: readonly string[]) => { color: PaletteColor; slot: number }[]
 }
 
 /** The Palette the stored ids name. `builtIns` is the set the ids are resolved against (ticket 0528 swaps it). */
@@ -142,7 +145,8 @@ export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[]
       return colors.find((color) => color.hex === nearest)
     },
     defaultColorId: (colors.find((color) => !isAddedColorId(color.id)) ?? colors[0])?.id,
-    hotkeyed: colors.slice(0, PALETTE_SHORTCUTS.length),
+    besideRecents: (recents) =>
+      colors.flatMap((color, slot) => (recents.includes(color.hex) ? [] : [{ color, slot }])),
   }
 }
 

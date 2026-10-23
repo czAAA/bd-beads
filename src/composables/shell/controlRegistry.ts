@@ -18,7 +18,8 @@ export interface ControlDeps {
   canRedo: () => boolean
   hasClipboard: () => boolean
   /** The Palette color standing in a slot (ticket 398): Shift+1 is slot 1, wherever its color was moved to. */
-  paletteColorIdAt: (slot: number) => string | undefined
+  /** Shift+1…9, Shift+0: the key's index, 0 to 9 (ticket 529). */
+  onPickColorKey: (key: number) => void
   /** A menu or popover layer is open (useOverlayLayer). */
   hasOpenLayer: () => boolean
   /** A confirmation modal or the shortcuts help overlay is open. */
@@ -295,11 +296,8 @@ export const CONTROLS: readonly ControlAction[] = [
     name: (t) => t.palette.colorLabel,
     group: 'colors',
     chords: PALETTE_SHORTCUTS.map(({ code, keyLabel }) => ({ code, shift: true, label: keyLabel })),
-    help: { name: (t) => t.shortcutsHelp.paletteColors, keys: [['Shift', '1…9'], ['Shift', '0'], ['Q'], ['W']] },
-    run: (deps, event) => {
-      const colorId = deps.paletteColorIdAt(PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code))
-      if (colorId) deps.onSelectColor(colorId)
-    },
+    help: { name: (t) => t.shortcutsHelp.paletteColors, keys: [['Shift', '1…9'], ['Shift', '0']] },
+    run: (deps, event) => deps.onPickColorKey(PALETTE_SHORTCUTS.findIndex((s) => s.code === event.code)),
   },
   {
     id: 'undo',

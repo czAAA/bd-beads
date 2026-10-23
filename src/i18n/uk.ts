@@ -552,7 +552,7 @@ export const uk: Translations = {
     panCanvas: 'Рухати полотно',
     canvasGroup: 'Полотно',
     zoomCanvas: 'Змінювати масштаб полотна',
-    paletteColors: 'Вибрати колір палітри, за порядком палітри',
+    paletteColors: 'Вибрати колір: 1–3 нещодавні кольори, далі палітра за порядком',
     keyHints: 'Показувати підказки клавіш',
     keyHintsOn: 'Увімк.',
     keyHintsOff: 'Вимк.',

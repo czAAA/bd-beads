@@ -543,7 +543,7 @@ export const zh: Translations = {
     panCanvas: '移动画布',
     canvasGroup: '画布',
     zoomCanvas: '缩放画布',
-    paletteColors: '按调色板顺序选择调色板颜色',
+    paletteColors: '选择颜色：1–3 为最近使用的颜色，其后按调色板顺序',
     keyHints: '显示按键提示',
     keyHintsOn: '开',
     keyHintsOff: '关',
