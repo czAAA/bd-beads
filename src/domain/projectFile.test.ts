@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { addedColorId, defaultPaletteIds } from './palette'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { paintAt } from '../testUtils/layers'
@@ -98,11 +99,11 @@ describe('single-Project roundtrip', () => {
     expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 4 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
+  it('writes version 5 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(4)
+    expect(file.version).toBe(5)
     expect(file.patterns).toBeUndefined()
     expect(file.projects[0].beads).toBeUndefined()
     expect(file.projects[0].encodedBeads).toBeDefined()
@@ -120,8 +121,19 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 5
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 5')
+    file.version = 6
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 6')
+  })
+
+  it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {
+    const custom = { ...decoratedProject(), palette: ['red', addedColorId('#123456'), ...defaultPaletteIds().filter((id) => id !== 'red')] }
+    const file = JSON.parse(serializeProject(custom))
+    expect(file.projects[0].palette).toEqual(custom.palette)
+    expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([custom])
+
+    delete file.projects[0].palette
+    file.version = 4
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.palette).toEqual(defaultPaletteIds())
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {

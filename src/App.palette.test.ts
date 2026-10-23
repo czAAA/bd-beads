@@ -2,11 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { BEAD_CATALOG } from './domain/beads'
-import { MAX_ADDED_COLORS, PALETTE } from './domain/palette'
+import { PALETTE, addedColorId, defaultPaletteIds } from './domain/palette'
 import { createProject } from './domain/project'
 import { en } from './i18n/en'
-import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY } from './services/addedColorsStore'
-import { saveProjects } from './services/libraryStore'
+import { loadProjects, saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
 import { chooseCustomColor, openColorPopover } from './testUtils/pill'
 
@@ -17,6 +16,16 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
   saveProjects([createProject({ technique: 'loom', beadId: cubeBead.id, name: 'Fox', size: { width: 10, height: 10, unit: 'beads' } })])
 })
+
+/** The ids of the Palette the saved Project holds (ticket 0525). */
+const storedPalette = () => loadProjects()[0]!.palette
+const storedAdded = () => storedPalette().filter((id) => id.startsWith('added-'))
+
+/** The saved Project with a Palette of these added colors (hexes), after the twelve unless `order` says otherwise. */
+function seedPalette(hexes: string[], order?: string[]) {
+  const [project] = loadProjects()
+  saveProjects([{ ...project!, palette: order ?? [...defaultPaletteIds(), ...hexes.map(addedColorId)] }])
+}
 
 const swatches = (wrapper: ReturnType<typeof mount>) => wrapper.findAll('[data-testid="palette-swatch"]')
 
@@ -55,7 +64,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     const added = all[PALETTE.length]!
     expect(added.attributes('aria-pressed')).toBe('true')
     expect(added.element.closest('.swatch')!.querySelector('.app-tooltip__key')).toBeNull() // an added color has no key chip
-    expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#123456'])
+    expect(storedAdded()).toEqual([addedColorId('#123456')])
 
     await paint(wrapper, 0)
     expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
@@ -74,21 +83,43 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
     expect((await palette(wrapper))[3]!.attributes('aria-pressed')).toBe('true')
   })
 
-  it('at the limit still paints, adds nothing and says why', async () => {
-    const full = Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`)
-    localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(full))
+  it('has no cap: a hundred added colors all join, and nothing says the Palette is full', async () => {
+    seedPalette(Array.from({ length: 100 }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`))
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)
     await choose(wrapper, '#fedcba')
     await paint(wrapper)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + MAX_ADDED_COLORS)
-    expect(wrapper.text()).toContain(en.palette.limitReached)
+    expect((await palette(wrapper))).toHaveLength(PALETTE.length + 101)
+    expect(storedAdded()).toHaveLength(101)
+    expect(wrapper.find('[data-testid="custom-color-button"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.findAll('[data-testid="toast"]')).toHaveLength(0)
+  })
+
+  it('is the Project\'s: a second Project keeps the built-in twelve', async () => {
+    const [fox] = loadProjects()
+    saveProjects([fox!, createProject({ technique: 'loom', beadId: cubeBead.id, name: 'Owl', size: { width: 10, height: 10, unit: 'beads' } })])
+    const wrapper = mount(App)
+    await flushPromises()
+    await openColorPopover(wrapper)
+    await choose(wrapper, '#123456')
+    expect(loadProjects().map((project) => project.palette.length).sort()).toEqual([PALETTE.length, PALETTE.length + 1])
+  })
+
+  it('Undo takes a swatch that joined back out', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+    await openColorPopover(wrapper)
+    await choose(wrapper, '#123456')
+    expect(storedAdded()).toHaveLength(1)
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyZ', key: 'z', ctrlKey: true, bubbles: true }))
+    await flushPromises()
+    expect(storedAdded()).toHaveLength(0)
   })
 })
 
 describe('an added swatch can be removed (ticket 228)', () => {
-  const seed = (hexes: string[]) => localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(hexes))
+  const seed = (hexes: string[]) => seedPalette(hexes)
   /** The × shows on the active added swatch and on a hovered or focused one (ticket 333), so the swatch is selected before it is used. */
   const selectAdded = async (wrapper: ReturnType<typeof mount>, index = 0) => {
     await (await palette(wrapper))[PALETTE.length + index]!.trigger('click')
@@ -121,7 +152,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     expect(wrapper.find('[data-testid="confirm-modal-message"]').text()).toContain('#123456')
     expect((await palette(wrapper))).toHaveLength(PALETTE.length + 2)
     expect((await palette(wrapper))[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
-    expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#123456', '#abcdef'])
+    expect(storedAdded()).toEqual([addedColorId('#123456'), addedColorId('#abcdef')])
   })
 
   it.each([
@@ -150,7 +181,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     expect(modal(wrapper).exists()).toBe(false)
     expect((await palette(wrapper))).toHaveLength(PALETTE.length + 1)
     expect(wrapper.find('[data-color-id="red"]').attributes('aria-pressed')).toBe('true')
-    expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#abcdef'])
+    expect(storedAdded()).toEqual([addedColorId('#abcdef')])
     expect(wrapper.text()).toContain(en.palette.removed)
     const reloaded = mount(App)
     await openColorPopover(reloaded)
@@ -180,21 +211,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await wrapper.find('[data-testid="toast-action"]').trigger('click')
     expect((await palette(wrapper)).map((swatch) => swatch.attributes('aria-label')).slice(PALETTE.length)).toEqual(['#123456', '#abcdef'])
     expect((await palette(wrapper))[PALETTE.length]!.attributes('aria-pressed')).toBe('true')
-    expect(JSON.parse(localStorage.getItem(ADDED_COLORS_KEY)!)).toEqual(['#123456', '#abcdef'])
-  })
-
-  it('frees a slot at the limit, so the next new Custom color is added', async () => {
-    seed(Array.from({ length: MAX_ADDED_COLORS }, (_, i) => `#${(i + 1).toString(16).padStart(6, '0')}`))
-    const wrapper = mount(App)
-    await flushPromises()
-    await openColorPopover(wrapper)
-    await (await palette(wrapper))[PALETTE.length]!.trigger('click')
-    await (await removeButton(wrapper)).trigger('click')
-    await confirm(wrapper)
-    await choose(wrapper, '#fedcba')
-    await paint(wrapper)
-    expect((await palette(wrapper))).toHaveLength(PALETTE.length + MAX_ADDED_COLORS)
-    expect((await palette(wrapper)).at(-1)!.attributes('aria-label')).toBe('#fedcba')
+    expect(storedAdded()).toEqual([addedColorId('#123456'), addedColorId('#abcdef')])
   })
 })
 
@@ -209,7 +226,7 @@ describe('the Palette is slots (ticket 398)', () => {
     await first.trigger('keydown', { key: 'ArrowRight', altKey: true })
     await flushPromises()
     expect((await ids(wrapper)).slice(0, 3)).toEqual(['white', 'black', 'red'])
-    expect(JSON.parse(localStorage.getItem(PALETTE_ORDER_KEY)!).slice(0, 2)).toEqual(['white', 'black'])
+    expect(storedPalette().slice(0, 2)).toEqual(['white', 'black'])
     await wrapper.get('[data-testid="color-popover-close"]').trigger('click') // a shortcut waits while a popover is open
     window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Digit1', key: '!', shiftKey: true, bubbles: true }))
     await flushPromises()
@@ -218,8 +235,7 @@ describe('the Palette is slots (ticket 398)', () => {
   })
 
   it('keeps no empty slot when an added color between others is removed', async () => {
-    localStorage.setItem(ADDED_COLORS_KEY, JSON.stringify(['#123456', '#abcdef']))
-    localStorage.setItem(PALETTE_ORDER_KEY, JSON.stringify(['red', 'added-123456', 'black']))
+    seedPalette(['#123456', '#abcdef'], ['red', 'added-123456', 'black'])
     const wrapper = mount(App)
     await flushPromises()
     await openColorPopover(wrapper)

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { defaultPaletteIds } from './palette'
 import { framedGrid, weaveOf, type Grid, type Project, type RowProgress } from './project'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
 import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
@@ -53,6 +54,7 @@ function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pic
     beadId: BEAD,
     ...framedGrid(cells, weaveOf(fields)),
     rowProgress: noProgress,
+    palette: defaultPaletteIds(),
     rotation: 0,
     createdAt: 0,
     updatedAt: 0,
@@ -169,6 +171,7 @@ const framedOverSketch: Project = {
     beads: { 0: { 0: COLORS.R!, 1: COLORS.B!, 3: COLORS.K! }, 1: { 1: COLORS.K!, 2: COLORS.K! } },
   },
   rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 },
+  palette: defaultPaletteIds(),
   rotation: 0,
   pieceNames: [{ name: 'Sketch', row: 20, column: 2 }],
   createdAt: 1740000000000,
@@ -181,6 +184,7 @@ const unframedSketch: Project = {
   beadId: BEAD,
   beads: { [-3]: { [-2]: COLORS.B!, [-1]: COLORS.B! }, 4: { 0: COLORS.B! } },
   rowProgress: noProgress,
+  palette: defaultPaletteIds(),
   rotation: 0,
   createdAt: 1740000002000,
   updatedAt: 1740000003000,
@@ -217,14 +221,15 @@ describe('stored-data compatibility', () => {
       expect(loadProjects()).toEqual([framedOverSketch, unframedSketch])
     })
 
-    it('opens a version 4 library as it is, and saves it back byte for byte', () => {
+    it('opens a version 4 library as it is, and saves it back with the Palette each Project now holds (ticket 0525)', () => {
       localStorage.setItem(STORAGE_KEY, libraryV4Weave)
 
       const opened = loadProjects()
       expect(opened).toEqual([framedOverSketch, unframedSketch])
       saveProjects(opened)
 
-      expect(localStorage.getItem(STORAGE_KEY)).toBe(libraryV4Weave.trim())
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns.map((stored: { palette: string[] }) => stored.palette)).toEqual([defaultPaletteIds(), defaultPaletteIds()])
+      expect(loadProjects()).toEqual(opened)
     })
 
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
@@ -285,10 +290,11 @@ describe('stored-data compatibility', () => {
       expect((await readProjectsFile(new File([await gzipJson(libraryFileV4)], 'g.openbeads'))).projects).toEqual([framedOverSketch, unframedSketch])
     })
 
-    it('writes a version 4 file back byte for byte', () => {
+    it('reads a version 4 file and writes it back as version 5 with the built-in Palette (ticket 0525)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(serializeProject(framed!)).toBe(projectFileV4Weave.trim())
-      expect(serializeLibrary(parseProjectsFile(libraryFileV4Weave).projects)).toBe(libraryFileV4Weave.trim())
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 5, projects: [{ palette: defaultPaletteIds() }] })
+      const library = parseProjectsFile(libraryFileV4Weave).projects
+      expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })
 
     it('gives the Frame of a file written before it had a Weave of its own the Project\'s (ticket 492)', () => {
