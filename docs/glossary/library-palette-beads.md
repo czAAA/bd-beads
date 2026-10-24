@@ -31,7 +31,7 @@ A catalog entry for a real bead line: a Brand, a Form factor and a Bead size (e.
 _Avoid_: seed bead type, item
 
 **Bead color**:
-One real color of a Bead line, identified by its maker's code (e.g. Delica `DB1`) and described by facts only: the maker's color family, a **Finish** and the Bead sizes it exists in, with a discontinued flag. No photo, hex or durability rating is kept (ADR 0072, ticket 536). The swatch for a code and picking it in the editor are later tickets (537).
+One real color of a Bead line, identified by its maker's code (e.g. Delica `DB1`) and described by facts only: the maker's color family, a **Finish** and the Bead sizes it exists in, with a discontinued flag. No photo or durability rating is kept, and a hex only where a human has measured one (ADR 0072, ticket 536). In the color popover, "Bead colors" opens the catalog of the Project's Bead for its Bead size: each code is a swatch made from the color family and the Finish and shown as approximate (a measured hex replaces it), a discontinued code is marked, and a code whose hex the Palette already holds is shown as taken and cannot be added twice. Adding one is an Edit and the swatch joins as an added color; a Mix has no single color and is not listed (ticket 537).
 _Avoid_: bead shade, catalog color
 
 **Color catalog**:

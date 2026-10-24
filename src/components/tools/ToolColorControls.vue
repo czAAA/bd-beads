@@ -1,7 +1,11 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue'
+import { useBeadColorsList } from '../../composables/palette/useBeadColors'
 import { usePalette } from '../../composables/tools/usePalette'
+import { useI18n } from '../../i18n/useI18n'
 import { useClosePopoverOnPick } from '../shell/pickContext'
+import AppButton from '../ui/AppButton.vue'
+import BeadColorList from '../palette/BeadColorList.vue'
 import CustomColorPanel from '../palette/CustomColorPanel.vue'
 import CustomColorPicker from '../palette/CustomColorPicker.vue'
 import PalettePicker from '../palette/PalettePicker.vue'
@@ -28,6 +32,10 @@ const customColorSelected = computed(() => !props.selectedColorId && !!props.cus
 // outside, Escape, Enter) hands it up once and closes the sheet holding this control; picking a Palette swatch instead
 // closes the picker with nothing taken.
 const palette = usePalette()
+const { t } = useI18n()
+// The Bead's own colors (ticket 0537) open under the grid the same way; only a Bead with a Color catalog offers them.
+const beadColors = useBeadColorsList()
+const catalogOpen = ref(false)
 const closePanel = useClosePopoverOnPick()
 const pickerOpen = ref(false)
 const panel = ref<InstanceType<typeof CustomColorPanel>>()
@@ -49,7 +57,13 @@ function leave() {
   closePanel()
 }
 
+function toggleCatalog() {
+  catalogOpen.value = !catalogOpen.value
+  if (catalogOpen.value) pickerOpen.value = false
+}
+
 function toggle() {
+  catalogOpen.value = false
   if (pickerOpen.value) panel.value?.take()
   else pickerOpen.value = true
 }
@@ -65,5 +79,24 @@ async function cancel() {
   <PalettePicker :selected-color-id="selectedColorId" :editing="editing" @select="selectColor">
     <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" :disabled="editing" @toggle="toggle" />
   </PalettePicker>
+  <AppButton
+    v-if="beadColors?.available.value && !editing"
+    variant="in-box"
+    size="sm"
+    :trailing-icon="catalogOpen ? 'chevron-up' : 'chevron-down'"
+    :aria-expanded="catalogOpen"
+    class="tool-color-controls__catalog"
+    data-testid="bead-colors-toggle"
+    @click="toggleCatalog"
+  >
+    {{ t.palette.beadColors.open }}
+  </AppButton>
+  <BeadColorList v-if="beadColors && catalogOpen && !editing" :colors="beadColors" />
   <CustomColorPanel ref="panel" v-if="pickerOpen" :color="customColor ?? paintHex" @take="take" @leave="leave" @cancel="cancel" />
 </template>
+
+<style scoped>
+.tool-color-controls__catalog {
+  margin-top: var(--space-12);
+}
+</style>

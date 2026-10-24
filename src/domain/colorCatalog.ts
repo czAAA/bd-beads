@@ -1,3 +1,5 @@
+import { normalizeHex } from './palette'
+
 /** The Finishes every Brand's wording is mapped onto (ADR 0072, ticket 536), in the order they are listed. */
 const FINISHES = [
   'transparent',
@@ -13,7 +15,7 @@ const FINISHES = [
 
 type Finish = (typeof FINISHES)[number]
 
-/** One maker code: facts only, no photo, hex or durability (ADR 0072). */
+/** One maker code: facts only, no photo or durability (ADR 0072); a hex only once a human has measured one. */
 interface ColorCode {
   /** The maker's own code, e.g. `DB1`. */
   code: string
@@ -24,6 +26,8 @@ interface ColorCode {
   wording: string
   /** The Bead sizes the code exists in, e.g. `11/0`. */
   sizes: string[]
+  /** A hex measured for this code (ticket 0537): replaces the generated swatch. Never derived from the code's number. */
+  hex?: string
   discontinued?: boolean
 }
 
@@ -49,12 +53,14 @@ function parseCode(raw: unknown, catalogId: string): ColorCode {
   if (typeof row.wording !== 'string') return fail(`${where} has no finish wording`)
   if (!isStringList(row.sizes)) return fail(`${where} has no sizes`)
   if (row.discontinued !== undefined && row.discontinued !== true) return fail(`${where} has a bad discontinued flag`)
+  const hex = typeof row.hex === 'string' ? normalizeHex(row.hex) : undefined
   return {
     code: row.code,
     family: row.family,
     finish: row.finish as Finish,
     wording: row.wording,
     sizes: row.sizes,
+    ...(hex ? { hex } : {}),
     ...(row.discontinued ? { discontinued: true } : {}),
   }
 }
