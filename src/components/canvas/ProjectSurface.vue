@@ -146,9 +146,13 @@ const toolCursor = computed(() => {
  * mode. None for a mouse, a finger or a Pencil in contact. */
 const penAt = ref<{ clientX: number; clientY: number; moves: boolean }>()
 
+/** How far up and left of the tip the hovering Pencil's pointer is drawn, in px, so the Pencil's own tip does not
+ * cover the hot spot. */
+const PEN_POINTER_NUDGE = 2
+
 /** The Tool pointer the app draws for a hovering Pencil, which Safari shows no CSS cursor for: the image placed so
- * its hot spot is at the tip. Not where the CSS cursor is not the tool's (Set Frame, a handle, Space) or the tool is
- * refused (the Frame's margin, also when the canvas moves under a still Pencil). */
+ * its hot spot is at the tip, nudged `PEN_POINTER_NUDGE` up and left. Not where the CSS cursor is not the tool's (Set
+ * Frame, a handle, Space) or the tool is refused (the Frame's margin, also when the canvas moves under a still Pencil). */
 const penPointer = computed(() => {
   if (!penAt.value || props.settingFrame || props.markerHidden || handleCursor.value || refusesMargin(beadUnder(penAt.value))) return undefined
   // The pointer that moves the canvas in the input mode shows the Hand, whatever the tool; the others their own.
@@ -157,7 +161,7 @@ const penPointer = computed(() => {
     : props.tool && !props.picking ? toolPointerImage(props.tool, { color: props.previewColor })
     : undefined
   const point = pointInSurface(penAt.value)
-  return image && { url: image.url, x: point.x - image.hotSpot[0], y: point.y - image.hotSpot[1] }
+  return image && { url: image.url, x: point.x - image.hotSpot[0] - PEN_POINTER_NUDGE, y: point.y - image.hotSpot[1] - PEN_POINTER_NUDGE }
 })
 
 function placePen(event: PointerEvent): void {
