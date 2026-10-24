@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppSwatch from './AppSwatch.vue'
 
@@ -41,88 +41,48 @@ describe('AppSwatch', () => {
     expect(wrapper.find('.app-tooltip__key').exists()).toBe(false)
   })
 
-  it('offers the × only while selected, and asks to remove', async () => {
-    const idle = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' } })
-    expect(idle.find('.swatch__remove').exists()).toBe(false)
+  it('shows no × at rest, hovered, selected or focused', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, selected: true } })
+    await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
+    await wrapper.get('.swatch__chip').trigger('focusin')
 
-    const wrapper = mount(AppSwatch, { props: { ...props, selected: true, removeLabel: 'Remove' } })
-    await wrapper.get('.swatch__remove').trigger('click')
-    expect(wrapper.emitted('remove')).toHaveLength(1)
-    expect(wrapper.emitted('select')).toBeUndefined()
+    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
   })
 
-  it('selects on the first click even when it lands on a hovered ×, and removes only once selected', async () => {
-    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' } })
-    await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
-    await wrapper.get('.swatch__remove').trigger('click')
+  it('shows a centered × picture when removable, with the chip as the only button', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, removable: true, selected: true } })
+    const mark = wrapper.get('.swatch__remove')
+
+    expect(mark.element.tagName).toBe('SPAN')
+    expect(mark.attributes('aria-hidden')).toBe('true')
+    expect(wrapper.findAll('button')).toHaveLength(1)
+    expect(wrapper.get('button').attributes('aria-pressed')).toBeUndefined()
+    await wrapper.get('button').trigger('click')
     expect(wrapper.emitted('select')).toHaveLength(1)
-    expect(wrapper.emitted('remove')).toBeUndefined()
-
-    await wrapper.setProps({ selected: true })
-    await wrapper.get('.swatch__remove').trigger('click')
-    expect(wrapper.emitted('remove')).toHaveLength(1)
-  })
-
-  it('moves focus to the chip when the × only selects', async () => {
-    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' }, attachTo: document.body })
-    await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
-    await wrapper.get('.swatch__remove').trigger('click')
-    expect(document.activeElement).toBe(wrapper.get('.swatch__chip').element)
-    wrapper.unmount()
-  })
-
-  it('keeps the × in the top-right corner with a hit area that stays small', () => {
-    const css = readFileSync(resolve(__dirname, 'AppSwatch.vue'), 'utf8')
-    const rule = css.match(/\.swatch__remove \{[^}]*\}/)?.[0] ?? ''
-    expect(rule).toContain('top: 0')
-    expect(rule).toContain('right: 0')
-    expect(rule).toContain('place-items: start end')
-    expect(rule).not.toContain('--hit-min')
   })
 
   it('draws the × black on a light swatch and white on a dark one, in any theme', () => {
-    const dark = mount(AppSwatch, { props: { ...props, color: '#1a1a1a', selected: true, removeLabel: 'Remove' } })
-    const light = mount(AppSwatch, { props: { ...props, color: '#fafafa', selected: true, removeLabel: 'Remove' } })
+    const dark = mount(AppSwatch, { props: { ...props, color: '#1a1a1a', removable: true } })
+    const light = mount(AppSwatch, { props: { ...props, color: '#fafafa', removable: true } })
 
     expect(dark.get('.swatch__remove').classes()).toContain('swatch__remove--light')
     expect(light.get('.swatch__remove').classes()).toContain('swatch__remove--dark')
   })
 
-  it('shows the × on the active swatch and while a mouse or pen hovers an added one, never on touch', async () => {
-    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' } })
-    const hover = (type: string, pointerType: string) => wrapper.get('.swatch').trigger(type, { pointerType })
-    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
+  it('fades a locked swatch, marks it aria-disabled and says why in its Tooltip, which describes it', async () => {
+    const wrapper = mount(AppSwatch, { props: { ...props, lockedBody: "Default colors can't be removed." } })
+    const chip = wrapper.get('button')
+    await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
 
-    await hover('pointerenter', 'touch')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
-    await hover('pointerenter', 'mouse')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
-    await hover('pointerleave', 'mouse')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
-    await hover('pointerenter', 'pen')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
-
-    await wrapper.setProps({ selected: true })
-    await hover('pointerleave', 'pen')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
+    expect(wrapper.classes()).toContain('swatch--locked')
+    expect(chip.attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('.app-tooltip__body').text()).toBe("Default colors can't be removed.")
+    expect(chip.attributes('aria-describedby')).toBeTruthy()
   })
 
-  it('shows the × while keyboard focus is on the swatch', async () => {
-    const wrapper = mount(AppSwatch, { props: { ...props, removeLabel: 'Remove' }, attachTo: document.body })
-    const chip = wrapper.get('.swatch__chip')
-    const matches = vi.spyOn(chip.element, 'matches').mockReturnValue(true)
-    await chip.trigger('focusin')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(true)
-    await chip.trigger('focusout')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
-    matches.mockReturnValue(false)
-    await chip.trigger('focusin')
-    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
-  })
-
-  it('has no × without a remove label, even hovered or selected', async () => {
-    const wrapper = mount(AppSwatch, { props: { ...props, selected: true } })
-    await wrapper.get('.swatch').trigger('pointerenter', { pointerType: 'mouse' })
-    expect(wrapper.find('.swatch__remove').exists()).toBe(false)
+  it('fades in the ×, and not under reduced motion', () => {
+    const css = readFileSync(resolve(__dirname, 'AppSwatch.vue'), 'utf8')
+    expect(css).toMatch(/\.swatch__remove \{[^}]*animation: swatch-remove-in var\(--duration-fast\)/)
+    expect(css).toMatch(/prefers-reduced-motion[\s\S]*\.swatch__remove \{\s*animation: none/)
   })
 })

@@ -359,6 +359,11 @@ export interface Translations {
     removed: string
     /** A removal button's accessible name; `{hex}` is the swatch's color. */
     removeSwatch: string
+    /** The colour popover's pencil (ticket 531): enters Edit palette, and ends it (its name while on). */
+    editPalette: string
+    doneEditingPalette: string
+    /** The Tooltip of a built-in swatch in Edit palette. */
+    defaultColorLocked: string
     /** The confirmation before an added swatch is removed (ticket 304); `{hex}` in the message is the swatch's
      * color. */
     removeConfirmTitle: string
