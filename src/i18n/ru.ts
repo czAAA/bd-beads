@@ -315,6 +315,16 @@ export const ru: Translations = {
     removeConfirmMessage: 'Цвет {hex} уйдёт из палитры. Закрашенные ячейки сохранят свой цвет.',
     removeConfirmButton: 'Убрать',
     removeCancelButton: 'Отмена',
+    removeAllColors: 'Убрать все свои цвета',
+    removedAll: 'Свои цвета убраны из палитры.',
+    removeAllConfirmTitle: 'Убрать все свои цвета?',
+    removeAllConfirmMessage: {
+      one: 'Цвет ({count}) уйдёт из палитры. Закрашенные ячейки сохранят свой цвет.',
+      few: 'Цвета ({count}) уйдут из палитры. Закрашенные ячейки сохранят свой цвет.',
+      many: 'Цвета ({count}) уйдут из палитры. Закрашенные ячейки сохранят свой цвет.',
+      other: 'Цвета ({count}) уйдут из палитры. Закрашенные ячейки сохранят свой цвет.',
+    },
+    removeAllConfirmButton: 'Убрать все',
   },
   tools: {
     paintLabel: 'Кисть',

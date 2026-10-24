@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { usePalette } from '../../composables/tools/usePalette'
+import { usePalette, useRemoveAllAddedColors } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { isAddedColorId } from '../../domain/palette'
 import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
@@ -35,6 +35,8 @@ const rootEl = ref<HTMLElement>()
 const style = ref<Record<string, string>>({ visibility: 'hidden' })
 const closeAction = controlAction('close')
 const editAction = controlAction('edit-palette')
+const removeAllAction = controlAction('remove-all-colors')
+const removeAll = useRemoveAllAddedColors()
 
 // Edit palette (ticket 531): the pencil is there while the Palette has an added color; the popover always opens
 // in normal mode, and the mode ends with the last added color.
@@ -111,7 +113,18 @@ onBeforeUnmount(() => {
     </div>
 
     <div class="color-popover__section">
-      <span class="color-popover__label">{{ t.toolPill.palette }}</span>
+      <span class="color-popover__label-row">
+        <span class="color-popover__label">{{ t.toolPill.palette }}</span>
+        <IconButton
+          v-if="editing && removeAll"
+          variant="plain"
+          :action="removeAllAction"
+          :label="t.palette.removeAllColors"
+          :icon-size="16"
+          data-testid="color-popover-remove-all"
+          @click="removeAll()"
+        />
+      </span>
       <ToolColorControls
         :selected-color-id="selectedColorId"
         :custom-color="customColor"
@@ -209,6 +222,12 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
+}
+
+.color-popover__label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .color-popover__label {

@@ -315,6 +315,16 @@ export const uk: Translations = {
     removeConfirmMessage: 'Колір {hex} піде з палітри. Зафарбовані клітинки збережуть свій колір.',
     removeConfirmButton: 'Прибрати',
     removeCancelButton: 'Скасувати',
+    removeAllColors: 'Прибрати всі свої кольори',
+    removedAll: 'Свої кольори прибрано з палітри.',
+    removeAllConfirmTitle: 'Прибрати всі свої кольори?',
+    removeAllConfirmMessage: {
+      one: 'Колір ({count}) піде з палітри. Зафарбовані клітинки збережуть свій колір.',
+      few: 'Кольори ({count}) підуть з палітри. Зафарбовані клітинки збережуть свій колір.',
+      many: 'Кольорів ({count}) піде з палітри. Зафарбовані клітинки збережуть свій колір.',
+      other: 'Кольори ({count}) підуть з палітри. Зафарбовані клітинки збережуть свій колір.',
+    },
+    removeAllConfirmButton: 'Прибрати всі',
   },
   tools: {
     paintLabel: 'Пензель',

@@ -203,6 +203,14 @@ export function removeAddedColor(ids: PaletteIds, colorId: string, builtIns: rea
   return slot < 0 || !isAddedColorId(colorId) ? undefined : { ids: all.filter((id) => id !== colorId), slot }
 }
 
+/** Every added color taken out of the Palette at once (ticket 0532): the ids left, and each removed color with the slot
+ * it stood in, in slot order, so Undo can put each back. No removals when none is added. */
+export function removeAllAddedColors(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): { ids: PaletteIds; removed: { colorId: string; slot: number }[] } {
+  const all = paletteColors(ids, builtIns).map((color) => color.id)
+  const removed = all.flatMap((colorId, slot) => (isAddedColorId(colorId) ? [{ colorId, slot }] : []))
+  return { ids: all.filter((id) => !isAddedColorId(id)), removed }
+}
+
 /** Undo of a removal: the color back in the slot it stood in (or last, when the Palette has since got shorter). */
 export function restoreAddedColor(ids: PaletteIds, colorId: string, slot: number, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): PaletteIds {
   const all = paletteColors(ids, builtIns).map((color) => color.id)

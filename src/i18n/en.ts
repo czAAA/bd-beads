@@ -313,6 +313,14 @@ export const en: Translations = {
     removeConfirmMessage: '{hex} will leave the Palette. Painted cells keep their color.',
     removeConfirmButton: 'Remove',
     removeCancelButton: 'Cancel',
+    removeAllColors: 'Remove all custom colors',
+    removedAll: 'Custom colors removed from the Palette.',
+    removeAllConfirmTitle: 'Remove all custom colors?',
+    removeAllConfirmMessage: {
+      one: '{count} color will leave the Palette. Painted cells keep their color.',
+      other: '{count} colors will leave the Palette. Painted cells keep their color.',
+    },
+    removeAllConfirmButton: 'Remove all',
   },
   tools: {
     paintLabel: 'Paint',

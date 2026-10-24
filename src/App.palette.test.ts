@@ -260,6 +260,84 @@ describe('an added swatch can be removed (ticket 228)', () => {
   })
 })
 
+describe('all custom colors can be removed at once (ticket 0532)', () => {
+  const bin = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="color-popover-remove-all"]')
+  const modal = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="remove-all-colors-modal"]')
+  const confirm = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
+
+  async function openEdit(hexes: string[], selectHex?: string, order?: string[]) {
+    seedPalette(hexes, order)
+    const wrapper = mount(App)
+    await flushPromises()
+    await openColorPopover(wrapper)
+    if (selectHex) await (await swatch(wrapper, addedColorId(selectHex))).trigger('click')
+    await palette(wrapper)
+    expect(bin(wrapper).exists()).toBe(false)
+    await wrapper.get('[data-testid="color-popover-edit"]').trigger('click')
+    return wrapper
+  }
+
+  it('shows the bin only in Edit palette', async () => {
+    const wrapper = await openEdit(['#123456'])
+    expect(bin(wrapper).exists()).toBe(true)
+    await wrapper.get('[data-testid="color-popover-edit"]').trigger('click')
+    expect(bin(wrapper).exists()).toBe(false)
+  })
+
+  it.each([
+    [['#123456'], '1 color will leave the Palette. Painted cells keep their color.'],
+    [['#123456', '#abcdef', '#fedcba'], '3 colors will leave the Palette. Painted cells keep their color.'],
+  ])('asks first, naming the count (%j)', async (hexes, message) => {
+    const wrapper = await openEdit(hexes)
+    await bin(wrapper).trigger('click')
+    expect(wrapper.get('[data-testid="confirm-modal-message"]').text()).toBe(message)
+    expect(storedAdded()).toHaveLength(hexes.length)
+  })
+
+  it('Cancel removes nothing', async () => {
+    const wrapper = await openEdit(['#123456', '#abcdef'])
+    await bin(wrapper).trigger('click')
+    await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
+    expect(modal(wrapper).exists()).toBe(false)
+    expect(storedAdded()).toHaveLength(2)
+    expect(wrapper.text()).not.toContain(en.palette.removedAll)
+  })
+
+  it('Confirm removes every added color, ends Edit palette and falls back to the default when one was active', async () => {
+    const wrapper = await openEdit(['#123456', '#abcdef'], '#abcdef')
+    await bin(wrapper).trigger('click')
+    await confirm(wrapper)
+    expect(storedPalette()).toEqual(defaultPaletteIds())
+    expect(wrapper.text()).toContain(en.palette.removedAll)
+    await palette(wrapper)
+    expect(wrapper.find('[data-testid="color-popover-edit"]').exists()).toBe(false)
+    expect(bin(wrapper).exists()).toBe(false)
+    expect(wrapper.find('[data-color-id="black"]').attributes('aria-pressed')).toBe('true')
+  })
+
+  it('one Undo puts every color back in its slot and selects the active one again', async () => {
+    const [first, ...rest] = defaultPaletteIds()
+    const order = [addedColorId('#123456'), first!, addedColorId('#abcdef'), ...rest]
+    const wrapper = await openEdit(['#123456', '#abcdef'], '#abcdef', order)
+    await bin(wrapper).trigger('click')
+    await confirm(wrapper)
+    expect(wrapper.findAll('[data-testid="toast-action"]')).toHaveLength(1)
+    await wrapper.get('[data-testid="toast-action"]').trigger('click')
+    expect(storedPalette()).toEqual(order)
+    expect((await swatch(wrapper, addedColorId('#abcdef'))).classes()).toContain('swatch__chip--selected')
+  })
+
+  it('Undo does not re-select the color when another one was chosen since', async () => {
+    const wrapper = await openEdit(['#123456'], '#123456')
+    await bin(wrapper).trigger('click')
+    await confirm(wrapper)
+    await (await swatch(wrapper, 'red')).trigger('click')
+    await wrapper.get('[data-testid="toast-action"]').trigger('click')
+    expect(storedAdded()).toEqual([addedColorId('#123456')])
+    expect((await swatch(wrapper, 'red')).classes()).toContain('swatch__chip--selected')
+  })
+})
+
 describe('the Palette is slots (ticket 398)', () => {
   const ids = async (wrapper: ReturnType<typeof mount>) => (await palette(wrapper)).map((swatch) => swatch.attributes('data-color-id'))
 
