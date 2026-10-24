@@ -2,6 +2,10 @@ import { ref } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { swatchHex } from '../../domain/beadSwatch'
 import { createProject } from '../../domain/project'
+import { projectPalette } from '../../domain/palette'
+import { listedColorName } from '../../i18n/colorName'
+import { en } from '../../i18n/en'
+import { paintAt } from '../../testUtils/layers'
 import { editHarness } from '../../testUtils/editHarness'
 import { useProjectPalette } from '../tools/usePalette'
 import { useBeadColors } from './useBeadColors'
@@ -58,5 +62,20 @@ describe('useBeadColors', () => {
     const before = harness.project.palette
     expect(add(swatchHex('Blue', 'opaque')!)).toBe('known')
     expect(harness.project.palette).toEqual(before)
+  })
+})
+
+describe('a swatch added from the catalog keeps its code (ticket 0538)', () => {
+  it('saves the code with the Project, shows it in Beads needed, and Undo takes it back', async () => {
+    const { harness, palette, load, swatches, add } = setup()
+    await load()
+    const entry = swatches.value.find((candidate) => !candidate.taken)!
+    add(entry.hex, entry.code)
+    expect(harness.project.paletteCodes).toEqual({ [entry.hex]: entry.code })
+    expect(palette.value.byHex(entry.hex)?.code).toBe(entry.code)
+    const painted = paintAt(harness.project, [{ row: 0, column: 0 }], entry.hex)
+    expect(listedColorName(en, projectPalette(painted).byHex(entry.hex), entry.hex)).toContain(entry.code)
+    harness.history.onUndo()
+    expect(harness.project.paletteCodes).toBeUndefined()
   })
 })

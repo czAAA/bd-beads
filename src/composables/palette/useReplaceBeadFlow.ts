@@ -3,6 +3,7 @@ import { beadLabel, beadsDiffer, findBead, offeredBeads, type Bead } from '../..
 import { replaceBead, resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
+import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { EditFn } from '../project/useEdit'
 
 /** What Replace Bead needs from the app shell: the open Project, Edit, and the app's language. */
@@ -77,13 +78,16 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   }
 
   /** Confirms Replace Bead (ticket 48, ADR 0007): swaps the Bead only, as one undo step. An exempt Edit: it doesn't
-   * draw, so the Row progress lock has nothing to guard. */
-  function onConfirmReplaceBead() {
+   * draw, so the Row progress lock has nothing to guard. A Project with coded swatches first loads the new Bead's Color
+   * catalog, so the swatches it lists keep their codes in the same step (ticket 0538); one that won't load drops them. */
+  async function onConfirmReplaceBead() {
     const bead = pendingBead.value
     pendingId.value = undefined
-    if (bead) {
-      deps.edit('exempt', (project) => replaceBead(project, bead))
-    }
+    if (!bead) return
+    const catalogId = bead.formFactor.colorCatalog
+    const coded = Object.keys(deps.currentProject()?.paletteCodes ?? {}).length > 0
+    const catalog = coded && catalogId ? await loadColorCatalog(catalogId).catch(() => undefined) : undefined
+    deps.edit('exempt', (project) => replaceBead(project, bead, catalog))
   }
 
   return {
