@@ -44,6 +44,7 @@ _Avoid_: Project sheet, Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:
 The slim row along the top of the canvas box, on the editor and on the Overview, at every width (tickets 425, 431, ADR 0055, ADR 0073). One component in both places, in three parts. Left: the panels, Menu (an icon and its word) then, in the editor, Project and Frame. Centre: the **Brand**, centred on the strip itself. Right: the tools, Rotate canvas (spec 0470), the Rulers toggle (`R`), Undo and Redo, then zoom out, zoom in and Fit, right-aligned (ticket 543). There is no zoom level in percent. Apart from the Brand it names nothing: no title, size line, printed-size estimate or keyboard hint. Under 1024px the words of Menu and Project and the Brand's wordmark go and only icons stay. On a phone the editor keeps its present strip, the middle scrolling sideways with touch-sized buttons, and no Brand; the Overview's phone strip keeps the Brand's logo. While a picture is being framed (Convert image) it holds Menu, the Brand and the framing step's own zoom. On the Overview the zoom scales the page's content (**Overview zoom**). It replaced the draggable Zoom pill.
+_Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (the Menu button + 2px with a mouse, 46px on touch), one derived rule (`--strip-height`) shared with the Overview. Its top corners follow the canvas box's rounded corners; its left, right and bottom edges are drawn.
 _Avoid_: Zoom pill, Canvas header
 
 **Brand**:
@@ -52,6 +53,7 @@ _Avoid_: header logo, title, app name
 
 **Canvas footer**:
 The slot along the bottom edge of the canvas box, the same height at every width (ADR 0073). In the editor it holds the Progress bar while a Project is open; on the Overview it is there and empty, so the box looks the same on both pages and nothing jumps.
+_Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (a large Row done button + 2px, the phone's two rows + 2px), one derived rule (`--progress-height`) so the Overview's empty footer matches the editor's. Its bottom corners follow the canvas box's rounded corners; its left, right and top edges are drawn.
 _Avoid_: footer bar, bottom bar
 
 **Canvas hint**:

@@ -7,9 +7,18 @@
   --control-height-sm: 2rem;
   /* CanvasStrip card: zoom and fit buttons, no fill; the strip itself; the zoom level's fixed width */
   --control-height-plain: 1.875rem;
-  --strip-height: 2.875rem;
+  /* Canvas strip and Canvas footer (ticket 544): each is as tall as its tallest item plus 1px above and below. The
+     bars take their height from their content; these derived values are the same rule for the one bar with no
+     content of its own (the Overview's empty footer), so the canvas box never changes height between pages. The
+     strip's tallest item is the Menu button (a coarse pointer grows its icon buttons to the touch target); the
+     footer's is a large button (its touch target overhangs the bar). */
+  --bar-pad: 1px;
+  --strip-item-height: var(--control-height);
+  --footer-item-height: var(--control-height-lg);
+  --footer-row-gap: var(--space-4);
+  --strip-height: calc(var(--strip-item-height) + 2 * var(--bar-pad));
   /* ProgressBar card: the bar along the canvas box's bottom edge, and its switch (30 × 18, a 12px knob) */
-  --progress-height: 3rem;
+  --progress-height: calc(var(--footer-item-height) + 2 * var(--bar-pad));
   --switch-width: 1.875rem;
   --switch-height: 1.125rem;
   --switch-knob: 0.75rem;
@@ -65,11 +74,25 @@
   --context-bar-radius: 0.875rem;
 }
 
-/* Phone widths: the Progress bar's buttons take a second row (ProgressBar.vue, ticket 411). */
+/* Phone widths: the Progress bar's buttons take a second row (ProgressBar.vue, ticket 411): a row of icon buttons,
+   then a row of large ones. */
 @media (max-width: 30rem) {
   :root {
-    --progress-height: var(--progress-height-phone);
+    --progress-height: calc(var(--control-height) + var(--footer-row-gap) + var(--footer-item-height) + 2 * var(--bar-pad));
   }
+}
+
+/* A coarse pointer grows the strip's icon buttons to the touch target, so the strip is the touch target + 2px. */
+@media (pointer: coarse) {
+  :root {
+    --strip-item-height: var(--touch-target);
+  }
+}
+
+/* The canvas box's rounded corners (ticket 544): the box has the large radius, and the strip's top corners and the
+   footer's bottom corners follow it by the same token. */
+:root {
+  --canvas-box-radius: var(--radius-lg);
 }
 
 /* Touch (ticket 166): a coarse pointer gives every .ui-control a 44px invisible hit area; swatches and tool tabs

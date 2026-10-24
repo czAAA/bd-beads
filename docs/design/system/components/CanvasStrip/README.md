@@ -1,6 +1,6 @@
 # CanvasStrip
 
-The 46px header strip at the top of the canvas box, one component on the editor and on the Overview: three slots: the panels (Menu, in the editor Project and Frame) aligned left, the Brand centred, and the tools (Rotate canvas, Rulers, Undo, Redo) with the zoom aligned right. It names no Project (tickets 425, 431, 0443, 0473, 0540, 0543, ADR 0055, ADR 0073).
+The header strip at the top of the canvas box, one component on the editor and on the Overview: three slots: the panels (Menu, in the editor Project and Frame) aligned left, the Brand centred, and the tools (Rotate canvas, Rulers, Undo, Redo) with the zoom aligned right. Its height is its tallest item plus 1px above and 1px below (ticket 544): the Menu button (34px) plus 2px with a mouse, the 44px touch targets plus 2px (46px) on a coarse pointer; `--strip-height` (controls.css) is the same rule for the Overview. It has a 1px `box-line`-tint edge on its left, right and bottom, and its top corners take the canvas box's radius (`radius-lg`, `--canvas-box-radius`). It names no Project (tickets 425, 431, 0443, 0473, 0540, 0543, ADR 0055, ADR 0073).
 
 - The canvas box: `box` fill, 1px `box-line`, radius-lg, `elevation-2` (light only), overflow hidden; it takes all the width right of the left column.
 - Strip: padding 0 10 0 16, gap 8, bottom divider `box-muted` at 22%. Three slots in a grid (`1fr auto 1fr`): Menu, Project and Frame on the left, the Brand in the middle, the canvas controls on the right.
