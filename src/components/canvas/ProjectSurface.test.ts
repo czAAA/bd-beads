@@ -1136,6 +1136,103 @@ describe('ProjectSurface', () => {
     })
   })
 
+  describe('the Tool pointer for a hovering Pencil (ticket 546)', () => {
+    const hover = { clientX: 105, clientY: 47, buttons: 0 }
+    const surfaceOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.find('[data-testid="project-surface"]')
+    const drawn = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.find('[data-testid="pen-pointer"]')
+    const svgOf = (src: string) => decodeURIComponent(src)
+
+    it('draws the tool\'s pointer at the Pencil, its hot spot on the tip, for each tool', async () => {
+      const hotSpots = { paint: [5, 19], erase: [6, 17], hand: [11, 12], select: [4, 3], fill: [18, 18], piece: [12, 12] } as const
+      for (const [tool, [x, y]] of Object.entries(hotSpots)) {
+        const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool, previewColor: '#e63746', moving: tool === 'hand', inputMode: 'pen' })
+        await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
+
+        const pointer = drawn(wrapper)
+        expect(pointer.exists(), tool).toBe(true)
+        expect(pointer.attributes('style')).toContain(`left: ${105 - x}px`)
+        expect(pointer.attributes('style')).toContain(`top: ${47 - y}px`)
+        expect(svgOf(pointer.attributes('src')!)).toContain(tool === 'paint' || tool === 'fill' ? 'fill="#e63746"' : '<svg')
+      }
+    })
+
+    it('leaves the bead out of Paint and Fill without a colour', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: null, inputMode: 'pen' })
+      await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
+      expect(svgOf(drawn(wrapper).attributes('src')!)).not.toContain('<rect')
+    })
+
+    it('is hidden while the Pencil touches, and back when it hovers again', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', inputMode: 'pen' })
+      const surface = surfaceOf(wrapper)
+      await surface.trigger('pointermove', { ...hover, pointerType: 'pen' })
+      expect(drawn(wrapper).exists()).toBe(true)
+
+      await surface.trigger('pointerdown', { ...hover, pointerType: 'pen', pointerId: 2, button: 0, buttons: 1 })
+      expect(drawn(wrapper).exists()).toBe(false)
+      await surface.trigger('pointermove', { ...hover, pointerType: 'pen', pointerId: 2, buttons: 1 })
+      expect(drawn(wrapper).exists()).toBe(false)
+
+      await surface.trigger('pointerup', { pointerType: 'pen', pointerId: 2 })
+      await surface.trigger('pointermove', { ...hover, pointerType: 'pen' })
+      expect(drawn(wrapper).exists()).toBe(true)
+    })
+
+    it('is dropped when the Pencil lifts away or is cancelled, and when it leaves the board', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', inputMode: 'pen' })
+      const surface = surfaceOf(wrapper)
+      for (const end of ['pointercancel', 'pointerleave']) {
+        await surface.trigger('pointermove', { ...hover, pointerType: 'pen' })
+        expect(drawn(wrapper).exists()).toBe(true)
+        await surface.trigger(end, { pointerType: 'pen' })
+        expect(drawn(wrapper).exists(), end).toBe(false)
+      }
+    })
+
+    it('shows the Hand\'s open hand for a Pencil that moves the canvas in Mouse mode', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746', inputMode: 'mouse' })
+      await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
+
+      const pointer = drawn(wrapper)
+      expect(pointer.attributes('style')).toContain(`left: ${105 - 11}px`)
+      expect(svgOf(pointer.attributes('src')!)).not.toContain('#e63746')
+    })
+
+    it('shows the eyedropper while picking, with its tip as the hot spot', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', picking: true, inputMode: 'pen' })
+      await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
+
+      expect(drawn(wrapper).attributes('style')).toContain(`left: ${105 - 6}px`)
+      expect(drawn(wrapper).attributes('style')).toContain(`top: ${47 - 25}px`)
+    })
+
+    it('shows nothing over the Frame\'s margin, in Set Frame, or while Space holds the pointer back', async () => {
+      const project = projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
+      const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'paint', blocksMargin: true, inputMode: 'pen' })
+      await surfaceOf(wrapper).trigger('pointermove', { clientX: at.x, clientY: at.y, buttons: 0, pointerType: 'pen' })
+      expect(drawn(wrapper).exists()).toBe(true)
+
+      await wrapper.setProps({ scroll: { x: 0, y: 40 } })
+      expect(drawn(wrapper).exists()).toBe(false)
+      await wrapper.setProps({ scroll: { x: 0, y: 0 } })
+      expect(drawn(wrapper).exists()).toBe(true)
+
+      await wrapper.setProps({ settingFrame: true })
+      expect(drawn(wrapper).exists()).toBe(false)
+      await wrapper.setProps({ settingFrame: false, markerHidden: true })
+      expect(drawn(wrapper).exists()).toBe(false)
+    })
+
+    it('shows nothing for a mouse, a trackpad or a finger', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', inputMode: 'pen' })
+      for (const pointerType of ['mouse', 'touch']) {
+        await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType })
+        expect(drawn(wrapper).exists(), pointerType).toBe(false)
+      }
+    })
+  })
+
   describe('the bead-shaped pointer (ticket 353)', () => {
     /** The marker's fill: the only translucent fillRect of 90% of a 20px bead less 1px at zoom 1. */
     const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 17)
