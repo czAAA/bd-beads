@@ -8,7 +8,6 @@
   /* CanvasStrip card: zoom and fit buttons, no fill; the strip itself; the zoom level's fixed width */
   --control-height-plain: 1.875rem;
   --strip-height: 2.875rem;
-  --zoom-level-width: 3rem;
   /* ProgressBar card: the bar along the canvas box's bottom edge, and its switch (30 × 18, a 12px knob) */
   --progress-height: 3rem;
   --switch-width: 1.875rem;
