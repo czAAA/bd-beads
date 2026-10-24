@@ -19,7 +19,7 @@ The endless arrangement of positions on the Canvas set by the Technique: loom ro
 _Avoid_: board, for the beads themselves or for the Schema
 
 **Position marks**:
-How the Grid's positions are drawn on the Canvas, in the style chosen as a preference on the device from the Canvas color popover: **Dots** (a dot at each empty position outside the Frame's footprint and its keep-out margin, the default) or **Squares** (one shared 1px line in the gap between neighbouring positions, shaped like the Technique's bead, and round every position of the Canvas, a drawn one and one inside the Frame included, ticket 0458). Inside the Frame an empty position is an empty bead instead, over whatever the Canvas holds there; the keep-out margin has none. Never in exports.
+How the Grid's positions are drawn on the Canvas: as squares (one shared 1px line in the gap between neighbouring positions, shaped like the Technique's bead, and round every position of the Canvas, a drawn one and one inside the Frame included, ticket 0458). The Dots style and the choice between styles were removed (ticket 0545). Inside the Frame an empty position is an empty bead instead, over whatever the Canvas holds there; the keep-out margin has none. Never in exports.
 _Avoid_: grid dots, background dots
 
 **Piece**:

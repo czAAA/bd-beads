@@ -204,7 +204,6 @@ export const uk: Translations = {
       label: 'Колір полотна',
       pickerLabel: 'колір полотна',
       swatchLabel: '{name}, {n} з {count}',
-      positionMarks: { label: 'Мітки позицій', dots: 'Крапки', squares: 'Квадрати', dotsBody: 'Крапка в кожній порожній позиції.', squaresBody: 'Контур навколо кожної порожньої позиції.' },
       names: { studio: 'Студія', linen: 'Льон', sage: 'Шавлія', mist: 'Серпанок', blush: 'Рум’янець', night: 'Ніч', ink: 'Туш', midnight: 'Північ', olive: 'Оливка', umber: 'Умбра', ash: 'Попіл' },
     },
     hint: {

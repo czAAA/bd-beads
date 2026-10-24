@@ -204,7 +204,6 @@ export const zh: Translations = {
       label: '画布颜色',
       pickerLabel: '画布颜色',
       swatchLabel: '{name}，第 {n} 个，共 {count} 个',
-      positionMarks: { label: '位置标记', dots: '圆点', squares: '方框', dotsBody: '每个空位上有一个圆点。', squaresBody: '每个空位周围有一个轮廓。' },
       names: { studio: '工作室', linen: '亚麻', sage: '鼠尾草', mist: '薄雾', blush: '腮红', night: '夜色', ink: '墨色', midnight: '午夜', olive: '橄榄', umber: '赭褐', ash: '灰烬' },
     },
     hint: {
