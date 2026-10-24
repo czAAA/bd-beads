@@ -31,12 +31,15 @@ A catalog entry for a real bead line: a Brand, a Form factor and a Bead size (e.
 _Avoid_: seed bead type, item
 
 **Bead color**:
-One real color of a Bead line, with its maker's code (e.g. TOHO Round 11/0 #25). Decided, not built yet: see ADR 0007.
+One real color of a Bead line, identified by its maker's code (e.g. Delica `DB1`) and described by facts only: the maker's color family, a **Finish** and the Bead sizes it exists in, with a discontinued flag. No photo, hex or durability rating is kept (ADR 0072, ticket 536). The swatch for a code and picking it in the editor are later tickets (537).
 _Avoid_: bead shade, catalog color
 
 **Color catalog**:
-Every Bead color of every Bead line, offered for building a Palette; inside a Project it offers the colors of that Project's Bead, so what Beads needed lists can be bought. Open to everyone, a Guest included. Decided, not built yet: see ADR 0002.
+A Brand's table of Bead colors (ADR 0072, ticket 536), its own entity: every Form factor of the Brand names it by `colorCatalog` (all Delica sizes share `miyuki-delica`); a Form factor with none, today every Form factor but Delica, has no catalog and its Beads keep the default colors. Each code row holds the maker code, color family, shared Finish, the maker's finish wording and sizes (`domain/colorCatalog.ts`). The data is JSON in `src/data/colorCatalogs/`, made by `scripts/build-color-catalog.mjs` in the docs repo from Miyuki's public directory and run by hand, and is loaded by `services/colorCatalogs.ts` as one lazy chunk per catalog, validated on load, so it is never in the main bundle. Delica holds 1,919 codes (1,288 of 11/0). Open to everyone, a Guest included. See ADR 0002.
 _Avoid_: color library, swatch catalog
+
+**Finish**:
+The one shared list every Brand's own finish wording is mapped onto: transparent, opaque, ceylon, silver-lined, luster, matte, rainbow, metallic, plated (ticket 536). A code keeps the maker's wording beside it for display (Miyuki's "Opaque · Metallic" is metallic). Where Miyuki gives several tags, the first of plated, metallic, rainbow, matte, silver-lined, luster wins, else its glass type decides.
 
 **Form factor**:
 The shape of a family of Beads (e.g. round, Delica, cube), a lookup row that carries its outline and its number and direction of holes, so a new shape is data, not code (ADR 0072). Its name is a translation. In a Real Bead shape it decides the outline of a project cell.
