@@ -30,6 +30,8 @@ const props = defineProps<{
   settledProject?: Project
   beadName: string
   replaceCandidates: readonly Bead[]
+  /** The Project's own Bead when it differs from the catalog's of the same id (ticket 534): listed, not offered. */
+  replaceOutdated?: Bead
   saveFailed: boolean
   unsaved: boolean
   exporting?: 'png' | 'pdf'
@@ -144,6 +146,9 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
       <span class="project-panel__bead-name" data-testid="panel-bead">{{ beadName }}</span>
       <!-- A menu, not a native select (ticket 442): the iPad's picker swallowed the pick, and the menu works the same everywhere. -->
       <MenuButton class="project-panel__replace" variant="in-box" :label="t.replaceBead.selectLabel" data-testid="phone-replace-bead-select">
+        <AppMenuItem v-if="replaceOutdated" disabled current data-testid="phone-replace-bead-outdated">
+          {{ `${beadLabel(replaceOutdated, t.formFactors)} ${t.replaceBead.outdatedPostfix}` }}
+        </AppMenuItem>
         <AppMenuItem
           v-for="bead in replaceCandidates"
           :key="bead.id"

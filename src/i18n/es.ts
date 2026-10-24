@@ -561,6 +561,7 @@ export const es: Translations = {
     confirmMessage:
       'Con {bead}, este proyecto medirá unos {new} en lugar de {old}. Tu diseño y su recuento de cuentas se quedan exactamente igual. Puedes deshacerlo.',
     confirmButton: 'Reemplazar cuenta',
+    outdatedPostfix: '(como se guardó)',
     cancelButton: 'Cancelar',
   },
   shortcutsHelp: {

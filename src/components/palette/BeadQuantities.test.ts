@@ -129,7 +129,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
   })
 
   it('hides the weights, not shows zeros, when the Project\'s Bead has no weight', () => {
-    const unknown = { ...wide('toho-cube-1.5mm', 10), beadId: 'a-bead-this-device-never-had' }
+    const unknown = { ...wide('toho-cube-1.5mm', 10), beadId: 'a-bead-this-device-never-had', bead: undefined }
     const wrapper = mountQuantities(unknown)
 
     expect(wrapper.find('[data-testid="quantity-count-red"]').text()).toBe('10')

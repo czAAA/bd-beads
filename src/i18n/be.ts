@@ -564,6 +564,7 @@ export const be: Translations = {
     confirmMessage:
       'З бісерынай {bead} гэты праект будзе прыкладна {new} замест {old}. Малюнак і колькасць бісерын застануцца дакладна такімі самымі. Гэта дзеянне можна адмяніць.',
     confirmButton: 'Замяніць бісер',
+    outdatedPostfix: '(як захавана)',
     cancelButton: 'Скасаваць',
   },
   shortcutsHelp: {

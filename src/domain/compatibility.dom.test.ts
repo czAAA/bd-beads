@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { beadCopy, findBead } from './beads'
 import { addedColorId, defaultPaletteIds } from './palette'
 import { framedGrid, weaveOf, type Grid, type Project, type RowProgress } from './project'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
@@ -19,6 +20,7 @@ import libraryV4 from './fixtures/library-v4.json?raw'
 import libraryV4Weave from './fixtures/library-v4-frame-weave.json?raw'
 import projectFileV3Framed from './fixtures/project-file-v3-framed-covered.json?raw'
 import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
+import projectFileV7 from './fixtures/project-file-v7-bead-copy.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
@@ -46,13 +48,16 @@ const peyotePicture = ['RRB..', '.KKR.', 'B...R', '..KBB']
 const brickPicture = ['R.K', '.BR', 'K.B', 'R..']
 
 const BEAD = 'toho-cube-1.5mm'
+/** What a Project saved with that id reads as: the id the catalog builds today and its Bead copy (ticket 534). */
+const CUBE_COPY = beadCopy(findBead(BEAD)!)
 const noProgress: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
 /** A Project the way it should read back: every field present, nothing a newer build dropped still hanging on. */
 function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pick<Project, 'id' | 'name' | 'technique'> & { grid: Grid }): Project {
   const { grid: cells, ...rest } = fields
   return {
-    beadId: BEAD,
+    beadId: CUBE_COPY.id,
+    bead: CUBE_COPY,
     ...framedGrid(cells, weaveOf(fields)),
     rowProgress: noProgress,
     palette: defaultPaletteIds(),
@@ -160,7 +165,8 @@ const framedOverSketch: Project = {
   id: 'v3-framed',
   name: 'Framed over a sketch',
   technique: 'loom',
-  beadId: BEAD,
+  beadId: CUBE_COPY.id,
+  bead: CUBE_COPY,
   beads: { 7: { 4: COLORS.R! }, 20: { 2: COLORS.B!, 3: COLORS.B!, 4: COLORS.B! } },
   frame: {
     technique: 'loom',
@@ -182,7 +188,8 @@ const unframedSketch: Project = {
   id: 'v3-unframed',
   name: 'Just a sketch',
   technique: 'peyote',
-  beadId: BEAD,
+  beadId: CUBE_COPY.id,
+  bead: CUBE_COPY,
   beads: { [-3]: { [-2]: COLORS.B!, [-1]: COLORS.B! }, 4: { 0: COLORS.B! } },
   rowProgress: noProgress,
   palette: defaultPaletteIds(),
@@ -291,9 +298,16 @@ describe('stored-data compatibility', () => {
       expect((await readProjectsFile(new File([await gzipJson(libraryFileV4)], 'g.openbeads'))).projects).toEqual([framedOverSketch, unframedSketch])
     })
 
-    it('reads a version 4 file and writes it back as version 6 with the built-in Palette (ticket 0525)', () => {
+    it('opens a version 7 file with the Bead copy of a Bead the catalog does not have, and writes it back the same (ticket 534)', () => {
+      const [opened] = parseProjectsFile(projectFileV7).projects
+      expect(opened).toMatchObject({ beadId: 'old-maker/cube/2mm', bead: { id: 'old-maker/cube/2mm', widthMm: 2, beadsPerKg: 50000 } })
+
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('reads a version 4 file and writes it back as version 7 with the built-in Palette (ticket 0525)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 6, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 7, projects: [{ palette: defaultPaletteIds() }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })

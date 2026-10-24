@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { beadLabel, findBead, offeredBeads, type Bead } from '../../domain/beads'
+import { beadLabel, beadsDiffer, findBead, offeredBeads, type Bead } from '../../domain/beads'
 import { replaceBead, resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -19,10 +19,23 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
    * closed. */
   const pendingId = ref<string | undefined>()
 
-  /** The other built-in catalog Beads the open Project could switch to (ticket 48) — everything but its current one. */
+  /** The catalog's current Bead of the Project's own id, when the Project's copy differs from it (ticket 534, ADR 0072);
+   * undefined when they match, or when that Bead is retired and so offered nowhere. */
+  const currentOfSameId = computed(() => {
+    const own = deps.currentProject()?.bead
+    const current = own && offeredBeads().find((bead) => bead.id === own.id)
+    return own && current && beadsDiffer(own, current) ? current : undefined
+  })
+
+  /** The Project's own Bead, shown beside the catalog's current one of the same id because the two differ (ticket 534);
+   * picking it would change nothing, so the list shows it without offering it. */
+  const outdated = computed(() => (currentOfSameId.value ? deps.currentProject()?.bead : undefined))
+
+  /** The Beads the open Project could switch to (ticket 48): everything offered but its own, and the catalog's current
+   * Bead of its id when its copy has gone out of date. */
   const candidates = computed(() => {
     const project = deps.currentProject()
-    return project ? offeredBeads().filter((bead) => bead.id !== resolveProjectBead(project)?.id) : []
+    return project ? offeredBeads().filter((bead) => bead.id !== resolveProjectBead(project)?.id || bead === currentOfSameId.value) : []
   })
 
   /** The Bead behind the pending id, resolved from the catalog — also doubles as "is the Replace bead modal open"
@@ -75,6 +88,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
 
   return {
     replaceBeadCandidates: candidates,
+    replaceBeadOutdated: outdated,
     replaceBeadPendingBead: pendingBead,
     replaceBeadConfirmMessage: confirmMessage,
     onRequestReplaceBead,
