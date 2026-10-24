@@ -16,7 +16,6 @@ export interface CanvasPointerDeps {
   pastePreviewCells: (project: Project, hovered: GridPosition) => PreviewCell[]
   beginSelectPress: (row: number, column: number, layer?: Layer) => void
   extendSelection: (row: number, column: number, layer?: Layer) => void
-  backOutOfSelect: () => void
   /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty
    * space. */
   tapPiece: (row: number, column: number, layer?: Layer) => void
@@ -103,8 +102,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    // Eraser (ticket 176): single-bead erase by default, so it works on touch without a right-click. Right-click stays
-    // (see onCellSecondaryDown): the only way to erase without leaving Paint, or flood-erase without leaving Fill.
+    // Eraser (ticket 176): single-bead erase by default, so it works on touch.
     if (tool === 'erase') {
       deps.beginOrCommitPress('erase', null, row, column, layer)
       return
@@ -146,41 +144,6 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     deps.paintStrokeCell(row, column, color, layer)
   }
 
-  /** Right-click erase, mapped to the active tool (ticket 25): flood-erase in one click under Fill,
-   * single-cell/dragged-line erase under Paint and Eraser -- the latter now redundant with Eraser's own primary
-   * press (ticket 176), and kept for Paint/Fill where it's the only erase available without switching tools. */
-  function onCellSecondaryDown(row: number, column: number, layer?: Layer) {
-    if (deps.spaceHeld()) {
-      return
-    }
-
-    // The Hand tool changes no bead, with either button.
-    if (deps.activeTool() === 'hand') {
-      return
-    }
-
-    // Select and Piece never erase; under them the right button backs out of a pending Paste or the Selection,
-    // alongside Escape.
-    if (deps.activeTool() === 'select' || deps.activeTool() === 'piece') {
-      deps.backOutOfSelect()
-      return
-    }
-
-    deps.beginOrCommitPress('erase', null, row, column, layer)
-  }
-
-  function onCellSecondaryMove(row: number, column: number, layer?: Layer) {
-    if (deps.spaceHeld()) {
-      return
-    }
-
-    if (deps.strokeMode() !== 'erase') {
-      return
-    }
-
-    deps.paintStrokeCell(row, column, null, layer)
-  }
-
   return {
     hoveredCell,
     previewCells,
@@ -189,7 +152,5 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     pasteAtPointer,
     onCellPrimaryDown,
     onCellPrimaryMove,
-    onCellSecondaryDown,
-    onCellSecondaryMove,
   }
 }

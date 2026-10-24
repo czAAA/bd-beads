@@ -208,7 +208,7 @@ function wireAppShell(services: Services) {
     (count) => showToast('paste-clipped', plural(locale.value, count, t.value.tools.pasteClippedMessage), 'info'),
   )
 
-  /** Touch has no Escape or right-click, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
+  /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
    * 0057). */
   const touch = useMediaQuery('(pointer: coarse)')
 
@@ -428,8 +428,6 @@ function wireAppShell(services: Services) {
     pasteAtPointer,
     onCellPrimaryDown,
     onCellPrimaryMove,
-    onCellSecondaryDown,
-    onCellSecondaryMove,
   } = useCanvasPointer({
     currentProject,
     activeTool: () => activeTool.value,
@@ -439,7 +437,6 @@ function wireAppShell(services: Services) {
     pastePreviewCells,
     beginSelectPress,
     extendSelection,
-    backOutOfSelect,
     tapPiece,
     beginOrCommitPress: (mode, color, row, column) => {
       // Before the press, so the Palette's Undo step comes before the stroke's own.
@@ -781,8 +778,6 @@ function wireAppShell(services: Services) {
     endStroke,
     onCellPrimaryDown,
     onCellPrimaryMove,
-    onCellSecondaryDown,
-    onCellSecondaryMove,
     onCellHover,
     onHoverEnd,
     beadCursor,

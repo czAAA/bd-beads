@@ -23,7 +23,6 @@ function setup(options: Options = {}) {
     pastePreviewCells: vi.fn(() => [{ row: 9, column: 9 }]),
     beginSelectPress: vi.fn(),
     extendSelection: vi.fn(),
-    backOutOfSelect: vi.fn(),
     tapPiece: vi.fn(),
     beginOrCommitPress: vi.fn(),
     paintStrokeCell: vi.fn(),
@@ -133,39 +132,13 @@ describe('useCanvasPointer', () => {
     })
   })
 
-  describe('secondary press and drag', () => {
-    it('erases under Paint, and again along the drag', () => {
-      const { deps, onCellSecondaryDown, onCellSecondaryMove } = setup({ strokeMode: 'erase' })
-      onCellSecondaryDown(2, 2)
-      expect(deps.beginOrCommitPress).toHaveBeenCalledWith('erase', null, 2, 2, undefined)
-      onCellSecondaryMove(2, 3)
-      expect(deps.paintStrokeCell).toHaveBeenCalledWith(2, 3, null, undefined)
-    })
-
+  describe('layer of a press', () => {
     it('hands the layer the pointer hit to the tool, which a position alone cannot say (ADR 0070)', () => {
       const { deps, onCellPrimaryDown, onCellPrimaryMove } = setup({ strokeMode: 'paint' })
       onCellPrimaryDown(4, 1, 'frame')
       expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 4, 1, 'frame')
       onCellPrimaryMove(4, 2, 'canvas')
       expect(deps.paintStrokeCell).toHaveBeenCalledWith(4, 2, '#ff0000', 'canvas')
-    })
-
-    it('backs out of Select rather than erasing under it', () => {
-      const { deps, onCellSecondaryDown } = setup({ tool: 'piece' })
-      onCellSecondaryDown(2, 2)
-      expect(deps.backOutOfSelect).toHaveBeenCalled()
-      expect(deps.beginOrCommitPress).not.toHaveBeenCalled()
-    })
-
-    it('does not drag-erase unless an erase stroke is running, or with Space held', () => {
-      const idle = setup({ strokeMode: 'paint' })
-      idle.onCellSecondaryMove(0, 0)
-      const panning = setup({ strokeMode: 'erase', spaceHeld: true })
-      panning.onCellSecondaryDown(0, 0)
-      panning.onCellSecondaryMove(0, 0)
-      expect(idle.deps.paintStrokeCell).not.toHaveBeenCalled()
-      expect(panning.deps.paintStrokeCell).not.toHaveBeenCalled()
-      expect(panning.deps.beginOrCommitPress).not.toHaveBeenCalled()
     })
   })
 

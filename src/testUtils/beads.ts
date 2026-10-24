@@ -58,7 +58,7 @@ function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: n
   return { clientX: point.x, clientY: point.y }
 }
 
-// Presses a bead: the left button by default, `{ button: 2 }` for the right. Whether the press is released is up to the
+// Presses a bead: the left button by default, `{ button: 2 }` for the right (which moves the Canvas, ticket 541). Whether the press is released is up to the
 // test, as it is up to a hand.
 export async function pressBead(wrapper: Anywhere, at: BeadAt, options: { button?: number; pointerType?: string } = {}): Promise<void> {
   const button = options.button ?? 0

@@ -207,7 +207,7 @@ export const zh: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: '用“新建项目”创建一个，打开已保存的项目，或导入文件。',
+    canvasPlaceholderHint: '用“新建项目”创建一个，打开已保存的项目，或导入文件。用鼠标右键或空格键拖动画布。',
     canvasPlaceholder: '还没有打开的项目',
     updateReady: '更新已就绪',
     updateReload: '重新加载',
@@ -554,8 +554,6 @@ export const zh: Translations = {
     keyHintsOff: '关',
   },
   tooltips: {
-    paint: '右键擦除。',
-    fill: '右键擦除该区域。',
     select: '然后复制和粘贴，或删除。',
     erase: '按 Delete 清空所选内容。',
     piece: '点按一颗珠子，选中它和与它相连的所有珠子。',

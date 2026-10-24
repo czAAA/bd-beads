@@ -308,7 +308,7 @@ describe('useSelectionGesture', () => {
     })
   })
 
-  describe('cancel (Escape / right-click, once the app shell has given precedence to nothing else)', () => {
+  describe('cancel (Escape, once the app shell has given precedence to nothing else)', () => {
     it('dismisses an armed paste projection first, leaving the block pasteable by keyboard', () => {
       const project = paintedProject()
       const { gesture, commitGridChange } = setup(project)
