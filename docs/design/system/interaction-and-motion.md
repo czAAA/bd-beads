@@ -34,7 +34,7 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 
 ## Open canvas and Frame (v16)
 
-- **Moving the canvas** follows the pointer or the wheel directly, with no easing and no inertia of its own (the device's own scroll inertia is kept). Space + drag shows the grab cursor, and the grabbing cursor while dragging; the Hand tool shows its Tool pointer, `hand`, and `hand-grabbing` while dragging (`assets/Cursors/`, ticket 0542).
+- **Moving the canvas** follows the pointer or the wheel directly, with no easing and no inertia of its own (the device's own scroll inertia is kept). Space + drag shows the grab cursor, and the grabbing cursor while dragging; the Hand tool shows its Tool pointer, `hand`, and `hand-grabbing` while dragging (`assets/Cursors/`, ticket 0542). A hovering Apple Pencil gets no CSS cursor from Safari, so the app draws the same Tool pointer (and the eyedropper's) at the Pencil's tip while it hovers: hidden on contact, lift, cancel and leave, the Hand's open hand for a Pencil that moves the canvas (Mouse mode), nothing over the Frame's margin or in Set Frame (ticket 546).
 - **Zoom** (⌘ or Ctrl + wheel, pinch, ⌘ or Ctrl + plus, minus and 0, the strip's buttons) is Canvas zoom, the only zoom: Page zoom is locked (ADR 0034), so a pinch, double-tap or ⌘ or Ctrl + wheel that starts outside the canvas does nothing, and one that drifts onto it stays inert. It keeps the point under the pointer still. It stops at the 10% Zoom floor on every screen.
 - **Set Frame:** the Frame follows the drag and snaps to whole beads with no animation; its size tag updates as it moves.
 - **Bring into view** (the Frame number) scrolls the canvas over `--duration-base` with `--ease-out`; under reduced motion it jumps.
