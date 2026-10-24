@@ -38,6 +38,17 @@ const MIYUKI_COLORS: readonly PaletteColor[] = [
   { id: 'iridescent', hex: '#8fb8de' },
 ]
 
+/** The hex of a maker's color family (`Blue`, `Gray`): the Miyuki set's color of that name, so a "Blue" swatch and the
+ * default blue are one color (ticket 0537); undefined for a family with no single color, like `Mix`. */
+export function familyHex(family: string): string | undefined {
+  return MIYUKI_COLORS.find((color) => color.id === familyColorId(family))?.hex
+}
+
+/** The Palette color id a maker's color family is named by: `Gray` is `grey`, the rest are lowercase. */
+export function familyColorId(family: string): string {
+  return family.toLowerCase() === 'gray' ? 'grey' : family.toLowerCase()
+}
+
 /** The built-in colors of each Brand (by id) that has a set of its own; a new Brand with a set is one entry here. */
 const BRAND_COLORS: ReadonlyMap<string, readonly PaletteColor[]> = new Map([['miyuki', MIYUKI_COLORS]])
 

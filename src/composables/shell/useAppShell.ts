@@ -52,6 +52,7 @@ import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
+import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
@@ -227,6 +228,7 @@ function wireAppShell(services: Services) {
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
   const { palette, addUsed, removeAdded, removeAllAdded, moveColor } = useProjectPalette({ currentProject, edit })
+  provideBeadColors(useBeadColors({ currentProject, palette, addUsed }))
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
   const {
