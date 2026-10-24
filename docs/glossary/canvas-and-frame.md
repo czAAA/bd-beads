@@ -96,5 +96,5 @@ Everything the rulers are for one view of the canvas, worked out once from the P
 _Avoid_: ruler view, ruler geometry
 
 **Canvas color**:
-The background of the drawing area, picked by the person from the Canvas color button in the canvas strip: five in light, six in dark, stored as a number so a change of theme keeps the position. A preference on the device like the theme: not saved with a Project and not in exports, which always print on the light board. The same popover holds the Position marks toggle (Dots | Squares). High contrast has one white canvas, so its button opens the toggle alone, with no swatches.
+The background of the drawing area, picked by the person in the Project panel (its Canvas section; the Overview has none): five in light, six in dark, stored as a number so a change of theme keeps the position. A preference on the device like the theme: not saved with a Project and not in exports, which always print on the light board. The same popover holds the Position marks toggle (Dots | Squares). High contrast has one white canvas, so its button opens the toggle alone, with no swatches.
 _Avoid_: board color, background theme
