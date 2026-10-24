@@ -25,6 +25,9 @@ interface FormFactor {
    * square for a cube. */
   roundness: number
   holes: { count: number; direction: HoleDirection }
+  /** The id of the Brand's Color catalog this shape's Beads take their codes from (ticket 536); absent for a Form
+   * factor with none, whose Beads keep the default colors. */
+  colorCatalog?: string
 }
 
 export interface Bead {
@@ -64,7 +67,13 @@ const MIYUKI: Brand = { id: 'miyuki', name: 'Miyuki' }
 
 const CUBE: FormFactor = { id: 'cube', nameKey: 'cube', roundness: 0, holes: { count: 1, direction: 'along' } }
 const ROUND: FormFactor = { id: 'round', nameKey: 'round', roundness: 0.5, holes: { count: 1, direction: 'along' } }
-const DELICA: FormFactor = { id: 'delica', nameKey: 'delica', roundness: 0.1, holes: { count: 1, direction: 'along' } }
+const DELICA: FormFactor = {
+  id: 'delica',
+  nameKey: 'delica',
+  roundness: 0.1,
+  holes: { count: 1, direction: 'along' },
+  colorCatalog: 'miyuki-delica',
+}
 
 type BeadParts = Omit<Bead, 'id'>
 
