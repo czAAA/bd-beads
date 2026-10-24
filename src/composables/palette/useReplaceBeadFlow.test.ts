@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, findBead } from '../../domain/beads'
-import { createProject, resolveProjectBead, type Project } from '../../domain/project'
+import { createProject, resolveProjectBead, setPalette, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
@@ -125,5 +125,20 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
     harness.history.onUndo()
     expect(resolveProjectBead(harness.currentProject()!)).toEqual(older.bead)
     expect(harness.history.canUndo.value).toBe(false)
+  })
+})
+
+describe('Replace Bead with coded swatches (ticket 0538)', () => {
+  it('loads the new Bead\'s catalog and keeps the codes it lists, in one Undo step', async () => {
+    const delica = findBead('miyuki/delica/11-0')!
+    const start = createProject({ technique: 'loom', beadId: delica.id, size: { width: 3, height: 3, unit: 'beads' } })
+    const coded = setPalette(start, [...start.palette, 'added-123456'], { '#123456': 'DB1' })
+    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(coded)
+    onRequestReplaceBead('toho/round/11-0')
+    await onConfirmReplaceBead()
+    expect(harness.project.paletteCodes).toBeUndefined()
+    harness.history.onUndo()
+    expect(harness.project.paletteCodes).toEqual({ '#123456': 'DB1' })
+    expect(harness.project.beadId).toBe(delica.id)
   })
 })

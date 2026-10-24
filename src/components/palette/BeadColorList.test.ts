@@ -34,7 +34,7 @@ describe('BeadColorList', () => {
 
     await wrapper.get('[data-testid="bead-color"]').trigger('click')
 
-    expect(colors.add).toHaveBeenCalledWith('#123456')
+    expect(colors.add).toHaveBeenCalledWith('#123456', 'DB1')
     expect(wrapper.emitted('added')).toEqual([['#123456']])
   })
 

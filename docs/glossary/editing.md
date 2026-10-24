@@ -19,7 +19,7 @@ Turns the Selection a quarter turn clockwise about its centre, on its layer (in 
 _Avoid_: flip, spin, orientation
 
 **Beads needed**:
-The count (and Estimated weight) of beads per color inside the Frame only; with no Frame it says "Set Frame to count beads." Beads outside the Frame are never counted.
+The count (and Estimated weight) of beads per color inside the Frame only; with no Frame it says "Set Frame to count beads." Beads outside the Frame are never counted. A color whose swatch has a catalog code (see Palette) is listed with it, "Red · DB0723", on screen, in the print and in the exports, so it can be bought (ticket 0538).
 _Avoid_: shopping list, bead count
 
 **Estimated size**:

@@ -1362,3 +1362,57 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
     expect(restoreSnapshot(replaced, snapshotOf(before)).bead).toEqual(cubeBead)
   })
 })
+
+describe('a swatch keeps its catalog code (ticket 0538)', () => {
+  const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
+  const delica15 = { ...delica, id: 'miyuki/delica/15-0', size: '15/0' }
+  const catalog = {
+    id: 'miyuki-delica',
+    codes: [
+      { code: 'DB1', family: ['Blue'], finish: 'opaque' as const, wording: 'Opaque', sizes: ['11/0', '15/0'] },
+      { code: 'DB2', family: ['Red'], finish: 'opaque' as const, wording: 'Opaque', sizes: ['11/0'] },
+    ],
+  }
+  const input = { technique: 'loom', beadId: delica.id, size: { width: 4, height: 2, unit: 'beads' } } as const
+  const blue = addedColorId('#123456')
+  const red = addedColorId('#654321')
+  const coded = () => {
+    const project = createProject(input)
+    return setPalette(project, [...project.palette, blue, red], { '#123456': 'DB1', '#654321': 'DB2' })
+  }
+
+  it('is saved with the Project and gone with its swatch', () => {
+    const project = coded()
+    expect(project.paletteCodes).toEqual({ '#123456': 'DB1', '#654321': 'DB2' })
+    expect(setPalette(project, project.palette.filter((id) => id !== red)).paletteCodes).toEqual({ '#123456': 'DB1' })
+  })
+
+  it('keeps the codes the new Bead lists in its size and drops the rest', () => {
+    expect(replaceBead(coded(), delica15, catalog).paletteCodes).toEqual({ '#123456': 'DB1' })
+  })
+
+  it('clears them all for a Bead with no catalog, and Undo puts them back', () => {
+    const project = coded()
+    const toho = replaceBead(project, roundBead)
+    expect(toho.paletteCodes).toBeUndefined()
+    expect(restoreSnapshot(toho, snapshotOf(project)).paletteCodes).toEqual(project.paletteCodes)
+  })
+
+  it('does not bring back a default removed on the way, and a coded swatch that becomes a default keeps its code', () => {
+    const start = createProject({ ...input, beadId: roundBead.id })
+    const teal = setPalette(start, [...start.palette, addedColorId('#e6d5b8')], { '#e6d5b8': 'DB1' })
+    const away = replaceBead(teal, delica, catalog)
+    expect(away.palette).toContain('beige')
+    expect(away.paletteCodes).toEqual({ '#e6d5b8': 'DB1' })
+    const removed = setPalette(away, away.palette.filter((id) => id !== 'beige'))
+    expect(removed.paletteCodes).toBeUndefined()
+    expect(replaceBead(removed, roundBead).palette).not.toContain('beige')
+  })
+
+  it('reads a Project saved without codes unchanged, and ignores unreadable ones', () => {
+    const plain = createProject(input)
+    expect(normalizeProject(plain).paletteCodes).toBeUndefined()
+    const odd = normalizeProject({ ...coded(), paletteCodes: { '#123456': 'DB1', nope: 'X', '#654321': 7 } } as never)
+    expect(odd.paletteCodes).toEqual({ '#123456': 'DB1' })
+  })
+})
