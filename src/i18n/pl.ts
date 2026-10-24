@@ -9,6 +9,15 @@ export const pl: Translations = {
   form: {
     nameLabel: 'Nazwa',
     beadLabel: 'Koralik',
+    beadPicker: {
+      hint: 'Wpływa na rozmiar, wagę i kolory.',
+      change: 'Zmień',
+      close: 'Zamknij',
+      brand: 'Marka',
+      formFactor: 'Kształt',
+      size: 'Rozmiar koralika',
+      choose: 'Wybierz',
+    },
     beadShapeLabel: 'Kształt koralika',
     beadShapeSymmetric: 'Symetryczny',
     beadShapeReal: 'Rzeczywisty',

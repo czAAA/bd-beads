@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import NewProjectForm from './NewProjectForm.vue'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
+import { chooseBead } from '../../testUtils/beadPicker'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import {
   IMAGE_MAX_BYTES,
@@ -52,12 +53,11 @@ async function stateSize(wrapper: ReturnType<typeof mount>, width: string, heigh
 }
 
 describe('NewProjectForm', () => {
-  it('lists every bead in the catalog as an option', () => {
+  it('starts on the default Bead with the picker collapsed (ticket 535)', () => {
     const wrapper = mount(NewProjectForm)
 
-    const options = wrapper.findAll('[data-testid="bead-select"] option')
-    expect(options).toHaveLength(BEAD_CATALOG.length)
-    expect(options[0]!.text()).toContain('TOHO')
+    expect(wrapper.find('[data-testid="bead-picker-steps"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="bead-picker-current"]').text()).toBe(beadLabel(BEAD_CATALOG[0]!, ru.formFactors))
   })
 
   it('focuses and selects the Name input as soon as the form opens (ticket 181)', () => {
@@ -97,7 +97,7 @@ describe('NewProjectForm', () => {
   it('emits submit with the chosen bead and technique, and no size: a new Project is a Canvas', async () => {
     const wrapper = mount(NewProjectForm)
 
-    await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)
+    await chooseBead(wrapper, BEAD_CATALOG[1]!.id)
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')).toEqual([
@@ -108,7 +108,7 @@ describe('NewProjectForm', () => {
   it('shows the selected bead label as the name placeholder', async () => {
     const wrapper = mount(NewProjectForm)
 
-    await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)
+    await chooseBead(wrapper, BEAD_CATALOG[1]!.id)
 
     expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe(
       beadLabel(BEAD_CATALOG[1]!, ru.formFactors),
@@ -198,7 +198,7 @@ describe('NewProjectForm draft (ticket 58)', () => {
     const wrapper = mount(NewProjectForm)
 
     await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
-    await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[2]!.id)
+    await chooseBead(wrapper, BEAD_CATALOG[2]!.id)
 
     expect(wrapper.emitted('draft')!.at(-1)![0]).toEqual({
       name: '',

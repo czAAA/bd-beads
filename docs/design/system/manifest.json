@@ -9,6 +9,7 @@
     "components/BeadBoard/README.md",
     "components/BeadCursor/README.md",
     "components/BeadHover/README.md",
+    "components/BeadPicker/README.md",
     "components/BeadPill/README.md",
     "components/BeadsNeeded/README.md",
     "components/Button/README.md",
@@ -97,6 +98,11 @@
       "name": "BeadHover",
       "group": "States",
       "summary": "How the Pattern answers the pointer: outline or colour preview on hover, and the cursors."
+    },
+    {
+      "name": "BeadPicker",
+      "group": "Forms",
+      "summary": "Chooses a Bead by Brand, then Form factor, then Bead size; collapsed to the current Bead and a hint."
     },
     {
       "name": "BeadPill",

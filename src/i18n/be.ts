@@ -10,6 +10,15 @@ export const be: Translations = {
   form: {
     nameLabel: 'Назва',
     beadLabel: 'Бісерына',
+    beadPicker: {
+      hint: 'Задае памер, вагу і колеры.',
+      change: 'Змяніць',
+      close: 'Закрыць',
+      brand: 'Бренд',
+      formFactor: 'Форма',
+      size: 'Памер бісерыны',
+      choose: 'Выбраць',
+    },
     beadShapeLabel: 'Форма бісерыны',
     beadShapeSymmetric: 'Роўная',
     beadShapeReal: 'Сапраўдная',

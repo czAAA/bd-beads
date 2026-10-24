@@ -10,6 +10,7 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { serializeLibrary } from './domain/projectFile'
 import { mountWithProject } from './testUtils/seedProject'
 import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openPanel, pickColor, pickTool, panelRead } from './testUtils/pill'
+import { chooseBead } from './testUtils/beadPicker'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -21,8 +22,7 @@ beforeEach(() => {
 /** Picks a Bead from the Project panel's Replace bead menu, which opens the sheet for it and leaves it open. */
 async function pickReplacement(wrapper: ReturnType<typeof mount>, beadId: string) {
   await openPanel(wrapper, 'strip-project')
-  await wrapper.get('[data-testid="phone-replace-bead-select"]').trigger('click')
-  await wrapper.get(`[data-testid="phone-replace-bead-${beadId}"]`).trigger('click')
+  await chooseBead(wrapper, beadId, 'replace-bead-picker')
 }
 
 describe('App row progress', () => {
@@ -209,8 +209,10 @@ describe('App replace bead', () => {
     const wrapper = await mountWithProject(15, 30)
     await openPanel(wrapper, 'strip-project')
 
+    await wrapper.get('[data-testid="replace-bead-picker-toggle"]').trigger('click')
+
     expect(wrapper.find('select').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="phone-replace-bead-select"]').element.tagName).toBe('BUTTON')
+    expect(wrapper.get('[data-testid="replace-bead-picker-brand"]').element.tagName).toBe('BUTTON')
   })
 
   it('opens the confirmation with Cancel focused first from the Project panel', async () => {
