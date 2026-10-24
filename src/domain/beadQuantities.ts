@@ -1,4 +1,4 @@
-import type { Bead } from './beads'
+import { gramsPerBead, type Bead } from './beads'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 import type { Palette } from './palette'
@@ -38,8 +38,9 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
 
 // A quantity's Estimated weight in grams (CONTEXT.md): bead count times the Bead's average weight. Derived, never
 // stored; undefined when the Bead has no weight, so a caller hides weights rather than showing zero.
-export function estimatedGrams(count: number, bead: Pick<Bead, 'gramsPerBead'> | undefined): number | undefined {
-  return bead?.gramsPerBead === undefined ? undefined : count * bead.gramsPerBead
+export function estimatedGrams(count: number, bead: Pick<Bead, 'beadsPerKg'> | undefined): number | undefined {
+  const grams = gramsPerBead(bead)
+  return grams === undefined ? undefined : count * grams
 }
 
 /** Grams below this are too small to weigh and read "< 0.01 g" instead. */

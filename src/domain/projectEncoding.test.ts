@@ -5,7 +5,7 @@ import { BUILT_IN_COLORS } from './palette'
 import { createProject, frameGrid, normalizeProject, withFrameGrid, type Grid, type Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 /** A Project of an exact grid size: 1.5mm cubes, so millimetres map one-to-one onto cells at 1.5mm each. */
 function makeProject(columns: number, rows: number): Project {

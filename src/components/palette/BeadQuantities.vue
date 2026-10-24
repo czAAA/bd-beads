@@ -2,6 +2,7 @@
 import { computed, ref, toRaw } from 'vue'
 import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import { listedColorName } from '../../i18n/colorName'
+import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { resolveProjectBead, type Project } from '../../domain/project'
 import { decimalSign, groupThousands } from '../../domain/formatNumber'
@@ -37,10 +38,11 @@ const collapsedHeight = computed(() => (isDesktop.value ? 'var(--panel-body-heig
 
 /** Estimated weight (ticket 155, CONTEXT.md): count × average bead weight, never stored; no weight column if the
  * Bead has none. */
-const gramsPerBead = computed(() => (props.project ? resolveProjectBead(props.project)?.gramsPerBead : undefined))
+const projectBead = computed(() => (props.project ? resolveProjectBead(props.project) : undefined))
+const averageGrams = computed(() => gramsPerBead(projectBead.value))
 
 function weightOf(count: number): string | undefined {
-  const grams = estimatedGrams(count, { gramsPerBead: gramsPerBead.value })
+  const grams = estimatedGrams(count, projectBead.value)
   return grams === undefined ? undefined : formatGrams(grams, t.value.quantities.gramsUnit, locale.value)
 }
 
@@ -48,7 +50,7 @@ function weightOf(count: number): string | undefined {
 // not rounded like formatGrams's total: the catalog's weights sit close together (0.0108g, 0.0091g), so rounding would
 // collapse them and break the header's count × average = total arithmetic.
 const avgWeightLabel = computed(() => {
-  const grams = gramsPerBead.value
+  const grams = averageGrams.value
   return grams === undefined ? undefined : `${String(grams).replace('.', decimalSign(locale.value))}${t.value.quantities.gramsUnit}`
 })
 
@@ -74,16 +76,16 @@ const expanded = ref(false)
     <template v-if="quantities.length > 0" #suffix>
       <span class="bead-quantities__part"
         >· <span data-testid="quantity-total-count">{{ groupThousands(totalCount, locale) }}</span
-        ><template v-if="gramsPerBead !== undefined"
+        ><template v-if="averageGrams !== undefined"
           >×<span data-testid="quantity-avg-weight">{{ avgWeightLabel }}</span
           >≈<span data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</span></template
         ></span
       >
     </template>
 
-    <template v-if="quantities.length > 0 && gramsPerBead !== undefined" #note>
+    <template v-if="quantities.length > 0 && averageGrams !== undefined" #note>
       <AppNote class="bead-quantities__note" data-testid="quantities-weight-note">
-        {{ t.quantities.weightInfo.replace('{grams}', String(gramsPerBead)) }}
+        {{ t.quantities.weightInfo.replace('{grams}', String(averageGrams)) }}
       </AppNote>
     </template>
 
@@ -102,7 +104,7 @@ const expanded = ref(false)
         <tr>
           <th>{{ t.quantities.colorHeading }}</th>
           <th>{{ t.quantities.countHeading }}</th>
-          <th v-if="gramsPerBead !== undefined">{{ t.quantities.weightHeading }}</th>
+          <th v-if="averageGrams !== undefined">{{ t.quantities.weightHeading }}</th>
         </tr>
       </thead>
       <tbody>
@@ -115,7 +117,7 @@ const expanded = ref(false)
             {{ groupThousands(quantity.count, locale) }}
           </td>
           <td
-            v-if="gramsPerBead !== undefined"
+            v-if="averageGrams !== undefined"
             class="bead-quantities__grams"
             :data-testid="`quantity-weight-${quantity.colorId ?? quantity.hex}`"
           >

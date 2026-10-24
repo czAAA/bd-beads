@@ -5,7 +5,7 @@ import { createProject, moveToRow, type Project, frameGrid, withFrameGrid } from
 import { en } from '../../i18n/en'
 import { useProjectLabels } from './useProjectLabels'
 
-const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho-cube-1.5mm')!
+const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho/cube/1.5mm')!
 const base = createProject({ technique: 'loom', beadId: bead.id, name: 'Logo panel', size: { width: 4, height: 3, unit: 'beads' } })
 
 function setup(project: Project | undefined = base) {

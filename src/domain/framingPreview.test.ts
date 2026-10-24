@@ -17,11 +17,9 @@ import { approximatePreviewColors, exactPreviewColors, nearestColorLookup } from
 
 const bead: Bead = {
   id: 'test-cube',
-  brand: 'Test',
-  name: 'Cube',
+  brand: { id: 'test', name: 'Test' },
   size: '1.5mm',
-  formFactor: 'cube',
-  color: null,
+  formFactor: { id: 'cube', nameKey: 'cube', roundness: 0, holes: { count: 1, direction: 'along' } },
   widthMm: 1.5,
   heightMm: 1.5,
 }

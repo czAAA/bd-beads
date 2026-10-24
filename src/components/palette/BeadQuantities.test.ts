@@ -8,7 +8,7 @@ import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 function project(): Project {
   return createProject({

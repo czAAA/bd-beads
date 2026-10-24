@@ -20,7 +20,7 @@ import {
   frameGrid,
 } from './project'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 function makeProject(name = 'Fox'): Project {
   return createProject({

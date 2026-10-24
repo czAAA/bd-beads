@@ -27,7 +27,7 @@ A mode of the Palette in the color popover, entered with the pencil in its head 
 _Avoid_: manage colors, delete mode
 
 **Bead**:
-A catalog entry for a real bead line: brand, name, size and form factor (e.g. Miyuki Delica 11/0), not a color (that is a Bead color), plus its physical footprint in mm (used to convert an mm/cm size into a grid when a Project is created, and to work out an Estimated size — see ticket 01). Width runs along the thread (the bead's length through its hole) and height across it (its diameter), so TOHO Round 11/0 is 1.5 × 2.2mm, not a 2.2mm ball. A Bead may carry a per-bead width correction (mm added to each column for thread and slack, measured rather than published — currently 0.15mm on TOHO Round 11/0), so a column is `widthMm + widthCorrectionMm` wide. Its brand decides the Project's built-in colors (`defaultPalette`, see Palette); changing the Bead moves the Palette with it, in the same Undo step. The bead catalog is a fixed built-in list of three Beads (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0), no longer user-editable — see ADR 0007.
+A catalog entry for a real bead line: a Brand, a Form factor and a Bead size (e.g. Miyuki Delica 11/0), not a color (that is a Bead color), with its own physical footprint in mm (used to convert an mm/cm size into a grid when a Project is created, and to work out an Estimated size — see ticket 01), width correction and beads per kg for that combination (ADR 0072, ticket 533), so nothing about a Bead is derived from its size alone. Width runs along the thread (the bead's length through its hole) and height across it (its diameter), so TOHO Round 11/0 is 1.5 × 2.2mm, not a 2.2mm ball. A Bead may carry a per-bead width correction (mm added to each column for thread and slack, measured rather than published — currently 0.15mm on TOHO Round 11/0), so a column is `widthMm + widthCorrectionMm` wide. Beads per kg is the maker's published figure; grams per bead are derived from it, and a Bead without one shows no Estimated weight. Its id is built from its parts (`miyuki/delica/11-0`), never changed or reused; the three ids from before are read through an alias map, and a Bead that leaves the catalog stays in it, flagged retired. Its Brand decides the Project's built-in colors (`defaultPalette`, see Palette); changing the Bead moves the Palette with it, in the same Undo step. The catalog is a fixed built-in list of three Beads (TOHO Cube 1.5mm, TOHO Round 11/0, Miyuki Delica 11/0), grown by adding data — see ADR 0007 and ADR 0072.
 _Avoid_: seed bead type, item
 
 **Bead color**:
@@ -39,8 +39,14 @@ Every Bead color of every Bead line, offered for building a Palette; inside a Pr
 _Avoid_: color library, swatch catalog
 
 **Form factor**:
-The physical shape of a bead (e.g. round, cylinder/Delica, cube). In a Real Bead shape it decides the outline of a project cell.
+The shape of a family of Beads (e.g. round, Delica, cube), a lookup row that carries its outline and its number and direction of holes, so a new shape is data, not code (ADR 0072). Its name is a translation. In a Real Bead shape it decides the outline of a project cell.
 _Avoid_: bead outline
+**Brand**:
+The maker of a Bead (TOHO, Miyuki), a lookup row with a literal name. It decides the Project's built-in colors and, later, the Color catalog. Not the app's Wordmark.
+_Avoid_: manufacturer, make
+**Bead size**:
+A Bead's size as its maker states it (11/0, 1.5mm), a literal. It is part of the Bead's id and says nothing by itself about the footprint: 11/0 is 1.6mm for Delica, 2.0mm for Miyuki Round and 2.2mm for TOHO Round.
+_Avoid_: bead number, gauge
 
 **Bead shape**: a Project setting, Symmetric or Real, chosen in the New Project form and the Project panel and saved with the file (older files and Templates read as Symmetric). Symmetric draws square cells, as before. Real draws each cell with the Bead's real proportions (width along the thread, height across it) and an outline from its Form factor: a rounded rectangle, so a Delica reads as a cylinder seen from the side. Applies to both layers, since a Project has one Bead. Grid positions, sizes counted in beads and Beads needed are the same in both.
 _Avoid_: cell shape

@@ -162,6 +162,7 @@ export const be: Translations = {
   languageSwitcher: {
     ariaLabel: 'Мова інтэрфейсу',
   },
+  formFactors: { cube: 'Куб', round: 'Круглы', delica: 'Delica' },
   projects: {
     heading: 'Захаваныя праекты',
     newProjectButton: 'Новы праект',

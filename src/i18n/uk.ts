@@ -161,6 +161,7 @@ export const uk: Translations = {
   languageSwitcher: {
     ariaLabel: 'Мова інтерфейсу',
   },
+  formFactors: { cube: 'Куб', round: 'Круглий', delica: 'Delica' },
   projects: {
     heading: 'Збережені проєкти',
     newProjectButton: 'Новий проєкт',
