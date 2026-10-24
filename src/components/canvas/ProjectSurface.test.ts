@@ -1150,8 +1150,8 @@ describe('ProjectSurface', () => {
 
         const pointer = drawn(wrapper)
         expect(pointer.exists(), tool).toBe(true)
-        expect(pointer.attributes('style')).toContain(`left: ${105 - x}px`)
-        expect(pointer.attributes('style')).toContain(`top: ${47 - y}px`)
+        expect(pointer.attributes('style')).toContain(`left: ${105 - x - 2}px`)
+        expect(pointer.attributes('style')).toContain(`top: ${47 - y - 2}px`)
         expect(svgOf(pointer.attributes('src')!)).toContain(tool === 'paint' || tool === 'fill' ? 'fill="#e63746"' : '<svg')
       }
     })
@@ -1194,7 +1194,7 @@ describe('ProjectSurface', () => {
       await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
 
       const pointer = drawn(wrapper)
-      expect(pointer.attributes('style')).toContain(`left: ${105 - 11}px`)
+      expect(pointer.attributes('style')).toContain(`left: ${105 - 11 - 2}px`)
       expect(svgOf(pointer.attributes('src')!)).not.toContain('#e63746')
     })
 
@@ -1202,8 +1202,8 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', picking: true, inputMode: 'pen' })
       await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
 
-      expect(drawn(wrapper).attributes('style')).toContain(`left: ${105 - 6}px`)
-      expect(drawn(wrapper).attributes('style')).toContain(`top: ${47 - 25}px`)
+      expect(drawn(wrapper).attributes('style')).toContain(`left: ${105 - 6 - 2}px`)
+      expect(drawn(wrapper).attributes('style')).toContain(`top: ${47 - 25 - 2}px`)
     })
 
     it('shows nothing over the Frame\'s margin, in Set Frame, or while Space holds the pointer back', async () => {
