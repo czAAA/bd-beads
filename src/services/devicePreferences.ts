@@ -2,7 +2,6 @@ import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } f
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
 import { type InputMode } from '../domain/inputMode'
-import type { PositionMarkStyle } from '../rendering/positionMarks'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
@@ -46,13 +45,6 @@ export const PREFERENCES = {
       return Number.isInteger(choice) && choice >= 1 && choice <= CANVAS_BACKGROUND_MAX ? choice : undefined
     },
     write: String,
-  }),
-  /** How the Canvas draws its Position marks (ticket 348): Dots until Squares is chosen. Never saved with a Project. */
-  positionMarks: preference<PositionMarkStyle>({
-    key: 'openbeads:position-marks',
-    fallback: 'dots',
-    parse: (raw) => (raw === 'dots' || raw === 'squares' ? raw : undefined),
-    write: (style) => (style === 'dots' ? null : style),
   }),
   // The input mode the person chose (ticket 325): Pen mode or Mouse mode; unset until they choose (ticket 326), so a
   // pen can pick Pen mode.

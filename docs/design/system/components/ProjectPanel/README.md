@@ -25,8 +25,7 @@ The Frame's Edit, Fit and Remove are not here (Fit and Remove stay on the Progre
 ## Canvas
 
 - **Background color:** the five light or six dark Canvas colors as 28px round swatches, 8px apart, the chosen one ringed with `ring` and a 2px gap in the panel's fill; each swatch's accessible name is "{name}, {n} of {c}" (CanvasBackground card). `role="radiogroup"`.
-- **Position marks:** a row with the label and Dots | Squares.
-- **In high contrast** the canvas is fixed white, so the swatches are replaced by one `body` line, "The canvas stays white in high contrast.", and only Position marks remains. The Canvas color button no longer exists on the strip.
+- **In high contrast** the canvas is fixed white, so the swatches are replaced by one `body` line, "The canvas stays white in high contrast.". The Canvas color button no longer exists on the strip.
 
 ## Name on exports (a pencil row)
 
@@ -50,6 +49,6 @@ Per Project, not per device (ADR 0060). It is the only place the Maker's name is
 
 ## Copy
 
-English: Project, Rename, Save Project, Export, PNG, PDF, Project file, Name on exports, Your name, Duplicate, Delete this Project, Delete Project, Technique, Bead, Replace bead, Canvas, Position marks, Dots, Squares. Russian: `writing.md`.
+English: Project, Rename, Save Project, Export, PNG, PDF, Project file, Name on exports, Your name, Duplicate, Delete this Project, Delete Project, Technique, Bead, Replace bead, Canvas. Russian: `writing.md`.
 
 Hand-written from spec 0440 and the Menu and Project mockups; static rendition.

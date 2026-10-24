@@ -48,13 +48,12 @@ describe('App shell, the Tool pill layout (tickets 383, 439, ADR 0046, ADR 0059)
     expect(wrapper.find('[data-testid="zoom-pill"]').exists()).toBe(false)
   })
 
-  it('has no Canvas color button: the swatches and Position marks are in Project (ticket 443)', async () => {
+  it('has no Canvas color button: the swatches are in Project (ticket 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
     expect(wrapper.find('[data-testid="canvas-color-button"]').exists()).toBe(false)
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
     const sheet = wrapper.get('[data-testid="panel-dropdown"]')
     expect(sheet.find('[data-testid="canvas-color-picker"]').exists()).toBe(true)
-    expect(sheet.find('[data-testid="position-marks"]').exists()).toBe(true)
   })
 })
 

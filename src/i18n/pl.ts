@@ -204,7 +204,6 @@ export const pl: Translations = {
       label: 'Kolor płótna',
       pickerLabel: 'kolor płótna',
       swatchLabel: '{name}, {n} z {count}',
-      positionMarks: { label: 'Znaczniki pozycji', dots: 'Kropki', squares: 'Kwadraty', dotsBody: 'Kropka na każdej pustej pozycji.', squaresBody: 'Obrys wokół każdej pustej pozycji.' },
       names: { studio: 'Pracownia', linen: 'Len', sage: 'Szałwia', mist: 'Mgła', blush: 'Rumieniec', night: 'Noc', ink: 'Atrament', midnight: 'Północ', olive: 'Oliwka', umber: 'Umbra', ash: 'Popiół' },
     },
     hint: {

@@ -387,15 +387,13 @@ describe('Project', () => {
     expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
   })
 
-  it('holds the Canvas color and Position marks, which left the strip, and has no Frame Edit, Fit or Remove', async () => {
+  it('holds the Canvas color, which left the strip, and has no Frame Edit, Fit or Remove', async () => {
     const wrapper = mountApp()
     expect(wrapper.find('[data-testid="canvas-color-button"]').exists()).toBe(false)
     await openPanel(wrapper, 'strip-project')
 
     await wrapper.get('[data-testid="canvas-color-linen"]').trigger('click')
     expect(localStorage.getItem('openbeads:canvas-background')).toBe('2')
-    await wrapper.get('[data-testid="position-marks"] [data-value="squares"]').trigger('click')
-    expect(localStorage.getItem('openbeads:position-marks')).toBe('squares')
     for (const gone of ['frame-edit', 'frame-fit', 'frame-remove']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
   })
 

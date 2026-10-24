@@ -113,13 +113,12 @@ describe('ProjectPanel (ticket 443)', () => {
     expect(wrapper.emitted('rename')).toBeUndefined()
   })
 
-  it('in high contrast keeps only the Position marks of the Canvas section', async () => {
+  it('in high contrast replaces the swatches of the Canvas section with a line', async () => {
     document.documentElement.dataset.theme = 'contrast'
     try {
       await new Promise((resolve) => setTimeout(resolve))
       const wrapper = mountPanel()
       expect(wrapper.get('[data-testid="canvas-stays-white"]').text()).toBe(en.panels.project.whiteInContrast)
-      expect(wrapper.find('[data-testid="position-marks"]').exists()).toBe(true)
     } finally {
       document.documentElement.dataset.theme = 'light'
     }

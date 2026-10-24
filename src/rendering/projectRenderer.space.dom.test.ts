@@ -158,14 +158,15 @@ describe('brick stitch inside a Frame', () => {
 })
 
 describe('the Frame margin on the Canvas (ticket 276)', () => {
-  it('fills no marks in the margin or the Frame, leaving a flat gap, and runs them right up to the margin', () => {
+  it('fills no marks in the margin outside the Frame, leaving a flat gap, and runs them right up to the margin', () => {
     const project = framedProject('loom')
     const { named } = render({ ...project, frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 500, height: 500 } })
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)
     // The Frame is rows 10 to 13 and columns 10 to 12; its margin is 6 round it, rows 4 to 19 and columns 4 to 18: x 80 to 380, y 80 to 400 (the marks' own edge sits 5 in from it).
-    const touchesMargin = fills.filter(({ left, right, top, bottom }) => left < 385 && right > 85 && top < 400 && bottom > 80)
+    // The one fill over the Frame itself (its cells' outlines, ticket 458) is the Frame's own columns, 200 to 260, half a gap out.
+    const touchesMargin = fills.filter(({ left, right, top, bottom }) => left < 385 && right > 85 && top < 400 && bottom > 80 && !(left === 199.5 && right === 260.5))
     expect(touchesMargin).toEqual([])
     expect(fills.some(({ right, top, bottom }) => right === 85 && top < 400 && bottom > 80)).toBe(true)
   })
@@ -207,51 +208,42 @@ describe('Position marks cost one pattern fill, however far out', () => {
   })
 })
 
-describe('Position marks tile styles', () => {
-  function tileCalls(style: 'dots' | 'squares', technique: Technique) {
+describe('Position marks tile', () => {
+  function tileCalls(technique: Technique) {
     const tile = recordingContext()
-    // A tile is made on a canvas of its own (one per style and Technique): hand it the one that records.
+    // A tile is made on a canvas of its own (one per Technique): hand it the one that records.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(tile.context as unknown as CanvasRenderingContext2D)
     const project = { ...framedProject(technique), frame: undefined }
     const { context } = recordingContext()
-    renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.5 + (style === 'squares' ? 0.01 : 0), positionMarks: style })
+    renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51 })
     return tile
   }
 
-  it('draws dots as arcs and no outlines', () => {
-    const { named } = tileCalls('dots', 'loom')
-    expect(named('arc').length).toBeGreaterThan(0)
-    expect(named('stroke')).toHaveLength(0)
-  })
-
   it('draws squares as outlines with the Technique\'s corner radius and no arcs', () => {
-    const loom = tileCalls('squares', 'loom')
+    const loom = tileCalls('loom')
     expect(loom.named('arc')).toHaveLength(0)
     expect(loom.named('stroke').length).toBeGreaterThan(0)
     // Loom beads are square: the corner arcs have no radius.
     expect(loom.named('arcTo').every((call) => call.args[4] === 0)).toBe(true)
 
-    const peyote = tileCalls('squares', 'peyote')
+    const peyote = tileCalls('peyote')
     expect(peyote.named('arcTo').some((call) => (call.args[4] as number) > 0)).toBe(true)
   })
 
   it('draws one shared 1px line on each cell\'s edge, and clears the bead inside it', () => {
-    // A technique of its own, as a tile is kept per style and Technique.
-    const { named } = tileCalls('squares', 'brick')
+    // A technique of its own, as a tile is kept per Technique.
+    const { named } = tileCalls('brick')
     // The outline sits on the cell's edge (a neighbour's is the same line), the clearing is the bead, half a gap in.
     const rights = named('arcTo').map((call) => call.args[0] as number)
     expect(rights).toContain(CELL_SIZE_PX)
     expect(rights).toContain(CELL_SIZE_PX - BEAD_GAP_PX / 2)
   })
 
-  it('fills the marks over the Frame\'s own positions too in Squares, not in Dots', () => {
-    function fills(style: 'dots' | 'squares') {
-      const { context, named } = recordingContext()
-      const project = framedProject('loom')
-      renderProject(context, { project, space: spaceOf(project, true), region: { x: -1000, y: -1000, width: 2000, height: 2000 }, zoom: 1, positionMarks: style })
-      return named('fillRect').length
-    }
-    expect(fills('squares')).toBeGreaterThan(fills('dots'))
+  it('fills the marks over the Frame\'s own positions too', () => {
+    const project = framedProject('loom')
+    const { named } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
+    // Four strips round the margin's box, and a fifth over the Frame itself.
+    expect(markFills(named)).toHaveLength(5)
   })
 
   it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {

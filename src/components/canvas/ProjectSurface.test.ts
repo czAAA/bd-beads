@@ -144,8 +144,8 @@ describe('ProjectSurface', () => {
       await nextTick()
 
       expect(draws()).toBe(1)
-      // The empty positions outside the Frame are dots in the dark theme's own color.
-      expect(context.named('fill').some((call) => call.fillStyle === DARK_THEME.positionMark)).toBe(true)
+      // The empty positions outside the Frame are outlined in the dark theme's own color.
+      expect(context.named('stroke').some((call) => call.strokeStyle === DARK_THEME.positionMark)).toBe(true)
       expect([canvas.width, canvas.height]).toEqual(size)
     } finally {
       document.documentElement.dataset.theme = 'light'

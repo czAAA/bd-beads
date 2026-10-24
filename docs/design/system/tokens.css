@@ -51,7 +51,7 @@
   --canvas-bg-6: #fafafa;
   --bead-rim: rgba(20,20,19,.12); /* Faint 0.75px rim drawn just inside each bead's edge, so two beads of one color stay apart: a dark tint in light and high contrast, a white tint in dark (and, in light, on a near-black bead). */
   --bead-empty: #d8d2cc; /* An empty bead position on the board (Derived). */
-  --position-mark: #d8d2cc;  /* A Position mark on the open canvas: the dot, or the outline of the square, at an empty position outside the Frame (starts from bead-empty). */
+  --position-mark: #d8d2cc;  /* A Position mark on the open canvas: the outline of the square at an empty position outside the Frame (starts from bead-empty). */
   --bead-outline: #1f1f1f; /* Hover outline when no color is chosen. */
   --elevation-1: 0 4px 12px rgba(0,0,0,.04); /* Card: save box, Beads needed, Saved Patterns. Dark uses surface steps instead. */
   --elevation-2: 0 12px 24px -4px rgba(0,0,0,.08); /* The canvas box. */
