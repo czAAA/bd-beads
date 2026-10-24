@@ -618,7 +618,6 @@ export const es: Translations = {
     fitToDrawing: 'Ajusta el marco a todas las cuentas.',
     noBeadsToFit: 'No hay cuentas a las que ajustar.',
     zoomFit: 'Haz zoom para ver todo.',
-    canvasColor: 'Elige el color de fondo.',
     colors: 'Prepara los colores con los que pintar.',
     newProject: 'Emtrozo un lienzo vacío.',
     importFile: 'Abre un proyecto desde un archivo.',

@@ -29,7 +29,7 @@ describe('DrawnLayer', () => {
 
   describe('how many there are per band (ticket 290)', () => {
     const total = (tier: Tier, kind: 'marks' | 'doodles') =>
-      SECTIONS.reduce((n, s) => n + LAYERS[s][kind][tier].length, 0)
+      SECTIONS.reduce((n, s) => n + LAYERS[s][kind][tier].filter((p) => p.side !== 'center').length, 0)
 
     it('keeps the laptop and desktop bands as they were', () => {
       for (const tier of ['xl', 'xxl'] as const) {
@@ -55,14 +55,14 @@ describe('DrawnLayer', () => {
   it('sits the drawings a fixed gap of 24-48px outside the column where the wide bands have room', () => {
     for (const section of SECTIONS)
       for (const tier of ['xl', 'xxl'] as const)
-        for (const d of LAYERS[section].doodles[tier].filter((d) => !d.big)) {
+        for (const d of LAYERS[section].doodles[tier].filter((d) => !d.big && d.side !== 'center')) {
           // A few small ones tuck into blank space beside the hero's text instead.
           if (d.gap < 0) continue
           expect(d.gap).toBeGreaterThanOrEqual(8)
           expect(d.gap).toBeLessThanOrEqual(48)
         }
     const outside = (tier: Tier) =>
-      SECTIONS.flatMap((s) => LAYERS[s].doodles[tier]).filter((d) => d.gap >= 24 && d.gap <= 48).length
+      SECTIONS.flatMap((s) => LAYERS[s].doodles[tier]).filter((d) => d.side !== 'center' && d.gap >= 24 && d.gap <= 48).length
     expect(outside('xl')).toBeGreaterThanOrEqual(18)
     expect(outside('xxl')).toBeGreaterThanOrEqual(18)
   })
@@ -85,6 +85,26 @@ describe('DrawnLayer', () => {
       .filter((d) => d.classes().includes('drawn__doodle--big'))
     expect(big.length).toBeGreaterThan(0)
     expect(big.every((d) => !d.classes().includes('drawn__tier--sm'))).toBe(true)
+  })
+
+  describe('across the whole page (ticket 540)', () => {
+    const centred = (tier: Tier) => SECTIONS.flatMap((s) => [...LAYERS[s].doodles[tier], ...LAYERS[s].marks[tier]]).filter((p) => p.side === 'center')
+
+    it('has placements in the gaps between the edges at every band', () => {
+      for (const tier of TIERS) expect(centred(tier).length).toBeGreaterThan(0)
+    })
+
+    it('measures a centred placement from the middle of the section, not from the column', () => {
+      const tier = TIERS.find((t) => LAYERS.plans.doodles[t].some((d) => d.side === 'center'))!
+      const placed = LAYERS.plans.doodles[tier].find((d) => d.side === 'center')!
+      const style = mount(DrawnLayer, { props: { section: 'plans' } })
+        .findAll('[data-testid="overview-drawn-doodle"]')
+        .find((d) => d.classes().includes(`drawn__tier--${tier}`) && d.attributes('style')!.includes(`calc(50% + ${placed.gap}px)`))!
+        .attributes('style')!
+        .replace(/\s/g, '')
+      expect(style).toContain(`left:calc(50%+${placed.gap}px);top:${placed.top}px`)
+      expect(style).not.toContain('--col')
+    })
   })
 
   it('colours the beads from the Palette and the accent/muted tokens only', () => {

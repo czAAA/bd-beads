@@ -121,7 +121,7 @@ const steam = [
   margin: 0;
   font: var(--type-serif-heading);
   /* Eases down on the narrowest phones so the title keeps to one line (ticket 246). */
-  font-size: clamp(1.625rem, 8vw, 1.875rem);
+  font-size: clamp(1.625rem, 8cqw, 1.875rem);
   line-height: 2.125rem;
   letter-spacing: var(--tracking-serif-heading);
   color: var(--ink);

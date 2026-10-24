@@ -228,8 +228,8 @@ const drawingStyle = computed(() => {
       data-testid="app-canvas"
     >
       <!--
-        The canvas box's header strip (ticket 143, ADR 0055): the canvas controls (Rulers, Undo, Redo, zoom, Fit) and
-        Canvas color. While a picture is being framed (ticket 58) its zoom is the framing step's own, over its own
+        The canvas box's header strip (ticket 143, ADR 0055, 0073): Menu, the Brand and the canvas controls (Rulers, Undo,
+        Redo, zoom, Fit). While a picture is being framed (ticket 58) its zoom is the framing step's own, over its own
         100–800% range (domain/imageFraming), since that zoom moves the picture under a fixed frame rather than
         scaling the Project on screen. The strip never scrolls, zooms or rotates with the Project below it.
       -->

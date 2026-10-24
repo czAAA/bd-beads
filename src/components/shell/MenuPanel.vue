@@ -18,14 +18,21 @@ import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 
 // The body of Menu (spec 0440, ticket 443; MenuPanel card): what is about the app and the device, in four sections
-// (Projects, Preferences, Help, About). It only asks: the app shell does the work.
-defineProps<{
-  projects: Project[]
-  toolsPosition: PillPosition
-  inputMode: InputMode
-  /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
-  penSeen: boolean
-}>()
+// (Projects, Preferences, Help, About). It only asks: the app shell does the work. On the Overview (ticket 540, ADR 0073)
+// the same panel shows its Overview item as the current page and leaves out what belongs to the editor.
+const props = withDefaults(
+  defineProps<{
+    /** The page the panel is opened on. */
+    page?: 'editor' | 'overview'
+    projects?: Project[]
+    toolsPosition?: PillPosition
+    inputMode?: InputMode
+    /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
+    penSeen?: boolean
+  }>(),
+  { page: 'editor', projects: () => [], toolsPosition: 'left', inputMode: 'mouse', penSeen: false },
+)
+const inEditor = computed(() => props.page === 'editor')
 const emit = defineEmits<{
   import: [projects: Project[]]
   'export-all': []
@@ -67,7 +74,7 @@ const inputOptions = computed(() => [
 
 <template>
   <div class="menu-panel" data-testid="menu-panel">
-    <PanelSection :label="t.panels.menu.projects">
+    <PanelSection v-if="inEditor" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
       <PanelItem icon="plus" accent stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
       <!-- Import keeps the panel open after the file is read and shows the result inline (ticket 523). -->
@@ -110,6 +117,7 @@ const inputOptions = computed(() => [
         <ThemeToggle />
       </div>
       <SettingChoice
+        v-if="inEditor"
         :model-value="toolsPosition"
         :label="t.toolPill.position"
         icon="grid"
@@ -118,7 +126,7 @@ const inputOptions = computed(() => [
         @update:model-value="emit('update:toolsPosition', $event)"
       />
       <SettingChoice
-        v-if="penSeen"
+        v-if="inEditor && penSeen"
         :model-value="inputMode"
         :label="t.panels.menu.input"
         icon="pen-mode"
@@ -130,8 +138,8 @@ const inputOptions = computed(() => [
     </PanelSection>
 
     <PanelSection :label="t.panels.menu.help">
-      <PanelItem icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
-      <PanelItem icon="bead" :href="overviewHref" data-testid="menu-item-overview">{{ t.header.overviewItem }}</PanelItem>
+      <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
+      <PanelItem icon="bead" :href="overviewHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-overview">{{ t.header.overviewItem }}</PanelItem>
     </PanelSection>
 
     <PanelSection :label="t.panels.menu.about">

@@ -1,20 +1,28 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import OverviewPage from './OverviewPage.vue'
-import { fakeMatchMedia } from '../testUtils/fakeMatchMedia'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
 
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
 
 function page(projectCount = 0) {
-  return mount(OverviewPage, { props: { projectCount, overviewHref: '/bd-beads/overview/' } })
+  return mount(OverviewPage, { props: { projectCount }, attachTo: document.body })
 }
 
-afterEach(() => vi.unstubAllGlobals())
+/** The page's width as the carousel's tier reads it before the first resize report. */
+function setScreenWidth(width: number) {
+  Object.defineProperty(window, 'innerWidth', { configurable: true, value: width })
+}
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+  document.body.innerHTML = ''
+})
 
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
+  setScreenWidth(600)
 })
 
 describe('OverviewPage', () => {
@@ -69,37 +77,92 @@ describe('OverviewPage', () => {
     })
   })
 
-  it('has the header menu, Language and Theme but no Keyboard shortcuts', () => {
+  it('is a canvas box: the Canvas strip on top, the content between, an empty Canvas footer below, and no header of its own', () => {
     const wrapper = page()
-    expect(wrapper.find('[data-testid="header-menu"]').exists()).toBe(true)
+    const box = wrapper.get('[data-testid="overview"]')
+    expect(box.element.children[0]).toBe(wrapper.get('[data-testid="canvas-strip"]').element)
+    expect(box.get('[data-testid="overview-scroll"]').find('[data-testid="overview-slogan"]').exists()).toBe(true)
+    expect(box.element.lastElementChild).toBe(wrapper.get('[data-testid="canvas-footer"]').element)
+    expect(wrapper.get('[data-testid="canvas-footer"]').text()).toBe('')
+    expect(wrapper.find('.overview__header').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="header-menu"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="theme-toggle"]').exists()).toBe(false)
+  })
+
+  it('has the strip with Menu, the Brand as the current page, and the zoom, but no Project controls', () => {
+    const wrapper = page()
+    expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="strip-undo"]').exists()).toBe(false)
+    const brand = wrapper.get('[data-testid="canvas-brand"]')
+    expect(brand.text()).toBe('openbeads')
+    expect(brand.attributes('aria-current')).toBe('page')
+    expect(brand.attributes('href')).toBeUndefined()
+    expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('100%')
+  })
+
+  it('opens the editor\'s Menu panel from the strip, with Language and Theme and Overview as the current page', async () => {
+    const wrapper = page()
+    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
+
+    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
     expect(wrapper.find('[role="radiogroup"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="shortcuts-button"]').exists()).toBe(false)
-  })
-
-  it('marks Overview as the current page in the header menu', async () => {
-    const wrapper = page()
-    await wrapper.find('[data-testid="header-menu"]').trigger('click')
-    const item = wrapper.find('[data-testid="menu-item-overview"]')
+    expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
+    const item = wrapper.get('[data-testid="menu-item-overview"]')
     expect(item.attributes('aria-current')).toBe('page')
-    expect(item.attributes('href')).toBe('/bd-beads/overview/')
+    expect(item.attributes('href')).toContain('overview/')
   })
 
-  it('has a header menu that announces whether it is open and lists its items in its Tooltip', async () => {
+  it('switches to Russian with the language switcher in the Menu, and remembers it', async () => {
     const wrapper = page()
-    const button = wrapper.find('[data-testid="header-menu"]')
-    expect(button.attributes('aria-expanded')).toBe('false')
-    expect(wrapper.text()).toContain('Overview.')
-    await button.trigger('click')
-    expect(button.attributes('aria-expanded')).toBe('true')
-  })
-
-  it('switches to Russian with the language switcher, and remembers it', async () => {
-    const wrapper = page()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="overview-make-first"]').text()).toBe('Сделать первый проект')
     expect(wrapper.find('[data-testid="feature-carousel"]').text()).toContain('Техники плетения')
     expect(localStorage.getItem('openbeads:locale')).toBe('ru')
+  })
+
+  describe('zoom', () => {
+    const zoomOf = (wrapper: ReturnType<typeof page>) => (wrapper.get('.overview__page').element as HTMLElement).style.zoom
+
+    it('scales the content from 75% to 200% in 10% steps with the buttons, and Fit resets it', async () => {
+      const wrapper = page()
+      await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('110%')
+      expect(zoomOf(wrapper)).toBe('1.1')
+
+      for (let i = 0; i < 20; i++) await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('200%')
+      expect(wrapper.get('[data-testid="zoom-in"]').attributes('aria-disabled')).toBeDefined()
+
+      await wrapper.get('[data-testid="zoom-reset"]').trigger('click')
+      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('100%')
+
+      for (let i = 0; i < 6; i++) await wrapper.get('[data-testid="zoom-out"]').trigger('click')
+      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('75%')
+      expect(wrapper.get('[data-testid="zoom-out"]').attributes('aria-disabled')).toBeDefined()
+    })
+
+    it('is remembered on the device', async () => {
+      const first = page()
+      await first.get('[data-testid="zoom-in"]').trigger('click')
+      first.unmount()
+
+      expect(page().get('[data-testid="zoom-level"]').text()).toBe('110%')
+    })
+
+    it('decides the carousel\'s tier from the zoomed width, not the screen\'s', async () => {
+      setScreenWidth(1200)
+      const wrapper = page()
+      expect(wrapper.find('[role="tablist"]').exists()).toBe(true)
+
+      for (let i = 0; i < 3; i++) await wrapper.get('[data-testid="zoom-in"]').trigger('click')
+      expect(wrapper.find('[role="tablist"]').exists()).toBe(false)
+    })
   })
 
   it('starts in English on a device with no saved language', () => {
@@ -109,10 +172,9 @@ describe('OverviewPage', () => {
 })
 
 describe('the features carousel', () => {
-  const wideQuery = '(min-width: 1024px)'
   const mountWide = () => {
-    vi.stubGlobal('matchMedia', fakeMatchMedia({ [wideQuery]: true }).matchMedia)
-    return mount(OverviewPage, { props: { projectCount: 0, overviewHref: '/' }, attachTo: document.body })
+    setScreenWidth(1200)
+    return mount(OverviewPage, { props: { projectCount: 0 }, attachTo: document.body })
   }
 
   it('is a named tablist of the seven features in order, each with an icon, and no Mirror (from 1024)', () => {
@@ -172,6 +234,7 @@ describe('the features carousel', () => {
 
   it('has the Russian arrow labels', async () => {
     const wrapper = page()
+    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await chooseLanguage(wrapper, 'ru')
     expect(wrapper.find('[data-testid="feature-prev"]').attributes('aria-label')).toBe('Предыдущая возможность')
     expect(wrapper.find('[data-testid="feature-next"]').attributes('aria-label')).toBe('Следующая возможность')

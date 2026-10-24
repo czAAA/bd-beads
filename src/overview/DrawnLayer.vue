@@ -26,6 +26,7 @@ function shape(d: Doodle) {
 }
 
 function position(p: Placement): string {
+  if (p.side === 'center') return `left:calc(50% + ${p.gap}px);top:${p.top}px`
   const from = p.side === 'left' ? 'right' : 'left'
   return `${from}:calc(50% + var(--col) + ${p.gap}px);top:${p.top}px`
 }
@@ -85,8 +86,8 @@ const doodles = computed(() =>
   left: 50%;
   /* Half the main column's content width: the page minus its padding, up to the column's maximum. */
   --col: calc(50cqw - var(--space-16));
-  width: 100vw;
-  margin-left: -50vw;
+  width: 100cqw;
+  margin-left: -50cqw;
   z-index: -1;
   overflow: clip;
   pointer-events: none;
@@ -116,6 +117,13 @@ const doodles = computed(() =>
   opacity: 0.16;
 }
 
+/* Narrower than any phone the layout is made for (a phone zoomed in), the drawings would only crowd the text. */
+@container overview (max-width: 329px) {
+  .drawn {
+    display: none;
+  }
+}
+
 /* Each placement belongs to one screen-size band: under 744, 744, 1024, 1440, 1920. */
 .drawn__tier--md,
 .drawn__tier--lg,
@@ -124,7 +132,7 @@ const doodles = computed(() =>
   display: none;
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .drawn {
     --col: calc(50cqw - var(--space-24));
   }
@@ -136,7 +144,7 @@ const doodles = computed(() =>
   }
 }
 
-@media (min-width: 1024px) {
+@container overview (min-width: 1024px) {
   .drawn {
     --col: min(50cqw - var(--space-32), 33.75rem - var(--space-32));
   }
@@ -148,7 +156,7 @@ const doodles = computed(() =>
   }
 }
 
-@media (min-width: 1440px) {
+@container overview (min-width: 1440px) {
   .drawn__tier--lg {
     display: none;
   }
@@ -157,7 +165,7 @@ const doodles = computed(() =>
   }
 }
 
-@media (min-width: 1920px) {
+@container overview (min-width: 1920px) {
   .drawn {
     --col: min(50cqw - 2.5rem, 37.5rem - 2.5rem);
   }

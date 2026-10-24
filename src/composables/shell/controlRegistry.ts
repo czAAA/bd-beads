@@ -514,7 +514,6 @@ export const CONTROLS: readonly ControlAction[] = [
   }),
   unkeyed('position-marks-dots', (t) => t.canvas.canvasColor.positionMarks.dots, 'canvas', { icon: 'position-dots', body: (t) => t.canvas.canvasColor.positionMarks.dotsBody }),
   unkeyed('position-marks-squares', (t) => t.canvas.canvasColor.positionMarks.squares, 'canvas', { icon: 'position-squares', body: (t) => t.canvas.canvasColor.positionMarks.squaresBody }),
-  unkeyed('canvas-color', (t) => t.canvas.canvasColor.label, 'canvas', { body: (t) => t.tooltips.canvasColor }),
   unkeyed('clear', (t) => t.deleteAll.button, 'edit', { icon: 'delete', body: (t) => t.tooltips.clear }),
   unkeyed('custom-color', (t) => t.palette.customColorLabel, 'colors', { body: (t) => t.tooltips.customColor }),
   unkeyed('pick-color', (t) => t.palette.pickFromCanvasLabel, 'colors', {
