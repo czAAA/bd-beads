@@ -7,7 +7,7 @@ A titled set of related controls — Tools (Paint, Fill, Select, Piece, Eraser, 
 _Avoid_: subbox, card, section, panel
 
 **Tool pill layout** (formerly **Dock layout**):
-The main layout at every width (ADR 0046, ADR 0059): the canvas box is the screen, flush with every screen edge (the safe-area inset where larger), with the Canvas strip on top, the drawing area and the Progress bar as its footer, and the Tool pill floating over the drawing area; sheets for the controls; no header, no left column. Menu and Project open from the Canvas strip (ticket 431). It is the only layout (ticket 412 removed the Toolbox layout and its flag; ticket 439 removed the Dock).
+The main layout at every width (ADR 0046, ADR 0059): the canvas box is the screen, flush with every screen edge (the safe-area inset where larger), with the Canvas strip on top, the drawing area and the Canvas footer below it, and the Tool pill floating over the drawing area; sheets for the controls; no header, no left column. Menu and Project open from the Canvas strip (ticket 431). It is the only layout (ticket 412 removed the Toolbox layout and its flag; ticket 439 removed the Dock).
 _Avoid_: phone layout, mobile layout, touch layout, Dock layout
 
 **Tool pill** (replaces the retired **Dock**):
@@ -43,8 +43,16 @@ The Project panel: the modal dropdown the Canvas strip's Project button opens (t
 _Avoid_: Project sheet, Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:
-The slim row along the top of the canvas box, at every width (tickets 425, 431, ADR 0055). Left to right: Menu, Project (each an icon and its word; Project only with a Project open), Rotate canvas (spec 0470), the Rulers toggle (`R`), Undo, Redo, zoom out, the zoom level, zoom in, Fit, then the Canvas color picker. It names nothing: no title, size line, printed-size estimate, icon or keyboard hint. On a phone Menu, Project and Canvas color stay in place and the middle scrolls sideways with touch-sized buttons. While a picture is being framed (Convert image) it holds Menu and the framing step's own zoom. It replaced the draggable Zoom pill.
+The slim row along the top of the canvas box, on the editor and on the Overview, at every width (tickets 425, 431, ADR 0055, ADR 0073). One component in both places, in three parts. Left: Menu first (an icon and its word), then, in the editor, Project (only with a Project open), Rotate canvas (spec 0470), the Rulers toggle (`R`), Undo and Redo. Centre: the **Brand**, centred on the strip itself. Right: zoom out, the zoom level, zoom in and Fit. Apart from the Brand it names nothing: no title, size line, printed-size estimate or keyboard hint. Under 1024px the words of Menu and Project and the Brand's wordmark go and only icons stay. On a phone the editor keeps its present strip, the middle scrolling sideways with touch-sized buttons, and no Brand; the Overview's phone strip keeps the Brand's logo. While a picture is being framed (Convert image) it holds Menu, the Brand and the framing step's own zoom. On the Overview the zoom scales the page's content (**Overview zoom**). It replaced the draggable Zoom pill.
 _Avoid_: Zoom pill, Canvas header
+
+**Brand**:
+The logo and the "openbeads" wordmark (in the display serif) as one unit, centred in the Canvas strip on every page. In the editor it opens the Overview; on the Overview it is the current page, so it is not a link. The wordmark hides first when the strip narrows, then the logo.
+_Avoid_: header logo, title, app name
+
+**Canvas footer**:
+The slot along the bottom edge of the canvas box, the same height at every width (ADR 0073). In the editor it holds the Progress bar while a Project is open; on the Overview it is there and empty, so the box looks the same on both pages and nothing jumps.
+_Avoid_: footer bar, bottom bar
 
 **Canvas hint**:
 The one line of shortcuts ("scroll or space drag to move · ⌘ scroll to zoom · 5 Hand · R Rulers") at the top-centre of the drawing area, under the strip (the Tool pill may cover it when docked at the top). Shown only while the Project has no beads and at every size except a phone; it goes with the first bead (ticket 429, ADR 0055).
