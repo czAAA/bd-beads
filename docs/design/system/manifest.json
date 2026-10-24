@@ -9,6 +9,7 @@
     "components/BeadBoard/README.md",
     "components/BeadCursor/README.md",
     "components/BeadHover/README.md",
+    "components/BeadColors/README.md",
     "components/BeadPicker/README.md",
     "components/BeadPill/README.md",
     "components/BeadsNeeded/README.md",
@@ -98,6 +99,11 @@
       "name": "BeadHover",
       "group": "States",
       "summary": "How the Pattern answers the pointer: outline or colour preview on hover, and the cursors."
+    },
+    {
+      "name": "BeadColors",
+      "group": "Forms",
+      "summary": "The Bead's Color catalog as approximate swatches to add to the Palette, in the colour popover."
     },
     {
       "name": "BeadPicker",

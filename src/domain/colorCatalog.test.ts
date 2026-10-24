@@ -21,9 +21,14 @@ describe('parseColorCatalog', () => {
     expect(() => parseColorCatalog(file, 'x')).toThrow(/Color catalog x/)
   })
 
-  it('leaves the photos, hexes and durability out of what it keeps', () => {
-    const catalog = parseColorCatalog({ id: 'x', codes: [{ ...row, hex: '#fff', photo: 'a.jpg', durability: 1 }] }, 'x')
-    expect(Object.keys(catalog.codes[0])).toEqual(['code', 'family', 'finish', 'wording', 'sizes'])
+  it('leaves the photos and durability out of what it keeps', () => {
+    const catalog = parseColorCatalog({ id: 'x', codes: [{ ...row, photo: 'a.jpg', durability: 1 }] }, 'x')
+    expect(Object.keys(catalog.codes[0]!)).toEqual(['code', 'family', 'finish', 'wording', 'sizes'])
+  })
+
+  it('keeps a measured hex, lowercase, and drops one that is not a color', () => {
+    const catalog = parseColorCatalog({ id: 'x', codes: [{ ...row, hex: '#ABCDEF' }, { ...row, code: 'DB2', hex: 'blue' }] }, 'x')
+    expect(catalog.codes.map((code) => code.hex)).toEqual(['#abcdef', undefined])
   })
 })
 

@@ -390,6 +390,25 @@ export interface Translations {
     removeAllConfirmTitle: string
     removeAllConfirmMessage: PluralForms
     removeAllConfirmButton: string
+    /** The Bead's Color catalog, to add a maker's color to the Palette (ticket 0537): `{code}` in a label is the maker's
+     * code, `{count}` in `showingFirst` the number of rows shown. */
+    beadColors: {
+      open: string
+      label: string
+      search: string
+      approximate: string
+      inPalette: string
+      takenNote: string
+      discontinued: string
+      add: string
+      takenLabel: string
+      showingFirst: string
+      noMatch: string
+      loading: string
+      failed: string
+      /** The Finish list shared by every Brand (ADR 0072). */
+      finishes: Record<'transparent' | 'opaque' | 'ceylon' | 'silver-lined' | 'luster' | 'matte' | 'rainbow' | 'metallic' | 'plated', string>
+    }
   }
   tools: {
     paintLabel: string
