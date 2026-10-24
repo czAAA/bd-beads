@@ -9,7 +9,7 @@ import { createProject, type Project, frameGrid } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { serializeLibrary } from './domain/projectFile'
 import { mountWithProject } from './testUtils/seedProject'
-import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openPanel, pickColor, panelRead } from './testUtils/pill'
+import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openPanel, pickColor, pickTool, panelRead } from './testUtils/pill'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
 
@@ -337,7 +337,8 @@ describe('App estimated weight (ticket 155)', () => {
     expect((await panelRead(wrapper, 'quantity-weight-red')).text).toBe('< 0.01 g')
     expect((await panelRead(wrapper, 'quantities-weight-note')).text).toContain('about 0.0091 g')
 
-    await pressBead(wrapper, 0, { button: 2 })
+    await pickTool(wrapper, 'erase')
+    await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
     expect((await panelRead(wrapper, 'quantity-weight-red')).exists).toBe(false)
     expect((await panelRead(wrapper, 'quantities-weight-note')).exists).toBe(false)

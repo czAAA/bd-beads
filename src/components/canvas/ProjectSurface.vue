@@ -86,8 +86,6 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{
   'cell-primary-down': [row: number, column: number, layer?: Layer]
   'cell-primary-move': [row: number, column: number, layer?: Layer]
-  'cell-secondary-down': [row: number, column: number, layer?: Layer]
-  'cell-secondary-move': [row: number, column: number, layer?: Layer]
   'cell-hover': [row: number, column: number, layer?: Layer]
   'hover-end': []
   /** A key pressed while the Project has focus (ticket 159): App.vue moves the bead cursor and uses the tool. */
@@ -755,10 +753,10 @@ function movesCanvas(event: PointerEvent): boolean {
   return props.inputMode !== undefined && !pointerDraws(props.inputMode, event.pointerType)
 }
 
-/** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle button on any tool, or the
- * pointer the input mode keeps for moving. */
+/** A press that moves the canvas instead of drawing: the Hand tool (or Space), the middle or right button on any tool
+ * (ticket 541), or the pointer the input mode keeps for moving. */
 function startsDrag(event: PointerEvent): boolean {
-  return handMoves.value || event.button === 1 || movesCanvas(event)
+  return handMoves.value || event.button === 1 || event.button === 2 || movesCanvas(event)
 }
 
 /** The point of the viewport a pointer is at, in px from its top-left corner. */
@@ -882,23 +880,22 @@ function onPointerDown(event: PointerEvent): void {
   if (!bead) {
     lastBead = undefined
     // A press on empty background still opens the stroke (ticket 504); Fill lands on the nearest bead instead.
-    if (event.button === 0 || event.button === 2) {
+    if (event.button === 0) {
       if (props.nearestOnPress || props.selectAnywhere) {
         const near = cellUnder(event, 'canvas')
-        if (props.selectAnywhere && event.button === 0) {
+        if (props.selectAnywhere) {
           selectDrag = true
           rootEl.value?.setPointerCapture?.(event.pointerId)
         }
-        if (event.button === 0) emit('cell-primary-down', near.row, near.column)
-        else emit('cell-secondary-down', near.row, near.column)
+        emit('cell-primary-down', near.row, near.column)
       } else {
-        stroke = { button: event.button, from: pointInSurface(event), last: undefined }
+        stroke = { from: pointInSurface(event), last: undefined }
       }
     }
     return
   }
-  if (event.button === 0 || event.button === 2) {
-    stroke = { button: event.button, from: pointInSurface(event), last: bead }
+  if (event.button === 0) {
+    stroke = { from: pointInSurface(event), last: bead }
   }
   // A press also lands where the pasted block under the pointer goes (the preview cells).
   if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
@@ -921,14 +918,11 @@ function onPointerDown(event: PointerEvent): void {
       finishedRestored.value = !finishedRestored.value
     }
     emit('cell-primary-down', ...cellArguments(bead))
-  } else if (event.button === 2) {
-    emit('cell-secondary-down', ...cellArguments(bead))
   }
 }
 
-// Reports the hover for the preview, plus a drag move when a button is held: primary continues a paint/fill stroke
-// (ticket 24), secondary an erase (ticket 25). `buttons` is 1 for touch/pen in contact, so one branch covers all three
-// input kinds.
+// Reports the hover for the preview, plus a drag move when the primary button is held, which continues a paint/fill
+// stroke (ticket 24). `buttons` is 1 for touch/pen in contact, so one branch covers all three input kinds.
 function onPointerMove(event: PointerEvent): void {
   if (adjusting.value) {
     emit('selection-drag', cellUnder(event))
@@ -995,7 +989,7 @@ function onPointerMove(event: PointerEvent): void {
 let selectDrag = false
 
 /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
-let stroke: { button: number; from: { x: number; y: number }; last: GridPosition | undefined } | undefined
+let stroke: { from: { x: number; y: number }; last: GridPosition | undefined } | undefined
 
 /** How far apart, in px, a swipe is sampled for beads: finer than the smallest bead on screen. */
 const STROKE_SAMPLE_PX = 2
@@ -1003,7 +997,7 @@ const STROKE_SAMPLE_PX = 2
 /** Reports every bead on the straight line from the stroke's last sample to the pointer, found in position space. */
 function continueStroke(event: PointerEvent): void {
   if (!stroke) return
-  if (!(event.buttons & (stroke.button === 0 ? 1 : 2))) {
+  if (!(event.buttons & 1)) {
     stroke = undefined
     return
   }
@@ -1015,14 +1009,8 @@ function continueStroke(event: PointerEvent): void {
     if (!bead || isSameBead(bead, stroke.last)) continue
     const first = stroke.last === undefined
     stroke.last = bead
-    if (stroke.button === 0) {
-      if (first) emit('cell-primary-down', ...cellArguments(bead))
-      else emit('cell-primary-move', ...cellArguments(bead))
-    } else if (first) {
-      emit('cell-secondary-down', ...cellArguments(bead))
-    } else {
-      emit('cell-secondary-move', ...cellArguments(bead))
-    }
+    if (first) emit('cell-primary-down', ...cellArguments(bead))
+    else emit('cell-primary-move', ...cellArguments(bead))
   }
   stroke.from = to
 }

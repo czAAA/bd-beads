@@ -451,6 +451,36 @@ describe('ProjectSurface', () => {
       expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
     })
 
+    it('drags the canvas with the right button on any tool, changing no bead (ticket 541)', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      const start = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
+
+      await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
+      await surface.trigger('pointermove', { clientX: start.x - 10, clientY: start.y + 10, buttons: 2 })
+
+      expect(wrapper.emitted('pan')).toEqual([[-10, 10]])
+      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+      expect(wrapper.emitted('cell-primary-move')).toBeUndefined()
+      expect(Object.keys(wrapper.emitted()).filter((name) => name.startsWith('cell-secondary'))).toEqual([])
+    })
+
+    it('does nothing on a right click that does not move', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project)
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      const start = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 1, column: 2 })
+
+      await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
+      await surface.trigger('pointerup')
+
+      expect(wrapper.emitted('pan')).toBeUndefined()
+      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
+    })
+
     it('shows an open hand while moving, closed while dragging', async () => {
       const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { moving: true })
       const surface = wrapper.find('[data-testid="project-surface"]')
@@ -505,20 +535,6 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { clientX: first.x, clientY: first.y, buttons: 1 })
 
       expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
-    })
-
-    it('carries on at the next bead after crossing empty background, for the erase button too', async () => {
-      const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project)
-      const surface = wrapper.find('[data-testid="project-surface"]')
-      const start = at(project, 3, 18)
-      const back = at(project, 3, 17)
-
-      await surface.trigger('pointerdown', { clientX: start.x, clientY: start.y, button: 2, buttons: 2 })
-      await surface.trigger('pointermove', { clientX: 990, clientY: 790, buttons: 2 })
-      await surface.trigger('pointermove', { clientX: back.x, clientY: back.y, buttons: 2 })
-
-      expect(wrapper.emitted('cell-secondary-move')).toContainEqual([3, 17])
     })
 
     it('ends at release', async () => {
@@ -945,24 +961,13 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-hover']).toEqual([[3, 5]])
     })
 
-    it('says a right press is a secondary one', async () => {
-      const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project)
-
-      await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 1, 2), button: 2, buttons: 2 })
-
-      expect(events(wrapper)['cell-secondary-down']).toEqual([[1, 2]])
-      expect(events(wrapper)['cell-primary-down']).toBeUndefined()
-    })
-
-    it('ignores a press with any other button', async () => {
+    it('ignores a press with the middle button', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)
 
       await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 1, 2), button: 1, buttons: 4 })
 
       expect(events(wrapper)['cell-primary-down']).toBeUndefined()
-      expect(events(wrapper)['cell-secondary-down']).toBeUndefined()
     })
 
     it('hovers each bead it moves onto, once', async () => {

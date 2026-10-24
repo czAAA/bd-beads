@@ -205,7 +205,7 @@ export const en: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Make one with New Project, open a Saved Project, or import a file.',
+    canvasPlaceholderHint: 'Make one with New Project, open a Saved Project, or import a file. Drag the Canvas around with the right mouse button or Space.',
     canvasPlaceholder: 'No Project open yet',
     updateReady: 'Update ready',
     updateReload: 'Reload',
@@ -559,8 +559,6 @@ export const en: Translations = {
     keyHintsOff: 'Off',
   },
   tooltips: {
-    paint: 'Right-click erases.',
-    fill: 'Right-click erases the area.',
     select: 'Then copy and paste, or remove.',
     erase: 'Delete empties what is selected.',
     piece: 'Tap a bead to select it and everything it touches.',

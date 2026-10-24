@@ -693,8 +693,6 @@ export interface Translations {
   /** Tooltip bodies and the reasons a control is disabled (ticket 334, ADR 0035); names are the controls' own. One
    * imperative sentence ending in a full stop; keys never appear (they are the key chip). */
   tooltips: {
-    paint: string
-    fill: string
     select: string
     erase: string
     piece: string
