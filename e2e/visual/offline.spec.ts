@@ -71,7 +71,7 @@ for (const [situation, breakIt] of failures) {
     await breakIt(context, host)
 
     await page.goto(new URL('overview/', host.url).href)
-    await expect(page.locator('main, #app').first()).toBeVisible()
+    await expect(page.getByTestId('overview')).toBeVisible()
     await expect(page.getByRole('heading').first()).toBeVisible()
   })
 }
