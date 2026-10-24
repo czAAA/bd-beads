@@ -533,6 +533,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('mouse-mode', (t) => t.inputMode.mouseLabel, 'canvas', { icon: 'pen-mode-off', body: (t) => t.inputMode.mouseHint }),
   unkeyed('saved-projects', (t) => t.projects.heading, 'edit', { icon: 'library' }),
   unkeyed('close', (t) => t.a11y.closeMessage, 'edit', { icon: 'close' }),
+  unkeyed('edit-palette', (t) => t.palette.editPalette, 'colors', { icon: 'pencil' }),
   unkeyed('pill-colors', (t) => t.toolbox.groups.colors, 'colors', { body: (t) => t.tooltips.colors }),
   unkeyed('new-project', (t) => t.projects.newProjectButton, 'edit', { body: (t) => t.tooltips.newProject }),
   unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),

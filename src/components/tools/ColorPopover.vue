@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, provide, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
+import { usePalette } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { isAddedColorId } from '../../domain/palette'
 import { popoverPlacement, type PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
@@ -32,12 +34,22 @@ const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
 const style = ref<Record<string, string>>({ visibility: 'hidden' })
 const closeAction = controlAction('close')
+const editAction = controlAction('edit-palette')
+
+// Edit palette (ticket 531): the pencil is there while the Palette has an added color; the popover always opens
+// in normal mode, and the mode ends with the last added color.
+const palette = usePalette()
+const hasAdded = computed(() => palette.value.colors.some((color) => isAddedColorId(color.id)))
+const editing = ref(false)
+watch(hasAdded, (has) => {
+  if (!has) editing.value = false
+})
 
 provide(PICK_CLOSE, () => emit('close'))
 useOverlayLayer({
   isOpen: () => true,
   root: () => rootEl.value,
-  close: () => emit('close'),
+  close: () => (editing.value ? (editing.value = false) : emit('close')),
   isOpener: (target) => props.tile?.contains(target) ?? false,
 })
 
@@ -84,6 +96,17 @@ onBeforeUnmount(() => {
       <span class="color-popover__chosen" :style="{ backgroundColor: colorHex ?? 'transparent' }" />
       <span class="color-popover__name" data-testid="color-popover-name">{{ colorName }}</span>
       <span v-if="colorHex" class="color-popover__hex">{{ colorHex }}</span>
+      <IconButton
+        v-if="hasAdded"
+        class="color-popover__edit"
+        variant="plain"
+        :action="editAction"
+        :label="editing ? t.palette.doneEditingPalette : t.palette.editPalette"
+        :icon-size="16"
+        :pressed="editing"
+        data-testid="color-popover-edit"
+        @click="editing = !editing"
+      />
       <IconButton class="color-popover__close" variant="plain" :action="closeAction" :label="t.toolPill.close" :icon-size="16" data-testid="color-popover-close" @click="emit('close')" />
     </div>
 
@@ -92,6 +115,7 @@ onBeforeUnmount(() => {
       <ToolColorControls
         :selected-color-id="selectedColorId"
         :custom-color="customColor"
+        :editing="editing"
         @select-color="(id) => emit('select-color', id)"
         @select-custom-color="(hex) => emit('select-custom-color', hex)"
       />
@@ -160,6 +184,20 @@ onBeforeUnmount(() => {
   flex: none;
   font: var(--type-meta-small);
   color: var(--muted);
+}
+
+.color-popover__edit {
+  flex: none;
+  margin-left: auto;
+}
+
+.color-popover__edit[aria-pressed='true'] {
+  color: var(--accent);
+  background: var(--press-fill);
+}
+
+.color-popover__edit + .color-popover__close {
+  margin-left: 0;
 }
 
 .color-popover__close {

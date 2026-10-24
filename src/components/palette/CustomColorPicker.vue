@@ -12,6 +12,8 @@ defineProps<{
   selected: boolean
   /** Whether the picker is open under the button. */
   expanded: boolean
+  /** Edit palette (ticket 531): it takes no press. */
+  disabled?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -37,9 +39,10 @@ const tooltip = computed(() => ({ name: action.name(t.value), body: action.body?
       :class="{ 'custom-color-picker--selected': selected }"
       :aria-pressed="selected"
       :aria-expanded="expanded"
+      :aria-disabled="disabled ? 'true' : undefined"
       :aria-label="t.palette.customColorLabel"
       data-testid="custom-color-button"
-      @click="emit('toggle')"
+      @click="!disabled && emit('toggle')"
     >
       <span class="custom-color-picker__swatch" />
       <svg class="custom-color-picker__plus" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6v12M6 12h12" /></svg>
@@ -78,9 +81,15 @@ const tooltip = computed(() => ({ name: action.name(t.value), body: action.body?
 }
 
 @media (hover: hover) {
-  .custom-color-picker:hover {
+  .custom-color-picker:hover:not([aria-disabled='true']) {
     border-color: var(--ink);
   }
+}
+
+.custom-color-picker[aria-disabled='true'] {
+  color: var(--faint);
+  cursor: not-allowed;
+  opacity: var(--swatch-faded-opacity);
 }
 
 .custom-color-picker:focus-visible {

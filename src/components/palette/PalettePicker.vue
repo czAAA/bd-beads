@@ -3,14 +3,18 @@ import { computed, nextTick, ref } from 'vue'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMoveColor, usePalette, useRecentColors, useRemoveAddedColor } from '../../composables/tools/usePalette'
 import { useSwatchDrag } from '../../composables/tools/useSwatchDrag'
-import { PALETTE_SHORTCUTS, RECENT_SHORTCUTS, isAddedColorId } from '../../domain/palette'
+import { PALETTE_SHORTCUTS, RECENT_SHORTCUTS, isAddedColorId, type PaletteColor } from '../../domain/palette'
 import { colorName } from '../../i18n/colorName'
 import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
 import { useClosePopoverOnPick } from '../shell/pickContext'
 
-const props = defineProps<{ selectedColorId?: string }>()
+const props = defineProps<{
+  selectedColorId?: string
+  /** Edit palette (ticket 531): a press on an added swatch asks to remove it, built-in ones are locked. */
+  editing?: boolean
+}>()
 const emit = defineEmits<{
   select: [colorId: string]
 }>()
@@ -32,8 +36,8 @@ function isStop(colorId: string, index: number): boolean {
   return selected ? colorId === props.selectedColorId : index === 0
 }
 
-// An added swatch asks to be removed (tickets 228, 304; PaletteSwatches card): by its ×, or Delete/Backspace on a
-// focused one (the keyboard route). The app shell confirms first.
+// An added swatch asks to be removed (tickets 228, 304, 531; PaletteSwatches card): by a press in Edit palette, or
+// Delete/Backspace on a focused one. The app shell confirms first.
 function remove(colorId: string) {
   removeAdded?.(colorId)
 }
@@ -59,11 +63,22 @@ async function nudge(position: number, by: number) {
   gridEl.value?.querySelector<HTMLElement>(`[data-color-id="${colorId}"]`)?.focus()
 }
 
-/** Choosing a swatch is the end of the visit to the colour popover (or a sheet): it closes. */
+/** Choosing a swatch is the end of the visit to the colour popover (or a sheet): it closes. In Edit palette a press
+ * asks to remove an added swatch and does nothing on a built-in one. */
 function pick(colorId: string) {
   if (drag.consumeDrag()) return
+  if (props.editing) {
+    if (isAddedColorId(colorId)) remove(colorId)
+    return
+  }
   emit('select', colorId)
   closePanel()
+}
+
+/** A swatch's name; in Edit palette an added one's is the removal it would ask for. */
+function swatchLabel(color: PaletteColor, slot: number): string {
+  if (!isAddedColorId(color.id)) return `${t.value.palette.colorLabel} ${slot + 1}, ${colorName(t.value, color)}`
+  return props.editing && removeAdded ? t.value.palette.removeSwatch.replace('{hex}', color.hex) : color.hex
 }
 
 function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number) {
@@ -86,10 +101,11 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
       v-for="({ color, slot }, index) in shown"
       :key="color.id"
       :color="color.hex"
-      :label="isAddedColorId(color.id) ? color.hex : `${t.palette.colorLabel} ${slot + 1}, ${colorName(t, color)}`"
+      :label="swatchLabel(color, slot)"
       :selected="color.id === selectedColorId"
       :hotkey="PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index] ? `Shift+${PALETTE_SHORTCUTS[RECENT_SHORTCUTS + index]!.keyLabel}` : undefined"
-      :remove-label="removeAdded && isAddedColorId(color.id) ? t.palette.removeSwatch.replace('{hex}', color.hex) : undefined"
+      :removable="editing && !!removeAdded && isAddedColorId(color.id)"
+      :locked-body="editing && !isAddedColorId(color.id) ? t.palette.defaultColorLocked : undefined"
       class="palette-picker__swatch"
       :class="{
         'palette-picker__swatch--dragging': drag.draggingFrom.value === index,
@@ -100,11 +116,10 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
       data-testid="palette-swatch"
       :data-color-id="color.id"
       @select="pick(color.id)"
-      @remove="remove(color.id)"
       @pointerdown="drag.onPointerDown($event, index)"
       @keydown="onSwatchKeydown($event, color.id, index)"
     />
-    <PickColorButton class="palette-picker__pick" />
+    <PickColorButton class="palette-picker__pick" :disabled="editing" />
     <slot />
   </div>
 </template>
