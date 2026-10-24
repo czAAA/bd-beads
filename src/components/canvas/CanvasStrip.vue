@@ -11,8 +11,8 @@ import IconButton from '../ui/IconButton.vue'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
 // The canvas box's header strip on the editor and the Overview (tickets 143, 540, ADR 0055, ADR 0073; CanvasStrip card):
-// Menu first, then Project, Frame, Rotate · Rulers · Undo · Redo, the Brand centred, zoom on the right. Under 1024px the
-// words and the wordmark hide; on an editor phone there is no Brand and the controls scroll.
+// three slots: Menu · Project · Frame on the left, the Brand in the middle, Rotate · Rulers · Undo · Redo and the zoom
+// on the right (ticket 543). Under 1024px the words and the wordmark hide; on an editor phone there is no Brand.
 const props = defineProps<{
   /** Which page the strip is on: the editor's Brand opens the Overview, the Overview's is the current page. */
   page?: 'editor' | 'overview'
@@ -98,21 +98,7 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
         <span class="canvas-strip__label">{{ actions.frame.name(t) }}</span>
       </AppButton>
     </div>
-    <div class="canvas-strip__controls" data-testid="canvas-strip-controls">
-      <div v-if="project" class="canvas-strip__tools">
-        <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
-        <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
-        <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" @click="emit('undo')" />
-        <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
-      </div>
-      <div v-if="zoomPercent !== undefined" class="canvas-strip__zoom">
-        <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
-        <span class="canvas-strip__level" data-testid="zoom-level">{{ zoomPercent }}%</span>
-        <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
-        <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
-      </div>
-    </div>
-    <!-- The Brand (ticket 540): centred on the strip; the editor's opens the Overview, the Overview's is the page itself. -->
+    <!-- The Brand (tickets 540, 543): the strip's middle slot; the editor's opens the Overview, the Overview's is the page itself. -->
     <component
       :is="onOverview ? 'span' : 'a'"
       class="canvas-strip__brand"
@@ -123,14 +109,29 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
       <AppLogo class="canvas-strip__mark" :size="22" />
       <span class="canvas-strip__wordmark">{{ t.app.title }}</span>
     </component>
+    <div class="canvas-strip__controls" data-testid="canvas-strip-controls">
+      <div v-if="project" class="canvas-strip__tools">
+        <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.undo" :deps="deps" data-testid="strip-undo" @click="emit('undo')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
+      </div>
+      <div v-if="zoomPercent !== undefined" class="canvas-strip__zoom">
+        <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
+/* Three slots (ticket 543): panels left, the Brand centred, the tools and zoom right. */
 .canvas-strip {
   position: relative;
-  display: flex;
+  display: grid;
   flex: none;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: var(--space-8);
   box-sizing: border-box;
@@ -148,11 +149,10 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
   }
 }
 
-/* Menu, Project and Frame stay at the left edge of the strip, even on a phone. */
 .canvas-strip__panels {
   display: flex;
-  flex: none;
   align-items: center;
+  justify-self: start;
   gap: var(--space-2);
 }
 
@@ -168,12 +168,20 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
   }
 }
 
-/*
- * From a tablet up the controls are part of the strip's row: the tools follow Menu on the left, the zoom is pushed to
- * the right. On a phone, too narrow for the cluster, they scroll sideways as one.
- */
+/* The right slot holds the tools and the zoom as one cluster; on a phone, too narrow for it, it scrolls sideways. */
 .canvas-strip__controls {
-  display: contents;
+  display: flex;
+  align-items: center;
+  justify-self: end;
+  gap: var(--space-2);
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.canvas-strip__controls::-webkit-scrollbar {
+  display: none;
 }
 
 .canvas-strip__tools,
@@ -184,42 +192,12 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
   gap: var(--space-2);
 }
 
-.canvas-strip__zoom {
-  margin-left: auto;
-}
-
-@media (max-width: 743px) {
-  .canvas-strip__controls {
-    display: flex;
-    flex: 0 1 auto;
-    align-items: center;
-    gap: var(--space-2);
-    min-width: 0;
-    margin-left: auto;
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-
-  .canvas-strip__controls::-webkit-scrollbar {
-    display: none;
-  }
-
-  .canvas-strip__zoom {
-    margin-left: 0;
-  }
-}
-
-/* The Brand is centred on the strip, whatever the sides hold (ticket 540). */
 .canvas-strip__brand {
-  position: absolute;
-  top: 50%;
-  left: 50%;
   display: flex;
   align-items: center;
   gap: var(--space-8);
   color: var(--ink);
   text-decoration: none;
-  transform: translate(-50%, -50%);
 }
 
 .canvas-strip__mark {
@@ -244,19 +222,15 @@ a.canvas-strip__brand:focus-visible {
   border-radius: var(--radius-xs);
 }
 
-/* The editor's phone strip has no Brand; the Overview's keeps the logo. */
+/* The editor's phone strip has no Brand and gives the room to the controls; the Overview's keeps the logo. */
 @media (max-width: 743px) {
+  .canvas-strip:not(.canvas-strip--overview) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
   .canvas-strip:not(.canvas-strip--overview) .canvas-strip__brand {
     display: none;
   }
-}
-
-.canvas-strip__level {
-  flex: none;
-  width: var(--zoom-level-width);
-  font: var(--type-meta);
-  color: var(--ink);
-  text-align: center;
 }
 
 /* A finger needs a bigger target than the pointer's 30px (responsive.md "Input, not width"). */

@@ -17,12 +17,12 @@ describe('CanvasStrip', () => {
 
   const project = { frame: undefined, beads: { 0: { 0: '#ff0000' } }, technique: 'loom' } as unknown as Project
 
-  it('holds Menu, Project, Rotate canvas, Rulers, Undo, Redo, then the zoom (out, level, in, Fit), and passes each press on (tickets 425, 431)', async () => {
+  it('holds Menu, Project, Rotate canvas, Rulers, Undo, Redo, then the zoom (out, in, Fit), and passes each press on (tickets 425, 431)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset'])
-    expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('125%')
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset'])
+    expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
 
     for (const id of ['strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-in', 'zoom-out', 'zoom-reset']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
     expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['rotate-canvas', 'toggle-rulers', 'undo', 'redo', 'zoom-in', 'zoom-out', 'reset']))
@@ -61,12 +61,21 @@ describe('CanvasStrip', () => {
     expect(wrapper.get('[data-testid="zoom-out"]').attributes('aria-disabled')).toBeUndefined()
   })
 
+  it('has three slots: panels, the Brand, then the tools and zoom together (ticket 543)', () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
+
+    const slots = Array.from(wrapper.get('[data-testid="canvas-strip"]').element.children)
+    expect(slots.map((slot) => slot.className.split(' ')[0])).toEqual(['canvas-strip__panels', 'canvas-strip__brand', 'canvas-strip__controls'])
+    const controls = wrapper.get('[data-testid="canvas-strip-controls"]')
+    for (const id of ['strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset']) expect(controls.find(`[data-testid="${id}"]`).exists()).toBe(true)
+  })
+
   it('holds Menu alone with no Project open (ticket 431)', () => {
     const wrapper = mount(CanvasStrip)
 
     expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="zoom-in"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="strip-rulers"]').exists()).toBe(false)
   })
 })
@@ -109,7 +118,7 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
 
     expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="canvas-brand"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('200%')
+    expect(wrapper.find('[data-testid="zoom-out"]').exists()).toBe(true)
   })
 })
 

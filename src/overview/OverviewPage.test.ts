@@ -99,7 +99,7 @@ describe('OverviewPage', () => {
     expect(brand.text()).toBe('openbeads')
     expect(brand.attributes('aria-current')).toBe('page')
     expect(brand.attributes('href')).toBeUndefined()
-    expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('100%')
+    expect(wrapper.find('[data-testid="zoom-reset"]').exists()).toBe(true)
   })
 
   it('opens the editor\'s Menu panel from the strip, with Language and Theme and Overview as the current page', async () => {
@@ -132,18 +132,17 @@ describe('OverviewPage', () => {
     it('scales the content from 75% to 200% in 10% steps with the buttons, and Fit resets it', async () => {
       const wrapper = page()
       await wrapper.get('[data-testid="zoom-in"]').trigger('click')
-      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('110%')
       expect(zoomOf(wrapper)).toBe('1.1')
 
       for (let i = 0; i < 20; i++) await wrapper.get('[data-testid="zoom-in"]').trigger('click')
-      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('200%')
+      expect(zoomOf(wrapper)).toBe('2')
       expect(wrapper.get('[data-testid="zoom-in"]').attributes('aria-disabled')).toBeDefined()
 
       await wrapper.get('[data-testid="zoom-reset"]').trigger('click')
-      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('100%')
+      expect(zoomOf(wrapper)).toBe('1')
 
       for (let i = 0; i < 6; i++) await wrapper.get('[data-testid="zoom-out"]').trigger('click')
-      expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('75%')
+      expect(zoomOf(wrapper)).toBe('0.75')
       expect(wrapper.get('[data-testid="zoom-out"]').attributes('aria-disabled')).toBeDefined()
     })
 
@@ -152,7 +151,7 @@ describe('OverviewPage', () => {
       await first.get('[data-testid="zoom-in"]').trigger('click')
       first.unmount()
 
-      expect(page().get('[data-testid="zoom-level"]').text()).toBe('110%')
+      expect(zoomOf(page())).toBe('1.1')
     })
 
     it('decides the carousel\'s tier from the zoomed width, not the screen\'s', async () => {
