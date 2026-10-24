@@ -551,6 +551,7 @@ export const zh: Translations = {
     confirmTitle: '替换珠子？',
     confirmMessage: '换成 {bead} 后，这个项目的尺寸约为 {new}，而不是 {old}。你的设计和珠子数量完全不变。你可以撤销这一操作。',
     confirmButton: '替换珠子',
+    outdatedPostfix: '(已保存的)',
     cancelButton: '取消',
   },
   shortcutsHelp: {

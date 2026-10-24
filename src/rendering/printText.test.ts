@@ -34,7 +34,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('shows no grams and no note for a Bead with no weight', () => {
-    const text = printText({ ...delicaProject(10), beadId: 'a-bead-this-device-never-had' }, en, 'en', at)
+    const text = printText({ ...delicaProject(10), beadId: 'a-bead-this-device-never-had', bead: undefined }, en, 'en', at)
 
     expect(text.colors[0]!.grams).toBeUndefined()
     expect(text.totalGrams).toBeUndefined()

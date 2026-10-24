@@ -563,6 +563,7 @@ export const uk: Translations = {
     confirmMessage:
       'З бісериною {bead} цей проєкт матиме приблизно {new} замість {old}. Малюнок і кількість бісерин лишаться точно такими самими. Цю дію можна скасувати.',
     confirmButton: 'Замінити бісер',
+    outdatedPostfix: '(як збережено)',
     cancelButton: 'Скасувати',
   },
   shortcutsHelp: {
