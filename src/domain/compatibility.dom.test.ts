@@ -305,9 +305,9 @@ describe('stored-data compatibility', () => {
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('reads a version 4 file and writes it back as version 7 with the built-in Palette (ticket 0525)', () => {
+    it('reads a version 4 file and writes it back as version 8 with the built-in Palette (ticket 0525)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 7, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 8, projects: [{ palette: defaultPaletteIds() }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })
@@ -334,5 +334,14 @@ describe('stored-data compatibility', () => {
       const [plain] = (await readProjectsFile(new File([await gzipJson(projectFileV3)], 'a.openbeads'))).projects
       expect(plain!.brickBlock).toBeUndefined()
     })
+  })
+})
+
+describe('swatch codes in a file (ticket 0538)', () => {
+  it('writes them in version 8, reads them back, and opens a version 7 file as it was', () => {
+    const [seven] = parseProjectsFile(projectFileV7).projects
+    expect(seven!.paletteCodes).toBeUndefined()
+    const coded = { ...seven!, palette: [...seven!.palette, 'added-123456'], paletteCodes: { '#123456': 'DB1' } }
+    expect(parseProjectsFile(serializeProject(coded)).projects[0]!.paletteCodes).toEqual({ '#123456': 'DB1' })
   })
 })

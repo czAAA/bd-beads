@@ -11,7 +11,7 @@ import { loadColorCatalog } from '../../services/colorCatalogs'
 export interface BeadColorsDeps {
   currentProject: () => Project | undefined
   palette: Readonly<Ref<Palette>>
-  addUsed: (hex: string) => { outcome: AddUsedColorOutcome }
+  addUsed: (hex: string, code?: string) => { outcome: AddUsedColorOutcome }
 }
 
 /** The Color catalog of the open Project's Bead as a list of swatches to add to its Palette (ticket 0537, ADR 0072).
@@ -50,7 +50,7 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
       : []
   })
 
-  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string) => addUsed(hex).outcome }
+  return { available: computed(() => !!catalogId.value), state, swatches, load, add: (hex: string, code?: string) => addUsed(hex, code).outcome }
 }
 
 export type BeadColors = ReturnType<typeof useBeadColors>

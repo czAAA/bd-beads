@@ -21,7 +21,8 @@ import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
-import { defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteIds, paletteForBead, removedDefaultsAfter, type PaletteIds } from './palette'
+import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
+import type { ColorCatalog } from './colorCatalog'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
 import { gridFromSize, type StatedSize } from './projectSize'
@@ -83,6 +84,9 @@ export interface Project {
   /** The default colors the maker removed after a change of Bead made them added colors (ticket 0528), as hexes, so a
    * change back does not put them back. Absent when none. */
   removedDefaults?: string[]
+  /** The catalog code of each swatch picked from the Color catalog, by the swatch's hex (ticket 0538, ADR 0072). Painted
+   * cells keep only their hex. Absent when no swatch has a code. */
+  paletteCodes?: PaletteCodes
   /** View-only turn (tickets 28, 171): the Project shown turned this many degrees clockwise. Never a data transform:
    * for Peyote/Brick the stagger is tied to weave direction, so transposing the grid would give an unweavable
    * schema. */
@@ -375,8 +379,10 @@ export function normalizeProject(stored: StoredProject): Project {
   // Its own copy when it holds a readable one, otherwise the catalog's Bead of that id, through the alias map (ticket 534).
   const bead = readBeadCopy(legacy.bead) ?? catalogCopy(project.beadId)
   const removedDefaults = readRemovedDefaults(legacy.removedDefaults)
+  const palette = normalizePaletteIds(legacy.palette, defaultPalette(project.beadId))
+  const paletteCodes = codesInPalette(normalizePaletteCodes(legacy.paletteCodes), palette, defaultPalette(project.beadId))
 
-  const { removedDefaults: _removed, bead: _storedBead, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
+  const { removedDefaults: _removed, paletteCodes: _codes, bead: _storedBead, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
@@ -403,8 +409,9 @@ export function normalizeProject(stored: StoredProject): Project {
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(weave, frame.columns, 'columns')),
     },
     // A Project saved before the Palette belonged to it (or with an unreadable one) starts from its Bead's built-in colors.
-    palette: normalizePaletteIds(legacy.palette, defaultPalette(project.beadId)),
+    palette,
     ...(removedDefaults.length > 0 ? { removedDefaults } : {}),
+    ...(Object.keys(paletteCodes).length > 0 ? { paletteCodes } : {}),
     rotation: normalizeRotation(legacy),
     ...(bead ? { beadId: bead.id, bead } : {}),
   }
@@ -694,6 +701,8 @@ export interface UndoEntry {
   palette: PaletteIds
   /** The removed default colors as they were (ticket 0528), restored with the Palette they belong to. */
   removedDefaults?: string[]
+  /** The swatch codes as they were (ticket 0538), restored with the Palette they belong to. */
+  paletteCodes?: PaletteCodes
   beadId: string
   /** The Bead copy as it was, restored with its id (ticket 534). */
   bead?: Bead
@@ -711,12 +720,12 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
+  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, paletteCodes: project.paletteCodes, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, bead: _bead, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, bead: _bead, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
@@ -729,6 +738,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     ...(entry.beadShape ? { beadShape: entry.beadShape } : {}),
     ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
+    ...(entry.paletteCodes ? { paletteCodes: entry.paletteCodes } : {}),
   })
 }
 
@@ -759,20 +769,23 @@ export function deleteAll(project: Project): Project {
   })
 }
 
-/** Swaps the Project's Bead for another catalog entry (ticket 48, ADR 0007). The grid is the Project's size and only
- * the Estimated size depends on the Bead (resizeProject restores the old size); the Palette follows the Bead in the
- * same change (ticket 0528, see paletteForBead), and painted cells keep their hex. */
-export function replaceBead(project: Project, bead: Bead): Project {
+/** Swaps the Project's Bead (ticket 48, ADR 0007); only the Estimated size depends on it. The Palette follows in the
+ * same change (ticket 0528) and painted cells keep their hex. A swatch keeps its catalog code only if `catalog`, the
+ * new Bead's, lists it in the new size (ticket 0538). */
+export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog): Project {
   const palette = paletteForBead(project.palette, project.removedDefaults ?? [], defaultPalette(project.beadId), defaultPalette(bead.id))
-  return touch(project, { beadId: bead.id, bead: beadCopy(bead), palette })
+  const codes = codesForBead(project.paletteCodes ?? {}, catalog, bead.size)
+  const { paletteCodes: _codes, ...rest } = project
+  return touch(rest, { beadId: bead.id, bead: beadCopy(bead), palette, ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}) })
 }
 
 /** The Project with a new Palette (adding, removing or moving a swatch); the default colors that left it are
- * remembered as removed (ticket 0528). */
-export function setPalette(project: Project, palette: PaletteIds): Project {
+ * remembered as removed (ticket 0528). `codes` join it by hex and a swatch's code leaves with it (ticket 0538). */
+export function setPalette(project: Project, palette: PaletteIds, codes: PaletteCodes = {}): Project {
   const removed = removedDefaultsAfter(project.palette, palette, project.removedDefaults ?? [])
-  const { removedDefaults: _removed, ...rest } = project
-  return touch(rest, { palette, ...(removed.length > 0 ? { removedDefaults: removed } : {}) })
+  const kept = codesInPalette({ ...project.paletteCodes, ...codes }, palette, defaultPalette(project.beadId))
+  const { removedDefaults: _removed, paletteCodes: _codes, ...rest } = project
+  return touch(rest, { palette, ...(removed.length > 0 ? { removedDefaults: removed } : {}), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
 }
 
 /** Where a Fill stops (ADR 0026): the Frame when it starts inside one, else the box round the Frame and every bead,
