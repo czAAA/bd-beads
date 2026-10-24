@@ -17,7 +17,7 @@ vi.mock('./rendering/projectExport', () => ({
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
 }))
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const project = createProject({ technique: 'loom', beadId: cubeBead.id, name: 'My scarf', size: { width: 15, height: 30, unit: 'mm' } })
 
 const mounted: ReturnType<typeof mount>[] = []

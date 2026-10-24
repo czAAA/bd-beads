@@ -45,8 +45,8 @@ import { changedPositions } from './canvas'
 import { fillAt, paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
-const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-round-11-0')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
+const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
 
 describe('createProject Brick block (ticket 477)', () => {
   const input = { technique: 'brick' as const, beadId: 'toho-cube-1.5mm' }
@@ -685,7 +685,7 @@ describe('deleteAll', () => {
 })
 
 describe('a Project\'s default colors follow its Bead (ticket 0528)', () => {
-  const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki-delica-11-0')!
+  const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
   const input = { technique: 'loom', size: { width: 4, height: 2, unit: 'beads' } } as const
   const tealId = addedColorId('#2fb6ae')
 

@@ -8,7 +8,7 @@ import { paintAt } from '../testUtils/layers'
 
 const palette = createPalette(defaultPaletteIds())
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 const RED = '#e63746'
 const BLUE = '#2f6fed'
@@ -71,15 +71,15 @@ describe('computeColorQuantities', () => {
 
 describe('estimatedGrams', () => {
   it.each([
-    ['toho-cube-1.5mm', 100, 1.08],
-    ['toho-round-11-0', 100, 0.91],
-    ['miyuki-delica-11-0', 100, 0.5],
+    ['toho/cube/1.5mm', 100, 1.08],
+    ['toho/round/11-0', 100, 0.91],
+    ['miyuki/delica/11-0', 100, 0.5],
   ])('multiplies the count by the average weight of a %s bead', (id, count, expected) => {
     expect(estimatedGrams(count, BEAD_CATALOG.find((bead) => bead.id === id))).toBeCloseTo(expected, 10)
   })
 
   it('is undefined for a Bead with no weight, or no Bead at all', () => {
-    expect(estimatedGrams(100, { gramsPerBead: undefined })).toBeUndefined()
+    expect(estimatedGrams(100, { beadsPerKg: undefined })).toBeUndefined()
     expect(estimatedGrams(100, undefined)).toBeUndefined()
   })
 })

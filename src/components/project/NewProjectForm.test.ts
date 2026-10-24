@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import NewProjectForm from './NewProjectForm.vue'
-import { BEAD_CATALOG } from '../../domain/beads'
+import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import {
   IMAGE_MAX_BYTES,
@@ -111,7 +111,7 @@ describe('NewProjectForm', () => {
     await wrapper.find('[data-testid="bead-select"]').setValue(BEAD_CATALOG[1]!.id)
 
     expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe(
-      `${BEAD_CATALOG[1]!.brand} ${BEAD_CATALOG[1]!.name} ${BEAD_CATALOG[1]!.size}`,
+      beadLabel(BEAD_CATALOG[1]!, ru.formFactors),
     )
   })
 

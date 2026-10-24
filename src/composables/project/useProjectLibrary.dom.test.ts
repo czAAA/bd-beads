@@ -6,7 +6,7 @@ import { loadProjects } from '../../services/libraryStore'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'
 import { useProjectLibrary } from './useProjectLibrary'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 function makeProject(overrides: Partial<Project> = {}): Project {
   return {

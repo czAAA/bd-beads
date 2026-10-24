@@ -8,7 +8,7 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { openPanel } from './testUtils/pill'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 const fox = () => createProject({ technique: 'loom', beadId: cubeBead.id, name: 'Fox', size: { width: 10, height: 10, unit: 'beads' } })
 

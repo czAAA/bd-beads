@@ -1,3 +1,4 @@
+import type { FormFactorNames } from '../domain/beads'
 import type { Locale } from '../domain/locale'
 import type { PluralForms } from './plural'
 
@@ -185,6 +186,8 @@ export interface Translations {
   languageSwitcher: {
     ariaLabel: string
   }
+  /** The Form factors' names, the middle word of a Bead's label (ticket 533); a maker's product name stays as it is. */
+  formFactors: FormFactorNames
   projects: {
     heading: string
     newProjectButton: string

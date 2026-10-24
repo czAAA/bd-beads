@@ -161,6 +161,7 @@ export const pl: Translations = {
   languageSwitcher: {
     ariaLabel: 'Język interfejsu',
   },
+  formFactors: { cube: 'Kostka', round: 'Okrągły', delica: 'Delica' },
   projects: {
     heading: 'Zapisane projekty',
     newProjectButton: 'Nowy projekt',

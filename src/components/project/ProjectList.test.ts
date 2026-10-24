@@ -11,7 +11,7 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 function makeProject() {
   return createProject({

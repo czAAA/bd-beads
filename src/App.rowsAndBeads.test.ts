@@ -11,7 +11,7 @@ import { serializeLibrary } from './domain/projectFile'
 import { mountWithProject } from './testUtils/seedProject'
 import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openPanel, pickColor, pickTool, panelRead } from './testUtils/pill'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()

@@ -161,6 +161,7 @@ export const zh: Translations = {
   languageSwitcher: {
     ariaLabel: '界面语言',
   },
+  formFactors: { cube: '方形', round: '圆形', delica: 'Delica' },
   projects: {
     heading: '已保存的项目',
     newProjectButton: '新建项目',
