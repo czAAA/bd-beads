@@ -68,7 +68,7 @@ export async function pickColor(wrapper: Wrapper, colorId: string): Promise<void
 /** Raises the New Project form (the Menu panel's subpanel) via the project bar's button, or Menu's when a Project is open; no-op
  * if up. */
 export async function openNewProject(wrapper: Wrapper): Promise<void> {
-  if (wrapper.find('[data-testid="bead-select"]').exists()) {
+  if (wrapper.find('[data-testid="bead-picker"]').exists()) {
     return
   }
   const row = wrapper.find('[data-testid="menu-new-project"]')

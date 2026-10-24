@@ -140,13 +140,13 @@ describe('Menu', () => {
     const open = wrapper.get('[data-testid="strip-project"]').text()
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="strip-project"]').text()).toBe(open)
   })
 
@@ -220,14 +220,14 @@ describe('Menu', () => {
     saveProjects([])
     const wrapper = mountApp()
     // The empty canvas opens Menu on the form by itself.
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-import"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
@@ -236,7 +236,7 @@ describe('Menu', () => {
   it('opens Menu on the form by itself when the empty canvas shows', async () => {
     saveProjects([])
     const wrapper = mountApp()
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
   })
 
   it('opens Menu on the form from the empty-canvas bar button', async () => {
@@ -245,7 +245,7 @@ describe('Menu', () => {
     await wrapper.get('[data-testid="phone-bar-new-project"]').trigger('click')
 
     expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="bead-select"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('dialog')
   })
 

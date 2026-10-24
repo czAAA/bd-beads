@@ -26,6 +26,16 @@ export interface Translations {
   form: {
     nameLabel: string
     beadLabel: string
+    /** The Bead picker (ticket 535): `hint` is its one line while collapsed; Brand, Form factor and Bead size are its steps. */
+    beadPicker: {
+      hint: string
+      change: string
+      close: string
+      brand: string
+      formFactor: string
+      size: string
+      choose: string
+    }
     beadShapeLabel: string
     beadShapeSymmetric: string
     beadShapeReal: string

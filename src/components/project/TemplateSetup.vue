@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
+import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
 import { resolveProjectBead, type CreateProjectInput, type Project } from '../../domain/project'
 import { formatMm, formatSizeMm, estimatedSizeMm } from '../../domain/projectSize'
 import { clampAxis, templateProjectInput, type Template, type TemplateAxis } from '../../domain/templates'
@@ -9,11 +9,11 @@ import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
-import FieldSelect from '../ui/form/FieldSelect.vue'
 import FormField from '../ui/form/FormField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
 import TemplatePicture from './TemplatePicture.vue'
+import BeadPicker from './BeadPicker.vue'
 import BrickBlockField from './BrickBlockField.vue'
 
 // The Template setup (tickets 493, 495; TemplateGallery card): Name, Bead, Techniques, Brick block, unit, sizes and the
@@ -111,10 +111,8 @@ function onSubmit() {
       />
     </FormField>
 
-    <FormField v-if="!project" :label="t.form.beadLabel" label-for="template-bead-select">
-      <FieldSelect id="template-bead-select" v-model="beadId" data-testid="template-bead-select">
-        <option v-for="option in offeredBeads()" :key="option.id" :value="option.id">{{ beadLabel(option, t.formFactors) }}</option>
-      </FieldSelect>
+    <FormField v-if="!project" :label="t.form.beadLabel" label-id="template-bead-label">
+      <BeadPicker v-model="beadId" :beads="offeredBeads()" testid="template-bead-picker" />
     </FormField>
 
     <FormField v-if="techniqueOptions.length > 1" :label="t.form.techniqueLabel" label-id="template-technique-label">
