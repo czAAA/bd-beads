@@ -1,3 +1,4 @@
+import { findBead } from '../domain/beads'
 import { describe, expect, it } from 'vitest'
 import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
@@ -164,7 +165,7 @@ describe('planPrint: wide and long Projects (ticket 163; printed-output.md, Prin
 })
 
 describe('planPrint: Bead shape (ticket 509)', () => {
-  const real = { ...shape('brick', 90, 100), beadId: 'miyuki-delica-11-0', beadShape: 'real' as const }
+  const real = { ...shape('brick', 90, 100), bead: findBead('miyuki-delica-11-0'), beadShape: 'real' as const }
 
   it('fits the chart to the Real cells: the whole Project still sits on the chart area', () => {
     const plan = planPrint(real)

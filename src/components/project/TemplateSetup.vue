@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
-import type { CreateProjectInput, Project } from '../../domain/project'
+import { resolveProjectBead, type CreateProjectInput, type Project } from '../../domain/project'
 import { formatMm, formatSizeMm, estimatedSizeMm } from '../../domain/projectSize'
 import { clampAxis, templateProjectInput, type Template, type TemplateAxis } from '../../domain/templates'
 import { describeWeave, type Technique } from '../../domain/weave'
@@ -44,7 +44,7 @@ const unitOptions = computed(() => [
 ])
 
 const techniqueOptions = computed(() => props.template.techniques.map((value) => ({ value, label: techniqueName(t.value, value) })))
-const bead = computed(() => findBead(props.project?.beadId ?? beadId.value))
+const bead = computed(() => (props.project ? resolveProjectBead(props.project) : findBead(beadId.value)))
 
 /** The size the Frame will have, in the Bead's real measure. */
 const estimated = computed(() => {

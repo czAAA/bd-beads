@@ -67,7 +67,7 @@ describe('the Bead shape in a Project', () => {
   })
 
   it('draws a Bead this device does not know as Symmetric', () => {
-    expect(projectCell({ beadId: 'custom-bead', beadShape: 'real' })).toBeUndefined()
+    expect(projectCell({ beadShape: 'real' })).toBeUndefined()
   })
 
   it('goes back to Symmetric without a leftover field', () => {

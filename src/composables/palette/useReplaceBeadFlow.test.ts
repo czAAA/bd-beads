@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, type Project } from '../../domain/project'
+import { BEAD_CATALOG, findBead } from '../../domain/beads'
+import { createProject, resolveProjectBead, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
@@ -87,5 +87,43 @@ describe('useReplaceBeadFlow', () => {
     onConfirmReplaceBead()
     expect(harness.history.canUndo.value).toBe(false)
     expect(harness.replaceProject).not.toHaveBeenCalled()
+  })
+})
+
+describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', () => {
+  const current = findBead(base.beadId)!
+  const older = { ...base, bead: { ...current, widthMm: current.widthMm + 0.2 } }
+
+  it('shows no postfix entry when its copy equals the catalog’s, even if only a name differs', () => {
+    const renamed = { ...base, bead: { ...current, brand: { ...current.brand, name: 'Other name' } } }
+    expect(setup(base).replaceBeadOutdated.value).toBeUndefined()
+    expect(setup(renamed).replaceBeadOutdated.value).toBeUndefined()
+  })
+
+  it('shows the copy beside the catalog’s current Bead of the same id when they differ', () => {
+    const { replaceBeadOutdated, replaceBeadCandidates } = setup(older)
+    expect(replaceBeadOutdated.value).toEqual(older.bead)
+    expect(replaceBeadCandidates.value.map((bead) => bead.id)).toContain(current.id)
+  })
+
+  it('shows no copy for a Bead the catalog does not offer', () => {
+    const gone = { ...base, beadId: 'brand/gone/1', bead: { ...current, id: 'brand/gone/1' } }
+    const { replaceBeadOutdated, replaceBeadCandidates } = setup(gone)
+    expect(replaceBeadOutdated.value).toBeUndefined()
+    expect(replaceBeadCandidates.value).toHaveLength(BEAD_CATALOG.length)
+  })
+
+  it('replaces to the catalog’s current Bead as an ordinary Replace Bead: sizes before and after, one Undo step', () => {
+    const { harness, replaceBeadConfirmMessage, onRequestReplaceBead, onConfirmReplaceBead } = setup(older)
+    onRequestReplaceBead(current.id)
+    expect(replaceBeadConfirmMessage.value).not.toBe('')
+
+    onConfirmReplaceBead()
+
+    expect(resolveProjectBead(harness.currentProject()!)).toEqual(current)
+    expect(harness.history.canUndo.value).toBe(true)
+    harness.history.onUndo()
+    expect(resolveProjectBead(harness.currentProject()!)).toEqual(older.bead)
+    expect(harness.history.canUndo.value).toBe(false)
   })
 })

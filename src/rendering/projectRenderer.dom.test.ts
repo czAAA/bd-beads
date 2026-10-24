@@ -1,3 +1,4 @@
+import { findBead } from '../domain/beads'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { withColors } from '../domain/canvas'
@@ -927,7 +928,7 @@ describe('Bead shape (ADR 0068)', () => {
   })
 
   it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {
-    const real = { ...painted(projectOf('peyote', 3, 3, { beadId: 'miyuki-delica-11-0' })), beadShape: 'real' as const }
+    const real = { ...painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), beadShape: 'real' as const }
     const beads = drawnBeads(real)
     expect(beads).toHaveLength(9)
     for (const bead of beads) {

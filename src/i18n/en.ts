@@ -558,6 +558,7 @@ export const en: Translations = {
     confirmMessage:
       'With {bead}, this Project will be about {new} instead of {old}. Your design and its bead count stay exactly the same. You can undo this.',
     confirmButton: 'Replace bead',
+    outdatedPostfix: '(as saved)',
     cancelButton: 'Cancel',
   },
   shortcutsHelp: {

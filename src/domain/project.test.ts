@@ -28,6 +28,7 @@ import {
   withFrame,
   beadColorAt,
   hasProjectBeads,
+  projectCell,
   projectColors,
   sameBeads,
   withFrameGrid,
@@ -41,6 +42,7 @@ import {
 import { BEAD_CATALOG } from './beads'
 import { BUILT_IN_COLORS, addedColorId } from './palette'
 import { describeWeave } from './weave'
+import { estimatedSizeMm } from './projectSize'
 import { changedPositions } from './canvas'
 import { fillAt, paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
@@ -614,6 +616,7 @@ describe('resolveProjectBead', () => {
         size: { width: 15, height: 15, unit: 'mm' },
       }),
       beadId: 'no-such-bead',
+      bead: undefined,
     }
 
     expect(resolveProjectBead(project)).toBeUndefined()
@@ -1313,5 +1316,49 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
 
   it('keeps a Frame\'s own Weave when it is read back', () => {
     expect(normalizeProject(peyoteOnLoom()).frame?.technique).toBe('peyote')
+  })
+})
+
+describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
+  const made = () => createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 10, height: 10, unit: 'beads' } })
+  const retired = { ...cubeBead, id: 'old-maker/cube/2mm', widthMm: 2, heightMm: 2, retired: true }
+
+  it('saves the copy without the retired flag', () => {
+    expect(made().bead).toEqual(cubeBead)
+    expect(replaceBead(made(), retired).bead).not.toHaveProperty('retired')
+  })
+
+  it('draws and sizes a Bead the catalog has dropped from the Project’s own copy', () => {
+    const project = { ...made(), beadId: retired.id, bead: retired, beadShape: 'real' as const }
+    const opened = normalizeProject(project)
+
+    expect(resolveProjectBead(opened)).toMatchObject({ id: retired.id, widthMm: 2 })
+    expect(projectCell(opened)).toBeDefined()
+    expect(estimatedSizeMm(opened.frame!, resolveProjectBead(opened)!).widthMm).toBe(20)
+  })
+
+  it('keeps the Project’s numbers when the catalog’s Bead of that id changes, until it is replaced', () => {
+    const older = normalizeProject({ ...made(), bead: { ...cubeBead, widthMm: 2, heightMm: 2 } })
+
+    expect(estimatedSizeMm(older.frame!, resolveProjectBead(older)!).widthMm).toBe(20)
+    expect(estimatedSizeMm(replaceBead(older, cubeBead).frame!, resolveProjectBead(replaceBead(older, cubeBead))!).widthMm).toBe(15)
+  })
+
+  it('gives a Project with no copy the catalog’s Bead, read through the alias map, and lets an unknown id stay unknown', () => {
+    const { bead: _copy, ...without } = { ...made(), beadId: 'toho-cube-1.5mm' }
+    expect(normalizeProject(without)).toMatchObject({ beadId: 'toho/cube/1.5mm', bead: cubeBead })
+
+    const { bead: _gone, ...unknown } = { ...made(), beadId: 'no-such-bead' }
+    expect(resolveProjectBead(normalizeProject(unknown))).toBeUndefined()
+  })
+
+  it('falls back to the catalog when the stored copy is not a Bead', () => {
+    expect(normalizeProject({ ...made(), bead: { id: 3 } as never }).bead).toEqual(cubeBead)
+  })
+
+  it('puts the copy back with Undo of a Replace Bead', () => {
+    const before = made()
+    const replaced = replaceBead(before, retired)
+    expect(restoreSnapshot(replaced, snapshotOf(before)).bead).toEqual(cubeBead)
   })
 })

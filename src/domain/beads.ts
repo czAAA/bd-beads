@@ -137,3 +137,44 @@ export function findBead(id: string): Bead | undefined {
   const current = LEGACY_BEAD_IDS[id] ?? id
   return BEAD_CATALOG.find((candidate) => candidate.id === current)
 }
+
+/** The Bead a Project saves as its own (ADR 0072): the catalog's Bead without the retired flag, which is the catalog's
+ * to say and not the Project's. */
+export function beadCopy(bead: Bead): Bead {
+  const { retired: _retired, ...copy } = bead
+  return copy
+}
+
+/** Whether two Beads of one id differ in anything that changes how a Project looks or weighs: footprint, correction,
+ * Form factor outline and holes, and beads per kg. Names and labels do not count (ADR 0072). */
+export function beadsDiffer(a: Bead, b: Bead): boolean {
+  return (
+    a.widthMm !== b.widthMm ||
+    a.heightMm !== b.heightMm ||
+    (a.widthCorrectionMm ?? 0) !== (b.widthCorrectionMm ?? 0) ||
+    a.beadsPerKg !== b.beadsPerKg ||
+    a.formFactor.roundness !== b.formFactor.roundness ||
+    a.formFactor.holes.count !== b.formFactor.holes.count ||
+    a.formFactor.holes.direction !== b.formFactor.holes.direction
+  )
+}
+
+const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value)
+
+/** The Bead copy a stored Project holds, or undefined when it is missing or not the shape of a Bead (the catalog's Bead
+ * of the same id stands in then). */
+export function readBeadCopy(stored: unknown): Bead | undefined {
+  const bead = stored as Partial<Bead> | null
+  const { brand, formFactor } = bead ?? {}
+  const holes = formFactor?.holes
+  const valid =
+    typeof bead === 'object' && bead !== null &&
+    typeof bead.id === 'string' && typeof bead.size === 'string' &&
+    typeof brand?.id === 'string' && typeof brand.name === 'string' &&
+    typeof formFactor?.id === 'string' && typeof formFactor.nameKey === 'string' && isNumber(formFactor.roundness) &&
+    isNumber(holes?.count) && (holes.direction === 'along' || holes.direction === 'across') &&
+    isNumber(bead.widthMm) && isNumber(bead.heightMm) &&
+    (bead.widthCorrectionMm === undefined || isNumber(bead.widthCorrectionMm)) &&
+    (bead.beadsPerKg === undefined || isNumber(bead.beadsPerKg))
+  return valid ? beadCopy(bead as Bead) : undefined
+}

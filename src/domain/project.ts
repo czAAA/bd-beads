@@ -1,4 +1,4 @@
-import { beadLabel, findBead, type Bead } from './beads'
+import { beadCopy, beadLabel, findBead, readBeadCopy, type Bead } from './beads'
 import {
   beadBounds,
   beadsFromColors,
@@ -64,6 +64,9 @@ export interface Project {
    * other; fixed once it is created (ADR 0038). */
   netSize?: number
   beadId: string
+  /** A full copy of the Bead, saved in the file so the Project opens, draws and is sized the same whatever the catalog
+   * later does (ticket 534, ADR 0072). Absent only for an id the catalog never had; a file without one gets it on open. */
+  bead?: Bead
   /** The Bead shape (ADR 0068): how the Canvas draws each cell, for both layers. Absent means Symmetric. */
   beadShape?: BeadShape
   /** What is painted on the Canvas, by position (ADR 0026); see BeadMap. No real-world size is stored: the
@@ -140,11 +143,11 @@ export function withBeadShape(project: Project, shape: BeadShape): Project {
 }
 
 /** What decides a Project's cell: its Bead and Bead shape (both optional, so a bare layout reads as Symmetric). */
-type ShapedBead = Partial<Pick<Project, 'beadId' | 'beadShape'>>
+type ShapedBead = Partial<Pick<Project, 'bead' | 'beadShape'>>
 
-/** How the Project's Bead is drawn: none in Symmetric, or for a Bead this device doesn't know. */
+/** How the Project's Bead is drawn, from its own copy: none in Symmetric, or for a Bead nobody knows. */
 export function projectCell(project: ShapedBead): BeadCell | undefined {
-  return beadCell(project.beadId ? findBead(project.beadId) : undefined, project.beadShape ?? DEFAULT_BEAD_SHAPE)
+  return beadCell(project.bead, project.beadShape ?? DEFAULT_BEAD_SHAPE)
 }
 
 /** The Frame's Weave (ticket 492), which may differ from the Canvas's; a Canvas with no Frame counts its rows in its
@@ -191,12 +194,13 @@ export function createProject(input: CreateProjectInput): Project {
     id: crypto.randomUUID(),
     name,
     ...created,
-    beadId: input.beadId,
+    beadId: bead.id,
+    bead: beadCopy(bead),
     ...(input.beadShape && input.beadShape !== DEFAULT_BEAD_SHAPE ? { beadShape: input.beadShape } : {}),
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
-    palette: defaultPaletteIds(defaultPalette(input.beadId)),
+    palette: defaultPaletteIds(defaultPalette(bead.id)),
     rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
@@ -368,9 +372,11 @@ export function normalizeProject(stored: StoredProject): Project {
   } = legacy
 
   const technique = project.technique
+  // Its own copy when it holds a readable one, otherwise the catalog's Bead of that id, through the alias map (ticket 534).
+  const bead = readBeadCopy(legacy.bead) ?? catalogCopy(project.beadId)
   const removedDefaults = readRemovedDefaults(legacy.removedDefaults)
 
-  const { removedDefaults: _removed, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
+  const { removedDefaults: _removed, bead: _storedBead, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
@@ -400,7 +406,14 @@ export function normalizeProject(stored: StoredProject): Project {
     palette: normalizePaletteIds(legacy.palette, defaultPalette(project.beadId)),
     ...(removedDefaults.length > 0 ? { removedDefaults } : {}),
     rotation: normalizeRotation(legacy),
+    ...(bead ? { beadId: bead.id, bead } : {}),
   }
+}
+
+/** The copy a file without one gets: the catalog's Bead of that id, if it knows it. */
+function catalogCopy(beadId: string): Bead | undefined {
+  const bead = findBead(beadId)
+  return bead && beadCopy(bead)
 }
 
 /** The removed default colors a stored Project holds: the valid hexes, each once; none for anything else. */
@@ -682,6 +695,8 @@ export interface UndoEntry {
   /** The removed default colors as they were (ticket 0528), restored with the Palette they belong to. */
   removedDefaults?: string[]
   beadId: string
+  /** The Bead copy as it was, restored with its id (ticket 534). */
+  bead?: Bead
   /** The Frame with its own beads, as they were (ADR 0066). */
   frame: FrameSheet | undefined
   /** The Piece names as they were, so Undo and Redo of a naming or of a merge or split restore them (ticket 406). */
@@ -696,17 +711,18 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, beadId: project.beadId, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
+  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, bead: _bead, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
     palette: entry.palette,
     beadId: entry.beadId,
+    ...(entry.bead ? { bead: entry.bead } : {}),
     frame: entry.frame,
     technique: entry.technique,
     ...(entry.brickBlock ? { brickBlock: entry.brickBlock } : {}),
@@ -748,7 +764,7 @@ export function deleteAll(project: Project): Project {
  * same change (ticket 0528, see paletteForBead), and painted cells keep their hex. */
 export function replaceBead(project: Project, bead: Bead): Project {
   const palette = paletteForBead(project.palette, project.removedDefaults ?? [], defaultPalette(project.beadId), defaultPalette(bead.id))
-  return touch(project, { beadId: bead.id, palette })
+  return touch(project, { beadId: bead.id, bead: beadCopy(bead), palette })
 }
 
 /** The Project with a new Palette (adding, removing or moving a swatch); the default colors that left it are
@@ -841,10 +857,10 @@ export function summarizeProject(project: Project): string {
   return `${project.name} · ${width}×${height}`
 }
 
-/** The Bead a Project was woven from (ticket 37), or undefined when the catalog no longer has it (a removed custom
- * Bead, ticket 38, or one an imported file names). Callers show a placeholder, not a raw id. */
-export function resolveProjectBead(project: Project): Bead | undefined {
-  return findBead(project.beadId)
+/** The Bead a Project was woven from (ticket 37): its own copy (ticket 534), so a catalog change or a retired Bead
+ * leaves it alone. Undefined for an id nobody knows; callers show a placeholder, not a raw id. */
+export function resolveProjectBead(project: Pick<Project, 'bead'>): Bead | undefined {
+  return project.bead
 }
 
 /** When a Project was last saved, for ordering the library: its updatedAt when it predates savedAt (ticket 145). */
