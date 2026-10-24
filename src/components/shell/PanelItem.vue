@@ -127,6 +127,12 @@ function onClick(event: Event) {
   color: var(--accent-strong);
 }
 
+/* The page the panel is opened on (the Overview's own item on the Overview). */
+.panel-item[aria-current='page'] {
+  color: var(--accent-strong);
+  cursor: default;
+}
+
 .panel-item[aria-disabled='true'] {
   color: var(--faint);
   cursor: default;

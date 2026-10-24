@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { computed, watchEffect } from 'vue'
+import { computed, ref, watchEffect } from 'vue'
 import AppButton from '../components/ui/AppButton.vue'
-import AppLogo from '../components/ui/AppLogo.vue'
-import AppMenuItem from '../components/ui/AppMenuItem.vue'
-import MenuButton from '../components/ui/MenuButton.vue'
-import LanguageSwitcher from '../components/shell/LanguageSwitcher.vue'
-import ThemeToggle from '../components/shell/ThemeToggle.vue'
+import CanvasStrip from '../components/canvas/CanvasStrip.vue'
+import MenuPanel from '../components/shell/MenuPanel.vue'
+import PanelHost from '../components/shell/PanelHost.vue'
+import { useElementSize } from '../composables/ui/useElementSize'
+import { useCanvasBackground } from '../theme/useCanvasBackground'
 import DrawnLayer from './DrawnLayer.vue'
 import CoffeeTile from './CoffeeTile.vue'
 import FeatureCarousel from './FeatureCarousel.vue'
 import PlanTiles from './PlanTiles.vue'
 import { provideI18n } from '../i18n/useI18n'
+import { OVERVIEW_MAX_ZOOM_PERCENT, OVERVIEW_MIN_ZOOM_PERCENT, useOverviewZoom } from './overviewZoom'
 
-// The Overview (ticket 77; Overview card): the page outside the editor that introduces bd-beads. The header is the
-// editor's own (no Keyboard shortcuts), then the slogan, two ways in, and tickets 217/219/220/221's sections. It only
-// reports which way in was chosen: the entry decides where that goes.
+// The Overview (ticket 77; Overview card): the page outside the editor that introduces openbeads, a canvas box like the
+// editor's (ticket 540, ADR 0073): the Canvas strip on top, the content scrolling between, an empty Canvas footer below.
+// It only reports which way in was chosen: the entry decides where that goes.
 const props = defineProps<{
   /** How many Projects this device has saved; none means a new visitor. */
   projectCount: number
-  /** This page's own address, for the header menu's Overview item. */
-  overviewHref: string
 }>()
 const emit = defineEmits<{ makeFirstProject: []; openEditor: [] }>()
 
@@ -32,32 +31,43 @@ watchEffect(() => {
 const sloganFirst = computed(() => t.value.overview.sloganLead.split(' ')[0]!)
 const sloganRest = computed(() => t.value.overview.sloganLead.slice(sloganFirst.value.length))
 
-/** The header Menu's items by name; its Tooltip lists them (ticket 334). */
-const menuItems = computed(() => [t.value.header.overviewItem])
+const menuOpen = ref(false)
+const zoom = useOverviewZoom()
+/** The content's own width once zoomed: the width its layout is made for (the CSS asks the container the same). */
+/** The width from which the carousel is a tablist, as in the CSS (1024px). */
+const WIDE_FROM = 1024
+const scrollEl = ref<HTMLElement>()
+const scrollSize = useElementSize(scrollEl)
+const pageWidth = computed(() => (scrollSize.width.value || window.innerWidth) / (zoom.percent.value / 100))
+const canvasBackground = useCanvasBackground()
+const boxStyle = computed(() => {
+  const color = canvasBackground.background.value?.color
+  return color ? { '--canvas-bg': color } : undefined
+})
 
 const isNew = computed(() => props.projectCount === 0)
 const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{count}', String(props.projectCount)))
 </script>
 
 <template>
-  <div class="overview" data-testid="overview">
-    <header class="overview__header">
-      <h1 class="overview__brand">
-        <AppLogo class="overview__mark" :size="22" />
-        <span class="overview__name">{{ t.app.title }}</span>
-      </h1>
-      <span class="overview__menu">
-        <MenuButton :label="t.header.menuButton" icon="menu" icon-only :items="menuItems" data-testid="header-menu">
-          <AppMenuItem icon="bead" :href="overviewHref" current data-testid="menu-item-overview">
-            {{ t.header.overviewItem }}
-          </AppMenuItem>
-        </MenuButton>
-      </span>
-      <span class="overview__gap" />
-      <LanguageSwitcher />
-      <ThemeToggle />
-    </header>
+  <div class="overview" :style="boxStyle" data-testid="overview">
+    <CanvasStrip
+      page="overview"
+      :open-panel="menuOpen ? 'menu' : null"
+      :zoom-percent="zoom.percent.value"
+      :zoom-min-percent="OVERVIEW_MIN_ZOOM_PERCENT"
+      :zoom-max-percent="OVERVIEW_MAX_ZOOM_PERCENT"
+      @select-panel="menuOpen = !menuOpen"
+      @zoom-in="zoom.zoomIn"
+      @zoom-out="zoom.zoomOut"
+      @reset="zoom.reset"
+    />
+    <PanelHost v-if="menuOpen" open="menu" :only="['menu']" @close="menuOpen = false">
+      <MenuPanel page="overview" />
+    </PanelHost>
 
+    <div ref="scrollEl" class="overview__scroll" data-testid="overview-scroll">
+      <div class="overview__page" :style="{ zoom: zoom.percent.value / 100 }">
     <main class="overview__main">
       <section class="overview__hero">
         <DrawnLayer section="hero" />
@@ -99,7 +109,7 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
       <section class="overview__inside" aria-labelledby="overview-inside">
         <DrawnLayer section="inside" />
         <h2 id="overview-inside" class="overview__heading">{{ t.overview.whatsInside }}</h2>
-        <FeatureCarousel />
+        <FeatureCarousel :wide="pageWidth >= WIDE_FROM" />
       </section>
 
       <div class="overview__coffee">
@@ -109,68 +119,45 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
 
       <PlanTiles @open-editor="emit('openEditor')" />
     </main>
+      </div>
+    </div>
+    <div class="overview__footer" data-testid="canvas-footer" />
   </div>
 </template>
 
 <style scoped>
+/* The canvas box (ticket 540, ADR 0073): the screen, the Canvas strip on top, the content scrolling between it and the
+ * empty Canvas footer, as the editor's box is laid out. */
 .overview {
-  /* The drawn layer measures its placements from the main column's edge, in this page's width (without a scrollbar). */
-  container-type: inline-size;
-  min-height: 100vh;
-  color: var(--ink);
-  background: var(--surface);
-}
-
-.overview__header {
-  display: flex;
-  align-items: center;
-  gap: var(--space-10);
+  position: fixed;
+  inset: 0;
   box-sizing: border-box;
-  min-height: var(--header-height);
-  padding: env(safe-area-inset-top) var(--space-32) 0;
-  background: var(--canvas);
-  border-bottom: 1px solid var(--line-soft);
-}
-
-@media (max-width: 743px) {
-  .overview__header {
-    min-height: var(--header-height-phone);
-    gap: var(--space-4);
-    padding-right: var(--space-16);
-    padding-left: var(--space-16);
-  }
-}
-
-@media (min-width: 1920px) {
-  .overview__header {
-    padding-right: 2.5rem;
-    padding-left: 2.5rem;
-  }
-}
-
-.overview__header > * {
-  flex: none;
-}
-
-.overview__gap {
-  flex: 1 1 0 !important;
-}
-
-.overview__brand {
   display: flex;
-  align-items: center;
-  gap: var(--space-8);
-  margin: 0 var(--space-10) 0 0;
-}
-
-.overview__mark {
-  color: var(--accent);
-}
-
-.overview__name {
-  font: var(--type-brand);
-  letter-spacing: var(--tracking-brand);
+  flex-direction: column;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  overflow: hidden;
   color: var(--ink);
+  background: var(--box);
+}
+
+.overview__scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden auto;
+  background: var(--canvas-bg, var(--canvas));
+}
+
+/* The zoom scales the content; the layout is made for the width it ends up with, so the text reflows and the page never
+ * scrolls sideways. The drawn layer measures its placements from the main column's edge in this width. */
+.overview__page {
+  container: overview / inline-size;
+}
+
+/* The same height as the editor's Progress bar, so the box doesn't change between pages. */
+.overview__footer {
+  flex: none;
+  height: var(--progress-height);
+  border-top: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
 }
 
 .overview__main {
@@ -180,21 +167,21 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   padding: var(--space-32) var(--space-16) var(--space-32);
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .overview__main {
     padding-right: var(--space-24);
     padding-left: var(--space-24);
   }
 }
 
-@media (min-width: 1024px) {
+@container overview (min-width: 1024px) {
   .overview__main {
     padding-right: var(--space-32);
     padding-left: var(--space-32);
   }
 }
 
-@media (min-width: 1920px) {
+@container overview (min-width: 1920px) {
   .overview__main {
     max-width: 75rem;
     padding-right: 2.5rem;
@@ -231,20 +218,20 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   color: var(--ink);
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .overview__slogan {
     --slogan-size: 3.625rem;
     --slogan-line: 3.875rem;
   }
 }
 
-@media (min-width: 1024px) {
+@container overview (min-width: 1024px) {
   .overview__slogan {
     --slogan-size: 3.75rem;
   }
 }
 
-@media (min-width: 1920px) {
+@container overview (min-width: 1920px) {
   .overview__slogan {
     --slogan-size: 4.375rem;
     --slogan-line: 4.5rem;
@@ -328,7 +315,7 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   display: none;
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .overview__aside--us {
     top: 0.0625rem;
     left: calc(100% + 0.25rem);

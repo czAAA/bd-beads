@@ -93,7 +93,7 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   color: var(--ink);
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .plans__heading {
     font-size: 2.625rem;
     line-height: 2.875rem;
@@ -118,7 +118,7 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   margin-top: var(--space-24);
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .plans__grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--space-12);
@@ -140,13 +140,13 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   border-radius: 1rem;
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .plan {
     padding: var(--space-20) 1.125rem;
   }
 }
 
-@media (min-width: 1024px) {
+@container overview (min-width: 1024px) {
   .plan {
     padding: 1.625rem var(--space-24);
   }
@@ -157,13 +157,13 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   padding: calc(1.375rem - 1px) calc(var(--space-20) - 1px);
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .plan--current {
     padding: calc(var(--space-20) - 1px) calc(1.125rem - 1px);
   }
 }
 
-@media (min-width: 1024px) {
+@container overview (min-width: 1024px) {
   .plan--current {
     padding: calc(1.625rem - 1px) calc(var(--space-24) - 1px);
   }
@@ -175,7 +175,7 @@ const IDS = ['no-account', 'free-account', 'pro'] as const
   pointer-events: none;
 }
 
-@media (min-width: 744px) {
+@container overview (min-width: 744px) {
   .plan__here {
     display: block;
   }

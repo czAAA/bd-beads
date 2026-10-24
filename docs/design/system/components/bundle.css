@@ -270,7 +270,9 @@ body {
 /* 4.1 Header */
 .bb-header { display: flex; align-items: center; gap: 10px; height: 64px; padding: 0 32px; background: var(--canvas); border-bottom: 1px solid var(--line-soft); }
 .bb-header > * { flex: none; }
-.bb-brand { display: inline-flex; align-items: center; gap: 8px; margin-right: 10px; font: 700 18px/1 var(--font-sans); letter-spacing: -.3px; color: var(--ink); }
+.bb-brand { display: inline-flex; align-items: center; gap: 8px; font: italic 400 24px/1 var(--font-serif); letter-spacing: -.3px; color: var(--ink); }
+.bb-strip { position: relative; }
+.bb-strip > .bb-brand { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
 .bb-brand-mark { width: 22px; height: 22px; display: grid; place-items: center; color: var(--accent); font-size: 22px; line-height: 1; }
 .bb-spacer { flex: 1 !important; }
 
