@@ -14,7 +14,7 @@ import {
   type DrawingContext,
   type ProjectTheme,
 } from './beadLook'
-import { positionMarkPattern, type PositionMarkStyle } from './positionMarks'
+import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, spaceOf, type Space } from './space'
 import {
   CELL_SIZE_PX,
@@ -136,8 +136,6 @@ export interface RenderInput {
   // Redraw only these rows: their whole band is cleared and redrawn, so edits do not pile up anti-aliasing on rounded
   // beads.
   rows?: { first: number; last: number }
-  /** How the Canvas draws its Position marks: the device's choice. Defaults to Dots. */
-  positionMarks?: PositionMarkStyle
   // How many positions wide the keep-out margin is drawn (ticket 459): the surface widens it when zoomed out. Defaults
   // to `MARGIN`.
   margin?: number
@@ -176,12 +174,12 @@ function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'brickBlock'
 }
 
 // The Canvas's Position marks (CONTEXT.md): one pattern fill in up to four strips round the margin's box, so no
-// position is tested. Dots mark only empty positions outside it; Squares also fill the Frame's box (ticket 458).
+// position is tested. The marks also fill the Frame's box (ticket 458).
 function drawPositionMarks(
   context: DrawingContext,
-  { project, area, zoom, pixelRatio, theme, style, margin }: { project: DrawnProject; space: Space; style: PositionMarkStyle; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
+  { project, area, zoom, pixelRatio, theme, margin }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
 ): void {
-  const pattern = positionMarkPattern(context, { style, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, cell: projectCell(project), deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
+  const pattern = positionMarkPattern(context, { technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, cell: projectCell(project), deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
   if (!pattern) {
     return
   }
@@ -222,8 +220,8 @@ function drawPositionMarks(
     strip(area.left, top, Math.min(hole.left, area.right), bottom)
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
   }
-  if (style === 'squares' && footprint) {
-    // Squares are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
+  if (footprint) {
+    // The marks are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
     // between its beads.
     const edge = BEAD_GAP_PX / 2
     strip(
@@ -396,7 +394,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, positionMarks = 'dots', showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN } = input
   const { frame, rotation } = project
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
@@ -433,7 +431,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin }
 
   if (space.open) {
-    drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, style: positionMarks, margin })
+    drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin })
     drawCanvasLayer(context, draw, space)
     if (frame) {
       const origin = frameOriginPx(canvasWeave(project), frame)

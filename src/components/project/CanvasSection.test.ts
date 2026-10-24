@@ -73,27 +73,12 @@ describe('CanvasSection', () => {
     expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('6')
   })
 
-  it('chooses Squares at once, keeps the choice on the device and reads it back', async () => {
-    localStorage.removeItem(PREFERENCES.positionMarks.key)
-    useCanvasBackground().setPositionMarks('dots')
-    const wrapper = render()
-    const options = wrapper.get('[data-testid="position-marks"]').findAll('[role="radio"]')
-    expect(options.map((option) => option.text())).toEqual(['Dots', 'Squares'])
-    expect(options[0].attributes('aria-checked')).toBe('true')
-
-    await options[1].trigger('click')
-
-    expect(useCanvasBackground().positionMarks.value).toBe('squares')
-    expect(localStorage.getItem(PREFERENCES.positionMarks.key)).toBe('squares')
-  })
-
-  it('in high contrast says the canvas stays white and keeps only the Position marks', async () => {
+  it('in high contrast says the canvas stays white', async () => {
     setTheme('contrast')
     await flush()
     const wrapper = render()
 
     expect(wrapper.get('[data-testid="canvas-stays-white"]').text()).toBe('The canvas stays white in high contrast.')
     expect(wrapper.find('[role="radiogroup"][aria-label="Canvas color"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="position-marks"]').exists()).toBe(true)
   })
 })

@@ -262,7 +262,7 @@ Product nouns are capitalized in English ("New Project", "Saved Projects", "Dele
 | Preferences · Language · Theme · Tools position · Input · Pen · Mouse | Настройки · Язык · Тема · Положение инструментов · Ввод · Перо · Мышь |
 | Left · Top · Right · Bottom · Light · Dark · System · High contrast | Слева · Сверху · Справа · Снизу · Светлая · Тёмная · Как в системе · Высокий контраст |
 | Help · Keyboard shortcuts · Overview · About · Source code · Version | Справка · Сочетания клавиш · Обзор · О приложении · Исходный код · Версия |
-| Rename {name} · Technique · Bead: · Replace bead · Canvas · Position marks · Dots · Squares | Переименовать «{name}» · Техника · Бисер: · Заменить бисер · Холст · Метки позиций · Точки · Клетки |
+| Rename {name} · Technique · Bead: · Replace bead · Canvas | Переименовать «{name}» · Техника · Бисер: · Заменить бисер · Холст |
 | saved · this device · unsaved changes · Not saved. {reason} · Try again | сохранено · на этом устройстве · есть несохранённые изменения · Не сохранено. {reason} · Повторить |
 | Save Project · Export · PNG · PDF · Project file | Сохранить проект · Экспорт · PNG · PDF · Файл проекта |
 | Name on exports · Your name · Printed on this Project's PDF and PNG exports. | Имя на экспорте · Ваше имя · Печатается на PDF и PNG этого проекта. |

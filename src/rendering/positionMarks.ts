@@ -4,20 +4,13 @@ import { cellSizePx, CELL_SIZE_PX, rowPitchPx, type Region } from './surfaceView
 
 // Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of
 // rows down: two for peyote/brick half-bead shifts, 2N with a Brick block of N) filled over the view, not a shape per position. A screen-size bitmap
-// kept like the bead sprites (sprites.ts). Style is a device preference: Dots, or Squares with one shared outline.
-
-/** How Position marks look (CONTEXT.md). */
-export type PositionMarkStyle = 'dots' | 'squares'
-
-/** The dot that marks an empty position: 1.5px across on screen (BeadBoard card). */
-const DOT_DIAMETER_PX = 1.5
+// kept like the bead sprites (sprites.ts). Each mark is a square with one shared outline.
 
 const MAX_TILES = 64
 const tiles = new Map<string, CanvasImageSource | null>()
 
 /** What a tile is made from: the Technique's row pitch, how big the grid is on screen, and the mark's color. */
 export interface MarkTileInput {
-  style: PositionMarkStyle
   technique: Technique
   /** The Brick block (ticket 477); nothing is 1. */
   brickBlock?: number
@@ -62,23 +55,6 @@ function tileOf(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize
       height: cellHeight,
     })),
   }
-}
-
-/** Draws every mark of one tile, and the copies that spill over its edges so that they wrap round. */
-function drawDots(context: DrawingContext, input: MarkTileInput, tile: Tile): void {
-  const { size } = tile
-  const radius = DOT_DIAMETER_PX / 2 / (input.deviceScale / input.pixelRatio)
-  context.fillStyle = input.color
-  context.beginPath()
-  for (const [x, y] of tile.beads.map((bead) => [bead.x + bead.width / 2, bead.y + bead.height / 2] as const)) {
-    for (const dx of [-size.width, 0, size.width]) {
-      for (const dy of [-size.height, 0, size.height]) {
-        context.moveTo(x + dx + radius, y + dy)
-        context.arc(x + dx, y + dy, radius, 0, Math.PI * 2)
-      }
-    }
-  }
-  context.fill()
 }
 
 /** A rounded rectangle as a closed path (the corners cut by `radius`, 0 for square). */
@@ -135,7 +111,7 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
   const width = Math.max(1, Math.round(size.width * input.deviceScale))
   const height = Math.max(1, Math.round(size.height * input.deviceScale))
   // The tile's size is in the key too; the roundness is the only part of the cell it doesn't show.
-  const key = [input.style, input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color].join('|')
+  const key = [input.technique, input.cell?.roundness ?? '', width, height, input.pixelRatio, input.color].join('|')
 
   let tile = tiles.get(key)
   if (tile === undefined) {
@@ -148,11 +124,7 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
     const own = canvas.getContext('2d')
     if (own) {
       own.setTransform(width / size.width, 0, 0, height / size.height, 0, 0)
-      if (input.style === 'squares') {
-        drawSquares(own, input, tileShape)
-      } else {
-        drawDots(own, input, tileShape)
-      }
+      drawSquares(own, input, tileShape)
     }
     tile = own ? canvas : null
     tiles.set(key, tile)

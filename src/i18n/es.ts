@@ -204,7 +204,6 @@ export const es: Translations = {
       label: 'Color del lienzo',
       pickerLabel: 'color del lienzo',
       swatchLabel: '{name}, {n} de {count}',
-      positionMarks: { label: 'Marcas de posición', dots: 'Puntos', squares: 'Cuadrados', dotsBody: 'Un punto en cada posición vacía.', squaresBody: 'Un contorno alrededor de cada posición vacía.' },
       names: { studio: 'Estudio', linen: 'Lino', sage: 'Salvia', mist: 'Bruma', blush: 'Rubor', night: 'Noche', ink: 'Tinta', midnight: 'Medianoche', olive: 'Oliva', umber: 'Sombra', ash: 'Ceniza' },
     },
     hint: {
