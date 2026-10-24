@@ -314,6 +314,13 @@ export const zh: Translations = {
     removeConfirmMessage: '{hex} 将从调色板中移除。已涂的格子保留其颜色。',
     removeConfirmButton: '移除',
     removeCancelButton: '取消',
+    removeAllColors: '移除所有自定义颜色',
+    removedAll: '自定义颜色已从调色板移除。',
+    removeAllConfirmTitle: '移除所有自定义颜色？',
+    removeAllConfirmMessage: {
+      other: '{count} 种颜色将从调色板移除。已涂色的格子保留原色。',
+    },
+    removeAllConfirmButton: '全部移除',
   },
   tools: {
     paintLabel: '涂色',

@@ -316,6 +316,16 @@ export const be: Translations = {
     removeConfirmMessage: 'Колер {hex} пойдзе з палітры. Зафарбаваныя ячэйкі захаваюць свой колер.',
     removeConfirmButton: 'Прыбраць',
     removeCancelButton: 'Скасаваць',
+    removeAllColors: 'Прыбраць усе свае колеры',
+    removedAll: 'Свае колеры прыбраны з палітры.',
+    removeAllConfirmTitle: 'Прыбраць усе свае колеры?',
+    removeAllConfirmMessage: {
+      one: 'Колер ({count}) пойдзе з палітры. Зафарбаваныя клеткі захаваюць свой колер.',
+      few: 'Колеры ({count}) пойдуць з палітры. Зафарбаваныя клеткі захаваюць свой колер.',
+      many: 'Колераў ({count}) пойдзе з палітры. Зафарбаваныя клеткі захаваюць свой колер.',
+      other: 'Колеры ({count}) пойдуць з палітры. Зафарбаваныя клеткі захаваюць свой колер.',
+    },
+    removeAllConfirmButton: 'Прыбраць усе',
   },
   tools: {
     paintLabel: 'Пэндзаль',

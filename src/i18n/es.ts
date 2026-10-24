@@ -315,6 +315,15 @@ export const es: Translations = {
     removeConfirmMessage: '{hex} saldrá de la paleta. Las celdas pintadas conservan su color.',
     removeConfirmButton: 'Quitar',
     removeCancelButton: 'Cancelar',
+    removeAllColors: 'Quitar todos los colores personalizados',
+    removedAll: 'Colores personalizados quitados de la paleta.',
+    removeAllConfirmTitle: '¿Quitar todos los colores personalizados?',
+    removeAllConfirmMessage: {
+      one: '{count} color saldrá de la paleta. Las celdas pintadas conservan su color.',
+      many: '{count} colores saldrán de la paleta. Las celdas pintadas conservan su color.',
+      other: '{count} colores saldrán de la paleta. Las celdas pintadas conservan su color.',
+    },
+    removeAllConfirmButton: 'Quitar todos',
   },
   tools: {
     paintLabel: 'Pintar',
