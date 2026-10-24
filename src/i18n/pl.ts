@@ -315,6 +315,16 @@ export const pl: Translations = {
     removeConfirmMessage: '{hex} zniknie z palety. Pomalowane pola zachowają swój kolor.',
     removeConfirmButton: 'Usuń',
     removeCancelButton: 'Anuluj',
+    removeAllColors: 'Usuń wszystkie własne kolory',
+    removedAll: 'Własne kolory usunięte z palety.',
+    removeAllConfirmTitle: 'Usunąć wszystkie własne kolory?',
+    removeAllConfirmMessage: {
+      one: '{count} kolor zniknie z palety. Zamalowane komórki zachowają swój kolor.',
+      few: '{count} kolory znikną z palety. Zamalowane komórki zachowają swój kolor.',
+      many: '{count} kolorów zniknie z palety. Zamalowane komórki zachowają swój kolor.',
+      other: '{count} kolorów zniknie z palety. Zamalowane komórki zachowają swój kolor.',
+    },
+    removeAllConfirmButton: 'Usuń wszystkie',
   },
   tools: {
     paintLabel: 'Maluj',
