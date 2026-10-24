@@ -56,7 +56,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
   const [across, down] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
-  const beadName = bead ? beadLabel(bead) : t.projects.unknownBeadLabel
+  const beadName = bead ? beadLabel(bead, t.formFactors) : t.projects.unknownBeadLabel
   const technique = techniqueName(t, frameWeave(project).technique)
   const grams = (count: number) => {
     const weight = printedGrams(count, bead)
@@ -94,7 +94,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     totalGrams: grams(total),
     gramsNote:
       perGram && bead
-        ? `${t.print.gramsNote.replace('{count}', groupThousands(perGram, locale)).replace('{bead}', `${bead.name} ${bead.size}`)} ${t.print.spares}`
+        ? `${t.print.gramsNote.replace('{count}', groupThousands(perGram, locale)).replace('{bead}', `${t.formFactors[bead.formFactor.nameKey]} ${bead.size}`)} ${t.print.spares}`
         : undefined,
     labels: t.print,
   }

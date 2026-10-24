@@ -150,7 +150,7 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
           :data-testid="`phone-replace-bead-${bead.id}`"
           @select="emit('replace-bead', bead.id)"
         >
-          {{ beadLabel(bead) }}
+          {{ beadLabel(bead, t.formFactors) }}
         </AppMenuItem>
       </MenuButton>
     </p>

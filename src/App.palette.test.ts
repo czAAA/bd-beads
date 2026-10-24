@@ -9,7 +9,7 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { pressBead } from './testUtils/beads'
 import { chooseCustomColor, openColorPopover } from './testUtils/pill'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { findBead } from '../../domain/beads'
+import { BEAD_CATALOG } from '../../domain/beads'
 import { createPalette, defaultPaletteIds } from '../../domain/palette'
 import { listedColorName } from '../../i18n/colorName'
 import { formatPrintedGrams, printedGrams } from '../../domain/printGrams'
@@ -12,7 +12,7 @@ import ExampleFrame from './ExampleFrame.vue'
 /** Beads needed (ticket 218): the gold pattern and its shopping list, counted off the Project and weighed as the exports weigh. */
 const { t, locale } = useI18n()
 
-const BEAD = findBead('miyuki-delica-11-0')
+const BEAD = BEAD_CATALOG.find((bead) => bead.brand.id === 'miyuki' && bead.formFactor.id === 'delica')
 const palette = createPalette(defaultPaletteIds())
 
 const lines = computed(() => {

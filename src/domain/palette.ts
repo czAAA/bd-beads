@@ -38,13 +38,13 @@ const MIYUKI_COLORS: readonly PaletteColor[] = [
   { id: 'iridescent', hex: '#8fb8de' },
 ]
 
-/** The built-in colors of each Bead brand that has a set of its own; a new brand is one entry here. */
-const BRAND_COLORS: ReadonlyMap<string, readonly PaletteColor[]> = new Map([['Miyuki', MIYUKI_COLORS]])
+/** The built-in colors of each Brand (by id) that has a set of its own; a new Brand with a set is one entry here. */
+const BRAND_COLORS: ReadonlyMap<string, readonly PaletteColor[]> = new Map([['miyuki', MIYUKI_COLORS]])
 
 /** The built-in colors a Project on this Bead starts with (ticket 0528): its brand's set, or the twelve for a brand
  * without one and for a Bead the catalog lacks. The same array every time, so two Beads can be compared by identity. */
 export function defaultPalette(beadId: string): readonly PaletteColor[] {
-  const brand = findBead(beadId)?.brand
+  const brand = findBead(beadId)?.brand.id
   return (brand && BRAND_COLORS.get(brand)) || BUILT_IN_COLORS
 }
 

@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../App.vue'
+import { DEFAULT_BEAD } from '../domain/beads'
 import { createProject } from '../domain/project'
 import { saveProjects } from '../services/libraryStore'
 import { openNewProject } from './pill'
@@ -10,7 +11,7 @@ import { openNewProject } from './pill'
 export function seedProject(widthMm: number, heightMm: number) {
   const project = createProject({
     technique: 'loom',
-    beadId: 'toho-cube-1.5mm',
+    beadId: DEFAULT_BEAD.id,
     size: { width: widthMm, height: heightMm, unit: 'mm' },
   })
   saveProjects([project])
@@ -32,7 +33,7 @@ export async function createProjectViaForm(wrapper: ReturnType<typeof mount>, na
   if (name !== undefined) {
     await sheet.get('[data-testid="name-input"]').setValue(name)
   }
-  await sheet.get('[data-testid="bead-select"]').setValue('toho-cube-1.5mm')
+  await sheet.get('[data-testid="bead-select"]').setValue(DEFAULT_BEAD.id)
   await sheet.get('form').trigger('submit')
   await nextTick()
 }

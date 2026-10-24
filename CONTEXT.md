@@ -37,9 +37,9 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | Area | Terms |
 |---|---|
 | [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, Canvas, Grid, Position marks, Piece, Piece area, Frame, Keep-out margin, Edit Frame, Move handle, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
-| [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Edit palette, Bead, Bead color, Color catalog, Form factor, Bead shape, Technique, Right-angle weave, Netting, Net size, Unit |
+| [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Edit palette, Bead, Bead color, Color catalog, Brand, Form factor, Bead size, Bead shape, Technique, Right-angle weave, Netting, Net size, Unit |
 | [Row progress](docs/glossary/row-progress.md) | Row progress, Pass, Row direction, Progress bar |
-| [Tool pill and controls](docs/glossary/toolbox.md) | Tool group, Tool pill layout, Tool pill, Panel, Menu, Subpanel, Canvas strip, Brand, Canvas footer, Tool button, Tooltip, Note |
+| [Tool pill and controls](docs/glossary/toolbox.md) | Tool group, Tool pill layout, Tool pill, Panel, Menu, Subpanel, Canvas strip, Wordmark, Canvas footer, Tool button, Tooltip, Note |
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer |
 | [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |

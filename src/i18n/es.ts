@@ -161,6 +161,7 @@ export const es: Translations = {
   languageSwitcher: {
     ariaLabel: 'Idioma',
   },
+  formFactors: { cube: 'Cubo', round: 'Redondo', delica: 'Delica' },
   projects: {
     heading: 'Proyectos guardados',
     newProjectButton: 'Nuevo proyecto',

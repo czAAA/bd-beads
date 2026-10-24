@@ -8,7 +8,7 @@ import { createProject, type Project, frameGrid } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { serializeLibrary, serializeProject } from '../../domain/projectFile'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 function makeProject(name: string): Project {
   return createProject({

@@ -19,7 +19,7 @@ vi.mock('../../rendering/draftRenderer', () => ({
   renderDraft: (_context: unknown, input: unknown) => draft.rendered.push(input),
 }))
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 /** A picture of flat color blocks: the left half red, the right half blue. */
 function twoBlocks(width = 8, height = 8): PixelData {

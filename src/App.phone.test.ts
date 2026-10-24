@@ -11,7 +11,7 @@ import { en } from './i18n/en'
 
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 beforeEach(() => {
   localStorage.clear()

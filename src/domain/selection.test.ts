@@ -24,7 +24,7 @@ import { withColors } from './canvas'
 import { createProject, withFrameGrid, type Project, frameGrid } from './project'
 import { BEAD_CATALOG } from './beads'
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 const RED = '#e63746'
 const BLUE = '#2f6fed'

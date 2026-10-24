@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { beadsPerGram, formatPrintedGrams, printedGrams } from './printGrams'
 
-const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki-delica-11-0')!
-const round = BEAD_CATALOG.find((bead) => bead.id === 'toho-round-11-0')!
+const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
+const round = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
 
 describe('grams on the printed output (ticket 162; printed-output.md)', () => {
   it('is the count divided by beads per gram, rounded up to 0.1 g', () => {
@@ -15,7 +15,7 @@ describe('grams on the printed output (ticket 162; printed-output.md)', () => {
   })
 
   it('has none for a Bead with no weight', () => {
-    expect(printedGrams(100, { gramsPerBead: undefined })).toBeUndefined()
+    expect(printedGrams(100, { beadsPerKg: undefined })).toBeUndefined()
     expect(printedGrams(100, undefined)).toBeUndefined()
   })
 
@@ -35,6 +35,6 @@ describe('grams on the printed output (ticket 162; printed-output.md)', () => {
   it('says how many beads make a gram, for the note', () => {
     expect(beadsPerGram(delica)).toBe(200)
     expect(beadsPerGram(round)).toBe(110)
-    expect(beadsPerGram({ gramsPerBead: undefined })).toBeUndefined()
+    expect(beadsPerGram({ beadsPerKg: undefined })).toBeUndefined()
   })
 })
