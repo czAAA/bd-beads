@@ -207,7 +207,7 @@ export const es: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre un proyecto guardado o importa un archivo.',
+    canvasPlaceholderHint: 'Crea uno con Nuevo proyecto, abre un proyecto guardado o importa un archivo. Mueve el lienzo arrastrando con el botón derecho del ratón o con Espacio.',
     canvasPlaceholder: 'Aún no hay ningún proyecto abierto',
     updateReady: 'Actualización lista',
     updateReload: 'Recargar',
@@ -562,8 +562,6 @@ export const es: Translations = {
     keyHintsOff: 'No',
   },
   tooltips: {
-    paint: 'El clic derecho borra.',
-    fill: 'El clic derecho borra la zona.',
     select: 'Luego copia y pega, o quita.',
     erase: 'Suprimir vacía lo seleccionado.',
     piece: 'Toca una cuenta para seleccionarla junto con todo lo que toca.',

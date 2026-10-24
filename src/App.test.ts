@@ -203,41 +203,30 @@ describe('App', () => {
     expect(grid[0]![3]!.color).toBeNull()
   })
 
-  it('right-clicks a single cell to erase it with the Paint tool', async () => {
+  it('does not erase on a right-click under Paint, which moves the Canvas instead (ticket 541)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, 0)
     await wrapper.trigger('mouseup')
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
-
     await pressBead(wrapper, 0, { button: 2 })
     await wrapper.trigger('mouseup')
 
-    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
-  it('right-clicks with the Fill tool to flood-erase the connected same-color region in one click', async () => {
+  it('does not flood-erase on a right-click under Fill (ticket 541)', async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    // Paint a 2x2 red block: (0,0), (0,1), (1,0), (1,1).
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await hoverBead(wrapper, 10, { buttons: 1 })
-    await hoverBead(wrapper, 11, { buttons: 1 })
     await wrapper.trigger('mouseup')
 
     await pickTool(wrapper, 'fill')
     await pressBead(wrapper, 0, { button: 2 })
+    await wrapper.trigger('mouseup')
 
-    const grid = frameGrid(loadProjects()[0]!)
-    expect(grid[0]![0]!.color).toBeNull()
-    expect(grid[0]![1]!.color).toBeNull()
-    expect(grid[1]![0]!.color).toBeNull()
-    expect(grid[1]![1]!.color).toBeNull()
-    // Outside the flood-erased region is untouched.
-    expect(grid[0]![2]!.color).toBeNull()
+    expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
   it('undoes the most recent paint action, and repeated undo steps back further', async () => {

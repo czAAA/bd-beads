@@ -207,7 +207,7 @@ export const pl: Translations = {
     },
   },
   shell: {
-    canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz zapisany projekt albo zaimportuj plik.',
+    canvasPlaceholderHint: 'Utwórz projekt przyciskiem Nowy projekt, otwórz zapisany projekt albo zaimportuj plik. Przesuwaj płótno prawym przyciskiem myszy lub spacją.',
     canvasPlaceholder: 'Nie otwarto jeszcze żadnego projektu',
     updateReady: 'Aktualizacja gotowa',
     updateReload: 'Załaduj ponownie',
@@ -563,8 +563,6 @@ export const pl: Translations = {
     keyHintsOff: 'Wył.',
   },
   tooltips: {
-    paint: 'Prawy przycisk wymazuje.',
-    fill: 'Prawy przycisk wymazuje obszar.',
     select: 'Potem skopiuj i wklej albo usuń.',
     erase: 'Delete opróżnia zaznaczone.',
     piece: 'Dotknij koralika, aby zaznaczyć go razem ze wszystkim, czego dotyka.',

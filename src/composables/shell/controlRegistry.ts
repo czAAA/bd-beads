@@ -163,8 +163,8 @@ const unkeyed = (id: string, name: ControlAction['name'], group: ControlGroup, r
 // The control registry (ADR 0035, ticket 329): every action with a key, defined once; the shortcut table and the
 // shortcuts dialog (in this order) are built from it. A test fails if two actions share a key.
 export const CONTROLS: readonly ControlAction[] = [
-  selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel, 'tools', (t) => t.tooltips.paint),
-  selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel, 'tools', (t) => t.tooltips.fill),
+  selectTool('paint', '1', 'paint', (t) => t.tools.paintLabel, 'tools'),
+  selectTool('fill', '2', 'fill', (t) => t.tools.fillLabel, 'tools'),
   selectTool('select', '3', 'select', (t) => t.tools.selectLabel, 'tools', (t) => t.tooltips.select),
   selectTool('piece', '6', 'piece', (t) => t.tools.pieceLabel, 'tools', (t) => t.tooltips.piece),
   {
