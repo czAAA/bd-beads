@@ -4,6 +4,7 @@ import { parseColorCatalog, type ColorCatalog } from '../domain/colorCatalog'
 // are made by the script in the docs repo.
 const CATALOG_FILES: Readonly<Record<string, () => Promise<{ default: unknown }>>> = {
   'miyuki-delica': () => import('../data/colorCatalogs/miyuki-delica.json'),
+  'miyuki-round': () => import('../data/colorCatalogs/miyuki-round.json'),
 }
 
 const loaded = new Map<string, Promise<ColorCatalog>>()
