@@ -1081,6 +1081,61 @@ describe('ProjectSurface', () => {
     })
   })
 
+  describe('the Tool pointer (ticket 542)', () => {
+    const styleOf = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.find('[data-testid="project-surface"]').attributes('style') ?? ''
+    const decoded = (style: string) => decodeURIComponent(style)
+
+    it('is the tool\'s cursor, with the chosen colour in the bead of Paint and Fill', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746' })
+      expect(decoded(styleOf(wrapper))).toContain('fill="#e63746"')
+
+      await wrapper.setProps({ tool: 'select' })
+      expect(styleOf(wrapper)).toMatch(/ 4 3, default/)
+    })
+
+    it('leaves the bead out when no colour is chosen', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'fill', previewColor: null })
+      expect(decoded(styleOf(wrapper))).not.toContain('<rect')
+    })
+
+    it('takes the place of the bead-shaped pointer: the OS pointer stays, nothing is drawn for the marker', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointermove', { clientX: 105, clientY: 47, buttons: 0, pointerType: 'mouse' })
+
+      expect(surface.classes()).not.toContain('project-surface--over-bead')
+      expect(context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 17)).toHaveLength(0)
+    })
+
+    it('gives way to the system\'s grab while Space is held, and to the eyedropper', async () => {
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746' })
+
+      await wrapper.setProps({ markerHidden: true })
+      expect(styleOf(wrapper)).toBe('')
+
+      await wrapper.setProps({ markerHidden: false, picking: true })
+      expect(decoded(styleOf(wrapper))).not.toContain('fill="#e63746"')
+      expect(styleOf(wrapper)).toContain('cursor: url(')
+    })
+
+    it('closes the Hand while it pans, but a drag by another button keeps the system\'s grabbing', async () => {
+      const project = projectOf(20, 10)
+      const hand = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'hand', moving: true })
+      const handSurface = hand.wrapper.find('[data-testid="project-surface"]')
+      expect(styleOf(hand.wrapper)).toMatch(/ 11 12, grab/)
+      await handSurface.trigger('pointerdown', { clientX: 105, clientY: 47, button: 0, buttons: 1, pointerId: 1 })
+      expect(styleOf(hand.wrapper)).toMatch(/ 11 12, grabbing/)
+
+      const paint = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'paint' })
+      const paintSurface = paint.wrapper.find('[data-testid="project-surface"]')
+      await paintSurface.trigger('pointerdown', { clientX: 105, clientY: 47, button: 2, buttons: 2, pointerId: 1 })
+      expect(paintSurface.classes()).toContain('project-surface--dragging')
+      expect(styleOf(paint.wrapper)).toBe('')
+    })
+  })
+
   describe('the bead-shaped pointer (ticket 353)', () => {
     /** The marker's fill: the only translucent fillRect of 90% of a 20px bead less 1px at zoom 1. */
     const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 17)

@@ -324,36 +324,36 @@ test.describe('touch', () => {
   })
 })
 
-test.describe('the bead-shaped pointer (ticket 353)', () => {
-  test('hides the OS pointer over the beads, and stands a marker of 90% of a bead centred on the pointer', async ({ page }) => {
+test.describe('the Paint tool pointer (tickets 353, 542)', () => {
+  const PAINT_POINTER = /^url\("data:image\/svg\+xml,.*"\) 5 19, crosshair$/
+
+  test('shows the tool\'s own pointer over the beads, and draws no bead-shaped marker', async ({ page }) => {
     const project = fixtureProject({ technique: 'loom', blank: true })
     await openApp(page, [project])
     await setZoom(page, 100)
     const centre = await pointOn(page, 'loom', false, 100, 3, 5)
-    // Four px right of the bead's centre, the marker reaches 13px past it: into the next bead, which the preview does
-    // not touch.
+    // Four px right of the bead's centre, the old marker reached 13px past it: into the next bead, which the preview
+    // does not touch. With the Tool pointer there is no marker, so the beads either side look alike.
     const at = { x: centre.x + 4, y: centre.y }
     await page.mouse.move(at.x, at.y)
     await settle(page)
 
-    expect(await page.getByTestId('project-surface').evaluate((element) => getComputedStyle(element).cursor)).toBe('none')
+    expect(await page.getByTestId('project-surface').evaluate((element) => getComputedStyle(element).cursor)).toMatch(PAINT_POINTER)
 
     const shot = PNG.sync.read(await page.screenshot({ clip: { x: at.x - 20, y: at.y - 2, width: 40, height: 4 } }))
     const pixel = (dx: number) => {
       const index = (2 * shot.width + 20 + dx) * 4
       return [shot.data[index]!, shot.data[index + 1]!, shot.data[index + 2]!]
     }
-    // Inside the marker (8px right of the pointer) the paint color shows through; 12px right of it, past its 9px reach,
-    // the bead is as it was.
-    expect(pixel(8)).not.toEqual(pixel(12))
-    expect(pixel(-8)).not.toEqual(pixel(-12))
+    expect(pixel(8)).toEqual(pixel(12))
+    expect(pixel(-8)).toEqual(pixel(-12))
   })
 
-  test('is the same marker on peyote, and gives way to the grab cursor while Space is held', async ({ page }) => {
+  test('is the same pointer on peyote, and gives way to the grab cursor while Space is held', async ({ page }) => {
     const project = fixtureProject({ technique: 'peyote', blank: true })
     await openApp(page, [project])
     await setZoom(page, 100)
-    // With the Frame panel closed Space would show the keyboard cursor over the marker; open it, as editing did (ticket 473).
+    // With the Frame bar closed Space would show the keyboard cursor; open it, as editing did (ticket 473).
     await page.getByTestId('strip-frame').click()
     await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
     const centre = await pointOn(page, 'peyote', false, 100, 3, 5)
@@ -361,16 +361,10 @@ test.describe('the bead-shaped pointer (ticket 353)', () => {
     await settle(page)
 
     const cursorOf = (testId: string) => page.getByTestId(testId).evaluate((element) => getComputedStyle(element).cursor)
-    expect(await cursorOf('project-surface')).toBe('none')
+    expect(await cursorOf('project-surface')).toMatch(PAINT_POINTER)
 
     await page.keyboard.down('Space')
     expect(await cursorOf('project-surface-overlay')).toBe('grab')
-    await settle(page)
-    const held = PNG.sync.read(await page.screenshot({ clip: { x: centre.x - 20, y: centre.y - 20, width: 40, height: 40 } }))
     await page.keyboard.up('Space')
-    await settle(page)
-    const free = PNG.sync.read(await page.screenshot({ clip: { x: centre.x - 20, y: centre.y - 20, width: 40, height: 40 } }))
-    // With Space down no marker is drawn, so the bead looks as it does under the hover preview alone.
-    expect(Buffer.compare(held.data, free.data)).not.toBe(0)
   })
 })
