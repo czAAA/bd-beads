@@ -1,4 +1,5 @@
 import { BEAD_CATALOG, findBead } from './beads'
+import type { ColorCatalog } from './colorCatalog'
 import { nearestColor } from './imageColors'
 
 export interface PaletteColor {
@@ -6,6 +7,8 @@ export interface PaletteColor {
   hex: string
   /** A brand's own name, the same in every language; absent, the name is the translation of `id` (`colorNames`). */
   literalName?: string
+  /** The maker's catalog code of a swatch picked from the Color catalog (ticket 0538, ADR 0072); absent for a plain color. */
+  code?: string
 }
 
 /** The twelve built-in colors a Palette starts from when its Bead's brand has no set of its own (see CONTEXT.md's
@@ -175,9 +178,13 @@ export interface Palette {
   besideRecents: (recents: readonly string[]) => { color: PaletteColor; slot: number }[]
 }
 
+/** The catalog code of each swatch that has one, by the swatch's hex (ticket 0538): a hex is a swatch's identity whether
+ * it is an added color or a built-in one, so a code follows its color when a Bead change moves it between the two. */
+export type PaletteCodes = Readonly<Record<string, string>>
+
 /** The Palette the stored ids name. `builtIns` is the set the ids are resolved against: the Bead's (see defaultPalette). */
-export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS): Palette {
-  const colors = paletteColors(ids, builtIns)
+export function createPalette(ids: PaletteIds, builtIns: readonly PaletteColor[] = BUILT_IN_COLORS, codes: PaletteCodes = {}): Palette {
+  const colors = paletteColors(ids, builtIns).map((color) => (codes[color.hex] ? { ...color, code: codes[color.hex] } : color))
   return {
     colors,
     byId: (id) => colors.find((color) => color.id === id),
@@ -248,8 +255,33 @@ export function moveSlot(ids: readonly string[], from: number, to: number): stri
 }
 
 /** The Palette of a Project as every reader asks it: its stored ids against its Bead's built-in colors (ticket 0528). */
-export function projectPalette(project: { palette: PaletteIds; beadId: string }): Palette {
-  return createPalette(project.palette, defaultPalette(project.beadId))
+export function projectPalette(project: { palette: PaletteIds; beadId: string; paletteCodes?: PaletteCodes }): Palette {
+  return createPalette(project.palette, defaultPalette(project.beadId), project.paletteCodes)
+}
+
+/** A stored code map read back whatever it holds: only a lowercase-hex key with a non-empty string code is kept (ticket 0538). */
+export function normalizePaletteCodes(stored: unknown): PaletteCodes {
+  if (typeof stored !== 'object' || stored === null || Array.isArray(stored)) return {}
+  const codes: Record<string, string> = {}
+  for (const [key, code] of Object.entries(stored)) {
+    const hex = normalizeHex(key)
+    if (hex && typeof code === 'string' && code !== '') codes[hex] = code
+  }
+  return codes
+}
+
+/** `codes` less the swatches that are no longer in the Palette `ids`, so a code never outlives its color (ticket 0538). */
+export function codesInPalette(codes: PaletteCodes, ids: PaletteIds, builtIns: readonly PaletteColor[]): PaletteCodes {
+  const held = new Set(paletteColors(ids, builtIns).map((color) => color.hex))
+  return Object.fromEntries(Object.entries(codes).filter(([hex]) => held.has(hex)))
+}
+
+/** The codes that stay after the Bead changes (ticket 0538, ADR 0072): a swatch keeps its code only when the new Bead's
+ * catalog lists it in the new Bead's size. No catalog (or one that failed to load) keeps none. */
+export function codesForBead(codes: PaletteCodes, catalog: ColorCatalog | undefined, size: string | undefined): PaletteCodes {
+  if (!catalog || !size) return {}
+  const listed = new Set(catalog.codes.filter((entry) => entry.sizes.includes(size)).map((entry) => entry.code))
+  return Object.fromEntries(Object.entries(codes).filter(([, code]) => listed.has(code)))
 }
 
 /** Whether some Bead's set has a color with this hex. */

@@ -30,8 +30,8 @@ const matches = computed(() => {
 })
 const shown = computed(() => matches.value.slice(0, SHOWN))
 
-function add(hex: string) {
-  if (props.colors.add(hex) === 'added') emit('added', hex)
+function add(hex: string, code: string) {
+  if (props.colors.add(hex, code) === 'added') emit('added', hex)
 }
 </script>
 
@@ -53,7 +53,7 @@ function add(hex: string) {
             data-testid="bead-color"
             :data-code="entry.code"
             :data-taken="entry.taken || undefined"
-            @click="!entry.taken && add(entry.hex)"
+            @click="!entry.taken && add(entry.hex, entry.code)"
           >
             <span class="bead-color-list__chip" :class="{ 'bead-color-list__chip--approximate': entry.approximate }" :style="{ backgroundColor: entry.hex }" />
             <span class="bead-color-list__text">

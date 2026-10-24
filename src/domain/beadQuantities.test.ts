@@ -1,4 +1,6 @@
-import { createPalette, defaultPaletteIds } from './palette'
+import { addedColorId, createPalette, defaultPaletteIds } from './palette'
+import { en } from '../i18n/en'
+import { listedColorName } from '../i18n/colorName'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
@@ -135,5 +137,15 @@ describe('computeColorQuantities in Netting (ticket 485)', () => {
 
     // One diamond: its tip, two beads on each side strand, the two side corners and the bottom tip.
     expect(computeColorQuantities(painted, palette)).toMatchObject([{ hex: RED, count: 8 }])
+  })
+})
+
+describe('a coded swatch in the shopping list (ticket 0538)', () => {
+  it('lists the maker code beside the color', () => {
+    const hex = '#123456'
+    const ids = [...defaultPaletteIds(), addedColorId(hex)]
+    const coded = createPalette(ids, undefined, { [hex]: 'DB1' })
+    expect(listedColorName(en, coded.byHex(hex), hex)).toBe('#123456 · DB1')
+    expect(listedColorName(en, createPalette(ids).byHex(hex), hex)).toBe('#123456')
   })
 })
