@@ -5,6 +5,7 @@ import { layerAt } from '../../domain/layers'
 import { footprintOf } from '../../domain/footprint'
 import { sameFrame } from '../../domain/frame'
 import { inMargin, mayPlace } from '../../domain/margin'
+import type { Tool } from '../../domain/tool'
 import type { GridPosition, Layer, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../../domain/project'
@@ -21,6 +22,7 @@ import { edgeScrollStep } from '../../composables/canvas/edgeScroll'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
 import { surfaceView, type Scroll, type ViewLayer } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR } from './eyedropperCursor'
+import { toolPointer } from './toolCursors'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -74,6 +76,9 @@ const props = withDefaults(defineProps<{
   /** Whether Select or Piece is the tool in hand (ticket 414): the pointer is the native arrow, not the bead-shaped
    * marker, and the Selection shows its handles. */
   selecting?: boolean
+  /** The tool in hand (ticket 542): its Tool pointer is the canvas pointer, in place of the bead-shaped marker. Absent,
+   * the marker shows over the beads. */
+  tool?: Tool
   /** Whether Pick color from canvas is on (ticket 403): the pointer is an eyedropper, the paint preview and bead
    * marker give way, and a chip by the pointer shows the color of the bead under it. */
   picking?: boolean
@@ -129,6 +134,15 @@ const emit = defineEmits<{
 const handMoves = computed(() => props.moving === true)
 /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
 const eyedropperShown = computed(() => props.picking === true && !props.markerHidden && !handMoves.value)
+
+/** The tool's own pointer (ticket 542): not while the eyedropper, Space or a canvas move by another button
+ * (the system's grab and grabbing) or the Frame's margin (not-allowed) has the pointer. Hand closes its hand while it
+ * pans. */
+const toolCursor = computed(() => {
+  if (!props.tool || props.picking || props.markerHidden || overRefusedMargin.value) return undefined
+  if (dragging.value && !handMoves.value) return undefined
+  return toolPointer(props.tool, { color: props.previewColor, dragging: dragging.value })
+})
 
 // Set by a press on the surface: bead cursor shows only for focus not from a pointer (Tab, Skip to Project). Cleared by
 // blur and arrow keys. While set, Space pans the canvas instead of using the tool (ticket 424).
@@ -566,7 +580,7 @@ function drawOverlay(): void {
       theme: theme.value,
       rowMarks: marksShown.value,
       cursor: props.cursor,
-      pointer: markerAt.value && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
+      pointer: markerAt.value && !props.tool && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
       marginOutline: marginOpacity.value,
@@ -1122,13 +1136,13 @@ onBeforeUnmount(() => {
     :data-scroll-x="scroll.x"
     :data-scroll-y="scroll.y"
     :class="{
-      'project-surface--over-bead': overBead && !handMoves && !picking && !selecting,
+      'project-surface--over-bead': overBead && !tool && !handMoves && !picking && !selecting,
       'project-surface--picking': eyedropperShown,
       'project-surface--refused': overRefusedMargin && !handMoves,
       'project-surface--moving': handMoves,
       'project-surface--dragging': dragging,
     }"
-    :style="eyedropperShown ? { cursor: EYEDROPPER_CURSOR } : handleCursor ? { cursor: handleCursor } : undefined"
+    :style="eyedropperShown ? { cursor: EYEDROPPER_CURSOR } : handleCursor ? { cursor: handleCursor } : toolCursor ? { cursor: toolCursor } : undefined"
     tabindex="0"
     role="img"
     :aria-label="label"

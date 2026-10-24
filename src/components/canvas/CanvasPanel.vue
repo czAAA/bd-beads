@@ -344,6 +344,7 @@ const drawingStyle = computed(() => {
               :scroll="scroll"
               :show-rulers="showRulers"
               :row-marks="rowHighlight"
+              :tool="activeTool"
               :moving="activeTool === 'hand'"
               :nearest-on-press="activeTool === 'fill'"
               :select-anywhere="activeTool === 'select'"
