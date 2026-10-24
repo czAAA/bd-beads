@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { toolPointer } from './toolCursors'
+import { toolPointer, toolPointerImage } from './toolCursors'
 
 const svgOf = (value: string) => decodeURIComponent(/data:image\/svg\+xml,([^"]+)/.exec(value)![1])
 
@@ -27,5 +27,13 @@ describe('toolPointer', () => {
     expect(toolPointer('hand', { dragging: true })).toMatch(/ 11 12, grabbing$/)
     expect(toolPointer('hand', { dragging: true })).not.toBe(toolPointer('hand'))
     expect(toolPointer('select', { dragging: true })).toBe(toolPointer('select'))
+  })
+})
+
+describe('toolPointerImage', () => {
+  it('is the same file and hot spot as the CSS value, as a plain image', () => {
+    const { url, hotSpot } = toolPointerImage('paint', { color: '#ff0000' })
+    expect(hotSpot).toEqual([5, 19])
+    expect(toolPointer('paint', { color: '#ff0000' })).toContain(`url("${url}") 5 19`)
   })
 })
