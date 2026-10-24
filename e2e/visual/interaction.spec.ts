@@ -122,24 +122,22 @@ test.describe('the pointer tools', () => {
     expect(frameGrid((await savedProject(page))).flat().every((cell) => cell.color === null)).toBe(true)
   })
 
-  test('a right click erases, and a right-button drag erases a stroke', async ({ page }) => {
+  test('a right-button drag moves the Canvas and erases nothing', async ({ page }) => {
     const project = fixtureProject({ technique: 'loom' })
     await openApp(page, [project])
     await setZoom(page, 100)
 
     const at = await pointOn(page, 'loom', false, 100, 4, 7)
     await page.mouse.click(at.x, at.y, { button: 'right' })
-    const after = await pointOn(page, 'loom', false, 100, 4, 10)
-    await page.mouse.move(after.x, after.y)
+    const from = await pointOn(page, 'loom', false, 100, 4, 10)
+    await page.mouse.move(from.x, from.y)
     await page.mouse.down({ button: 'right' })
     const end = await pointOn(page, 'loom', false, 100, 4, 13)
     await page.mouse.move(end.x, end.y, { steps: 12 })
     await page.mouse.up({ button: 'right' })
 
     const saved = await savedProject(page)
-    expect([7, 10, 11, 12, 13].map((column) => colorAt(saved, 4, column))).toEqual(Array(5).fill(null))
-    // What was not touched is as it was.
-    expect(colorAt(saved, 4, 8)).toBe(frameGrid(project)[4]![8]!.color)
+    expect([7, 10, 11, 12, 13].map((column) => colorAt(saved, 4, column))).toEqual([7, 10, 11, 12, 13].map((column) => frameGrid(project)[4]![column]!.color))
   })
 
   test('the Fill tool fills the area under a click', async ({ page }) => {

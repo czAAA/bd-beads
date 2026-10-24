@@ -776,7 +776,7 @@ function fillLimit(project: Pick<Project, 'beads' | 'frame'>, start: GridPositio
 }
 
 /** Every cell reachable from `start` through same-colored neighbors (see neighborsOf): the flood region of a click.
- * Used by Fill (fillArea), including right-click erase under Fill (ticket 25), which passes a null color. */
+ * Used by Fill (fillArea). */
 function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, start: GridPosition): GridPosition[] {
   const targetColor = colorAt(project.beads, start.row, start.column)
   const limit = fillLimit(project, start)

@@ -28,7 +28,7 @@ import type { FramePress } from '../../rendering/frameHandles'
 
 // The Select tool's whole gesture (ticket 63): the Selection, in-session clipboard, the in-progress press (click vs
 // drag) and the live paste preview. It never reads the active tool (see
-// leaveSelectTool); Escape/right-click precedence stays in the shell, which calls cancel() last.
+// leaveSelectTool); Escape precedence stays in the shell, which calls cancel() last.
 export function useSelectionGesture(
   currentProject: () => Project | undefined,
   edit: EditFn,
@@ -47,7 +47,7 @@ export function useSelectionGesture(
   // but it survives a Project switch (see clearSelection()).
   const copiedBlock = ref<CopiedBlock | undefined>()
   // Leaves paste mode (live preview plus stamp, Select-only) without touching copiedBlock (ticket 92, ADR 0016): on
-  // leaving Select, on Escape/right-click (see leaveSelectTool/cancel) and on touch by Undo or a second tap on Select.
+  // leaving Select, on Escape (see leaveSelectTool/cancel) and on touch by Undo or a second tap on Select.
   // A new Copy or Ctrl/Cmd+V re-arms it (ticket 437, ADR 0057); switching back to Select alone does not.
   const pasteDismissed = ref(false)
   /** Paste mode (ticket 437): Select shows the live paste preview and a click or drag stamps -- copiedBlock present
@@ -241,7 +241,7 @@ export function useSelectionGesture(
     pasteDismissed.value = true
   }
 
-  // Right-click or Escape under Select backs out one step (ticket 49): an active paste projection first (see
+  // Escape under Select backs out one step (ticket 49): an active paste projection first (see
   // dismissPaste), else the Selection. The app shell calls this last (ticket 63). Returns whether there was anything to
   // back out of, so Escape can fall through to selecting Paint (ticket 214).
   function cancel(): boolean {

@@ -87,8 +87,6 @@ const {
   previewCells,
   onCellPrimaryDown,
   onCellPrimaryMove,
-  onCellSecondaryDown,
-  onCellSecondaryMove,
   onCellHover,
   onHoverEnd,
   beadCursor,
@@ -364,8 +362,6 @@ const drawingStyle = computed(() => {
               @keyboard-focus="onProjectKeyboardFocus"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
-              @cell-secondary-down="onCellSecondaryDown"
-              @cell-secondary-move="onCellSecondaryMove"
               @cell-hover="onCellHover"
               @hover-end="onHoverEnd"
               @pan="panBy"
