@@ -48,9 +48,12 @@ async function swatch(wrapper: ReturnType<typeof mount>, colorId: string) {
   return wrapper.get(`[data-color-id="${colorId}"]`)
 }
 
-async function removeButton(wrapper: ReturnType<typeof mount>) {
+/** Enters Edit palette (ticket 531) and presses the added swatch: the way to ask to remove it. */
+async function askToRemove(wrapper: ReturnType<typeof mount>, colorId: string) {
   await palette(wrapper)
-  return wrapper.find('[data-testid="palette-swatch-remove"]')
+  const pencil = wrapper.get('[data-testid="color-popover-edit"]')
+  if (pencil.attributes('aria-pressed') !== 'true') await pencil.trigger('click')
+  await wrapper.get(`[data-color-id="${colorId}"]`).trigger('click')
 }
 
 async function choose(wrapper: ReturnType<typeof mount>, hex: string) {
@@ -130,7 +133,7 @@ describe('a Custom color joins the Palette on first use (ticket 227)', () => {
 
 describe('an added swatch can be removed (ticket 228)', () => {
   const seed = (hexes: string[]) => seedPalette(hexes)
-  /** The × shows on the active added swatch and on a hovered or focused one (ticket 333), so the swatch is selected before it is used. */
+  /** Choosing a color closes the popover; the swatch is selected before Edit palette asks to remove it. */
   const selectAdded = async (wrapper: ReturnType<typeof mount>, hex = '#123456') => {
     await (await swatch(wrapper, addedColorId(hex))).trigger('click')
     await palette(wrapper)
@@ -139,16 +142,48 @@ describe('an added swatch can be removed (ticket 228)', () => {
   const modal = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="remove-color-modal"]')
   const confirm = (wrapper: ReturnType<typeof mount>) => wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-  it('shows the × on the active added swatch, and on no built-in one (ticket 333)', async () => {
+  it('shows a × on every added swatch only in Edit palette, and none on a built-in one (ticket 531)', async () => {
     seed(['#123456', '#abcdef'])
     const wrapper = mount(App)
     await flushPromises()
-    await openColorPopover(wrapper)
-    await (await palette(wrapper))[0]!.trigger('click')
-    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(0)
     await selectAdded(wrapper, '#abcdef')
-    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
-    expect((await removeButton(wrapper)).attributes('aria-label')).toBe(en.palette.removeSwatch.replace('{hex}', '#abcdef'))
+    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(0)
+    await wrapper.get('[data-testid="color-popover-edit"]').trigger('click')
+    expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(2)
+    expect((await swatch(wrapper, addedColorId('#abcdef'))).attributes('aria-label')).toBe(en.palette.removeSwatch.replace('{hex}', '#abcdef'))
+    const builtIn = (await palette(wrapper)).find((candidate) => !candidate.attributes('data-color-id')!.startsWith('added'))!
+    expect(builtIn.attributes('aria-disabled')).toBe('true')
+    for (const id of ['pick-color-button', 'custom-color-button']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled')).toBe('true')
+    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+    expect(wrapper.find('[data-testid="custom-color-panel"]').exists()).toBe(false)
+  })
+
+  it('Edit palette ends on Escape without closing the popover, and the popover opens in normal mode (ticket 531)', async () => {
+    seed(['#123456'])
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+    await openColorPopover(wrapper)
+    await wrapper.get('[data-testid="color-popover-edit"]').trigger('click')
+    expect(wrapper.get('[data-testid="color-popover-edit"]').attributes('aria-pressed')).toBe('true')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await flushPromises()
+    expect(wrapper.get('[data-testid="color-popover-edit"]').attributes('aria-pressed')).toBe('false')
+    await wrapper.get('[data-testid="color-popover-edit"]').trigger('click')
+    await wrapper.get('[data-testid="color-popover-close"]').trigger('click')
+    await openColorPopover(wrapper)
+    expect(wrapper.get('[data-testid="color-popover-edit"]').attributes('aria-pressed')).toBe('false')
+    wrapper.unmount()
+  })
+
+  it('Edit palette ends with the last added color, and the pencil goes (ticket 531)', async () => {
+    seed(['#123456'])
+    const wrapper = mount(App)
+    await flushPromises()
+    await openColorPopover(wrapper)
+    await askToRemove(wrapper, addedColorId('#123456'))
+    await confirm(wrapper)
+    await flushPromises()
+    expect(wrapper.find('[data-testid="color-popover-edit"]').exists()).toBe(false)
   })
 
   it('asks before removing: the × opens a confirmation naming the color, and nothing is removed yet', async () => {
@@ -157,11 +192,11 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await flushPromises()
     await openColorPopover(wrapper)
     await selectAdded(wrapper)
-    await (await removeButton(wrapper)).trigger('click')
+    await askToRemove(wrapper, addedColorId('#123456'))
     expect(modal(wrapper).exists()).toBe(true)
     expect(wrapper.find('[data-testid="confirm-modal-message"]').text()).toContain('#123456')
     expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 2)
-    expect((await swatch(wrapper, addedColorId('#123456'))).attributes('aria-pressed')).toBe('true')
+    expect((await swatch(wrapper, addedColorId('#123456'))).classes()).toContain('swatch__chip--selected')
     expect(storedAdded()).toEqual([addedColorId('#123456'), addedColorId('#abcdef')])
   })
 
@@ -173,7 +208,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await flushPromises()
     await openColorPopover(wrapper)
     await selectAdded(wrapper)
-    await (await removeButton(wrapper)).trigger('click')
+    await askToRemove(wrapper, addedColorId('#123456'))
     await dismiss(wrapper)
     expect(modal(wrapper).exists()).toBe(false)
     expect(await total(wrapper)).toBe(BUILT_IN_COLORS.length + 1)
@@ -186,7 +221,7 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await flushPromises()
     await openColorPopover(wrapper)
     await (await swatch(wrapper, addedColorId('#123456'))).trigger('click')
-    await (await removeButton(wrapper)).trigger('click')
+    await askToRemove(wrapper, addedColorId('#123456'))
     await confirm(wrapper)
     expect(modal(wrapper).exists()).toBe(false)
     expect(storedPalette()).toHaveLength(BUILT_IN_COLORS.length + 1)
@@ -217,10 +252,10 @@ describe('an added swatch can be removed (ticket 228)', () => {
     await flushPromises()
     await openColorPopover(wrapper)
     await (await swatch(wrapper, addedColorId('#123456'))).trigger('click')
-    await (await removeButton(wrapper)).trigger('click')
+    await askToRemove(wrapper, addedColorId('#123456'))
     await confirm(wrapper)
     await wrapper.find('[data-testid="toast-action"]').trigger('click')
-    expect((await swatch(wrapper, addedColorId('#123456'))).attributes('aria-pressed')).toBe('true')
+    expect((await swatch(wrapper, addedColorId('#123456'))).classes()).toContain('swatch__chip--selected')
     expect(storedAdded()).toEqual([addedColorId('#123456'), addedColorId('#abcdef')])
   })
 })
@@ -251,7 +286,7 @@ describe('the Palette is slots (ticket 398)', () => {
     await openColorPopover(wrapper)
     expect((await ids(wrapper)).slice(0, 4)).toEqual(['red', 'added-123456', 'black', 'white'])
     await (await palette(wrapper))[1]!.trigger('click')
-    await (await removeButton(wrapper)).trigger('click')
+    await askToRemove(wrapper, addedColorId('#123456'))
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect((await ids(wrapper)).slice(0, 3)).toEqual(['red', 'black', 'white'])
   })
