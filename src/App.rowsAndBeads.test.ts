@@ -200,7 +200,7 @@ describe('App header bead', () => {
   it("shows the open Project's Bead label in the header", async () => {
     const wrapper = await mountWithProject(15, 30)
 
-    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Cube 1.5mm')
+    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Куб 1.5mm')
   })
 })
 
@@ -215,7 +215,7 @@ describe('App replace bead', () => {
 
   it('opens the confirmation with Cancel focused first from the Project panel', async () => {
     const wrapper = await mountWithProject(15, 30)
-    await pickReplacement(wrapper, 'toho-round-11-0')
+    await pickReplacement(wrapper, 'toho/round/11-0')
 
     expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="confirm-modal-cancel"]').attributes()).toHaveProperty('data-autofocus')
@@ -229,7 +229,7 @@ describe('App replace bead', () => {
     const wrapper = await mountWithProject(15, 30) // 10x20 at Cube: about 1.5 x 3.0 cm
 
     await chooseAppLanguage(wrapper, 'en')
-    await pickReplacement(wrapper, 'toho-round-11-0')
+    await pickReplacement(wrapper, 'toho/round/11-0')
 
     const modal = wrapper.find('[data-testid="replace-bead-modal"]')
     expect(modal.exists()).toBe(true)
@@ -237,17 +237,17 @@ describe('App replace bead', () => {
     expect(modal.text()).toContain('With TOHO Round 11/0, this Project will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
     expect(modal.text()).toContain('Your design and its bead count stay exactly the same')
     expect(modal.text()).not.toContain('New size')
-    expect(loadedProject().beadId).toBe('toho-cube-1.5mm')
+    expect(loadedProject().beadId).toBe('toho/cube/1.5mm')
   })
 
   it('reports the estimate the way the screen shows the Project, so a Project saved turned swaps width and height', async () => {
-    const saved = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
+    const saved = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } })
     saveProjects([{ ...saved, rotation: 90 }])
     const wrapper = mount(App)
     await flushPromises()
     await chooseAppLanguage(wrapper, 'en')
 
-    await pickReplacement(wrapper, 'toho-round-11-0')
+    await pickReplacement(wrapper, 'toho/round/11-0')
 
     expect(wrapper.find('[data-testid="replace-bead-modal"]').text()).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
   })
@@ -255,14 +255,14 @@ describe('App replace bead', () => {
   it('switches the Bead once confirmed and leaves the grid exactly as it was', async () => {
     const wrapper = await mountWithProject(15, 30) // 10x20 at Cube
 
-    await pickReplacement(wrapper, 'toho-round-11-0')
+    await pickReplacement(wrapper, 'toho/round/11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
 
-    expect(loadedProject().beadId).toBe('toho-round-11-0')
+    expect(loadedProject().beadId).toBe('toho/round/11-0')
     expect(loadedProject().frame!.columns).toBe(10)
     expect(loadedProject().frame!.rows).toBe(20)
     expect(loadedProject()).not.toHaveProperty('widthMm')
-    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Round 11/0')
+    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Круглый 11/0')
   })
 
   it('is one undo step: a single Undo restores the previous Bead, and Redo swaps it back', async () => {
@@ -272,13 +272,13 @@ describe('App replace bead', () => {
     await wrapper.find('.app-shell').trigger('mouseup') // paint (0,0) red
     await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
 
-    await pickReplacement(wrapper, 'toho-round-11-0')
+    await pickReplacement(wrapper, 'toho/round/11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect(wrapper.find<HTMLButtonElement>('[data-testid="strip-undo"]').attributes('aria-disabled') === 'true').toBe(false)
 
     await wrapper.find('[data-testid="strip-undo"]').trigger('click')
 
-    expect(loadedProject().beadId).toBe('toho-cube-1.5mm')
+    expect(loadedProject().beadId).toBe('toho/cube/1.5mm')
     expect(loadedProject().frame!.columns).toBe(10)
     expect(loadedProject().frame!.rows).toBe(20)
     expect(frameGrid(loadedProject())[0]![0]!.color).toBe('#e63746')
@@ -290,7 +290,7 @@ describe('App replace bead', () => {
 
     await wrapper.find('[data-testid="strip-redo"]').trigger('click')
 
-    expect(loadedProject().beadId).toBe('toho-round-11-0')
+    expect(loadedProject().beadId).toBe('toho/round/11-0')
     expect(loadedProject().frame!.columns).toBe(10)
   })
 })
@@ -332,7 +332,7 @@ describe('App estimated weight (ticket 155)', () => {
     await wrapper.find('.app-shell').trigger('mouseup')
     expect((await panelRead(wrapper, 'quantity-weight-red')).text).toBe('0.01 g')
 
-    await pickReplacement(wrapper, 'toho-round-11-0')
+    await pickReplacement(wrapper, 'toho/round/11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
     expect((await panelRead(wrapper, 'quantity-weight-red')).text).toBe('< 0.01 g')
     expect((await panelRead(wrapper, 'quantities-weight-note')).text).toContain('about 0.0091 g')
