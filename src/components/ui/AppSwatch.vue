@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from './AppIcon.vue'
 import AppTooltip from './AppTooltip.vue'
 import { markOn } from './swatchMark'
 
 // One color chip (ticket 333; PaletteSwatches card). Tooltip: name, hex body, key chip if any. `label` is the a11y
-// name. The remove x (added colors only) shows on the active swatch, on hover and on keyboard focus, with a hit area
-// 4px past it, so a click on the body never removes.
+// name. In Edit palette (ticket 531) an added swatch shows a centered × (a picture, the whole chip is the press) and a
+// built-in one fades and says why it cannot be removed.
 defineOptions({ inheritAttrs: false })
 
 const props = withDefaults(
@@ -19,69 +19,31 @@ const props = withDefaults(
     hotkey?: string
     /** How the swatch is exposed: a toggle button (the default) or a radio of a radiogroup. */
     role?: 'button' | 'radio'
-    /** Asks for the ×; it shows while the swatch is selected, hovered or keyboard-focused. */
-    removeLabel?: string
+    /** Edit palette, an added swatch: a press removes it, so it shows the ×. */
+    removable?: boolean
+    /** Edit palette, a built-in swatch: why it cannot be removed. It fades, is `aria-disabled` and says this. */
+    lockedBody?: string
   }>(),
-  { selected: false, hotkey: undefined, role: 'button', removeLabel: undefined },
+  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined },
 )
 const emit = defineEmits<{
   select: []
-  remove: []
 }>()
 
 const { t } = useI18n()
-const rootEl = ref<HTMLElement>()
-/** Keyboard focus is on the swatch (or its ×); a click that merely focuses a button doesn't count. */
-const focused = ref(false)
-const isKeyboardFocus = (target: EventTarget | null) => {
-  try {
-    return (target as HTMLElement).matches(':focus-visible')
-  } catch {
-    return false // an engine without :focus-visible
-  }
-}
-const onFocusIn = (event: FocusEvent) => {
-  focused.value = isKeyboardFocus(event.target)
-}
-const onFocusOut = (event: FocusEvent) => {
-  if (!rootEl.value?.contains(event.relatedTarget as Node | null)) focused.value = false
-}
-/** A mouse or pen is over the swatch (a touch has no hover, so it never sets this). */
-const hovered = ref(false)
-const onPointerEnter = (event: PointerEvent) => {
-  if (event.pointerType !== 'touch') hovered.value = true
-}
-const onPointerLeave = () => {
-  hovered.value = false
-}
-/** The first click on a swatch always selects it, even one that landed on the ×; only a selected swatch's × removes. */
-const onRemove = () => {
-  if (!props.selected) {
-    // Do what a click on the chip does, focus included, so the Tab stop and the arrows follow.
-    rootEl.value?.querySelector<HTMLElement>('.swatch__chip')?.focus()
-    emit('select')
-    return
-  }
-  hovered.value = false
-  emit('remove')
-}
 
 /** The × is black or white by the swatch's own hex, whatever the theme. */
 const mark = computed(() => markOn(props.color))
-const showRemove = computed(() => (props.selected || hovered.value || focused.value) && !!props.removeLabel)
+const tooltip = computed(() =>
+  props.lockedBody === undefined
+    ? { name: t.value.palette.colorLabel, body: props.color, hotkey: props.hotkey, announce: !props.label.includes(props.color) }
+    : { name: t.value.palette.colorLabel, disabled: true as const, disabledBody: props.lockedBody, announce: true },
+)
 </script>
 
 <template>
-  <span
-    ref="rootEl"
-    class="swatch"
-    @pointerenter="onPointerEnter"
-    @pointerleave="onPointerLeave"
-    @pointercancel="onPointerLeave"
-    @focusin="onFocusIn"
-    @focusout="onFocusOut"
-  >
-    <AppTooltip :name="t.palette.colorLabel" :body="color" :hotkey="hotkey" :announce="!label.includes(color)">
+  <span class="swatch" :class="{ 'swatch--locked': lockedBody !== undefined }">
+    <AppTooltip v-bind="tooltip">
       <template #default="{ describedby }">
         <button
           v-bind="$attrs"
@@ -91,8 +53,9 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
           :style="{ backgroundColor: color }"
           :role="role === 'radio' ? 'radio' : undefined"
           :aria-label="label"
-          :aria-pressed="role === 'button' ? selected : undefined"
+          :aria-pressed="role === 'button' && !removable ? selected : undefined"
           :aria-checked="role === 'radio' ? selected : undefined"
+          :aria-disabled="lockedBody === undefined ? undefined : 'true'"
           :aria-describedby="describedby"
           @click="emit('select')"
         >
@@ -100,18 +63,9 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
         </button>
       </template>
     </AppTooltip>
-    <button
-      v-if="showRemove"
-      type="button"
-      class="swatch__remove"
-      :class="`swatch__remove--${mark}`"
-      :aria-label="removeLabel"
-      tabindex="-1"
-      data-testid="palette-swatch-remove"
-      @click="onRemove"
-    >
+    <span v-if="removable" class="swatch__remove" :class="`swatch__remove--${mark}`" aria-hidden="true" data-testid="palette-swatch-remove">
       <AppIcon class="swatch__remove-icon" name="close" :size="14" />
-    </button>
+    </span>
   </span>
 </template>
 
@@ -163,22 +117,26 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
   outline-offset: var(--focus-offset);
 }
 
-/* A button the size of the × and its 4px inset, with no look of its own: only the × shows, in the swatch's top-right
- * corner. It stays small so a second click on the swatch body never removes. */
+/* The × of Edit palette (ticket 531): a picture centered on the chip; the press goes to the chip under it. */
 .swatch__remove {
   position: absolute;
-  top: 0;
-  right: 0;
+  inset: 0;
   z-index: 1;
-  box-sizing: border-box;
   display: grid;
-  place-items: start end;
-  width: calc(var(--swatch-remove-size) + 2 * var(--space-4));
-  height: calc(var(--swatch-remove-size) + 2 * var(--space-4));
-  padding: var(--space-4);
-  background: none;
-  border: 0;
-  cursor: pointer;
+  place-items: center;
+  pointer-events: none;
+  animation: swatch-remove-in var(--duration-fast) var(--ease-standard);
+}
+
+@keyframes swatch-remove-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* A built-in swatch in Edit palette: faded, but still focusable and draggable. */
+.swatch--locked .swatch__chip {
+  opacity: var(--swatch-faded-opacity);
 }
 
 .swatch__remove--dark {
@@ -193,21 +151,20 @@ const showRemove = computed(() => (props.selected || hovered.value || focused.va
 
 .swatch__remove-icon {
   /* !important: the icon sets its own size inline, in rem, from its `size` prop (14 at least). */
-  width: var(--swatch-remove-size) !important;
-  height: var(--swatch-remove-size) !important;
+  width: var(--swatch-edit-remove-size) !important;
+  height: var(--swatch-edit-remove-size) !important;
   color: var(--mark);
-  stroke-width: var(--swatch-remove-stroke);
+  stroke-width: var(--swatch-edit-remove-stroke);
   filter: drop-shadow(0 0 var(--swatch-mark-halo) var(--mark-halo)) drop-shadow(0 0 var(--swatch-mark-halo) var(--mark-halo));
-}
-
-.swatch__remove:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: calc(-1 * var(--focus-offset));
 }
 
 @media (prefers-reduced-motion: reduce) {
   .swatch__chip:active {
     transform: none;
+  }
+
+  .swatch__remove {
+    animation: none;
   }
 }
 </style>

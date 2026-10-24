@@ -63,4 +63,33 @@ describe('PalettePicker', () => {
     expect(tooltip.get('.app-tooltip__name').text()).toBe(ru.palette.colorLabel)
     expect(tooltip.get('.app-tooltip__body').text()).toBe(BUILT_IN_COLORS[0]!.hex)
   })
+
+  describe('Edit palette (ticket 531)', () => {
+    it('locks every built-in swatch: faded, aria-disabled, no select, still focusable', async () => {
+      const wrapper = mount(PalettePicker, { props: { editing: true }, attachTo: document.body })
+      const first = wrapper.get('[data-testid="palette-swatch"]')
+
+      expect(first.attributes('aria-disabled')).toBe('true')
+      expect(first.attributes('tabindex')).toBeDefined()
+      await first.trigger('click')
+      expect(wrapper.emitted('select')).toBeUndefined()
+      expect(wrapper.findAll('.swatch--locked')).toHaveLength(BUILT_IN_COLORS.length)
+      expect(wrapper.find('[data-testid="palette-swatch-remove"]').exists()).toBe(false)
+      wrapper.unmount()
+    })
+
+    it('says why a built-in swatch is locked, as its description', async () => {
+      const wrapper = mount(PalettePicker, { props: { editing: true } })
+      await wrapper.get('.app-tooltip').trigger('pointerenter', { pointerType: 'mouse' })
+
+      expect(wrapper.get('.app-tooltip__body').text()).toBe(ru.palette.defaultColorLocked)
+    })
+
+    it('leaves the swatches alone outside the mode', () => {
+      const wrapper = mount(PalettePicker)
+
+      expect(wrapper.find('[aria-disabled="true"]').exists()).toBe(false)
+      expect(wrapper.find('.swatch--locked').exists()).toBe(false)
+    })
+  })
 })

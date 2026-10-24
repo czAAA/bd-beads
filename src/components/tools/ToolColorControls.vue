@@ -12,6 +12,8 @@ const props = defineProps<{
   selectedColorId?: string
   /** The last Custom color chosen (CONTEXT.md), kept on its slot even once a Palette swatch deselects it. */
   customColor?: string
+  /** Edit palette (ticket 531). */
+  editing?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -60,8 +62,8 @@ async function cancel() {
 </script>
 
 <template>
-  <PalettePicker :selected-color-id="selectedColorId" @select="selectColor">
-    <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" @toggle="toggle" />
+  <PalettePicker :selected-color-id="selectedColorId" :editing="editing" @select="selectColor">
+    <CustomColorPicker ref="customButton" :selected="customColorSelected" :expanded="pickerOpen" :disabled="editing" @toggle="toggle" />
   </PalettePicker>
   <CustomColorPanel ref="panel" v-if="pickerOpen" :color="customColor ?? paintHex" @take="take" @leave="leave" @cancel="cancel" />
 </template>
