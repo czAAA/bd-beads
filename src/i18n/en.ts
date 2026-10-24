@@ -613,7 +613,6 @@ export const en: Translations = {
     fitToDrawing: 'Fit the Frame around every bead.',
     noBeadsToFit: 'There are no beads to fit.',
     zoomFit: 'Zoom to fit everything.',
-    canvasColor: 'Set the background color.',
     colors: 'Set up the colors to paint with.',
     newProject: 'Start an empty Canvas.',
     importFile: 'Open a Project from a file.',

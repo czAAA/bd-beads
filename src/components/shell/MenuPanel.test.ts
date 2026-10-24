@@ -80,3 +80,20 @@ describe('MenuPanel (ticket 443)', () => {
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
   })
 })
+
+describe('MenuPanel on the Overview (ticket 540)', () => {
+  it('shows Overview as the current page and leaves out what belongs to the editor', () => {
+    const wrapper = mountIn({ page: 'overview', projects: undefined, toolsPosition: undefined, inputMode: undefined })
+    const groups = wrapper.findAll('[role="group"]').filter((group) => group.find('h3').exists())
+    expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
+
+    expect(wrapper.get('[data-testid="menu-item-overview"]').attributes('aria-current')).toBe('page')
+    expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="menu-tools-position"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
+  })
+
+  it('does not mark Overview as current in the editor', () => {
+    expect(mountIn().get('[data-testid="menu-item-overview"]').attributes('aria-current')).toBeUndefined()
+  })
+})

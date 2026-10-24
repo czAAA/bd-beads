@@ -617,7 +617,6 @@ export const pl: Translations = {
     fitToDrawing: 'Dopasuj ramkę do wszystkich koralików.',
     noBeadsToFit: 'Nie ma koralików do dopasowania.',
     zoomFit: 'Powiększ tak, aby zmieściło się wszystko.',
-    canvasColor: 'Ustaw kolor tła.',
     colors: 'Ustaw kolory do malowania.',
     newProject: 'Zacznij puste płótno.',
     importFile: 'Otwórz projekt z pliku.',

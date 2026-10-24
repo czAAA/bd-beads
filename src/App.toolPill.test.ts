@@ -33,7 +33,7 @@ describe('App shell, the Tool pill layout (tickets 383, 439, ADR 0046, ADR 0059)
     const wrapper = await mountWithProject(15, 30)
     const strip = wrapper.get('[data-testid="canvas-strip"]')
     const order = strip.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => ['strip-menu', 'strip-project', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset', 'canvas-color-button'].includes(id!))).toEqual([
+    expect(order.filter((id) => ['strip-menu', 'strip-project', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-level', 'zoom-in', 'zoom-reset'].includes(id!))).toEqual([
       'strip-menu',
       'strip-project',
       'strip-rulers',
