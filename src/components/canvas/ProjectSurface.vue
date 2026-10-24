@@ -21,8 +21,8 @@ import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selec
 import { edgeScrollStep } from '../../composables/canvas/edgeScroll'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
 import { surfaceView, type Scroll, type ViewLayer } from '../../rendering/surfaceView'
-import { EYEDROPPER_CURSOR } from './eyedropperCursor'
-import { toolPointer } from './toolCursors'
+import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from './eyedropperCursor'
+import { toolPointer, toolPointerImage } from './toolCursors'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 // The Canvas drawn by the Project renderer (ADR 0018, ADR 0026), the Drawing surface of CONTEXT.md: two screen-sized
@@ -141,6 +141,29 @@ const toolCursor = computed(() => {
   if (dragging.value && !handMoves.value) return undefined
   return toolPointer(props.tool, { color: props.previewColor, dragging: dragging.value })
 })
+
+/** Where a Pencil hovers (ticket 546), in client px, and whether it is the pointer that moves the canvas in the input
+ * mode. None for a mouse, a finger or a Pencil in contact. */
+const penAt = ref<{ clientX: number; clientY: number; moves: boolean }>()
+
+/** The Tool pointer the app draws for a hovering Pencil, which Safari shows no CSS cursor for: the image placed so
+ * its hot spot is at the tip. Not where the CSS cursor is not the tool's (Set Frame, a handle, Space) or the tool is
+ * refused (the Frame's margin, also when the canvas moves under a still Pencil). */
+const penPointer = computed(() => {
+  if (!penAt.value || props.settingFrame || props.markerHidden || handleCursor.value || refusesMargin(beadUnder(penAt.value))) return undefined
+  // The pointer that moves the canvas in the input mode shows the Hand, whatever the tool; the others their own.
+  const image = penAt.value.moves ? toolPointerImage('hand')
+    : eyedropperShown.value ? EYEDROPPER_IMAGE
+    : props.tool && !props.picking ? toolPointerImage(props.tool, { color: props.previewColor })
+    : undefined
+  const point = pointInSurface(penAt.value)
+  return image && { url: image.url, x: point.x - image.hotSpot[0], y: point.y - image.hotSpot[1] }
+})
+
+function placePen(event: PointerEvent): void {
+  const hovering = event.pointerType === 'pen' && event.buttons === 0 && !dragging.value && !framing.value && !adjusting.value
+  penAt.value = hovering ? { clientX: event.clientX, clientY: event.clientY, moves: movesCanvas(event) } : undefined
+}
 
 // Set by a press on the surface: bead cursor shows only for focus not from a pointer (Tab, Skip to Project). Cleared by
 // blur and arrow keys. While set, Space pans the canvas instead of using the tool (ticket 424).
@@ -836,6 +859,7 @@ function pressMoveHandle(event: PointerEvent): void {
 }
 
 function onPointerDown(event: PointerEvent): void {
+  penAt.value = undefined
   touchInput.value = event.pointerType === 'touch'
   if (props.project.frame && event.pointerType === 'touch' && !event.isPrimary) {
     // A second finger is a pinch (usePinchPan): whatever the first was dragging is let go, uncommitted.
@@ -935,6 +959,7 @@ function onPointerDown(event: PointerEvent): void {
 // Reports the hover for the preview, plus a drag move when the primary button is held, which continues a paint/fill
 // stroke (ticket 24). `buttons` is 1 for touch/pen in contact, so one branch covers all three input kinds.
 function onPointerMove(event: PointerEvent): void {
+  placePen(event)
   if (adjusting.value) {
     emit('selection-drag', cellUnder(event))
     return
@@ -1043,11 +1068,13 @@ function onPointerEnd(event?: PointerEvent): void {
 
 /** A cancelled pointer is a pen gone out of range or a gesture taken over: it has no marker to show. */
 function onPointerCancel(): void {
+  penAt.value = undefined
   onPointerEnd()
   hideMarker()
 }
 
 function onPointerLeave(): void {
+  penAt.value = undefined
   hovered.value = false
   hoverPoint = undefined
   lastBead = undefined
@@ -1146,6 +1173,15 @@ onBeforeUnmount(() => {
   >
     <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
     <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
+    <img
+      v-if="penPointer"
+      class="project-surface__pen-pointer"
+      :src="penPointer.url"
+      :style="{ left: `${penPointer.x}px`, top: `${penPointer.y}px` }"
+      data-testid="pen-pointer"
+      alt=""
+      aria-hidden="true"
+    />
     <span
       v-if="pickChip"
       class="project-surface__pick-chip"
@@ -1193,6 +1229,11 @@ onBeforeUnmount(() => {
 
 /* The live color under the eyedropper: a small chip a little below and right of the tip, never in the way of the
  * press. */
+.project-surface__pen-pointer {
+  position: absolute;
+  pointer-events: none;
+}
+
 .project-surface__pick-chip {
   position: absolute;
   display: flex;

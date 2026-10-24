@@ -27,19 +27,30 @@ const POINTERS: Readonly<Record<Tool, Pointer>> = {
 const HEX = /^#[0-9a-f]{3,8}$/i
 const cache = new Map<string, string>()
 
-/** The CSS `cursor` value for a tool: the image, its hot spot and the system's cursor as fallback. Hand shows its
- * closed hand while `dragging`; Paint and Fill carry a bead in `color`, and none when it is absent. */
-export function toolPointer(tool: Tool, options: { color?: string | null; dragging?: boolean } = {}): string {
-  const { hotSpot, fallback, file } = POINTERS[tool]
+/** The Tool pointer as a plain image (ticket 546): the same file, colour and hot spot as `toolPointer`, for the app to
+ * draw itself where a CSS cursor is not shown (a hovering Pencil). */
+export function toolPointerImage(
+  tool: Tool,
+  options: { color?: string | null; dragging?: boolean } = {},
+): { url: string; hotSpot: readonly [number, number] } {
+  const { hotSpot, file } = POINTERS[tool]
   const dragging = tool === 'hand' && options.dragging === true
   const color = options.color && HEX.test(options.color) ? options.color : undefined
   const key = `${tool}|${dragging}|${color ?? ''}`
-  let value = cache.get(key)
-  if (value === undefined) {
+  let url = cache.get(key)
+  if (url === undefined) {
     const source = sources[dragging ? 'hand-grabbing' : file] ?? ''
     const svg = color ? source.replace(/currentColor/g, color) : source.replace(/<rect[^>]*>(<\/rect>)?/g, '')
-    value = `url("data:image/svg+xml,${encodeURIComponent(svg)}") ${hotSpot[0]} ${hotSpot[1]}, ${dragging ? 'grabbing' : fallback}`
-    cache.set(key, value)
+    url = `data:image/svg+xml,${encodeURIComponent(svg)}`
+    cache.set(key, url)
   }
-  return value
+  return { url, hotSpot }
+}
+
+/** The CSS `cursor` value for a tool: the image, its hot spot and the system's cursor as fallback. Hand shows its
+ * closed hand while `dragging`; Paint and Fill carry a bead in `color`, and none when it is absent. */
+export function toolPointer(tool: Tool, options: { color?: string | null; dragging?: boolean } = {}): string {
+  const { url, hotSpot } = toolPointerImage(tool, options)
+  const dragging = tool === 'hand' && options.dragging === true
+  return `url("${url}") ${hotSpot[0]} ${hotSpot[1]}, ${dragging ? 'grabbing' : POINTERS[tool].fallback}`
 }
