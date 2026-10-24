@@ -563,6 +563,7 @@ export const ru: Translations = {
     confirmMessage:
       'С бисеринкой {bead} этот проект будет примерно {new} вместо {old}. Рисунок и число бисерин останутся точно такими же. Это действие можно отменить.',
     confirmButton: 'Заменить бисер',
+    outdatedPostfix: '(как сохранено)',
     cancelButton: 'Отмена',
   },
   shortcutsHelp: {

@@ -563,6 +563,7 @@ export const pl: Translations = {
     confirmMessage:
       'Z koralikiem {bead} ten projekt będzie miał około {new} zamiast {old}. Twój schemat i liczba koralików pozostają dokładnie takie same. Możesz to cofnąć.',
     confirmButton: 'Zamień koralik',
+    outdatedPostfix: '(jak zapisano)',
     cancelButton: 'Anuluj',
   },
   shortcutsHelp: {

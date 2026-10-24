@@ -24,7 +24,7 @@ describe('useProjectLabels', () => {
     })
 
     it('is a neutral placeholder for a Bead the catalog does not have', () => {
-      const unknown = { ...base, beadId: 'custom-that-was-removed' }
+      const unknown = { ...base, beadId: 'custom-that-was-removed', bead: undefined }
       expect(setup(unknown).activeBeadLabel.value).toBe(en.projects.unknownBeadLabel)
     })
 

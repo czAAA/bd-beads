@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { addedColorId, defaultPaletteIds } from './palette'
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG } from './beads'
+import { BEAD_CATALOG, findBead } from './beads'
 import { paintAt } from '../testUtils/layers'
 import {
   importProjects,
@@ -99,11 +99,11 @@ describe('single-Project roundtrip', () => {
     expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 5 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
+  it('writes version 7 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(6)
+    expect(file.version).toBe(7)
     expect(file.patterns).toBeUndefined()
     expect(file.projects[0].beads).toBeUndefined()
     expect(file.projects[0].encodedBeads).toBeDefined()
@@ -121,8 +121,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 7
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 7')
+    file.version = 8
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 8')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {
@@ -336,5 +336,21 @@ describe('Netting in a file (ticket 485)', () => {
     const file = serializeProject(woven(5)).replace('"netSize":5', '"netSize":4')
 
     expect(parseProjectsFile(file).projects[0]!.netSize).toBe(3)
+  })
+})
+
+describe('the Bead copy in a file (ticket 534)', () => {
+  it('round-trips the copy of a Bead the catalog does not have', () => {
+    const retired = { ...findBead('toho/cube/1.5mm')!, id: 'old-maker/cube/2mm', widthMm: 2 }
+    const project = { ...decoratedProject(), beadId: retired.id, bead: retired }
+    expect(parseProjectsFile(serializeProject(project)).projects[0]!.bead).toEqual(retired)
+  })
+
+  it('opens a version 6 file, which has no copy, with the catalog’s Bead', () => {
+    const file = JSON.parse(serializeProject(decoratedProject()))
+    file.version = 6
+    delete file.projects[0].bead
+
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.bead).toEqual(findBead(decoratedProject().beadId))
   })
 })

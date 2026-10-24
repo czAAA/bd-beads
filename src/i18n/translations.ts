@@ -684,6 +684,8 @@ export interface Translations {
     // the design and bead count don't, and rows/columns can be adjusted afterwards.
     confirmMessage: string
     confirmButton: string
+    /** After the Project's own Bead when the catalog's Bead of the same id has changed (ticket 534). */
+    outdatedPostfix: string
     cancelButton: string
   }
   /** The `?` shortcuts help overlay (ticket 96): every keyboard shortcut, grouped by Tool group. Key labels

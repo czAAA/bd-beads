@@ -65,7 +65,7 @@ function withName<T extends StoredProject>(project: T): T {
   if (project.name) {
     return project
   }
-  const bead = findBead(project.beadId)
+  const bead = ('bead' in project ? project.bead : undefined) ?? findBead(project.beadId)
   return { ...project, name: bead ? beadLabel(bead) : project.beadId }
 }
 

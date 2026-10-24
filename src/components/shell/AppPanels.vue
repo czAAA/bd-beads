@@ -36,6 +36,7 @@ const {
   onSetBeadShape,
   onFitFrame,
   replaceBeadCandidates,
+  replaceBeadOutdated,
   onRequestReplaceBead,
   onImportProjects,
   decodeImage,
@@ -119,6 +120,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       :settled-project="settledProject"
       :bead-name="activeBeadLabel ?? ''"
       :replace-candidates="replaceBeadCandidates"
+      :replace-outdated="replaceBeadOutdated"
       :save-failed="saveFailed"
       :unsaved="unsaved"
       :exporting="exporting"

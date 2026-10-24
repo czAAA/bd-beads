@@ -123,9 +123,9 @@ describe('projectStorage', () => {
 
     saveProjects(loadProjects())
 
-    const raw = localStorage.getItem(STORAGE_KEY)!
-    expect(raw).not.toContain('widthMm')
-    expect(raw).not.toContain('heightMm')
+    const [saved] = JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns
+    expect(saved).not.toHaveProperty('widthMm')
+    expect(saved).not.toHaveProperty('heightMm')
   })
 
   it('lets a write that does not fit through to the caller instead of swallowing it', () => {
