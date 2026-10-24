@@ -205,7 +205,6 @@ export const be: Translations = {
       label: 'Колер палатна',
       pickerLabel: 'колер палатна',
       swatchLabel: '{name}, {n} з {count}',
-      positionMarks: { label: 'Меткі пазіцый', dots: 'Кропкі', squares: 'Квадраты', dotsBody: 'Кропка ў кожнай пустой пазіцыі.', squaresBody: 'Контур вакол кожнай пустой пазіцыі.' },
       names: { studio: 'Студыя', linen: 'Лён', sage: 'Шалфей', mist: 'Імгла', blush: 'Румянец', night: 'Ноч', ink: 'Туш', midnight: 'Поўнач', olive: 'Аліва', umber: 'Умбра', ash: 'Попел' },
     },
     hint: {

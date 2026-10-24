@@ -1,15 +1,15 @@
 import type { DrawingContext } from '../rendering/beadLook'
 
-/** A 2D context stand-in that writes down every drawing call with the fill color and opacity in force (jsdom has
+/** A 2D context stand-in that writes down every drawing call with the fill and stroke colors and opacity in force (jsdom has
  * none). */
 export function recordingContext() {
-  const calls: { name: string; args: unknown[]; fillStyle: unknown; globalAlpha: number }[] = []
-  const state = { fillStyle: '#000000' as unknown, globalAlpha: 1 }
+  const calls: { name: string; args: unknown[]; fillStyle: unknown; strokeStyle: unknown; globalAlpha: number }[] = []
+  const state = { fillStyle: '#000000' as unknown, strokeStyle: '#000000' as unknown, globalAlpha: 1 }
   const stack: (typeof state)[] = []
   const record =
     (name: string) =>
     (...args: unknown[]) => {
-      calls.push({ name, args, fillStyle: state.fillStyle, globalAlpha: state.globalAlpha })
+      calls.push({ name, args, fillStyle: state.fillStyle, strokeStyle: state.strokeStyle, globalAlpha: state.globalAlpha })
     }
 
   const context = {
@@ -33,7 +33,6 @@ export function recordingContext() {
     font: '',
     textAlign: 'start',
     textBaseline: 'alphabetic',
-    strokeStyle: '#000000',
     lineWidth: 1,
     lineCap: 'butt',
     lineJoin: 'miter',
@@ -52,6 +51,12 @@ export function recordingContext() {
     },
     set fillStyle(value: unknown) {
       state.fillStyle = value
+    },
+    get strokeStyle() {
+      return state.strokeStyle
+    },
+    set strokeStyle(value: unknown) {
+      state.strokeStyle = value
     },
     get globalAlpha() {
       return state.globalAlpha
