@@ -9,6 +9,15 @@ export const es: Translations = {
   form: {
     nameLabel: 'Nombre',
     beadLabel: 'Cuenta',
+    beadPicker: {
+      hint: 'Define el tamaño, el peso y los colores.',
+      change: 'Cambiar',
+      close: 'Cerrar',
+      brand: 'Marca',
+      formFactor: 'Forma',
+      size: 'Tamaño de la cuenta',
+      choose: 'Elegir',
+    },
     beadShapeLabel: 'Forma de la cuenta',
     beadShapeSymmetric: 'Simétrica',
     beadShapeReal: 'Real',

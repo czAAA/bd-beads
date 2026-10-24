@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
-import { beadLabel, type Bead } from '../../domain/beads'
+import type { Bead } from '../../domain/beads'
 import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain/weave'
-import type { Project } from '../../domain/project'
+import { resolveProjectBead, type Project } from '../../domain/project'
 import { MAX_PROJECT_NAME, normalizeProjectName } from '../../domain/projectName'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
@@ -10,11 +10,10 @@ import SaveExport from '../export/SaveExport.vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
-import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
-import MenuButton from '../ui/MenuButton.vue'
 import TextField from '../ui/form/TextField.vue'
 import PanelItem from '../shell/PanelItem.vue'
+import BeadPicker from './BeadPicker.vue'
 import BeadShapeField from './BeadShapeField.vue'
 import CanvasSection from './CanvasSection.vue'
 import CanvasTechniqueRow from './CanvasTechniqueRow.vue'
@@ -64,6 +63,7 @@ const fieldId = useId()
 const renameField = ref<InstanceType<typeof TextField>>()
 const errorId = useId()
 const shapeLabelId = useId()
+const ownBead = computed(() => resolveProjectBead(props.project))
 const rename = controlAction('rename-project')
 const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
@@ -144,21 +144,21 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
     <p class="project-panel__bead" data-testid="project-bead-row">
       <span class="project-panel__bead-label">{{ t.panels.project.bead }}</span>
       <span class="project-panel__bead-name" data-testid="panel-bead">{{ beadName }}</span>
-      <!-- A menu, not a native select (ticket 442): the iPad's picker swallowed the pick, and the menu works the same everywhere. -->
-      <MenuButton class="project-panel__replace" variant="in-box" :label="t.replaceBead.selectLabel" data-testid="phone-replace-bead-select">
-        <AppMenuItem v-if="replaceOutdated" disabled current data-testid="phone-replace-bead-outdated">
-          {{ `${beadLabel(replaceOutdated, t.formFactors)} ${t.replaceBead.outdatedPostfix}` }}
-        </AppMenuItem>
-        <AppMenuItem
-          v-for="bead in replaceCandidates"
-          :key="bead.id"
-          :data-testid="`phone-replace-bead-${bead.id}`"
-          @select="emit('replace-bead', bead.id)"
-        >
-          {{ beadLabel(bead, t.formFactors) }}
-        </AppMenuItem>
-      </MenuButton>
     </p>
+
+    <!-- Menus, not native selects (ticket 442): the iPad's picker swallowed the pick, and a menu works the same everywhere. -->
+    <BeadPicker
+      v-if="ownBead"
+      class="project-panel__picker"
+      :model-value="ownBead.id"
+      :beads="replaceCandidates"
+      :current="ownBead"
+      :outdated="!!replaceOutdated"
+      close-on-pick
+      compact
+      testid="replace-bead-picker"
+      @update:model-value="emit('replace-bead', $event)"
+    />
 
     <div class="project-panel__shape" data-testid="bead-shape-row">
       <span :id="shapeLabelId">{{ t.form.beadShapeLabel }}</span>

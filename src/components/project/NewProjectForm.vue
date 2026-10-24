@@ -18,6 +18,7 @@ import type { StatedSize } from '../../domain/projectSize'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
+import BeadPicker from './BeadPicker.vue'
 import BeadShapeField from './BeadShapeField.vue'
 import BrickBlockField from './BrickBlockField.vue'
 import NetSizeField from './NetSizeField.vue'
@@ -25,7 +26,6 @@ import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
-import FieldSelect from '../ui/form/FieldSelect.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import FormField from '../ui/form/FormField.vue'
 import LoadingState from '../ui/LoadingState.vue'
@@ -205,12 +205,8 @@ function onDropImage(file: File) {
       />
     </FormField>
 
-    <FormField :label="t.form.beadLabel" label-for="bead-select">
-      <FieldSelect id="bead-select" v-model="beadId" data-testid="bead-select">
-        <option v-for="bead in offeredBeads()" :key="bead.id" :value="bead.id">
-          {{ beadLabel(bead, t.formFactors) }}
-        </option>
-      </FieldSelect>
+    <FormField :label="t.form.beadLabel" label-id="bead-label">
+      <BeadPicker v-model="beadId" :beads="offeredBeads()" testid="bead-picker" />
     </FormField>
 
     <FormField :label="t.form.beadShapeLabel" label-id="bead-shape-label">
