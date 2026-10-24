@@ -9,6 +9,15 @@ export const zh: Translations = {
   form: {
     nameLabel: '名称',
     beadLabel: '珠子',
+    beadPicker: {
+      hint: '决定大小、重量和颜色。',
+      change: '更改',
+      close: '关闭',
+      brand: '品牌',
+      formFactor: '形状',
+      size: '珠子尺寸',
+      choose: '选择',
+    },
     beadShapeLabel: '珠子形状',
     beadShapeSymmetric: '对称',
     beadShapeReal: '真实',

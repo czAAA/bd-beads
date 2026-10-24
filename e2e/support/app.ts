@@ -95,7 +95,7 @@ export async function copySelection(page: Page): Promise<void> {
 /** Opens the New Project form (the Menu panel's subpanel). With no Project open Menu opens on it by itself; if it
  * has been closed since, the empty canvas's New Project button brings it back. */
 export async function openNewProjectForm(page: Page): Promise<void> {
-  const form = page.getByTestId('bead-select')
+  const form = page.getByTestId('bead-picker')
   if (!(await form.isVisible())) {
     await page.getByTestId('phone-bar-new-project').click()
   }

@@ -33,7 +33,6 @@ export async function createProjectViaForm(wrapper: ReturnType<typeof mount>, na
   if (name !== undefined) {
     await sheet.get('[data-testid="name-input"]').setValue(name)
   }
-  await sheet.get('[data-testid="bead-select"]').setValue(DEFAULT_BEAD.id)
   await sheet.get('form').trigger('submit')
   await nextTick()
 }

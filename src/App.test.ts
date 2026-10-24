@@ -38,7 +38,7 @@ describe('App', () => {
 
     const afterReload = mount(App)
 
-    expect(afterReload.find('[data-testid="bead-select"]').exists()).toBe(false)
+    expect(afterReload.find('[data-testid="bead-picker"]').exists()).toBe(false)
     expect(drawnProject(afterReload)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
   })
 
@@ -268,9 +268,11 @@ describe('App', () => {
     const wrapper = mount(App)
     await openNewProject(wrapper)
 
-    const options = wrapper.findAll<HTMLOptionElement>('[data-testid="bead-select"] option')
-    expect(options).toHaveLength(BEAD_CATALOG.length)
-    expect(options.map((option) => option.text())).not.toContain('Acme Fancy 8/0')
+    await wrapper.get('[data-testid="bead-picker-toggle"]').trigger('click')
+    await wrapper.get('[data-testid="bead-picker-brand"]').trigger('click')
+    const brands = wrapper.findAll('[role="menuitem"]').map((item) => item.text())
+    expect(brands).toEqual(['TOHO', 'Miyuki'])
+    expect(brands).not.toContain('Acme')
   })
 
   it('still opens, paints, and exports a Project created with a since-removed custom Bead', async () => {
@@ -303,7 +305,7 @@ describe('App', () => {
     const wrapper = mount(App)
     await openNewProject(wrapper)
 
-    expect(wrapper.find('label[for="bead-select"]').text()).toBe(ru.form.beadLabel)
+    expect(wrapper.find('#bead-label').text()).toBe(ru.form.beadLabel)
     expect(wrapper.find('button[type="submit"]').text()).toBe(ru.form.submit)
   })
 
@@ -313,14 +315,14 @@ describe('App', () => {
     await chooseAppLanguage(wrapper, 'en')
     await openNewProject(wrapper)
 
-    expect(wrapper.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
+    expect(wrapper.find('#bead-label').text()).toBe(en.form.beadLabel)
     expect(wrapper.find('[data-testid="create-project"]').text()).toBe(en.form.submit)
 
     wrapper.unmount()
     const afterReload = mount(App)
     await openNewProject(afterReload)
 
-    expect(afterReload.find('label[for="bead-select"]').text()).toBe(en.form.beadLabel)
+    expect(afterReload.find('#bead-label').text()).toBe(en.form.beadLabel)
   })
 
   it('rules the canvas with row and column numbers on all four edges', async () => {

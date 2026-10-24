@@ -8,6 +8,7 @@ import { chooseCustomColor } from './testUtils/pill'
 import { BEAD_CATALOG } from './domain/beads'
 import { downloadFile } from './services/fileDownload'
 import { en } from './i18n/en'
+import { chooseBead } from './testUtils/beadPicker'
 
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
 
@@ -23,7 +24,7 @@ beforeEach(() => {
  * `form`, so scope to the panel's. */
 async function createProjectViaPanel(wrapper: ReturnType<typeof mount>) {
   const panel = wrapper.get('[data-testid="panel-body"]')
-  await panel.get('[data-testid="bead-select"]').setValue(cubeBead.id)
+  await chooseBead(panel, cubeBead.id)
   await panel.get('form').trigger('submit')
 }
 
