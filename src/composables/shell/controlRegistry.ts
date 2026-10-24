@@ -534,6 +534,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('saved-projects', (t) => t.projects.heading, 'edit', { icon: 'library' }),
   unkeyed('close', (t) => t.a11y.closeMessage, 'edit', { icon: 'close' }),
   unkeyed('edit-palette', (t) => t.palette.editPalette, 'colors', { icon: 'pencil' }),
+  unkeyed('remove-all-colors', (t) => t.palette.removeAllColors, 'colors', { icon: 'delete' }),
   unkeyed('pill-colors', (t) => t.toolbox.groups.colors, 'colors', { body: (t) => t.tooltips.colors }),
   unkeyed('new-project', (t) => t.projects.newProjectButton, 'edit', { body: (t) => t.tooltips.newProject }),
   unkeyed('import-file', (t) => t.transfer.importLabel, 'edit', { body: (t) => t.tooltips.importFile }),

@@ -370,6 +370,13 @@ export interface Translations {
     removeConfirmMessage: string
     removeConfirmButton: string
     removeCancelButton: string
+    /** Remove all custom colors (ticket 0532): the bin's name and Tooltip, the toast, and the confirmation; `{count}` in
+     * the message is how many colors leave. */
+    removeAllColors: string
+    removedAll: string
+    removeAllConfirmTitle: string
+    removeAllConfirmMessage: PluralForms
+    removeAllConfirmButton: string
   }
   tools: {
     paintLabel: string

@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { BUILT_IN_COLORS, addUsedColor, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, restoreAddedColor, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
+import { BUILT_IN_COLORS, addUsedColor, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, removeAllAddedColors, restoreAddedColor, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
   it('has no duplicate ids', () => {
@@ -60,6 +60,26 @@ describe('removing an added color (ticket 228)', () => {
     const without = removeAddedColor(three, addedColorId('#222222'))!
     expect(restoreAddedColor(without.ids, addedColorId('#222222'), without.slot)).toEqual(three)
     expect(restoreAddedColor(three, addedColorId('#222222'), 0)).toEqual(three)
+  })
+})
+
+describe('removing every added color (ticket 0532)', () => {
+  const a = addedColorId('#111111')
+  const b = addedColorId('#222222')
+  const [first, second, ...rest] = defaultPaletteIds()
+  const mixed = [a, first!, second!, b, ...rest]
+
+  it('leaves the built-ins in order and says which slot each added color stood in', () => {
+    expect(removeAllAddedColors(mixed)).toEqual({ ids: defaultPaletteIds(), removed: [{ colorId: a, slot: 0 }, { colorId: b, slot: 3 }] })
+  })
+
+  it('removes nothing when no color is added', () => {
+    expect(removeAllAddedColors(defaultPaletteIds())).toEqual({ ids: defaultPaletteIds(), removed: [] })
+  })
+
+  it('restoring each in slot order brings back the exact Palette', () => {
+    const { ids, removed } = removeAllAddedColors(mixed)
+    expect(removed.reduce((acc, { colorId, slot }) => restoreAddedColor(acc, colorId, slot), ids)).toEqual(mixed)
   })
 })
 

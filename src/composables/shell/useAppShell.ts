@@ -1,6 +1,7 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
+import { isAddedColorId } from '../../domain/palette'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
@@ -51,7 +52,7 @@ import { useSettledProject } from '../project/useSettledProject'
 import { useSaveOnPageHide } from '../project/useSaveOnPageHide'
 import { useSpaceDragPan } from '../canvas/useSpaceDragPan'
 import { useToasts } from '../ui/useToasts'
-import { provideColorPick, provideMoveColor, provideRemoveAddedColor, useProjectPalette } from '../tools/usePalette'
+import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useToolAtCursor } from '../tools/useToolAtCursor'
@@ -225,7 +226,7 @@ function wireAppShell(services: Services) {
   }
 
   /** The Palette: the open Project's built-in colors and the Custom colors that joined it (ticket 0525). */
-  const { palette, addUsed, removeAdded, moveColor } = useProjectPalette({ currentProject, edit })
+  const { palette, addUsed, removeAdded, removeAllAdded, moveColor } = useProjectPalette({ currentProject, edit })
 
   /** The active tool and which of the two paint colors is chosen (tickets 58, 171, 206). */
   const {
@@ -361,6 +362,29 @@ function wireAppShell(services: Services) {
     if (colorId) onRemoveAddedColor(colorId)
   }
   provideRemoveAddedColor(onRequestRemoveAddedColor)
+
+  /** Remove all custom colors (ticket 0532): the bin in Edit palette asks, the dialog names how many leave. */
+  const addedColorCount = computed(() => palette.value.colors.filter((color) => isAddedColorId(color.id)).length)
+  const removeAllColorsConfirmOpen = ref(false)
+  const removeAllColorsMessage = computed(() => plural(locale.value, addedColorCount.value, t.value.palette.removeAllConfirmMessage))
+  function onConfirmRemoveAllAddedColors() {
+    removeAllColorsConfirmOpen.value = false
+    const previous = selectedColorId.value
+    const wasSelected = !!previous && isAddedColorId(previous)
+    const restore = removeAllAdded()
+    if (!restore) return
+    const fallback = palette.value.defaultColorId
+    if (wasSelected && fallback) onSelectColor(fallback)
+    showToast('palette-removed-all', t.value.palette.removedAll, 'info', {
+      label: t.value.palette.undoButton,
+      run: () => {
+        restore()
+        // Selected again only if nothing else was chosen since.
+        if (wasSelected && previous && selectedColorId.value === fallback) onSelectColor(previous)
+      },
+    })
+  }
+  provideRemoveAllAddedColors(() => (removeAllColorsConfirmOpen.value = true))
   provideMoveColor(moveColor)
 
   /** A Custom color that is about to paint a cell joins the Palette on its first use (ticket 227). */
@@ -624,6 +648,7 @@ function wireAppShell(services: Services) {
       frameFlow.replaceConfirmOpen.value ||
       !!frameFlow.switchQuestion.value ||
       !!pendingColorRemovalId.value ||
+      removeAllColorsConfirmOpen.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
       !!importSwitch.pendingImport.value ||
       !!savedProjectConfirms.pendingRemove.value ||
@@ -791,6 +816,9 @@ function wireAppShell(services: Services) {
     onRotateCanvas: rotateCanvasFlow.onRotateCanvas,
     ...deleteAll,
     pendingColorRemovalHex,
+    removeAllColorsConfirmOpen,
+    removeAllColorsMessage,
+    onConfirmRemoveAllAddedColors,
     onCancelRemoveAddedColor,
     onConfirmRemoveAddedColor,
     ...removeLine,

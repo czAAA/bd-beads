@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
-import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteIds } from '../../domain/palette'
+import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteIds } from '../../domain/palette'
 import { setPalette as withPalette, type Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
@@ -48,12 +48,28 @@ export function useProjectPalette({ currentProject, edit }: ProjectPaletteDeps) 
     }
   }
 
+  /** Every added swatch leaves the Palette in one Edit (ticket 0532). Hands back how to put them all back in their
+   * slots, or undefined when none is added. */
+  function removeAllAdded(): (() => void) | undefined {
+    const project = currentProject()
+    const removal = project && removeAllAddedColors(project.palette, defaultPalette(project.beadId))
+    if (!removal || removal.removed.length === 0) return undefined
+    setPalette(removal.ids)
+    return () => {
+      const now = currentProject()
+      if (!now) return
+      const builtIns = defaultPalette(now.beadId)
+      const ids = removal.removed.reduce((acc, { colorId, slot }) => restoreAddedColor(acc, colorId, slot, builtIns), now.palette)
+      setPalette(ids)
+    }
+  }
+
   /** A swatch dragged (or nudged) from one slot to another (ticket 398); its Shift+key follows the slot it lands in. */
   function moveColor(from: number, to: number) {
     setPalette(moveSlot(palette.value.colors.map((color) => color.id), from, to))
   }
 
-  return { palette, addUsed, removeAdded, moveColor }
+  return { palette, addUsed, removeAdded, removeAllAdded, moveColor }
 }
 
 const removeKey: InjectionKey<(colorId: string) => void> = Symbol('removeAddedColor')
@@ -67,6 +83,18 @@ export function provideRemoveAddedColor(remove: (colorId: string) => void) {
 /** How a swatch asks to be removed; absent (mounted alone) means no swatch offers removal. */
 export function useRemoveAddedColor(): ((colorId: string) => void) | undefined {
   return inject(removeKey, undefined)
+}
+
+const removeAllKey: InjectionKey<() => void> = Symbol('removeAllAddedColors')
+
+/** The app shell hands out how the bin in Edit palette asks to remove every added color (ticket 0532). */
+export function provideRemoveAllAddedColors(request: () => void) {
+  provide(removeAllKey, request)
+}
+
+/** Absent (mounted alone) means the popover offers no bin. */
+export function useRemoveAllAddedColors() {
+  return inject(removeAllKey, undefined)
 }
 
 /** The Palette for a swatch component: a new Project's when no app shell provides one (mounted alone). */
