@@ -135,10 +135,14 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
   align-items: center;
   gap: var(--space-8);
   box-sizing: border-box;
-  height: var(--strip-height);
-  padding: 0 var(--space-10) 0 var(--space-16);
+  /* As tall as its tallest item plus 1px above and below (ticket 544); --strip-height is the same rule for the
+   * Overview, which has the same strip. The top corners follow the canvas box's curve. */
+  min-height: var(--strip-height);
+  padding: var(--bar-pad) var(--space-10) var(--bar-pad) var(--space-16);
   color: var(--ink);
-  border-bottom: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
+  border-top: 0;
+  border-radius: var(--canvas-box-radius) var(--canvas-box-radius) 0 0;
 }
 
 /* Menu, Project and Frame all fit in a 320px window in the longest language (ticket 473). */

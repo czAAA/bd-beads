@@ -138,6 +138,7 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   overflow: hidden;
   color: var(--ink);
   background: var(--box);
+  border-radius: var(--canvas-box-radius);
 }
 
 .overview__scroll {
@@ -156,8 +157,11 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
 /* The same height as the editor's Progress bar, so the box doesn't change between pages. */
 .overview__footer {
   flex: none;
+  box-sizing: border-box;
   height: var(--progress-height);
-  border-top: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
+  border: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);
+  border-bottom: 0;
+  border-radius: 0 0 var(--canvas-box-radius) var(--canvas-box-radius);
 }
 
 .overview__main {

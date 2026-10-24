@@ -1,6 +1,6 @@
 # ProgressBar
 
-The 48px bar (ticket 411; it was 56px) along the canvas box's bottom edge holding every Row progress control. It is always shown, at every width including under 1024px, whatever the Pattern's shape.
+The bar along the canvas box's bottom edge holding every Row progress control. It is always shown, at every width including under 1024px, whatever the Pattern's shape. Its height is its tallest item (the large Row done / Row not done buttons, 38px) plus 1px above and 1px below, 40px (ticket 544; it was 48px); `--progress-height` (controls.css) is the same rule for the Overview's empty Canvas footer. It has a 1px edge on its left, right and top, and its bottom corners take the canvas box's radius (`radius-lg`, `--canvas-box-radius`).
 
 Left to right, padding 0 12 0 16, gap 12, top divider `box-muted` at 22%:
 1. **Remove frame (ticket 426)** was a box button here until ticket 0455: it is now the cross on the Frame's corner (Frame card), and still asks first. Row progress is on whenever the Project has a Frame, so there is no switch and no `P` key.
@@ -14,7 +14,7 @@ Left to right, padding 0 12 0 16, gap 12, top divider `box-muted` at 22%:
 
 Row done and Row not done show text and follow Row direction: top to bottom they read "Row not done ↑" and "Row done ↓"; left to right the arrows turn to point left and right and the words become "Column not done" and "Column done" (in every shipped language). Tooltips and screen-reader names are the visible labels.
 
-**Phone widths (30rem and under).** Row not done and Row done do not fit one row with Turn row direction, Reset progress and the track in every language at 360px, so they take a second row of their own, half the bar each (`type-small`), and the bar is 88px (`--progress-height` 5.5rem) instead of 48px; everything above it follows that height.
+**Phone widths (30rem and under).** Row not done and Row done do not fit one row with Turn row direction, Reset progress and the track in every language at 360px, so they take a second row of their own, half the bar each (`type-small`), and the bar is its two rows plus 4px between and 1px above and below, 78px (`--progress-height`), instead of 40px; everything above it follows that height.
 
 **No Frame (v16).** Row progress works on the Frame: its rows are the Frame's rows. Until a Frame is set the bar shows the hint "[Select icon] Select to set a [Frame icon] Frame" (`meta`, `muted`; each icon, 14px, in a 20px hint chip like the CanvasHint's Kbd chips: `elevated`, 1px `line-strong` edge with a 2px bottom, `radius-xs`) and, right-aligned, a Fit to drawing button (secondary in a box, `frame` icon); Fit to drawing is shown only while there is no Frame (ticket 426). Row done and Row not done are not offered, and the bar keeps its height so the canvas does not jump.
 
