@@ -479,6 +479,7 @@ const drawingStyle = computed(() => {
   overflow: hidden;
   overflow: clip;
   background: var(--box);
+  border-radius: var(--canvas-box-radius);
 }
 
 /* The drawing area (ticket 143): the box under the strip, sized for the fit zoom, so it takes a share (flex-basis 0),

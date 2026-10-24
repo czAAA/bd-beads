@@ -488,8 +488,10 @@ onBeforeUnmount(() => {
   gap: var(--space-8) var(--space-20);
   box-sizing: border-box;
   min-height: var(--progress-height);
-  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-16);
-  border-top: 1px solid var(--box-line);
+  padding: var(--bar-pad) var(--space-12) var(--bar-pad) var(--space-16);
+  border: 1px solid var(--box-line);
+  border-bottom: 0;
+  border-radius: 0 0 var(--canvas-box-radius) var(--canvas-box-radius);
 }
 
 .convert-image-frame__setting {
