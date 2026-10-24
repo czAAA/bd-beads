@@ -102,14 +102,14 @@ export async function openNewProjectForm(page: Page): Promise<void> {
   await settle(page)
 }
 
-/** The zoom readout in the Canvas strip's cluster (the framing step shows its own there too). */
-function zoomControl(page: Page, part: 'level' | 'in' | 'out'): Locator {
+/** The zoom buttons in the Canvas strip's cluster (the framing step shows its own there too). */
+function zoomControl(page: Page, part: 'in' | 'out'): Locator {
   return page.getByTestId(`zoom-${part}`)
 }
 
 /** The zoom level on screen right now, in percent. */
 export async function currentZoomPercent(page: Page): Promise<number> {
-  return Number.parseInt((await zoomControl(page, 'level').textContent()) ?? '', 10)
+  return Number.parseInt((await page.getByTestId('canvas-strip-zoom').getAttribute('data-zoom-percent')) ?? '', 10)
 }
 
 /** Clicks the zoom buttons until the level reads `percent`, and waits for the picture to catch up. */
