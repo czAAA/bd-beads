@@ -751,7 +751,6 @@ export interface Translations {
     fitToDrawing: string
     noBeadsToFit: string
     zoomFit: string
-    canvasColor: string
     colors: string
     newProject: string
     importFile: string

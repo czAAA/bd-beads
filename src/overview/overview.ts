@@ -9,7 +9,7 @@ import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
 import { loadProjects } from '../services/libraryStore'
 import { startOfflineShell } from '../services/offlineShell'
-import { markEditorChosen, overviewUrl } from './overviewRoute'
+import { markEditorChosen } from './overviewRoute'
 import OverviewPage from './OverviewPage.vue'
 
 // The Overview is its own page beside the editor (ticket 77), so it starts the same way main.ts does.
@@ -27,7 +27,6 @@ createApp({
   render: () =>
     h(OverviewPage, {
       projectCount: loadProjects().length,
-      overviewHref: overviewUrl(base),
       onMakeFirstProject: goToEditor,
       onOpenEditor: goToEditor,
     }),

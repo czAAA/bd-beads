@@ -610,7 +610,6 @@ export const zh: Translations = {
     fitToDrawing: '让边框贴合所有珠子。',
     noBeadsToFit: '没有可贴合的珠子。',
     zoomFit: '缩放以显示全部内容。',
-    canvasColor: '设置背景颜色。',
     colors: '设置用于涂色的颜色。',
     newProject: '开始一块空白画布。',
     importFile: '从文件打开项目。',

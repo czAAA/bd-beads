@@ -7,9 +7,10 @@ import { useI18n } from '../i18n/useI18n'
 import type { Translations } from '../i18n/translations'
 import FeatureExample from './examples/FeatureExample.vue'
 
-// The Overview's "What's inside" carousel (ticket 217; Overview card). From 1024 a `tablist` of the seven features
-// beside the selected stage, with ‹ › and "n / 7"; below 1024 swipe cards with dots and ‹ ›. Each stage scales the
-// feature's example (ticket 218) to the room it leaves.
+// The Overview's "What's inside" carousel (ticket 217; Overview card): from 1024 a `tablist` beside the stage, below it
+// swipe cards with dots, both with ‹ ›. "1024" is the page's width after its zoom (ticket 540), which the page says;
+// each stage scales its example (ticket 218) to the room it leaves.
+const props = defineProps<{ wide: boolean }>()
 const { t } = useI18n()
 
 /** The features in the order the design system lists them, each with its Icons v2 icon. */
@@ -23,7 +24,7 @@ const FEATURES: { key: keyof Translations['overview']['features']; icon: IconNam
   { key: 'savedProjects', icon: 'library' },
 ]
 
-const wide = useMediaQuery('(min-width: 1024px)')
+const wide = computed(() => props.wide)
 const reducedMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const current = ref(0)
 const track = useTemplateRef<HTMLElement>('track')
@@ -284,7 +285,7 @@ function onScroll() {
 }
 
 /* From 1024: the list left, the stage right, ‹ › and the count top-right of the stage. */
-@media (min-width: 1024px) {
+@container overview (min-width: 1024px) {
   .carousel {
     display: grid;
     grid-template-columns: 18.75rem 1fr;
@@ -400,7 +401,7 @@ function onScroll() {
   }
 }
 
-@media (min-width: 1920px) {
+@container overview (min-width: 1920px) {
   .carousel {
     grid-template-columns: 21.25rem 1fr;
   }

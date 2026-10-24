@@ -71,6 +71,48 @@ describe('CanvasStrip', () => {
   })
 })
 
+describe('CanvasStrip Brand and layout (ticket 540)', () => {
+  const project = { frame: undefined, beads: { 0: { 0: '#ff0000' } }, technique: 'loom' } as unknown as Project
+
+  it('has Menu first and the Brand, the logo and "openbeads", which opens the Overview from the editor', () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
+    const first = wrapper.findAll('[data-testid]').find((element) => element.attributes('data-testid')?.startsWith('strip-'))
+    expect(first?.attributes('data-testid')).toBe('strip-menu')
+
+    const brand = wrapper.get('[data-testid="canvas-brand"]')
+    expect(brand.element.tagName).toBe('A')
+    expect(brand.attributes('href')).toContain('overview/')
+    expect(brand.attributes('aria-current')).toBeUndefined()
+    expect(brand.text()).toBe('openbeads')
+    expect(brand.find('[data-testid="app-logo"]').exists()).toBe(true)
+  })
+
+  it('shows the Brand as the current page, with no link, on the Overview', () => {
+    const wrapper = mount(CanvasStrip, { props: { page: 'overview', zoomPercent: 100 } })
+    const brand = wrapper.get('[data-testid="canvas-brand"]')
+
+    expect(brand.element.tagName).toBe('SPAN')
+    expect(brand.attributes('href')).toBeUndefined()
+    expect(brand.attributes('aria-current')).toBe('page')
+  })
+
+  it('keeps the words of Menu and Project in the page for a screen reader, and has no Canvas color control', () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
+
+    expect(wrapper.get('[data-testid="strip-menu"] .canvas-strip__label').text()).toBe('Menu')
+    expect(wrapper.get('[data-testid="strip-project"] .canvas-strip__label').text()).toBe('Project')
+    expect(wrapper.find('[data-testid="canvas-color"]').exists()).toBe(false)
+  })
+
+  it('holds Menu, the Brand and the framing zoom while a picture is framed', () => {
+    const wrapper = mount(CanvasStrip, { props: { zoomPercent: 200, zoomMinPercent: 100, zoomMaxPercent: 800 } })
+
+    expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="canvas-brand"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="zoom-level"]').text()).toBe('200%')
+  })
+})
+
 describe('CanvasStrip Rotate canvas (ticket 471)', () => {
   it('is disabled with the reason while the Canvas is empty, and does not ask for a turn', async () => {
     const empty = { frame: undefined, beads: {}, technique: 'loom', rotation: 0 } as unknown as Project
