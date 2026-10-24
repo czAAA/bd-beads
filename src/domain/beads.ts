@@ -75,6 +75,9 @@ const DELICA: FormFactor = {
   colorCatalog: 'miyuki-delica',
 }
 
+/** Miyuki's Round Rocailles: drawn like TOHO's Round, but with Miyuki's own Color catalog, empty until one is made. */
+const MIYUKI_ROUND: FormFactor = { ...ROUND, colorCatalog: 'miyuki-round' }
+
 type BeadParts = Omit<Bead, 'id'>
 
 function defineBead(parts: BeadParts): Bead {
@@ -107,6 +110,24 @@ export const BEAD_CATALOG: readonly Bead[] = [
     beadsPerKg: 109890,
   }),
   defineBead({ brand: MIYUKI, formFactor: DELICA, size: '11/0', widthMm: 1.6, heightMm: 1.3, beadsPerKg: 200000 }),
+  // Miyuki's size table (ticket 539) gives an outer diameter (`heightMm`) and beads per 10 cm of strung beads, which
+  // gives the length along the thread (`widthMm`, 100 / count). Every figure is "approx." there.
+  defineBead({ brand: MIYUKI, formFactor: DELICA, size: '15/0', widthMm: 1.1, heightMm: 1.3, beadsPerKg: 350000 }),
+  defineBead({ brand: MIYUKI, formFactor: DELICA, size: '10/0', widthMm: 1.7, heightMm: 2.2, beadsPerKg: 108000 }),
+  defineBead({ brand: MIYUKI, formFactor: DELICA, size: '8/0', widthMm: 2.7, heightMm: 3, beadsPerKg: 30000 }),
+  defineBead({ brand: MIYUKI, formFactor: MIYUKI_ROUND, size: '15/0', widthMm: 1, heightMm: 1.5, beadsPerKg: 250000 }),
+  defineBead({ brand: MIYUKI, formFactor: MIYUKI_ROUND, size: '11/0', widthMm: 1.4, heightMm: 2, beadsPerKg: 110000 }),
+  defineBead({ brand: MIYUKI, formFactor: MIYUKI_ROUND, size: '8/0', widthMm: 2.1, heightMm: 3, beadsPerKg: 39000 }),
+  defineBead({ brand: MIYUKI, formFactor: MIYUKI_ROUND, size: '6/0', widthMm: 2.9, heightMm: 4.5, beadsPerKg: 12000 }),
+  // TOHO publishes diameters (its Shape Chart) but no length, so `widthMm` is the diameter at the measured 11/0 ratio
+  // (1.5 / 2.2). PROVISIONAL until measured. Beads per kg only where TOHO's chart has one.
+  defineBead({ brand: TOHO, formFactor: ROUND, size: '15/0', widthMm: 1, heightMm: 1.5, beadsPerKg: 269400 }),
+  defineBead({ brand: TOHO, formFactor: ROUND, size: '10/0', widthMm: 1.6, heightMm: 2.4 }),
+  defineBead({ brand: TOHO, formFactor: ROUND, size: '9/0', widthMm: 1.8, heightMm: 2.6 }),
+  defineBead({ brand: TOHO, formFactor: ROUND, size: '8/0', widthMm: 2, heightMm: 3, beadsPerKg: 41800 }),
+  defineBead({ brand: TOHO, formFactor: ROUND, size: '7/0', widthMm: 2.4, heightMm: 3.5 }),
+  defineBead({ brand: TOHO, formFactor: ROUND, size: '6/0', widthMm: 2.7, heightMm: 4, beadsPerKg: 16700 }),
+  defineBead({ brand: TOHO, formFactor: ROUND, size: '3/0', widthMm: 3.7, heightMm: 5.5 }),
 ]
 
 /** The ids Beads had before they were built from their parts, read as the Bead they named (ADR 0072). */
