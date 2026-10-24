@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { BEAD_CATALOG, findBead } from '../../domain/beads'
+import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput, Project } from '../../domain/project'
 import { formatMm, formatSizeMm, estimatedSizeMm } from '../../domain/projectSize'
 import { clampAxis, templateProjectInput, type Template, type TemplateAxis } from '../../domain/templates'
@@ -25,7 +25,7 @@ const emit = defineEmits<{ submit: [payload: CreateProjectInput] }>()
 const { t, locale } = useI18n()
 
 const name = ref('')
-const beadId = ref(props.project?.beadId ?? BEAD_CATALOG[0]!.id)
+const beadId = ref(props.project?.beadId ?? DEFAULT_BEAD.id)
 const technique = ref<Technique>(props.template.technique)
 const brickBlock = ref(1)
 const columns = ref(props.template.width.default)
@@ -113,7 +113,7 @@ function onSubmit() {
 
     <FormField v-if="!project" :label="t.form.beadLabel" label-for="template-bead-select">
       <FieldSelect id="template-bead-select" v-model="beadId" data-testid="template-bead-select">
-        <option v-for="option in BEAD_CATALOG" :key="option.id" :value="option.id">{{ option.brand }} {{ option.name }} {{ option.size }}</option>
+        <option v-for="option in offeredBeads()" :key="option.id" :value="option.id">{{ beadLabel(option, t.formFactors) }}</option>
       </FieldSelect>
     </FormField>
 

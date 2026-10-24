@@ -1,3 +1,4 @@
+import { FORM_FACTOR_NAMES_EN } from '../domain/beads'
 import type { Translations } from './translations'
 
 export const en: Translations = {
@@ -159,6 +160,7 @@ export const en: Translations = {
   languageSwitcher: {
     ariaLabel: 'Language',
   },
+  formFactors: FORM_FACTOR_NAMES_EN,
   projects: {
     heading: 'Saved Projects',
     newProjectButton: 'New Project',

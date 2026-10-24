@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
+import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
 import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, type BeadShape, type Technique } from '../../domain/weave'
 import {
@@ -58,7 +58,7 @@ const emit = defineEmits<{
 }>()
 
 const name = ref('')
-const beadId = ref(BEAD_CATALOG[0]!.id)
+const beadId = ref(DEFAULT_BEAD.id)
 const technique = ref<Technique>(DEFAULT_TECHNIQUE)
 /** The Bead shape (ADR 0068, ticket 508): how the Canvas draws each cell. */
 const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
@@ -78,8 +78,8 @@ function focusName() {
 defineExpose({ focusName })
 onMounted(focusName)
 
-const selectedBead = computed(() => BEAD_CATALOG.find((candidate) => candidate.id === beadId.value))
-const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
+const selectedBead = computed(() => findBead(beadId.value))
+const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value, t.value.formFactors) : ''))
 
 const techniqueOptions = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
 
@@ -207,8 +207,8 @@ function onDropImage(file: File) {
 
     <FormField :label="t.form.beadLabel" label-for="bead-select">
       <FieldSelect id="bead-select" v-model="beadId" data-testid="bead-select">
-        <option v-for="bead in BEAD_CATALOG" :key="bead.id" :value="bead.id">
-          {{ bead.brand }} {{ bead.name }} {{ bead.size }}
+        <option v-for="bead in offeredBeads()" :key="bead.id" :value="bead.id">
+          {{ beadLabel(bead, t.formFactors) }}
         </option>
       </FieldSelect>
     </FormField>

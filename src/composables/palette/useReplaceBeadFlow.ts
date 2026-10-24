@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { BEAD_CATALOG, beadLabel, findBead, type Bead } from '../../domain/beads'
+import { beadLabel, findBead, offeredBeads, type Bead } from '../../domain/beads'
 import { replaceBead, resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -22,7 +22,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   /** The other built-in catalog Beads the open Project could switch to (ticket 48) — everything but its current one. */
   const candidates = computed(() => {
     const project = deps.currentProject()
-    return project ? BEAD_CATALOG.filter((bead) => bead.id !== project.beadId) : []
+    return project ? offeredBeads().filter((bead) => bead.id !== resolveProjectBead(project)?.id) : []
   })
 
   /** The Bead behind the pending id, resolved from the catalog — also doubles as "is the Replace bead modal open"
@@ -47,7 +47,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
       candidate ? formatSizeMm(estimatedSizeMm(project, candidate), unitLabels, deps.locale()) : '—'
 
     return t.replaceBead.confirmMessage
-      .replace('{bead}', () => beadLabel(bead))
+      .replace('{bead}', () => beadLabel(bead, t.formFactors))
       .replace('{new}', () => estimateWith(bead))
       .replace('{old}', () => estimateWith(resolveProjectBead(project)))
   })

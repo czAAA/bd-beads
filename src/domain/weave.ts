@@ -180,17 +180,13 @@ export const DEFAULT_BEAD_SHAPE: BeadShape = 'symmetric'
 /** Every Bead shape, in the order the choice lists them. */
 export const BEAD_SHAPES: readonly BeadShape[] = ['symmetric', 'real']
 
-/** How much of a bead's width its corners are rounded by, per Form factor: near sharp for a cylinder, a pill for a round
- * bead, square for a cube. */
-const FORM_ROUNDNESS: Record<Bead['formFactor'], number> = { cylinder: 0.1, round: 0.5, cube: 0 }
-
 /** The one geometry function for a Bead's cell (ADR 0068): Symmetric is the Technique's own cell (undefined, so every
  * rule below reads as before), Real the Bead's height over its pitch along the thread and its outline. */
-export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm' | 'formFactor'> | undefined, shape: BeadShape): BeadCell | undefined {
+export function beadCell(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'> & { formFactor: Pick<Bead['formFactor'], 'roundness'> } | undefined, shape: BeadShape): BeadCell | undefined {
   if (shape !== 'real' || !bead) {
     return undefined
   }
-  return { aspect: bead.heightMm / beadPitchMm(bead), roundness: FORM_ROUNDNESS[bead.formFactor] }
+  return { aspect: bead.heightMm / beadPitchMm(bead), roundness: bead.formFactor.roundness }
 }
 
 /** The Weave with the Bead's cell added (none, in Symmetric, leaves it as it is). */

@@ -9,7 +9,7 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 /** 10 columns x 20 rows, Row progress on, so Previous/Next both have room to be enabled. */
 function makeProject(): Project {

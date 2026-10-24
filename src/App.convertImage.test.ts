@@ -30,7 +30,7 @@ vi.mock('./services/imageDecode', async (importOriginal) => {
   }
 })
 
-const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho-cube-1.5mm')!
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 /** A picture of two flat blocks: the left half red, the right half blue. */
 function twoBlocks(width = 8, height = 8): PixelData {
