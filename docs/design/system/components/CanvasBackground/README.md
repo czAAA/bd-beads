@@ -12,4 +12,11 @@ The one background of the drawing area: the rulers and the beads sit on it, and 
 - **Where it lives (ticket 0443).** Not a popover any more: five (light) or six (dark) round swatches in a row inside Project's Canvas section, 28px, 8px apart, the chosen one ringed. The same radio group, names and remembered choice as before. The popover paragraph above describes the earlier form.
 - **Copy.** "Canvas color" (Russian "Цвет холста"); the choice names are in the Writing section.
 
+**Approved palette (ticket 0554; the tokens and the app change in that ticket):** neutral steps from near-white to mid-grey, with no tints, since a tinted background shifts how bead colors look and the v18 light set kept white beads at about 1.0:1. Five in each theme.
+- Light: Studio `#fafafa` (default), Linen `#f7f3ec`, **Stone** `#e6e3de` (new), **Fog** `#e3e7ec` (replaces Mist), **Pebble** `#cdcac4` (new). Sage and Blush go.
+- Dark: Night `#202020` (default), Ink `#0e0e0e`, Midnight `#12161c`, Ash `#2c2b29`, **Slate** `#3b3e43` (new, for designs heavy in black). Olive and Umber go.
+- Each background has its own empty-bead and ruler color, rulers at 4.5:1 or more: Studio and Linen `#d8d2cc` / `#6a6a6a`; Stone `#cbc6bf` / `#5c5c5c`; Fog `#c9ced5` / `#5c5c5c`; Pebble `#b3afa8` / `#444444`; Night `#3c3c3c` / `#8c8c8c`; Ink `#2c2c2c` / `#8c8c8c`; Midnight `#262c35` / `#8c8c8c`; Ash `#3d3b38` / `#a0a0a0`; Slate `#50545a` / `#b4b4b4`.
+- The stored choice moves to the new list by name, not position: a dropped choice falls back to the theme's default, Mist becomes Fog, and Ash (dark 6) becomes dark 4. `canvas-bg-6` goes.
+- In Project the swatches are 26px `radius-sm`, 6px apart, ringed `ink` (ProjectPanel card).
+
 Hand-written; static rendition of the open picker.

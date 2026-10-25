@@ -207,6 +207,12 @@
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
   --panel-width: 340px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
   --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) on a coarse pointer. */
+  --panel-row: 28px; /* A row of the Menu, Project or Frame panel (ticket 0553): item, section header, setting, pencil or beads-needed row. Replaces item-height there. */
+  --panel-row-touch: 36px; /* panel-row on a coarse pointer: a deliberate exception to touch-target, since the rows touch and each row is its own hit area (responsive.md). */
+  --panel-row-two-line: 40px; /* A two-line panel row: a project in the Projects library (name over maker). */
+  --panel-row-two-line-touch: 48px; /* panel-row-two-line on a coarse pointer. */
+  --picker-height: 24px; /* The PanelPicker button on a setting row, and the panel's small SegmentedControl and Stepper. */
+  --picker-height-touch: 32px; /* picker-height on a coarse pointer. */
   --bead-min-phone: 16px; /* Where a ruler number needs more room at the Phone tier (0–743px): 12px numbers need about 16px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --bead-min-tablet: 15px; /* Where a ruler number needs more room from 744px up: 11px numbers need about 15px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --touch-target: 44px; /* Minimum hit area for every control on a coarse pointer (touch, Pencil). */

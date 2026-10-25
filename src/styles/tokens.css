@@ -243,6 +243,12 @@
   --pill-thickness: 3rem;
   --panel-width: 21.25rem;
   --item-height: 2.125rem;
+  --panel-row: 1.75rem;
+  --panel-row-touch: 2.25rem;
+  --panel-row-two-line: 2.5rem;
+  --panel-row-two-line-touch: 3rem;
+  --picker-height: 1.5rem;
+  --picker-height-touch: 2rem;
   --bead-min-phone: 1rem;
   --bead-min-tablet: 0.9375rem;
   --touch-target: 2.75rem;

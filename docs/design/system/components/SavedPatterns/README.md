@@ -10,4 +10,6 @@ The fourth box of the left column: the five most recently saved Projects as roun
 - The consumer provides the thumbnails; the preview's striped circles are placeholders.
 - **No Frame (v16):** a saved Project with no Frame shows "no Frame" where the size goes (`meta-tiny`, `muted`). Its thumbnail is drawn from every Piece on the Canvas; with a Frame, from the Frame.
 
+**Superseded (ticket 0553):** saved projects are listed in the Projects library subpanel of the Menu (MenuPanel card), one PanelListRow per project. This card stays as the record.
+
 Hand-written from DESIGN.md §5.8 and §5.9; static rendition.
