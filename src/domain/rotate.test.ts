@@ -201,3 +201,35 @@ describe('rotateFrame (ticket 471, ADR 0066)', () => {
     expect(rotateFrame({ ...base, beads: {}, frame: undefined })).toBeUndefined()
   })
 })
+
+describe('rotating a Piece-tool shape (ticket 547)', () => {
+  // A bar of three red beads with a blue bead beside its middle one, inside the bar's bounding rectangle.
+  const beads = beadsFromColors(
+    [
+      ['#aa0000', '#aa0000', '#aa0000'],
+      [null, '#0000bb', null],
+    ],
+    { row: 10, column: 10 },
+  )
+  const shape: Selection = {
+    top: 10,
+    left: 10,
+    rows: 2,
+    columns: 3,
+    cells: [{ row: 10, column: 10 }, { row: 10, column: 11 }, { row: 10, column: 12 }],
+  }
+
+  it('turns its own beads, leaves the other Piece where it is and keeps the turned shape selected', () => {
+    const result = rotateSelection(withBeads(beads), shape)
+    expect(result.selection.cells).toHaveLength(3)
+    expect(result.selection).toMatchObject({ rows: 3, columns: 2 })
+    expect(positionsOf(result.project.beads).filter((entry) => entry.endsWith('#aa0000'))).toHaveLength(3)
+    // the blue bead is under the turned footprint but not on a turned cell: it stays
+    expect(positionsOf(result.project.beads)).toContain('11,11:#0000bb')
+  })
+
+  it('reports as covered only the beads the shape landed on', () => {
+    const turned = rotateSelection(withBeads(beads), shape)
+    expect(coveredByRotation(withBeads(beads), turned.project, shape, turned.selection)).toBe(0)
+  })
+})

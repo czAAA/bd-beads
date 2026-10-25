@@ -5,7 +5,7 @@ import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave, rowProgressOn } from '../domain/project'
-import { hasGuides, selectionFrame, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
+import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
@@ -295,6 +295,10 @@ const OUTLINE_PX = 2
 // beads, so on peyote and brick stitch (alternate rows half a bead over) it spans the furthest any row reaches. Handles
 // are drawn later in the viewport's px.
 function drawSelection(context: DrawingContext, weave: Weave, space: Space, selection: Selection, theme: ProjectTheme): void {
+  if (selection.cells) {
+    drawShapeOutline(context, weave, selection.cells, theme)
+    return
+  }
   const bottom = space.open ? selection.top + selection.rows - 1 : Math.min(selection.top + selection.rows - 1, space.rows - 1)
   const right = space.open ? selection.left + selection.columns - 1 : Math.min(selection.left + selection.columns - 1, space.columns - 1)
   const { x, y, width, height } = positionsBoxPx(weave, selection.top, selection.left, bottom - selection.top + 1, right - selection.left + 1)
@@ -304,6 +308,21 @@ function drawSelection(context: DrawingContext, weave: Weave, space: Space, sele
   context.fillRect(x, y + height - OUTLINE_PX, width, OUTLINE_PX)
   context.fillRect(x, y, OUTLINE_PX, height)
   context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
+}
+
+// A shaped Selection (ticket 547): each cell's side that no other cell of the shape lies across is part of the outline,
+// so it runs round the outside and round each hole.
+function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly GridPosition[], theme: ProjectTheme): void {
+  const has = new Set(cells.map((cell) => `${cell.row},${cell.column}`))
+  const next = (cell: GridPosition, rows: number, columns: number) => has.has(`${cell.row + rows},${cell.column + columns}`)
+  context.fillStyle = theme.marker
+  for (const cell of cells) {
+    const { x, y, width, height } = positionsBoxPx(weave, cell.row, cell.column, 1, 1)
+    if (!next(cell, -1, 0)) context.fillRect(x, y, width, OUTLINE_PX)
+    if (!next(cell, 1, 0)) context.fillRect(x, y + height - OUTLINE_PX, width, OUTLINE_PX)
+    if (!next(cell, 0, -1)) context.fillRect(x, y, OUTLINE_PX, height)
+    if (!next(cell, 0, 1)) context.fillRect(x + width - OUTLINE_PX, y, OUTLINE_PX, height)
+  }
 }
 
 // The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px in high
@@ -414,7 +433,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const local = <T extends GridPosition>(cell: T): T => (frame ? inFrameTerms(frame, cell) : cell)
     const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, covered, cell)).map(local) : [...cells])
     const sheetBounds = space.open ? { row: 0, column: 0, rows: sheetSpace.rows, columns: sheetSpace.columns } : project.frame
-    const sheetSelection = selection && ownLayer === 'frame' ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column } : selection) : undefined
+    const sheetSelection = selection && ownLayer === 'frame' ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column, ...(selection.cells ? { cells: selection.cells.map(local) } : {}) } : selection) : undefined
     context.save()
     context.translate(origin.x, origin.y)
     const inPass = showRows ? beadsInPass(project, sheetSpace) : []
@@ -455,7 +474,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })
   }
-  if (selection && selectionHandles && space.open && hasGuides(selection)) {
+  if (selection && selectionHandles && space.open && selectionHasHandles(selection)) {
     drawBoxHandles(context, selectionHandles.surface.beadBox(selectionFrame(selection), ownLayer), pixelRatio, theme, selectionHandles.touch)
   }
   if (pointer) {
