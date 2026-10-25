@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, DEFAULT_BEAD, beadLabel, beadPitchMm, findBead, gramsPerBead, offeredBeads } from './beads'
+import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadLabel, beadPitchMm, findBead, gramsPerBead, offeredBeads } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
@@ -99,5 +99,32 @@ describe('beadLabel', () => {
     const cube = findBead('toho/cube/1.5mm')!
     expect(beadLabel(cube)).toBe('TOHO Cube 1.5mm')
     expect(beadLabel(cube, { cube: 'Куб', round: 'Круглый', delica: 'Delica' })).toBe('TOHO Куб 1.5mm')
+  })
+})
+
+describe('beadAfterPick (ticket 554)', () => {
+  const beads = offeredBeads()
+  const delica11 = findBead('miyuki/delica/11-0')!
+
+  it('keeps the Type and size when the new Brand has them', () => {
+    const toho = findBead('toho/round/11-0')!
+    const next = beadAfterPick(beads, toho, { brandId: 'miyuki' })
+    expect(next?.brand.id).toBe('miyuki')
+    expect(next?.size).toBe(toho.size)
+  })
+
+  it('takes the new Brand\'s first Bead when it has neither the Type nor the size', () => {
+    const cube = beads.find((bead) => bead.formFactor.id === 'cube')!
+    const next = beadAfterPick(beads, cube, { brandId: 'miyuki' })
+    expect(next?.brand.id).toBe('miyuki')
+  })
+
+  it('keeps the Brand and the size when only the Type changes', () => {
+    const next = beadAfterPick(beads, delica11, { formFactorId: delica11.formFactor.id })
+    expect(next?.id).toBe(delica11.id)
+  })
+
+  it('is undefined for a Brand with no Beads', () => {
+    expect(beadAfterPick(beads, delica11, { brandId: 'nobody' })).toBeUndefined()
   })
 })

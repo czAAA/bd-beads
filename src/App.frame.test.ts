@@ -344,13 +344,9 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
   })
 
-  it('has Fit to drawing in the Progress bar with no Frame, and Beads needed asks for one', async () => {
+  it('has Fit to drawing in the Progress bar with no Frame', async () => {
     const wrapper = await mountOpen()
     expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').text()).toContain(en.frame.progressSelectToSet)
-    await openPanel(wrapper, 'strip-project')
-    expect(wrapper.find('[data-testid="quantities-needs-frame"]').text()).toBe(en.frame.countNeedsFrame)
-
-    await closePanel(wrapper)
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
   })

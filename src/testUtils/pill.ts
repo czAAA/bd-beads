@@ -6,7 +6,7 @@ import { chooseLanguage } from './chooseLanguage'
 
 type Wrapper = ReturnType<typeof mount>
 
-type Sheet = 'strip-project' | 'strip-menu'
+type Sheet = 'strip-project' | 'strip-menu' | 'strip-frame'
 
 /** Opens Menu or Project (CanvasStrip card, ticket 443): the strip's button toggles, so an open panel
  * is left alone and the other is swapped in. */
@@ -133,10 +133,10 @@ export function toolState(wrapper: Wrapper, tool: Tool): { pressed: boolean; sel
   return { pressed: tile.attributes('aria-pressed') === 'true', selected: tile.classes().includes('icon-btn--selected') }
 }
 
-/** Reads one element of the Project panel (ProjectPanel card), closing it again so the next canvas press isn't
- * swallowed. */
-export async function panelRead(wrapper: Wrapper, testId: string): Promise<{ exists: boolean; text: string }> {
-  await openPanel(wrapper, 'strip-project')
+/** Reads one element of the Project panel (ProjectPanel card), or of the one a strip button opens, closing it again so
+ * the next canvas press isn't swallowed. */
+export async function panelRead(wrapper: Wrapper, testId: string, opener: Sheet = 'strip-project'): Promise<{ exists: boolean; text: string }> {
+  await openPanel(wrapper, opener)
   const element = wrapper.find(`[data-testid="${testId}"]`)
   const read = { exists: element.exists(), text: element.exists() ? element.text() : '' }
   await closePanel(wrapper)

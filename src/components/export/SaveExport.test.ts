@@ -11,11 +11,11 @@ beforeEach(() => {
 const mountBox = (props: Record<string, unknown> = {}) => mount(SaveExport, { props: { hasFrame: true, ...props }, attachTo: document.body })
 
 describe('SaveExport (ticket 443)', () => {
-  it('has PNG, PDF and Project file buttons that each ask for their export', async () => {
+  it('has PNG and PDF buttons that each ask for their export', async () => {
     const wrapper = mountBox()
-    expect(['export-png', 'export-pdf', 'export-project-file'].map((id) => wrapper.get(`[data-testid="${id}"]`).text())).toEqual(['PNG', 'PDF', 'Project file'])
-    for (const id of ['export-png', 'export-pdf', 'export-project-file']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
-    expect(['export-png', 'export-pdf', 'export-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1])
+    expect(['export-png', 'export-pdf'].map((id) => wrapper.get(`[data-testid="${id}"]`).text())).toEqual(['PNG', 'PDF'])
+    for (const id of ['export-png', 'export-pdf']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
+    expect(['export-png', 'export-pdf'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1])
   })
 
   it('waits for a second PNG or PDF while one is being drawn', async () => {
