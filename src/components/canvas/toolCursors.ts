@@ -1,5 +1,4 @@
 import type { Tool } from '../../domain/tool'
-import type { PenPointerImage } from './penPointer'
 
 // The Tool pointers (ticket 542): the design system's cursor files, one per tool, as the CSS `cursor` value. A cursor
 // image cannot read CSS custom properties, so the files' ink and halo are fixed; only the colour bead of Paint and
@@ -14,31 +13,27 @@ const sources: Readonly<Record<string, string>> = Object.fromEntries(
   Object.entries(files).map(([path, svg]) => [/([^/]+)\.svg$/.exec(path)![1], svg]),
 )
 
-/** `tip`: the hot spot is the drawing's tip (a pencil's, a bucket's spout), so the drawing points at what it acts on. */
-type Pointer = { file: string; hotSpot: readonly [number, number]; fallback: string; tip: boolean }
-
-/** The files' size, in px: every Tool pointer is drawn on a 24px square. */
-const SIZE = 24
+type Pointer = { file: string; hotSpot: readonly [number, number]; fallback: string }
 
 const POINTERS: Readonly<Record<Tool, Pointer>> = {
-  paint: { file: 'paint', hotSpot: [5, 19], fallback: 'crosshair', tip: true },
-  erase: { file: 'erase', hotSpot: [6, 17], fallback: 'crosshair', tip: true },
-  hand: { file: 'hand', hotSpot: [11, 12], fallback: 'grab', tip: false },
-  select: { file: 'select', hotSpot: [4, 3], fallback: 'default', tip: false },
-  fill: { file: 'fill', hotSpot: [18, 18], fallback: 'crosshair', tip: true },
-  piece: { file: 'piece', hotSpot: [12, 12], fallback: 'crosshair', tip: false },
+  paint: { file: 'paint', hotSpot: [5, 19], fallback: 'crosshair' },
+  erase: { file: 'erase', hotSpot: [6, 17], fallback: 'crosshair' },
+  hand: { file: 'hand', hotSpot: [11, 12], fallback: 'grab' },
+  select: { file: 'select', hotSpot: [4, 3], fallback: 'default' },
+  fill: { file: 'fill', hotSpot: [18, 18], fallback: 'crosshair' },
+  piece: { file: 'piece', hotSpot: [12, 12], fallback: 'crosshair' },
 }
 
 const HEX = /^#[0-9a-f]{3,8}$/i
 const cache = new Map<string, string>()
 
 /** The Tool pointer as a plain image (ticket 546): the same file, colour and hot spot as `toolPointer`, for the app to
- * draw itself where a CSS cursor is not shown (a hovering Pencil), with its size and whether it points (ticket 548). */
+ * draw itself where a CSS cursor is not shown (a hovering Pencil). */
 export function toolPointerImage(
   tool: Tool,
   options: { color?: string | null; dragging?: boolean } = {},
-): PenPointerImage & { url: string } {
-  const { hotSpot, file, tip } = POINTERS[tool]
+): { url: string; hotSpot: readonly [number, number] } {
+  const { hotSpot, file } = POINTERS[tool]
   const dragging = tool === 'hand' && options.dragging === true
   const color = options.color && HEX.test(options.color) ? options.color : undefined
   const key = `${tool}|${dragging}|${color ?? ''}`
@@ -49,7 +44,7 @@ export function toolPointerImage(
     url = `data:image/svg+xml,${encodeURIComponent(svg)}`
     cache.set(key, url)
   }
-  return { url, hotSpot, size: SIZE, tip }
+  return { url, hotSpot }
 }
 
 /** The CSS `cursor` value for a tool: the image, its hot spot and the system's cursor as fallback. Hand shows its
