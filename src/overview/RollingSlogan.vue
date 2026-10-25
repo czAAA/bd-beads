@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useElementSize } from '../composables/ui/useElementSize'
 import { useMediaQuery } from '../composables/ui/useMediaQuery'
 import { SLOGAN_HOLD_MS, SLOGAN_ROLL_MS, SLOGAN_WORDS } from './slogan'
 
@@ -14,17 +13,6 @@ const step = ref(0)
 const animated = ref(true)
 const reduceMotion = useMediaQuery('(prefers-reduced-motion: reduce)')
 const word = computed(() => column[lastStep - step.value]!)
-
-const root = ref<HTMLElement>()
-const measure = ref<HTMLElement>()
-const rootSize = useElementSize(root)
-const slotWidth = ref<number>()
-function measureWidest() {
-  const widths = [...(measure.value?.children ?? [])].map((el) => (el as HTMLElement).offsetWidth)
-  const widest = Math.max(0, ...widths)
-  slotWidth.value = widest > 0 ? widest : undefined
-}
-watch(rootSize.width, measureWidest)
 
 let timer: ReturnType<typeof setTimeout> | undefined
 function stop() {
@@ -61,8 +49,6 @@ function sync() {
 
 watch(reduceMotion, sync)
 onMounted(() => {
-  measureWidest()
-  void document.fonts?.ready.then(measureWidest)
   document.addEventListener('visibilitychange', sync)
   sync()
 })
@@ -73,9 +59,9 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <p ref="root" class="slogan" aria-label="openbeads" :data-word="word" data-testid="overview-slogan">
+  <p class="slogan" aria-label="openbeads" :data-word="word" data-testid="overview-slogan">
     <span class="slogan__open" aria-hidden="true">open</span>
-    <span class="slogan__slot" aria-hidden="true" :style="slotWidth ? { width: `${slotWidth}px` } : undefined">
+    <span class="slogan__slot" aria-hidden="true">
       <span
         class="slogan__column"
         :class="{ 'slogan__column--still': !animated }"
@@ -86,9 +72,9 @@ onBeforeUnmount(() => {
       >
         <span v-for="(w, i) in column" :key="i" class="slogan__word">{{ w }}</span>
       </span>
-    </span>
-    <span ref="measure" class="slogan__measure" aria-hidden="true">
-      <span v-for="w in SLOGAN_WORDS" :key="w">{{ w }}</span>
+      <span class="slogan__sizer">
+        <span v-for="w in SLOGAN_WORDS" :key="w">{{ w }}</span>
+      </span>
     </span>
   </p>
 </template>
@@ -99,7 +85,6 @@ onBeforeUnmount(() => {
   --slogan-size: 2.5rem;
   --slogan-line: 2.5rem;
 
-  position: relative;
   display: flex;
   justify-content: center;
   margin: 0;
@@ -136,7 +121,7 @@ onBeforeUnmount(() => {
 
 /* One line tall, as wide as the widest word, its top and bottom edges faded. */
 .slogan__slot {
-  display: block;
+  display: grid;
   flex: none;
   height: var(--slogan-line);
   overflow: hidden;
@@ -146,6 +131,7 @@ onBeforeUnmount(() => {
 }
 
 .slogan__column {
+  grid-area: 1 / 1;
   display: block;
   transition: transform var(--slogan-roll) var(--ease-standard);
 }
@@ -159,11 +145,14 @@ onBeforeUnmount(() => {
   height: var(--slogan-line);
 }
 
-.slogan__measure {
-  position: absolute;
+/* Every word, unseen, in the column's cell: the slot is as wide as the widest. */
+.slogan__sizer {
+  grid-area: 1 / 1;
+  display: block;
+  height: 0;
+  overflow: hidden;
   visibility: hidden;
   white-space: nowrap;
-  pointer-events: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
