@@ -167,3 +167,21 @@ describe('↓ and ↑ step past a dropdown row', () => {
     wrapper.unmount()
   })
 })
+
+describe('↓ and ↑ leave a choice group', () => {
+  it('moves focus from a radio to the control below, while Home stays with the group', () => {
+    const wrapper = mount(AppPanel, {
+      attachTo: document.body,
+      props: { title: 'Project', anchor: 'strip-menu' },
+      slots: { default: () => [h('div', { role: 'radiogroup' }, [h('button', { type: 'button', role: 'radio', 'data-testid': 'shape' }, 'Real')]), h('button', { type: 'button', 'data-testid': 'next' }, 'Next')] },
+    })
+    const shape = wrapper.get('[data-testid="shape"]').element as HTMLElement
+    shape.focus()
+    const home = new KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true })
+    shape.dispatchEvent(home)
+    expect(home.defaultPrevented).toBe(false)
+    shape.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="next"]').element)
+    wrapper.unmount()
+  })
+})

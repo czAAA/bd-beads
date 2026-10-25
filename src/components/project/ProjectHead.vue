@@ -200,10 +200,9 @@ function setBrickBlock(brickBlock: number) {
 }
 
 .project-head__lines {
-  display: grid;
-  grid-template-columns: max-content minmax(0, 1fr);
-  column-gap: var(--space-8);
-  row-gap: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
 }
 
 .project-head__technique {

@@ -4,8 +4,8 @@ import AppIcon from '../AppIcon.vue'
 import AppTooltip from '../AppTooltip.vue'
 import type { IconName } from '../icons'
 
-// Two or three always-visible choices (ticket 149): a radiogroup of one tab stop, arrows/Home/End move the choice,
-// which follows focus. A label that doesn't fit wraps; a single word wider than its share moves the option to the next
+// Two or three always-visible choices (ticket 149): a radiogroup of one tab stop, ←/→/Home/End move the choice,
+// which follows focus; ↑/↓ are left to the page or panel around it, so a panel's arrows can leave the group. A label that doesn't fit wraps; a single word wider than its share moves the option to the next
 // row (ticket 231).
 /** An option's Tooltip: the `disabledBody` replaces the body while the whole control is disabled. */
 interface OptionTooltip {
@@ -46,9 +46,9 @@ function onKeydown(event: KeyboardEvent) {
   const index = props.options.findIndex((option) => option.value === value.value)
   const last = props.options.length - 1
   const next =
-    event.key === 'ArrowRight' || event.key === 'ArrowDown'
+    event.key === 'ArrowRight'
       ? Math.min(last, index + 1)
-      : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+      : event.key === 'ArrowLeft'
         ? Math.max(0, index - 1)
         : event.key === 'Home'
           ? 0

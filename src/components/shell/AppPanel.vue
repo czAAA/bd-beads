@@ -133,7 +133,8 @@ function onKeydown(event: KeyboardEvent) {
     list[event.shiftKey ? list.length - 1 : 0]?.focus({ preventScroll: true })
     return
   }
-  const own = target.closest('input, textarea, [role="radiogroup"]') !== null
+  // A choice group keeps Home and End (its first and last choice); ↑/↓ leave it.
+  const own = target.closest('input, textarea') !== null || (target.closest('[role="radiogroup"]') !== null && (event.key === 'Home' || event.key === 'End'))
   if (own || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
   event.preventDefault()
   const index = list.indexOf(target)

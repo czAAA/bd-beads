@@ -98,22 +98,31 @@ function cancel() {
 
 <style scoped>
 .editable-line {
-  display: grid;
-  /* Lines in one grid share its label column (ProjectHead), so their values start at the same place. */
-  grid-template-columns: subgrid;
-  grid-column: 1 / -1;
-  align-items: start;
+  display: flex;
+  /* The value follows its own colon by one space; label and value share a centre line. */
+  align-items: center;
+  gap: 1ch;
   min-width: 0;
+  min-height: var(--panel-item-height);
+}
+
+.editable-line:has(.editable-line__form) {
+  align-items: flex-start;
+}
+
+.editable-line:has(.editable-line__form) .editable-line__label {
+  padding-top: var(--space-4);
 }
 
 .editable-line__label {
-  padding-top: var(--space-2);
+  flex: none;
   font: var(--type-label);
   color: var(--muted);
 }
 
 .editable-line__body,
 .editable-line__form {
+  flex: 1 1 auto;
   min-width: 0;
 }
 
