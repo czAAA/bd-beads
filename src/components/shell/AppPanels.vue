@@ -6,13 +6,14 @@ import NewProjectForm from '../project/NewProjectForm.vue'
 import TemplateGallery from '../project/TemplateGallery.vue'
 import TemplateSetup from '../project/TemplateSetup.vue'
 import AppButton from '../ui/AppButton.vue'
-import ProjectList from '../project/ProjectList.vue'
+import ProjectsLibrary from '../project/ProjectsLibrary.vue'
+import PanelItem from './PanelItem.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
 import { ref } from 'vue'
 import { templateById, type TemplateId } from '../../domain/templates'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
-// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and Saved Projects as another. Each panel only asks; the app shell does the work.
+// The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library as another. Each panel only asks; the app shell does the work.
 const {
   t,
   projects,
@@ -92,13 +93,14 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
   <!--
     Menu and Project (spec 0440, ticket 443; MenuPanel and ProjectPanel cards): one panel host, a dropdown at every width,
     which stays mounted while the two swap. Menu is about the app and the device, Project about the
-    open Project; New Project is Menu's subpanel and the Saved Projects sheet below opens from it.
+    open Project; New Project is Menu's subpanel and the Projects library below opens from it.
   -->
   <PanelHost
     v-if="openPanel === 'menu' || (openPanel === 'project' && activeProject)"
     :open="openPanel"
     :only="['menu', 'project']"
     :sub-title="phoneSavedProjectsOpen ? t.projects.heading : t.projects.newProjectButton"
+    :sub-meta="openPanel === 'menu' && phoneSavedProjectsOpen ? String(projects.length) : undefined"
     :start-in-sub="menuOpensOnForm || projects.length === 0"
     @close="openPanel = null"
   >
@@ -109,11 +111,8 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
       :handedness="handedness"
-      @import="onImportProjects"
-      @export-all="onExportLibraryFile"
       @new-project="phoneSavedProjectsOpen = false"
       @saved-projects="phoneSavedProjectsOpen = true"
-      @delete-all="onRequestDeleteAllProjects"
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
       @shortcuts="shortcutsHelpOpen = true"
@@ -156,15 +155,15 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
           @submit="(payload) => { onPlaceFrameFromTemplate(payload); openPanel = null }"
         />
       </template>
-      <!-- Saved Projects: Menu's other subpanel. Picking a Project opens it and closes the panel. -->
-      <ProjectList
+      <!-- The Projects library: Menu's other subpanel. Picking a Project opens it and closes the panel. -->
+      <ProjectsLibrary
         v-else-if="phoneSavedProjectsOpen && depth === 1"
         :projects="projects"
         :active-project-id="activeProjectId"
         @select="onSelectProjectFromPhoneDrawer"
         @remove="onRequestRemove"
-        @export-project="onExportProjectFile"
-        @export-library="onExportLibraryFile"
+        @import="onImportProjects"
+        @export-all="onExportLibraryFile"
       />
       <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
       <template v-else-if="depth === 1">
@@ -184,6 +183,18 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       />
     </template>
     <template #footer="{ depth }">
+      <PanelItem
+        v-if="depth === 1 && phoneSavedProjectsOpen && openPanel === 'menu'"
+        icon="delete"
+        danger
+        :disabled="projects.length === 0"
+        :name="t.panels.menu.deleteAll"
+        :disabled-body="t.projects.emptyTitle"
+        data-testid="menu-delete-all"
+        @select="onRequestDeleteAllProjects"
+      >
+        {{ t.panels.menu.deleteAll }}
+      </PanelItem>
       <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
         {{ openPanel === 'project' ? (activeProject?.frame ? t.frame.replaceFrame : t.frame.addFrameButton) : t.form.submit }}
       </AppButton>

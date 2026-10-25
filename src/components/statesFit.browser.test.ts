@@ -5,7 +5,7 @@ import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
 import BeadQuantities from './palette/BeadQuantities.vue'
 import BeadColorList from './palette/BeadColorList.vue'
-import ProjectList from './project/ProjectList.vue'
+import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import FrameControls from './project/FrameControls.vue'
 import TemplateGallery from './project/TemplateGallery.vue'
 import TemplateSetup from './project/TemplateSetup.vue'
@@ -88,7 +88,7 @@ const CASES: FitCase[] = [
   ['Save failed notice', SaveFailedNotice, {}],
   ['BeadQuantities painted', BeadQuantities, { project: painted }],
   ['BeadQuantities expanded', BeadQuantities, { project: painted }, expand],
-  ['ProjectList expanded', ProjectList, { projects: [empty, { ...empty, id: 'b', name: 'Fox' }, { ...empty, id: 'c', name: 'Owl' }, { ...empty, id: 'd', name: 'Hare' }], activeProjectId: empty.id }, expand],
+  ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, { ...empty, id: 'b', name: 'Fox' }, { ...empty, id: 'c', name: 'Owl' }, { ...empty, id: 'd', name: 'Hare' }], activeProjectId: empty.id }],
   ['FrameControls estimate', FrameControls, { project: framed }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],

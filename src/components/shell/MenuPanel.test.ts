@@ -5,8 +5,10 @@ import MenuPanel from './MenuPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { createProject } from '../../domain/project'
 import { en } from '../../i18n/en'
+import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 
 beforeEach(() => {
+  document.documentElement.removeAttribute('data-theme')
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
 })
@@ -32,33 +34,27 @@ describe('MenuPanel (ticket 443)', () => {
     expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
   })
 
-  it('lists New Project, Import, Export all, Saved Projects with its count and Delete all Projects last and danger', () => {
+  it('lists New Project and the Projects library with its count, each opening a subpanel', () => {
     const wrapper = mountIn()
     const projects = wrapper.get('[data-testid="menu-panel"] section')
-    const rows = projects.findAll('.panel-item, .project-import__button').map((row) => row.text())
-    expect(rows).toEqual([en.projects.newProjectButton, en.transfer.importLabel, `${en.transfer.exportLibraryButton}.openbeads`, `${en.projects.heading}1`, en.panels.menu.deleteAll])
-    expect(wrapper.get('[data-testid="menu-delete-all"]').classes()).toContain('panel-item--danger')
-  })
-
-  it('disables Delete all Projects and Saved Projects with none saved, each with its reason', () => {
-    const wrapper = mountIn({ projects: [] })
-    expect(wrapper.get('[data-testid="menu-delete-all"]').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="menu-saved-projects"]').attributes('aria-disabled')).toBe('true')
+    const rows = projects.findAll('.panel-item').map((row) => row.text())
+    expect(rows).toEqual([en.projects.newProjectButton, `${en.projects.heading}1`])
+    expect(projects.findAll('.panel-item__mark--sub')).toHaveLength(2)
   })
 
   it('shows the Input row only once a pen has been seen', () => {
     expect(mountIn().find('[data-testid="menu-input-mode"]').exists()).toBe(false)
     const pen = mountIn({ penSeen: true })
     expect(pen.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
-    expect(pen.get('[data-testid="menu-input-mode"]').text()).toContain(en.panels.menu.pen)
+    expect(panelOptionShown(pen, 'menu-input-mode')).toBe(en.panels.menu.pen)
   })
 
-  it('shows the Hand row only once a pen has been seen, and asks for the other hand', async () => {
+  it('shows Writing hand only once a pen has been seen, and asks for the other hand', async () => {
     expect(mountIn().find('[data-testid="menu-handedness"]').exists()).toBe(false)
     const pen = mountIn({ penSeen: true })
-    const row = pen.get('[data-testid="menu-handedness"]')
-    expect(row.text()).toContain(en.panels.menu.right)
-    await row.findAll('[role="radio"]').find((option) => option.text() === en.panels.menu.left)!.trigger('click')
+    expect(pen.get('[data-testid="menu-handedness"]').text()).toContain(en.panels.menu.writingHand)
+    expect(panelOptionShown(pen, 'menu-handedness')).toBe(en.panels.menu.right)
+    await choosePanelOption(pen, 'menu-handedness', 'left')
     expect(pen.findComponent(MenuPanel).emitted('update:handedness')).toEqual([['left']])
   })
 
@@ -68,10 +64,25 @@ describe('MenuPanel (ticket 443)', () => {
     expect(wrapper.get('[data-testid="menu-version"]').text()).toContain(en.panels.menu.version)
   })
 
-  it('on the dropdown has the language switcher and the four theme segments', () => {
+  it('has the language and theme as pickers, and a language change is remembered', async () => {
     const wrapper = mountIn()
-    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="theme-toggle"]').findAll('[role="radio"]')).toHaveLength(4)
+    expect(panelOptionShown(wrapper, 'language-switcher')).toBe('English')
+    expect(panelOptionShown(wrapper, 'theme-picker')).toBe(en.theme.matchDevice)
+    await choosePanelOption(wrapper, 'language-switcher', 'pl')
+    expect(localStorage.getItem('openbeads:locale')).toBe('pl')
+  })
+
+  it('applies a theme at once and remembers it on this device', async () => {
+    const wrapper = mountIn()
+    await choosePanelOption(wrapper, 'theme-picker', 'dark')
+    expect(document.documentElement.dataset.theme).toBe('dark')
+    expect(localStorage.getItem('openbeads:theme')).toBe('dark')
+    await choosePanelOption(wrapper, 'theme-picker', 'device')
+    expect(localStorage.getItem('openbeads:theme')).toBeNull()
+  })
+
+  it('has no Buy me a coffee row while there is no link', () => {
+    expect(mountIn().find('[data-testid="menu-item-coffee"]').exists()).toBe(false)
   })
 
   it('emits its choices', async () => {
@@ -79,14 +90,23 @@ describe('MenuPanel (ticket 443)', () => {
     const wrapper = mountIn({}, openSub)
     const panel = wrapper.getComponent(MenuPanel)
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-    await wrapper.get('[data-testid="menu-export-all"]').trigger('click')
     await wrapper.get('[data-testid="menu-saved-projects"]').trigger('click')
-    await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
-    await wrapper.get('[data-testid="menu-tools-position"] [data-value="left"]').trigger('click')
-    expect(['new-project', 'export-all', 'saved-projects', 'delete-all'].map((name) => panel.emitted(name)?.length)).toEqual([1, 1, 1, 1])
-    // New Project and Saved Projects each open a subpanel.
+    await choosePanelOption(wrapper, 'menu-tools-position', 'left')
+    expect(['new-project', 'saved-projects'].map((name) => panel.emitted(name)?.length)).toEqual([1, 1])
+    // New Project and the Projects library each open a subpanel.
     expect(openSub).toHaveBeenCalledTimes(2)
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
+  })
+
+  it('folds a section shut and remembers it on this device', async () => {
+    const wrapper = mountIn()
+    const header = wrapper.get('[aria-expanded]')
+    expect(header.attributes('aria-expanded')).toBe('true')
+    await header.trigger('click')
+    expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
+    expect(localStorage.getItem('openbeads:panel-sections-closed')).toBe('menu:projects')
+    wrapper.unmount()
+    expect(mountIn().find('[data-testid="menu-new-project"]').exists()).toBe(false)
   })
 })
 

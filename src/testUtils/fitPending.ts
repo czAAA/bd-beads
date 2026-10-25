@@ -24,8 +24,6 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'ProgressBar by columns', texts: ['Columna sin terminar', 'Columna terminada'], at: { es: [320] }, fixedBy: '556' },
   { case: 'FramePanel', texts: ['Ширина', 'Висота'], at: { uk: [320] }, fixedBy: '555', borderline: true },
   { case: 'FramePanel', texts: ['Szerokość', 'Wysokość'], at: { pl: [320] }, fixedBy: '555' },
-  { case: 'ProjectList expanded', texts: ['Экспортировать все'], at: { ru: [390, 320] }, fixedBy: '557' },
-  { case: 'ProjectList expanded', texts: ['Экспарт усіх'], at: { be: [320] }, fixedBy: '557' },
   { case: 'CanvasStrip Tooltips', texts: ['RedoCtrl/Cmd+Shift+Z'], at: { en: [320] }, fixedBy: '560' },
   { case: 'dialog pendingImport', texts: ['Перейти к импортированному проекту?'], at: { ru: [320] }, fixedBy: '559' },
   { case: 'BeadColorList', texts: ['· Discontinued'], at: { en: [320] }, fixedBy: '558' },

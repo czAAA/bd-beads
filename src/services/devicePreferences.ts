@@ -115,6 +115,14 @@ export const PREFERENCES = {
     parse: (raw) => raw.split(',').flatMap((hex) => normalizeHex(hex) ?? []).slice(0, RECENT_COLORS_KEPT),
     write: (colors) => (colors.length ? colors.join(',') : null),
   }),
+  /** The panel sections folded shut on this device, as `panel:section` ids (ticket 0553): every section is open until
+   * it is closed. */
+  panelSectionsClosed: preference<readonly string[]>({
+    key: 'openbeads:panel-sections-closed',
+    fallback: [],
+    parse: (raw) => raw.split(',').filter((id) => id.length > 0),
+    write: (ids) => (ids.length ? ids.join(',') : null),
+  }),
   /** The app's language. */
   locale: preference<Locale>({
     key: 'openbeads:locale',

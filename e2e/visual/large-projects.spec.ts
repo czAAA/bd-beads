@@ -75,15 +75,13 @@ for (const { columns, rows } of SIZES) {
       expect([reloaded.frame!.columns, reloaded.frame!.rows]).toEqual([columns, rows])
       expect(frameGrid(reloaded)[2]![3]!.color).toBe(RED)
 
-      // The whole Project goes out in a Project file, and reads back the same. Export Project is in Saved Projects'
-      // footer (ticket 147; ExpandablePanel), which only renders once expanded. Saved Projects is a sheet of its own,
-      // opened from the Project panel (PhoneForms card).
+      // The whole Project goes out in a Project file, and reads back the same. Export all projects is in the Projects
+      // library, a subpanel of Menu (ticket 0553).
       await openStripPanel(page, 'strip-menu')
       await page.getByTestId('menu-saved-projects').click()
       await settle(page)
-      await page.getByTestId('project-list').getByTestId('panel-expand').click()
       const download = page.waitForEvent('download')
-      await page.getByTestId('export-project').click()
+      await page.getByTestId('menu-export-all').click()
       // A .openbeads file is gzip around the JSON (ADR 0048).
       const file = gunzipSync(readFileSync((await (await download).path())!)).toString('utf8')
       const exported = parseProjectsFile(file).projects[0]!
