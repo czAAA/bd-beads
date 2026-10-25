@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Project } from '../../domain/project'
 import CanvasStrip from './CanvasStrip.vue'
+import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
 
 beforeEach(() => {
@@ -21,12 +22,22 @@ describe('CanvasStrip', () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset'])
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-coffee', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset'])
     expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="canvas-strip-zoom"]').attributes('data-zoom-percent')).toBe('125')
 
     for (const id of ['strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-in', 'zoom-out', 'zoom-reset']) await wrapper.get(`[data-testid="${id}"]`).trigger('click')
     expect(Object.keys(wrapper.emitted())).toEqual(expect.arrayContaining(['rotate-canvas', 'toggle-rulers', 'undo', 'redo', 'zoom-in', 'zoom-out', 'reset']))
+  })
+
+  it('has a Buy me a coffee link to the Coffee link, in a new tab with noopener (ticket 560)', () => {
+    const link = mount(CanvasStrip, { props: { project } }).get('[data-testid="strip-coffee"]')
+
+    expect(link.element.tagName).toBe('A')
+    expect(link.attributes('href')).toBe(COFFEE_URL)
+    expect(link.attributes('target')).toBe('_blank')
+    expect(link.attributes('rel')).toBe('noopener')
+    expect(link.attributes('aria-label')).toBe('Buy me a coffee')
   })
 
   it('shows Menu and Project as icon + text, and asks for their sheets (ticket 431)', async () => {
