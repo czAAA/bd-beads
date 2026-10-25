@@ -122,7 +122,7 @@ describe('FramePanel (ticket 473)', () => {
   it('has the edge cells in the order Top, Bottom, Left, Right, each with − first and + second', () => {
     const wrapper = mountBar()
     const cells = wrapper.findAll('.frame-panel__cell')
-    expect(cells.map((cell) => cell.get('.frame-panel__name').text())).toEqual([en.frame.edgeName.top, en.frame.edgeName.bottom, en.frame.edgeName.left, en.frame.edgeName.right])
+    expect(cells.map((cell) => cell.get('.frame-panel__edge-name').text())).toEqual([en.frame.edgeName.top, en.frame.edgeName.bottom, en.frame.edgeName.left, en.frame.edgeName.right])
     for (const edge of ['top', 'bottom', 'left', 'right'] as const) {
       const out = wrapper.get(`[data-testid="frame-edge-${edge}-out"]`)
       const inward = wrapper.get(`[data-testid="frame-edge-${edge}-in"]`)
@@ -139,8 +139,8 @@ describe('FramePanel (ticket 473)', () => {
     await wrapper.get('[data-testid="frame-edge-left-out"]').trigger('click')
     await wrapper.get('[data-testid="frame-edge-top-in"]').trigger('click')
     expect(wrapper.emitted('step')).toEqual([['left', 1], ['top', -1]])
-    expect(wrapper.get('[data-testid="frame-panel-cell-top"]').classes()).toContain('frame-panel__cell--last')
-    expect(wrapper.get('[data-testid="frame-panel-cell-left"]').classes()).not.toContain('frame-panel__cell--last')
+    expect(wrapper.get('[data-testid="frame-panel-cell-top"] .frame-panel__glyph').classes()).toContain('frame-panel__glyph--last')
+    expect(wrapper.get('[data-testid="frame-panel-cell-left"] .frame-panel__glyph').classes()).not.toContain('frame-panel__glyph--last')
   })
 
   it('disables the − at four beads with the reason, and a press is no step', async () => {
@@ -167,12 +167,13 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.emitted('step')).toHaveLength(count)
   })
 
-  it('keeps the steppers, disabled, and drops Rotate once a pass is done', () => {
+  it('turns the fields off, hides the edges and says why, and drops Rotate once a pass is done', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
     expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
   })
 
   it('does not offer Rotate in Netting (ticket 486)', () => {
@@ -205,5 +206,65 @@ describe('FramePanel (ticket 473)', () => {
     await flushPromises()
     document.getElementById('outside')!.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, isPrimary: true }))
     expect(closed(wrapper)).toHaveLength(1)
+  })
+
+  it('names the Frame in place: an empty name invites one, Save emits it, an empty one clears (ticket 555)', async () => {
+    const wrapper = mountBar()
+    expect(wrapper.get('[data-testid="frame-name-add"]').text()).toBe(en.frame.nameEmpty)
+    await wrapper.get('[data-testid="frame-name-add"]').trigger('click')
+    await wrapper.get('[data-testid="frame-name-input"]').setValue('  Moth wing ')
+    await wrapper.get('[data-testid="frame-name-save"]').trigger('click')
+    expect(wrapper.emitted('rename')).toEqual([['Moth wing']])
+    const named = mountBar({ ...framed(), frame: { ...framed().frame!, name: 'Moth wing' } })
+    expect(named.get('[data-testid="frame-name"]').text()).toBe('Moth wing')
+    await named.get('[data-testid="frame-name-edit"]').trigger('click')
+    await named.get('[data-testid="frame-name-input"]').setValue('')
+    await named.get('[data-testid="frame-name-save"]').trigger('click')
+    expect(named.emitted('rename')).toEqual([['']])
+  })
+
+  it('shows the Estimated size with its Tooltip, and a summary when the size section is folded (ticket 555)', async () => {
+    const wrapper = mountBar()
+    expect(wrapper.get('[data-testid="frame-estimate"]').text()).toContain('≈')
+    expect(wrapper.get('[data-testid="frame-estimate-info"]').attributes('aria-label')).toBe(en.size.estimateLabel)
+    expect(wrapper.text()).toContain(en.frame.estimateInfo)
+    await wrapper.findAll('.panel-section__header')[0]!.trigger('click')
+    expect(wrapper.findAll('[data-testid="frame-estimate"]')).toHaveLength(0)
+    expect(wrapper.get('.panel-section__summary').text()).toMatch(/^5 × 6 · ≈ /)
+  })
+
+  it('asks for the Picture and the Printable chart, and waits while one is being made (ticket 555)', async () => {
+    const wrapper = mountBar()
+    await wrapper.get('[data-testid="export-png"]').trigger('click')
+    await wrapper.get('[data-testid="export-pdf"]').trigger('click')
+    expect(wrapper.emitted('export-png')).toHaveLength(1)
+    expect(wrapper.emitted('export-pdf')).toHaveLength(1)
+    await wrapper.setProps({ exporting: 'pdf' })
+    expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('ends with Beads needed, its total in the header (ticket 555)', () => {
+    const wrapper = mountBar()
+    const sections = wrapper.findAll('.panel-section')
+    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.frame.sizeHeading, en.panels.project.exportHeading, en.quantities.heading])
+    expect(sections.at(-1)!.attributes('data-testid')).toBe('bead-quantities')
+  })
+
+  it('with no Frame offers Frame from template and Fit a frame to the drawing, and nothing else (ticket 555)', async () => {
+    const { frame: _frame, ...bare } = framed()
+    const wrapper = mountBar(bare)
+    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
+    expect(wrapper.findAll('.panel-section')).toHaveLength(0)
+    expect(wrapper.get('[data-testid="frame-none-line"]').text()).toBe(en.frame.noFrameLine)
+    expect(wrapper.get('[data-testid="frame-from-template"]').text()).toContain(en.frame.fromTemplate)
+    expect(wrapper.get('[data-testid="frame-fit"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('with no Frame, Fit is on once something is drawn and asks the shell to fit (ticket 555)', async () => {
+    const { frame: _frame, ...bare } = framed()
+    const wrapper = mountBar({ ...bare, beads: { 1: { 1: '#ff0000' } } })
+    await wrapper.get('[data-testid="frame-fit"]').trigger('click')
+    expect(wrapper.emitted('fit')).toHaveLength(1)
   })
 })

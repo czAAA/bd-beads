@@ -59,6 +59,7 @@ const {
   framePanelShown,
   onStepFrameEdge,
   onResizeFrame,
+  onRenameFrame,
   onRotateFrame,
   onRemoveFrame,
   onFrameKey,
@@ -77,16 +78,36 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
 
 <template>
   <!-- The Frame panel (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
-  <PanelHost v-if="activeProject && framePanelShown && !framing" open="frame" :only="['frame']" @close="onCloseFramePanel">
+  <PanelHost v-if="activeProject && framePanelShown && !framing" open="frame" :only="['frame']" :sub-title="t.frame.fromTemplate" @close="onCloseFramePanel">
     <FramePanel
       :project="activeProject"
       :settled-project="settledProject"
+      :exporting="exporting"
       @step="onStepFrameEdge"
       @resize="onResizeFrame"
       @rotate="onRotateFrame"
       @remove="onRemoveFrame"
+      @rename="onRenameFrame"
+      @fit="onFitFrame"
+      @export-png="onExportPng"
+      @export-pdf="onExportPdf"
       @key="onFrameKey"
     />
+    <!-- Frame from template (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->
+    <template #sub="{ depth }">
+      <TemplateGallery v-if="depth === 1" without-blank class="app-panels__gallery" @choose="chosenTemplate = $event" />
+      <TemplateSetup
+        v-else-if="chosenTemplate"
+        :template="templateById(chosenTemplate)"
+        :project="activeProject"
+        @submit="(payload) => { onPlaceFrameFromTemplate(payload); onCloseFramePanel() }"
+      />
+    </template>
+    <template #footer="{ depth }">
+      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
+        {{ activeProject.frame ? t.frame.replaceFrame : t.frame.addFrameButton }}
+      </AppButton>
+    </template>
   </PanelHost>
 
   <!--
@@ -122,7 +143,6 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       :replace-candidates="replaceBeadCandidates"
       :save-failed="saveFailed"
       :unsaved="unsaved"
-      :exporting="exporting"
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
       @set-brick-block="onSetBrickBlock"
@@ -131,29 +151,16 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       @set-bead-shape="onSetBeadShape"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"
-      @export-png="onExportPng"
-      @export-pdf="onExportPdf"
       @export-project-file="onExportProjectFile"
-      @fit-frame="onFitFrame(); openPanel = null"
       @save-maker-name="onSaveMakerName"
       @duplicate="onRequestDuplicate"
       @clear="onRequestDeleteAll"
       @delete="onRequestDelete"
     />
     <template #sub="{ depth }">
-      <!-- The Project panel's Frame area opens the gallery and the setup alone, to put a Frame on the open Project (ticket 495). -->
-      <template v-if="openPanel === 'project' && activeProject">
-        <TemplateGallery v-if="depth === 1" without-blank class="app-panels__gallery" @choose="chosenTemplate = $event" />
-        <TemplateSetup
-          v-else-if="chosenTemplate"
-          :template="templateById(chosenTemplate)"
-          :project="activeProject"
-          @submit="(payload) => { onPlaceFrameFromTemplate(payload); openPanel = null }"
-        />
-      </template>
       <!-- The Projects library: Menu's other subpanel. Picking a Project opens it and closes the panel. -->
       <ProjectsLibrary
-        v-else-if="phoneSavedProjectsOpen && depth === 1"
+        v-if="phoneSavedProjectsOpen && depth === 1"
         :projects="projects"
         :active-project-id="activeProjectId"
         @select="onSelectProjectFromPhoneDrawer"
@@ -192,7 +199,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
         {{ t.panels.menu.deleteAll }}
       </PanelItem>
       <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
-        {{ openPanel === 'project' ? (activeProject?.frame ? t.frame.replaceFrame : t.frame.addFrameButton) : t.form.submit }}
+        {{ t.form.submit }}
       </AppButton>
     </template>
   </PanelHost>

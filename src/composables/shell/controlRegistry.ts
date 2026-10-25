@@ -232,9 +232,7 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'frame',
     name: (t) => t.frame.title,
     body: (t) => t.tooltips.framePanel,
-    // Open once a pass is done too, for the size and Remove Frame (ticket 475).
-    enabled: hasFrame,
-    disabledBody: (t) => t.tooltips.setFrameFirst,
+    // Always there, with or without a Frame, and once a pass is done too (tickets 475, 555).
     group: 'canvas',
     chords: [],
     needsProject: true,

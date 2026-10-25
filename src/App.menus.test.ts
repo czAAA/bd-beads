@@ -205,6 +205,24 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
+  it('puts a Frame on the open Project from the Frame panel: Frame from template pushes the gallery, Create places it and closes the panel (ticket 555)', async () => {
+    const { frame: _frame, ...open } = moth()
+    saveProjects([open])
+    const wrapper = mountApp()
+    await openPanel(wrapper, 'strip-frame')
+    await wrapper.get('[data-testid="frame-from-template"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.frame.fromTemplate)
+    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="template-card-bracelet"]').trigger('click')
+    await wrapper.get('[data-testid="template-height-preset-100"]').trigger('click')
+    await wrapper.get('[data-testid="create-template-project"]').trigger('click')
+    await flushPromises()
+
+    expect(loadProjects().find((project) => project.name === 'Moth')!.frame).toMatchObject({ columns: 12, rows: 100, beads: {} })
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+  })
+
   it('discards the draft on Back', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-menu')
