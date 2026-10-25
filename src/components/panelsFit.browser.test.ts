@@ -34,6 +34,7 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['MenuPanel', inPanel(MenuPanel, { projects: [project], toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true }), {}],
   ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
+  ['ProjectPanel (technique locked)', ProjectPanel, { project: { ...project, rowProgress: { ...project.rowProgress, currentRow: 1 } }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['FramePanel', FramePanel, { project: framed }],
   ['SaveExport', SaveExport, { hasFrame: true }],
   ['BeadQuantities', BeadQuantities, { project }],
