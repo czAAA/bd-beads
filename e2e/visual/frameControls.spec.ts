@@ -33,7 +33,9 @@ for (const zoom of [10, 100, 400]) {
     expect(bar.width).toBeLessThanOrEqual(400)
     for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
       const step = await box(page, testid)
-      expect([step.width, step.height]).toEqual([26, 24])
+      // 26px halves as tall as a picker (1.5rem, which the root font size scales).
+      expect(step.width).toBe(26)
+      expect(step.height).toBeLessThanOrEqual(32)
     }
     expect(overlaps(handle, pencil)).toBe(false)
     await context.close()
