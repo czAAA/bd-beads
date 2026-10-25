@@ -293,12 +293,9 @@ describe('App', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
 
     // Export/import round-tripping an unresolved beadId is covered directly in projectFile.test.ts; here it's
-    // enough that the button (disabled only while no Project is open) is live for this one.
+    // enough that the button (disabled only while the library is empty) is live for this one.
     await openSavedProjects(wrapper)
-    await wrapper.find('[data-testid="project-list"] [data-testid="panel-expand"]').trigger('click')
-    expect(
-      wrapper.find<HTMLButtonElement>('[data-testid="export-project"]').element.disabled,
-    ).toBe(false)
+    expect(wrapper.get('[data-testid="menu-export-all"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('defaults to Russian on first visit with no saved language preference', async () => {

@@ -6,19 +6,19 @@ import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
 import { overviewUrl } from '../../overview/overviewRoute'
-import ProjectImport from '../import/ProjectImport.vue'
-import AppIcon from '../ui/AppIcon.vue'
+import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
+import type { ThemePick } from '../../theme/theme'
+import { useThemePick } from '../../theme/useThemePick'
 import PanelItem from './PanelItem.vue'
+import PanelPicker from './PanelPicker.vue'
 import PanelSection from './PanelSection.vue'
-import SettingChoice from './SettingChoice.vue'
-import LanguageSwitcher from './LanguageSwitcher.vue'
-import ThemeToggle from './ThemeToggle.vue'
 import type { Project } from '../../domain/project'
+import type { IconName } from '../ui/icons'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
 
-// The body of Menu (spec 0440, ticket 443; MenuPanel card): what is about the app and the device, in four sections
-// (Projects, Preferences, Help, About). It only asks: the app shell does the work. On the Overview (ticket 540, ADR 0073)
+// The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): what is about the app and the device, in four sections
+// (Projects, Preferences, Help, About), each folding shut. Import, Export all and Delete all live in the Projects library. It only asks: the app shell does the work. On the Overview (ticket 540, ADR 0073)
 // the same panel shows its Overview item as the current page and leaves out what belongs to the editor.
 const props = withDefaults(
   defineProps<{
@@ -35,33 +35,38 @@ const props = withDefaults(
 )
 const inEditor = computed(() => props.page === 'editor')
 const emit = defineEmits<{
-  import: [projects: Project[]]
-  'export-all': []
   'saved-projects': []
   'new-project': []
-  'delete-all': []
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
   'update:handedness': [hand: Handedness]
   shortcuts: []
 }>()
 
-const { t } = useI18n()
+const { t, locale, setLocale } = useI18n()
+const { pick, setPick } = useThemePick()
 const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
 
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
+/** Where Buy me a coffee goes; the row is absent until the maintainer adds the link. */
+const COFFEE_URL = ''
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 
 const actions = {
   newProject: controlAction('new-project'),
-  exportAll: controlAction('export-all'),
   savedProjects: controlAction('saved-projects'),
-  deleteAll: controlAction('delete-all-projects'),
   shortcuts: controlAction('shortcuts-help'),
 }
 const version = __APP_VERSION__
 
+const languageOptions = LOCALES.map((code) => ({ value: code, label: LOCALE_NAMES[code], shortLabel: localeCode(code), lang: code }))
+const themeOptions = computed<{ value: ThemePick; icon: IconName; label: string }[]>(() => [
+  { value: 'device', icon: 'device', label: t.value.theme.matchDevice },
+  { value: 'light', icon: 'sun', label: t.value.panels.menu.themeLight },
+  { value: 'dark', icon: 'moon', label: t.value.panels.menu.themeDark },
+  { value: 'contrast', icon: 'contrast', label: t.value.theme.contrast },
+])
 const positionOptions = computed(() => [
   { value: 'left' as const, icon: 'position-left' as const, label: t.value.toolPill.left },
   { value: 'top' as const, icon: 'position-top' as const, label: t.value.toolPill.top },
@@ -80,49 +85,32 @@ const inputOptions = computed(() => [
 
 <template>
   <div class="menu-panel" data-testid="menu-panel">
-    <PanelSection v-if="inEditor" :label="t.panels.menu.projects">
+    <PanelSection v-if="inEditor" id="menu:projects" :label="t.panels.menu.projects">
       <!-- New Project opens in this panel (spec 0478): the shell swaps to the subpanel the app shell fills. -->
-      <PanelItem icon="plus" accent stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
-      <!-- Import keeps the panel open after the file is read and shows the result inline (ticket 523). -->
-      <div class="menu-panel__import" data-testid="menu-import">
-        <ProjectImport :projects="projects" testid-prefix="menu-" @import="emit('import', $event)" />
-      </div>
-      <PanelItem icon="export" value=".openbeads" data-testid="menu-export-all" @select="emit('export-all')">{{ actions.exportAll.name(t) }}</PanelItem>
-      <PanelItem
-        icon="library"
-        :value="String(projects.length)"
-        :disabled="projects.length === 0"
-        :name="actions.savedProjects.name(t)"
-        :disabled-body="t.projects.noSavedProjectsMessage"
-        stays
-        data-testid="menu-saved-projects"
-        @select="emit('saved-projects'); context?.openSub()"
-      >
+      <PanelItem icon="plus" accent sub stays data-testid="menu-new-project" @select="emit('new-project'); context?.openSub()">{{ actions.newProject.name(t) }}</PanelItem>
+      <PanelItem icon="library" :value="String(projects.length)" sub stays data-testid="menu-saved-projects" @select="emit('saved-projects'); context?.openSub()">
         {{ actions.savedProjects.name(t) }}
-      </PanelItem>
-      <PanelItem
-        icon="delete"
-        danger
-        :disabled="projects.length === 0"
-        :name="actions.deleteAll.name(t)"
-        :disabled-body="t.projects.noSavedProjectsMessage"
-        data-testid="menu-delete-all"
-        @select="emit('delete-all')"
-      >
-        {{ actions.deleteAll.name(t) }}
       </PanelItem>
     </PanelSection>
 
-    <PanelSection :label="t.panels.menu.preferences">
-      <div class="menu-panel__row">
-        <span class="menu-panel__label"><AppIcon name="globe" :size="16" />{{ t.languageSwitcher.ariaLabel }}</span>
-        <LanguageSwitcher />
-      </div>
-      <div class="menu-panel__stack">
-        <span class="menu-panel__label"><AppIcon name="sun" :size="16" />{{ t.theme.groupLabel }}</span>
-        <ThemeToggle />
-      </div>
-      <SettingChoice
+    <PanelSection id="menu:preferences" :label="t.panels.menu.preferences">
+      <PanelPicker
+        :model-value="locale"
+        :label="t.languageSwitcher.ariaLabel"
+        icon="globe"
+        :options="languageOptions"
+        data-testid="language-switcher"
+        @update:model-value="setLocale"
+      />
+      <PanelPicker
+        :model-value="pick"
+        :label="t.theme.groupLabel"
+        icon="sun"
+        :options="themeOptions"
+        data-testid="theme-picker"
+        @update:model-value="setPick"
+      />
+      <PanelPicker
         v-if="inEditor"
         :model-value="toolsPosition"
         :label="t.toolPill.position"
@@ -131,36 +119,35 @@ const inputOptions = computed(() => [
         data-testid="menu-tools-position"
         @update:model-value="emit('update:toolsPosition', $event)"
       />
-      <SettingChoice
+      <PanelPicker
         v-if="inEditor && penSeen"
         :model-value="inputMode"
         :label="t.panels.menu.input"
         icon="pen-mode"
         :options="inputOptions"
-        inline
         data-testid="menu-input-mode"
         @update:model-value="emit('update:inputMode', $event)"
       />
-      <SettingChoice
+      <PanelPicker
         v-if="penSeen"
         :model-value="handedness"
-        :label="t.panels.menu.hand"
+        :label="t.panels.menu.writingHand"
         icon="pen-mode"
         :options="handOptions"
-        inline
         data-testid="menu-handedness"
         @update:model-value="emit('update:handedness', $event)"
       />
     </PanelSection>
 
-    <PanelSection :label="t.panels.menu.help">
+    <PanelSection id="menu:help" :label="t.panels.menu.help">
       <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
       <PanelItem icon="bead" :href="overviewHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-overview">{{ t.header.overviewItem }}</PanelItem>
     </PanelSection>
 
-    <PanelSection :label="t.panels.menu.about">
+    <PanelSection id="menu:about" :label="t.panels.menu.about">
       <!-- The repository is public under AGPL-3.0 (ADR 0031, ticket 269); this link is what the license's network clause requires a hosted copy to offer. -->
       <PanelItem icon="code" :href="SOURCE_URL" external data-testid="menu-item-source">{{ t.header.sourceItem }}</PanelItem>
+      <PanelItem v-if="COFFEE_URL" icon="coffee" accent-icon :href="COFFEE_URL" external data-testid="menu-item-coffee">{{ t.panels.menu.coffee }}</PanelItem>
       <div class="menu-panel__version" data-testid="menu-version">
         <span>{{ t.panels.menu.version }}</span>
         <span class="menu-panel__number">{{ version }}</span>
@@ -170,53 +157,18 @@ const inputOptions = computed(() => [
 </template>
 
 <style scoped>
-.menu-panel__row,
-.menu-panel__stack,
 .menu-panel__version {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
   box-sizing: border-box;
   min-height: var(--panel-item-height);
-  padding: var(--space-4) var(--space-12);
+  padding: 0 var(--space-10) 0 calc(var(--space-10) + 16px + var(--space-8));
   font: var(--type-control);
-  color: var(--ink);
-}
-
-.menu-panel__row {
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-}
-
-.menu-panel__stack {
-  flex-direction: column;
-  gap: var(--space-8);
-}
-
-.menu-panel__label {
-  display: flex;
-  align-items: center;
-  gap: var(--space-10);
-}
-
-.menu-panel__version {
-  align-items: center;
-  justify-content: space-between;
-  padding-left: calc(var(--space-12) + 16px + var(--space-10));
   color: var(--muted);
 }
 
 .menu-panel__number {
   font: var(--type-meta);
-}
-
-/* Import is a file label (ProjectImport), dressed as one of the rows above and below it. */
-.menu-panel__import :deep(.project-import__button) {
-  display: flex;
-  width: 100%;
-  box-sizing: border-box;
-  min-height: var(--panel-item-height);
-  padding: 0 var(--space-12);
-  gap: var(--space-10);
-  border-radius: var(--radius-sm);
 }
 </style>

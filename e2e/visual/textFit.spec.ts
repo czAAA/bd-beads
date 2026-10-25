@@ -32,6 +32,9 @@ const wholeOnScreen = async (locator: Locator): Promise<boolean> => {
 const vis = (page: Page, testid: string): Locator => page.locator(`[data-testid="${testid}"]:visible`).first()
 const shown = async (page: Page, testid: string): Promise<boolean> => (await vis(page, testid).count()) > 0 && (await wholeOnScreen(vis(page, testid)))
 
+/** What lives in the Projects library subpanel, not in the Menu itself. */
+const LIBRARY_CONTROLS = new Set(['project-list', 'menu-delete-all'])
+
 /** Brings the control into view the way a person would at this width: it is already there, or in one of the phone panels. Returns false when no way leads to it. */
 async function reveal(page: Page, testid: string): Promise<boolean> {
   if (await shown(page, testid)) return true
@@ -40,8 +43,8 @@ async function reveal(page: Page, testid: string): Promise<boolean> {
     await page.getByTestId(dock).click()
     await settle(page)
     if (await shown(page, testid)) return true
-    // Saved Projects is a subpanel of Menu, opened from Menu's own item (PhoneForms card).
-    if (testid === 'project-list' && (await shown(page, 'menu-saved-projects'))) {
+    // The Projects library is a subpanel of Menu, opened from Menu's own item (PhoneForms card).
+    if (LIBRARY_CONTROLS.has(testid) && (await shown(page, 'menu-saved-projects'))) {
       await page.getByTestId('menu-saved-projects').click()
       await settle(page)
       if (await shown(page, testid)) return true
@@ -258,20 +261,24 @@ const SCREENS: Screen[] = [
       await measure()
     },
   })),
-  ...[
-    ['Beads needed', 'bead-quantities'],
-    ['Saved Projects', 'project-list'],
-  ].map(([name, testid]): Screen => ({
-    name: `${name} expanded`,
+  {
+    name: 'Beads needed expanded',
     visit: async (page, measure) => {
-      if (!(await reveal(page, testid))) return false
-      const expand = page.locator(`[data-testid="${testid}"]:visible [data-testid="panel-expand"]`).first()
+      if (!(await reveal(page, 'bead-quantities'))) return false
+      const expand = page.locator('[data-testid="bead-quantities"]:visible [data-testid="panel-expand"]').first()
       if ((await expand.count()) === 0) return false
       await expand.click()
       await settle(page)
       await measure()
     },
-  })),
+  },
+  {
+    name: 'Projects library',
+    visit: async (page, measure) => {
+      if (!(await reveal(page, 'project-list'))) return false
+      await measure()
+    },
+  },
   {
     name: 'Overview',
     overview: true,

@@ -6,7 +6,6 @@ import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
 import FramePanel from './canvas/FramePanel.vue'
 import ProjectPanel from './project/ProjectPanel.vue'
-import ProjectList from './project/ProjectList.vue'
 import NameOnExportsRow from './project/NameOnExportsRow.vue'
 import NewProjectForm from './project/NewProjectForm.vue'
 import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
@@ -36,7 +35,6 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['MenuPanel', inPanel(MenuPanel, { projects: [project], toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true }), {}],
   ['ProjectPanel', ProjectPanel, { project, beadName: 'TOHO Cube 1.5mm', replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['FramePanel', FramePanel, { project: framed }],
-  ['ProjectList', ProjectList, { projects: [project, { ...project, id: 'other', name: 'Fox' }], activeProjectId: project.id }],
   ['NameOnExportsRow', NameOnExportsRow, { name: 'Maria' }],
   ['SaveExport', SaveExport, { hasFrame: true }],
   ['BeadQuantities', BeadQuantities, { project }],
