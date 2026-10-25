@@ -16,7 +16,7 @@ import { BEAD_CATALOG, findBead } from '../domain/beads'
 import { createProject } from '../domain/project'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
-// (ticket 552; replaces the screens of e2e/visual/textFit.spec.ts that only they lived on).
+// (ticket 552).
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 const framed = { ...project, frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom' as const, beads: {} } }
 

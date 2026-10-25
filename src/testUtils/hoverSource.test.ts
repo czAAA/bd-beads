@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest'
-import { INFO_POPOVERS, NATIVE_TITLES } from './hoverExemptions'
-import { handMadeTooltips, nativeTitles } from './hoverSource'
+import { INFO_POPOVERS, NATIVE_TITLES, NOT_MOUNTED } from './hoverExemptions'
+import { componentsWithText, exercisedComponents, handMadeTooltips, nativeTitles, tooltipMakers } from './hoverSource'
 
 /** The hover text source guards (tickets 264, 552): one way to make hover text, so the Tooltip checks can't be bypassed.
  * They read the templates and need no page. */
@@ -18,4 +18,11 @@ it('hand-made tooltips are the listed info popovers and nothing else', () => {
   const listed = INFO_POPOVERS.map((popover) => `${popover.file}|${popover.testid}`)
   expect(made.filter((key) => !listed.includes(key)), 'a tooltip made by hand bypasses the shared Tooltip and so the hover text checks: use AppTooltip, or list it in INFO_POPOVERS (src/testUtils/hoverExemptions.ts)').toEqual([])
   expect(listed.filter((key) => !made.includes(key)), 'listed in INFO_POPOVERS but gone from the source: remove it').toEqual([])
+})
+
+it('every component with text or a Tooltip is tried by a browser fit test', () => {
+  const tried = exercisedComponents()
+  const names = [...new Set([...componentsWithText().map((file) => file.name), ...tooltipMakers()])]
+  expect(names.filter((name) => !tried.has(name) && !(name in NOT_MOUNTED)), 'add a case for it to a *.browser.test.ts (describeFits in src/testUtils/browserFit.ts), or list it in NOT_MOUNTED (src/testUtils/hoverExemptions.ts) with a reason').toEqual([])
+  expect(Object.keys(NOT_MOUNTED).filter((name) => tried.has(name) || !names.includes(name)), 'listed in NOT_MOUNTED but a test mounts it now, or it has no text: remove it').toEqual([])
 })

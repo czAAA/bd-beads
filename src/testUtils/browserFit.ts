@@ -1,19 +1,22 @@
 import { createApp, type Component } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
 import { LOCALES, type Locale } from '../domain/locale'
 import { browserDevicePreferences } from '../services/devicePreferences'
+import { measureOpenBubble } from './hoverInPage'
 import { unexplainedFit } from './fitPending'
 import { MEASURE_ARGS, measureTextMisfits, settleForMeasuring, type TextMisfit } from './textFitInPage'
 
-/** Mounting a component in a real browser at a width and in a language, and measuring it with the same check the e2e
- * runs on the whole app (tickets 229, 552). Only for `*.browser.test.ts`. */
+/** Mounting a component in a real browser at a width and in a language, and measuring whether its text fits and its
+ * Tooltips stay on screen (tickets 229, 264, 552). Only for `*.browser.test.ts`. */
 
 export type { Locale, TextMisfit }
 
 /** The languages and the widths a component is tried at: the widths are the layout's breakpoint edges, not every device. */
 export const FIT_LOCALES: readonly Locale[] = LOCALES
 export const FIT_WIDTHS = [1280, 1024, 768, 390, 320] as const
+/** The narrowest screen is where a Tooltip has least room; a wider one adds nothing it can fail on. */
+export const TOOLTIP_WIDTH = 320
 
 export interface Mounted {
   root: HTMLElement
@@ -67,13 +70,74 @@ export async function fitProblems(name: string, locale: Locale, width: number): 
   return unexplainedFit(name, locale, width, await misfitsNow())
 }
 
+/** The Tooltip's own long-press time (AppTooltip.vue), with a margin. */
+const LONG_PRESS_MS = 600
+
+/** A finger held on the Tooltip's trigger past the long-press time; the clock is faked for the wait, as a real half
+ * second per Tooltip and language would triple the run. `triggers` all open together. */
+export function longPress(...triggers: HTMLElement[]): void {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+  try {
+    for (const trigger of triggers) trigger.dispatchEvent(new PointerEvent('pointerdown', { pointerType: 'touch', isPrimary: true }))
+    vi.advanceTimersByTime(LONG_PRESS_MS)
+  } finally {
+    vi.useRealTimers()
+  }
+}
+
+/** The ways a person opens a Tooltip, each as what is sent to the trigger to open it and to let it go. */
+const WAYS: [name: string, open: (trigger: HTMLElement) => void, close: (trigger: HTMLElement) => void][] = [
+  ['hover', (trigger) => trigger.dispatchEvent(new PointerEvent('pointerenter', { pointerType: 'mouse' })), (trigger) => trigger.dispatchEvent(new PointerEvent('pointerleave', { pointerType: 'mouse' }))],
+  ['focus', (trigger) => trigger.dispatchEvent(new FocusEvent('focusin', { bubbles: true })), (trigger) => trigger.dispatchEvent(new FocusEvent('focusout'))],
+  [
+    'long press',
+    () => {},
+    (trigger) => {
+      trigger.dispatchEvent(new PointerEvent('pointerup', { pointerType: 'touch' }))
+      trigger.dispatchEvent(new FocusEvent('focusout'))
+    },
+  ],
+]
+
+/** Opens every Tooltip on the page by hover, focus and a touch long press, and reports those that are cut off, or
+ * do not open. Triggers are found by the page (`.app-tooltip`), so a Tooltip a component adds is checked with no list. */
+export async function tooltipProblems(root: HTMLElement): Promise<string[]> {
+  const triggers = [...root.querySelectorAll<HTMLElement>('.app-tooltip')].filter((trigger) => trigger.getClientRects().length > 0)
+  triggers.forEach((trigger, index) => trigger.setAttribute('data-hover-probe', String(index)))
+  const problems: string[] = []
+  for (const [way, open, close] of WAYS) {
+    if (way === 'long press') longPress(...triggers)
+    else for (const trigger of triggers) open(trigger)
+    await vi.waitFor(() => { if (triggers.some((_, index) => !measureOpenBubble(index))) throw new Error('not all open yet') }, { timeout: 500 }).catch(() => undefined)
+    await Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => undefined)))
+    triggers.forEach((_, index) => {
+      const bubble = measureOpenBubble(index)
+      const name = triggers[index]!.querySelector('button, a, [role="button"]')?.getAttribute('data-testid') ?? triggers[index]!.textContent?.trim().slice(0, 30)
+      if (!bubble) problems.push(`${way}: the Tooltip of ${name} did not open`)
+      else for (const cut of bubble.cuts) problems.push(`${way}: the Tooltip of ${name} "${bubble.text}" is cut by ${cut.pixels}px (${cut.against})`)
+    })
+    for (const trigger of triggers) close(trigger)
+  }
+  return problems
+}
+
+/** One component to try: its name (as `fitPending.ts` knows it), props, and what a person does to it before the
+ * check (expand a panel, open a list). */
+export type FitCase = [name: string, component: Component, props: Record<string, unknown>, act?: (root: HTMLElement) => Promise<void> | void]
+
 /** One test per language and width for each component: it must fit its box, bar what `fitPending.ts` lists. */
-export function describeFits(cases: [name: string, component: Component, props: Record<string, unknown>][]): void {
-  describe.each(cases)('%s text fit', (name, component, props) => {
+export function describeFits(cases: FitCase[]): void {
+  describe.each(cases)('%s text fit', (name, component, props, act) => {
     for (const locale of FIT_LOCALES) {
       for (const width of FIT_WIDTHS) {
         it(`fits its box in ${locale} at ${width}px`, async () => {
-          await mountAt(component, props, { locale, width })
+          const mounted = await mountAt(component, props, { locale, width })
+          if (act) {
+            await act(mounted.root)
+            await settleForMeasuring()
+          }
+          // Where a Tooltip has least room; opening each in every language and width would add nothing a Tooltip can fail on.
+          if (width === TOOLTIP_WIDTH) expect(unexplainedFit(`${name} Tooltips`, locale, width, await tooltipProblems(mounted.root)), 'hover text').toEqual([])
           expect(await fitProblems(name, locale, width)).toEqual([])
         })
       }

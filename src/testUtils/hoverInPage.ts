@@ -1,7 +1,7 @@
 /** What the hover text check measures in the page (tickets 264, 552). */
 
-/** Measures the open bubble of the trigger marked `data-hover-probe=index`, in the page (the e2e check and the browser
- * component tests send it there, so it stays self-contained). Null when none is open. */
+/** Measures the open bubble of the trigger marked `data-hover-probe=index`, in the page (the browser tests send it there, so it stays
+ * self-contained). Null when none is open. */
 export function measureOpenBubble(index: number): { text: string; owner: string; cuts: { against: string; pixels: number }[] } | null {
   const TOLERANCE = 1
   const wrapper = document.querySelector(`[data-hover-probe="${index}"]`)
