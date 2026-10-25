@@ -116,7 +116,7 @@ export const zh: Translations = {
       input: '输入',
       pen: '手写笔',
       mouse: '鼠标',
-      hand: '持笔手',
+      writingHand: '持笔手',
       right: '右手',
       left: '左手',
       help: '帮助',
