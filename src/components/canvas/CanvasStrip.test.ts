@@ -168,7 +168,10 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     await menu.trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(projectButton.element)
     await projectButton.trigger('keydown', { key: 'ArrowRight' })
-    expect(document.activeElement).toBe(projectButton.element)
+    const frameButton = wrapper.get('[data-testid="strip-frame"]')
+    expect(document.activeElement).toBe(frameButton.element)
+    await frameButton.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(frameButton.element)
     wrapper.unmount()
   })
 
