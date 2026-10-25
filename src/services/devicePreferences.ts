@@ -1,7 +1,7 @@
 import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } from 'vue'
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
-import { type InputMode } from '../domain/inputMode'
+import { type Handedness, type InputMode } from '../domain/inputMode'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
@@ -53,6 +53,13 @@ export const PREFERENCES = {
     fallback: undefined,
     parse: (raw) => (raw === 'pen' || raw === 'mouse' ? raw : undefined),
     write: (mode) => mode ?? null,
+  }),
+  /** Which hand holds the pen: Right until Left is chosen. */
+  handedness: preference<Handedness>({
+    key: 'openbeads:handedness',
+    fallback: 'right',
+    parse: (raw) => (raw === 'right' || raw === 'left' ? raw : undefined),
+    write: (hand) => (hand === 'right' ? null : hand),
   }),
   /** Whether a pen has touched this device (ticket 326): the input mode toggle is offered once it has. */
   penSeen: preference<boolean>({

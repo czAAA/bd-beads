@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { InputMode } from '../../domain/inputMode'
+import type { Handedness, InputMode } from '../../domain/inputMode'
 import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -27,10 +27,11 @@ const props = withDefaults(
     projects?: Project[]
     toolsPosition?: PillPosition
     inputMode?: InputMode
+    handedness?: Handedness
     /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
     penSeen?: boolean
   }>(),
-  { page: 'editor', projects: () => [], toolsPosition: 'left', inputMode: 'mouse', penSeen: false },
+  { page: 'editor', projects: () => [], toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
 )
 const inEditor = computed(() => props.page === 'editor')
 const emit = defineEmits<{
@@ -41,6 +42,7 @@ const emit = defineEmits<{
   'delete-all': []
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
+  'update:handedness': [hand: Handedness]
   shortcuts: []
 }>()
 
@@ -65,6 +67,10 @@ const positionOptions = computed(() => [
   { value: 'top' as const, icon: 'position-top' as const, label: t.value.toolPill.top },
   { value: 'right' as const, icon: 'position-right' as const, label: t.value.toolPill.right },
   { value: 'bottom' as const, icon: 'position-bottom' as const, label: t.value.toolPill.bottom },
+])
+const handOptions = computed(() => [
+  { value: 'right' as const, label: t.value.panels.menu.right },
+  { value: 'left' as const, label: t.value.panels.menu.left },
 ])
 const inputOptions = computed(() => [
   { value: 'pen' as const, label: t.value.panels.menu.pen, icon: 'pen-mode' as const },
@@ -134,6 +140,16 @@ const inputOptions = computed(() => [
         inline
         data-testid="menu-input-mode"
         @update:model-value="emit('update:inputMode', $event)"
+      />
+      <SettingChoice
+        v-if="penSeen"
+        :model-value="handedness"
+        :label="t.panels.menu.hand"
+        icon="pen-mode"
+        :options="handOptions"
+        inline
+        data-testid="menu-handedness"
+        @update:model-value="emit('update:handedness', $event)"
       />
     </PanelSection>
 
