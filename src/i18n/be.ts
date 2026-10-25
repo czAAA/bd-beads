@@ -117,7 +117,7 @@ export const be: Translations = {
       input: 'Увод',
       pen: 'Пяро',
       mouse: 'Мыш',
-      hand: 'Рука',
+      writingHand: 'Працоўная рука',
       right: 'Правая',
       left: 'Левая',
       help: 'Даведка',

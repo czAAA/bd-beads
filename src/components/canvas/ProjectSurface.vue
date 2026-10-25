@@ -7,7 +7,7 @@ import { sameFrame } from '../../domain/frame'
 import { inMargin, mayPlace } from '../../domain/margin'
 import type { Tool } from '../../domain/tool'
 import type { GridPosition, Layer, PreviewCell } from '../../domain/grid'
-import { pointerDraws, type Handedness, type InputMode } from '../../domain/inputMode'
+import { pointerDraws, type WritingHand, type InputMode } from '../../domain/inputMode'
 import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../../domain/project'
 import { selectionFrame, selectionHasHandles, selectionLayer, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
@@ -22,6 +22,7 @@ import { edgeScrollStep } from '../../composables/canvas/edgeScroll'
 import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
 import { surfaceView, type Scroll, type ViewLayer } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from './eyedropperCursor'
+import { penPointerAt } from './penPointer'
 import { toolPointer, toolPointerImage } from './toolCursors'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
@@ -52,8 +53,9 @@ const props = withDefaults(defineProps<{
   moving?: boolean
   /** Which pointer draws and which one moves the canvas (ticket 325); absent, every pointer draws. */
   inputMode?: InputMode
-  /** Which hand holds the pen: its marker stands off the tip away from that hand. Right when not given. */
-  handedness?: Handedness
+  /** The Writing hand (ticket 548): a hovering Pencil's Tool pointer stands off the tip away from it. Right when not
+   * given. */
+  writingHand?: WritingHand
   /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
   showRulers?: boolean
   /** Whether the Row progress look is drawn (ticket 474): finished rows dimmed, the current row ringed and lifted. */
@@ -148,22 +150,23 @@ const toolCursor = computed(() => {
  * mode. None for a mouse, a finger or a Pencil in contact. */
 const penAt = ref<{ clientX: number; clientY: number; moves: boolean }>()
 
-/** How far up and left of the tip the hovering Pencil's pointer is drawn, in px, so the Pencil's own tip does not
- * cover the hot spot. */
-const PEN_POINTER_NUDGE = 2
-
-/** The Tool pointer the app draws for a hovering Pencil, which Safari shows no CSS cursor for: the image placed so
- * its hot spot is at the tip, nudged `PEN_POINTER_NUDGE` up and left. Not where the CSS cursor is not the tool's (Set
- * Frame, a handle, Space) or the tool is refused (the Frame's margin, also when the canvas moves under a still Pencil). */
+/** The Tool pointer the app draws for a hovering Pencil, which Safari shows no CSS cursor for, clear of the Pencil and
+ * the hand (ticket 548). Not where the CSS cursor is not the tool's (Set Frame, a handle, Space) or the tool is refused
+ * (the Frame's margin, also when the canvas moves under a still Pencil). */
 const penPointer = computed(() => {
-  if (!penAt.value || props.settingFrame || props.markerHidden || handleCursor.value || refusesMargin(beadUnder(penAt.value))) return undefined
+  if (!penAt.value || props.settingFrame || props.markerHidden || handleCursor.value) return undefined
+  const hit = beadUnder(penAt.value)
+  if (refusesMargin(hit)) return undefined
   // The pointer that moves the canvas in the input mode shows the Hand, whatever the tool; the others their own.
-  const image = penAt.value.moves ? toolPointerImage('hand')
+  const moves = penAt.value.moves
+  const image = moves ? toolPointerImage('hand')
     : eyedropperShown.value ? EYEDROPPER_IMAGE
     : props.tool && !props.picking ? toolPointerImage(props.tool, { color: props.previewColor })
     : undefined
-  const point = pointInSurface(penAt.value)
-  return image && { url: image.url, x: point.x - image.hotSpot[0] - PEN_POINTER_NUDGE, y: point.y - image.hotSpot[1] - PEN_POINTER_NUDGE }
+  if (!image) return undefined
+  // Moving the canvas acts on no bead, so the Hand marks none.
+  const bead = hit && !moves && !handMoves.value ? surface.value.beadRegion(hit, hit.layer) : undefined
+  return { url: image.url, ...penPointerAt(pointInSurface(penAt.value), bead, image, props.writingHand ?? 'right') }
 })
 
 function placePen(event: PointerEvent): void {
@@ -548,24 +551,12 @@ const markerAt = ref<{ x: number; y: number; layer: ViewLayer }>()
 /** Whether the pointer last seen over the surface is one that draws and hovers: not a finger, not the one the input
  * mode keeps for moving the canvas. */
 let hoverDraws = false
-/** Whether that pointer is a hovering Pencil, whose marker stands off the tip so the hand does not cover it. */
-let hoverPen = false
-/** How far up, and to the side away from the writing hand, of a hovering Pencil's tip the marker stands, in px, clear
- * of the hand resting below and beside it. */
-const PEN_MARKER_OFFSET_PX = 18
 
 /** Puts the marker where the hovering pointer is, if it is over a bead it may place; asked again when the canvas
  * moves under a still pointer. */
 function placeMarker(): void {
   const bead = hoverPoint && hoverDraws && !dragging.value && !framing.value ? beadUnder(hoverPoint) : undefined
-  if (!hoverPoint || !bead || refusesMargin(bead)) {
-    markerAt.value = undefined
-    return
-  }
-  const { x, y } = pointInSurface(hoverPoint)
-  const offset = hoverPen ? PEN_MARKER_OFFSET_PX : 0
-  const side = props.handedness === 'left' ? 1 : -1
-  markerAt.value = { x: x + side * offset, y: y - offset, layer: layerAt(props.project, bead) }
+  markerAt.value = hoverPoint && bead && !refusesMargin(bead) ? { ...pointInSurface(hoverPoint), layer: layerAt(props.project, bead) } : undefined
 }
 
 /** Takes the marker away, and keeps it away until the pointer moves again. */
@@ -1013,7 +1004,6 @@ function onPointerMove(event: PointerEvent): void {
   hoverPoint = event.pointerType === 'touch' ? undefined : { clientX: event.clientX, clientY: event.clientY }
   hovered.value = hoverPoint !== undefined && hoversFinishedRow(bead)
   hoverDraws = hoversFor(event) && !movesCanvas(event)
-  hoverPen = event.pointerType === 'pen'
   // The Hand tool never hovers: it changes no bead, so there is nothing to preview. Nor does the pointer that only
   // moves the canvas.
   if (handMoves.value || movesCanvas(event)) {

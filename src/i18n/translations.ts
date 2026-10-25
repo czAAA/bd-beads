@@ -139,7 +139,7 @@ export interface Translations {
       projects: string
       preferences: string
       input: string
-      hand: string
+      writingHand: string
       right: string
       left: string
       pen: string

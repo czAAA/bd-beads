@@ -201,6 +201,9 @@ export interface SurfaceView {
    * the Frame's first. With a `layer` the position is read on it, for the rows of a Frame that draws shorter than it
    * names (ADR 0070). */
   beadToPoint(position: GridPosition, layer?: ViewLayer): Scroll
+  /** The rectangle one bead is drawn in, in the viewport, turned with the view: where a hovering Pencil's Tool pointer
+   * finds the bead's corner (ticket 548). A position and `layer` are read as for `beadToPoint`. */
+  beadRegion(position: GridPosition, layer?: ViewLayer): Region
   // The rectangle a block of beads covers in the viewport, with the half bead an offset technique's shifted rows add on
   // the right.
   beadBox(box: Frame, layer?: ViewLayer): Region
@@ -347,12 +350,16 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
     const [a, b, c, d, e, f] = matrix(at)
     return { x: a * x + c * y + e, y: b * x + d * y + f }
   }
+  /** A rectangle of grid space as displayed, at a zoom: turned, so its corners may swap. */
+  const displayedRegion = (grid: Region, at: number): Region => {
+    const first = displayed(grid.x, grid.y, at)
+    const last = displayed(grid.x + grid.width, grid.y + grid.height, at)
+    return { x: Math.min(first.x, last.x), y: Math.min(first.y, last.y), width: Math.abs(last.x - first.x), height: Math.abs(last.y - first.y) }
+  }
   const displayedBox = (box: Frame, at: number, layer: Layer): Region => {
     const local = { ...box, row: box.row - layer.offset.row, column: box.column - layer.offset.column }
     const grid = gridBox(layer.weave, local)
-    const first = displayed(layer.origin.x + grid.x, layer.origin.y + grid.y, at)
-    const last = displayed(layer.origin.x + grid.x + grid.width, layer.origin.y + grid.y + grid.height, at)
-    return { x: Math.min(first.x, last.x), y: Math.min(first.y, last.y), width: Math.abs(last.x - first.x), height: Math.abs(last.y - first.y) }
+    return displayedRegion({ ...grid, x: layer.origin.x + grid.x, y: layer.origin.y + grid.y }, at)
   }
   const inViewport = (region: Region): Region => ({ ...region, x: region.x - scroll.x, y: region.y - scroll.y })
   // A point of the viewport in grid space: the turn and the zoom undone. The matrix is a quarter turn times the zoom,
@@ -407,15 +414,22 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
     return found && !(footprint && frameContains(footprint, found)) ? { ...found, layer: 'canvas' } : undefined
   }
 
+  /** A position's bead rectangle in grid space, from its layer's origin. */
+  const beadInSpace = (position: GridPosition, named: ViewLayer | undefined): Region => {
+    const layer = named ? layerNamed(named) : layerAtAddress(position)
+    const box = positionBoxPx(layer.weave, position.row - layer.offset.row, position.column - layer.offset.column)
+    return { ...box, x: layer.origin.x + box.x, y: layer.origin.y + box.y }
+  }
+
   return {
     zoom,
     viewport,
     beadToPoint: (position, named) => {
-      const layer = named ? layerNamed(named) : layerAtAddress(position)
-      const box = positionBoxPx(layer.weave, position.row - layer.offset.row, position.column - layer.offset.column)
-      const at = displayed(layer.origin.x + box.x + box.width / 2, layer.origin.y + box.y + box.height / 2, zoom)
+      const box = beadInSpace(position, named)
+      const at = displayed(box.x + box.width / 2, box.y + box.height / 2, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
     },
+    beadRegion: (position, named) => inViewport(displayedRegion(beadInSpace(position, named), zoom)),
     beadBox: (box, layer) => inViewport(displayedBox(box, zoom, layerNamed(layer))),
     pointToHit,
     pointToBead: (point) => {

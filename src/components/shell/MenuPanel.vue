@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Handedness, InputMode } from '../../domain/inputMode'
+import type { WritingHand, InputMode } from '../../domain/inputMode'
 import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -27,11 +27,11 @@ const props = withDefaults(
     projects?: Project[]
     toolsPosition?: PillPosition
     inputMode?: InputMode
-    handedness?: Handedness
+    writingHand?: WritingHand
     /** Input shows only once a pen has been seen (ticket 326), and is absent, not disabled, before. */
     penSeen?: boolean
   }>(),
-  { page: 'editor', projects: () => [], toolsPosition: 'left', inputMode: 'mouse', handedness: 'right', penSeen: false },
+  { page: 'editor', projects: () => [], toolsPosition: 'left', inputMode: 'mouse', writingHand: 'right', penSeen: false },
 )
 const inEditor = computed(() => props.page === 'editor')
 const emit = defineEmits<{
@@ -42,7 +42,7 @@ const emit = defineEmits<{
   'delete-all': []
   'update:toolsPosition': [position: PillPosition]
   'update:inputMode': [mode: InputMode]
-  'update:handedness': [hand: Handedness]
+  'update:writingHand': [hand: WritingHand]
   shortcuts: []
 }>()
 
@@ -68,7 +68,7 @@ const positionOptions = computed(() => [
   { value: 'right' as const, icon: 'position-right' as const, label: t.value.toolPill.right },
   { value: 'bottom' as const, icon: 'position-bottom' as const, label: t.value.toolPill.bottom },
 ])
-const handOptions = computed(() => [
+const writingHandOptions = computed(() => [
   { value: 'right' as const, label: t.value.panels.menu.right },
   { value: 'left' as const, label: t.value.panels.menu.left },
 ])
@@ -143,13 +143,13 @@ const inputOptions = computed(() => [
       />
       <SettingChoice
         v-if="penSeen"
-        :model-value="handedness"
-        :label="t.panels.menu.hand"
+        :model-value="writingHand"
+        :label="t.panels.menu.writingHand"
         icon="pen-mode"
-        :options="handOptions"
+        :options="writingHandOptions"
         inline
-        data-testid="menu-handedness"
-        @update:model-value="emit('update:handedness', $event)"
+        data-testid="menu-writing-hand"
+        @update:model-value="emit('update:writingHand', $event)"
       />
     </PanelSection>
 
