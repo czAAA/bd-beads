@@ -7,9 +7,9 @@ import { useResolvedTheme } from './useResolvedTheme'
 /** The person's Canvas color (ticket 252), shared by the app. The stored number is kept whatever the theme shows of
  * it. */
 export function useCanvasBackground(preferences: DevicePreferences = useDevicePreferences()): {
-  /** The stored number, 1 to 6. */
+  /** The stored number, 1 to 5. */
   choice: Readonly<Ref<number>>
-  /** The position shown in the current theme (light has no 6). */
+  /** The position shown in the current theme. */
   shown: ComputedRef<number>
   /** The background shown now, or undefined in high contrast. */
   background: ComputedRef<CanvasBackground | undefined>

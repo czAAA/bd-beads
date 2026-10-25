@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, useId } from 'vue'
+import { computed, nextTick } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { canvasBackgrounds } from '../../rendering/canvasBackgrounds'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -7,17 +7,15 @@ import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import AppIcon from '../ui/AppIcon.vue'
 import AppSwatch from '../ui/AppSwatch.vue'
 
-// The Canvas section of the Project panel (ProjectPanel and CanvasBackground cards, tickets 252, 348, 443): Canvas
-// background swatches (five light, six dark; a radio group applying at once). High contrast has one white canvas, so only
-// a line saying so remains.
+// The body of the Project panel's canvas section (ProjectPanel and CanvasBackground cards, tickets 252, 348, 443, 554):
+// Canvas background swatches (five in each theme; a radio group applying at once) and the chosen one's name and hex. High
+// contrast has one white canvas, so only a line saying so remains.
 const { t } = useI18n()
 const theme = useResolvedTheme()
 const canvas = useCanvasBackground()
 
 const swatches = computed(() => canvasBackgrounds(theme.value))
 const current = computed(() => canvas.background.value)
-
-const headingId = useId()
 
 function nameOf(index: number): string {
   return t.value.canvas.canvasColor.names[swatches.value[index].id]
@@ -49,8 +47,7 @@ function onSwatchKeydown(event: KeyboardEvent, index: number) {
 </script>
 
 <template>
-  <section class="canvas-section" role="group" :aria-labelledby="headingId" data-testid="canvas-section">
-    <h3 :id="headingId" class="canvas-section__heading">{{ t.panels.project.canvas }}</h3>
+  <div class="canvas-section" data-testid="canvas-section">
     <div v-if="swatches.length" class="canvas-section__swatches" role="radiogroup" :aria-label="t.canvas.canvasColor.label" data-testid="canvas-color-picker">
       <AppSwatch
         v-for="(swatch, index) in swatches"
@@ -72,31 +69,26 @@ function onSwatchKeydown(event: KeyboardEvent, index: number) {
       {{ nameOf(canvas.shown.value - 1) }}
       <span class="canvas-section__hex">{{ current.color }}</span>
     </span>
-  </section>
+  </div>
 </template>
 
 <style scoped>
 .canvas-section {
-  --swatch-size: 28px;
+  --swatch-size: 26px;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--space-8);
-  padding: var(--space-4) var(--space-12);
+  padding: var(--space-4) var(--space-10);
   color: var(--ink);
-}
-
-.canvas-section__heading {
-  margin: 0;
-  font: var(--type-label);
-  color: var(--muted);
-  text-transform: lowercase;
 }
 
 .canvas-section__swatches {
   --swatch-gap: var(--overlay-fill);
   display: flex;
   flex-wrap: wrap;
-  gap: var(--space-8);
+  gap: var(--space-6);
   /* Room for the 2px ring that sits 2px outside the chosen swatch. */
   padding: var(--space-4);
   margin: calc(-1 * var(--space-4));
