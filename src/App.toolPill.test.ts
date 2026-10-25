@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
+import { en } from './i18n/en'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { mountWithProject } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
+import { choosePanelOption, panelOptionShown } from './testUtils/choosePanelOption'
 import { openPanel, pickColor, pickTool } from './testUtils/pill'
 import { frameGrid } from './domain/project'
 import { BUILT_IN_COLORS } from './domain/palette'
@@ -77,14 +79,13 @@ describe('the Tool pill (ticket 439, ADR 0059)', () => {
   it('moves from the Menu panel\'s Tools position and remembers it on the device', async () => {
     const wrapper = await mountWithProject(15, 30)
     await openPanel(wrapper, 'strip-menu')
-    const position = wrapper.get('[data-testid="menu-tools-position"]')
-    expect(position.get('[data-value="bottom"]').attributes('aria-checked')).toBe('true')
+    expect(panelOptionShown(wrapper, 'menu-tools-position')).toBe(en.toolPill.bottom)
 
-    await position.get('[data-value="right"]').trigger('click')
+    await choosePanelOption(wrapper, 'menu-tools-position', 'right')
 
     expect(pillOf(wrapper).attributes('data-position')).toBe('right')
     expect(localStorage.getItem('openbeads:tool-pill-position')).toBe('right')
-    await position.get('[data-value="bottom"]').trigger('click')
+    await choosePanelOption(wrapper, 'menu-tools-position', 'bottom')
     expect(localStorage.getItem('openbeads:tool-pill-position')).toBeNull()
   })
 

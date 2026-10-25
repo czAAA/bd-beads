@@ -131,7 +131,7 @@ export interface Translations {
       projects: string
       preferences: string
       input: string
-      hand: string
+      writingHand: string
       right: string
       left: string
       pen: string
@@ -140,6 +140,9 @@ export interface Translations {
       about: string
       version: string
       deleteAll: string
+      coffee: string
+      themeLight: string
+      themeDark: string
       tooltipDeleteAll: string
       deleteAllTitle: string
       deleteAllMessage: string
@@ -198,9 +201,15 @@ export interface Translations {
     newProjectButton: string
     removeButton: string
     unknownBeadLabel: string
-    noSavedProjectsMessage: string
-    /** Saved Projects' meta: how many of the library the box shows ("5 of 12"). */
-    shownOf: string
+    /** The library's empty state: a title over a line saying where projects are kept. */
+    emptyTitle: string
+    emptyBody: string
+    /** "3 pieces": a project's Pieces count, in the library row's Tooltip. */
+    pieces: PluralForms
+    /** "1 unnamed": the Pieces with no name, after the named ones. */
+    unnamedPieces: string
+    /** "Frame 24 × 30 beads", with {width} and {height}. */
+    frameSize: string
   }
   /** The Template gallery and setup in New Project (ticket 493; TemplateGallery card). `specLine` is "24 × 80 · Loom". */
   templates: {

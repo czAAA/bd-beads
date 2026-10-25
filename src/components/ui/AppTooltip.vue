@@ -241,6 +241,7 @@ onBeforeUnmount(hide)
 }
 
 .app-tooltip__body {
+  white-space: pre-line;
   font-weight: 500;
 }
 

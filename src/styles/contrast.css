@@ -3,8 +3,7 @@
 :root[data-theme='contrast'] :is(
     .save-box,
     .expandable-panel,
-    .app-shell__canvas,
-    .theme-toggle
+    .app-shell__canvas
   ) {
   border-width: 2px;
   box-shadow: none;
@@ -51,8 +50,7 @@
       .text-field,
       .stepper,
       .file-button__target,
-      .custom-color-picker,
-      .project-list__remove
+      .custom-color-picker
     ) {
     border: 1px solid ButtonText;
   }
