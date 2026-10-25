@@ -5,6 +5,7 @@ import FramePanel from './FramePanel.vue'
 import PanelHost from '../shell/PanelHost.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
+import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
 
 beforeEach(() => {
@@ -241,6 +242,14 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.emitted('export-pdf')).toHaveLength(1)
     await wrapper.setProps({ exporting: 'pdf' })
     expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
+  })
+
+  it('ends the export section with a plain Buy me a coffee link to the Coffee link, in a new tab (ticket 560)', () => {
+    const wrapper = mountBar()
+    const link = wrapper.get('[data-testid="frame-coffee-link"]')
+    expect(link.text()).toBe(en.frame.exportCoffeeLink)
+    expect(link.attributes()).toMatchObject({ href: COFFEE_URL, target: '_blank', rel: 'noopener' })
+    expect(wrapper.get('[data-testid="frame-coffee"]').text()).toContain(en.frame.exportCoffee)
   })
 
   it('ends with Beads needed, its total in the header (ticket 555)', () => {
