@@ -22,7 +22,6 @@ const {
   activeProject,
   saveFailed,
   unsaved,
-  activeBeadLabel,
   settledProject,
   onNewProjectDraft,
   onCreateProject,
@@ -37,7 +36,6 @@ const {
   onSetBeadShape,
   onFitFrame,
   replaceBeadCandidates,
-  replaceBeadOutdated,
   onRequestReplaceBead,
   onImportProjects,
   decodeImage,
@@ -82,6 +80,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
   <PanelHost v-if="activeProject && framePanelShown && !framing" open="frame" :only="['frame']" @close="onCloseFramePanel">
     <FramePanel
       :project="activeProject"
+      :settled-project="settledProject"
       @step="onStepFrameEdge"
       @resize="onResizeFrame"
       @rotate="onRotateFrame"
@@ -120,10 +119,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
     <ProjectPanel
       v-else-if="activeProject"
       :project="activeProject"
-      :settled-project="settledProject"
-      :bead-name="activeBeadLabel ?? ''"
       :replace-candidates="replaceBeadCandidates"
-      :replace-outdated="replaceBeadOutdated"
       :save-failed="saveFailed"
       :unsaved="unsaved"
       :exporting="exporting"

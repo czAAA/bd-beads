@@ -128,31 +128,21 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="sheet-rotate"]').exists()).toBe(false)
   })
 
-  it('changes the Frame\'s Technique from the Project panel as one Undo step, the Canvas keeping its own (tickets 351, 492)', async () => {
+  it('changes the Technique from the one control in the Project panel as one Undo step (tickets 351, 492, 554)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
-    expect(wrapper.get('[data-testid="frame-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
+    const picker = wrapper.get('[data-testid="project-technique"] button')
+    expect(picker.attributes('aria-label')).toBe('Technique: Loom')
+    expect(wrapper.find('[data-testid="canvas-technique-row"]').exists()).toBe(false)
 
-    await wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').trigger('click')
+    await picker.trigger('click')
+    await wrapper.get('[data-testid="project-technique"] [data-value="peyote"]').trigger('click')
 
     expect(drawnProject(wrapper).frame?.technique).toBe('peyote')
     expect(drawnProject(wrapper).technique).toBe('loom')
-    expect(wrapper.get('[data-testid="frame-technique"] [data-value="peyote"]').attributes('aria-checked')).toBe('true')
+    expect(wrapper.get('[data-testid="project-technique"] button').attributes('aria-label')).toBe('Technique: Peyote')
     await wrapper.get('[data-testid="strip-undo"]').trigger('click')
     expect(drawnProject(wrapper).frame?.technique).toBe('loom')
-  })
-
-  it('changes the Canvas\'s Technique from the Project panel as one Undo step, the Frame keeping its own (ticket 492)', async () => {
-    const wrapper = await mountWithProject(15, 30)
-    await wrapper.find('[data-testid="strip-project"]').trigger('click')
-    expect(wrapper.get('[data-testid="canvas-technique"] [data-value="loom"]').attributes('aria-checked')).toBe('true')
-
-    await wrapper.get('[data-testid="canvas-technique"] [data-value="peyote"]').trigger('click')
-
-    expect(drawnProject(wrapper).technique).toBe('peyote')
-    expect(drawnProject(wrapper).frame?.technique).toBe('loom')
-    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
-    expect(drawnProject(wrapper).technique).toBe('loom')
   })
 
   it('picks a Palette color from the colour popover and paints with it', async () => {
@@ -208,7 +198,7 @@ describe('App at the phone tier (ticket 79)', () => {
 
     const panel = wrapper.find('[data-testid="panel-dropdown"]')
     expect(panel.find('[data-testid="save-box"]').exists()).toBe(true)
-    expect(panel.find('[data-testid="panel-bead"]').exists()).toBe(true)
+    expect(panel.find('[data-testid="export-project-file"]').exists()).toBe(true)
   })
 
   it('opens the Projects library from its Menu row when projects exist', async () => {
@@ -257,15 +247,15 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('shows the open Project\'s name, save state and Bead at the top of Project (tickets 295, 443)', async () => {
+  it('shows the open Project\'s name, save state and Bead pickers of Project (tickets 295, 443)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
     const panel = wrapper.get('[data-testid="panel-dropdown"]')
     expect(panel.get('[data-testid="project-name"]').text()).not.toBe('')
-    expect(panel.get('[data-testid="save-state"]').text()).toBe('saved · this device')
-    expect(panel.find('[data-testid="save-state"] svg').exists()).toBe(true)
-    expect(panel.get('[data-testid="panel-bead"]').text()).toBe('TOHO Cube 1.5mm')
+    expect(panel.get('[data-testid="save-state"]').text()).toBe(en.panels.project.savedLocal)
+    expect(panel.find('[data-testid="save-icon"] svg').exists()).toBe(true)
+    expect(panel.get('[data-testid="bead-brand"] button').text()).toBe('TOHO')
   })
 
   it('opens the Menu from the Canvas strip as a dropdown with language, theme, Overview and the source link, and nothing about the Project (tickets 295, 443)', async () => {

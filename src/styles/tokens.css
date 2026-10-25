@@ -49,10 +49,9 @@
   --curve: rgba(250,82,15,.32);
   --canvas-bg-1: #fafafa;
   --canvas-bg-2: #f7f3ec;
-  --canvas-bg-3: #f1f5ee;
-  --canvas-bg-4: #eff4f8;
-  --canvas-bg-5: #fbf0ea;
-  --canvas-bg-6: #fafafa;
+  --canvas-bg-3: #e6e3de;
+  --canvas-bg-4: #e3e7ec;
+  --canvas-bg-5: #cdcac4;
   --bead-rim: rgba(20,20,19,.12);
   --bead-empty: #d8d2cc;
   --position-mark: #d8d2cc;
@@ -110,9 +109,8 @@
   --canvas-bg-1: #202020;
   --canvas-bg-2: #0e0e0e;
   --canvas-bg-3: #12161c;
-  --canvas-bg-4: #171608;
-  --canvas-bg-5: #1c1714;
-  --canvas-bg-6: #2c2b29;
+  --canvas-bg-4: #2c2b29;
+  --canvas-bg-5: #3b3e43;
   --bead-rim: rgba(255,255,255,.16);
   --bead-empty: #3c3c3c;
   --position-mark: #3c3c3c;
@@ -172,7 +170,6 @@
   --canvas-bg-3: #ffffff;
   --canvas-bg-4: #ffffff;
   --canvas-bg-5: #ffffff;
-  --canvas-bg-6: #ffffff;
   --bead-rim: rgba(0,0,0,.35);
   --bead-empty: #b8b0a8;
   --position-mark: #b8b0a8;

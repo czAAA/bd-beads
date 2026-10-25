@@ -199,3 +199,14 @@ export function readBeadCopy(stored: unknown): Bead | undefined {
     (bead.beadsPerKg === undefined || isNumber(bead.beadsPerKg))
   return valid ? beadCopy(bead as Bead) : undefined
 }
+
+/** The Bead a pick in Brand or Type leads to (ticket 554): the three pickers narrow each other, so a new Brand keeps
+ * the Type and the size when it has them, else its first. Picking a Size is a Bead of its own and needs none of this. */
+export function beadAfterPick(beads: readonly Bead[], current: Bead, pick: { brandId?: string; formFactorId?: string }): Bead | undefined {
+  const brandId = pick.brandId ?? current.brand.id
+  const inBrand = beads.filter((bead) => bead.brand.id === brandId)
+  const formFactorId = pick.formFactorId ?? current.formFactor.id
+  const inType = inBrand.filter((bead) => bead.formFactor.id === formFactorId)
+  const pool = inType.length ? inType : inBrand
+  return pool.find((bead) => bead.size === current.size) ?? pool[0]
+}

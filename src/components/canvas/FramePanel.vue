@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import BeadQuantities from '../palette/BeadQuantities.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
@@ -16,6 +17,8 @@ import { useI18n } from '../../i18n/useI18n'
 // shows the handles and is a separate control); a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
+  /** The Project as summaries see it while a stroke is going on (useSettledProject), for Beads needed. */
+  settledProject?: Project
 }>()
 
 const emit = defineEmits<{
@@ -193,6 +196,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         </span>
       </div>
     </div>
+    <!-- Beads needed left the Project panel (ticket 554); the redesigned Frame panel gives it a section (ticket 0555). -->
+    <BeadQuantities :project="settledProject ?? project" />
   </div>
 </template>
 

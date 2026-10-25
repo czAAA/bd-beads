@@ -501,7 +501,6 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !frameLocked(deps),
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedTechnique,
   }),
-  unkeyed('change-canvas-technique', (t) => t.panels.project.canvasTechnique, 'canvas', { body: (t) => t.tooltips.changeCanvasTechnique }),
   unkeyed('change-brick-block', (t) => t.form.brickBlockLabel, 'canvas', {
     body: (t) => t.tooltips.brickBlock,
     enabled: (deps: ControlDeps) => !frameLocked(deps),
