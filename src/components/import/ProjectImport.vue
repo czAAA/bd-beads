@@ -181,7 +181,7 @@ async function onImportFile(event: Event): Promise<void> {
 
 .project-import__button:has(:focus-visible) {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .project-import__result,

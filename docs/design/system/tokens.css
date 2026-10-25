@@ -19,7 +19,7 @@
   --accent: #fa520f; /* The one accent: the single most likely next action in a region (New Pattern, Replace bead, Save Pattern, Row done), the active tool, the current row, the brand mark, the selected Saved Pattern. Nothing else is accent-colored. As a fill and in the logo; for text and thin marks on light surfaces use accent-strong. */
   --accent-hover: #ff6a2b; /* Primary button hover and pressed fill and border. Light is lighter than accent (#ff6a2b) so the dark label keeps 5.8:1. */
   --accent-strong: #c23604; /* Accent as text and thin marks on light surfaces: the active tool label and underline, the open Saved Pattern ring and name, message edges and accent icons, links (4.9:1 on panel). Dark: the same yellow as accent. */
-  --focus-ring: #c23604; /* The keyboard focus ring: 2px, 2px away (3px in high contrast). 4.9:1 on panel in light, 16:1 in dark. */
+  --focus-ring: #1f1f1f; /* The keyboard focus ring, neutral and the same as ink: 2px, 1px away (3px black in high contrast). 16:1 on panel in light, 16:1 in dark. Yellow and orange mean selected only (ADR 0075). */
   --accent-disabled-bg: #e5e5e5; /* Disabled primary button fill. */
   --accent-disabled-fg: #a8a8a8; /* Disabled primary button text. */
   --on-accent: #1f1f1f; /* Text and icons on accent and accent-hover: dark in both themes (4.9:1 on light orange, 18:1 on dark yellow). The logo on an accent tile stays white (a graphic, 3.3:1). */
@@ -76,7 +76,7 @@
   --accent: #faff69;
   --accent-hover: #e6eb52;
   --accent-strong: #faff69;
-  --focus-ring: #faff69;
+  --focus-ring: #ffffff;
   --accent-disabled-bg: #3a3a1f;
   --accent-disabled-fg: #888888;
   --on-accent: #0a0a0a;

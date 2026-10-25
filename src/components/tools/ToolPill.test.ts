@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ToolPill from './ToolPill.vue'
+import type { PillPosition } from '../../domain/toolPill'
 
 const TOOL_IDS = ['paint', 'fill', 'select', 'erase', 'hand', 'piece']
 
@@ -131,6 +132,49 @@ describe('ToolPill (ticket 439)', () => {
     const wrapper = mount(ToolPill, { props: { ...base, activeTool: 'hand' } })
     const stops = wrapper.findAll('.tool-pill__stop').filter((button) => button.attributes('tabindex') === '0')
     expect(stops.map((button) => button.attributes('data-testid'))).toEqual(['pill-tool-hand'])
+  })
+})
+
+describe('the Tool pill’s arrows follow its axis (ticket 563, ADR 0075)', () => {
+  async function pressOn(position: PillPosition, from: string, key: string) {
+    const wrapper = mount(ToolPill, { props: { ...base, position, activeTool: 'paint' }, attachTo: document.body })
+    const start = wrapper.get(`[data-testid="${from}"]`).element as HTMLElement
+    start.focus()
+    await wrapper.get('[data-testid="tool-pill"]').trigger('keydown', { key })
+    const focused = (document.activeElement as HTMLElement | null)?.getAttribute('data-testid')
+    wrapper.unmount()
+    return focused
+  }
+
+  it.each<[PillPosition, string, string]>([
+    ['bottom', 'ArrowRight', 'ArrowLeft'],
+    ['top', 'ArrowRight', 'ArrowLeft'],
+    ['left', 'ArrowDown', 'ArrowUp'],
+    ['right', 'ArrowDown', 'ArrowUp'],
+  ])('steps with %s along %s and %s', async (position, forward, backward) => {
+    const tools = TOOL_IDS.map((tool) => `pill-tool-${tool}`)
+    expect(await pressOn(position, tools[1]!, forward)).toBe(tools[2])
+    expect(await pressOn(position, tools[1]!, backward)).toBe(tools[0])
+  })
+
+  it.each<[PillPosition, string]>([
+    ['bottom', 'ArrowDown'],
+    ['top', 'ArrowUp'],
+    ['left', 'ArrowRight'],
+    ['right', 'ArrowLeft'],
+  ])('ignores the other axis (%s, %s)', async (position, key) => {
+    expect(await pressOn(position, 'pill-tool-hand', key)).toBe('pill-tool-hand')
+  })
+
+  it('stops at the last tile and jumps with Home and End', async () => {
+    expect(await pressOn('bottom', 'pill-color', 'ArrowRight')).toBe('pill-color')
+    expect(await pressOn('bottom', 'pill-tool-hand', 'End')).toBe('pill-color')
+    expect(await pressOn('bottom', 'pill-tool-hand', 'Home')).toBe('tool-pill-grip')
+  })
+
+  it('leaves the grip out of the Tab stops', () => {
+    const wrapper = mount(ToolPill, { props: base })
+    expect(wrapper.get('[data-testid="tool-pill-grip"]').attributes('tabindex')).toBe('-1')
   })
 })
 

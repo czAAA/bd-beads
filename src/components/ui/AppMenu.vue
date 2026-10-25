@@ -203,7 +203,7 @@ defineExpose({ close })
 
 .app-menu__icon-button:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .app-menu__icon-button--open {

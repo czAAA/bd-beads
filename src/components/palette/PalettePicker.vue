@@ -28,7 +28,7 @@ const closePanel = useClosePopoverOnPick()
 
 /** The swatches are one Tab stop, the selected swatch (or the first); the arrows move between them (ticket 159). */
 const gridEl = ref<HTMLElement>()
-const roving = useRovingFocus(gridEl, '.palette-picker__swatch')
+const roving = useRovingFocus(gridEl, { selector: '.palette-picker__swatch' })
 const removeAdded = useRemoveAddedColor()
 
 function isStop(colorId: string, index: number): boolean {

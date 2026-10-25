@@ -63,6 +63,12 @@ function onButtonKeydown(event: KeyboardEvent) {
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault()
     void show(event.key === 'ArrowUp' ? 'last' : 'chosen')
+  } else if (event.key === 'ArrowRight' && !open.value) {
+    event.preventDefault()
+    void show()
+  } else if (event.key === 'ArrowLeft' && open.value) {
+    event.preventDefault()
+    close()
   }
 }
 
@@ -72,7 +78,17 @@ function choose(next: T) {
 }
 
 function onListKeydown(event: KeyboardEvent) {
-  if (event.key === 'Tab') return close(false)
+  if (event.key === 'Tab') {
+    // The Tab closes the list and carries on from its button; the panel's own Tab handling stays out of it.
+    event.stopPropagation()
+    close()
+    return
+  }
+  if (event.key === 'ArrowLeft') {
+    event.preventDefault()
+    event.stopPropagation()
+    return close()
+  }
   const list = items()
   const current = list.indexOf(document.activeElement as HTMLElement)
   const last = list.length - 1
@@ -211,7 +227,7 @@ function onListKeydown(event: KeyboardEvent) {
 
 .panel-picker__button:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 @media (pointer: coarse) {

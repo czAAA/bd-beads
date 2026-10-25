@@ -117,13 +117,22 @@ function focusEntry() {
 }
 
 /** Arrows, Home and End move through the panel's controls; a field and a choice group keep their own keys. Tab is
- * left to the browser: it leaves the dropdown. */
+ * left to the browser, which leaves the dropdown, except in the Menu: there Tab and Shift+Tab wrap, so focus never
+ * leaves the open panel (ADR 0075). */
 function onKeydown(event: KeyboardEvent) {
   // A key the content already used (the Frame panel's arrows move the Frame) is not a move through the panel.
   if (event.defaultPrevented) return
   const target = event.target as HTMLElement
   const list = focusables()
-  if (event.key === 'Tab') return
+  if (event.key === 'Tab') {
+    if (!props.menu || !list.length) return
+    const index = list.indexOf(target)
+    const edge = event.shiftKey ? index <= 0 : index === list.length - 1
+    if (!edge) return
+    event.preventDefault()
+    list[event.shiftKey ? list.length - 1 : 0]?.focus({ preventScroll: true })
+    return
+  }
   const own = target.closest('input, textarea, [role="radiogroup"], [aria-haspopup]') !== null
   if (own || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
   event.preventDefault()
@@ -134,6 +143,7 @@ function onKeydown(event: KeyboardEvent) {
 
 /** The dropdown closes when focus leaves it with Tab. */
 function onFocusOut(event: FocusEvent) {
+  if (props.menu) return
   const next = event.relatedTarget
   if (next instanceof Element && !panelEl.value?.contains(next) && !next.closest(OPENERS) && !next.closest('[popover]')) emit('close')
 }
