@@ -499,6 +499,8 @@ export const en: Translations = {
     sizeHeading: 'Size',
     exportPicture: 'Picture',
     exportChart: 'Printable chart',
+    exportCoffee: 'openbeads is made, maintained and slowly grown by one family. If it’s useful to you, a coffee helps it carry on.',
+    exportCoffeeLink: 'Buy me a coffee',
     estimateInfo: 'An estimate. Bead size × beads across and down. Thread, tension and small differences between beads mean the finished work often comes out a little different.',
     sizeLockedLine: 'Rows are marked done. Remove the frame to change the size.',
     editFrame: 'Edit Frame',

@@ -579,6 +579,8 @@ export interface Translations {
     sizeHeading: string
     exportPicture: string
     exportChart: string
+    exportCoffee: string
+    exportCoffeeLink: string
     estimateInfo: string
     sizeLockedLine: string
     editFrame: string

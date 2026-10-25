@@ -13,6 +13,7 @@ import LoadingState from '../ui/LoadingState.vue'
 import TextField from '../ui/form/TextField.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
+import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
@@ -255,6 +256,11 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         <PanelItem icon="image" value=".png" stays :disabled="exportBusy" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
         <PanelItem icon="pdf" value=".pdf" stays :disabled="exportBusy" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
         <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
+        <!-- Buy me a coffee (ticket 560): one plain line, no popup; absent while the Coffee link is empty. -->
+        <p v-if="COFFEE_URL" class="frame-panel__line" data-testid="frame-coffee">
+          {{ t.frame.exportCoffee }}
+          <a class="frame-panel__coffee" :href="COFFEE_URL" target="_blank" rel="noopener" data-testid="frame-coffee-link">{{ t.frame.exportCoffeeLink }}</a>
+        </p>
       </PanelSection>
 
       <BeadQuantities :project="settledProject ?? project" />
@@ -315,6 +321,11 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   padding: var(--space-4) var(--space-10);
   font: var(--type-meta-small);
   color: var(--muted);
+}
+
+.frame-panel__coffee {
+  color: var(--accent-strong);
+  text-decoration: underline;
 }
 
 .frame-panel__body {
