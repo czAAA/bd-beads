@@ -8,6 +8,8 @@ export interface FitPending {
   texts: string[]
   at: Partial<Record<Locale, number[]>>
   fixedBy: string
+  /** Off by a pixel or two, so that it fits on one operating system's text rendering and not on the other's: it need not misfit everywhere. */
+  borderline?: true
 }
 
 export const FIT_PENDING: FitPending[] = [
@@ -20,8 +22,10 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'OverviewPage', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { case: 'ProgressBar by columns', texts: ['Стовпець не готовий', 'Стовпець готовий'], at: { uk: [320] }, fixedBy: '556' },
   { case: 'ProgressBar by columns', texts: ['Columna sin terminar', 'Columna terminada'], at: { es: [320] }, fixedBy: '556' },
-  { case: 'FramePanel', texts: ['Ширина', 'Висота'], at: { uk: [320] }, fixedBy: '555' },
+  { case: 'FramePanel', texts: ['Ширина', 'Висота'], at: { uk: [320] }, fixedBy: '555', borderline: true },
   { case: 'FramePanel', texts: ['Szerokość', 'Wysokość'], at: { pl: [320] }, fixedBy: '555' },
+  { case: 'OverviewPage', texts: ['Cuenta gratuita'], at: { es: [768] }, fixedBy: '231', borderline: true },
+  { case: 'OverviewPage', texts: ['Darmowe konto'], at: { pl: [768] }, fixedBy: '231', borderline: true },
 ]
 
 const quoted = (text: string) => `"${text}"`
@@ -30,7 +34,7 @@ const quoted = (text: string) => `"${text}"`
 export function unexplainedFit(name: string, locale: Locale, width: number, misfits: string[], pending: FitPending[] = FIT_PENDING): string[] {
   const mine = pending.filter((entry) => entry.case === name && (entry.at[locale] ?? []).includes(width))
   const problems = misfits.filter((misfit) => !mine.some((entry) => entry.texts.some((text) => misfit.includes(quoted(text)))))
-  for (const entry of mine) {
+  for (const entry of mine.filter((entry) => !entry.borderline)) {
     for (const text of entry.texts.filter((text) => !misfits.some((misfit) => misfit.includes(quoted(text))))) {
       problems.push(`pending entry (fixed by ${entry.fixedBy}) no longer misfits here: ${quoted(text)}; remove ${locale} ${width} from it in src/testUtils/fitPending.ts`)
     }

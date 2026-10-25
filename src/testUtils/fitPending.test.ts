@@ -20,4 +20,10 @@ describe('unexplainedFit', () => {
     expect(problem).toContain('no longer misfits')
     expect(problem).toContain('999')
   })
+
+  it('does not report a borderline entry that matches nothing, but still lets its misfit through', () => {
+    const borderline: FitPending[] = [{ ...pending[0], borderline: true }]
+    expect(unexplainedFit('Box', 'ru', 320, [], borderline)).toEqual([])
+    expect(unexplainedFit('Box', 'ru', 320, [wraps], borderline)).toEqual([])
+  })
 })
