@@ -136,7 +136,7 @@ function onClick(event: Event) {
 
 .panel-item:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .panel-item--danger {

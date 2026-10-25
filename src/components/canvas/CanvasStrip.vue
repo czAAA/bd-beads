@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { MAX_ZOOM_PERCENT, MIN_ZOOM_PERCENT } from '../../domain/grid'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import { COFFEE_URL } from '../../data/coffeeLink'
@@ -63,11 +64,29 @@ const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 const onOverview = computed(() => props.page === 'overview')
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
+
+// One Tab stop per section (ADR 0075): the panels, the Brand (a single link) and the right-hand tools. ←/→ step inside
+// a section and stop at its ends; ↓ on a panel button opens its panel, like Enter.
+const panelsEl = ref<HTMLElement>()
+const controlsEl = ref<HTMLElement>()
+const panelsRoving = useRovingFocus(panelsEl, { axis: () => 'horizontal', managesTabIndex: true })
+const controlsRoving = useRovingFocus(controlsEl, { selector: 'button, a[href]', axis: () => 'horizontal', managesTabIndex: true })
+
+function onPanelsKeydown(event: KeyboardEvent) {
+  const button = event.target as HTMLElement
+  if (event.key === 'ArrowDown' && button.getAttribute('aria-pressed') !== 'true') {
+    event.preventDefault()
+    event.stopPropagation()
+    button.click()
+    return
+  }
+  panelsRoving.onKeydown(event)
+}
 </script>
 
 <template>
   <div class="canvas-strip no-page-pan" :class="{ 'canvas-strip--overview': onOverview }" data-testid="canvas-strip">
-    <div class="canvas-strip__panels">
+    <div ref="panelsEl" class="canvas-strip__panels" @keydown="onPanelsKeydown" @focusin="panelsRoving.onFocusin">
       <AppButton
         variant="text"
         :action="actions.menu"
@@ -110,7 +129,7 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
       <AppLogo class="canvas-strip__mark" :size="22" />
       <span class="canvas-strip__wordmark">{{ t.app.title }}</span>
     </component>
-    <div class="canvas-strip__controls" data-testid="canvas-strip-controls">
+    <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="controlsRoving.onKeydown" @focusin="controlsRoving.onFocusin">
       <!-- Buy me a coffee (ticket 560): only where the strip has room (1024px and up); under it the Menu row is the way in. -->
       <span v-if="COFFEE_URL" class="canvas-strip__coffee">
         <IconButton variant="plain" :icon-size="18" :action="actions.coffee" :href="COFFEE_URL" data-testid="strip-coffee" />

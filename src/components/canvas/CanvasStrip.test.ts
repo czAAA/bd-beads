@@ -145,3 +145,52 @@ describe('CanvasStrip Rotate canvas (ticket 471)', () => {
     expect(wrapper.emitted('rotate-canvas')).toBeUndefined()
   })
 })
+
+describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
+  const project = { frame: undefined, beads: { 0: { 0: '#ff0000' } }, technique: 'loom' } as unknown as Project
+  const props = { project, canUndo: true, canRedo: true, zoomPercent: 125 }
+  const stops = (wrapper: ReturnType<typeof mount>) =>
+    wrapper.findAll('button, a').filter((el) => el.attributes('tabindex') !== '-1').map((el) => el.attributes('data-testid'))
+
+  it('is three Tab stops: a panel button, the Wordmark and a right-hand tool', () => {
+    const wrapper = mount(CanvasStrip, { props, attachTo: document.body })
+    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-coffee'])
+    wrapper.unmount()
+  })
+
+  it('steps ←/→ inside the panels and stops at the ends', async () => {
+    const wrapper = mount(CanvasStrip, { props, attachTo: document.body })
+    const menu = wrapper.get('[data-testid="strip-menu"]')
+    const projectButton = wrapper.get('[data-testid="strip-project"]')
+    ;(menu.element as HTMLElement).focus()
+    await menu.trigger('keydown', { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(menu.element)
+    await menu.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(projectButton.element)
+    await projectButton.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(projectButton.element)
+    wrapper.unmount()
+  })
+
+  it('keeps the right-hand tools in one section, moving its Tab stop to the last focused one', async () => {
+    const wrapper = mount(CanvasStrip, { props, attachTo: document.body })
+    const rulers = wrapper.get('[data-testid="strip-rulers"]')
+    ;(rulers.element as HTMLElement).focus()
+    await rulers.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="strip-undo"]').element)
+    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-undo'])
+    const reset = wrapper.get('[data-testid="zoom-reset"]')
+    ;(reset.element as HTMLElement).focus()
+    await reset.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(reset.element)
+    wrapper.unmount()
+  })
+
+  it('opens a panel on ↓ like Enter, but not one that is already open', async () => {
+    const wrapper = mount(CanvasStrip, { props: { ...props, openPanel: 'project' }, attachTo: document.body })
+    await wrapper.get('[data-testid="strip-menu"]').trigger('keydown', { key: 'ArrowDown' })
+    await wrapper.get('[data-testid="strip-project"]').trigger('keydown', { key: 'ArrowDown' })
+    expect(wrapper.emitted('select-panel')).toEqual([['menu']])
+    wrapper.unmount()
+  })
+})

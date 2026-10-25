@@ -252,7 +252,7 @@ function onScroll() {
 .carousel__arrow:focus-visible,
 .carousel__tab:focus-visible {
   outline: 2px solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .carousel__arrow--next :deep(.icon) {

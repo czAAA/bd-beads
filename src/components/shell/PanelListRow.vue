@@ -64,7 +64,7 @@ const emit = defineEmits<{ select: [] }>()
 
 .panel-list-row__select:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .panel-list-row__thumb {
