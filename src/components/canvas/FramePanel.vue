@@ -453,7 +453,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-panel__estimate {
   display: flex;
   align-items: center;
-  gap: var(--space-8);
+  gap: var(--space-4);
   min-height: var(--panel-item-height);
   color: var(--muted);
 }
