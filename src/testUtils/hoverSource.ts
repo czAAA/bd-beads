@@ -4,7 +4,7 @@ import { basename, join, relative } from 'node:path'
 /** What the hover text check reads from the source (ticket 264): where Tooltips are made, plus the guards keeping
  * hover text shared. */
 
-const SRC = join(import.meta.dirname, '..', '..', 'src')
+const SRC = join(import.meta.dirname, '..')
 
 export interface SourceFile {
   /** Path from src/, e.g. components/ui/ProgressBar.vue. */

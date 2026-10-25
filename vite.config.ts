@@ -1,12 +1,29 @@
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
+import { playwright } from '@vitest/browser-playwright'
 import vue from '@vitejs/plugin-vue'
+import { chromium } from 'playwright'
 import { configDefaults, defineConfig } from 'vitest/config'
 import { resolveBase } from './vite.base.ts'
 import { offlineShell } from './vite.pwa.ts'
 
 /** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
 const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/overview/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
+
+/** Component tests that need a real browser for layout (ticket 552): `*.browser.test.ts`. They run where Chromium is
+ * installed and skip themselves where it is not (the Pi); `BD_BROWSER_TESTS=1` makes a missing Chromium an error, `=0`
+ * skips them. */
+const BROWSER_TESTS = '**/*.browser.test.ts'
+const browserTestsOn = (): boolean => {
+  const mode = process.env.BD_BROWSER_TESTS
+  if (mode === '0') return false
+  if (mode === '1') return true
+  try {
+    return existsSync(chromium.executablePath())
+  } catch {
+    return false
+  }
+}
 
 const APP_VERSION = (JSON.parse(readFileSync(resolve(import.meta.dirname, 'package.json'), 'utf8')) as { version: string }).version
 
@@ -43,7 +60,7 @@ export default defineConfig(({ mode }) => ({
           globals: false,
           isolate: false,
           include: ['**/*.test.ts'],
-          exclude: [...configDefaults.exclude, ...PAGE_TESTS, 'e2e/**', 'worker/**'],
+          exclude: [...configDefaults.exclude, ...PAGE_TESTS, BROWSER_TESTS, 'e2e/**', 'worker/**'],
         },
       },
       {
@@ -58,10 +75,25 @@ export default defineConfig(({ mode }) => ({
           include: PAGE_TESTS,
           // `npm run test:related` sets SKIP_APP_TESTS: the App imports everything, so `vitest related` would pull in
           // every App.*.test.ts (ticket 418, docs/testing.md).
-          exclude: [...configDefaults.exclude, ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
+          exclude: [...configDefaults.exclude, BROWSER_TESTS, ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
           setupFiles: ['./src/testSetup.ts'],
         },
       },
+      ...(browserTestsOn()
+        ? [
+            {
+              // Layout facts (text that fits, a Tooltip kept on screen) in a real Chromium, one component at a time at a
+              // chosen width and language (ticket 552, docs/testing.md).
+              extends: true as const,
+              test: {
+                name: 'browser',
+                include: [BROWSER_TESTS],
+                setupFiles: ['./src/browserSetup.ts'],
+                browser: { enabled: true, headless: true, screenshotFailures: false, provider: playwright(), instances: [{ browser: 'chromium' as const }] },
+              },
+            },
+          ]
+        : []),
       {
         // The backend Worker (ticket 71): its tests start workerd through Miniflare, so they run in Node, no DOM.
         extends: true,

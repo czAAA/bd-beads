@@ -24,6 +24,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - Which Vitest project a test runs in (ticket 420) follows from where it sits and what it is called:
   - `page` (jsdom, one page shared by every file a worker runs): anything under `src/components/` or `src/overview/`, every `src/App*.test.ts`, and any other test that needs a page or its storage (`document`, `window`, `localStorage`, `sessionStorage`, a canvas) named `<name>.dom.test.ts`.
   - `unit` (plain Node, no per-file isolation): everything else. A new domain, rendering or service test needs no setup. If it fails there on `document`, `window` or `localStorage` being undefined, rename it `.dom.test.ts`.
+  - `browser` (real Chromium through Vitest browser mode, ticket 552): `<name>.browser.test.ts`, for layout facts jsdom cannot know (text that fits, a Tooltip kept on screen). It mounts one component at a width and language with `mountAt` (`src/testUtils/browserFit.ts`), which loads the app's own styles and fonts, and measures with the same check the e2e text fit uses. It runs where Chromium is installed (`npx playwright install chromium`) and skips itself where it is not (the Pi); `BD_BROWSER_TESTS=1` turns a missing Chromium into an error, `=0` skips it. A `.browser.test.ts` is never run by `unit` or `page`.
   - In both, files share one module cache per worker within a project, so keep module state and `vi.mock` inside the file and undo what a test installs on a global (`vi.unstubAllGlobals()`, `vi.restoreAllMocks()`).
 - Why sharing: setting up jsdom per file was most of the suite's time. Measured on the Pi with 2 workers (ticket 420), the App files take 217 s wall and 374 s CPU sharing one page per worker and 378 s and 567 s isolated, so they share too.
 - Test at the highest seam that already exists for the behavior, through its public interface, and don't add a seam only to reach an internal. Mount the whole App only when the App's wiring is the subject; otherwise test the domain function, the flow composable or the component on its own (ticket 253 moved logic tests down out of the App tests).
@@ -92,7 +93,16 @@ A change that adds, removes or moves visible elements (a row in a panel, a contr
 
 The references are made on Linux, the platform CI runs. Commit the new images in the same pull request as the change that alters the look. When a run fails, read its `diff.png` first (see `CLAUDE.md`'s context hygiene).
 
-## Text fit check
+## Text fit checks
+
+Four checks keep text from poking out of its box in any language (ticket 552). The first three are fast and run with the other tests; the fourth drives the whole app.
+
+1. **Label widths** (`src/i18n/labelFit.test.ts`, plain Node): `textWidth` (`src/testUtils/textWidth.ts`) sets a string in the app's bundled fonts, reading the faces and unicode ranges from `src/styles/fonts.css`, and the test checks every key of a declared group against the room its place gives it, in all seven languages (so far the Overview carousel's tab names and lines; each budget names the CSS its room comes from). Known overruns are in its `PENDING`, each deleted by the ticket that fixes it; one that fits again fails until removed. Chinese has no bundled font, so its glyphs count as one em and the result is an estimate. To cover a place, add a `Budget`.
+2. **Component fit** (`*.browser.test.ts`, the `browser` project): `src/components/componentFit.browser.test.ts` mounts fixed-size components (the language switcher, the theme toggle, the Progress bar, the tool pill) in every language at five widths and fails on any misfit the e2e check would name. To add a component, add a case to its `CASES`.
+3. **Tooltips** (`src/components/ui/tooltips.browser.test.ts`): every registry action's Tooltip, in every language at 320 px, hovered at the left edge and focused at the right, must stay on screen and inside what clips it (`measureOpenBubble`, shared with the e2e hover check). The hover-text source guards (`src/testUtils/hoverSource.test.ts`) read the templates in Node: no native `title`, no hand-made tooltip that is not listed in `src/testUtils/hoverExemptions.ts`.
+4. **The whole-app check**, below.
+
+### The whole-app text fit check
 
 `e2e/visual/textFit.spec.ts` (part of `npm run visual`, ticket 229) opens the app in every language at every supported width, visits each screen, menu, sheet, dialog and popover, and measures — no reference screenshots — whether any text pokes out of its box, the screen or a clipping ancestor, is cut off by an ellipsis, or wraps in a control meant to be one line (`e2e/support/textFit.ts`; user-typed Project names, carousel cards not yet scrolled to and the canvas's own backdrop and rulers are skipped). A failure names the screen, element, text, overflow in pixels, language and width.
 
@@ -104,6 +114,6 @@ Three guards keep it exhaustive:
 
 1. *Discovery*, above.
 2. *Reachability*: every component whose template makes a Tooltip (`<AppTooltip>`, `IconButton`; the bubble's `data-owner` says which) or an info popover must be seen open somewhere in the run, checked once by the Playwright global teardown after all language-and-width tests (`e2e/support/hoverReach.ts`), so a Tooltip in a state no screen visits fails naming the component: add a `Screen` that reaches it, or list it in `UNREACHED` with a reason (`e2e/support/hoverExemptions.ts`).
-3. *One way to make hover text*: `e2e/visual/hoverSource.spec.ts` reads the templates and fails on a native `title` or a hand-made tooltip that is not listed (`NATIVE_TITLES`, each "native, cannot be clipped" until moved onto the Tooltip; `INFO_POPOVERS`, which text fit measures once).
+3. *One way to make hover text*: `src/testUtils/hoverSource.test.ts` reads the templates and fails on a native `title` or a hand-made tooltip that is not listed (`NATIVE_TITLES`, each "native, cannot be clipped" until moved onto the Tooltip; `INFO_POPOVERS`, which text fit measures once), in `src/testUtils/hoverExemptions.ts`.
 
 A partial run (one language or width) skips guard 2.

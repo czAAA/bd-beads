@@ -1,16 +1,5 @@
-import type { InfoPopover } from './hoverSource'
-
 /** What the hover text check lets be (ticket 264): each entry needs a written reason a reviewer would accept; delete
- * it when moot. */
-
-/** Native `title` attributes that show hover text, as `file|what`. None left (ADR 0035, ticket 341): hover text is
- * the shared Tooltip's. */
-export const NATIVE_TITLES: Record<string, string> = {}
-
-// Hand-made hover texts (info popovers opened by click or the info button's focus, own `role="tooltip"`): text fit
-// measures them (ticket 229); the hover text check needs them listed here and seen open. A new hand-made one fails the
-// source guard. None are left (ticket 342 removed the New Project form's Estimate info popup).
-export const INFO_POPOVERS: InfoPopover[] = []
+ * it when moot. The source guards' lists are in src/testUtils/hoverExemptions.ts (ticket 552). */
 
 // Places in the source that make a Tooltip no screen opens, by component name (or `info:<test id>`), each with why.
 // First try a screen that reaches its state, in e2e/visual/textFit.spec.ts; an exemption is only for a Tooltip no app
