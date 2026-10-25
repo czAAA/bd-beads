@@ -182,7 +182,7 @@ function onKeydown(event: KeyboardEvent) {
 
 .segmented__option:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 1px;
+  outline-offset: var(--focus-offset);
 }
 
 .segmented--disabled {
