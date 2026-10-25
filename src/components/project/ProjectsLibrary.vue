@@ -116,12 +116,19 @@ function frameSize(project: Project): string {
 /* Import is a file label (ProjectImport), dressed as one of the rows around it. */
 .projects-library__import :deep(.project-import__button) {
   display: flex;
+  flex-wrap: wrap;
   width: 100%;
   box-sizing: border-box;
+  height: auto;
   min-height: var(--panel-item-height);
+  white-space: normal;
   padding: 0 var(--space-10);
-  gap: var(--space-8);
+  gap: var(--space-2) var(--space-8);
   border-radius: var(--radius-sm);
+}
+
+.projects-library__import :deep(.project-import__label) {
+  min-width: min-content;
 }
 
 .projects-library__rule {
