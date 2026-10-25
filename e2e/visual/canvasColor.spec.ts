@@ -6,12 +6,12 @@ import { fixtureProject } from '../support/projects'
  * ruler/bead/rim colors) in dark. */
 for (const [scheme, choice, name] of [
   ['light', 2, 'linen'],
-  ['dark', 6, 'ash'],
+  ['dark', 4, 'ash'],
 ] as const) {
   test(`canvas color picker open on ${name}`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: scheme, viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    await page.addInitScript((value) => localStorage.setItem('openbeads:canvas-background', value), String(choice))
+    await page.addInitScript((value) => localStorage.setItem('openbeads:canvas-background-2', value), String(choice))
     await openApp(page, [fixtureProject({ technique: 'loom' })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await openStripPanel(page, 'strip-project')

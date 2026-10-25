@@ -2,7 +2,7 @@ import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } f
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
 import { type Handedness, type InputMode } from '../domain/inputMode'
-import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
+import { CANVAS_BACKGROUND_MAX, migratedChoice } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
@@ -17,6 +17,9 @@ interface Preference<T> {
   parse: (raw: string) => T | undefined
   /** The string to keep, or null to forget the saved one (the fallback applies again). */
   write: (value: T) => string | null
+  /** An earlier build's key and how its saved string reads now, for a preference whose values changed meaning. The
+   * old key is left as it was: older builds read it. */
+  earlier?: { key: string; parse: (raw: string, storage: PreferenceStorage) => T | undefined }
 }
 
 function preference<T>(spec: Preference<T>): Preference<T> {
@@ -31,20 +34,31 @@ function onUntilOff(key: string): Preference<boolean> {
 // Every preference kept on this device (ADR 0020), declared once; keys and values are the long-standing ones so saved
 // data survives. To add one, declare it here and read it with `devicePreferences.get('name')`; validating, fallback and
 // saving are handled below.
+/** How many backgrounds the first Canvas color list held, the highest number an earlier build stored. */
+const FIRST_LIST_SIZE = 6
+
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
   rulers: onUntilOff('openbeads:rulers'),
   /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0064): on by default; a view setting only. */
   rowHighlight: onUntilOff('openbeads:row-highlight'),
-  /** The Canvas color (ticket 252): a number, 1 to 6, so it survives a change of theme. */
+  /** The Canvas color (tickets 252, 554): a number, 1 to 5, so it survives a change of theme. The first list's number
+   * (1 to 6) is read once from its own key and moved by name. */
   canvasBackground: preference({
-    key: 'openbeads:canvas-background',
+    key: 'openbeads:canvas-background-2',
     fallback: 1,
     parse: (raw) => {
       const choice = Number(raw)
       return Number.isInteger(choice) && choice >= 1 && choice <= CANVAS_BACKGROUND_MAX ? choice : undefined
     },
     write: String,
+    earlier: {
+      key: 'openbeads:canvas-background',
+      parse: (raw, storage) => {
+        const choice = Number(raw)
+        return Number.isInteger(choice) && choice >= 1 && choice <= FIRST_LIST_SIZE ? migratedChoice(themeShown(storage), choice) : undefined
+      },
+    },
   }),
   // The input mode the person chose (ticket 325): Pen mode or Mouse mode; unset until they choose (ticket 326), so a
   // pen can pick Pen mode.
@@ -132,6 +146,14 @@ export const PREFERENCES = {
   }),
 }
 
+/** The theme the person was seeing: their pick, or the device's when they never picked (high contrast counts as light,
+ * which has the same first list). */
+function themeShown(storage: PreferenceStorage): 'light' | 'dark' {
+  const pick = storage.getItem(PREFERENCES.theme.key)
+  if (pick !== null) return pick === 'dark' ? 'dark' : 'light'
+  return typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
 export type PreferenceName = keyof typeof PREFERENCES
 type PreferenceValue<N extends PreferenceName> = (typeof PREFERENCES)[N] extends Preference<infer T> ? T : never
 
@@ -153,6 +175,14 @@ export function createDevicePreferences(storage: PreferenceStorage): DevicePrefe
     try {
       const saved = readKey(storage, spec.key)
       if (saved !== null) value = spec.parse(saved) ?? spec.fallback
+      else if (spec.earlier) {
+        const earlier = storage.getItem(spec.earlier.key)
+        const moved = earlier === null ? undefined : spec.earlier.parse(earlier, storage)
+        if (moved !== undefined) {
+          value = moved
+          storage.setItem(spec.key, spec.write(moved) ?? '')
+        }
+      }
     } catch {
       // Storage can be blocked (private mode, site data off): the preference starts at its default.
     }

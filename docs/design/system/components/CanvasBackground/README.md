@@ -1,6 +1,6 @@
 # CanvasBackground
 
-The one background of the drawing area: the rulers and the beads sit on it, and the board has no second fill. The person picks one in Project, under Canvas (ProjectPanel card; the Canvas color button left the strip in ticket 0443): five in light, six in dark. The preview shows both themes with a different choice in each: Linen in light, Ash (the lightest dark canvas) in dark.
+The one background of the drawing area: the rulers and the beads sit on it, and the board has no second fill. The person picks one in Project, under Canvas (ProjectPanel card; the Canvas color button left the strip in ticket 0443): five in light, five in dark (the palette approved in ticket 0554, below; the sections above still describe the first list of eleven, which that ticket replaced). The preview shows both themes with a different choice in each: Linen in light, Ash in dark.
 
 - **Colors made for the app.** Warm neutrals and faint tints taken from the app's own palette, in the spirit of Excalidraw's canvas picker. Light: Studio `#fafafa` (the default, equal to the `box` fill, so nothing shifts), Linen `#f7f3ec` (the export board color), Sage `#f1f5ee`, Mist `#eff4f8`, Blush `#fbf0ea`. Dark: Night `#202020` (the default, equal to the dark `box` and `board`; the card first said `#1a1a1a`, but the app's dark canvas has always been `#202020` and the default must not shift), Ink `#0e0e0e`, Midnight `#12161c`, Olive `#171608` (a nod to the yellow accent), Umber `#1c1714`, and Ash `#2c2b29`, a warm mid-dark grey, the lightest of the dark choices and still well inside the dark palette (between `box` and `line-strong`). Tokens `canvas-bg-1` to `canvas-bg-6`.
 - **One choice, two palettes.** The app stores the number, not the color, so switching theme keeps the position: Sage (3) becomes Midnight (3). The light theme has no choice 6; a stored 6 shows Studio there and comes back when the theme does. The choice is remembered on the device, like the theme.
@@ -12,11 +12,11 @@ The one background of the drawing area: the rulers and the beads sit on it, and 
 - **Where it lives (ticket 0443).** Not a popover any more: five (light) or six (dark) round swatches in a row inside Project's Canvas section, 28px, 8px apart, the chosen one ringed. The same radio group, names and remembered choice as before. The popover paragraph above describes the earlier form.
 - **Copy.** "Canvas color" (Russian "Цвет холста"); the choice names are in the Writing section.
 
-**Approved palette (ticket 0554; the tokens and the app change in that ticket):** neutral steps from near-white to mid-grey, with no tints, since a tinted background shifts how bead colors look and the v18 light set kept white beads at about 1.0:1. Five in each theme.
+**Approved palette (ticket 0554; in the tokens and the app since that ticket, and it wins over what is written above):** neutral steps from near-white to mid-grey, with no tints, since a tinted background shifts how bead colors look and the v18 light set kept white beads at about 1.0:1. Five in each theme.
 - Light: Studio `#fafafa` (default), Linen `#f7f3ec`, **Stone** `#e6e3de` (new), **Fog** `#e3e7ec` (replaces Mist), **Pebble** `#cdcac4` (new). Sage and Blush go.
 - Dark: Night `#202020` (default), Ink `#0e0e0e`, Midnight `#12161c`, Ash `#2c2b29`, **Slate** `#3b3e43` (new, for designs heavy in black). Olive and Umber go.
 - Each background has its own empty-bead and ruler color, rulers at 4.5:1 or more: Studio and Linen `#d8d2cc` / `#6a6a6a`; Stone `#cbc6bf` / `#5c5c5c`; Fog `#c9ced5` / `#5c5c5c`; Pebble `#b3afa8` / `#444444`; Night `#3c3c3c` / `#8c8c8c`; Ink `#2c2c2c` / `#8c8c8c`; Midnight `#262c35` / `#8c8c8c`; Ash `#3d3b38` / `#a0a0a0`; Slate `#50545a` / `#b4b4b4`.
-- The stored choice moves to the new list by name, not position: a dropped choice falls back to the theme's default, Mist becomes Fog, and Ash (dark 6) becomes dark 4. `canvas-bg-6` goes.
+- The stored choice moves to the new list by name, not position: a dropped choice falls back to the theme's default, Mist becomes Fog, and Ash (dark 6) becomes dark 4. `canvas-bg-6` is gone. Pebble's strong ruler (every 5th number) is `#262626`.
 - In Project the swatches are 26px `radius-sm`, 6px apart, ringed `ink` (ProjectPanel card).
 
 Hand-written; static rendition of the open picker.

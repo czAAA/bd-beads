@@ -268,6 +268,7 @@ test.describe('the pointer tools', () => {
     await openBlank(page)
     await page.getByTestId('strip-project').click()
     await settle(page)
+    await page.getByTestId('project-name-edit').click()
     const field = page.getByRole('textbox').first()
     await field.fill('a')
     await field.focus()

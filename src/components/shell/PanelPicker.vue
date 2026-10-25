@@ -3,14 +3,18 @@ import { computed, nextTick, ref, useId } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import AppIcon from '../ui/AppIcon.vue'
+import AppTooltip from '../ui/AppTooltip.vue'
 import type { IconName } from '../ui/icons'
 
 // A preference shown as its current value (MenuPanel card): the label on the row, a small button holding the value, and
-// a menu under it, right-aligned, with a check on the chosen one. It applies at once. Enter, Space or Down opens it on
-// the chosen item, arrows move, Escape closes only the picker. It replaces SettingChoice.
+// a menu under it, right-aligned, with a check on the chosen one. It applies at once; Enter, Space or Down opens it,
+// arrows move, Escape closes only the picker. `bare` drops the visible label so several share a row; `disabled` says why.
 const props = defineProps<{
   label: string
   icon?: IconName
+  bare?: boolean
+  disabled?: boolean
+  disabledBody?: string
   options: readonly { value: T; label: string; icon?: IconName; lang?: string; /** What the button shows when the name is long (a language's code). */ shortLabel?: string }[]
 }>()
 const value = defineModel<T>({ required: true })
@@ -49,11 +53,13 @@ function close(returnFocus = true) {
 useOverlayLayer({ isOpen: () => open.value, root: () => rootEl.value, close: () => close(), onOutsidePress: () => close(false) })
 
 function onButtonClick() {
+  if (props.disabled) return
   if (open.value) close(false)
   else void show()
 }
 
 function onButtonKeydown(event: KeyboardEvent) {
+  if (props.disabled) return
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault()
     void show(event.key === 'ArrowUp' ? 'last' : 'chosen')
@@ -89,24 +95,31 @@ function onListKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div ref="rootEl" class="panel-picker">
-    <span class="panel-picker__label"><AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}</span>
-    <button
-      ref="buttonEl"
-      class="ui-control panel-picker__button"
-      :class="{ 'panel-picker__button--open': open }"
-      type="button"
-      aria-haspopup="menu"
-      :aria-expanded="open"
-      :aria-controls="open ? listId : undefined"
-      :aria-label="`${label}: ${chosen?.label ?? ''}`"
-      @click="onButtonClick"
-      @keydown="onButtonKeydown"
+  <div ref="rootEl" class="panel-picker" :class="{ 'panel-picker--bare': bare }">
+    <span v-if="!bare" class="panel-picker__label"><AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}</span>
+    <component
+      :is="disabled && disabledBody ? AppTooltip : 'span'"
+      v-bind="disabled && disabledBody ? { name: label, disabled: true, disabledBody, announce: false } : {}"
+      class="panel-picker__wrap"
     >
-      <AppIcon v-if="chosen?.icon" :name="chosen.icon" :size="14" />
-      <span :lang="chosen?.lang">{{ shown }}</span>
-      <AppIcon name="chevron-down" :size="12" />
-    </button>
+      <button
+        ref="buttonEl"
+        class="ui-control panel-picker__button"
+        :class="{ 'panel-picker__button--open': open }"
+        type="button"
+        aria-haspopup="menu"
+        :aria-expanded="open"
+        :aria-disabled="disabled || undefined"
+        :aria-controls="open ? listId : undefined"
+        :aria-label="`${label}: ${chosen?.label ?? ''}`"
+        @click="onButtonClick"
+        @keydown="onButtonKeydown"
+      >
+        <AppIcon v-if="chosen?.icon" :name="chosen.icon" :size="14" />
+        <span class="panel-picker__value" :lang="chosen?.lang">{{ shown }}</span>
+        <AppIcon name="chevron-down" :size="12" />
+      </button>
+    </component>
     <div v-if="open" :id="listId" ref="listEl" class="panel-picker__list" :style="anchored.style.value" role="menu" :aria-label="label" @keydown="onListKeydown">
       <button
         v-for="option in options"
@@ -145,6 +158,35 @@ function onListKeydown(event: KeyboardEvent) {
   display: flex;
   align-items: center;
   gap: var(--space-8);
+}
+
+.panel-picker--bare {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.panel-picker__wrap {
+  display: block;
+  min-width: 0;
+}
+
+.panel-picker--bare .panel-picker__wrap,
+.panel-picker--bare .panel-picker__button {
+  justify-content: space-between;
+  width: 100%;
+}
+
+.panel-picker__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.panel-picker__button[aria-disabled='true'] {
+  color: var(--faint);
+  cursor: default;
 }
 
 .panel-picker__button {

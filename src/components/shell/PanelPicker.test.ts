@@ -67,3 +67,21 @@ describe('PanelPicker (ticket 0553)', () => {
     expect(document.activeElement).toBe(button().element)
   })
 })
+
+describe('PanelPicker bare and disabled (ticket 554)', () => {
+  const options = [{ value: 'a', label: 'Alpha' }, { value: 'b', label: 'Beta' }]
+
+  it('drops the visible label but keeps the name', () => {
+    const wrapper = mount(PanelPicker, { props: { label: 'Brand', modelValue: 'a', options, bare: true } })
+    expect(wrapper.find('.panel-picker__label').exists()).toBe(false)
+    expect(wrapper.get('button').attributes('aria-label')).toBe('Brand: Alpha')
+  })
+
+  it('does not open when disabled', async () => {
+    const wrapper = mount(PanelPicker, { props: { label: 'Brand', modelValue: 'a', options, disabled: true } })
+    await wrapper.get('button').trigger('click')
+    await wrapper.get('button').trigger('keydown', { key: 'ArrowDown' })
+    expect(wrapper.get('button').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[role="menu"]').exists()).toBe(false)
+  })
+})
