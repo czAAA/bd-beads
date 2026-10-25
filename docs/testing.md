@@ -44,7 +44,8 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 
 ## Shared test helpers (`src/testUtils/`)
 
-- `chooseLanguage.ts`: `chooseLanguage(wrapper, 'ru')` opens the language switcher's list and picks that language (ticket 368).
+- `chooseLanguage.ts`: `chooseLanguage(wrapper, 'ru')` opens the Language picker's menu and picks that language (ticket 368).
+- `choosePanelOption.ts`: `choosePanelOption(wrapper, testid, value)` picks a value in a Menu PanelPicker; `panelOptionShown` reads the value it shows (ticket 0553).
 - `seedProject.ts`: `seedProject` saves a Project, `mountWithProject` mounts the App on it (no form driving), `createProjectViaForm` for the one test that is about the form.
 - `editHarness.ts`: a real Edit and Undo history over one in-memory Project, for flow tests (ADR 0036).
 - `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).

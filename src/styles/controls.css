@@ -1,7 +1,7 @@
 /* Sizes the component cards give that tokens.json has no token for (ticket 157), in rem; take them from here, not
    a number in a component. */
 :root {
-  /* Button card: 34 default, 38 in the save box and Edit row, 32 in the Saved Projects footer */
+  /* Button card: 34 default, 38 in the save box and Edit row, 32 in a panel footer */
   --control-height: 2.125rem;
   --control-height-lg: 2.375rem;
   --control-height-sm: 2rem;
@@ -43,24 +43,24 @@
   /* SaveBox card: the Export prompt popover, 288px wide with a 10px radius */
   --popover-width: 18rem;
   --popover-radius: 0.625rem;
-  /* BeadsNeeded and SavedProjects cards: an expandable panel's header, a Beads needed row (three fill the collapsed
-     body), the Saved Projects collapsed body, and a color's 12px dot */
+  /* BeadsNeeded card: an expandable panel's header, a Beads needed row (three fill the collapsed
+     body), and a color's 12px dot */
   --panel-head-height: 1.75rem;
   --panel-row-height: 2rem;
   --panel-body-height: 6rem;
-  --saved-body-height: 6.5rem;
-  /* The 24" and larger tier (ticket 83): five Beads needed rows, and two rows of Saved Projects thumbnails */
+  /* The 24" and larger tier (ticket 83): five Beads needed rows */
   --panel-body-height-desktop: 10rem;
-  --saved-body-height-desktop: 12.5rem;
   --swatch-dot: 0.875rem;
   --swatch-dot-radius: 3px;
   --grams-width: 3.5rem;
   /* A tooltip that holds a sentence or two (the estimated weight) wraps at this width */
   --tooltip-wide: 16rem;
-  /* SavedProjects card: the 44px circle, the 36px thumbnail in it, the widest a name gets, and the 20px Remove × */
-  --thumbnail-circle: 2.75rem;
+  /* A project's thumbnail, and the 20px Remove × beside it in the Projects library */
   --thumbnail-size: 2.25rem;
-  --thumbnail-name-width: 3.625rem;
+  /* MenuPanel card: the Projects library row's 28px thumbnail and 14px frame slot, and a PanelPicker's menu width */
+  --panel-thumbnail-size: 1.75rem;
+  --panel-mark-size: 0.875rem;
+  --picker-menu-width: 11.5rem;
   --thumbnail-remove: 1.25rem;
   /* SegmentedControl card: a small option; Stepper card: the value's width and its 15px figures */
   --control-height-small: 1.75rem;

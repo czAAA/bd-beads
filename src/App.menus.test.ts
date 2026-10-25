@@ -5,7 +5,8 @@ import App from './App.vue'
 import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
-import { openPanel } from './testUtils/pill'
+import { choosePanelOption } from './testUtils/choosePanelOption'
+import { openPanel, openSavedProjects } from './testUtils/pill'
 
 /** Menu and Project (spec 0440, ticket 443): one happy path per flow; both open as a dropdown on every screen size. */
 
@@ -36,7 +37,7 @@ describe('Menu and Project open as a dropdown on every screen size', () => {
 
     expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('menu')
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="theme-toggle"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBe('true')
 
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
@@ -65,22 +66,21 @@ describe('Menu and Project open as a dropdown on every screen size', () => {
     const wrapper = mountApp()
     for (const panel of ['strip-menu', 'strip-project'] as const) {
       await openPanel(wrapper, panel)
-      for (const row of wrapper.findAll('[data-testid="panel-body"] :is([class*="panel-item"], [class*="setting"], [class*="menu-panel__"], [class*="name-row"], [class*="save-export"]):not(svg)')) expect(row.attributes('style') ?? '').not.toMatch(/(^|;|\s)height:/)
+      for (const row of wrapper.findAll('[data-testid="panel-body"] :is([class*="panel-item"], [class*="panel-picker"], [class*="menu-panel__"], [class*="name-row"], [class*="save-export"]):not(svg)')) expect(row.attributes('style') ?? '').not.toMatch(/(^|;|\s)height:/)
     }
   })
 })
 
 describe('Menu', () => {
-  it('holds Projects, Preferences, Help and About in that order, with Delete all Projects last in Projects', async () => {
+  it('holds Projects, Preferences, Help and About in that order, with the Projects library last in Projects', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-menu')
 
     const sections = wrapper.findAll('[data-testid="menu-panel"] [role="group"]').filter((group) => group.find('h3').exists())
     expect(sections.map((section) => section.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
-    const projects = sections[0]!.findAll('button, a, label').map((item) => item.text()).filter(Boolean)
+    const projects = sections[0]!.findAll('.panel-item').map((item) => item.text())
     expect(projects[0]).toBe(en.projects.newProjectButton)
-    expect(projects.at(-1)).toBe(en.panels.menu.deleteAll)
-    expect(text(wrapper, 'menu-export-all')).toContain('.openbeads')
+    expect(projects.at(-1)).toContain(en.projects.heading)
     expect(text(wrapper, 'menu-saved-projects')).toContain('1')
   })
 
@@ -88,7 +88,7 @@ describe('Menu', () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-menu')
 
-    await wrapper.get('[data-testid="menu-tools-position"] [data-value="top"]').trigger('click')
+    await choosePanelOption(wrapper, 'menu-tools-position', 'top')
 
     expect(localStorage.getItem('openbeads:tool-pill-position')).toBe('top')
   })
@@ -106,14 +106,14 @@ describe('Menu', () => {
     await openPanel(wrapper, 'strip-menu')
 
     expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
-    await wrapper.get('[data-testid="menu-input-mode"] [data-value="mouse"]').trigger('click')
+    await choosePanelOption(wrapper, 'menu-input-mode', 'mouse')
     expect(localStorage.getItem('openbeads:input-mode')).toBe('mouse')
   })
 
   it('deletes every Project after a confirmation, and lands on the empty state; Cancel keeps them', async () => {
     saveProjects([moth(), { ...moth(), id: 'other', name: 'Other' }])
     const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
+    await openSavedProjects(wrapper)
     expect(text(wrapper, 'menu-delete-all')).toBe(en.panels.menu.deleteAll)
 
     await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
@@ -123,7 +123,7 @@ describe('Menu', () => {
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
     expect(loadProjects()).toHaveLength(2)
 
-    await openPanel(wrapper, 'strip-menu')
+    await openSavedProjects(wrapper)
     await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
     await flushPromises()
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
@@ -223,7 +223,7 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    expect(wrapper.find('[data-testid="menu-import"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="menu-saved-projects"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')

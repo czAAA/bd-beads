@@ -23,6 +23,8 @@ const props = defineProps<{
   width?: string
   /** The first subpanel's title; a panel with a `sub` slot gives one. */
   subTitle?: string
+  /** A figure at the right of the subpanel's header (the library's count). */
+  subMeta?: string
   /** Opens already on the subpanel; Escape then closes the panel instead of going back. */
   startInSub?: boolean
 }>()
@@ -170,6 +172,7 @@ onBeforeUnmount(() => {
     <header v-if="inSub" class="app-panel__header">
       <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" @click="goBack" />
       <h2 :id="titleId" class="app-panel__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
+      <span v-if="subMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ subMeta }}</span>
     </header>
     <h2 v-else :id="titleId" class="app-panel__title">{{ title }}</h2>
     <div ref="subBodyEl" class="app-panel__body" data-testid="panel-body">
@@ -184,7 +187,7 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .app-panel {
-  --panel-item-height: var(--item-height);
+  --panel-item-height: var(--panel-row);
   position: fixed;
   box-sizing: border-box;
   display: flex;
@@ -229,6 +232,13 @@ onBeforeUnmount(() => {
   color: var(--ink);
 }
 
+.app-panel__meta {
+  margin-left: auto;
+  padding-right: var(--space-6);
+  font: var(--type-meta);
+  color: var(--muted);
+}
+
 .app-panel__footer:empty {
   display: none;
 }
@@ -265,7 +275,7 @@ onBeforeUnmount(() => {
 
 @media (pointer: coarse) {
   .app-panel {
-    --panel-item-height: 2.75rem;
+    --panel-item-height: var(--panel-row-touch);
   }
 }
 

@@ -18,10 +18,13 @@ const props = withDefaults(
     /** A second, simultaneously-mounted instance (the Menu's, alongside the empty canvas's) needs its own
      * testids. */
     testidPrefix?: string
+    /** Shown at the right of the button (the file type, in a panel's row). */
+    value?: string
   }>(),
   {
     compact: false,
     testidPrefix: '',
+    value: undefined,
   },
 )
 
@@ -93,7 +96,8 @@ async function onImportFile(event: Event): Promise<void> {
         @change="onImportFile"
       />
       <AppIcon name="import" :size="15" />
-      <span>{{ t.transfer.importLabel }}</span>
+      <span class="project-import__label">{{ t.transfer.importLabel }}</span>
+      <span v-if="value" class="project-import__value">{{ value }}</span>
     </label>
   </AppTooltip>
 
@@ -149,6 +153,18 @@ async function onImportFile(event: Event): Promise<void> {
 .project-import__button:active {
   background: var(--press-fill);
   transform: scale(var(--press-scale));
+}
+
+.project-import__label {
+  flex: 1 1 auto;
+  text-align: left;
+}
+
+.project-import__value {
+  flex: none;
+  margin-left: auto;
+  font: var(--type-meta);
+  color: var(--muted);
 }
 
 /* Visually hidden, not display: none, so it stays focusable and reachable by keyboard and screen reader. */

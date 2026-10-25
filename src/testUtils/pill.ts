@@ -118,7 +118,7 @@ export async function chooseAppLanguage(wrapper: Wrapper, locale: Locale): Promi
   await chooseLanguage(wrapper, locale)
 }
 
-/** Opens Saved Projects, the sheet Menu's item raises, unless it is already up. */
+/** Opens the Projects library, the subpanel Menu's item raises, unless it is already up. */
 export async function openSavedProjects(wrapper: Wrapper): Promise<void> {
   if (wrapper.find('[data-testid="project-list"]').exists()) {
     return

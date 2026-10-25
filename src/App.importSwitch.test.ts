@@ -10,7 +10,7 @@ import { loadProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites } from './testUtils/storageWrites'
-import { openPanel, pickColor } from './testUtils/pill'
+import { openPanel, openSavedProjects, pickColor } from './testUtils/pill'
 
 beforeEach(() => {
   localStorage.clear()
@@ -25,10 +25,10 @@ function makeProject(name: string): Project {
   return createProject({ name, technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 15, height: 15, unit: 'mm' } })
 }
 
-/** Picks a file for the import control: the project bar's with no Project open, Menu's otherwise. */
+/** Picks a file for the import control: the project bar's with no Project open, the Menu's Projects library otherwise. */
 async function pick(wrapper: Wrapper, contents: string) {
   if (!wrapper.find('[data-testid="phone-bar-import-file"]').exists()) {
-    await openPanel(wrapper, 'strip-menu')
+    await openSavedProjects(wrapper)
   }
   const input = wrapper.find<HTMLInputElement>('[data-testid="phone-bar-import-file"], [data-testid="menu-import-file"]')
   Object.defineProperty(input.element, 'files', {
