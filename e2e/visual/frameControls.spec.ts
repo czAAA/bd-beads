@@ -30,10 +30,10 @@ for (const zoom of [10, 100, 400]) {
 
     expect([handle.width, handle.height]).toEqual([56, 44])
     expect([pencil.width, pencil.height]).toEqual([32, 32])
-    expect(bar.width).toBeLessThanOrEqual(504)
+    expect(bar.width).toBeLessThanOrEqual(340)
     for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
       const step = await box(page, testid)
-      expect([step.width, step.height]).toEqual([48, 48])
+      expect([step.width, step.height]).toEqual([26, 24])
     }
     expect(overlaps(handle, pencil)).toBe(false)
     await context.close()
