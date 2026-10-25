@@ -65,11 +65,13 @@ const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 const onOverview = computed(() => props.page === 'overview')
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 
-// One Tab stop per section (ADR 0075): the panels, the Brand (a single link) and the right-hand tools. ←/→ step inside
+// One Tab stop per section (ADR 0075): the panels, the Brand with the coffee link and the right-hand tools. ←/→ step inside
 // a section and stop at its ends; ↓ on a panel button opens its panel, like Enter.
 const panelsEl = ref<HTMLElement>()
+const centerEl = ref<HTMLElement>()
 const controlsEl = ref<HTMLElement>()
 const panelsRoving = useRovingFocus(panelsEl, { axis: () => 'horizontal', managesTabIndex: true })
+const centerRoving = useRovingFocus(centerEl, { selector: 'a[href]', axis: () => 'horizontal', managesTabIndex: true })
 const controlsRoving = useRovingFocus(controlsEl, { selector: 'button, a[href]', axis: () => 'horizontal', managesTabIndex: true })
 
 function onPanelsKeydown(event: KeyboardEvent) {
@@ -119,21 +121,23 @@ function onPanelsKeydown(event: KeyboardEvent) {
       </AppButton>
     </div>
     <!-- The Brand (tickets 540, 543): the strip's middle slot; the editor's opens the Overview, the Overview's is the page itself. -->
-    <component
-      :is="onOverview ? 'span' : 'a'"
-      class="canvas-strip__brand"
-      :href="onOverview ? undefined : overviewHref"
-      :aria-current="onOverview ? 'page' : undefined"
-      data-testid="canvas-brand"
-    >
-      <AppLogo class="canvas-strip__mark" :size="22" />
-      <span class="canvas-strip__wordmark">{{ t.app.title }}</span>
-    </component>
-    <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="controlsRoving.onKeydown" @focusin="controlsRoving.onFocusin">
-      <!-- Buy me a coffee (ticket 560): only where the strip has room (1024px and up); under it the Menu row is the way in. -->
+    <div ref="centerEl" class="canvas-strip__center" @keydown="centerRoving.onKeydown" @focusin="centerRoving.onFocusin">
+      <component
+        :is="onOverview ? 'span' : 'a'"
+        class="canvas-strip__brand"
+        :href="onOverview ? undefined : overviewHref"
+        :aria-current="onOverview ? 'page' : undefined"
+        data-testid="canvas-brand"
+      >
+        <AppLogo class="canvas-strip__mark" :size="22" />
+        <span class="canvas-strip__wordmark">{{ t.app.title }}</span>
+      </component>
+      <!-- Buy me a coffee (ticket 560): after the wordmark; only where the strip has room (1024px and up), under it the Menu row is the way in. -->
       <span v-if="COFFEE_URL" class="canvas-strip__coffee">
         <IconButton variant="plain" :icon-size="18" :action="actions.coffee" :href="COFFEE_URL" data-testid="strip-coffee" />
       </span>
+    </div>
+    <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="controlsRoving.onKeydown" @focusin="controlsRoving.onFocusin">
       <div v-if="project" class="canvas-strip__tools">
         <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
@@ -226,6 +230,12 @@ function onPanelsKeydown(event: KeyboardEvent) {
   gap: var(--space-2);
 }
 
+.canvas-strip__center {
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+}
+
 .canvas-strip__brand {
   display: flex;
   align-items: center;
@@ -262,7 +272,7 @@ a.canvas-strip__brand:focus-visible {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .canvas-strip:not(.canvas-strip--overview) .canvas-strip__brand {
+  .canvas-strip:not(.canvas-strip--overview) .canvas-strip__center {
     display: none;
   }
 }
