@@ -151,20 +151,6 @@ describe('useCanvasView', () => {
     expect(view.zoom.value).toBe(1)
   })
 
-  it('scrolls only as far as it takes to bring a bead into view', () => {
-    const { view } = setup(projectOf(20, 10))
-    view.fit()
-    const before = { ...view.scroll.value }
-
-    view.reveal({ row: 5, column: 5 })
-    expect(view.scroll.value).toEqual(before)
-
-    view.reveal({ row: 5, column: 100 })
-    // Bead 100 spans x 2000 to 2020; with 24px clear it ends at the viewport's right edge.
-    expect(view.scroll.value.x).toBe(2020 + 24 - 1000)
-    expect(view.scroll.value.y).toBe(before.y)
-  })
-
   it('centres on a block of beads without changing the zoom', () => {
     const { view } = setup(projectOf(20, 10))
     view.fit()

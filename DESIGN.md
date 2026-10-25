@@ -59,7 +59,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Tiers (phone, iPad 13″, MacBook Air, 24″+), fitting longer text, input, screen edges | [`responsive.md`](docs/design/system/responsive.md) |
 | Form controls, empty, loading, errors and results | [`forms-and-states.md`](docs/design/system/forms-and-states.md) |
 | Hover, pressed, focus, disabled states; motion tokens | [`interaction-and-motion.md`](docs/design/system/interaction-and-motion.md) |
-| Contrast, high contrast, never color alone, text and zoom, keyboard, painting with the keyboard, screen readers, stacking order | [`accessibility.md`](docs/design/system/accessibility.md) |
+| Contrast, high contrast, never color alone, text and zoom, keyboard, beads and the keyboard, screen readers, stacking order | [`accessibility.md`](docs/design/system/accessibility.md) |
 | PDF and PNG exports: page 1, chart pages, beads and grams, the maker's name, wide and long Patterns | [`printed-output.md`](docs/design/system/printed-output.md) |
 | Voice, sentence patterns, plurals, glossary, color names, numbers and units, strings to fix, Russian | [`writing.md`](docs/design/system/writing.md) |
 | One card per component (68, plus the `Cover`): a short written guideline | [`components/<Name>/`](docs/design/system/components) |
@@ -105,7 +105,7 @@ Tickets written before the v13 rewrite cite `DESIGN.md §N`. They now resolve he
 | §6.1 | Icons | README, Iconography; `assets/Icons/` |
 | §6.2 | Logo | README, Logo; `assets/Logos/` |
 | §6.3 | Favicon | README, Favicon; `favicon/` |
-| §7 | Bead drawing | `BeadBoard`, `BeadHover`, `BeadCursor` cards; §4.2 below |
+| §7 | Bead drawing | `BeadBoard`, `BeadHover` cards; §4.2 below |
 | §8 | Copy | `writing.md` |
 | §9 | What changes | §5 below |
 | §10 | Design system files | §3 and §6 below |

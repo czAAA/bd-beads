@@ -60,13 +60,7 @@ export const zh: Translations = {
     estimateUnits: '≈ {columns}×{rows} 单元',
   },
   a11y: {
-    skipToProject: '跳到项目',
     toolsLandmark: '工具',
-    cursorPosition: '第 {row} 行，第 {column} 列，{color}',
-    painted: '已涂 {color}',
-    filled: '已填充 {color}',
-    erased: '已擦除',
-    emptyBead: '空',
     projectLabel: '{name}，{columns} 列 {rows} 行珠子，{colors}',
     canvasLabel: '{name}，无边框的画布，{colors}',
     colorsCount: { other: '{count} 种颜色' },

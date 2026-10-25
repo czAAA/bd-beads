@@ -80,9 +80,6 @@ export interface ProjectTheme {
   /** A bead in a finished row: its own color at `opacity` over the board in every theme (ticket 352), never grey;
    * `grey` is the greyscale option. */
   finished: { grey: boolean; opacity: number }
-  /** The keyboard's bead cursor ring (`focus-ring`) and its width: 2px, 3px in high contrast (BeadCursor card). */
-  cursor: string
-  cursorWidth: number
 }
 
 /** How much of a finished bead's own color shows over the board while finished rows are dimmed (ticket 352). */
@@ -103,8 +100,6 @@ export const LIGHT_THEME: ProjectTheme = {
   marker: '#1d4ed8',
   outline: '#1f1f1f',
   finished: { grey: false, opacity: FINISHED_OPACITY },
-  cursor: '#c23604',
-  cursorWidth: 2,
 }
 
 /** The dark theme: a white rim, so two beads of one color stay apart. */
@@ -122,8 +117,6 @@ export const DARK_THEME: ProjectTheme = {
   marker: '#faff69',
   outline: '#ffffff',
   finished: { grey: false, opacity: FINISHED_OPACITY },
-  cursor: '#faff69',
-  cursorWidth: 2,
 }
 
 /** High contrast: light-based, with a stronger rim and black marks. Bead colors never change. */
@@ -141,8 +134,6 @@ const CONTRAST_THEME: ProjectTheme = {
   marker: '#000000',
   outline: '#000000',
   finished: { grey: false, opacity: FINISHED_OPACITY },
-  cursor: '#000000',
-  cursorWidth: 3,
 }
 
 /** PNG and PDF exports and the Convert image preview: always light, whatever the app's theme, on the `print-board`. */

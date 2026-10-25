@@ -60,13 +60,7 @@ export const ru: Translations = {
     estimateUnits: '≈ {columns}×{rows} юнитов',
   },
   a11y: {
-    skipToProject: 'Перейти к проекту',
     toolsLandmark: 'Инструменты',
-    cursorPosition: 'Ряд {row}, столбец {column}, {color}',
-    painted: 'Закрашено: {color}',
-    filled: 'Залито: {color}',
-    erased: 'Стёрто',
-    emptyBead: 'пусто',
     projectLabel: '{name}, {columns} на {rows} бисерин, {colors}',
     canvasLabel: '{name}, свободное полотно без рамки, {colors}',
     colorsCount: { one: '{count} цвет', few: '{count} цвета', many: '{count} цветов', other: '{count} цвета' },

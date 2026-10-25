@@ -10,7 +10,7 @@ const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/sys
 const token = (name: string, theme: Theme) => tokens.color.tokens.find((entry) => entry.name === name)!.value[theme]
 
 /** DESIGN.md §4.2: which token each ProjectTheme field copies. */
-const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finished' | 'cursorWidth'>, string> = {
+const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finished'>, string> = {
   background: 'board',
   canvas: 'box',
   positionMark: 'position-mark',
@@ -21,7 +21,6 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finishe
   emptyBead: 'bead-empty',
   marker: 'marker',
   outline: 'bead-outline',
-  cursor: 'focus-ring',
 }
 
 describe('ProjectTheme', () => {

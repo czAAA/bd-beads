@@ -1,5 +1,4 @@
 import { frameContains, type Frame } from '../domain/canvas'
-import type { GridPosition } from '../domain/grid'
 import { lineOfPass } from '../domain/weave'
 import { namedPieces } from '../domain/pieceNames'
 import { frameWeave, rowProgressOn } from '../domain/project'
@@ -19,8 +18,6 @@ const PIECE_RADIUS_PX = 6
 const FRAME_RADIUS_PX = 7
 const PIECE_LINE_PX = 1
 const FRAME_LINE_PX = 1.5
-/** The line under the number the keyboard cursor is on (BeadCursor card). */
-const CURSOR_LINE_PX = 2
 
 export interface RulerDrawInput {
   project: DrawnProject
@@ -30,8 +27,6 @@ export interface RulerDrawInput {
   layout: RulerLayout
   pixelRatio: number
   theme: ProjectTheme
-  /** The keyboard's bead cursor: its row and column numbers are marked. */
-  cursor?: GridPosition
   /** Whether the current row's number is bold. Defaults to `rowProgressOn(project)` (ticket 434). */
   rowMarks?: boolean
 }
@@ -58,17 +53,16 @@ function drawDot(context: DrawingContext, dot: RulerDot, scale: RulerScale, them
 }
 
 /** One ruler number, in the style its role asks for (Rulers card). */
-function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, project: DrawnProject, theme: ProjectTheme, cursor: GridPosition | undefined, rowMarks: boolean): void {
+function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, project: DrawnProject, theme: ProjectTheme, rowMarks: boolean): void {
   const { direction, currentRow, currentColumn } = project.rowProgress
   const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
   const currentLine = lineOfPass(frameWeave(project), direction === 'rows' ? currentRow : currentColumn, direction)
   const current = rowMarks && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
-  const onCursor = cursor !== undefined && (label.axis === 'row' ? cursor.row === label.position : cursor.column === label.position)
 
-  const weight = current || onCursor || label.fifth ? 700 : 400
+  const weight = current || label.fifth ? 700 : 400
   context.font = `${weight} ${fontPx}px ${MONO_FONT}`
-  context.fillStyle = current ? theme.marker : onCursor ? theme.frameLine : label.fifth ? theme.rulerStrong : theme.ruler
+  context.fillStyle = current ? theme.marker : label.fifth ? theme.rulerStrong : theme.ruler
   context.textAlign = 'center'
   context.textBaseline = 'middle'
 
@@ -81,16 +75,11 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   } else {
     context.fillText(label.text, label.x, label.y)
   }
-
-  if (onCursor) {
-    context.fillStyle = theme.cursor
-    context.fillRect(label.x - label.width / 2, label.y + label.height / 2 + 1, label.width, CURSOR_LINE_PX)
-  }
 }
 
 /** Draws the lines and the Ruler layout's numbers and dots, in the viewport's own px over whatever is drawn. */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
-  const { project, surface, layout, pixelRatio, theme, cursor, rowMarks = rowProgressOn(project) } = input
+  const { project, surface, layout, pixelRatio, theme, rowMarks = rowProgressOn(project) } = input
   const { fontPx } = layout.scale
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
@@ -104,7 +93,7 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
     drawDot(context, dot, layout.scale, theme)
   }
   for (const label of layout.labels) {
-    drawLabel(context, label, fontPx, project, theme, cursor, rowMarks)
+    drawLabel(context, label, fontPx, project, theme, rowMarks)
   }
   drawPieceNames(context, input)
 }

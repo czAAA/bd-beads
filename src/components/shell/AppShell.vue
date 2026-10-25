@@ -8,11 +8,8 @@ import { useAppShell } from '../../composables/shell/useAppShell'
 
 const {
   t,
-  activeProject,
   saveFailed,
   announcement,
-  framing,
-  focusProject,
   endStroke,
   onExportProjectFile,
 } = useAppShell()
@@ -20,11 +17,7 @@ const {
 
 <template>
   <div class="app-shell" @mouseup="endStroke" @pointerup="endStroke" @pointercancel="endStroke">
-    <!-- Skip to Project (ticket 159): the first Tab stop, visible only while focused. -->
-    <a v-if="activeProject && !framing" class="app-shell__skip" href="#project" data-testid="skip-to-project" @click.prevent="focusProject">
-      {{ t.a11y.skipToProject }}
-    </a>
-    <!-- One polite announcement per action (ticket 159): the bead cursor's place, what the key just did. -->
+    <!-- One polite announcement per action (ticket 159): what a Frame move or a rotation just did. -->
     <p class="app-shell__announcer" role="status" aria-live="polite" data-testid="announcer">{{ announcement }}</p>
 
     <!--
@@ -73,26 +66,6 @@ const {
   overflow: hidden;
   overflow: clip;
   background: var(--canvas);
-}
-
-.app-shell__skip {
-  position: absolute;
-  top: var(--space-8);
-  left: var(--space-8);
-  z-index: var(--z-tooltip);
-  padding: var(--space-8) var(--space-12);
-  font: var(--type-control);
-  color: var(--ink);
-  background: var(--canvas);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
-  transform: translateY(-200%);
-}
-
-.app-shell__skip:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
-  transform: none;
 }
 
 /* Heard, not seen. */
