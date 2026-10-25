@@ -1,5 +1,5 @@
 import { computed, onBeforeUnmount, onMounted } from 'vue'
-import { DEFAULT_INPUT_MODE, type WritingHand, type InputMode } from '../../domain/inputMode'
+import { DEFAULT_INPUT_MODE, type Handedness, type InputMode } from '../../domain/inputMode'
 import type { DevicePreferences } from '../../services/devicePreferences'
 
 // The input mode (tickets 325, 326, 443): which pointer draws and which moves the canvas. A browser can't tell a pen
@@ -8,7 +8,7 @@ import type { DevicePreferences } from '../../services/devicePreferences'
 export function usePenInputMode(preferences: DevicePreferences) {
   const chosen = preferences.get('inputMode')
   const penSeen = preferences.get('penSeen')
-  const writingHand = preferences.get('writingHand')
+  const handedness = preferences.get('handedness')
 
   const inputMode = computed<InputMode>(() => chosen.value ?? (penSeen.value ? 'pen' : DEFAULT_INPUT_MODE))
   /** The Menu's Input row picks one of the two; the choice is kept on the device. */
@@ -16,8 +16,8 @@ export function usePenInputMode(preferences: DevicePreferences) {
   /** Until a pen is seen every pointer draws, so the stroke that reveals the toggle still draws. */
   const surfaceInputMode = computed(() => (penSeen.value ? inputMode.value : undefined))
 
-  /** The Menu's Writing hand row picks one of the two; the choice is kept on the device. */
-  const setWritingHand = (hand: WritingHand) => void (writingHand.value = hand)
+  /** The Menu's Hand row picks one of the two; the choice is kept on the device. */
+  const setHandedness = (hand: Handedness) => void (handedness.value = hand)
 
   function onPointer(event: PointerEvent): void {
     if (event.pointerType === 'pen' && !penSeen.value) penSeen.value = true
@@ -31,5 +31,5 @@ export function usePenInputMode(preferences: DevicePreferences) {
     window.removeEventListener('pointermove', onPointer, true)
   })
 
-  return { inputMode, inputModeAvailable: penSeen, setInputMode, surfaceInputMode, writingHand, setWritingHand }
+  return { inputMode, inputModeAvailable: penSeen, setInputMode, surfaceInputMode, handedness, setHandedness }
 }

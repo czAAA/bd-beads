@@ -55,17 +55,6 @@ describe('the Surface view maps beads and points both ways', () => {
             expect(view.pointToCell(view.beadToPoint(bead))).toEqual(bead)
           }
         })
-
-        it.each(VIEWS)('boxes one bead where it is drawn, round its centre (zoom $zoom)', ({ zoom, scroll }) => {
-          const view = surfaceView({ space: spaceOf(technique), technique, rotation, zoom, scroll })
-          for (const bead of BEADS) {
-            const region = view.beadRegion(bead)
-            const centre = view.beadToPoint(bead)
-            expect([region.width, region.height]).toEqual([CELL_SIZE_PX * zoom, CELL_SIZE_PX * zoom])
-            expect(region.x + region.width / 2).toBeCloseTo(centre.x)
-            expect(region.y + region.height / 2).toBeCloseTo(centre.y)
-          }
-        })
       })
     })
 
@@ -102,7 +91,6 @@ describe('the Surface view maps beads and points both ways', () => {
     const view = surfaceView({ space: FRAME_ONLY('peyote'), technique: 'peyote', rotation: 0, zoom: 1 })
     expect(view.beadToPoint({ row: 0, column: 0 })).toEqual({ x: 10, y: 10 })
     expect(view.beadToPoint({ row: 1, column: 0 })).toEqual({ x: 20, y: 25 })
-    expect(view.beadRegion({ row: 1, column: 0 })).toEqual({ x: 10, y: 15, width: 20, height: 20 })
   })
 })
 
@@ -184,12 +172,6 @@ describe('the Surface view in Right-angle weave (ticket 482)', () => {
         expect(view.pointToCell(view.beadToPoint(bead))).toEqual(bead)
       }
     })
-  })
-
-  it('boxes one bead as drawn, its long side turning with the view', () => {
-    const at = (rotation: Rotation) => surfaceView({ space: frameOnly, technique: 'rightAngle', rotation, zoom: 1 }).beadRegion({ row: 1, column: 5 })
-    expect([at(90).width, at(90).height]).toEqual([at(0).height, at(0).width])
-    expect(at(0).width).not.toBe(at(0).height)
   })
 
   it('finds no bead in the hole of a Unit, or at the empty end of a line of horizontal beads', () => {

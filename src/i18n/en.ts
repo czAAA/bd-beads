@@ -115,7 +115,7 @@ export const en: Translations = {
       input: 'Input',
       pen: 'Pen',
       mouse: 'Mouse',
-      writingHand: 'Writing hand',
+      hand: 'Hand',
       right: 'Right',
       left: 'Left',
       help: 'Help',

@@ -116,7 +116,7 @@ export const uk: Translations = {
       input: 'Введення',
       pen: 'Перо',
       mouse: 'Миша',
-      writingHand: 'Робоча рука',
+      hand: 'Рука',
       right: 'Права',
       left: 'Ліва',
       help: 'Довідка',
