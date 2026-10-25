@@ -3,7 +3,6 @@ import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
 import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
-import BeadQuantities from './palette/BeadQuantities.vue'
 import BeadColorList from './palette/BeadColorList.vue'
 import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import TemplateGallery from './project/TemplateGallery.vue'
@@ -75,18 +74,10 @@ function beadColors(state: 'ready' | 'failed') {
 
 const framed = { ...empty, frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } }
 
-const expand = (root: HTMLElement): void => {
-  const button = root.querySelector<HTMLElement>('[data-testid="panel-expand"]')
-  if (!button) throw new Error('the panel has no expand button')
-  button.click()
-}
-
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
-  ['BeadQuantities painted', BeadQuantities, { project: painted }],
-  ['BeadQuantities expanded', BeadQuantities, { project: painted }, expand],
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, { ...empty, id: 'b', name: 'Fox' }, { ...empty, id: 'c', name: 'Owl' }, { ...empty, id: 'd', name: 'Hare' }], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],

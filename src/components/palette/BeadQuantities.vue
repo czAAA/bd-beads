@@ -5,15 +5,15 @@ import { listedColorName } from '../../i18n/colorName'
 import { gramsPerBead } from '../../domain/beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { resolveProjectBead, type Project } from '../../domain/project'
-import { decimalSign, groupThousands } from '../../domain/formatNumber'
+import { groupThousands } from '../../domain/formatNumber'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
-import ExpandablePanel from '../ui/ExpandablePanel.vue'
-import { useMediaQuery } from '../../composables/ui/useMediaQuery'
+import AppIcon from '../ui/AppIcon.vue'
+import PanelSection from '../shell/PanelSection.vue'
 
-// Beads needed (tickets 146, 178; BeadsNeeded card): an expandable panel titled "Beads needed · 1 200 ×0.0108g≈13 g"
-// (weight omitted when the Bead has none). Collapsed it shows the three most-needed colors, expanded every color;
-// a Note (ticket 328) says where the weight comes from. The rows stay a table, headings for screen readers only.
+// Beads needed (tickets 146, 178, 555; BeadsNeeded card): the Frame panel's last section, with the total and the weight
+// ("1 512 · ≈ 7.6 g", none when the Bead has none) in its header. Five colors show, then "Show all {n} colors" opens the
+// rest in place; a Note (ticket 328) says where the weight comes from. The rows stay a table, headings for screen readers only.
 const props = defineProps<{
   /** The Project whose bead counts are shown; without one the box just asks for a Project to be opened. */
   project?: Project
@@ -27,14 +27,8 @@ const { t, locale } = useI18n()
 const palette = computed(() => (props.project ? projectPalette(props.project) : createPalette(defaultPaletteIds())))
 const quantities = computed(() => (props.project ? computeColorQuantities(toRaw(props.project), palette.value) : []))
 
-/** The 24" and larger tier (ticket 83; responsive.md, bp-desktop): the column has room for five rows before
- * expanding. */
-const isDesktop = useMediaQuery('(min-width: 1920px)')
-
-/** How many rows the collapsed summary holds (BeadsNeeded card: 3 rows of 32px, a 96px body; 5 rows, 160px, at the
- * 24" tier). */
-const summaryRows = computed(() => (isDesktop.value ? 5 : 3))
-const collapsedHeight = computed(() => (isDesktop.value ? 'var(--panel-body-height-desktop)' : 'var(--panel-body-height)'))
+/** How many colors show before "Show all". */
+const SUMMARY_ROWS = 5
 
 /** Estimated weight (ticket 155, CONTEXT.md): count × average bead weight, never stored; no weight column if the
  * Bead has none. */
@@ -46,93 +40,75 @@ function weightOf(count: number): string | undefined {
   return grams === undefined ? undefined : formatGrams(grams, t.value.quantities.gramsUnit, locale.value)
 }
 
-// The Bead's average weight of one bead (ticket 178's header), in the language's decimal sign. Shown at full precision,
-// not rounded like formatGrams's total: the catalog's weights sit close together (0.0108g, 0.0091g), so rounding would
-// collapse them and break the header's count × average = total arithmetic.
-const avgWeightLabel = computed(() => {
-  const grams = averageGrams.value
-  return grams === undefined ? undefined : `${String(grams).replace('.', decimalSign(locale.value))}${t.value.quantities.gramsUnit}`
-})
-
 const totalCount = computed(() => quantities.value.reduce((sum, quantity) => sum + quantity.count, 0))
+
+/** The maker's catalog code of the color, when it was picked from the Color catalog (ticket 538). */
+const codeOf = (colorId: string | null): string | undefined => palette.value.byId(colorId)?.code
 
 function nameOf(colorId: string | null, hex: string): string {
   return listedColorName(t.value, palette.value.byId(colorId), hex)
 }
 
 const expanded = ref(false)
+const shown = computed(() => (expanded.value ? quantities.value : quantities.value.slice(0, SUMMARY_ROWS)))
+const total = computed(() => {
+  const grams = weightOf(totalCount.value)
+  return `${groupThousands(totalCount.value, locale.value)}${grams ? ` · ≈ ${grams}` : ''}`
+})
 </script>
 
 <template>
-  <ExpandablePanel
-    v-model:expanded="expanded"
-    class="bead-quantities"
-    :title="t.quantities.heading"
-    :expandable="quantities.length > summaryRows"
-    :collapsed-height="collapsedHeight"
-    :empty="quantities.length === 0"
-    data-testid="bead-quantities"
-  >
-    <template v-if="quantities.length > 0" #suffix>
-      <span class="bead-quantities__part"
-        >· <span data-testid="quantity-total-count">{{ groupThousands(totalCount, locale) }}</span
-        ><template v-if="averageGrams !== undefined"
-          >×<span data-testid="quantity-avg-weight">{{ avgWeightLabel }}</span
-          >≈<span data-testid="quantity-total-weight">{{ weightOf(totalCount) }}</span></template
-        ></span
-      >
-    </template>
+  <PanelSection id="frame:beads" :label="t.quantities.heading" keep-summary data-testid="bead-quantities">
+    <template v-if="quantities.length > 0" #summary><span data-testid="quantity-total">{{ total }}</span></template>
+    <div class="bead-quantities">
+      <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
+        {{ t.quantities.noProjectMessage }}
+      </p>
+      <p v-else-if="!project.frame" class="bead-quantities__empty" data-testid="quantities-needs-frame">
+        {{ t.frame.countNeedsFrame }}
+      </p>
+      <p v-else-if="quantities.length === 0" class="bead-quantities__empty" data-testid="quantities-empty">
+        {{ t.quantities.noColorsMessage }}
+      </p>
 
-    <template v-if="quantities.length > 0 && averageGrams !== undefined" #note>
-      <AppNote class="bead-quantities__note" data-testid="quantities-weight-note">
+      <table v-else class="bead-quantities__table">
+        <thead class="bead-quantities__headings">
+          <tr>
+            <th>{{ t.quantities.colorHeading }}</th>
+            <th>{{ t.quantities.countHeading }}</th>
+            <th v-if="averageGrams !== undefined">{{ t.quantities.weightHeading }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="quantity in shown" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
+            <td class="bead-quantities__color">
+              <span class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
+              <span v-if="codeOf(quantity.colorId)" class="bead-quantities__code">{{ codeOf(quantity.colorId) }}</span>
+              <span class="bead-quantities__name">{{ nameOf(quantity.colorId, quantity.hex) }}</span>
+            </td>
+            <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
+              {{ groupThousands(quantity.count, locale) }}
+            </td>
+            <td v-if="averageGrams !== undefined" class="bead-quantities__grams" :data-testid="`quantity-weight-${quantity.colorId ?? quantity.hex}`">
+              {{ weightOf(quantity.count) }}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <button v-if="quantities.length > SUMMARY_ROWS" class="ui-control bead-quantities__more" type="button" :aria-expanded="expanded" data-testid="quantities-toggle" @click="expanded = !expanded">
+        <span>{{ expanded ? t.quantities.showFewer : t.quantities.showAll.replace('{count}', String(quantities.length)) }}</span>
+        <AppIcon name="chevron-down" :size="14" class="bead-quantities__chevron" :class="{ 'bead-quantities__chevron--up': expanded }" />
+      </button>
+      <AppNote v-if="quantities.length > 0 && averageGrams !== undefined" class="bead-quantities__note" data-testid="quantities-weight-note">
         {{ t.quantities.weightInfo.replace('{grams}', String(averageGrams)) }}
       </AppNote>
-    </template>
-
-    <p v-if="!project" class="bead-quantities__empty" data-testid="quantities-no-project">
-      {{ t.quantities.noProjectMessage }}
-    </p>
-    <p v-else-if="!project.frame" class="bead-quantities__empty" data-testid="quantities-needs-frame">
-      {{ t.frame.countNeedsFrame }}
-    </p>
-    <p v-else-if="quantities.length === 0" class="bead-quantities__empty" data-testid="quantities-empty">
-      {{ t.quantities.noColorsMessage }}
-    </p>
-
-    <table v-else class="bead-quantities__table">
-      <thead class="bead-quantities__headings">
-        <tr>
-          <th>{{ t.quantities.colorHeading }}</th>
-          <th>{{ t.quantities.countHeading }}</th>
-          <th v-if="averageGrams !== undefined">{{ t.quantities.weightHeading }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="quantity in quantities" :key="quantity.hex" class="bead-quantities__row" data-testid="quantity-row">
-          <td class="bead-quantities__color">
-            <span class="bead-quantities__swatch" :style="{ backgroundColor: quantity.hex }" />
-            {{ nameOf(quantity.colorId, quantity.hex) }}
-          </td>
-          <td class="bead-quantities__count" :data-testid="`quantity-count-${quantity.colorId ?? quantity.hex}`">
-            {{ groupThousands(quantity.count, locale) }}
-          </td>
-          <td
-            v-if="averageGrams !== undefined"
-            class="bead-quantities__grams"
-            :data-testid="`quantity-weight-${quantity.colorId ?? quantity.hex}`"
-          >
-            {{ weightOf(quantity.count) }}
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </ExpandablePanel>
+    </div>
+  </PanelSection>
 </template>
 
 <style scoped>
-/* The title breaks only between its parts, never inside "≈ 6 g". */
-.bead-quantities__part {
-  white-space: nowrap;
+.bead-quantities {
+  padding: var(--space-4) var(--space-10);
 }
 
 .bead-quantities__empty {
@@ -157,27 +133,41 @@ const expanded = ref(false)
   white-space: nowrap;
 }
 
-/* A row: 32px, a line-soft rule above, the swatch and name, then the count and the weight on the right. */
 .bead-quantities__row > td {
-  height: var(--panel-row-height);
+  height: var(--panel-item-height);
   padding: 0;
-  border-top: 1px solid var(--line-soft);
 }
 
+/* The color: a swatch, its catalog code, then its name, which gives way (ellipsis) before the count does. */
 .bead-quantities__color {
-  font: var(--type-body);
-  color: var(--body);
-  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: var(--space-8);
+  min-width: 0;
+  height: var(--panel-item-height);
+  font: var(--type-control);
+  color: var(--ink);
 }
 
 .bead-quantities__swatch {
-  display: inline-block;
+  flex: none;
   width: var(--swatch-dot);
   height: var(--swatch-dot);
-  margin-right: var(--space-10);
-  vertical-align: -1px;
   border-radius: var(--swatch-dot-radius);
   box-shadow: inset 0 0 0 1px var(--swatch-edge);
+}
+
+.bead-quantities__code {
+  flex: none;
+  font: var(--type-meta-small);
+  color: var(--muted);
+}
+
+.bead-quantities__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .bead-quantities__count,
@@ -189,30 +179,42 @@ const expanded = ref(false)
 }
 
 .bead-quantities__count {
-  width: 100%;
+  width: 1%;
+  padding-left: var(--space-8);
   color: var(--ink);
 }
 
 .bead-quantities__grams {
   min-width: var(--grams-width);
   padding-left: var(--space-8);
+  font: var(--type-meta-small);
   color: var(--muted);
 }
 
-/* Ticket 450: the canvas box is 12px narrower each side, so on a phone the weight column gives up its reserved width
- * (a table column is as wide as its widest cell anyway). */
-@media (max-width: 30rem) {
-  .bead-quantities__grams {
-    min-width: 0;
-    padding-left: var(--space-4);
-  }
+.bead-quantities__more {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-height: var(--panel-item-height);
+  padding: 0;
+  font: var(--type-control);
+  color: var(--muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
 
-  .bead-quantities__swatch {
-    margin-right: var(--space-6);
-  }
+.bead-quantities__more:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.bead-quantities__chevron--up {
+  transform: rotate(180deg);
 }
 
 .bead-quantities__note {
-  margin-top: var(--space-10);
+  margin-top: var(--space-6);
 }
 </style>

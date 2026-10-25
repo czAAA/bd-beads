@@ -35,6 +35,26 @@ describe('changeFrame in Right-angle weave (ticket 482)', () => {
   })
 })
 
+describe('changeFrame naming the Frame (ticket 555)', () => {
+  it('sets the name, keeps the rest of the Frame, and an empty name clears it', () => {
+    const named = changeFrame(framed(), { name: 'Moth wing' })
+    if (named.kind !== 'changed') throw new Error('expected a change')
+    expect(named.project.frame).toEqual({ ...sheet(frame), name: 'Moth wing' })
+    const cleared = changeFrame(named.project, { name: '' })
+    expect(cleared.kind === 'changed' && cleared.project.frame).toEqual(sheet(frame))
+  })
+
+  it('is no change for the name it already has, and refused with no Frame', () => {
+    expect(changeFrame(framed(), { name: '' }).kind).toBe('unchanged')
+    const { frame: _frame, ...open } = framed()
+    expect(changeFrame(open, { name: 'Moth' })).toEqual({ kind: 'refused', reason: 'no-frame' })
+  })
+
+  it('still names a Frame once a pass is done', () => {
+    expect(changeFrame(framed({ rowProgress: woven('rows') }), { name: 'Moth' }).kind).toBe('changed')
+  })
+})
+
 describe('changeFrame', () => {
   describe('refusals', () => {
     const changes: [string, FrameChange][] = [

@@ -235,6 +235,26 @@ describe('useFrameFlow', () => {
     expect(setup(open).barShown.value).toBe(false)
   })
 
+  it('opens the panel with no Frame too, and keeps it open when the Frame goes (ticket 555)', () => {
+    const bare = setup(open)
+    bare.toggleBar()
+    expect(bare.barShown.value).toBe(true)
+    const framedFlow = setup()
+    framedFlow.toggleBar()
+    framedFlow.remove()
+    framedFlow.confirmRemove()
+    expect(framedFlow.barShown.value).toBe(true)
+  })
+
+  it('names the Frame as one Undo step, and an empty name clears it, even once a pass is done (ticket 555)', () => {
+    const { deps, rename } = setup(moveToRow(sized, 1))
+    rename('Moth wing')
+    expect(deps.harness.project.frame!.name).toBe('Moth wing')
+    rename('')
+    expect(deps.harness.project.frame!.name).toBeUndefined()
+    expect(deps.replaceProject).toHaveBeenCalledTimes(2)
+  })
+
   it('resizes to a typed size, both sides evenly, as one Undo step, and not once a pass is done (ticket 473)', () => {
     const big = { ...sized, frame: { technique: 'loom' as const, row: 4, column: 4, rows: 6, columns: 6, beads: {} } }
     const { deps, resizeTo } = setup(big)

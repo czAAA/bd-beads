@@ -1,10 +1,9 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BeadQuantities from './BeadQuantities.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, type Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
-import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
 
@@ -91,7 +90,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     const wrapper = mountQuantities(wide(beadId, 100))
 
     expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe(weight)
-    expect(wrapper.find('[data-testid="quantity-total-weight"]').text()).toBe(weight)
+    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe(`100 · ≈ ${weight}`)
   })
 
   it('shows the weight per color and a total across colors', () => {
@@ -100,23 +99,20 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
 
     expect(wrapper.find('[data-testid="quantity-weight-red"]').text()).toBe('1.08 g')
     expect(wrapper.find('[data-testid="quantity-weight-blue"]').text()).toBe('0.54 g')
-    expect(wrapper.find('[data-testid="quantity-total-count"]').text()).toBe('150')
-    expect(wrapper.find('[data-testid="quantity-total-weight"]').text()).toBe('1.62 g')
+    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('150 · ≈ 1.62 g')
   })
 
-  it('shows the header as count × average weight per bead ≈ the total (ticket 178)', () => {
+  it('puts the total and its weight in the header, the same folded or open (ticket 555)', () => {
     const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
 
-    expect(wrapper.find('[data-testid="quantity-total-count"]').text()).toBe('100')
-    expect(wrapper.find('[data-testid="quantity-avg-weight"]').text()).toBe('0.0108g')
-    expect(wrapper.find('[data-testid="quantity-total-weight"]').text()).toBe('1.08 g')
+    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1.08 g')
   })
 
-  it('shows the average weight per bead with the Russian decimal comma too (ticket 178)', () => {
+  it('writes the total with the Russian decimal comma too', () => {
     localStorage.setItem('openbeads:locale', 'ru')
     const wrapper = mountQuantities(wide('toho-cube-1.5mm', 100))
 
-    expect(wrapper.find('[data-testid="quantity-avg-weight"]').text()).toBe('0,0108г')
+    expect(wrapper.find('[data-testid="quantity-total"]').text()).toBe('100 · ≈ 1,08 г')
   })
 
   it('rounds to one decimal from 10 g up and says "< 0.01 g" for a color too small to weigh', () => {
@@ -142,7 +138,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     const wrapper = mountQuantities(project())
 
     expect(wrapper.find('[data-testid="quantities-weight-note"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="quantity-total-weight"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="quantity-total"]').exists()).toBe(false)
   })
 
   it('explains the estimate in an always-visible Note, with the Bead\'s average weight and no (i) button (ticket 328)', () => {
@@ -155,9 +151,7 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
     expect(wrapper.find('button[aria-describedby], [role="tooltip"]').exists()).toBe(false)
   })
 
-  describe('at the 24″ and larger tier (ticket 83; responsive.md, bp-desktop)', () => {
-    afterEach(() => vi.unstubAllGlobals())
-
+  describe('Show all (ticket 555)', () => {
     function withColors(count: number): Project {
       const hexes = ['#e63746', '#2f6fed', '#22aa55', '#f5c518', '#8e44ad', '#ff8800', '#00bcd4']
       return hexes
@@ -165,19 +159,22 @@ describe('BeadQuantities estimated weight (ticket 155)', () => {
         .reduce((p, hex, column) => paintAt(p, [{ row: 0, column }], hex), project())
     }
 
-    it('holds five color rows before it needs expanding: four colors are not expandable, six are', () => {
-      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1920px)': true }).matchMedia)
-
-      expect(mountQuantities(withColors(4)).find('[data-testid="panel-expand"]').exists()).toBe(false)
-      expect(mountQuantities(withColors(5)).find('[data-testid="panel-expand"]').exists()).toBe(false)
-      expect(mountQuantities(withColors(6)).find('[data-testid="panel-expand"]').exists()).toBe(true)
+    it('lists five colors, with no button for five or fewer', () => {
+      expect(mountQuantities(withColors(5)).findAll('[data-testid="quantity-row"]')).toHaveLength(5)
+      expect(mountQuantities(withColors(5)).find('[data-testid="quantities-toggle"]').exists()).toBe(false)
     })
 
-    it('holds three rows below that tier: four colors already expand', () => {
-      vi.stubGlobal('matchMedia', fakeMatchMedia({ '(min-width: 1920px)': false }).matchMedia)
+    it('shows the rest in place on "Show all 7 colors" and folds back on "Show fewer"', async () => {
+      const wrapper = mountQuantities(withColors(7))
+      const toggle = wrapper.get('[data-testid="quantities-toggle"]')
 
-      expect(mountQuantities(withColors(3)).find('[data-testid="panel-expand"]').exists()).toBe(false)
-      expect(mountQuantities(withColors(4)).find('[data-testid="panel-expand"]').exists()).toBe(true)
+      expect(wrapper.findAll('[data-testid="quantity-row"]')).toHaveLength(5)
+      expect(toggle.text()).toBe('Show all colors (7)')
+      await toggle.trigger('click')
+      expect(wrapper.findAll('[data-testid="quantity-row"]')).toHaveLength(7)
+      expect(toggle.text()).toBe('Show fewer')
+      await toggle.trigger('click')
+      expect(wrapper.findAll('[data-testid="quantity-row"]')).toHaveLength(5)
     })
   })
 })

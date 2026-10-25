@@ -59,7 +59,6 @@ const actions = {
   zoomFit: controlAction('zoom-fit'),
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
-const frameEnabled = computed(() => actions.frame.enabled?.(deps.value) ?? true)
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 const onOverview = computed(() => props.page === 'overview')
@@ -89,11 +88,11 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
         <span class="canvas-strip__label">{{ actions.project.name(t) }}</span>
       </AppButton>
       <AppButton
-        v-if="project?.frame"
+        v-if="project"
         variant="text"
         :action="actions.frame"
         :deps="deps"
-        :selected="frameOpen && frameEnabled"
+        :selected="frameOpen"
         data-testid="strip-frame"
         @click="emit('toggle-frame')"
       >

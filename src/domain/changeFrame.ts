@@ -33,6 +33,9 @@ export type FrameChange =
   /** Put a new empty Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
    * the Canvas under the new one is hidden, not changed. */
   | { place: { frame: Frame; weave: Weave } }
+  /** Name the Frame (ticket 555), or clear its name with an empty one; allowed after Row progress has started, as it
+   * touches no bead and no pass. */
+  | { name: string }
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
@@ -66,7 +69,7 @@ export function frameChangeDiscardsProgress(project: Project, change: FrameChang
 /** Why the change would be refused on this Project, or undefined when it would be allowed. Cheap: it builds nothing. */
 export function frameChangeRefusal(project: Project, change: FrameChange): FrameChangeRefusal | undefined {
   // Remove Frame is how the weaver lets go of finished passes: it clears them with the Frame (ticket 426, ADR 0055).
-  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change) && !('move' in change)) {
+  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change) && !('move' in change) && !('name' in change)) {
     return 'locked'
   }
   const frame = project.frame
@@ -89,7 +92,7 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
       return 'only-line'
     }
   }
-  if ('move' in change && !frame) {
+  if (('move' in change || 'name' in change) && !frame) {
     return 'no-frame'
   }
   if ('make' in change && namedPieceCutBy(project, change.make)) {
@@ -121,6 +124,14 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     }
     // The Frame carries its beads and the passes; the Canvas under the destination stays as it is, hidden (ADR 0066).
     return { kind: 'changed', project: { ...project, frame: { ...frame, row: moved.row, column: moved.column }, updatedAt: Date.now() } }
+  }
+
+  if ('name' in change) {
+    const { name: _previous, ...frame } = project.frame!
+    if (change.name === (project.frame!.name ?? '')) {
+      return { kind: 'unchanged', project }
+    }
+    return { kind: 'changed', project: { ...project, frame: { ...frame, ...(change.name ? { name: change.name } : {}) }, updatedAt: Date.now() } }
   }
 
   if ('place' in change) {
