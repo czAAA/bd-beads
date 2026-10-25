@@ -1,8 +1,6 @@
 /* High contrast (ticket 160; HighContrastTheme card): 2px full-color lines, white surfaces, no elevation;
    `:root[data-theme]` outweighs scoped rules. */
 :root[data-theme='contrast'] :is(
-    .save-box,
-    .expandable-panel,
     .app-shell__canvas
   ) {
   border-width: 2px;
@@ -14,7 +12,7 @@
   border-bottom: 2px solid var(--line);
 }
 
-:root[data-theme='contrast'] :is(.progress-bar, .convert-image-frame__controls, .expandable-panel__footer) {
+:root[data-theme='contrast'] :is(.progress-bar, .convert-image-frame__controls) {
   border-top: 2px solid var(--line);
 }
 
@@ -71,7 +69,7 @@
     outline-offset: 2px;
   }
 
-  html:root :is(.save-box, .expandable-panel, .app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
+  html:root :is(.app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
     border: 1px solid CanvasText;
   }
 }

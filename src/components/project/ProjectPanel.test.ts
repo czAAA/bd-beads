@@ -24,7 +24,7 @@ function mountPanel(props: Record<string, unknown> = {}) {
 describe('ProjectPanel (tickets 443, 554)', () => {
   it('has the head, then the bead, canvas, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
-    const order = ['project-head', 'bead-shape', 'bead-brand', 'canvas-section', 'export-project-file', 'export-png', 'project-duplicate', 'project-clear', 'project-delete']
+    const order = ['project-head', 'bead-shape', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -184,15 +184,14 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     }
   })
 
-  it('emits Duplicate, Clear, Delete and the exports', async () => {
+  it('emits Duplicate, Clear, Delete and the Project file export', async () => {
     const wrapper = mountPanel()
     await wrapper.get('[data-testid="project-duplicate"]').trigger('click')
     await wrapper.get('[data-testid="project-clear"]').trigger('click')
     await wrapper.get('[data-testid="project-delete"]').trigger('click')
-    await wrapper.get('[data-testid="export-png"]').trigger('click')
-    await wrapper.get('[data-testid="export-pdf"]').trigger('click')
     await wrapper.get('[data-testid="export-project-file"]').trigger('click')
-    expect(['duplicate', 'clear', 'delete', 'export-png', 'export-pdf', 'export-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1, 1, 1, 1])
+    expect(['duplicate', 'clear', 'delete', 'export-project-file'].map((name) => wrapper.emitted(name)?.length)).toEqual([1, 1, 1, 1])
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
   })
 
   it('folds a section shut and shows its summary', async () => {

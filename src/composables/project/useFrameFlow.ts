@@ -75,19 +75,18 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
   const settingFrame = computed(() => !!deps.currentProject()?.frame && handlesOn.value && !locked.value)
 
-  /** Whether the Frame panel shows: a Frame and the bar opened. Once a pass is done it holds the size and Remove Frame
-   * alone (ticket 475: a panel that closes on a press outside cannot stay up for good). */
-  const barShown = computed(() => !!deps.currentProject()?.frame && barOpen.value)
+  /** Whether the Frame panel shows: a Project and the panel opened, with or without a Frame (ticket 555). Once a pass
+   * is done it holds the size and Remove Frame alone (ticket 475: a panel that closes on a press outside cannot stay up
+   * for good). */
+  const barShown = computed(() => !!deps.currentProject() && barOpen.value)
 
-  // The bar is closed whenever a Project opens or its Frame goes (ticket 473); a Frame made or a lock changing only
-  // drops a drag in progress.
+  // The panel is closed whenever a Project opens (ticket 473), and the handles go off with it or when the Frame goes; a
+  // Frame made or a lock changing only drops a drag in progress.
   watch(
     [() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame],
     ([id, framed], [previousId]) => {
-      if (id !== previousId || !framed) {
-        barOpen.value = false
-        handlesOn.value = false
-      }
+      if (id !== previousId) barOpen.value = false
+      if (id !== previousId || !framed) handlesOn.value = false
     },
     { flush: 'sync' },
   )
@@ -98,10 +97,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (deps.currentProject()?.frame) handlesOn.value = !handlesOn.value
   }
 
-  /** The strip's Frame button: opens or closes the Frame panel; nothing happens without a Frame. Once Row progress has
-   * started the bar still opens, for the size and Remove Frame. */
+  /** The strip's Frame button: opens or closes the Frame panel, with or without a Frame (ticket 555). Once Row progress
+   * has started the panel still opens, for the size and Remove Frame. */
   function toggleBar(): void {
-    if (deps.currentProject()?.frame) barOpen.value = !barOpen.value
+    if (deps.currentProject()) barOpen.value = !barOpen.value
   }
 
   /** The bar closed by Escape or a press outside it. */
@@ -283,6 +282,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (!sameFrame(next, project.frame)) commit(next)
   }
 
+  /** The Frame's name, typed in the Frame panel (ticket 555): one Undo step; empty clears it. */
+  function rename(name: string): void {
+    deps.edit('frame', (project) => changeFrame(project, { name }))
+  }
+
   // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
   // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407); with a Frame already
   // set, it moves it there.
@@ -408,6 +412,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     cancel,
     stepEdge,
     resizeTo,
+    rename,
     setTechnique,
     setBrickBlock,
     setCanvasTechnique,

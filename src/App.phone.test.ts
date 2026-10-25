@@ -192,13 +192,16 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(true)
   })
 
-  it('shows the Project panel\'s exports for the open Project', async () => {
+  it('shows the Project file export in the Project panel and the Picture and chart in the Frame panel', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-project"]').trigger('click')
 
     const panel = wrapper.find('[data-testid="panel-dropdown"]')
-    expect(panel.find('[data-testid="save-box"]').exists()).toBe(true)
     expect(panel.find('[data-testid="export-project-file"]').exists()).toBe(true)
+    expect(panel.find('[data-testid="export-png"]').exists()).toBe(false)
+
+    await wrapper.find('[data-testid="strip-frame"]').trigger('click')
+    expect(wrapper.find('[data-testid="panel-dropdown"] [data-testid="export-png"]').exists()).toBe(true)
   })
 
   it('opens the Projects library from its Menu row when projects exist', async () => {

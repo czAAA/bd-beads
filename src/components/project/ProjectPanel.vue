@@ -6,7 +6,6 @@ import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import SaveExport from '../export/SaveExport.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import CanvasSection from './CanvasSection.vue'
@@ -15,14 +14,13 @@ import ProjectHead from './ProjectHead.vue'
 
 // The body of Project (spec 0440, tickets 443, 554; ProjectPanel card): everything about the open Project that no tool
 // already does. A head (title with the save state, name, maker, Technique), then four sections that fold shut: bead,
-// canvas, export and this project. It only asks; the app shell does the work.
+// canvas, export and this project. It only asks; the app shell does the work (Picture and chart: Frame panel, ticket 555).
 const props = defineProps<{
   project: Project
   /** What the Project could switch to (ticket 48). */
   replaceCandidates: readonly Bead[]
   saveFailed: boolean
   unsaved: boolean
-  exporting?: 'png' | 'pdf'
 }>()
 const emit = defineEmits<{
   rename: [name: string]
@@ -33,10 +31,7 @@ const emit = defineEmits<{
   'set-bead-shape': [shape: BeadShape]
   'replace-bead': [beadId: string]
   save: []
-  'export-png': []
-  'export-pdf': []
   'export-project-file': []
-  'fit-frame': []
   'save-maker-name': [name: string]
   duplicate: []
   clear: []
@@ -90,15 +85,6 @@ const canvasName = computed(() => {
 
     <PanelSection id="project:export" :label="t.panels.project.exportHeading">
       <PanelItem icon="export" value=".openbeads" stays data-testid="export-project-file" @select="emit('export-project-file')">{{ file.name(t) }}</PanelItem>
-      <!-- Until the Frame panel takes them (ticket 0555), a picture and a printable chart are made here. -->
-      <SaveExport
-        :has-frame="project.frame !== undefined"
-        :exporting="exporting"
-        :project-name="project.name"
-        @export-png="emit('export-png')"
-        @export-pdf="emit('export-pdf')"
-        @fit-frame="emit('fit-frame')"
-      />
     </PanelSection>
 
     <PanelSection id="project:this" :label="t.panels.project.thisProject">

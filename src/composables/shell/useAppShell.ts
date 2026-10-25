@@ -796,6 +796,7 @@ function wireAppShell(services: Services) {
     onFrameCancel: frameFlow.cancel,
     onStepFrameEdge: frameFlow.stepEdge,
     onResizeFrame: frameFlow.resizeTo,
+    onRenameFrame: frameFlow.rename,
     onSetTechnique: frameFlow.setTechnique,
     onSetBrickBlock: frameFlow.setBrickBlock,
     onSetCanvasTechnique: frameFlow.setCanvasTechnique,
