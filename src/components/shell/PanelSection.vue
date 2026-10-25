@@ -23,7 +23,7 @@ const { open, toggle } = usePanelSection(() => props.id)
     <h3 class="panel-section__heading">
       <button :id="labelId" class="ui-control panel-section__header" type="button" :aria-expanded="open" :aria-controls="bodyId" @click="toggle">
         <span class="panel-section__label">{{ label }}</span>
-        <span v-if="(summary || $slots.summary) && (!open || keepSummary)" class="panel-section__summary"><slot name="summary">{{ summary }}</slot></span>
+        <span v-if="(summary || $slots.summary) && (!open || keepSummary)" class="panel-section__summary" :class="{ 'panel-section__summary--kept': keepSummary }"><slot name="summary">{{ summary }}</slot></span>
         <AppIcon :name="open ? 'chevron-down' : 'chevron-left'" :size="14" class="panel-section__chevron" :class="{ 'panel-section__chevron--closed': !open }" />
       </button>
     </h3>
@@ -85,6 +85,11 @@ const { open, toggle } = usePanelSection(() => props.id)
   text-overflow: ellipsis;
   text-transform: none;
   white-space: nowrap;
+}
+
+/* A kept summary (a total) is never shortened. */
+.panel-section__summary--kept {
+  flex: none;
 }
 
 /* The design system draws one chevron-left; right is it turned. */
