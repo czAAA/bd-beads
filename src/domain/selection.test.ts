@@ -18,6 +18,8 @@ import {
   stampedCells,
   pastedCells,
   selectionBetween,
+  selectionHasHandles,
+  snapSelectionToUnits,
   type CopiedBlock,
 } from './selection'
 import { withColors } from './canvas'
@@ -232,15 +234,31 @@ describe('stampedCells and pasteOnLayer', () => {
 describe('Piece and Select all selections (ticket 414)', () => {
   const picture = painted(['rr....', '.r..b.', '......', 'b...b.'])
 
-  it('a tap selects the bounding rectangle of the tapped bead’s Piece, and nothing on an empty position', () => {
-    expect(pieceSelectionAt(picture.frame!.beads, { technique: 'loom' }, { row: 1, column: 1 })).toEqual({ top: 0, left: 0, rows: 2, columns: 2 })
+  it('a tap selects the tapped bead’s Piece, a non-rectangular shape, and nothing on an empty position', () => {
+    expect(pieceSelectionAt(picture.frame!.beads, { technique: 'loom' }, { row: 1, column: 1 })).toEqual({
+      top: 0,
+      left: 0,
+      rows: 2,
+      columns: 2,
+      cells: expect.arrayContaining([{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 1 }]),
+    })
     expect(pieceSelectionAt(picture.frame!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toBeUndefined()
   })
 
-  it('a Piece’s rectangle includes the beads of other Pieces inside it', () => {
+  it('a Piece’s shape leaves out the beads of other Pieces inside its rectangle and the holes (ticket 547)', () => {
     const ring = painted(['rrrrr', 'r...r', 'r.b.r', 'r...r', 'rrrrr'])
-    expect(pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 0, column: 0 })).toEqual({ top: 0, left: 0, rows: 5, columns: 5 })
-    expect(pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toEqual({ top: 2, left: 2, rows: 1, columns: 1 })
+    const outer = pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 0, column: 0 })
+    expect(outer).toMatchObject({ top: 0, left: 0, rows: 5, columns: 5 })
+    expect(outer?.cells).toHaveLength(16)
+    expect(outer?.cells).not.toContainEqual({ row: 2, column: 2 })
+    expect(outer?.cells).not.toContainEqual({ row: 1, column: 1 })
+    expect(pieceSelectionAt(ring.frame!.beads, { technique: 'loom' }, { row: 2, column: 2 })).toEqual({
+      top: 2,
+      left: 2,
+      rows: 1,
+      columns: 1,
+      cells: [{ row: 2, column: 2 }],
+    })
   })
 
   it('Select all is the rectangle round every placed bead, and nothing on an empty canvas', () => {
@@ -296,7 +314,7 @@ describe('Selections on a layer (ADR 0066)', () => {
   })
 
   it('taps a Piece of the layer the tap is on', () => {
-    expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1, layer: 'frame' })
+    expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1, layer: 'frame', cells: [{ row: 3, column: 3 }] })
     expect(pieceSelectionOnLayer(layered(), { row: 20, column: 20 })).toMatchObject({ top: 20, left: 20, rows: 1, columns: 1 })
   })
 })
@@ -346,7 +364,13 @@ describe('pieceSelectionAt with a Frame (ticket 433)', () => {
   )
 
   it('takes the part on the tapped bead\'s side: the inside, or clear of the margin', () => {
-    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 10 }, frame)).toEqual({ top: 12, left: 10, rows: 1, columns: 2 })
+    expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 10 }, frame)).toEqual({
+      top: 12,
+      left: 10,
+      rows: 1,
+      columns: 2,
+      cells: [{ row: 12, column: 10 }, { row: 12, column: 11 }],
+    })
     expect(pieceSelectionAt(beads, { technique: 'loom' }, { row: 12, column: 9 }, frame)).toBeUndefined()
   })
 })
@@ -371,3 +395,41 @@ describe('dragFocusOnLayer for a Frame that draws shorter than the rows it names
   })
 })
 
+
+describe('a Piece-tool shape (ticket 547)', () => {
+  // A red ring with a blue Piece in its hole: the ring is not a rectangle, and its rectangle holds another Piece.
+  const target = painted(['rrrrr', 'r...r', 'r.b.r', 'r...r', 'rrrrr'])
+  const L = pieceSelectionOnLayer(target, { row: 0, column: 0 })!
+
+  it('is the Piece alone, without the other Piece or the holes inside its rectangle', () => {
+    expect(L).toMatchObject({ top: 0, left: 0, rows: 5, columns: 5 })
+    expect(L.cells).toHaveLength(16)
+    expect(L.cells).not.toContainEqual({ row: 2, column: 2 })
+    expect(L.cells).not.toContainEqual({ row: 1, column: 1 })
+  })
+
+  it('has no handles, where a rectangle of the same size has them', () => {
+    expect(selectionHasHandles(L)).toBe(false)
+    expect(selectionHasHandles({ top: 0, left: 0, rows: 5, columns: 5 })).toBe(true)
+  })
+
+  it('copies its own beads only, holes in the block where the rectangle held other beads', () => {
+    expect(copyLayerSelection(target, L)?.colors).toEqual([
+      [RED, RED, RED, RED, RED],
+      [RED, null, null, null, RED],
+      [RED, null, null, null, RED],
+      [RED, null, null, null, RED],
+      [RED, RED, RED, RED, RED],
+    ])
+  })
+
+  it('clears and fills its own cells only, never the other Piece or the empty cells', () => {
+    expect(picture(paintLayerSelection(target, L, null))).toEqual(['.....', '.....', '..b..', '.....', '.....'])
+    expect(picture(paintLayerSelection(target, L, BLUE))).toEqual(['bbbbb', 'b...b', 'b.b.b', 'b...b', 'bbbbb'])
+  })
+
+  it('keeps its cells when snapped to Units, and a rectangle without them', () => {
+    expect(snapSelectionToUnits({ technique: 'loom' }, L)).toBe(L)
+    expect(snapSelectionToUnits({ technique: 'brick' }, L).cells).toEqual(L.cells)
+  })
+})
