@@ -213,8 +213,8 @@ The Overview and the header menu, as signed off. The same rules: plain and short
 | Exports: PDF for printing, PNG image and the Pattern file. | Экспорт: PDF для печати, PNG и файл схемы. |
 | Saved Patterns: Kept on this device. No account needed. | Сохранённые схемы: Хранятся на этом устройстве. Аккаунт не нужен. |
 | Previous feature · Next feature (arrow labels) | Предыдущая возможность · Следующая возможность |
-| Made by one person | Один человек |
-| bd-beads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks. | bd-beads делает один человек, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо. |
+| Made by one family | Одна семья |
+| bd-beads is made by one family, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks. | bd-beads делает одна семья, бисеринка за бисеринкой, и он бесплатный. Если он сэкономил вам вечер подсчётов, кофе будет лучшим спасибо. |
 | Buy me a coffee | Угостить кофе |
 | plans · Three ways to use it | тарифы · Три способа работать |
 | Accounts and Pro aren't open yet. Everything works without them. | Аккаунты и Pro пока не открыты. Всё работает и без них. |

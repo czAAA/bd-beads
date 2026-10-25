@@ -16,6 +16,7 @@ import type { Project } from '../../domain/project'
 import type { IconName } from '../ui/icons'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from './panelContext'
+import { COFFEE_URL } from '../../data/coffeeLink'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): what is about the app and the device, in four sections
 // (Projects, Preferences, Help, About), each folding shut. Import, Export all and Delete all live in the Projects library. It only asks: the app shell does the work. On the Overview (ticket 540, ADR 0073)
@@ -49,8 +50,6 @@ const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
 
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
-/** Where Buy me a coffee goes; the row is absent until the maintainer adds the link. */
-const COFFEE_URL = ''
 const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 
 const actions = {

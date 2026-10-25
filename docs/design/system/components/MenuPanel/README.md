@@ -24,7 +24,7 @@ About half the air of v18: every row is `panel-row` (28px; `panel-row-touch`, 36
 1. **Projects:** New Project (`accent`, `plus`, ›) and **Projects library** (`library`, the count as its value, ›). Both push a subpanel. Import, Export all and Delete all moved into the library.
 2. **Preferences:** Language (the code, "EN"), Theme (its icon and word: System, Light, Dark, High contrast), Tools position (its icon and word: Left, Top, Right, Bottom), Input (Pen, Mouse) and Writing hand (Right, Left), all PanelPickers. Input and Writing hand show only once a pen has been seen (ticket 326), absent otherwise, not disabled.
 3. **Help:** Keyboard shortcuts (the key `?` as its value; only when a keyboard is attached), Overview.
-4. **About:** Source code (`external`; opens the repository in a new tab; the AGPL-3.0 network clause needs a hosted copy to link to its source, ticket 269), **Buy me a coffee** (the `coffee` icon in `accent-strong`, `external`; a deliberate second accent mark in the panel; the row is absent until the app has a link for it), and Version (a non-interactive row, indented to the label column, the number in `meta`).
+4. **About:** Source code (`external`; opens the repository in a new tab; the AGPL-3.0 network clause needs a hosted copy to link to its source, ticket 269), **Buy me a coffee** (the `coffee` icon in `accent-strong`, `external`; a deliberate second accent mark in the panel; the row is absent while the app has no link for it), and Version (a non-interactive row, indented to the label column, the number in `meta`).
 
 On the Overview (ticket 540) the panel leaves out Projects and the editor-only pickers, and shows its Overview item as the current page.
 
