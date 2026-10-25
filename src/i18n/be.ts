@@ -61,13 +61,7 @@ export const be: Translations = {
     estimateUnits: '≈ {columns}×{rows} юнітаў',
   },
   a11y: {
-    skipToProject: 'Перайсці да праекта',
     toolsLandmark: 'Інструменты',
-    cursorPosition: 'Рад {row}, слупок {column}, {color}',
-    painted: 'Зафарбавана: {color}',
-    filled: 'Заліта: {color}',
-    erased: 'Сцёрта',
-    emptyBead: 'пуста',
     projectLabel: '{name}, {columns} на {rows} бісерын, {colors}',
     canvasLabel: '{name}, вольнае палатно без рамкі, {colors}',
     colorsCount: { one: '{count} колер', few: '{count} колеры', many: '{count} колераў', other: '{count} колеру' },

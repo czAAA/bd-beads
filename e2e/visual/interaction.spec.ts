@@ -264,27 +264,6 @@ test.describe('the pointer tools', () => {
     await page.keyboard.up('Space')
   })
 
-  test('Space on the Project reached with Tab still uses the tool, not a pan (ticket 424)', async ({ page }) => {
-    await openBlank(page)
-    await page.getByTestId('project-surface').focus()
-    await page.keyboard.down('Space')
-    await settle(page)
-    expect(await cursorOfSurface(page)).not.toBe('grab')
-    await page.keyboard.up('Space')
-  })
-
-  test('an arrow key after a press hands Space back to the tool (ticket 424)', async ({ page }) => {
-    await openBlank(page)
-    await selectTool(page, 'paint')
-    await drawAt(page, 3, 4)
-    await page.keyboard.press('ArrowRight')
-    await settle(page)
-    await page.keyboard.down('Space')
-    await settle(page)
-    expect(await cursorOfSurface(page)).not.toBe('grab')
-    await page.keyboard.up('Space')
-  })
-
   test('Space while typing in a form field is unchanged (ticket 424)', async ({ page }) => {
     await openBlank(page)
     await page.getByTestId('strip-project').click()
@@ -353,9 +332,6 @@ test.describe('the Paint tool pointer (tickets 353, 542)', () => {
     const project = fixtureProject({ technique: 'peyote', blank: true })
     await openApp(page, [project])
     await setZoom(page, 100)
-    // With the Frame bar closed Space would show the keyboard cursor; open it, as editing did (ticket 473).
-    await page.getByTestId('strip-frame').click()
-    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
     const centre = await pointOn(page, 'peyote', false, 100, 3, 5)
     await page.mouse.move(centre.x, centre.y)
     await settle(page)

@@ -34,16 +34,15 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Keyboard
 
-- Tab order: Skip to Pattern (visible on focus), header, Toolbox, save box, Beads needed, Saved Patterns, canvas strip, the Pattern, Progress bar.
-- One stop per group; arrow keys inside the tool tiles, swatches and segmented controls (roving tabindex). The Pattern is one stop with a bead cursor: arrows move, Space or Enter paints.
+- Tab order: header, Toolbox, save box, Beads needed, Saved Patterns, canvas strip, Progress bar. The Pattern takes no focus and there is no skip link (ADR 0074).
+- One stop per group; arrow keys inside the tool tiles, swatches and segmented controls (roving tabindex).
 - Modals and the modal Pattern and Menu panels trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 
-## Painting with the keyboard
+## Beads and the keyboard
 
-- The Pattern is one Tab stop with a bead cursor: 2px `focus-ring`, 2px outside the bead (3px in high contrast), and the cursor's row and column marked on the rulers (`ink`, bold, a `focus-ring` underline). See the BeadCursor card.
-- Arrows move, Shift + arrows extend a Selection, Home / End and Page Up / Down jump, Space or Enter uses the current tool, Escape leaves. The canvas strip shows "arrows move · space paints · esc leaves".
-- Screen readers hear "Row 4, column 5, orange" as it moves and "Painted blue" after Space.
+- The keyboard does not place, erase or select beads (ADR 0074): the Pattern is pointer and touch only, takes no focus, and has no cursor ring or ruler marks. A person who cannot point or touch cannot place a bead; the Tool keys, Select all, Clear selection, Undo and Redo, and the Frame handle's keys still work from the keyboard.
+- Screen readers meet the Pattern as one image named for what it shows (see Screen readers below), and hear a polite announcement after a Frame move or a rotation.
 
 ## Screen readers
 
@@ -69,8 +68,8 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Open canvas and Frame (v16)
 
-- **Keys:** `6` starts Set Frame, `R` toggles the rulers, `5` picks the Hand tool. Space pressed on its own still paints at the bead cursor; Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
-- **Bead cursor:** arrows move it across the whole open canvas, and the canvas scrolls to keep it in view. With the Frame being set, arrows move the Frame by one bead, Shift + arrows resize it, Enter sets it and Escape cancels.
+- **Keys:** `6` starts Set Frame, `R` toggles the rulers, `5` picks the Hand tool. Space held while dragging moves the canvas. The wheel moves the canvas and ⌘ or Ctrl + wheel zooms. The CanvasHint that names these is aria-hidden; the same list is in Keyboard shortcuts.
+- **Frame keys:** on the Frame's focused Move handle, arrows move the Frame by one bead and Shift + arrows resize it.
 - **Names:** the Rulers toggle is "Rulers" with `aria-pressed`. The Frame number is "Frame 1, bring it into view". Rotate without a Frame is disabled and named "Rotate, Set Frame first". The export prompt is a dialog named "Set Frame to export"; focus moves into it and returns to Export.
 - **Announced:** "Frame set, width 21, height 19", "Frame removed", and the rotate notice in full: "Pattern rotated. 1 piece was in the way and moved outside the Frame."
 - **Never colour alone:** the Frame is a line plus its rulers; a piece is a rectangle plus its rulers. The Frame line is `ink`, the strongest mark on every canvas background. The piece rectangle (`line-strong`) is decoration: the rulers carry the information.
