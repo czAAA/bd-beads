@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import AppButton from '../components/ui/AppButton.vue'
+import { COFFEE_URL } from '../data/coffeeLink'
 import { useI18n } from '../i18n/useI18n'
 
 // The coffee tile (ticket 219; Overview card): a beaded cup with steam, who made the app, one line and a secondary
-// button that goes nowhere yet (the maker's page is a later ticket). No donation-service name, logo or colours.
+// button that opens the Coffee link in a new tab (ticket 560), inert while it is empty. No donation-service name, logo or colours.
 // The cup and steam are decorative.
 const { t } = useI18n()
 
@@ -49,7 +50,7 @@ const steam = [
       <h3 class="coffee__title">{{ t.overview.coffee.title }}</h3>
       <p class="coffee__text">{{ t.overview.coffee.text }}</p>
     </div>
-    <AppButton data-testid="overview-coffee-button">{{ t.overview.coffee.button }}</AppButton>
+    <AppButton :href="COFFEE_URL || undefined" data-testid="overview-coffee-button">{{ t.overview.coffee.button }}</AppButton>
   </section>
 </template>
 

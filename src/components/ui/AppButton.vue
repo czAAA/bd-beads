@@ -22,6 +22,8 @@ const props = withDefaults(
     selected?: boolean
     disabled?: boolean
     type?: 'button' | 'submit'
+    /** Makes it a link that opens in a new tab with `rel="noopener"` (an external page). */
+    href?: string
     /** A registry action: the source of the label, body, key, enabled state and disabled reason. */
     action?: ControlActionLike
     deps?: unknown
@@ -41,6 +43,7 @@ const props = withDefaults(
     selected: undefined,
     disabled: undefined,
     type: 'button',
+    href: undefined,
     action: undefined,
     deps: undefined,
     label: undefined,
@@ -71,7 +74,10 @@ const tooltipProps = computed(() => {
 
 const buttonAttrs = computed(() => ({
   class: ['ui-control', 'app-button', `app-button--${props.variant}`, `app-button--${props.size}`, { 'app-button--selected': props.selected, 'app-button--danger-link': props.danger }],
-  type: props.type,
+  type: props.href ? undefined : props.type,
+  href: props.href,
+  target: props.href ? '_blank' : undefined,
+  rel: props.href ? 'noopener' : undefined,
   'aria-pressed': props.selected === undefined ? undefined : props.selected,
   'aria-disabled': isDisabled.value ? true : undefined,
 }))
@@ -86,17 +92,17 @@ function swallowClick(event: MouseEvent) {
 
 <template>
   <!-- Without a Tooltip the button is the root, so a parent's scoped styles on it still apply. -->
-  <button v-if="!tooltipProps" v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
+  <component :is="href ? 'a' : 'button'" v-if="!tooltipProps" v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
     <AppIcon v-if="iconName" :name="iconName" :size="variant === 'link' ? 16 : 15" />
     <slot>{{ name }}</slot>
     <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="15" />
-  </button>
+  </component>
   <AppTooltip v-else v-bind="tooltipProps" class="app-button-wrap">
-    <button v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
+    <component :is="href ? 'a' : 'button'" v-bind="mergeProps(buttonAttrs, $attrs)" @click.capture="swallowClick">
       <AppIcon v-if="iconName" :name="iconName" :size="variant === 'link' ? 16 : 15" />
       <slot>{{ name }}</slot>
       <AppIcon v-if="trailingIcon" class="app-button__trailing" :name="trailingIcon" :size="15" />
-    </button>
+    </component>
   </AppTooltip>
 </template>
 
@@ -116,6 +122,7 @@ function swallowClick(event: MouseEvent) {
   font: var(--type-control);
   color: var(--ink);
   white-space: nowrap;
+  text-decoration: none;
   background: var(--button);
   border: 1px solid var(--button-line);
   border-radius: var(--radius-md);
