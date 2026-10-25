@@ -2,7 +2,6 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Frame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { sameFrame } from '../../domain/frame'
-import { layerAt } from '../../domain/layers'
 import { projectCell, type Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -97,27 +96,6 @@ export function useCanvasView(
     return surfaceOf(project).pointToCell({ x: viewport.value.width / 2, y: viewport.value.height / 2 }, 'canvas')
   }
 
-  /** Scrolls only as far as it takes to bring a bead into view, `margin` px clear of the viewport's edges: what
-   * moving the keyboard cursor does. */
-  function reveal(position: GridPosition, margin = 24): void {
-    const project = currentProject()
-    if (!project || !measured()) {
-      return
-    }
-    const bead = surfaceOf(project).beadBox({ ...position, rows: 1, columns: 1 }, layerAt(project, position))
-    const { width, height } = viewport.value
-    let dx = 0
-    let dy = 0
-    if (bead.x - margin < 0) dx = bead.x - margin
-    else if (bead.x + bead.width + margin > width) dx = bead.x + bead.width + margin - width
-    if (bead.y - margin < 0) dy = bead.y - margin
-    else if (bead.y + bead.height + margin > height) dy = bead.y + bead.height + margin - height
-    if (dx !== 0 || dy !== 0) {
-      scroll.value = { x: scroll.value.x + dx, y: scroll.value.y + dy }
-      isAtFit.value = false
-    }
-  }
-
   function setZoom(value: number, anchor?: Scroll): void {
     const next = clampZoom(value)
     if (next === zoom.value) {
@@ -169,7 +147,6 @@ export function useCanvasView(
     scrollBy,
     centreOn,
     visibleCentre,
-    reveal,
     isAtFit,
   }
 }

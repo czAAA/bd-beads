@@ -89,11 +89,6 @@ const {
   onCellPrimaryMove,
   onCellHover,
   onHoverEnd,
-  beadCursor,
-  cursorShown,
-  onProjectKeyboardFocus,
-  onProjectKey,
-  onProjectKeyUp,
   onRotate,
   onRotateCanvas,
   onSelectAll,
@@ -358,11 +353,7 @@ const drawingStyle = computed(() => {
               :selection-blocks-margin="selecting"
               :selection-refusals="selectionRefusals"
               :selecting="selecting"
-              :cursor="cursorShown ? beadCursor : undefined"
               :label="projectLabel"
-              @cursor-key="onProjectKey"
-              @keyup="onProjectKeyUp"
-              @keyboard-focus="onProjectKeyboardFocus"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
               @cell-hover="onCellHover"

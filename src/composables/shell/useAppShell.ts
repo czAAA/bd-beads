@@ -34,7 +34,6 @@ import { useBeadShapeFlow } from '../project/useBeadShapeFlow'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
-import { useKeyboardCursor } from '../canvas/useKeyboardCursor'
 import { useNewProjectFlow } from '../project/useNewProjectFlow'
 import type { OpenPanel } from './openPanel'
 import { useOverlayVisibility } from './useOverlayVisibility'
@@ -56,7 +55,6 @@ import { provideBeadColors, useBeadColors } from '../palette/useBeadColors'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../tools/usePalette'
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
-import { useToolAtCursor } from '../tools/useToolAtCursor'
 import { useUndoHistory } from '../project/useUndoHistory'
 
 // The app's composition root (ADR 0020): wires every composable the shell uses into one flat context; nothing here
@@ -142,7 +140,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, visibleCentre, zoomPercent, stripZoomPercent } =
+  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, zoomPercent, stripZoomPercent } =
     useCanvasFraming({
       currentProject,
       framing: () => framing.value,
@@ -182,7 +180,6 @@ function wireAppShell(services: Services) {
   const {
     selection,
     refusals: selectionRefusals,
-    refuse: refuseSelection,
     beginPress: beginSelectPress,
     extendPress: extendSelection,
     endPress: endSelectPress,
@@ -474,41 +471,7 @@ function wireAppShell(services: Services) {
     pickColorAt,
   })
 
-  /** Painting with the keyboard (tickets 159, 194): the announcer needs the cursor and the cursor the announcer, so
-   * the announcer reads the cursor lazily. */
-  const { announcement, announce, announceCursor, colorWords } = useA11yAnnouncer({
-    messages,
-    currentProject,
-    beadCursor: () => beadCursor.value,
-    palette: () => palette.value,
-  })
-
-  const { invokeToolAt, extendSelectionTo, finishExtending } = useToolAtCursor({
-    messages,
-    currentProject,
-    activeTool: () => activeTool.value,
-    selectedColorHex,
-    pressCell: onCellPrimaryDown,
-    endStroke,
-    beginSelectPress,
-    leavePasteMode,
-    extendSelection,
-    refuseSelection,
-    announce,
-    colorWords,
-  })
-
-  const { beadCursor, cursorShown, onProjectKeyboardFocus, onProjectKey, onProjectKeyUp } = useKeyboardCursor({
-    currentProject,
-    reveal,
-    hasSelection: () => !!selection.value,
-    onCellHover,
-    onHoverEnd,
-    announceCursor,
-    invokeToolAt,
-    extendSelectionTo,
-    finishExtending,
-  })
+  const { announcement, announce } = useA11yAnnouncer()
 
   /** Delete all and its confirmation (tickets 42, 198). */
   const deleteAll = useDeleteAllFlow({ currentProject, edit })
@@ -694,11 +657,6 @@ function wireAppShell(services: Services) {
     },
   })
 
-  /** Skip to Project: moves keyboard focus straight onto the Project. */
-  function focusProject() {
-    canvasScrollEl.value?.querySelector<HTMLElement>('[data-testid="project-surface"]')?.focus()
-  }
-
   watch(activeProjectId, () => {
     resetHistory()
     // Selection resets here through the module's reset(); the clipboard deliberately survives a Project switch
@@ -772,7 +730,6 @@ function wireAppShell(services: Services) {
     stripZoomPercent,
     spaceHeld,
     spacePanning,
-    focusProject,
     // Editing
     canUndo,
     canRedo,
@@ -809,11 +766,6 @@ function wireAppShell(services: Services) {
     onCellPrimaryMove,
     onCellHover,
     onHoverEnd,
-    beadCursor,
-    cursorShown,
-    onProjectKeyboardFocus,
-    onProjectKey,
-    onProjectKeyUp,
     ...rowOps,
     onRotate: rotateFlow.onRotate,
     onRotateFrame: rotateFrameFlow.onRotateFrame,

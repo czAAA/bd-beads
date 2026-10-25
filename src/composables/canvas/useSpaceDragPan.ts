@@ -2,7 +2,7 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { isTypingInFormField } from '../shell/useKeyboardShortcuts'
 
 /** The Space key, by its physical code, so it means the same whatever the keyboard layout. */
-export function isSpaceKey(event: KeyboardEvent): boolean {
+function isSpaceKey(event: KeyboardEvent): boolean {
   return event.code === 'Space'
 }
 

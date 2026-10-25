@@ -60,13 +60,7 @@ export const pl: Translations = {
     estimateUnits: '≈ {columns}×{rows} jednostek',
   },
   a11y: {
-    skipToProject: 'Przejdź do projektu',
     toolsLandmark: 'Narzędzia',
-    cursorPosition: 'Rząd {row}, kolumna {column}, {color}',
-    painted: 'Pomalowano: {color}',
-    filled: 'Wypełniono: {color}',
-    erased: 'Wymazano',
-    emptyBead: 'puste',
     projectLabel: '{name}, {columns} na {rows} koralików, {colors}',
     canvasLabel: '{name}, płótno bez ramki, {colors}',
     colorsCount: { one: '{count} kolor', few: '{count} kolory', many: '{count} kolorów', other: '{count} koloru' },

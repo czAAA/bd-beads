@@ -60,13 +60,7 @@ export const es: Translations = {
     estimateUnits: '≈ {columns}×{rows} unidades',
   },
   a11y: {
-    skipToProject: 'Ir al proyecto',
     toolsLandmark: 'Herramientas',
-    cursorPosition: 'Fila {row}, columna {column}, {color}',
-    painted: 'Pintado de {color}',
-    filled: 'Rellenado de {color}',
-    erased: 'Borrado',
-    emptyBead: 'vacía',
     projectLabel: '{name}, {columns} por {rows} cuentas, {colors}',
     canvasLabel: '{name}, lienzo sin marco, {colors}',
     colorsCount: { one: '{count} color', many: '{count} de colores', other: '{count} colores' },

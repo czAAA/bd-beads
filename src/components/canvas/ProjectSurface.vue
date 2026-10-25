@@ -19,7 +19,6 @@ import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { edgeScrollStep } from '../../composables/canvas/edgeScroll'
-import { isSpaceKey } from '../../composables/canvas/useSpaceDragPan'
 import { surfaceView, type Scroll, type ViewLayer } from '../../rendering/surfaceView'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from './eyedropperCursor'
 import { toolPointer, toolPointerImage } from './toolCursors'
@@ -43,8 +42,6 @@ const props = withDefaults(defineProps<{
   previewColor?: string | null
   /** The rectangle the Select tool has marked out, drawn as a marquee over those beads (ticket 31). */
   selection?: Selection
-  /** The keyboard's bead cursor (ticket 159), drawn only while the surface has keyboard focus. */
-  cursor?: GridPosition
   /** The Project's accessible name: it is one image to a screen reader, summed up (ScreenReaders card). */
   label?: string
   /** Whether a drag moves the canvas instead of drawing (the Hand tool, or Space held); Edit Frame takes the drag
@@ -95,10 +92,6 @@ const emit = defineEmits<{
   'cell-primary-move': [row: number, column: number, layer?: Layer]
   'cell-hover': [row: number, column: number, layer?: Layer]
   'hover-end': []
-  /** A key pressed while the Project has focus (ticket 159): App.vue moves the bead cursor and uses the tool. */
-  'cursor-key': [event: KeyboardEvent]
-  /** Keyboard focus arrived (true) or left (false): the cursor shows only after focus by keyboard. */
-  'keyboard-focus': [focused: boolean]
   /** The canvas was dragged by this many px (the Hand tool, the middle button). */
   pan: [dx: number, dy: number]
   /** The wheel or a trackpad scrolled the canvas by this many px. */
@@ -171,12 +164,7 @@ function placePen(event: PointerEvent): void {
   penAt.value = hovering ? { clientX: event.clientX, clientY: event.clientY, moves: movesCanvas(event) } : undefined
 }
 
-// Set by a press on the surface: bead cursor shows only for focus not from a pointer (Tab, Skip to Project). Cleared by
-// blur and arrow keys. While set, Space pans the canvas instead of using the tool (ticket 424).
-let pressed = false
-
 function onPress(event: PointerEvent) {
-  pressed = true
   const was = activePointers.size > 0
   activePointers.add(event.pointerId)
   if (!was) emit('pressing', true)
@@ -219,23 +207,6 @@ function dropPressedPointers() {
  * or the Selection is not captured): the window hears it, so no path can leave the bar away (ticket 503). */
 function onWindowPointerEnd(event: PointerEvent) {
   releasePointer(event)
-}
-
-function onFocus() {
-  if (!pressed) emit('keyboard-focus', true)
-}
-
-function onBlur() {
-  pressed = false
-  emit('keyboard-focus', false)
-}
-
-/** Space after a pointer press goes to the window's Space-drag pan (ticket 424), not the tool at the bead cursor; an
- * arrow key ends that. */
-function onKeydown(event: KeyboardEvent): void {
-  if (event.key.startsWith('Arrow')) pressed = false
-  if (isSpaceKey(event) && pressed) return
-  emit('cursor-key', event)
 }
 
 /** The colors the beads are drawn in follow the app's theme and the person's Canvas color; a change redraws both
@@ -615,7 +586,6 @@ function drawOverlay(): void {
       pixelRatio,
       theme: theme.value,
       rowMarks: marksShown.value,
-      cursor: props.cursor,
       pointer: markerAt.value && !props.tool && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
@@ -649,7 +619,6 @@ watch(
     () => props.previewColor,
     markerAt,
     () => props.selection,
-    () => props.cursor,
     () => props.showRulers,
     marksShown,
     () => props.settingFrame,
@@ -1179,12 +1148,8 @@ onBeforeUnmount(() => {
       'project-surface--dragging': dragging,
     }"
     :style="eyedropperShown ? { cursor: EYEDROPPER_CURSOR } : handleCursor ? { cursor: handleCursor } : toolCursor ? { cursor: toolCursor } : undefined"
-    tabindex="0"
     role="img"
     :aria-label="label"
-    @focus="onFocus"
-    @blur="onBlur"
-    @keydown="onKeydown"
     @pointerdown.capture="onPress"
     @pointerdown="onPointerDown"
     @pointermove="onPointerMove"
@@ -1218,11 +1183,6 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-.project-surface:focus {
-  /* The bead cursor on the overlay is the focus indicator (BeadCursor card). */
-  outline: none;
-}
-
 .project-surface {
   position: absolute;
   inset: 0;
