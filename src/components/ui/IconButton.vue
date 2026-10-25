@@ -272,10 +272,6 @@ function swallowClick(event: MouseEvent) {
   color: var(--accent-strong);
 }
 
-.icon-btn--tool:focus-visible {
-  outline-offset: calc(-1 * var(--focus-offset));
-}
-
 /* The key sits against the icon's top-right corner: DM Mono 11px, `muted`, accent when selected. */
 .icon-btn__key {
   position: absolute;

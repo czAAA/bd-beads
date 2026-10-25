@@ -14,7 +14,7 @@ Every clickable action in bd-beads: primary, primary select, secondary, secondar
 - **Danger fill** (`bb-btn--danger`): the confirm button of a destructive modal only.
 
 ## Anatomy
-Height 34 (38 in the save box and Edit row, 32 in the Saved Patterns footer). Icon 15px, stroke 1.75, then the label (`control` role), 8px apart, padding 0 12, radius-md. Focus: 2px `accent` outline, 2px offset.
+Height 34 (38 in the save box and Edit row, 32 in the Saved Patterns footer). Icon 15px, stroke 1.75, then the label (`control` role), 8px apart, padding 0 12, radius-md. Focus: the `focus-ring` outline, 2px, inside the edge (`--focus-offset`).
 
 ## Labelled button
 One component covers every labelled button (ticket 331, ADR 0035), the Link included: an optional leading icon, the label, an optional trailing icon. It shows a Tooltip only when given one, and then only a sentence the label doesn't already say ("Start an empty canvas."), or from a control-registry action, which supplies its label, key chip, enabled state and, when disabled, the reason. A disabled button is `aria-disabled`, still hoverable and focusable, a click does nothing, and its Tooltip says why.
