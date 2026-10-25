@@ -139,7 +139,7 @@ function wireAppShell(services: Services) {
   const toggleRowHighlight = () => void (rowHighlight.value = !rowHighlight.value)
 
   /** The input mode toggle (tickets 325, 326): offered once a pen has been seen. */
-  const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
+  const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, writingHand, setWritingHand } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
   const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, reveal, centreOn, visibleCentre, zoomPercent, stripZoomPercent } =
@@ -760,8 +760,8 @@ function wireAppShell(services: Services) {
     setInputMode,
     inputModeAvailable,
     surfaceInputMode,
-    handedness,
-    setHandedness,
+    writingHand,
+    setWritingHand,
     panBy,
     scrollBy,
     setZoom,

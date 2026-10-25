@@ -53,8 +53,8 @@ const {
   inputMode,
   setInputMode,
   inputModeAvailable,
-  handedness,
-  setHandedness,
+  writingHand,
+  setWritingHand,
   openPanel,
   framing,
   framePanelShown,
@@ -108,14 +108,14 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       :projects="projects"
       :input-mode="inputMode"
       :pen-seen="inputModeAvailable"
-      :handedness="handedness"
+      :writingHand="writingHand"
       @import="onImportProjects"
       @export-all="onExportLibraryFile"
       @new-project="phoneSavedProjectsOpen = false"
       @saved-projects="phoneSavedProjectsOpen = true"
       @delete-all="onRequestDeleteAllProjects"
       @update:input-mode="setInputMode"
-      @update:handedness="setHandedness"
+      @update:writingHand="setWritingHand"
       @shortcuts="shortcutsHelpOpen = true"
     />
     <ProjectPanel
