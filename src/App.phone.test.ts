@@ -211,7 +211,7 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(panel.find('[data-testid="panel-bead"]').exists()).toBe(true)
   })
 
-  it('enables the Saved Projects icon and opens a drawer when projects exist', async () => {
+  it('opens the Projects library from its Menu row when projects exist', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
 
@@ -222,26 +222,18 @@ describe('App at the phone tier (ticket 79)', () => {
     expect(btn.text()).toContain('1')
 
     await btn.trigger('click')
-    // Menu swaps to its Saved Projects subpanel.
+    // Menu swaps to its Projects library subpanel.
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe(en.projects.heading)
     expect(wrapper.find('[data-testid="panel-body"] [data-testid="project-list"]').exists()).toBe(true)
   })
 
-  it('exports a Project file and the whole library from the Saved Projects panel (ticket 385)', async () => {
+  it('exports the whole library from the Projects library (ticket 385)', async () => {
     const wrapper = await mountWithProject(15, 30)
     await wrapper.find('[data-testid="strip-menu"]').trigger('click')
     await wrapper.find('[data-testid="menu-saved-projects"]').trigger('click')
 
-    // Scoped to the Saved Projects subpanel: another ProjectList has its own panel-expand too.
-    const savedProjectsPanel = wrapper.get('[data-testid="panel-body"]')
-    await savedProjectsPanel.find('[data-testid="panel-expand"]').trigger('click')
-
-    await savedProjectsPanel.find('[data-testid="export-project"]').trigger('click')
-    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
-
-    vi.mocked(downloadFile).mockClear()
-    await savedProjectsPanel.find('[data-testid="export-library"]').trigger('click')
+    await wrapper.get('[data-testid="panel-body"]').find('[data-testid="menu-export-all"]').trigger('click')
     await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
   })
 

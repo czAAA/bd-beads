@@ -83,7 +83,7 @@ describe('OverviewPage', () => {
     expect(wrapper.find('.overview__header').exists()).toBe(false)
     expect(wrapper.find('[data-testid="header-menu"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="theme-toggle"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(false)
   })
 
   it('has the strip with Menu, the Brand as the current page, and the zoom, but no Project controls', () => {
@@ -105,7 +105,7 @@ describe('OverviewPage', () => {
 
     expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBe('true')
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
-    expect(wrapper.find('[role="radiogroup"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
     const item = wrapper.get('[data-testid="menu-item-overview"]')

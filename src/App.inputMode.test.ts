@@ -5,6 +5,7 @@ import { createProject } from './domain/project'
 import { saveProjects } from './services/libraryStore'
 import { beadColor, pressBead } from './testUtils/beads'
 import { en } from './i18n/en'
+import { choosePanelOption } from './testUtils/choosePanelOption'
 import { closePanel, openPanel } from './testUtils/pill'
 
 /** Pen mode and Mouse mode (tickets 325, 326, 443): which pointer draws and which one moves the canvas, and the Menu's Input row that picks, which shows once a pen is seen. */
@@ -38,7 +39,8 @@ async function inputRow(wrapper: Awaited<ReturnType<typeof mountOpen>>) {
   await openPanel(wrapper, 'strip-menu')
   return wrapper.find('[data-testid="menu-input-mode"]')
 }
-const chosen = (row: Awaited<ReturnType<typeof inputRow>>) => row.findAll('[role="radio"]').find((option) => option.attributes('aria-checked') === 'true')?.text()
+/** The value the row's picker shows, from its button's name ("Input: Pen"). */
+const chosen = (row: Awaited<ReturnType<typeof inputRow>>) => (row.get('button[aria-haspopup]').attributes('aria-label') ?? '').split(': ')[1]
 
 describe('the Input row in Menu', () => {
   it('is in Mouse mode when the person chose it, and choosing Pen switches it and keeps the choice for the next visit', async () => {
@@ -49,7 +51,7 @@ describe('the Input row in Menu', () => {
     expect(row.text()).toContain(en.panels.menu.input)
     expect(chosen(row)).toBe(en.panels.menu.mouse)
 
-    await row.find('[data-value="pen"]').trigger('click')
+    await choosePanelOption(wrapper, 'menu-input-mode', 'pen')
     expect(chosen(await inputRow(wrapper))).toBe(en.panels.menu.pen)
     expect(localStorage.getItem('openbeads:input-mode')).toBe('pen')
 
