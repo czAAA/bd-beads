@@ -17,6 +17,9 @@ export interface Selection {
   columns: number
   /** The layer the drag or tap began on (ADR 0066, ticket 491); absent: the one its top-left bead is on. */
   layer?: Layer
+  /** A Piece-tool tap's exact shape (ticket 547, ADR 0051): the Piece's own bead positions, which lie inside the
+   * rectangle above (its bounding box). Absent: every position of the rectangle. */
+  cells?: readonly GridPosition[]
 }
 
 /** The cells one Copy snapshotted (CONTEXT.md's Copy): colors, not grid positions, stamped wherever Paste is aimed. */
@@ -65,6 +68,23 @@ export function dragFocusOnLayer(project: Placed, layer: Layer, cell: GridPositi
   }
 }
 
+/** A position as a set key. */
+export const cellKey = (row: number, column: number): string => `${row},${column}`
+
+/** Whether a position is in the Selection's own cells: the whole rectangle, or for a shape only its Piece's beads
+ * (ticket 547). Undefined for a rectangle, which needs no test beyond its bounds. */
+export function selectionMask(selection: Selection): ((row: number, column: number) => boolean) | undefined {
+  if (!selection.cells) return undefined
+  const keys = new Set(selection.cells.map((cell) => cellKey(cell.row, cell.column)))
+  return (row, column) => keys.has(cellKey(row, column))
+}
+
+/** Whether the Selection has the Frame's eight handles: a rectangle big enough for guides. A shape has none and can't
+ * be resized or moved (ticket 547). */
+export function selectionHasHandles(selection: Selection): boolean {
+  return !selection.cells && hasGuides(selection)
+}
+
 /** A box of beads carries guides (rulers, selection handles) once it spans at least this many beads in total, i.e.
  * more than 4 (tickets 377, 435); a single row of five does. */
 const GUIDED_MIN_BEADS = 5
@@ -86,9 +106,9 @@ function selectionOfBox(box: Frame): Selection {
   return { top: box.row, left: box.column, rows: box.rows, columns: box.columns }
 }
 
-// The Selection a tap with the Piece tool makes (ticket 414): the bounding rectangle of the tapped bead's Piece (other
-// Pieces' beads inside it are in too); none on an empty position. With a Frame (ticket 433) only the part on the
-// tapped bead's side counts, trimmed to a legal rectangle; a tap in the margin selects nothing.
+// The Selection a tap with the Piece tool makes (ticket 414): the tapped bead's Piece, its bounding rectangle carrying
+// its exact cells (ticket 547); none on an empty position. With a Frame (ticket 433) only the part on the tapped
+// bead's side counts, trimmed to a legal rectangle; a tap in the margin selects nothing.
 export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Frame): Selection | undefined {
   const members = pieceBeadsAt(beads, weave, at).filter((member) => {
     if (!frame) return true
@@ -102,7 +122,9 @@ export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition,
   const columns = members.map((member) => member.column)
   const top = Math.min(...rows)
   const left = Math.min(...columns)
-  return trimToAllowed(frame, { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }, at)
+  const box = trimToAllowed(frame, { top, left, rows: Math.max(...rows) - top + 1, columns: Math.max(...columns) - left + 1 }, at)
+  const cells = box && members.filter((member) => frameContains(selectionFrame(box), member))
+  return box && cells && { ...box, cells }
 }
 
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
@@ -165,17 +187,20 @@ export function withinFrame(selection: Selection, frame: Frame): Selection {
 /** The Selection grown to whole Units where the Technique has them (ticket 483), kept inside the Frame it started in. */
 export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Frame): Selection {
   const snapped = describeWeave(weave).snapSelection(selection, frame)
-  return selection.layer ? { ...snapped, layer: selection.layer } : snapped
+  if (snapped === selection) return selection
+  return { ...snapped, ...(selection.layer ? { layer: selection.layer } : {}), ...(selection.cells ? { cells: selection.cells } : {}) }
 }
 
 /** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
  * the first bead. */
 export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {
   const { rowsPerUnit } = describeWeave(project)
+  const mask = selectionMask(selection)
+  const colorIn = (row: number, column: number) => (!mask || mask(row, column) ? colorAt(project.beads, row, column) : null)
   const drawn: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
     for (let column = selection.left; column < selection.left + selection.columns; column++) {
-      if (colorAt(project.beads, row, column)) drawn.push({ row, column })
+      if (colorIn(row, column)) drawn.push({ row, column })
     }
   }
   if (drawn.length === 0) return undefined
@@ -186,7 +211,7 @@ export function copySelection(project: Project, selection: Selection): CopiedBlo
   const left = Math.min(...drawn.map((cell) => cell.column))
   const right = Math.max(...drawn.map((cell) => cell.column))
   const colors = Array.from({ length: bottom - top + 1 }, (_row, rowOffset) =>
-    Array.from({ length: right - left + 1 }, (_column, columnOffset) => colorAt(project.beads, top + rowOffset, left + columnOffset)),
+    Array.from({ length: right - left + 1 }, (_column, columnOffset) => colorIn(top + rowOffset, left + columnOffset)),
   )
 
   return { rows: colors.length, columns: colors[0].length, colors, anchor: { row: drawn[0].row - top, column: drawn[0].column - left } }
@@ -250,7 +275,8 @@ export function selectionLayer(project: Placed, selection: Selection): Layer {
 /** The Selection counted in a layer's own rows and columns. */
 export function selectionInLayer(project: Pick<Project, 'frame'>, layer: Layer, selection: Selection): Selection {
   const { row, column } = positionInLayer(project, layer, { row: selection.top, column: selection.left })
-  return { top: row, left: column, rows: selection.rows, columns: selection.columns }
+  const cells = selection.cells?.map((cell) => positionInLayer(project, layer, cell))
+  return { top: row, left: column, rows: selection.rows, columns: selection.columns, ...(cells ? { cells } : {}) }
 }
 
 /** Snapshots the drawn beads of a Selection on its layer (Copy). */
@@ -259,12 +285,14 @@ export function copyLayerSelection(project: Project, selection: Selection): Copi
   return copySelection(layerView(project, layer), selectionInLayer(project, layer, selection))
 }
 
-/** Every position in a Selection on its layer: the Selection's rectangle, cut to the Frame when it is the Frame's. */
+/** Every position in a Selection on its layer: the Selection's rectangle (a shape's own cells), cut to the Frame when it
+ * is the Frame's. */
 function selectionCells(view: Project, selection: Selection): GridPosition[] {
+  const mask = selectionMask(selection)
   const cells: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
     for (let column = selection.left; column < selection.left + selection.columns; column++) {
-      if (!view.frame || frameContains(view.frame, { row, column })) {
+      if ((!mask || mask(row, column)) && (!view.frame || frameContains(view.frame, { row, column }))) {
         cells.push({ row, column })
       }
     }
@@ -297,7 +325,8 @@ export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selec
   const view = layerView(project, 'frame')
   const picked = pieceSelectionAt(view.beads, view, positionInLayer(project, 'frame', at), view.frame)
   const origin = positionOnCanvas(project, 'frame', { row: picked?.top ?? 0, column: picked?.left ?? 0 })
-  return picked && { ...picked, top: origin.row, left: origin.column, layer }
+  const cells = picked?.cells?.map((cell) => positionOnCanvas(project, 'frame', cell))
+  return picked && { ...picked, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) }
 }
 
 /** The cells a Paste at `at` would fill, as Canvas positions (the paste preview). */

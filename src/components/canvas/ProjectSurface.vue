@@ -9,7 +9,7 @@ import type { Tool } from '../../domain/tool'
 import type { GridPosition, Layer, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type InputMode } from '../../domain/inputMode'
 import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../../domain/project'
-import { hasGuides, selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
+import { selectionFrame, selectionHasHandles, selectionLayer, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../rendering/gestureView'
@@ -886,10 +886,15 @@ function onPointerDown(event: PointerEvent): void {
     }
   }
   if (props.selecting && props.selection && event.button === 0 && !(event.pointerType === 'touch' && !event.isPrimary) && !startsDrag(event)) {
-    // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it.
+    // A Selection too small for handles (ticket 435) has none to grab: a press inside it only moves it. A shape (ticket
+    // 547) can't be grabbed at all.
     const box = surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer())
     const point = pointInSurface(event)
-    const target: FramePress = hasGuides(props.selection) ? boxPressAt(box, props.project.rotation, point, touchInput.value) : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
+    const target: FramePress = props.selection.cells
+      ? { kind: 'outside' }
+      : selectionHasHandles(props.selection)
+        ? boxPressAt(box, props.project.rotation, point, touchInput.value)
+        : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
     if (target.kind !== 'outside') {
       adjusting.value = true
       hideMarker()
@@ -968,7 +973,7 @@ function onPointerMove(event: PointerEvent): void {
     emit('selection-drag', cellUnder(event))
     return
   }
-  if (props.selecting && props.selection && event.pointerType !== 'touch' && hasGuides(props.selection)) {
+  if (props.selecting && props.selection && event.pointerType !== 'touch' && selectionHasHandles(props.selection)) {
     const id = handleIdAt(surface.value.beadBox(selectionFrame(props.selection), selectionViewLayer()), pointInSurface(event), false)
     handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
   } else if (props.project.frame && event.pointerType !== 'touch' && !framing.value) {
