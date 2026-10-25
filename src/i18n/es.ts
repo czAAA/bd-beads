@@ -238,8 +238,6 @@ export const es: Translations = {
   },
   overview: {
     pageTitle: 'Resumen',
-    sloganLead: 'Dibuja. Disfruta.',
-    sloganLast: 'Teje.',
     tagline: 'guarda. cuenta. exporta',
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',
@@ -247,7 +245,7 @@ export const es: Translations = {
     whatsInside: 'Qué incluye',
     previousFeature: 'Función anterior',
     nextFeature: 'Función siguiente',
-    notes: { you: 'tú', onUs: 'va por nosotros' },
+    notes: { onUs: 'va por nosotros' },
     coffee: { title: 'Una sola persona', text: 'openbeads lo hace una sola persona, cuenta a cuenta, y es gratis. Si te ahorró una tarde de contar, un café es una buena forma de dar las gracias.', button: 'Invítame a un café' },
     plans: {
       label: 'planes',

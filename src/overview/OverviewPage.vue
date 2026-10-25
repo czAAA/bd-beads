@@ -10,6 +10,7 @@ import DrawnLayer from './DrawnLayer.vue'
 import CoffeeTile from './CoffeeTile.vue'
 import FeatureCarousel from './FeatureCarousel.vue'
 import PlanTiles from './PlanTiles.vue'
+import RollingSlogan from './RollingSlogan.vue'
 import { provideI18n } from '../i18n/useI18n'
 import { OVERVIEW_MAX_ZOOM_PERCENT, OVERVIEW_MIN_ZOOM_PERCENT, useOverviewZoom } from './overviewZoom'
 
@@ -26,10 +27,6 @@ const { t } = provideI18n()
 watchEffect(() => {
   document.title = `${t.value.overview.pageTitle} · ${t.value.app.title}`
 })
-
-/** The slogan's first word carries the note "you". */
-const sloganFirst = computed(() => t.value.overview.sloganLead.split(' ')[0]!)
-const sloganRest = computed(() => t.value.overview.sloganLead.slice(sloganFirst.value.length))
 
 const menuOpen = ref(false)
 const zoom = useOverviewZoom()
@@ -71,14 +68,7 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
     <main class="overview__main">
       <section class="overview__hero">
         <DrawnLayer section="hero" />
-        <p class="overview__slogan" data-testid="overview-slogan">
-          <span class="overview__slogan-first"
-            >{{ sloganFirst
-            }}<span class="overview__note overview__note--you" aria-hidden="true" data-testid="overview-note-you">{{
-              t.overview.notes.you
-            }}</span></span
-          >{{ sloganRest }} <span class="overview__slogan-last">{{ t.overview.sloganLast }}</span>
-        </p>
+        <RollingSlogan />
         <p class="overview__tagline">
           <span class="overview__tagline-text">{{ t.overview.tagline }}</span>
           <span class="overview__aside overview__aside--us" aria-hidden="true" data-testid="overview-note-on-us">
@@ -209,54 +199,6 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   padding: var(--space-32) 0;
 }
 
-.overview__slogan {
-  /* Steps up with the screen (Overview card): 40px phone, 58px from 744, 60px from 1024, 70px at 24″. */
-  --slogan-size: 2.5rem;
-  --slogan-line: 2.5rem;
-
-  margin: 0;
-  font: var(--type-tagline);
-  font-size: var(--slogan-size);
-  line-height: var(--slogan-line);
-  letter-spacing: var(--tracking-tagline);
-  color: var(--ink);
-}
-
-@container overview (min-width: 744px) {
-  .overview__slogan {
-    --slogan-size: 3.625rem;
-    --slogan-line: 3.875rem;
-  }
-}
-
-@container overview (min-width: 1024px) {
-  .overview__slogan {
-    --slogan-size: 3.75rem;
-  }
-}
-
-@container overview (min-width: 1920px) {
-  .overview__slogan {
-    --slogan-size: 4.375rem;
-    --slogan-line: 4.5rem;
-  }
-}
-
-/* Russian runs longer: 20% smaller. */
-.overview__slogan:lang(ru) {
-  font-size: calc(var(--slogan-size) * 0.8);
-  line-height: calc(var(--slogan-line) * 0.8);
-}
-
-.overview__slogan-last {
-  color: var(--accent-strong);
-}
-
-.overview__slogan-first {
-  position: relative;
-  display: inline-block;
-}
-
 .overview__tagline {
   position: relative;
   margin: var(--space-16) 0 0;
@@ -277,15 +219,8 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   pointer-events: none;
 }
 
-.overview__note--accent,
-.overview__note--you {
+.overview__note--accent {
   color: var(--accent-strong);
-}
-
-.overview__note--you {
-  top: -0.75rem;
-  left: -0.25rem;
-  transform: rotate(-8deg);
 }
 
 .overview__aside {

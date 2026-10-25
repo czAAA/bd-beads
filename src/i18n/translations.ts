@@ -274,8 +274,6 @@ export interface Translations {
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
   overview: {
     pageTitle: string
-    sloganLead: string
-    sloganLast: string
     tagline: string
     makeFirstProject: string
     openEditor: string
@@ -285,7 +283,7 @@ export interface Translations {
     previousFeature: string
     nextFeature: string
     /** The hand-written notes of the hero (Overview card); decorative, hidden from screen readers. */
-    notes: { you: string; onUs: string }
+    notes: { onUs: string }
     /** The coffee tile (ticket 219; Overview card). */
     coffee: { title: string; text: string; button: string }
     /** The plan tiles (ticket 220; Overview card): placeholders until accounts and payment exist. */
