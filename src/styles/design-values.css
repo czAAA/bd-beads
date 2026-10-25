@@ -14,6 +14,7 @@
   --hover-fill: var(--surface);
   --press-fill: var(--line);
   --focus-width: 2px;
+  --focus-offset: -2px;
   --tooltip-fill: color-mix(in srgb, var(--elevated) 92%, transparent);
   --tooltip-blur: 8px;
   --tooltip-muted: var(--muted);
@@ -31,6 +32,7 @@
   --hover-fill: var(--elevated);
   --press-fill: var(--line-strong);
   --focus-width: 2px;
+  --focus-offset: -2px;
   --tooltip-fill: color-mix(in srgb, var(--elevated) 90%, transparent);
   --tooltip-blur: 8px;
   --tooltip-muted: var(--body);
@@ -47,6 +49,7 @@
   --hover-fill: #f0f0f0;
   --press-fill: #d4d4d4;
   --focus-width: 3px;
+  --focus-offset: -3px;
   --tooltip-fill: var(--elevated);
   --tooltip-blur: 0;
   --tooltip-muted: var(--muted);
@@ -66,7 +69,6 @@
 
 :root {
   /* Control geometry (Button, IconButton, Swatch, Tooltip cards): fixed sizes the spacing scale does not cover */
-  --focus-offset: 1px;
   --border-emphasis: 2px;
   --hit-min: 24px;
   --selbar-height: 28px;

@@ -329,6 +329,6 @@ const showing = computed(() => props.selectionSummary !== undefined)
 
 .context-bar :deep(.context-bar__button:focus-visible) {
   outline: var(--focus-width) solid var(--canvas);
-  outline-offset: -2px;
+  outline-offset: var(--focus-offset);
 }
 </style>

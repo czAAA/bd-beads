@@ -180,7 +180,7 @@ function frameSize(project: Project): string {
 
 .projects-library__remove:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 1px;
+  outline-offset: var(--focus-offset);
 }
 
 .projects-library__item:hover .projects-library__remove,

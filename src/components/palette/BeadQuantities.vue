@@ -207,7 +207,7 @@ const total = computed(() => {
 
 .bead-quantities__more:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .bead-quantities__chevron--up {

@@ -213,7 +213,7 @@ watch(
 
 .stepper__button:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 1px;
+  outline-offset: var(--focus-offset);
 }
 
 .stepper__button:disabled {

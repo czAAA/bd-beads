@@ -278,7 +278,7 @@ function onListKeydown(event: KeyboardEvent) {
 
 .panel-picker__option:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: -1px;
+  outline-offset: var(--focus-offset);
 }
 
 @media (hover: hover) {
