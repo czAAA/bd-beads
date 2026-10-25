@@ -155,6 +155,10 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
+.slogan__sizer > span {
+  display: block;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .slogan__column {
     transition: none;
