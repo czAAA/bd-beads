@@ -243,8 +243,6 @@ export const zh: Translations = {
   },
   overview: {
     pageTitle: '概览',
-    sloganLead: '绘制。快乐。',
-    sloganLast: '编织。',
     tagline: '保存。计数。导出',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
@@ -252,7 +250,7 @@ export const zh: Translations = {
     whatsInside: '功能一览',
     previousFeature: '上一个功能',
     nextFeature: '下一个功能',
-    notes: { you: '你', onUs: '我们请客' },
+    notes: { onUs: '我们请客' },
     coffee: { title: '一个人做的', text: 'openbeads 由一个人一颗一颗珠子做出来，并且免费。如果它帮你省下一晚上的数珠子，请我喝杯咖啡就是最好的感谢。', button: '请我喝咖啡' },
     plans: {
       label: '方案',

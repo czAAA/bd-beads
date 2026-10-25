@@ -243,8 +243,6 @@ export const en: Translations = {
   },
   overview: {
     pageTitle: 'Overview',
-    sloganLead: 'Draw. Joy.',
-    sloganLast: 'Weave.',
     tagline: 'save. count. export',
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',
@@ -252,7 +250,7 @@ export const en: Translations = {
     whatsInside: "What's inside",
     previousFeature: 'Previous feature',
     nextFeature: 'Next feature',
-    notes: { you: 'you', onUs: 'on us' },
+    notes: { onUs: 'on us' },
     coffee: { title: 'Made by one person', text: "openbeads is made by one person, bead by bead, and it's free. If it saved you an evening of counting, a coffee says thanks.", button: 'Buy me a coffee' },
     plans: {
       label: 'plans',

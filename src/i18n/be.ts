@@ -245,8 +245,6 @@ export const be: Translations = {
   },
   overview: {
     pageTitle: 'Агляд',
-    sloganLead: 'Малюйце. Атрымлівайце асалоду.',
-    sloganLast: 'Тварыце.',
     tagline: 'захаваем. палічым. экспартуем',
     makeFirstProject: 'Стварыць першы праект',
     openEditor: 'Адкрыць рэдактар',
@@ -254,7 +252,7 @@ export const be: Translations = {
     whatsInside: 'Што ўнутры',
     previousFeature: 'Папярэдняя магчымасць',
     nextFeature: 'Наступная магчымасць',
-    notes: { you: 'вы', onUs: 'гэта мы' },
+    notes: { onUs: 'гэта мы' },
     coffee: { title: 'Адзін чалавек', text: 'openbeads робіць адзін чалавек, бісерына за бісерынай, і ён бясплатны. Калі ён зэканоміў вам вечар падлікаў, кава будзе лепшай падзякай.', button: 'Пачаставаць кавай' },
     plans: {
       label: 'тарыфы',
