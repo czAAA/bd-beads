@@ -195,6 +195,15 @@ const SCREENS: Screen[] = [
     },
   },
   {
+    // Brick stitch adds the Brick block stepper to the head.
+    name: 'Project head, brick stitch',
+    project: fixtureProject({ technique: 'brick' }),
+    visit: async (page, measure) => {
+      if (!(await reveal(page, 'project-brick-block'))) return false
+      await measure()
+    },
+  },
+  {
     name: 'Bead pickers',
     visit: async (page, measure) => {
       if (!(await reveal(page, 'bead-size'))) return false

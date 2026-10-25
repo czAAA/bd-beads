@@ -159,7 +159,7 @@ export const pl: Translations = {
       makerLabel: 'autor:',
       savedLocal: 'Zapisano w przeglądarce',
       notSavedYet: 'Jeszcze nie zapisano',
-      addMaker: 'Dodaj swoje imię do eksportów',
+      addMaker: 'Imię do eksportów',
       changeMaker: 'Zmień imię autora',
       thisProject: 'Ten projekt',
       beadBrand: 'Marka',

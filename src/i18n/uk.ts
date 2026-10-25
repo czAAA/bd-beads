@@ -159,7 +159,7 @@ export const uk: Translations = {
       makerLabel: 'автор:',
       savedLocal: 'Збережено в браузері',
       notSavedYet: 'Ще не збережено',
-      addMaker: 'Додайте ім’я для експорту',
+      addMaker: 'Ім’я для експорту',
       changeMaker: 'Змінити ім’я автора',
       thisProject: 'Цей проєкт',
       beadBrand: 'Бренд',
