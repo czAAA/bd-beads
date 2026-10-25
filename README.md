@@ -1,7 +1,7 @@
 # bd-beads
 beads drawing app
 
-Copyright (C) 2026 czAAA (see [NOTICE](NOTICE)). Open source under the GNU Affero General Public License v3.0 or later (see [LICENSE](LICENSE)); AGPL because the app is served rather than distributed, so a modified copy hosted as a competing service must offer its users the modified source (AGPL §13); a permissive license or the GPL would not require that. Issues are welcome; outside contributions (pull requests) are not accepted yet.
+Copyright (C) 2026 czAAA (see [NOTICE](NOTICE)). Open source under the GNU Affero General Public License v3.0 or later (see [LICENSE](LICENSE)); AGPL because the app is served rather than distributed, so a modified copy hosted as a competing service must offer its users the modified source (AGPL §13); a permissive license or the GPL would not require that. Issues are welcome; outside contributions (pull requests) are not accepted yet. If it is useful to you, [Buy me a coffee](https://buymeacoffee.com/openbeads).
 
 Hosted privately for now (tailnet only). The public deploy returns with the Cloudflare hosting ticket.
 

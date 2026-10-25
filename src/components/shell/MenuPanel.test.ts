@@ -5,6 +5,7 @@ import MenuPanel from './MenuPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
 import { createProject } from '../../domain/project'
 import { en } from '../../i18n/en'
+import { COFFEE_URL } from '../../data/coffeeLink'
 import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 
 beforeEach(() => {
@@ -26,7 +27,6 @@ function mountIn(props: Record<string, unknown> = {}, openSub = () => {}) {
   })
   return mount(Host)
 }
-
 describe('MenuPanel (ticket 443)', () => {
   it('has Projects, Preferences, Help and About in that order, each a named group', () => {
     const wrapper = mountIn()
@@ -81,8 +81,11 @@ describe('MenuPanel (ticket 443)', () => {
     expect(localStorage.getItem('openbeads:theme')).toBeNull()
   })
 
-  it('has no Buy me a coffee row while there is no link', () => {
-    expect(mountIn().find('[data-testid="menu-item-coffee"]').exists()).toBe(false)
+  it('has a Buy me a coffee row opening the Coffee link in a new tab', () => {
+    const row = mountIn().get('[data-testid="menu-item-coffee"]')
+    expect(row.attributes('href')).toBe(COFFEE_URL)
+    expect(row.attributes('target')).toBe('_blank')
+    expect(row.attributes('rel')).toBe('noopener')
   })
 
   it('emits its choices', async () => {
