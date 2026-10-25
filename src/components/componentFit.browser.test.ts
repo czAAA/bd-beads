@@ -7,7 +7,7 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { createProject, toggleRowDirection } from '../domain/project'
 
 // Components with a fixed-size box, mounted in a real browser in every language at the layout's width edges, must keep
-// their text inside the box (ticket 552; replaces the screens of e2e/visual/textFit.spec.ts that only they lived on).
+// their text inside the box (ticket 552).
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const project = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
 

@@ -93,3 +93,39 @@ export function tooltipMakers(): string[] {
     .filter((file) => tags(file.template).some((tag) => TOOLTIP_MAKERS.includes(tag.name)))
     .map((file) => file.name)
 }
+
+/** The components the browser fit tests reach: those a `*.browser.test.ts` imports (it mounts them), and every
+ * component used in the template of one already reached (it is on the page whenever that one is). */
+export function exercisedComponents(): Set<string> {
+  const files = sourceFiles()
+  const byName = new Map(files.map((file) => [file.name, file]))
+  const reached = new Set<string>()
+  const queue: string[] = []
+  const reach = (name: string) => {
+    if (byName.has(name) && !reached.has(name)) {
+      reached.add(name)
+      queue.push(name)
+    }
+  }
+  for (const test of walk(SRC).filter((file) => file.endsWith('.browser.test.ts'))) {
+    for (const match of readFileSync(test, 'utf8').matchAll(/import\s+(\w+)\s+from\s+'[^']*\.vue'/g)) reach(match[1]!)
+  }
+  while (queue.length > 0) {
+    for (const tag of tags(byName.get(queue.pop()!)!.template)) reach(tag.name)
+  }
+  return reached
+}
+
+/** The components whose template shows a translated text: the ones a text fit test is for. */
+export function componentsWithText(): SourceFile[] {
+  return sourceFiles().filter((file) => /\bt\.[a-zA-Z]/.test(file.template))
+}
+
+/** The source files (not tests) that read a top-level group of the translations, `t.<group>` or `.<group>.`. */
+export function filesReadingTranslations(group: string): SourceFile[] {
+  const pattern = new RegExp(`(?:\\bt\\b|\\bt\\.value)\\.${group}\\b|\\.${group}\\.`)
+  return walk(SRC)
+    .filter((file) => /\.(vue|ts)$/.test(file) && !file.endsWith('.test.ts') && !/[\\/](i18n|testUtils)[\\/]/.test(file))
+    .map((file) => ({ path: relative(SRC, file), name: basename(file).replace(/\.(vue|ts)$/, ''), template: readFileSync(file, 'utf8') }))
+    .filter((file) => pattern.test(file.template))
+}

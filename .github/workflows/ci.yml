@@ -137,13 +137,7 @@ jobs:
         run: npx playwright install --with-deps chromium
       - if: steps.browsers.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
-      # Two runs, each sharded the same way. Playwright hands a shard a contiguous slice of the tests, and the fourteen
-      # text-fit tests (textFit.spec.ts, ~16 s each against ~1 s for the rest) would all land in one shard, so they are
-      # sharded among themselves and every shard gets its share of both kinds.
-      - run: npx playwright test --grep-invert 'text fits its box' --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-      - run: npx playwright test --grep 'text fits its box' --shard=${{ matrix.shard }}/${{ strategy.job-total }}
-        env:
-          PLAYWRIGHT_BLOB_OUTPUT_FILE: blob-report/report-${{ matrix.shard }}-text-fit.zip
+      - run: npx playwright test --shard=${{ matrix.shard }}/${{ strategy.job-total }}
       # Each shard's blob report, kept on failure and success alike so the merged report is whole.
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: always()

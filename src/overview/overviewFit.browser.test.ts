@@ -4,7 +4,7 @@ import { unexplainedFit } from '../testUtils/fitPending'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import OverviewPage from './OverviewPage.vue'
 
-// The Overview has its own tiers, so its widths are those of the whole-app check (ticket 552).
+// The Overview has its own tiers, so it is tried at more widths than the rest (ticket 552).
 const WIDTHS = [1900, 1280, 1024, 844, 820, 768, 390, 360, 320]
 
 describe('OverviewPage text fit', () => {
