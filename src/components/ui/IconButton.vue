@@ -19,6 +19,8 @@ const props = withDefaults(
     /** A registry action: the source of the name, body, key, enabled state and disabled reason. */
     action?: ControlActionLike
     deps?: unknown
+    /** Makes it a link that opens in a new tab with `rel="noopener"` (an external page). */
+    href?: string
     shape?: 'square' | 'round'
     variant?: 'secondary' | 'in-box' | 'toolbox' | 'box' | 'plain' | 'tool' | 'pill'
     size?: 'md' | 'lg'
@@ -45,6 +47,7 @@ const props = withDefaults(
     label: undefined,
     action: undefined,
     deps: undefined,
+    href: undefined,
     shape: 'square',
     variant: 'secondary',
     size: 'md',
@@ -99,10 +102,14 @@ function swallowClick(event: MouseEvent) {
 
 <template>
   <component :is="tooltipProps ? AppTooltip : 'span'" v-bind="tooltipProps ?? {}" :class="{ 'icon-btn-wrap': true, 'icon-btn-wrap--tool': isTool, 'icon-btn-wrap--pill': isPill }">
-    <button
+    <component
+      :is="href ? 'a' : 'button'"
       class="ui-control icon-btn"
       :class="[`icon-btn--${shape}`, `icon-btn--${variant}`, `icon-btn--${props.size}`, { 'icon-btn--selected': selected, 'icon-btn--accent': accent }]"
-      type="button"
+      :type="href ? undefined : 'button'"
+      :href="href"
+      :target="href ? '_blank' : undefined"
+      :rel="href ? 'noopener' : undefined"
       :aria-label="name"
       :aria-pressed="pressed ?? selected"
       :aria-disabled="isDisabled ? 'true' : undefined"
@@ -112,7 +119,7 @@ function swallowClick(event: MouseEvent) {
     >
       <slot><AppIcon v-if="iconName" :name="iconName" :size="size" /></slot>
       <KeyChip v-if="keyed && showHotkey && hotkey" class="icon-btn__key" aria-hidden="true">{{ hotkey }}</KeyChip>
-    </button>
+    </component>
   </component>
 </template>
 
@@ -136,6 +143,7 @@ function swallowClick(event: MouseEvent) {
   padding: 0;
   box-sizing: border-box;
   color: var(--ink);
+  text-decoration: none;
   background: var(--button);
   border: 1px solid var(--button-line);
   border-radius: var(--radius-md);
