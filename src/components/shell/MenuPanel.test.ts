@@ -12,7 +12,7 @@ beforeEach(() => {
 })
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
-const base = { projects: [project], toolsPosition: 'bottom' as const, inputMode: 'pen' as const, penSeen: false }
+const base = { projects: [project], toolsPosition: 'bottom' as const, inputMode: 'pen' as const, handedness: 'right' as const, penSeen: false }
 
 /** The panel inside a shell's context. */
 function mountIn(props: Record<string, unknown> = {}, openSub = () => {}) {
@@ -51,6 +51,15 @@ describe('MenuPanel (ticket 443)', () => {
     const pen = mountIn({ penSeen: true })
     expect(pen.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
     expect(pen.get('[data-testid="menu-input-mode"]').text()).toContain(en.panels.menu.pen)
+  })
+
+  it('shows the Hand row only once a pen has been seen, and asks for the other hand', async () => {
+    expect(mountIn().find('[data-testid="menu-handedness"]').exists()).toBe(false)
+    const pen = mountIn({ penSeen: true })
+    const row = pen.get('[data-testid="menu-handedness"]')
+    expect(row.text()).toContain(en.panels.menu.right)
+    await row.findAll('[role="radio"]').find((option) => option.text() === en.panels.menu.left)!.trigger('click')
+    expect(pen.findComponent(MenuPanel).emitted('update:handedness')).toEqual([['left']])
   })
 
   it('has Source code opening a new tab, and the version as text', () => {
