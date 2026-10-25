@@ -34,13 +34,12 @@ function items(): HTMLElement[] {
   return [...(listEl.value?.querySelectorAll<HTMLElement>('[role="menuitemradio"]') ?? [])]
 }
 
-async function show(focus: 'chosen' | 'last' = 'chosen') {
+async function show() {
   open.value = true
   await nextTick()
   anchored.follow()
   const list = items()
-  const target = focus === 'last' ? list.at(-1) : list[Math.max(0, props.options.findIndex((option) => option.value === value.value))]
-  target?.focus()
+  list[Math.max(0, props.options.findIndex((option) => option.value === value.value))]?.focus()
 }
 
 function close(returnFocus = true) {
@@ -60,10 +59,8 @@ function onButtonClick() {
 
 function onButtonKeydown(event: KeyboardEvent) {
   if (props.disabled) return
-  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
-    event.preventDefault()
-    void show(event.key === 'ArrowUp' ? 'last' : 'chosen')
-  } else if (event.key === 'ArrowRight' && !open.value) {
+  // ↓/↑ are the panel's: they step past this row. →, Enter and Space open the list.
+  if (event.key === 'ArrowRight' && !open.value) {
     event.preventDefault()
     void show()
   } else if (event.key === 'ArrowLeft' && open.value) {
