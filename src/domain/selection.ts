@@ -68,7 +68,8 @@ export function dragFocusOnLayer(project: Placed, layer: Layer, cell: GridPositi
   }
 }
 
-const cellKey = (row: number, column: number): string => `${row},${column}`
+/** A position as a set key. */
+export const cellKey = (row: number, column: number): string => `${row},${column}`
 
 /** Whether a position is in the Selection's own cells: the whole rectangle, or for a shape only its Piece's beads
  * (ticket 547). Undefined for a rectangle, which needs no test beyond its bounds. */

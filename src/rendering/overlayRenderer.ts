@@ -5,7 +5,7 @@ import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave, rowProgressOn } from '../domain/project'
-import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
+import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
@@ -313,8 +313,8 @@ function drawSelection(context: DrawingContext, weave: Weave, space: Space, sele
 // A shaped Selection (ticket 547): each cell's side that no other cell of the shape lies across is part of the outline,
 // so it runs round the outside and round each hole.
 function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly GridPosition[], theme: ProjectTheme): void {
-  const has = new Set(cells.map((cell) => `${cell.row},${cell.column}`))
-  const next = (cell: GridPosition, rows: number, columns: number) => has.has(`${cell.row + rows},${cell.column + columns}`)
+  const has = new Set(cells.map((cell) => cellKey(cell.row, cell.column)))
+  const next = (cell: GridPosition, rows: number, columns: number) => has.has(cellKey(cell.row + rows, cell.column + columns))
   context.fillStyle = theme.marker
   for (const cell of cells) {
     const { x, y, width, height } = positionsBoxPx(weave, cell.row, cell.column, 1, 1)
