@@ -9,4 +9,6 @@ An expandable panel listing how many beads of each color the Pattern needs, with
 - Numbers group thousands with a no-break space: "1 200".
 - **Counts the Frame only (v16):** beads outside the Frame are not counted. With no Frame the panel keeps its header and says "Set Frame to count beads." (EmptyPanels).
 
+**In the Frame panel (ticket 0555):** Beads needed is the Frame panel's last section, not an expandable box: the total in its PanelSection header, `panel-row` rows (14px swatch, code, name, count, grams), five shown, then "Show all {n} colours" opens the rest in place. It counts the Frame only, so it is absent with no Frame.
+
 Hand-written from DESIGN.md §5.8; static rendition.

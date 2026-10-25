@@ -315,3 +315,23 @@ The gallery's section label is "Start from". A Template is a card with a name an
 | Custom scheme: Any size, in any Technique. | Своя схема: Любой размер и любая техника. |
 | Usual sizes | Обычные размеры |
 | This side is fixed. | Эта сторона не меняется. |
+
+## Panels redesign (tickets 0553 to 0555)
+
+`.openbeads` is named wherever a project file is read or written (Import a project, Export all projects, Project file, the file picker's Tooltip, the import error). The `project:`, `frame:`, `name:` and `maker:` labels are lowercase in every language, like the section labels.
+
+| English | Русский |
+|---|---|
+| Projects library · Import a project · Export all projects · Delete all projects | Библиотека проектов · Импортировать проект · Экспортировать все проекты · Удалить все проекты |
+| No projects yet · Projects you make are kept on this device. Import a .openbeads file to bring one in. | Проектов пока нет · Проекты хранятся на этом устройстве. Импортируйте файл .openbeads, чтобы добавить проект. |
+| {n} pieces · {n} unnamed · Frame {w} × {h} beads | Частей: {n} · без названия: {n} · Рамка {w} × {h} бусин |
+| Writing hand · Right · Left · Buy me a coffee | Рабочая рука · Правая · Левая · Угостить кофе |
+| project: · name: · maker: · Add your name for exports · Change the maker's name | проект: · название: · автор: · Добавьте имя для экспорта · Изменить имя автора |
+| Saved in local browser · Not saved yet · Saved in openbeads cloud · Not in openbeads cloud: sign in to sync | Сохранено в браузере · Ещё не сохранено · Сохранено в облаке openbeads · Не в облаке openbeads: войдите, чтобы синхронизировать |
+| Bead shape · Symmetric · Real · Brand · Type · Size | Форма бусины · Симметричная · Реальная · Бренд · Тип · Размер |
+| Project file · Picture · Printable chart · Clear all beads · Delete project | Файл проекта · Картинка · Схема для печати · Очистить все бусины · Удалить проект |
+| frame: · Name this frame · Rename the frame · Frame from template · Fit a frame to the drawing · A frame sets the size, the exports and the bead count. | рамка: · Назовите рамку · Переименовать рамку · Рамка из шаблона · Рамка по рисунку · Рамка задаёт размер, экспорт и подсчёт бусин. |
+| Estimated size · An estimate. · Rows are marked done. Remove the frame to change the size. · Show all {n} colours | Примерный размер · Это оценка. · Ряды отмечены как готовые. Уберите рамку, чтобы изменить размер. · Показать все цвета ({n}) |
+| Stone · Fog · Pebble · Slate | Камень · Туман · Галька · Сланец |
+
+Russian here is a proposal for review; the other five languages follow it in the app change.

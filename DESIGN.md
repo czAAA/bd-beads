@@ -65,7 +65,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | One card per component (68, plus the `Cover`): a short written guideline | [`components/<Name>/`](docs/design/system/components) |
 | Logo and app icons | [`assets/Logos/`](docs/design/system/assets/Logos) |
 | The theme-aware favicon set for `public/` | [`favicon/`](docs/design/system/favicon) |
-| Icons v2 (61 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
+| Icons v2 (71 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
 | Icons v1, the icons the app shipped before v2 (reference only) | [`assets/Icons v1/`](docs/design/system/assets/Icons%20v1) |
 
 One layout (ticket 412): the app has one layout at every width (ADR 0046; ADR 0059, ticket 439, replaced the Dock with the floating Tool pill). The header, left column and Toolbox that old §4, §4.1, §4.2 and §5.7 describe are gone; `responsive.md` and the `ToolPill`, `ToolSheet` and `CanvasStrip` cards say where their controls live now. The `Dock` card is kept as the record of the bar the Tool pill replaced. The `Toolbox` card is kept as the record of the v18 rail.
