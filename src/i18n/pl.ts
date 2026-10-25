@@ -116,7 +116,7 @@ export const pl: Translations = {
       input: 'Wejście',
       pen: 'Rysik',
       mouse: 'Mysz',
-      writingHand: 'Ręka pisząca',
+      hand: 'Ręka',
       right: 'Prawa',
       left: 'Lewa',
       help: 'Pomoc',

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DrawnLayer from './DrawnLayer.vue'
-import { LAYERS, TIERS, type SectionName, type Tier } from './drawnLayer'
+import { LAYERS, TIERS, type Doodle, type SectionName, type Tier } from './drawnLayer'
 
 const SECTIONS: SectionName[] = ['hero', 'inside', 'coffee', 'plans']
 
@@ -27,26 +27,30 @@ describe('DrawnLayer', () => {
       }
   })
 
+  // Counted at the edges and in the middle together: tickets 540 and 549 move drawings in beside the content, and a
+  // drawing counts wherever it sits.
   describe('how many there are per band (ticket 290)', () => {
     const total = (tier: Tier, kind: 'marks' | 'doodles') =>
-      SECTIONS.reduce((n, s) => n + LAYERS[s][kind][tier].filter((p) => p.side !== 'center').length, 0)
+      SECTIONS.reduce((n, s) => n + LAYERS[s][kind][tier].length, 0)
 
-    it('keeps the laptop and desktop bands as they were', () => {
+    it('keeps the laptop and desktop bands at about thirty drawings and nine or ten X1 marks', () => {
       for (const tier of ['xl', 'xxl'] as const) {
-        expect(total(tier, 'doodles')).toBe(24)
-        expect(total(tier, 'marks')).toBe(9)
+        expect(total(tier, 'doodles')).toBeGreaterThanOrEqual(30)
+        expect(total(tier, 'doodles')).toBeLessThanOrEqual(36)
+        expect(total(tier, 'marks')).toBeGreaterThanOrEqual(9)
+        expect(total(tier, 'marks')).toBeLessThanOrEqual(10)
       }
     })
 
     it('thins the tablet and small laptop bands to about two thirds, and the phone band to about one third', () => {
       for (const tier of ['md', 'lg'] as const) {
-        expect(total(tier, 'doodles')).toBeGreaterThanOrEqual(14)
-        expect(total(tier, 'doodles')).toBeLessThanOrEqual(18)
+        expect(total(tier, 'doodles')).toBeGreaterThanOrEqual(20)
+        expect(total(tier, 'doodles')).toBeLessThanOrEqual(27)
         expect(total(tier, 'marks')).toBeGreaterThanOrEqual(5)
         expect(total(tier, 'marks')).toBeLessThanOrEqual(7)
       }
-      expect(total('sm', 'doodles')).toBeGreaterThanOrEqual(6)
-      expect(total('sm', 'doodles')).toBeLessThanOrEqual(10)
+      expect(total('sm', 'doodles')).toBeGreaterThanOrEqual(7)
+      expect(total('sm', 'doodles')).toBeLessThanOrEqual(12)
       expect(total('sm', 'marks')).toBeGreaterThanOrEqual(2)
       expect(total('sm', 'marks')).toBeLessThanOrEqual(4)
     })
@@ -61,10 +65,11 @@ describe('DrawnLayer', () => {
           expect(d.gap).toBeGreaterThanOrEqual(8)
           expect(d.gap).toBeLessThanOrEqual(48)
         }
+    // Most stay outside the column; ticket 549 brought the rest in beside the content.
     const outside = (tier: Tier) =>
       SECTIONS.flatMap((s) => LAYERS[s].doodles[tier]).filter((d) => d.side !== 'center' && d.gap >= 24 && d.gap <= 48).length
-    expect(outside('xl')).toBeGreaterThanOrEqual(18)
-    expect(outside('xxl')).toBeGreaterThanOrEqual(18)
+    expect(outside('xl')).toBeGreaterThanOrEqual(15)
+    expect(outside('xxl')).toBeGreaterThanOrEqual(15)
   })
 
   it('places each drawing from the column with a gap in CSS', () => {
@@ -95,8 +100,10 @@ describe('DrawnLayer', () => {
     })
 
     it('measures a centred placement from the middle of the section, not from the column', () => {
-      const tier = TIERS.find((t) => LAYERS.plans.doodles[t].some((d) => d.side === 'center'))!
-      const placed = LAYERS.plans.doodles[tier].find((d) => d.side === 'center')!
+      // Measured from the top, and right of the middle: the browser writes a negative gap as `50% - …`.
+      const centred = (d: Doodle) => d.side === 'center' && d.top !== undefined && d.gap > 0
+      const tier = TIERS.find((t) => LAYERS.plans.doodles[t].some(centred))!
+      const placed = LAYERS.plans.doodles[tier].find(centred)!
       const style = mount(DrawnLayer, { props: { section: 'plans' } })
         .findAll('[data-testid="overview-drawn-doodle"]')
         .find((d) => d.classes().includes(`drawn__tier--${tier}`) && d.attributes('style')!.includes(`calc(50% + ${placed.gap}px)`))!
@@ -105,6 +112,25 @@ describe('DrawnLayer', () => {
       expect(style).toContain(`left:calc(50%+${placed.gap}px);top:${placed.top}px`)
       expect(style).not.toContain('--col')
     })
+  })
+
+  it('lets only the last section, the Plans, draw into the page padding below it (ticket 549)', () => {
+    for (const section of SECTIONS) {
+      const layer = mount(DrawnLayer, { props: { section } }).get('[data-testid="overview-drawn-layer"]')
+      expect(layer.classes().includes('drawn--to-page-end')).toBe(section === 'plans')
+    }
+  })
+
+  it('measures a placement up from the bottom when it gives `bottom`, so it stays under the Plan tiles at any width', () => {
+    const tier = TIERS.find((t) => LAYERS.plans.doodles[t].some((d) => d.bottom !== undefined))!
+    const placed = LAYERS.plans.doodles[tier].find((d) => d.bottom !== undefined)!
+    const styles = mount(DrawnLayer, { props: { section: 'plans' } })
+      .findAll('[data-testid="overview-drawn-doodle"]')
+      .filter((d) => d.classes().includes(`drawn__tier--${tier}`))
+      .map((d) => d.attributes('style')!.replace(/\s/g, ''))
+    const style = styles.find((s) => s.includes(`bottom:${placed.bottom}px`))
+    expect(style).toBeDefined()
+    expect(style).not.toContain('top:')
   })
 
   it('colours the beads from the Palette and the accent/muted tokens only', () => {

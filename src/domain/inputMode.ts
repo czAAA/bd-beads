@@ -4,9 +4,8 @@ export type InputMode = 'pen' | 'mouse'
 
 export const DEFAULT_INPUT_MODE: InputMode = 'mouse'
 
-/** The Writing hand (ticket 548): which hand holds the pen; a hovering pen's Tool pointer stands off the tip away from
- * it. */
-export type WritingHand = 'right' | 'left'
+/** Which hand holds the pen; the pen's marker stands off the tip away from it. */
+export type Handedness = 'right' | 'left'
 
 /** Whether a pointer of this `PointerEvent.pointerType` draws with the Tool in this mode; the others move the
  * canvas. */

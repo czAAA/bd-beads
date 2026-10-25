@@ -12,7 +12,7 @@ const svg =
   `<g stroke="#fff" stroke-width="4.5">${drawing}</g><g stroke="#1f1f1f" stroke-width="1.75">${drawing}</g></svg>`
 
 /** The image and its hot spot, for the app to draw itself where a CSS cursor is not shown (a hovering Pencil, ticket 546). */
-export const EYEDROPPER_IMAGE = { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, hotSpot: [TIP.x, TIP.y] as const, size: SIZE, tip: true }
+export const EYEDROPPER_IMAGE = { url: `data:image/svg+xml,${encodeURIComponent(svg)}`, hotSpot: [TIP.x, TIP.y] as const }
 
 /** The CSS `cursor` value: the image and its hot spot, falling back to a crosshair. */
 export const EYEDROPPER_CURSOR = `url("${EYEDROPPER_IMAGE.url}") ${TIP.x} ${TIP.y}, crosshair`
