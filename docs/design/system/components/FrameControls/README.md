@@ -7,4 +7,6 @@ The Frame disclosure row opened in place, and the Estimated size warning. (Calle
 - While a Row progress pass is done, Edit Frame, Fit to drawing and Technique are locked and "Rows are marked done. Remove the Frame to change the size" is written under them. Remove Frame is not locked: it clears the passes with the Frame, after a confirmation (ticket 434).
 - The estimate warning is the Tooltip at a 280px measure; on touch it opens on tap.
 
+**Retired (ticket 0555):** these controls now live in the Frame panel (Frame card): Technique in Project as its one Technique, the size, edges and Estimated size in the panel's size section, the estimate warning as an `info` Tooltip. This card stays as the record.
+
 Hand-written from the Phase A sign-off (forms, screens and states) and the v16 sign-off; static rendition.
