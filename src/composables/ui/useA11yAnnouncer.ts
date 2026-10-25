@@ -1,21 +1,8 @@
 import { nextTick, ref } from 'vue'
-import type { GridPosition } from '../../domain/grid'
-import type { Palette } from '../../domain/palette'
-import { beadColorAt, type Project } from '../../domain/project'
-import { colorName } from '../../i18n/colorName'
-import type { Translations } from '../../i18n/translations'
 
-/** What announcing needs from the app shell: the language, the open Project and the bead cursor. */
-export interface A11yAnnouncerDeps {
-  messages: () => Translations
-  currentProject: () => Project | undefined
-  beadCursor: () => GridPosition
-  palette: () => Palette
-}
-
-// Screen-reader announcements (tickets 159, 192; ADR 0020): the one polite live-region message per action, such as the
-// bead cursor's place and color. Deps are read lazily.
-export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {
+// Screen-reader announcements (tickets 159, 192): the one polite live-region message per action, such as a Frame move
+// or a rotation.
+export function useA11yAnnouncer() {
   /** The live region's text. */
   const announcement = ref('')
 
@@ -27,28 +14,5 @@ export function useA11yAnnouncer(deps: A11yAnnouncerDeps) {
     })
   }
 
-  /** A bead color in words: the Palette's name for it, "Custom color" for any other, "empty" for none. */
-  function colorWords(hex: string | null | undefined): string {
-    const t = deps.messages()
-    if (!hex) return t.a11y.emptyBead
-    return colorName(t, deps.palette().byHex(hex))
-  }
-
-  // Says the bead cursor's row, column and color. With a Frame the numbers are the Frame's own (rulers count from 1 at
-  // its top-left), so a bead above or left of it is row or column 0 and below; with none they are the canvas's, from
-  // row 0, column 0.
-  function announceCursor() {
-    const project = deps.currentProject()
-    if (!project) return
-    const { row, column } = deps.beadCursor()
-    announce(
-      deps
-        .messages()
-        .a11y.cursorPosition.replace('{row}', String(row - (project.frame?.row ?? 0) + 1))
-        .replace('{column}', String(column - (project.frame?.column ?? 0) + 1))
-        .replace('{color}', colorWords(beadColorAt(project, row, column))),
-    )
-  }
-
-  return { announcement, announce, announceCursor, colorWords }
+  return { announcement, announce }
 }

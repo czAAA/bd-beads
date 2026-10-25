@@ -7,7 +7,6 @@
     "assets/Icons/README.md",
     "assets/Logos/README.md",
     "components/BeadBoard/README.md",
-    "components/BeadCursor/README.md",
     "components/BeadHover/README.md",
     "components/BeadColors/README.md",
     "components/BeadPicker/README.md",
@@ -89,11 +88,6 @@
       "name": "BeadBoard",
       "group": "Canvas",
       "summary": "How a Pattern is drawn: beads on a rounded board, with rulers and the current-row marker."
-    },
-    {
-      "name": "BeadCursor",
-      "group": "States",
-      "summary": "The keyboard cursor on the Pattern: one bead ringed in focus-ring, its row and column marked on the rulers."
     },
     {
       "name": "BeadHover",

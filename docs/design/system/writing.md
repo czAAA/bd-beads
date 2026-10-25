@@ -169,7 +169,6 @@ The Canvas color button (Russian "Цвет полотна") offers five backgrou
 | Make one with New Pattern on the left, open a Saved Pattern, or import a file. | Создайте её кнопкой «Новая схема» слева, откройте сохранённую схему или импортируйте файл. |
 | Opening {Pattern} · {size} | Открываем {Pattern} · {size} |
 | Converting the picture · {percent} | Конвертируем изображение · {percent} |
-| Skip to Pattern | Перейти к схеме |
 | High contrast | Высокий контраст |
 | More · Tools | Ещё · Инструменты |
 | Row 13 of 30 | Ряд 13 из 30 |

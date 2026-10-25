@@ -59,13 +59,7 @@ export const en: Translations = {
     estimateUnits: '≈ {columns}×{rows} Units',
   },
   a11y: {
-    skipToProject: 'Skip to Project',
     toolsLandmark: 'Tools',
-    cursorPosition: 'Row {row}, column {column}, {color}',
-    painted: 'Painted {color}',
-    filled: 'Filled with {color}',
-    erased: 'Erased',
-    emptyBead: 'empty',
     projectLabel: '{name}, {columns} by {rows} beads, {colors}',
     canvasLabel: '{name}, Canvas with no Frame, {colors}',
     colorsCount: { one: '{count} color', other: '{count} colors' },

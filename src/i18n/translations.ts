@@ -84,17 +84,9 @@ export interface Translations {
     estimateBeads: string
     estimateUnits: string
   }
-  /** Keyboard and screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
+  /** Screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
-    skipToProject: string
     toolsLandmark: string
-    /** Announced as the bead cursor moves. */
-    cursorPosition: string
-    /** Announced after Space or Enter uses the current tool. */
-    painted: string
-    filled: string
-    erased: string
-    emptyBead: string
     /** The Project's accessible name: "{name}, {columns} by {rows} beads, {colors}" plus, with Row progress on, the
      * progress. */
     projectLabel: string

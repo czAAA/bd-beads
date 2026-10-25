@@ -75,10 +75,8 @@ export interface OverlayInput {
   /** Where the Selection's eight handles stand (ticket 414): the view the box is measured in, and `touch` for four
    * larger ones. Without it the Selection has no handles. */
   selectionHandles?: { surface: SurfaceView; touch: boolean }
-  /** The keyboard's bead cursor (ticket 159): a ring round one bead, only while the Project has keyboard focus. */
-  cursor?: GridPosition
   // Where positions live, from `spaceOf`, as the base layer was drawn. On the Canvas (ADR 0026) any position can carry
-  // a preview, Selection or cursor; in Frame-only space (default) the Project is the Frame alone, drawn from its first
+  // a preview or Selection; in Frame-only space (default) the Project is the Frame alone, drawn from its first
   // bead.
   space?: Space
   /** The rulers and their lines (Canvas only): the Frame's line or each piece's rectangle; `surface` is the view the
@@ -325,30 +323,6 @@ function drawShapeOutline(context: DrawingContext, weave: Weave, cells: readonly
   }
 }
 
-// The bead cursor (ticket 159; BeadCursor card): a ring in the theme's cursor color, 2px outside the bead (3px in high
-// contrast), following its corners. Drawn last, over everything, so never hidden.
-function drawCursor(context: DrawingContext, weave: Weave, space: Space, cursor: GridPosition, theme: ProjectTheme): void {
-  const { technique } = weave
-  if (!inSpace(space, cursor.row, cursor.column)) {
-    return
-  }
-  // The bead stands half the gap in from its cell; the ring starts 2px outside that.
-  const offset = 2 - BEAD_GAP_PX / 2
-  const width = theme.cursorWidth
-  const box = positionBoxPx(weave, cursor.row, cursor.column)
-  const x = box.x - offset
-  const y = box.y - offset
-  const across = box.width + offset * 2
-  const down = box.height + offset * 2
-  const radius = beadRoundness(technique, weave.cell) * CELL_SIZE_PX + offset
-
-  context.fillStyle = theme.cursor
-  context.beginPath()
-  roundedRect(context, x - width, y - width, across + width * 2, down + width * 2, radius + width)
-  roundedRect(context, x, y, across, down, radius)
-  context.fill('evenodd')
-}
-
 /** The Frame margin's outline (ticket 276, Frame card): 1px dashed `line-strong` round its outer edge, radius 12,
  * faded by `opacity`. Drawn in grid space, so its widths are divided by the zoom to stay screen px. */
 const MARGIN_OUTLINE_DASH_PX = [4, 3]
@@ -386,14 +360,14 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, cursor, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
   const showRows = rowMarks ?? rowProgressOn(project)
   const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
-  if (!showRows && !preview && !selection && !cursor && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
+  if (!showRows && !preview && !selection && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
 
@@ -411,7 +385,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const ownLayer: 'canvas' | 'frame' = space.open ? (selection ? selectionLayerOf(project, selection) : 'canvas') : 'frame'
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
   const canvasPreview = preview && { ...preview, cells: offFrame(preview.cells) }
-  const canvasCursor = cursor && !onFrame(frame, covered, cursor) ? cursor : undefined
 
   if (space.open && marginOutline > 0 && project.frame) {
     drawMarginOutline(context, canvasWeaveOf, covered!, zoom, marginOutline, theme, margin)
@@ -422,7 +395,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   if (space.open) {
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, theme)
     if (canvasPreview?.cells.length) drawPreview(context, canvasWeaveOf, project.frame, space, canvasPreview.cells, canvasPreview, theme)
-    if (canvasCursor) drawCursor(context, canvasWeaveOf, space, canvasCursor, theme)
   }
 
   // The Frame's layer, or the Project drawn alone.
@@ -446,8 +418,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (inPass.length > 0) {
       drawBeadRings(context, inPass, sheetWeave, theme)
     }
-    const sheetCursor = cursor && (frame ? onFrame(frame, covered, cursor) : true) ? local(cursor) : undefined
-    if (sheetCursor) drawCursor(context, sheetWeave, sheetSpace, sheetCursor, theme)
     context.restore()
   }
 
@@ -459,7 +429,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       layout: rulers.layout,
       pixelRatio,
       theme,
-      cursor,
       rowMarks: showRows,
     })
   }
