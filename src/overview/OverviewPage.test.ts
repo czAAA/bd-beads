@@ -256,3 +256,11 @@ describe('OverviewPage plan tiles', () => {
     }
   })
 })
+
+describe('OverviewPage background', () => {
+  it("draws the Canvas's grid: a bead across, in the theme's Position mark color", () => {
+    const style = page().find('[data-testid="overview"]').attributes('style') ?? ''
+    expect(style).toContain('--canvas-cell: 20px')
+    expect(style).toContain('--canvas-grid:')
+  })
+})
