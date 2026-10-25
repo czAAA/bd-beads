@@ -1,7 +1,7 @@
 import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } from 'vue'
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
-import { type WritingHand, type InputMode } from '../domain/inputMode'
+import { type Handedness, type InputMode } from '../domain/inputMode'
 import { CANVAS_BACKGROUND_MAX } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
@@ -54,8 +54,8 @@ export const PREFERENCES = {
     parse: (raw) => (raw === 'pen' || raw === 'mouse' ? raw : undefined),
     write: (mode) => mode ?? null,
   }),
-  /** The Writing hand (ticket 548): Right until Left is chosen. The key keeps its first name, so a saved choice stays. */
-  writingHand: preference<WritingHand>({
+  /** Which hand holds the pen: Right until Left is chosen. */
+  handedness: preference<Handedness>({
     key: 'openbeads:handedness',
     fallback: 'right',
     parse: (raw) => (raw === 'right' || raw === 'left' ? raw : undefined),

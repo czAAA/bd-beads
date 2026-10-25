@@ -116,7 +116,7 @@ export const ru: Translations = {
       input: 'Ввод',
       pen: 'Перо',
       mouse: 'Мышь',
-      writingHand: 'Рабочая рука',
+      hand: 'Рука',
       right: 'Правая',
       left: 'Левая',
       help: 'Справка',

@@ -61,7 +61,6 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
 | Canvas · Hand · Rulers | Полотно · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
-| Writing hand | Рабочая рука | Which hand holds the Pencil (Menu); not «Рука», which is the Hand tool |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | A Project made from a picture |
 
@@ -82,7 +81,6 @@ The same voice and sentence patterns in each language; domain words are never re
 | Frame | рамка | рамка |
 | Piece | шматочок | кавалачак |
 | Canvas · Hand · Rulers | Полотно · Рука · Лінійки | Палатно · Рука · Лінейкі |
-| Writing hand | Робоча рука | Працоўная рука |
 | Mirror | Відображення | Адлюстраванне |
 | Convert image | Конвертувати зображення | Канвертаваць выяву |
 
