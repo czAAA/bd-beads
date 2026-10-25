@@ -1,7 +1,8 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { INFO_POPOVERS, UNREACHED } from './hoverExemptions'
-import { tooltipMakers } from './hoverSource'
+import { INFO_POPOVERS } from '../../src/testUtils/hoverExemptions'
+import { UNREACHED } from './hoverExemptions'
+import { tooltipMakers } from '../../src/testUtils/hoverSource'
 import { LOCALES, WIDTHS } from './textFitMatrix'
 
 // The hover text check's reachability guard (ticket 264): every source place making a Tooltip or info popover must be
