@@ -4,7 +4,7 @@ import { snapRow } from './frame'
 import { layerView, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, frameWeave, type Project } from './project'
-import { selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
+import { cellKey, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
 import { describeWeave } from './weave'
 
 // Rotate (CONTEXT.md, ADR 0052): a quarter turn clockwise of the Selection's beads about its centre. Unlike the legacy
@@ -75,12 +75,12 @@ export function rotateSelection(project: Project, selection: Selection, inset = 
   const cleared = withColors(project.beads, [...lifted, ...covered].map(({ row, column }) => ({ row, column, color: null })))
   const beads = withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column)!, color })))
 
-  const landedKeys = landed && new Set(landed.map(({ row, column }) => `${row},${column}`))
+  const landedKeys = landed && new Set(landed.map(({ row, column }) => cellKey(row, column)))
   const named = carryNames(project, { ...project, beads, updatedAt: Date.now() }, (position) => {
     if (frameContains(area, position) && (!mask || mask(position.row, position.column))) {
       return turn(position.row, position.column)
     }
-    if (landedKeys) return landedKeys.has(`${position.row},${position.column}`) ? undefined : position
+    if (landedKeys) return landedKeys.has(cellKey(position.row, position.column)) ? undefined : position
     return frameContains(footprint, position) ? undefined : position
   })
   return { project: named, selection: landed ? { ...turned, cells: landed } : turned }
