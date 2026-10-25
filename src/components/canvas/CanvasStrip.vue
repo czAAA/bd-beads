@@ -5,6 +5,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
+import { COFFEE_URL } from '../../data/coffeeLink'
 import { overviewUrl } from '../../overview/overviewRoute'
 import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
@@ -47,6 +48,7 @@ const { t } = useI18n()
 /** Every button is a registry action, so its name, Tooltip, key and disabled reason come from there (ADR 0035). */
 const actions = {
   menu: controlAction('strip-menu'),
+  coffee: controlAction('strip-coffee'),
   project: controlAction('strip-project'),
   frame: controlAction('strip-frame'),
   rotateCanvas: controlAction('rotate-canvas'),
@@ -69,7 +71,7 @@ const overviewHref = overviewUrl(import.meta.env.BASE_URL)
 const panelsEl = ref<HTMLElement>()
 const controlsEl = ref<HTMLElement>()
 const panelsRoving = useRovingFocus(panelsEl, { axis: () => 'horizontal', managesTabIndex: true })
-const controlsRoving = useRovingFocus(controlsEl, { axis: () => 'horizontal', managesTabIndex: true })
+const controlsRoving = useRovingFocus(controlsEl, { selector: 'button, a[href]', axis: () => 'horizontal', managesTabIndex: true })
 
 function onPanelsKeydown(event: KeyboardEvent) {
   const button = event.target as HTMLElement
@@ -129,6 +131,10 @@ function onPanelsKeydown(event: KeyboardEvent) {
       <span class="canvas-strip__wordmark">{{ t.app.title }}</span>
     </component>
     <div ref="controlsEl" class="canvas-strip__controls" data-testid="canvas-strip-controls" @keydown="controlsRoving.onKeydown" @focusin="controlsRoving.onFocusin">
+      <!-- Buy me a coffee (ticket 560): only where the strip has room (1024px and up); under it the Menu row is the way in. -->
+      <span v-if="COFFEE_URL" class="canvas-strip__coffee">
+        <IconButton variant="plain" :icon-size="18" :action="actions.coffee" :href="COFFEE_URL" data-testid="strip-coffee" />
+      </span>
       <div v-if="project" class="canvas-strip__tools">
         <IconButton variant="plain" :icon-size="18" :action="actions.rotateCanvas" :deps="deps" data-testid="strip-rotate-canvas" @click="emit('rotate-canvas')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.rulers" :deps="deps" :selected="rulers" data-testid="strip-rulers" @click="emit('toggle-rulers')" />
@@ -188,6 +194,12 @@ function onPanelsKeydown(event: KeyboardEvent) {
     overflow: hidden;
     clip: rect(0 0 0 0);
     white-space: nowrap;
+  }
+}
+
+@media (max-width: 1023px) {
+  .canvas-strip__coffee {
+    display: none;
   }
 }
 

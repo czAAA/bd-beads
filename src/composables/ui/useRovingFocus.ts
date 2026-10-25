@@ -21,7 +21,7 @@ export function useRovingFocus(container: Ref<HTMLElement | undefined>, options:
 
   function items(): HTMLElement[] {
     return [...(container.value?.querySelectorAll<HTMLElement>(selector) ?? [])].filter(
-      (item) => !(item as HTMLButtonElement).disabled,
+      (item) => !(item as HTMLButtonElement).disabled && item.checkVisibility?.() !== false,
     )
   }
 
