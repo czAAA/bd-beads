@@ -39,6 +39,7 @@ const triggerEl = ref<HTMLElement>()
 /** Whether this browser has popovers (a test DOM may not). */
 const topLayer = typeof HTMLElement !== 'undefined' && 'showPopover' in HTMLElement.prototype
 const position = ref({ left: 0, top: 0 })
+let resizeObserver: ResizeObserver | undefined
 
 /** Puts the bubble in the top layer, where no ancestor's `overflow` can cut it; a browser without popovers keeps it
  * where it is, positioned the same way. */
@@ -77,6 +78,12 @@ async function openBubble() {
   await nextTick()
   setTopLayer(true)
   await place()
+  if (bubbleEl.value && typeof ResizeObserver !== 'undefined') {
+    // The bubble can change size after it is placed (a font or the key chip settling): placed for the old size, it
+    // would poke past the screen's edge (ticket 562).
+    resizeObserver ??= new ResizeObserver(() => void place())
+    resizeObserver.observe(bubbleEl.value)
+  }
 }
 
 /** A scroll anywhere (the column, the canvas) or a resize moves the trigger from under the bubble. */
@@ -143,6 +150,7 @@ function hide() {
   pinned.value = false
   if (!open.value) return
   open.value = false
+  resizeObserver?.disconnect()
   follow(false)
   setTopLayer(false)
 }

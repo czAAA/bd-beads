@@ -20,7 +20,6 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'OverviewPage', texts: ['Без аккаунта'], at: { ru: [820, 768] }, fixedBy: '231' },
   { case: 'OverviewPage', texts: ['Три способа работать'], at: { ru: [390, 360, 320] }, fixedBy: '231' },
   { case: 'OverviewPage', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
-  { case: 'CanvasStrip Tooltips', texts: ['RedoCtrl/Cmd+Shift+Z'], at: { en: [320] }, fixedBy: '562', borderline: true },
   { case: 'dialog pendingImport', texts: ['Перейти к импортированному проекту?'], at: { ru: [320] }, fixedBy: '559' },
   { case: 'BeadColorList', texts: ['· Discontinued'], at: { en: [320] }, fixedBy: '558' },
   { case: 'BeadColorList', texts: ['· Снят с производства'], at: { ru: [390, 320] }, fixedBy: '558' },
