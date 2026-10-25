@@ -139,6 +139,9 @@ export interface Translations {
       projects: string
       preferences: string
       input: string
+      hand: string
+      right: string
+      left: string
       pen: string
       mouse: string
       help: string

@@ -117,6 +117,7 @@ const {
   frameHandlesOn,
   onToggleFramePanel,
   surfaceInputMode,
+  handedness,
   onFitFrame,
   onEditFrame,
   onFrameKey,
@@ -349,6 +350,7 @@ const drawingStyle = computed(() => {
               :marker-hidden="spaceHeld"
               :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"
+              :handedness="handedness"
               :blocks-margin="!colorPick?.picking.value && (activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive)"
               :preview-cells="previewCells"
               :preview-color="previewColor"

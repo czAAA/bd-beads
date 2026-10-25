@@ -1237,16 +1237,25 @@ describe('ProjectSurface', () => {
     /** The marker's fill: the only translucent fillRect of 90% of a 20px bead less 1px at zoom 1. */
     const marker = () => context.named('fillRect').filter((call) => call.globalAlpha === 0.6 && call.args[2] === 17)
 
-    it('follows a mouse and a hovering pen, centred on the pointer, in the chosen color', async () => {
+    it('follows a mouse centred on the pointer, and a hovering pen up and left of its tip, in the chosen color', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746' })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
-      for (const pointerType of ['mouse', 'pen']) {
+      for (const [pointerType, offset] of [['mouse', 0], ['pen', 18]] as const) {
         context.calls.length = 0
         await surface.trigger('pointermove', { clientX: 105, clientY: 47, pointerType, buttons: 0 })
-        await vi.waitFor(() => expect(marker().map((call) => [call.fillStyle, call.args[0], call.args[1]])).toEqual([['#e63746', 96.5, 38.5]]))
+        await vi.waitFor(() => expect(marker().map((call) => [call.fillStyle, call.args[0], call.args[1]])).toEqual([['#e63746', 96.5 - offset, 38.5 - offset]]))
       }
+    })
+
+    it('stands a hovering pen\'s marker up and right of the tip for a left hand', async () => {
+      const project = projectOf(20, 10)
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', handedness: 'left' })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointermove', { clientX: 105, clientY: 47, pointerType: 'pen', buttons: 0 })
+      await vi.waitFor(() => expect(marker().map((call) => [call.args[0], call.args[1]])).toEqual([[96.5 + 18, 38.5 - 18]]))
     })
 
     it('is gone when the pen lifts away, and a finger shows none', async () => {
