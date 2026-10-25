@@ -139,7 +139,7 @@ function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number
 
 .palette-picker :deep(.palette-picker__swatch--target) {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 /* Pick color from canvas is the grid's last tile (ticket 403): a swatch's size, with a bigger eyedropper. Not a

@@ -82,7 +82,7 @@ function onClick() {
 
 .app-menu-item:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: -1px;
+  outline-offset: var(--focus-offset);
 }
 
 .app-menu-item:focus {
