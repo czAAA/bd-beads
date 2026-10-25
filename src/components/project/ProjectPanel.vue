@@ -1,36 +1,25 @@
 <script setup lang="ts">
-import { computed, nextTick, ref, useId } from 'vue'
-import type { Bead } from '../../domain/beads'
-import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain/weave'
+import { computed } from 'vue'
+import { beadLabel, type Bead } from '../../domain/beads'
 import { resolveProjectBead, type Project } from '../../domain/project'
-import { MAX_PROJECT_NAME, normalizeProjectName } from '../../domain/projectName'
+import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import SaveExport from '../export/SaveExport.vue'
-import BeadQuantities from '../palette/BeadQuantities.vue'
-import AppButton from '../ui/AppButton.vue'
-import AppIcon from '../ui/AppIcon.vue'
-import IconButton from '../ui/IconButton.vue'
-import TextField from '../ui/form/TextField.vue'
 import PanelItem from '../shell/PanelItem.vue'
-import BeadPicker from './BeadPicker.vue'
-import BeadShapeField from './BeadShapeField.vue'
+import PanelSection from '../shell/PanelSection.vue'
 import CanvasSection from './CanvasSection.vue'
-import CanvasTechniqueRow from './CanvasTechniqueRow.vue'
-import FrameControls from './FrameControls.vue'
-import NameOnExportsRow from './NameOnExportsRow.vue'
+import ProjectBeadSection from './ProjectBeadSection.vue'
+import ProjectHead from './ProjectHead.vue'
 
-// The body of Project (spec 0440, ticket 443; ProjectPanel card): everything about the open Project that no tool already
-// does: head (name, rename pencil, save state), Technique, Bead line, Canvas, Save and exports, "Name on exports", then
-// Duplicate, Clear and Delete. The Frame's Edit, Fit and Remove are not here. It only asks; the app shell does the work.
+// The body of Project (spec 0440, tickets 443, 554; ProjectPanel card): everything about the open Project that no tool
+// already does. A head (title with the save state, name, maker, Technique), then four sections that fold shut: bead,
+// canvas, export and this project. It only asks; the app shell does the work.
 const props = defineProps<{
   project: Project
-  /** The Project as summaries see it while a stroke is going on (useSettledProject), for Beads needed. */
-  settledProject?: Project
-  beadName: string
+  /** What the Project could switch to (ticket 48). */
   replaceCandidates: readonly Bead[]
-  /** The Project's own Bead when it differs from the catalog's of the same id (ticket 534): listed, not offered. */
-  replaceOutdated?: Bead
   saveFailed: boolean
   unsaved: boolean
   exporting?: 'png' | 'pdf'
@@ -55,140 +44,68 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-
-const renaming = ref(false)
-const draft = ref('')
-const refused = ref(false)
-const fieldId = useId()
-const renameField = ref<InstanceType<typeof TextField>>()
-const errorId = useId()
-const shapeLabelId = useId()
-const ownBead = computed(() => resolveProjectBead(props.project))
-const rename = controlAction('rename-project')
+const canvas = useCanvasBackground()
 const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
-const renameLabel = computed(() => t.value.panels.project.rename.replace('{name}', props.project.name))
+const file = controlAction('export-project-file')
 
-function startRename() {
-  draft.value = props.project.name
-  refused.value = false
-  renaming.value = true
-  // The person tapped the pencil to type, so the keyboard rises on a touch device too (ticket 520).
-  void nextTick(() => renameField.value?.focus({ asked: true }))
-}
+const beadSummary = computed(() => {
+  const bead = resolveProjectBead(props.project)
+  const shape = (props.project.beadShape ?? DEFAULT_BEAD_SHAPE) === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric
+  return bead ? `${beadLabel(bead, t.value.formFactors)} · ${shape.toLowerCase()}` : undefined
+})
 
-function commitRename() {
-  if (!normalizeProjectName(draft.value)) {
-    refused.value = true
-    return
-  }
-  renaming.value = false
-  if (normalizeProjectName(draft.value) !== props.project.name) emit('rename', draft.value)
-}
-
-function cancelRename() {
-  renaming.value = false
-  refused.value = false
-}
-
-/** What the save-state line says: saved, unsaved changes, or why the device refused it. */
-const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'unsaved' : 'saved'))
+const canvasName = computed(() => {
+  const background = canvas.background.value
+  return background ? t.value.canvas.canvasColor.names[background.id] : undefined
+})
 </script>
 
 <template>
   <div class="project-panel" data-testid="project-panel">
-    <section class="project-panel__head" role="group" :aria-label="project.name">
-      <div v-if="!renaming" class="project-panel__name-row">
-        <h3 class="project-panel__name" data-testid="project-name">{{ project.name }}</h3>
-        <IconButton variant="plain" icon="pencil" :label="renameLabel" :tooltip="{ body: rename.body?.(t) }" data-testid="project-rename" @click="startRename" />
-      </div>
-      <form v-else class="project-panel__rename" data-testid="project-rename-form" data-handles-escape @submit.prevent="commitRename" @panel-escape="cancelRename">
-        <div class="project-panel__rename-row">
-          <TextField
-            :id="fieldId"
-            ref="renameField"
-            v-model="draft"
-            type="text"
-            :maxlength="MAX_PROJECT_NAME"
-            :invalid="refused"
-            :aria-label="renameLabel"
-            :aria-describedby="refused ? errorId : undefined"
-            data-testid="project-rename-input"
-            @input="refused = false"
-          />
-          <IconButton variant="plain" icon="check" :label="t.panels.project.save" tooltip :disabled="!normalizeProjectName(draft)" data-testid="project-rename-save" @click="commitRename" />
-          <IconButton variant="plain" icon="close" :label="t.panels.project.cancel" tooltip data-testid="project-rename-cancel" @click="cancelRename" />
-        </div>
-        <span class="project-panel__counter">{{ draft.length }}/{{ MAX_PROJECT_NAME }}</span>
-        <p v-if="refused" :id="errorId" class="project-panel__error" role="alert" data-testid="project-rename-error">{{ t.panels.project.nameRequired }}</p>
-      </form>
-      <!-- The save state (SaveStates card), a polite live region so "Not saved" is announced. -->
-      <p class="project-panel__state" :class="`project-panel__state--${state}`" role="status" aria-live="polite" data-testid="save-state">
-        <template v-if="state === 'saved'">
-          <AppIcon name="check" :size="14" /><span>{{ t.saveBox.savedState }}</span>
-        </template>
-        <template v-else-if="state === 'unsaved'">
-          <span class="project-panel__dashed" aria-hidden="true" /><span>{{ t.panels.project.unsaved }}</span>
-        </template>
-        <template v-else>
-          <AppIcon name="warning" :size="14" />
-          <span class="project-panel__reason">{{ t.panels.project.notSaved.replace('{reason}', t.panels.project.saveRefused) }}</span>
-          <AppButton variant="link" data-testid="save-try-again" @click="emit('save')">{{ t.panels.project.tryAgain }}</AppButton>
-        </template>
-      </p>
-    </section>
-
-    <FrameControls :project="project" @set-technique="emit('set-technique', $event)" @set-brick-block="emit('set-brick-block', $event)" />
-
-    <p class="project-panel__bead" data-testid="project-bead-row">
-      <span class="project-panel__bead-label">{{ t.panels.project.bead }}</span>
-      <span class="project-panel__bead-name" data-testid="panel-bead">{{ beadName }}</span>
-    </p>
-
-    <!-- Menus, not native selects (ticket 442): the iPad's picker swallowed the pick, and a menu works the same everywhere. -->
-    <BeadPicker
-      v-if="ownBead"
-      class="project-panel__picker"
-      :model-value="ownBead.id"
-      :beads="replaceCandidates"
-      :current="ownBead"
-      :outdated="!!replaceOutdated"
-      close-on-pick
-      compact
-      testid="replace-bead-picker"
-      @update:model-value="emit('replace-bead', $event)"
+    <ProjectHead
+      :project="project"
+      :save-failed="saveFailed"
+      :unsaved="unsaved"
+      @rename="emit('rename', $event)"
+      @save-maker-name="emit('save-maker-name', $event)"
+      @save="emit('save')"
+      @set-technique="emit('set-technique', $event)"
+      @set-brick-block="emit('set-brick-block', $event)"
+      @set-canvas-technique="emit('set-canvas-technique', $event)"
+      @set-canvas-brick-block="emit('set-canvas-brick-block', $event)"
     />
 
-    <div class="project-panel__shape" data-testid="bead-shape-row">
-      <span :id="shapeLabelId">{{ t.form.beadShapeLabel }}</span>
-      <BeadShapeField :model-value="project.beadShape ?? DEFAULT_BEAD_SHAPE" :labelledby="shapeLabelId" small testid="bead-shape" @update:model-value="emit('set-bead-shape', $event)" />
-    </div>
+    <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
+      <ProjectBeadSection :project="project" :candidates="replaceCandidates" @set-bead-shape="emit('set-bead-shape', $event)" @replace-bead="emit('replace-bead', $event)" />
+    </PanelSection>
 
-    <CanvasTechniqueRow :project="project" @set-technique="emit('set-canvas-technique', $event)" @set-brick-block="emit('set-canvas-brick-block', $event)" />
+    <PanelSection id="project:canvas" :label="t.panels.project.canvas" :summary="canvasName">
+      <template v-if="canvas.background.value" #summary>
+        <span class="project-panel__chip" :style="{ backgroundColor: canvas.background.value.color }" aria-hidden="true" />{{ canvasName }}
+      </template>
+      <CanvasSection />
+    </PanelSection>
 
-    <CanvasSection />
+    <PanelSection id="project:export" :label="t.panels.project.exportHeading">
+      <PanelItem icon="export" value=".openbeads" stays data-testid="export-project-file" @select="emit('export-project-file')">{{ file.name(t) }}</PanelItem>
+      <!-- Until the Frame panel takes them (ticket 0555), a picture and a printable chart are made here. -->
+      <SaveExport
+        :has-frame="project.frame !== undefined"
+        :exporting="exporting"
+        :project-name="project.name"
+        @export-png="emit('export-png')"
+        @export-pdf="emit('export-pdf')"
+        @fit-frame="emit('fit-frame')"
+      />
+    </PanelSection>
 
-    <SaveExport
-      :has-frame="project.frame !== undefined"
-      :exporting="exporting"
-      :project-name="project.name"
-      @export-png="emit('export-png')"
-      @export-pdf="emit('export-pdf')"
-      @export-project-file="emit('export-project-file')"
-      @fit-frame="emit('fit-frame')"
-    />
-
-    <NameOnExportsRow :name="project.makerName ?? ''" @save="emit('save-maker-name', $event)" />
-
-    <!-- Beads needed (ticket 146) is in no card for the new panel; it stays here, above Duplicate, until a design decision moves it (ticket 443). -->
-    <div class="project-panel__beads"><BeadQuantities :project="settledProject" /></div>
-
-    <div class="project-panel__manage" role="group" :aria-label="t.panels.project.deleteThis">
+    <PanelSection id="project:this" :label="t.panels.project.thisProject">
       <PanelItem icon="copy" data-testid="project-duplicate" @select="emit('duplicate')">{{ duplicate.name(t) }}</PanelItem>
       <PanelItem icon="erase" danger data-testid="project-clear" @select="emit('clear')">{{ clear.name(t) }}</PanelItem>
       <PanelItem icon="delete" danger data-testid="project-delete" @select="emit('delete')">{{ remove.name(t) }}</PanelItem>
-    </div>
+    </PanelSection>
   </div>
 </template>
 
@@ -196,129 +113,20 @@ const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'uns
 .project-panel {
   display: flex;
   flex-direction: column;
-  gap: var(--space-12);
   color: var(--ink);
 }
 
-.project-panel > :deep(.frame-controls),
-.project-panel > :deep(.canvas-technique),
-.project-panel__head,
-.project-panel__shape,
-.project-panel__bead {
-  box-sizing: border-box;
-  padding: 0 var(--space-12);
+.project-panel > :deep(.panel-section:first-of-type) {
+  margin-top: var(--space-4);
 }
 
-.project-panel__head {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  padding-top: var(--space-4);
-}
-
-.project-panel__name-row,
-.project-panel__rename-row {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-}
-
-.project-panel__name {
-  flex: 1 1 auto;
-  min-width: 0;
-  margin: 0;
-  overflow: hidden;
-  font: 600 1.0625rem/1.375rem var(--font-sans);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.project-panel__rename {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-
-.project-panel__rename-row > :first-child {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.project-panel__counter {
-  font: var(--type-meta);
-  color: var(--muted);
-}
-
-.project-panel__error {
-  margin: 0;
-  font: var(--type-body);
-  color: var(--danger);
-}
-
-.project-panel__state {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-6);
-  margin: 0;
-  font: var(--type-meta);
-  color: var(--muted);
-}
-
-.project-panel__state--saved :deep([data-icon]) {
-  color: var(--accent-strong);
-}
-
-.project-panel__state--failed {
-  color: var(--danger);
-}
-
-.project-panel__reason {
-  font: 500 0.8125rem/1.125rem var(--font-sans);
-}
-
-.project-panel__dashed {
+.project-panel__chip {
+  display: inline-block;
   width: 12px;
   height: 12px;
-  box-sizing: border-box;
-  border: 1.5px dashed currentColor;
-  border-radius: var(--radius-full);
-}
-
-.project-panel__shape {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  font: var(--type-control);
-  min-width: 0;
-}
-
-.project-panel__bead {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-8);
-  margin: 0;
-}
-
-.project-panel__bead-label {
-  font: var(--type-label);
-  color: var(--muted);
-  text-transform: lowercase;
-}
-
-.project-panel__bead-name {
-  font: 500 0.875rem/1.25rem var(--font-sans);
-}
-
-.project-panel__beads {
-  padding: 0 var(--space-4);
-}
-
-.project-panel__manage {
-  display: flex;
-  flex-direction: column;
-  padding-top: var(--space-8);
-  border-top: 1px solid var(--line-soft);
+  margin-right: var(--space-6);
+  vertical-align: -1px;
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 </style>

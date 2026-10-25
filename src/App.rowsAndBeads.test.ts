@@ -4,13 +4,12 @@ import { gzipJson } from './testUtils/gzipJson'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
-import { BEAD_CATALOG } from './domain/beads'
+import { BEAD_CATALOG, findBead } from './domain/beads'
 import { createProject, type Project, frameGrid } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { serializeLibrary } from './domain/projectFile'
 import { mountWithProject } from './testUtils/seedProject'
 import { chooseAppLanguage, deleteAll, openColorPopover, openSavedProjects, openPanel, pickColor, pickTool, panelRead } from './testUtils/pill'
-import { chooseBead } from './testUtils/beadPicker'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -19,10 +18,11 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
 
-/** Picks a Bead from the Project panel's Replace bead menu, which opens the sheet for it and leaves it open. */
+/** Switches the open Project to another Type of its Brand from the Project panel, which opens the confirmation. */
 async function pickReplacement(wrapper: ReturnType<typeof mount>, beadId: string) {
   await openPanel(wrapper, 'strip-project')
-  await chooseBead(wrapper, beadId, 'replace-bead-picker')
+  await wrapper.get('[data-testid="bead-type"] button').trigger('click')
+  await wrapper.get(`[data-testid="bead-type"] [data-value="${findBead(beadId)!.formFactor.id}"]`).trigger('click')
 }
 
 describe('App row progress', () => {
@@ -197,10 +197,12 @@ describe('App delete all', () => {
 })
 
 describe('App header bead', () => {
-  it("shows the open Project's Bead label in the header", async () => {
+  it("shows the open Project's Bead in the Project panel's pickers", async () => {
     const wrapper = await mountWithProject(15, 30)
+    await openPanel(wrapper, 'strip-project')
 
-    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Куб 1.5mm')
+    const pickers = ['bead-brand', 'bead-type', 'bead-size'].map((id) => wrapper.get(`[data-testid="${id}"] button`).text())
+    expect(pickers).toEqual(['TOHO', 'Куб', '1.5mm'])
   })
 })
 
@@ -209,10 +211,10 @@ describe('App replace bead', () => {
     const wrapper = await mountWithProject(15, 30)
     await openPanel(wrapper, 'strip-project')
 
-    await wrapper.get('[data-testid="replace-bead-picker-toggle"]').trigger('click')
+    await wrapper.get('[data-testid="bead-type"] button').trigger('click')
 
     expect(wrapper.find('select').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="replace-bead-picker-brand"]').element.tagName).toBe('BUTTON')
+    expect(wrapper.find('[data-testid="bead-type"] [role="menu"]').exists()).toBe(true)
   })
 
   it('opens the confirmation with Cancel focused first from the Project panel', async () => {
@@ -264,7 +266,8 @@ describe('App replace bead', () => {
     expect(loadedProject().frame!.columns).toBe(10)
     expect(loadedProject().frame!.rows).toBe(20)
     expect(loadedProject()).not.toHaveProperty('widthMm')
-    expect((await panelRead(wrapper, 'panel-bead')).text).toBe('TOHO Круглый 11/0')
+    await openPanel(wrapper, 'strip-project')
+    expect(['bead-brand', 'bead-type', 'bead-size'].map((id) => wrapper.get(`[data-testid="${id}"] button`).text())).toEqual(['TOHO', 'Круглый', '11/0'])
   })
 
   it('is one undo step: a single Undo restores the previous Bead, and Redo swaps it back', async () => {
@@ -315,10 +318,10 @@ describe('App bead quantities', () => {
     const wrapper = await mountWithProject(15, 30)
     await projectWithPaintedCells(wrapper)
 
-    expect((await panelRead(wrapper, 'quantity-count-red')).text).toBe('2')
-    expect((await panelRead(wrapper, 'quantity-count-blue')).text).toBe('1')
-    expect((await panelRead(wrapper, 'bead-quantities')).exists).toBe(true)
-    await openPanel(wrapper, 'strip-project')
+    expect((await panelRead(wrapper, 'quantity-count-red', 'strip-frame')).text).toBe('2')
+    expect((await panelRead(wrapper, 'quantity-count-blue', 'strip-frame')).text).toBe('1')
+    expect((await panelRead(wrapper, 'bead-quantities', 'strip-frame')).exists).toBe(true)
+    await openPanel(wrapper, 'strip-frame')
     expect(wrapper.find('[data-testid="bead-quantities"] select').exists()).toBe(false)
   })
 })
@@ -327,23 +330,23 @@ describe('App estimated weight (ticket 155)', () => {
   it('follows painting and erasing, and Replace bead', async () => {
     localStorage.setItem('openbeads:locale', 'en')
     const wrapper = await mountWithProject(15, 30)
-    expect((await panelRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
+    expect((await panelRead(wrapper, 'quantities-weight-note', 'strip-frame')).exists).toBe(false)
 
     await pickColor(wrapper, 'red')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect((await panelRead(wrapper, 'quantity-weight-red')).text).toBe('0.01 g')
+    expect((await panelRead(wrapper, 'quantity-weight-red', 'strip-frame')).text).toBe('0.01 g')
 
     await pickReplacement(wrapper, 'toho/round/11-0')
     await wrapper.find('[data-testid="confirm-modal-confirm"]').trigger('click')
-    expect((await panelRead(wrapper, 'quantity-weight-red')).text).toBe('< 0.01 g')
-    expect((await panelRead(wrapper, 'quantities-weight-note')).text).toContain('about 0.0091 g')
+    expect((await panelRead(wrapper, 'quantity-weight-red', 'strip-frame')).text).toBe('< 0.01 g')
+    expect((await panelRead(wrapper, 'quantities-weight-note', 'strip-frame')).text).toContain('about 0.0091 g')
 
     await pickTool(wrapper, 'erase')
     await pressBead(wrapper, 0)
     await wrapper.find('.app-shell').trigger('mouseup')
-    expect((await panelRead(wrapper, 'quantity-weight-red')).exists).toBe(false)
-    expect((await panelRead(wrapper, 'quantities-weight-note')).exists).toBe(false)
+    expect((await panelRead(wrapper, 'quantity-weight-red', 'strip-frame')).exists).toBe(false)
+    expect((await panelRead(wrapper, 'quantities-weight-note', 'strip-frame')).exists).toBe(false)
   })
 })
 

@@ -6,13 +6,12 @@ import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
 import FramePanel from './canvas/FramePanel.vue'
 import ProjectPanel from './project/ProjectPanel.vue'
-import NameOnExportsRow from './project/NameOnExportsRow.vue'
 import NewProjectForm from './project/NewProjectForm.vue'
 import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
 import SaveExport from './export/SaveExport.vue'
 import BeadQuantities from './palette/BeadQuantities.vue'
 import ConvertImageSizeDialog from './import/ConvertImageSizeDialog.vue'
-import { BEAD_CATALOG, findBead } from '../domain/beads'
+import { BEAD_CATALOG, findBead, offeredBeads } from '../domain/beads'
 import { createProject } from '../domain/project'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
@@ -33,9 +32,9 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 }],
   ['ShortcutsHelp', ShortcutsHelp, {}],
   ['MenuPanel', inPanel(MenuPanel, { projects: [project], toolsPosition: 'bottom', inputMode: 'pen', handedness: 'right', penSeen: true }), {}],
-  ['ProjectPanel', ProjectPanel, { project, beadName: 'TOHO Cube 1.5mm', replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
+  ['ProjectPanel', ProjectPanel, { project: { ...project, makerName: 'Maria' }, replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
+  ['ProjectPanel (brick, no maker, failed)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: offeredBeads(), saveFailed: true, unsaved: false }],
   ['FramePanel', FramePanel, { project: framed }],
-  ['NameOnExportsRow', NameOnExportsRow, { name: 'Maria' }],
   ['SaveExport', SaveExport, { hasFrame: true }],
   ['BeadQuantities', BeadQuantities, { project }],
   ['NewProjectForm', NewProjectForm, {}],

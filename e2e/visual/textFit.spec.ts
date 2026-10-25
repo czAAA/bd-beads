@@ -179,16 +179,25 @@ const SCREENS: Screen[] = [
     },
   },
   {
-    name: 'Name on exports',
+    name: 'Project head',
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'project-name-on-exports'))) return false
+      if (!(await reveal(page, 'project-technique'))) return false
       await measure()
     },
   },
   {
-    name: 'Frame',
+    // Once a Row progress pass is done the Technique is locked, its reason in a Tooltip (ticket 492).
+    name: 'Technique locked',
+    project: fixtureProject({ technique: 'loom', rowProgress: { currentRow: 1 } }),
     visit: async (page, measure) => {
-      if (!(await reveal(page, 'frame-technique'))) return false
+      if (!(await reveal(page, 'project-technique'))) return false
+      await measure()
+    },
+  },
+  {
+    name: 'Bead pickers',
+    visit: async (page, measure) => {
+      if (!(await reveal(page, 'bead-size'))) return false
       await measure()
     },
   },
