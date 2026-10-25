@@ -29,6 +29,10 @@ const MORE_LINES: [string, number][] = [
 /** Boxes that hold artwork or the scrolling drawing, whose content is meant to be wider than the box. */
 const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"], [data-testid="example-paper"]'
 
+/** Words that roll through a one-line window (the Overview's slogan, ticket 550): the window cuts them vertically on
+ * purpose, so only sideways overflow counts. */
+const ROLLING = '[data-testid="slogan-column"]'
+
 /** Not checked: user-typed text (a long Project name may ellipsize) and the drawing's furniture (backdrop word,
  * ruler numbers). */
 const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid="project-name"], [data-testid="canvas-strip-title"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
@@ -43,7 +47,7 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
     await Promise.all(document.getAnimations().filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime ?? 0)).map((animation) => animation.finished.catch(() => undefined)))
   })
   return page.evaluate(
-    ({ oneLine, userText, moreLines, cutOffByDesign }) => {
+    ({ oneLine, userText, moreLines, cutOffByDesign, rolling }) => {
       const TOLERANCE = 1
       const WRAP_TOLERANCE = 2
       const misfits: TextMisfit[] = []
@@ -142,9 +146,10 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
         clips.push({ name: 'the viewport', left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight, vertical: false, scrolls: false, snaps: false })
         // Once a scroll container has had its say about vertical cuts, the boxes outside it don't (the text scrolls).
         let scrollsY = false
+        const rollsVertically = owner.closest(rolling) !== null
         for (const clip of clips) {
           if (clip.snaps) break
-          if (scrollsY) clip.vertical = false
+          if (scrollsY || rollsVertically) clip.vertical = false
           if (clip.scrolls) scrollsY = true
           const sides: [string, number][] = [
             ['left', clip.left - box.left],
@@ -205,6 +210,6 @@ export async function findTextMisfits(page: Page): Promise<TextMisfit[]> {
       }
       return misfits
     },
-    { oneLine: ONE_LINE, userText: USER_TEXT, moreLines: MORE_LINES, cutOffByDesign: CUT_OFF_BY_DESIGN },
+    { oneLine: ONE_LINE, userText: USER_TEXT, moreLines: MORE_LINES, cutOffByDesign: CUT_OFF_BY_DESIGN, rolling: ROLLING },
   )
 }
