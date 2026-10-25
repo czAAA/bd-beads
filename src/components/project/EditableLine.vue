@@ -98,15 +98,15 @@ function cancel() {
 
 <style scoped>
 .editable-line {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-8);
+  display: grid;
+  /* Lines in one grid share its label column (ProjectHead), so their values start at the same place. */
+  grid-template-columns: subgrid;
+  grid-column: 1 / -1;
+  align-items: start;
   min-width: 0;
 }
 
 .editable-line__label {
-  flex: none;
-  min-width: 46px;
   padding-top: var(--space-2);
   font: var(--type-label);
   color: var(--muted);
@@ -114,7 +114,6 @@ function cancel() {
 
 .editable-line__body,
 .editable-line__form {
-  flex: 1 1 auto;
   min-width: 0;
 }
 

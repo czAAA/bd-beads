@@ -82,30 +82,32 @@ function setBrickBlock(brickBlock: number) {
       </div>
     </div>
 
-    <EditableLine
-      :label="t.panels.project.nameLabel"
-      :value="project.name"
-      :edit-label="renameLabel"
-      :edit-tooltip="rename.body?.(t)"
-      :maxlength="MAX_PROJECT_NAME"
-      :required-message="t.panels.project.nameRequired"
-      :normalize="normalizeProjectName"
-      testid="project-name"
-      @save="emit('rename', $event)"
-    />
+    <div class="project-head__lines">
+      <EditableLine
+        :label="t.panels.project.nameLabel"
+        :value="project.name"
+        :edit-label="renameLabel"
+        :edit-tooltip="rename.body?.(t)"
+        :maxlength="MAX_PROJECT_NAME"
+        :required-message="t.panels.project.nameRequired"
+        :normalize="normalizeProjectName"
+        testid="project-name"
+        @save="emit('rename', $event)"
+      />
 
-    <EditableLine
-      small
-      :label="t.panels.project.makerLabel"
-      :value="project.makerName ?? ''"
-      :edit-label="t.panels.project.changeMaker"
-      :empty-text="t.panels.project.addMaker"
-      :placeholder="t.saveBox.yourName"
-      :maxlength="MAX_MAKER_NAME"
-      :normalize="(raw) => raw.trim()"
-      testid="project-maker"
-      @save="emit('save-maker-name', $event)"
-    />
+      <EditableLine
+        small
+        :label="t.panels.project.makerLabel"
+        :value="project.makerName ?? ''"
+        :edit-label="t.panels.project.changeMaker"
+        :empty-text="t.panels.project.addMaker"
+        :placeholder="t.saveBox.yourName"
+        :maxlength="MAX_MAKER_NAME"
+        :normalize="(raw) => raw.trim()"
+        testid="project-maker"
+        @save="emit('save-maker-name', $event)"
+      />
+    </div>
 
     <div class="project-head__technique">
       <PanelPicker
@@ -195,6 +197,13 @@ function setBrickBlock(brickBlock: number) {
   height: 5.5px;
   background: var(--accent-strong);
   border-radius: var(--radius-full);
+}
+
+.project-head__lines {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: var(--space-8);
+  row-gap: var(--space-4);
 }
 
 .project-head__technique {
