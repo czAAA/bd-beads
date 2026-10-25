@@ -20,10 +20,11 @@ export interface TextMisfit {
 const ONE_LINE = 'button, a, label, th, h1, h2, h3, h4, h5, h6, summary, legend, [role="tab"], [role="menuitem"], [role="button"], .ui-pill, [data-one-line]'
 
 /** One-line controls that are designed to take more lines than one, with how many: the Overview's tab line, the
- * segmented control's two-line options. */
+ * segmented control's two-line options, a dialog's title. */
 const MORE_LINES: [string, number][] = [
   ['.carousel__tab-line', 2],
   ['.segmented__option', 2],
+  ['.app-modal__title', 2],
   ['.bead-quantities__tooltip', 99],
   ['[role="tooltip"]', 99],
 ]
@@ -53,6 +54,8 @@ export const MEASURE_ARGS: MeasureArgs = { oneLine: ONE_LINE, userText: USER_TEX
 /** Waits for the fonts and the animations that end, so what is measured is where things end up. */
 export async function settleForMeasuring(): Promise<void> {
   await document.fonts.ready
+  // Two frames, for what is sized from a resize report (the Overview's examples scale to their stage).
+  await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
   // Dialogs and sheets arrive with a short animation; what is measured is where they end up.
   await Promise.all(document.getAnimations().filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime ?? 0)).map((animation) => animation.finished.catch(() => undefined)))
 }

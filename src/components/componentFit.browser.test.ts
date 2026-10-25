@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import type { Component } from 'vue'
-import { FIT_LOCALES, FIT_WIDTHS, misfitsNow, mountAt } from '../testUtils/browserFit'
+import { describeFits } from '../testUtils/browserFit'
 import LanguageSwitcher from './shell/LanguageSwitcher.vue'
 import ThemeToggle from './shell/ThemeToggle.vue'
 import ProgressBar from './canvas/ProgressBar.vue'
@@ -21,14 +20,4 @@ const CASES: [string, Component, Record<string, unknown>][] = [
   ['ProgressBar by columns', ProgressBar, { project: toggleRowDirection(project) }],
 ]
 
-describe.each(CASES)('%s text fit', (_name, component, props) => {
-  for (const locale of FIT_LOCALES) {
-    for (const width of FIT_WIDTHS) {
-      it(`fits its box in ${locale} at ${width}px`, async () => {
-        const mounted = await mountAt(component, props, { locale, width })
-        expect(await misfitsNow()).toEqual([])
-        mounted.unmount()
-      })
-    }
-  }
-})
+describeFits(CASES)
