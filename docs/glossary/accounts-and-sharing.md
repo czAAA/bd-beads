@@ -20,6 +20,10 @@ _Avoid_: premium, subscriber, paid user
 
 **Sign-in method**:
 A way to prove who you are to your account: Google, an email link, or a passkey. An account is one verified email address; Google and an email link both prove it, so either reaches the same account, and a passkey is added to an account after signing in, never used to create one.
+
+**Sign in** / **Sign out**:
+Sign in proves a Sign-in method to the backend and starts a session on this device; it is also how an account is created, since there is one flow and the first Google sign-in with an unknown email creates the account (no separate "sign up"). Sign out ends the session on this device and loses nothing, because everything a Guest has lives on the device. Offered in the Menu's user section, which shows the verified email and the plan (Free account or Pro), no name or picture.
+_Avoid_: sign up, register, log in, log out
 _Avoid_: login provider, auth method, identity
 
 **Edit link**:
