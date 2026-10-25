@@ -77,7 +77,7 @@ describe('CanvasStrip', () => {
     const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
 
     const slots = Array.from(wrapper.get('[data-testid="canvas-strip"]').element.children)
-    expect(slots.map((slot) => slot.className.split(' ')[0])).toEqual(['canvas-strip__panels', 'canvas-strip__brand', 'canvas-strip__controls'])
+    expect(slots.map((slot) => slot.className.split(' ')[0])).toEqual(['canvas-strip__panels', 'canvas-strip__center', 'canvas-strip__controls'])
     const controls = wrapper.get('[data-testid="canvas-strip-controls"]')
     for (const id of ['strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset']) expect(controls.find(`[data-testid="${id}"]`).exists()).toBe(true)
   })
@@ -154,7 +154,7 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
 
   it('is three Tab stops: a panel button, the Wordmark and a right-hand tool', () => {
     const wrapper = mount(CanvasStrip, { props, attachTo: document.body })
-    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-coffee'])
+    expect(stops(wrapper)).toEqual(['strip-menu', 'canvas-brand', 'strip-rotate-canvas'])
     wrapper.unmount()
   })
 
