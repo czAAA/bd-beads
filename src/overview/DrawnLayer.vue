@@ -26,9 +26,10 @@ function shape(d: Doodle) {
 }
 
 function position(p: Placement): string {
-  if (p.side === 'center') return `left:calc(50% + ${p.gap}px);top:${p.top}px`
+  const vertical = p.bottom === undefined ? `top:${p.top}px` : `bottom:${p.bottom}px`
+  if (p.side === 'center') return `left:calc(50% + ${p.gap}px);${vertical}`
   const from = p.side === 'left' ? 'right' : 'left'
-  return `${from}:calc(50% + var(--col) + ${p.gap}px);top:${p.top}px`
+  return `${from}:calc(50% + var(--col) + ${p.gap}px);${vertical}`
 }
 
 const layer = computed(() => LAYERS[props.section])
@@ -41,7 +42,12 @@ const doodles = computed(() =>
 </script>
 
 <template>
-  <div class="drawn" aria-hidden="true" data-testid="overview-drawn-layer">
+  <div
+    class="drawn"
+    :class="{ 'drawn--to-page-end': section === 'plans' }"
+    aria-hidden="true"
+    data-testid="overview-drawn-layer"
+  >
     <span
       v-for="(m, i) in marks"
       :key="`m${i}`"
@@ -92,6 +98,11 @@ const doodles = computed(() =>
   overflow: clip;
   pointer-events: none;
   user-select: none;
+}
+
+/* The Plans are the page's last section: their drawings may also use the page's bottom padding, under the tiles. */
+.drawn--to-page-end {
+  bottom: calc(-1 * var(--space-32));
 }
 
 .drawn__mark {
