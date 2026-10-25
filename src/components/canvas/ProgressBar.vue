@@ -267,6 +267,7 @@ const directionLabel = computed(() =>
   .progress-bar__steps {
     flex: 1 1 100%;
     min-width: 0;
+    gap: var(--space-4);
   }
 
   /* A button is wrapped (for its Tooltip) only while it has one, so a lone button is a flex item too. */
@@ -280,6 +281,7 @@ const directionLabel = computed(() =>
     width: 100%;
     min-width: 0;
     padding-inline: var(--space-6);
+    gap: var(--space-2);
     justify-content: center;
     font: var(--type-small);
   }
