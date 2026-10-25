@@ -89,7 +89,8 @@ export default defineConfig(({ mode }) => ({
                 name: 'browser',
                 include: [BROWSER_TESTS],
                 setupFiles: ['./src/browserSetup.ts'],
-                browser: { enabled: true, headless: true, screenshotFailures: false, provider: playwright(), instances: [{ browser: 'chromium' as const }] },
+                browser: { enabled: true, headless: true, screenshotFailures: false, // Reduced motion, as the e2e has it: animated drawings are measured where they end up.
+                  provider: playwright({ contextOptions: { reducedMotion: 'reduce' } }), instances: [{ browser: 'chromium' as const }] },
               },
             },
           ]
