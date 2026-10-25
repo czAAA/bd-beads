@@ -45,7 +45,6 @@ describe('OverviewPage', () => {
     it('shows the notes, hidden from screen readers', () => {
       const wrapper = page()
       for (const [id, text] of [
-        ['you', 'you'],
         ['on-us', 'on us'],
       ]) {
         const note = wrapper.find(`[data-testid="overview-note-${id}"]`)
@@ -54,17 +53,14 @@ describe('OverviewPage', () => {
       }
     })
 
-    it('puts "you" on the first word of the slogan and leaves the slogan reading as before', () => {
-      const slogan = page().find('[data-testid="overview-slogan"]')
-      expect(slogan.find('[data-testid="overview-note-you"]').exists()).toBe(true)
-      expect(slogan.text().replace('you', '')).toBe('Draw. Joy. Weave.')
+    it('shows the slogan as the one stable label "openbeads"', () => {
+      const slogan = page().get('[data-testid="overview-slogan"]')
+      expect(slogan.attributes('aria-label')).toBe('openbeads')
+      expect(slogan.find('[data-testid="overview-note-you"]').exists()).toBe(false)
     })
 
-    it('shows "you" and "on us" once Projects are saved too', () => {
-      const wrapper = page(2)
-      expect(wrapper.find('[data-testid="overview-note-you"]').text()).toBe('you')
-      expect(wrapper.find('[data-testid="overview-note-on-us"]').text()).toBe('on us')
-      expect(wrapper.find('[data-testid="overview-slogan"]').text().replace('you', '')).toBe('Draw. Joy. Weave.')
+    it('shows "on us" once Projects are saved too', () => {
+      expect(page(2).find('[data-testid="overview-note-on-us"]').text()).toBe('on us')
     })
   })
 
