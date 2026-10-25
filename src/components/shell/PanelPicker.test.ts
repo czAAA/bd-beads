@@ -38,18 +38,22 @@ describe('PanelPicker (ticket 0553)', () => {
     expect(items()).toHaveLength(0)
   })
 
-  it('opens on the chosen item with Down, and on the last with Up', async () => {
+  it('leaves ↓ and ↑ to the panel: they do not open the list', async () => {
     wrapper = mountPicker()
     await button().trigger('keydown', { key: 'ArrowDown' })
-    expect(document.activeElement).toBe(items()[1]!.element)
-    await items()[1]!.trigger('keydown', { key: 'Escape' })
     await button().trigger('keydown', { key: 'ArrowUp' })
-    expect(document.activeElement).toBe(items()[2]!.element)
+    expect(items()).toHaveLength(0)
+  })
+
+  it('opens on the chosen item', async () => {
+    wrapper = mountPicker()
+    await button().trigger('click')
+    expect(document.activeElement).toBe(items()[1]!.element)
   })
 
   it('moves with the arrows, wrapping, and with Home and End', async () => {
     wrapper = mountPicker()
-    await button().trigger('keydown', { key: 'ArrowDown' })
+    await button().trigger('click')
     await items()[1]!.trigger('keydown', { key: 'ArrowDown' })
     expect(document.activeElement).toBe(items()[2]!.element)
     await items()[2]!.trigger('keydown', { key: 'ArrowDown' })
