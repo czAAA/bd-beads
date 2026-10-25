@@ -7,6 +7,7 @@ import { paintAt } from '../../testUtils/layers'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
+const BLUE = '#2f6fed'
 
 /** 4 columns x 4 rows, loom. */
 function makeProject(): Project {
@@ -471,6 +472,34 @@ describe('useSelectionGesture', () => {
       gesture.tapPiece(1, 1)
 
       expect(gesture.selection.value).toMatchObject({ top: 0, left: 0, rows: 2, columns: 2 })
+    })
+
+    it('the tap gives the Piece\'s exact cells, a Piece tap elsewhere replaces them, and Select all is a rectangle again (ticket 547)', () => {
+      const { gesture } = twoPieces()
+
+      gesture.tapPiece(1, 1)
+      expect(gesture.selection.value?.cells).toEqual(expect.arrayContaining([{ row: 0, column: 0 }, { row: 1, column: 1 }]))
+      expect(gesture.selection.value?.cells).toHaveLength(2)
+
+      gesture.tapPiece(3, 3)
+      expect(gesture.selection.value?.cells).toEqual([{ row: 3, column: 3 }])
+
+      gesture.selectAll()
+      expect(gesture.selection.value?.cells).toBeUndefined()
+    })
+
+    it('Clear selection and Fill act on the shape\'s cells, not the empty cells of its rectangle', () => {
+      const { gesture, harness } = twoPieces()
+      gesture.tapPiece(1, 1)
+
+      gesture.fill(BLUE)
+      const frame = harness.currentProject()!.frame!
+      expect(frame.beads[0]?.[1]).toBeUndefined()
+      expect(frame.beads[0]?.[0]).toBe(BLUE)
+
+      gesture.deleteSelection()
+      expect(harness.currentProject()!.frame!.beads[0]?.[0]).toBeUndefined()
+      expect(harness.currentProject()!.frame!.beads[3]?.[3]).toBe(RED)
     })
 
     it('a tap on empty space clears the Selection', () => {

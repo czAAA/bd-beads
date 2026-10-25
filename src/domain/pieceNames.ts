@@ -229,6 +229,7 @@ export function pieceInSelection(
   selection: Selection,
 ): GridPosition | undefined {
   const labeller = pieceLabeller(project.beads, project)
+  const shape = selection.cells && new Set(selection.cells.map((cell) => `${cell.row},${cell.column}`))
   let found: { id: number; at: GridPosition } | undefined
   for (const [rowKey, columns] of Object.entries(project.beads)) {
     const row = Number(rowKey)
@@ -238,6 +239,9 @@ export function pieceInSelection(
     for (const columnKey of Object.keys(columns)) {
       const column = Number(columnKey)
       if (column < selection.left || column >= selection.left + selection.columns) {
+        continue
+      }
+      if (shape && !shape.has(`${row},${column}`)) {
         continue
       }
       const id = labeller.idOf({ row, column })!
