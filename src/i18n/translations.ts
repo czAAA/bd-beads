@@ -154,19 +154,15 @@ export interface Translations {
       clear: string
       tooltipClear: string
       nameRequired: string
-      unsaved: string
       notSaved: string
       saveRefused: string
-      tryAgain: string
       bead: string
-      canvasTechnique: string
       canvas: string
       whiteInContrast: string
       exportHeading: string
       exportPng: string
       exportPdf: string
       exportFile: string
-      editNameOnExports: string
       duplicate: string
       duplicateTitle: string
       duplicateNote: string
@@ -181,6 +177,17 @@ export interface Translations {
       tooltipRename: string
       tooltipDuplicate: string
       tooltipDelete: string
+      titleLabel: string
+      nameLabel: string
+      makerLabel: string
+      savedLocal: string
+      notSavedYet: string
+      addMaker: string
+      changeMaker: string
+      thisProject: string
+      beadBrand: string
+      beadType: string
+      beadSize: string
     }
   }
   /** The header's theme control (ticket 139). */
@@ -237,13 +244,13 @@ export interface Translations {
     rulersLabel: string
     rotateCanvasLabel: string
     announceCanvasRotated: string
-    /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Sage, 3 of
-     * 5") and the eleven background names. */
+    /** The Canvas color button's name and the picker's label (CanvasBackground card), the swatch name ("Stone, 3 of
+     * 5") and the ten background names. */
     canvasColor: {
       label: string
       pickerLabel: string
       swatchLabel: string
-      names: Record<'studio' | 'linen' | 'sage' | 'mist' | 'blush' | 'night' | 'ink' | 'midnight' | 'olive' | 'umber' | 'ash', string>
+      names: Record<'studio' | 'linen' | 'stone' | 'fog' | 'pebble' | 'night' | 'ink' | 'midnight' | 'ash' | 'slate', string>
     }
     /** The hint in the drawing area's bottom-left corner (CanvasHint card), in pieces around its key chips. */
     hint: {
@@ -515,7 +522,6 @@ export interface Translations {
   saveBox: {
     exportButton: string
     /** The label row: the library's save state on this device. */
-    savedState: string
     failedState: string
     menuPng: string
     menuPdf: string
@@ -764,7 +770,6 @@ export interface Translations {
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
-    changeCanvasTechnique: string
     brickBlock: string
     rowProgressLockedBrickBlock: string
     rowProgressLockedRotate: string

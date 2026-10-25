@@ -7,9 +7,9 @@ import MenuButton from '../ui/MenuButton.vue'
 import { inject } from 'vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 
-// Save and export in the Project panel (ProjectPanel and SaveBox cards, tickets 148, 443): Save Project, PNG | PDF
-// | Project file. It only asks; the app does the work. With no Frame, PNG and PDF open the "Set Frame to export" prompt
-// (Fit to drawing, or a Frame from a Selection, ticket 417).
+// PNG and PDF export in the Project panel's export section (SaveBox card, tickets 148, 443, 554), until the Frame panel
+// takes them (ticket 0555). It only asks; the app does the work. With no Frame, PNG and PDF open the "Set Frame to
+// export" prompt (Fit to drawing, or a Frame from a Selection, ticket 417).
 defineProps<{
   /** Whether the open Project has a Frame: PNG and PDF export only the Frame's beads. */
   hasFrame: boolean
@@ -22,7 +22,6 @@ defineProps<{
 const emit = defineEmits<{
   'export-png': []
   'export-pdf': []
-  'export-project-file': []
   'fit-frame': []
 }>()
 
@@ -30,12 +29,10 @@ const { t } = useI18n()
 const context = inject(PANEL_CONTEXT, undefined)
 const png = controlAction('export-png')
 const pdf = controlAction('export-pdf')
-const file = controlAction('export-project-file')
 </script>
 
 <template>
-  <section class="save-export" role="group" :aria-label="t.panels.project.exportHeading" data-testid="save-box">
-    <span class="save-export__label">{{ t.panels.project.exportHeading }}</span>
+  <div class="save-export" data-testid="save-box">
     <div class="save-export__buttons">
       <template v-if="hasFrame">
         <AppButton variant="in-box" :disabled="!!exporting" data-testid="export-png" @click="emit('export-png')">{{ png.name(t) }}</AppButton>
@@ -51,7 +48,6 @@ const file = controlAction('export-project-file')
           </div>
         </MenuButton>
       </template>
-      <AppButton variant="in-box" data-testid="export-project-file" @click="emit('export-project-file')">{{ file.name(t) }}</AppButton>
     </div>
     <LoadingState
       v-if="exporting"
@@ -59,7 +55,7 @@ const file = controlAction('export-project-file')
       compact
       :text="(exporting === 'pdf' ? t.saveBox.makingPdf : t.saveBox.makingPng).replace('{name}', projectName ?? '')"
     />
-  </section>
+  </div>
 </template>
 
 <style scoped>
@@ -67,13 +63,7 @@ const file = controlAction('export-project-file')
   display: flex;
   flex-direction: column;
   gap: var(--space-8);
-  padding: var(--space-4) var(--space-12);
-}
-
-.save-export__label {
-  font: var(--type-label);
-  color: var(--muted);
-  text-transform: lowercase;
+  padding: var(--space-4) var(--space-10);
 }
 
 .save-export__buttons {

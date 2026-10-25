@@ -120,16 +120,15 @@ The same voice and sentence patterns in each language; domain words are never re
 
 ## Canvas color names
 
-The Canvas color button (Russian "Цвет полотна") offers five backgrounds in light and six in dark. The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
+The Canvas color control (Russian "Цвет полотна") offers five backgrounds in light and five in dark (ticket 0554). The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
 
 | Choice | Light (EN / RU) | Dark (EN / RU) |
 | --- | --- | --- |
 | 1 | Studio / Студия | Night / Ночь |
 | 2 | Linen / Лён | Ink / Тушь |
-| 3 | Sage / Шалфей | Midnight / Полночь |
-| 4 | Mist / Дымка | Olive / Олива |
-| 5 | Blush / Румянец | Umber / Умбра |
-| 6 | n/a | Ash / Пепел |
+| 3 | Stone / Камень | Midnight / Полночь |
+| 4 | Fog / Туман | Ash / Пепел |
+| 5 | Pebble / Галька | Slate / Сланец |
 
 ## Numbers, units and dates
 
