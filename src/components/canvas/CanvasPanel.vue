@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { useElementSize } from '../../composables/ui/useElementSize'
 import CanvasHint from './CanvasHint.vue'
 import CanvasStrip from './CanvasStrip.vue'
 import ContextBar from '../tools/ContextBar.vue'
@@ -203,6 +204,19 @@ const framingControlsEl = ref<HTMLElement>()
 /** The Canvas color (ticket 252) as the drawing area's fill, and the technique word's own color where the background
  * needs one. */
 const canvasBackground = useCanvasBackground()
+
+/** The drawing area, also tracked here for the layer that carries the Selection bar over it. */
+const drawingEl = ref<HTMLElement>()
+function bindDrawing(el: unknown) {
+  bindCanvasArea(el)
+  drawingEl.value = el instanceof HTMLElement ? el : undefined
+}
+const drawingSize = useElementSize(drawingEl)
+const selectionLayerStyle = computed(() => {
+  const el = drawingEl.value
+  if (!el) return undefined
+  return { left: `${el.offsetLeft}px`, top: `${el.offsetTop}px`, width: `${drawingSize.width.value}px`, height: `${drawingSize.height.value}px` }
+})
 const drawingStyle = computed(() => {
   const color = canvasBackground.background.value?.color
   if (!color) return undefined
@@ -250,58 +264,11 @@ const drawingStyle = computed(() => {
       />
 
       <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Project). -->
-      <div :ref="bindCanvasArea" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
+      <div :ref="bindDrawing" class="app-shell__drawing" :style="drawingStyle" data-testid="app-drawing-area">
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
         <CanvasHint v-if="activeProject && !framing && !hasProjectBeads(activeProject)" class="app-shell__canvas-hint" />
-
-        <!--
-          The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
-          inside the canvas box, clear of the Tool pill; Select all is its first item.
-        -->
-        <ContextBar
-          v-if="activeProject && !framing"
-          :selection-summary="selectionSummary"
-          :selection="selection"
-          :anchor="selectionAnchor"
-          :gesturing="surfacePressing"
-          :size-only="selectionGuided"
-          :paste-armed="pasteProjectionActive"
-          :has-clipboard="hasClipboard()"
-          :project="activeProject"
-          :can-remove-line="canRemoveSelectedLine"
-          :can-name-piece="canNamePiece"
-          :has-paint-color="hasPaintColor()"
-          :select-active="activeTool === 'select'"
-          :obstacle="pillRect"
-          @copy="onCopy"
-          @cut="onCut"
-          @paste="onPasteMode"
-          @fill="onFillSelection"
-          @frame="onFrameFromSelection"
-          @clear-selection="onClearSelection"
-          @rotate="onRotate"
-          @select-all="onSelectAll"
-          @remove-line="onRemoveSelectedLine"
-          @name-piece="onNamePiece"
-        />
-
-        <!-- The Frame's own controls (tickets 473, 475): the Move handle and edit pencil follow the Frame; the bar hangs
-          from the pencil or the strip's Frame button, whichever opened it. -->
-        <FrameChrome
-          v-if="activeProject && frameAnchor"
-          :project="activeProject"
-          :anchor="frameAnchor"
-          :editing="frameHandlesOn"
-          :pressing="surfacePressing"
-          :selection="selectionAnchor?.box"
-          :pill="pillRect"
-          @toggle="onEditFrame"
-          @remove="onRemoveFrame"
-          @move-press="surfaceRef?.pressMoveHandle($event)"
-          @key="onFrameKey"
-        />
 
         <div class="app-shell__canvas-row">
           <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject && !framing }">
@@ -427,6 +394,59 @@ const drawingStyle = computed(() => {
         @toggle-row-highlight="toggleRowHighlight"
         @fit-frame="onFitFrame"
       />
+
+      <!--
+        The Selection bar comes last in the page order (ADR 0075: Tab reaches the Progress bar first), so it sits in a
+        layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The Frame's controls
+        ride in it after the bar: the order of ADR 0075 has no place for them.
+      -->
+      <div v-if="activeProject && !framing" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
+        <!--
+          The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
+          inside the canvas box, clear of the Tool pill; Select all is its first item.
+        -->
+        <ContextBar
+          :selection-summary="selectionSummary"
+          :selection="selection"
+          :anchor="selectionAnchor"
+          :gesturing="surfacePressing"
+          :size-only="selectionGuided"
+          :paste-armed="pasteProjectionActive"
+          :has-clipboard="hasClipboard()"
+          :project="activeProject"
+          :can-remove-line="canRemoveSelectedLine"
+          :can-name-piece="canNamePiece"
+          :has-paint-color="hasPaintColor()"
+          :select-active="activeTool === 'select'"
+          :obstacle="pillRect"
+          @copy="onCopy"
+          @cut="onCut"
+          @paste="onPasteMode"
+          @fill="onFillSelection"
+          @frame="onFrameFromSelection"
+          @clear-selection="onClearSelection"
+          @rotate="onRotate"
+          @select-all="onSelectAll"
+          @remove-line="onRemoveSelectedLine"
+          @name-piece="onNamePiece"
+        />
+
+        <!-- The Frame's own controls (tickets 473, 475): the Move handle and edit pencil follow the Frame; the bar hangs
+          from the pencil or the strip's Frame button, whichever opened it. -->
+        <FrameChrome
+          v-if="activeProject && frameAnchor"
+          :project="activeProject"
+          :anchor="frameAnchor"
+          :editing="frameHandlesOn"
+          :pressing="surfacePressing"
+          :selection="selectionAnchor?.box"
+          :pill="pillRect"
+          @toggle="onEditFrame"
+          @remove="onRemoveFrame"
+          @move-press="surfaceRef?.pressMoveHandle($event)"
+          @key="onFrameKey"
+        />
+      </div>
     </div>
   </main>
 </template>
@@ -491,6 +511,18 @@ const drawingStyle = computed(() => {
  * the Tool pill's layer, which float over the beads. */
 .app-shell__drawing > :not(.app-shell__canvas-hint):not(.context-bar):not(.frame-chrome):not(.tool-pill-layer) {
   position: relative;
+}
+
+/* The Selection bar's layer: the drawing area's box, taking no pointer itself. Its overflow clips like the drawing
+ * area's. */
+.app-shell__selection-layer {
+  position: absolute;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.app-shell__selection-layer > .context-bar {
+  pointer-events: auto;
 }
 
 /** Space+drag panning (ticket 95): grab cursor while Space is held, grabbing once the drag starts (BeadHover card);

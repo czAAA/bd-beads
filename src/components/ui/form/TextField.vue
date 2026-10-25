@@ -61,7 +61,7 @@ defineExpose({ focus })
 .text-field:focus-within {
   border-color: var(--ink);
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .text-field--bare {

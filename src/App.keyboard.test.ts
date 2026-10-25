@@ -48,3 +48,15 @@ describe('one Tab stop per group (ticket 159)', () => {
     expect(stops[0]!.attributes('aria-pressed')).toBe('true')
   })
 })
+
+describe('Tab visits the strip, the Tool pill, then the Progress bar (ticket 563, ADR 0075)', () => {
+  it('reaches one stop per strip section, one in the Tool pill, then the Progress bar', async () => {
+    const wrapper = await openProject()
+    const stops = [...document.querySelectorAll<HTMLElement>('button, a[href]')].filter((el) => el.tabIndex === 0 && !el.closest('[aria-hidden="true"]'))
+    const regions = stops.map((el) => el.closest('[data-testid="canvas-strip"], [data-testid="tool-pill"], [data-testid="progress-bar"], [data-testid="context-bar"]')?.getAttribute('data-testid'))
+
+    expect(regions.slice(0, 5)).toEqual(['canvas-strip', 'canvas-strip', 'canvas-strip', 'tool-pill', 'progress-bar'])
+    expect(stops[3]!.getAttribute('data-testid')).toBe('pill-tool-paint')
+    wrapper.unmount()
+  })
+})

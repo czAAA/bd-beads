@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { frameWeave, rowProgressPosition, type Project } from '../../domain/project'
 import { describeWeave } from '../../domain/weave'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -29,6 +30,10 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+// One Tab stop; ←/→ step along the bar's controls and stop at the ends (ADR 0075).
+const rootEl = ref<HTMLElement>()
+const roving = useRovingFocus(rootEl, { axis: () => 'horizontal', managesTabIndex: true })
 
 /** Every control here is a registry action: its name, Tooltip, key chip and disabled reason come from there (ADR
  * 0035). */
@@ -65,7 +70,7 @@ const directionLabel = computed(() =>
 </script>
 
 <template>
-  <div class="progress-bar no-page-pan" data-testid="progress-bar">
+  <div ref="rootEl" class="progress-bar no-page-pan" data-testid="progress-bar" @keydown="roving.onKeydown" @focusin="roving.onFocusin">
     <template v-if="!hasFrame">
       <!-- Styled like the CanvasHint, icons 14px to fit the 20px chips: "(Select chip) Select to set a (Frame chip) Frame", each icon in a chip. -->
       <p class="progress-bar__need" data-testid="progress-bar-needs-frame">

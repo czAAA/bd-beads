@@ -155,7 +155,7 @@ function cancel() {
 
 .editable-line__empty:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .editable-line__form {

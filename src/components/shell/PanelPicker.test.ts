@@ -58,6 +58,25 @@ describe('PanelPicker (ticket 0553)', () => {
     expect(document.activeElement).toBe(items()[2]!.element)
   })
 
+  it('opens with → and closes with ←, handing focus back to its button (ticket 563)', async () => {
+    wrapper = mountPicker()
+    await button().trigger('keydown', { key: 'ArrowLeft' })
+    expect(items()).toHaveLength(0)
+    await button().trigger('keydown', { key: 'ArrowRight' })
+    expect(items()).toHaveLength(3)
+    await items()[1]!.trigger('keydown', { key: 'ArrowLeft' })
+    expect(items()).toHaveLength(0)
+    expect(document.activeElement).toBe(button().element)
+  })
+
+  it('closes on Tab and carries on from its button (ticket 563)', async () => {
+    wrapper = mountPicker()
+    await button().trigger('click')
+    await items()[1]!.trigger('keydown', { key: 'Tab' })
+    expect(items()).toHaveLength(0)
+    expect(document.activeElement).toBe(button().element)
+  })
+
   it('closes on Escape alone, handing focus back to its button', async () => {
     wrapper = mountPicker()
     await button().trigger('click')

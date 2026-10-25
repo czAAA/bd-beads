@@ -64,8 +64,9 @@ const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select
 const colorAction = controlAction('pill-colors')
 const colorLabel = computed(() => t.value.toolPill.color.replace('{name}', props.colorName ?? ''))
 
-/** The tool tiles and the colour control are one Tab stop (the active tool); the arrows move along them. */
-const roving = useRovingFocus(pillEl, '.tool-pill__stop')
+/** The grip, the tool tiles and the colour control are one Tab stop (the active tool); the arrows of the pill's axis move
+ * along them, the other axis does nothing (ADR 0075). */
+const roving = useRovingFocus(pillEl, { selector: '.tool-pill__grip, .tool-pill__stop', axis: () => (vertical.value ? 'vertical' : 'horizontal') })
 
 const drag = useToolPillDrag(pillEl, layerEl, {
   onStart: () => emit('update:popoverOpen', false),
@@ -164,6 +165,7 @@ watch(
         type="button"
         class="ui-control tool-pill__grip"
         :aria-label="t.toolPill.move"
+        tabindex="-1"
         data-testid="tool-pill-grip"
         @keydown="onGripKeydown"
       >

@@ -210,3 +210,18 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     expect(wrapper.emitted('fit-frame')).toHaveLength(1)
   })
 })
+
+describe('ProgressBar keyboard (ticket 563, ADR 0075)', () => {
+  it('is one Tab stop, ←/→ stepping along its controls and stopping at the ends', async () => {
+    const wrapper = mount(ProgressBar, { props: { project: makeProject() }, attachTo: document.body })
+    const buttons = wrapper.findAll('button')
+    expect(buttons.filter((button) => button.attributes('tabindex') === '0')).toHaveLength(1)
+
+    ;(buttons[0]!.element as HTMLElement).focus()
+    await buttons[0]!.trigger('keydown', { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(buttons[0]!.element)
+    await buttons[0]!.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(buttons[1]!.element)
+    wrapper.unmount()
+  })
+})
