@@ -152,3 +152,18 @@ describe('the open Menu keeps focus (ticket 563, ADR 0075)', () => {
     expect(tab(project.get('[data-testid="last"]').element).defaultPrevented).toBe(false)
   })
 })
+
+describe('↓ and ↑ step past a dropdown row', () => {
+  it('moves focus from a haspopup button to the next control instead of stopping on it', () => {
+    const wrapper = mount(AppPanel, {
+      attachTo: document.body,
+      props: { title: 'Menu', anchor: 'strip-menu', menu: true },
+      slots: { default: () => [h('button', { type: 'button', 'aria-haspopup': 'menu', 'data-testid': 'lang' }, 'Language'), h('button', { type: 'button', 'data-testid': 'theme' }, 'Theme')] },
+    })
+    const lang = wrapper.get('[data-testid="lang"]').element as HTMLElement
+    lang.focus()
+    lang.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true }))
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="theme"]').element)
+    wrapper.unmount()
+  })
+})

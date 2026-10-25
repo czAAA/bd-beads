@@ -36,7 +36,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 - Tab order (ADR 0075): the Canvas strip (one stop per section: Menu/Project/Frame, the Wordmark, the right-hand tools), the Tool pill (its colour control and recents included), the Progress bar (only with a Frame), the Frame's controls, the Selection bar (only with a Selection). Shift+Tab walks it backwards. The Pattern takes no focus and there is no skip link (ADR 0074).
 - One stop per group; arrow keys inside it (roving tabindex), stopping at the ends. In the strip and the Progress and Selection bars ←/→ step; the Tool pill follows its axis (↑/↓ when it stands left or right, ←/→ when top or bottom, the other axis does nothing), with Home and End.
-- Enter or ↓ on Menu, Project or Frame opens the panel with focus on its first item. In an open Menu Tab and Shift+Tab wrap, so focus never leaves it; ←/→ closes or opens a row's dropdown, Enter or ↓ opens it, Escape closes the panel and returns focus to its button.
+- Enter or ↓ on Menu, Project or Frame opens the panel with focus on its first item. In an open Menu Tab and Shift+Tab wrap, so focus never leaves it; ←/→ closes or opens a row's dropdown, Enter or Space opens it, ↓/↑ step past it to the next row, Escape closes the panel and returns focus to its button.
 - Modals and the modal Pattern and Menu panels trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 
