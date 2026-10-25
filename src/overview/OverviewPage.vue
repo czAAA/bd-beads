@@ -5,6 +5,7 @@ import CanvasStrip from '../components/canvas/CanvasStrip.vue'
 import MenuPanel from '../components/shell/MenuPanel.vue'
 import PanelHost from '../components/shell/PanelHost.vue'
 import { useElementSize } from '../composables/ui/useElementSize'
+import { CELL_SIZE_PX } from '../rendering/surfaceView'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import DrawnLayer from './DrawnLayer.vue'
 import CoffeeTile from './CoffeeTile.vue'
@@ -37,9 +38,15 @@ const scrollEl = ref<HTMLElement>()
 const scrollSize = useElementSize(scrollEl)
 const pageWidth = computed(() => (scrollSize.width.value || window.innerWidth) / (zoom.percent.value / 100))
 const canvasBackground = useCanvasBackground()
+// The page's background is the editor Canvas's empty grid: squares a bead across (CELL_SIZE_PX), outlined in the
+// theme's Position mark color, sized by the zoom as the Canvas's are.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
-  return color ? { '--canvas-bg': color } : undefined
+  return {
+    ...(color ? { '--canvas-bg': color } : undefined),
+    '--canvas-grid': canvasBackground.projectTheme.value.positionMark,
+    '--canvas-cell': `${CELL_SIZE_PX * (zoom.percent.value / 100)}px`,
+  }
 })
 
 const isNew = computed(() => props.projectCount === 0)
@@ -135,7 +142,12 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   flex: 1 1 0;
   min-height: 0;
   overflow: hidden auto;
-  background: var(--canvas-bg, var(--canvas));
+  background-color: var(--canvas-bg, var(--canvas));
+  background-image:
+    linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px),
+    linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px);
+  background-size: var(--canvas-cell) var(--canvas-cell);
+  background-attachment: local;
 }
 
 /* The zoom scales the content; the layout is made for the width it ends up with, so the text reflows and the page never
