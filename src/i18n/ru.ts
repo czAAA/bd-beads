@@ -159,7 +159,7 @@ export const ru: Translations = {
       makerLabel: 'автор:',
       savedLocal: 'Сохранено в браузере',
       notSavedYet: 'Ещё не сохранено',
-      addMaker: 'Добавьте имя для экспорта',
+      addMaker: 'Имя для экспорта',
       changeMaker: 'Изменить имя автора',
       thisProject: 'Этот проект',
       beadBrand: 'Бренд',
