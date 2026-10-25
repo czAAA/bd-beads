@@ -203,9 +203,9 @@ The Overview and the header menu, as signed off. The same rules: plain and short
 | --- | --- |
 | Menu | Меню |
 | Overview (menu link) | Обзор |
-| Draw. Joy. Weave. | Рисуйте. Наслаждайтесь. Создавайте. |
+| open + beads · draw · joy · weave · create · art · canvas · possibility · play · wonder · pattern · ideas (the rolling slogan, ticket 550) | the same, not translated: it is the brand |
 | save. count. export | сохраним. посчитаем. экспортируем |
-| you · on us (notes) | вы · это мы |
+| on us (note) | это мы |
 | Make your first Pattern · Open the editor | Сделать первую схему · Открыть редактор |
 | Patterns saved: 3 | Схем сохранено: 3 |
 | What's inside | Что внутри |

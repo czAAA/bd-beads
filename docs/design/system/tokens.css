@@ -252,7 +252,7 @@
   --text-meta-tiny: 400 11px/15px var(--font-mono); /* Saved Pattern sizes ("40×30"), kbd hints ("esc"). */
   --text-ruler: 400 11px/1.4 var(--font-mono); /* Canvas rulers: every row and column number; every 5th bold in body, the rest regular in ruler, the current row weight 700 in marker; column numbers from 100 turned a quarter turn; 12px on a phone. See the Rulers card. */
   --text-word: italic 400 240px/1 var(--font-serif); /* The background technique word only, italic, in word color, anchored bottom-right behind the board. */
-  --text-tagline: italic 400 60px/62px var(--font-serif); /* Overview only: the slogan. 40px on the phone, 58px from 744, 60px from 1024, 70px at 24″; Russian 20% smaller. The last word in accent-strong. */
+  --text-tagline: italic 400 60px/62px var(--font-serif); /* Overview only: the rolling slogan. 40px on the phone, 58px from 744, 60px from 1024, 70px at 24″, the same in every language. "open" in ink, the rolling word in accent-strong. */
   --text-serif-heading: italic 400 34px/38px var(--font-serif); /* Overview only: section headings ("What's inside", "Three ways to use it") and plan names (30px); 42px from 744 below 1024. */
   --text-note: italic 400 17px/1 var(--font-serif); /* Overview only: handwritten notes beside things ("you", "on us", "eleven small steps"), 15–19px, muted or accent-strong, with a 1.25px hand-drawn arrow. Decorative, aria-hidden. */
 }
