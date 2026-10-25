@@ -9,4 +9,7 @@ import './style.css'
 import { afterEach } from 'vitest'
 import { unmountAll } from './testUtils/browserFit'
 
-afterEach(unmountAll)
+afterEach(() => {
+  unmountAll()
+  localStorage.clear()
+})
