@@ -23,7 +23,7 @@
   --accent: #fa520f;
   --accent-hover: #ff6a2b;
   --accent-strong: #c23604;
-  --focus-ring: #c23604;
+  --focus-ring: #1f1f1f;
   --accent-disabled-bg: #e5e5e5;
   --accent-disabled-fg: #a8a8a8;
   --on-accent: #1f1f1f;
@@ -82,7 +82,7 @@
   --accent: #faff69;
   --accent-hover: #e6eb52;
   --accent-strong: #faff69;
-  --focus-ring: #faff69;
+  --focus-ring: #ffffff;
   --accent-disabled-bg: #3a3a1f;
   --accent-disabled-fg: #888888;
   --on-accent: #0a0a0a;

@@ -200,3 +200,35 @@ describe('ContextBar', () => {
     expect(wrapper.find('[title]').exists()).toBe(false)
   })
 })
+
+describe('ContextBar keyboard (ticket 563, ADR 0075)', () => {
+  beforeEach(() => {
+    localStorage.setItem('openbeads:locale', 'en')
+    vi.useFakeTimers()
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('is one Tab stop, ←/→ stepping along its buttons and stopping at the ends', async () => {
+    const wrapper = mount(ContextBar, {
+      props: { project: drawn, selection, selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false },
+      attachTo: document.body,
+    })
+    await arm()
+    const buttons = wrapper.findAll('button[data-testid]')
+    expect(buttons.filter((button) => button.attributes('tabindex') === '0')).toHaveLength(1)
+
+    ;(buttons[0]!.element as HTMLElement).focus()
+    await buttons[0]!.trigger('keydown', { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(buttons[0]!.element)
+    await buttons[0]!.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(buttons[1]!.element)
+    const last = buttons.at(-1)!
+    ;(last.element as HTMLElement).focus()
+    await last.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(last.element)
+    wrapper.unmount()
+  })
+})

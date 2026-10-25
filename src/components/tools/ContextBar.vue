@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from '../../i18n/useI18n'
 import { useElementSize } from '../../composables/ui/useElementSize'
+import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { BAR_EDGE_PX, selectionBarPlacement, type BarBox, type SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import AppMenuItem from '../ui/AppMenuItem.vue'
@@ -152,6 +153,8 @@ const BAR_SIDE_PADDING_PX = 2
 const BAR_DIVIDER_PX = 1 + 2 * 3
 
 const rootEl = ref<HTMLElement>()
+// One Tab stop; ←/→ step along the buttons and stop at the ends (ADR 0075).
+const roving = useRovingFocus(rootEl, { selector: '.context-bar__button', axis: () => 'horizontal', managesTabIndex: true })
 const readoutEl = ref<HTMLElement>()
 const bar = useElementSize(rootEl)
 const readout = useElementSize(readoutEl)
@@ -195,6 +198,8 @@ const showing = computed(() => props.selectionSummary !== undefined)
     role="toolbar"
     :aria-label="t.contextBar.label"
     data-testid="context-bar"
+    @keydown="roving.onKeydown"
+    @focusin="roving.onFocusin"
   >
     <span ref="readoutEl" class="context-bar__size" data-testid="context-bar-size">{{ selectionSummary }}</span>
     <template v-for="(item, index) in shown" :key="item.id">

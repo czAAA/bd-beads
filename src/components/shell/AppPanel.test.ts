@@ -120,3 +120,35 @@ describe('AppSubpanel', () => {
     expect(wrapper.emitted('close')).toBeUndefined()
   })
 })
+
+describe('the open Menu keeps focus (ticket 563, ADR 0075)', () => {
+  const tab = (target: Element, shiftKey = false) => {
+    const event = new KeyboardEvent('keydown', { key: 'Tab', shiftKey, bubbles: true, cancelable: true })
+    target.dispatchEvent(event)
+    return event
+  }
+  const mountRows = (props: Record<string, unknown>) =>
+    mount(AppPanel, {
+      attachTo: document.body,
+      props: { title: 'Menu', anchor: 'strip-menu', ...props },
+      slots: { default: () => [h('button', { type: 'button', 'data-testid': 'first' }, 'One'), h('button', { type: 'button', 'data-testid': 'second' }, 'Two'), h('button', { type: 'button', 'data-testid': 'last' }, 'Three')] },
+    })
+
+  it('wraps Tab from the last item to the first, and Shift+Tab back', () => {
+    const wrapper = mountRows({ menu: true })
+    const first = wrapper.get('[data-testid="first"]').element
+    const last = wrapper.get('[data-testid="last"]').element
+    expect(tab(last).defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(first)
+    expect(tab(first, true).defaultPrevented).toBe(true)
+    expect(document.activeElement).toBe(last)
+  })
+
+  it('leaves Tab to the browser between the items, and everywhere outside the Menu', () => {
+    const menu = mountRows({ menu: true })
+    expect(tab(menu.get('[data-testid="second"]').element).defaultPrevented).toBe(false)
+    menu.unmount()
+    const project = mountRows({})
+    expect(tab(project.get('[data-testid="last"]').element).defaultPrevented).toBe(false)
+  })
+})

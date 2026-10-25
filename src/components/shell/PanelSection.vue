@@ -64,7 +64,7 @@ const { open, toggle } = usePanelSection(() => props.id)
 
 .panel-section__header:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .panel-section__label {

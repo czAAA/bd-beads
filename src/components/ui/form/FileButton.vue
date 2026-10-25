@@ -77,7 +77,7 @@ function onDrop(event: DragEvent, disabled: boolean | undefined) {
 
 .file-button__target:has(:focus-visible) {
   outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
+  outline-offset: var(--focus-offset);
 }
 
 .file-button__target--disabled {

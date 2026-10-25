@@ -7,7 +7,7 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 - Text 4.5:1, meaningful marks 3:1 (the focus ring, control borders, the active underline, the selected ring), in light, dark and high contrast. The ContrastAudit card lists every pair.
 - **Orange buttons carry dark labels.** `on-accent` is #1f1f1f in light (4.9:1 on #fa520f), the same move the dark theme makes with dark text on yellow. Hover lightens to `accent-hover` #ff6a2b (5.8:1). The brand orange itself is unchanged.
 - **Accent as text or a thin mark** on light surfaces is `accent-strong` (#c23604, 4.9:1 on panel): the active tool label and underline, the open Saved Pattern ring and name, message edges, accent icons, links. `accent` stays for fills, the current row and the logo.
-- The focus ring is `focus-ring`. Fields and Steppers, whose border is their only edge, use `field-line`; the off Switch uses `switch-off`; danger-filled buttons label in `on-danger`.
+- The focus ring is `focus-ring`, the same as `ink`, never the accent (ADR 0075). Fields and Steppers, whose border is their only edge, use `field-line`; the off Switch uses `switch-off`; danger-filled buttons label in `on-danger`.
 - Changed values: `danger` light #c23604; `ruler` #6a6a6a / #8c8c8c; `subtle` light #767676; `muted` and `box-muted` dark #949494.
 - **Rulers** are measured on all eleven canvas backgrounds: regular numbers in `ruler` at 4.8:1 or more (Ash uses a lifted `#a0a0a0`, 5.4:1), every 5th in `body` at 7.9:1 or more, the current row's `marker` at 13:1 or more in dark (in light it is royal blue, 6.0:1 or more on the canvas backgrounds, ticket 369), and 10.9:1, 16.5:1 and 21:1 in high contrast. The Rulers card has the table. Column numbers from 100 are turned a quarter turn; none is ever thinned.
 - The logo on an accent tile (app icon, apple-touch icon, the cover) stays white in light: a graphic needs 3:1 and has 3.3:1.
@@ -34,8 +34,9 @@ Every screen meets WCAG 2.2 AA in both themes and works with a keyboard, a scree
 
 ## Keyboard
 
-- Tab order: header, Toolbox, save box, Beads needed, Saved Patterns, canvas strip, Progress bar. The Pattern takes no focus and there is no skip link (ADR 0074).
-- One stop per group; arrow keys inside the tool tiles, swatches and segmented controls (roving tabindex).
+- Tab order (ADR 0075): the Canvas strip (one stop per section: Menu/Project/Frame, the Wordmark, the right-hand tools), the Tool pill (its colour control and recents included), the Progress bar (only with a Frame), the Frame's controls, the Selection bar (only with a Selection). Shift+Tab walks it backwards. The Pattern takes no focus and there is no skip link (ADR 0074).
+- One stop per group; arrow keys inside it (roving tabindex), stopping at the ends. In the strip and the Progress and Selection bars ←/→ step; the Tool pill follows its axis (↑/↓ when it stands left or right, ←/→ when top or bottom, the other axis does nothing), with Home and End.
+- Enter or ↓ on Menu, Project or Frame opens the panel with focus on its first item. In an open Menu Tab and Shift+Tab wrap, so focus never leaves it; ←/→ closes or opens a row's dropdown, Enter or ↓ opens it, Escape closes the panel and returns focus to its button.
 - Modals and the modal Pattern and Menu panels trap focus and return it to the opener. Escape closes the top-most thing: modal → sheet → menu → Selection → open disclosure row.
 - Focus is never hidden behind the header or the Dock (`scroll-margin`).
 
