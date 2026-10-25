@@ -244,8 +244,6 @@ export const pl: Translations = {
   },
   overview: {
     pageTitle: 'Przegląd',
-    sloganLead: 'Rysuj. Ciesz się.',
-    sloganLast: 'Pleć.',
     tagline: 'zapisz. policz. wyeksportuj',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
@@ -253,7 +251,7 @@ export const pl: Translations = {
     whatsInside: 'Co jest w środku',
     previousFeature: 'Poprzednia funkcja',
     nextFeature: 'Następna funkcja',
-    notes: { you: 'ty', onUs: 'na nasz koszt' },
+    notes: { onUs: 'na nasz koszt' },
     coffee: { title: 'Jedna osoba', text: 'openbeads robi jedna osoba, koralik po koraliku, i jest darmowe. Jeśli oszczędziło ci wieczór liczenia, kawa będzie miłym podziękowaniem.', button: 'Postaw mi kawę' },
     plans: {
       label: 'plany',
