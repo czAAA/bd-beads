@@ -90,7 +90,8 @@ describe('Edit Frame', () => {
     expect(wrapper.find('[data-testid="frame-edit"]').exists()).toBe(false)
     await closePanel(wrapper)
 
-    expect(wrapper.find('[data-testid="strip-frame"]').exists()).toBe(false)
+    // The Frame button is there with or without a Frame (ticket 555).
+    expect(wrapper.find('[data-testid="strip-frame"]').exists()).toBe(true)
 
     const framed = await mountOpen(framedProject())
     expect(framed.get('[data-testid="frame-edit-toggle"]').attributes('aria-pressed')).toBe('false')
@@ -261,7 +262,8 @@ describe('Edit Frame', () => {
     expect([wrapper.get('[data-testid="frame-panel-width"]').attributes('placeholder'), wrapper.get('[data-testid="frame-panel-height"]').attributes('placeholder')]).toEqual(['3', '2'])
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="frame-edge-top-out"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
     await toggleBar(wrapper)
     expect(editing(wrapper)).toBe(false)
 
@@ -333,15 +335,29 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     expect(beadColor(wrapper, { row: 2, column: 3 })).toBe(RED)
   })
 
-  it('opens "Set Frame to export" with no Frame, and Fit to drawing there sets one', async () => {
+  it('offers Frame from template and Fit a frame to the drawing with no Frame, and Fit sets one in place (ticket 555)', async () => {
     const wrapper = await mountOpen()
-    await openPanel(wrapper, 'strip-project')
-    await wrapper.find('[data-testid="export-png-needs-frame"]').trigger('click')
-    expect(wrapper.find('[data-testid="export-needs-frame"]').text()).toContain(en.frame.exportPromptTitle)
+    await toggleBar(wrapper)
+    expect(wrapper.find('[data-testid="frame-from-template"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="export-fit-frame"]').trigger('click')
+    await wrapper.get('[data-testid="frame-fit"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
+    expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(true)
+  })
+
+  it('names the Frame from the panel, saved with the Project, and one Undo takes it back (ticket 555)', async () => {
+    const wrapper = await mountOpen(framedProject())
+    await toggleBar(wrapper)
+    await wrapper.get('[data-testid="frame-name-add"]').trigger('click')
+    await wrapper.get('[data-testid="frame-name-input"]').setValue('Moth wing')
+    await wrapper.get('[data-testid="frame-name-save"]').trigger('click')
+    await flushPromises()
+    expect(loadProjects()[0]!.frame!.name).toBe('Moth wing')
+    expect(wrapper.get('[data-testid="frame-name"]').text()).toBe('Moth wing')
+    await key({ key: 'z', ctrlKey: true })
+    expect(loadProjects()[0]!.frame!.name).toBeUndefined()
   })
 
   it('has Fit to drawing in the Progress bar with no Frame', async () => {

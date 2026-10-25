@@ -6,7 +6,13 @@ import AppIcon from '../ui/AppIcon.vue'
 // A named section of a panel (MenuPanel card): a header button with the `label`, an optional `summary` (text, or the `summary` slot for a swatch) and a chevron,
 // then rows, split by a 1px `line-soft` rule; a named group for screen readers. It folds shut, and stays so on this
 // device: `id` is the panel and the section ("menu:projects"), every section open on a first visit.
-const props = defineProps<{ label: string; id: string; summary?: string }>()
+const props = defineProps<{
+  label: string
+  id: string
+  summary?: string
+  /** Shows the summary while the section is open too (Beads needed's total, ticket 555). */
+  keepSummary?: boolean
+}>()
 const labelId = useId()
 const bodyId = useId()
 const { open, toggle } = usePanelSection(() => props.id)
@@ -17,7 +23,7 @@ const { open, toggle } = usePanelSection(() => props.id)
     <h3 class="panel-section__heading">
       <button :id="labelId" class="ui-control panel-section__header" type="button" :aria-expanded="open" :aria-controls="bodyId" @click="toggle">
         <span class="panel-section__label">{{ label }}</span>
-        <span v-if="(summary || $slots.summary) && !open" class="panel-section__summary"><slot name="summary">{{ summary }}</slot></span>
+        <span v-if="(summary || $slots.summary) && (!open || keepSummary)" class="panel-section__summary"><slot name="summary">{{ summary }}</slot></span>
         <AppIcon :name="open ? 'chevron-down' : 'chevron-left'" :size="14" class="panel-section__chevron" :class="{ 'panel-section__chevron--closed': !open }" />
       </button>
     </h3>

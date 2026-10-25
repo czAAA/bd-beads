@@ -23,7 +23,7 @@ export const PANELS: Record<PanelId, PanelDescriptor> = {
   menu: { id: 'menu', title: (t) => t.header.menuButton, anchor: 'strip-menu', menu: true, skipsFields: false, openers: ['strip-menu'] },
   project: { id: 'project', title: (t) => t.header.projectPanelLabel, anchor: 'strip-project', menu: false, skipsFields: false, openers: ['strip-project'] },
   // The Frame panel opens from the strip's Frame button alone; the edit pencil on the Frame shows its handles and is no opener.
-  frame: { id: 'frame', title: (t) => t.frame.title, anchor: 'strip-frame', menu: false, skipsFields: true, width: 'min(calc(100vw - 2 * var(--frame-panel-gap)), var(--frame-panel-width))', openers: ['strip-frame'] },
+  frame: { id: 'frame', title: (t) => t.frame.title, anchor: 'strip-frame', menu: false, skipsFields: true, openers: ['strip-frame'] },
 }
 
 /** The selector matching every panel's opener buttons. */

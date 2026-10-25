@@ -38,7 +38,7 @@ const ROLLING = '[data-testid="slogan-column"]'
 
 /** Not checked: user-typed text (a long Project name may ellipsize) and the drawing's furniture (backdrop word,
  * ruler numbers). */
-const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid="project-name"], [data-testid="canvas-strip-title"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
+const USER_TEXT = '[data-user-text], [data-testid="project-info"], [data-testid="project-name"], [data-testid="frame-name"], [data-testid="canvas-strip-title"], [data-testid="ruler-label"], .project-canvas__clip, .project-list__name'
 
 /** What the measurement is told: the selectors above, so a page runs it without importing anything. */
 export interface MeasureArgs {

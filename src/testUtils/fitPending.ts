@@ -22,8 +22,6 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'OverviewPage', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
   { case: 'ProgressBar by columns', texts: ['Стовпець не готовий', 'Стовпець готовий'], at: { uk: [320] }, fixedBy: '556' },
   { case: 'ProgressBar by columns', texts: ['Columna sin terminar', 'Columna terminada'], at: { es: [320] }, fixedBy: '556' },
-  { case: 'FramePanel', texts: ['Ширина', 'Висота'], at: { uk: [320] }, fixedBy: '555', borderline: true },
-  { case: 'FramePanel', texts: ['Szerokość', 'Wysokość'], at: { pl: [320] }, fixedBy: '555' },
   { case: 'CanvasStrip Tooltips', texts: ['RedoCtrl/Cmd+Shift+Z'], at: { en: [320] }, fixedBy: '562', borderline: true },
   { case: 'dialog pendingImport', texts: ['Перейти к импортированному проекту?'], at: { ru: [320] }, fixedBy: '559' },
   { case: 'BeadColorList', texts: ['· Discontinued'], at: { en: [320] }, fixedBy: '558' },

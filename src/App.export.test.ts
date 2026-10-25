@@ -43,9 +43,9 @@ function mountApp() {
   return wrapper
 }
 
-/** The exports are buttons of the Project panel (ticket 443). */
+/** The Picture and the Printable chart are rows of the Frame panel (tickets 443, 555). */
 async function openExportMenu(wrapper: ReturnType<typeof mount>) {
-  await openPanel(wrapper, 'strip-project')
+  await openPanel(wrapper, 'strip-frame')
 }
 
 describe('App PNG and PDF export (tickets 73, 74)', () => {

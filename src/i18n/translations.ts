@@ -483,6 +483,8 @@ export interface Translations {
     weightHeading: string
     gramsUnit: string
     totalLabel: string
+    showAll: string
+    showFewer: string
     /** The Estimated weight Note (tickets 155, 328); `{grams}` is the Bead's average weight of one bead. */
     weightInfo: string
   }
@@ -566,6 +568,19 @@ export interface Translations {
    * Russian unreviewed. */
   frame: {
     title: string
+    titleLabel: string
+    nameEmpty: string
+    nameEdit: string
+    nameTooltip: string
+    fromTemplate: string
+    fitAFrame: string
+    fitNothing: string
+    noFrameLine: string
+    sizeHeading: string
+    exportPicture: string
+    exportChart: string
+    estimateInfo: string
+    sizeLockedLine: string
     editFrame: string
     moveHandle: string
     /** The Frame panel's stepper names, by the edge they move (tickets 417, 473): a bead out, a bead in. */
@@ -591,7 +606,6 @@ export interface Translations {
     replaceConfirmTitle: string
     replaceConfirmMessage: string
     /** The one line under a Frame control that says what the Frame is. */
-    explainer: string
     /** The size tooltip at the Frame's bottom-right corner while it is being set: "13×13 ≈ 2.1 × 2.1 cm". */
     sizeTooltip: string
     announceSet: string
@@ -615,7 +629,6 @@ export interface Translations {
     rotateFrameLabel: string
     announceFrameRotated: string
     /** Export without a Frame opens a dialog with this title. */
-    exportPromptTitle: string
     countNeedsFrame: string
     /** The Progress bar's hint with no Frame: [Select icon] {progressSelectToSet} [Frame icon] {progressFrameWord}.
      * Two pieces so each language can order and inflect them: the second ends the sentence (a noun in the
