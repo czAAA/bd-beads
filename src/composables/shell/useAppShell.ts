@@ -252,10 +252,15 @@ function wireAppShell(services: Services) {
   /** Whether Pick color from canvas is on (ticket 398); see pickColorAt. */
   const pickingColor = ref(false)
 
+  /** Whether the next Selection becomes the Frame (ticket 568): armed by the Frame panel's Select a frame, ended by the
+   * Selection being made, Escape or another tool. */
+  const selectingFrame = ref(false)
+
   // Choosing a tool. The Eraser clears an existing Selection first (ticket 313), like Del under Select, so Select all
   // asks for Delete all's confirmation (ticket 415); leaving Select drops the Selection, as for every other tool.
   function onSelectTool(tool: Tool) {
     pickingColor.value = false
+    selectingFrame.value = false
     // Another tool leaves paste mode (Piece included, which leaveSelectTool spares); a second tap on Select does on
     // touch.
     if (tool !== 'select' || (touch.value && activeTool.value === 'select')) leavePasteMode()
@@ -289,6 +294,29 @@ function wireAppShell(services: Services) {
   /** Frame from a Selection (ticket 415): the Frame becomes the Selection's rectangle. */
   function onFrameFromSelection() {
     if (selection.value) frameFlow.setTo(selectionFrame(selection.value))
+  }
+
+  /** Select a frame (ticket 568): Select is the tool, and the Selection the next drag makes is framed on release. */
+  function onSelectFrame() {
+    onSelectTool('select')
+    selectingFrame.value = true
+    showToast('select-frame', t.value.frame.selectFrameHint, 'info')
+  }
+
+  /** The end of a Select press: when the drag was made to set the Frame, the Frame is set to it. */
+  function endSelectPressFraming() {
+    endSelectPress()
+    if (!selectingFrame.value || !selection.value) return
+    selectingFrame.value = false
+    onFrameFromSelection()
+    resetSelection()
+  }
+
+  /** Escape under Select: ends the framing drag too, which counts as the key being used. */
+  function backOutOfSelectOrFraming(): boolean {
+    const was = selectingFrame.value
+    selectingFrame.value = false
+    return backOutOfSelect() || was
   }
 
   /** Copy (ticket 437, ADR 0057): keeps the drawn beads, clears the Selection and arms paste mode under Select; with
@@ -420,7 +448,7 @@ function wireAppShell(services: Services) {
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
-    endSelectPress,
+    endSelectPress: endSelectPressFraming,
   })
 
   /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the
@@ -623,7 +651,7 @@ function wireAppShell(services: Services) {
       manageProject.deletingAll.value ||
       storageAsk.storageNoteOpen.value ||
       shortcutsHelpOpen.value,
-    backOutOfSelect,
+    backOutOfSelect: backOutOfSelectOrFraming,
     onUndo,
     onRedo,
     onSelectTool,
@@ -759,7 +787,7 @@ function wireAppShell(services: Services) {
     hasPaintColor,
     onFrameFromSelection,
     selectionRefusals,
-    backOutOfSelect,
+    backOutOfSelect: backOutOfSelectOrFraming,
     previewCells,
     endStroke,
     onCellPrimaryDown,
@@ -799,19 +827,23 @@ function wireAppShell(services: Services) {
     onRenameFrame: frameFlow.rename,
     onSetTechnique: frameFlow.setTechnique,
     onSetBrickBlock: frameFlow.setBrickBlock,
+    onSetNetSize: frameFlow.setNetSize,
+    onSetCanvasNetSize: frameFlow.setCanvasNetSize,
     onSetCanvasTechnique: frameFlow.setCanvasTechnique,
     switchQuestion: frameFlow.switchQuestion,
     onSetSwitchNetSize: frameFlow.setSwitchNetSize,
+    onSetSwitchBrickBlock: frameFlow.setSwitchBrickBlock,
     onCancelSwitchTechnique: frameFlow.cancelSwitch,
     onConfirmSwitchTechnique: frameFlow.confirmSwitch,
     onSetCanvasBrickBlock: frameFlow.setCanvasBrickBlock,
     onSetBeadShape: beadShapeFlow.setBeadShape,
     onFitFrame: frameFlow.fit,
+    onSelectFrame,
     onRemoveFrame: frameFlow.remove,
     removeFrameConfirmOpen: frameFlow.removeConfirmOpen,
     onCancelRemoveFrame: frameFlow.cancelRemove,
     onConfirmRemoveFrame: frameFlow.confirmRemove,
-    onPlaceFrameFromTemplate: frameFlow.placeFromTemplate,
+    onPlaceFrameFromStarter: frameFlow.placeFromStarter,
     replaceFrameConfirmOpen: frameFlow.replaceConfirmOpen,
     onCancelReplaceFrame: frameFlow.cancelReplace,
     onConfirmReplaceFrame: frameFlow.confirmReplace,

@@ -140,13 +140,13 @@ describe('Menu', () => {
     const open = wrapper.get('[data-testid="strip-project"]').text()
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
 
-    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
     expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="strip-project"]').text()).toBe(open)
   })
 
@@ -179,44 +179,46 @@ describe('Menu', () => {
     expect(text(wrapper, 'project-name')).toBe('Heron')
   })
 
-  it('starts a Project from a Template: a card opens its setup, Back returns to the gallery, Create makes the Frame in place', async () => {
+  it('starts a Project from a Starter: a card opens its setup, Back returns to the gallery, Create makes the Frame in place', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="pick-starter"]').trigger('click')
+    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(true)
 
-    await wrapper.get('[data-testid="template-card-bracelet"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.templates.bracelet.name)
-    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.starters.bracelet.name)
+    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(true)
     expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
 
-    await wrapper.get('[data-testid="template-card-bracelet"]').trigger('click')
-    await wrapper.get('[data-testid="template-height-preset-100"]').trigger('click')
-    await wrapper.get('[data-testid="create-template-project"]').trigger('click')
+    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
+    await wrapper.get('[data-testid="starter-height-preset-100"]').trigger('click')
+    await wrapper.get('[data-testid="create-starter-project"]').trigger('click')
     await flushPromises()
 
-    expect(names()).toEqual([en.templates.bracelet.name, 'Moth'])
-    const made = loadProjects().find((project) => project.name === en.templates.bracelet.name)!
+    expect(names()).toEqual([en.starters.bracelet.name, 'Moth'])
+    const made = loadProjects().find((project) => project.name === en.starters.bracelet.name)!
     expect(made.technique).toBe('loom')
     expect(made.frame).toMatchObject({ row: 0, column: 0, columns: 12, rows: 100, beads: {} })
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('puts a Frame on the open Project from the Frame panel: Frame from template pushes the gallery, Create places it and closes the panel (ticket 555)', async () => {
+  it('puts a Frame on the open Project from the Frame panel: Frame from starter pushes the gallery, Create places it and closes the panel (ticket 555)', async () => {
     const { frame: _frame, ...open } = moth()
     saveProjects([open])
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-frame')
-    await wrapper.get('[data-testid="frame-from-template"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.frame.fromTemplate)
-    expect(wrapper.find('[data-testid="template-gallery"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="frame-from-starter"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.frame.fromStarter)
+    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(true)
 
-    await wrapper.get('[data-testid="template-card-bracelet"]').trigger('click')
-    await wrapper.get('[data-testid="template-height-preset-100"]').trigger('click')
-    await wrapper.get('[data-testid="create-template-project"]').trigger('click')
+    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
+    await wrapper.get('[data-testid="starter-height-preset-100"]').trigger('click')
+    await wrapper.get('[data-testid="create-starter-project"]').trigger('click')
     await flushPromises()
 
     expect(loadProjects().find((project) => project.name === 'Moth')!.frame).toMatchObject({ columns: 12, rows: 100, beads: {} })
@@ -238,14 +240,14 @@ describe('Menu', () => {
     saveProjects([])
     const wrapper = mountApp()
     // The empty canvas opens Menu on the form by itself.
-    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="menu-saved-projects"]').exists()).toBe(true)
 
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
-    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
     await nextTick()
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
@@ -254,7 +256,7 @@ describe('Menu', () => {
   it('opens Menu on the form by itself when the empty canvas shows', async () => {
     saveProjects([])
     const wrapper = mountApp()
-    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
   })
 
   it('opens Menu on the form from the empty-canvas bar button', async () => {
@@ -263,7 +265,7 @@ describe('Menu', () => {
     await wrapper.get('[data-testid="phone-bar-new-project"]').trigger('click')
 
     expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="bead-picker"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('dialog')
   })
 

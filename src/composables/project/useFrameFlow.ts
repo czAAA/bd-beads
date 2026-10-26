@@ -5,7 +5,7 @@ import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { canvasWeave, createProject, frameWeave, rowProgressStarted, switchLoss, weaveOf, type CreateProjectInput, type Project } from '../../domain/project'
+import { canvasWeave, createProject, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, weaveOf, type CreateProjectInput, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import type { Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -130,53 +130,72 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return true
   }
 
-  /** The Technique switch waiting on its question (ticket 507): a layer with drawn beads says what would be lost, and
-   * Netting asks for its Net size, before anything changes. */
-  const switchAsk = ref<{ layer: Layer; technique: Technique; netSize: number } | undefined>()
+  /** The weave change waiting on its question (tickets 507, 568): a layer with drawn beads says what would be lost, and
+   * Netting asks for its Net size and Brick stitch for its Brick block, before anything changes. */
+  const switchAsk = ref<{ layer: Layer; technique: Technique; netSize: number; brickBlock: number } | undefined>()
 
-  /** The open switch question as the dialog shows it: the new Technique's name, the beads that would be lost, the Net
-   * size asked for, and whether the layer has beads at all. */
+  /** The open question as the dialog shows it: the Technique, the beads that would be lost, the Net size and Brick block
+   * asked for, whether the layer has beads at all, and whether the Technique stays (only a setting changes). */
   const switchQuestion = computed(() => {
     const ask = switchAsk.value
     const project = deps.currentProject()
     if (!ask || !project) return undefined
+    const { hasNetSize, hasBrickBlock } = describeWeave({ technique: ask.technique })
     return {
       technique: ask.technique,
       lost: switchLoss(project, ask.layer, ask.technique, ask.netSize),
       drawn: layerHasBeads(project, ask.layer),
-      asksNetSize: describeWeave({ technique: ask.technique }).hasNetSize,
+      keeps: ask.technique === layerWeave(project, ask.layer).technique,
+      asksNetSize: hasNetSize,
       netSize: ask.netSize,
+      asksBrickBlock: hasBrickBlock,
+      brickBlock: ask.brickBlock,
     }
   })
 
-  function applySwitch(layer: Layer, technique: Technique, netSize?: number): void {
-    const outcome =
-      layer === 'frame'
-        ? deps.edit('frame', (project) => changeFrame(project, { technique, netSize }))
-        : deps.edit('exempt', (project) => changeCanvasWeave(project, { technique, netSize }))
-    if (outcome.kind !== 'applied') return
-    const t = deps.messages()
-    deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
-  }
+  const layerWeave = (project: Project, layer: Layer) => (layer === 'frame' ? frameWeave(project) : canvasWeave(project))
 
-  /** Asks first when the layer has drawn beads or the Technique needs a Net size; otherwise switches at once. */
-  function askSwitch(layer: Layer, technique: Technique): void {
+  function applySwitch(layer: Layer, technique: Technique, netSize?: number, brickBlock?: number): void {
     const project = deps.currentProject()
     if (!project) return
-    const current = layer === 'frame' ? project.frame?.technique : project.technique
-    if (current === undefined || current === technique) return
+    const before = layerWeave(project, layer)
+    const outcome =
+      layer === 'frame'
+        ? deps.edit('frame', (current) => changeFrame(current, { technique, netSize, brickBlock }))
+        : deps.edit('exempt', (current) => changeCanvasWeave(current, { technique, netSize, brickBlock }))
+    if (outcome.kind !== 'applied') return
+    const t = deps.messages()
+    if (technique !== before.technique) deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
+    else if (brickBlock !== undefined && brickBlock !== (before.brickBlock ?? 1)) deps.announce(t.frame.announceBrickBlock.replace('{count}', String(brickBlock)))
+    else if (netSize !== undefined) deps.announce(t.frame.announceNetSize.replace('{count}', String(netSize)))
+  }
+
+  /** Changes a layer's Technique, Net size or Brick block (tickets 507, 568). Asks first when a Technique switch has
+   * drawn beads or settings to choose, or when a Net size would drop beads; otherwise changes at once. */
+  function askWeave(layer: Layer, change: { technique?: Technique; netSize?: number; brickBlock?: number }): void {
+    const project = deps.currentProject()
+    if (!project || (layer === 'frame' && !project.frame)) return
+    const current = layerWeave(project, layer)
+    const technique = change.technique ?? current.technique
+    const netSize = change.netSize ?? current.netSize ?? DEFAULT_NET_SIZE
+    const brickBlock = change.brickBlock ?? current.brickBlock ?? 1
+    const { hasNetSize, hasBrickBlock } = describeWeave({ technique })
+    if (sameWeave(current, switchedWeave(current, technique, netSize, hasBrickBlock ? brickBlock : undefined))) return
     if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
-    const weave = layer === 'frame' ? frameWeave(project) : canvasWeave(project)
-    const netSize = weave.netSize ?? DEFAULT_NET_SIZE
-    if (layerHasBeads(project, layer) || describeWeave({ technique }).hasNetSize) {
-      switchAsk.value = { layer, technique, netSize }
+    const switching = technique !== current.technique
+    if ((switching && (layerHasBeads(project, layer) || hasNetSize || hasBrickBlock)) || switchLoss(project, layer, technique, netSize) > 0) {
+      switchAsk.value = { layer, technique, netSize, brickBlock }
       return
     }
-    applySwitch(layer, technique)
+    applySwitch(layer, technique, hasNetSize ? netSize : undefined, hasBrickBlock ? brickBlock : undefined)
   }
 
   function setSwitchNetSize(netSize: number): void {
     if (switchAsk.value) switchAsk.value = { ...switchAsk.value, netSize }
+  }
+
+  function setSwitchBrickBlock(brickBlock: number): void {
+    if (switchAsk.value) switchAsk.value = { ...switchAsk.value, brickBlock }
   }
 
   function cancelSwitch(): void {
@@ -186,33 +205,42 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function confirmSwitch(): void {
     const ask = switchAsk.value
     switchAsk.value = undefined
-    if (ask) applySwitch(ask.layer, ask.technique, describeWeave({ technique: ask.technique }).hasNetSize ? ask.netSize : undefined)
+    if (!ask) return
+    const { hasNetSize, hasBrickBlock } = describeWeave({ technique: ask.technique })
+    applySwitch(ask.layer, ask.technique, hasNetSize ? ask.netSize : undefined, hasBrickBlock ? ask.brickBlock : undefined)
   }
 
   /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, once a pass is done not at all. */
   function setTechnique(technique: Technique): void {
-    askSwitch('frame', technique)
+    askWeave('frame', { technique })
   }
 
   /** Weaves the open brick stitch Project with another Brick block (ticket 477): every bead keeps its cell, one Undo
    * step. */
   function setBrickBlock(brickBlock: number): void {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, { brickBlock }))
-    if (outcome.kind !== 'applied') return
-    deps.announce(deps.messages().frame.announceBrickBlock.replace('{count}', String(brickBlock)))
+    askWeave('frame', { brickBlock })
+  }
+
+  /** Weaves the open Netting Project's Frame with another Net size (ticket 568): beads without a place in the new net are
+   * dropped, after asking. */
+  function setNetSize(netSize: number): void {
+    askWeave('frame', { netSize })
   }
 
   /** Weaves the Canvas in another Technique (tickets 492, 507): any time, since Row progress belongs to the Frame; one
    * Undo step. */
   function setCanvasTechnique(technique: Technique): void {
-    askSwitch('canvas', technique)
+    askWeave('canvas', { technique })
   }
 
   /** The Canvas with another Brick block (ticket 492). */
   function setCanvasBrickBlock(brickBlock: number): void {
-    const outcome = deps.edit('exempt', (project) => changeCanvasWeave(project, { brickBlock }))
-    if (outcome.kind !== 'applied') return
-    deps.announce(deps.messages().frame.announceBrickBlock.replace('{count}', String(brickBlock)))
+    askWeave('canvas', { brickBlock })
+  }
+
+  /** The Canvas with another Net size (ticket 568). */
+  function setCanvasNetSize(netSize: number): void {
+    askWeave('canvas', { netSize })
   }
 
   function press(target: FramePress, cell: GridPosition): void {
@@ -328,25 +356,25 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     commit(undefined)
   }
 
-  /** Whether the Replace Frame question is open; the pending Template choice waits behind it (ticket 495). */
+  /** Whether the Replace Frame question is open; the pending Starter choice waits behind it (ticket 495). */
   const replaceConfirmOpen = ref(false)
-  let pendingTemplate: CreateProjectInput | undefined
+  let pendingStarter: CreateProjectInput | undefined
 
-  /** Add Frame from Template and Replace Frame (ticket 495): an empty Frame in the Template's Technique, centred on what
+  /** Add Frame from Starter and Replace Frame (ticket 495): an empty Frame in the Starter's Technique, centred on what
    * is on screen and snapped to a Canvas position, over whatever lies there. Replacing a Frame that holds beads asks first,
    * as they go with it. */
-  function placeFromTemplate(input: CreateProjectInput): void {
+  function placeFromStarter(input: CreateProjectInput): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
     if (project.frame && Object.keys(project.frame.beads).length > 0) {
-      pendingTemplate = input
+      pendingStarter = input
       replaceConfirmOpen.value = true
       return
     }
-    applyTemplate(input)
+    applyStarter(input)
   }
 
-  function applyTemplate(input: CreateProjectInput): void {
+  function applyStarter(input: CreateProjectInput): void {
     const made = createProject(input).frame!
     const weave = weaveOf(made)
     const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
@@ -361,15 +389,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** The Replace Frame question answered No: nothing changes. */
   function cancelReplace(): void {
     replaceConfirmOpen.value = false
-    pendingTemplate = undefined
+    pendingStarter = undefined
   }
 
   /** The question answered Yes: the Frame goes and the new one is made, as one Undo step. */
   function confirmReplace(): void {
     replaceConfirmOpen.value = false
-    const input = pendingTemplate
-    pendingTemplate = undefined
-    if (input) applyTemplate(input)
+    const input = pendingStarter
+    pendingStarter = undefined
+    if (input) applyStarter(input)
   }
 
   /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it
@@ -415,19 +443,22 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     rename,
     setTechnique,
     setBrickBlock,
+    setNetSize,
     setCanvasTechnique,
     switchQuestion,
     setSwitchNetSize,
+    setSwitchBrickBlock,
     cancelSwitch,
     confirmSwitch,
     setCanvasBrickBlock,
+    setCanvasNetSize,
     fit,
     setTo,
     remove,
     removeConfirmOpen,
     cancelRemove,
     confirmRemove,
-    placeFromTemplate,
+    placeFromStarter,
     replaceConfirmOpen,
     cancelReplace,
     confirmReplace,

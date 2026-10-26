@@ -1,14 +1,14 @@
 import { findBuiltInColor } from './palette'
 import { describeWeave, type Weave } from './weave'
 
-// The decorated example on a Template card and in its setup (ticket 494, spec 0488): a small symmetric ornament, made
+// The decorated example on a Starter card and in its setup (ticket 494, spec 0488): a small symmetric ornament, made
 // the same way every time for the same Weave, size and seed. It is only a picture; Create still gives an empty Frame.
 
-/** The longest side of the sample, in beads: a card's picture slot is small, so the Template's own size is scaled down. */
+/** The longest side of the sample, in beads: a card's picture slot is small, so the Starter's own size is scaled down. */
 const SAMPLE_LONG_SIDE = 11
 const SAMPLE_MIN_SIDE = 5
 
-/** The sample's size in beads: the Template's shape, held to a few beads a side so they stay big enough to see. */
+/** The sample's size in beads: the Starter's shape, held to a few beads a side so they stay big enough to see. */
 export function sampleSize(width: number, height: number): { columns: number; rows: number } {
   const scale = SAMPLE_LONG_SIDE / Math.max(width, height, 1)
   const side = (value: number) => Math.max(SAMPLE_MIN_SIDE, Math.min(SAMPLE_LONG_SIDE, Math.round(value * scale)))
@@ -31,7 +31,7 @@ export function sampleColors(theme: SampleTheme): string[] {
   return SAMPLE_COLOR_IDS[theme].map((id) => findBuiltInColor(id)!.hex)
 }
 
-/** A number from text, so a Template's id always gives the same ornament. */
+/** A number from text, so a Starter's id always gives the same ornament. */
 export function seedOf(text: string): number {
   let seed = 2166136261
   for (const char of text) {

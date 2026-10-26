@@ -3,10 +3,10 @@ import { ref } from 'vue'
 import AppIcon from '../AppIcon.vue'
 import type { IconName } from '../icons'
 
-/** A button that opens the system file picker (ticket 149): desktop can also drop a file on it (`drop-file`); the
+/** A button that opens the system file picker (ticket 149; `accent` fills it like a primary button, ticket 568): desktop can also drop a file on it (`drop-file`); the
  * <input> keeps the attributes and change listener. */
 defineOptions({ inheritAttrs: false })
-defineProps<{ label: string; icon?: IconName; disabled?: boolean; disabledReason?: string; limits?: string }>()
+defineProps<{ label: string; icon?: IconName; disabled?: boolean; disabledReason?: string; limits?: string; accent?: boolean }>()
 const emit = defineEmits<{ 'drop-file': [file: File] }>()
 
 const dragging = ref(false)
@@ -22,7 +22,7 @@ function onDrop(event: DragEvent, disabled: boolean | undefined) {
   <div class="file-button">
     <label
       class="file-button__target"
-      :class="{ 'file-button__target--disabled': disabled, 'file-button__target--over': dragging }"
+      :class="{ 'file-button__target--disabled': disabled, 'file-button__target--over': dragging, 'file-button__target--accent': accent }"
       @dragover.prevent="dragging = !disabled"
       @dragleave="dragging = false"
       @drop.prevent="onDrop($event, disabled)"
@@ -84,6 +84,25 @@ function onDrop(event: DragEvent, disabled: boolean | undefined) {
   color: var(--faint);
   background: var(--surface);
   cursor: not-allowed;
+}
+
+.file-button__target--accent {
+  color: var(--on-accent);
+  background: var(--accent);
+  border: 1px solid var(--accent);
+}
+
+@media (hover: hover) {
+  .file-button__target--accent:hover:not(.file-button__target--disabled) {
+    background: var(--accent-hover);
+    border-color: var(--accent-hover);
+  }
+}
+
+.file-button__target--accent.file-button__target--over {
+  color: var(--on-accent);
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
 }
 
 /* Visually hidden, not display: none, so it stays focusable and reachable by keyboard and screen reader. */

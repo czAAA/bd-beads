@@ -202,6 +202,11 @@ export function readBeadCopy(stored: unknown): Bead | undefined {
 
 /** The Bead a pick in Brand or Type leads to (ticket 554): the three pickers narrow each other, so a new Brand keeps
  * the Type and the size when it has them, else its first. Picking a Size is a Bead of its own and needs none of this. */
+/** The items with the first of each key kept, in order: the distinct Brands, Form factors or Sizes of a list of Beads. */
+export function uniqueBy<T>(items: readonly T[], key: (item: T) => string): T[] {
+  return items.filter((item, index) => items.findIndex((other) => key(other) === key(item)) === index)
+}
+
 export function beadAfterPick(beads: readonly Bead[], current: Bead, pick: { brandId?: string; formFactorId?: string }): Bead | undefined {
   const brandId = pick.brandId ?? current.brand.id
   const inBrand = beads.filter((bead) => bead.brand.id === brandId)

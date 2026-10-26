@@ -8,7 +8,7 @@ import type { PixelData } from './domain/imageConversion'
 import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
 import { openNewProject } from './testUtils/pill'
-import { chooseBead } from './testUtils/beadPicker'
+import { chooseBeadInSection } from './testUtils/beadPicker'
 
 // Convert image end to end through the app shell (ticket 58): the form's file input, the framing step, and the Project
 // it creates. Only the decode is stubbed (jsdom decodes no image bytes, see imageDecode.ts): the picture arrives as
@@ -48,7 +48,7 @@ function twoBlocks(width = 8, height = 8): PixelData {
  * Bead. */
 async function pickBead(wrapper: ReturnType<typeof mount>, beadId = cubeBead.id) {
   await openNewProject(wrapper)
-  await chooseBead(wrapper, beadId)
+  await chooseBeadInSection(wrapper, beadId)
 }
 
 async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', type = 'image/png') {
