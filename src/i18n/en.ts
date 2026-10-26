@@ -534,6 +534,22 @@ export const en: Translations = {
     announceMoved: 'Frame moved with its beads',
     announceNothingToFit: 'Nothing drawn yet to fit the Frame to',
     refusedCutsSchema: 'A Frame can’t cut through the Schema “{name}”. Frame all of it, or none of it.',
+    snapAddedTop: {
+      one: 'Added an empty row on top: a Frame must start on an unshifted row.',
+      other: 'Added {count} empty rows on top: a Frame must start on an unshifted row.',
+    },
+    snapAddedBottom: {
+      one: 'Added an empty row at the bottom: a Frame must be whole Units or cycles.',
+      other: 'Added {count} empty rows at the bottom: a Frame must be whole Units or cycles.',
+    },
+    snapAddedLeft: {
+      one: 'Added an empty column on the left: a Frame must be whole Units or cycles.',
+      other: 'Added {count} empty columns on the left: a Frame must be whole Units or cycles.',
+    },
+    snapAddedRight: {
+      one: 'Added an empty column on the right: a Frame must be whole Units or cycles.',
+      other: 'Added {count} empty columns on the right: a Frame must be whole Units or cycles.',
+    },
     announceTechnique: 'Technique changed to {technique}',
     switchConfirmTitle: 'Change Technique?',
     switchConfirmMessage: 'The picture may look different in {technique}. Beads with no place there will be removed: {count}. This can be undone.',
