@@ -32,9 +32,13 @@ export interface PrintText {
   exportedAt: string
   metaLine: string
   bead: string
+  /** The Bead shape setting in words (Symmetric, Real), for page 1's facts. */
+  shape: string
   size: string
   estimatedSize: string
   colors: PrintedColor[]
+  /** "22 colors" */
+  colorsCount: string
   /** "4 800 beads" and "≈ 24 g": the Total both ways. */
   totalBeads: string
   totalGrams?: string
@@ -80,6 +84,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       .replace('{bead}', beadName)
       .replace(' · ≈ {estimate}', estimate ? ` · ≈ ${estimate}` : ''),
     bead: beadName,
+    shape: project.beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
     size,
     estimatedSize: estimate ? `≈ ${estimate}` : '',
     colors: quantities.map((quantity) => ({
@@ -89,6 +94,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       grams: grams(quantity.count),
       ...(project.letters && project.paletteLetters?.[quantity.hex] ? { letter: project.paletteLetters[quantity.hex] } : {}),
     })),
+    colorsCount: plural(locale, quantities.length, t.a11y.colorsCount),
     totalBeads: plural(locale, total, t.print.beadsCount),
     totalGrams: grams(total),
     gramsNote:

@@ -174,7 +174,7 @@ The Canvas color control (Russian "Цвет полотна") offers five backgro
 | Undone: Fill · Redone: Fill | Отменено: заливка · Повторено: заливка |
 | Technique · Bead · Size · Colors | Техника плетения · Бисеринка · Размер · Цветов |
 | {maker} · {date} · {time} | {maker} · {date} · {time} (Мария Ковалева · 26 сент. 2026 г. · 14:32) |
-| Lines: the chart parts, each on its own page with every row and column numbered. | Линии — части схемы, каждая на своей странице; все ряды и столбцы пронумерованы. |
+| Lines: the chart parts, each on its own page with every row and column numbered. | Линии: части схемы, каждая на своей странице; все ряды и столбцы пронумерованы. |
 | Odd numbers top and left, even numbers bottom and right. | Нечётные номера сверху и слева, чётные — снизу и справа. |
 | Beads needed: {n} colors · {beads} beads · ≈ {g} · see page {p} | Нужно бисера: цветов — {n} · {beads} бисеринок · ≈ {g} · см. страницу {p} |
 | Specification · Color key · To buy · {n} × 5 g | Спецификация · Ключ цветов · Купить · {n} × 5 г |

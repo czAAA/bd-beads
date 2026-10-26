@@ -7,5 +7,6 @@ export const PRINT_COLORS = {
   muted: '#6a6a6a',
   line: '#e5e5e5',
   accent: '#fa520f',
+  accentStrong: '#c23604',
   board: PRINT_THEME.background,
 }
