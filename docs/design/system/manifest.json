@@ -50,7 +50,9 @@
     "components/PngExport/README.md",
     "components/PrintChartPage/README.md",
     "components/PrintPage1/README.md",
+    "components/PrintSpecification/README.md",
     "components/PrintStrips/README.md",
+    "components/PrintWordChart/README.md",
     "components/PrintWide/README.md",
     "components/ProgressBar/README.md",
     "components/ProjectPanel/README.md",
@@ -293,27 +295,37 @@
     {
       "name": "PngExport",
       "group": "Print",
-      "summary": "The PNG export: the whole Pattern on its board, with a narrow story column beside it."
+      "summary": "The PNG export: one portrait picture, the whole framed Schema at full width with the story under it."
     },
     {
       "name": "PrintChartPage",
       "group": "Print",
-      "summary": "A chart page of the PDF: one part of the Pattern, filling the sheet, to work from at the craft table."
+      "summary": "A chart page of the PDF: one part of at most 100 × 100 beads with every row and column numbered."
     },
     {
       "name": "PrintPage1",
       "group": "Print",
-      "summary": "The first page of the PDF: the whole Pattern large on its board, with Beads needed in beads and grams and the facts beside it."
+      "summary": "The first page of the PDF: the whole framed Schema across the full width, the facts above it and Beads needed under it."
+    },
+    {
+      "name": "PrintSpecification",
+      "group": "Print",
+      "summary": "The Specification page of the PDF: the full legend with beads, grams and tubes to buy, the facts and the page map."
     },
     {
       "name": "PrintStrips",
       "group": "Print",
-      "summary": "Long thin Patterns (bracelets) stack several parts on one sheet; the PNG of a wide Pattern puts its story under the chart."
+      "summary": "Long thin Schemas and leftover parts stack several boards on one sheet; the PNG puts its story under the chart."
     },
     {
       "name": "PrintWide",
       "group": "Print",
-      "summary": "A Pattern wider than tall prints on landscape A4 with the same layout: the canvas and the Beads needed column on page 1, one part per chart page."
+      "summary": "A Schema wider than tall keeps the portrait A4 layout: a shorter picture on page 1, the same 100-bead parts after it."
+    },
+    {
+      "name": "PrintWordChart",
+      "group": "Print",
+      "summary": "The Word chart pages of the PDF, with Letters on: one line per row with a tick box."
     },
     {
       "name": "ProgressBar",
