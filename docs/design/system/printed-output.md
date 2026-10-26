@@ -49,6 +49,6 @@ The PDF and PNG exports: the chart is the main thing on every page, large and re
 
 - **The chart first**: the whole Pattern on its board with rulers every 10 and the 10-bead lines takes about three quarters of the picture.
 - A narrow story column on the right: technique word, name, "by {maker}", bead and size, Beads needed with beads and grams and the Total, date and time, the X1 mark and "bd-beads". A Pattern wider than tall puts it underneath. The maker's name sits under the board; the accent line curves under it and slips behind the board's corners; three marks behind; nothing over the beads or the text.
-- Beads are 30 px (fewer when the picture would pass 16 megapixels); drawn in the app's language. File names stay `bd-beads-{pattern}.png` and `.pdf`.
+- Bead size follows the Export quality (QualitySlider card): 45, 60 or 90 px, Medium (60) by default, and the PDF is 150, 300 or 450 DPI; the PNG is reduced when it would pass the one pixel ceiling; drawn in the app's language. File names stay `bd-beads-{pattern}.png` and `.pdf`.
 
 The sizes are the `print-*` tokens; the board color is `print-board`. The PrintPage1, PrintChartPage and PngExport cards show the pages.

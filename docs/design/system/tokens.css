@@ -210,6 +210,8 @@
   --panel-row-two-line-touch: 48px; /* panel-row-two-line on a coarse pointer. */
   --picker-height: 24px; /* The PanelPicker button on a setting row, and the panel's small SegmentedControl and Stepper. */
   --picker-height-touch: 32px; /* picker-height on a coarse pointer. */
+  --slider-track: 4px; /* The QualitySlider track and its filled part (Export quality in the Frame panel). */
+  --slider-thumb: 20px; /* The QualitySlider thumb; the native range input is touch-target tall around it, so the hit area is 44px. */
   --bead-min-phone: 16px; /* Where a ruler number needs more room at the Phone tier (0–743px): 12px numbers need about 16px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --bead-min-tablet: 15px; /* Where a ruler number needs more room from 744px up: 11px numbers need about 15px of bead before they stay clear at every Ruler step; under it the numbers thin (ADR 0033). Not a zoom floor. */
   --touch-target: 44px; /* Minimum hit area for every control on a coarse pointer (touch, Pencil). */
@@ -238,7 +240,7 @@
   --print-line-opacity: 0.38; /* Accent line strength on paper. */
   --print-mark-opacity: 0.07; /* The large background X1 mark; the medium and small ones use 0.08 and 0.1. */
   --print-name-opacity: 0.14; /* The maker's name set large under the canvas. */
-  --print-png-bead: 30px; /* Bead size in the PNG, fewer pixels when the picture would pass 16 megapixels. */
+  --print-png-bead: 60px; /* Bead size in the PNG at the default Export quality (Medium); Low is 45px and High 90px (QualitySlider card). Every size is reduced when the picture would pass the one pixel ceiling. */
   --font-sans: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
   --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
