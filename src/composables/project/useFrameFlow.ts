@@ -7,7 +7,8 @@ import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { canvasWeave, createProject, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, weaveOf, type CreateProjectInput, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
-import type { Translations } from '../../i18n/translations'
+import { plural } from '../../i18n/plural'
+import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from './useEdit'
@@ -19,6 +20,7 @@ export interface FrameFlowDeps {
   announce: (message: string) => void
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   messages: () => Translations
+  locale: () => Locale
   /** Brings a block of beads into the middle of the view. */
   centreOn: (frame: Frame) => void
   /** The Canvas position under the middle of the view, or nothing until the area is measured. */
@@ -324,7 +326,20 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const bottom = project ? describeWeave(project).snapBottom(top, frame.row + frame.rows - 1) : frame.row + frame.rows - 1
     const left = project ? snapColumn(project, frame.column) : frame.column
     const right = project ? describeWeave(project).snapRight(left, frame.column + frame.columns - 1) : frame.column + frame.columns - 1
-    commit({ row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }, 'make')
+    const applied = commit({ row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }, 'make')
+    if (applied) explainSnap(frame, { top, bottom, left, right })
+  }
+
+  /** Ticket 570: one toast saying how much each edge grew when the snap pushed the Frame past what was picked. */
+  function explainSnap(picked: Frame, snapped: Record<FrameEdge, number>): void {
+    const grown: ['snapAddedTop' | 'snapAddedBottom' | 'snapAddedLeft' | 'snapAddedRight', number][] = [
+      ['snapAddedTop', picked.row - snapped.top],
+      ['snapAddedBottom', snapped.bottom - (picked.row + picked.rows - 1)],
+      ['snapAddedLeft', picked.column - snapped.left],
+      ['snapAddedRight', snapped.right - (picked.column + picked.columns - 1)],
+    ]
+    const lines = grown.filter(([, added]) => added > 0).map(([key, added]) => plural(deps.locale(), added, deps.messages().frame[key]))
+    if (lines.length > 0) deps.showToast('frame-snapped', lines.join(' '), 'info')
   }
 
   function fit(): void {

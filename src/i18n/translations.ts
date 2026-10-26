@@ -625,6 +625,11 @@ export interface Translations {
     announceNothingToFit: string
     /** A Frame that would cut through a named Piece is refused (ticket 407); `{name}` is the Schema's name. */
     refusedCutsSchema: string
+    /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows or columns added on each edge, and why. */
+    snapAddedTop: PluralForms
+    snapAddedBottom: PluralForms
+    snapAddedLeft: PluralForms
+    snapAddedRight: PluralForms
     /** `{technique}` is the new Technique's name. */
     announceTechnique: string
     /** Changing a layer's Technique (ticket 507): `{technique}` is the new one, `{count}` the beads with no place in it. */

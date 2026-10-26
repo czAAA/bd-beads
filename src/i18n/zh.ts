@@ -531,6 +531,18 @@ export const zh: Translations = {
     announceMoved: '边框已连同珠子一起移动',
     announceNothingToFit: '还没有画任何东西，无法让边框贴合',
     refusedCutsSchema: '边框不能切开图案“{name}”。要么整个框住，要么都不框。',
+    snapAddedTop: {
+      other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
+    },
+    snapAddedBottom: {
+      other: '在下方添加了 {count} 行空白：边框必须是完整的单元或循环。',
+    },
+    snapAddedLeft: {
+      other: '在左侧添加了 {count} 列空白：边框必须是完整的单元或循环。',
+    },
+    snapAddedRight: {
+      other: '在右侧添加了 {count} 列空白：边框必须是完整的单元或循环。',
+    },
     announceTechnique: '编织技法已改为{technique}',
     switchConfirmTitle: '更改编织技法？',
     switchConfirmMessage: '图案在{technique}中可能看起来不同。在其中没有位置的珠子将被移除：{count}。可以撤销。',
