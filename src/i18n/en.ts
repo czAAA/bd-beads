@@ -429,7 +429,13 @@ export const en: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
-    readParts: 'Dashed: the chart parts, by page. Read across, then down. Row 1 is at the top.',
+    readParts: 'Lines: the chart parts, each on its own page with every row and column numbered.',
+    /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
+    beadsNeededSee: 'Beads needed: {summary} · see page {page}',
+    shape: 'Shape',
+    /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
+    partPage: 'part {part} · page {page}',
+    partPageShort: '{part} · p {page}',
     beadsNeeded: 'Beads needed',
     total: 'Total',
     beadsGrams: 'beads · grams',
