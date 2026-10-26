@@ -177,6 +177,7 @@ export function wordChartPageCount(words: PrintText, page: PageSize): number {
 /** The Word chart's sheets, drawn one at a time by `makePage` (the PDF's blank page at its dpi); numbered from `first` of
  * `total`. */
 export function* drawWordChartPages(words: PrintText, page: PageSize, makePage: () => { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D }, first: number, total: number): Generator<HTMLCanvasElement> {
+  if (!words.wordChart) return
   const width = page.width - PRINT_MARGIN * 2
   const measured = measureWordChart(scratch(), words, width)
   const pages = paginate(measured, page)
