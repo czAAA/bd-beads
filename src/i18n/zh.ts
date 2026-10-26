@@ -512,6 +512,8 @@ export const zh: Translations = {
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
     qualityPdfCapped: '在此设备上，PDF 的“高”为 {n} DPI。',
+    qualityHintLabel: '低质量的用途',
+    qualityHint: '低质量节省内存：文件更小，手机始终能生成图片。',
     exportCoffee: 'openbeads 由一个家庭制作、维护并慢慢完善。如果它对你有用，请我们喝杯咖啡，它就能继续走下去。',
     exportCoffeeLink: '请我喝杯咖啡',
     estimateInfo: '这只是估算：珠子大小 × 横向和纵向的珠子数。线、松紧度以及珠子之间的细微差异，常会让成品略有出入。',

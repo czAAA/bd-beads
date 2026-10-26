@@ -598,6 +598,8 @@ export interface Translations {
     qualityPdfSize: string
     qualityDpi: string
     qualityPdfCapped: string
+    qualityHintLabel: string
+    qualityHint: string
     exportCoffee: string
     exportCoffeeLink: string
     estimateInfo: string

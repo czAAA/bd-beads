@@ -271,6 +271,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('45 px · 150 DPI')
     expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('90 px · 450 DPI')
     expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium60 px · 300 DPIPNG ≈ \d+ MBPDF ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
     expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 60 px · 300 DPI, PNG ≈ \d+ MB, PDF ≈ \d+ MB$/)
 
