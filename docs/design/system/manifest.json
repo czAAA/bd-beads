@@ -56,6 +56,7 @@
     "components/PrintWide/README.md",
     "components/ProgressBar/README.md",
     "components/ProjectPanel/README.md",
+    "components/QualitySlider/README.md",
     "components/Rulers/README.md",
     "components/SaveBox/README.md",
     "components/SaveStates/README.md",
@@ -335,6 +336,11 @@
       "name": "ProjectPanel",
       "group": "Overlays",
       "summary": "The Project panel: name with a pencil, save state, Technique, Bead, Canvas, Save, exports, Name on exports, Duplicate and Delete this Project."
+    },
+    {
+      "name": "QualitySlider",
+      "group": "Forms",
+      "summary": "Export quality: a three-stop slider under the Picture and Printable chart buttons that sets the PNG bead size and the PDF DPI."
     },
     {
       "name": "Rulers",

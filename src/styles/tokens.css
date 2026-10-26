@@ -246,6 +246,8 @@
   --panel-row-two-line-touch: 3rem;
   --picker-height: 1.5rem;
   --picker-height-touch: 2rem;
+  --slider-track: 0.25rem;
+  --slider-thumb: 1.25rem;
   --bead-min-phone: 1rem;
   --bead-min-tablet: 0.9375rem;
   --touch-target: 2.75rem;
@@ -274,7 +276,7 @@
   --print-line-opacity: 0.38;
   --print-mark-opacity: 0.07;
   --print-name-opacity: 0.14;
-  --print-png-bead: 30px;
+  --print-png-bead: 60px;
   --print-part-beads: 100;
   --print-part-overlap: 2;
   --print-chart-cell: 1.75mm;
