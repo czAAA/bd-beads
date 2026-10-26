@@ -1,8 +1,9 @@
 import { countedDimensions, frameWeave, projectDimensions } from '../domain/project'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
-import type { Project } from '../domain/project'
-import { PRINT_THEME } from './beadLook'
+import { shownLetters, type Project } from '../domain/project'
+import type { SwatchLetters } from '../domain/swatchLetters'
+import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
@@ -135,7 +136,7 @@ export interface Board {
 }
 
 /** The pale rounded board and the beads of `region` on it (the whole chart on page 1, a part on a chart page). */
-function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board): void {
+function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, letters?: SwatchLetters): void {
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
@@ -149,7 +150,7 @@ function drawBoard(context: CanvasRenderingContext2D, project: Project, region: 
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, letters })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
@@ -290,11 +291,12 @@ function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x:
   y += mm(2)
   // A row reads best around 5.5 mm; only a very long color list pushes it down to the 4.2 mm floor.
   const rowHeight = words.colors.length > 20 ? mm(4.2) : mm(5.5)
-  const beadSize = Math.min(mm(3.4), rowHeight * 0.7)
+  const lettered = words.colors.some((color) => color.letter)
+  const beadSize = lettered ? Math.min(mm(4.6), rowHeight * 0.95) : Math.min(mm(3.4), rowHeight * 0.7)
   const gramsX = x + width
   const beadsX = x + width - (words.totalGrams ? mm(12) : 0)
 
-  const row = (swatch: string | undefined, name: string, beads: string, grams: string | undefined, bold: boolean) => {
+  const row = (swatch: string | undefined, name: string, beads: string, grams: string | undefined, bold: boolean, letter?: string) => {
     const middle = y + rowHeight / 2
     context.strokeStyle = PRINT_COLORS.line
     context.lineWidth = pt(0.5)
@@ -309,6 +311,7 @@ function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x:
       context.fill()
       context.strokeStyle = 'rgba(0, 0, 0, 0.2)'
       context.stroke()
+      if (letter) drawBeadLetter(context, { x, y: middle - beadSize / 2, size: beadSize, color: swatch, letter, dimmed: false, theme: PRINT_THEME })
     }
     const weight = bold ? '700' : '400'
     const nameX = swatch ? x + beadSize + mm(2) : x
@@ -317,7 +320,7 @@ function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, x:
     if (grams) text(context, grams, gramsX, middle + pt(3), font(weight, 7.5, MONO), PRINT_COLORS.muted, 'right')
     y += rowHeight
   }
-  for (const color of words.colors) row(color.hex, color.name, color.beads, color.grams, false)
+  for (const color of words.colors) row(color.hex, color.name, color.beads, color.grams, false, color.letter)
   row(undefined, labels.total, words.totalBeads.replace(/\D+$/, ''), words.totalGrams, true)
 
   if (words.gramsNote) {
@@ -499,7 +502,7 @@ function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan,
   text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(11.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', rightEdge - PRINT_MARGIN)
 
   // The part, filling the page, with its rulers.
-  drawBoard(context, project, part.region, plan.zoom, board)
+  drawBoard(context, project, part.region, plan.zoom, board, shownLetters(project))
   drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
 
   // The 8 mm footer: the brand, and where the chart goes on.
@@ -552,7 +555,7 @@ function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, par
     text(context, stripLabel(project, labels, part), PRINT_MARGIN, y + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
     y += PRINT_STRIP_LABEL + inset
     const board: Board = { x: PRINT_MARGIN + inset + (areaWidth - part.region.width) / 2, y, width: part.region.width, height: part.region.height }
-    drawBoard(context, project, part.region, plan.zoom, board)
+    drawBoard(context, project, part.region, plan.zoom, board, shownLetters(project))
     drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
     y = board.y + board.height + inset + PRINT_STRIP_GAP
   }

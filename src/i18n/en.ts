@@ -515,6 +515,8 @@ export const en: Translations = {
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
     qualityPdfCapped: 'High is {n} DPI in the PDF on this device.',
+    lettersLabel: 'Letters',
+    lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
     qualityHintLabel: 'What the lowest quality is for',
     qualityHint: 'Low saves memory: smaller files, and a picture a phone can always make.',
     exportCoffee: 'openbeads is made, maintained and slowly grown by one family. If it’s useful to you, a coffee helps it carry on.',

@@ -7,6 +7,7 @@ import PanelSection from '../shell/PanelSection.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
+import AppSwitch from '../ui/AppSwitch.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
@@ -47,6 +48,7 @@ const emit = defineEmits<{
   'select-frame': []
   'export-png': []
   'export-pdf': []
+  'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
 }>()
 
@@ -197,6 +199,14 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         @update:model-value="quality = $event as ExportQuality"
       />
       <p v-if="highPdfDpi" class="frame-panel__line" data-testid="quality-pdf-capped">{{ t.frame.qualityPdfCapped.replace('{n}', String(highPdfDpi)) }}</p>
+      <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
+      <template v-if="frame">
+        <div class="frame-panel__letters">
+          <span class="frame-panel__letters-label">{{ t.frame.lettersLabel }}</span>
+          <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
+        </div>
+        <p class="frame-panel__line" data-testid="frame-letters-line">{{ t.frame.lettersLine }}</p>
+      </template>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
       <!-- Buy me a coffee (ticket 560): one plain line, no popup; absent while the Coffee link is empty. -->
@@ -366,6 +376,17 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
 .frame-panel__quality {
   padding: 0 var(--space-10);
+}
+.frame-panel__letters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--panel-item-height);
+  padding: 0 var(--space-10);
+}
+.frame-panel__letters-label {
+  font: var(--type-control);
 }
 .frame-panel__line {
   margin: 0;

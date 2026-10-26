@@ -598,6 +598,9 @@ export interface Translations {
     qualityPdfSize: string
     qualityDpi: string
     qualityPdfCapped: string
+    /** The Letters switch in the Frame panel (ticket 0573) and its one-line explanation. */
+    lettersLabel: string
+    lettersLine: string
     qualityHintLabel: string
     qualityHint: string
     exportCoffee: string

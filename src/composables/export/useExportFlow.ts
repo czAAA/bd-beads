@@ -1,6 +1,6 @@
 import { computed, ref, toRaw } from 'vue'
 import { withMakerName } from '../../domain/makerName'
-import type { Project } from '../../domain/project'
+import { withLetters, type Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
 import { PNG_BEAD_PX_BY_QUALITY } from '../../domain/exportQuality'
@@ -40,6 +40,14 @@ export function useExportFlow(deps: ExportFlowDeps) {
     const project = deps.currentProject()
     if (project) {
       deps.replaceProject(withMakerName(project, name))
+    }
+  }
+
+  /** Letters on or off (ticket 0573): saved with the Project, no Undo step, like the maker's name. */
+  function onSetLetters(on: boolean) {
+    const project = deps.currentProject()
+    if (project && (project.letters === true) !== on) {
+      deps.replaceProject(withLetters(project, on))
     }
   }
 
@@ -123,5 +131,5 @@ export function useExportFlow(deps: ExportFlowDeps) {
     )
   }
 
-  return { makerName, onSaveMakerName, exporting, onExportProjectFile, onExportLibraryFile, onExportPng, onExportPdf }
+  return { makerName, onSaveMakerName, onSetLetters, exporting, onExportProjectFile, onExportLibraryFile, onExportPng, onExportPdf }
 }
