@@ -257,10 +257,15 @@ describe('OverviewPage plan tiles', () => {
   })
 })
 
+// jsdom has no canvas to draw the tile on: a stand-in gives the picture and the size the editor's tile would have.
+vi.mock('../rendering/positionMarks', () => ({
+  positionMarkBackground: () => ({ url: 'data:image/png;base64,AAAA', width: 20, height: 30 }),
+}))
+
 describe('OverviewPage background', () => {
-  it("draws the Canvas's grid: a bead across, in the theme's Position mark color", () => {
+  it("draws the Canvas's empty positions of a Delica 11/0 Symmetric Project: a bead across, as the editor's tile", () => {
     const style = page().find('[data-testid="overview"]').attributes('style') ?? ''
-    expect(style).toContain('--canvas-cell: 20px')
-    expect(style).toContain('--canvas-grid:')
+    expect(style).toContain('--canvas-marks: url(data:image/png;base64,AAAA)')
+    expect(style).toContain('--canvas-tile: 20px')
   })
 })
