@@ -136,6 +136,7 @@ const qualityStops = computed(() =>
     return { id, word, detail: `${beadPx} px`, from: beadPx < wanted ? `${wanted} px` : undefined, lines: [png], spoken: `${word}, ${beadPx} px, ${png}` }
   }),
 )
+const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
 const qualityReduced = computed(() => ({ label: t.value.frame.qualityReducedLabel, body: t.value.frame.qualityReduced }))
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
@@ -182,6 +183,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         :label="t.frame.exportQuality"
         :stops="qualityStops"
         :reduced="qualityReduced"
+        :hint="qualityHint"
         :model-value="quality"
         :disabled="exportBusy"
         @update:model-value="quality = $event as ExportQuality"

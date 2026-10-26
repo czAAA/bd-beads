@@ -514,6 +514,8 @@ export const en: Translations = {
     qualityReducedLabel: 'Why a size is reduced',
     lettersLabel: 'Letters',
     lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
+    qualityHintLabel: 'What the lowest quality is for',
+    qualityHint: 'Low saves memory: smaller files, and a picture a phone can always make.',
     exportCoffee: 'openbeads is made, maintained and slowly grown by one family. If it’s useful to you, a coffee helps it carry on.',
     exportCoffeeLink: 'Buy me a coffee',
     estimateInfo: 'An estimate. Bead size × beads across and down. Thread, tension and small differences between beads mean the finished work often comes out a little different.',
