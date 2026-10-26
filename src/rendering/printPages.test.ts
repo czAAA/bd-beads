@@ -3,10 +3,12 @@ import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { loadPrintFonts, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout } from './printPages'
+import { loadPrintFonts, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, partLabel } from './printPages'
+import { en } from '../i18n/en'
+import type { Project } from '../domain/project'
 import { PRINT_COLORS } from './printColors'
 import { CELL_SIZE_PX } from './surfaceView'
-import { mm, orientedPage, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN } from './printPlan'
+import { A4_PORTRAIT, mm, planPrint, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN } from './printPlan'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
@@ -27,8 +29,8 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
     expect(PRINT_MARGIN).toBeCloseTo(size('print-margin'))
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
     expect(PRINT_LEGEND_WIDTH).toBeCloseTo(size('print-legend-width'))
-    expect(PRINT_BEAD_BASE_MM).toBe(Number.parseFloat(String(print('print-bead-base'))))
-    expect(PRINT_BEAD_MAX_MM).toBe(Number.parseFloat(String(print('print-bead-max'))))
+    expect(PRINT_CHART_CELL_MM).toBe(Number.parseFloat(String(print('print-chart-cell'))))
+    expect(PRINT_CHART_CELL_LETTERS_MM).toBe(Number.parseFloat(String(print('print-chart-cell-letters'))))
   })
 })
 
@@ -41,12 +43,12 @@ describe('pageOneLayout: fills the sheet even for a huge Project (ticket 184)', 
     ['loom', 20, 20],
   ])('draws a %s %s×%s Project as large as the better of the two legend placements allows', (technique, columns, rows) => {
     const project = shape(technique, columns, rows)
-    const page = orientedPage(project)
+    const page = A4_PORTRAIT
     const layout = pageOneLayout(project, page)
 
     // Whichever side the legend sits on, the Project reaches that layout's own room on at least one axis (or the
-    // largest bead, print-bead-max): nothing is left small in a box it doesn't fill.
-    const capped = layout.zoom >= mm(PRINT_BEAD_MAX_MM) / CELL_SIZE_PX - 1e-9
+    // largest bead, 7 mm): nothing is left small in a box it doesn't fill.
+    const capped = layout.zoom >= mm(7) / CELL_SIZE_PX - 1e-9
     expect(capped || Math.max(layout.extent.width / layout.room.width, layout.extent.height / layout.room.height) > 0.99).toBe(true)
   })
 
@@ -55,15 +57,14 @@ describe('pageOneLayout: fills the sheet even for a huge Project (ticket 184)', 
     // than tall and used to be forced into the below-legend layout, whose fixed mm(78) band fit it at zoom ≈ 0.08
     // versus ≈ 0.20 beside the legend — a small, centered chart on an otherwise empty page.
     const project = shape('peyote', 250, 250)
-    const layout = pageOneLayout(project, orientedPage(project))
+    const layout = pageOneLayout(project, A4_PORTRAIT)
 
-    expect(layout.columnBelow).toBe(false)
     expect(layout.zoom).toBeGreaterThan(0.15)
   })
 
   it('still uses the below-legend layout for a Project that is genuinely much wider than tall', () => {
     const project = shape('loom', 300, 24)
-    const layout = pageOneLayout(project, orientedPage(project))
+    const layout = pageOneLayout(project, A4_PORTRAIT)
 
     expect(layout.columnBelow).toBe(true)
   })
@@ -92,6 +93,30 @@ describe('miniMapLayout: the chart-page locator (ticket 187)', () => {
     // Every cell sits in a single row: the locator adds no height under the header.
     expect(layout.cells.every((cell) => cell.down === 0)).toBe(true)
     expect(layout.cells.filter((cell) => cell.here)).toHaveLength(1)
+  })
+
+  it('marks every part of a shared sheet (ticket 578)', () => {
+    const plan = planPrint(shape('loom', 130, 130)) // B and D share page 3
+    const layout = miniMapLayout(plan, plan.parts[1]!)
+
+    expect(layout.cells.filter((cell) => cell.here)).toEqual([{ across: 1, down: 0, here: true }, { across: 1, down: 1, here: true }])
+  })
+})
+
+describe('partLabel: the label above each board (ticket 578)', () => {
+  const label = (columns: number, rows: number, rotation: Rotation, letter: number) => {
+    const project = shape('loom', columns, rows, rotation) as unknown as Project
+    const part = planPrint(project).parts[letter]!
+    return partLabel(project, en.print, part)
+  }
+
+  it('names the part and the Schema’s own columns and rows', () => {
+    expect(label(130, 100, 0, 1)).toBe('Part B · columns 101–130 · rows 1–100')
+  })
+
+  it('counts a turned Schema from its far end, lowest number first, with rows running across', () => {
+    // A quarter turn: the 130 rows run across, so part B holds the last 30 rows, counted from the far end (1–30), and all 100 columns.
+    expect(label(100, 130, 90, 1)).toBe('Part B · columns 1–100 · rows 1–30')
   })
 })
 

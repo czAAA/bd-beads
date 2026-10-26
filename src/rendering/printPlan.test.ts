@@ -3,9 +3,8 @@ import { describe, expect, it } from 'vitest'
 import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { A4_LANDSCAPE, A4_PORTRAIT, chartArea, continuation, mm, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS_LETTERS } from './printPlan'
-import { frameWeave } from '../domain/project'
-import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
+import { A4_PORTRAIT, type PrintPart, chartArea, continuation, mm, partLetter, planPrint, PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS_LETTERS, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM } from './printPlan'
+import { CELL_SIZE_PX } from './surfaceView'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 const beadMm = (zoom: number) => (CELL_SIZE_PX * zoom) / mm(1)
@@ -38,23 +37,10 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     ])
   })
 
-  it('grows the bead until a block fills the page, the same on every page and never above 7 mm', () => {
-    const plan = planPrint(shape('loom', 150, 220))
-    const area = chartArea(plan.page)
-
-    expect(beadMm(plan.zoom)).toBeLessThanOrEqual(PRINT_BEAD_MAX_MM)
-    const block = displayedExtentPx('loom', PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS, plan.zoom, 0)
-    expect(block.width).toBeLessThanOrEqual(area.width + 1e-6)
-    expect(block.height).toBeLessThanOrEqual(area.height + 1e-6)
-    // It fills the page one way or the other.
-    expect(Math.max(block.width / area.width, block.height / area.height)).toBeGreaterThan(0.99)
-  })
-
-  it('keeps a small Project on one chart page at the largest bead', () => {
-    const plan = planPrint(shape('loom', 20, 20))
-
-    expect(plan.parts).toHaveLength(1)
-    expect(beadMm(plan.zoom)).toBeCloseTo(PRINT_BEAD_MAX_MM, 6)
+  it('draws every part at one bead size, 1.75 mm, whatever the page it lands on', () => {
+    expect(beadMm(planPrint(shape('loom', 150, 220)).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
+    expect(beadMm(planPrint(shape('loom', 20, 20)).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
+    expect(PRINT_CHART_CELL_MM).toBe(1.75)
   })
 
   it.each<[Technique, number, number, Rotation]>([
@@ -63,7 +49,7 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     ['loom', 100, 20, 90],
     ['loom', 100, 20, 180],
     ['loom', 100, 20, 270],
-  ])('covers every bead of a %s %s×%s Project (rotation: %s°) with parts that each fit a page', (technique, columns, rows, rotation) => {
+  ])('covers every bead of a %s %s×%s Project (rotation: %s°) with parts that each fit a sheet', (technique, columns, rows, rotation) => {
     const plan = planPrint(shape(technique, columns, rows, rotation))
     const area = chartArea(plan.page)
     const [across, down] = rotationSwapsAxes(rotation) ? [rows, columns] : [columns, rows]
@@ -71,120 +57,140 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect(plan.parts).toHaveLength(plan.partsAcross * plan.partsDown)
     expect(plan.parts.at(-1)!.lastAcross).toBe(across - 1)
     expect(plan.parts.at(-1)!.lastDown).toBe(down - 1)
+    // A brick or peyote part is half a bead wider than its beads, which can pass the area by under a millimetre.
     for (const part of plan.parts) {
-      expect(part.region.width).toBeLessThanOrEqual(area.width + 1)
-      expect(part.region.height).toBeLessThanOrEqual(area.height + 1)
+      expect(part.place.width).toBeLessThanOrEqual(area.width + mm(1))
+      expect(part.place.height).toBeLessThanOrEqual(area.height + 1)
     }
   })
 
-  it('numbers the chart pages from 2, after page 1', () => {
+  it('numbers the chart pages from 2, after page 1, with none left empty', () => {
     const plan = planPrint(shape('loom', 150, 220))
+    const pages = new Set(plan.parts.map((part) => part.page))
 
-    expect(plan.parts.map((part) => part.page)).toEqual([2, 3, 4, 5, 6, 7])
-    expect(plan.pageCount).toBe(7)
+    expect(Math.min(...pages)).toBe(2)
+    expect([...pages].sort((a, b) => a - b)).toEqual(Array.from({ length: plan.pageCount - 1 }, (_, index) => index + 2))
   })
 
   it('says where the chart continues from each part', () => {
     const plan = planPrint(shape('loom', 150, 220))
 
-    expect(continuation(plan, plan.parts[0]!)).toEqual({ right: 3, below: 4 })
-    expect(continuation(plan, plan.parts[1]!)).toEqual({ right: undefined, below: 5 })
-    expect(continuation(plan, plan.parts[5]!)).toEqual({ right: undefined, below: undefined })
+    const [a, b, , , , f] = plan.parts as [PrintPart, PrintPart, PrintPart, PrintPart, PrintPart, PrintPart]
+    expect(continuation(plan, a)).toEqual({ right: b.page, below: plan.parts[2]!.page })
+    expect(continuation(plan, b)).toEqual({ right: undefined, below: plan.parts[3]!.page })
+    expect(continuation(plan, f)).toEqual({ right: undefined, below: undefined })
   })
 })
 
 describe('planPrint: fixed 100 × 100-bead blocks (ticket 185)', () => {
-  it('splits a very large Project into a predictable grid of blocks, each its own page', () => {
+  it('splits a very large Project into a predictable grid of blocks, a full one to a sheet', () => {
     const plan = planPrint(shape('peyote', 250, 250))
 
     expect([plan.partsAcross, plan.partsDown]).toEqual([3, 3])
     expect(plan.parts).toHaveLength(9)
-    expect(plan.pageCount).toBe(10)
+    expect(plan.pageCount).toBeLessThan(10)
     // Every block but the edge ones is a full 100 × 100 beads; the edge ones simply run out of Project.
     for (const part of plan.parts) {
       expect(part.lastAcross - part.firstAcross + 1).toBeLessThanOrEqual(PRINT_BLOCK_BEADS)
       expect(part.lastDown - part.firstDown + 1).toBeLessThanOrEqual(PRINT_BLOCK_BEADS)
     }
-    expect(plan.parts.filter((part) => part.lastAcross - part.firstAcross + 1 === PRINT_BLOCK_BEADS)).toHaveLength(6)
+    const full = plan.parts.filter((part) => part.lastAcross - part.firstAcross + 1 === PRINT_BLOCK_BEADS && part.lastDown - part.firstDown + 1 === PRINT_BLOCK_BEADS)
+    expect(full).toHaveLength(4)
+    expect(new Set(full.map((part) => part.page)).size).toBe(4)
   })
 })
 
-describe('planPrint: wide and long Projects (ticket 163; printed-output.md, PrintWide and PrintStrips)', () => {
-  it('prints a wide Project on landscape A4, one block per page, each filling its sheet', () => {
-    const plan = planPrint(shape('loom', 220, 24))
+describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, Chart pages)', () => {
+  it('puts a 130 × 130 Schema as part A, then B and D together, then C', () => {
+    const plan = planPrint(shape('loom', 130, 130))
+    const page = (letter: string) => plan.parts.find((part) => part.letter === letter)!.page
 
-    expect(plan.page).toEqual(A4_LANDSCAPE)
-    expect(plan.strip).toBe(false)
-    expect(plan.partsAcross).toBe(3)
-    expect(plan.partsDown).toBe(1)
-    expect(plan.parts.map((part) => part.page)).toEqual([2, 3, 4])
+    expect(plan.parts.map((part) => [part.letter, part.firstAcross, part.lastAcross, part.firstDown, part.lastDown])).toEqual([
+      ['A', 0, 99, 0, 99],
+      ['B', 100, 129, 0, 99],
+      ['C', 0, 99, 100, 129],
+      ['D', 100, 129, 100, 129],
+    ])
+    expect([page('A'), page('B'), page('C'), page('D')]).toEqual([2, 3, 4, 3])
+    expect(plan.pageCount).toBe(4)
+    // B and D side by side on their sheet, each in its own box.
+    const [b, d] = [plan.parts[1]!, plan.parts[3]!]
+    expect(d.place.x).toBeGreaterThan(b.place.x + b.place.width - 1)
+    expect(d.place.y).toBe(b.place.y)
+  })
+
+  it('keeps boxes on a sheet apart and inside its chart area', () => {
+    const plan = planPrint(shape('loom', 130, 130))
     const area = chartArea(plan.page)
-    // The two full 100-bead blocks fill their sheet; the 20-bead edge block simply draws smaller, at the same zoom.
-    for (const part of plan.parts.slice(0, 2)) {
-      expect(Math.max(part.region.width / area.width, part.region.height / area.height)).toBeGreaterThan(0.99)
+    for (const part of plan.parts) {
+      expect(part.place.x + part.place.width).toBeLessThanOrEqual(area.width + 1)
+      expect(part.place.y + part.place.height).toBeLessThanOrEqual(area.height + 1)
+      for (const other of plan.parts) {
+        if (other === part || other.page !== part.page) continue
+        const apart = part.place.x + part.place.width <= other.place.x || other.place.x + other.place.width <= part.place.x || part.place.y + part.place.height <= other.place.y || other.place.y + other.place.height <= part.place.y
+        expect(apart).toBe(true)
+      }
     }
-    expect(plan.parts.at(-1)!.lastAcross - plan.parts.at(-1)!.firstAcross + 1).toBe(20)
   })
 
-  it('keeps a wide Project that fits one block on a single chart page', () => {
-    const plan = planPrint(shape('loom', 96, 24))
+  it('cuts a 240 × 60 bracelet into 100, 100 and 40 beads, each part 60 tall, two to a sheet', () => {
+    const plan = planPrint(shape('loom', 240, 60))
 
-    expect(plan.page).toEqual(A4_LANDSCAPE)
-    expect(plan.partsAcross).toBe(1)
+    expect(plan.parts.map((part) => [part.firstAcross, part.lastAcross, part.lastDown])).toEqual([[0, 99, 59], [100, 199, 59], [200, 239, 59]])
+    expect(beadMm(plan.zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
+    expect(plan.parts.map((part) => part.page)).toEqual([2, 2, 3])
+  })
+
+  it('shares sheets between the parts of a long thin bracelet, in reading order', () => {
+    const plan = planPrint(shape('loom', 300, 8))
+    const pages = plan.parts.map((part) => part.page)
+
     expect(plan.partsDown).toBe(1)
+    expect(plan.pageCount - 1).toBeLessThan(plan.parts.length)
+    expect(pages).toEqual([...pages].sort((a, b) => a - b))
+    expect(plan.parts.at(-1)!.lastAcross).toBe(299)
   })
 
-  it('prints a taller-or-square Project portrait', () => {
-    expect(planPrint(shape('loom', 50, 50)).page).toEqual(A4_PORTRAIT)
+  it('needs one part, on one sheet, for a 60 × 60 Schema', () => {
+    const plan = planPrint(shape('loom', 60, 60))
+
+    expect(plan.parts).toHaveLength(1)
+    expect(plan.parts[0]).toMatchObject({ letter: 'A', page: 2 })
+    expect(plan.pageCount).toBe(2)
+  })
+
+  it('stays A4 portrait for a Schema wider than tall', () => {
+    expect(planPrint(shape('loom', 220, 24)).page).toEqual(A4_PORTRAIT)
+    expect(planPrint(shape('loom', 96, 24)).page).toEqual(A4_PORTRAIT)
     expect(planPrint(shape('loom', 40, 60)).page).toEqual(A4_PORTRAIT)
   })
 
-  it('stacks a bracelet-length Project several parts to a sheet, at the base bead size', () => {
-    const plan = planPrint(shape('loom', 300, 8))
-
-    expect(plan.page).toEqual(A4_LANDSCAPE)
-    expect(plan.strip).toBe(true)
-    expect(plan.zoom).toBeCloseTo(mm(PRINT_BEAD_BASE_MM) / CELL_SIZE_PX)
-    expect(plan.partsAcross).toBeGreaterThan(1)
-    expect(plan.partsDown).toBe(1)
-    // Several parts land on the same page, each covering the whole 8-row height and its own slice across.
-    const pages = new Map<number, number>()
-    for (const part of plan.parts) pages.set(part.page, (pages.get(part.page) ?? 0) + 1)
-    expect(Math.max(...pages.values())).toBeGreaterThan(1)
-    expect(plan.parts.at(-1)!.lastAcross).toBe(299)
-    expect(plan.parts.every((part) => part.firstDown === 0 && part.lastDown === 7)).toBe(true)
-    // Pages read in order, left across then the next sheet.
-    expect([...pages.keys()]).toEqual([...pages.keys()].sort((a, b) => a - b))
-  })
-
-  it('does not stack when a part already fills half its page or more', () => {
-    // Square-ish and thoroughly two-way-split Projects keep one part per page.
-    expect(planPrint(shape('loom', 50, 50)).strip).toBe(false)
-    expect(planPrint(shape('loom', 60, 80)).strip).toBe(false)
+  it('names parts A to Z, then AA', () => {
+    expect([0, 1, 25, 26, 27, 51, 52].map(partLetter)).toEqual(['A', 'B', 'Z', 'AA', 'AB', 'AZ', 'BA'])
   })
 })
 
 describe('planPrint: Bead shape (ticket 509)', () => {
-  const real = { ...shape('brick', 90, 100), bead: findBead('miyuki-delica-11-0'), beadShape: 'real' as const }
+  it('draws Real cells at the same bead size as Symmetric ones: the chart is counted, not fitted', () => {
+    const real = { ...shape('brick', 90, 100), bead: findBead('miyuki-delica-11-0'), beadShape: 'real' as const }
 
-  it('fits the chart to the Real cells: the whole Project still sits on the chart area', () => {
-    const plan = planPrint(real)
-    const { width, height } = displayedExtentPx('brick', 90, 100, plan.zoom, 0, frameWeave(real).cell)
-
-    expect(width).toBeLessThanOrEqual(plan.page.width)
-    expect(height).toBeLessThanOrEqual(plan.page.height)
-  })
-
-  it('differs from Symmetric, whose cells are square', () => {
-    expect(planPrint(real).zoom).not.toBe(planPrint(shape('brick', 90, 100)).zoom)
+    expect(planPrint(real).zoom).toBe(planPrint(shape('brick', 90, 100)).zoom)
   })
 })
 
-describe('planPrint with Letters (ticket 0573)', () => {
+describe('planPrint with Letters (ticket 0573, 578)', () => {
   it('cuts parts of at most 75 beads a side, so 130 beads are 75 and 55, and 100 beads when Letters is off', () => {
     const lettered = planPrint({ ...shape('loom', 130, 60), letters: true })
     expect(PRINT_BLOCK_BEADS_LETTERS).toBe(75)
     expect(lettered.parts.map((part) => [part.firstAcross, part.lastAcross])).toEqual([[0, 74], [75, 129]])
     expect(planPrint(shape('loom', 130, 60)).parts.map((part) => [part.firstAcross, part.lastAcross])).toEqual([[0, 99], [100, 129]])
+  })
+
+  it('draws a bead at 2.3 mm, and a full 75-bead part still fits the sheet', () => {
+    const plan = planPrint({ ...shape('loom', 130, 130), letters: true })
+
+    expect(beadMm(plan.zoom)).toBeCloseTo(PRINT_CHART_CELL_LETTERS_MM, 6)
+    expect(PRINT_CHART_CELL_LETTERS_MM).toBe(2.3)
+    expect(plan.parts[0]!.place.width).toBeLessThanOrEqual(chartArea(plan.page).width)
   })
 })
