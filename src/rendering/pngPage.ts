@@ -66,11 +66,11 @@ function drawStoryHeader(context: CanvasRenderingContext2D, words: PrintText, x:
   return y + mm(7)
 }
 
-/** The bottom row of the story: the X1 mark and "bd-beads" on the left, the date and time on the right; returns where
+/** The bottom row of the story: the X1 mark and "openbeads" on the left, the date and time on the right; returns where
  * it ends. */
 function drawStoryBrand(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number): number {
   drawMark(context, x, y, mm(4.5), PRINT_COLORS.accent)
-  text(context, 'bd-beads', x + mm(6), y + mm(3.5), font('700', 7.5, SANS), PRINT_COLORS.ink)
+  text(context, 'openbeads', x + mm(6), y + mm(3.5), font('700', 7.5, SANS), PRINT_COLORS.ink)
   text(context, words.exportedAt, x + width, y + mm(3.5), font('400', 7, MONO), PRINT_COLORS.muted, 'right')
   return y + mm(5)
 }
