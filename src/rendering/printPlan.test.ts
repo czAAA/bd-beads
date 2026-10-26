@@ -88,7 +88,14 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     const pages = new Set(plan.parts.map((part) => part.page))
 
     expect(Math.min(...pages)).toBe(2)
-    expect([...pages].sort((a, b) => a - b)).toEqual(Array.from({ length: plan.pageCount - 1 }, (_, index) => index + 2))
+    expect([...pages].sort((a, b) => a - b)).toEqual(Array.from({ length: plan.specificationPage - 2 }, (_, index) => index + 2))
+  })
+
+  it('puts the Specification on the page after the last chart page, counted in the total (ticket 0581)', () => {
+    const plan = planPrint(shape('loom', 150, 220))
+
+    expect(plan.specificationPage).toBe(Math.max(...plan.parts.map((part) => part.page)) + 1)
+    expect(plan.pageCount).toBe(plan.specificationPage)
   })
 
   it('says where the chart continues from each part', () => {
@@ -131,7 +138,7 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
       ['D', 100, 129, 100, 129],
     ])
     expect([page('A'), page('B'), page('C'), page('D')]).toEqual([2, 3, 4, 3])
-    expect(plan.pageCount).toBe(4)
+    expect(plan.pageCount).toBe(5)
     // B and D side by side on their sheet, each in its own box.
     const [b, d] = [plan.parts[1]!, plan.parts[3]!]
     expect(d.place.x).toBeGreaterThan(b.place.x + b.place.width - 1)
@@ -165,7 +172,7 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
     const pages = plan.parts.map((part) => part.page)
 
     expect(plan.partsDown).toBe(1)
-    expect(plan.pageCount - 1).toBeLessThan(plan.parts.length)
+    expect(plan.specificationPage - 2).toBeLessThan(plan.parts.length)
     expect(pages).toEqual([...pages].sort((a, b) => a - b))
     expect(plan.parts.at(-1)!.lastAcross).toBe(299)
   })
@@ -175,7 +182,7 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
 
     expect(plan.parts).toHaveLength(1)
     expect(plan.parts[0]).toMatchObject({ letter: 'A', page: 2 })
-    expect(plan.pageCount).toBe(2)
+    expect(plan.pageCount).toBe(3)
   })
 
   it('stays A4 portrait for a Schema wider than tall', () => {

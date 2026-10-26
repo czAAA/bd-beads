@@ -72,6 +72,9 @@ export interface PrintPlan {
   partsAcross: number
   partsDown: number
   parts: PrintPart[]
+  /** The page the Specification is on: the one after the last chart page (ticket 0581). */
+  specificationPage: number
+  /** Every page of the PDF up to and including the Specification; the Word chart's sheets are counted on top. */
   pageCount: number
 }
 
@@ -204,7 +207,7 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT): PrintPl
     return { ...part, page: sheet + 2, place: { x: x - overflow / 2, y, ...size } }
   })
   const sheets = placed.reduce((most, { sheet }) => Math.max(most, sheet + 1), 0)
-  return { page, zoom, partsAcross, partsDown, parts, pageCount: 1 + sheets }
+  return { page, zoom, partsAcross, partsDown, parts, specificationPage: 2 + sheets, pageCount: 2 + sheets }
 }
 
 /** Where the chart goes on from a part: the page to its right and the page below, if there are any. */

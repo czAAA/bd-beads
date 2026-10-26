@@ -29,6 +29,5 @@ export function estimatePngBytes(project: Shape, beadPx: number): number {
 /** About how many bytes the PDF is at this DPI: its pages times a typical page, which grows about with the DPI. */
 export function estimatePdfBytes(project: Parameters<typeof planPrint>[0], dpi: number): number {
   const plan = planPrint(project)
-  const pages = 1 + new Set(plan.parts.map((part) => part.page)).size
-  return Math.round(pages * plan.page.width * plan.page.height * PDF_BYTES_PER_PIXEL * (dpi / PRINT_DPI))
+  return Math.round(plan.pageCount * plan.page.width * plan.page.height * PDF_BYTES_PER_PIXEL * (dpi / PRINT_DPI))
 }

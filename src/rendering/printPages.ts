@@ -438,7 +438,7 @@ function drawBeadsNeeded(context: CanvasRenderingContext2D, words: PrintText, pl
   const both = [words.colorsCount, words.totalBeads, words.totalGrams && `≈ ${words.totalGrams}`].filter(Boolean).join(' · ')
 
   if (layout.kind === 'line') {
-    const line = labels.beadsNeededSee.replace('{summary}', both).replace('{page}', String(plan.pageCount + 1))
+    const line = labels.beadsNeededSee.replace('{summary}', both).replace('{page}', String(plan.specificationPage))
     text(context, line, x, y + mm(3), font('700', 8.5, SANS), PRINT_COLORS.ink, 'left', width)
     return
   }
@@ -746,5 +746,5 @@ function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: P
   if (Number.isFinite(right) && Number.isFinite(below)) return labels.continuesBoth.replace('{right}', String(right)).replace('{below}', String(below))
   if (Number.isFinite(right)) return labels.continuesRight.replace('{right}', String(right))
   if (Number.isFinite(below)) return labels.continuesBelow.replace('{below}', String(below))
-  return here < plan.pageCount ? labels.continuesOn.replace('{next}', String(here + 1)) : labels.lastPart
+  return here < plan.specificationPage - 1 ? labels.continuesOn.replace('{next}', String(here + 1)) : labels.lastPart
 }
