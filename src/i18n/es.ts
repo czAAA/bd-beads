@@ -515,6 +515,8 @@ export const es: Translations = {
     qualitySizeMb: '{n} MB',
     qualityReduced: 'Reducido para caber en la imagen más grande que un navegador puede crear para este marco.',
     qualityReducedLabel: 'Por qué se reduce el tamaño',
+    qualityHintLabel: 'Para qué sirve la calidad baja',
+    qualityHint: 'La calidad baja ahorra memoria: archivos más pequeños y una imagen que un móvil siempre puede crear.',
     exportCoffee: 'openbeads lo hace, lo mantiene y lo va haciendo crecer poco a poco una sola familia. Si te resulta útil, un café ayuda a que siga adelante.',
     exportCoffeeLink: 'Invítame a un café',
     estimateInfo: 'Es una estimación. Tamaño de la cuenta × cuentas de ancho y de alto. El hilo, la tensión y pequeñas diferencias entre cuentas hacen que la obra terminada salga a menudo algo distinta.',
