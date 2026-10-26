@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { framedGrid } from '../../domain/project'
-import { generateOrnament, sampleColors, sampleSize, seedOf } from '../../domain/templateSample'
+import { generateOrnament, sampleColors, sampleSize, seedOf } from '../../domain/starterSample'
 import type { Technique } from '../../domain/weave'
 import { PROJECT_THEMES } from '../../rendering/beadLook'
 import { renderProject } from '../../rendering/projectRenderer'
@@ -9,15 +9,15 @@ import { spaceOf } from '../../rendering/space'
 import { displayedExtentPx } from '../../rendering/surfaceView'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
-// The decorated example on a Template card and in its setup (ticket 494, spec 0488; TemplateGallery card): a small
+// The decorated example on a Starter card and in its setup (ticket 494, spec 0488; StarterGallery card): a small
 // symmetric ornament in the Technique, drawn by the Project renderer in the Frame-only space and scaled to the slot.
 // Decorative.
 const props = defineProps<{
   technique: Technique
-  /** The Template's default size, whose shape the sample takes. */
+  /** The Starter's default size, whose shape the sample takes. */
   columns: number
   rows: number
-  /** Names the ornament: the same Template always gets the same one. */
+  /** Names the ornament: the same Starter always gets the same one. */
   seedText: string
 }>()
 
@@ -58,11 +58,11 @@ watch([project, zoom, theme], draw)
 </script>
 
 <template>
-  <canvas ref="canvasEl" class="template-picture" aria-hidden="true" data-testid="template-picture" />
+  <canvas ref="canvasEl" class="starter-picture" aria-hidden="true" data-testid="starter-picture" />
 </template>
 
 <style scoped>
-.template-picture {
+.starter-picture {
   display: block;
   width: 100%;
   height: 100%;

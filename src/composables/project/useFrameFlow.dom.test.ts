@@ -522,29 +522,29 @@ describe('useFrameFlow', () => {
       expect(deps.harness.project.frame).toEqual(start.frame)
     })
   })
-  describe('Add Frame from Template and Replace Frame (ticket 495)', () => {
+  describe('Add Frame from Starter and Replace Frame (ticket 495)', () => {
     const bracelet = { technique: 'loom' as const, beadId: 'toho-cube-1.5mm', size: { width: 12, height: 90, unit: 'beads' as const } }
 
     it('puts an empty Frame in the middle of the view in an open Project, over the Canvas, as one announced step', () => {
       const painted = { ...open, beads: { 22: { 33: '#00ff00' } } }
-      const { deps, placeFromTemplate } = setup(painted)
-      placeFromTemplate(bracelet)
+      const { deps, placeFromStarter } = setup(painted)
+      placeFromStarter(bracelet)
       expect(lastFrame(deps)).toEqual({ row: 20 - 45, column: 30 - 6, rows: 90, columns: 12 })
       expect(deps.harness.project.frame!.beads).toEqual({})
       expect(deps.harness.project.beads).toBe(painted.beads)
       expect(deps.announce).toHaveBeenCalledWith('Frame set, width 12, height 90')
     })
 
-    it('weaves the new Frame in the Template\'s Technique, whatever the Canvas is woven in', () => {
-      const { deps, placeFromTemplate } = setup(open)
-      placeFromTemplate({ ...bracelet, technique: 'peyote' })
+    it('weaves the new Frame in the Starter\'s Technique, whatever the Canvas is woven in', () => {
+      const { deps, placeFromStarter } = setup(open)
+      placeFromStarter({ ...bracelet, technique: 'peyote' })
       expect(deps.harness.project.frame!.technique).toBe('peyote')
       expect(deps.harness.project.technique).toBe('loom')
     })
 
     it('replaces an empty Frame at once, starting Row progress at the first pass', () => {
-      const { deps, placeFromTemplate, replaceConfirmOpen } = setup(sized)
-      placeFromTemplate(bracelet)
+      const { deps, placeFromStarter, replaceConfirmOpen } = setup(sized)
+      placeFromStarter(bracelet)
       expect(replaceConfirmOpen.value).toBe(false)
       expect(deps.harness.project.frame).toMatchObject({ rows: 90, columns: 12, beads: {} })
       expect(deps.harness.project.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
@@ -552,8 +552,8 @@ describe('useFrameFlow', () => {
 
     it('asks before replacing a Frame that holds beads, and replaces nothing on No', () => {
       const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
-      const { deps, placeFromTemplate, replaceConfirmOpen, cancelReplace } = setup(drawn)
-      placeFromTemplate(bracelet)
+      const { deps, placeFromStarter, replaceConfirmOpen, cancelReplace } = setup(drawn)
+      placeFromStarter(bracelet)
       expect(replaceConfirmOpen.value).toBe(true)
       expect(deps.replaceProject).not.toHaveBeenCalled()
       cancelReplace()
@@ -563,8 +563,8 @@ describe('useFrameFlow', () => {
 
     it('drops the old Frame with its beads on Yes, as one Undo step', () => {
       const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
-      const { deps, placeFromTemplate, confirmReplace, replaceConfirmOpen } = setup(drawn)
-      placeFromTemplate(bracelet)
+      const { deps, placeFromStarter, confirmReplace, replaceConfirmOpen } = setup(drawn)
+      placeFromStarter(bracelet)
       confirmReplace()
       expect(replaceConfirmOpen.value).toBe(false)
       expect(deps.replaceProject).toHaveBeenCalledTimes(1)
@@ -573,8 +573,8 @@ describe('useFrameFlow', () => {
 
     it('does nothing once a pass is done', () => {
       const done = moveToRow(sized, 1)
-      const { deps, placeFromTemplate } = setup(done)
-      placeFromTemplate(bracelet)
+      const { deps, placeFromStarter } = setup(done)
+      placeFromStarter(bracelet)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
   })

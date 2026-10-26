@@ -22,7 +22,7 @@ import { describeWeave } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame panel (tickets 473, 475, 555; Frame card): title line with Rotate and Remove, the name, then the size, export
-// and Beads needed sections; with no Frame, Frame from template and Fit instead. A panel like Menu and Project
+// and Beads needed sections; with no Frame, Frame from starter and Fit instead. A panel like Menu and Project
 // (AppPanels, PanelHost), opened from the strip's Frame button only; a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
@@ -268,7 +268,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
     <template v-else>
       <div class="frame-panel__none">
-        <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-template" @select="context?.openSub(t.frame.fromTemplate)">{{ t.frame.fromTemplate }}</PanelItem>
+        <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.frame.fromStarter)">{{ t.frame.fromStarter }}</PanelItem>
         <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
         <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
       </div>

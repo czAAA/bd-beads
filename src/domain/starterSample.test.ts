@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { TEMPLATES } from './templates'
-import { generateOrnament, sampleColors, sampleSize, seedOf, type SampleTheme } from './templateSample'
+import { STARTERS } from './starters'
+import { generateOrnament, sampleColors, sampleSize, seedOf, type SampleTheme } from './starterSample'
 import { TECHNIQUES } from './weave'
 
 const THEMES: SampleTheme[] = ['light', 'dark', 'contrast']
@@ -29,15 +29,15 @@ describe('the sample ornament', () => {
 
   it('uses more than one color in every theme', () => {
     for (const theme of THEMES) {
-      for (const template of TEMPLATES) {
-        const size = sampleSize(template.width.default, template.height.default)
-        const grid = generateOrnament({ technique: template.technique }, size, seedOf(template.id), sampleColors(theme))
+      for (const starter of STARTERS) {
+        const size = sampleSize(starter.width.default, starter.height.default)
+        const grid = generateOrnament({ technique: starter.technique }, size, seedOf(starter.id), sampleColors(theme))
         expect(new Set(grid.flat()).size).toBeGreaterThan(1)
       }
     }
   })
 
-  it('keeps the Template shape in a few beads', () => {
+  it('keeps the Starter shape in a few beads', () => {
     expect(sampleSize(24, 80)).toEqual({ columns: 5, rows: 11 })
     expect(sampleSize(20, 40)).toEqual({ columns: 6, rows: 11 })
     expect(sampleSize(10, 10)).toEqual({ columns: 11, rows: 11 })

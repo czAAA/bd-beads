@@ -1,33 +1,33 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
-import { TEMPLATES, type Template, type TemplateId } from '../../domain/templates'
+import { STARTERS, type Starter, type StarterId } from '../../domain/starters'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import AppIcon from '../ui/AppIcon.vue'
-import TemplatePicture from './TemplatePicture.vue'
+import StarterPicture from './StarterPicture.vue'
 
-// The Template gallery at the top of New Project (ticket 493, spec 0488; TemplateGallery card): a Blank canvas tile and one
-// card per Template, in a radiogroup of one tab stop. Blank canvas is the choice the form below makes; a tap on a Template
+// The Starter gallery at the top of New Project (ticket 493, spec 0488; StarterGallery card): a Blank canvas tile and one
+// card per Starter, in a radiogroup of one tab stop. Blank canvas is the choice the form below makes; a tap on a Starter
 // card opens its setup (the panel's next subpanel). One column.
 const props = defineProps<{
   /** Opened from the Project panel's Frame area (ticket 495): there is no Blank canvas to start from. */
   withoutBlank?: boolean
 }>()
-const emit = defineEmits<{ choose: [id: TemplateId]; 'choose-blank': [] }>()
+const emit = defineEmits<{ choose: [id: StarterId]; 'choose-blank': [] }>()
 
 const { t } = useI18n()
 const panel = inject(PANEL_CONTEXT, undefined)
 const rootEl = ref<HTMLElement>()
 
-type Choice = { id: 'blank' } | { id: TemplateId; template: Template }
-const choices = computed<Choice[]>(() => [...(props.withoutBlank ? [] : [{ id: 'blank' as const }]), ...TEMPLATES.map((template) => ({ id: template.id, template }))])
+type Choice = { id: 'blank' } | { id: StarterId; starter: Starter }
+const choices = computed<Choice[]>(() => [...(props.withoutBlank ? [] : [{ id: 'blank' as const }]), ...STARTERS.map((starter) => ({ id: starter.id, starter }))])
 
-function specLine(template: Template): string {
-  return t.value.templates.specLine
-    .replace('{width}', String(template.width.default))
-    .replace('{height}', String(template.height.default))
-    .replace('{technique}', techniqueName(t.value, template.technique))
+function specLine(starter: Starter): string {
+  return t.value.starters.specLine
+    .replace('{width}', String(starter.width.default))
+    .replace('{height}', String(starter.height.default))
+    .replace('{technique}', techniqueName(t.value, starter.technique))
 }
 
 /** Blank canvas is what the form below makes, so choosing it only takes the reader there. */
@@ -37,7 +37,7 @@ function onChoose(choice: Choice) {
     return
   }
   emit('choose', choice.id)
-  panel?.openSub(t.value.templates[choice.id].name)
+  panel?.openSub(t.value.starters[choice.id].name)
 }
 
 function onKeydown(event: KeyboardEvent) {
@@ -65,53 +65,53 @@ function onKeydown(event: KeyboardEvent) {
 <template>
   <div
     ref="rootEl"
-    class="template-gallery"
+    class="starter-gallery"
     role="radiogroup"
-    :aria-label="t.templates.galleryLabel"
-    data-testid="template-gallery"
+    :aria-label="t.starters.galleryLabel"
+    data-testid="starter-gallery"
     @keydown="onKeydown"
   >
     <button
       v-for="choice in choices"
       :key="choice.id"
-      class="template-gallery__card"
+      class="starter-gallery__card"
       type="button"
       role="radio"
       :aria-checked="choice.id === 'blank'"
       :tabindex="choice.id === 'blank' ? 0 : -1"
-      :data-testid="`template-card-${choice.id}`"
+      :data-testid="`starter-card-${choice.id}`"
       data-wrap-ok
       @click="onChoose(choice)"
     >
-      <span class="template-gallery__picture">
-        <slot name="picture" :template="'template' in choice ? choice.template : undefined">
-          <TemplatePicture
-            v-if="'template' in choice"
-            :technique="choice.template.technique"
-            :columns="choice.template.width.default"
-            :rows="choice.template.height.default"
+      <span class="starter-gallery__picture">
+        <slot name="picture" :starter="'starter' in choice ? choice.starter : undefined">
+          <StarterPicture
+            v-if="'starter' in choice"
+            :technique="choice.starter.technique"
+            :columns="choice.starter.width.default"
+            :rows="choice.starter.height.default"
             :seed-text="choice.id"
           />
           <AppIcon v-else name="plus" :size="22" />
         </slot>
       </span>
-      <span class="template-gallery__text">
-        <span class="template-gallery__name">{{ t.templates[choice.id].name }}</span>
-        <span class="template-gallery__description">{{ t.templates[choice.id].description }}</span>
-        <span v-if="'template' in choice" class="template-gallery__spec" data-testid="template-spec">{{ specLine(choice.template) }}</span>
+      <span class="starter-gallery__text">
+        <span class="starter-gallery__name">{{ t.starters[choice.id].name }}</span>
+        <span class="starter-gallery__description">{{ t.starters[choice.id].description }}</span>
+        <span v-if="'starter' in choice" class="starter-gallery__spec" data-testid="starter-spec">{{ specLine(choice.starter) }}</span>
       </span>
     </button>
   </div>
 </template>
 
 <style scoped>
-.template-gallery {
+.starter-gallery {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--space-8);
 }
 
-.template-gallery__card {
+.starter-gallery__card {
   display: flex;
   gap: var(--space-10);
   align-items: center;
@@ -127,21 +127,21 @@ function onKeydown(event: KeyboardEvent) {
   border-radius: var(--radius-md);
 }
 
-.template-gallery__card:hover {
+.starter-gallery__card:hover {
   background: var(--hover-fill);
 }
 
-.template-gallery__card[aria-checked='true'] {
+.starter-gallery__card[aria-checked='true'] {
   border-color: var(--accent-strong);
   box-shadow: inset 0 0 0 1px var(--accent-strong);
 }
 
-.template-gallery__card:focus-visible {
+.starter-gallery__card:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
 
-.template-gallery__picture {
+.starter-gallery__picture {
   display: flex;
   flex: none;
   align-items: center;
@@ -150,25 +150,25 @@ function onKeydown(event: KeyboardEvent) {
   height: 4.5rem;
 }
 
-.template-gallery__text {
+.starter-gallery__text {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
   min-width: 0;
 }
 
-.template-gallery__name {
+.starter-gallery__name {
   font: var(--type-control);
   font-weight: 700;
 }
 
-.template-gallery__description {
+.starter-gallery__description {
   font: var(--type-meta);
   font-family: var(--font-sans);
   color: var(--muted);
 }
 
-.template-gallery__spec {
+.starter-gallery__spec {
   font: var(--type-meta);
   color: var(--muted);
   font-variant-numeric: tabular-nums;
