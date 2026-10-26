@@ -7,8 +7,8 @@ import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
 
 // The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows
-// on mouse/pen hover or keyboard focus; a touch/pen press held LONG_PRESS_MS opens it (ticket 166), as does a click on
-// a disabled control. Never clipped (ticket 265): a manual top-layer popover. `announce: false` avoids double reading.
+// on mouse/pen hover held HOVER_DELAY_MS or keyboard focus; a touch/pen press held LONG_PRESS_MS (ticket 166) or a
+// click on a disabled control opens it. Never clipped (ticket 265): a manual top-layer popover.
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
@@ -27,6 +27,8 @@ const VIEWPORT_MARGIN_PX = 8
 const TRIGGER_GAP_PX = 6
 
 const LONG_PRESS_MS = 500
+/** How long a mouse or hovering pen rests on the trigger before the tip shows, so passing over it shows nothing. */
+const HOVER_DELAY_MS = 400
 
 const id = useId()
 /** For the hover text check (ticket 264): the components this Tooltip comes from. */
@@ -96,6 +98,7 @@ function follow(on: boolean) {
 /** Set by a press inside the trigger, so the focus that press gives it doesn't pop a tooltip over what was pressed. */
 let pressing = false
 let longPressTimer: ReturnType<typeof setTimeout> | undefined
+let hoverTimer: ReturnType<typeof setTimeout> | undefined
 
 function clearLongPress() {
   if (longPressTimer === undefined) return
@@ -103,7 +106,14 @@ function clearLongPress() {
   longPressTimer = undefined
 }
 
+function clearHover() {
+  if (hoverTimer === undefined) return
+  clearTimeout(hoverTimer)
+  hoverTimer = undefined
+}
+
 function show() {
+  clearHover()
   if (open.value) return
   open.value = true
   follow(true)
@@ -116,7 +126,8 @@ function onPointerEnter(event: PointerEvent) {
   // (`buttons` is 1): that is a press, which the long-press handles, not a hover.
   if (event.pointerType === 'touch') return
   if (event.pointerType === 'pen' && event.buttons !== 0) return
-  show()
+  clearHover()
+  hoverTimer = setTimeout(show, HOVER_DELAY_MS)
 }
 
 function onPointerDown(event: PointerEvent) {
@@ -146,6 +157,7 @@ function onFocusIn(event: FocusEvent) {
 }
 
 function hide() {
+  clearHover()
   clearLongPress()
   pinned.value = false
   if (!open.value) return

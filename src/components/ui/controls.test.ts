@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { mount } from '@vue/test-utils'
+import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AppButton from './AppButton.vue'
@@ -187,6 +187,15 @@ describe('AppTooltip props (ticket 327)', () => {
 })
 
 describe('AppTooltip', () => {
+  /** A mouse or hovering pen resting on the trigger past the hover delay. */
+  async function hover(wrapper: VueWrapper, init: PointerEventInit = { pointerType: 'mouse' }) {
+    vi.useFakeTimers()
+    await wrapper.trigger('pointerenter', init)
+    vi.advanceTimersByTime(400)
+    vi.useRealTimers()
+    await nextTick()
+  }
+
   function tooltip() {
     return mount(AppTooltip, {
       attachTo: document.body,
@@ -200,7 +209,7 @@ describe('AppTooltip', () => {
     const bubble = wrapper.get('[role="tooltip"]')
     expect(bubble.isVisible()).toBe(false)
 
-    await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+    await hover(wrapper)
     expect(bubble.isVisible()).toBe(true)
     await wrapper.trigger('pointerleave')
     expect(bubble.isVisible()).toBe(false)
@@ -212,7 +221,7 @@ describe('AppTooltip', () => {
       props: { name: 'Paint', hotkey: '1', body: 'Click or drag to paint.' },
       slots: { default: '<button type="button">x</button>' },
     })
-    await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+    await hover(wrapper)
 
     expect(wrapper.get('.app-tooltip__name').text()).toBe('Paint')
     expect(wrapper.get('.app-tooltip__key').text()).toBe('1')
@@ -226,7 +235,7 @@ describe('AppTooltip', () => {
       props: { name: 'Undo', hotkey: undefined, body: 'Hidden', disabled: true, disabledBody: 'Nothing to undo.' },
       slots: { default: '<button type="button" aria-disabled="true">x</button>' },
     })
-    await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+    await hover(wrapper)
 
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
     expect(wrapper.get('.app-tooltip__name').text()).toBe('Undo')
@@ -290,6 +299,28 @@ describe('AppTooltip', () => {
     expect(enabled.get('[role="tooltip"]').isVisible()).toBe(false)
   })
 
+  it('waits 0.4 s of hover before showing, and not at all if the pointer leaves first', async () => {
+    vi.useFakeTimers()
+    const wrapper = tooltip()
+    const bubble = wrapper.get('[role="tooltip"]')
+    await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(399)
+    await nextTick()
+    expect(bubble.isVisible()).toBe(false)
+    vi.advanceTimersByTime(1)
+    await nextTick()
+    expect(bubble.isVisible()).toBe(true)
+    await wrapper.trigger('pointerleave')
+
+    await wrapper.trigger('pointerenter', { pointerType: 'mouse' })
+    vi.advanceTimersByTime(200)
+    await wrapper.trigger('pointerleave')
+    vi.advanceTimersByTime(1000)
+    await nextTick()
+    expect(bubble.isVisible()).toBe(false)
+    vi.useRealTimers()
+  })
+
   it('does not show for a touch', async () => {
     const wrapper = tooltip()
     await wrapper.trigger('pointerenter', { pointerType: 'touch' })
@@ -298,7 +329,7 @@ describe('AppTooltip', () => {
 
   it('shows for a hovering pen, like a mouse', async () => {
     const wrapper = tooltip()
-    await wrapper.trigger('pointerenter', { pointerType: 'pen', buttons: 0 })
+    await hover(wrapper, { pointerType: 'pen', buttons: 0 })
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(true)
     await wrapper.trigger('pointerleave', { pointerType: 'pen' })
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
@@ -306,7 +337,7 @@ describe('AppTooltip', () => {
 
   it('does not show for a pen that enters with its tip down (a pen that cannot hover)', async () => {
     const wrapper = tooltip()
-    await wrapper.trigger('pointerenter', { pointerType: 'pen', buttons: 1 })
+    await hover(wrapper, { pointerType: 'pen', buttons: 1 })
     expect(wrapper.get('[role="tooltip"]').isVisible()).toBe(false)
   })
 
