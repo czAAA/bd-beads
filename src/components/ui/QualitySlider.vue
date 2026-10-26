@@ -18,6 +18,8 @@ const props = defineProps<{
     /** The estimates under the size, one per format. */
     lines?: readonly string[]
   }[]
+  /** The info button beside the label: what the lowest stop is for ("Low saves memory"). */
+  hint?: { label: string; body: string }
   /** The info button beside the head while any stop is reduced: its accessible name and Tooltip. */
   reduced?: { label: string; body: string }
   /** The id of the chosen stop. */
@@ -41,7 +43,10 @@ function pick(next: number): void {
 <template>
   <div class="qs" :style="{ '--qs-at': at, '--qs-n': stops.length }" data-testid="quality-slider">
     <p class="qs-head">
-      {{ label }}
+      <span class="qs-label">
+        {{ label }}
+        <IconButton v-if="hint" variant="plain" icon="info" :icon-size="16" :label="hint.label" :tooltip="{ body: hint.body }" data-testid="quality-hint" />
+      </span>
       <IconButton v-if="reduced && stops.some((stop) => stop.from)" class="qs-info" variant="plain" icon="info" :icon-size="16" :label="reduced.label" :tooltip="{ body: reduced.body }" data-testid="quality-reduced-info" />
       <span data-testid="quality-chosen">{{ chosen?.word }}</span>
     </p>
@@ -113,7 +118,8 @@ function pick(next: number): void {
   .qs-stop:disabled { cursor: default; background: none; }
   .qs-stop small { font: 400 12px/16px var(--font-mono); color: var(--muted); white-space: nowrap; }
   .qs-stop .qs-was { color: var(--accent-strong); }
-  .qs-info { margin-right: auto; }
+  .qs-label { display: inline-flex; align-items: center; gap: var(--space-4); margin-right: auto; }
+  .qs-info { margin-right: 0; }
   .qs-stop:disabled small, .qs-stop:disabled b { color: var(--faint); }
   [data-theme="contrast"] .qs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
 </style>
