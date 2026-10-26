@@ -140,15 +140,18 @@ test('PNG export of a 250 × 250 peyote Project is one picture within the pixel 
 })
 
 test('PDF export holds the legend and the chart, and splits a large Project over pages', async ({ page }) => {
-  await openApp(page, [fixtureProject({ technique: 'brick', columns: 120, rows: 120 })])
+  const project = fixtureProject({ technique: 'brick', columns: 120, rows: 120 })
+  await openApp(page, [project])
 
   const { name, bytes } = await downloadOf(page, 'export-pdf')
   const pdf = bytes.toString('latin1')
 
   expect(name).toBe('openbeads-fixture-brick.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
-  // A legend page, then the chart at 1.75 mm a bead: 120 columns are two parts.
-  expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBeGreaterThan(3)
+  // A legend page, then the chart at 1.75 mm a bead: 120 columns are two parts, the small ones sharing a sheet.
+  const plan = planPrint(project)
+  expect(plan.parts).toHaveLength(4)
+  expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)
 })
 
 /** The size (in pt) of the PDF's first page, from its MediaBox: [0 0 width height]. */
