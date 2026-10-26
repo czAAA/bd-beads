@@ -240,7 +240,7 @@ let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; heig
 
 /** Whether two Projects differ only in the colors of their beads (`updatedAt` is not drawn). Any other difference, even
  * one added later, can change how a bead is drawn (shape, size, Technique, weave), so it repaints it all. */
-function sameLayout(a: Project, b: Project): boolean {
+function sameDrawing(a: Project, b: Project): boolean {
   const { beads: _a, frame: frameA, updatedAt: _u, ...restA } = a
   const { beads: _b, frame: frameB, updatedAt: _v, ...restB } = b
   return sameFields(restA, restB) && (frameA === undefined || frameB === undefined ? frameA === frameB : sameFrameLayout(frameA, frameB))
@@ -447,7 +447,7 @@ function drawCells(): void {
     before.theme === theme.value &&
     before.showFinished === showFinished.value &&
     before.rowMarks === marksShown.value &&
-    sameLayout(before.project, project)
+    sameDrawing(before.project, project)
       ? changedBands(before.project, project)
       : undefined
 
