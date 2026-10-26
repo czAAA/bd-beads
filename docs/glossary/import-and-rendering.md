@@ -31,3 +31,7 @@ _Avoid_: labels, symbols mode
 
 **Word chart** (ticket 0574): the written pattern a weaver follows beside the picture, made when Letters is on: a legend (letter, color name, bead count), then one line per row, such as `Row 3 (R): 2C, 1A, 3*` (a count and a Swatch letter, `*` for empty cells), in the order of Row progress (Row 1 is the first row the Progress bar counts, said in the header). A page after the pattern in the PDF and a second PNG next to the pattern one. For peyote the first line is `Rows 1&2` (the first pass, as the Pass term defines) and every later line is one Pass, with a header saying Even count or Odd count; peyote and brick stitch lines carry an alternating (L) or (R), loom lines read left to right with no marker. Not made for Right-angle weave or Netting. Its words are translated; its letters and numbers are not.
 _Avoid_: instructions page, bead list, legend (that is only its first part)
+
+**Export quality**:
+The on-device choice, below the export buttons in the Frame panel, of how sharp the PNG and PDF exports are: Low (saves memory), Medium (the default) or High. One choice for both formats: a PNG draws a bead 45, 60 or 90 px across, a PDF page is drawn at 150, 300 or 450 dots per inch. Each stop shows an estimated file size for the open Frame. The exports keep to one pixel ceiling for every device, and a level that would pass it is drawn smaller, which its stop says; a device that cannot hold a 450 dpi page offers no such stop.
+_Avoid_: resolution, picture size (confusable with the Frame's size)
