@@ -55,6 +55,8 @@ interface TechniqueRules {
   nameKey: TechniqueNameKey
   /** The `overview.examples` label it has in the overview's Techniques example; absent when the example leaves it out. */
   overviewKey?: 'loom' | 'peyote' | 'brick'
+  /** Whether the Overview's background is the empty positions of a Project worked in it. */
+  overviewBackground?: boolean
   /** Whether the flat Starters (gerdan, bracelet, earrings, bag) can be woven in it. */
   flatStarter: boolean
   /** Whether it is the one a narrow, shifted-row Starter (earrings) starts in. */
@@ -112,6 +114,7 @@ const TECHNIQUE_RULES = {
     nameKey: 'techniquePeyote',
     narrowStarterDefault: true,
     overviewKey: 'peyote',
+    overviewBackground: true,
     flatStarter: true,
     shifted: true,
     rowPitch: 0.75,
@@ -607,6 +610,9 @@ export const OVERVIEW_TECHNIQUES: readonly { technique: Technique; label: 'loom'
   const label = RULES[technique].overviewKey
   return label ? [{ technique, label }] : []
 })
+
+/** The Technique whose empty positions are the Overview's background. */
+export const OVERVIEW_BACKGROUND_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].overviewBackground) ?? DEFAULT_TECHNIQUE
 
 /** Whether the Technique is one of these. */
 export function isTechnique(value: unknown): value is Technique {
