@@ -244,6 +244,24 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
   })
 
+  it('offers Export quality with Medium chosen, remembers a pick on the device and waits while exporting (ticket 576)', async () => {
+    const wrapper = mountBar()
+    const range = wrapper.get<HTMLInputElement>('[data-testid="quality-range"]')
+    expect(range.attributes('aria-label')).toBe(en.frame.exportQuality)
+    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityMedium)
+    expect(wrapper.findAll('[role="radio"]').map((stop) => stop.text())).toEqual([en.frame.qualityLow, en.frame.qualityMedium, en.frame.qualityHigh])
+    await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
+    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityHigh)
+    expect(localStorage.getItem('openbeads:export-quality')).toBe('high')
+    await range.setValue(0)
+    expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
+    await wrapper.setProps({ exporting: 'png' })
+    expect(range.element.disabled).toBe(true)
+    expect(wrapper.get('[data-testid="quality-stop-high"]').attributes('disabled')).toBeDefined()
+    wrapper.unmount()
+    expect(mountBar().get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
+  })
+
   it('ends the export section with a plain Buy me a coffee link to the Coffee link, in a new tab (ticket 560)', () => {
     const wrapper = mountBar()
     const link = wrapper.get('[data-testid="frame-coffee-link"]')

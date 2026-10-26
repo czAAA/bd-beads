@@ -7,6 +7,7 @@ import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
 import { normalizeHex } from '../domain/palette'
+import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
 import { readKey, removeKey } from './storageKeys'
 
 /** One on-device preference: where it is kept, what it is before anyone picks, and how it reads and writes. */
@@ -112,6 +113,13 @@ export const PREFERENCES = {
     fallback: undefined,
     parse: (raw) => (raw === 'on' ? true : raw === 'off' ? false : undefined),
     write: (on) => (on === undefined ? null : on ? 'on' : 'off'),
+  }),
+  /** The Export quality (ticket 576): Medium until another stop is picked; drives the PNG and the PDF. */
+  exportQuality: preference<ExportQuality>({
+    key: 'openbeads:export-quality',
+    fallback: DEFAULT_EXPORT_QUALITY,
+    parse: parseExportQuality,
+    write: (quality) => (quality === DEFAULT_EXPORT_QUALITY ? null : quality),
   }),
   // Which edge the Tool pill is docked to (ticket 439): bottom until it is moved, and a stored value that is not an
   // edge is bottom too.
