@@ -456,6 +456,10 @@ export const be: Translations = {
     continuesBelow: 'Працяг ніжэй на старонцы {below} →',
     continuesOn: 'Працяг на старонцы {next} →',
     lastPart: 'Апошняя частка',
+    chartStyleColor: 'Толькі колер',
+    chartStyleLetters: 'Колер + літары',
+    keyOnPage: 'Колеры на гэтай старонцы',
+    readNumbers: 'Няцотныя нумары зверху і злева, цотныя знізу і справа.',
     wordChart: {
       title: 'Рад за радам',
       row: 'Рад {n}',
