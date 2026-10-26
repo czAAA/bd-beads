@@ -22,6 +22,7 @@ import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
+import { hasWordChart } from '../../domain/wordChart'
 import { EXPORT_QUALITIES, PDF_DPI_BY_QUALITY, PNG_BEAD_PX_BY_QUALITY, roundedMegabytes, type ExportQuality } from '../../domain/exportQuality'
 import { estimatePdfBytes, estimatePngBytes, pngBeadPx } from '../../rendering/exportEstimate'
 import { pdfDpiFor } from '../../rendering/pdfDpi'
@@ -206,6 +207,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
         </div>
         <p class="frame-panel__line" data-testid="frame-letters-line">{{ t.frame.lettersLine }}</p>
+        <!-- The Word chart follows Letters (ticket 0574) but not in every Technique. -->
+        <p v-if="project.letters && !hasWordChart(frameWeave(project).technique)" class="frame-panel__line" data-testid="frame-letters-unavailable">{{ t.frame.lettersUnavailable }}</p>
       </template>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
