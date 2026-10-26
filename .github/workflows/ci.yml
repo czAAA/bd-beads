@@ -55,7 +55,7 @@ jobs:
 
   # The component tests that need a real browser (ticket 552): text fit and Tooltips, one component at a time. The unit
   # shards have no Chromium and skip them, so this job runs them and `BD_BROWSER_TESTS=1` makes a missing one an error.
-  # Three shards: one runner took 235 s for 2,040 tests, the longest job in the pipeline. Changing the count is this
+  # Four shards: one runner took 235 s for 2,040 tests, the longest job in the pipeline. Changing the count is this
   # list only; the --shard flag follows it.
   browser:
     name: Browser component tests (shard ${{ matrix.shard }})
@@ -63,7 +63,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
