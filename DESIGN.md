@@ -62,7 +62,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Contrast, high contrast, never color alone, text and zoom, keyboard, beads and the keyboard, screen readers, stacking order | [`accessibility.md`](docs/design/system/accessibility.md) |
 | PDF and PNG exports: page 1, chart pages, beads and grams, the maker's name, wide and long Patterns | [`printed-output.md`](docs/design/system/printed-output.md) |
 | Voice, sentence patterns, plurals, glossary, color names, numbers and units, strings to fix, Russian | [`writing.md`](docs/design/system/writing.md) |
-| One card per component (68, plus the `Cover`): a short written guideline | [`components/<Name>/`](docs/design/system/components) |
+| One card per component (73): a short written guideline | [`components/<Name>/`](docs/design/system/components) |
 | Logo and app icons | [`assets/Logos/`](docs/design/system/assets/Logos) |
 | The theme-aware favicon set for `public/` | [`favicon/`](docs/design/system/favicon) |
 | Icons v2 (71 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |

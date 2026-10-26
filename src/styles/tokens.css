@@ -277,4 +277,10 @@
   --print-mark-opacity: 0.07;
   --print-name-opacity: 0.14;
   --print-png-bead: 60px;
+  --print-part-beads: 100;
+  --print-part-overlap: 2;
+  --print-chart-cell: 1.75mm;
+  --print-ruler: 5mm;
+  --print-chart-cell-letters: 2.3mm;
+  --print-part-beads-letters: 75;
 }

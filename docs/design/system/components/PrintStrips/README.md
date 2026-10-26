@@ -1,8 +1,8 @@
 # PrintStrips
 
-Long thin Patterns (bracelets) stack several parts on one sheet; the PNG of a wide Pattern puts its story under the chart.
+Long thin framed Schemas (bracelets) and leftover parts stack several boards on one sheet; the PNG always puts its story under the chart.
 
-- When a part would fill less than half the page, parts share a sheet, each on its own board with rulers and a label "Part 2 · columns 39–76", read top to bottom. The bead stays at the 4.6 mm base size.
-- The wide PNG: the chart at full width; below it the technique word, name, maker, bead and size on the left, Beads needed in two columns with beads and grams, the date and brand at the bottom left.
+- Parts smaller than a sheet share it when they fit at `print-chart-cell`, each on its own board with rulers and a label "part B · columns 101–130 · rows 1–100", placed in reading order. The bead size never changes between sheets.
+- The PNG: the chart at full width; under it the technique word, name, maker, bead and size on the left, Beads needed in two columns with beads and grams on the right, the brand and date at the bottom.
 
-Hand-written from the Phase E sign-off.
+Rewritten for the export sheets signed off on 2026-10-26 (ticket 0575); the earlier card (parts at the 4.6 mm base size) is in git history.
