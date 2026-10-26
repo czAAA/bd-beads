@@ -144,6 +144,7 @@ const highPdfDpi = computed(() => {
   const dpi = pdfDpiFor('high')
   return dpi < PDF_DPI_BY_QUALITY.high ? dpi : undefined
 })
+const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
 const qualityReduced = computed(() => ({ label: t.value.frame.qualityReducedLabel, body: t.value.frame.qualityReduced }))
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
@@ -190,6 +191,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         :label="t.frame.exportQuality"
         :stops="qualityStops"
         :reduced="qualityReduced"
+        :hint="qualityHint"
         :model-value="quality"
         :disabled="exportBusy"
         @update:model-value="quality = $event as ExportQuality"

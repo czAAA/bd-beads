@@ -520,6 +520,8 @@ export const pl: Translations = {
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
     qualityPdfCapped: 'Na tym urządzeniu „Wysoka” w PDF to {n} DPI.',
+    qualityHintLabel: 'Do czego służy niska jakość',
+    qualityHint: 'Niska jakość oszczędza pamięć: mniejsze pliki i obraz, który telefon zawsze utworzy.',
     exportCoffee: 'openbeads tworzy, utrzymuje i powoli rozwija jedna rodzina. Jeśli ci się przydaje, kawa pomoże mu przetrwać.',
     exportCoffeeLink: 'Postaw mi kawę',
     estimateInfo: 'To szacunek. Rozmiar koralika × liczba koralików wszerz i wzdłuż. Nić, naciąg i drobne różnice między koralikami sprawiają, że gotowa praca często wychodzi trochę inna.',
