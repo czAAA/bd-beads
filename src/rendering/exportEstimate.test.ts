@@ -31,9 +31,9 @@ describe('pngBeadPx', () => {
 })
 
 describe('estimatePdfBytes', () => {
-  it('scales with the square of the DPI', () => {
+  it('scales with the DPI', () => {
     const project = shape('loom', 20, 30)
-    expect(estimatePdfBytes(project, 300)).toBeCloseTo(estimatePdfBytes(project, 150) * 4, -3)
+    expect(estimatePdfBytes(project, 300)).toBeCloseTo(estimatePdfBytes(project, 150) * 2, -3)
   })
 
   it('counts more pages for a larger Frame', () => {

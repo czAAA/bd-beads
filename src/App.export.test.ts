@@ -76,6 +76,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
     expect(exportProjectPdf).toHaveBeenCalledWith(
       expect.objectContaining({ id: project.id }),
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
+      expect.any(Number),
     )
     expect(downloadFile).toHaveBeenCalledWith('openbeads-my-scarf.pdf', expect.any(Blob), 'application/pdf')
   })

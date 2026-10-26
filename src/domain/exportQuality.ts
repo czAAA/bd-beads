@@ -13,6 +13,9 @@ export function parseExportQuality(raw: string): ExportQuality | undefined {
 /** How many px a bead is across in the PNG at each quality (QualitySlider card); a large Frame is drawn smaller. */
 export const PNG_BEAD_PX_BY_QUALITY: Record<ExportQuality, number> = { low: 45, medium: 60, high: 90 }
 
+/** The dpi the PDF's pages are drawn at for each quality (QualitySlider card, ticket 572); the sheet is A4 whatever it is. */
+export const PDF_DPI_BY_QUALITY: Record<ExportQuality, number> = { low: 150, medium: 300, high: 450 }
+
 /** A file size in whole megabytes, rounded the way an estimate should read: never to the digit ("≈ 12 MB", not 11.8). */
 export function roundedMegabytes(bytes: number): number {
   const mb = bytes / 1_000_000

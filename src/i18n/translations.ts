@@ -595,6 +595,9 @@ export interface Translations {
     qualitySizeMb: string
     qualityReduced: string
     qualityReducedLabel: string
+    qualityPdfSize: string
+    qualityDpi: string
+    qualityPdfCapped: string
     exportCoffee: string
     exportCoffeeLink: string
     estimateInfo: string
