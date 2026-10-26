@@ -26,9 +26,6 @@ export interface PrintText {
   name: string
   techniqueWord: string
   maker: string
-  // Background watermark text (ticket 182): the maker's name, plus this Project's own name when it overrides the
-  // device-wide one.
-  background: string
   /** "Sep 26, 2026 · 14:32" */
   exportedAt: string
   metaLine: string
@@ -75,7 +72,6 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     name: project.name,
     techniqueWord: technique,
     maker,
-    background: maker ? `${project.name} · ${maker}` : '',
     exportedAt: `${date} · ${time}`,
     metaLine: t.print.metaLine
       .replace('{size}', size)

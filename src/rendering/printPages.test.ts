@@ -3,9 +3,10 @@ import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { loadPrintFonts, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, PRINT_OPACITY } from './printPages'
+import { loadPrintFonts, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout } from './printPages'
 import { PRINT_COLORS } from './printColors'
-import { mm, orientedPage, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN, PRINT_NAME_BAND } from './printPlan'
+import { CELL_SIZE_PX } from './surfaceView'
+import { mm, orientedPage, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN } from './printPlan'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
@@ -21,15 +22,13 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
     expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), line: color('line'), accent: color('accent'), board: color('print-board') })
   })
 
-  it('uses the print sizes and opacities', () => {
+  it('uses the print sizes', () => {
     const size = (name: string) => mm(Number.parseFloat(String(print(name))))
     expect(PRINT_MARGIN).toBeCloseTo(size('print-margin'))
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
-    expect(PRINT_NAME_BAND).toBeCloseTo(size('print-name-band'))
     expect(PRINT_LEGEND_WIDTH).toBeCloseTo(size('print-legend-width'))
     expect(PRINT_BEAD_BASE_MM).toBe(Number.parseFloat(String(print('print-bead-base'))))
     expect(PRINT_BEAD_MAX_MM).toBe(Number.parseFloat(String(print('print-bead-max'))))
-    expect(PRINT_OPACITY).toEqual({ line: Number(print('print-line-opacity')), mark: Number(print('print-mark-opacity')), name: Number(print('print-name-opacity')) })
   })
 })
 
@@ -45,9 +44,10 @@ describe('pageOneLayout: fills the sheet even for a huge Project (ticket 184)', 
     const page = orientedPage(project)
     const layout = pageOneLayout(project, page)
 
-    // Whichever side the legend sits on, the Project reaches that layout's own room on at least one axis: nothing
-    // is left small in a box it doesn't fill.
-    expect(Math.max(layout.extent.width / layout.room.width, layout.extent.height / layout.room.height)).toBeGreaterThan(0.99)
+    // Whichever side the legend sits on, the Project reaches that layout's own room on at least one axis (or the
+    // largest bead, print-bead-max): nothing is left small in a box it doesn't fill.
+    const capped = layout.zoom >= mm(PRINT_BEAD_MAX_MM) / CELL_SIZE_PX - 1e-9
+    expect(capped || Math.max(layout.extent.width / layout.room.width, layout.extent.height / layout.room.height) > 0.99).toBe(true)
   })
 
   it('picks the side legend over the previously-forced below-legend band for a peyote 250×250 Project', () => {

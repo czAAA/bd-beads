@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
 import { PRINT_THEME } from '../../src/rendering/beadLook'
 import { BUILT_IN_COLORS } from '../../src/domain/palette'
-import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
+import { PNG_BEAD_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
 import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
 import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
@@ -37,9 +37,9 @@ function nonWhiteIn(png: PNG, x: number, y: number, width: number, height: numbe
   return false
 }
 
-/** Whether any pixel in the box has the background name's pale warm tint (accent at 14% over the board color),
- * unlike the board (ticket 183). */
-function warmerThanBoardIn(png: PNG, x: number, y: number, width: number, height: number): boolean {
+/** Whether any pixel in the box has a pale warm tint (accent at low opacity over the board color), unlike the plain
+ * margin (ticket 183). */
+function hasWarmTintIn(png: PNG, x: number, y: number, width: number, height: number): boolean {
   for (let row = y; row < Math.min(y + height, png.height); row += 2) {
     for (let column = x; column < Math.min(x + width, png.width); column += 2) {
       const at = (row * png.width + column) * 4
@@ -99,35 +99,20 @@ test('a Project with no maker name leaves it out of the PNG (printed-output.md, 
   expect(png.width).toBeGreaterThan(0)
 })
 
-test('a Project with a maker name prints it in the PNG, large and pale under the board, never cut off (tickets 182, 183)', async ({ page }) => {
-  const project = { ...fixtureProject({ technique: 'loom', columns: 10, rows: 10 }), makerName: 'Ada' }
-  await openApp(page, [project])
+test('a Project with a maker name leaves no pale name or line behind the chart, wide or not (ticket 0577)', async ({ page }) => {
+  for (const [columns, rows] of [[10, 10], [60, 12]] as const) {
+    const project = { ...fixtureProject({ technique: 'loom', columns, rows }), makerName: 'Ada' }
+    await openApp(page, [project])
 
-  const { bytes } = await downloadOf(page, 'export-png')
-  const png = PNG.sync.read(bytes)
-  const chartWidth = 10 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
-  // The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183): room for the background name.
-  const chartHeight = 10 * PNG_BEAD_PX + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX
-  // Somewhere in the board's own bottom margin, under the beads.
-  expect(warmerThanBoardIn(png, 0, chartHeight - PNG_BOTTOM_MARGIN_PX + 30, chartWidth, PNG_BOTTOM_MARGIN_PX - 40)).toBe(true)
-  // Never cut off (ticket 183 regression): the picture is tall enough to hold the whole bottom margin, not just the
-  // beads.
-  expect(png.height).toBeGreaterThanOrEqual(chartHeight)
-})
-
-test('a wide Project with a maker name shows the watermark under its board too, not painted over by the chart (ticket 183)', async ({ page }) => {
-  const project = { ...fixtureProject({ technique: 'loom', columns: 60, rows: 12 }), makerName: 'Ada' }
-  await openApp(page, [project])
-
-  const { bytes } = await downloadOf(page, 'export-png')
-  const png = PNG.sync.read(bytes)
-  const zoom = pngZoom(project)
-  const chart = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
-  const chartWidth = Math.ceil(chart.width) + PNG_MARGIN_PX * 2
-  const chartHeight = Math.ceil(chart.height) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX
-  // Under the board, before the story starts beneath it: the regression this guards against painted over it here,
-  // since renderProject repaints this whole picture-wide region and used to run after the background was drawn.
-  expect(warmerThanBoardIn(png, 0, chartHeight - PNG_BOTTOM_MARGIN_PX + 30, chartWidth, PNG_BOTTOM_MARGIN_PX - 40)).toBe(true)
+    const { bytes } = await downloadOf(page, 'export-png')
+    const png = PNG.sync.read(bytes)
+    const zoom = pngZoom(project)
+    const chart = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
+    const chartWidth = Math.ceil(chart.width) + PNG_MARGIN_PX * 2
+    const chartHeight = Math.ceil(chart.height) + PNG_MARGIN_PX * 2
+    // The bottom margin under the board is blank: the background name and the accent line used to tint it.
+    expect(hasWarmTintIn(png, 0, chartHeight - PNG_MARGIN_PX + 4, chartWidth, PNG_MARGIN_PX - 8)).toBe(false)
+  }
 })
 
 test('PNG export of a 250 × 250 peyote Project is one picture within the pixel budget', async ({ page }) => {
