@@ -202,7 +202,7 @@
   --float-edge: 12px; /* Screen edge to what floats over the screen (the colour popover): the canvas box itself is flush, with only env(safe-area-inset-*) round it. */
   --pill-gap: 6px; /* The Tool pill's inset from the drawing area's edge (between the Canvas strip and the Progress bar), and from the colour popover. */
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
-  --panel-width: 504px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
+  --panel-width: 448px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
   --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) on a coarse pointer. */
   --panel-row: 28px; /* A row of the Menu, Project or Frame panel (ticket 0553): item, section header, setting, pencil or beads-needed row. Replaces item-height there. */
   --panel-row-touch: 36px; /* panel-row on a coarse pointer: a deliberate exception to touch-target, since the rows touch and each row is its own hit area (responsive.md). */
