@@ -162,10 +162,12 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   // before.
   const { blankPage, drawChartPage, drawPageOne, loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
-  // The Word chart (ticket 0574) follows the chart pages; its sheets count in every page's "of N".
+  // The Specification (ticket 0581) follows the chart pages and the Word chart (ticket 0574) follows it; both count in
+  // every page's "of N".
+  const { drawSpecificationPage } = await import('./printSpecification')
   const { drawWordChartPages, wordChartPageCount } = await import('./wordChartPages')
   const wordPages = wordChartPageCount(words, plan.page)
-  const counted = wordPages > 0 ? { ...plan, pageCount: plan.pageCount + wordPages } : plan
+  const counted = wordPages > 0 ? { ...plan, pageCount: plan.specificationPage + wordPages } : plan
 
   const pages: PdfPage[] = []
   const add = async (canvas: HTMLCanvasElement) => {
@@ -184,7 +186,8 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   for (const parts of sheets.values()) {
     await add(drawChartPage(project, words, counted, parts, scale))
   }
-  for (const canvas of drawWordChartPages(words, plan.page, () => blankPage(plan.page, scale), plan.pageCount + 1, counted.pageCount)) {
+  await add(drawSpecificationPage(project, words, counted, wordPages > 0 ? plan.specificationPage + 1 : undefined, scale))
+  for (const canvas of drawWordChartPages(words, plan.page, () => blankPage(plan.page, scale), plan.specificationPage + 1, counted.pageCount)) {
     await add(canvas)
   }
 

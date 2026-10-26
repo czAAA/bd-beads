@@ -24,3 +24,15 @@ export function formatPrintedGrams(grams: number, locale: Locale, unit: string):
   const decimal = decimalSign(locale)
   return `${groupThousands(whole, locale)}${tenth ? `${decimal}${tenth}` : ''} ${unit}`
 }
+
+/** The size of the tubes the Specification counts in. */
+const TUBE_GRAMS = 5
+/** The spare the grams note suggests, as a factor. */
+const SPARE = 1.1
+
+/** Tubes to buy for a weight (ticket 0581): the grams with about 10% spare over a 5 g tube, rounded up, so even a color
+ * under a gram is one tube. */
+export function tubesToBuy(grams: number): number {
+  // The small allowance keeps an exact fit (50 g × 1.1 = 55.00000000000001 → 12 tubes) from tipping over.
+  return Math.max(0, Math.ceil((grams * SPARE) / TUBE_GRAMS - 1e-9))
+}
