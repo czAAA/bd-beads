@@ -116,7 +116,7 @@ export function wrap(context: CanvasRenderingContext2D, value: string, style: st
 
 /** A page canvas `scale` times the layout's px (the layout is at PRINT_DPI; a PDF at a higher quality draws the same page
  * larger, ticket 572): the context is scaled, so everything is drawn in layout px. */
-function blankPage(page: PageSize, scale: number): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
+export function blankPage(page: PageSize, scale: number): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(page.width * scale)
   canvas.height = Math.round(page.height * scale)

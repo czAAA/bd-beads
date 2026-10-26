@@ -79,6 +79,9 @@ interface TechniqueRules {
   twoPasses: boolean
   /** Whether columns and rows count Units (a square of four beads) rather than beads (ticket 482). */
   countsUnits: boolean
+  /** Its Word chart (ticket 0574), absent where it has none: `marked` rows carry an (L) or (R) for the end they start from,
+   * the others all read left to right. */
+  wordChart?: { marked: boolean }
   /** A drawn bead's height over its width in px, where the Technique draws beads that aren't square. */
   cellAspect: number
 }
@@ -108,6 +111,7 @@ const TECHNIQUE_RULES = {
     rowDirection: true,
     twoPasses: false,
     countsUnits: false,
+    wordChart: { marked: false },
     cellAspect: 1,
   },
   peyote: {
@@ -125,6 +129,7 @@ const TECHNIQUE_RULES = {
     rowDirection: true,
     twoPasses: true,
     countsUnits: false,
+    wordChart: { marked: true },
     cellAspect: 1,
   },
   brick: {
@@ -140,6 +145,7 @@ const TECHNIQUE_RULES = {
     rowDirection: true,
     twoPasses: false,
     countsUnits: false,
+    wordChart: { marked: true },
     cellAspect: 1,
   },
   rightAngle: {

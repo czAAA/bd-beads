@@ -363,3 +363,12 @@ describe('FramePanel Letters (ticket 0573)', () => {
     expect(mountBar(bare).find('[data-testid="frame-letters"]').exists()).toBe(false)
   })
 })
+
+describe('FramePanel Letters note (ticket 0574)', () => {
+  it('says the Word chart is not available for a Technique without one, only while Letters is on', () => {
+    const rightAngle = { ...framed(), technique: 'rightAngle' as const, frame: { ...framed().frame!, technique: 'rightAngle' as const } }
+    expect(mountBar({ ...rightAngle, letters: true }).get('[data-testid="frame-letters-unavailable"]').text()).toBe(en.frame.lettersUnavailable)
+    expect(mountBar(rightAngle).find('[data-testid="frame-letters-unavailable"]').exists()).toBe(false)
+    expect(mountBar({ ...framed(), letters: true }).find('[data-testid="frame-letters-unavailable"]').exists()).toBe(false)
+  })
+})

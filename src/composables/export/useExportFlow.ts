@@ -1,11 +1,11 @@
 import { computed, ref, toRaw } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import { withLetters, type Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, wordChartFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
 import { PNG_BEAD_PX_BY_QUALITY } from '../../domain/exportQuality'
 import { pdfDpiFor } from '../../rendering/pdfDpi'
-import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
+import { exportProjectPdf, exportProjectPng, exportWordChartPng } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
@@ -57,17 +57,20 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   /** Makes a file and hands it over inside the tap, then says it is ready (ticket 523). Safari shares only from a
    * fresh tap, so when it refuses because the build took too long the toast's action is the new tap (ticket 306). */
-  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string) {
+  async function makeAndHandOver(fileName: string, make: () => Promise<BlobPart>, type: string, toastId: string, ready: string): Promise<boolean> {
     const contents = await make()
     const outcome = await downloadFile(fileName, contents, type)
     if (outcome === 'cancelled') {
-      return
+      return false
     }
     const retry = outcome === 'refused' ? { label: deps.messages().saveBox.readySave, run: () => void downloadFile(fileName, contents, type) } : undefined
     deps.showToast?.(toastId, ready, 'success', retry)
+    return true
   }
 
-  async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string) {
+  /** `second` is a file made after the first is handed over (the Word chart's PNG, ticket 0574): none when it has nothing to
+   * make. */
+  async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, second?: (project: Project) => { fileName: string; make: () => Promise<Blob> } | undefined) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
     if (!project?.frame || exporting.value) {
@@ -77,13 +80,17 @@ export function useExportFlow(deps: ExportFlowDeps) {
     try {
       // Read as the Project itself: drawing reads every bead.
       const { saveBox } = deps.messages()
-      await makeAndHandOver(
+      const handed = await makeAndHandOver(
         projectExportFileName(project, extension),
         () => make(toRaw(project)),
         type,
         `export-${extension}`,
         extension === 'png' ? saveBox.readyPng : saveBox.readyPdf,
       )
+      const next = handed ? second?.(toRaw(project)) : undefined
+      if (next) {
+        await makeAndHandOver(next.fileName, next.make, type, `export-${extension}-instructions`, saveBox.readyPng)
+      }
     } finally {
       exporting.value = undefined
     }
@@ -115,10 +122,16 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   function onExportPng() {
     // The words the picture prints (ticket 164), in the app's language, with the Project's maker's name (ADR 0060).
+    // With Letters on, the Word chart follows as a second picture (ticket 0574).
+    const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date())
     return runExport(
-      (project) => exportProjectPng(project, printText(project, deps.messages(), deps.locale(), new Date()), PNG_BEAD_PX_BY_QUALITY[quality.value]),
+      (project) => exportProjectPng(project, wordsOf(project), PNG_BEAD_PX_BY_QUALITY[quality.value]),
       'png',
       'image/png',
+      (project) => {
+        const words = wordsOf(project)
+        return words.wordChart ? { fileName: wordChartFileName(project), make: () => exportWordChartPng(words, PNG_BEAD_PX_BY_QUALITY[quality.value]) } : undefined
+      },
     )
   }
 

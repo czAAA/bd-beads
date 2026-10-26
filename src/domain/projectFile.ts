@@ -71,6 +71,11 @@ export function projectExportFileName(project: Project, extension: 'png' | 'pdf'
   return `openbeads-${fileNameSlug(project.name) || 'project'}.${extension}`
 }
 
+/** The Word chart's picture beside the pattern's PNG (ticket 0574), e.g. `openbeads-my-scarf_instructions.png`. */
+export function wordChartFileName(project: Project): string {
+  return projectExportFileName(project, 'png').replace(/\.png$/, '_instructions.png')
+}
+
 export function libraryFileName(): string {
   return 'openbeads_lib.openbeads'
 }
