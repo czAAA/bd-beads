@@ -7,9 +7,8 @@ import { tooltipOwners } from './tooltipOwner'
 import type { TooltipProps } from './tooltipProps'
 
 // The design system's Tooltip (tickets 157, 327, 453; Menu card): name in bold, optional `hotkey` and `body`. Shows
-// on mouse/pen hover held HOVER_DELAY_MS, or keyboard focus at once; a touch/pen press held LONG_PRESS_MS opens it
-// (ticket 166), as does a click on a disabled control. Never clipped (ticket 265): a manual top-layer popover.
-// `announce: false` avoids double reading.
+// on mouse/pen hover held HOVER_DELAY_MS or keyboard focus; a touch/pen press held LONG_PRESS_MS (ticket 166) or a
+// click on a disabled control opens it. Never clipped (ticket 265): a manual top-layer popover.
 const props = withDefaults(defineProps<TooltipProps>(), {
   body: undefined,
   placement: 'bottom',
