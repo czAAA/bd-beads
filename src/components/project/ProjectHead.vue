@@ -1,18 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { MAX_MAKER_NAME } from '../../domain/makerName'
-import { MAX_PROJECT_NAME, normalizeProjectName } from '../../domain/projectName'
 import { frameWeave, type Project } from '../../domain/project'
-import { describeWeave, TECHNIQUES, type Technique } from '../../domain/weave'
-import { techniqueName } from '../../i18n/techniqueName'
+import { DEFAULT_NET_SIZE, type Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
-import PanelPicker from '../shell/PanelPicker.vue'
-import BrickBlockField from './BrickBlockField.vue'
-import EditableLine from './EditableLine.vue'
+import NamesSection from './NamesSection.vue'
+import TechniqueSection from './TechniqueSection.vue'
 
 // The head of the Project panel, always shown (ProjectPanel card, ticket 554): the `project:` title with the local save
 // state, the Project's name and maker, and the one Technique control with Brick block. It only asks; the shell works.
@@ -27,12 +23,13 @@ const emit = defineEmits<{
   save: []
   'set-technique': [technique: Technique]
   'set-brick-block': [brickBlock: number]
+  'set-net-size': [netSize: number]
   'set-canvas-technique': [technique: Technique]
   'set-canvas-brick-block': [brickBlock: number]
+  'set-canvas-net-size': [netSize: number]
 }>()
 
 const { t } = useI18n()
-const rename = controlAction('rename-project')
 const techniqueAction = controlAction('change-technique')
 const brickBlockAction = controlAction('change-brick-block')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
@@ -46,11 +43,8 @@ const stateText = computed(() =>
       : t.value.panels.project.notSaved.replace('{reason}', t.value.panels.project.saveRefused),
 )
 
-const renameLabel = computed(() => t.value.panels.project.rename.replace('{name}', props.project.name))
-
 const weave = computed(() => frameWeave(props.project))
 const locked = computed(() => !techniqueAction.enabled?.(deps.value))
-const techniqueOptions = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
 /** A Project with a Frame weaves it (Row progress belongs to the Frame); one without weaves the Canvas. */
 const hasFrame = computed(() => props.project.frame !== undefined)
 
@@ -62,6 +56,11 @@ function setTechnique(technique: Technique) {
 function setBrickBlock(brickBlock: number) {
   if (hasFrame.value) emit('set-brick-block', brickBlock)
   else emit('set-canvas-brick-block', brickBlock)
+}
+
+function setNetSize(netSize: number) {
+  if (hasFrame.value) emit('set-net-size', netSize)
+  else emit('set-canvas-net-size', netSize)
 }
 </script>
 
@@ -82,54 +81,28 @@ function setBrickBlock(brickBlock: number) {
       </div>
     </div>
 
-    <div class="project-head__lines">
-      <EditableLine
-        :label="t.panels.project.nameLabel"
-        :value="project.name"
-        :edit-label="renameLabel"
-        :edit-tooltip="rename.body?.(t)"
-        :maxlength="MAX_PROJECT_NAME"
-        :required-message="t.panels.project.nameRequired"
-        :normalize="normalizeProjectName"
-        testid="project-name"
-        @save="emit('rename', $event)"
-      />
+    <NamesSection
+      class="project-head__lines"
+      inline
+      :name="project.name"
+      :maker-name="project.makerName ?? ''"
+      @update:name="emit('rename', $event)"
+      @update:maker-name="emit('save-maker-name', $event)"
+    />
 
-      <EditableLine
-        small
-        :label="t.panels.project.makerLabel"
-        :value="project.makerName ?? ''"
-        :edit-label="t.panels.project.changeMaker"
-        :empty-text="t.panels.project.addMaker"
-        :placeholder="t.saveBox.yourName"
-        :maxlength="MAX_MAKER_NAME"
-        :normalize="(raw) => raw.trim()"
-        testid="project-maker"
-        @save="emit('save-maker-name', $event)"
-      />
-    </div>
-
-    <div class="project-head__technique">
-      <PanelPicker
-        :model-value="weave.technique"
-        :label="t.form.techniqueLabel"
-        icon="pattern"
-        :options="techniqueOptions"
-        :disabled="locked"
-        :disabled-body="locked ? techniqueAction.disabledBody?.(t, deps) : undefined"
-        data-testid="project-technique"
-        @update:model-value="setTechnique"
-      />
-      <BrickBlockField
-        v-if="describeWeave(weave).hasBrickBlock"
-        class="project-head__brick"
-        :model-value="weave.brickBlock ?? 1"
-        :disabled="locked"
-        :disabled-body="locked ? brickBlockAction.disabledBody?.(t, deps) : undefined"
-        testid="project-brick-block"
-        @update:model-value="setBrickBlock"
-      />
-    </div>
+    <TechniqueSection
+      class="project-head__technique"
+      testid="project"
+      :technique="weave.technique"
+      :brick-block="weave.brickBlock ?? 1"
+      :net-size="weave.netSize ?? DEFAULT_NET_SIZE"
+      :disabled="locked"
+      :technique-disabled-body="techniqueAction.disabledBody?.(t, deps)"
+      :brick-block-disabled-body="brickBlockAction.disabledBody?.(t, deps)"
+      @update:technique="setTechnique"
+      @update:brick-block="setBrickBlock"
+      @update:net-size="setNetSize"
+    />
   </section>
 </template>
 
@@ -200,22 +173,11 @@ function setBrickBlock(brickBlock: number) {
 }
 
 .project-head__lines {
-  display: flex;
-  flex-direction: column;
   gap: var(--space-4);
 }
 
-.project-head__technique {
-  display: flex;
-  flex-direction: column;
-  margin: 0 calc(-1 * var(--space-10));
-}
 
-.project-head__brick {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 var(--space-10);
-  min-height: var(--panel-item-height);
+.project-head__technique {
+  margin: 0 calc(-1 * var(--space-10));
 }
 </style>

@@ -11,7 +11,7 @@ The panel shell (width, edge, radius, motion, closing, focus), the density and t
    - **Cloud:** `cloud` in `accent-strong`, "Saved in openbeads cloud"; not signed in, `cloud-off` in `faint`, "Not in openbeads cloud: sign in to sync". The cloud icon is shown only once the app has cloud sync; until then the title line holds the local icon alone.
 2. **`name:`** (`label` style, a 46px column) and the Project's name (Inter 600 16/24, one line, ellipsis) with a 24px **pencil**. The pencil turns the name into a TextField in place, with Save (check) and Cancel (×) beside it and a counter "n/40" in `meta` under it. Enter saves, Escape cancels, Save is disabled and the field gets the `danger` edge with "A Project needs a name." while empty. Rename is saved at once and is not part of Undo.
 3. **`maker:`** and the maker's name (`control` 13/18, `body`), smaller than the project's name, with its own pencil, edited the same way (placeholder "Your name", counter "n/40", empty clears it). With no name the row reads "+ Add your name for exports" in `muted`. It is the old Name on exports row: per Project (ADR 0060), printed in Instrument Serif italic on PDF and PNG exports (printed-output.md).
-4. **Technique:** a PanelPicker (Loom, Peyote, Brick stitch, Right-angle weave, Netting), the `pattern` icon. With brick stitch, **Brick block** follows as a row with a small Stepper (`picker-height`). The Canvas Technique row of ticket 0492 is gone: the Project has one Technique control. Locked once a Row progress pass is done (ticket 0492), with the reason in its Tooltip.
+4. **Technique:** a PanelPicker (Loom, Peyote, Brick stitch, Right-angle weave, Netting), the `pattern` icon. With brick stitch, **Brick block** follows as a row with a small Stepper (`picker-height`). The Canvas Technique row of ticket 0492 is gone: the Project has one Technique control. Locked once a Row progress pass is done (ticket 0492), with the reason in its Tooltip. With Netting, **Net size** follows the same way (ticket 0568). A switch to a Technique with a setting, or a Net size that would drop beads, asks first, and the question holds the setting (Brick block, Net size). Name, maker, Technique and the Bead section are the sections New Project shares (NewPatternForm card).
 
 ## Sections (PanelSection, in this order)
 
@@ -20,7 +20,7 @@ The panel shell (width, edge, radius, motion, closing, focus), the density and t
 3. **export:** **Project file** (`export`, value `.openbeads`). Picture (PNG) and Printable chart (PDF) need a Frame and live in the Frame panel (Frame card).
 4. **this project:** Duplicate, **Clear all beads** (`erase`, `danger`) and **Delete project** (`delete`, `danger`), as PanelItems. Clear all beads is the app's existing Clear: every bead of this canvas emptied and Row progress off, behind its usual confirmation, one Undo step; the Project stays.
 
-Not here any more: the size estimate, Frame from template and Beads needed (all in the Frame panel), the Save Project button (saving is automatic; the head shows its state) and the Canvas Technique.
+Not here any more: the size estimate, Frame from starter and Beads needed (all in the Frame panel), the Save Project button (saving is automatic; the head shows its state) and the Canvas Technique.
 
 ## Duplicate and Delete
 

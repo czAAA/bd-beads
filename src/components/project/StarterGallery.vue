@@ -4,24 +4,18 @@ import { STARTERS, type Starter, type StarterId } from '../../domain/starters'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { PANEL_CONTEXT } from '../shell/panelContext'
-import AppIcon from '../ui/AppIcon.vue'
 import StarterPicture from './StarterPicture.vue'
 
-// The Starter gallery at the top of New Project (ticket 493, spec 0488; StarterGallery card): a Blank canvas tile and one
-// card per Starter, in a radiogroup of one tab stop. Blank canvas is the choice the form below makes; a tap on a Starter
-// card opens its setup (the panel's next subpanel). One column.
-const props = defineProps<{
-  /** Opened from the Project panel's Frame area (ticket 495): there is no Blank canvas to start from. */
-  withoutBlank?: boolean
-}>()
-const emit = defineEmits<{ choose: [id: StarterId]; 'choose-blank': [] }>()
+// The Starter gallery (ticket 493, spec 0488; StarterGallery card), unfolded by New Project's Pick a starter (ticket 568)
+// and by the Frame panel: one card per Starter, in a radiogroup of one tab stop. A tap on a card opens its setup (the
+// panel's next subpanel). One column.
+const emit = defineEmits<{ choose: [id: StarterId] }>()
 
 const { t } = useI18n()
 const panel = inject(PANEL_CONTEXT, undefined)
 const rootEl = ref<HTMLElement>()
 
-type Choice = { id: 'blank' } | { id: StarterId; starter: Starter }
-const choices = computed<Choice[]>(() => [...(props.withoutBlank ? [] : [{ id: 'blank' as const }]), ...STARTERS.map((starter) => ({ id: starter.id, starter }))])
+const choices = computed(() => STARTERS.map((starter) => ({ id: starter.id, starter })))
 
 function specLine(starter: Starter): string {
   return t.value.starters.specLine
@@ -30,12 +24,7 @@ function specLine(starter: Starter): string {
     .replace('{technique}', techniqueName(t.value, starter.technique))
 }
 
-/** Blank canvas is what the form below makes, so choosing it only takes the reader there. */
-function onChoose(choice: Choice) {
-  if (choice.id === 'blank') {
-    emit('choose-blank')
-    return
-  }
+function onChoose(choice: { id: StarterId }) {
   emit('choose', choice.id)
   panel?.openSub(t.value.starters[choice.id].name)
 }
@@ -72,33 +61,31 @@ function onKeydown(event: KeyboardEvent) {
     @keydown="onKeydown"
   >
     <button
-      v-for="choice in choices"
+      v-for="(choice, index) in choices"
       :key="choice.id"
       class="starter-gallery__card"
       type="button"
       role="radio"
-      :aria-checked="choice.id === 'blank'"
-      :tabindex="choice.id === 'blank' ? 0 : -1"
+      :aria-checked="false"
+      :tabindex="index === 0 ? 0 : -1"
       :data-testid="`starter-card-${choice.id}`"
       data-wrap-ok
       @click="onChoose(choice)"
     >
       <span class="starter-gallery__picture">
-        <slot name="picture" :starter="'starter' in choice ? choice.starter : undefined">
+        <slot name="picture" :starter="choice.starter">
           <StarterPicture
-            v-if="'starter' in choice"
             :technique="choice.starter.technique"
             :columns="choice.starter.width.default"
             :rows="choice.starter.height.default"
             :seed-text="choice.id"
           />
-          <AppIcon v-else name="plus" :size="22" />
         </slot>
       </span>
       <span class="starter-gallery__text">
         <span class="starter-gallery__name">{{ t.starters[choice.id].name }}</span>
         <span class="starter-gallery__description">{{ t.starters[choice.id].description }}</span>
-        <span v-if="'starter' in choice" class="starter-gallery__spec" data-testid="starter-spec">{{ specLine(choice.starter) }}</span>
+        <span class="starter-gallery__spec" data-testid="starter-spec">{{ specLine(choice.starter) }}</span>
       </span>
     </button>
   </div>

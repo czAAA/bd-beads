@@ -2,7 +2,8 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
-import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, TECHNIQUES, type BeadShape, type Technique } from '../../domain/weave'
+import type { StarterId } from '../../domain/starters'
+import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type BeadShape, type Technique } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -13,15 +14,13 @@ import {
   type DecodeImage,
 } from '../../domain/imageConversion'
 import { SLOW_FRAMING_CELLS } from '../../domain/imageFraming'
-import { MAX_MAKER_NAME } from '../../domain/makerName'
 import type { StatedSize } from '../../domain/projectSize'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
-import BeadPicker from './BeadPicker.vue'
-import BeadShapeField from './BeadShapeField.vue'
-import BrickBlockField from './BrickBlockField.vue'
-import NetSizeField from './NetSizeField.vue'
+import BeadSection from './BeadSection.vue'
+import NamesSection from './NamesSection.vue'
+import StarterGallery from './StarterGallery.vue'
+import TechniqueSection from './TechniqueSection.vue'
 import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
 import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
@@ -29,8 +28,6 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import FormField from '../ui/form/FormField.vue'
 import LoadingState from '../ui/LoadingState.vue'
-import SegmentedControl from '../ui/form/SegmentedControl.vue'
-import TextField from '../ui/form/TextField.vue'
 
 const { t } = useI18n()
 
@@ -55,6 +52,8 @@ const emit = defineEmits<{
   draft: [payload: CreateProjectInput]
   /** A picture that passed validation and decoded — the framing step's starting point. */
   'convert-image': [image: PixelData]
+  /** A Starter card was tapped: its setup is the panel's next subpanel (ticket 568). */
+  'choose-starter': [id: StarterId]
 }>()
 
 const name = ref('')
@@ -68,12 +67,12 @@ const netSize = ref(DEFAULT_NET_SIZE)
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
 
-const nameField = ref<InstanceType<typeof TextField>>()
+const names = ref<InstanceType<typeof NamesSection>>()
 
 /** Focuses and selects the Name (ticket 181), to encourage naming; on a touch device it waits for a tap, so the
  * keyboard stays down (ticket 515). */
 function focusName() {
-  nameField.value?.focus({ select: true })
+  names.value?.focusName()
 }
 defineExpose({ focusName })
 onMounted(focusName)
@@ -81,7 +80,9 @@ onMounted(focusName)
 const selectedBead = computed(() => findBead(beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value, t.value.formFactors) : ''))
 
-const techniqueOptions = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
+/** Whether Pick a starter has unfolded the gallery (ticket 568); the panel keeps it, so Back from a Starter's setup finds
+ * the gallery as it was left. */
+const startersOpen = defineModel<boolean>('startersOpen', { default: false })
 
 /** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342). */
 function currentInput(): CreateProjectInput {
@@ -182,48 +183,30 @@ function onDropImage(file: File) {
 
 <template>
   <!--
-    The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: Name (optional), Maker's
-    name (ticket 182, also optional and blank by default), Bead, Technique, then the Create Project button, "or" and Convert image.
-    It states no size (ticket 342): a Project starts as a Canvas and its size is set in the Frame
-    sheet. Convert image still needs one, so choosing a picture opens its own size step before framing.
+    The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: the Open canvas title and what
+    it is for, Name (optional), Maker's name (ticket 182, also optional), Bead and Technique (the sections the Project
+    panel shares, ticket 568), then three accent buttons: Create Project, Convert image and Pick a starter. It states no
+    size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image still needs
+    one, so choosing a picture opens its own size step before framing.
   -->
   <form id="new-project-form" class="new-project-form" novalidate @submit.prevent="onSubmit">
-    <FormField :label="t.form.nameLabel" label-for="name-input" :aside="t.form.optional">
-      <TextField id="name-input" ref="nameField" v-model="name" data-testid="name-input" type="text" :placeholder="namePlaceholder" />
-    </FormField>
+    <header class="new-project-form__head">
+      <h2 class="new-project-form__title" data-testid="open-canvas-title">{{ t.form.openCanvasTitle }}</h2>
+      <p class="new-project-form__subtitle">{{ t.form.openCanvasSubtitle }}</p>
+    </header>
 
-    <!-- This Project's own maker's name (ticket 182): blank by default, overriding the device-wide one only if set. -->
-    <FormField :label="t.form.makerNameLabel" label-for="maker-name-input" :aside="t.form.optional">
-      <TextField
-        id="maker-name-input"
-        v-model="makerName"
-        data-testid="maker-name-input"
-        type="text"
-        autocomplete="name"
-        :maxlength="MAX_MAKER_NAME"
-        :placeholder="t.form.makerNamePlaceholder"
-      />
-    </FormField>
+    <NamesSection ref="names" v-model:name="name" v-model:maker-name="makerName" :name-placeholder="namePlaceholder" />
 
     <FormField :label="t.form.beadLabel" label-id="bead-label">
-      <BeadPicker v-model="beadId" :beads="offeredBeads()" testid="bead-picker" />
+      <BeadSection v-model:bead-shape="beadShape" :bead="selectedBead" :candidates="offeredBeads()" @pick="beadId = $event" />
     </FormField>
 
-    <FormField :label="t.form.beadShapeLabel" label-id="bead-shape-label">
-      <BeadShapeField v-model="beadShape" labelledby="bead-shape-label" testid="bead-shape-select" />
-    </FormField>
-
-    <FormField :label="t.form.techniqueLabel" label-id="technique-label">
-      <SegmentedControl
-        v-model="technique"
-        :options="techniqueOptions"
-        labelledby="technique-label"
-        data-testid="technique-select"
-      />
-    </FormField>
-
-    <BrickBlockField v-if="describeWeave({ technique }).hasBrickBlock" v-model="brickBlock" testid="brick-block" />
-    <NetSizeField v-if="describeWeave({ technique }).hasNetSize" v-model="netSize" testid="net-size" />
+    <TechniqueSection
+      v-model:technique="technique"
+      v-model:brick-block="brickBlock"
+      v-model:net-size="netSize"
+      testid="new-project"
+    />
 
     <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus" data-testid="create-project">
       {{ t.form.submit }}
@@ -248,6 +231,7 @@ function onDropImage(file: File) {
           :label="t.convertImage.fileLabel"
           :aria-label="t.convertImage.fileName"
           icon="image"
+          accent
           data-testid="convert-image-input"
           :accept="imageInputAccept()"
           @change="onConvertImage"
@@ -260,6 +244,22 @@ function onDropImage(file: File) {
         <AppIcon name="warning" :size="14" />
         <span>{{ convertError }}</span>
       </p>
+    </div>
+
+    <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
+    <div class="new-project-form__starters">
+      <AppButton
+        variant="primary"
+        icon="frame"
+        :trailing-icon="startersOpen ? 'chevron-up' : 'chevron-down'"
+        :aria-expanded="startersOpen"
+        aria-controls="new-project-starters"
+        data-testid="pick-starter"
+        @click="startersOpen = !startersOpen"
+      >
+        {{ t.form.pickStarter }}
+      </AppButton>
+      <StarterGallery v-if="startersOpen" id="new-project-starters" @choose="emit('choose-starter', $event)" />
     </div>
 
     <ConvertImageSizeDialog
@@ -277,6 +277,36 @@ function onDropImage(file: File) {
 <style scoped>
 .new-project-form__convert-tip {
   flex-direction: column;
+}
+
+.new-project-form__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.new-project-form__title {
+  margin: 0;
+  font: var(--type-title);
+  color: var(--ink);
+}
+
+.new-project-form__subtitle {
+  margin: 0;
+  font: var(--type-meta);
+  font-family: var(--font-sans);
+  color: var(--muted);
+}
+
+.new-project-form__starters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-8);
+}
+
+.new-project-form__starters > :first-child {
+  width: 100%;
+  height: var(--field-height);
 }
 
 .new-project-form {

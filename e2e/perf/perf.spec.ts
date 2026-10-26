@@ -1,5 +1,5 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
-import { copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, stateConvertSize } from '../support/app'
+import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, stateConvertSize } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -246,7 +246,7 @@ for (const slowdown of SLOWDOWNS) {
       test(`framing ${name} at ${slowdown}× slowdown`, async ({ page }) => {
         await openApp(page, [])
         await openNewProjectForm(page)
-        await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
+        await chooseNewProjectTechnique(page, technique)
         await page.getByTestId('convert-image-input').setInputFiles({
           name: 'fixture.png',
           mimeType: 'image/png',

@@ -285,6 +285,15 @@ describe('changeFrame', () => {
       expect(changeCanvasWeave(net, { technique: 'loom' }).netSize).toBeUndefined()
     })
 
+    it('takes the Brick block given with the switch to brick stitch, and keeps the layer\'s own when none is given (ticket 568)', () => {
+      expect(changeCanvasWeave(framed(), { technique: 'brick', brickBlock: 3 })).toMatchObject({ technique: 'brick', brickBlock: 3 })
+      const brick = changeCanvasWeave(framed(), { technique: 'brick', brickBlock: 4 })
+      expect(changeCanvasWeave(brick, { technique: 'peyote' }).brickBlock).toBe(4)
+      const result = changeFrame(framed(), { technique: 'brick', brickBlock: 2 })
+      expect(result.kind === 'changed' && result.project.frame).toMatchObject({ technique: 'brick', brickBlock: 2 })
+      expect(changeFrame(framed(), { technique: 'loom', brickBlock: 1 }).kind).toBe('unchanged')
+    })
+
     it('counts the beads a switch would drop', () => {
       const project = framed({ beads: { 0: { 0: '#111111', 1: '#222222' } } })
       // Netting of size 3 has no position at (0, 0) or (0, 1): both are holes.
@@ -547,6 +556,16 @@ describe('changeFrame in Netting (ticket 485)', () => {
     const result = changeFrame(start, { technique: 'netting', netSize: 3 })
     expect(result.kind === 'changed' && result.project.frame?.beads).toEqual({ 1: { 1: '#222222' } })
     expect(changeFrame({ ...start, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }, { technique: 'netting', netSize: 3 })).toEqual({ kind: 'refused', reason: 'locked' })
+  })
+
+  it('changes only the Net size when the Technique stays, and is no change for the size it has (ticket 568)', () => {
+    const start = framed({ frame: sheet(frame, { 0: { 0: '#111111' }, 1: { 1: '#222222' } }) })
+    const net = changeFrame(start, { technique: 'netting', netSize: 3 })
+    const project = net.kind === 'changed' ? net.project : start
+    const wider = changeFrame(project, { technique: 'netting', netSize: 7 })
+    expect(wider.kind === 'changed' && wider.project.frame).toMatchObject({ technique: 'netting', netSize: 7 })
+    expect(changeFrame(project, { technique: 'netting', netSize: 3 }).kind).toBe('unchanged')
+    expect(changeCanvasWeave(changeCanvasWeave(framed(), { technique: 'netting', netSize: 3 }), { technique: 'netting', netSize: 5 }).netSize).toBe(5)
   })
 
   it('does not take out a single line, which is not a diamond', () => {
