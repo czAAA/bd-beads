@@ -5,6 +5,7 @@ export const PRINT_COLORS = {
   paper: '#ffffff',
   ink: '#1f1f1f',
   muted: '#6a6a6a',
+  faint: '#a8a8a8',
   line: '#e5e5e5',
   accent: '#fa520f',
   accentStrong: '#c23604',

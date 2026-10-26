@@ -86,3 +86,36 @@ describe('printText with Letters (ticket 0573)', () => {
     expect(lettered.colors.map((color) => color.letter)).toEqual([project.paletteLetters!['#e63746']])
   })
 })
+
+describe('printText Word chart (ticket 0574)', () => {
+  const letters = (project: ReturnType<typeof delicaProject>) => withLetters({ ...project, paletteLetters: { '#e63746': 'C' } }, true)
+
+  it('writes the rows as words with the range, the notes and the runs', () => {
+    const base = createProject({ technique: 'brick', beadId: 'miyuki-delica-11-0', size: { width: 3, height: 2, unit: 'beads' } })
+    const painted = paintAt(base, [{ row: 0, column: 0 }, { row: 0, column: 1 }, { row: 1, column: 2 }], '#e63746')
+    const chart = printText(letters(painted), en, 'en', at).wordChart!
+
+    expect(chart.title).toBe('Row by row')
+    expect(chart.range).toBe('1–2')
+    expect(chart.notes).toEqual([en.print.wordChart.firstTop, en.print.wordChart.sides, en.print.wordChart.runNote, en.print.wordChart.emptyNote])
+    expect(chart.rows).toEqual([
+      { label: 'Row 1', marker: 'L', runs: '2C, 1*', runCount: 2 },
+      { label: 'Row 2', marker: 'R', runs: '1C, 2*', runCount: 2 },
+    ])
+  })
+
+  it('says Rows 1&2 and the count for peyote, and translates the words but not the letters', () => {
+    const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
+    const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }], '#e63746')), ru, 'ru', at).wordChart!
+
+    expect(chart.rows[0]).toEqual({ label: ru.print.wordChart.both, marker: 'L', runs: '1C, 3*', runCount: 2 })
+    expect(chart.notes).toContain(ru.print.wordChart.evenCount)
+    expect(chart.range).toBe('1–4')
+  })
+
+  it('has none with Letters off or without a Technique that has one', () => {
+    expect(printText(delicaProject(3), en, 'en', at).wordChart).toBeUndefined()
+    const rightAngle = createProject({ technique: 'rightAngle', beadId: 'miyuki-delica-11-0', size: { width: 8, height: 8, unit: 'beads' } })
+    expect(printText(withLetters(rightAngle, true), en, 'en', at).wordChart).toBeUndefined()
+  })
+})
