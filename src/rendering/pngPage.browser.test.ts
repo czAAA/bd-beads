@@ -4,7 +4,7 @@ import { en } from '../i18n/en'
 import { PNG_STORY_LEFT, pngLayout } from './pngPage'
 import { font, loadPrintFonts, MONO, SERIF } from './printPages'
 import { printText } from './printText'
-import { PNG_MARGIN_PX, pngZoom } from './projectExport'
+import { exportProjectPng, PNG_MARGIN_PX, PNG_MAX_WIDTH, pngZoom } from './projectExport'
 import { displayedExtentPx } from './surfaceView'
 import { frameWeave } from '../domain/project'
 import { be } from '../i18n/be'
@@ -48,6 +48,27 @@ describe('pngLayout (PngExport card)', () => {
 
     expect(layout.width).toBeGreaterThan(chart.width)
     expect(layout.chartX).toBe(Math.floor((layout.width - chart.width) / 2))
+  })
+
+  it.each([['widest', 1000, 4], ['very wide', 600, 40]])('stays within the canvas width limit for a %s Schema', (_shape, columns, rows) => {
+    const { project, chart } = chartOf(columns, rows)
+    const layout = pngLayout(chart, printText(project, en, 'en', new Date()))
+
+    expect(layout.width).toBeLessThanOrEqual(PNG_MAX_WIDTH)
+  })
+})
+
+// The picture's own size is in its header (IHDR: width at byte 16, height at byte 20, big-endian).
+describe('exportProjectPng with a centred chart (PngExport card)', () => {
+  beforeAll(loadPrintFonts)
+
+  it('is as wide and as tall as the layout says for a small Schema', async () => {
+    const { project, chart } = chartOf(8, 8)
+    const layout = pngLayout(chart, printText(project, en, 'en', new Date()))
+    const header = new DataView(await (await exportProjectPng(project, printText(project, en, 'en', new Date()))).slice(0, 24).arrayBuffer())
+
+    expect(layout.chartX).toBeGreaterThan(0)
+    expect([header.getUint32(16), header.getUint32(20)]).toEqual([layout.width, layout.height])
   })
 })
 

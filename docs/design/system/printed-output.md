@@ -8,7 +8,7 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 - **The canvas, on paper.** The chart sits on a pale rounded board (`print-board`) like the app's canvas; the technique word is set in Instrument Serif italic in `accent` next to the Project's name.
 - **Open, with no watermarks.** Nothing is drawn behind or over the chart or the text: no background maker's name, no X1 marks, no accent line, no signature on the beads. The PDF and PNG are meant to be shared. The maker's name is still printed as information (Made by, the header, "by {maker}").
 - **Accent marks structure only**: the technique word, the lines where the chart parts meet, the part labels and the current part on the mini map. Text is `ink` or `muted`. A black-and-white printer turns the accent gray and loses no information; with Letters on, the letters carry the colors.
-- **On every page**: the X1 mark and "bd-beads" (small, in the header or footer, never as a background), technique and name, the maker's name, the export date and time, "page 2 / 9".
+- **On every page**: the X1 mark and "openbeads" (small, in the header or footer, never as a background), technique and name, the maker's name, the export date and time, "page 2 / 9".
 - Inter for text, DM Mono for numbers and meta, Instrument Serif italic for the technique word and the maker's name, loaded before drawing. A4 portrait, 10 mm margins (`print-margin`); nothing under 6.5 pt; Row progress fades never print.
 
 ## The order of the pages
@@ -20,7 +20,7 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 
 ## Page 1
 
-- **Top line**: the X1 mark and "bd-beads" on the left; date and time on the right. Then the technique word and the Project's name, then one row of facts under a hairline: made by, technique, bead, shape, size (columns × rows), finished size.
+- **Top line**: the X1 mark and "openbeads" on the left; date and time on the right. Then the technique word and the Project's name, then one row of facts under a hairline: made by, technique, bead, shape, size (columns × rows), finished size.
 - **The whole Schema on the board**, the full page width: rulers on the top and left with a number every 5 (every 10th and the 1 in `ink` 500, the others `muted`). The bead is as large as the width allows while Beads needed still fits under it, never above `print-bead-max`.
 - **The chart parts** are marked on it by solid 2 px `accent` lines with a white keyline, run through the rulers, with "101 →" and "101 ↓" in `accent-strong` where each cut is. Each part carries a white pill with an `accent` border: "part A · page 2", "B · p 3".
 - **Beads needed** under the board, in two columns that read down: a letter swatch (the color, its Swatch letter on it when Letters is on), color name, code, beads, grams; then the Total ("Total · 14 colors · 16 900 beads · ≈ 84.5 g") and the grams note.
@@ -70,7 +70,7 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 ## PNG image
 
 - **One portrait picture**: the whole Schema on its board at full width, rulers on the top and left with a number every 10; the story under it.
-- **The story**: on the left the technique word, the name, "by {maker}", bead and size, and the total ("16 900 beads · ≈ 84.5 g"); on the right Beads needed in two columns (letter swatch, name, beads, grams). At the bottom the X1 mark and "bd-beads" on the left, the date and time on the right. A Schema wider than tall gets a shorter picture; the story stays under it.
+- **The story**: on the left the technique word, the name, "by {maker}", bead and size, and the total ("16 900 beads · ≈ 84.5 g"); on the right Beads needed in two columns (letter swatch, name, beads, grams). At the bottom the X1 mark and "openbeads" on the left, the date and time on the right. A Schema wider than tall gets a shorter picture; the story stays under it.
 - Bead size follows the Export quality (QualitySlider card): 45, 60 or 90 px, Medium (`print-png-bead`, 60) by default, and the PDF is 150, 300 or 450 DPI; fewer, to a whole px, when the picture would pass the one ceiling (400 megapixels, 16 384 px wide); drawn in the app's language. No watermark. File names stay `bd-beads-{pattern}.png` and `.pdf`.
 
 The sizes are the `print-*` tokens; the board color is `print-board`. The PrintPage1, PrintChartPage, PrintSpecification, PrintWordChart and PngExport cards show the pages. The signed-off canvas is in the claude.ai design project "Export sheets — PDF & PNG".
