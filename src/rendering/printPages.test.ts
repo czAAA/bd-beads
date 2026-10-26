@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { loadPrintFonts, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, partLabel } from './printPages'
+import { loadPrintFonts, lineBetween, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, partLabel, rulerLevel, rulerSide } from './printPages'
 import { en } from '../i18n/en'
 import type { Project } from '../domain/project'
 import { PRINT_COLORS } from './printColors'
@@ -21,7 +21,7 @@ const print = (name: string) => tokens.print.tokens.find((entry) => entry.name =
 
 describe('the printed pages keep to the tokens (ticket 162)', () => {
   it('uses the light colors and the print board', () => {
-    expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), line: color('line'), accent: color('accent'), board: color('print-board') })
+    expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), faint: color('faint'), line: color('line'), accent: color('accent'), board: color('print-board') })
   })
 
   it('uses the print sizes', () => {
@@ -117,6 +117,25 @@ describe('partLabel: the label above each board (ticket 578)', () => {
   it('counts a turned Schema from its far end, lowest number first, with rows running across', () => {
     // A quarter turn: the 130 rows run across, so part B holds the last 30 rows, counted from the far end (1–30), and all 100 columns.
     expect(label(100, 130, 90, 1)).toBe('Part B · columns 1–100 · rows 1–30')
+  })
+})
+
+describe('chart rulers (ticket 579)', () => {
+  it('puts odd numbers on the top and left and even on the bottom and right, so each appears once', () => {
+    expect([1, 2, 99, 100, 101, 130].map(rulerSide)).toEqual(['start', 'end', 'start', 'end', 'start', 'end'])
+  })
+
+  it('sets every 10th bold, every 5th in ink and the rest muted', () => {
+    expect([10, 100, 5, 15, 1, 7, 101].map(rulerLevel)).toEqual(['tenth', 'tenth', 'fifth', 'fifth', 'plain', 'plain', 'plain'])
+  })
+
+  it('draws a fine line after every 5th bead and a heavier one after every 10th, counting the Schema’s own numbers either way it runs', () => {
+    expect(lineBetween(5, 6)).toBe('fifth')
+    expect(lineBetween(10, 11)).toBe('tenth')
+    expect(lineBetween(3, 4)).toBeUndefined()
+    // A turned Schema counts down: the line sits between 11 and 10, after the 10th bead in the Schema's order.
+    expect(lineBetween(11, 10)).toBe('tenth')
+    expect(lineBetween(6, 5)).toBe('fifth')
   })
 })
 

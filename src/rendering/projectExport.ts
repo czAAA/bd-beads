@@ -115,7 +115,7 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
     context.restore()
     // Rulers every 10 beads, and the 10-bead lines (printed-output.md, PNG image): drawn outside the board, offset for
     // this band.
-    drawRulers(context, project, zoom, { x: beads.x, y: beads.y - y, width: beads.width, height: beads.height }, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)
+    drawRulers(context, project, zoom, { x: beads.x, y: beads.y - y, width: beads.width, height: beads.height }, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 })
     drawPngStory(context, words, layout, y)
     return context.getImageData(0, 0, layout.width, rows).data
   })

@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { A4_PORTRAIT, type PrintPart, chartArea, continuation, mm, partLetter, planPrint, PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS_LETTERS, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM } from './printPlan'
+import { A4_PORTRAIT, type PrintPart, PRINT_PART_OVERLAP, chartArea, continuation, mm, partLetter, planPrint, PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS_LETTERS, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM } from './printPlan'
 import { CELL_SIZE_PX } from './surfaceView'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
@@ -57,11 +57,30 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect(plan.parts).toHaveLength(plan.partsAcross * plan.partsDown)
     expect(plan.parts.at(-1)!.lastAcross).toBe(across - 1)
     expect(plan.parts.at(-1)!.lastDown).toBe(down - 1)
-    // A brick or peyote part is half a bead wider than its beads, which can pass the area by under a millimetre.
+    // A brick or peyote part is half a bead wider than its beads, and a part carries its overlap: both can pass the
+    // area by a few millimetres, into the margins.
     for (const part of plan.parts) {
-      expect(part.place.width).toBeLessThanOrEqual(area.width + mm(1))
+      expect(part.place.width).toBeLessThanOrEqual(area.width + mm(5))
       expect(part.place.height).toBeLessThanOrEqual(area.height + 1)
     }
+  })
+
+  it('repeats 2 beads of the part before it at the left and the top, none on the first part\'s outer edges (ticket 579)', () => {
+    const plan = planPrint(shape('loom', 250, 250))
+    const at = (across: number, down: number) => plan.parts.find((part) => part.across === across && part.down === down)!
+    const grid = (part: PrintPart) => [part.overlapAcross, part.overlapDown]
+
+    expect(PRINT_PART_OVERLAP).toBe(2)
+    expect(grid(at(0, 0))).toEqual([0, 0])
+    expect(grid(at(1, 0))).toEqual([2, 0])
+    expect(grid(at(0, 1))).toEqual([0, 2])
+    expect(grid(at(2, 2))).toEqual([2, 2])
+    // The board holds the overlap too, so the part's own beads still start at its own number.
+    const own = at(1, 1)
+    const bead = CELL_SIZE_PX * plan.zoom
+    expect(own.firstAcross).toBe(100)
+    expect(own.region.x).toBeCloseTo(98 * bead, 6)
+    expect(Math.abs(own.region.width - 102 * bead)).toBeLessThan(1)
   })
 
   it('numbers the chart pages from 2, after page 1, with none left empty', () => {
