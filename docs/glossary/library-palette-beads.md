@@ -15,7 +15,7 @@ The short note shown once per device, at the first time a Project is written to 
 _Avoid_: permission prompt, storage popup
 
 **Maker's name**:
-Who made a Project: an optional name, at most 40 characters, printed on that Project's PDF and PNG exports and its background watermark, alongside the Project's own name. It belongs to the Project, not to the device, so it is set per Project (the New Project form, then "Name on exports") and travels with the Project (export, import, another device); there is no device-wide name and no fallback, and an empty name leaves the exports without one (ADR 0060, tickets 161, 182, 441).
+Who made a Project: an optional name, at most 40 characters, printed on that Project's PDF and PNG exports as information (made by, the chart page header, "by" on the PNG; never as a watermark), alongside the Project's own name. It belongs to the Project, not to the device, so it is set per Project (the New Project form, then "Name on exports") and travels with the Project (export, import, another device); there is no device-wide name and no fallback, and an empty name leaves the exports without one (ADR 0060, tickets 161, 182, 441).
 _Avoid_: author, owner, signature, user name
 
 **Palette**:
