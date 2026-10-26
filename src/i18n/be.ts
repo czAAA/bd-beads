@@ -58,7 +58,7 @@ export const be: Translations = {
     enterWholeBeads: 'Пакажыце цэлую колькасць бісерын.',
     or: 'або',
     openCanvasTitle: 'Адкрытае палатно',
-    openCanvasSubtitle: 'Малюйце на адкрытым палатне, задайце рамку, каб экспартаваць карцінку або PDF',
+    openCanvasSubtitle: 'Малюйце на адкрытым палатне, задайце рамку, каб экспартаваць карцінку або PDF, калі спатрэбіцца',
     pickStarter: 'Абраць стартар',
     estimateBeads: '≈ {columns}×{rows} бісерын',
     estimateUnits: '≈ {columns}×{rows} юнітаў',

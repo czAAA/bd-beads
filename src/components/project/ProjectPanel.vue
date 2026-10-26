@@ -79,9 +79,9 @@ const canvasName = computed(() => {
     <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
       <BeadSection
         :bead="resolveProjectBead(project)"
-        :bead-shape="project.beadShape"
+        :bead-shape="project.beadShape ?? DEFAULT_BEAD_SHAPE"
         :candidates="replaceCandidates"
-        @update:bead-shape="emit('set-bead-shape', $event!)"
+        @update:bead-shape="emit('set-bead-shape', $event)"
         @pick="emit('replace-bead', $event)"
       />
     </PanelSection>
