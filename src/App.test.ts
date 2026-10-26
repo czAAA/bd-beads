@@ -38,7 +38,7 @@ describe('App', () => {
 
     const afterReload = mount(App)
 
-    expect(afterReload.find('[data-testid="bead-picker"]').exists()).toBe(false)
+    expect(afterReload.find('[data-testid="bead-section"]').exists()).toBe(false)
     expect(drawnProject(afterReload)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
   })
 
@@ -268,9 +268,8 @@ describe('App', () => {
     const wrapper = mount(App)
     await openNewProject(wrapper)
 
-    await wrapper.get('[data-testid="bead-picker-toggle"]').trigger('click')
-    await wrapper.get('[data-testid="bead-picker-brand"]').trigger('click')
-    const brands = wrapper.findAll('[role="menuitem"]').map((item) => item.text())
+    await wrapper.get('[data-testid="bead-brand"] button[aria-haspopup]').trigger('click')
+    const brands = wrapper.findAll('[data-testid="bead-brand"] [role="menuitemradio"]').map((item) => item.text())
     expect(brands).toEqual(['TOHO', 'Miyuki'])
     expect(brands).not.toContain('Acme')
   })

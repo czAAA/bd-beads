@@ -5,8 +5,8 @@ import ToastRegion from './ui/ToastRegion.vue'
 import AppMessage from './ui/AppMessage.vue'
 import BeadColorList from './palette/BeadColorList.vue'
 import ProjectsLibrary from './project/ProjectsLibrary.vue'
-import TemplateGallery from './project/TemplateGallery.vue'
-import TemplateSetup from './project/TemplateSetup.vue'
+import StarterGallery from './project/StarterGallery.vue'
+import StarterSetup from './project/StarterSetup.vue'
 import ConvertImageFrame from './import/ConvertImageFrame.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
@@ -17,7 +17,7 @@ import { createProject } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
 import { armSelectionBar } from '../testUtils/pill'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
-import { TEMPLATES } from '../domain/templates'
+import { STARTERS } from '../domain/starters'
 import { CENTERED_PAN } from '../domain/imageFraming'
 import { DEFAULT_MAX_IMAGE_COLORS, type PixelData } from '../domain/imageConversion'
 
@@ -88,8 +88,8 @@ const CASES: FitCase[] = [
     { project: painted, selection: { top: 0, left: 0, rows: 2, columns: 2 }, selectionSummary: '2×2 ≈ 3 × 3 mm', pasteArmed: false, canRemoveLine: true, canNamePiece: true, hasClipboard: true, anchor: { box: { left: 40, top: 160, width: 100, height: 60 }, viewport: { width: 360, height: 640 } } },
     async () => void (await armSelectionBar()),
   ],
-  ['TemplateGallery', TemplateGallery, {}],
-  ['TemplateSetup', TemplateSetup, { template: TEMPLATES[0]! }],
+  ['StarterGallery', StarterGallery, {}],
+  ['StarterSetup', StarterSetup, { starter: STARTERS[0]! }],
   ['BeadColorList', BeadColorList, { colors: beadColors('ready') }],
   ['BeadColorList failed', BeadColorList, { colors: beadColors('failed') }],
   [

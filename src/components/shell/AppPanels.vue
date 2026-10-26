@@ -3,14 +3,14 @@ import FramePanel from '../canvas/FramePanel.vue'
 import MenuPanel from './MenuPanel.vue'
 import PanelHost from './PanelHost.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
-import TemplateGallery from '../project/TemplateGallery.vue'
-import TemplateSetup from '../project/TemplateSetup.vue'
+import StarterGallery from '../project/StarterGallery.vue'
+import StarterSetup from '../project/StarterSetup.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectsLibrary from '../project/ProjectsLibrary.vue'
 import PanelItem from './PanelItem.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
-import { ref } from 'vue'
-import { templateById, type TemplateId } from '../../domain/templates'
+import { ref, watch } from 'vue'
+import { starterById, type StarterId } from '../../domain/starters'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
 // The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library as another. Each panel only asks; the app shell does the work.
@@ -25,16 +25,19 @@ const {
   settledProject,
   onNewProjectDraft,
   onCreateProject,
-  onPlaceFrameFromTemplate,
+  onPlaceFrameFromStarter,
   startConvertImage,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
   onSetBrickBlock,
+  onSetNetSize,
+  onSetCanvasNetSize,
   onSetCanvasTechnique,
   onSetCanvasBrickBlock,
   onSetBeadShape,
   onFitFrame,
+  onSelectFrame,
   replaceBeadCandidates,
   onRequestReplaceBead,
   onImportProjects,
@@ -71,14 +74,18 @@ const {
   onSelectProjectFromPhoneDrawer,
 } = useAppShell()
 
-/** The Template whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup subpanel. */
-const chosenTemplate = ref<TemplateId>()
-const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
+/** The Starter whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup subpanel. */
+const chosenStarter = ref<StarterId>()
+/** Whether New Project's Pick a starter has unfolded the gallery (ticket 568); folded again whenever the panel closes. */
+const startersOpen = ref(false)
+watch(openPanel, (open) => {
+  if (open === null) startersOpen.value = false
+})
 </script>
 
 <template>
   <!-- The Frame panel (tickets 473, 475, 511): a panel like the two below, mounted here and not in the canvas. -->
-  <PanelHost v-if="activeProject && framePanelShown && !framing" open="frame" :only="['frame']" :sub-title="t.frame.fromTemplate" @close="onCloseFramePanel">
+  <PanelHost v-if="activeProject && framePanelShown && !framing" open="frame" :only="['frame']" :sub-title="t.frame.fromStarter" @close="onCloseFramePanel">
     <FramePanel
       :project="activeProject"
       :settled-project="settledProject"
@@ -89,22 +96,23 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       @remove="onRemoveFrame"
       @rename="onRenameFrame"
       @fit="onFitFrame"
+      @select-frame="onSelectFrame"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @key="onFrameKey"
     />
-    <!-- Frame from template (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->
+    <!-- Frame from starter (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->
     <template #sub="{ depth }">
-      <TemplateGallery v-if="depth === 1" without-blank class="app-panels__gallery" @choose="chosenTemplate = $event" />
-      <TemplateSetup
-        v-else-if="chosenTemplate"
-        :template="templateById(chosenTemplate)"
+      <StarterGallery v-if="depth === 1" class="app-panels__gallery" @choose="chosenStarter = $event" />
+      <StarterSetup
+        v-else-if="chosenStarter"
+        :starter="starterById(chosenStarter)"
         :project="activeProject"
-        @submit="(payload) => { onPlaceFrameFromTemplate(payload); onCloseFramePanel() }"
+        @submit="(payload) => { onPlaceFrameFromStarter(payload); onCloseFramePanel() }"
       />
     </template>
     <template #footer="{ depth }">
-      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
+      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
         {{ activeProject.frame ? t.frame.replaceFrame : t.frame.addFrameButton }}
       </AppButton>
     </template>
@@ -148,6 +156,8 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       @set-brick-block="onSetBrickBlock"
       @set-canvas-technique="onSetCanvasTechnique"
       @set-canvas-brick-block="onSetCanvasBrickBlock"
+      @set-net-size="onSetNetSize"
+      @set-canvas-net-size="onSetCanvasNetSize"
       @set-bead-shape="onSetBeadShape"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"
@@ -168,20 +178,20 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
         @import="onImportProjects"
         @export-all="onExportLibraryFile"
       />
-      <!-- Level 1 is New Project: the Template gallery above the form. A card pushes level 2, its setup (ticket 493). -->
+      <!-- Level 1 is New Project, with the Starter gallery under its Pick a starter button. A card pushes level 2, its setup (ticket 493). -->
       <template v-else-if="depth === 1">
-        <TemplateGallery class="app-panels__gallery" @choose="chosenTemplate = $event" @choose-blank="newProjectForm?.focusName()" />
         <NewProjectForm
-          ref="newProjectForm"
+          v-model:starters-open="startersOpen"
           :decode-image="decodeImage"
           @submit="(payload) => { onCreateProject(payload); openPanel = null }"
           @draft="onNewProjectDraft"
+          @choose-starter="chosenStarter = $event"
           @convert-image="(draft) => { startConvertImage(draft); openPanel = null }"
         />
       </template>
-      <TemplateSetup
-        v-else-if="chosenTemplate"
-        :template="templateById(chosenTemplate)"
+      <StarterSetup
+        v-else-if="chosenStarter"
+        :starter="starterById(chosenStarter)"
         @submit="(payload) => { onCreateProject(payload); openPanel = null }"
       />
     </template>
@@ -198,7 +208,7 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       >
         {{ t.panels.menu.deleteAll }}
       </PanelItem>
-      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="template-setup-form" variant="primary" icon="plus" data-testid="create-template-project">
+      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
         {{ t.form.submit }}
       </AppButton>
     </template>

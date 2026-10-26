@@ -493,10 +493,14 @@ export function withFrame(project: Project, rectangle: Frame | undefined): Proje
 }
 
 /** The layer's Weave switched to another Technique (ADR 0038): the Brick block stays, the Net size is the one given, the
- * layer's own if it has one, or the default, and only a Technique with a Net size keeps one. */
-function switchedWeave(current: Weave, technique: Technique, netSize?: number): Weave {
-  const brickBlock = current.brickBlock
-  return weaveOf({ technique, brickBlock, netSize: describeWeave({ technique }).hasNetSize ? clampNetSize(netSize ?? current.netSize) : undefined })
+ * layer's own if it has one, or the default, and only a Technique with a Net size keeps one. A Brick block given (ticket 568)
+ * replaces the layer's. */
+export function switchedWeave(current: Weave, technique: Technique, netSize?: number, brickBlock?: number): Weave {
+  return weaveOf({
+    technique,
+    brickBlock: brickBlock === undefined ? current.brickBlock : clampBrickBlock(brickBlock),
+    netSize: describeWeave({ technique }).hasNetSize ? clampNetSize(netSize ?? current.netSize) : undefined,
+  })
 }
 
 /** The beads of a layer that keep a place in `weave` (a Frame's counted from its own corner, `shape`), and how many are
@@ -526,10 +530,10 @@ export function switchLoss(project: Project, layer: 'canvas' | 'frame', techniqu
 
 /** The Canvas woven in another Technique (ticket 351, 492, ADR 0038): its beads keep their row and column where the
  * Technique has a position there and the rest are dropped. The Frame is another layer and stays as it is. */
-export function withTechnique(project: Project, technique: Technique, netSize?: number): Project {
-  const weave = switchedWeave(canvasWeave(project), technique, netSize)
-  const { netSize: _netSize, ...rest } = project
-  return touch({ ...rest, ...(weave.netSize ? { netSize: weave.netSize } : {}) }, { technique: weave.technique, beads: beadsInWeave(project.beads, weave).kept })
+export function withTechnique(project: Project, technique: Technique, netSize?: number, brickBlock?: number): Project {
+  const weave = switchedWeave(canvasWeave(project), technique, netSize, brickBlock)
+  const { netSize: _netSize, brickBlock: _brickBlock, ...rest } = project
+  return touch({ ...rest, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}) }, { technique: weave.technique, beads: beadsInWeave(project.beads, weave).kept })
 }
 
 /** The Project with the Canvas's Brick block changed (ticket 477): the same cells, only the shift's rhythm changes. */
@@ -540,13 +544,13 @@ export function withBrickBlock(project: Project, brickBlock: number): Project {
 /** The Frame woven in another Technique (ticket 492, ADR 0038): its beads keep their row and column where the Technique
  * has a position there and the rest are dropped. Its local row 0 is always an unshifted one, so nothing else moves. A
  * Project with no Frame is unchanged. */
-export function withFrameTechnique(project: Project, technique: Technique, netSize?: number): Project {
+export function withFrameTechnique(project: Project, technique: Technique, netSize?: number, brickBlock?: number): Project {
   if (!project.frame) {
     return project
   }
-  const weave = switchedWeave(frameWeave(project), technique, netSize)
-  const { netSize: _netSize, ...frame } = project.frame
-  return touch(project, { frame: { ...frame, ...(weave.netSize ? { netSize: weave.netSize } : {}), technique: weave.technique, beads: beadsInWeave(project.frame.beads, weave, project.frame).kept } })
+  const weave = switchedWeave(frameWeave(project), technique, netSize, brickBlock)
+  const { netSize: _netSize, brickBlock: _brickBlock, ...frame } = project.frame
+  return touch(project, { frame: { ...frame, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}), technique: weave.technique, beads: beadsInWeave(project.frame.beads, weave, project.frame).kept } })
 }
 
 /** The Frame with its Brick block changed (ticket 492). */
