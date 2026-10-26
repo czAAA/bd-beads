@@ -44,12 +44,10 @@ export const PNG_MARGIN_PX = 40
 
 /** How many pixels one band of the picture holds while it is drawn and compressed. */
 const STRIP_PIXELS = 1_000_000
-// Set aside for the story column (ticket 164) before solving for the chart's own zoom, so the whole picture — chart and
-// story together — still keeps to PNG_MAX_PIXELS. Generous: the story is a few hundred px across or tall, never
+// Set aside for the story (ticket 164) before solving for the chart's own zoom, so the whole picture — chart and
+// story together — still keeps to PNG_MAX_PIXELS. Generous: the story under the chart is a few hundred px tall, never
 // anywhere near this.
 const PNG_STORY_RESERVE_PIXELS = 2_500_000
-// Width the story column may take beside a tall chart (pngPage.ts), kept out of PNG_MAX_WIDTH.
-const PNG_STORY_RESERVE_WIDTH = 600
 
 // How far to enlarge the Project for a PNG: to a legible bead size, and no further than the pixel budget (less the
 // story's own room) allows.
@@ -66,13 +64,13 @@ export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' |
   const a = width * height
   const b = (width + height) * borderX
   const c = borderX * borderX - budget
-  const widest = (PNG_MAX_WIDTH - PNG_STORY_RESERVE_WIDTH - borderX) / width
+  const widest = (PNG_MAX_WIDTH - borderX) / width
   const largest = Math.min(wanted, widest, (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a))
   // A reduced bead is a whole number of px across: between pixels its edges blur and the file grows several times over.
   return largest < wanted ? Math.floor(largest * CELL_SIZE_PX) / CELL_SIZE_PX : largest
 }
 
-// The Project as a PNG (ticket 164; printed-output.md): chart with rulers plus the PDF's story column, drawn band by
+// The Project as a PNG (ticket 164; printed-output.md): chart with rulers plus the story under it, drawn band by
 // band to stay within the pixel budget (see pngZoom); redrawing the small story on every band is cheap.
 export async function exportProjectPng(project: Project, words: PrintText, beadPx = PNG_BEAD_PX): Promise<Blob> {
   const zoom = pngZoom(project, beadPx)
@@ -92,7 +90,7 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
   const context = contextOf(canvas)
   // The beads' own box, inside the margin the rulers sit in — its own extent, not derived from the chart
   // margins.
-  const beads = { x: PNG_MARGIN_PX, y: PNG_MARGIN_PX, width: beadsWidth, height: beadsHeight }
+  const beads = { x: layout.chartX + PNG_MARGIN_PX, y: PNG_MARGIN_PX, width: beadsWidth, height: beadsHeight }
   const grid = displayedGrid(project)
 
   return encodePng(layout.width, layout.height, stripRows, (y, rows) => {
@@ -101,11 +99,11 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
     context.fillStyle = '#ffffff'
     context.fillRect(0, 0, canvas.width, canvas.height)
     // The margin-inclusive card's own rounded corners (not the board fetched above, which is the tighter bead rect).
-    clipToPngBoard(context, 0, 0, chart.width, chart.height, y)
+    clipToPngBoard(context, layout.chartX, 0, chart.width, chart.height, y)
     renderProject(context, {
       project,
       space: spaceOf(project, false),
-      region: { x: -PNG_MARGIN_PX, y: y - PNG_MARGIN_PX, width: chart.width, height: canvas.height },
+      region: { x: -(layout.chartX + PNG_MARGIN_PX), y: y - PNG_MARGIN_PX, width: layout.width, height: canvas.height },
       zoom,
       theme: PRINT_THEME,
       // A finished row's fade is a weaving aid; a chart shows every bead at full color (ticket 434).
