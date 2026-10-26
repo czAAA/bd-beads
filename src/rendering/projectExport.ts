@@ -64,8 +64,8 @@ const PNG_STORY_RESERVE_PIXELS = 2_500_000
 
 // How far to enlarge the Project for a PNG: to a legible bead size, and no further than the pixel budget (less the
 // story's own room) allows.
-export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): number {
-  const wanted = PNG_BEAD_PX / CELL_SIZE_PX
+export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>, beadPx = PNG_BEAD_PX): number {
+  const wanted = beadPx / CELL_SIZE_PX
   const { width, height } = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation, frameWeave(project).cell)
   if (width === 0 || height === 0) {
     return wanted
@@ -84,8 +84,8 @@ export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' |
 
 // The Project as a PNG (ticket 164; printed-output.md): chart with rulers plus the PDF's story column, drawn band by
 // band to stay within the pixel budget (see pngZoom); redrawing the small story on every band is cheap.
-export async function exportProjectPng(project: Project, words: PrintText): Promise<Blob> {
-  const zoom = pngZoom(project)
+export async function exportProjectPng(project: Project, words: PrintText, beadPx = PNG_BEAD_PX): Promise<Blob> {
+  const zoom = pngZoom(project, beadPx)
   const displayed = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, zoom, project.rotation, frameWeave(project).cell)
   const beadsWidth = Math.ceil(displayed.width)
   const beadsHeight = Math.ceil(displayed.height)

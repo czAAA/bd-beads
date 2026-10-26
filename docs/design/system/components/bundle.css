@@ -3,6 +3,9 @@
 /* bd-beads component styles, hand-written from DESIGN.md §5 (static renditions; the app's Vue components are the implementation). */
 
 /* Values DESIGN.md defines that are not plain color tokens */
+:root, [data-theme="light"], [data-theme="dark"], [data-theme="contrast"] {
+  --slider-thumb-scale: 1.15; /* QualitySlider card: the thumb while it is dragged. */
+}
 :root, [data-theme="light"] {
   --track-fill: linear-gradient(90deg, #fa520f, #ffa110);
   --scrim: rgba(0, 0, 0, .32);
@@ -765,3 +768,40 @@ body {
 .bb-popover-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
 .bb-btn.is-disabled { color: var(--faint); cursor: default; }
 .p-zoom b.on { background: var(--ink); color: var(--canvas); border-radius: 99px; }
+
+/* QualitySlider card (Export quality in the Frame panel's export section): the stops row lines each button up with its
+   thumb position; --qs-n is the number of stops (3, or 2 where High is not available), --qs-at the thumb position (0, .5, 1; the fill runs to it). */
+.qs { --qs-n: 3; --qs-at: .5; display: flex; flex-direction: column; gap: var(--space-4); padding: var(--space-8) 0 0; font: 400 12px/16px var(--font-sans); color: var(--body); }
+.qs[data-stops="2"] { --qs-n: 2; }
+.qs-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-8); margin: 0; font: 500 13px/18px var(--font-sans); color: var(--ink); }
+.qs-head span { font: 400 12px/16px var(--font-sans); color: var(--muted); }
+.qs-range { -webkit-appearance: none; appearance: none; display: block; box-sizing: border-box; height: var(--touch-target); margin: 0 calc(100% / (2 * var(--qs-n)) - var(--slider-thumb) / 2); width: calc(100% - 100% / var(--qs-n) + var(--slider-thumb)); background: transparent; cursor: pointer; --qs-line: calc(var(--slider-thumb) / 2 + (100% - var(--slider-thumb)) * var(--qs-at)); }
+.qs-range::-webkit-slider-runnable-track { height: var(--slider-track); border-radius: var(--radius-full); background: linear-gradient(var(--accent), var(--accent)) 0 / var(--qs-line) 100% no-repeat, var(--track); }
+.qs-range::-moz-range-track { height: var(--slider-track); border-radius: var(--radius-full); background: var(--track); }
+.qs-range::-moz-range-progress { height: var(--slider-track); border-radius: var(--radius-full); background: var(--accent); }
+.qs-range::-webkit-slider-thumb { -webkit-appearance: none; box-sizing: border-box; width: var(--slider-thumb); height: var(--slider-thumb); margin-top: calc((var(--slider-track) - var(--slider-thumb)) / 2); border-radius: var(--radius-full); background: var(--ink); border: 2px solid var(--canvas); transition: transform var(--duration-fast, 120ms) var(--ease-standard, ease); }
+.qs-range::-moz-range-thumb { box-sizing: border-box; width: var(--slider-thumb); height: var(--slider-thumb); border-radius: var(--radius-full); background: var(--ink); border: 2px solid var(--canvas); }
+.qs-range:hover::-webkit-slider-thumb, .qs-range.is-hover::-webkit-slider-thumb { background: var(--accent-strong); }
+.qs-range:hover::-moz-range-thumb { background: var(--accent-strong); }
+.qs-range:active::-webkit-slider-thumb, .qs-range.is-drag::-webkit-slider-thumb { background: var(--accent-strong); transform: scale(var(--slider-thumb-scale)); }
+.qs-range:active::-moz-range-thumb { background: var(--accent-strong); transform: scale(var(--slider-thumb-scale)); }
+.qs-range:focus-visible, .qs-range.is-focus { outline: none; }
+.qs-range:focus-visible::-webkit-slider-thumb, .qs-range.is-focus::-webkit-slider-thumb { outline: var(--focus-width) solid var(--focus-ring); outline-offset: 2px; }
+.qs-range:focus-visible::-moz-range-thumb { outline: var(--focus-width) solid var(--focus-ring); outline-offset: 2px; }
+.qs-range:disabled, .qs-range.is-disabled { cursor: default; }
+.qs-range:disabled::-webkit-slider-runnable-track, .qs-range.is-disabled::-webkit-slider-runnable-track { background: linear-gradient(var(--accent-disabled-bg), var(--accent-disabled-bg)) 0 / var(--qs-line) 100% no-repeat, var(--track); }
+.qs-range:disabled::-webkit-slider-thumb, .qs-range.is-disabled::-webkit-slider-thumb { background: var(--faint); }
+.qs-range:disabled::-moz-range-progress { background: var(--accent-disabled-bg); }
+.qs-range:disabled::-moz-range-thumb { background: var(--faint); }
+.qs-stops { display: grid; grid-template-columns: repeat(var(--qs-n), minmax(0, 1fr)); margin-top: calc(-1 * var(--space-8)); }
+.qs-stop { box-sizing: border-box; min-height: var(--touch-target); padding: var(--space-4) var(--space-2); border: 0; border-radius: var(--radius-sm); background: none; color: var(--muted); font: inherit; text-align: center; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 0; overflow-wrap: break-word; hyphens: manual; }
+.qs-stop:hover, .qs-stop.is-hover { background: var(--hover-fill); }
+.qs-stop:focus-visible { outline: var(--focus-width) solid var(--focus-ring); outline-offset: var(--focus-offset); }
+.qs-stop b { font: 500 13px/18px var(--font-sans); color: var(--body); }
+.qs-stop[aria-checked="true"] b, .qs-stop.is-on b { color: var(--ink); }
+.qs-stop small { font: 400 12px/16px var(--font-mono); color: var(--muted); white-space: nowrap; }
+.qs-stop .qs-was { color: var(--accent-strong); }
+.qs-stop:disabled, .qs-stop.is-disabled { cursor: default; background: none; }
+.qs-stop:disabled b, .qs-stop.is-disabled b, .qs-stop:disabled small, .qs-stop.is-disabled small { color: var(--faint); }
+.qs-note { margin: 0; font: 400 12px/16px var(--font-sans); color: var(--muted); }
+[data-theme="contrast"] .qs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
