@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { A4_LANDSCAPE, A4_PORTRAIT, chartArea, continuation, mm, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_BLOCK_BEADS } from './printPlan'
+import { A4_LANDSCAPE, A4_PORTRAIT, chartArea, continuation, mm, planPrint, PRINT_BEAD_BASE_MM, PRINT_BEAD_MAX_MM, PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS_LETTERS } from './printPlan'
 import { frameWeave } from '../domain/project'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
@@ -177,5 +177,14 @@ describe('planPrint: Bead shape (ticket 509)', () => {
 
   it('differs from Symmetric, whose cells are square', () => {
     expect(planPrint(real).zoom).not.toBe(planPrint(shape('brick', 90, 100)).zoom)
+  })
+})
+
+describe('planPrint with Letters (ticket 0573)', () => {
+  it('cuts parts of at most 75 beads a side, so 130 beads are 75 and 55, and 100 beads when Letters is off', () => {
+    const lettered = planPrint({ ...shape('loom', 130, 60), letters: true })
+    expect(PRINT_BLOCK_BEADS_LETTERS).toBe(75)
+    expect(lettered.parts.map((part) => [part.firstAcross, part.lastAcross])).toEqual([[0, 74], [75, 129]])
+    expect(planPrint(shape('loom', 130, 60)).parts.map((part) => [part.firstAcross, part.lastAcross])).toEqual([[0, 99], [100, 129]])
   })
 })

@@ -13,6 +13,8 @@ import {
   keepFinishedRows,
   replaceBead,
   setPalette,
+  shownLetters,
+  withLetters,
   resolveProjectBead,
   restoreBeads,
   restoreSnapshot,
@@ -40,7 +42,7 @@ import {
   withFrameTechnique,
 } from './project'
 import { BEAD_CATALOG } from './beads'
-import { BUILT_IN_COLORS, addedColorId } from './palette'
+import { BUILT_IN_COLORS, addedColorId, addUsedColor, projectPalette } from './palette'
 import { describeWeave } from './weave'
 import { estimatedSizeMm } from './projectSize'
 import { changedPositions } from './canvas'
@@ -1414,5 +1416,54 @@ describe('a swatch keeps its catalog code (ticket 0538)', () => {
     expect(normalizeProject(plain).paletteCodes).toBeUndefined()
     const odd = normalizeProject({ ...coded(), paletteCodes: { '#123456': 'DB1', nope: 'X', '#654321': 7 } } as never)
     expect(odd.paletteCodes).toEqual({ '#123456': 'DB1' })
+  })
+})
+
+describe('Swatch letters (ticket 0573)', () => {
+  const input = { technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 2, unit: 'beads' } } as const
+  const hexOf = (project: Project, id: string) => projectPalette(project).byId(id)!.hex
+
+  it('gives every Palette color a letter in Palette order, A first', () => {
+    const project = createProject(input)
+    const palette = projectPalette(project)
+    expect(project.paletteLetters![palette.colors[0]!.hex]).toBe('A')
+    expect(project.paletteLetters![palette.colors[1]!.hex]).toBe('B')
+    expect(Object.keys(project.paletteLetters!)).toHaveLength(palette.colors.length)
+  })
+
+  it('gives a new color the lowest unused letter and never changes another color\'s letter when one is deleted or moved', () => {
+    const start = createProject(input)
+    const white = hexOf(start, 'white')
+    const withAdded = setPalette(start, addUsedColor(start.palette, '#123456').ids)
+    const added = withAdded.paletteLetters!['#123456']!
+    const deleted = setPalette(withAdded, withAdded.palette.filter((id) => id !== 'black'))
+    expect(deleted.paletteLetters![white]).toBe(start.paletteLetters![white])
+    expect(deleted.paletteLetters!['#123456']).toBe(added)
+    const moved = setPalette(deleted, [...deleted.palette].reverse())
+    expect(moved.paletteLetters).toEqual(deleted.paletteLetters)
+    const readded = setPalette(moved, addUsedColor(moved.palette, '#654321').ids)
+    expect(readded.paletteLetters!['#654321']).toBe('A')
+  })
+
+  it('gives a Project saved before letters its letters in Palette order when opened, and keeps Letters off', () => {
+    const { paletteLetters: _letters, ...old } = createProject(input)
+    const opened = normalizeProject(old)
+    expect(opened.paletteLetters![hexOf(opened, opened.palette[0]!)]).toBe('A')
+    expect(opened.letters).toBeUndefined()
+  })
+
+  it('keeps stored letters and the Letters choice through opening and through Undo', () => {
+    const start = withLetters(createProject(input), true)
+    const changed = setPalette(start, addUsedColor(start.palette, '#123456').ids)
+    expect(normalizeProject(JSON.parse(JSON.stringify(changed)))).toMatchObject({ letters: true, paletteLetters: changed.paletteLetters })
+    expect(restoreSnapshot(changed, snapshotOf(start)).paletteLetters).toEqual(start.paletteLetters)
+  })
+
+  it('turns Letters on and off, off being unsaved, and shows letters only while it is on', () => {
+    const project = createProject(input)
+    expect(shownLetters(project)).toBeUndefined()
+    const on = withLetters(project, true)
+    expect(shownLetters(on)).toBe(on.paletteLetters)
+    expect('letters' in withLetters(on, false)).toBe(false)
   })
 })

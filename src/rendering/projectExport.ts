@@ -1,4 +1,4 @@
-import { frameWeave, projectDimensions } from '../domain/project'
+import { frameWeave, projectDimensions, shownLetters } from '../domain/project'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
 import { PNG_BEAD_PX_BY_QUALITY } from '../domain/exportQuality'
@@ -110,6 +110,7 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
       theme: PRINT_THEME,
       // A finished row's fade is a weaving aid; a chart shows every bead at full color (ticket 434).
       rowMarks: false,
+      letters: shownLetters(project),
     })
     context.restore()
     // Rulers every 10 beads, and the 10-bead lines (printed-output.md, PNG image): drawn outside the board, offset for
