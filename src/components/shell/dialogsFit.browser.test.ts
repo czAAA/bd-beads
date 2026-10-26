@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, type Ref } from 'vue'
-import { FIT_LOCALES, FIT_WIDTHS, fitProblems, mountAt } from '../../testUtils/browserFit'
+import { FIT_LOCALES, fitProblems, mountAt, problemsAcrossWidths, widthsFor } from '../../testUtils/browserFit'
 import { provideAppShell, type AppShellContext } from '../../composables/shell/useAppShell'
 import { createProject } from '../../domain/project'
 import { saveProjects } from '../../services/libraryStore'
@@ -32,29 +32,27 @@ const Host = defineComponent({
 
 describe.each(FLAGS)('the dialog behind %s text fit', (flag) => {
   for (const locale of FIT_LOCALES) {
-    for (const width of FIT_WIDTHS) {
-      it(`fits its box in ${locale} at ${width}px`, async () => {
-        await mountAt(Host, {}, { locale, width, text: false })
-        ;(shell[flag] as Ref<boolean>).value = true
-        await nextTick()
-        expect(document.querySelector('.app-modal'), 'the dialog opened').not.toBeNull()
-        expect(await fitProblems(`dialog ${flag}`, locale, width)).toEqual([])
-      })
-    }
+    const widths = widthsFor(locale)
+    it(`fits its box in ${locale} at ${widths.join(', ')}px`, async () => {
+      await mountAt(Host, {}, { locale, width: widths[0]!, text: false })
+      ;(shell[flag] as Ref<boolean>).value = true
+      await nextTick()
+      expect(document.querySelector('.app-modal'), 'the dialog opened').not.toBeNull()
+      expect(await problemsAcrossWidths(widths, (width) => fitProblems(`dialog ${flag}`, locale, width))).toEqual({})
+    })
   }
 })
 
 describe.each(WITH_PROJECT)('the dialog behind %s text fit', (flag, open) => {
   for (const locale of FIT_LOCALES) {
-    for (const width of FIT_WIDTHS) {
-      it(`fits its box in ${locale} at ${width}px`, async () => {
-        saveProjects([moth, fox])
-        await mountAt(Host, {}, { locale, width, text: false })
-        open(shell)
-        await nextTick()
-        expect(document.querySelector('.app-modal'), 'the dialog opened').not.toBeNull()
-        expect(await fitProblems(`dialog ${flag}`, locale, width)).toEqual([])
-      })
-    }
+    const widths = widthsFor(locale)
+    it(`fits its box in ${locale} at ${widths.join(', ')}px`, async () => {
+      saveProjects([moth, fox])
+      await mountAt(Host, {}, { locale, width: widths[0]!, text: false })
+      open(shell)
+      await nextTick()
+      expect(document.querySelector('.app-modal'), 'the dialog opened').not.toBeNull()
+      expect(await problemsAcrossWidths(widths, (width) => fitProblems(`dialog ${flag}`, locale, width))).toEqual({})
+    })
   }
 })
