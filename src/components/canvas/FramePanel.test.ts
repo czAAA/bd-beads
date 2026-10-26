@@ -7,6 +7,10 @@ import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
+import { PDF_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
+import { pdfDpiFor } from '../../rendering/pdfDpi'
+
+vi.mock('../../rendering/pdfDpi', () => ({ pdfDpiFor: vi.fn((quality: ExportQuality) => PDF_DPI_BY_QUALITY[quality]) }))
 
 beforeEach(() => {
   localStorage.clear()
@@ -264,17 +268,29 @@ describe('FramePanel (ticket 473)', () => {
 
   it('shows each stop’s bead size and PNG size for the open Frame, and both bead sizes where a large Frame is reduced (ticket 571)', () => {
     const small = mountBar()
-    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('45 px')
-    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('90 px')
-    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium60 pxPNG ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('45 px · 150 DPI')
+    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('90 px · 450 DPI')
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium60 px · 300 DPIPNG ≈ \d+ MBPDF ≈ \d+ MB$/)
     expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
-    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 60 px, PNG ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 60 px · 300 DPI, PNG ≈ \d+ MB, PDF ≈ \d+ MB$/)
 
     const large = mountBar({ ...framed(), frame: { ...framed().frame!, columns: 200, rows: 200 } })
-    expect(large.get('[data-testid="quality-detail-high"]').text()).toMatch(/^90 px → \d+ px$/)
-    expect(large.get('[data-testid="quality-detail-low"]').text()).toBe('45 px')
+    expect(large.get('[data-testid="quality-detail-high"]').text()).toMatch(/^90 px → \d+ px · 450 DPI$/)
+    expect(large.get('[data-testid="quality-detail-low"]').text()).toBe('45 px · 150 DPI')
     expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(true)
+  })
+
+  it('says what High is when this device cannot draw a 450 dpi page, and shows that dpi on the stop (ticket 572)', () => {
+    expect(mountBar().find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
+    vi.mocked(pdfDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
+    try {
+      const wrapper = mountBar()
+      expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(en.frame.qualityPdfCapped.replace('{n}', '300'))
+      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('90 px · 300 DPI')
+    } finally {
+      vi.mocked(pdfDpiFor).mockImplementation((quality) => PDF_DPI_BY_QUALITY[quality])
+    }
   })
 
   it('ends the export section with a plain Buy me a coffee link to the Coffee link, in a new tab (ticket 560)', () => {

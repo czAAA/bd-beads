@@ -2,7 +2,7 @@ import { frameWeave, projectDimensions, shownLetters } from '../domain/project'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
 import { PNG_BEAD_PX_BY_QUALITY } from '../domain/exportQuality'
-import { encodePng } from '../domain/pngEncoder'
+import { deflateRgb, encodePng } from '../domain/pngEncoder'
 import { PRINT_THEME } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
@@ -123,22 +123,18 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
 
 // ---- PDF -----------------------------------------------------------------------------------------------------------
 
-const JPEG_QUALITY = 0.92
-
-function jpegOf(canvas: HTMLCanvasElement): Promise<Uint8Array> {
-  return new Promise((resolve, reject) => {
-    canvas.toBlob(
-      (blob) => (blob ? blob.arrayBuffer().then((buffer) => resolve(new Uint8Array(buffer)), reject) : reject(new Error('The page could not be turned into a picture.'))),
-      'image/jpeg',
-      JPEG_QUALITY,
-    )
-  })
+/** The page as lossless compressed scanlines: measured at half the size of a JPEG of it (ticket 572, ADR 0043). */
+function flateOf(canvas: HTMLCanvasElement): Promise<Uint8Array[]> {
+  const context = contextOf(canvas)
+  const stripRows = Math.max(1, Math.floor(STRIP_PIXELS / canvas.width))
+  return deflateRgb(canvas.width, canvas.height, stripRows, (y, rows) => context.getImageData(0, y, canvas.width, rows).data)
 }
 
 // The Project as a PDF (ticket 162): page 1 summary, then equal chart pages (planPrint), drawn one at a time so memory
-// stays bounded (ADR 0019).
-export async function exportProjectPdf(project: Project, words: PrintText): Promise<Blob> {
+// stays bounded (ADR 0019). The pages are drawn at `dpi`; the sheet is the same size in points whatever it is.
+export async function exportProjectPdf(project: Project, words: PrintText, dpi = PRINT_DPI): Promise<Blob> {
   const plan = planPrint(project)
+  const scale = dpi / PRINT_DPI
   // Loaded when a PDF is asked for: the page drawing (and the mark it reads from the design system) isn't needed
   // before.
   const { drawChartPage, drawPageOne, loadPrintFonts } = await import('./printPages')
@@ -146,19 +142,20 @@ export async function exportProjectPdf(project: Project, words: PrintText): Prom
 
   const pages: PdfPage[] = []
   const add = async (canvas: HTMLCanvasElement) => {
-    pages.push({ jpeg: await jpegOf(canvas), pixelWidth: plan.page.width, pixelHeight: plan.page.height })
+    const size = { pixelWidth: canvas.width, pixelHeight: canvas.height }
+    pages.push({ ...size, flate: await flateOf(canvas) })
     // Let the canvas go before the next page is drawn.
     canvas.width = 0
     canvas.height = 0
   }
 
-  await add(drawPageOne(project, words, plan))
+  await add(drawPageOne(project, words, plan, scale))
   // Usually one part per page; PrintStrips can put several small parts on the same sheet, so pages come from grouping
   // them.
   const sheets = new Map<number, PrintPart[]>()
   for (const part of plan.parts) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
   for (const parts of sheets.values()) {
-    await add(drawChartPage(project, words, plan, parts))
+    await add(drawChartPage(project, words, plan, parts, scale))
   }
 
   return buildPdf(pages, (plan.page.width * 72) / PRINT_DPI, (plan.page.height * 72) / PRINT_DPI)

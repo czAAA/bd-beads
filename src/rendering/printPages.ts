@@ -113,12 +113,15 @@ export function wrap(context: CanvasRenderingContext2D, value: string, style: st
   return lines
 }
 
-function blankPage(page: PageSize): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
+/** A page canvas `scale` times the layout's px (the layout is at PRINT_DPI; a PDF at a higher quality draws the same page
+ * larger, ticket 572): the context is scaled, so everything is drawn in layout px. */
+function blankPage(page: PageSize, scale: number): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
   const canvas = document.createElement('canvas')
-  canvas.width = page.width
-  canvas.height = page.height
+  canvas.width = Math.round(page.width * scale)
+  canvas.height = Math.round(page.height * scale)
   const context = canvas.getContext('2d', { willReadFrequently: true })
   if (!context) throw new Error('No 2D canvas is available to draw the export on.')
+  context.scale(scale, scale)
   context.fillStyle = PRINT_COLORS.paper
   context.fillRect(0, 0, page.width, page.height)
   return { canvas, context }
@@ -139,13 +142,16 @@ function drawBoard(context: CanvasRenderingContext2D, project: Project, region: 
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
   context.fill()
 
+  // The page may be scaled (blankPage): the beads are drawn at that resolution too, then laid in at layout size.
+  const scale = context.getTransform().a
   const tile = document.createElement('canvas')
-  tile.width = Math.max(1, Math.ceil(region.width))
-  tile.height = Math.max(1, Math.ceil(region.height))
+  tile.width = Math.max(1, Math.ceil(region.width * scale))
+  tile.height = Math.max(1, Math.ceil(region.height * scale))
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
-  renderProject(tileContext, { project, space: spaceOf(project, false), region, zoom, theme: PRINT_THEME, rowMarks: false, letters })
-  context.drawImage(tile, at.x, at.y)
+  const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, letters })
+  context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
 export interface Span {
@@ -347,9 +353,9 @@ function drawFacts(context: CanvasRenderingContext2D, words: PrintText, x: numbe
   return y
 }
 
-export function drawPageOne(project: Project, words: PrintText, plan: PrintPlan): HTMLCanvasElement {
+export function drawPageOne(project: Project, words: PrintText, plan: PrintPlan, scale = 1): HTMLCanvasElement {
   const { page } = plan
-  const { canvas, context } = blankPage(page)
+  const { canvas, context } = blankPage(page, scale)
   const layout = pageOneLayout(project, page)
   const board: Board = {
     x: layout.room.x + (layout.columnBelow ? (layout.room.width - layout.extent.width) / 2 : 0),
@@ -467,13 +473,13 @@ function drawMiniMap(context: CanvasRenderingContext2D, plan: PrintPlan, part: P
 }
 
 /** A chart page: one full-size part normally, or (PrintStrips) several small ones stacked on the same sheet. */
-export function drawChartPage(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[]): HTMLCanvasElement {
-  return plan.strip ? drawStripSheet(project, words, plan, parts) : drawSinglePartPage(project, words, plan, parts[0]!)
+export function drawChartPage(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[], scale = 1): HTMLCanvasElement {
+  return plan.strip ? drawStripSheet(project, words, plan, parts, scale) : drawSinglePartPage(project, words, plan, parts[0]!, scale)
 }
 
-function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan, part: PrintPart): HTMLCanvasElement {
+function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan, part: PrintPart, scale: number): HTMLCanvasElement {
   const { page } = plan
-  const { canvas, context } = blankPage(page)
+  const { canvas, context } = blankPage(page, scale)
   const { labels } = words
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const areaTop = PRINT_MARGIN + PRINT_HEADER + inset
@@ -529,9 +535,9 @@ function stripLabel(project: Project, labels: PrintText['labels'], part: PrintPa
 
 /** Several parts sharing one sheet, at the base bead size, each on its own board with rulers and a label, top to
  * bottom. */
-function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[]): HTMLCanvasElement {
+function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[], scale: number): HTMLCanvasElement {
   const { page } = plan
-  const { canvas, context } = blankPage(page)
+  const { canvas, context } = blankPage(page, scale)
   const { labels } = words
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const areaWidth = page.width - PRINT_MARGIN * 2 - inset * 2

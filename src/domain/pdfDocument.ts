@@ -1,9 +1,9 @@
-/** A PDF of whole-page JPEGs (ticket 74). The caller draws each page on a canvas (text included, so no font to
- * embed); this only wraps the pictures in the file format, keeping the export free of a PDF library. */
+/** A PDF of whole-page pictures (tickets 74, 572). The caller draws each page on a canvas (text included, so no font
+ * to embed); this only wraps the pictures in the file format, keeping the export free of a PDF library. */
 
 export interface PdfPage {
-  /** The page as a baseline JPEG. */
-  jpeg: Uint8Array
+  /** The page as zlib-compressed RGB scanlines, each led by a PNG filter byte (`deflateRgb`); lossless (ticket 572). */
+  flate: Uint8Array[]
   /** The picture's size in pixels. */
   pixelWidth: number
   pixelHeight: number
@@ -42,9 +42,12 @@ export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number): B
     ])
     const content = `q ${widthPt.toFixed(2)} 0 0 ${heightPt.toFixed(2)} 0 0 cm /Im0 Do Q`
     object(number + 1, [`<< /Length ${content.length} >>\nstream\n${content}\nendstream`])
+    const length = page.flate.reduce((sum, part) => sum + part.length, 0)
+    // Predictor 15: every scanline leads with its PNG filter byte, as deflateRgb writes them.
+    const parms = `<< /Predictor 15 /Colors 3 /BitsPerComponent 8 /Columns ${page.pixelWidth} >>`
     object(number + 2, [
-      `<< /Type /XObject /Subtype /Image /Width ${page.pixelWidth} /Height ${page.pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${page.jpeg.length} >>\nstream\n`,
-      page.jpeg,
+      `<< /Type /XObject /Subtype /Image /Width ${page.pixelWidth} /Height ${page.pixelHeight} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /DecodeParms ${parms} /Length ${length} >>\nstream\n`,
+      ...page.flate,
       '\nendstream',
     ])
   })

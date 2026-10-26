@@ -39,16 +39,9 @@ function chunk(type: string, data: Uint8Array): Uint8Array {
 /** A band of the picture: `rows` full rows of RGBA pixels, `width` across, starting `y` rows down. */
 export type StripSource = (y: number, rows: number) => Uint8ClampedArray | Promise<Uint8ClampedArray>
 
-/**
- * An opaque 8-bit RGB PNG, `width` × `height`, read `stripRows` rows at a time from `strip` (whose alpha is ignored).
- */
-export async function encodePng(width: number, height: number, stripRows: number, strip: StripSource): Promise<Blob> {
-  const header = new Uint8Array(13)
-  const headerView = new DataView(header.buffer)
-  headerView.setUint32(0, width)
-  headerView.setUint32(4, height)
-  header.set([8, 2, 0, 0, 0], 8) // 8 bits, RGB, deflate, no filter method variations, no interlace
-
+/** The zlib-compressed scanlines of an opaque 8-bit RGB picture (alpha of `strip` ignored), read `stripRows` rows at a
+ * time: what a PNG's IDAT and a PDF's FlateDecode image hold (ticket 572). Each scanline leads with filter type 0. */
+export async function deflateRgb(width: number, height: number, stripRows: number, strip: StripSource): Promise<Uint8Array[]> {
   const compression = new CompressionStream('deflate')
   const writer = compression.writable.getWriter()
   const compressed: Uint8Array[] = []
@@ -59,7 +52,7 @@ export async function encodePng(width: number, height: number, stripRows: number
       if (done) {
         return
       }
-      compressed.push(chunk('IDAT', value))
+      compressed.push(value)
     }
   })()
 
@@ -69,7 +62,6 @@ export async function encodePng(width: number, height: number, stripRows: number
     const rgba = await strip(y, rows)
     const scanlines = new Uint8Array(rows * rowBytes)
     for (let row = 0; row < rows; row += 1) {
-      // Each scanline starts with its filter type: 0, none.
       let out = row * rowBytes + 1
       for (let from = row * width * 4, end = from + width * 4; from < end; from += 4) {
         scanlines[out] = rgba[from]!
@@ -82,7 +74,20 @@ export async function encodePng(width: number, height: number, stripRows: number
   }
   await writer.close()
   await reading
+  return compressed
+}
 
+/**
+ * An opaque 8-bit RGB PNG, `width` × `height`, read `stripRows` rows at a time from `strip` (whose alpha is ignored).
+ */
+export async function encodePng(width: number, height: number, stripRows: number, strip: StripSource): Promise<Blob> {
+  const header = new Uint8Array(13)
+  const headerView = new DataView(header.buffer)
+  headerView.setUint32(0, width)
+  headerView.setUint32(4, height)
+  header.set([8, 2, 0, 0, 0], 8) // 8 bits, RGB, deflate, no filter method variations, no interlace
+
+  const compressed = (await deflateRgb(width, height, stripRows, strip)).map((data) => chunk('IDAT', data))
   return new Blob([SIGNATURE as BlobPart, chunk('IHDR', header) as BlobPart, ...(compressed as BlobPart[]), chunk('IEND', new Uint8Array(0)) as BlobPart], {
     type: 'image/png',
   })
