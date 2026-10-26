@@ -52,17 +52,17 @@ function hasWarmTintIn(png: PNG, x: number, y: number, width: number, height: nu
   return false
 }
 
-test('PNG export draws each bead in its color, at a legible size, on the print board, with a story column (ticket 164)', async ({ page }) => {
-  const project = fixtureProject({ technique: 'loom', columns: 12, rows: 8 })
+test('PNG export draws each bead in its color, at a legible size, on the print board, with the story under it (tickets 164, 0582)', async ({ page }) => {
+  const project = fixtureProject({ technique: 'loom', columns: 60, rows: 8 })
   await openApp(page, [project])
 
   const { name, bytes } = await downloadOf(page, 'export-png')
   const png = PNG.sync.read(bytes)
-  const chartWidth = 12 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
+  const chartWidth = 60 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
   const chartHeight = 8 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
 
   expect(name).toBe('openbeads-fixture-loom.png')
-  // Wider than tall: the story sits under the chart, so the picture is exactly the chart's width and taller than it.
+  // The story sits under the chart: a Schema as wide as this fills the picture, which is taller than the chart.
   expect(png.width).toBe(chartWidth)
   expect(png.height).toBeGreaterThan(chartHeight)
   // Exports are always light, on the print board (DESIGN.md §4.3), whatever the app's theme — rounded, so its very
@@ -76,17 +76,20 @@ test('PNG export draws each bead in its color, at a legible size, on the print b
   expect(nonWhiteIn(png, 0, chartHeight, png.width, png.height - chartHeight)).toBe(true)
 })
 
-test('PNG export puts the story beside a typical Project', async ({ page }) => {
-  const project = fixtureProject({ technique: 'loom', columns: 10, rows: 30 })
-  await openApp(page, [project])
+test('PNG export puts the story under a tall Project too, and centres a narrow one (ticket 0582)', async ({ page }) => {
+  for (const [columns, rows] of [[40, 60], [10, 30]] as const) {
+    const project = fixtureProject({ technique: 'loom', columns, rows })
+    await openApp(page, [project])
 
-  const { bytes } = await downloadOf(page, 'export-png')
-  const png = PNG.sync.read(bytes)
-  const chartWidth = 10 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
+    const { bytes } = await downloadOf(page, 'export-png')
+    const png = PNG.sync.read(bytes)
+    const chartWidth = columns * PNG_BEAD_PX + PNG_MARGIN_PX * 2
+    const chartHeight = rows * PNG_BEAD_PX + PNG_MARGIN_PX * 2
 
-  // Taller than wide: the story sits beside the chart, so the picture is wider than the chart alone.
-  expect(png.width).toBeGreaterThan(chartWidth)
-  expect(nonWhiteIn(png, chartWidth, 0, png.width - chartWidth, png.height)).toBe(true)
+    expect(png.width).toBeGreaterThanOrEqual(chartWidth)
+    expect(png.height).toBeGreaterThan(chartHeight)
+    expect(nonWhiteIn(png, 0, chartHeight, png.width, png.height - chartHeight)).toBe(true)
+  }
 })
 
 test('a Project with no maker name leaves it out of the PNG (printed-output.md, The maker\'s name)', async ({ page }) => {
