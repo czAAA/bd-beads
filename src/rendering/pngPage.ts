@@ -1,5 +1,5 @@
-import { mm, type PageSize } from './printPlan'
-import { drawAccentLine, drawBackgroundName, drawMark, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
+import { mm } from './printPlan'
+import { drawMark, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import type { PrintText } from './printText'
 
@@ -147,11 +147,4 @@ function drawStory(context: CanvasRenderingContext2D, words: PrintText, x: numbe
   const afterBrand = drawStoryBrand(context, words, x, afterHeader + mm(4))
   const afterColors = drawStoryColors(context, words, rightX, y, rightWidth, 2)
   return Math.max(afterBrand, afterColors)
-}
-
-/** The background name large and pale under the board, and the accent line's curve behind it, drawn before the chart
- * and the story. `bandTop` is the top of the band being streamed, in the whole picture. */
-export function drawPngBackground(context: CanvasRenderingContext2D, page: PageSize, background: string, board: { x: number; top: number; bottom: number; right: number }, bandTop: number): void {
-  drawBackgroundName(context, background, board.x, board.bottom - bandTop, 'left')
-  drawAccentLine(context, page, { x: 0, y: page.height - mm(6) - bandTop }, { right: board.right, top: board.top - bandTop, bottom: board.bottom - bandTop })
 }
