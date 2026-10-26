@@ -591,6 +591,10 @@ export interface Translations {
     qualityLow: string
     qualityMedium: string
     qualityHigh: string
+    qualityPngSize: string
+    qualitySizeMb: string
+    qualityReduced: string
+    qualityReducedLabel: string
     exportCoffee: string
     exportCoffeeLink: string
     estimateInfo: string
