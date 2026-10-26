@@ -281,6 +281,36 @@ describe('ProjectSurface', () => {
       expect(draws()).toBe(1)
     })
 
+    it.each([
+      ['Bead shape', (project: Project): Project => ({ ...project, beadShape: 'real' })],
+      ['net size', (project: Project): Project => ({ ...project, netSize: 5 })],
+      ['piece names', (project: Project): Project => ({ ...project, pieceNames: [{ row: 0, column: 0, name: 'Strap' }] })],
+      ['Technique', (project: Project): Project => ({ ...project, technique: 'peyote' })],
+      ['Bead', (project: Project): Project => ({ ...project, beadId: `${project.beadId}-other`, bead: undefined })],
+      ['brick block', (project: Project): Project => ({ ...project, brickBlock: 3 })],
+      ['rotation', (project: Project): Project => ({ ...project, rotation: 90 })],
+    ])('draws everything again when the %s changes, though no bead changed color', async (_name, change) => {
+      viewport = { width: 400, height: 600 }
+      const project = projectOf(20, 30)
+      const { wrapper } = await mountSurface(project)
+      context.calls.length = 0
+
+      await wrapper.setProps({ project: change(project) })
+
+      expect(draws()).toBe(1)
+    })
+
+    it('draws no beads when Row progress is replaced by an equal one', async () => {
+      viewport = { width: 400, height: 600 }
+      const project = projectOf(20, 30)
+      const { wrapper } = await mountSurface(project)
+      context.calls.length = 0
+
+      await wrapper.setProps({ project: { ...project, rowProgress: { ...project.rowProgress } } })
+
+      expect(context.named('rect')).toHaveLength(0)
+    })
+
     it('draws everything again when the Frame changes, since empty beads are drawn inside it', async () => {
       viewport = { width: 400, height: 600 }
       const project = projectOf(20, 30)
