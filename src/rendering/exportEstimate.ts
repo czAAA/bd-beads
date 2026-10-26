@@ -1,5 +1,5 @@
 import { frameWeave, projectDimensions } from '../domain/project'
-import { PNG_BOTTOM_MARGIN_PX, PNG_MARGIN_PX, pngZoom } from './projectExport'
+import { PNG_MARGIN_PX, pngZoom } from './projectExport'
 import { mm, planPrint, PRINT_DPI } from './printPlan'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
@@ -24,7 +24,7 @@ const STORY_UNDER_PX = Math.ceil(mm(8)) + Math.ceil(mm(60))
 export function estimatePngBytes(project: Shape, beadPx: number): number {
   const zoom = pngZoom(project, beadPx)
   const { width, height } = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, zoom, project.rotation, frameWeave(project).cell)
-  const chart = { width: Math.ceil(width) + PNG_MARGIN_PX * 2, height: Math.ceil(height) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX }
+  const chart = { width: Math.ceil(width) + PNG_MARGIN_PX * 2, height: Math.ceil(height) + PNG_MARGIN_PX * 2 }
   const wide = chart.width > chart.height
   const pixels = (chart.width + (wide ? 0 : STORY_BESIDE_PX)) * (chart.height + (wide ? STORY_UNDER_PX : 0))
   return Math.round(pixels * PNG_BYTES_PER_PIXEL)
