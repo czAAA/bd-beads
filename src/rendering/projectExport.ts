@@ -5,7 +5,7 @@ import { encodePng } from '../domain/pngEncoder'
 import { PRINT_THEME } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
-import { displayedGrid, planPrint, PRINT_BOARD_PAD, PRINT_DPI, type PrintPart } from './printPlan'
+import { displayedGrid, planPrint, PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
@@ -39,22 +39,6 @@ export const PNG_MAX_PIXELS = 16_000_000
 // border.
 export const PNG_MARGIN_PX = 40
 
-// Taller bottom margin (ticket 183): the large background name tucked behind the board's lower edge needs room to clear
-// it.
-export const PNG_BOTTOM_MARGIN_PX = 100
-
-// The bead board's rect in the chart canvas (ticket 183): margins plus PRINT_BOARD_PAD, as the PDF page-1 board
-// (printPages.ts). The background name and accent line tuck behind this rect, not the full chart rect, or the margin
-// crops them.
-export function pngBoardRect(chart: { width: number; height: number }): { x: number; top: number; right: number; bottom: number } {
-  return {
-    x: PNG_MARGIN_PX,
-    top: PNG_MARGIN_PX - PRINT_BOARD_PAD,
-    right: chart.width - PNG_MARGIN_PX + PRINT_BOARD_PAD,
-    bottom: chart.height - PNG_BOTTOM_MARGIN_PX + PRINT_BOARD_PAD,
-  }
-}
-
 /** How many pixels one band of the picture holds while it is drawn and compressed. */
 const STRIP_PIXELS = 1_000_000
 // Set aside for the story column (ticket 164) before solving for the chart's own zoom, so the whole picture — chart and
@@ -70,15 +54,13 @@ export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' |
   if (width === 0 || height === 0) {
     return wanted
   }
-  // The largest zoom whose picture, borders and the pixel each side rounds up by included, still fits: (w·z + bx)(h·z +
-  // by) = budget. The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183), so the two
-  // borders differ.
+  // The largest zoom whose picture, borders and the pixel each side rounds up by included, still fits: (w·z + b)(h·z +
+  // b) = budget, the border b being the same on both axes.
   const borderX = PNG_MARGIN_PX * 2 + 2
-  const borderY = PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX + 2
   const budget = PNG_MAX_PIXELS - PNG_STORY_RESERVE_PIXELS
   const a = width * height
-  const b = width * borderY + height * borderX
-  const c = borderX * borderY - budget
+  const b = (width + height) * borderX
+  const c = borderX * borderX - budget
   return Math.min(wanted, (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a))
 }
 
@@ -89,11 +71,10 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
   const displayed = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, zoom, project.rotation, frameWeave(project).cell)
   const beadsWidth = Math.ceil(displayed.width)
   const beadsHeight = Math.ceil(displayed.height)
-  // The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183): room for the background name.
-  const chart = { width: beadsWidth + PNG_MARGIN_PX * 2, height: beadsHeight + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX }
+  const chart = { width: beadsWidth + PNG_MARGIN_PX * 2, height: beadsHeight + PNG_MARGIN_PX * 2 }
   // Loaded when a PNG is asked for: the story's words and the mark it reads from the design system aren't needed
   // before.
-  const { clipToPngBoard, drawPngBackground, drawPngStory, pngLayout } = await import('./pngPage')
+  const { clipToPngBoard, drawPngStory, pngLayout } = await import('./pngPage')
   const { drawRulers, loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
   const layout = pngLayout(chart, words)
@@ -101,8 +82,7 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
 
   const canvas = createCanvas(layout.width, Math.min(stripRows, layout.height))
   const context = contextOf(canvas)
-  const board = pngBoardRect(chart)
-  // The beads' own box, inside the margin the rulers sit in — its own extent, not derived from the (asymmetric) chart
+  // The beads' own box, inside the margin the rulers sit in — its own extent, not derived from the chart
   // margins.
   const beads = { x: PNG_MARGIN_PX, y: PNG_MARGIN_PX, width: beadsWidth, height: beadsHeight }
   const grid = displayedGrid(project)
@@ -124,10 +104,6 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
       rowMarks: false,
     })
     context.restore()
-    // After the board, not before (ticket 183 regression): renderProject repaints its own whole region — taller than
-    // the chart alone whenever the picture carries extra height below it (a wide Project's story, say) — so drawing
-    // the background name any earlier left it painted over and invisible in exactly those pictures.
-    drawPngBackground(context, layout, words.background, board, y)
     // Rulers every 10 beads, and the 10-bead lines (printed-output.md, PNG image): drawn outside the board, offset for
     // this band.
     drawRulers(context, project, zoom, { x: beads.x, y: beads.y - y, width: beads.width, height: beads.height }, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, 10)

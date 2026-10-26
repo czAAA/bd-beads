@@ -18,7 +18,6 @@ export const PRINT_BEAD_MAX_MM = 7
 export const PRINT_MARGIN = mm(10)
 export const PRINT_HEADER = mm(16)
 const PRINT_FOOTER = mm(8)
-export const PRINT_NAME_BAND = mm(12)
 export const PRINT_LEGEND_WIDTH = mm(48)
 /** The rulers' band on each side of a chart, and the board's own edge around the beads. */
 export const PRINT_RULER = mm(5)
@@ -36,13 +35,13 @@ export interface PageSize {
 export const A4_PORTRAIT: PageSize = { width: 1240, height: 1754 }
 export const A4_LANDSCAPE: PageSize = { width: 1754, height: 1240 }
 
-/** What a chart page leaves for the beads themselves: inside the margins, header, name band, footer, rulers and
+/** What a chart page leaves for the beads themselves: inside the margins, header, footer, rulers and
  * board. */
 export function chartArea(page: PageSize): PageSize {
   const inset = (PRINT_RULER + PRINT_BOARD_PAD) * 2
   return {
     width: page.width - PRINT_MARGIN * 2 - inset,
-    height: page.height - PRINT_MARGIN * 2 - PRINT_HEADER - PRINT_FOOTER - PRINT_NAME_BAND - inset,
+    height: page.height - PRINT_MARGIN * 2 - PRINT_HEADER - PRINT_FOOTER - inset,
   }
 }
 

@@ -11,7 +11,6 @@ import {
   PRINT_HEADER,
   PRINT_LEGEND_WIDTH,
   PRINT_MARGIN,
-  PRINT_NAME_BAND,
   PRINT_RULER,
   PRINT_STRIP_GAP,
   PRINT_STRIP_LABEL,
@@ -26,10 +25,8 @@ import { headerMaker, type PrintText } from './printText'
 import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 // Drawing the printed pages (ticket 162; printed-output.md, PrintPage1 and PrintChartPage cards). The chart first,
-// the rest is small in the margins. The accent stays light so a black-and-white printer loses nothing (word full, line
-// 38%, marks 7%, maker's name 14%). Paper is 150 dpi; beads are drawn by the Project renderer in the light print theme.
-
-export const PRINT_OPACITY = { line: 0.38, mark: 0.07, name: 0.14 }
+// the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
+// 150 dpi; beads are drawn by the Project renderer in the light print theme.
 
 // The canvas can't read CSS variables, so these three stacks repeat `docs/design/system/tokens.json` (type.families):
 // change them together.
@@ -65,9 +62,8 @@ const MARK_PARTS = [
   })),
 ]
 
-export function drawMark(context: CanvasRenderingContext2D, x: number, y: number, size: number, color: string, alpha = 1): void {
+export function drawMark(context: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
   context.save()
-  context.globalAlpha = alpha
   context.translate(x, y)
   context.scale(size / 48, size / 48)
   context.strokeStyle = color
@@ -125,31 +121,6 @@ function blankPage(page: PageSize): { canvas: HTMLCanvasElement; context: Canvas
   context.fillStyle = PRINT_COLORS.paper
   context.fillRect(0, 0, page.width, page.height)
   return { canvas, context }
-}
-
-/** The accent line, background only: in from the left, under the board, out past its right edge, off the top. */
-export function drawAccentLine(context: CanvasRenderingContext2D, page: PageSize, from: { x: number; y: number }, board: { right: number; top: number; bottom: number }): void {
-  context.save()
-  context.globalAlpha = PRINT_OPACITY.line
-  context.strokeStyle = PRINT_COLORS.accent
-  context.lineWidth = mm(0.5)
-  context.lineCap = 'round'
-  context.beginPath()
-  context.moveTo(-mm(5), from.y)
-  context.bezierCurveTo(page.width * 0.3, from.y + mm(6), board.right - mm(40), board.bottom + mm(10), board.right - mm(12), board.bottom - mm(8))
-  context.bezierCurveTo(board.right + mm(10), board.top + mm(30), board.right + mm(4), board.top - mm(10), page.width + mm(5), -mm(5))
-  context.stroke()
-  context.restore()
-}
-
-// Large and pale under the board, its top tucked behind the board's lower edge; never cut. The maker's name, or with a
-// Project maker's name (ticket 182) both (see PrintText.background).
-export function drawBackgroundName(context: CanvasRenderingContext2D, background: string, x: number, boardBottom: number, align: CanvasTextAlign): void {
-  if (!background) return
-  context.save()
-  context.globalAlpha = PRINT_OPACITY.name
-  text(context, background, x, boardBottom + pt(26), font('italic 400', 40, SERIF), PRINT_COLORS.accent, align)
-  context.restore()
 }
 
 export interface Board {
@@ -283,7 +254,7 @@ export function pageOneLayout(project: Pick<Project, 'technique' | 'frame' | 'be
       x: PRINT_MARGIN + inset,
       y: top + inset,
       width: page.width - PRINT_MARGIN * 2 - inset * 2 - (columnBelow ? 0 : PRINT_LEGEND_WIDTH + mm(6)),
-      height: page.height - top - PRINT_MARGIN - PRINT_NAME_BAND - mm(4) - inset * 2 - (columnBelow ? mm(78) : 0),
+      height: page.height - top - PRINT_MARGIN - mm(4) - inset * 2 - (columnBelow ? mm(78) : 0),
     }
     const zoom = Math.min(maxZoom, room.width / wide.width, room.height / wide.height)
     return { columnBelow, room, zoom, extent: { width: wide.width * zoom, height: wide.height * zoom } }
@@ -384,14 +355,6 @@ export function drawPageOne(project: Project, words: PrintText, plan: PrintPlan)
     height: layout.extent.height,
   }
   const boardBottom = board.y + board.height + PRINT_BOARD_PAD
-  const boardRight = board.x + board.width + PRINT_BOARD_PAD
-
-  // Behind everything: the marks, the maker's name and the accent line.
-  drawMark(context, page.width - mm(58), page.height * 0.42, mm(70), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawMark(context, page.width - PRINT_MARGIN - mm(26), page.height - PRINT_MARGIN - mm(26), mm(26), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawMark(context, page.width * 0.46, PRINT_MARGIN + mm(12), mm(12), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawBackgroundName(context, words.background, board.x, boardBottom, 'left')
-  drawAccentLine(context, page, { x: 0, y: page.height - mm(24) }, { right: boardRight, top: board.y - PRINT_BOARD_PAD, bottom: boardBottom })
 
   // The top: brand, maker, date; the technique word and name; one meta line; how to read the parts.
   let y = PRINT_MARGIN + mm(4)
@@ -415,7 +378,7 @@ export function drawPageOne(project: Project, words: PrintText, plan: PrintPlan)
   // Beads needed and the facts, each its own narrow column (ticket 186): beside the board, stacked one under the
   // other; under it for a Project wider than tall, where there is width to spare, side by side instead.
   if (layout.columnBelow) {
-    const y1 = boardBottom + PRINT_RULER + PRINT_NAME_BAND + mm(6) + pt(10)
+    const y1 = boardBottom + PRINT_RULER + mm(6) + pt(10)
     const beadsColumn = { x: PRINT_MARGIN, width: PRINT_LEGEND_WIDTH }
     const factsColumn = { x: beadsColumn.x + PRINT_LEGEND_WIDTH + mm(10), width: PRINT_LEGEND_WIDTH }
     drawBeadsNeeded(context, words, beadsColumn.x, y1, beadsColumn.width)
@@ -518,13 +481,6 @@ function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan,
     width: part.region.width,
     height: part.region.height,
   }
-  const boardBottom = board.y + board.height + PRINT_BOARD_PAD
-
-  // Behind: two marks, the maker's name tucked under the board, the accent line's run to the right.
-  drawMark(context, page.width - mm(44), page.height * 0.5, mm(52), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawMark(context, PRINT_MARGIN - mm(4), page.height - PRINT_MARGIN - mm(34), mm(20), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawBackgroundName(context, words.background, page.width / 2, boardBottom, 'center')
-  drawAccentLine(context, page, { x: 0, y: boardBottom + mm(8) }, { right: board.x + board.width + PRINT_BOARD_PAD, top: board.y - PRINT_BOARD_PAD, bottom: boardBottom })
 
   // The 16 mm header: technique word and name, the part, maker, date and time, the page and a mini map.
   const pageLabel = labels.page.replace('{page}', String(part.page)).replace('{pages}', String(plan.pageCount))
@@ -577,9 +533,6 @@ function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, par
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const areaWidth = page.width - PRINT_MARGIN * 2 - inset * 2
 
-  drawMark(context, page.width - mm(44), page.height * 0.5, mm(52), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-  drawMark(context, PRINT_MARGIN - mm(4), page.height - PRINT_MARGIN - mm(18), mm(18), PRINT_COLORS.accent, PRINT_OPACITY.mark)
-
   // The header: technique word and name, the maker and date, the page number (no per-part indicator or mini map: each
   // board has its own label).
   const pageLabel = labels.page.replace('{page}', String(parts[0]!.page)).replace('{pages}', String(plan.pageCount))
@@ -589,7 +542,6 @@ function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, par
   text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(11.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
 
   let y = PRINT_MARGIN + PRINT_HEADER
-  let lastBoard: Board | undefined
   for (const part of parts) {
     text(context, stripLabel(project, labels, part), PRINT_MARGIN, y + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
     y += PRINT_STRIP_LABEL + inset
@@ -597,13 +549,6 @@ function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, par
     drawBoard(context, project, part.region, plan.zoom, board)
     drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
     y = board.y + board.height + inset + PRINT_STRIP_GAP
-    lastBoard = board
-  }
-
-  if (lastBoard) {
-    const boardBottom = lastBoard.y + lastBoard.height + PRINT_BOARD_PAD
-    drawBackgroundName(context, words.background, page.width / 2, boardBottom, 'center')
-    drawAccentLine(context, page, { x: 0, y: boardBottom + mm(4) }, { right: lastBoard.x + lastBoard.width + PRINT_BOARD_PAD, top: lastBoard.y - PRINT_BOARD_PAD, bottom: boardBottom })
   }
 
   // The footer: the brand, and (from the last part on the sheet) where the chart goes on.

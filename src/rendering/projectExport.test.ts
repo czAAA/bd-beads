@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PNG_BEAD_PX, PNG_BOTTOM_MARGIN_PX, PNG_MAX_PIXELS, PNG_MARGIN_PX, pngBoardRect, pngZoom } from './projectExport'
-import { PRINT_BOARD_PAD } from './printPlan'
+import { PNG_BEAD_PX, PNG_MAX_PIXELS, PNG_MARGIN_PX, pngZoom } from './projectExport'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { frameWeave } from '../domain/project'
@@ -25,8 +24,7 @@ describe('pngZoom (ticket 73)', () => {
     const zoom = pngZoom(project)
     const { width, height } = projectExtentPx(technique, columns, rows)
 
-    // The bottom margin is taller than the other three (PNG_BOTTOM_MARGIN_PX, ticket 183), so its border differs from the rest.
-    expect((Math.ceil(width * zoom) + PNG_MARGIN_PX * 2) * (Math.ceil(height * zoom) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX)).toBeLessThanOrEqual(PNG_MAX_PIXELS)
+    expect((Math.ceil(width * zoom) + PNG_MARGIN_PX * 2) * (Math.ceil(height * zoom) + PNG_MARGIN_PX * 2)).toBeLessThanOrEqual(PNG_MAX_PIXELS)
     expect(zoom).toBeGreaterThan(0.5)
   })
 })
@@ -38,38 +36,10 @@ describe('pngZoom: Bead shape (ticket 509)', () => {
     const zoom = pngZoom(real)
     const { width, height } = displayedExtentPx(real.technique, 250, 250, 1, 0, frameWeave(real).cell)
 
-    expect((Math.ceil(width * zoom) + PNG_MARGIN_PX * 2) * (Math.ceil(height * zoom) + PNG_MARGIN_PX + PNG_BOTTOM_MARGIN_PX)).toBeLessThanOrEqual(PNG_MAX_PIXELS)
+    expect((Math.ceil(width * zoom) + PNG_MARGIN_PX * 2) * (Math.ceil(height * zoom) + PNG_MARGIN_PX * 2)).toBeLessThanOrEqual(PNG_MAX_PIXELS)
   })
 
   it('is the same zoom as Symmetric when the Project is Symmetric', () => {
     expect(pngZoom({ ...real, beadShape: undefined })).toBe(pngZoom(shape('peyote', 250, 250)))
-  })
-})
-
-describe('pngBoardRect (ticket 183)', () => {
-  it('sits inside the margin, not the full margin-inclusive chart', () => {
-    const chart = { width: 500, height: 300 }
-    const board = pngBoardRect(chart)
-
-    // The margin band is blank border around the board, so the board can never reach the chart's own edges.
-    expect(board.x).toBe(PNG_MARGIN_PX)
-    expect(board.right).toBeLessThan(chart.width)
-    expect(board.bottom).toBeLessThan(chart.height)
-  })
-
-  it('pads its right the same small amount the PDF page-1 board does, so the accent line tucks behind it the same way', () => {
-    const chart = { width: 500, height: 300 }
-    const board = pngBoardRect(chart)
-
-    expect(board.top).toBe(PNG_MARGIN_PX - PRINT_BOARD_PAD)
-    expect(board.right).toBe(chart.width - PNG_MARGIN_PX + PRINT_BOARD_PAD)
-  })
-
-  it("insets its bottom by the taller bottom margin (ticket 183), leaving room for the background name's own descender", () => {
-    const chart = { width: 500, height: 300 }
-    const board = pngBoardRect(chart)
-
-    expect(board.bottom).toBe(chart.height - PNG_BOTTOM_MARGIN_PX + PRINT_BOARD_PAD)
-    expect(chart.height - board.bottom).toBeGreaterThan(PNG_MARGIN_PX)
   })
 })

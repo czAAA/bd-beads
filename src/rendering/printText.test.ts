@@ -57,18 +57,16 @@ describe('printText (tickets 162, 164)', () => {
     expect(headerMaker('x'.repeat(40)).endsWith('…')).toBe(true)
   })
 
-  it("prints the Project's own maker's name, and joins it with the Project's name in the background (ADR 0060)", () => {
+  it("prints the Project's own maker's name (ADR 0060)", () => {
     const project = { ...delicaProject(10), makerName: 'Bead Master' }
     const text = printText(project, en, 'en', at)
 
     expect(text.maker).toBe('Bead Master')
-    expect(text.background).toBe('Logo panel · Bead Master')
   })
 
-  it('prints no name, in the header or the background, when the Project has none (ADR 0060)', () => {
+  it('prints no name when the Project has none (ADR 0060)', () => {
     const text = printText(delicaProject(10), en, 'en', at)
 
     expect(text.maker).toBe('')
-    expect(text.background).toBe('')
   })
 })
