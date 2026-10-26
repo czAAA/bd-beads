@@ -498,6 +498,12 @@ export interface Translations {
     metaLine: string
     /** On page 1, when the chart is split over pages. */
     readParts: string
+    /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
+    beadsNeededSee: string
+    shape: string
+    /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
+    partPage: string
+    partPageShort: string
     beadsNeeded: string
     total: string
     /** Beads needed's two columns. */

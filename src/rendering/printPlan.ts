@@ -19,7 +19,6 @@ export const PRINT_CHART_CELL_LETTERS_MM = 2.3
 export const PRINT_MARGIN = mm(10)
 export const PRINT_HEADER = mm(17)
 const PRINT_FOOTER = mm(8)
-export const PRINT_LEGEND_WIDTH = mm(48)
 /** The rulers' band on each side of a chart, and the board's own edge around the beads. */
 export const PRINT_RULER = mm(5)
 export const PRINT_BOARD_PAD = mm(2.5)

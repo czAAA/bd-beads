@@ -434,7 +434,13 @@ export const uk: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
-    readParts: 'Пунктиром показано частини схеми за сторінками. Читайте зліва направо, потім зверху вниз. Ряд 1 вгорі.',
+    readParts: 'Лінії: частини схеми, кожна на своїй сторінці; усі ряди й стовпці пронумеровано.',
+    /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
+    beadsNeededSee: 'Потрібно бісеру: {summary} · див. сторінку {page}',
+    shape: 'Форма',
+    /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
+    partPage: 'частина {part} · стор. {page}',
+    partPageShort: '{part} · с. {page}',
     beadsNeeded: 'Потрібно бісеру',
     total: 'Разом',
     beadsGrams: 'бісерин · грамів',

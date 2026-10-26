@@ -434,7 +434,13 @@ export const pl: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
-    readParts: 'Linia przerywana: części wykresu, według stron. Czytaj w poprzek, a potem w dół. Rząd 1 jest na górze.',
+    readParts: 'Linie: części wykresu, każda na własnej stronie, z ponumerowanymi wszystkimi rzędami i kolumnami.',
+    /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
+    beadsNeededSee: 'Potrzebne koraliki: {summary} · zob. stronę {page}',
+    shape: 'Kształt',
+    /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
+    partPage: 'część {part} · str. {page}',
+    partPageShort: '{part} · s. {page}',
     beadsNeeded: 'Potrzebne koraliki',
     total: 'Razem',
     beadsGrams: 'koraliki · gramy',
