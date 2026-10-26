@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createProject } from '../domain/project'
+import { createProject, withLetters } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
@@ -68,5 +68,14 @@ describe('printText (tickets 162, 164)', () => {
     const text = printText(delicaProject(10), en, 'en', at)
 
     expect(text.maker).toBe('')
+  })
+})
+
+describe('printText with Letters (ticket 0573)', () => {
+  it('gives each color of Beads needed its Swatch letter only when Letters is on', () => {
+    const project = delicaProject(10)
+    expect(printText(project, en, 'en', at).colors.map((color) => color.letter)).toEqual([undefined])
+    const lettered = printText(withLetters(project, true), en, 'en', at)
+    expect(lettered.colors.map((color) => color.letter)).toEqual([project.paletteLetters!['#e63746']])
   })
 })

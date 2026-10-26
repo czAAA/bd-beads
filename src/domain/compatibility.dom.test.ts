@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { beadCopy, findBead } from './beads'
-import { addedColorId, defaultPaletteIds } from './palette'
+import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
+import { lettersFor } from './swatchLetters'
 import { framedGrid, weaveOf, type Grid, type Project, type RowProgress } from './project'
 import { parseLegacyProjectsFile } from '../services/legacyProjectFile'
 import { parseProjectsFile, serializeLibrary, serializeProject } from './projectFile'
@@ -52,6 +53,9 @@ const BEAD = 'toho-cube-1.5mm'
 const CUBE_COPY = beadCopy(findBead(BEAD)!)
 const noProgress: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
+/** The Swatch letters a Project saved before letters opens with (ticket 0573): A, B, C… in Palette order. */
+const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => color.hex), undefined)
+
 /** A Project the way it should read back: every field present, nothing a newer build dropped still hanging on. */
 function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pick<Project, 'id' | 'name' | 'technique'> & { grid: Grid }): Project {
   const { grid: cells, ...rest } = fields
@@ -61,6 +65,7 @@ function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pic
     ...framedGrid(cells, weaveOf(fields)),
     rowProgress: noProgress,
     palette: defaultPaletteIds(),
+    paletteLetters: defaultLetters,
     rotation: 0,
     createdAt: 0,
     updatedAt: 0,
@@ -179,6 +184,7 @@ const framedOverSketch: Project = {
   },
   rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 },
   palette: defaultPaletteIds(),
+  paletteLetters: defaultLetters,
   rotation: 0,
   pieceNames: [{ name: 'Sketch', row: 20, column: 2 }],
   createdAt: 1740000000000,
@@ -193,6 +199,7 @@ const unframedSketch: Project = {
   beads: { [-3]: { [-2]: COLORS.B!, [-1]: COLORS.B! }, 4: { 0: COLORS.B! } },
   rowProgress: noProgress,
   palette: defaultPaletteIds(),
+  paletteLetters: defaultLetters,
   rotation: 0,
   createdAt: 1740000002000,
   updatedAt: 1740000003000,

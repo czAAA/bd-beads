@@ -14,6 +14,7 @@ import {
 import {
   createProject,
   moveToRow,
+  setPalette,
   withBrickBlock,
   withTechnique,
   type Project,
@@ -126,7 +127,7 @@ describe('single-Project roundtrip', () => {
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {
-    const custom = { ...decoratedProject(), palette: ['red', addedColorId('#123456'), ...defaultPaletteIds().filter((id) => id !== 'red')] }
+    const custom = setPalette(decoratedProject(), ['red', addedColorId('#123456'), ...defaultPaletteIds().filter((id) => id !== 'red')])
     const file = JSON.parse(serializeProject(custom))
     expect(file.projects[0].palette).toEqual(custom.palette)
     expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([custom])

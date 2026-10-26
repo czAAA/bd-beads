@@ -9,6 +9,7 @@ import {
   brighten,
   CURRENT_ROW_BRIGHTNESS,
   DEFAULT_THEME,
+  drawBeadLetter,
   drawFlatBead,
   type BeadDrawer,
   type DrawingContext,
@@ -142,6 +143,8 @@ export interface RenderInput {
   // How one bead is drawn. Defaults to today's look; a richer one is handed in here, and never has to know about rows,
   // zoom, rotation or what is on screen.
   drawBead?: BeadDrawer
+  /** The Swatch letter of each color by hex (ticket 0573): given, the Frame's beads carry their letter. Absent, none. */
+  letters?: Readonly<Record<string, string>>
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
@@ -289,13 +292,14 @@ interface LayerDraw {
   area: { left: number; right: number; top: number; bottom: number }
   rows: { first: number; last: number } | undefined
   margin: number
+  letters: Readonly<Record<string, string>> | undefined
 }
 
 /** The Frame's cells, bead or empty bead, in the Frame's own Weave, from the context's origin (ticket 492). `origin` is
  * where its first position sits in grid px. `space` is the Frame on its own: its positions counted from 0, and
  * `toAbsolute` the address of its first. */
 function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }): void {
-  const { project, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, rows: band } = draw
+  const { project, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, rows: band, letters } = draw
   const weave = frameWeave(project)
   const description = describeWeave(weave)
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
@@ -317,17 +321,24 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
       }
       const position = { row: space.toAbsolute.row + row, column: space.toAbsolute.column + column }
       const box = positionBoxPx(weave, row, column)
+      const painted = beadInSpace(project, space, row, column)
+      const dimmed = rowMarks && !showFinished && isInFinishedRow(project, position)
+      const sized = box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}
       drawBead(context, {
         x: origin.x + box.x,
         y: origin.y + box.y,
         size: CELL_SIZE_PX,
-        ...(box.width !== CELL_SIZE_PX || box.height !== CELL_SIZE_PX ? { width: box.width, height: box.height } : {}),
+        ...sized,
         cornerRadius,
-        color: lightenCurrent(beadInSpace(project, space, row, column), position),
-        dimmed: rowMarks && !showFinished && isInFinishedRow(project, position),
+        color: lightenCurrent(painted, position),
+        dimmed,
         deviceScale: zoom * pixelRatio,
         theme: look,
       })
+      const letter = painted === null ? undefined : letters?.[painted]
+      if (painted !== null && letter) {
+        drawBeadLetter(context, { x: origin.x + box.x, y: origin.y + box.y, size: CELL_SIZE_PX, ...sized, color: painted, letter, dimmed, theme: look })
+      }
     }
   }
 }
@@ -394,7 +405,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
-  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN } = input
+  const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters } = input
   const { frame, rotation } = project
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
@@ -428,7 +439,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   context.imageSmoothingEnabled = false
 
   const area = regionInGridSpace(extent, region, zoom, rotation)
-  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin }
+  const draw: LayerDraw = { project, region, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, area, rows: band, margin, letters }
 
   if (space.open) {
     drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin })

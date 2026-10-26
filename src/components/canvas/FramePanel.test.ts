@@ -329,3 +329,20 @@ describe('FramePanel (ticket 473)', () => {
     expect(started.get('[data-testid="frame-select"]').attributes('aria-disabled')).toBe('true')
   })
 })
+
+describe('FramePanel Letters (ticket 0573)', () => {
+  it('has a Letters switch, off by default, with a one-line explanation, and asks to turn it on', async () => {
+    const panel = mountBar()
+    const letters = panel.get('[data-testid="frame-letters"]')
+    expect(letters.attributes('aria-checked')).toBe('false')
+    expect(panel.get('[data-testid="frame-letters-line"]').text()).toBe(en.frame.lettersLine)
+    await letters.trigger('click')
+    expect(panel.emitted('set-letters')).toEqual([[true]])
+  })
+
+  it('shows it on when the Project has Letters on, and has no switch without a Frame', async () => {
+    expect(mountBar({ ...framed(), letters: true }).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
+    const { frame: _frame, ...bare } = framed()
+    expect(mountBar(bare).find('[data-testid="frame-letters"]').exists()).toBe(false)
+  })
+})

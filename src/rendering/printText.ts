@@ -17,6 +17,8 @@ interface PrintedColor {
   name: string
   beads: string
   grams?: string
+  /** The color's Swatch letter, only when Letters is on (ticket 0573): printed on its swatch. */
+  letter?: string
 }
 
 // Everything the PDF and PNG print, worked out as words before drawing (tickets 162, 164); maker's name omitted when
@@ -85,6 +87,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       name: listedColorName(t, palette.byId(quantity.colorId), quantity.hex),
       beads: groupThousands(quantity.count, locale),
       grams: grams(quantity.count),
+      ...(project.letters && project.paletteLetters?.[quantity.hex] ? { letter: project.paletteLetters[quantity.hex] } : {}),
     })),
     totalBeads: plural(locale, total, t.print.beadsCount),
     totalGrams: grams(total),
