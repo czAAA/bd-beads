@@ -341,3 +341,50 @@ export const drawFlatBead: BeadDrawer = (context, bead) => {
   }
   drawBeadShapes(context, bead)
 }
+
+/** A letter on a dark bead (ticket 0573; printed-output.md, Color + letters). */
+export const LETTER_ON_DARK = '#ffffff'
+/** A letter on a light bead: the design system's `ink`, which is the same in every theme because bead colors are. */
+export const LETTER_ON_LIGHT = '#1f1f1f'
+
+/** Below this luma (0-255) a bead is dark enough for a white letter. */
+const DARK_BEAD_LUMA = 140
+
+/** How tall a letter is, as a share of the bead's shorter side. */
+const LETTER_HEIGHT_SHARE = 0.56
+
+/** A letter's width in em, and what a second letter adds: a two-letter label shrinks to stay inside the bead. */
+const LETTER_WIDTH_EM = 0.62
+const LETTER_BASE_EM = 0.38
+
+/** Sans capitals sit a little high when centred on the middle baseline; this lowers them, in em. */
+const LETTER_DROP_EM = 0.04
+
+/** What `drawBeadLetter` needs: the bead's box as the renderer passed it to the bead drawer, and its color. */
+export interface BeadLetter {
+  x: number
+  y: number
+  size: number
+  width?: number
+  height?: number
+  /** The bead's color as painted (a hex), which the letter is chosen against. */
+  color: string
+  letter: string
+  dimmed: boolean
+  theme: ProjectTheme
+}
+
+/** The Swatch letter centred on a bead (ticket 0573): white on a dark bead, `ink` on a light one, judged on the color
+ * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. */
+export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme }: BeadLetter): void {
+  const shown = dimmed ? finishedColor(color, theme) : color
+  const rgb = parseHex(shown)
+  const dark = rgb ? luma(rgb) < DARK_BEAD_LUMA : false
+  const side = Math.min(width, height)
+  const fontSize = (side * LETTER_HEIGHT_SHARE) / Math.max(1, letter.length * LETTER_WIDTH_EM + LETTER_BASE_EM)
+  context.font = `600 ${fontSize}px Inter, system-ui, sans-serif`
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillStyle = dark ? LETTER_ON_DARK : LETTER_ON_LIGHT
+  context.fillText(letter, x + width / 2, y + height / 2 + fontSize * LETTER_DROP_EM)
+}

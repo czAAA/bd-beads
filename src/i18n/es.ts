@@ -518,6 +518,8 @@ export const es: Translations = {
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
     qualityPdfCapped: 'En este dispositivo, Alta en el PDF es de {n} DPI.',
+    lettersLabel: 'Letras',
+    lettersLine: 'Imprime la letra de cada color en sus cuentas, para distinguir los colores en papel y en blanco y negro.',
     qualityHintLabel: 'Para qué sirve la calidad baja',
     qualityHint: 'La calidad baja ahorra memoria: archivos más pequeños y una imagen que un móvil siempre puede crear.',
     exportCoffee: 'openbeads lo hace, lo mantiene y lo va haciendo crecer poco a poco una sola familia. Si te resulta útil, un café ayuda a que siga adelante.',

@@ -59,6 +59,19 @@ describe('useExportFlow with no Frame (ticket 233)', () => {
   })
 })
 
+describe('useExportFlow Letters (ticket 0573)', () => {
+  it('turns Letters on and off on the open Project, saved with it', () => {
+    const replaced: Project[] = []
+    const flow = useExportFlow({ currentProject: () => replaced.at(-1) ?? project, projects: () => [project], messages: () => en, locale: () => 'en' as const, replaceProject: (next) => replaced.push(next), downloadFile })
+    flow.onSetLetters(true)
+    expect(replaced.at(-1)?.letters).toBe(true)
+    flow.onSetLetters(false)
+    expect(replaced.at(-1)?.letters).toBeUndefined()
+    flow.onSetLetters(false)
+    expect(replaced).toHaveLength(2)
+  })
+})
+
 describe('useExportFlow', () => {
   describe('Project file', () => {
     it('hands over the whole library as one gzipped file', async () => {

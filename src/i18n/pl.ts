@@ -520,6 +520,8 @@ export const pl: Translations = {
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
     qualityPdfCapped: 'Na tym urządzeniu „Wysoka” w PDF to {n} DPI.',
+    lettersLabel: 'Litery',
+    lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
     qualityHintLabel: 'Do czego służy niska jakość',
     qualityHint: 'Niska jakość oszczędza pamięć: mniejsze pliki i obraz, który telefon zawsze utworzy.',
     exportCoffee: 'openbeads tworzy, utrzymuje i powoli rozwija jedna rodzina. Jeśli ci się przydaje, kawa pomoże mu przetrwać.',

@@ -6,7 +6,7 @@ import { beadRoundness, describeWeave, passCount, passLines, passOf, type BeadCe
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave, rowProgressOn } from '../domain/project'
 import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
-import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
+import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import type { DrawnProject } from './projectRenderer'
@@ -91,6 +91,9 @@ export interface OverlayInput {
   /** How many positions wide the margin outline stands out from the Frame (ticket 459): wider when zoomed out.
    * Defaults to `MARGIN`. */
   margin?: number
+  /** The Swatch letters by hex when Letters is on (ticket 0573): the current row's lifted beads carry theirs, as the
+   * base layer's do. */
+  letters?: Readonly<Record<string, string>>
 }
 
 /** A bead the current pass weaves: its cell, top left, and its color. */
@@ -138,10 +141,14 @@ function sizedLike(box: { width: number; height: number }): { width?: number; he
   return box.width === CELL_SIZE_PX && box.height === CELL_SIZE_PX ? {} : { width: box.width, height: box.height }
 }
 
-function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme): void {
+function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>): void {
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   for (const bead of beads) {
     drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, ...sizedLike(bead), cornerRadius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
+    const letter = letters?.[bead.color]
+    if (letter) {
+      drawBeadLetter(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, ...sizedLike(bead), color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), letter, dimmed: false, theme })
+    }
   }
 }
 
@@ -360,7 +367,7 @@ function inFrameTerms<T extends GridPosition>(frame: FrameSheet, cell: T): T {
  * nothing is drawn. On the Canvas it goes a layer at a time (ticket 492): the Canvas's in its Weave, then the Frame's
  * in its own from its first position's corner, its items counted from its first position. */
 export function renderOverlay(context: DrawingContext, input: OverlayInput): void {
-  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks } = input
+  const { project, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, space = spaceOf(project, false), preview, selection, rulers, frameEditing, selectionHandles, marginOutline = 0, margin = MARGIN, pointer, rowMarks, letters } = input
 
   context.setTransform(1, 0, 0, 1, 0, 0)
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
@@ -410,7 +417,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     context.translate(origin.x, origin.y)
     const inPass = showRows ? beadsInPass(project, sheetSpace) : []
     if (showRows) {
-      drawLiftedBeads(context, inPass, sheetWeave, zoom, pixelRatio, theme)
+      drawLiftedBeads(context, inPass, sheetWeave, zoom, pixelRatio, theme, letters)
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme)
     const sheetCells = preview && onSheet(preview.cells)

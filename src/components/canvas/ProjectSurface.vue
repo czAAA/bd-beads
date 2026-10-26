@@ -7,7 +7,7 @@ import { inMargin, mayPlace } from '../../domain/margin'
 import type { Tool } from '../../domain/tool'
 import type { GridPosition, Layer, PreviewCell } from '../../domain/grid'
 import { pointerDraws, type Handedness, type InputMode } from '../../domain/inputMode'
-import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../../domain/project'
+import { beadColorAt, canvasWeave, isInFinishedRow, projectCell, rowProgressOn, sameWeave, shownLetters, type Project } from '../../domain/project'
 import { selectionFrame, selectionHasHandles, selectionLayer, type Selection } from '../../domain/selection'
 import type { ProjectTheme } from '../../rendering/beadLook'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../rendering/frameHandles'
@@ -427,6 +427,7 @@ function drawCells(): void {
   const pixelRatio = globalThis.devicePixelRatio || 1
   const region = currentRegion()
   const project = toRaw(props.project)
+  const letters = shownLetters(project)
   const resized = sizeCanvas(canvas, region.width, region.height, pixelRatio)
   const context = canvas.getContext('2d')
   if (!context) {
@@ -452,11 +453,11 @@ function drawCells(): void {
       : undefined
 
   if (bands === undefined) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters })
     return
   }
   for (const rows of bands) {
-    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value })
+    renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters })
   }
 }
 
@@ -597,6 +598,7 @@ function drawOverlay(): void {
       pixelRatio,
       theme: theme.value,
       rowMarks: marksShown.value,
+      letters: shownLetters(toRaw(props.project)),
       pointer: markerAt.value && !props.tool && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
