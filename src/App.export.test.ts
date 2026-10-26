@@ -12,7 +12,8 @@ import { openPanel } from './testUtils/pill'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
-vi.mock('./rendering/projectExport', () => ({
+vi.mock('./rendering/projectExport', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./rendering/projectExport')>()),
   exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
 }))
@@ -59,6 +60,7 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
     expect(exportProjectPng).toHaveBeenCalledWith(
       expect.objectContaining({ id: project.id }),
       expect.objectContaining({ name: 'My scarf', labels: en.print }),
+      60,
     )
     expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
     expect(projectExportFileName(project, 'png')).toBe('openbeads-my-scarf.png')

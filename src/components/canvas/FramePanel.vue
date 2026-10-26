@@ -21,7 +21,8 @@ import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
-import { EXPORT_QUALITIES, type ExportQuality } from '../../domain/exportQuality'
+import { EXPORT_QUALITIES, PNG_BEAD_PX_BY_QUALITY, roundedMegabytes, type ExportQuality } from '../../domain/exportQuality'
+import { estimatePngBytes, pngBeadPx } from '../../rendering/exportEstimate'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
@@ -120,7 +121,20 @@ const sizeSummary = computed(() => [`${counted.value.columns} × ${counted.value
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
 const quality = useExportQuality()
-const qualityStops = computed(() => EXPORT_QUALITIES.map((id) => ({ id, word: t.value.frame[QUALITY_WORDS[id]] })))
+/** Each stop's words, its bead size (both values when the Frame is too large for it) and the PNG size it would make for
+ * the open Frame (ticket 571); the chart's size joins when the PDF follows the choice (ticket 572). */
+const qualityStops = computed(() =>
+  EXPORT_QUALITIES.map((id) => {
+    const word = t.value.frame[QUALITY_WORDS[id]]
+    if (!frame.value) return { id, word }
+    const wanted = PNG_BEAD_PX_BY_QUALITY[id]
+    const beadPx = pngBeadPx(props.project, wanted)
+    const size = t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePngBytes(props.project, wanted))))
+    const png = t.value.frame.qualityPngSize.replace('{size}', size)
+    return { id, word, detail: `${beadPx} px`, from: beadPx < wanted ? `${wanted} px` : undefined, lines: [png], spoken: `${word}, ${beadPx} px, ${png}` }
+  }),
+)
+const qualityReduced = computed(() => ({ label: t.value.frame.qualityReducedLabel, body: t.value.frame.qualityReduced }))
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
 
@@ -165,6 +179,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         class="frame-panel__quality"
         :label="t.frame.exportQuality"
         :stops="qualityStops"
+        :reduced="qualityReduced"
         :model-value="quality"
         :disabled="exportBusy"
         @update:model-value="quality = $event as ExportQuality"
