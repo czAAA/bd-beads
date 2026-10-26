@@ -3,7 +3,6 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } fro
 import { changedPositions } from '../../domain/canvas'
 import { layerAt } from '../../domain/layers'
 import { footprintOf } from '../../domain/footprint'
-import { sameFrame } from '../../domain/frame'
 import { inMargin, mayPlace } from '../../domain/margin'
 import type { Tool } from '../../domain/tool'
 import type { GridPosition, Layer, PreviewCell } from '../../domain/grid'
@@ -239,20 +238,32 @@ function measure(): void {
 /** What the cells were last drawn from, to draw only what an edit changed. */
 let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
 
-/** Whether two Projects are laid out and dimmed alike, so that what differs between them is only which color each
- * bead holds. */
-function sameLayout(a: Project, b: Project): boolean {
-  const progress = (project: Project) => project.rowProgress
-  return (
-    a.technique === b.technique &&
-    (a.brickBlock ?? 1) === (b.brickBlock ?? 1) &&
-    sameFrame(a.frame, b.frame) &&
-    (a.frame === undefined || b.frame === undefined || sameWeave(a.frame, b.frame)) &&
-    a.rotation === b.rotation &&
-    progress(a).direction === progress(b).direction &&
-    progress(a).currentRow === progress(b).currentRow &&
-    progress(a).currentColumn === progress(b).currentColumn
-  )
+/** Whether two Projects differ only in the colors of their beads (`updatedAt` is not drawn). Any other difference, even
+ * one added later, can change how a bead is drawn (shape, size, Technique, weave), so it repaints it all. */
+function sameDrawing(a: Project, b: Project): boolean {
+  const { beads: _a, frame: frameA, updatedAt: _u, ...restA } = a
+  const { beads: _b, frame: frameB, updatedAt: _v, ...restB } = b
+  return sameFields(restA, restB) && (frameA === undefined || frameB === undefined ? frameA === frameB : sameFrameLayout(frameA, frameB))
+}
+
+function sameFrameLayout(a: NonNullable<Project['frame']>, b: NonNullable<Project['frame']>): boolean {
+  const { beads: _a, ...restA } = a
+  const { beads: _b, ...restB } = b
+  return sameFields(restA, restB)
+}
+
+/** Whether two records hold the same values, comparing objects one level deep (a row progress is replaced whole). */
+function sameFields(a: object, b: object): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)])
+  const field = (record: object, key: string) => (record as Record<string, unknown>)[key]
+  return [...keys].every((key) => {
+    const x = field(a, key)
+    const y = field(b, key)
+    if (x === y) {
+      return true
+    }
+    return typeof x === 'object' && typeof y === 'object' && x !== null && y !== null && !Array.isArray(x) && !Array.isArray(y) && Object.keys({ ...x, ...y }).every((inner) => field(x, inner) === field(y, inner))
+  })
 }
 
 /** Past this many changed rows, drawing them one band at a time costs more than drawing the lot. */
@@ -436,7 +447,7 @@ function drawCells(): void {
     before.theme === theme.value &&
     before.showFinished === showFinished.value &&
     before.rowMarks === marksShown.value &&
-    sameLayout(before.project, project)
+    sameDrawing(before.project, project)
       ? changedBands(before.project, project)
       : undefined
 

@@ -1,5 +1,7 @@
 import { nextTick } from 'vue'
+import type { VueWrapper } from '@vue/test-utils'
 import { findBead } from '../domain/beads'
+import { choosePanelOption } from './choosePanelOption'
 
 type Wrapper = { get: (selector: string) => { trigger: (event: string) => Promise<unknown> }; find: (selector: string) => { exists: () => boolean } }
 
@@ -23,4 +25,15 @@ export async function chooseBead(wrapper: Wrapper, beadId: string, testid = 'bea
     await wrapper.get(`[data-testid="${testid}-${step}-${id}"]`).trigger('click')
     await nextTick()
   }
+}
+
+/** Picks a Bead in the shared bead section (ticket 568) the way a person does: Brand, then Type, then Size, each a
+ * PanelPicker that narrows the next. */
+export async function chooseBeadInSection(wrapper: Pick<VueWrapper, 'find'>, beadId: string): Promise<void> {
+  const bead = findBead(beadId)
+  if (!bead) throw new Error(`no Bead ${beadId}`)
+  await choosePanelOption(wrapper, 'bead-brand', bead.brand.id)
+  await choosePanelOption(wrapper, 'bead-type', bead.formFactor.id)
+  await choosePanelOption(wrapper, 'bead-size', bead.id)
+  await nextTick()
 }

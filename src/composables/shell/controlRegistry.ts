@@ -458,17 +458,17 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations) => t.tooltips.noFrameToRemove,
   }),
   // Both are held still once a pass is done: the passes belong to the Frame (ticket 495).
-  unkeyed('add-frame-from-template', (t) => t.frame.addFromTemplate, 'canvas', {
+  unkeyed('add-frame-from-starter', (t) => t.frame.addFromStarter, 'canvas', {
     icon: 'plus',
-    body: (t) => t.tooltips.frameFromTemplate,
+    body: (t) => t.tooltips.frameFromStarter,
     enabled: (deps: ControlDeps) => !frameLocked(deps),
-    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromTemplate,
+    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromStarter,
   }),
   unkeyed('replace-frame', (t) => t.frame.replaceFrame, 'canvas', {
     icon: 'plus',
     body: (t) => t.tooltips.replaceFrame,
     enabled: (deps: ControlDeps) => !frameLocked(deps),
-    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromTemplate,
+    disabledBody: (t: Translations) => t.tooltips.rowProgressLockedFrameFromStarter,
   }),
   unkeyed('rotate-frame', (t) => t.frame.rotateFrameLabel, 'canvas', {
     icon: 'rotate',

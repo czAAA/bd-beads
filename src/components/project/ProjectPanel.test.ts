@@ -37,7 +37,7 @@ describe('ProjectPanel (tickets 443, 554)', () => {
 
   it('has none of what moved to the Frame panel or went away', () => {
     const wrapper = mountPanel()
-    for (const gone of ['canvas-technique-row', 'frame-technique', 'size-estimate-row', 'frame-from-template', 'project-bead-row', 'project-name-on-exports', 'frame-edit', 'frame-fit', 'frame-remove']) {
+    for (const gone of ['canvas-technique-row', 'frame-technique', 'size-estimate-row', 'frame-from-starter', 'project-bead-row', 'project-name-on-exports', 'frame-edit', 'frame-fit', 'frame-remove']) {
       expect(wrapper.find(`[data-testid="${gone}"]`).exists(), gone).toBe(false)
     }
     expect(wrapper.text()).not.toContain('Beads needed')
@@ -163,6 +163,20 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     await picker().trigger('click')
     await wrapper.get('[data-testid="project-technique"] [data-value="brick"]').trigger('click')
     expect(wrapper.emitted('set-canvas-technique')).toEqual([['brick']])
+  })
+
+  it('shows the Net size of a Netting layer and sends a change to the Frame, or the Canvas with no Frame (ticket 568)', async () => {
+    const netting = { ...project, technique: 'netting' as const, netSize: 3, frame: { ...project.frame!, technique: 'netting' as const, netSize: 3 } }
+    const wrapper = mountPanel({ project: netting })
+    expect(wrapper.get('[data-testid="project-net-size-value"]').text()).toBe('3')
+    await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerdown')
+    await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerup')
+    expect(wrapper.emitted('set-net-size')).toEqual([[5]])
+
+    await wrapper.setProps({ project: { ...netting, frame: undefined } })
+    await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerdown')
+    await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerup')
+    expect(wrapper.emitted('set-canvas-net-size')).toEqual([[5]])
   })
 
   it('locks the Technique, with the reason, once a Row progress pass is done', async () => {

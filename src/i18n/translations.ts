@@ -14,7 +14,7 @@ interface FeatureCopy {
 }
 
 /** A gallery card's name and its one-line description. */
-interface TemplateCopy {
+interface StarterCopy {
   name: string
   description: string
 }
@@ -80,6 +80,11 @@ export interface Translations {
     enterWholeBeads: string
     /** Between Create Project and Convert image. */
     or: string
+    /** New Project's heading and what an open canvas is for (ticket 568). */
+    openCanvasTitle: string
+    openCanvasSubtitle: string
+    /** The button that unfolds the Starter gallery. */
+    pickStarter: string
     /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */
     estimateBeads: string
     estimateUnits: string
@@ -218,21 +223,20 @@ export interface Translations {
     /** "Frame 24 × 30 beads", with {width} and {height}. */
     frameSize: string
   }
-  /** The Template gallery and setup in New Project (ticket 493; TemplateGallery card). `specLine` is "24 × 80 · Loom". */
-  templates: {
+  /** The Starter gallery and setup in New Project (ticket 493; StarterGallery card). `specLine` is "24 × 80 · Loom". */
+  starters: {
     galleryLabel: string
     presetsLabel: string
-    /** Under a side the Template keeps fixed (earrings keep their width). */
+    /** Under a side the Starter keeps fixed (earrings keep their width). */
     fixedNote: string
-    /** Under the sample picture in a Template's setup: it decorates, the Frame is empty (ticket 494). */
+    /** Under the sample picture in a Starter's setup: it decorates, the Frame is empty (ticket 494). */
     sampleNote: string
     specLine: string
-    blank: TemplateCopy
-    gerdan: TemplateCopy
-    bracelet: TemplateCopy
-    earrings: TemplateCopy
-    bag: TemplateCopy
-    custom: TemplateCopy
+    gerdan: StarterCopy
+    bracelet: StarterCopy
+    earrings: StarterCopy
+    bag: StarterCopy
+    custom: StarterCopy
   }
   canvas: {
     zoomInLabel: string
@@ -572,10 +576,14 @@ export interface Translations {
     nameEmpty: string
     nameEdit: string
     nameTooltip: string
-    fromTemplate: string
+    fromStarter: string
     fitAFrame: string
     fitNothing: string
     noFrameLine: string
+    /** The Frame panel's Select a frame row, the hint shown once it is on, and the line under the off exports (ticket 568). */
+    selectAFrame: string
+    selectFrameHint: string
+    exportNeedsFrame: string
     sizeHeading: string
     exportPicture: string
     exportChart: string
@@ -602,7 +610,7 @@ export interface Translations {
     removeConfirmMessage: string
     removeConfirmButton: string
     removeConfirmCancel: string
-    addFromTemplate: string
+    addFromStarter: string
     addFrameButton: string
     replaceFrame: string
     replaceConfirmTitle: string
@@ -623,9 +631,13 @@ export interface Translations {
     switchConfirmTitle: string
     switchConfirmMessage: string
     /** Asked of a layer with no beads when Netting needs its Net size. */
-    switchNetMessage: string
+    switchSettingsMessage: string
+    switchNetSizeTitle: string
+    switchNetSizeMessage: string
+    switchNetSizeButton: string
     switchConfirmButton: string
     announceBrickBlock: string
+    announceNetSize: string
     /** Announced after Rotate turned the Selection and covered no bead. */
     announceSelectionRotated: string
     rotateFrameLabel: string
@@ -773,9 +785,9 @@ export interface Translations {
     frameEdgeInDisabled: string
     removeFrame: string
     noFrameToRemove: string
-    frameFromTemplate: string
+    frameFromStarter: string
     replaceFrame: string
-    rowProgressLockedFrameFromTemplate: string
+    rowProgressLockedFrameFromStarter: string
     resetProgress: string
     noProgressToReset: string
     moveFrame: string

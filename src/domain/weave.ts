@@ -57,10 +57,10 @@ interface TechniqueRules {
   overviewKey?: 'loom' | 'peyote' | 'brick'
   /** Whether the Overview's background is the empty positions of a Project worked in it. */
   overviewBackground?: boolean
-  /** Whether the flat Templates (gerdan, bracelet, earrings, bag) can be woven in it. */
-  flatTemplate: boolean
-  /** Whether it is the one a narrow, shifted-row Template (earrings) starts in. */
-  narrowTemplateDefault?: boolean
+  /** Whether the flat Starters (gerdan, bracelet, earrings, bag) can be woven in it. */
+  flatStarter: boolean
+  /** Whether it is the one a narrow, shifted-row Starter (earrings) starts in. */
+  narrowStarterDefault?: boolean
   /** Every other row (or block of rows) sits half a bead across. */
   shifted: boolean
   /** Distance from one row's top to the next, in bead heights: peyote rows nest into each other. */
@@ -98,7 +98,7 @@ const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'techniqueLoom',
     overviewKey: 'loom',
-    flatTemplate: true,
+    flatStarter: true,
     shifted: false,
     rowPitch: 1,
     roundness: 0,
@@ -112,10 +112,10 @@ const TECHNIQUE_RULES = {
   },
   peyote: {
     nameKey: 'techniquePeyote',
-    narrowTemplateDefault: true,
+    narrowStarterDefault: true,
     overviewKey: 'peyote',
     overviewBackground: true,
-    flatTemplate: true,
+    flatStarter: true,
     shifted: true,
     rowPitch: 0.75,
     roundness: ROUNDED_BEAD_CORNER,
@@ -130,7 +130,7 @@ const TECHNIQUE_RULES = {
   brick: {
     nameKey: 'techniqueBrick',
     overviewKey: 'brick',
-    flatTemplate: true,
+    flatStarter: true,
     shifted: true,
     rowPitch: 1,
     roundness: 0,
@@ -144,7 +144,7 @@ const TECHNIQUE_RULES = {
   },
   rightAngle: {
     nameKey: 'techniqueRightAngle',
-    flatTemplate: false,
+    flatStarter: false,
     shifted: false,
     rowPitch: 1,
     roundness: ROUNDED_BEAD_CORNER,
@@ -158,7 +158,7 @@ const TECHNIQUE_RULES = {
   },
   netting: {
     nameKey: 'techniqueNetting',
-    flatTemplate: false,
+    flatStarter: false,
     shifted: false,
     rowPitch: NETTING_STEP,
     roundness: 0.5,
@@ -177,7 +177,7 @@ const RULES: Record<Technique, TechniqueRules> = TECHNIQUE_RULES
 /** The Bead shape setting (ADR 0068): Symmetric draws a Technique's own cell, Real the Bead's. */
 export type BeadShape = 'symmetric' | 'real'
 
-/** The shape a Project, an old file or a Template without the setting has. */
+/** The shape a Project, an old file or a Starter without the setting has. */
 export const DEFAULT_BEAD_SHAPE: BeadShape = 'symmetric'
 
 /** Every Bead shape, in the order the choice lists them. */
@@ -596,13 +596,13 @@ export function techniqueNameKey(technique: Technique): TechniqueNameKey {
   return RULES[technique].nameKey
 }
 
-/** The Techniques a flat Template (gerdan, bracelet, earrings, bag) can be woven in, in picker order. */
-export const FLAT_TECHNIQUES: readonly Technique[] = TECHNIQUES.filter((technique) => RULES[technique].flatTemplate)
+/** The Techniques a flat Starter (gerdan, bracelet, earrings, bag) can be woven in, in picker order. */
+export const FLAT_TECHNIQUES: readonly Technique[] = TECHNIQUES.filter((technique) => RULES[technique].flatStarter)
 
-/** The Techniques an earrings Template offers: its default first, then the other flat ones. */
-export const NARROW_TEMPLATE_TECHNIQUES: readonly Technique[] = [
-  ...FLAT_TECHNIQUES.filter((technique) => RULES[technique].narrowTemplateDefault),
-  ...FLAT_TECHNIQUES.filter((technique) => !RULES[technique].narrowTemplateDefault),
+/** The Techniques an earrings Starter offers: its default first, then the other flat ones. */
+export const NARROW_STARTER_TECHNIQUES: readonly Technique[] = [
+  ...FLAT_TECHNIQUES.filter((technique) => RULES[technique].narrowStarterDefault),
+  ...FLAT_TECHNIQUES.filter((technique) => !RULES[technique].narrowStarterDefault),
 ]
 
 /** The Techniques the overview's Techniques example shows, each with its label key. */
