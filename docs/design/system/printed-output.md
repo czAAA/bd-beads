@@ -64,7 +64,7 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 
 ## Wide and long Schemas
 
-- The PDF is always A4 portrait. A Schema wider than tall gets a shorter picture on page 1, which leaves more room for Beads needed; the chart pages are the same 100-bead parts.
+- The PDF's pages are lossless raster (one picture a page, text included), drawn at 150, 300 or 450 DPI by the Export quality (QualitySlider card); a device that cannot hold a 450 DPI page draws High at 300. The PDF is always A4 portrait. A Schema wider than tall gets a shorter picture on page 1, which leaves more room for Beads needed; the chart pages are the same 100-bead parts.
 - Long thin Schemas (bracelets) stack their parts on shared sheets (Chart pages above). See the PrintWide and PrintStrips cards.
 
 ## PNG image

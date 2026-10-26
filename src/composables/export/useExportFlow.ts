@@ -4,6 +4,7 @@ import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
 import { PNG_BEAD_PX_BY_QUALITY } from '../../domain/exportQuality'
+import { pdfDpiFor } from '../../rendering/pdfDpi'
 import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
@@ -116,7 +117,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPdf() {
     // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
-      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date())),
+      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date()), pdfDpiFor(quality.value)),
       'pdf',
       'application/pdf',
     )
