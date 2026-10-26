@@ -515,6 +515,7 @@ function wireAppShell(services: Services) {
     announce,
     showToast,
     messages,
+    locale: () => locale.value,
     centreOn,
     visibleCentre,
   })

@@ -195,6 +195,48 @@ describe('useFrameFlow', () => {
     expect(settingFrame.value).toBe(false)
   })
 
+  describe('explains a snap that grew the Frame (ticket 570)', () => {
+    const woven = (technique: 'brick' | 'netting' | 'rightAngle') =>
+      withFrame(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), undefined)
+
+    it('says nothing on a Loom, which does not snap', () => {
+      const { deps, setTo } = setup(open)
+      setTo({ row: 1, column: 1, rows: 3, columns: 3 })
+      expect(deps.showToast).not.toHaveBeenCalled()
+    })
+
+    it('says one row was added on top', () => {
+      const { deps, setTo } = setup(woven('brick'))
+      setTo({ row: 3, column: 0, rows: 4, columns: 4 })
+      expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added an empty row on top: a Frame must start on an unshifted row.', 'info')
+    })
+
+    it('covers every edge that grew in one toast', () => {
+      const { deps, setTo } = setup(woven('netting'))
+      setTo({ row: 5, column: 5, rows: 3, columns: 3 })
+      expect(deps.showToast).toHaveBeenCalledTimes(1)
+      expect(deps.showToast).toHaveBeenCalledWith(
+        'frame-snapped',
+        'Added an empty row on top: a Frame must start on an unshifted row. Added an empty row at the bottom: a Frame must be whole Units or cycles. Added an empty column on the left: a Frame must be whole Units or cycles. Added an empty column on the right: a Frame must be whole Units or cycles.',
+        'info',
+      )
+    })
+
+    it('counts several rows added on top', () => {
+      const { deps, setTo } = setup({ ...woven('brick'), brickBlock: 4 })
+      setTo({ row: 11, column: 0, rows: 4, columns: 4 })
+      expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added 3 empty rows on top: a Frame must start on an unshifted row.', 'info')
+    })
+
+    it('says nothing when the Frame is refused', () => {
+      const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 4, column, color: '#e63746' })))
+      const { deps, setTo } = setup({ ...woven('brick'), beads, pieceNames: [{ row: 4, column: 0, name: 'Fox' }] })
+      setTo({ row: 4, column: 2, rows: 1, columns: 4 })
+      expect(deps.showToast).toHaveBeenCalledTimes(1)
+      expect(deps.showToast).toHaveBeenCalledWith('frame-cuts-schema', expect.any(String), 'info')
+    })
+  })
+
   it('refuses a Frame that would cut a named Schema, with a Message naming it (ticket 407)', () => {
     const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
     const named = { ...open, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
