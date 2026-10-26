@@ -100,9 +100,8 @@ function drawSquares(context: DrawingContext, input: MarkTileInput, tile: Tile):
   }
 }
 
-// The tile for the Canvas's Position marks as a pattern on `context`, scaled to repeat every bead across in grid px, or
-// undefined without a canvas. Fill with it while the context is in grid space.
-export function positionMarkPattern(context: DrawingContext, input: MarkTileInput): CanvasPattern | undefined {
+/** The tile as a bitmap, kept by its key, with its size in grid px; null without a canvas. */
+function tileBitmap(input: MarkTileInput): { tile: CanvasImageSource | null; size: Tile['size']; width: number; height: number } | undefined {
   if (typeof document === 'undefined') {
     return undefined
   }
@@ -129,7 +128,30 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
     tile = own ? canvas : null
     tiles.set(key, tile)
   }
+  return { tile, size, width, height }
+}
+
+// The tile for the Canvas's Position marks as a pattern on `context`, scaled to repeat every bead across in grid px, or
+// undefined without a canvas. Fill with it while the context is in grid space.
+export function positionMarkPattern(context: DrawingContext, input: MarkTileInput): CanvasPattern | undefined {
+  const bitmap = tileBitmap(input)
+  if (!bitmap) {
+    return undefined
+  }
+  const { tile, size, width, height } = bitmap
   const pattern = tile ? (context as unknown as CanvasRenderingContext2D).createPattern(tile, 'repeat') : null
   pattern?.setTransform({ a: size.width / width, d: size.height / height })
   return pattern ?? undefined
+}
+
+/** The same tile as a CSS background: an image URL and the size it repeats at in CSS px, for a page that is not a
+ * canvas (the Overview). Undefined without a canvas to draw it on. */
+export function positionMarkBackground(input: MarkTileInput): { url: string; width: number; height: number } | undefined {
+  const bitmap = tileBitmap(input)
+  const tile = bitmap?.tile
+  if (!bitmap || !(tile instanceof HTMLCanvasElement)) {
+    return undefined
+  }
+  const url = tile.toDataURL()
+  return url === 'data:,' ? undefined : { url, width: bitmap.size.width * (input.deviceScale / input.pixelRatio), height: bitmap.size.height * (input.deviceScale / input.pixelRatio) }
 }
