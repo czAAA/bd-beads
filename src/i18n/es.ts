@@ -537,6 +537,26 @@ export const es: Translations = {
     announceMoved: 'Marco movido con sus cuentas',
     announceNothingToFit: 'Aún no hay nada dibujado a lo que ajustar el marco',
     refusedCutsSchema: 'Un marco no puede cortar el esquema «{name}». Enmárcalo entero o déjalo fuera.',
+    snapAddedTop: {
+      one: 'Se añadió una fila vacía arriba: un marco debe empezar en una fila sin desplazar.',
+      many: 'Se añadieron {count} filas vacías arriba: un marco debe empezar en una fila sin desplazar.',
+      other: 'Se añadieron {count} filas vacías arriba: un marco debe empezar en una fila sin desplazar.',
+    },
+    snapAddedBottom: {
+      one: 'Se añadió una fila vacía abajo: un marco debe ser de Unidades o ciclos enteros.',
+      many: 'Se añadieron {count} filas vacías abajo: un marco debe ser de Unidades o ciclos enteros.',
+      other: 'Se añadieron {count} filas vacías abajo: un marco debe ser de Unidades o ciclos enteros.',
+    },
+    snapAddedLeft: {
+      one: 'Se añadió una columna vacía a la izquierda: un marco debe ser de Unidades o ciclos enteros.',
+      many: 'Se añadieron {count} columnas vacías a la izquierda: un marco debe ser de Unidades o ciclos enteros.',
+      other: 'Se añadieron {count} columnas vacías a la izquierda: un marco debe ser de Unidades o ciclos enteros.',
+    },
+    snapAddedRight: {
+      one: 'Se añadió una columna vacía a la derecha: un marco debe ser de Unidades o ciclos enteros.',
+      many: 'Se añadieron {count} columnas vacías a la derecha: un marco debe ser de Unidades o ciclos enteros.',
+      other: 'Se añadieron {count} columnas vacías a la derecha: un marco debe ser de Unidades o ciclos enteros.',
+    },
     announceTechnique: 'Técnica cambiada a {technique}',
     switchConfirmTitle: '¿Cambiar la técnica?',
     switchConfirmMessage: 'El dibujo puede verse distinto en {technique}. Se quitarán las cuentas que no tengan lugar allí: {count}. Se puede deshacer.',
