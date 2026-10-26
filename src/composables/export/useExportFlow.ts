@@ -3,10 +3,12 @@ import { withMakerName } from '../../domain/makerName'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
+import { PNG_BEAD_PX_BY_QUALITY } from '../../domain/exportQuality'
 import { exportProjectPdf, exportProjectPng } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
+import { useExportQuality } from './useExportQuality'
 import type { MessageTone, Toast } from '../ui/useToasts'
 
 /** What exporting needs from the app shell: the open Project and the library, and the app's language. */
@@ -27,6 +29,7 @@ export interface ExportFlowDeps {
  * maker's name (ADR 0060). Deps are lazy. */
 export function useExportFlow(deps: ExportFlowDeps) {
   const downloadFile = deps.downloadFile ?? browserDownloadFile
+  const quality = useExportQuality()
 
   /** The open Project's maker's name for the PDF and PNG exports (ADR 0060; CONTEXT.md); empty when none is set. */
   const makerName = computed(() => deps.currentProject()?.makerName ?? '')
@@ -104,7 +107,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPng() {
     // The words the picture prints (ticket 164), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
-      (project) => exportProjectPng(project, printText(project, deps.messages(), deps.locale(), new Date())),
+      (project) => exportProjectPng(project, printText(project, deps.messages(), deps.locale(), new Date()), PNG_BEAD_PX_BY_QUALITY[quality.value]),
       'png',
       'image/png',
     )

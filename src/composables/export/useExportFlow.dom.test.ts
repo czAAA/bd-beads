@@ -83,8 +83,15 @@ describe('useExportFlow', () => {
       expect(exportProjectPng).toHaveBeenCalledWith(
         expect.objectContaining({ id: project.id }),
         expect.objectContaining({ name: 'My scarf', labels: en.print, maker: 'Ada' }),
+        60,
       )
       expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
+    })
+
+    it('draws a bead as many px across as the Export quality on the device says (ticket 571)', async () => {
+      localStorage.setItem('openbeads:export-quality', 'high')
+      await setup().onExportPng()
+      expect(exportProjectPng).toHaveBeenCalledWith(expect.anything(), expect.anything(), 90)
     })
 
     it('draws the open Project as a PDF', async () => {
