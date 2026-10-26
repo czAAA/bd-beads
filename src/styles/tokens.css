@@ -279,4 +279,6 @@
   --print-part-overlap: 2;
   --print-chart-cell: 1.75mm;
   --print-ruler: 5mm;
+  --print-chart-cell-letters: 2.3mm;
+  --print-part-beads-letters: 75;
 }
