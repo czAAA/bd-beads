@@ -1,12 +1,25 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import IconButton from './IconButton.vue'
 
 // A discrete slider of a few named stops (QualitySlider card; ticket 576): a native range input, so touch drag, arrows,
 // Home and End work, with a tappable button under each stop that mirrors it.
 const props = defineProps<{
   /** The accessible name and the head line. */
   label: string
-  stops: readonly { id: string; word: string }[]
+  stops: readonly {
+    id: string
+    word: string
+    /** Read after the word by a screen reader, e.g. the bead size and the estimates. */
+    spoken?: string
+    /** The size under the word; with `from` it reads "from → detail" (the stop was reduced for this Frame). */
+    detail?: string
+    from?: string
+    /** The estimates under the size, one per format. */
+    lines?: readonly string[]
+  }[]
+  /** The info button beside the head while any stop is reduced: its accessible name and Tooltip. */
+  reduced?: { label: string; body: string }
   /** The id of the chosen stop. */
   modelValue: string
   /** An export is running: the slider keeps its place but takes no input. */
@@ -29,6 +42,7 @@ function pick(next: number): void {
   <div class="qs" :style="{ '--qs-at': at, '--qs-n': stops.length }" data-testid="quality-slider">
     <p class="qs-head">
       {{ label }}
+      <IconButton v-if="reduced && stops.some((stop) => stop.from)" class="qs-info" variant="plain" icon="info" :icon-size="16" :label="reduced.label" :tooltip="{ body: reduced.body }" data-testid="quality-reduced-info" />
       <span data-testid="quality-chosen">{{ chosen?.word }}</span>
     </p>
     <input
@@ -40,7 +54,7 @@ function pick(next: number): void {
       :value="index"
       :disabled="disabled"
       :aria-label="label"
-      :aria-valuetext="chosen?.word"
+      :aria-valuetext="chosen?.spoken ?? chosen?.word"
       data-testid="quality-range"
       @input="pick(Number(($event.target as HTMLInputElement).value))"
     />
@@ -58,6 +72,11 @@ function pick(next: number): void {
         @click="pick(position)"
       >
         <b>{{ stop.word }}</b>
+        <small v-if="stop.detail" :data-testid="`quality-detail-${stop.id}`">
+          <template v-if="stop.from">{{ stop.from }} → <span class="qs-was">{{ stop.detail }}</span></template>
+          <template v-else>{{ stop.detail }}</template>
+        </small>
+        <small v-for="line in stop.lines" :key="line">{{ line }}</small>
       </button>
     </div>
   </div>
@@ -92,6 +111,9 @@ function pick(next: number): void {
   .qs-stop b { font: 500 13px/18px var(--font-sans); color: var(--body); }
   .qs-stop[aria-checked="true"] b { color: var(--ink); }
   .qs-stop:disabled { cursor: default; background: none; }
-  .qs-stop:disabled b { color: var(--faint); }
+  .qs-stop small { font: 400 12px/16px var(--font-mono); color: var(--muted); white-space: nowrap; }
+  .qs-stop .qs-was { color: var(--accent-strong); }
+  .qs-info { margin-right: auto; }
+  .qs-stop:disabled small, .qs-stop:disabled b { color: var(--faint); }
   [data-theme="contrast"] .qs-range::-webkit-slider-runnable-track { box-shadow: inset 0 0 0 1px var(--panel-line); }
 </style>
