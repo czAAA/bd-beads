@@ -1,6 +1,10 @@
 /* Values DESIGN.md defines that aren't tokens (§4.6), kept apart from tokens.css, which tokens.test.ts holds equal
    to tokens.json. */
 
+:root {
+  --slider-thumb-scale: 1.15; /* QualitySlider card: the thumb while it is dragged. */
+}
+
 :root,
 :root[data-theme="light"] {
   --underline-width: 2px;
