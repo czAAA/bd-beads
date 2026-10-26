@@ -1,11 +1,11 @@
-import { countedDimensions, frameWeave, projectDimensions } from '../domain/project'
+import { countedDimensions, frameWeave } from '../domain/project'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import { describeWeave, type Weave } from '../domain/weave'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, cellSizePx, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
-// PDF page layout (ticket 162, 185): page 1 whole, then 100 × 100-bead chart blocks, beads up to 7 mm; page px at 150
-// dpi.
+// PDF page layout (ticket 162, 185, 578): page 1 whole, then parts of at most 100 × 100 beads at one bead size, small
+// parts sharing a sheet; page px at 150 dpi.
 
 export const PRINT_DPI = 150
 /** Millimetres as page px. */
@@ -13,8 +13,9 @@ export function mm(value: number): number {
   return (value * PRINT_DPI) / 25.4
 }
 
-export const PRINT_BEAD_BASE_MM = 4.6
-export const PRINT_BEAD_MAX_MM = 7
+/** One bead on every chart page (`print-chart-cell`), or with Letters on, `print-chart-cell-letters`. */
+export const PRINT_CHART_CELL_MM = 1.75
+export const PRINT_CHART_CELL_LETTERS_MM = 2.3
 export const PRINT_MARGIN = mm(10)
 export const PRINT_HEADER = mm(16)
 const PRINT_FOOTER = mm(8)
@@ -22,36 +23,34 @@ export const PRINT_LEGEND_WIDTH = mm(48)
 /** The rulers' band on each side of a chart, and the board's own edge around the beads. */
 export const PRINT_RULER = mm(5)
 export const PRINT_BOARD_PAD = mm(2.5)
-/** Room for a stacked part's own "Part N · columns A–B" label (PrintStrips), and the gap between stacked boards. */
-export const PRINT_STRIP_LABEL = mm(6)
-export const PRINT_STRIP_GAP = mm(6)
+/** Room for a part's own "Part B · columns 101–130 · rows 1–100" label above its board, and the gap between boards. */
+export const PRINT_PART_LABEL = mm(5)
+const PRINT_PART_GAP = mm(1)
 
 export interface PageSize {
   width: number
   height: number
 }
 
-/** A4 at 150 dpi. */
+/** A4 portrait at 150 dpi: every page of the PDF. */
 export const A4_PORTRAIT: PageSize = { width: 1240, height: 1754 }
-export const A4_LANDSCAPE: PageSize = { width: 1754, height: 1240 }
 
-/** What a chart page leaves for the beads themselves: inside the margins, header, footer, rulers and
- * board. */
+/** What a chart page leaves for its boards: inside the margins, header and footer. */
 export function chartArea(page: PageSize): PageSize {
-  const inset = (PRINT_RULER + PRINT_BOARD_PAD) * 2
   return {
-    width: page.width - PRINT_MARGIN * 2 - inset,
-    height: page.height - PRINT_MARGIN * 2 - PRINT_HEADER - PRINT_FOOTER - inset,
+    width: page.width - PRINT_MARGIN * 2,
+    height: page.height - PRINT_MARGIN * 2 - PRINT_HEADER - PRINT_FOOTER,
   }
 }
 
 export interface PrintPart {
-  // The page it prints on (page 1 is the whole Project). Several parts share a page when they are stacked (see
-  // `PrintPlan.strip`).
+  /** The page it prints on (page 1 is the whole Project); small parts share one. */
   page: number
   /** Which part across and down, from 0. */
   across: number
   down: number
+  /** Its name in reading order: A, B, C ... Z, AA. */
+  letter: string
   /** The displayed beads it holds, across and down, from 0 (a turned Project's rows run across). */
   firstAcross: number
   lastAcross: number
@@ -59,30 +58,19 @@ export interface PrintPart {
   lastDown: number
   /** Where it sits in the whole displayed chart at the plan's zoom, in px. */
   region: Region
+  /** Its label, rulers and board as one box, from the top left of the page's chart area, in px. */
+  place: Region
 }
 
 export interface PrintPlan {
-  /** Landscape when the Project is wider than tall, portrait otherwise (printed-output.md, Wide and long Projects). */
+  /** Always A4 portrait (printed-output.md, Wide and long Schemas). */
   page: PageSize
-  /** How far the renderer enlarges the Project on the chart pages: one bead is CELL_SIZE_PX × zoom px. */
+  /** One bead is CELL_SIZE_PX × zoom px on every chart page. */
   zoom: number
   partsAcross: number
   partsDown: number
   parts: PrintPart[]
   pageCount: number
-  /** True when a part fills under half its page: several parts then share a sheet at base bead size (PrintStrips). */
-  strip: boolean
-}
-
-/** Wider than tall, as displayed (a turned Project's rows run across). */
-function isProjectWide(project: Shape): boolean {
-  const { width, height } = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, project.rotation, frameWeave(project).cell)
-  return width > height
-}
-
-/** A4, landscape for a Project wider than tall and portrait otherwise; nothing else about the layout changes. */
-export function orientedPage(project: Shape): PageSize {
-  return isProjectWide(project) ? A4_LANDSCAPE : A4_PORTRAIT
 }
 
 type Shape = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape' | 'letters'>>
@@ -115,47 +103,74 @@ function blockExtent(weave: Weave, rotation: Rotation, across: number, down: num
   return displayedExtentPx(weave.technique, columns, rows, 1, rotation, weave.cell)
 }
 
-/** A chart page's block, fixed (ticket 185): 100 beads a side, an edge block simply however many remain. */
+/** A chart part's side, fixed (ticket 185): 100 beads, an edge part simply however many remain. */
 export const PRINT_BLOCK_BEADS = 100
-/** With Letters on a part holds at most this many beads a side, so a letter keeps room (ticket 0573,
- * `print-part-beads-letters`). */
+/** With Letters on a part holds at most this many beads a side, so a letter keeps room (`print-part-beads-letters`). */
 export const PRINT_BLOCK_BEADS_LETTERS = 75
 
-export function planPrint(project: Shape, page: PageSize = orientedPage(project)): PrintPlan {
-  const area = chartArea(page)
+/** A, B ... Z, AA, AB ...: a part's name from its place in reading order. */
+export function partLetter(index: number): string {
+  let name = ''
+  for (let rest = index; rest >= 0; rest = Math.floor(rest / 26) - 1) name = String.fromCharCode(65 + (rest % 26)) + name
+  return name
+}
+
+/** Slack for the rounding of a board that exactly fills a sheet. */
+const FIT_SLOP = 1
+
+interface Shelf {
+  y: number
+  height: number
+  used: number
+}
+
+/** Puts boxes on sheets: left to right along a shelf, a new shelf below, a new sheet when none has room (first fit, so
+ * a small part fills a gap on an earlier sheet). A box too big for an empty sheet still gets one. */
+function packSheets(sizes: PageSize[], area: PageSize): { sheet: number; x: number; y: number }[] {
+  const sheets: Shelf[][] = []
+  return sizes.map((size) => {
+    for (const [sheet, shelves] of sheets.entries()) {
+      for (const shelf of shelves) {
+        if (shelf.used + size.width <= area.width + FIT_SLOP && size.height <= shelf.height + FIT_SLOP) {
+          const x = shelf.used
+          shelf.used += size.width + PRINT_PART_GAP
+          return { sheet, x, y: shelf.y }
+        }
+      }
+      const last = shelves.at(-1)
+      const y = last ? last.y + last.height + PRINT_PART_GAP : 0
+      if (y + size.height <= area.height + FIT_SLOP) {
+        shelves.push({ y, height: size.height, used: size.width + PRINT_PART_GAP })
+        return { sheet, x: 0, y }
+      }
+    }
+    sheets.push([{ y: 0, height: size.height, used: size.width + PRINT_PART_GAP }])
+    return { sheet: sheets.length - 1, x: 0, y: 0 }
+  })
+}
+
+/** Cuts the displayed chart into parts of at most 100 × 100 beads (75 with Letters on) from the top left, every one at
+ * one bead size, and lays them on sheets in reading order (ticket 578). */
+export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT): PrintPlan {
   const grid = displayedGrid(project)
-  const baseZoom = mm(PRINT_BEAD_BASE_MM) / CELL_SIZE_PX
-  const maxZoom = mm(PRINT_BEAD_MAX_MM) / CELL_SIZE_PX
-
-  // Fixed 100 × 100-bead blocks, not sized to what fits the page: a Project within a block's reach needs no split at
-  // all, and a huge one splits into a predictable grid instead of parts computed from the base bead's legibility.
+  const zoom = mm(project.letters ? PRINT_CHART_CELL_LETTERS_MM : PRINT_CHART_CELL_MM) / CELL_SIZE_PX
   const block = project.letters ? PRINT_BLOCK_BEADS_LETTERS : PRINT_BLOCK_BEADS
-  const partAcross = Math.min(block, grid.across)
-  const partDown = Math.min(block, grid.down)
-  const partsAcross = Math.ceil(grid.across / partAcross)
-  const partsDown = Math.ceil(grid.down / partDown)
+  const partsAcross = Math.ceil(grid.across / block)
+  const partsDown = Math.ceil(grid.down / block)
+  const inset = PRINT_RULER + PRINT_BOARD_PAD
 
-  // A bracelet splits only one way (here, across): the other axis (down) then stays the same, short, size on every
-  // part. When that leaves a part filling less than half its page, several share a sheet instead (PrintStrips).
-  const strip = partsDown === 1 && partsAcross > 1 ? planStrips(project, page, area, grid, baseZoom, partAcross) : undefined
-  if (strip) return strip
-
-  // The block, then the largest bead at which one fills the page; an edge block simply draws smaller, at the same zoom.
-  const part = blockExtent(project, project.rotation, partAcross, partDown)
-  const zoom = Math.min(maxZoom, area.width / part.width, area.height / part.height)
-
-  const parts: PrintPart[] = []
+  const cut: Omit<PrintPart, 'page' | 'place'>[] = []
   for (let down = 0; down < partsDown; down += 1) {
     for (let across = 0; across < partsAcross; across += 1) {
-      const firstAcross = across * partAcross
-      const firstDown = down * partDown
-      const lastAcross = Math.min(grid.across, firstAcross + partAcross) - 1
-      const lastDown = Math.min(grid.down, firstDown + partDown) - 1
+      const firstAcross = across * block
+      const firstDown = down * block
+      const lastAcross = Math.min(grid.across, firstAcross + block) - 1
+      const lastDown = Math.min(grid.down, firstDown + block) - 1
       const extent = blockExtent(project, project.rotation, lastAcross - firstAcross + 1, lastDown - firstDown + 1)
-      parts.push({
-        page: parts.length + 2,
+      cut.push({
         across,
         down,
+        letter: partLetter(cut.length),
         firstAcross,
         lastAcross,
         firstDown,
@@ -170,45 +185,14 @@ export function planPrint(project: Shape, page: PageSize = orientedPage(project)
     }
   }
 
-  return { page, zoom, partsAcross, partsDown, parts, pageCount: parts.length + 1, strip: false }
-}
-
-type Grid = ReturnType<typeof displayedGrid>
-
-/** Stacks equal across-only parts several to a sheet, at the base bead size, when doing one page each would waste
- * paper. */
-function planStrips(project: Shape, page: PageSize, area: PageSize, grid: Grid, baseZoom: number, partAcross: number): PrintPlan | undefined {
-  const partsAcross = Math.ceil(grid.across / partAcross)
-  const downExtent = blockExtent(project, project.rotation, partAcross, grid.down).height * baseZoom
-  if (downExtent >= area.height / 2) return undefined
-
-  const stripHeight = PRINT_STRIP_LABEL + (PRINT_RULER + PRINT_BOARD_PAD) * 2 + downExtent
-  const perSheet = Math.floor((area.height + PRINT_STRIP_GAP) / (stripHeight + PRINT_STRIP_GAP))
-  if (perSheet < 2) return undefined
-
-  const parts: PrintPart[] = []
-  for (let across = 0; across < partsAcross; across += 1) {
-    const firstAcross = across * partAcross
-    const lastAcross = Math.min(grid.across, firstAcross + partAcross) - 1
-    const extent = blockExtent(project, project.rotation, lastAcross - firstAcross + 1, grid.down)
-    parts.push({
-      page: 2 + Math.floor(across / perSheet),
-      across,
-      down: 0,
-      firstAcross,
-      lastAcross,
-      firstDown: 0,
-      lastDown: grid.down - 1,
-      region: {
-        x: firstAcross * grid.stepAcross * baseZoom,
-        y: 0,
-        width: Math.ceil(extent.width * baseZoom),
-        height: Math.ceil(extent.height * baseZoom),
-      },
-    })
-  }
-  const sheets = Math.ceil(partsAcross / perSheet)
-  return { page, zoom: baseZoom, partsAcross, partsDown: 1, parts, pageCount: 1 + sheets, strip: true }
+  const sizes = cut.map(({ region }) => ({ width: region.width + inset * 2, height: region.height + inset * 2 + PRINT_PART_LABEL }))
+  const placed = packSheets(sizes, chartArea(page))
+  const parts = cut.map((part, index) => {
+    const { sheet, x, y } = placed[index]!
+    return { ...part, page: sheet + 2, place: { x, y, ...sizes[index]! } }
+  })
+  const sheets = placed.reduce((most, { sheet }) => Math.max(most, sheet + 1), 0)
+  return { page, zoom, partsAcross, partsDown, parts, pageCount: 1 + sheets }
 }
 
 /** Where the chart goes on from a part: the page to its right and the page below, if there are any. */

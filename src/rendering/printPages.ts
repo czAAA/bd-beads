@@ -13,8 +13,7 @@ import {
   PRINT_LEGEND_WIDTH,
   PRINT_MARGIN,
   PRINT_RULER,
-  PRINT_STRIP_GAP,
-  PRINT_STRIP_LABEL,
+  PRINT_PART_LABEL,
   continuation,
   displayedGrid,
   mm,
@@ -446,11 +445,10 @@ export function miniMapLayout(plan: PrintPlan, part: PrintPart): { cell: number;
   const horizontal = total > MINI_MAP_GRID_LIMIT
   const columns = horizontal ? total : plan.partsAcross
   const cell = horizontal ? Math.min(mm(2), mm(40) / total) : Math.min(mm(3), mm(24) / Math.max(plan.partsAcross, plan.partsDown))
-  const current = part.down * plan.partsAcross + part.across
   const at = (index: number): [number, number] => (horizontal ? [index, 0] : [index % plan.partsAcross, Math.floor(index / plan.partsAcross)])
   const cells = Array.from({ length: total }, (_, index) => {
     const [across, down] = at(index)
-    return { across, down, here: index === current }
+    return { across, down, here: plan.parts[index]!.page === part.page }
   })
   return { cell, width: cell * columns, cells }
 }
@@ -472,100 +470,63 @@ function drawMiniMap(context: CanvasRenderingContext2D, plan: PrintPlan, part: P
   return layout.width
 }
 
-/** A chart page: one full-size part normally, or (PrintStrips) several small ones stacked on the same sheet. */
+/** A chart page: its parts, each on its own board under its label, where the plan placed them (ticket 578). */
 export function drawChartPage(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[], scale = 1): HTMLCanvasElement {
-  return plan.strip ? drawStripSheet(project, words, plan, parts, scale) : drawSinglePartPage(project, words, plan, parts[0]!, scale)
-}
-
-function drawSinglePartPage(project: Project, words: PrintText, plan: PrintPlan, part: PrintPart, scale: number): HTMLCanvasElement {
   const { page } = plan
   const { canvas, context } = blankPage(page, scale)
   const { labels } = words
   const inset = PRINT_RULER + PRINT_BOARD_PAD
-  const areaTop = PRINT_MARGIN + PRINT_HEADER + inset
-  const areaWidth = page.width - PRINT_MARGIN * 2 - inset * 2
-  const board: Board = {
-    x: PRINT_MARGIN + inset + (areaWidth - part.region.width) / 2,
-    y: areaTop,
-    width: part.region.width,
-    height: part.region.height,
-  }
+  const here = parts[0]!
 
-  // The 16 mm header: technique word and name, the part, maker, date and time, the page and a mini map.
-  const pageLabel = labels.page.replace('{page}', String(part.page)).replace('{pages}', String(plan.pageCount))
-  const mapWidth = drawMiniMap(context, plan, part, page.width - PRINT_MARGIN, PRINT_MARGIN + mm(1))
+  // The 16 mm header: technique word and name, the maker, date and time, a mini map and the page number, large.
+  const pageLabel = labels.page.replace('{page}', String(here.page)).replace('{pages}', String(plan.pageCount))
+  const mapWidth = drawMiniMap(context, plan, here, page.width - PRINT_MARGIN, PRINT_MARGIN + mm(1))
   const rightEdge = page.width - PRINT_MARGIN - mapWidth - mm(4)
   text(context, pageLabel, rightEdge, PRINT_MARGIN + mm(5), font('700', 9, SANS), PRINT_COLORS.ink, 'right')
   drawTitle(context, words, PRINT_MARGIN, PRINT_MARGIN + mm(6), 18, 11, rightEdge - PRINT_MARGIN - mm(40))
-  const partLabel = labels.part.replace('{part}', String(part.page - 1)).replace('{parts}', String(plan.parts.length))
-  const meta = [partLabel, headerMaker(words.maker), words.exportedAt].filter(Boolean).join(' · ')
+  const meta = [headerMaker(words.maker), words.exportedAt].filter(Boolean).join(' · ')
   text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(11.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', rightEdge - PRINT_MARGIN)
 
-  // The part, filling the page, with its rulers.
-  drawBoard(context, project, part.region, plan.zoom, board, shownLetters(project))
-  drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
+  for (const part of parts) {
+    const left = PRINT_MARGIN + part.place.x
+    const top = PRINT_MARGIN + PRINT_HEADER + part.place.y
+    text(context, partLabel(project, labels, part), left, top + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
+    const board: Board = { x: left + inset, y: top + PRINT_PART_LABEL + inset, width: part.region.width, height: part.region.height }
+    drawBoard(context, project, part.region, plan.zoom, board, shownLetters(project))
+    drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
+  }
 
   // The 8 mm footer: the brand, and where the chart goes on.
   const footer = page.height - PRINT_MARGIN - mm(1.5)
   drawMark(context, PRINT_MARGIN, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
   text(context, 'openbeads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
-  const next = continuation(plan, part)
-  const onward =
-    next.right && next.below
-      ? labels.continuesBoth.replace('{right}', String(next.right)).replace('{below}', String(next.below))
-      : next.right
-        ? labels.continuesRight.replace('{right}', String(next.right))
-        : next.below
-          ? labels.continuesBelow.replace('{below}', String(next.below))
-          : labels.lastPart
-  text(context, onward, page.width - PRINT_MARGIN, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
+  text(context, continuationText(labels, plan, parts), page.width - PRINT_MARGIN, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
   return canvas
 }
 
-// ---- Stacked strips (PrintStrips) ----------------------------------------------------------------------------------
-
-/** "Part 2 · columns 39–76": the raw axis being split (columns when not turned a quarter, rows when it is), lowest
- * number first. */
-function stripLabel(project: Project, labels: PrintText['labels'], part: PrintPart): string {
-  const a = acrossNumber(project, part.firstAcross)
-  const b = acrossNumber(project, part.lastAcross)
-  const template = rotationSwapsAxes(project.rotation) ? labels.partRows : labels.partColumns
-  return template.replace('{part}', String(part.across + 1)).replace('{from}', String(Math.min(a, b))).replace('{to}', String(Math.max(a, b)))
+/** "Part B · columns 101–130 · rows 1–100": the Project's own numbers, lowest first (a turned Project's rows run
+ * across). */
+export function partLabel(project: Project, labels: PrintText['labels'], part: PrintPart): string {
+  const range = (a: number, b: number) => `${Math.min(a, b)}–${Math.max(a, b)}`
+  const across = range(acrossNumber(project, part.firstAcross), acrossNumber(project, part.lastAcross))
+  const down = range(downNumber(project, part.firstDown), downNumber(project, part.lastDown))
+  const turned = rotationSwapsAxes(project.rotation)
+  return labels.partArea
+    .replace('{part}', part.letter)
+    .replace('{columns}', turned ? down : across)
+    .replace('{rows}', turned ? across : down)
 }
 
-/** Several parts sharing one sheet, at the base bead size, each on its own board with rulers and a label, top to
- * bottom. */
-function drawStripSheet(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[], scale: number): HTMLCanvasElement {
-  const { page } = plan
-  const { canvas, context } = blankPage(page, scale)
-  const { labels } = words
-  const inset = PRINT_RULER + PRINT_BOARD_PAD
-  const areaWidth = page.width - PRINT_MARGIN * 2 - inset * 2
-
-  // The header: technique word and name, the maker and date, the page number (no per-part indicator or mini map: each
-  // board has its own label).
-  const pageLabel = labels.page.replace('{page}', String(parts[0]!.page)).replace('{pages}', String(plan.pageCount))
-  text(context, pageLabel, page.width - PRINT_MARGIN, PRINT_MARGIN + mm(5), font('700', 9, SANS), PRINT_COLORS.ink, 'right')
-  drawTitle(context, words, PRINT_MARGIN, PRINT_MARGIN + mm(6), 18, 11, page.width - PRINT_MARGIN * 2 - mm(40))
-  const meta = [headerMaker(words.maker), words.exportedAt].filter(Boolean).join(' · ')
-  text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(11.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', page.width - PRINT_MARGIN * 2)
-
-  let y = PRINT_MARGIN + PRINT_HEADER
-  for (const part of parts) {
-    text(context, stripLabel(project, labels, part), PRINT_MARGIN, y + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
-    y += PRINT_STRIP_LABEL + inset
-    const board: Board = { x: PRINT_MARGIN + inset + (areaWidth - part.region.width) / 2, y, width: part.region.width, height: part.region.height }
-    drawBoard(context, project, part.region, plan.zoom, board, shownLetters(project))
-    drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
-    y = board.y + board.height + inset + PRINT_STRIP_GAP
-  }
-
-  // The footer: the brand, and (from the last part on the sheet) where the chart goes on.
-  const footer = page.height - PRINT_MARGIN - mm(1.5)
-  drawMark(context, PRINT_MARGIN, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
-  text(context, 'openbeads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
-  const next = continuation(plan, parts.at(-1)!)
-  const onward = next.right ? labels.continuesRight.replace('{right}', String(next.right)) : labels.lastPart
-  text(context, onward, page.width - PRINT_MARGIN, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
-  return canvas
+/** Where the chart goes on from a sheet: the pages to the right of and below its parts, else the next sheet, else
+ * "Last part". */
+function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: PrintPart[]): string {
+  const here = parts[0]!.page
+  const pages = (pick: (next: ReturnType<typeof continuation>) => number | undefined) =>
+    parts.map((part) => pick(continuation(plan, part))).filter((page): page is number => page !== undefined && page !== here)
+  const right = Math.min(...pages((next) => next.right))
+  const below = Math.min(...pages((next) => next.below))
+  if (Number.isFinite(right) && Number.isFinite(below)) return labels.continuesBoth.replace('{right}', String(right)).replace('{below}', String(below))
+  if (Number.isFinite(right)) return labels.continuesRight.replace('{right}', String(right))
+  if (Number.isFinite(below)) return labels.continuesBelow.replace('{below}', String(below))
+  return here < plan.pageCount ? labels.continuesOn.replace('{next}', String(here + 1)) : labels.lastPart
 }
