@@ -277,7 +277,7 @@ onBeforeUnmount(() => {
 .app-panel--dropdown {
   z-index: var(--z-popover);
   width: var(--panel-width);
-  /* Never wider than the screen less the 8px gutter the position keeps (the phone's larger rem makes 21.25rem nearly 390px). */
+  /* Never wider than the screen less the 8px gutter the position keeps (on a phone 504px is wider than the screen). */
   max-width: calc(100vw - 2 * var(--frame-panel-gap));
   padding: var(--space-8);
   border-radius: var(--radius-lg);
