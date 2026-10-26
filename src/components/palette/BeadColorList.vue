@@ -60,7 +60,7 @@ function add(hex: string, code: string) {
               <span class="bead-color-list__code">{{ entry.code }}</span>
               <span class="bead-color-list__meta">
                 {{ familyName(entry.family) }} · {{ t.palette.beadColors.finishes[entry.finish] }}
-                <template v-if="entry.discontinued"> · {{ t.palette.beadColors.discontinued }}</template>
+                <span v-if="entry.discontinued" class="bead-color-list__note"> · {{ t.palette.beadColors.discontinued }}</span>
               </span>
             </span>
             <span v-if="entry.taken" class="bead-color-list__taken">{{ t.palette.beadColors.inPalette }}</span>
@@ -147,6 +147,11 @@ function add(hex: string, code: string) {
   font: var(--type-meta);
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+
+/* The mark moves to the next line whole instead of breaking inside. */
+.bead-color-list__note {
+  display: inline-block;
 }
 
 .bead-color-list__taken {
