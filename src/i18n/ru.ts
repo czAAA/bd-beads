@@ -57,7 +57,7 @@ export const ru: Translations = {
     enterWholeBeads: 'Укажите целое число бисерин.',
     or: 'или',
     openCanvasTitle: 'Открытый холст',
-    openCanvasSubtitle: 'Рисуйте на открытом холсте, задайте рамку, чтобы экспортировать картинку или PDF',
+    openCanvasSubtitle: 'Рисуйте на открытом холсте, задайте рамку, чтобы экспортировать картинку или PDF, когда понадобится',
     pickStarter: 'Выбрать стартер',
     estimateBeads: '≈ {columns}×{rows} бисерин',
     estimateUnits: '≈ {columns}×{rows} юнитов',

@@ -11,7 +11,7 @@ beforeEach(() => {
 
 const bead = BEAD_CATALOG[0]!
 const mountSection = (props: Record<string, unknown> = {}) =>
-  mount(BeadSection, { props: { bead, candidates: offeredBeads(), 'onUpdate:beadShape': () => {}, ...props } })
+  mount(BeadSection, { props: { bead, beadShape: 'symmetric', candidates: offeredBeads(), 'onUpdate:beadShape': () => {}, ...props } })
 
 describe('BeadSection (ticket 568)', () => {
   it('shows the Bead it is given as Brand, Type and Size', () => {
@@ -34,7 +34,7 @@ describe('BeadSection (ticket 568)', () => {
   })
 
   it('offers Symmetric and Real and reports the shape chosen', async () => {
-    const wrapper = mountSection({ beadShape: 'symmetric' })
+    const wrapper = mountSection()
 
     await wrapper.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
 

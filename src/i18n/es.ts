@@ -57,7 +57,7 @@ export const es: Translations = {
     enterWholeBeads: 'Escribe un número entero de cuentas.',
     or: 'o',
     openCanvasTitle: 'Lienzo abierto',
-    openCanvasSubtitle: 'Dibuja en el lienzo abierto, pon un marco para exportar la imagen o el PDF',
+    openCanvasSubtitle: 'Dibuja en el lienzo abierto, pon un marco para exportar la imagen o el PDF cuando haga falta',
     pickStarter: 'Elegir un punto de partida',
     estimateBeads: '≈ {columns}×{rows} cuentas',
     estimateUnits: '≈ {columns}×{rows} unidades',

@@ -57,7 +57,7 @@ export const pl: Translations = {
     enterWholeBeads: 'Wpisz całkowitą liczbę koralików.',
     or: 'lub',
     openCanvasTitle: 'Otwarte płótno',
-    openCanvasSubtitle: 'Rysuj na otwartym płótnie, ustaw ramkę, by wyeksportować obraz lub PDF',
+    openCanvasSubtitle: 'Rysuj na otwartym płótnie, ustaw ramkę, by wyeksportować obraz lub PDF, gdy będzie potrzeba',
     pickStarter: 'Wybierz starter',
     estimateBeads: '≈ {columns}×{rows} koralików',
     estimateUnits: '≈ {columns}×{rows} jednostek',

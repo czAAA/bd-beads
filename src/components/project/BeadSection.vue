@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
-import { BEAD_CATALOG, beadAfterPick, type Bead } from '../../domain/beads'
-import { DEFAULT_BEAD_SHAPE, type BeadShape } from '../../domain/weave'
+import { BEAD_CATALOG, beadAfterPick, uniqueBy, type Bead } from '../../domain/beads'
+import type { BeadShape } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import PanelPicker from '../shell/PanelPicker.vue'
 import BeadShapeField from './BeadShapeField.vue'
@@ -15,7 +15,7 @@ const props = defineProps<{
   /** What it could switch to: everything offered but its own, with the catalog's Bead of its id when its copy is out of date. */
   candidates: readonly Bead[]
 }>()
-const shape = defineModel<BeadShape | undefined>('beadShape')
+const shape = defineModel<BeadShape>('beadShape', { required: true })
 const emit = defineEmits<{ pick: [beadId: string] }>()
 
 const { t } = useI18n()
@@ -28,13 +28,9 @@ const entries = computed(() => {
   return all.sort((a, b) => rank(a) - rank(b))
 })
 
-function unique<T>(items: readonly T[], key: (item: T) => string): T[] {
-  return items.filter((item, index) => items.findIndex((other) => key(other) === key(item)) === index)
-}
-
-const brands = computed(() => unique(entries.value, (bead) => bead.brand.id).map((bead) => ({ value: bead.brand.id, label: bead.brand.name })))
+const brands = computed(() => uniqueBy(entries.value, (bead) => bead.brand.id).map((bead) => ({ value: bead.brand.id, label: bead.brand.name })))
 const types = computed(() =>
-  unique(
+  uniqueBy(
     entries.value.filter((bead) => bead.brand.id === own.value?.brand.id),
     (bead) => bead.formFactor.id,
   ).map((bead) => ({ value: bead.formFactor.id, label: t.value.formFactors[bead.formFactor.nameKey] })),
@@ -64,7 +60,7 @@ function pickSize(beadId: string) {
   <div class="bead-section" data-testid="bead-section">
     <div class="bead-section__shape" data-testid="bead-shape-row">
       <span :id="shapeLabelId">{{ t.form.beadShapeLabel }}</span>
-      <BeadShapeField :model-value="shape ?? DEFAULT_BEAD_SHAPE" :labelledby="shapeLabelId" small testid="bead-shape" @update:model-value="shape = $event" />
+      <BeadShapeField :model-value="shape" :labelledby="shapeLabelId" small testid="bead-shape" @update:model-value="shape = $event" />
     </div>
     <div v-if="own" class="bead-section__pickers" role="group" :aria-label="t.panels.project.bead">
       <PanelPicker bare :label="t.panels.project.beadBrand" :model-value="own.brand.id" :options="brands" data-testid="bead-brand" @update:model-value="pickBrand" />

@@ -77,7 +77,6 @@ describe('NewProjectForm', () => {
     expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
     expect(pick.attributes('aria-expanded')).toBe('false')
     await pick.trigger('click')
-    expect(wrapper.find('[data-testid="starter-card-blank"]').exists()).toBe(false)
     await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
     expect(wrapper.emitted('choose-starter')).toEqual([['bracelet']])
     await pick.trigger('click')

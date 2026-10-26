@@ -115,8 +115,6 @@ const sizeSummary = computed(() => [`${counted.value.columns} × ${counted.value
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 const exportBusy = computed(() => !!props.exporting)
-/** Why the exports are off: with no Frame there is nothing to export. */
-const exportOffBody = computed(() => (frame.value ? undefined : t.value.frame.exportNeedsFrame))
 const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
 
 /** The Tooltip over the off size fields. */
@@ -154,8 +152,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
     <!-- Export first and always shown (ticket 568): off with no Frame, with the way to get one written under it. -->
     <PanelSection id="frame:export" :label="t.panels.project.exportHeading">
-      <PanelItem icon="image" value=".png" stays :disabled="!frame || exportBusy" :disabled-body="exportOffBody" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
-      <PanelItem icon="pdf" value=".pdf" stays :disabled="!frame || exportBusy" :disabled-body="exportOffBody" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
+      <PanelItem icon="image" value=".png" stays :disabled="!frame || exportBusy" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
+      <PanelItem icon="pdf" value=".pdf" stays :disabled="!frame || exportBusy" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
       <!-- Buy me a coffee (ticket 560): one plain line, no popup; absent while the Coffee link is empty. -->

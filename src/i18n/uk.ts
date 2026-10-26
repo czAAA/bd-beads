@@ -57,7 +57,7 @@ export const uk: Translations = {
     enterWholeBeads: 'Вкажіть ціле число бісерин.',
     or: 'або',
     openCanvasTitle: 'Відкрите полотно',
-    openCanvasSubtitle: 'Малюйте на відкритому полотні, задайте рамку, щоб експортувати картинку або PDF',
+    openCanvasSubtitle: 'Малюйте на відкритому полотні, задайте рамку, щоб експортувати картинку або PDF, коли знадобиться',
     pickStarter: 'Обрати стартер',
     estimateBeads: '≈ {columns}×{rows} бісерин',
     estimateUnits: '≈ {columns}×{rows} юнітів',
