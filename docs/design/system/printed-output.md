@@ -71,6 +71,6 @@ The PDF and PNG exports of a framed Schema: the chart is the main thing on every
 
 - **One portrait picture**: the whole Schema on its board at full width, rulers on the top and left with a number every 10; the story under it.
 - **The story**: on the left the technique word, the name, "by {maker}", bead and size, and the total ("16 900 beads · ≈ 84.5 g"); on the right Beads needed in two columns (letter swatch, name, beads, grams). At the bottom the X1 mark and "bd-beads" on the left, the date and time on the right. A Schema wider than tall gets a shorter picture; the story stays under it.
-- Bead size follows the Export quality (QualitySlider card): 45, 60 or 90 px, Medium (`print-png-bead`, 60) by default, and the PDF is 150, 300 or 450 DPI; fewer when the picture would pass the one pixel ceiling; drawn in the app's language. No watermark. File names stay `bd-beads-{pattern}.png` and `.pdf`.
+- Bead size follows the Export quality (QualitySlider card): 45, 60 or 90 px, Medium (`print-png-bead`, 60) by default, and the PDF is 150, 300 or 450 DPI; fewer, to a whole px, when the picture would pass the one ceiling (400 megapixels, 16 384 px wide); drawn in the app's language. No watermark. File names stay `bd-beads-{pattern}.png` and `.pdf`.
 
 The sizes are the `print-*` tokens; the board color is `print-board`. The PrintPage1, PrintChartPage, PrintSpecification, PrintWordChart and PngExport cards show the pages. The signed-off canvas is in the claude.ai design project "Export sheets — PDF & PNG".

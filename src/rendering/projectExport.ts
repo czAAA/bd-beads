@@ -1,6 +1,7 @@
 import { frameWeave, projectDimensions } from '../domain/project'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
+import { PNG_BEAD_PX_BY_QUALITY } from '../domain/exportQuality'
 import { encodePng } from '../domain/pngEncoder'
 import { PRINT_THEME } from './beadLook'
 import { renderProject } from './projectRenderer'
@@ -30,11 +31,13 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 
 // ---- PNG -----------------------------------------------------------------------------------------------------------
 
-/** A bead is this many px across in a PNG, unless the Project is too large for that (see pngZoom). */
-export const PNG_BEAD_PX = 30
-// The most pixels a PNG is drawn with: what a phone can be asked to hold while it is compressed, and about what a 70 ×
-// 250 Project needs at 30 px a bead.
-export const PNG_MAX_PIXELS = 16_000_000
+/** A bead is this many px across in a PNG at Medium, the Export quality it starts at (ticket 571; see pngZoom). */
+export const PNG_BEAD_PX = PNG_BEAD_PX_BY_QUALITY.medium
+// The most raw pixels a PNG is drawn with, on every device (ticket 571, ADR 0043): it bounds pixels, not the compressed
+// bytes, which are held whole. Past it a level is drawn smaller.
+export const PNG_MAX_PIXELS = 400_000_000
+// The widest a picture is drawn: the strip canvas is as wide as the picture and some browsers stop at 16 384 px.
+export const PNG_MAX_WIDTH = 16_384
 // Around the chart's top, left and right, in image px: room for its rulers (the PngExport card) as well as a blank
 // border.
 export const PNG_MARGIN_PX = 40
@@ -45,6 +48,8 @@ const STRIP_PIXELS = 1_000_000
 // story together — still keeps to PNG_MAX_PIXELS. Generous: the story is a few hundred px across or tall, never
 // anywhere near this.
 const PNG_STORY_RESERVE_PIXELS = 2_500_000
+// Width the story column may take beside a tall chart (pngPage.ts), kept out of PNG_MAX_WIDTH.
+const PNG_STORY_RESERVE_WIDTH = 600
 
 // How far to enlarge the Project for a PNG: to a legible bead size, and no further than the pixel budget (less the
 // story's own room) allows.
@@ -61,7 +66,10 @@ export function pngZoom(project: Pick<Project, 'technique' | 'frame' | 'beads' |
   const a = width * height
   const b = (width + height) * borderX
   const c = borderX * borderX - budget
-  return Math.min(wanted, (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a))
+  const widest = (PNG_MAX_WIDTH - PNG_STORY_RESERVE_WIDTH - borderX) / width
+  const largest = Math.min(wanted, widest, (-b + Math.sqrt(b * b - 4 * a * c)) / (2 * a))
+  // A reduced bead is a whole number of px across: between pixels its edges blur and the file grows several times over.
+  return largest < wanted ? Math.floor(largest * CELL_SIZE_PX) / CELL_SIZE_PX : largest
 }
 
 // The Project as a PNG (ticket 164; printed-output.md): chart with rulers plus the PDF's story column, drawn band by

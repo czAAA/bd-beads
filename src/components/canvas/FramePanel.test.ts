@@ -249,7 +249,7 @@ describe('FramePanel (ticket 473)', () => {
     const range = wrapper.get<HTMLInputElement>('[data-testid="quality-range"]')
     expect(range.attributes('aria-label')).toBe(en.frame.exportQuality)
     expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityMedium)
-    expect(wrapper.findAll('[role="radio"]').map((stop) => stop.text())).toEqual([en.frame.qualityLow, en.frame.qualityMedium, en.frame.qualityHigh])
+    expect(wrapper.findAll('[role="radio"] b').map((word) => word.text())).toEqual([en.frame.qualityLow, en.frame.qualityMedium, en.frame.qualityHigh])
     await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
     expect(wrapper.get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityHigh)
     expect(localStorage.getItem('openbeads:export-quality')).toBe('high')
@@ -260,6 +260,20 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="quality-stop-high"]').attributes('disabled')).toBeDefined()
     wrapper.unmount()
     expect(mountBar().get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
+  })
+
+  it('shows each stop’s bead size and PNG size for the open Frame, and both bead sizes where a large Frame is reduced (ticket 571)', () => {
+    const small = mountBar()
+    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('45 px')
+    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('90 px')
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium60 pxPNG ≈ \d+ MB$/)
+    expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 60 px, PNG ≈ \d+ MB$/)
+
+    const large = mountBar({ ...framed(), frame: { ...framed().frame!, columns: 200, rows: 200 } })
+    expect(large.get('[data-testid="quality-detail-high"]').text()).toMatch(/^90 px → \d+ px$/)
+    expect(large.get('[data-testid="quality-detail-low"]').text()).toBe('45 px')
+    expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(true)
   })
 
   it('ends the export section with a plain Buy me a coffee link to the Coffee link, in a new tab (ticket 560)', () => {

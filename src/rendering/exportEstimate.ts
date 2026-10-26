@@ -5,9 +5,10 @@ import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 
 type Shape = Parameters<typeof pngZoom>[0]
 
-// Bytes per pixel, fitted to real exports of 600 to 20 000 bead Projects (noise to flat blocks): PNG 0.04 to 0.10, a
-// PDF page 0.10 to 0.28. The middle of each range, so an estimate is out by a third either way; it is shown as "≈".
-const PNG_BYTES_PER_PIXEL = 0.07
+// Bytes per pixel. PNG: measured in Chromium at 45 to 90 px a bead on a banded fixture, 20 × 30 to 250 × 250: 0.024 to
+// 0.047, falling as beads get larger (ticket 571); the middle, so a noisier picture comes out larger. PDF page: fitted
+// earlier, 0.10 to 0.28. Estimates are out by a half either way and shown as "≈".
+const PNG_BYTES_PER_PIXEL = 0.04
 const PDF_BYTES_PER_PIXEL = 0.15
 
 /** How many px a bead is across in the PNG at this quality, after the pixel ceiling has reduced it (QualitySlider card). */
