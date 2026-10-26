@@ -121,6 +121,29 @@ export async function exportProjectPng(project: Project, words: PrintText, beadP
   })
 }
 
+/** The Word chart as a PNG (ticket 0574): one tall picture of the written rows, at the same Export quality as the
+ * pattern's (the text is drawn larger as a bead is). Drawn band by band like the pattern. */
+export async function exportWordChartPng(words: PrintText, beadPx = PNG_BEAD_PX): Promise<Blob> {
+  const { wordChartPicture } = await import('./wordChartPages')
+  const { loadPrintFonts } = await import('./printPages')
+  await loadPrintFonts()
+  const scale = beadPx / PNG_BEAD_PX
+  const picture = wordChartPicture(words)
+  const width = Math.ceil(picture.width * scale)
+  const height = Math.ceil(picture.height * scale)
+  const stripRows = Math.max(1, Math.floor(STRIP_PIXELS / width))
+  const canvas = createCanvas(width, Math.min(stripRows, height))
+  const context = contextOf(canvas)
+  return encodePng(width, height, stripRows, (y, rows) => {
+    context.setTransform(1, 0, 0, 1, 0, 0)
+    context.fillStyle = '#ffffff'
+    context.fillRect(0, 0, canvas.width, canvas.height)
+    context.scale(scale, scale)
+    picture.draw(context, y / scale, canvas.height / scale)
+    return context.getImageData(0, 0, width, rows).data
+  })
+}
+
 // ---- PDF -----------------------------------------------------------------------------------------------------------
 
 /** The page as lossless compressed scanlines: measured at half the size of a JPEG of it (ticket 572, ADR 0043). */
@@ -137,8 +160,12 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   const scale = dpi / PRINT_DPI
   // Loaded when a PDF is asked for: the page drawing (and the mark it reads from the design system) isn't needed
   // before.
-  const { drawChartPage, drawPageOne, loadPrintFonts } = await import('./printPages')
+  const { blankPage, drawChartPage, drawPageOne, loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
+  // The Word chart (ticket 0574) follows the chart pages; its sheets count in every page's "of N".
+  const { drawWordChartPages, wordChartPageCount } = await import('./wordChartPages')
+  const wordPages = wordChartPageCount(words, plan.page)
+  const counted = wordPages > 0 ? { ...plan, pageCount: plan.pageCount + wordPages } : plan
 
   const pages: PdfPage[] = []
   const add = async (canvas: HTMLCanvasElement) => {
@@ -149,13 +176,16 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
     canvas.height = 0
   }
 
-  await add(drawPageOne(project, words, plan, scale))
+  await add(drawPageOne(project, words, counted, scale))
   // Usually one part per page; PrintStrips can put several small parts on the same sheet, so pages come from grouping
   // them.
   const sheets = new Map<number, PrintPart[]>()
   for (const part of plan.parts) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
   for (const parts of sheets.values()) {
-    await add(drawChartPage(project, words, plan, parts, scale))
+    await add(drawChartPage(project, words, counted, parts, scale))
+  }
+  for (const canvas of drawWordChartPages(words, plan.page, () => blankPage(plan.page, scale), plan.pageCount + 1, counted.pageCount)) {
+    await add(canvas)
   }
 
   return buildPdf(pages, (plan.page.width * 72) / PRINT_DPI, (plan.page.height * 72) / PRINT_DPI)
