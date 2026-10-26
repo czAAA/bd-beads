@@ -95,7 +95,9 @@ const doodles = computed(() =>
   width: 100cqw;
   margin-left: -50cqw;
   z-index: -1;
-  overflow: clip;
+  /* Sideways clipped at the page's edges; down open, so a mark taller than what is left of its section is drawn whole
+     (it passes behind the next section). */
+  overflow: clip visible;
   pointer-events: none;
   user-select: none;
 }
