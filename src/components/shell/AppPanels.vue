@@ -49,6 +49,7 @@ const {
   onExportLibraryFile,
   saveNow,
   onSaveMakerName,
+  onSetLetters,
   onRenameProject,
   onRequestDuplicate,
   onRequestDelete,
@@ -99,6 +100,7 @@ watch(openPanel, (open) => {
       @select-frame="onSelectFrame"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
+      @set-letters="onSetLetters"
       @key="onFrameKey"
     />
     <!-- Frame from starter (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->

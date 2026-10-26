@@ -515,6 +515,8 @@ export const es: Translations = {
     qualitySizeMb: '{n} MB',
     qualityReduced: 'Reducido para caber en la imagen más grande que un navegador puede crear para este marco.',
     qualityReducedLabel: 'Por qué se reduce el tamaño',
+    lettersLabel: 'Letras',
+    lettersLine: 'Imprime la letra de cada color en sus cuentas, para distinguir los colores en papel y en blanco y negro.',
     qualityHintLabel: 'Para qué sirve la calidad baja',
     qualityHint: 'La calidad baja ahorra memoria: archivos más pequeños y una imagen que un móvil siempre puede crear.',
     exportCoffee: 'openbeads lo hace, lo mantiene y lo va haciendo crecer poco a poco una sola familia. Si te resulta útil, un café ayuda a que siga adelante.',

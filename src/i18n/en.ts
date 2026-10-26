@@ -512,6 +512,8 @@ export const en: Translations = {
     qualitySizeMb: '{n} MB',
     qualityReduced: 'Reduced to fit the largest picture a browser can make for this Frame.',
     qualityReducedLabel: 'Why a size is reduced',
+    lettersLabel: 'Letters',
+    lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
     qualityHintLabel: 'What the lowest quality is for',
     qualityHint: 'Low saves memory: smaller files, and a picture a phone can always make.',
     exportCoffee: 'openbeads is made, maintained and slowly grown by one family. If it’s useful to you, a coffee helps it carry on.',

@@ -509,6 +509,8 @@ export const zh: Translations = {
     qualitySizeMb: '{n} MB',
     qualityReduced: '已缩小，以适应浏览器能为此边框生成的最大图片。',
     qualityReducedLabel: '为什么尺寸被缩小',
+    lettersLabel: '字母',
+    lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
     qualityHintLabel: '低质量的用途',
     qualityHint: '低质量节省内存：文件更小，手机始终能生成图片。',
     exportCoffee: 'openbeads 由一个家庭制作、维护并慢慢完善。如果它对你有用，请我们喝杯咖啡，它就能继续走下去。',

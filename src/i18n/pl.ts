@@ -517,6 +517,8 @@ export const pl: Translations = {
     qualitySizeMb: '{n} MB',
     qualityReduced: 'Zmniejszono, aby zmieścić się w największym obrazie, jaki przeglądarka może utworzyć dla tej ramki.',
     qualityReducedLabel: 'Dlaczego rozmiar jest zmniejszony',
+    lettersLabel: 'Litery',
+    lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
     qualityHintLabel: 'Do czego służy niska jakość',
     qualityHint: 'Niska jakość oszczędza pamięć: mniejsze pliki i obraz, który telefon zawsze utworzy.',
     exportCoffee: 'openbeads tworzy, utrzymuje i powoli rozwija jedna rodzina. Jeśli ci się przydaje, kawa pomoże mu przetrwać.',

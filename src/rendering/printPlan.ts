@@ -85,7 +85,7 @@ export function orientedPage(project: Shape): PageSize {
   return isProjectWide(project) ? A4_LANDSCAPE : A4_PORTRAIT
 }
 
-type Shape = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+type Shape = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape' | 'letters'>>
 
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
@@ -117,6 +117,9 @@ function blockExtent(weave: Weave, rotation: Rotation, across: number, down: num
 
 /** A chart page's block, fixed (ticket 185): 100 beads a side, an edge block simply however many remain. */
 export const PRINT_BLOCK_BEADS = 100
+/** With Letters on a part holds at most this many beads a side, so a letter keeps room (ticket 0573,
+ * `print-part-beads-letters`). */
+export const PRINT_BLOCK_BEADS_LETTERS = 75
 
 export function planPrint(project: Shape, page: PageSize = orientedPage(project)): PrintPlan {
   const area = chartArea(page)
@@ -126,8 +129,9 @@ export function planPrint(project: Shape, page: PageSize = orientedPage(project)
 
   // Fixed 100 × 100-bead blocks, not sized to what fits the page: a Project within a block's reach needs no split at
   // all, and a huge one splits into a predictable grid instead of parts computed from the base bead's legibility.
-  const partAcross = Math.min(PRINT_BLOCK_BEADS, grid.across)
-  const partDown = Math.min(PRINT_BLOCK_BEADS, grid.down)
+  const block = project.letters ? PRINT_BLOCK_BEADS_LETTERS : PRINT_BLOCK_BEADS
+  const partAcross = Math.min(block, grid.across)
+  const partDown = Math.min(block, grid.down)
   const partsAcross = Math.ceil(grid.across / partAcross)
   const partsDown = Math.ceil(grid.down / partDown)
 

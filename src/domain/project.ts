@@ -21,7 +21,8 @@ import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
-import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
+import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteColors, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
+import { lettersFor, type SwatchLetters } from './swatchLetters'
 import type { ColorCatalog } from './colorCatalog'
 import { normalizeMakerName } from './makerName'
 import { readPieceNames, type PieceName } from './pieceNames'
@@ -87,6 +88,11 @@ export interface Project {
   /** The catalog code of each swatch picked from the Color catalog, by the swatch's hex (ticket 0538, ADR 0072). Painted
    * cells keep only their hex. Absent when no swatch has a code. */
   paletteCodes?: PaletteCodes
+  /** The Swatch letter of each Palette color, by the swatch's hex (ticket 0573). Every Project has one for every
+   * color; it only goes missing in a file from before letters, which opening fills in Palette order. */
+  paletteLetters?: SwatchLetters
+  /** Letters (ticket 0573): print each bead's Swatch letter on the Frame, the PNG and the PDF. Absent means off. */
+  letters?: boolean
   /** View-only turn (tickets 28, 171): the Project shown turned this many degrees clockwise. Never a data transform:
    * for Peyote/Brick the stagger is tied to weave direction, so transposing the grid would give an unweavable
    * schema. */
@@ -194,6 +200,7 @@ export function createProject(input: CreateProjectInput): Project {
     ...(describeWeave({ technique: input.technique }).hasNetSize ? { netSize: clampNetSize(input.netSize) } : {}),
   })
 
+  const palette = defaultPaletteIds(defaultPalette(bead.id))
   return {
     id: crypto.randomUUID(),
     name,
@@ -204,7 +211,8 @@ export function createProject(input: CreateProjectInput): Project {
     beads: {},
     ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
-    palette: defaultPaletteIds(defaultPalette(bead.id)),
+    palette,
+    paletteLetters: lettersOfPalette(palette, bead.id, undefined),
     rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
@@ -382,7 +390,9 @@ export function normalizeProject(stored: StoredProject): Project {
   const palette = normalizePaletteIds(legacy.palette, defaultPalette(project.beadId))
   const paletteCodes = codesInPalette(normalizePaletteCodes(legacy.paletteCodes), palette, defaultPalette(project.beadId))
 
-  const { removedDefaults: _removed, paletteCodes: _codes, bead: _storedBead, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
+  const paletteLetters = lettersOfPalette(palette, project.beadId, legacy.paletteLetters)
+
+  const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, letters: storedLetters, bead: _storedBead, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
   // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
   const brickBlock = readBrickBlock(storedBlock)
   const pieceNames = readPieceNames(legacy.pieceNames)
@@ -412,6 +422,8 @@ export function normalizeProject(stored: StoredProject): Project {
     palette,
     ...(removedDefaults.length > 0 ? { removedDefaults } : {}),
     ...(Object.keys(paletteCodes).length > 0 ? { paletteCodes } : {}),
+    paletteLetters,
+    ...(storedLetters === true ? { letters: true } : {}),
     rotation: normalizeRotation(legacy),
     ...(bead ? { beadId: bead.id, bead } : {}),
   }
@@ -707,6 +719,8 @@ export interface UndoEntry {
   removedDefaults?: string[]
   /** The swatch codes as they were (ticket 0538), restored with the Palette they belong to. */
   paletteCodes?: PaletteCodes
+  /** The Swatch letters as they were (ticket 0573), restored with the Palette they belong to. */
+  paletteLetters?: SwatchLetters
   beadId: string
   /** The Bead copy as it was, restored with its id (ticket 534). */
   bead?: Bead
@@ -724,12 +738,12 @@ export interface UndoEntry {
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, paletteCodes: project.paletteCodes, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
+  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, paletteCodes: project.paletteCodes, paletteLetters: project.paletteLetters, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, bead: _bead, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, bead: _bead, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
@@ -743,6 +757,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
     ...(entry.paletteCodes ? { paletteCodes: entry.paletteCodes } : {}),
+    paletteLetters: lettersOfPalette(entry.palette, entry.beadId, entry.paletteLetters),
   })
 }
 
@@ -773,6 +788,22 @@ export function deleteAll(project: Project): Project {
   })
 }
 
+/** The Swatch letters of a Palette (ticket 0573): each color keeps the letter it had and a new one takes the lowest unused. */
+function lettersOfPalette(palette: PaletteIds, beadId: string, kept: unknown): SwatchLetters {
+  return lettersFor(paletteColors(palette, defaultPalette(beadId)).map((color) => color.hex), kept)
+}
+
+/** The Project with Letters on or off (ticket 0573); off is the default and is left unsaved. */
+export function withLetters(project: Project, on: boolean): Project {
+  const { letters: _old, ...rest } = project
+  return on ? { ...rest, letters: true } : rest
+}
+
+/** The Swatch letters to print on beads: the Project's own while Letters is on, none otherwise (ticket 0573). */
+export function shownLetters(project: Pick<Project, 'letters' | 'paletteLetters'>): SwatchLetters | undefined {
+  return project.letters ? project.paletteLetters : undefined
+}
+
 /** Swaps the Project's Bead (ticket 48, ADR 0007); only the Estimated size depends on it. The Palette follows in the
  * same change (ticket 0528) and painted cells keep their hex. A swatch keeps its catalog code only if `catalog`, the
  * new Bead's, lists it in the new size (ticket 0538). */
@@ -780,7 +811,8 @@ export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog
   const palette = paletteForBead(project.palette, project.removedDefaults ?? [], defaultPalette(project.beadId), defaultPalette(bead.id))
   const codes = codesForBead(project.paletteCodes ?? {}, catalog, bead.size)
   const { paletteCodes: _codes, ...rest } = project
-  return touch(rest, { beadId: bead.id, bead: beadCopy(bead), palette, ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}) })
+  const paletteLetters = lettersOfPalette(palette, bead.id, project.paletteLetters)
+  return touch(rest, { beadId: bead.id, bead: beadCopy(bead), palette, paletteLetters, ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}) })
 }
 
 /** The Project with a new Palette (adding, removing or moving a swatch); the default colors that left it are
@@ -789,7 +821,8 @@ export function setPalette(project: Project, palette: PaletteIds, codes: Palette
   const removed = removedDefaultsAfter(project.palette, palette, project.removedDefaults ?? [])
   const kept = codesInPalette({ ...project.paletteCodes, ...codes }, palette, defaultPalette(project.beadId))
   const { removedDefaults: _removed, paletteCodes: _codes, ...rest } = project
-  return touch(rest, { palette, ...(removed.length > 0 ? { removedDefaults: removed } : {}), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
+  const paletteLetters = lettersOfPalette(palette, project.beadId, project.paletteLetters)
+  return touch(rest, { palette, paletteLetters, ...(removed.length > 0 ? { removedDefaults: removed } : {}), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
 }
 
 /** Where a Fill stops (ADR 0026): the Frame when it starts inside one, else the box round the Frame and every bead,
