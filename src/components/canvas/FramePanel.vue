@@ -9,9 +9,11 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
+import QualitySlider from '../ui/QualitySlider.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import TextField from '../ui/form/TextField.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
@@ -19,6 +21,7 @@ import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
+import { EXPORT_QUALITIES, type ExportQuality } from '../../domain/exportQuality'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
@@ -45,6 +48,7 @@ const emit = defineEmits<{
   key: [event: KeyboardEvent]
 }>()
 
+const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
 const { t, locale } = useI18n()
 const context = inject(PANEL_CONTEXT, undefined)
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
@@ -114,6 +118,9 @@ const estimate = computed(() => {
 const sizeSummary = computed(() => [`${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '))
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
+/** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
+const quality = useExportQuality()
+const qualityStops = computed(() => EXPORT_QUALITIES.map((id) => ({ id, word: t.value.frame[QUALITY_WORDS[id]] })))
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
 
@@ -154,6 +161,14 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
     <PanelSection id="frame:export" :label="t.panels.project.exportHeading">
       <PanelItem icon="image" value=".png" stays :disabled="!frame || exportBusy" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
       <PanelItem icon="pdf" value=".pdf" stays :disabled="!frame || exportBusy" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
+      <QualitySlider
+        class="frame-panel__quality"
+        :label="t.frame.exportQuality"
+        :stops="qualityStops"
+        :model-value="quality"
+        :disabled="exportBusy"
+        @update:model-value="quality = $event as ExportQuality"
+      />
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
       <!-- Buy me a coffee (ticket 560): one plain line, no popup; absent while the Coffee link is empty. -->
@@ -321,6 +336,9 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   flex-direction: column;
 }
 
+.frame-panel__quality {
+  padding: 0 var(--space-10);
+}
 .frame-panel__line {
   margin: 0;
   padding: var(--space-4) var(--space-10);

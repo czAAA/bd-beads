@@ -587,6 +587,10 @@ export interface Translations {
     sizeHeading: string
     exportPicture: string
     exportChart: string
+    exportQuality: string
+    qualityLow: string
+    qualityMedium: string
+    qualityHigh: string
     exportCoffee: string
     exportCoffeeLink: string
     estimateInfo: string

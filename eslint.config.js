@@ -107,10 +107,11 @@ export default tseslint.config(
   ...(() => {
     const kbd = { selector: "VElement[name='kbd']", message: 'Draw a key chip with <KeyChip> (ticket 438).' };
     const textEntry = {
-      selector: "VElement[name=/^(input|textarea)$/]:not(:has(VAttribute[directive=false][key.name='type'][value.value='file']))",
+      selector: "VElement[name=/^(input|textarea)$/]:not(:has(VAttribute[directive=false][key.name='type'][value.value=/^(file|range)$/]))",
       message: 'Use <TextField> for text entry (ticket 519).',
     };
     const block = (ignores, selectors) => ({ files: ['src/**/*.vue'], ignores, rules: { 'vue/no-restricted-syntax': ['error', ...selectors] } });
+    // A range input (QualitySlider, ticket 576) raises no keyboard either.
     // The file inputs open a picker, not a keyboard, so only these two components may hold a bare <input type="file">.
     const fileInputs = ['src/components/ui/form/FileButton.vue', 'src/components/import/ProjectImport.vue'];
     return [
