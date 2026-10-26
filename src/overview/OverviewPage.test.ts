@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import OverviewPage from './OverviewPage.vue'
+import { DEFAULT_TECHNIQUE, OVERVIEW_BACKGROUND_TECHNIQUE } from '../domain/weave'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
 
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
@@ -258,12 +259,19 @@ describe('OverviewPage plan tiles', () => {
 })
 
 // jsdom has no canvas to draw the tile on: a stand-in gives the picture and the size the editor's tile would have.
-vi.mock('../rendering/positionMarks', () => ({
-  positionMarkBackground: () => ({ url: 'data:image/png;base64,AAAA', width: 20, height: 30 }),
+const { positionMarkBackground } = vi.hoisted(() => ({
+  positionMarkBackground: vi.fn((_input: { technique: string }) => ({ url: 'data:image/png;base64,AAAA', width: 20, height: 30 })),
 }))
+vi.mock('../rendering/positionMarks', () => ({ positionMarkBackground }))
 
 describe('OverviewPage background', () => {
-  it("draws the Canvas's empty positions of a Delica 11/0 Symmetric Project: a bead across, as the editor's tile", () => {
+  it("draws the Canvas's empty positions of a Delica 11/0 Symmetric peyote Project, not the loom's square grid", () => {
+    page()
+    expect(OVERVIEW_BACKGROUND_TECHNIQUE).not.toBe(DEFAULT_TECHNIQUE)
+    expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: OVERVIEW_BACKGROUND_TECHNIQUE }))
+  })
+
+  it("is the editor's tile: a bead across", () => {
     const style = page().find('[data-testid="overview"]').attributes('style') ?? ''
     expect(style).toContain('--canvas-marks: url(data:image/png;base64,AAAA)')
     expect(style).toContain('--canvas-tile: 20px')
