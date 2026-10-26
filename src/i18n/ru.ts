@@ -455,6 +455,10 @@ export const ru: Translations = {
     continuesBelow: 'Продолжение ниже на странице {below} →',
     continuesOn: 'Продолжение на странице {next} →',
     lastPart: 'Последняя часть',
+    chartStyleColor: 'Только цвет',
+    chartStyleLetters: 'Цвет + буквы',
+    keyOnPage: 'Цвета на этой странице',
+    readNumbers: 'Нечётные номера сверху и слева, чётные снизу и справа.',
   },
   saveBox: {
     exportButton: 'Экспортировать',

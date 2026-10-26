@@ -17,7 +17,7 @@ export function mm(value: number): number {
 export const PRINT_CHART_CELL_MM = 1.75
 export const PRINT_CHART_CELL_LETTERS_MM = 2.3
 export const PRINT_MARGIN = mm(10)
-export const PRINT_HEADER = mm(16)
+export const PRINT_HEADER = mm(17)
 const PRINT_FOOTER = mm(8)
 export const PRINT_LEGEND_WIDTH = mm(48)
 /** The rulers' band on each side of a chart, and the board's own edge around the beads. */
@@ -56,7 +56,10 @@ export interface PrintPart {
   lastAcross: number
   firstDown: number
   lastDown: number
-  /** Where it sits in the whole displayed chart at the plan's zoom, in px. */
+  /** The beads of the part before it that it repeats at its left and its top (0 on the first part's outer edges). */
+  overlapAcross: number
+  overlapDown: number
+  /** Where it sits in the whole displayed chart at the plan's zoom, in px, its overlap included. */
   region: Region
   /** Its label, rulers and board as one box, from the top left of the page's chart area, in px. */
   place: Region
@@ -107,6 +110,9 @@ function blockExtent(weave: Weave, rotation: Rotation, across: number, down: num
 export const PRINT_BLOCK_BEADS = 100
 /** With Letters on a part holds at most this many beads a side, so a letter keeps room (`print-part-beads-letters`). */
 export const PRINT_BLOCK_BEADS_LETTERS = 75
+
+/** Columns or rows of the part before it that a part repeats, shaded, so the sheets line up (`print-part-overlap`). */
+export const PRINT_PART_OVERLAP = 2
 
 /** A, B ... Z, AA, AB ...: a part's name from its place in reading order. */
 export function partLetter(index: number): string {
@@ -166,7 +172,9 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT): PrintPl
       const firstDown = down * block
       const lastAcross = Math.min(grid.across, firstAcross + block) - 1
       const lastDown = Math.min(grid.down, firstDown + block) - 1
-      const extent = blockExtent(project, project.rotation, lastAcross - firstAcross + 1, lastDown - firstDown + 1)
+      const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross)
+      const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown)
+      const extent = blockExtent(project, project.rotation, lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
       cut.push({
         across,
         down,
@@ -175,9 +183,11 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT): PrintPl
         lastAcross,
         firstDown,
         lastDown,
+        overlapAcross,
+        overlapDown,
         region: {
-          x: firstAcross * grid.stepAcross * zoom,
-          y: firstDown * grid.stepDown * zoom,
+          x: (firstAcross - overlapAcross) * grid.stepAcross * zoom,
+          y: (firstDown - overlapDown) * grid.stepDown * zoom,
           width: Math.ceil(extent.width * zoom),
           height: Math.ceil(extent.height * zoom),
         },
@@ -189,7 +199,10 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT): PrintPl
   const placed = packSheets(sizes, chartArea(page))
   const parts = cut.map((part, index) => {
     const { sheet, x, y } = placed[index]!
-    return { ...part, page: sheet + 2, place: { x, y, ...sizes[index]! } }
+    const size = sizes[index]!
+    // A part with its overlap can pass the sheet's width by a few beads: it stays centered, using the margins evenly.
+    const overflow = Math.max(0, size.width - chartArea(page).width)
+    return { ...part, page: sheet + 2, place: { x: x - overflow / 2, y, ...size } }
   })
   const sheets = placed.reduce((most, { sheet }) => Math.max(most, sheet + 1), 0)
   return { page, zoom, partsAcross, partsDown, parts, pageCount: 1 + sheets }
