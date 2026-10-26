@@ -267,6 +267,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('45 px')
     expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('90 px')
     expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium60 pxPNG ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
     expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 60 px, PNG ≈ \d+ MB$/)
 
