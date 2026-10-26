@@ -108,7 +108,9 @@ export async function tooltipProblems(root: HTMLElement): Promise<string[]> {
   for (const [way, open, close] of WAYS) {
     if (way === 'long press') longPress(...triggers)
     else for (const trigger of triggers) open(trigger)
-    await vi.waitFor(() => { if (triggers.some((_, index) => !measureOpenBubble(index))) throw new Error('not all open yet') }, { timeout: 500 }).catch(() => undefined)
+    await vi.waitFor(() => { if (triggers.some((_, index) => !measureOpenBubble(index))) throw new Error('not all open yet') }, { timeout: 1000 }).catch(() => undefined)
+    // A hover opens after its delay, and a bubble is placed a tick after it shows.
+    await new Promise((resolve) => requestAnimationFrame(resolve))
     await Promise.all(document.getAnimations().map((animation) => animation.finished.catch(() => undefined)))
     triggers.forEach((_, index) => {
       const bubble = measureOpenBubble(index)
