@@ -14,7 +14,7 @@ interface FeatureCopy {
 }
 
 /** A gallery card's name and its one-line description. */
-interface TemplateCopy {
+interface StarterCopy {
   name: string
   description: string
 }
@@ -218,21 +218,21 @@ export interface Translations {
     /** "Frame 24 × 30 beads", with {width} and {height}. */
     frameSize: string
   }
-  /** The Template gallery and setup in New Project (ticket 493; TemplateGallery card). `specLine` is "24 × 80 · Loom". */
-  templates: {
+  /** The Starter gallery and setup in New Project (ticket 493; StarterGallery card). `specLine` is "24 × 80 · Loom". */
+  starters: {
     galleryLabel: string
     presetsLabel: string
-    /** Under a side the Template keeps fixed (earrings keep their width). */
+    /** Under a side the Starter keeps fixed (earrings keep their width). */
     fixedNote: string
-    /** Under the sample picture in a Template's setup: it decorates, the Frame is empty (ticket 494). */
+    /** Under the sample picture in a Starter's setup: it decorates, the Frame is empty (ticket 494). */
     sampleNote: string
     specLine: string
-    blank: TemplateCopy
-    gerdan: TemplateCopy
-    bracelet: TemplateCopy
-    earrings: TemplateCopy
-    bag: TemplateCopy
-    custom: TemplateCopy
+    blank: StarterCopy
+    gerdan: StarterCopy
+    bracelet: StarterCopy
+    earrings: StarterCopy
+    bag: StarterCopy
+    custom: StarterCopy
   }
   canvas: {
     zoomInLabel: string
@@ -572,7 +572,7 @@ export interface Translations {
     nameEmpty: string
     nameEdit: string
     nameTooltip: string
-    fromTemplate: string
+    fromStarter: string
     fitAFrame: string
     fitNothing: string
     noFrameLine: string
@@ -602,7 +602,7 @@ export interface Translations {
     removeConfirmMessage: string
     removeConfirmButton: string
     removeConfirmCancel: string
-    addFromTemplate: string
+    addFromStarter: string
     addFrameButton: string
     replaceFrame: string
     replaceConfirmTitle: string
@@ -773,9 +773,9 @@ export interface Translations {
     frameEdgeInDisabled: string
     removeFrame: string
     noFrameToRemove: string
-    frameFromTemplate: string
+    frameFromStarter: string
     replaceFrame: string
-    rowProgressLockedFrameFromTemplate: string
+    rowProgressLockedFrameFromStarter: string
     resetProgress: string
     noProgressToReset: string
     moveFrame: string

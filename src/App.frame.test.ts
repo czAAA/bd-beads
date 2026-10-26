@@ -335,10 +335,10 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     expect(beadColor(wrapper, { row: 2, column: 3 })).toBe(RED)
   })
 
-  it('offers Frame from template and Fit a frame to the drawing with no Frame, and Fit sets one in place (ticket 555)', async () => {
+  it('offers Frame from starter and Fit a frame to the drawing with no Frame, and Fit sets one in place (ticket 555)', async () => {
     const wrapper = await mountOpen()
     await toggleBar(wrapper)
-    expect(wrapper.find('[data-testid="frame-from-template"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="frame-from-starter"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
 
     await wrapper.get('[data-testid="frame-fit"]').trigger('click')

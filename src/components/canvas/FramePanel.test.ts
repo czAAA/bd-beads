@@ -259,14 +259,14 @@ describe('FramePanel (ticket 473)', () => {
     expect(sections.at(-1)!.attributes('data-testid')).toBe('bead-quantities')
   })
 
-  it('with no Frame offers Frame from template and Fit a frame to the drawing, and nothing else (ticket 555)', async () => {
+  it('with no Frame offers Frame from starter and Fit a frame to the drawing, and nothing else (ticket 555)', async () => {
     const { frame: _frame, ...bare } = framed()
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
     expect(wrapper.findAll('.panel-section')).toHaveLength(0)
     expect(wrapper.get('[data-testid="frame-none-line"]').text()).toBe(en.frame.noFrameLine)
-    expect(wrapper.get('[data-testid="frame-from-template"]').text()).toContain(en.frame.fromTemplate)
+    expect(wrapper.get('[data-testid="frame-from-starter"]').text()).toContain(en.frame.fromStarter)
     expect(wrapper.get('[data-testid="frame-fit"]').attributes('aria-disabled')).toBe('true')
   })
 

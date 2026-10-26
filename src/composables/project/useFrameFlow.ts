@@ -328,25 +328,25 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     commit(undefined)
   }
 
-  /** Whether the Replace Frame question is open; the pending Template choice waits behind it (ticket 495). */
+  /** Whether the Replace Frame question is open; the pending Starter choice waits behind it (ticket 495). */
   const replaceConfirmOpen = ref(false)
-  let pendingTemplate: CreateProjectInput | undefined
+  let pendingStarter: CreateProjectInput | undefined
 
-  /** Add Frame from Template and Replace Frame (ticket 495): an empty Frame in the Template's Technique, centred on what
+  /** Add Frame from Starter and Replace Frame (ticket 495): an empty Frame in the Starter's Technique, centred on what
    * is on screen and snapped to a Canvas position, over whatever lies there. Replacing a Frame that holds beads asks first,
    * as they go with it. */
-  function placeFromTemplate(input: CreateProjectInput): void {
+  function placeFromStarter(input: CreateProjectInput): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
     if (project.frame && Object.keys(project.frame.beads).length > 0) {
-      pendingTemplate = input
+      pendingStarter = input
       replaceConfirmOpen.value = true
       return
     }
-    applyTemplate(input)
+    applyStarter(input)
   }
 
-  function applyTemplate(input: CreateProjectInput): void {
+  function applyStarter(input: CreateProjectInput): void {
     const made = createProject(input).frame!
     const weave = weaveOf(made)
     const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
@@ -361,15 +361,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** The Replace Frame question answered No: nothing changes. */
   function cancelReplace(): void {
     replaceConfirmOpen.value = false
-    pendingTemplate = undefined
+    pendingStarter = undefined
   }
 
   /** The question answered Yes: the Frame goes and the new one is made, as one Undo step. */
   function confirmReplace(): void {
     replaceConfirmOpen.value = false
-    const input = pendingTemplate
-    pendingTemplate = undefined
-    if (input) applyTemplate(input)
+    const input = pendingStarter
+    pendingStarter = undefined
+    if (input) applyStarter(input)
   }
 
   /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it
@@ -427,7 +427,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     removeConfirmOpen,
     cancelRemove,
     confirmRemove,
-    placeFromTemplate,
+    placeFromStarter,
     replaceConfirmOpen,
     cancelReplace,
     confirmReplace,

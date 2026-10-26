@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
 import { resolveProjectBead, type CreateProjectInput, type Project } from '../../domain/project'
 import { formatMm, formatSizeMm, estimatedSizeMm } from '../../domain/projectSize'
-import { clampAxis, templateProjectInput, type Template, type TemplateAxis } from '../../domain/templates'
+import { clampAxis, starterProjectInput, type Starter, type StarterAxis } from '../../domain/starters'
 import { describeWeave, type Technique } from '../../domain/weave'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
@@ -12,24 +12,24 @@ import AppStepper from '../ui/form/AppStepper.vue'
 import FormField from '../ui/form/FormField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
-import TemplatePicture from './TemplatePicture.vue'
+import StarterPicture from './StarterPicture.vue'
 import BeadPicker from './BeadPicker.vue'
 import BrickBlockField from './BrickBlockField.vue'
 
-// The Template setup (tickets 493, 495; TemplateGallery card): Name, Bead, Techniques, Brick block, unit, sizes and the
+// The Starter setup (tickets 493, 495; StarterGallery card): Name, Bead, Techniques, Brick block, unit, sizes and the
 // Estimated size; Create is the panel's pinned footer button. With a `project` it sets up a Frame on that open Project
 // instead: no Name or Bead, the Project's own Bead measures the size.
-const props = defineProps<{ template: Template; project?: Project }>()
+const props = defineProps<{ starter: Starter; project?: Project }>()
 const emit = defineEmits<{ submit: [payload: CreateProjectInput] }>()
 
 const { t, locale } = useI18n()
 
 const name = ref('')
 const beadId = ref(props.project?.beadId ?? DEFAULT_BEAD.id)
-const technique = ref<Technique>(props.template.technique)
+const technique = ref<Technique>(props.starter.technique)
 const brickBlock = ref(1)
-const columns = ref(props.template.width.default)
-const rows = ref(props.template.height.default)
+const columns = ref(props.starter.width.default)
+const rows = ref(props.starter.height.default)
 
 /** How the sizes are read: the stepper's number stays a count of beads (Units), and mm or cm only change what it shows. */
 type ShownUnit = 'beads' | 'mm' | 'cm'
@@ -43,7 +43,7 @@ const unitOptions = computed(() => [
   { value: 'cm' as const, label: t.value.form.unitCm },
 ])
 
-const techniqueOptions = computed(() => props.template.techniques.map((value) => ({ value, label: techniqueName(t.value, value) })))
+const techniqueOptions = computed(() => props.starter.techniques.map((value) => ({ value, label: techniqueName(t.value, value) })))
 const bead = computed(() => (props.project ? resolveProjectBead(props.project) : findBead(beadId.value)))
 
 /** The size the Frame will have, in the Bead's real measure. */
@@ -63,28 +63,28 @@ const widthShown = computed(() => shownAs(estimated.value?.widthMm))
 const heightShown = computed(() => shownAs(estimated.value?.heightMm))
 
 function setSide(side: 'width' | 'height', value: number) {
-  const axis = props.template[side]
+  const axis = props.starter[side]
   if (side === 'width') columns.value = clampAxis(axis, value)
   else rows.value = clampAxis(axis, value)
 }
 
 const sides = computed(() => [
-  { side: 'width' as const, axis: props.template.width, model: columns, label: t.value.form.widthLabel, shown: widthShown.value, decrease: t.value.form.decreaseWidthButton, increase: t.value.form.increaseWidthButton },
-  { side: 'height' as const, axis: props.template.height, model: rows, label: t.value.form.heightLabel, shown: heightShown.value, decrease: t.value.form.decreaseHeightButton, increase: t.value.form.increaseHeightButton },
+  { side: 'width' as const, axis: props.starter.width, model: columns, label: t.value.form.widthLabel, shown: widthShown.value, decrease: t.value.form.decreaseWidthButton, increase: t.value.form.increaseWidthButton },
+  { side: 'height' as const, axis: props.starter.height, model: rows, label: t.value.form.heightLabel, shown: heightShown.value, decrease: t.value.form.decreaseHeightButton, increase: t.value.form.increaseHeightButton },
 ])
 
-function presetsOf(axis: TemplateAxis): readonly number[] {
+function presetsOf(axis: StarterAxis): readonly number[] {
   return axis.lock ? [] : (axis.presets ?? [])
 }
 
 function onSubmit() {
   emit(
     'submit',
-    templateProjectInput(props.template, {
+    starterProjectInput(props.starter, {
       technique: technique.value,
       brickBlock: brickBlock.value,
       beadId: beadId.value,
-      name: name.value.trim() || t.value.templates[props.template.id].name,
+      name: name.value.trim() || t.value.starters[props.starter.id].name,
       columns: columns.value,
       rows: rows.value,
     }),
@@ -93,45 +93,45 @@ function onSubmit() {
 </script>
 
 <template>
-  <form id="template-setup-form" class="template-setup" novalidate data-testid="template-setup" @submit.prevent="onSubmit">
-    <div class="template-setup__sample">
-      <span class="template-setup__picture">
-        <TemplatePicture :technique="technique" :columns="template.width.default" :rows="template.height.default" :seed-text="template.id" />
+  <form id="starter-setup-form" class="starter-setup" novalidate data-testid="starter-setup" @submit.prevent="onSubmit">
+    <div class="starter-setup__sample">
+      <span class="starter-setup__picture">
+        <StarterPicture :technique="technique" :columns="starter.width.default" :rows="starter.height.default" :seed-text="starter.id" />
       </span>
-      <AppNote data-testid="template-sample-note">{{ t.templates.sampleNote }}</AppNote>
+      <AppNote data-testid="starter-sample-note">{{ t.starters.sampleNote }}</AppNote>
     </div>
 
-    <FormField v-if="!project" :label="t.form.nameLabel" label-for="template-name-input" :aside="t.form.optional">
+    <FormField v-if="!project" :label="t.form.nameLabel" label-for="starter-name-input" :aside="t.form.optional">
       <TextField
-        id="template-name-input"
+        id="starter-name-input"
         v-model="name"
-        data-testid="template-name-input"
+        data-testid="starter-name-input"
         type="text"
-        :placeholder="t.templates[template.id].name"
+        :placeholder="t.starters[starter.id].name"
       />
     </FormField>
 
-    <FormField v-if="!project" :label="t.form.beadLabel" label-id="template-bead-label">
-      <BeadPicker v-model="beadId" :beads="offeredBeads()" testid="template-bead-picker" />
+    <FormField v-if="!project" :label="t.form.beadLabel" label-id="starter-bead-label">
+      <BeadPicker v-model="beadId" :beads="offeredBeads()" testid="starter-bead-picker" />
     </FormField>
 
-    <FormField v-if="techniqueOptions.length > 1" :label="t.form.techniqueLabel" label-id="template-technique-label">
+    <FormField v-if="techniqueOptions.length > 1" :label="t.form.techniqueLabel" label-id="starter-technique-label">
       <SegmentedControl
         v-model="technique"
         :options="techniqueOptions"
-        labelledby="template-technique-label"
-        data-testid="template-technique"
+        labelledby="starter-technique-label"
+        data-testid="starter-technique"
       />
     </FormField>
 
-    <BrickBlockField v-if="describeWeave(weave).hasBrickBlock" v-model="brickBlock" testid="template-brick-block" />
+    <BrickBlockField v-if="describeWeave(weave).hasBrickBlock" v-model="brickBlock" testid="starter-brick-block" />
 
-    <FormField :label="t.form.unitLabel" label-id="template-unit-label">
-      <SegmentedControl v-model="unit" :options="unitOptions" mono labelledby="template-unit-label" data-testid="template-unit" />
+    <FormField :label="t.form.unitLabel" label-id="starter-unit-label">
+      <SegmentedControl v-model="unit" :options="unitOptions" mono labelledby="starter-unit-label" data-testid="starter-unit" />
     </FormField>
 
-    <div v-for="entry in sides" :key="entry.side" class="template-setup__side" :data-testid="`template-${entry.side}`">
-      <span :id="`template-${entry.side}-label`" class="template-setup__label">{{ entry.label }}</span>
+    <div v-for="entry in sides" :key="entry.side" class="starter-setup__side" :data-testid="`starter-${entry.side}`">
+      <span :id="`starter-${entry.side}-label`" class="starter-setup__label">{{ entry.label }}</span>
       <AppStepper
         :model-value="entry.model.value"
         :min="entry.axis.min"
@@ -141,25 +141,25 @@ function onSubmit() {
         :decrease-label="entry.decrease"
         :increase-label="entry.increase"
         :display="entry.shown"
-        :decrease-testid="`template-${entry.side}-decrease`"
-        :increase-testid="`template-${entry.side}-increase`"
-        :value-testid="`template-${entry.side}-value`"
+        :decrease-testid="`starter-${entry.side}-decrease`"
+        :increase-testid="`starter-${entry.side}-increase`"
+        :value-testid="`starter-${entry.side}-value`"
         @update:model-value="setSide(entry.side, $event)"
       />
-      <p v-if="entry.axis.lock" class="template-setup__fixed" :data-testid="`template-${entry.side}-fixed`">{{ t.templates.fixedNote }}</p>
+      <p v-if="entry.axis.lock" class="starter-setup__fixed" :data-testid="`starter-${entry.side}-fixed`">{{ t.starters.fixedNote }}</p>
       <div
         v-else-if="presetsOf(entry.axis).length"
-        class="template-setup__presets"
+        class="starter-setup__presets"
         role="group"
-        :aria-labelledby="`template-${entry.side}-label`"
+        :aria-labelledby="`starter-${entry.side}-label`"
       >
         <button
           v-for="preset in presetsOf(entry.axis)"
           :key="preset"
-          class="template-setup__chip"
+          class="starter-setup__chip"
           type="button"
           :aria-pressed="entry.model.value === preset"
-          :data-testid="`template-${entry.side}-preset-${preset}`"
+          :data-testid="`starter-${entry.side}-preset-${preset}`"
           @click="setSide(entry.side, preset)"
         >
           {{ preset }}
@@ -167,7 +167,7 @@ function onSubmit() {
       </div>
     </div>
 
-    <p class="template-setup__estimate" role="group" :aria-label="t.size.estimateLabel" data-testid="template-estimate">
+    <p class="starter-setup__estimate" role="group" :aria-label="t.size.estimateLabel" data-testid="starter-estimate">
       {{ t.size.estimateLabel }}: <strong>{{ estimateText }}</strong>
     </p>
     <AppNote>{{ t.size.estimateWarning }}</AppNote>
@@ -175,41 +175,41 @@ function onSubmit() {
 </template>
 
 <style scoped>
-.template-setup {
+.starter-setup {
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
 }
 
-.template-setup__sample {
+.starter-setup__sample {
   display: flex;
   gap: var(--space-12);
   align-items: center;
 }
 
-.template-setup__picture {
+.starter-setup__picture {
   flex: none;
   width: 6rem;
   height: 6rem;
 }
 
-.template-setup__side {
+.starter-setup__side {
   display: flex;
   flex-direction: column;
   gap: var(--space-6);
 }
 
-.template-setup__label {
+.starter-setup__label {
   font: var(--type-control);
 }
 
-.template-setup__presets {
+.starter-setup__presets {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-6);
 }
 
-.template-setup__chip {
+.starter-setup__chip {
   min-width: 2.5rem;
   padding: var(--space-4) var(--space-10);
   font: var(--type-meta);
@@ -221,25 +221,25 @@ function onSubmit() {
   font-variant-numeric: tabular-nums;
 }
 
-.template-setup__chip[aria-pressed='true'] {
+.starter-setup__chip[aria-pressed='true'] {
   border-color: var(--accent-strong);
   box-shadow: inset 0 0 0 1px var(--accent-strong);
 }
 
-.template-setup__chip:focus-visible {
+.starter-setup__chip:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
 
-.template-setup__fixed,
-.template-setup__estimate {
+.starter-setup__fixed,
+.starter-setup__estimate {
   margin: 0;
   font: var(--type-meta);
   font-family: var(--font-sans);
   color: var(--muted);
 }
 
-.template-setup__estimate strong {
+.starter-setup__estimate strong {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }

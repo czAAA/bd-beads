@@ -811,7 +811,7 @@ function wireAppShell(services: Services) {
     removeFrameConfirmOpen: frameFlow.removeConfirmOpen,
     onCancelRemoveFrame: frameFlow.cancelRemove,
     onConfirmRemoveFrame: frameFlow.confirmRemove,
-    onPlaceFrameFromTemplate: frameFlow.placeFromTemplate,
+    onPlaceFrameFromStarter: frameFlow.placeFromStarter,
     replaceFrameConfirmOpen: frameFlow.replaceConfirmOpen,
     onCancelReplaceFrame: frameFlow.cancelReplace,
     onConfirmReplaceFrame: frameFlow.confirmReplace,
