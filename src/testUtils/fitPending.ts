@@ -28,8 +28,6 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'BeadColorList', texts: ['· Знята з вытворчасці'], at: { be: [390] }, fixedBy: '558', borderline: true },
   { case: 'BeadColorList', texts: ['· Descatalogado'], at: { es: [320] }, fixedBy: '558' },
   { case: 'BeadColorList', texts: ['· Wycofany'], at: { pl: [320] }, fixedBy: '558' },
-  { case: 'OverviewPage', texts: ['Cuenta gratuita'], at: { es: [768] }, fixedBy: '231', borderline: true },
-  { case: 'OverviewPage', texts: ['Darmowe konto'], at: { pl: [768] }, fixedBy: '231', borderline: true },
 ]
 
 const quoted = (text: string) => `"${text}"`
