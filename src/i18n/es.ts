@@ -453,6 +453,10 @@ export const es: Translations = {
     continuesBelow: 'Continúa abajo en la página {below} →',
     continuesOn: 'Continúa en la página {next} →',
     lastPart: 'Última parte',
+    chartStyleColor: 'Solo color',
+    chartStyleLetters: 'Color + letras',
+    keyOnPage: 'Colores en esta página',
+    readNumbers: 'Números impares arriba y a la izquierda, pares abajo y a la derecha.',
   },
   saveBox: {
     exportButton: 'Exportar',

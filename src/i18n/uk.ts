@@ -455,6 +455,10 @@ export const uk: Translations = {
     continuesBelow: 'Продовження нижче на сторінці {below} →',
     continuesOn: 'Продовження на сторінці {next} →',
     lastPart: 'Остання частина',
+    chartStyleColor: 'Лише колір',
+    chartStyleLetters: 'Колір + літери',
+    keyOnPage: 'Кольори на цій сторінці',
+    readNumbers: 'Непарні номери вгорі й ліворуч, парні внизу й праворуч.',
   },
   saveBox: {
     exportButton: 'Експортувати',
