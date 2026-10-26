@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
-import { beadsPerGram, formatPrintedGrams, printedGrams } from './printGrams'
+import { beadsPerGram, formatPrintedGrams, printedGrams, tubesToBuy } from './printGrams'
 
 const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
 const round = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -36,5 +36,20 @@ describe('grams on the printed output (ticket 162; printed-output.md)', () => {
     expect(beadsPerGram(delica)).toBe(200)
     expect(beadsPerGram(round)).toBe(110)
     expect(beadsPerGram({ beadsPerKg: undefined })).toBeUndefined()
+  })
+})
+
+describe('tubes to buy (ticket 0581)', () => {
+  it('is the grams with 10% spare over 5 g tubes, rounded up', () => {
+    expect(tubesToBuy(24)).toBe(6)
+    expect(tubesToBuy(3.9)).toBe(1)
+    expect(tubesToBuy(4.6)).toBe(2)
+    expect(tubesToBuy(10)).toBe(3)
+  })
+
+  it('is one tube for a color under a gram and does not tip over on an exact fit', () => {
+    expect(tubesToBuy(0.1)).toBe(1)
+    expect(tubesToBuy(50)).toBe(11)
+    expect(tubesToBuy(0)).toBe(0)
   })
 })

@@ -500,6 +500,23 @@ export interface Translations {
     readParts: string
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: string
+    /** The Specification page after the chart pages (ticket 0581). */
+    specification: string
+    columnLetter: string
+    columnColor: string
+    columnCode: string
+    columnBeads: string
+    columnGrams: string
+    columnToBuy: string
+    /** "2 × 5 g": the tubes to buy. */
+    tubes: string
+    schemaFacts: string
+    factBeads: string
+    chartStyleFact: string
+    pagesFact: string
+    wherePartsAre: string
+    partsNote: string
+    rowByRowOn: string
     shape: string
     /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
     partPage: string
