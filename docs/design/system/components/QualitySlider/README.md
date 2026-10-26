@@ -21,7 +21,7 @@ Both exports follow it. The choice is remembered per device. `print-dpi` (150) i
 
 - A native `<input type="range" min="0" max="2" step="1">`, so touch drag, arrow keys, Home and End work by default (one tab stop). Accessible name "Export quality"; `aria-valuetext` reads the stop's word and both estimates, e.g. "Medium, picture about 12 MB, chart about 3 MB".
 - Track `slider-track` (4px, `radius-full`) in `track`; the filled part up to the thumb in `accent`. Thumb `slider-thumb` (20px) in `ink` with a 2px `canvas` ring. The input is `touch-target` (44px) tall, so the hit area meets 44px; the stops row is pulled up under it.
-- Under the track, one button per stop (`role="radio"` in a `radiogroup`, mirroring the range value), each at least `touch-target` tall and centred under its thumb position, so a tap on a label moves the thumb. Each holds: the word (Inter 500 13), then `45 px · 150 DPI` (DM Mono 12, `muted`), then the estimate for each format, `PNG ≈ 12 MB` and `PDF ≈ 3 MB`, computed for the open Frame. Estimates are approximate: always "≈", never to the digit.
+- Under the track, one button per stop (`role="radio"` in a `radiogroup`, mirroring the range value), each at least `touch-target` tall and centred under its thumb position, so a tap on a label moves the thumb. Each holds: the word (Inter 500 13), then `45 px · 150 DPI` (DM Mono 12, `muted`; the DPI is the PDF's on this device), then the estimate for each format, `PNG ≈ 12 MB` and `PDF ≈ 3 MB`, computed for the open Frame. Estimates are approximate: always "≈", never to the digit.
 - Stops are the only ticks; no extra tick marks are drawn.
 
 ## States
@@ -34,7 +34,7 @@ Both exports follow it. The choice is remembered per device. `print-dpi` (150) i
 | Dragging | Thumb `accent-strong`, scaled by `slider-thumb-scale` (1.15); the value snaps stop to stop (no in-between). |
 | Disabled | While an export runs: thumb `faint`, filled part `accent-disabled-bg`, labels and estimates `faint`, no hover. The buttons for the export are disabled with it (SaveStates card). |
 | Scaled down | A stop whose bead size was reduced for this Frame (the pixel ceiling) shows both values, `60 px → 41 px`, the second in `accent-strong`; an `info` button beside it opens the panel's Tooltip: "Reduced to fit the largest picture a browser can make for this Frame." The estimate is for the reduced size. |
-| Unavailable | A stop the device cannot make (PDF 450 DPI on phones) is absent: the slider has two stops (`--qs-n` is 2, each half the width) and one `meta-small` line says "High is 300 DPI on this device." The saved choice High maps to the last stop shown. |
+| Unavailable | A PDF page the device cannot allocate (450 DPI on some phones and tablets, found by trying, ticket 0572) is not offered: High's PDF is drawn at the next level down, its stop shows `300 DPI`, and one `meta-small` line under the slider says "High is 300 DPI in the PDF on this device." The slider keeps three stops, so the PNG's High (90 px) stays. |
 
 ## Layout and text
 

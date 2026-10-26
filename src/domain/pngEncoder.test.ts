@@ -1,6 +1,6 @@
 import { PNG } from 'pngjs'
 import { describe, expect, it } from 'vitest'
-import { encodePng } from './pngEncoder'
+import { deflateRgb, encodePng } from './pngEncoder'
 
 /** RGBA rows for `rows` rows from `y`, each pixel's red the row and green the column, so a misplaced band shows. */
 function gradient(width: number) {
@@ -43,5 +43,17 @@ describe('encodePng (ticket 73)', () => {
 
   it('has the PNG media type', async () => {
     expect((await encodePng(1, 1, 1, gradient(1))).type).toBe('image/png')
+  })
+})
+
+describe('deflateRgb (ticket 572)', () => {
+  it('gives zlib scanlines, each led by filter type 0, over bands of rows', async () => {
+    const parts = await deflateRgb(3, 5, 2, gradient(3))
+    const joined = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0))
+    parts.reduce((at, part) => (joined.set(part, at), at + part.length), 0)
+    const raw = new Uint8Array(await new Response(new Blob([joined]).stream().pipeThrough(new DecompressionStream('deflate'))).arrayBuffer())
+
+    expect(raw.length).toBe(5 * (1 + 3 * 3))
+    expect([...raw.subarray(3 * 10, 3 * 10 + 10)]).toEqual([0, 3, 0, 7, 3, 1, 7, 3, 2, 7])
   })
 })
