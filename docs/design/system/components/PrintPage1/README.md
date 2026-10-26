@@ -1,11 +1,11 @@
 # PrintPage1
 
-The first page of the PDF: the whole Pattern large on its board, with Beads needed in beads and grams and the facts beside it.
+The first page of the PDF: the whole framed Schema across the full width of the sheet, the facts above it and Beads needed under it.
 
-- Top line: the X1 mark and "bd-beads"; the maker's name, date and time on the right. Then the technique word (Instrument Serif italic, `accent`) and the Pattern name, one meta line, and how to read the parts.
-- The canvas: every bead on the `print-board` board, rulers every 10, a hairline every 10 beads; the chart parts dashed and numbered by page.
-- A `print-legend-width` column: Beads needed with bead swatches, names, beads and grams per color and in the Total, the grams note, then Made by, Technique, Bead, Size, Estimated size. It sits on the paper, so the accent line passes behind it. A Pattern wider than tall puts it under the canvas.
-- Background: the maker's name tucked under the canvas; the accent line in from the bottom left, under the canvas, out of its right edge, behind the column, off the top right; the X1 mark at three sizes, never touching the name.
-- Grams: count ÷ the Bead's beads per gram, rounded up to 0.1 g; the Total from the total count. "≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares."
+- Top line: the X1 mark and "bd-beads" on the left, date and time on the right. Then the technique word (Instrument Serif italic, `accent`) and the Project's name, and one row of facts under a hairline: made by, technique, bead, shape, size, finished size (labels DM Mono `muted`, values Inter 500).
+- The board (`print-board`) at the full page width: every bead, rulers on the top and left with a number every 5, the bead as large as the width allows while Beads needed fits, up to `print-bead-max`.
+- The chart parts: solid 2 px `accent` lines with a white keyline through the board and its rulers, "101 →" / "101 ↓" in `accent-strong` at each cut, and a white pill on each part with its page ("part A · page 2").
+- Beads needed under the board, two columns reading down: letter swatch, color name, code, beads, grams; the Total and the grams note. When it does not fit, one line ("Beads needed: 22 colors · 31 400 beads · ≈ 157 g · see page 7") and the full table is on the Specification page.
+- No watermark: nothing behind or over the board, the facts or Beads needed.
 
-Hand-written from the Phase D sign-off.
+Rewritten for the export sheets signed off on 2026-10-26 (ticket 0575); the earlier card (a 48 mm column beside the canvas, the background name and accent line) is in git history.

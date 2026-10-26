@@ -1,8 +1,8 @@
 # PrintWide
 
-A Pattern wider than tall prints on landscape A4 with the same layout: the canvas and the Beads needed column on page 1, one part per chart page.
+A framed Schema wider than tall keeps the portrait A4 layout: a shorter picture on page 1, the same 100-bead chart parts after it.
 
-- Orientation follows the Pattern: wider than tall is landscape, otherwise portrait. Nothing else changes.
-- A 96×24 border: page 1 plus two chart pages of 48×24, each filling the sheet.
+- The PDF is always portrait. On page 1 the board stays at the full page width and loses height, which leaves more room for Beads needed.
+- A 240 × 60 Schema: page 1, then three parts of 100 × 60, 100 × 60 and 40 × 60; the last two share a sheet when they fit at `print-chart-cell`.
 
-Hand-written from the Phase E sign-off.
+Rewritten for the export sheets signed off on 2026-10-26 (ticket 0575); the earlier card (landscape A4 for wide Patterns) is in git history.

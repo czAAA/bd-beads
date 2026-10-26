@@ -230,15 +230,19 @@
   --print-margin: 10mm; /* Page margin on every side. */
   --print-header: 16mm; /* Chart page header: technique word and name, part, maker, date and time, page number, mini map. */
   --print-footer: 8mm; /* Footer: the brand, and where the chart continues. */
-  --print-name-band: 12mm; /* Band under the chart board for the maker's name and the accent line. */
-  --print-bead-base: 4.6mm; /* Bead size that decides how many chart pages a Pattern takes. */
+  --print-name-band: 12mm; /* Band under the chart board for the maker's name and the accent line. Kept only until the export code follows the 2026-10-26 export sheets (ticket 0575), which drop it. */
+  --print-bead-base: 4.6mm; /* Bead size that decides how many chart pages a Pattern takes. Kept only until the export code follows the 2026-10-26 export sheets (ticket 0575), which drop it. */
   --print-bead-max: 7mm; /* Largest bead after a part is enlarged to fill its page. */
-  --print-legend-width: 48mm; /* Page 1 column: Beads needed (beads and grams) and the facts. */
-  --print-line-width: 0.5mm; /* The background accent line, at print-line-opacity. */
-  --print-line-opacity: 0.38; /* Accent line strength on paper. */
-  --print-mark-opacity: 0.07; /* The large background X1 mark; the medium and small ones use 0.08 and 0.1. */
-  --print-name-opacity: 0.14; /* The maker's name set large under the canvas. */
+  --print-legend-width: 48mm; /* Page 1 column: Beads needed (beads and grams) and the facts. Kept only until the export code follows the 2026-10-26 export sheets (ticket 0575), which drop it. */
+  --print-line-width: 0.5mm; /* The background accent line, at print-line-opacity. Kept only until the export code follows the 2026-10-26 export sheets (ticket 0575), which drop it. */
+  --print-line-opacity: 0.38; /* Accent line strength on paper. Kept only until the export code follows the 2026-10-26 export sheets (ticket 0575), which drop it. */
+  --print-mark-opacity: 0.07; /* The large background X1 mark; the medium and small ones use 0.08 and 0.1. Kept only until the export code follows the 2026-10-26 export sheets (ticket 0575), which drop it. */
+  --print-name-opacity: 0.14; /* The maker's name set large under the canvas. Kept only until the export code follows the 2026-10-26 export sheets (ticket 0575), which drop it. */
   --print-png-bead: 30px; /* Bead size in the PNG, fewer pixels when the picture would pass 16 megapixels. */
+  --print-part-beads: 100; /* Largest chart part, in beads, on each side; a Schema is cut into parts of this size from the top left, the leftovers last. */
+  --print-part-overlap: 2; /* Columns or rows of the neighbouring part repeated, shaded, at the start of a part so the sheets line up. */
+  --print-chart-cell: 1.75mm; /* Bead size on every chart page: a full 100-bead part fills the sheet's width; every part uses it. */
+  --print-ruler: 5mm; /* Ruler band on each side of a chart part: odd numbers top and left, even numbers bottom and right. */
   --font-sans: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
   --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;

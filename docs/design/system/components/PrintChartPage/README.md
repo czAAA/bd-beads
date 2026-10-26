@@ -1,10 +1,13 @@
 # PrintChartPage
 
-A chart page of the PDF: one part of the Pattern, filling the sheet, to work from at the craft table.
+A chart page of the PDF: one part of at most 100 × 100 beads with every row and column numbered, to work from at the craft table.
 
-- The page count comes from `print-bead-base` (4.6 mm); the Pattern is then split into equal parts and the bead grows until a part fills the page (up to `print-bead-max`). Every page, the last one too, has the same bead size.
-- Rulers on all four sides in the Pattern's own numbers (every 5th `muted`, every 10th bold `ink`), a hairline every 10 beads.
-- Header (`print-header`): technique word and name, the part, maker, date and time, "Page 2 of 5" and a mini map. Name band (`print-name-band`): the maker's name tucked under the board, the accent line's run. Footer (`print-footer`): brand, and "Continues right on page 3, below on page 4 →" or "Last part".
-- Only the beads are in color; accent is the technique word, the background line and marks. Nothing is drawn over the bead field.
+- Parts are cut at `print-part-beads` (100) from the top left; a 130-bead side is 100 + 30. Every part is drawn at `print-chart-cell` (1.75 mm), so a full part fills the sheet's width and all pages share one bead size.
+- Leftover parts share a sheet when they fit at that size, each on its own board labelled "part B · columns 101–130 · rows 1–100".
+- Rulers in a `print-ruler` band on all four sides: odd numbers top and left, even numbers bottom and right, so each number appears once; column numbers turned to read upwards. Every 10th `ink` 500, every 5th `ink`, the rest `muted`. A fine line every 5 beads, a heavier one every 10.
+- Overlap: `print-part-overlap` (2) columns or rows of the previous part, shaded, numbers `faint`, an `accent` line where the part begins.
+- Letters on: each bead carries its Swatch letter (white on dark beads, `ink` on light). Off: color only.
+- Header: technique word and name; the part, the chart style, maker, date and time; a mini map (current part `accent`) and the page number, large. Under the board: the color key for this page with counts, how to read the numbers, where the chart continues. Footer: brand, "Continues right on page 3, below on page 4 →" or "Last part" (writing.md).
+- No watermark over or behind the chart.
 
-Hand-written from the Phase D sign-off.
+Rewritten for the export sheets signed off on 2026-10-26 (ticket 0575); the earlier card (equal parts grown to fill the sheet, the name band) is in git history.
