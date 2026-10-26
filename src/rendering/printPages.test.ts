@@ -8,7 +8,7 @@ import { en } from '../i18n/en'
 import type { Project } from '../domain/project'
 import { PRINT_COLORS } from './printColors'
 import { CELL_SIZE_PX } from './surfaceView'
-import { A4_PORTRAIT, mm, planPrint, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_LEGEND_WIDTH, PRINT_MARGIN } from './printPlan'
+import { A4_PORTRAIT, mm, planPrint, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM, PRINT_BOARD_PAD, PRINT_HEADER, PRINT_MARGIN, PRINT_RULER } from './printPlan'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
@@ -21,52 +21,66 @@ const print = (name: string) => tokens.print.tokens.find((entry) => entry.name =
 
 describe('the printed pages keep to the tokens (ticket 162)', () => {
   it('uses the light colors and the print board', () => {
-    expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), faint: color('faint'), line: color('line'), accent: color('accent'), board: color('print-board') })
+    expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), faint: color('faint'), line: color('line'), accent: color('accent'), accentStrong: color('accent-strong'), board: color('print-board') })
   })
 
   it('uses the print sizes', () => {
     const size = (name: string) => mm(Number.parseFloat(String(print(name))))
     expect(PRINT_MARGIN).toBeCloseTo(size('print-margin'))
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
-    expect(PRINT_LEGEND_WIDTH).toBeCloseTo(size('print-legend-width'))
     expect(PRINT_CHART_CELL_MM).toBe(Number.parseFloat(String(print('print-chart-cell'))))
     expect(PRINT_CHART_CELL_LETTERS_MM).toBe(Number.parseFloat(String(print('print-chart-cell-letters'))))
   })
 })
 
-describe('pageOneLayout: fills the sheet even for a huge Project (ticket 184)', () => {
-  it.each<[Technique, number, number]>([
-    ['peyote', 250, 250],
-    ['brick', 250, 250],
-    ['loom', 250, 250],
-    ['loom', 60, 80],
-    ['loom', 20, 20],
-  ])('draws a %s %s×%s Project as large as the better of the two legend placements allows', (technique, columns, rows) => {
-    const project = shape(technique, columns, rows)
-    const page = A4_PORTRAIT
-    const layout = pageOneLayout(project, page)
+describe('pageOneLayout: the whole Schema at full width with Beads needed under it (ticket 580)', () => {
+  const page = A4_PORTRAIT
+  const fullWidth = page.width - PRINT_MARGIN * 2 - (PRINT_RULER + PRINT_BOARD_PAD) * 2
 
-    // Whichever side the legend sits on, the Project reaches that layout's own room on at least one axis (or the
-    // largest bead, 7 mm): nothing is left small in a box it doesn't fill.
-    const capped = layout.zoom >= mm(7) / CELL_SIZE_PX - 1e-9
-    expect(capped || Math.max(layout.extent.width / layout.room.width, layout.extent.height / layout.room.height) > 0.99).toBe(true)
+  it('fills the page width for a wide Schema and keeps the table for a few colors', () => {
+    const layout = pageOneLayout(shape('loom', 300, 24), page, 5)
+
+    expect(layout.extent.width).toBeCloseTo(fullWidth)
+    expect(layout.beadsNeeded.kind).toBe('table')
+    expect(layout.board.x).toBeCloseTo(PRINT_MARGIN + PRINT_RULER + PRINT_BOARD_PAD)
   })
 
-  it('picks the side legend over the previously-forced below-legend band for a peyote 250×250 Project', () => {
-    // Peyote's rows sit closer than its columns (rowPitchPx), so a square 250×250 bead count is technically wider
-    // than tall and used to be forced into the below-legend layout, whose fixed mm(78) band fit it at zoom ≈ 0.08
-    // versus ≈ 0.20 beside the legend — a small, centered chart on an otherwise empty page.
-    const project = shape('peyote', 250, 250)
-    const layout = pageOneLayout(project, A4_PORTRAIT)
+  it('never draws a bead past print-bead-max, and centers a small Schema', () => {
+    const layout = pageOneLayout(shape('loom', 20, 20), page, 5)
 
+    expect(layout.zoom).toBeCloseTo(mm(7) / CELL_SIZE_PX)
+    expect(layout.board.x + layout.extent.width / 2).toBeCloseTo(page.width / 2)
+  })
+
+  it('is limited by the height for a tall Schema, and Beads needed still fits the page', () => {
+    const layout = pageOneLayout(shape('loom', 60, 250), page, 8)
+
+    expect(layout.extent.width).toBeLessThan(fullWidth)
+    expect(layout.beadsNeeded.kind).toBe('table')
+    expect(layout.below + layout.beadsNeeded.height).toBeLessThanOrEqual(page.height - PRINT_MARGIN)
+  })
+
+  it('reads the table in two columns, so rows are half the colors, rounded up', () => {
+    const layout = pageOneLayout(shape('loom', 80, 60), page, 7).beadsNeeded
+
+    expect(layout.kind === 'table' && layout.rows).toBe(4)
+  })
+
+  it('swaps the table for the one line when many colors would shrink the board, and the board takes the room', () => {
+    const few = pageOneLayout(shape('loom', 100, 100), page, 6)
+    const many = pageOneLayout(shape('loom', 100, 100), page, 60)
+
+    expect(few.beadsNeeded.kind).toBe('table')
+    expect(many.beadsNeeded.kind).toBe('line')
+    expect(many.zoom).toBeGreaterThanOrEqual(few.zoom)
+    expect(many.below + many.beadsNeeded.height).toBeLessThanOrEqual(page.height - PRINT_MARGIN)
+  })
+
+  it('draws a huge Schema within the sheet', () => {
+    const layout = pageOneLayout(shape('peyote', 250, 250), page, 12)
+
+    expect(layout.board.x + layout.extent.width).toBeLessThanOrEqual(page.width - PRINT_MARGIN)
     expect(layout.zoom).toBeGreaterThan(0.15)
-  })
-
-  it('still uses the below-legend layout for a Project that is genuinely much wider than tall', () => {
-    const project = shape('loom', 300, 24)
-    const layout = pageOneLayout(project, A4_PORTRAIT)
-
-    expect(layout.columnBelow).toBe(true)
   })
 })
 

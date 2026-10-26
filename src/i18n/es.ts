@@ -432,7 +432,13 @@ export const es: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
-    readParts: 'Línea discontinua: las partes del gráfico, por página. Lee de izquierda a derecha y luego hacia abajo. La fila 1 está arriba.',
+    readParts: 'Líneas: las partes del gráfico, cada una en su página, con todas las filas y columnas numeradas.',
+    /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
+    beadsNeededSee: 'Cuentas necesarias: {summary} · ver página {page}',
+    shape: 'Forma',
+    /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
+    partPage: 'parte {part} · pág. {page}',
+    partPageShort: '{part} · p. {page}',
     beadsNeeded: 'Cuentas necesarias',
     total: 'Total',
     beadsGrams: 'cuentas · gramos',

@@ -426,7 +426,13 @@ export const zh: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
-    readParts: '虚线：按页划分的图表部分。先从左到右读，再从上到下。第 1 行在顶部。',
+    readParts: '线条：图表各部分，每部分占一页，所有行和列均已编号。',
+    /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
+    beadsNeededSee: '所需珠子：{summary} · 见第 {page} 页',
+    shape: '形状',
+    /** A part's pill on page 1: "part A · page 2", and the short form for a narrow part. */
+    partPage: '第 {part} 部分 · 第 {page} 页',
+    partPageShort: '{part} · {page} 页',
     beadsNeeded: '所需珠子',
     total: '合计',
     beadsGrams: '颗数 · 克数',

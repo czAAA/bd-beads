@@ -33,6 +33,13 @@ describe('printText (tickets 162, 164)', () => {
     expect(text.gramsNote).toBe('≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares.')
   })
 
+  it('words the facts and the color count page 1 prints (ticket 580)', () => {
+    const text = printText(delicaProject(10), en, 'en', at)
+
+    expect(text.shape).toBe('Symmetric')
+    expect(text.colorsCount).toBe('1 color')
+  })
+
   it('shows no grams and no note for a Bead with no weight', () => {
     const text = printText({ ...delicaProject(10), beadId: 'a-bead-this-device-never-had', bead: undefined }, en, 'en', at)
 
