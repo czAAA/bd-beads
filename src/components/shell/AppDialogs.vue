@@ -21,6 +21,7 @@ const {
   onConfirmRemoveFrame,
   switchQuestion,
   onSetSwitchNetSize,
+  onSetSwitchBrickBlock,
   onCancelSwitchTechnique,
   onConfirmSwitchTechnique,
   replaceFrameConfirmOpen,
@@ -107,6 +108,7 @@ const {
     v-if="switchQuestion"
     :question="switchQuestion"
     @update:net-size="onSetSwitchNetSize"
+    @update:brick-block="onSetSwitchBrickBlock"
     @confirm="onConfirmSwitchTechnique"
     @cancel="onCancelSwitchTechnique"
   />

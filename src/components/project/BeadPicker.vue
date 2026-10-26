@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { beadLabel, type Bead } from '../../domain/beads'
+import { beadLabel, uniqueBy, type Bead } from '../../domain/beads'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
@@ -47,12 +47,8 @@ reset()
 watch(() => props.modelValue, reset)
 watch(open, (isOpen) => isOpen && reset())
 
-function unique<T>(items: readonly T[], key: (item: T) => string): T[] {
-  return items.filter((item, index) => items.findIndex((other) => key(other) === key(item)) === index)
-}
-
-const brands = computed(() => unique(entries.value, (bead) => bead.brand.id))
-const formFactors = computed(() => unique(entries.value.filter((bead) => bead.brand.id === brandId.value), (bead) => bead.formFactor.id))
+const brands = computed(() => uniqueBy(entries.value, (bead) => bead.brand.id))
+const formFactors = computed(() => uniqueBy(entries.value.filter((bead) => bead.brand.id === brandId.value), (bead) => bead.formFactor.id))
 const sizes = computed(() => entries.value.filter((bead) => bead.brand.id === brandId.value && bead.formFactor.id === formFactorId.value))
 
 const ownSizeIsSaved = (bead: Bead) => props.outdated && bead.id === props.current?.id

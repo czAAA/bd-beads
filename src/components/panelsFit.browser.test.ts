@@ -8,6 +8,7 @@ import FramePanel from './canvas/FramePanel.vue'
 import ProjectPanel from './project/ProjectPanel.vue'
 import NewProjectForm from './project/NewProjectForm.vue'
 import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
+import SwitchTechniqueModal from './project/SwitchTechniqueModal.vue'
 import ConvertImageSizeDialog from './import/ConvertImageSizeDialog.vue'
 import { BEAD_CATALOG, findBead, offeredBeads } from '../domain/beads'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
@@ -47,7 +48,11 @@ const CASES: FitCase[] = [
   ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}],
   ['FramePanel (rows done)', inPanel(FramePanel, { project: { ...painted, rowProgress: { ...painted.rowProgress, currentRow: 1 } } }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
+  ['ProjectPanel (netting)', ProjectPanel, { project: createProject({ technique: 'netting', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['NewProjectForm', NewProjectForm, {}],
+  ['NewProjectForm (starters open)', NewProjectForm, { startersOpen: true }],
+  ['SwitchTechniqueModal (brick stitch)', SwitchTechniqueModal, { question: { technique: 'brick', lost: 12, drawn: true, keeps: false, asksNetSize: false, netSize: 3, asksBrickBlock: true, brickBlock: 2 } }],
+  ['SwitchTechniqueModal (Net size)', SwitchTechniqueModal, { question: { technique: 'netting', lost: 12, drawn: true, keeps: true, asksNetSize: true, netSize: 5, asksBrickBlock: false, brickBlock: 1 } }],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
   ['ConvertImageSizeDialog', ConvertImageSizeDialog, { bead: findBead('toho-cube-1.5mm')!, technique: 'loom', slowFramingCellThresholds: { loom: 5000, peyote: 5000, brick: 5000, rightAngle: 5000, netting: 5000 } }],
 ]

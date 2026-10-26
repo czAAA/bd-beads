@@ -9,7 +9,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import CanvasSection from './CanvasSection.vue'
-import ProjectBeadSection from './ProjectBeadSection.vue'
+import BeadSection from './BeadSection.vue'
 import ProjectHead from './ProjectHead.vue'
 
 // The body of Project (spec 0440, tickets 443, 554; ProjectPanel card): everything about the open Project that no tool
@@ -26,8 +26,10 @@ const emit = defineEmits<{
   rename: [name: string]
   'set-technique': [technique: Technique]
   'set-brick-block': [brickBlock: number]
+  'set-net-size': [netSize: number]
   'set-canvas-technique': [technique: Technique]
   'set-canvas-brick-block': [brickBlock: number]
+  'set-canvas-net-size': [netSize: number]
   'set-bead-shape': [shape: BeadShape]
   'replace-bead': [beadId: string]
   save: []
@@ -70,10 +72,18 @@ const canvasName = computed(() => {
       @set-brick-block="emit('set-brick-block', $event)"
       @set-canvas-technique="emit('set-canvas-technique', $event)"
       @set-canvas-brick-block="emit('set-canvas-brick-block', $event)"
+      @set-net-size="emit('set-net-size', $event)"
+      @set-canvas-net-size="emit('set-canvas-net-size', $event)"
     />
 
     <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
-      <ProjectBeadSection :project="project" :candidates="replaceCandidates" @set-bead-shape="emit('set-bead-shape', $event)" @replace-bead="emit('replace-bead', $event)" />
+      <BeadSection
+        :bead="resolveProjectBead(project)"
+        :bead-shape="project.beadShape ?? DEFAULT_BEAD_SHAPE"
+        :candidates="replaceCandidates"
+        @update:bead-shape="emit('set-bead-shape', $event)"
+        @pick="emit('replace-bead', $event)"
+      />
     </PanelSection>
 
     <PanelSection id="project:canvas" :label="t.panels.project.canvas" :summary="canvasName">

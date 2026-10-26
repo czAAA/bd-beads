@@ -66,7 +66,7 @@
     "components/StackingOrder/README.md",
     "components/Stepper/README.md",
     "components/SwitchAndFileButton/README.md",
-    "components/TemplateGallery/README.md",
+    "components/StarterGallery/README.md",
     "components/TextField/README.md",
     "components/ThemeToggle/README.md",
     "components/ToolPill/README.md",
@@ -385,9 +385,9 @@
       "summary": "The labelled on/off Switch, and the FileButton that opens the file picker with its limits written under it."
     },
     {
-      "name": "TemplateGallery",
+      "name": "StarterGallery",
       "group": "Screens",
-      "summary": "The Templates New Project starts from: a radiogroup of cards above the form, and the setup subpanel with its sizes, presets and Estimated size."
+      "summary": "The Starters New Project starts from: a radiogroup of cards under its Pick a starter button, and the setup subpanel with its sizes, presets and Estimated size."
     },
     {
       "name": "TextField",

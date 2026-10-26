@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { openApp, openNewProjectForm, setZoom, stateConvertSize } from '../support/app'
+import { chooseNewProjectTechnique, openApp, openNewProjectForm, setZoom, stateConvertSize } from '../support/app'
 import { fixturePicture } from '../support/picture'
 
 // The framing step of Convert image (ticket 58): beads under the frame at 100% and 200% and after a drag.
@@ -10,7 +10,7 @@ test.describe('Convert image framing', () => {
     test(technique, async ({ page }) => {
       await openApp(page, [])
       await openNewProjectForm(page)
-      await page.getByTestId('technique-select').locator(`[data-value="${technique}"]`).click()
+      await chooseNewProjectTechnique(page, technique)
       await page.getByTestId('convert-image-input').setInputFiles({
         name: 'fixture.png',
         mimeType: 'image/png',
