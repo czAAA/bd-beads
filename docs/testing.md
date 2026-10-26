@@ -15,6 +15,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - Each suite ends in one job with a stable name, and branch protection requires those three: "Typecheck and lint", "Unit tests passed", "Visual check passed". The shard counts can change in `ci.yml` without touching branch protection.
 - A pull request that changes only Markdown is skipped by `paths-ignore`, so its required checks never start and it waits forever: merge it with an admin override.
 - The workflow uses `pull_request` (never `pull_request_target`), a read-only token and no secrets, and pins every action to a commit SHA.
+- The browser component and visual jobs run in the `mcr.microsoft.com/playwright` image (Chromium and its system libraries built in, so no apt install on the runner). Its tag must equal the `@playwright/test` version in `package-lock.json`; bump both together.
 - A failed visual shard uploads its `test-results`, and the shards' reports are merged into one HTML report artifact.
 - The performance check (`npm run perf`, README) is run by hand, never in CI: its timings depend on an idle machine.
 
