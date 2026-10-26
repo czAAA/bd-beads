@@ -5,7 +5,8 @@ import CanvasStrip from '../components/canvas/CanvasStrip.vue'
 import MenuPanel from '../components/shell/MenuPanel.vue'
 import PanelHost from '../components/shell/PanelHost.vue'
 import { useElementSize } from '../composables/ui/useElementSize'
-import { CELL_SIZE_PX } from '../rendering/surfaceView'
+import { DEFAULT_TECHNIQUE } from '../domain/weave'
+import { positionMarkBackground } from '../rendering/positionMarks'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import DrawnLayer from './DrawnLayer.vue'
 import CoffeeTile from './CoffeeTile.vue'
@@ -38,14 +39,21 @@ const scrollEl = ref<HTMLElement>()
 const scrollSize = useElementSize(scrollEl)
 const pageWidth = computed(() => (scrollSize.width.value || window.innerWidth) / (zoom.percent.value / 100))
 const canvasBackground = useCanvasBackground()
-// The page's background is the editor Canvas's empty grid: squares a bead across (CELL_SIZE_PX), outlined in the
-// theme's Position mark color, sized by the zoom as the Canvas's are.
+// The page's background is the editor Canvas's empty positions of a Miyuki Delica 11/0 Project in the Symmetric bead
+// shape (square cells, the default Technique), outlined in the theme's Position mark color, sized by the zoom.
 const boxStyle = computed(() => {
   const color = canvasBackground.background.value?.color
+  const zoomScale = zoom.percent.value / 100
+  const pixelRatio = window.devicePixelRatio || 1
+  const marks = positionMarkBackground({
+    technique: DEFAULT_TECHNIQUE,
+    deviceScale: zoomScale * pixelRatio,
+    pixelRatio,
+    color: canvasBackground.projectTheme.value.positionMark,
+  })
   return {
     ...(color ? { '--canvas-bg': color } : undefined),
-    '--canvas-grid': canvasBackground.projectTheme.value.positionMark,
-    '--canvas-cell': `${CELL_SIZE_PX * (zoom.percent.value / 100)}px`,
+    ...(marks ? { '--canvas-marks': `url(${marks.url})`, '--canvas-tile': `${marks.width}px ${marks.height}px` } : undefined),
   }
 })
 
@@ -143,10 +151,8 @@ const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{co
   min-height: 0;
   overflow: hidden auto;
   background-color: var(--canvas-bg, var(--canvas));
-  background-image:
-    linear-gradient(to bottom, var(--canvas-grid) 1px, transparent 1px),
-    linear-gradient(to right, var(--canvas-grid) 1px, transparent 1px);
-  background-size: var(--canvas-cell) var(--canvas-cell);
+  background-image: var(--canvas-marks, none);
+  background-size: var(--canvas-tile);
   background-attachment: local;
 }
 
