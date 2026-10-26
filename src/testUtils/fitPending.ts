@@ -20,7 +20,6 @@ export const FIT_PENDING: FitPending[] = [
   { case: 'OverviewPage', texts: ['Без аккаунта'], at: { ru: [820, 768] }, fixedBy: '231' },
   { case: 'OverviewPage', texts: ['Три способа работать'], at: { ru: [390, 360, 320] }, fixedBy: '231' },
   { case: 'OverviewPage', texts: ['Конвертировать изображение'], at: { ru: [360, 320] }, fixedBy: '231' },
-  { case: 'dialog pendingImport', texts: ['Перейти к импортированному проекту?'], at: { ru: [320] }, fixedBy: '559' },
 ]
 
 const quoted = (text: string) => `"${text}"`

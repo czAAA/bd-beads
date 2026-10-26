@@ -588,7 +588,7 @@ export const ru: Translations = {
     lockedReason: 'Есть готовые ряды. Уберите рамку, чтобы изменить размер',
   },
   importSwitch: {
-    title: 'Перейти к импортированному проекту?',
+    title: 'Перейти к новому проекту?',
     messageOne:
       'Проект «{imported}» импортирован. Ваш прогресс в проекте «{current}» сохранён. Перейти к «{imported}» или оставить открытой «{current}»?',
     messageMany:
