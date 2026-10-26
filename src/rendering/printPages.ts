@@ -1,9 +1,11 @@
 import { countedDimensions, frameWeave, projectDimensions } from '../domain/project'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
+import { groupThousands } from '../domain/formatNumber'
 import { shownLetters, type Project } from '../domain/project'
 import type { SwatchLetters } from '../domain/swatchLetters'
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
+import { colorsOnParts } from './chartPageKey'
 import { PRINT_COLORS } from './printColors'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
@@ -113,7 +115,7 @@ export function wrap(context: CanvasRenderingContext2D, value: string, style: st
 
 /** A page canvas `scale` times the layout's px (the layout is at PRINT_DPI; a PDF at a higher quality draws the same page
  * larger, ticket 572): the context is scaled, so everything is drawn in layout px. */
-function blankPage(page: PageSize, scale: number): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
+export function blankPage(page: PageSize, scale: number): { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D } {
   const canvas = document.createElement('canvas')
   canvas.width = Math.round(page.width * scale)
   canvas.height = Math.round(page.height * scale)
@@ -182,9 +184,10 @@ function downNumber(project: RulerShape, index: number): number {
   return downReversed(project.rotation) ? dimension - index : index + 1
 }
 
-// The rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the far
-// end), and a hairline every 10 beads. `every` is 10 on page 1; chart pages label every 5th bead in `muted`, 10th bold.
-export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10): void {
+// Page 1's rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the
+// far end), a number every `every` beads (page 1: 5, or 10 when the beads are small) and a hairline every 10; the chart
+// pages' own are `drawChartRulers`.
+export function drawRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, across: Span, down: Span, every: 5 | 10 = 10): void {
   const grid = displayedGrid(project)
   const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
 
@@ -228,6 +231,106 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
   }
   context.stroke()
   context.restore()
+}
+
+/** How a chart page's ruler sets a number: every 10th bold and `ink`, every 5th `ink`, the rest `muted`. */
+export function rulerLevel(value: number): 'tenth' | 'fifth' | 'plain' {
+  return value % 10 === 0 ? 'tenth' : value % 5 === 0 ? 'fifth' : 'plain'
+}
+
+/** Which band a number stands in on a chart page: odd on the top and left, even on the bottom and right, so each
+ * number appears once (printed-output.md, Chart pages). */
+export function rulerSide(value: number): 'start' | 'end' {
+  return value % 2 === 1 ? 'start' : 'end'
+}
+
+/** Whether the line between two neighbouring beads (their Schema numbers) closes a block of 5 or 10: a fine line every
+ * 5 beads, a heavier one every 10, counted in the Schema's own numbers whichever way it is turned. */
+export function lineBetween(a: number, b: number): 'tenth' | 'fifth' | undefined {
+  const level = rulerLevel(Math.min(a, b))
+  return level === 'plain' ? undefined : level
+}
+
+/** A chart part's rulers (ticket 579): every column and row numbered in the Project's own numbers, odd top and left, even
+ * bottom and right, columns turned. The overlap is shaded with `faint` numbers under an `accent` line where the part
+ * begins; fine and heavier lines run over the beads. */
+function drawChartRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, part: PrintPart): void {
+  const grid = displayedGrid(project)
+  const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
+  const firstAcross = part.firstAcross - part.overlapAcross
+  const firstDown = part.firstDown - part.overlapDown
+  const acrossAt = (index: number) => at.x + (index - firstAcross) * grid.stepAcross * zoom
+  const downAt = (index: number) => at.y + (index - firstDown) * grid.stepDown * zoom
+
+  context.save()
+  context.beginPath()
+  context.rect(at.x, at.y, at.width, at.height)
+  context.clip()
+  context.fillStyle = PRINT_COLORS.paper
+  context.globalAlpha = 0.6
+  if (part.overlapAcross) context.fillRect(at.x, at.y, acrossAt(part.firstAcross) - at.x, at.height)
+  if (part.overlapDown) context.fillRect(at.x, at.y, at.width, downAt(part.firstDown) - at.y)
+  context.restore()
+
+  // The lines over the beads: the first bead of an axis has no line before it.
+  context.save()
+  context.strokeStyle = PRINT_COLORS.ink
+  for (const level of ['fifth', 'tenth'] as const) {
+    context.globalAlpha = level === 'tenth' ? 0.7 : 0.3
+    context.lineWidth = pt(level === 'tenth' ? 0.8 : 0.4)
+    context.beginPath()
+    for (let index = firstAcross + 1; index <= part.lastAcross; index += 1) {
+      if (lineBetween(acrossNumber(project, index - 1), acrossNumber(project, index)) !== level) continue
+      context.moveTo(acrossAt(index), at.y)
+      context.lineTo(acrossAt(index), at.y + at.height)
+    }
+    for (let index = firstDown + 1; index <= part.lastDown; index += 1) {
+      if (lineBetween(downNumber(project, index - 1), downNumber(project, index)) !== level) continue
+      context.moveTo(at.x, downAt(index))
+      context.lineTo(at.x + at.width, downAt(index))
+    }
+    context.stroke()
+  }
+  context.restore()
+
+  // Where the part itself begins.
+  context.save()
+  context.strokeStyle = PRINT_COLORS.accent
+  context.lineWidth = pt(1.4)
+  context.beginPath()
+  if (part.overlapAcross) {
+    context.moveTo(acrossAt(part.firstAcross), at.y)
+    context.lineTo(acrossAt(part.firstAcross), at.y + at.height)
+  }
+  if (part.overlapDown) {
+    context.moveTo(at.x, downAt(part.firstDown))
+    context.lineTo(at.x + at.width, downAt(part.firstDown))
+  }
+  context.stroke()
+  context.restore()
+
+  const label = (value: number, x: number, y: number, turned: boolean, overlap: boolean) => {
+    const level = rulerLevel(value)
+    context.save()
+    context.font = font(level === 'tenth' ? '700' : '400', 6.5, MONO)
+    context.fillStyle = overlap ? PRINT_COLORS.faint : level === 'plain' ? PRINT_COLORS.muted : PRINT_COLORS.ink
+    context.textAlign = 'center'
+    context.textBaseline = 'middle'
+    context.translate(x, y)
+    if (turned) context.rotate(-Math.PI / 2)
+    context.fillText(String(value), 0, 0)
+    context.restore()
+  }
+  for (let index = firstAcross; index <= part.lastAcross; index += 1) {
+    const value = acrossNumber(project, index)
+    const x = acrossAt(index) + (grid.beadAcross * zoom) / 2
+    label(value, x, rulerSide(value) === 'start' ? at.y - gap : at.y + at.height + gap, true, index < part.firstAcross)
+  }
+  for (let index = firstDown; index <= part.lastDown; index += 1) {
+    const value = downNumber(project, index)
+    const y = downAt(index) + (grid.beadDown * zoom) / 2
+    label(value, rulerSide(value) === 'start' ? at.x - gap : at.x + at.width + gap, y, false, index < part.firstDown)
+  }
 }
 
 /** The top line on every page: the mark and "openbeads" on the left, the maker, date and time on the right. */
@@ -523,7 +626,61 @@ function drawMiniMap(context: CanvasRenderingContext2D, plan: PrintPlan, part: P
   return layout.width
 }
 
-/** A chart page: its parts, each on its own board under its label, where the plan placed them (ticket 578). */
+/** The header's page number, large, with "Page 3 of 9" under it; returns where its left edge is. */
+function drawPageNumber(context: CanvasRenderingContext2D, labels: PrintText['labels'], plan: PrintPlan, page: number, right: number): number {
+  const big = text(context, String(page), right, PRINT_MARGIN + mm(9), font('700', 26, SANS), PRINT_COLORS.ink, 'right')
+  const small = labels.page.replace('{page}', String(page)).replace('{pages}', String(plan.pageCount))
+  const width = text(context, small, right, PRINT_MARGIN + mm(14), font('400', 6.5, MONO), PRINT_COLORS.muted, 'right')
+  return right - Math.max(big, width)
+}
+
+/** The color key under the boards: a swatch, name and the beads of it on this page, in columns that read down, with the
+ * reading line at the bottom. A list too long for the room ends in an ellipsis. */
+function drawColorKey(context: CanvasRenderingContext2D, project: Project, words: PrintText, parts: PrintPart[], pageWidth: number, area: { top: number; bottom: number }): void {
+  const { labels } = words
+  const left = PRINT_MARGIN
+  const width = pageWidth - PRINT_MARGIN * 2
+  text(context, labels.readNumbers, left, area.bottom, font('400', 7, SANS), PRINT_COLORS.muted, 'left', width)
+
+  let y = area.top + pt(8)
+  text(context, labels.keyOnPage, left, y, font('700', 8, SANS), PRINT_COLORS.ink)
+  y += mm(2)
+  const named = new Map(words.colors.map((color) => [color.hex, color]))
+  const colors = colorsOnParts(project, parts).filter(({ hex }) => named.has(hex))
+  const lettered = project.letters && colors.some(({ hex }) => named.get(hex)?.letter)
+  const rowHeight = lettered ? mm(5) : mm(4.2)
+  const swatch = lettered ? mm(4.2) : mm(3)
+  const columns = 3
+  const columnWidth = width / columns
+  const rows = Math.max(1, Math.floor((area.bottom - mm(5) - y) / rowHeight))
+  const fits = colors.length <= rows * columns
+  const shown = fits ? colors : colors.slice(0, rows * columns - 1)
+
+  shown.forEach(({ hex, count }, index) => {
+    const x = left + Math.floor(index / rows) * columnWidth
+    const top = y + (index % rows) * rowHeight
+    const middle = top + rowHeight / 2
+    const color = named.get(hex)!
+    context.fillStyle = hex
+    context.beginPath()
+    context.roundRect(x, middle - swatch / 2, swatch, swatch, swatch * 0.28)
+    context.fill()
+    context.strokeStyle = 'rgba(0, 0, 0, 0.2)'
+    context.lineWidth = pt(0.5)
+    context.stroke()
+    if (lettered && color.letter) drawBeadLetter(context, { x, y: middle - swatch / 2, size: swatch, color: hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
+    const countRight = x + columnWidth - mm(4)
+    const counted = text(context, groupThousands(count, words.locale), countRight, middle + pt(3), font('400', 7.5, MONO), PRINT_COLORS.ink, 'right')
+    text(context, color.name, x + swatch + mm(2), middle + pt(3), font('400', 8, SANS), PRINT_COLORS.ink, 'left', columnWidth - swatch - mm(2) - counted - mm(7))
+  })
+  if (!fits) {
+    const index = shown.length
+    text(context, '…', left + Math.floor(index / rows) * columnWidth, y + (index % rows) * rowHeight + rowHeight / 2 + pt(3), font('400', 8, SANS), PRINT_COLORS.muted)
+  }
+}
+
+/** A chart page: its parts, each on its own board under its label, where the plan placed them (ticket 578), with the
+ * header, the page's color key and the footer (ticket 579). */
 export function drawChartPage(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[], scale = 1): HTMLCanvasElement {
   const { page } = plan
   const { canvas, context } = blankPage(page, scale)
@@ -531,23 +688,31 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const here = parts[0]!
 
-  // The 16 mm header: technique word and name, the maker, date and time, a mini map and the page number, large.
-  const pageLabel = labels.page.replace('{page}', String(here.page)).replace('{pages}', String(plan.pageCount))
+  // The 17 mm header: technique word and name; the part and the chart style, the maker, date and time; a mini map and
+  // the page number, large.
   const mapWidth = drawMiniMap(context, plan, here, page.width - PRINT_MARGIN, PRINT_MARGIN + mm(1))
-  const rightEdge = page.width - PRINT_MARGIN - mapWidth - mm(4)
-  text(context, pageLabel, rightEdge, PRINT_MARGIN + mm(5), font('700', 9, SANS), PRINT_COLORS.ink, 'right')
-  drawTitle(context, words, PRINT_MARGIN, PRINT_MARGIN + mm(6), 18, 11, rightEdge - PRINT_MARGIN - mm(40))
-  const meta = [headerMaker(words.maker), words.exportedAt].filter(Boolean).join(' · ')
-  text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(11.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', rightEdge - PRINT_MARGIN)
+  const rightEdge = drawPageNumber(context, labels, plan, here.page, page.width - PRINT_MARGIN - mapWidth - mm(4)) - mm(4)
+  drawTitle(context, words, PRINT_MARGIN, PRINT_MARGIN + mm(6), 18, 11, rightEdge - PRINT_MARGIN)
+  const style = project.letters ? labels.chartStyleLetters : labels.chartStyleColor
+  const partLine = parts.length === 1 ? partLabel(project, labels, here) : labels.partArea.replace('{part}', parts.map((part) => part.letter).join(', ')).split(' · ')[0]!
+  text(context, partLine, PRINT_MARGIN, PRINT_MARGIN + mm(11), font('700', 8, SANS), PRINT_COLORS.ink, 'left', rightEdge - PRINT_MARGIN)
+  const meta = [style, headerMaker(words.maker), words.exportedAt].filter(Boolean).join(' · ')
+  text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(15.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', rightEdge - PRINT_MARGIN)
 
+  let boardsBottom = 0
   for (const part of parts) {
     const left = PRINT_MARGIN + part.place.x
     const top = PRINT_MARGIN + PRINT_HEADER + part.place.y
-    text(context, partLabel(project, labels, part), left, top + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
+    boardsBottom = Math.max(boardsBottom, top + part.place.height)
+    // A sheet with one part has its label in the header; parts sharing a sheet each carry theirs.
+    if (parts.length > 1) text(context, partLabel(project, labels, part), left + inset, top + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
     const board: Board = { x: left + inset, y: top + PRINT_PART_LABEL + inset, width: part.region.width, height: part.region.height }
     drawBoard(context, project, part.region, plan.zoom, board, shownLetters(project))
-    drawRulers(context, project, plan.zoom, board, { first: part.firstAcross, last: part.lastAcross }, { first: part.firstDown, last: part.lastDown }, 5)
+    drawChartRulers(context, project, plan.zoom, board, part)
   }
+
+  // Under the boards: the colors on this page, and how the numbers read.
+  drawColorKey(context, project, words, parts, page.width, { top: boardsBottom + mm(3), bottom: page.height - PRINT_MARGIN - mm(8) })
 
   // The 8 mm footer: the brand, and where the chart goes on.
   const footer = page.height - PRINT_MARGIN - mm(1.5)

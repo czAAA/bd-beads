@@ -529,6 +529,31 @@ export interface Translations {
     /** A sheet whose parts continue on the next sheet, not to the right or below. */
     continuesOn: string
     lastPart: string
+    /** The chart style on a chart page's header: color alone, or with each bead's letter. */
+    chartStyleColor: string
+    chartStyleLetters: string
+    /** The heading over a chart page's color key. */
+    keyOnPage: string
+    /** The line on how the numbers on a chart page read. */
+    readNumbers: string
+    /** The Word chart pages and image (ticket 0574): words only, letters and numbers are not translated. */
+    wordChart: {
+      title: string
+      /** "Row {n}". */
+      row: string
+      /** The first line of a peyote chart, rows 1 and 2 together. */
+      both: string
+      firstTop: string
+      firstRight: string
+      firstBottom: string
+      firstLeft: string
+      loomRead: string
+      evenCount: string
+      oddCount: string
+      sides: string
+      runNote: string
+      emptyNote: string
+    }
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */
   saveBox: {
@@ -607,6 +632,8 @@ export interface Translations {
     /** The Letters switch in the Frame panel (ticket 0573) and its one-line explanation. */
     lettersLabel: string
     lettersLine: string
+    /** Said under the Letters switch where the Technique has no Word chart (ticket 0574). */
+    lettersUnavailable: string
     qualityHintLabel: string
     qualityHint: string
     exportCoffee: string
