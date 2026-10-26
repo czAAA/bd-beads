@@ -268,8 +268,7 @@
   --print-margin: 10mm;
   --print-header: 17mm;
   --print-footer: 8mm;
-  --print-bead-max: 7mm;
-  --print-png-bead: 60px;
+  --print-bead-max: 6mm;
   --print-part-beads: 100;
   --print-part-overlap: 2;
   --print-chart-cell: 1.75mm;

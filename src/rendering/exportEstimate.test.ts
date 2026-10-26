@@ -1,25 +1,18 @@
 import { describe, expect, it } from 'vitest'
-import { estimatePdfBytes, estimatePngBytes, pngBeadPx } from './exportEstimate'
+import { estimatePdfBytes, estimatePngBytes } from './exportEstimate'
 import type { Technique } from '../domain/weave'
 
 const shape = (technique: Technique, columns: number, rows: number) => ({ technique, rotation: 0 as const, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
 
 describe('estimatePngBytes (QualitySlider card)', () => {
   // Against real files: exportEstimate.browser.test.ts.
-  it('grows with the quality until the ceilings, then stops', () => {
-    const small = shape('loom', 20, 30)
-    expect(estimatePngBytes(small, 45)).toBeLessThan(estimatePngBytes(small, 60))
-    expect(estimatePngBytes(small, 60)).toBeLessThan(estimatePngBytes(small, 90))
-    const big = shape('loom', 250, 250)
-    expect(estimatePngBytes(big, 60)).toBeLessThan(estimatePngBytes(big, 90))
-    expect(estimatePngBytes(big, 90)).toBe(estimatePngBytes(big, 120))
+  it('scales with the DPI, since the page is the same drawing larger', () => {
+    expect(estimatePngBytes(300, 0)).toBeCloseTo(estimatePngBytes(150, 0) * 2, -3)
+    expect(estimatePngBytes(450, 0)).toBeGreaterThan(estimatePngBytes(300, 0))
   })
-})
 
-describe('pngBeadPx', () => {
-  it('keeps the wanted size for a small Frame and reduces it for a large one', () => {
-    expect(pngBeadPx(shape('loom', 20, 30), 60)).toBe(60)
-    expect(pngBeadPx(shape('loom', 200, 200), 90)).toBeLessThan(90)
+  it('adds a page for every list page Beads needed runs over onto', () => {
+    expect(estimatePngBytes(300, 2)).toBeCloseTo(estimatePngBytes(300, 0) * 3, -3)
   })
 })
 
@@ -31,5 +24,10 @@ describe('estimatePdfBytes', () => {
 
   it('counts more pages for a larger Frame', () => {
     expect(estimatePdfBytes(shape('loom', 100, 200), 150)).toBeGreaterThan(estimatePdfBytes(shape('loom', 20, 30), 150))
+  })
+
+  it('counts the list pages too', () => {
+    const project = shape('loom', 20, 30)
+    expect(estimatePdfBytes(project, 150, 2)).toBeGreaterThan(estimatePdfBytes(project, 150))
   })
 })
