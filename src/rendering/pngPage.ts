@@ -1,3 +1,4 @@
+import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { mm } from './printPlan'
 import { drawMark, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
@@ -13,6 +14,8 @@ const PNG_GUTTER = mm(8)
 const PNG_STORY_WIDTH = mm(58)
 const ROW = mm(6.5)
 const SWATCH = mm(3.2)
+/** A swatch that carries a Swatch letter (ticket 0573): bigger, so the letter prints at the 6.5 pt floor. */
+const SWATCH_LETTER = mm(4.6)
 
 export interface PngLayout {
   width: number
@@ -91,18 +94,20 @@ function drawStoryColors(context: CanvasRenderingContext2D, words: PrintText, x:
   const colWidth = columns === 2 ? (width - mm(6)) / 2 : width
   const row = (colX: number, rowY: number, color: PrintText['colors'][number] | undefined, bold: boolean) => {
     const middle = rowY + ROW / 2
+    const swatch = color?.letter ? SWATCH_LETTER : SWATCH
     if (color) {
       context.fillStyle = color.hex
       context.beginPath()
-      context.roundRect(colX, middle - SWATCH / 2, SWATCH, SWATCH, SWATCH * 0.28)
+      context.roundRect(colX, middle - swatch / 2, swatch, swatch, swatch * 0.28)
       context.fill()
       context.strokeStyle = 'rgba(0, 0, 0, 0.2)'
       context.stroke()
+      if (color.letter) drawBeadLetter(context, { x: colX, y: middle - swatch / 2, size: swatch, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
     }
     const weight = bold ? '700' : '400'
     const gramsX = colX + colWidth
     const beadsX = colX + colWidth - (color?.grams || (bold && words.totalGrams) ? mm(11) : 0)
-    const nameX = colX + SWATCH + mm(2)
+    const nameX = colX + SWATCH_LETTER + mm(2)
     text(context, color ? color.name : labels.total, nameX, middle + pt(3), font(weight, 8, SANS), PRINT_COLORS.ink, 'left', beadsX - nameX - mm(3))
     text(context, color ? color.beads : words.totalBeads.replace(/\D+$/, ''), beadsX, middle + pt(3), font(weight, 7.5, MONO), PRINT_COLORS.ink, 'right')
     if (color ? color.grams : words.totalGrams) {

@@ -517,6 +517,8 @@ export const pl: Translations = {
     qualitySizeMb: '{n} MB',
     qualityReduced: 'Zmniejszono, aby zmieścić się w największym obrazie, jaki przeglądarka może utworzyć dla tej ramki.',
     qualityReducedLabel: 'Dlaczego rozmiar jest zmniejszony',
+    lettersLabel: 'Litery',
+    lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
     exportCoffee: 'openbeads tworzy, utrzymuje i powoli rozwija jedna rodzina. Jeśli ci się przydaje, kawa pomoże mu przetrwać.',
     exportCoffeeLink: 'Postaw mi kawę',
     estimateInfo: 'To szacunek. Rozmiar koralika × liczba koralików wszerz i wzdłuż. Nić, naciąg i drobne różnice między koralikami sprawiają, że gotowa praca często wychodzi trochę inna.',

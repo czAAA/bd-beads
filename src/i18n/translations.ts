@@ -595,6 +595,9 @@ export interface Translations {
     qualitySizeMb: string
     qualityReduced: string
     qualityReducedLabel: string
+    /** The Letters switch in the Frame panel (ticket 0573) and its one-line explanation. */
+    lettersLabel: string
+    lettersLine: string
     exportCoffee: string
     exportCoffeeLink: string
     estimateInfo: string
