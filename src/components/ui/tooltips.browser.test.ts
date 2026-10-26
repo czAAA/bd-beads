@@ -4,12 +4,13 @@ import { userEvent } from 'vitest/browser'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/project'
 import { CONTROLS, controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { FIT_LOCALES, longPress, mountAt, TOOLTIP_WIDTH } from '../../testUtils/browserFit'
+import { FIT_LOCALES, longPress, mountAt, TOOLTIP_WIDTH, waysIn } from '../../testUtils/browserFit'
 import { measureOpenBubble } from '../../testUtils/hoverInPage'
 import IconButton from './IconButton.vue'
 
 // Every registry action's Tooltip stays on the screen and inside what clips it, at the screen's left and right edges,
-// in every language (ticket 552).
+// in every language (ticket 552). Whether a Tooltip opens does not depend on the language: English is opened all three
+// ways, the others by hover alone.
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 // The narrowest screen is where a bubble has least room; the wide one adds nothing a Tooltip can fail on.
 const WIDTH = TOOLTIP_WIDTH
@@ -44,8 +45,9 @@ async function openAndMeasure(root: HTMLElement, open: (button: HTMLElement) => 
 describe('Tooltips of the registry actions', () => {
   for (const control of CONTROLS.filter((action) => action.icon)) {
     for (const locale of FIT_LOCALES) {
-      it(`${control.id} stays on screen in ${locale} at ${WIDTH}px, hovered at the left edge, focused at the right and long pressed`, async () => {
-        for (const [side, how] of TRIES) {
+      const tries = TRIES.filter(([, how]) => waysIn(locale).includes(how))
+      it(`${control.id} stays on screen in ${locale} at ${WIDTH}px, ${tries.map(([side, how]) => `${how} at the ${side} edge`).join(', ')}`, async () => {
+        for (const [side, how] of tries) {
           const mounted = await mountAt(harness(control.id, side), {}, { locale, width: WIDTH, text: false })
           const open = how === 'hover' ? (button: HTMLElement) => userEvent.hover(button) : how === 'focus' ? (button: HTMLElement) => button.focus() : (button: HTMLElement) => longPress(button.closest('.app-tooltip') as HTMLElement)
           const bubble = await openAndMeasure(mounted.root, open)

@@ -1,6 +1,6 @@
 import { defineComponent, h } from 'vue'
 import { expect, it } from 'vitest'
-import { misfitsNow, mountAt } from './browserFit'
+import { FIT_LOCALES, localesAt, misfitsNow, mountAt, waysIn, widthsFor } from './browserFit'
 import MenuPanel from '../components/shell/MenuPanel.vue'
 
 // The measurement has to see what it is for: a one-line button too narrow for its words is a misfit, a roomy one is not.
@@ -28,4 +28,16 @@ it('renders in the language it is asked for, every time', async () => {
   expect(texts[1]).not.toBe(texts[0])
   expect(texts[2]).toBe(texts[0])
   expect(texts[3]).not.toBe(texts[0])
+})
+
+it('tries every language below the iPad mini in portrait, and English and Russian from it up', () => {
+  expect(localesAt(767)).toEqual(FIT_LOCALES)
+  expect(localesAt(768)).toEqual(['en', 'ru'])
+  expect(widthsFor('en')).toEqual([1280, 1024, 768, 390, 320])
+  expect(widthsFor('pl')).toEqual([390, 320])
+})
+
+it('opens a Tooltip all three ways in English and by hover alone in the other languages', () => {
+  expect(waysIn('en')).toEqual(['hover', 'focus', 'long press'])
+  expect(waysIn('zh')).toEqual(['hover'])
 })
