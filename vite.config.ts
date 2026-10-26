@@ -35,6 +35,8 @@ export default defineConfig(({ mode }) => ({
   base: resolveBase(mode, process.env.DEPLOY_BASE),
   // The offline shell (ticket 69, ADR 0045): the service worker, written into the build with the list of every file in it.
   plugins: [vue(), offlineShell()],
+  // Lets `tailscale serve` reach the dev server from other devices on the tailnet.
+  server: { allowedHosts: ['.ts.net'] },
   // The version the Menu's About section shows (ticket 443).
   define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   build: {
