@@ -515,13 +515,13 @@ export interface Translations {
     /** On the PNG: "by Maria". */
     byMaker: string
     page: string
-    part: string
-    /** A part on a sheet it shares with others (ticket 163): "Part 2 · columns 39–76". */
-    partColumns: string
-    partRows: string
+    /** A part's label above its board (ticket 578): "Part B · columns 101–130 · rows 1–100". */
+    partArea: string
     continuesBoth: string
     continuesRight: string
     continuesBelow: string
+    /** A sheet whose parts continue on the next sheet, not to the right or below. */
+    continuesOn: string
     lastPart: string
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */

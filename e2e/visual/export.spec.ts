@@ -5,7 +5,7 @@ import { PNG } from 'pngjs'
 import { PRINT_THEME } from '../../src/rendering/beadLook'
 import { BUILT_IN_COLORS } from '../../src/domain/palette'
 import { PNG_BEAD_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
-import { A4_LANDSCAPE, A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
+import { A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
 import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { displayedExtentPx } from '../../src/rendering/surfaceView'
@@ -140,15 +140,18 @@ test('PNG export of a 250 × 250 peyote Project is one picture within the pixel 
 })
 
 test('PDF export holds the legend and the chart, and splits a large Project over pages', async ({ page }) => {
-  await openApp(page, [fixtureProject({ technique: 'brick', columns: 120, rows: 120 })])
+  const project = fixtureProject({ technique: 'brick', columns: 120, rows: 120 })
+  await openApp(page, [project])
 
   const { name, bytes } = await downloadOf(page, 'export-pdf')
   const pdf = bytes.toString('latin1')
 
   expect(name).toBe('openbeads-fixture-brick.pdf')
   expect(pdf.startsWith('%PDF-1.4')).toBe(true)
-  // A legend page, then the chart at 4.6 mm a bead: 120 columns don't fit one A4 sheet's width.
-  expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBeGreaterThan(3)
+  // A legend page, then the chart at 1.75 mm a bead: 120 columns are two parts, the small ones sharing a sheet.
+  const plan = planPrint(project)
+  expect(plan.parts).toHaveLength(4)
+  expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)
 })
 
 /** The size (in pt) of the PDF's first page, from its MediaBox: [0 0 width height]. */
@@ -157,7 +160,7 @@ function firstPageSize(pdf: string): [number, number] {
   return [Number(width), Number(height)]
 }
 
-test('PDF export: a wide Project prints landscape, one part filling each chart page (ticket 163, PrintWide)', async ({ page }) => {
+test('PDF export: a wide Project stays portrait (ticket 578, PrintWide)', async ({ page }) => {
   const project = fixtureProject({ technique: 'loom', columns: 96, rows: 24 })
   await openApp(page, [project])
 
@@ -165,10 +168,9 @@ test('PDF export: a wide Project prints landscape, one part filling each chart p
   const pdf = bytes.toString('latin1')
 
   const [width, height] = firstPageSize(pdf)
-  expect(width).toBeGreaterThan(height)
+  expect(height).toBeGreaterThan(width)
   const plan = planPrint(project)
-  expect(plan.page).toEqual(A4_LANDSCAPE)
-  expect(plan.strip).toBe(false)
+  expect(plan.page).toEqual(A4_PORTRAIT)
   expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)
 })
 
@@ -183,7 +185,7 @@ test('PDF export: a taller-or-square Project prints portrait', async ({ page }) 
   expect([width, height].map(Math.round)).toEqual([Math.round((A4_PORTRAIT.width * 72) / 150), Math.round((A4_PORTRAIT.height * 72) / 150)])
 })
 
-test('PDF export: a bracelet-length Project stacks several parts on one sheet (ticket 163, PrintStrips)', async ({ page }) => {
+test('PDF export: a bracelet-length Project shares sheets between its parts (ticket 578, PrintStrips)', async ({ page }) => {
   const project = fixtureProject({ technique: 'loom', columns: 300, rows: 8 })
   await openApp(page, [project])
 
@@ -191,7 +193,6 @@ test('PDF export: a bracelet-length Project stacks several parts on one sheet (t
   const pdf = bytes.toString('latin1')
 
   const plan = planPrint(project)
-  expect(plan.strip).toBe(true)
   expect(plan.partsAcross).toBeGreaterThan(plan.pageCount - 1) // fewer sheets than parts: some sheets share several
   expect(Number(/\/Count (\d+)/.exec(pdf)![1])).toBe(plan.pageCount)
 })
