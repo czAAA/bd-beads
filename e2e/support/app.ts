@@ -95,11 +95,17 @@ export async function copySelection(page: Page): Promise<void> {
 /** Opens the New Project form (the Menu panel's subpanel). With no Project open Menu opens on it by itself; if it
  * has been closed since, the empty canvas's New Project button brings it back. */
 export async function openNewProjectForm(page: Page): Promise<void> {
-  const form = page.getByTestId('bead-picker')
+  const form = page.getByTestId('bead-section')
   if (!(await form.isVisible())) {
     await page.getByTestId('phone-bar-new-project').click()
   }
   await settle(page)
+}
+
+/** Chooses a Technique in the New Project form's Technique section (ticket 568). */
+export async function chooseNewProjectTechnique(page: Page, technique: string): Promise<void> {
+  await page.getByTestId('new-project-technique').locator('button[aria-haspopup]').click()
+  await page.getByTestId('new-project-technique').locator(`[role="menuitemradio"][data-value="${technique}"]`).click()
 }
 
 /** The zoom buttons in the Canvas strip's cluster (the framing step shows its own there too). */

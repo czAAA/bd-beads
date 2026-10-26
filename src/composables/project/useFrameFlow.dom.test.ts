@@ -346,8 +346,9 @@ describe('useFrameFlow', () => {
     })
 
     it('is allowed once Row progress has a pass done', () => {
-      const { deps, setCanvasTechnique } = setup(moveToRow(sized, 1))
+      const { deps, setCanvasTechnique, confirmSwitch } = setup(moveToRow(sized, 1))
       setCanvasTechnique('brick')
+      confirmSwitch()
       expect(deps.harness.project.technique).toBe('brick')
     })
 
@@ -391,12 +392,26 @@ describe('useFrameFlow', () => {
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
 
-    it('skips the question for a layer with no beads, except to ask Netting for its Net size', () => {
-      const { deps, setCanvasTechnique, switchQuestion } = setup()
+    it('skips the question for a layer with no beads, except to ask Netting for its Net size and Brick stitch for its Brick block (ticket 568)', () => {
+      const { deps, setCanvasTechnique, switchQuestion, cancelSwitch } = setup()
       setCanvasTechnique('peyote')
       expect(deps.harness.project.technique).toBe('peyote')
       setCanvasTechnique('netting')
-      expect(switchQuestion.value).toMatchObject({ drawn: false, asksNetSize: true })
+      expect(switchQuestion.value).toMatchObject({ drawn: false, asksNetSize: true, asksBrickBlock: false, keeps: false })
+      cancelSwitch()
+      setCanvasTechnique('brick')
+      expect(switchQuestion.value).toMatchObject({ drawn: false, asksNetSize: false, asksBrickBlock: true, brickBlock: 1 })
+    })
+
+    it('takes the Brick block chosen in the question along with the switch to brick stitch (ticket 568)', () => {
+      const { deps, setCanvasTechnique, setSwitchBrickBlock, confirmSwitch } = setup(drawnCanvas)
+      setCanvasTechnique('brick')
+      setSwitchBrickBlock(3)
+      confirmSwitch()
+      expect(deps.harness.project).toMatchObject({ technique: 'brick', brickBlock: 3 })
+      expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.technique).toBe('loom')
     })
 
     it('asks about the Frame\'s beads, not the Canvas\'s, and not at all while Row progress is on', () => {
@@ -407,6 +422,40 @@ describe('useFrameFlow', () => {
       const locked = setup(moveToRow(framedBeads, 1))
       locked.setTechnique('peyote')
       expect(locked.switchQuestion.value).toBeUndefined()
+    })
+  })
+
+  describe('the Net size (ticket 568)', () => {
+    const net = { ...sized, technique: 'netting' as const, netSize: 3, frame: { ...sized.frame!, technique: 'netting' as const, netSize: 3 } }
+
+    it('changes at once while no bead would be lost, as one announced Undo step', () => {
+      const { deps, setNetSize, switchQuestion } = setup(net)
+      setNetSize(5)
+      expect(switchQuestion.value).toBeUndefined()
+      expect(deps.harness.project.frame).toMatchObject({ technique: 'netting', netSize: 5 })
+      expect(deps.announce).toHaveBeenCalledWith('Net size changed to 5')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.frame?.netSize).toBe(3)
+    })
+
+    it('asks first when beads would lose their place, counting them as the size is chosen, and keeps the Technique', () => {
+      const drawn = { ...net, beads: { 0: { 0: '#111111', 1: '#222222' } } }
+      const { deps, setCanvasNetSize, setSwitchNetSize, switchQuestion, confirmSwitch } = setup(drawn)
+      setCanvasNetSize(5)
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+      expect(switchQuestion.value).toMatchObject({ technique: 'netting', keeps: true, asksNetSize: true, netSize: 5 })
+      const lost = switchQuestion.value!.lost
+      setSwitchNetSize(7)
+      expect(switchQuestion.value!.netSize).toBe(7)
+      confirmSwitch()
+      expect(deps.harness.project.netSize).toBe(7)
+      expect(lost).toBeGreaterThan(0)
+    })
+
+    it('is no step for the size already used', () => {
+      const { deps, setNetSize } = setup(net)
+      setNetSize(3)
+      expect(deps.replaceProject).not.toHaveBeenCalled()
     })
   })
 

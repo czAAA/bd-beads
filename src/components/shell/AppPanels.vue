@@ -9,7 +9,7 @@ import AppButton from '../ui/AppButton.vue'
 import ProjectsLibrary from '../project/ProjectsLibrary.vue'
 import PanelItem from './PanelItem.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { starterById, type StarterId } from '../../domain/starters'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
@@ -31,10 +31,13 @@ const {
   onRequestDeleteAllProjects,
   onSetTechnique,
   onSetBrickBlock,
+  onSetNetSize,
+  onSetCanvasNetSize,
   onSetCanvasTechnique,
   onSetCanvasBrickBlock,
   onSetBeadShape,
   onFitFrame,
+  onSelectFrame,
   replaceBeadCandidates,
   onRequestReplaceBead,
   onImportProjects,
@@ -73,7 +76,11 @@ const {
 
 /** The Starter whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup subpanel. */
 const chosenStarter = ref<StarterId>()
-const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
+/** Whether New Project's Pick a starter has unfolded the gallery (ticket 568); folded again whenever the panel closes. */
+const startersOpen = ref(false)
+watch(openPanel, (open) => {
+  if (open === null) startersOpen.value = false
+})
 </script>
 
 <template>
@@ -89,13 +96,14 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       @remove="onRemoveFrame"
       @rename="onRenameFrame"
       @fit="onFitFrame"
+      @select-frame="onSelectFrame"
       @export-png="onExportPng"
       @export-pdf="onExportPdf"
       @key="onFrameKey"
     />
     <!-- Frame from starter (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->
     <template #sub="{ depth }">
-      <StarterGallery v-if="depth === 1" without-blank class="app-panels__gallery" @choose="chosenStarter = $event" />
+      <StarterGallery v-if="depth === 1" class="app-panels__gallery" @choose="chosenStarter = $event" />
       <StarterSetup
         v-else-if="chosenStarter"
         :starter="starterById(chosenStarter)"
@@ -148,6 +156,8 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
       @set-brick-block="onSetBrickBlock"
       @set-canvas-technique="onSetCanvasTechnique"
       @set-canvas-brick-block="onSetCanvasBrickBlock"
+      @set-net-size="onSetNetSize"
+      @set-canvas-net-size="onSetCanvasNetSize"
       @set-bead-shape="onSetBeadShape"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"
@@ -168,14 +178,14 @@ const newProjectForm = ref<InstanceType<typeof NewProjectForm>>()
         @import="onImportProjects"
         @export-all="onExportLibraryFile"
       />
-      <!-- Level 1 is New Project: the Starter gallery above the form. A card pushes level 2, its setup (ticket 493). -->
+      <!-- Level 1 is New Project, with the Starter gallery under its Pick a starter button. A card pushes level 2, its setup (ticket 493). -->
       <template v-else-if="depth === 1">
-        <StarterGallery class="app-panels__gallery" @choose="chosenStarter = $event" @choose-blank="newProjectForm?.focusName()" />
         <NewProjectForm
-          ref="newProjectForm"
+          v-model:starters-open="startersOpen"
           :decode-image="decodeImage"
           @submit="(payload) => { onCreateProject(payload); openPanel = null }"
           @draft="onNewProjectDraft"
+          @choose-starter="chosenStarter = $event"
           @convert-image="(draft) => { startConvertImage(draft); openPanel = null }"
         />
       </template>

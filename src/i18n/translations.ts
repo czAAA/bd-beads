@@ -80,6 +80,11 @@ export interface Translations {
     enterWholeBeads: string
     /** Between Create Project and Convert image. */
     or: string
+    /** New Project's heading and what an open canvas is for (ticket 568). */
+    openCanvasTitle: string
+    openCanvasSubtitle: string
+    /** The button that unfolds the Starter gallery. */
+    pickStarter: string
     /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */
     estimateBeads: string
     estimateUnits: string
@@ -227,7 +232,6 @@ export interface Translations {
     /** Under the sample picture in a Starter's setup: it decorates, the Frame is empty (ticket 494). */
     sampleNote: string
     specLine: string
-    blank: StarterCopy
     gerdan: StarterCopy
     bracelet: StarterCopy
     earrings: StarterCopy
@@ -576,6 +580,10 @@ export interface Translations {
     fitAFrame: string
     fitNothing: string
     noFrameLine: string
+    /** The Frame panel's Select a frame row, the hint shown once it is on, and the line under the off exports (ticket 568). */
+    selectAFrame: string
+    selectFrameHint: string
+    exportNeedsFrame: string
     sizeHeading: string
     exportPicture: string
     exportChart: string
@@ -623,9 +631,13 @@ export interface Translations {
     switchConfirmTitle: string
     switchConfirmMessage: string
     /** Asked of a layer with no beads when Netting needs its Net size. */
-    switchNetMessage: string
+    switchSettingsMessage: string
+    switchNetSizeTitle: string
+    switchNetSizeMessage: string
+    switchNetSizeButton: string
     switchConfirmButton: string
     announceBrickBlock: string
+    announceNetSize: string
     /** Announced after Rotate turned the Selection and covered no bead. */
     announceSelectionRotated: string
     rotateFrameLabel: string

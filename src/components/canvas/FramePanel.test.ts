@@ -229,7 +229,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-estimate"]').text()).toContain('≈')
     expect(wrapper.get('[data-testid="frame-estimate-info"]').attributes('aria-label')).toBe(en.size.estimateLabel)
     expect(wrapper.text()).toContain(en.frame.estimateInfo)
-    await wrapper.findAll('.panel-section__header')[0]!.trigger('click')
+    await wrapper.findAll('.panel-section__header')[1]!.trigger('click')
     expect(wrapper.findAll('[data-testid="frame-estimate"]')).toHaveLength(0)
     expect(wrapper.get('.panel-section__summary').text()).toMatch(/^5 × 6 · ≈ /)
   })
@@ -252,19 +252,25 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-coffee"]').text()).toContain(en.frame.exportCoffee)
   })
 
-  it('ends with Beads needed, its total in the header (ticket 555)', () => {
+  it('leads with Export, then the size, and ends with Beads needed, its total in the header (tickets 555, 568)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
-    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.frame.sizeHeading, en.panels.project.exportHeading, en.quantities.heading])
+    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.quantities.heading])
+    expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
     expect(sections.at(-1)!.attributes('data-testid')).toBe('bead-quantities')
   })
 
-  it('with no Frame offers Frame from starter and Fit a frame to the drawing, and nothing else (ticket 555)', async () => {
+  it('with no Frame offers Frame from starter, Select a frame and Fit, and only Export besides, off (tickets 555, 568)', async () => {
     const { frame: _frame, ...bare } = framed()
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
-    expect(wrapper.findAll('.panel-section')).toHaveLength(0)
+    expect(wrapper.findAll('.panel-section').map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading])
+    expect(wrapper.get('[data-testid="frame-select"]').text()).toContain(en.frame.selectAFrame)
+    for (const id of ['export-png', 'export-pdf']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
+    await wrapper.get('[data-testid="export-png"]').trigger('click')
+    expect(wrapper.emitted('export-png')).toBeUndefined()
     expect(wrapper.get('[data-testid="frame-none-line"]').text()).toBe(en.frame.noFrameLine)
     expect(wrapper.get('[data-testid="frame-from-starter"]').text()).toContain(en.frame.fromStarter)
     expect(wrapper.get('[data-testid="frame-fit"]').attributes('aria-disabled')).toBe('true')
@@ -275,5 +281,19 @@ describe('FramePanel (ticket 473)', () => {
     const wrapper = mountBar({ ...bare, beads: { 1: { 1: '#ff0000' } } })
     await wrapper.get('[data-testid="frame-fit"]').trigger('click')
     expect(wrapper.emitted('fit')).toHaveLength(1)
+  })
+
+  it('asks the shell to select a frame, with or without a Frame, and not once a pass is done (ticket 568)', async () => {
+    const { frame: _frame, ...bare } = framed()
+    const without = mountBar(bare)
+    await without.get('[data-testid="frame-select"]').trigger('click')
+    expect(without.emitted('select-frame')).toHaveLength(1)
+
+    const wrapper = mountBar()
+    await wrapper.get('[data-testid="frame-select"]').trigger('click')
+    expect(wrapper.emitted('select-frame')).toHaveLength(1)
+
+    const started = mountBar({ ...moveToRow(framed(), 1) })
+    expect(started.get('[data-testid="frame-select"]').attributes('aria-disabled')).toBe('true')
   })
 })

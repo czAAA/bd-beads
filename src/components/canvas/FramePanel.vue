@@ -21,8 +21,8 @@ import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 
-// The Frame panel (tickets 473, 475, 555; Frame card): title line with Rotate and Remove, the name, then the size, export
-// and Beads needed sections; with no Frame, Frame from starter and Fit instead. A panel like Menu and Project
+// The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
+// name, size and Beads needed; with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
 // (AppPanels, PanelHost), opened from the strip's Frame button only; a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
@@ -39,6 +39,7 @@ const emit = defineEmits<{
   remove: []
   rename: [name: string]
   fit: []
+  'select-frame': []
   'export-png': []
   'export-pdf': []
   key: [event: KeyboardEvent]
@@ -114,6 +115,8 @@ const sizeSummary = computed(() => [`${counted.value.columns} × ${counted.value
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 const exportBusy = computed(() => !!props.exporting)
+/** Why the exports are off: with no Frame there is nothing to export. */
+const exportOffBody = computed(() => (frame.value ? undefined : t.value.frame.exportNeedsFrame))
 const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
 
 /** The Tooltip over the off size fields. */
@@ -148,6 +151,19 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         />
       </span>
     </div>
+
+    <!-- Export first and always shown (ticket 568): off with no Frame, with the way to get one written under it. -->
+    <PanelSection id="frame:export" :label="t.panels.project.exportHeading">
+      <PanelItem icon="image" value=".png" stays :disabled="!frame || exportBusy" :disabled-body="exportOffBody" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
+      <PanelItem icon="pdf" value=".pdf" stays :disabled="!frame || exportBusy" :disabled-body="exportOffBody" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
+      <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
+      <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
+      <!-- Buy me a coffee (ticket 560): one plain line, no popup; absent while the Coffee link is empty. -->
+      <p v-if="COFFEE_URL" class="frame-panel__line" data-testid="frame-coffee">
+        {{ t.frame.exportCoffee }}
+        <a class="frame-panel__coffee" :href="COFFEE_URL" target="_blank" rel="noopener" data-testid="frame-coffee-link">{{ t.frame.exportCoffeeLink }}</a>
+      </p>
+    </PanelSection>
 
     <template v-if="frame">
       <div class="frame-panel__name">
@@ -249,18 +265,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             <span class="frame-panel__estimate-value">{{ estimate }}</span>
             <IconButton variant="plain" icon="info" :icon-size="16" :label="t.size.estimateLabel" :tooltip="{ body: t.frame.estimateInfo }" data-testid="frame-estimate-info" />
           </div>
+          <PanelItem icon="select" :disabled="locked" :disabled-body="t.tooltips.frameSizeLocked" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
         </div>
-      </PanelSection>
-
-      <PanelSection id="frame:export" :label="t.panels.project.exportHeading">
-        <PanelItem icon="image" value=".png" stays :disabled="exportBusy" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
-        <PanelItem icon="pdf" value=".pdf" stays :disabled="exportBusy" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
-        <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
-        <!-- Buy me a coffee (ticket 560): one plain line, no popup; absent while the Coffee link is empty. -->
-        <p v-if="COFFEE_URL" class="frame-panel__line" data-testid="frame-coffee">
-          {{ t.frame.exportCoffee }}
-          <a class="frame-panel__coffee" :href="COFFEE_URL" target="_blank" rel="noopener" data-testid="frame-coffee-link">{{ t.frame.exportCoffeeLink }}</a>
-        </p>
       </PanelSection>
 
       <BeadQuantities :project="settledProject ?? project" />
@@ -269,6 +275,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
     <template v-else>
       <div class="frame-panel__none">
         <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.frame.fromStarter)">{{ t.frame.fromStarter }}</PanelItem>
+        <PanelItem icon="select" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
         <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
         <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
       </div>

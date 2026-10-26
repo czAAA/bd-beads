@@ -339,12 +339,37 @@ describe('Rotate, Export and Row progress on the Frame', () => {
     const wrapper = await mountOpen()
     await toggleBar(wrapper)
     expect(wrapper.find('[data-testid="frame-from-starter"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
 
     await wrapper.get('[data-testid="frame-fit"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBeUndefined()
+  })
+
+  it('selects a frame from the panel: Select becomes the tool and the next drag becomes the Frame on release, Escape cancels (ticket 568)', async () => {
+    const wrapper = await mountOpen()
+    await toggleBar(wrapper)
+    await wrapper.get('[data-testid="frame-select"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="frame-panel"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="pill-tool-select"]').attributes('aria-pressed')).toBe('true')
+
+    await pressBead(wrapper, 0)
+    await hoverBead(wrapper, 1, { buttons: 1 })
+    expect(savedFrame()).toBeUndefined()
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+    expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
+
+    await toggleBar(wrapper)
+    await wrapper.get('[data-testid="frame-select"]').trigger('click')
+    await key({ key: 'Escape' })
+    await pressBead(wrapper, 0)
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+    expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
   })
 
   it('names the Frame from the panel, saved with the Project, and one Undo takes it back (ticket 555)', async () => {

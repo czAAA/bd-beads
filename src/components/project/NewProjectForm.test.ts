@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import NewProjectForm from './NewProjectForm.vue'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
-import { chooseBead } from '../../testUtils/beadPicker'
+import { chooseBeadInSection } from '../../testUtils/beadPicker'
+import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import {
   IMAGE_MAX_BYTES,
@@ -53,11 +54,34 @@ async function stateSize(wrapper: ReturnType<typeof mount>, width: string, heigh
 }
 
 describe('NewProjectForm', () => {
-  it('starts on the default Bead with the picker collapsed (ticket 535)', () => {
+  it('starts on the default Bead in the shared bead section (tickets 535, 568)', () => {
     const wrapper = mount(NewProjectForm)
 
-    expect(wrapper.find('[data-testid="bead-picker-steps"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="bead-picker-current"]').text()).toBe(beadLabel(BEAD_CATALOG[0]!, ru.formFactors))
+    expect(panelOptionShown(wrapper, 'bead-brand')).toBe(BEAD_CATALOG[0]!.brand.name)
+    expect(panelOptionShown(wrapper, 'bead-size')).toBe(BEAD_CATALOG[0]!.size)
+  })
+
+  it('opens with the Open canvas title and its subtitle, then the three accent buttons in order (ticket 568)', () => {
+    const wrapper = mount(NewProjectForm)
+
+    expect(wrapper.get('[data-testid="open-canvas-title"]').text()).toBe(ru.form.openCanvasTitle)
+    expect(wrapper.text()).toContain(ru.form.openCanvasSubtitle)
+    const buttons = [...wrapper.element.querySelectorAll('[data-testid="create-project"], .file-button__target--accent, [data-testid="pick-starter"]')]
+    expect(buttons.map((button) => button.getAttribute('data-testid') ?? 'convert')).toEqual(['create-project', 'convert', 'pick-starter'])
+  })
+
+  it('keeps the Starter gallery folded until Pick a starter, and reports the Starter chosen in it (ticket 568)', async () => {
+    const wrapper = mount(NewProjectForm)
+    const pick = wrapper.get('[data-testid="pick-starter"]')
+
+    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
+    expect(pick.attributes('aria-expanded')).toBe('false')
+    await pick.trigger('click')
+    expect(wrapper.find('[data-testid="starter-card-blank"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
+    expect(wrapper.emitted('choose-starter')).toEqual([['bracelet']])
+    await pick.trigger('click')
+    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
   })
 
   it('focuses and selects the Name input as soon as the form opens (ticket 181)', () => {
@@ -97,7 +121,7 @@ describe('NewProjectForm', () => {
   it('emits submit with the chosen bead and technique, and no size: a new Project is a Canvas', async () => {
     const wrapper = mount(NewProjectForm)
 
-    await chooseBead(wrapper, BEAD_CATALOG[1]!.id)
+    await chooseBeadInSection(wrapper, BEAD_CATALOG[1]!.id)
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')).toEqual([
@@ -108,7 +132,7 @@ describe('NewProjectForm', () => {
   it('shows the selected bead label as the name placeholder', async () => {
     const wrapper = mount(NewProjectForm)
 
-    await chooseBead(wrapper, BEAD_CATALOG[1]!.id)
+    await chooseBeadInSection(wrapper, BEAD_CATALOG[1]!.id)
 
     expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe(
       beadLabel(BEAD_CATALOG[1]!, ru.formFactors),
@@ -125,17 +149,18 @@ describe('NewProjectForm', () => {
     expect(events![0]![0]).toMatchObject({ name: 'My Bracelet' })
   })
 
-  it('lists Peyote, Brick stitch, Right-angle weave and Netting alongside Loom', () => {
+  it('lists Peyote, Brick stitch, Right-angle weave and Netting alongside Loom', async () => {
     const wrapper = mount(NewProjectForm)
 
-    const options = wrapper.findAll('[data-testid="technique-select"] [role="radio"]')
+    await wrapper.get('[data-testid="new-project-technique"] button[aria-haspopup]').trigger('click')
+    const options = wrapper.findAll('[data-testid="new-project-technique"] [role="menuitemradio"]')
     expect(options.map((option) => option.attributes('data-value'))).toEqual(['loom', 'peyote', 'brick', 'rightAngle', 'netting'])
   })
 
   it('emits the chosen technique when Peyote or Brick stitch is selected', async () => {
     const wrapper = mount(NewProjectForm)
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
     await wrapper.find('form').trigger('submit')
 
     const events = wrapper.emitted('submit')
@@ -145,7 +170,7 @@ describe('NewProjectForm', () => {
   it('emits Right-angle weave when it is selected (ticket 482)', async () => {
     const wrapper = mount(NewProjectForm)
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="rightAngle"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'rightAngle')
     await wrapper.find('form').trigger('submit')
 
     expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'rightAngle' })
@@ -154,12 +179,12 @@ describe('NewProjectForm', () => {
   it('offers Symmetric and Real, starts Symmetric and sends Real only when it is chosen (ticket 508)', async () => {
     const wrapper = mount(NewProjectForm)
 
-    const options = wrapper.findAll('[data-testid="bead-shape-select"] [role="radio"]')
+    const options = wrapper.findAll('[data-testid="bead-shape"] [role="radio"]')
     expect(options.map((option) => option.attributes('data-value'))).toEqual(['symmetric', 'real'])
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')![0]![0]).not.toHaveProperty('beadShape')
 
-    await wrapper.find('[data-testid="bead-shape-select"] [data-value="real"]').trigger('click')
+    await wrapper.find('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')![1]![0]).toMatchObject({ beadShape: 'real' })
     expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ beadShape: 'real' })
@@ -197,8 +222,8 @@ describe('NewProjectForm draft (ticket 58)', () => {
   it('reports every later change, so the frame follows the fields as they are edited', async () => {
     const wrapper = mount(NewProjectForm)
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
-    await chooseBead(wrapper, BEAD_CATALOG[2]!.id)
+    await choosePanelOption(wrapper, 'new-project-technique', 'brick')
+    await chooseBeadInSection(wrapper, BEAD_CATALOG[2]!.id)
 
     expect(wrapper.emitted('draft')!.at(-1)![0]).toEqual({
       name: '',
@@ -210,27 +235,27 @@ describe('NewProjectForm draft (ticket 58)', () => {
 })
 
 describe('NewProjectForm Brick block (ticket 477)', () => {
-  const field = '[data-testid="brick-block"]'
+  const field = '[data-testid="new-project-brick-block"]'
 
   it('shows the stepper only for Brick stitch, with the hover text on it', async () => {
     const wrapper = mount(NewProjectForm)
     expect(wrapper.find(field).exists()).toBe(false)
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'brick')
     expect(wrapper.find(field).exists()).toBe(true)
-    expect(wrapper.find('[data-testid="brick-block-value"]').text()).toBe('1')
+    expect(wrapper.find('[data-testid="new-project-brick-block-value"]').text()).toBe('1')
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
     expect(wrapper.find(field).exists()).toBe(false)
   })
 
   it('steps from 1 to 20, and sends the number with the draft and the submit', async () => {
     const wrapper = mount(NewProjectForm)
-    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
-    expect(wrapper.find('[data-testid="brick-block-less"]').attributes('disabled')).toBeDefined()
+    await choosePanelOption(wrapper, 'new-project-technique', 'brick')
+    expect(wrapper.find('[data-testid="new-project-brick-block-less"]').attributes('disabled')).toBeDefined()
 
-    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerdown')
-    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerup')
+    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerup')
     expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ technique: 'brick', brickBlock: 2 })
 
     await wrapper.find('form').trigger('submit')
@@ -239,48 +264,48 @@ describe('NewProjectForm Brick block (ticket 477)', () => {
 
   it('keeps the number while another Technique is chosen, and sends none for it', async () => {
     const wrapper = mount(NewProjectForm)
-    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
-    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerdown')
-    await wrapper.find('[data-testid="brick-block-more"]').trigger('pointerup')
+    await choosePanelOption(wrapper, 'new-project-technique', 'brick')
+    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerdown')
+    await wrapper.find('[data-testid="new-project-brick-block-more"]').trigger('pointerup')
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="peyote"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'peyote')
     expect(wrapper.emitted('draft')!.at(-1)![0]).not.toHaveProperty('brickBlock')
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
-    expect(wrapper.find('[data-testid="brick-block-value"]').text()).toBe('2')
+    await choosePanelOption(wrapper, 'new-project-technique', 'brick')
+    expect(wrapper.find('[data-testid="new-project-brick-block-value"]').text()).toBe('2')
   })
 })
 
 describe('NewProjectForm Net size (ticket 485)', () => {
   const press = async (wrapper: ReturnType<typeof mount>, button: 'less' | 'more') => {
-    await wrapper.find(`[data-testid="net-size-${button}"]`).trigger('pointerdown')
-    await wrapper.find(`[data-testid="net-size-${button}"]`).trigger('pointerup')
+    await wrapper.find(`[data-testid="new-project-net-size-${button}"]`).trigger('pointerdown')
+    await wrapper.find(`[data-testid="new-project-net-size-${button}"]`).trigger('pointerup')
   }
 
   it('shows the stepper only for Netting, at 3', async () => {
     const wrapper = mount(NewProjectForm)
-    expect(wrapper.find('[data-testid="net-size"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="new-project-net-size"]').exists()).toBe(false)
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="netting"]').trigger('click')
-    expect(wrapper.find('[data-testid="net-size-value"]').text()).toBe('3')
-    expect(wrapper.find('[data-testid="net-size-less"]').attributes('disabled')).toBeDefined()
+    await choosePanelOption(wrapper, 'new-project-technique', 'netting')
+    expect(wrapper.find('[data-testid="new-project-net-size-value"]').text()).toBe('3')
+    expect(wrapper.find('[data-testid="new-project-net-size-less"]').attributes('disabled')).toBeDefined()
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="rightAngle"]').trigger('click')
-    expect(wrapper.find('[data-testid="net-size"]').exists()).toBe(false)
+    await choosePanelOption(wrapper, 'new-project-technique', 'rightAngle')
+    expect(wrapper.find('[data-testid="new-project-net-size"]').exists()).toBe(false)
   })
 
   it('steps through the odd sizes from 3 to 9, and sends the number with the draft and the submit', async () => {
     const wrapper = mount(NewProjectForm)
-    await wrapper.find('[data-testid="technique-select"] [data-value="netting"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'netting')
 
     await press(wrapper, 'more')
-    expect(wrapper.find('[data-testid="net-size-value"]').text()).toBe('5')
+    expect(wrapper.find('[data-testid="new-project-net-size-value"]').text()).toBe('5')
     expect(wrapper.emitted('draft')!.at(-1)![0]).toMatchObject({ technique: 'netting', netSize: 5 })
     await press(wrapper, 'more')
     await press(wrapper, 'more')
     await press(wrapper, 'more')
-    expect(wrapper.find('[data-testid="net-size-value"]').text()).toBe('9')
-    expect(wrapper.find('[data-testid="net-size-more"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="new-project-net-size-value"]').text()).toBe('9')
+    expect(wrapper.find('[data-testid="new-project-net-size-more"]').attributes('disabled')).toBeDefined()
 
     await wrapper.find('form').trigger('submit')
     expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ technique: 'netting', netSize: 9 })
@@ -288,10 +313,10 @@ describe('NewProjectForm Net size (ticket 485)', () => {
 
   it('sends no Net size for another Technique', async () => {
     const wrapper = mount(NewProjectForm)
-    await wrapper.find('[data-testid="technique-select"] [data-value="netting"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'netting')
     await press(wrapper, 'more')
 
-    await wrapper.find('[data-testid="technique-select"] [data-value="brick"]').trigger('click')
+    await choosePanelOption(wrapper, 'new-project-technique', 'brick')
     expect(wrapper.emitted('draft')!.at(-1)![0]).not.toHaveProperty('netSize')
   })
 })
