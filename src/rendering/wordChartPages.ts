@@ -1,232 +1,238 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
-import { drawMark, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
+import { drawMark, font, MONO, SANS, SERIF, text, wrap } from './printPages'
 import { mm, PRINT_MARGIN, type PageSize } from './printPlan'
 import { headerMaker, type PrintedWordRow, type PrintText } from './printText'
 
-// The Word chart as pages and as a picture (ticket 0574; PrintWordChart card): a header, the color key strip, then one
-// line per row with a tick box, its number and runs. A row never splits across pages and a long one wraps with a
-// hanging indent. Measured first and drawn from that measure, so the page count and the drawing can't drift.
+// The Word chart as PDF pages (tickets 0574, 0586; PrintWordChart card): a header naming the page's own rows, the color
+// key strip, then one line per row with a tick box, its number and runs, in two columns when the longest row fits half
+// the width. A row never splits across columns or pages. Laid out first, so the page count and the drawing can't drift.
 
-const LINE = pt(12)
-const NOTE_LINE = pt(10.5)
-const ROW_PAD = mm(1.6)
-const TICK = mm(3)
-const SWATCH = mm(4.6)
-const KEY_PAD = mm(3)
-const HEADER = mm(20)
-const RUN_STYLE = font('400', 8.5, MONO)
-const LABEL_STYLE = font('500', 8.5, MONO)
-const COUNT_STYLE = font('400', 7, MONO)
+const PITCH = mm(5.6)
+const ROW_STYLE = font('400', 10, MONO)
+const NUMBER_STYLE = font('500', 10, MONO)
+const TICK = mm(2.8)
+const NUMBER_RIGHT = mm(11.5)
+const RUNS_LEFT = mm(13.5)
+const MARKER_GAP = mm(1)
+const GAP = mm(8)
+const COLUMN = mm(91)
+const KEY_TOP = mm(26.5)
+const KEY_ONE_ROW = mm(8)
+const KEY_NEXT_ROW = mm(4.5)
+const KEY_STEP = mm(31)
+const KEY_INSET = mm(3)
+const SWATCH = mm(3)
+const NOTE_LINE = mm(3.4)
+const BOTTOM = mm(20)
+const NOTE_STYLE = font('400', 7.5, SANS)
 
 interface PlacedRow {
   row: PrintedWordRow
-  /** The runs wrapped to the room beside the label, one entry per printed line. */
+  /** The runs wrapped to the room beside the number, one entry per printed line. */
   lines: string[]
   height: number
 }
 
-interface KeyItem {
-  x: number
-  y: number
-  color: PrintText['colors'][number]
+interface WordChartPage {
+  /** The rows of each column, read down the first column, then the next. */
+  columns: PlacedRow[][]
+  /** "1–82": the rows this page holds. */
+  range: string
 }
 
-export interface Measured {
-  width: number
-  /** Where the label column ends and the runs begin, from the left of the content. */
+interface Layout {
+  columnWidth: number
   runsX: number
-  runsWidth: number
-  key: { items: KeyItem[]; notes: string[]; height: number }
-  rows: PlacedRow[]
-}
-
-/** The label as printed: "Row 3 (R):". */
-function labelOf(row: PrintedWordRow): string {
-  return `${row.label}${row.marker ? ` (${row.marker})` : ''}:`
-}
-
-/** Everything about the chart that depends on the width alone: the key strip and every row's wrapped lines. */
-export function measureWordChart(context: CanvasRenderingContext2D, words: PrintText, width: number): Measured {
-  const chart = words.wordChart!
-  context.font = LABEL_STYLE
-  const labelWidth = Math.max(...chart.rows.map((row) => context.measureText(labelOf(row)).width), 0)
-  const runsX = TICK + mm(3) + labelWidth + mm(3)
-  context.font = COUNT_STYLE
-  const countWidth = context.measureText(String(Math.max(...chart.rows.map((row) => row.runCount), 0))).width
-  const runsWidth = width - runsX - countWidth - mm(4)
-
-  // The key: a swatch with its letter, the name and the count, flowing over lines.
-  const items: KeyItem[] = []
-  let x = KEY_PAD
-  let y = KEY_PAD
-  const inner = width - KEY_PAD * 2
-  const itemWidth = (color: PrintText['colors'][number]) => {
-    context.font = font('400', 8, SANS)
-    return SWATCH + mm(2) + context.measureText(`${color.name} · ${color.beads}`).width + mm(5)
-  }
-  for (const color of words.colors) {
-    const need = Math.min(itemWidth(color), inner)
-    if (x > KEY_PAD && x - KEY_PAD + need > inner) {
-      x = KEY_PAD
-      y += SWATCH + mm(2)
-    }
-    items.push({ x, y, color })
-    x += need
-  }
-  y += words.colors.length > 0 ? SWATCH + mm(2.5) : 0
-  const notes = chart.notes.flatMap((note) => wrap(context, note, font('400', 7.5, SANS), inner))
-  const height = y + notes.length * NOTE_LINE + KEY_PAD - (notes.length > 0 ? 0 : mm(1))
-
-  const rows = chart.rows.map((row) => {
-    const lines = wrap(context, row.runs, RUN_STYLE, runsWidth)
-    return { row, lines, height: ROW_PAD * 2 + Math.max(1, lines.length) * LINE }
-  })
-  return { width, runsX, runsWidth, key: { items, notes, height }, rows }
-}
-
-function drawKey(context: CanvasRenderingContext2D, measured: Measured, x: number, y: number): number {
-  const { key, width } = measured
-  context.fillStyle = PRINT_COLORS.board
-  context.beginPath()
-  context.roundRect(x, y, width, key.height, mm(2))
-  context.fill()
-  for (const { x: itemX, y: itemY, color } of key.items) {
-    const left = x + itemX
-    const top = y + itemY
-    context.fillStyle = color.hex
-    context.beginPath()
-    context.roundRect(left, top, SWATCH, SWATCH, SWATCH * 0.28)
-    context.fill()
-    context.strokeStyle = 'rgba(0, 0, 0, 0.2)'
-    context.lineWidth = pt(0.5)
-    context.stroke()
-    if (color.letter) drawBeadLetter(context, { x: left, y: top, size: SWATCH, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
-    text(context, `${color.name} · ${color.beads}`, left + SWATCH + mm(2), top + SWATCH / 2 + pt(3), font('400', 8, SANS), PRINT_COLORS.ink, 'left', width - itemX - SWATCH - mm(2) - KEY_PAD)
-  }
-  let noteY = y + key.height - KEY_PAD - key.notes.length * NOTE_LINE
-  for (const note of key.notes) {
-    noteY += NOTE_LINE
-    text(context, note, x + KEY_PAD, noteY - pt(2), font('400', 7.5, SANS), PRINT_COLORS.muted)
-  }
-  return y + key.height
-}
-
-function drawRow(context: CanvasRenderingContext2D, measured: Measured, placed: PlacedRow, x: number, y: number): void {
-  const first = y + ROW_PAD + LINE * 0.75
-  context.strokeStyle = PRINT_COLORS.ink
-  context.lineWidth = pt(0.6)
-  context.beginPath()
-  context.roundRect(x, first - TICK + pt(1.5), TICK, TICK, mm(0.5))
-  context.stroke()
-  text(context, labelOf(placed.row), x + TICK + mm(3), first, LABEL_STYLE, PRINT_COLORS.ink)
-  placed.lines.forEach((line, index) => text(context, line, x + measured.runsX, first + index * LINE, RUN_STYLE, PRINT_COLORS.ink))
-  text(context, String(placed.row.runCount), x + measured.width, first, COUNT_STYLE, PRINT_COLORS.muted, 'right')
-  context.strokeStyle = PRINT_COLORS.line
-  context.lineWidth = pt(0.5)
-  context.beginPath()
-  context.moveTo(x, y + placed.height)
-  context.lineTo(x + measured.width, y + placed.height)
-  context.stroke()
-}
-
-/** The top of every Word chart sheet: "loom · name · maker", "Row by row" with the range in the accent serif, and the
- * page number when there is one. Returns where it ends. */
-function drawHeader(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, width: number, pageLabel?: string): number {
-  const chart = words.wordChart!
-  drawMark(context, x, y, mm(5), PRINT_COLORS.accent)
-  const meta = [words.techniqueWord, words.name, headerMaker(words.maker)].filter(Boolean).join(' · ')
-  text(context, meta, x + mm(7), y + mm(3.8), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width - mm(40))
-  if (pageLabel) text(context, pageLabel, x + width, y + mm(3.8), font('700', 9, SANS), PRINT_COLORS.ink, 'right')
-  const title = text(context, chart.title, x, y + mm(13), font('600', 14, SANS), PRINT_COLORS.ink)
-  text(context, chart.range, x + title + mm(2.5), y + mm(13), font('italic 400', 15, SERIF), PRINT_COLORS.accent)
-  return y + HEADER
+  notes: string[]
+  keyColors: PrintText['colors']
+  keyHeight: number
+  /** Where the first row's top is, from the top of the page. */
+  rowsTop: number
+  pages: WordChartPage[]
 }
 
 function scratch(): CanvasRenderingContext2D {
   return document.createElement('canvas').getContext('2d')!
 }
 
-// ---- PDF pages -----------------------------------------------------------------------------------------------------
+/** The colors in Swatch letter order (A, B ... Z, AA ...). */
+function inLetterOrder(colors: PrintText['colors']): PrintText['colors'] {
+  return [...colors].sort((a, b) => (a.letter ?? '').length - (b.letter ?? '').length || (a.letter ?? '').localeCompare(b.letter ?? ''))
+}
 
-/** The rows each page holds: the first page gives up room to the key. A row never splits, and a page holds at least
- * one. */
-function paginate(measured: Measured, page: PageSize): PlacedRow[][] {
-  const top = PRINT_MARGIN + HEADER
-  const bottom = page.height - PRINT_MARGIN
-  const pages: PlacedRow[][] = [[]]
-  let y = top + measured.key.height + mm(3)
-  for (const placed of measured.rows) {
-    const current = pages[pages.length - 1]!
-    if (current.length > 0 && y + placed.height > bottom) {
-      pages.push([])
-      y = top
-    }
-    pages[pages.length - 1]!.push(placed)
-    y += placed.height
+function rangeOf(rows: PlacedRow[]): string {
+  const first = rows[0]!.row.first
+  const last = rows[rows.length - 1]!.row.last
+  return first === last ? String(first) : `${first}–${last}`
+}
+
+function layoutWordChart(context: CanvasRenderingContext2D, words: PrintText, page: PageSize): Layout {
+  const chart = words.wordChart!
+  const width = page.width - PRINT_MARGIN * 2
+  const marked = chart.rows.some((row) => row.marker)
+  context.font = ROW_STYLE
+  const markerWidth = marked ? context.measureText('(L)').width : 0
+  const runsX = marked ? NUMBER_RIGHT + MARKER_GAP + markerWidth + mm(2) : RUNS_LEFT
+  const longest = Math.max(...chart.rows.map((row) => context.measureText(row.runs).width), 0)
+  const columnWidth = runsX + longest <= COLUMN ? COLUMN : width
+
+  const keyColors = inLetterOrder(words.colors)
+  const items = keyColors.length + (chart.empty ? 1 : 0)
+  const perRow = Math.max(1, Math.floor((width - KEY_INSET) / KEY_STEP))
+  const keyHeight = KEY_ONE_ROW + KEY_NEXT_ROW * (Math.max(1, Math.ceil(items / perRow)) - 1)
+  const notes = wrap(context, chart.notes.join(' '), NOTE_STYLE, width)
+  const rowsTop = KEY_TOP + keyHeight + mm(6) + NOTE_LINE * (notes.length - 1) + mm(3.4)
+
+  const placed = chart.rows.map((row): PlacedRow => {
+    const lines = wrap(context, row.runs, ROW_STYLE, columnWidth - runsX)
+    return { row, lines, height: Math.max(1, lines.length) * PITCH }
+  })
+  const bottom = page.height - BOTTOM
+  const perPage = columnWidth === COLUMN ? 2 : 1
+  const pages: WordChartPage[] = []
+  let columns: PlacedRow[][] = [[]]
+  let y = rowsTop
+  const close = () => {
+    pages.push({ columns, range: rangeOf(columns.flat()) })
+    columns = [[]]
+    y = rowsTop
   }
-  return pages
+  for (const next of placed) {
+    if (columns[columns.length - 1]!.length > 0 && y + next.height > bottom) {
+      if (columns.length < perPage) {
+        columns.push([])
+        y = rowsTop
+      } else {
+        close()
+      }
+    }
+    columns[columns.length - 1]!.push(next)
+    y += next.height
+  }
+  close()
+  return { columnWidth, runsX, notes, keyColors, keyHeight, rowsTop, pages }
 }
 
 /** How many sheets the Word chart takes in the PDF (0 when there is none). */
 export function wordChartPageCount(words: PrintText, page: PageSize): number {
   if (!words.wordChart) return 0
-  return paginate(measureWordChart(scratch(), words, page.width - PRINT_MARGIN * 2), page).length
+  return layoutWordChart(scratch(), words, page).pages.length
+}
+
+/** The title with this page's own rows, e.g. "Row by row 83–120". */
+export function wordChartPageTitles(words: PrintText, page: PageSize): string[] {
+  if (!words.wordChart) return []
+  return layoutWordChart(scratch(), words, page).pages.map((sheet) => `${words.wordChart!.title} ${sheet.range}`)
+}
+
+/** How many columns the Word chart runs in on this page size. */
+export function wordChartColumns(words: PrintText, page: PageSize): number {
+  if (!words.wordChart) return 0
+  return Math.max(...layoutWordChart(scratch(), words, page).pages.map((sheet) => sheet.columns.length))
+}
+
+function drawHeader(context: CanvasRenderingContext2D, words: PrintText, range: string, pageNumber: number, total: number, left: number, width: number): void {
+  const meta = [words.techniqueWord, words.name, headerMaker(words.maker)].filter(Boolean).join(' · ')
+  text(context, meta, left, mm(14), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width - mm(40))
+  const title = text(context, words.wordChart!.title, left, mm(22.4), font('600', 16, SANS), PRINT_COLORS.ink)
+  text(context, range, left + title + mm(1.6), mm(22.4), font('italic 400', 17, SERIF), PRINT_COLORS.accent)
+  const right = left + width
+  const of = text(context, `/ ${total}`, right, mm(18.6), font('400', 8, MONO), PRINT_COLORS.muted, 'right')
+  text(context, String(pageNumber), right - of - mm(1), mm(18.6), font('600', 18, SANS), PRINT_COLORS.ink, 'right')
+}
+
+function drawKey(context: CanvasRenderingContext2D, words: PrintText, layout: Layout, left: number, width: number): void {
+  const chart = words.wordChart!
+  context.strokeStyle = PRINT_COLORS.faint
+  context.lineWidth = mm(0.2)
+  context.beginPath()
+  context.roundRect(left, KEY_TOP, width, layout.keyHeight, mm(2))
+  context.stroke()
+
+  const perRow = Math.max(1, Math.floor((width - KEY_INSET) / KEY_STEP))
+  const nameRoom = KEY_STEP - SWATCH - mm(1.6) - mm(2)
+  const place = (index: number) => {
+    const x = left + KEY_INSET + (index % perRow) * KEY_STEP
+    const middle = KEY_TOP + mm(4) + Math.floor(index / perRow) * KEY_NEXT_ROW
+    return { x, top: middle - SWATCH / 2, name: x + SWATCH + mm(1.6), baseline: middle + mm(0.9) }
+  }
+  layout.keyColors.forEach((color, index) => {
+    const at = place(index)
+    context.fillStyle = color.hex
+    context.beginPath()
+    context.roundRect(at.x, at.top, SWATCH, SWATCH, SWATCH * 0.28)
+    context.fill()
+    context.strokeStyle = PRINT_COLORS.lineStrong
+    context.lineWidth = mm(0.1)
+    context.stroke()
+    if (color.letter) drawBeadLetter(context, { x: at.x, y: at.top, size: SWATCH, color: color.hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
+    text(context, color.name, at.name, at.baseline, font('400', 7, SANS), PRINT_COLORS.ink, 'left', nameRoom)
+  })
+  if (chart.empty) {
+    const at = place(layout.keyColors.length)
+    context.strokeStyle = PRINT_COLORS.lineStrong
+    context.lineWidth = mm(0.1)
+    context.beginPath()
+    context.roundRect(at.x, at.top, SWATCH, SWATCH, SWATCH * 0.28)
+    context.stroke()
+    text(context, '*', at.x + SWATCH / 2, at.top + SWATCH * 0.8, font('400', 8, SANS), PRINT_COLORS.muted, 'center')
+    text(context, chart.empty, at.name, at.baseline, font('400', 7, SANS), PRINT_COLORS.ink, 'left', nameRoom)
+  }
+
+  const noteTop = KEY_TOP + layout.keyHeight + mm(6)
+  layout.notes.forEach((line, index) => text(context, line, left, noteTop + index * NOTE_LINE, NOTE_STYLE, PRINT_COLORS.muted))
+}
+
+function drawRow(context: CanvasRenderingContext2D, layout: Layout, placed: PlacedRow, x: number, y: number): void {
+  const { row, lines } = placed
+  context.strokeStyle = PRINT_COLORS.fieldLine
+  context.lineWidth = mm(0.2)
+  context.beginPath()
+  context.roundRect(x, y + mm(1.4), TICK, TICK, mm(0.4))
+  context.stroke()
+  const baseline = y + mm(3.9)
+  text(context, row.label, x + NUMBER_RIGHT, baseline, NUMBER_STYLE, PRINT_COLORS.ink, 'right')
+  if (row.marker) text(context, `(${row.marker})`, x + NUMBER_RIGHT + MARKER_GAP, baseline, ROW_STYLE, PRINT_COLORS.muted)
+  lines.forEach((line, index) => text(context, line, x + layout.runsX, baseline + index * PITCH, ROW_STYLE, PRINT_COLORS.ink))
+
+  const fifth = row.last % 5 === 0
+  context.strokeStyle = fifth ? PRINT_COLORS.lineStrong : PRINT_COLORS.lineSoft
+  context.lineWidth = mm(fifth ? 0.2 : 0.15)
+  context.beginPath()
+  context.moveTo(x, y + placed.height)
+  context.lineTo(x + layout.columnWidth, y + placed.height)
+  context.stroke()
+}
+
+function drawFooter(context: CanvasRenderingContext2D, words: PrintText, next: { range: string; page: number } | undefined, left: number, width: number, pageHeight: number): void {
+  const footer = pageHeight - PRINT_MARGIN - mm(1.5)
+  drawMark(context, left, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
+  const brand = text(context, 'openbeads', left + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
+  text(context, words.exportedAt, left + mm(5.5) + brand + mm(4), footer, font('400', 7.5, MONO), PRINT_COLORS.muted)
+  if (next) text(context, words.labels.wordChart.nextRows.replace('{rows}', next.range).replace('{page}', String(next.page)), left + width, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
 }
 
 /** The Word chart's sheets, drawn one at a time by `makePage` (the PDF's blank page at its dpi); numbered from `first` of
  * `total`. */
 export function* drawWordChartPages(words: PrintText, page: PageSize, makePage: () => { canvas: HTMLCanvasElement; context: CanvasRenderingContext2D }, first: number, total: number): Generator<HTMLCanvasElement> {
   if (!words.wordChart) return
+  const layout = layoutWordChart(scratch(), words, page)
+  const left = PRINT_MARGIN
   const width = page.width - PRINT_MARGIN * 2
-  const measured = measureWordChart(scratch(), words, width)
-  const pages = paginate(measured, page)
-  for (const [index, rows] of pages.entries()) {
+  for (const [index, sheet] of layout.pages.entries()) {
     const { canvas, context } = makePage()
-    const pageLabel = words.labels.page.replace('{page}', String(first + index)).replace('{pages}', String(total))
-    let y = drawHeader(context, words, PRINT_MARGIN, PRINT_MARGIN, width, pageLabel)
-    if (index === 0) y = drawKey(context, measured, PRINT_MARGIN, y) + mm(3)
-    for (const placed of rows) {
-      drawRow(context, measured, placed, PRINT_MARGIN, y)
-      y += placed.height
-    }
-    yield canvas
-  }
-}
-
-// ---- PNG -----------------------------------------------------------------------------------------------------------
-
-/** The picture's width in layout px: about 170 mm of text. */
-const PNG_CONTENT_WIDTH = Math.round(mm(170))
-
-export interface WordChartPicture {
-  /** Layout size; the picture is `scale` times it. */
-  width: number
-  height: number
-  /** Draws the band of the picture from `top` down, `rows` layout px tall, onto a context already scaled and cleared. */
-  draw: (context: CanvasRenderingContext2D, top: number, bandHeight: number) => void
-}
-
-/** The Word chart as one tall picture (PngExport card): the same header, key and rows, with a margin round them. */
-export function wordChartPicture(words: PrintText): WordChartPicture {
-  const measured = measureWordChart(scratch(), words, PNG_CONTENT_WIDTH)
-  const rowsHeight = measured.rows.reduce((sum, placed) => sum + placed.height, 0)
-  const height = Math.ceil(PRINT_MARGIN * 2 + HEADER + measured.key.height + mm(3) + rowsHeight)
-  const width = PNG_CONTENT_WIDTH + Math.ceil(PRINT_MARGIN * 2)
-  return {
-    width,
-    height,
-    draw(context, top, bandHeight) {
-      context.save()
-      context.translate(0, -top)
-      let y = drawHeader(context, words, PRINT_MARGIN, PRINT_MARGIN, PNG_CONTENT_WIDTH)
-      y = drawKey(context, measured, PRINT_MARGIN, y) + mm(3)
-      for (const placed of measured.rows) {
-        // Only rows in the band are drawn: the chart can be thousands of px tall.
-        if (y + placed.height >= top && y <= top + bandHeight) drawRow(context, measured, placed, PRINT_MARGIN, y)
+    drawHeader(context, words, sheet.range, first + index, total, left, width)
+    drawKey(context, words, layout, left, width)
+    sheet.columns.forEach((rows, column) => {
+      let y = layout.rowsTop
+      for (const placed of rows) {
+        drawRow(context, layout, placed, left + column * (COLUMN + GAP), y)
         y += placed.height
       }
-      context.restore()
-    },
+    })
+    const following = layout.pages[index + 1]
+    drawFooter(context, words, following && { range: following.range, page: first + index + 1 }, left, width, page.height)
+    yield canvas
   }
 }

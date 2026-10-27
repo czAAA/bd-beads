@@ -26,19 +26,20 @@ interface PrintedColor {
   letter?: string
 }
 
-/** One line of the Word chart: its words (`Row 3`, `Rows 1&2`), the end it starts from, its runs (`2C, 1A, 3*`) and how many. */
+/** One line of the Word chart: its number (`3`, `1&2`) and the rows it holds, the end it starts from and its runs (`2C, 1A, 3*`). */
 export interface PrintedWordRow {
   label: string
+  first: number
+  last: number
   marker?: 'L' | 'R'
   runs: string
-  runCount: number
 }
 
 /** The Word chart as words (ticket 0574), only when Letters is on and the Technique has one. */
 interface PrintedWordChart {
   title: string
-  /** "1–24". */
-  range: string
+  /** The key's last item, "empty", when the Schema has empty positions. */
+  empty?: string
   /** The lines on reading the rows: which row is first, even or odd count, (L) and (R), a run, `*`. */
   notes: string[]
   rows: PrintedWordRow[]
@@ -90,16 +91,16 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart']):
   if (chart.count) notes.push(chart.count === 'even' ? t.evenCount : t.oddCount)
   if (chart.marked) notes.push(t.sides)
   notes.push(t.runNote)
-  if (chart.hasEmpty) notes.push(t.emptyNote)
   return {
     title: t.title,
-    range: `1–${chart.lastNumber}`,
+    ...(chart.hasEmpty ? { empty: t.empty } : {}),
     notes,
     rows: chart.rows.map((row) => ({
-      label: row.both ? t.both : t.row.replace('{n}', String(row.number)),
+      label: row.both ? '1&2' : String(row.number),
+      first: row.number,
+      last: row.both ? 2 : row.number,
       ...(row.marker ? { marker: row.marker } : {}),
       runs: row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(', '),
-      runCount: row.runs.length,
     })),
   }
 }
