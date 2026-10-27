@@ -14,12 +14,12 @@ export function parseExportQuality(raw: string): ExportQuality | undefined {
  * whatever it is. The PDF is not on the slider (ADR 0076). */
 export const PNG_DPI_BY_QUALITY: Record<ExportQuality, number> = { low: 150, medium: 300, high: 450 }
 
-/** A file size in whole megabytes, rounded the way an estimate should read: never to the digit ("≈ 12 MB", not 11.8). */
-export function roundedMegabytes(bytes: number): number {
-  const mb = bytes / 1_000_000
-  if (mb < 10) return Math.max(1, Math.round(mb))
-  const step = mb < 100 ? 5 : 50
-  return Math.round(mb / step) * step
+/** A file size as it is shown (QualitySlider card, ADR 0076): rounded **up** to 0.1 MB, to a whole MB from 10 MB, and
+ * `undefined` under 0.1 MB, which reads "< 0.1 MB". Up, so the figure is never less than the file. */
+export function shownMegabytes(bytes: number): number | undefined {
+  if (bytes < 100_000) return undefined
+  const tenths = Math.ceil(bytes / 100_000)
+  return tenths >= 100 ? Math.ceil(bytes / 1_000_000) : tenths / 10
 }
 
 /** The dpi the PDF's picture pages and the text picture under each chart page are drawn at (`print-dpi`, ADR 0076). */

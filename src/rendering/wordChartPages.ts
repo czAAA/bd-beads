@@ -52,8 +52,13 @@ interface Layout {
   pages: WordChartPage[]
 }
 
+/** A context to measure on: the page's own, or where there is no canvas (a test page) one that sets every character as wide
+ * as a mono face does (0.6 em), which the Word chart's rows are in. */
 function scratch(): CanvasRenderingContext2D {
-  return document.createElement('canvas').getContext('2d')!
+  const context = document.createElement('canvas').getContext('2d')
+  if (context) return context
+  const measuring = { font: '', measureText: (value: string) => ({ width: value.length * 0.6 * Number(/(\d+(?:\.\d+)?)px/.exec(measuring.font)?.[1] ?? 16) }) }
+  return measuring as unknown as CanvasRenderingContext2D
 }
 
 /** The colors in Swatch letter order (A, B ... Z, AA ...). */
