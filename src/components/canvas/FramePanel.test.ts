@@ -5,6 +5,7 @@ import FramePanel from './FramePanel.vue'
 import PanelHost from '../shell/PanelHost.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
+import type { CustomFrameKindId } from '../../domain/frameKind'
 import { changeFrame } from '../../domain/changeFrame'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
@@ -392,18 +393,35 @@ describe('FramePanel Letters note (ticket 0574)', () => {
 })
 
 describe('FramePanel with a Custom frame (ticket 0592)', () => {
-  /** A Project with a Triangle of the given Rounds in place of its Frame. */
-  function triangle(rounds = 4, project = framed()): Project {
-    const result = changeFrame(project, { custom: { kind: 'triangle', rounds, centre: { row: 10, column: 10 } } })
-    if (result.kind !== 'changed') throw new Error('expected a Triangle')
+  /** A Project with a Custom frame of a kind and size in place of its Frame. */
+  function custom(kind: CustomFrameKindId, size: number, project = framed()): Project {
+    const result = changeFrame(project, { custom: { kind, size, centre: { row: 10, column: 10 } } })
+    if (result.kind !== 'changed') throw new Error(`expected a ${kind}`)
     return result.project
   }
+  const triangle = (rounds = 4) => custom('triangle', rounds)
 
-  it('offers Triangle and Warped Square, which ask the shell for that Custom frame', async () => {
+  it('offers every Custom frame kind, each asking the shell for that Custom frame', async () => {
     const wrapper = mountBar()
-    expect(wrapper.get('[data-testid="frame-custom-triangle"]').text()).toContain(en.frame.customKinds.triangle)
+    for (const kind of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite'] as const) {
+      expect(wrapper.get(`[data-testid="frame-custom-${kind}"]`).text()).toContain(en.frame.customKinds[kind])
+    }
     await wrapper.get('[data-testid="frame-custom-warpedSquare"]').trigger('click')
-    expect(wrapper.emitted('add-custom')).toEqual([['warpedSquare']])
+    await wrapper.get('[data-testid="frame-custom-kite"]').trigger('click')
+    expect(wrapper.emitted('add-custom')).toEqual([['warpedSquare'], ['kite']])
+  })
+
+  it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {
+    for (const [kind, size, words] of [
+      ['star', 6, en.frame.sizeSettings.partSize],
+      ['kaleidocycle', 9, en.frame.sizeSettings.partSize],
+      ['kite', 21, en.frame.sizeSettings.rows],
+    ] as const) {
+      const wrapper = mountBar(custom(kind, size))
+      expect(wrapper.get('[data-testid="frame-setting"]').text()).toContain(words.label)
+      expect(wrapper.get('[data-testid="frame-setting-value"]').text()).toBe(String(size))
+      expect(wrapper.get('[data-testid="frame-setting-less"]').attributes('aria-label')).toBe(words.less)
+    }
   })
 
   it('shows Rounds in place of Width and Height, and no Rotate or Select a frame', async () => {
@@ -411,8 +429,8 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-select"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="frame-rounds-value"]').text()).toBe('4')
-    await wrapper.get('[data-testid="frame-rounds-more"]').trigger('click')
-    expect(wrapper.emitted('set-rounds')).toEqual([[5]])
+    expect(wrapper.get('[data-testid="frame-setting-value"]').text()).toBe('4')
+    await wrapper.get('[data-testid="frame-setting-more"]').trigger('click')
+    expect(wrapper.emitted('set-size')).toEqual([[5]])
   })
 })

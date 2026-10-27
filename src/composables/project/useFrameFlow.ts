@@ -4,7 +4,7 @@ import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, fr
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, customFrameLoss, frameChangeRefusal } from '../../domain/changeFrame'
-import { frameAllows, frameKindOf, settingsOf, type CustomFrameKindId } from '../../domain/frameKind'
+import { frameAllows, frameKindOf, frameSizeOf, sizeSettingOf, type CustomFrameKindId, type FrameSettingName } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { canvasWeave, createProject, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, weaveOf, type CreateProjectInput, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -413,50 +413,53 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     replaceAsking(() => applyStarter(input))
   }
 
-  /** Add Custom frame (ticket 0592, until the Starter gallery, ticket 0597): an empty Frame of the kind at its default
-   * Rounds, centred on what is on screen, in place of any Frame there; one Undo step. */
+  /** Add Custom frame (tickets 0592, 0593, until the Starter gallery, ticket 0597): an empty Frame of the kind at its
+   * default size, centred on what is on screen, in place of any Frame there; one Undo step. */
   function placeCustom(kind: CustomFrameKindId): void {
     replaceAsking(() => {
-      const rounds = settingsOf({ kind })!.rounds
+      const size = frameSizeOf({ kind })!
       const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
-      const outcome = deps.edit('frame', (project) => changeFrame(project, { custom: { kind, rounds, centre } }))
+      const outcome = deps.edit('frame', (project) => changeFrame(project, { custom: { kind, size, centre } }))
       const t = deps.messages()
-      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', t.frame.customKinds[kind]).replace('{count}', String(rounds)))
+      const setting = t.frame.sizeSettings[sizeSettingOf({ kind })!.name]
+      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', t.frame.customKinds[kind]).replace('{size}', plural(deps.locale(), size, setting.summary)))
     })
   }
 
-  /** The Rounds change waiting on its question: the Rounds asked for and how many painted beads they would drop. */
-  const roundsAsk = ref<{ rounds: number; lost: number } | undefined>()
+  /** The size change waiting on its question: the size asked for and how many painted beads it would drop. */
+  const sizeAsk = ref<{ setting: FrameSettingName; size: number; lost: number } | undefined>()
 
-  /** A Custom frame's Rounds from the Frame panel (ticket 0592): one Undo step, asking first when painted beads on the
-   * outer rounds would go; held still once a pass is done. */
-  function setRounds(rounds: number): void {
+  /** A Custom frame's size (its Rounds, Part size or Rows) from the Frame panel (tickets 0592, 0593): one Undo step,
+   * asking first when painted beads on the outer rounds or last rows would go; held still once a pass is done. */
+  function setSize(size: number): void {
     const project = deps.currentProject()
-    if (!project?.frame || locked.value) return
-    const lost = customFrameLoss(project, { rounds })
+    const setting = project?.frame && sizeSettingOf(project.frame)
+    if (!setting || locked.value) return
+    const lost = customFrameLoss(project!, { [setting.name]: size })
     if (lost > 0) {
-      roundsAsk.value = { rounds, lost }
+      sizeAsk.value = { setting: setting.name, size, lost }
       return
     }
-    applyRounds(rounds)
+    applySize(setting.name, size)
   }
 
-  function applyRounds(rounds: number): void {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, { settings: { rounds } }))
+  function applySize(setting: FrameSettingName, size: number): void {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { settings: { [setting]: size } }))
     const settled = deps.currentProject()?.frame
-    if (outcome.kind === 'applied' && settled) deps.announce(deps.messages().frame.announceRounds.replace('{count}', String(settingsOf(settled)!.rounds)))
+    const words = deps.messages().frame.sizeSettings[setting]
+    if (outcome.kind === 'applied' && settled) deps.announce(words.announce.replace('{count}', String(frameSizeOf(settled))))
   }
 
-  /** The Rounds question answered No: nothing changes. */
-  function cancelRounds(): void {
-    roundsAsk.value = undefined
+  /** The size question answered No: nothing changes. */
+  function cancelSize(): void {
+    sizeAsk.value = undefined
   }
 
-  /** The Rounds question answered Yes: the outer rounds go with their beads, as one Undo step. */
-  function confirmRounds(): void {
-    const ask = roundsAsk.value
-    roundsAsk.value = undefined
-    if (ask) applyRounds(ask.rounds)
+  /** The size question answered Yes: the outer rounds or last rows go with their beads, as one Undo step. */
+  function confirmSize(): void {
+    const ask = sizeAsk.value
+    sizeAsk.value = undefined
+    if (ask) applySize(ask.setting, ask.size)
   }
 
   function applyStarter(input: CreateProjectInput): void {
@@ -546,10 +549,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     confirmRemove,
     placeFromStarter,
     placeCustom,
-    setRounds,
-    roundsAsk,
-    cancelRounds,
-    confirmRounds,
+    setSize,
+    sizeAsk,
+    cancelSize,
+    confirmSize,
     replaceConfirmOpen,
     cancelReplace,
     confirmReplace,

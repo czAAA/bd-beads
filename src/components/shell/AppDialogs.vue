@@ -18,10 +18,9 @@ const {
   onConfirmResetProgress,
   removeFrameConfirmOpen,
   removeFrameTakesBeads,
-  roundsConfirmOpen,
-  roundsConfirmMessage,
-  onCancelRounds,
-  onConfirmRounds,
+  sizeConfirm,
+  onCancelSize,
+  onConfirmSize,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
   switchQuestion,
@@ -110,14 +109,14 @@ const {
   />
 
   <ConfirmModal
-    v-if="roundsConfirmOpen"
-    data-testid="rounds-modal"
-    :title="t.frame.roundsConfirmTitle"
-    :message="roundsConfirmMessage"
-    :confirm-label="t.frame.roundsConfirmButton"
+    v-if="sizeConfirm"
+    data-testid="size-modal"
+    :title="sizeConfirm.title"
+    :message="sizeConfirm.message"
+    :confirm-label="sizeConfirm.button"
     :cancel-label="t.frame.removeConfirmCancel"
-    @confirm="onConfirmRounds"
-    @cancel="onCancelRounds"
+    @confirm="onConfirmSize"
+    @cancel="onCancelSize"
   />
 
   <SwitchTechniqueModal
