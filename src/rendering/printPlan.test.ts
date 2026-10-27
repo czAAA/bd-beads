@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { A4_PORTRAIT, type PrintPart, PRINT_PART_OVERLAP, chartArea, continuation, mm, partLetter, planPrint, PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS_LETTERS, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM } from './printPlan'
+import { A4_PORTRAIT, type PrintPart, PRINT_PART_OVERLAP, chartArea, continuation, mm, partLetter, planPrint, PRINT_CHART_CELL_MM } from './printPlan'
 import { CELL_SIZE_PX } from './surfaceView'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
@@ -16,31 +16,24 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect(plan.page).toEqual({ width: 1240, height: 1754 })
   })
 
-  it('keeps a Project that fits one 100 × 100-bead block on a single chart page (ticket 185)', () => {
-    const plan = planPrint(shape('loom', 60, 80))
+  it('keeps a Project that fits one chart page on a single part (ticket 0584)', () => {
+    const plan = planPrint(shape('loom', 20, 20))
 
     expect([plan.partsAcross, plan.partsDown]).toEqual([1, 1])
-    expect(plan.parts).toEqual([expect.objectContaining({ firstAcross: 0, lastAcross: 59, firstDown: 0, lastDown: 79, page: 2 })])
+    expect(plan.parts).toEqual([expect.objectContaining({ firstAcross: 0, lastAcross: 19, firstDown: 0, lastDown: 19, page: 2 })])
   })
 
-  it('splits a Project bigger than one block into fixed 100 × 100-bead blocks, the edge blocks sized to whatever remains (ticket 185)', () => {
-    const plan = planPrint(shape('loom', 150, 220))
-
-    expect([plan.partsAcross, plan.partsDown]).toEqual([2, 3])
-    expect(plan.parts.map((part) => [part.firstAcross, part.lastAcross, part.firstDown, part.lastDown])).toEqual([
-      [0, 99, 0, 99],
-      [100, 149, 0, 99],
-      [0, 99, 100, 199],
-      [100, 149, 100, 199],
-      [0, 99, 200, 219],
-      [100, 149, 200, 219],
-    ])
+  it('cuts a 100 × 100 into 2 × 2 parts and a 35 × 120 into 1 × 2 (ticket 0584)', () => {
+    expect([planPrint(shape('loom', 100, 100)).partsAcross, planPrint(shape('loom', 100, 100)).partsDown]).toEqual([2, 2])
+    const tall = planPrint(shape('loom', 35, 120))
+    expect([tall.partsAcross, tall.partsDown]).toEqual([1, 2])
   })
 
-  it('draws every part at one bead size, 1.75 mm, whatever the page it lands on', () => {
+  it('draws every part at one bead size, 3 mm, with Letters or not', () => {
     expect(beadMm(planPrint(shape('loom', 150, 220)).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
     expect(beadMm(planPrint(shape('loom', 20, 20)).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
-    expect(PRINT_CHART_CELL_MM).toBe(1.75)
+    expect(beadMm(planPrint({ ...shape('loom', 150, 220), letters: true }).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
+    expect(PRINT_CHART_CELL_MM).toBe(3)
   })
 
   it.each<[Technique, number, number, Rotation]>([
@@ -78,9 +71,9 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     // The board holds the overlap too, so the part's own beads still start at its own number.
     const own = at(1, 1)
     const bead = CELL_SIZE_PX * plan.zoom
-    expect(own.firstAcross).toBe(100)
-    expect(own.region.x).toBeCloseTo(98 * bead, 6)
-    expect(Math.abs(own.region.width - 102 * bead)).toBeLessThan(1)
+    const block = own.lastAcross - own.firstAcross + 1
+    expect(own.region.x).toBeCloseTo((own.firstAcross - 2) * bead, 6)
+    expect(Math.abs(own.region.width - (block + 2) * bead)).toBeLessThan(1)
   })
 
   it('numbers the chart pages from 2, after page 1, with none left empty', () => {
@@ -110,53 +103,60 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
 
   it('says where the chart continues from each part', () => {
     const plan = planPrint(shape('loom', 150, 220))
+    const at = (across: number, down: number) => plan.parts.find((part) => part.across === across && part.down === down)!
+    const [lastAcross, lastDown] = [plan.partsAcross - 1, plan.partsDown - 1]
 
-    const [a, b, , , , f] = plan.parts as [PrintPart, PrintPart, PrintPart, PrintPart, PrintPart, PrintPart]
-    expect(continuation(plan, a)).toEqual({ right: b.page, below: plan.parts[2]!.page })
-    expect(continuation(plan, b)).toEqual({ right: undefined, below: plan.parts[3]!.page })
-    expect(continuation(plan, f)).toEqual({ right: undefined, below: undefined })
+    expect(continuation(plan, at(0, 0))).toEqual({ right: at(1, 0).page, below: at(0, 1).page })
+    expect(continuation(plan, at(lastAcross, 0))).toEqual({ right: undefined, below: at(lastAcross, 1).page })
+    expect(continuation(plan, at(lastAcross, lastDown))).toEqual({ right: undefined, below: undefined })
   })
 })
 
-describe('planPrint: fixed 100 × 100-bead blocks (ticket 185)', () => {
-  it('splits a very large Project into a predictable grid of blocks, a full one to a sheet', () => {
-    const plan = planPrint(shape('peyote', 250, 250))
+describe('planPrint: parts as big as the chart page holds (ticket 0584)', () => {
+  it.each<[Technique, number, number, Rotation]>([
+    ['loom', 250, 250, 0],
+    ['peyote', 250, 250, 0],
+    ['brick', 130, 200, 0],
+    ['loom', 100, 300, 90],
+  ])('fills every part of a %s %s×%s Project (rotation %s°) but the last in each direction, and fits the area', (technique, columns, rows, rotation) => {
+    const plan = planPrint(shape(technique, columns, rows, rotation))
+    const area = chartArea(plan.page)
+    const full = plan.parts[0]!
+    const [fullAcross, fullDown] = [full.lastAcross - full.firstAcross + 1, full.lastDown - full.firstDown + 1]
+    const bead = CELL_SIZE_PX * plan.zoom
 
-    expect([plan.partsAcross, plan.partsDown]).toEqual([3, 3])
-    expect(plan.parts).toHaveLength(9)
-    expect(plan.pageCount).toBeLessThan(10)
-    // Every block but the edge ones is a full 100 × 100 beads; the edge ones simply run out of Project.
     for (const part of plan.parts) {
-      expect(part.lastAcross - part.firstAcross + 1).toBeLessThanOrEqual(PRINT_BLOCK_BEADS)
-      expect(part.lastDown - part.firstDown + 1).toBeLessThanOrEqual(PRINT_BLOCK_BEADS)
+      expect(part.place.width).toBeLessThanOrEqual(area.width + 1)
+      expect(part.place.height).toBeLessThanOrEqual(area.height + 1)
+      if (part.across < plan.partsAcross - 1) expect(part.lastAcross - part.firstAcross + 1).toBe(fullAcross)
+      if (part.down < plan.partsDown - 1) expect(part.lastDown - part.firstDown + 1).toBe(fullDown)
+      // A full part with its overlap could take no more than one bead (a brick or peyote part's half bead aside).
+      if (part.across > 0 && part.across < plan.partsAcross - 1) expect(part.place.width + bead / 2).toBeGreaterThan(area.width - bead)
+      if (part.down > 0 && part.down < plan.partsDown - 1) expect(part.place.height + bead / 2).toBeGreaterThan(area.height - bead)
     }
-    const full = plan.parts.filter((part) => part.lastAcross - part.firstAcross + 1 === PRINT_BLOCK_BEADS && part.lastDown - part.firstDown + 1 === PRINT_BLOCK_BEADS)
-    expect(full).toHaveLength(4)
-    expect(new Set(full.map((part) => part.page)).size).toBe(4)
+  })
+
+  it('holds the remainder in the last part of each direction', () => {
+    const plan = planPrint(shape('loom', 100, 100))
+    const [first, second] = [plan.parts[0]!, plan.parts[1]!]
+
+    expect(second.firstAcross).toBe(first.lastAcross + 1)
+    expect(second.lastAcross).toBe(99)
+    expect(plan.parts.at(-1)!.lastDown).toBe(99)
   })
 })
 
 describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, Chart pages)', () => {
-  it('puts a 130 × 130 Schema as part A, then B and D together, then C', () => {
-    const plan = planPrint(shape('loom', 130, 130))
-    const page = (letter: string) => plan.parts.find((part) => part.letter === letter)!.page
+  it('puts the leftover parts of a 100 × 100 Schema on their own pages in reading order', () => {
+    const plan = planPrint(shape('loom', 100, 100))
 
-    expect(plan.parts.map((part) => [part.letter, part.firstAcross, part.lastAcross, part.firstDown, part.lastDown])).toEqual([
-      ['A', 0, 99, 0, 99],
-      ['B', 100, 129, 0, 99],
-      ['C', 0, 99, 100, 129],
-      ['D', 100, 129, 100, 129],
-    ])
-    expect([page('A'), page('B'), page('C'), page('D')]).toEqual([2, 3, 4, 3])
-    expect(plan.pageCount).toBe(5)
-    // B and D side by side on their sheet, each in its own box.
-    const [b, d] = [plan.parts[1]!, plan.parts[3]!]
-    expect(d.place.x).toBeGreaterThan(b.place.x + b.place.width - 1)
-    expect(d.place.y).toBe(b.place.y)
+    expect(plan.parts.map((part) => part.letter)).toEqual(['A', 'B', 'C', 'D'])
+    expect(plan.parts.map((part) => part.page)).toEqual([2, 3, 4, 5])
+    expect(plan.pageCount).toBe(6)
   })
 
   it('keeps boxes on a sheet apart and inside its chart area', () => {
-    const plan = planPrint(shape('loom', 130, 130))
+    const plan = planPrint(shape('loom', 100, 100))
     const area = chartArea(plan.page)
     for (const part of plan.parts) {
       expect(part.place.x + part.place.width).toBeLessThanOrEqual(area.width + 1)
@@ -169,12 +169,13 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
     }
   })
 
-  it('cuts a 240 × 60 bracelet into 100, 100 and 40 beads, each part 60 tall, two to a sheet', () => {
+  it('cuts a 240 × 60 bracelet into parts 60 tall, as wide as the page holds', () => {
     const plan = planPrint(shape('loom', 240, 60))
 
-    expect(plan.parts.map((part) => [part.firstAcross, part.lastAcross, part.lastDown])).toEqual([[0, 99, 59], [100, 199, 59], [200, 239, 59]])
+    expect(plan.partsDown).toBe(1)
+    expect(plan.parts.at(-1)!.lastAcross).toBe(239)
+    expect(plan.parts.every((part) => part.lastDown === 59)).toBe(true)
     expect(beadMm(plan.zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
-    expect(plan.parts.map((part) => part.page)).toEqual([2, 2, 3])
   })
 
   it('shares sheets between the parts of a long thin bracelet, in reading order', () => {
@@ -187,8 +188,8 @@ describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, C
     expect(plan.parts.at(-1)!.lastAcross).toBe(299)
   })
 
-  it('needs one part, on one sheet, for a 60 × 60 Schema', () => {
-    const plan = planPrint(shape('loom', 60, 60))
+  it('needs one part, on one sheet, for a 40 × 40 Schema', () => {
+    const plan = planPrint(shape('loom', 40, 40))
 
     expect(plan.parts).toHaveLength(1)
     expect(plan.parts[0]).toMatchObject({ letter: 'A', page: 2 })
@@ -214,19 +215,12 @@ describe('planPrint: Bead shape (ticket 509)', () => {
   })
 })
 
-describe('planPrint with Letters (ticket 0573, 578)', () => {
-  it('cuts parts of at most 75 beads a side, so 130 beads are 75 and 55, and 100 beads when Letters is off', () => {
-    const lettered = planPrint({ ...shape('loom', 130, 60), letters: true })
-    expect(PRINT_BLOCK_BEADS_LETTERS).toBe(75)
-    expect(lettered.parts.map((part) => [part.firstAcross, part.lastAcross])).toEqual([[0, 74], [75, 129]])
-    expect(planPrint(shape('loom', 130, 60)).parts.map((part) => [part.firstAcross, part.lastAcross])).toEqual([[0, 99], [100, 129]])
-  })
+describe('planPrint with Letters (ticket 0573, 0584)', () => {
+  it('cuts the same parts as with Letters off, at the same 3 mm bead', () => {
+    const lettered = planPrint({ ...shape('loom', 130, 130), letters: true })
+    const plain = planPrint(shape('loom', 130, 130))
 
-  it('draws a bead at 2.3 mm, and a full 75-bead part still fits the sheet', () => {
-    const plan = planPrint({ ...shape('loom', 130, 130), letters: true })
-
-    expect(beadMm(plan.zoom)).toBeCloseTo(PRINT_CHART_CELL_LETTERS_MM, 6)
-    expect(PRINT_CHART_CELL_LETTERS_MM).toBe(2.3)
-    expect(plan.parts[0]!.place.width).toBeLessThanOrEqual(chartArea(plan.page).width)
+    expect(lettered.parts.map((part) => [part.firstAcross, part.lastAcross, part.firstDown, part.lastDown])).toEqual(plain.parts.map((part) => [part.firstAcross, part.lastAcross, part.firstDown, part.lastDown]))
+    expect(beadMm(lettered.zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
   })
 })

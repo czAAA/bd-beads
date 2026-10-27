@@ -12,6 +12,7 @@ import { spaceOf } from './space'
 import {
   PRINT_BOARD_PAD,
   PRINT_HEADER,
+  PRINT_KEY,
   PRINT_MARGIN,
   PRINT_RULER,
   PRINT_PART_LABEL,
@@ -23,7 +24,7 @@ import {
   type PrintPlan,
 } from './printPlan'
 import { COVER_CUT_LABEL } from './coverLayout'
-import { headerMaker, type PrintText } from './printText'
+import type { PrintText } from './printText'
 
 // Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; the Cover page is coverPage.ts). The chart first,
 // the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
@@ -507,22 +508,16 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const here = parts[0]!
 
-  // The 17 mm header: technique word and name; the part and the chart style, the maker, date and time; a mini map and
-  // the page number, large.
+  // The 15 mm header: technique word and name, the part; a mini map and the page number, large. The date is in the footer.
   const mapWidth = drawMiniMap(context, plan, here, page.width - PRINT_MARGIN, PRINT_MARGIN + mm(1))
   const rightEdge = drawPageNumber(context, labels, plan, here.page, page.width - PRINT_MARGIN - mapWidth - mm(4)) - mm(4)
   drawTitle(context, words, PRINT_MARGIN, PRINT_MARGIN + mm(6), 18, 11, rightEdge - PRINT_MARGIN)
-  const style = project.letters ? labels.chartStyleLetters : labels.chartStyleColor
   const partLine = parts.length === 1 ? partLabel(project, labels, here) : labels.partArea.replace('{part}', parts.map((part) => part.letter).join(', ')).split(' · ')[0]!
   text(context, partLine, PRINT_MARGIN, PRINT_MARGIN + mm(11), font('700', 8, SANS), PRINT_COLORS.ink, 'left', rightEdge - PRINT_MARGIN)
-  const meta = [style, headerMaker(words.maker), words.exportedAt].filter(Boolean).join(' · ')
-  text(context, meta, PRINT_MARGIN, PRINT_MARGIN + mm(15.5), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', rightEdge - PRINT_MARGIN)
 
-  let boardsBottom = 0
   for (const part of parts) {
     const left = PRINT_MARGIN + part.place.x
     const top = PRINT_MARGIN + PRINT_HEADER + part.place.y
-    boardsBottom = Math.max(boardsBottom, top + part.place.height)
     // A sheet with one part has its label in the header; parts sharing a sheet each carry theirs.
     if (parts.length > 1) text(context, partLabel(project, labels, part), left + inset, top + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
     const board: Board = { x: left + inset, y: top + PRINT_PART_LABEL + inset, width: part.region.width, height: part.region.height }
@@ -531,12 +526,13 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   }
 
   // Under the boards: the colors on this page, and how the numbers read.
-  drawColorKey(context, project, words, parts, page.width, { top: boardsBottom + mm(3), bottom: page.height - PRINT_MARGIN - mm(8) })
+  drawColorKey(context, project, words, parts, page.width, { top: page.height - PRINT_MARGIN - mm(8) - PRINT_KEY + mm(3), bottom: page.height - PRINT_MARGIN - mm(8) })
 
-  // The 8 mm footer: the brand, and where the chart goes on.
+  // The 8 mm footer: the brand and the date, and where the chart goes on.
   const footer = page.height - PRINT_MARGIN - mm(1.5)
   drawMark(context, PRINT_MARGIN, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
-  text(context, 'openbeads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
+  const brand = text(context, 'openbeads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
+  text(context, words.exportedAt, PRINT_MARGIN + mm(5.5) + brand + mm(4), footer, font('400', 7.5, MONO), PRINT_COLORS.muted)
   text(context, continuationText(labels, plan, parts), page.width - PRINT_MARGIN, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
   return canvas
 }

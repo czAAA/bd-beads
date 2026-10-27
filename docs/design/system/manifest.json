@@ -300,7 +300,7 @@
     {
       "name": "PrintChartPage",
       "group": "Print",
-      "summary": "A chart page of the PDF: one part of at most 100 × 100 beads with every row and column numbered."
+      "summary": "A chart page of the PDF: one part, as many beads as fill the page, with every row and column numbered."
     },
     {
       "name": "PrintPage1",
@@ -320,7 +320,7 @@
     {
       "name": "PrintWide",
       "group": "Print",
-      "summary": "A Schema wider than tall keeps the portrait A4 layout: a shorter picture on page 1, the same 100-bead parts after it."
+      "summary": "A Schema wider than tall keeps the portrait A4 layout: a shorter picture on page 1, the same full-page parts after it."
     },
     {
       "name": "PrintWordChart",

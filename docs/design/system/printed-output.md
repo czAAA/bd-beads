@@ -31,20 +31,20 @@ One A4 portrait page for both formats, drawn by the same code, inside a 10 mm ma
 
 ## Chart pages
 
-- **Parts of at most 100 × 100 beads** (`print-part-beads`), cut from the top left: a 130-bead side is 100 + 30, a 250-bead side 100 + 100 + 50. Every part is drawn at one bead size, `print-chart-cell` (1.75 mm), so a full part fills the sheet's width and what is counted on one page matches the next.
+- **Parts as big as a chart page holds**, cut from the top left. Every bead is `print-chart-cell` (3 mm), Letters or not, so a weaver can follow it and what is counted on one page matches the next. A part is as many beads across and down as fit the chart area at that size, its rulers and overlap included (about 56 × 66 on A4); the last part in each direction holds what remains, so a 100 × 100 is 2 × 2 parts and a 35 × 120 is 1 × 2. The chart area is the page inside its margins, less the header, the color key and the footer.
 - **Leftover parts share a sheet** when they fit at that size, each on its own board with its label above it ("part B · columns 101–130 · rows 1–100"); a long strip (a bracelet) stacks its parts the same way. Sheets are filled in reading order.
 - **Every column and row is numbered**: odd numbers on the top and left, even numbers on the bottom and right, in a `print-ruler` band on each side. Column numbers are turned to read upwards so three digits fit one bead. Every 10th is `ink` 500, every 5th `ink`, the others `muted`; the numbers are the Schema's own (101–130 on part B, not 1–30).
 - **Lines**: a fine line every 5 beads, a heavier one every 10.
-- **Overlap**: a part repeats `print-part-overlap` (2) columns or rows of the part before it, shaded (the colors lightened, their numbers `faint`), with an `accent` line where the part itself begins, so the sheets line up. A middle part is then 102 beads wide, 3.5 mm more than the sheet's chart area: it stays centered and uses the margins evenly.
-- **Color + letters**: with Letters on, each bead carries its Swatch letter, white on dark beads and `ink` on light ones, at the 6.5 pt floor like all print text. A letter needs a bigger cell, so with Letters on the chart pages use `print-chart-cell-letters` (2.3 mm) and parts of at most 75 × 75 beads (`print-part-beads-letters`); a 130-bead side is then 75 + 55. Off, the beads are color only, at 1.75 mm in 100-bead parts.
-- **Header**: the technique word and name; "part A · columns 1–100 · rows 1–100", the chart style ("color + letters"), the maker, date and time; on the right a mini map of the parts (the current one in `accent`) and the page number, large. **Under the board**: the color key for this page (letter swatch, name, beads on this page), a line on reading the numbers, and where the chart continues. **Footer**: the brand, and "Continues right on page 3, below on page 4 →" or "Last part" (writing.md).
+- **Overlap**: a part repeats `print-part-overlap` (2) columns or rows of the part before it, shaded (the colors lightened, their numbers `faint`), with an `accent` line where the part itself begins, so the sheets line up. The overlap is counted in the size of a part, so a part always fits its sheet.
+- **Color + letters**: with Letters on, each bead carries its Swatch letter, white on dark beads and `ink` on light ones, at the 6.5 pt floor like all print text. The 3 mm cell is big enough for a letter, so Letters on changes neither the bead size nor the parts. Off, the beads are color only.
+- **Header**: the technique word and name; "part A · columns 1–100 · rows 1–100", on the right a mini map of the parts (the current one in `accent`) and the page number, large. **Under the board**: the color key for this page (letter swatch, name, beads on this page), a line on reading the numbers, and where the chart continues. **Footer**: the brand and the date, and "Continues right on page 3, below on page 4 →" or "Last part" (writing.md).
 
 ## Specification
 
 - The full **Beads needed** table: letter, swatch, color name, brand code, beads, grams, to buy; a Total row with the beads, the grams and the tubes; the grams note.
 - **To buy**: tubes of 5 g, from the grams with about 10% spare, rounded up ("2 × 5 g"); the Total adds up the tubes.
 - **The Schema**: made by, technique, bead, shape, size, finished size, beads and grams, chart style, pages.
-- **Where each part is**: a small map of the parts with their pages, and a line on the 100-bead parts, the shared sheets and the overlap.
+- **Where each part is**: a small map of the parts with their pages, and a line on the part size, the shared sheets and the overlap.
 
 ## Word chart
 
@@ -66,7 +66,7 @@ One A4 portrait page for both formats, drawn by the same code, inside a 10 mm ma
 
 ## Wide and long Schemas
 
-- The PDF's pages are lossless raster (one picture a page, text included), drawn at 150, 300 or 450 DPI by the Export quality (QualitySlider card); a device that cannot hold a 450 DPI page draws High at 300. The PDF is always A4 portrait. A Schema wider than tall gets a shorter picture on the Cover page, which leaves more room for Beads needed; the chart pages are the same 100-bead parts.
+- The PDF's pages are lossless raster (one picture a page, text included), drawn at 150, 300 or 450 DPI by the Export quality (QualitySlider card); a device that cannot hold a 450 DPI page draws High at 300. The PDF is always A4 portrait. A Schema wider than tall gets a shorter picture on the Cover page, which leaves more room for Beads needed; the chart pages are the same full-page parts.
 - Long thin Schemas (bracelets) stack their parts on shared sheets (Chart pages above). See the PrintWide and PrintStrips cards.
 
 ## PNG image
