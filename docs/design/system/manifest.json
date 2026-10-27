@@ -300,7 +300,7 @@
     {
       "name": "PrintChartPage",
       "group": "Print",
-      "summary": "A chart page of the PDF: one part, as many beads as fill the page, with every row and column numbered."
+      "summary": "A chart page of the PDF, in vector: one part at 3 mm a bead, as many beads as fill the page, every bead lettered, rulers in fives."
     },
     {
       "name": "PrintPage1",
@@ -325,7 +325,7 @@
     {
       "name": "PrintWordChart",
       "group": "Print",
-      "summary": "The Word chart pages of the PDF, with Letters on: one line per row with a tick box."
+      "summary": "The Word chart pages of the PDF, with Letters on: one 10 pt line per row with a tick box, in two columns when the rows fit, titled with the page's own rows."
     },
     {
       "name": "ProgressBar",
@@ -340,7 +340,7 @@
     {
       "name": "QualitySlider",
       "group": "Forms",
-      "summary": "Export quality: a three-stop slider under the Picture and Printable chart buttons that sets the PNG bead size and the PDF DPI."
+      "summary": "Export quality: a three-stop slider under the Picture and Printable chart buttons that sets the PNG only; each button shows its size and count (\"PDF ≈ 3.2 MB · 9 pages\")."
     },
     {
       "name": "Rulers",
