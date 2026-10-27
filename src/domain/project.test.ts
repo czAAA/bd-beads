@@ -537,14 +537,41 @@ describe('row direction', () => {
     expect(rowProgressPosition(moveToRow(downColumns, 15))).toEqual({ current: 10, total: 10 })
   })
 
-  it('keeps a separate pointer for each direction, so flipping back returns to the same row', () => {
+  it('keeps a separate pointer for each direction, so coming back to one returns to the same row', () => {
     const onRowSeven = moveToRow(tallProject(), 7)
+    const turn = (project: Project, times: number): Project => (times === 0 ? project : turn(toggleRowDirection(project), times - 1))
 
     expect(rowProgressPosition(toggleRowDirection(onRowSeven))).toEqual({ current: 0, total: 10 })
 
     const onColumnTwo = moveToRow(toggleRowDirection(onRowSeven), 2)
 
-    expect(rowProgressPosition(toggleRowDirection(onColumnTwo))).toEqual({ current: 7, total: 20 })
+    expect(rowProgressPosition(turn(onColumnTwo, 3))).toEqual({ current: 7, total: 20 })
+  })
+
+  it('turns through top to bottom, left to right, bottom to top and right to left', () => {
+    const ways = [tallProject()]
+    for (let at = 0; at < 4; at += 1) ways.push(toggleRowDirection(ways[at]))
+
+    expect(ways.map(({ rowProgress }) => [rowProgress.direction, !!rowProgress.reversed])).toEqual([
+      ['rows', false],
+      ['columns', false],
+      ['rows', true],
+      ['columns', true],
+      ['rows', false],
+    ])
+  })
+
+  it('weaves a bottom to top row from the Frame\'s last line, with its own pointer', () => {
+    const base = withFrame(tallProject(), { row: 0, column: 0, rows: 20, columns: 10 })
+    const upward = moveToRow(toggleRowDirection(toggleRowDirection(base)), 2)
+
+    expect(rowProgressPosition(upward)).toEqual({ current: 2, total: 20 })
+    expect(isInFinishedRow(upward, { layer: 'frame', row: 19, column: 3 })).toBe(true)
+    expect(isInFinishedRow(upward, { layer: 'frame', row: 17, column: 3 })).toBe(false)
+    expect(isInCurrentRow(upward, { layer: 'frame', row: 17, column: 3 })).toBe(true)
+    expect(rowProgressStarted(upward)).toBe(true)
+    expect(rowProgressPosition(toggleRowDirection(upward)).current).toBe(0)
+    expect(rowProgressPosition(resetRowProgress(upward)).current).toBe(0)
   })
 })
 
@@ -859,6 +886,15 @@ describe('the Frame in an undo entry (ADR 0066)', () => {
 })
 
 describe('normalizeProject', () => {
+  it('keeps a reversed way and its pointers through a save, and opens an old file with neither (ticket 0589)', () => {
+    const framed = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), { row: 0, column: 0, rows: 4, columns: 3 })
+    const upward = moveToRow(toggleRowDirection(toggleRowDirection(framed)), 3)
+    const reopened = normalizeProject(JSON.parse(JSON.stringify(upward)))
+
+    expect(reopened.rowProgress).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0, currentRowBack: 3 })
+    expect(normalizeProject(JSON.parse(JSON.stringify(framed))).rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+  })
+
   it('gives a Project saved as a fixed grid beads by position and a Frame the size of that grid (ADR 0026)', () => {
     const { beads: _beads, frame: _frame, ...base } = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } })
     const legacy = {

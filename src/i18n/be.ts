@@ -414,9 +414,13 @@ export const be: Translations = {
     columnNextButton: 'Слупок гатовы',
     directionToastRows: 'Рады цяпер ідуць зверху ўніз.',
     directionToastColumns: 'Рады цяпер ідуць злева направа.',
+    directionToastRowsReversed: 'Рады цяпер ідуць знізу ўверх.',
+    directionToastColumnsReversed: 'Рады цяпер ідуць справа налева.',
     ofTotal: 'з {total} · {direction}',
     topToBottom: 'Зверху ўніз',
     leftToRight: 'Злева направа',
+    bottomToTop: 'Знізу ўверх',
+    rightToLeft: 'Справа налева',
     finishedLabel: 'Гатовыя рады',
   },
   quantities: {

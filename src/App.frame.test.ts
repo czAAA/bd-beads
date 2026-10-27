@@ -510,7 +510,7 @@ describe('Row progress follows the Frame (tickets 411, 426)', () => {
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(en.rowProgress.columnNextButton)
 
     await key({ key: 'd' })
-    expect(wrapper.text()).toContain(en.rowProgress.directionToastRows)
+    expect(wrapper.text()).toContain(en.rowProgress.directionToastRowsReversed)
     expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(en.rowProgress.nextButton)
   })
 })

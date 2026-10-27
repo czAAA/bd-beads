@@ -1,7 +1,7 @@
 import { colorAt } from './canvas'
 import type { Rotation } from './grid'
 import { frameWeave, type Project } from './project'
-import { describeWeave, lineOfPass, passCount, passOf, type PassDirection, type Technique } from './weave'
+import { describeWeave, lineOfPass, mirrorLine, passCount, passOf, type PassDirection, type Technique } from './weave'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
  * line per row in the order Row progress counts them. Pure data here; the words and the drawing are the export's. */
@@ -51,6 +51,8 @@ const FIRST_EDGE: Record<PassDirection, Record<Rotation, Edge>> = {
   columns: { 0: 'left', 90: 'top', 180: 'right', 270: 'bottom' },
 }
 
+const OPPOSITE: Record<Edge, Edge> = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' }
+
 // Whether a line's positions count up from left to right (top to bottom for a line that runs down the picture).
 const ASCENDS: Record<PassDirection, Record<Rotation, boolean>> = {
   rows: { 0: true, 90: true, 180: false, 270: false },
@@ -65,7 +67,7 @@ export function wordChartOf(project: Project): WordChart | undefined {
   if (!project.letters || !frame || !wordChart) {
     return undefined
   }
-  const direction = project.rowProgress.direction
+  const { direction, reversed } = project.rowProgress
   const lines = direction === 'rows' ? frame.rows : frame.columns
   const along = direction === 'rows' ? frame.columns : frame.rows
   const ascends = ASCENDS[direction][project.rotation]
@@ -73,10 +75,11 @@ export function wordChartOf(project: Project): WordChart | undefined {
 
   const rows: WordRow[] = []
   for (let pass = 0; pass < passCount(weave, lines, direction); pass += 1) {
-    const line = lineOfPass(weave, pass, direction)
+    const woven = lineOfPass(weave, pass, direction)
+    const line = mirrorLine(woven, lines, reversed)
     const colors: (string | undefined)[] = []
     for (let at = 0; at < along; at += 1) {
-      if (passOf(weave, line, at, direction) === pass) {
+      if (passOf(weave, woven, at, direction) === pass) {
         const hex = direction === 'rows' ? colorAt(frame.beads, line, at) : colorAt(frame.beads, at, line)
         colors.push(hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?'))
       }
@@ -98,7 +101,7 @@ export function wordChartOf(project: Project): WordChart | undefined {
 
   return {
     marked: wordChart.marked,
-    firstEdge: FIRST_EDGE[direction][project.rotation],
+    firstEdge: reversed ? OPPOSITE[FIRST_EDGE[direction][project.rotation]] : FIRST_EDGE[direction][project.rotation],
     ...(twoPasses ? { count: along % 2 === 0 ? 'even' : 'odd' } : {}),
     rows,
     lastNumber: rows[rows.length - 1]?.number ?? 0,
