@@ -83,7 +83,7 @@ EU ring sizes are the inside circumference in mm; US is worked out from it to th
 
 ## Panel width
 
-The canvas draws the desktop and tablet panel 520px wide, which `panel-width` (448px today) becomes in ticket 0598, for every panel. On a phone the panel stays the screen less its 8px gutters, so the cards' column is 173px at 390px and 157px at 360px.
+On desktop and tablet the panel is `panel-width`, 520px (585px at the app's 18px root; ticket 0598, for every panel), as the canvas draws it, so the two columns of cards get 236px pictures. On a phone the panel stays the screen less its 8px gutters, so the cards' column is 173px at 390px and 157px at 360px.
 
 ## Until ticket 0596: the one-step gallery
 

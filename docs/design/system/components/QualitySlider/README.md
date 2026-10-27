@@ -6,7 +6,7 @@ Revised in the design session of 2026-10-27 (tickets 0585, 0588; the claude.ai c
 
 ## Where it sits
 
-- In the Frame panel (`panel-width`, 448px), in the **export** PanelSection, in this order: the Picture row, the Printable chart row, then the slider, `space-8` under the last button and inside the section's padding. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
+- In the Frame panel (`panel-width`, 520px), in the **export** PanelSection, in this order: the Picture row, the Printable chart row, then the slider, `space-8` under the last button and inside the section's padding. The section header and its collapse behave as every PanelSection does (remembered per device); the collapsed summary does not mention quality or sizes.
 - The slider's head line: "Export quality" (Inter 500 13, `ink`) and, right-aligned, the chosen stop's word in `meta-small` (`muted`).
 - Under the stops, `space-8` below them: one `meta-small` line in `muted`, "For the picture. The printable chart is drawn in lines and stays sharp at any zoom." (writing.md).
 
@@ -49,7 +49,7 @@ The PDF is not on the slider: its picture pages (Cover, list pages, Specificatio
 
 ## Layout and text
 
-- Fits the 448px panel and a 320px viewport (the panel is narrower than `panel-width` on a phone): at 288px the three columns are about 96px each; nothing is a fixed width. A word never breaks inside itself (`overflow-wrap: break-word` only for a word wider than its column); the figures (`DM Mono`) never wrap, while the words and lines wrap under the stops. A long translated word ("Estimaciones", "Низкое") makes its column taller, never wider.
+- Fits the 520px panel and a 320px viewport (the panel is narrower than `panel-width` on a phone): at 288px the three columns are about 96px each; nothing is a fixed width. A word never breaks inside itself (`overflow-wrap: break-word` only for a word wider than its column); the figures (`DM Mono`) never wrap, while the words and lines wrap under the stops. A long translated word ("Estimaciones", "Низкое") makes its column taller, never wider.
 - Seven languages (be, ru, uk, pl, es, zh, en): the words are Low, Medium, High (each with "saves memory" in the head's Tooltip, not in the column), "Export quality", and the note. "PNG" and "PDF" stay in Latin letters; "≈", "MB", "files" and "pages" follow the language.
 - Light, dark and contrast themes: the track gets a 1px `panel-line` inset in contrast; the filled part and thumb keep 3:1 against the track in all three.
 

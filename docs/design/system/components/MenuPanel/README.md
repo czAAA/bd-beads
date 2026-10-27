@@ -4,7 +4,7 @@ The body of the Menu: what is about the app and the device. It renders as a drop
 
 ## Panel (the dropdown)
 
-- Opens 4px under the Menu button on the Canvas strip, left edges aligned. `panel-width` (448px, 504px at the app's 18px root) wide, `radius-lg`, `overlay-fill` with a 1px `overlay-line` edge (2px `line-strong` in high contrast), `elevation-3`, padding 8, `z-popover`. Taller than the box: it scrolls inside, with no visible scrollbar.
+- Opens 4px under the Menu button on the Canvas strip, left edges aligned. `panel-width` (520px, 585px at the app's 18px root) wide, `radius-lg`, `overlay-fill` with a 1px `overlay-line` edge (2px `line-strong` in high contrast), `elevation-3`, padding 8, `z-popover`. Taller than the box: it scrolls inside, with no visible scrollbar.
 - Closes on Escape, a press outside it (the press only closes), or the lit Menu button. Focus returns to the button.
 - Motion: `duration-base` in, 150ms out, opacity and a 4px move; a fade only under reduced motion (as the Menu card).
 
