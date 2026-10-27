@@ -76,6 +76,11 @@ export function wordChartFileName(project: Project): string {
   return projectExportFileName(project, 'png').replace(/\.png$/, '_instructions.png')
 }
 
+/** A further page of the cover PNG (Beads needed running over, ticket 0583), e.g. `openbeads-my-scarf_2.png` for the second. */
+export function projectListFileName(project: Project, page: number): string {
+  return projectExportFileName(project, 'png').replace(/\.png$/, `_${page}.png`)
+}
+
 export function libraryFileName(): string {
   return 'openbeads_lib.openbeads'
 }
