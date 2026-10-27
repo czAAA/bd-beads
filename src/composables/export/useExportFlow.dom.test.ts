@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject, type Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, projectListFileName, wordChartFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
 import { useExportFlow } from './useExportFlow'
 
@@ -9,10 +9,9 @@ vi.mock('../../rendering/pdfDpi', () => ({ pdfDpiFor: vi.fn((quality: ExportQual
 vi.mock('../../rendering/projectExport', () => ({
   exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
-  exportWordChartPng: vi.fn(async () => new Blob(['words'], { type: 'image/png' })),
   projectPageCount: vi.fn(() => 1),
 }))
-import { exportProjectPdf, exportProjectPng, exportWordChartPng, projectPageCount } from '../../rendering/projectExport'
+import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 
@@ -23,7 +22,6 @@ beforeEach(() => {
   downloadFile.mockClear()
   vi.mocked(exportProjectPng).mockClear()
   vi.mocked(exportProjectPdf).mockClear()
-  vi.mocked(exportWordChartPng).mockClear()
   vi.mocked(projectPageCount).mockReturnValue(1)
   localStorage.clear()
 })
@@ -76,29 +74,11 @@ describe('useExportFlow Letters (ticket 0573)', () => {
   })
 })
 
-describe('useExportFlow Word chart (ticket 0574)', () => {
-  it('hands over a second PNG named _instructions after the pattern when Letters is on, at the same Export quality', async () => {
-    localStorage.setItem('openbeads:export-quality', 'high')
+describe('useExportFlow Word chart (ticket 0586)', () => {
+  it('makes only the pattern PNG with Letters on: the Word chart is PDF pages, not a picture', async () => {
     await setup({ project: { ...project, letters: true } }).onExportPng()
 
-    expect(exportWordChartPng).toHaveBeenCalledWith(expect.objectContaining({ wordChart: expect.objectContaining({ title: 'Row by row' }) }), 1.5)
-    expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), wordChartFileName(project)])
-    expect(wordChartFileName(project)).toBe('openbeads-my-scarf_instructions.png')
-  })
-
-  it('makes no second PNG with Letters off, or for a Technique without a Word chart', async () => {
-    await setup().onExportPng()
-    const netting = createProject({ technique: 'netting', beadId: 'toho-cube-1.5mm', name: 'Net', size: { width: 9, height: 9, unit: 'beads' } })
-    await setup({ project: { ...netting, letters: true } }).onExportPng()
-
-    expect(exportWordChartPng).not.toHaveBeenCalled()
-    expect(downloadFile).toHaveBeenCalledTimes(2)
-  })
-
-  it('makes no second PNG when the first is cancelled', async () => {
-    downloadFile.mockResolvedValueOnce('cancelled')
-    await setup({ project: { ...project, letters: true } }).onExportPng()
-    expect(downloadFile).toHaveBeenCalledTimes(1)
+    expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png')])
   })
 })
 
@@ -139,11 +119,11 @@ describe('useExportFlow', () => {
       expect(exportProjectPng).toHaveBeenCalledWith(expect.anything(), expect.anything(), 450)
     })
 
-    it('hands over the list pages Beads needed runs over onto as _2 and _3, in order, before the Word chart (ticket 0583)', async () => {
+    it('hands over the list pages Beads needed runs over onto as _2 and _3, in order (ticket 0583)', async () => {
       vi.mocked(projectPageCount).mockReturnValue(3)
       await setup({ project: { ...project, letters: true } }).onExportPng()
 
-      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), projectListFileName(project, 2), projectListFileName(project, 3), wordChartFileName(project)])
+      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), projectListFileName(project, 2), projectListFileName(project, 3)])
       expect(projectListFileName(project, 2)).toBe('openbeads-my-scarf_2.png')
       expect(vi.mocked(exportProjectPng).mock.calls.map((call) => call[3])).toEqual([undefined, 1, 2])
     })
