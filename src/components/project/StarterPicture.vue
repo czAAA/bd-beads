@@ -1,60 +1,54 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { framedGrid } from '../../domain/project'
-import { generateOrnament, sampleColors, sampleSize, seedOf } from '../../domain/starterSample'
-import type { Technique } from '../../domain/weave'
+import { starterProject, type Starter } from '../../domain/starters'
 import { PROJECT_THEMES } from '../../rendering/beadLook'
 import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
-import { displayedExtentPx } from '../../rendering/surfaceView'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
-// The decorated example on a Starter card and in its setup (ticket 494, spec 0488; StarterGallery card): a small
-// symmetric ornament in the Technique, drawn by the Project renderer in the Frame-only space and scaled to the slot.
-// Decorative.
-const props = defineProps<{
-  technique: Technique
-  /** The Starter's default size, whose shape the sample takes. */
-  columns: number
-  rows: number
-  /** Names the ornament: the same Starter always gets the same one. */
-  seedText: string
-}>()
-
-/** The longest side of the drawing in CSS px; the slot scales it down or up, and it is drawn at twice that for a crisp edge. */
-const DRAWN_PX = 96
+// A Starter's picture (ticket 0596; StarterGallery card, Pictures): its design, or its shape empty with its Seams, drawn
+// by the Project renderer in Real Bead shape and fitted to its well, never cropped. Decorative: the card or the setup
+// names it.
+const props = withDefaults(
+  defineProps<{
+    starter: Starter
+    /** The size drawn: the design's own unless the setup has changed it. */
+    size?: number
+    /** Draws the design; off, the shape is drawn empty. */
+    design?: boolean
+    /** The Bead whose shape the beads take: the setup's, or Delica 11/0 on a card. */
+    beadId?: string
+    /** The longest side of the drawing in CSS px; the well scales it, and it is drawn at twice that for a crisp edge. */
+    drawnPx?: number
+  }>(),
+  { size: undefined, design: true, beadId: 'miyuki/delica/11-0', drawnPx: 240 },
+)
 
 const theme = useResolvedTheme()
 const canvasEl = ref<HTMLCanvasElement>()
 
-const project = computed(() => {
-  const weave = { technique: props.technique }
-  const grid = generateOrnament(weave, sampleSize(props.columns, props.rows), seedOf(props.seedText), sampleColors(theme.value))
-  return {
-    ...weave,
-    ...framedGrid(grid.map((row) => row.map((color) => ({ color }))), weave),
-    rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
-    rotation: 0 as const,
-  }
-})
-const frame = computed(() => project.value.frame!)
-const unit = computed(() => displayedExtentPx(props.technique, frame.value.columns, frame.value.rows, 1, 0))
-const zoom = computed(() => DRAWN_PX / Math.max(unit.value.width, unit.value.height))
-const extent = computed(() => ({ width: unit.value.width * zoom.value, height: unit.value.height * zoom.value }))
+const project = computed(() => ({
+  ...starterProject(props.starter, { name: '', beadId: props.beadId, size: props.size ?? props.starter.size, useDesign: props.design }),
+  beadShape: 'real' as const,
+}))
 
 function draw() {
   const canvas = canvasEl.value
   const context = canvas?.getContext('2d')
   if (!canvas || !context) return
+  const space = spaceOf(project.value, false)
+  const zoom = props.drawnPx / Math.max(space.extent.width, space.extent.height)
   const pixelRatio = 2
-  canvas.width = Math.round(extent.value.width * pixelRatio)
-  canvas.height = Math.round(extent.value.height * pixelRatio)
-  const region = { x: 0, y: 0, width: extent.value.width, height: extent.value.height }
-  renderProject(context, { project: project.value, space: spaceOf(project.value, false), region, zoom: zoom.value, pixelRatio, theme: PROJECT_THEMES[theme.value], rowMarks: false })
+  const region = { x: 0, y: 0, width: space.extent.width * zoom, height: space.extent.height * zoom }
+  canvas.width = Math.round(region.width * pixelRatio)
+  canvas.height = Math.round(region.height * pixelRatio)
+  // No board of its own: the well's fill shows round the beads.
+  const look = { ...PROJECT_THEMES[theme.value], background: 'transparent' }
+  renderProject(context, { project: project.value, space, region, zoom, pixelRatio, theme: look, rowMarks: false })
 }
 
 onMounted(draw)
-watch([project, zoom, theme], draw)
+watch([project, theme], draw)
 </script>
 
 <template>
@@ -62,14 +56,13 @@ watch([project, zoom, theme], draw)
 </template>
 
 <style scoped>
+/* Fitted to its well with 7% padding (StarterGallery card). */
 .starter-picture {
   display: block;
+  box-sizing: border-box;
   width: 100%;
   height: 100%;
-  box-sizing: border-box;
-  padding: var(--space-4);
+  padding: 7%;
   object-fit: contain;
-  background: var(--board);
-  border-radius: var(--radius-sm);
 }
 </style>

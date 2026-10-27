@@ -35,6 +35,8 @@ const { t } = useI18n()
  * again by its test id to take focus back from Back). */
 interface SubLevel {
   title?: string
+  /** Its crumb at the header's right ("starter · shapes", ticket 0596); the panel's `subMeta` when none. */
+  meta?: string
   returnTestId: string | null
 }
 const stack = ref<SubLevel[]>(props.startInSub ? [{ returnTestId: null }] : [])
@@ -43,10 +45,11 @@ const inSub = computed(() => stack.value.length > 0)
 const depth = computed(() => stack.value.length)
 const openedInSub = props.startInSub ?? false
 const currentTitle = computed(() => stack.value.at(-1)?.title ?? props.subTitle)
+const currentMeta = computed(() => stack.value.at(-1)?.meta ?? props.subMeta)
 const itemRole = computed(() => (props.menu && !inSub.value ? ('menuitem' as const) : undefined))
 const subBodyEl = ref<HTMLElement>()
-function openSub(title?: string) {
-  stack.value.push({ title, returnTestId: document.activeElement?.getAttribute('data-testid') ?? null })
+function openSub(title?: string, level: { meta?: string; opener?: string } = {}) {
+  stack.value.push({ title, meta: level.meta, returnTestId: level.opener ?? document.activeElement?.getAttribute('data-testid') ?? null })
   void nextTick(focusEntry)
 }
 function goBack() {
@@ -183,7 +186,7 @@ onBeforeUnmount(() => {
     <header v-if="inSub" class="app-panel__header">
       <IconButton icon="chevron-left" variant="plain" :label="t.panels.back" tooltip data-testid="panel-back" @click="goBack" />
       <h2 :id="titleId" class="app-panel__heading" data-testid="panel-sub-title">{{ currentTitle }}</h2>
-      <span v-if="subMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ subMeta }}</span>
+      <span v-if="currentMeta" class="app-panel__meta" data-testid="panel-sub-meta">{{ currentMeta }}</span>
     </header>
     <h2 v-else :id="titleId" class="app-panel__title">{{ title }}</h2>
     <div ref="subBodyEl" class="app-panel__body" data-testid="panel-body">

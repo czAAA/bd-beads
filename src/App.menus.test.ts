@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import App from './App.vue'
 import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
+import { starterById, starterDesign } from './domain/starters'
 import { en } from './i18n/en'
 import { choosePanelOption } from './testUtils/choosePanelOption'
 import { openPanel, openSavedProjects } from './testUtils/pill'
@@ -179,49 +180,45 @@ describe('Menu', () => {
     expect(text(wrapper, 'project-name')).toBe('Heron')
   })
 
-  it('starts a Project from a Starter: a card opens its setup, Back returns to the gallery, Create makes the Frame in place', async () => {
+  it('starts a Project from a Starter: Pick a starter, a category, an option, Back up a level, and Create puts its design in place (ticket 0596)', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
     await wrapper.get('[data-testid="pick-starter"]').trigger('click')
-    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(true)
-
-    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.starters.bracelet.name)
-    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.starters.title)
+    await wrapper.get('[data-testid="starter-category-shapes"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-meta')).toBe('starter')
+    await wrapper.get('[data-testid="starter-card-star"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.frame.customKinds.star)
+    expect(text(wrapper, 'panel-sub-meta')).toBe('starter · shapes')
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(true)
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
-
-    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
-    await wrapper.get('[data-testid="starter-height-preset-100"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.starters.categories.shapes.name)
+    await wrapper.get('[data-testid="starter-card-star"]').trigger('click')
     await wrapper.get('[data-testid="create-starter-project"]').trigger('click')
     await flushPromises()
 
-    expect(names()).toEqual([en.starters.bracelet.name, 'Moth'])
-    const made = loadProjects().find((project) => project.name === en.starters.bracelet.name)!
-    expect(made.technique).toBe('loom')
-    expect(made.frame).toMatchObject({ row: 0, column: 0, columns: 12, rows: 100, beads: {} })
+    expect(names()).toEqual(['Moth', en.frame.customKinds.star])
+    const made = loadProjects().find((project) => project.name === en.frame.customKinds.star)!
+    expect(made.frame).toMatchObject({ kind: 'star', settings: { partSize: 5 } })
+    expect(made.frame!.beads).toEqual(starterDesign(starterById('star')))
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('puts a Frame on the open Project from the Frame panel: Frame from starter pushes the gallery, Create places it and closes the panel (ticket 555)', async () => {
+  it('puts a Starter on the open Project from the Frame panel, empty on Start empty, and closes the panel (tickets 555, 0596)', async () => {
     const { frame: _frame, ...open } = moth()
     saveProjects([open])
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-frame')
     await wrapper.get('[data-testid="frame-from-starter"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.frame.fromStarter)
-    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(true)
-
-    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
-    await wrapper.get('[data-testid="starter-height-preset-100"]').trigger('click')
+    await wrapper.get('[data-testid="starter-category-shapes"]').trigger('click')
+    await wrapper.get('[data-testid="starter-card-triangle"]').trigger('click')
+    expect(text(wrapper, 'create-starter-project')).toBe(en.frame.addFrameButton)
+    await wrapper.get('[data-testid="starter-design"] [role="radio"]:last-child').trigger('click')
     await wrapper.get('[data-testid="create-starter-project"]').trigger('click')
     await flushPromises()
 
-    expect(loadProjects().find((project) => project.name === 'Moth')!.frame).toMatchObject({ columns: 12, rows: 100, beads: {} })
+    expect(loadProjects().find((project) => project.name === 'Moth')!.frame).toMatchObject({ kind: 'triangle', settings: { rounds: 10 }, beads: {} })
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 

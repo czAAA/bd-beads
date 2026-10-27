@@ -126,9 +126,6 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
 /** A Custom frame's kind: every kind but Rectangular. */
 export type CustomFrameKindId = Exclude<FrameKindId, 'rectangular'>
 
-/** The Custom frame kinds, in the order Add Custom frame offers them. */
-export const CUSTOM_FRAME_KINDS: readonly CustomFrameKindId[] = ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite']
-
 /** Whether a stored value names a Frame kind. */
 export function isFrameKind(value: unknown): value is FrameKindId {
   return typeof value === 'string' && Object.hasOwn(FRAME_KINDS, value)

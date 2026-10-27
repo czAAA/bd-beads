@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import type { ConvertedImage, PixelData } from '../../domain/imageConversion'
 import type { StatedSize } from '../../domain/projectSize'
+import { starterProject, type Starter, type StarterChoice } from '../../domain/starters'
 import {
   createProject,
   createProjectFromImage,
@@ -63,6 +64,11 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
     deps.addProject(createProject(payload))
   }
 
+  /** Create Project in a Starter's setup (ticket 0596): a new Project with the Starter's Frame, its design or empty. */
+  function onCreateFromStarter(starter: Starter, choice: StarterChoice & { name: string; beadId: string }) {
+    deps.addProject(starterProject(starter, choice))
+  }
+
   // Creates the Project the frame was holding (ticket 58): an ordinary new Project arriving painted with the Image
   // colors (ADR 0011), from the framing preview grid. Cancel creates nothing, so it goes straight to the composable.
   function onConvertImageCreate(converted: ConvertedImage) {
@@ -75,5 +81,5 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
     deps.cancelConvertImage()
   }
 
-  return { framing, onNewProjectDraft, onCreateProject, onConvertImageCreate }
+  return { framing, onNewProjectDraft, onCreateProject, onCreateFromStarter, onConvertImageCreate }
 }

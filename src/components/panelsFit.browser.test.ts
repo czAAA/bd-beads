@@ -50,7 +50,6 @@ const CASES: FitCase[] = [
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
   ['ProjectPanel (netting)', ProjectPanel, { project: createProject({ technique: 'netting', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['NewProjectForm', NewProjectForm, {}],
-  ['NewProjectForm (starters open)', NewProjectForm, { startersOpen: true }],
   ['SwitchTechniqueModal (brick stitch)', SwitchTechniqueModal, { question: { technique: 'brick', lost: 12, drawn: true, keeps: false, asksNetSize: false, netSize: 3, asksBrickBlock: true, brickBlock: 2 } }],
   ['SwitchTechniqueModal (Net size)', SwitchTechniqueModal, { question: { technique: 'netting', lost: 12, drawn: true, keeps: true, asksNetSize: true, netSize: 5, asksBrickBlock: false, brickBlock: 1 } }],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],

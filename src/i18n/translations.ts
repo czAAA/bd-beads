@@ -1,6 +1,7 @@
 import type { FormFactorNames } from '../domain/beads'
 import type { CustomFrameKindId, FrameSettingName } from '../domain/frameKind'
 import type { Locale } from '../domain/locale'
+import type { StarterCategoryId } from '../domain/starters'
 import type { PluralForms } from './plural'
 
 export type { Locale }
@@ -12,12 +13,6 @@ interface FeatureCopy {
   text: string
   tabName?: string
   tabLine?: string
-}
-
-/** A gallery card's name and its one-line description. */
-interface StarterCopy {
-  name: string
-  description: string
 }
 
 export interface Translations {
@@ -224,20 +219,35 @@ export interface Translations {
     /** "Frame 24 × 30 beads", with {width} and {height}. */
     frameSize: string
   }
-  /** The Starter gallery and setup in New Project (ticket 493; StarterGallery card). `specLine` is "24 × 80 · Loom". */
+  /** The Starter gallery and its setup (ticket 0596; StarterGallery card). */
   starters: {
-    galleryLabel: string
+    /** Step 1's title, "Starter"; lowercased, the crumb of the levels under it. */
+    title: string
+    /** Step 1's lead line, over the categories. */
+    lead: string
+    /** A category: its name, its step 2 lead line, and its card's count of options ("5 shapes"). */
+    categories: Record<StarterCategoryId, { name: string; lead: string; count: PluralForms }>
+    /** An option card's and the Estimated size's bead count, "165 beads". */
+    beads: PluralForms
+    /** The setup's Design choice: Use design or Start empty. */
+    designLabel: string
+    useDesign: string
+    startEmpty: string
+    /** Under Design once a size has turned the design off, with {size} the design's ("10 rounds"). */
+    designOffNote: string
+    /** Under Design on Start empty at the design's own size. */
+    emptyNote: string
+    /** The dot on the chip of the design's own size, for screen readers. */
+    designSize: string
+    /** The chips' group, "Usual sizes". */
     presetsLabel: string
-    /** Under a side the Starter keeps fixed (earrings keep their width). */
-    fixedNote: string
-    /** Under the sample picture in a Starter's setup: it decorates, the Frame is empty (ticket 494). */
-    sampleNote: string
-    specLine: string
-    gerdan: StarterCopy
-    bracelet: StarterCopy
-    earrings: StarterCopy
-    bag: StarterCopy
-    custom: StarterCopy
+    /** The setup picture's name, with {option} the Starter's ("Star, with design"). */
+    pictureWithDesign: string
+    pictureEmpty: string
+    /** A size as a caption or the note names it, by the setting it is in ("10 rounds", "part size 5"). */
+    sizes: Record<FrameSettingName, PluralForms>
+    /** Beside a Shape's size label: what it counts ("from the centre", "rounds a triangle"). */
+    hints: Record<CustomFrameKindId, string>
   }
   canvas: {
     zoomInLabel: string
@@ -710,12 +720,8 @@ export interface Translations {
     announceNothingToFit: string
     /** A Frame that would cut through a named Piece is refused (ticket 407); `{name}` is the Schema's name. */
     refusedCutsSchema: string
-    /** The temporary Add Custom frame entry (ticket 0592, removed by the Starter gallery, ticket 0597): its heading with
-     * and without a Frame, the Custom frame kinds and the line under them. */
-    customHeading: string
-    customReplaceHeading: string
+    /** The Custom frame kinds' names (tickets 0592, 0596): the Shapes' names in the Starter gallery and what is announced. */
     customKinds: Record<CustomFrameKindId, string>
-    customLine: string
     /** A Custom frame's size setting in the Frame panel, one entry per setting (tickets 0592, 0593): its stepper, the
      * Size line's summary, the question before a smaller size drops painted beads, and what is announced. */
     sizeSettings: Record<
