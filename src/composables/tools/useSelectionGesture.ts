@@ -21,6 +21,7 @@ import {
   type Selection,
 } from '../../domain/selection'
 import { footprintOf } from '../../domain/footprint'
+import { frameAllows } from '../../domain/frameKind'
 import { clampOutOfMargin, inMargin, marginBoxFor, selectionAllowed } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
@@ -65,6 +66,12 @@ export function useSelectionGesture(
   // stamps the copy, so the press only records its anchor here and endPress decides which it was.
   const selectPress = ref<{ anchor: GridPosition; focus: GridPosition; layer: Layer; moved: boolean } | null>(null)
 
+  /** Whether a Selection may not start here: in the keep-out margin (ticket 433), or on a Frame whose kind offers none
+   * (a Custom frame, ticket 0592). */
+  function refusesSelection(project: Project, at: GridPosition): boolean {
+    return inMargin(footprintOf(project), at) || (layerAt(project, at) === 'frame' && !frameAllows(project.frame, 'select'))
+  }
+
   /** A Selection grown to whole Units where the Technique has them (ticket 483), kept in the Frame it began in. */
   function snapped(next: Selection): Selection {
     const project = currentProject()
@@ -78,9 +85,9 @@ export function useSelectionGesture(
     }
     const at = { row, column, ...(named ? { layer: named } : {}) }
 
-    // A Selection cannot start in the keep-out margin (ticket 433): nothing begins (the pointer shows the cue itself, a
-    // key asks extendPress's caller to).
-    if (inMargin(footprintOf(project), at)) {
+    // A Selection cannot start in the keep-out margin (ticket 433), nor on a Frame whose kind offers none (ticket 0592):
+    // nothing begins (the pointer shows the cue itself, a key asks extendPress's caller to).
+    if (refusesSelection(project, at)) {
       return
     }
     const layer = layerAt(project, at)
@@ -147,7 +154,7 @@ export function useSelectionGesture(
     }
     const at = { row, column, ...(named ? { layer: named } : {}) }
     const picked = pieceSelectionOnLayer(project, at)
-    if (inMargin(footprintOf(project), at) || (!picked && beadColorAt(project, row, column, named))) {
+    if (refusesSelection(project, at) || (!picked && beadColorAt(project, row, column, named))) {
       refusals.value += 1
       return
     }
@@ -159,7 +166,8 @@ export function useSelectionGesture(
    * every placed bead. Returns false, changing nothing, on an empty canvas with no Frame. */
   function selectAll(): boolean {
     const project = currentProject()
-    const all = project ? selectAllSelection(project.beads, project.frame) : undefined
+    // A Frame that offers no Selection leaves Select all the Canvas's beads.
+    const all = project ? selectAllSelection(project.beads, frameAllows(project.frame, 'select') ? project.frame : undefined) : undefined
     if (!all) {
       return false
     }

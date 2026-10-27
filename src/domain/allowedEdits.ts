@@ -3,6 +3,7 @@ import { forEachBead, withColors, type BeadChange } from './canvas'
 import { canvasWeave, frameWeave, keepFinishedRows, type Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
 import { describeWeave } from './weave'
+import { frameHasPosition } from './frameKind'
 import { keepMarginClear } from './margin'
 
 /** What a drawing command did, minus finished rows (ticket 33), margin paint, beads where the Weave has none and joins of named Pieces (ticket 406),
@@ -31,12 +32,11 @@ function keepWhereBeadsAre(before: Project, after: Project): Project {
   if (!frame) {
     return canvas
   }
-  // The Frame's own beads sit at positions of the Frame itself, its top left being 0, 0.
-  const own = { ...frame, row: 0, column: 0 }
-  const framedWeave = describeWeave(frameWeave(after))
+  // The Frame's own beads sit at positions of the Frame itself, its top left being 0, 0; a Custom frame's at its layout's.
+  const own = { ...frame, ...frameWeave(after) }
   const framed: BeadChange[] = []
   forEachBead(frame.beads, (row, column, color) => {
-    if (!framedWeave.hasPosition({ row, column }, own) && before.frame?.beads[row]?.[column] !== color) {
+    if (!frameHasPosition(own, { row, column }) && before.frame?.beads[row]?.[column] !== color) {
       framed.push({ row, column, color: before.frame?.beads[row]?.[column] ?? null })
     }
   })

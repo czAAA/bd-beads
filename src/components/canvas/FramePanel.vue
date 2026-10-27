@@ -13,11 +13,13 @@ import IconButton from '../ui/IconButton.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import TextField from '../ui/form/TextField.vue'
+import AppStepper from '../ui/form/AppStepper.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
+import { CUSTOM_FRAME_KINDS, frameAllows, frameKindOf, hasRowOrder, settingsOf, type CustomFrameKindId } from '../../domain/frameKind'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -54,6 +56,8 @@ const emit = defineEmits<{
   'export-pdf': []
   'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
+  'add-custom': [kind: CustomFrameKindId]
+  'set-rounds': [rounds: number]
 }>()
 
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
@@ -64,6 +68,14 @@ const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
 const frame = computed(() => props.project.frame)
+
+/** A Custom frame's Rounds and their range (ticket 0592), in place of Width and Height; none for a Rectangular Frame. */
+const rounds = computed(() => {
+  const custom = frame.value && frameKindOf(frame.value).custom
+  return custom && { value: settingsOf(frame.value!)!.rounds, min: custom.rounds.min, max: custom.rounds.max }
+})
+/** Whether the Frame can be turned a quarter: its kind allows it (a Custom frame does not yet). */
+const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 
 /** The edge the last press stepped, lit in its cell. */
 const lastEdge = ref<FrameEdge>()
@@ -123,7 +135,9 @@ const estimate = computed(() => {
   const bead = resolveProjectBead(props.project)
   return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
 })
-const sizeSummary = computed(() => [`${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '))
+const sizeSummary = computed(() =>
+  [rounds.value ? plural(locale.value, rounds.value.value, t.value.frame.roundsSummary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
+)
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
@@ -179,7 +193,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       <span class="frame-panel__label">{{ t.frame.titleLabel }}</span>
       <span v-if="frame" class="frame-panel__tools">
         <IconButton
-          v-if="!locked && turnable"
+          v-if="!locked && turnable && rotatable"
           variant="plain"
           :icon-size="16"
           :action="rotateAction"
@@ -221,7 +235,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         </div>
         <p class="frame-panel__line" data-testid="frame-letters-line">{{ t.frame.lettersLine }}</p>
         <!-- The Word chart follows Letters (ticket 0574) but not in every Technique. -->
-        <p v-if="project.letters && !hasWordChart(frameWeave(project).technique)" class="frame-panel__line" data-testid="frame-letters-unavailable">{{ t.frame.lettersUnavailable }}</p>
+        <p v-if="project.letters && (!hasWordChart(frameWeave(project).technique) || !hasRowOrder(frame))" class="frame-panel__line" data-testid="frame-letters-unavailable">{{ t.frame.lettersUnavailable }}</p>
       </template>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
@@ -248,7 +262,35 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </div>
 
       <PanelSection id="frame:size" :label="t.frame.sizeHeading" :summary="sizeSummary">
-        <div class="frame-panel__body">
+        <!-- A Custom frame is sized by its Rounds (ticket 0592): growing adds empty rounds outside, shrinking asks first. -->
+        <div v-if="rounds" class="frame-panel__body">
+          <div class="frame-panel__rounds" data-testid="frame-rounds">
+            <span class="frame-panel__rounds-label">{{ t.frame.roundsLabel }}</span>
+            <AppStepper
+              :model-value="rounds.value"
+              :min="rounds.min"
+              :max="rounds.max"
+              :decrease-label="t.frame.roundsLess"
+              :increase-label="t.frame.roundsMore"
+              :value-label="t.frame.roundsLabel"
+              :disabled="locked"
+              tooltip
+              :disabled-body="t.tooltips.frameSizeLocked"
+              decrease-testid="frame-rounds-less"
+              increase-testid="frame-rounds-more"
+              value-testid="frame-rounds-value"
+              @update:model-value="emit('set-rounds', $event)"
+            />
+          </div>
+          <p v-if="locked" class="frame-panel__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>
+          <div v-if="estimate" class="frame-panel__estimate" data-testid="frame-estimate">
+            <AppIcon name="ruler" :size="16" />
+            <span class="frame-panel__estimate-label">{{ t.size.estimateLabel }}</span>
+            <span class="frame-panel__estimate-value">{{ estimate }}</span>
+            <IconButton variant="plain" icon="info" :icon-size="16" :label="t.size.estimateLabel" :tooltip="{ body: t.frame.estimateInfo }" data-testid="frame-estimate-info" />
+          </div>
+        </div>
+        <div v-else class="frame-panel__body">
           <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
           <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
           <component
@@ -335,8 +377,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           <PanelItem icon="select" :disabled="locked" :disabled-body="t.tooltips.frameSizeLocked" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
         </div>
       </PanelSection>
-
-      <BeadQuantities :project="settledProject ?? project" />
     </template>
 
     <template v-else>
@@ -347,6 +387,22 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
       </div>
     </template>
+
+    <!-- Add Custom frame (ticket 0592): temporary, until the Starter gallery offers the shapes (ticket 0597). -->
+    <PanelSection id="frame:custom" :label="frame ? t.frame.customReplaceHeading : t.frame.customHeading">
+      <PanelItem
+        v-for="kind in CUSTOM_FRAME_KINDS"
+        :key="kind"
+        icon="frame"
+        :disabled="locked"
+        :disabled-body="t.tooltips.rowProgressLockedFrameFromStarter"
+        :data-testid="`frame-custom-${kind}`"
+        @select="emit('add-custom', kind)"
+      >{{ t.frame.customKinds[kind] }}</PanelItem>
+      <p class="frame-panel__line" data-testid="frame-custom-line">{{ t.frame.customLine }}</p>
+    </PanelSection>
+
+    <BeadQuantities v-if="frame" :project="settledProject ?? project" />
   </div>
 </template>
 
@@ -388,6 +444,18 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-panel__none {
   display: flex;
   flex-direction: column;
+}
+
+.frame-panel__rounds {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+  min-height: var(--panel-item-height);
+}
+
+.frame-panel__rounds-label {
+  font: var(--type-control);
 }
 
 .frame-panel__quality {

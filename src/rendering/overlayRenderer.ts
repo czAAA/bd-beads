@@ -3,7 +3,8 @@ import { type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, type BeadCell } from '../domain/weave'
-import { rowOrderOf } from '../domain/frameKind'
+import { frameLayoutOf, rowOrderOf } from '../domain/frameKind'
+import { centredBead, layoutBeadPx, placedLayout, type PlacedLayout } from './customFrameView'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, currentPass, frameWeave, rowProgressOn } from '../domain/project'
 import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
@@ -197,6 +198,29 @@ function drawPreview(context: DrawingContext, weave: Weave, bounds: Frame | unde
   }
 }
 
+/** The hover preview on a Custom frame's beads (ticket 0592): the same look, each bead turned to its panel's angle at
+ * the place its layout gives it. */
+function drawLayoutPreview(context: DrawingContext, placed: PlacedLayout, roundness: number, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
+  const box = centredBead(placed)
+  const bead = { x: box.x + BEAD_GAP_PX / 2, y: box.y + BEAD_GAP_PX / 2, width: box.width - BEAD_GAP_PX, height: box.height - BEAD_GAP_PX, radius: Math.max(0, roundness * placed.scale - BEAD_GAP_PX / 2) }
+  for (const cell of cells) {
+    const at = layoutBeadPx(placed, cell)
+    if (!at) {
+      continue
+    }
+    const color = cell.color ?? preview.color
+    context.save()
+    context.translate(at.x, at.y)
+    context.rotate(at.angle)
+    if (color) {
+      fillFaintly(context, bead, color)
+    } else {
+      outlineBead(context, bead, theme)
+    }
+    context.restore()
+  }
+}
+
 /** A bead as drawn: where it sits and how big, with its corner radius. */
 interface BeadRect {
   x: number
@@ -344,7 +368,8 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Frame, 
  * the Frame draws (ADR 0070). */
 function onFrame(frame: FrameSheet | undefined, covered: Frame | undefined, position: GridPosition): boolean {
   if (frame === undefined) return false
-  return position.layer ? position.layer === 'frame' && frameContains(frame, position) : covered !== undefined && frameContains(covered, position)
+  // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).
+  return position.layer ? position.layer === 'frame' && (frameLayoutOf(frame) !== undefined || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
 }
 
 /** The Frame's positions counted from its own first (ticket 492): a position of the Canvas that lies on it, or the cell
@@ -411,7 +436,11 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     }
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme)
     const sheetCells = preview && onSheet(preview.cells)
-    if (preview && sheetCells?.length) drawPreview(context, sheetWeave, sheetBounds, sheetSpace, sheetCells, preview, theme)
+    const placed = project.frame && placedLayout(project.frame, sheetWeave)
+    if (preview && sheetCells?.length) {
+      if (placed) drawLayoutPreview(context, placed, beadRoundness(sheetWeave.technique, sheetWeave.cell), sheetCells, preview, theme)
+      else drawPreview(context, sheetWeave, sheetBounds, sheetSpace, sheetCells, preview, theme)
+    }
     if (inPass.length > 0) {
       drawBeadRings(context, inPass, sheetWeave, theme)
     }
