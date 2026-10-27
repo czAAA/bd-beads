@@ -6,7 +6,7 @@ import { footprintOf } from './footprint'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { canvasWeave, clampBrickBlock, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameTechnique, withTechnique, weaveOf, sameWeave, switchedWeave, type Project } from './project'
+import { canvasWeave, clampBrickBlock, firstPasses, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameTechnique, withTechnique, weaveOf, sameWeave, switchedWeave, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
@@ -233,7 +233,7 @@ function placedFrame(project: Project, place: { frame: Frame; weave: Weave }): P
   const { frame: _previous, ...rest } = project
   const { row, column, rows, columns } = place.frame
   const frame = { row, column, rows, columns, beads: {}, ...weaveOf(place.weave) }
-  return { ...rest, frame, rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 }, updatedAt: Date.now() }
+  return { ...rest, frame, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
 }
 
 /** The Project without its Frame (ticket 497): the Frame's footprint on the Canvas is cleared and its beads dropped in,

@@ -36,6 +36,12 @@ describe('Word chart (ticket 0574)', () => {
     expect(chart.hasEmpty).toBe(true)
   })
 
+  it('numbers rows from the Frame\'s last line once rows run bottom to top, with Row 1 on the opposite edge', () => {
+    const project = framed('loom', ['AB', 'CC'], { rowProgress: { direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0 } })
+    expect(lines(project)).toEqual(['1: 2C', '2: 1A,1B'])
+    expect(wordChartOf(project)!.firstEdge).toBe('bottom')
+  })
+
   it('alternates (L) and (R) on brick stitch and reads an (R) row from the right', () => {
     expect(lines(framed('brick', ['AAB', 'ABB', 'CCC']))).toEqual(['1(L): 2A,1B', '2(R): 2B,1A', '3(L): 3C'])
   })

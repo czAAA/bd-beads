@@ -408,9 +408,13 @@ export const en: Translations = {
     columnNextButton: 'Column done',
     directionToastRows: 'Rows now run top to bottom.',
     directionToastColumns: 'Rows now run left to right.',
+    directionToastRowsReversed: 'Rows now run bottom to top.',
+    directionToastColumnsReversed: 'Rows now run right to left.',
     ofTotal: 'of {total} · {direction}',
     topToBottom: 'Top to bottom',
     leftToRight: 'Left to right',
+    bottomToTop: 'Bottom to top',
+    rightToLeft: 'Right to left',
     finishedLabel: 'Rows done',
   },
   quantities: {

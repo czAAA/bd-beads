@@ -413,9 +413,13 @@ export const ru: Translations = {
     columnNextButton: 'Столбец готов',
     directionToastRows: 'Ряды теперь идут сверху вниз.',
     directionToastColumns: 'Ряды теперь идут слева направо.',
+    directionToastRowsReversed: 'Ряды теперь идут снизу вверх.',
+    directionToastColumnsReversed: 'Ряды теперь идут справа налево.',
     ofTotal: 'из {total} · {direction}',
     topToBottom: 'Сверху вниз',
     leftToRight: 'Слева направо',
+    bottomToTop: 'Снизу вверх',
+    rightToLeft: 'Справа налево',
     finishedLabel: 'Готовые ряды',
   },
   quantities: {

@@ -411,9 +411,13 @@ export const es: Translations = {
     columnNextButton: 'Columna terminada',
     directionToastRows: 'Las filas ahora van de arriba abajo.',
     directionToastColumns: 'Las filas ahora van de izquierda a derecha.',
+    directionToastRowsReversed: 'Las filas ahora van de abajo arriba.',
+    directionToastColumnsReversed: 'Las filas ahora van de derecha a izquierda.',
     ofTotal: 'de {total} · {direction}',
     topToBottom: 'De arriba abajo',
     leftToRight: 'De izquierda a derecha',
+    bottomToTop: 'De abajo arriba',
+    rightToLeft: 'De derecha a izquierda',
     finishedLabel: 'Filas terminadas',
   },
   quantities: {

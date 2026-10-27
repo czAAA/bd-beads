@@ -64,9 +64,18 @@ const notDoneLabel = computed(() => (columnWise.value ? t.value.rowProgress.colu
 /** The row shown as current: the last one once every pass is done. */
 const shownRow = computed(() => Math.min(position.value.current + 1, position.value.total))
 
-const directionLabel = computed(() =>
-  props.project.rowProgress.direction === 'rows' ? t.value.rowProgress.topToBottom : t.value.rowProgress.leftToRight,
-)
+const directionLabel = computed(() => {
+  const { direction, reversed } = props.project.rowProgress
+  const words = t.value.rowProgress
+  if (direction === 'rows') return reversed ? words.bottomToTop : words.topToBottom
+  return reversed ? words.rightToLeft : words.leftToRight
+})
+
+/** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). */
+const arrowTurn = computed(() => {
+  const { direction, reversed } = props.project.rowProgress
+  return direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
+})
 </script>
 
 <template>
@@ -130,7 +139,7 @@ const directionLabel = computed(() =>
         <span class="progress-bar__fill" :style="{ width: `${finishedShare * 100}%` }" />
       </div>
       <!-- Row not done and Row done are large text buttons whose label and arrow follow Row direction (ticket 411). -->
-      <div class="progress-bar__steps" :class="{ 'progress-bar__steps--columns': columnWise }">
+      <div class="progress-bar__steps" :class="`progress-bar__steps--${arrowTurn}`">
         <AppButton
           variant="box"
           size="lg"
@@ -230,9 +239,17 @@ const directionLabel = computed(() =>
   gap: var(--space-8);
 }
 
-/* Rows running down the columns point the arrows along them: the down arrow turns to point right, the up arrow left. */
-.progress-bar__steps--columns :deep(svg) {
+/* The arrows point along the rows: drawn for top to bottom, the down arrow turns to point right, up or left. */
+.progress-bar__steps--right :deep(svg) {
   transform: rotate(-90deg);
+}
+
+.progress-bar__steps--up :deep(svg) {
+  transform: rotate(180deg);
+}
+
+.progress-bar__steps--left :deep(svg) {
+  transform: rotate(90deg);
 }
 
 .progress-bar__track {
