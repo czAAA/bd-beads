@@ -406,9 +406,13 @@ export const zh: Translations = {
     columnNextButton: '列已完成',
     directionToastRows: '行方向已改为从上到下。',
     directionToastColumns: '行方向已改为从左到右。',
+    directionToastRowsReversed: '行方向已改为从下到上。',
+    directionToastColumnsReversed: '行方向已改为从右到左。',
     ofTotal: '共 {total} 行 · {direction}',
     topToBottom: '从上到下',
     leftToRight: '从左到右',
+    bottomToTop: '从下到上',
+    rightToLeft: '从右到左',
     finishedLabel: '已完成的行',
   },
   quantities: {

@@ -413,9 +413,13 @@ export const pl: Translations = {
     columnNextButton: 'Kolumna gotowa',
     directionToastRows: 'Rzędy biegną teraz od góry do dołu.',
     directionToastColumns: 'Rzędy biegną teraz od lewej do prawej.',
+    directionToastRowsReversed: 'Rzędy biegną teraz od dołu do góry.',
+    directionToastColumnsReversed: 'Rzędy biegną teraz od prawej do lewej.',
     ofTotal: 'z {total} · {direction}',
     topToBottom: 'Od góry do dołu',
     leftToRight: 'Od lewej do prawej',
+    bottomToTop: 'Od dołu do góry',
+    rightToLeft: 'Od prawej do lewej',
     finishedLabel: 'Gotowe rzędy',
   },
   quantities: {

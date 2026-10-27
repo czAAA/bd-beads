@@ -37,6 +37,14 @@ describe('useRowOps', () => {
     const columns = toggleRowDirection(tracking)
     const back = { ...deps, currentProject: () => columns }
     useRowOps(back).onToggleRowDirection()
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRowsReversed, 'success')
+
+    const upward = toggleRowDirection(columns)
+    useRowOps({ ...deps, currentProject: () => upward }).onToggleRowDirection()
+    expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastColumnsReversed, 'success')
+
+    const leftward = toggleRowDirection(upward)
+    useRowOps({ ...deps, currentProject: () => leftward }).onToggleRowDirection()
     expect(showToast).toHaveBeenLastCalledWith('row-direction', en.rowProgress.directionToastRows, 'success')
   })
 

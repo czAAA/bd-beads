@@ -754,6 +754,12 @@ export function neighborsOf(weave: Weave, bounds: GridBounds | undefined, positi
 /** The way a pass runs: along the Frame's rows, or down its columns. */
 export type PassDirection = 'rows' | 'columns'
 
+/** A line's index counted from the Frame's far end when the pass order is reversed (bottom to top, right to left),
+ * so every pass rule keeps working on lines counted in weaving order (ticket 0589). */
+export function mirrorLine(line: number, lines: number, reversed: boolean | undefined): number {
+  return reversed ? lines - 1 - line : line
+}
+
 /** Positions from one shared bead down to the next in Netting (p, ticket 485). */
 const nettingStride = (weave: Weave): number => (clampNetSize(weave.netSize) + 1) / 2
 

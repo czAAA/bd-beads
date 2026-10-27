@@ -470,10 +470,14 @@ export interface Translations {
     /** The success toast after Turn row direction names the direction the rows now run. */
     directionToastRows: string
     directionToastColumns: string
+    directionToastRowsReversed: string
+    directionToastColumnsReversed: string
     /** The Progress bar's meta after "Row 12": "of {total} · {direction}" (ticket 144). */
     ofTotal: string
     topToBottom: string
     leftToRight: string
+    bottomToTop: string
+    rightToLeft: string
     /** The progress track's accessible name. */
     finishedLabel: string
   }

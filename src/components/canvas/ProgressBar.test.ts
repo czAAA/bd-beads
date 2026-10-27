@@ -94,12 +94,18 @@ describe('ProgressBar', () => {
     const rows = mount(ProgressBar, { props: { project: moveToRow(makeProject(), 4) } })
     expect(rows.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.previousButton)
     expect(rows.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
-    expect(rows.find('.progress-bar__steps--columns').exists()).toBe(false)
+    expect(rows.find('.progress-bar__steps--right').exists()).toBe(false)
 
     const columns = mount(ProgressBar, { props: { project: toggleRowDirection(moveToRow(makeProject(), 4)) } })
     expect(columns.find('[data-testid="progress-bar-previous"]').text()).toBe(ru.rowProgress.columnPreviousButton)
     expect(columns.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.columnNextButton)
-    expect(columns.find('.progress-bar__steps--columns').exists()).toBe(true)
+    expect(columns.find('.progress-bar__steps--right').exists()).toBe(true)
+
+    const up = toggleRowDirection(toggleRowDirection(moveToRow(makeProject(), 4)))
+    expect(mount(ProgressBar, { props: { project: up } }).find('.progress-bar__steps--up').exists()).toBe(true)
+    const left = mount(ProgressBar, { props: { project: toggleRowDirection(up) } })
+    expect(left.find('.progress-bar__steps--left').exists()).toBe(true)
+    expect(left.text()).toContain(ru.rowProgress.rightToLeft)
   })
 
   it('fills the whole track once every pass is done, and shows the last row as the current one (ticket 411)', () => {
