@@ -23,6 +23,7 @@ import projectFileV3Framed from './fixtures/project-file-v3-framed-covered.json?
 import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
 import projectFileV7 from './fixtures/project-file-v7-bead-copy.json?raw'
 import projectFileV9Custom from './fixtures/project-file-v9-custom-frame.json?raw'
+import projectFileV9Turned from './fixtures/project-file-v9-custom-frame-turned.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
@@ -317,6 +318,12 @@ describe('stored-data compatibility', () => {
       const [opened] = parseProjectsFile(projectFileV9Custom).projects
       expect(opened!.frame).toEqual({ row: 7, column: 7, rows: 12, columns: 10, technique: 'peyote', kind: 'triangle', settings: { rounds: 4 }, beads: { 0: { 1: '#e63746' }, 3: { 11: '#e63746' } } })
       expect(opened!.beads).toEqual({ 0: { 0: '#2fb6ae' } })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('opens a version 9 Custom frame turned by Rotate Frame with its turn, and writes it back the same (ticket 0594)', () => {
+      const [opened] = parseProjectsFile(projectFileV9Turned).projects
+      expect(opened!.frame).toMatchObject({ rows: 10, columns: 12, kind: 'triangle', settings: { rounds: 4 }, quarterTurns: 1 })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 

@@ -315,8 +315,8 @@ export function turnedLayout(layout: FrameLayout, turns: number): FrameLayout {
 
 const indexes = new WeakMap<FrameLayout, Map<string, LayoutPosition>>()
 
-/** A position's key in a layout's index. */
-const keyOf = ({ row, column }: GridPosition): string => `${row}:${column}`
+/** A position's key in a layout's index, and in what is keyed by layout position (Row order, a Paste's landings). */
+export const keyOf = ({ row, column }: GridPosition): string => `${row}:${column}`
 
 function indexOf(layout: FrameLayout): Map<string, LayoutPosition> {
   let index = indexes.get(layout)

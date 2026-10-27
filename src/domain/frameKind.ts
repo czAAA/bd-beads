@@ -69,6 +69,11 @@ const KALEIDOCYCLE_PART: FrameSetting = { name: 'partSize', default: 9, min: 3, 
 /** A Kite's Rows from its point (inferred: the reference gives no size). */
 const KITE_ROWS: FrameSetting = { name: 'rows', default: 21, min: 4, max: 60, presets: [15, 21, 30] }
 
+/** A Custom frame's Row order (ticket 0594): its layout's passes, worked in rounds from the centre or rows from a point. */
+function layoutRowOrder(lines: 'round' | 'row'): FrameKind['rowOrder'] {
+  return (sheet) => layoutOrder(frameLayoutOf(sheet)!, lines)
+}
+
 /** What a Custom frame offers (ticket 0594): a Selection over it by a rectangle on screen, and Rotate Frame. */
 const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['rotate', 'select'])
 
@@ -84,35 +89,35 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
   triangle: {
     id: 'triangle',
     removedBeads: 'removed',
-    rowOrder: (sheet) => layoutOrder(frameLayoutOf(sheet)!, 'round'),
+    rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(3, rounds) },
   },
   warpedSquare: {
     id: 'warpedSquare',
     removedBeads: 'removed',
-    rowOrder: (sheet) => layoutOrder(frameLayoutOf(sheet)!, 'round'),
+    rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(4, rounds) },
   },
   star: {
     id: 'star',
     removedBeads: 'removed',
-    rowOrder: (sheet) => layoutOrder(frameLayoutOf(sheet)!, 'round'),
+    rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: STAR_PART, layout: starLayout },
   },
   kaleidocycle: {
     id: 'kaleidocycle',
     removedBeads: 'removed',
-    rowOrder: (sheet) => layoutOrder(frameLayoutOf(sheet)!, 'round'),
+    rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: KALEIDOCYCLE_PART, layout: kaleidocycleLayout },
   },
   kite: {
     id: 'kite',
     removedBeads: 'removed',
-    rowOrder: (sheet) => layoutOrder(frameLayoutOf(sheet)!, 'row'),
+    rowOrder: layoutRowOrder('row'),
     allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: KITE_ROWS, layout: kiteLayout },
   },

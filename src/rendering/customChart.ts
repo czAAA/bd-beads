@@ -1,8 +1,7 @@
 import { frameWeave, type Project } from '../domain/project'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { placedLayout } from './customFrameView'
-import { projectExtentPx } from './surfaceView'
-import { gridToRegion, type Region } from './surfaceView'
+import { gridToRegion, projectExtentPx, type Region } from './surfaceView'
 
 // A Custom frame on a printed chart (ticket 0594): its beads lie at angles, not on rows and columns, so a chart page
 // places each one from its layout, through the same transform as the rest of the page, rather than reading a grid.
