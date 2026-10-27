@@ -656,6 +656,7 @@ export const pl: Translations = {
     countNeedsFrame: 'Ustaw ramkę, aby policzyć koraliki.',
     progressSelectToSet: 'Zaznacz, aby ustawić',
     progressFrameWord: 'ramkę',
+    progressNotForShape: 'Postęp rzędów nie jest jeszcze dostępny dla tego kształtu',
     rotateCoveredMessage: 'Obrócony fragment wylądował na istniejących koralikach.',
   },
   size: {

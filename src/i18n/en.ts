@@ -641,6 +641,7 @@ export const en: Translations = {
     countNeedsFrame: 'Set Frame to count beads.',
     progressSelectToSet: 'Select to set a',
     progressFrameWord: 'Frame',
+    progressNotForShape: "Row progress isn't available for this shape yet",
     rotateCoveredMessage: 'The turned fragment landed on top of existing beads.',
   },
   size: {

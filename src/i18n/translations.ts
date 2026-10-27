@@ -741,6 +741,8 @@ export interface Translations {
      * accusative where the language has one). */
     progressSelectToSet: string
     progressFrameWord: string
+    /** The Progress bar on a Frame whose kind has no Row order yet (a Custom frame, ticket 0592). */
+    progressNotForShape: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
   }

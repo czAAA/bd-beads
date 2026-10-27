@@ -5,6 +5,7 @@ import FramePanel from './FramePanel.vue'
 import PanelHost from '../shell/PanelHost.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
+import { changeFrame } from '../../domain/changeFrame'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
@@ -320,7 +321,8 @@ describe('FramePanel (ticket 473)', () => {
   it('leads with Export, then the size, and ends with Beads needed, its total in the header (tickets 555, 568)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
-    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.quantities.heading])
+    // Add Custom frame sits before Beads needed until the Starter gallery takes it (tickets 0592, 0597).
+    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.frame.customReplaceHeading, en.quantities.heading])
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
     expect(sections.at(-1)!.attributes('data-testid')).toBe('bead-quantities')
   })
@@ -330,7 +332,7 @@ describe('FramePanel (ticket 473)', () => {
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
-    expect(wrapper.findAll('.panel-section').map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading])
+    expect(wrapper.findAll('.panel-section').map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.customHeading])
     expect(wrapper.get('[data-testid="frame-select"]').text()).toContain(en.frame.selectAFrame)
     for (const id of ['export-png', 'export-pdf']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
@@ -386,5 +388,31 @@ describe('FramePanel Letters note (ticket 0574)', () => {
     expect(mountBar({ ...rightAngle, letters: true }).get('[data-testid="frame-letters-unavailable"]').text()).toBe(en.frame.lettersUnavailable)
     expect(mountBar(rightAngle).find('[data-testid="frame-letters-unavailable"]').exists()).toBe(false)
     expect(mountBar({ ...framed(), letters: true }).find('[data-testid="frame-letters-unavailable"]').exists()).toBe(false)
+  })
+})
+
+describe('FramePanel with a Custom frame (ticket 0592)', () => {
+  /** A Project with a Triangle of the given Rounds in place of its Frame. */
+  function triangle(rounds = 4, project = framed()): Project {
+    const result = changeFrame(project, { custom: { kind: 'triangle', rounds, centre: { row: 10, column: 10 } } })
+    if (result.kind !== 'changed') throw new Error('expected a Triangle')
+    return result.project
+  }
+
+  it('offers Triangle and Warped Square, which ask the shell for that Custom frame', async () => {
+    const wrapper = mountBar()
+    expect(wrapper.get('[data-testid="frame-custom-triangle"]').text()).toContain(en.frame.customKinds.triangle)
+    await wrapper.get('[data-testid="frame-custom-warpedSquare"]').trigger('click')
+    expect(wrapper.emitted('add-custom')).toEqual([['warpedSquare']])
+  })
+
+  it('shows Rounds in place of Width and Height, and no Rotate or Select a frame', async () => {
+    const wrapper = mountBar(triangle(4))
+    expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-select"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-rounds-value"]').text()).toBe('4')
+    await wrapper.get('[data-testid="frame-rounds-more"]').trigger('click')
+    expect(wrapper.emitted('set-rounds')).toEqual([[5]])
   })
 })

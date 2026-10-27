@@ -657,6 +657,7 @@ export const be: Translations = {
     countNeedsFrame: 'Задайце рамку, каб палічыць бісер.',
     progressSelectToSet: 'Вылучыце, каб задаць',
     progressFrameWord: 'рамку',
+    progressNotForShape: 'Прагрэс па радках для гэтай фігуры пакуль недаступны',
     rotateCoveredMessage: 'Павернуты фрагмент апынуўся паверх існуючых бусін.',
   },
   size: {
