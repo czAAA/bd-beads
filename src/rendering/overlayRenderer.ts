@@ -3,7 +3,7 @@ import { type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, type BeadCell } from '../domain/weave'
-import { rowOrderOf } from '../domain/frameKind'
+import { frameLayoutOf, rowOrderOf } from '../domain/frameKind'
 import { centredBead, layoutBeadPx, placedLayout, type PlacedLayout } from './customFrameView'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, currentPass, frameWeave, rowProgressOn } from '../domain/project'
@@ -369,7 +369,7 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Frame, 
 function onFrame(frame: FrameSheet | undefined, covered: Frame | undefined, position: GridPosition): boolean {
   if (frame === undefined) return false
   // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).
-  return position.layer ? position.layer === 'frame' && (frame.kind !== undefined || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
+  return position.layer ? position.layer === 'frame' && (frameLayoutOf(frame) !== undefined || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
 }
 
 /** The Frame's positions counted from its own first (ticket 492): a position of the Canvas that lies on it, or the cell

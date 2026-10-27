@@ -27,11 +27,8 @@ describe('a layout built by Rounds (spec 0590, ticket 0592)', () => {
       const { positions } = roundsLayout(corners, 8)
       const keys = new Set(positions.map(({ row, column }) => `${row}:${column}`))
       expect(keys.size).toBe(positions.length)
-      for (const a of positions) {
-        for (const b of positions) {
-          if (a !== b) expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(0.99)
-        }
-      }
+      const closest = Math.min(...positions.flatMap((a, index) => positions.slice(index + 1).map((b) => Math.hypot(a.x - b.x, a.y - b.y))))
+      expect(closest).toBeGreaterThan(0.99)
     }
   })
 

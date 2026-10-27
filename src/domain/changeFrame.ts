@@ -1,10 +1,10 @@
-import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame, type FrameSheet } from './canvas'
+import { beadCount, beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame, type FrameSheet } from './canvas'
 import { movedFrame, sameFrame, snapColumn, snappedMove, snapRow } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
 import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, type FrameKindId, type FrameSettings } from './frameKind'
-import { layoutPosition } from './frameLayout'
+import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
@@ -160,7 +160,10 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   if ('settings' in change) {
     const frame = project.frame!
     const settings = settingsOf({ kind: frame.kind, settings: { ...frame.settings, ...change.settings } })!
-    return settings.rounds === settingsOf(frame)!.rounds ? { kind: 'unchanged', project } : { kind: 'changed', project: { ...project, frame: resettled(project, frame, settings), updatedAt: Date.now() } }
+    if (settings.rounds === settingsOf(frame)!.rounds) {
+      return { kind: 'unchanged', project }
+    }
+    return { kind: 'changed', project: { ...project, frame: resettled(project, frame, settings), updatedAt: Date.now() } }
   }
 
   if ('remove' in change) {
@@ -230,12 +233,11 @@ function placedCustomFrame(project: Project, { kind, rounds, centre }: { kind: F
 function resettled(project: Project, frame: FrameSheet, settings: FrameSettings): FrameSheet {
   const centre = canvasDistance(project, frame, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
   const sheet = customSheet(project, frame.kind!, settings, { row: frame.row + centre.row, column: frame.column + centre.column })
-  return { ...frame, ...sheet, beads: beadsInLayout(frame.beads, sheet) }
+  return { ...frame, ...sheet, beads: beadsInLayout(frame.beads, frameLayoutOf(sheet)!) }
 }
 
 /** The beads of a map that have a position in a Custom frame's layout. */
-function beadsInLayout(beads: BeadMap, frame: FrameSheet): BeadMap {
-  const layout = frameLayoutOf(frame)!
+function beadsInLayout(beads: BeadMap, layout: FrameLayout): BeadMap {
   const gone: BeadChange[] = []
   forEachBead(beads, (row, column) => {
     if (!layoutPosition(layout, { row, column })) gone.push({ row, column, color: null })
@@ -249,11 +251,7 @@ export function customFrameLoss(project: Project, settings: FrameSettings): numb
   const frame = project.frame
   if (!frame || !frameKindOf(frame).custom) return 0
   const layout = frameLayoutOf({ kind: frame.kind, settings: { ...frame.settings, ...settings } })!
-  let lost = 0
-  forEachBead(frame.beads, (row, column) => {
-    if (!layoutPosition(layout, { row, column })) lost += 1
-  })
-  return lost
+  return beadCount(frame.beads) - beadCount(beadsInLayout(frame.beads, layout))
 }
 
 /** The Project with its Frame set to `rectangle` (ticket 513): the strip the Frame gives up is laid on the Canvas as
