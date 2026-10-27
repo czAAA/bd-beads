@@ -641,8 +641,6 @@ export interface Translations {
     qualityHigh: string
     qualityPngSize: string
     qualitySizeMb: string
-    qualityReduced: string
-    qualityReducedLabel: string
     qualityPdfSize: string
     qualityDpi: string
     qualityPdfCapped: string

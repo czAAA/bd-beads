@@ -23,9 +23,11 @@ import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
 import { hasWordChart } from '../../domain/wordChart'
-import { EXPORT_QUALITIES, PDF_DPI_BY_QUALITY, PNG_BEAD_PX_BY_QUALITY, roundedMegabytes, type ExportQuality } from '../../domain/exportQuality'
-import { estimatePdfBytes, estimatePngBytes, pngBeadPx } from '../../rendering/exportEstimate'
+import { EXPORT_QUALITIES, PDF_DPI_BY_QUALITY, roundedMegabytes, type ExportQuality } from '../../domain/exportQuality'
+import { estimatePdfBytes, estimatePngBytes } from '../../rendering/exportEstimate'
+import { coverLayout } from '../../rendering/coverLayout'
 import { pdfDpiFor } from '../../rendering/pdfDpi'
+import { printText } from '../../rendering/printText'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
@@ -125,30 +127,26 @@ const sizeSummary = computed(() => [`${counted.value.columns} × ${counted.value
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 /** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
 const quality = useExportQuality()
-/** Each stop's words, its bead size (both values when the Frame is too large for it), the PDF's dpi and the PNG and PDF
- * sizes it would make for the open Frame (tickets 571, 572). */
-const qualityStops = computed(() =>
-  EXPORT_QUALITIES.map((id) => {
+/** Each stop's words, its dpi and the PNG and PDF sizes it would make for the open Frame (tickets 571, 572, 0583). */
+const qualityStops = computed(() => {
+  // Beads needed running over onto list pages adds pages to both (the cover is the same code in both).
+  const lists = frame.value ? coverLayout(props.project, printText(props.project, t.value, locale.value, new Date())).lists.length : 0
+  return EXPORT_QUALITIES.map((id) => {
     const word = t.value.frame[QUALITY_WORDS[id]]
     if (!frame.value) return { id, word }
-    const wanted = PNG_BEAD_PX_BY_QUALITY[id]
-    const beadPx = pngBeadPx(props.project, wanted)
-    const size = t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePngBytes(props.project, wanted))))
-    const png = t.value.frame.qualityPngSize.replace('{size}', size)
     const dpi = pdfDpiFor(id)
-    const pdfSize = t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePdfBytes(props.project, dpi))))
-    const pdf = t.value.frame.qualityPdfSize.replace('{size}', pdfSize)
-    const detail = `${beadPx} px · ${t.value.frame.qualityDpi.replace('{n}', String(dpi))}`
-    return { id, word, detail, from: beadPx < wanted ? `${wanted} px` : undefined, lines: [png, pdf], spoken: `${word}, ${detail}, ${png}, ${pdf}` }
-  }),
-)
+    const png = t.value.frame.qualityPngSize.replace('{size}', t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePngBytes(dpi, lists)))))
+    const pdf = t.value.frame.qualityPdfSize.replace('{size}', t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePdfBytes(props.project, dpi, lists)))))
+    const detail = t.value.frame.qualityDpi.replace('{n}', String(dpi))
+    return { id, word, detail, lines: [png, pdf], spoken: `${word}, ${detail}, ${png}, ${pdf}` }
+  })
+})
 /** The dpi High draws the PDF at when the device cannot allocate a page that large, else nothing. */
 const highPdfDpi = computed(() => {
   const dpi = pdfDpiFor('high')
   return dpi < PDF_DPI_BY_QUALITY.high ? dpi : undefined
 })
 const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
-const qualityReduced = computed(() => ({ label: t.value.frame.qualityReducedLabel, body: t.value.frame.qualityReduced }))
 const exportBusy = computed(() => !!props.exporting)
 const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
 
@@ -193,7 +191,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         class="frame-panel__quality"
         :label="t.frame.exportQuality"
         :stops="qualityStops"
-        :reduced="qualityReduced"
         :hint="qualityHint"
         :model-value="quality"
         :disabled="exportBusy"

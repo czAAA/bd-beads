@@ -266,19 +266,19 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().get('[data-testid="quality-chosen"]').text()).toBe(en.frame.qualityLow)
   })
 
-  it('shows each stop’s bead size and PNG size for the open Frame, and both bead sizes where a large Frame is reduced (ticket 571)', () => {
+  it('shows each stop’s dpi and the PNG and PDF sizes for the open Frame (tickets 571, 0583)', () => {
     const small = mountBar()
-    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('45 px · 150 DPI')
-    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('90 px · 450 DPI')
-    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium60 px · 300 DPIPNG ≈ \d+ MBPDF ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('150 DPI')
+    expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium300 DPIPNG ≈ \d+ MBPDF ≈ \d+ MB$/)
     expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
-    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 60 px · 300 DPI, PNG ≈ \d+ MB, PDF ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 300 DPI, PNG ≈ \d+ MB, PDF ≈ \d+ MB$/)
 
+    // A Frame too large for any bead size to be reduced: the page is the same size, so there is no reduced stop.
     const large = mountBar({ ...framed(), frame: { ...framed().frame!, columns: 200, rows: 200 } })
-    expect(large.get('[data-testid="quality-detail-high"]').text()).toMatch(/^90 px → \d+ px · 450 DPI$/)
-    expect(large.get('[data-testid="quality-detail-low"]').text()).toBe('45 px · 150 DPI')
-    expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(true)
+    expect(large.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
+    expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
   })
 
   it('says what High is when this device cannot draw a 450 dpi page, and shows that dpi on the stop (ticket 572)', () => {
@@ -287,7 +287,7 @@ describe('FramePanel (ticket 473)', () => {
     try {
       const wrapper = mountBar()
       expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(en.frame.qualityPdfCapped.replace('{n}', '300'))
-      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('90 px · 300 DPI')
+      expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('300 DPI')
     } finally {
       vi.mocked(pdfDpiFor).mockImplementation((quality) => PDF_DPI_BY_QUALITY[quality])
     }
