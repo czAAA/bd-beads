@@ -1,7 +1,7 @@
 import { colorAt } from './canvas'
 import type { Rotation } from './grid'
-import { frameWeave, type Project } from './project'
-import { describeWeave, lineOfPass, mirrorLine, passCount, passOf, type PassDirection, type Technique } from './weave'
+import { frameRowOrder, frameWeave, type Project } from './project'
+import { describeWeave, type PassDirection, type Technique } from './weave'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
  * line per row in the order Row progress counts them. Pure data here; the words and the drawing are the export's. */
@@ -68,22 +68,17 @@ export function wordChartOf(project: Project): WordChart | undefined {
     return undefined
   }
   const { direction, reversed } = project.rowProgress
-  const lines = direction === 'rows' ? frame.rows : frame.columns
   const along = direction === 'rows' ? frame.columns : frame.rows
   const ascends = ASCENDS[direction][project.rotation]
+  const order = frameRowOrder(project)
   let hasEmpty = false
 
   const rows: WordRow[] = []
-  for (let pass = 0; pass < passCount(weave, lines, direction); pass += 1) {
-    const woven = lineOfPass(weave, pass, direction)
-    const line = mirrorLine(woven, lines, reversed)
-    const colors: (string | undefined)[] = []
-    for (let at = 0; at < along; at += 1) {
-      if (passOf(weave, woven, at, direction) === pass) {
-        const hex = direction === 'rows' ? colorAt(frame.beads, line, at) : colorAt(frame.beads, at, line)
-        colors.push(hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?'))
-      }
-    }
+  for (let pass = 0; pass < order.count; pass += 1) {
+    const colors = order.positionsOf(pass).map(({ row, column }) => {
+      const hex = colorAt(frame.beads, row, column)
+      return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
+    })
     const marker = wordChart.marked ? (pass % 2 === 0 ? 'L' : 'R') : undefined
     // A loom row, and an L row, read left to right; an R row right to left.
     const leftToRight = marker !== 'R'
