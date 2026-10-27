@@ -21,9 +21,14 @@ function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
 /** How many pixels one strip of a page holds while it is compressed. */
 const STRIP_PIXELS = 1_000_000
 
+/** The words of the PNG: it is the picture, so no Swatch letters, whatever the Letters toggle says (ticket 0587). */
+function withoutLetters(words: PrintText): PrintText {
+  return { ...words, colors: words.colors.map(({ letter: _letter, ...color }) => color) }
+}
+
 /** The cover as a PNG page and the list pages Beads needed runs over onto, in order after it (ticket 0583). */
 export function projectPageCount(project: Project, words: PrintText): number {
-  return 1 + coverLayout(project, words).lists.length
+  return 1 + coverLayout(project, withoutLetters(words)).lists.length
 }
 
 /** The page as a PNG, compressed strip by strip. */
@@ -40,9 +45,10 @@ export async function exportProjectPng(project: Project, words: PrintText, dpi =
   const { drawCoverPage, drawListPage } = await import('./coverPage')
   const { loadPrintFonts } = await import('./printPages')
   await loadPrintFonts()
-  const layout = coverLayout(project, words)
+  const bare = withoutLetters(words)
+  const layout = coverLayout(project, bare)
   const scale = dpi / PRINT_DPI
-  const canvas = page === 0 ? drawCoverPage(project, words, layout, scale) : drawListPage(words, layout, page - 1, scale)
+  const canvas = page === 0 ? drawCoverPage({ ...project, letters: false }, bare, layout, scale) : drawListPage(bare, layout, page - 1, scale)
   const blob = await pngOf(canvas)
   canvas.width = 0
   canvas.height = 0
