@@ -17,6 +17,11 @@ const {
   onCancelResetProgress,
   onConfirmResetProgress,
   removeFrameConfirmOpen,
+  removeFrameTakesBeads,
+  roundsConfirmOpen,
+  roundsConfirmMessage,
+  onCancelRounds,
+  onConfirmRounds,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
   switchQuestion,
@@ -97,11 +102,22 @@ const {
     v-if="removeFrameConfirmOpen"
     data-testid="remove-frame-modal"
     :title="t.frame.removeConfirmTitle"
-    :message="t.frame.removeConfirmMessage"
+    :message="removeFrameTakesBeads ? t.frame.removeConfirmCustom : t.frame.removeConfirmMessage"
     :confirm-label="t.frame.removeConfirmButton"
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
     @cancel="onCancelRemoveFrame"
+  />
+
+  <ConfirmModal
+    v-if="roundsConfirmOpen"
+    data-testid="rounds-modal"
+    :title="t.frame.roundsConfirmTitle"
+    :message="roundsConfirmMessage"
+    :confirm-label="t.frame.roundsConfirmButton"
+    :cancel-label="t.frame.removeConfirmCancel"
+    @confirm="onConfirmRounds"
+    @cancel="onCancelRounds"
   />
 
   <SwitchTechniqueModal

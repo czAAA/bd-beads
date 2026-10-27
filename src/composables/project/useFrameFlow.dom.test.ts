@@ -670,3 +670,48 @@ describe('useFrameFlow', () => {
     })
   })
 })
+
+describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
+  it('adds a Triangle round the middle of the view as one Undo step, and announces it', () => {
+    const { deps, placeCustom } = setup(open)
+    placeCustom('triangle')
+    expect(deps.harness.project.frame).toMatchObject({ kind: 'triangle', settings: { rounds: 9 }, beads: {} })
+    expect(deps.announce).toHaveBeenCalledWith('Triangle frame set, rounds: 9')
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.frame).toBeUndefined()
+  })
+
+  it('asks before replacing a Frame that holds beads, and replaces it on Yes', () => {
+    const drawn = { ...sized, frame: { ...sized.frame!, beads: { 0: { 0: '#ff0000' } } } }
+    const { deps, placeCustom, replaceConfirmOpen, confirmReplace } = setup(drawn)
+    placeCustom('warpedSquare')
+    expect(replaceConfirmOpen.value).toBe(true)
+    expect(deps.harness.project.frame!.kind).toBeUndefined()
+    confirmReplace()
+    expect(deps.harness.project.frame).toMatchObject({ kind: 'warpedSquare', beads: {} })
+  })
+
+  it('grows its Rounds at once, and asks before fewer Rounds drop painted beads', () => {
+    const { deps, placeCustom, setRounds, roundsAsk, confirmRounds } = setup(open)
+    placeCustom('triangle')
+    setRounds(10)
+    expect(deps.harness.project.frame!.settings).toEqual({ rounds: 10 })
+    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 9: { 0: '#ff0000' } } } })
+    setRounds(9)
+    expect(roundsAsk.value).toEqual({ rounds: 9, lost: 1 })
+    confirmRounds()
+    expect(deps.harness.project.frame).toMatchObject({ settings: { rounds: 9 }, beads: {} })
+  })
+
+  it('removes an empty one at once, with nothing to ask, and asks first once it holds beads', () => {
+    const { deps, placeCustom, remove, removeConfirmOpen, removeTakesBeads } = setup(open)
+    placeCustom('triangle')
+    expect(removeTakesBeads.value).toBe(true)
+    remove()
+    expect(deps.harness.project.frame).toBeUndefined()
+    placeCustom('triangle')
+    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 0: { 0: '#ff0000' } } } })
+    remove()
+    expect(removeConfirmOpen.value).toBe(true)
+  })
+})

@@ -1,13 +1,14 @@
-import { beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
-import { movedFrame, sameFrame, snappedMove } from './frame'
+import { beadCount, beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame, type FrameSheet } from './canvas'
+import { movedFrame, sameFrame, snapColumn, snappedMove, snapRow } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
-import { frameKindOf } from './frameKind'
+import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, type FrameKindId, type FrameSettings } from './frameKind'
+import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { canvasWeave, clampBrickBlock, firstPasses, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameTechnique, withTechnique, weaveOf, sameWeave, switchedWeave, type Project } from './project'
+import { canvasDistance, canvasWeave, clampBrickBlock, firstPasses, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameTechnique, withTechnique, weaveOf, sameWeave, switchedWeave, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
@@ -38,6 +39,12 @@ export type FrameChange =
   /** Name the Frame (ticket 555), or clear its name with an empty one; allowed after Row progress has started, as it
    * touches no bead and no pass. */
   | { name: string }
+  /** Put a new empty Custom frame of a kind and Rounds round a Canvas position (ticket 0592), in place of any Frame
+   * there, as `place` does. */
+  | { custom: { kind: FrameKindId; rounds: number; centre: GridPosition } }
+  /** Change a Custom frame's settings (ticket 0592): its layout is built again round the same centre, and every bead
+   * whose position is still in it stays; growing adds empty rounds outside. */
+  | { settings: FrameSettings }
 
 /** Why a change did not happen. */
 export type FrameChangeRefusal =
@@ -55,6 +62,9 @@ export type FrameChangeRefusal =
   | 'cuts-schema'
   /** A line of a Technique counted in Units isn't a Unit (ADR 0038), so it can't be removed alone. */
   | 'fixed-weave'
+  /** The Frame's kind does not offer it (ADR 0077): a Custom frame's shape comes from its settings, not a rectangle,
+   * and a Rectangular Frame has no settings. */
+  | 'not-offered'
 
 export type FrameChangeResult =
   | { kind: 'refused'; reason: FrameChangeRefusal }
@@ -75,7 +85,10 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
     return 'locked'
   }
   const frame = project.frame
-  if (('technique' in change || 'brickBlock' in change) && !frame) {
+  if (frame && kindRefuses(frame, change)) {
+    return 'not-offered'
+  }
+  if (('technique' in change || 'brickBlock' in change || 'settings' in change) && !frame) {
     return 'no-frame'
   }
   if ('removeLine' in change && describeWeave(frameWeave(project)).countsUnits) {
@@ -140,6 +153,19 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return { kind: 'changed', project: placedFrame(project, change.place) }
   }
 
+  if ('custom' in change) {
+    return { kind: 'changed', project: placedCustomFrame(project, change.custom) }
+  }
+
+  if ('settings' in change) {
+    const frame = project.frame!
+    const settings = settingsOf({ kind: frame.kind, settings: { ...frame.settings, ...change.settings } })!
+    if (settings.rounds === settingsOf(frame)!.rounds) {
+      return { kind: 'unchanged', project }
+    }
+    return { kind: 'changed', project: { ...project, frame: resettled(project, frame, settings), updatedAt: Date.now() } }
+  }
+
   if ('remove' in change) {
     return project.frame ? { kind: 'changed', project: removedFrame(project) } : { kind: 'unchanged', project }
   }
@@ -171,6 +197,61 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return { kind: 'unchanged', project }
   }
   return { kind: 'changed', project: resizedFrame(project, next) }
+}
+
+/** Whether the Frame's kind refuses this change: what reshapes a rectangle for a Custom frame, settings for a
+ * Rectangular one. */
+function kindRefuses(frame: FrameSheet, change: FrameChange): boolean {
+  if ('settings' in change) return !frameKindOf(frame).custom
+  return (
+    ('set' in change && !frameAllows(frame, 'resize')) ||
+    ('removeLine' in change && !frameAllows(frame, 'remove-line')) ||
+    ('make' in change && !frameAllows(frame, 'from-selection')) ||
+    (('technique' in change || 'brickBlock' in change) && !frameAllows(frame, 'technique'))
+  )
+}
+
+/** A Custom frame built from its kind and settings round a Canvas position: its bounding rectangle in its own
+ * Technique, its first row and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
+function customSheet(project: Project, kind: FrameKindId, settings: FrameSettings, centre: GridPosition): FrameSheet {
+  const read = settingsOf({ kind, settings })!
+  const { rows, columns } = customFrameSize(kind, read)
+  const weave = weaveOf({ technique: frameKindOf({ kind }).custom!.technique })
+  const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
+  const canvas = canvasWeave(project)
+  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, kind, settings: read }
+}
+
+/** The Project with a new empty Custom frame in place of any Frame there (ticket 0592): Row progress starts at the first
+ * pass, and the Canvas keeps every bead. */
+function placedCustomFrame(project: Project, { kind, rounds, centre }: { kind: FrameKindId; rounds: number; centre: GridPosition }): Project {
+  return { ...project, frame: customSheet(project, kind, { rounds }, centre), rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
+}
+
+/** A Custom frame laid out again from new settings round its own centre, keeping each bead whose position is still in
+ * the layout. */
+function resettled(project: Project, frame: FrameSheet, settings: FrameSettings): FrameSheet {
+  const centre = canvasDistance(project, frame, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
+  const sheet = customSheet(project, frame.kind!, settings, { row: frame.row + centre.row, column: frame.column + centre.column })
+  return { ...frame, ...sheet, beads: beadsInLayout(frame.beads, frameLayoutOf(sheet)!) }
+}
+
+/** The beads of a map that have a position in a Custom frame's layout. */
+function beadsInLayout(beads: BeadMap, layout: FrameLayout): BeadMap {
+  const gone: BeadChange[] = []
+  forEachBead(beads, (row, column) => {
+    if (!layoutPosition(layout, { row, column })) gone.push({ row, column, color: null })
+  })
+  return withColors(beads, gone)
+}
+
+/** How many painted beads a change of a Custom frame's settings would drop (ticket 0592): those whose position the new
+ * layout does not have. The Frame panel asks before such a change. */
+export function customFrameLoss(project: Project, settings: FrameSettings): number {
+  const frame = project.frame
+  if (!frame || !frameKindOf(frame).custom) return 0
+  const layout = frameLayoutOf({ kind: frame.kind, settings: { ...frame.settings, ...settings } })!
+  return beadCount(frame.beads) - beadCount(beadsInLayout(frame.beads, layout))
 }
 
 /** The Project with its Frame set to `rectangle` (ticket 513): the strip the Frame gives up is laid on the Canvas as

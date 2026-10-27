@@ -4,6 +4,8 @@ import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX, projectExtentPx, surfaceView } from './surfaceView'
+import { layoutBeadPx, placedLayout } from './customFrameView'
+import { customFrameSize } from '../domain/frameKind'
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
 const ROTATIONS: Rotation[] = [0, 90, 180, 270]
@@ -300,5 +302,23 @@ describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
     const symmetric = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: 0, zoom: 1 }).beadStep().row
     expect(real.y).toBeCloseTo(CELL_SIZE_PX * cell.aspect)
     expect(symmetric.y).toBe(CELL_SIZE_PX)
+  })
+})
+
+describe('a Custom frame on the Canvas (ticket 0592)', () => {
+  const frame = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 4 } }
+  const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame, rotation: 0, zoom: 1 })
+  const bead = layoutBeadPx(placedLayout(frame, frame)!, { row: 3, column: 5 })!
+
+  it('hits the bead its layout puts under the point, named by round and place, and puts it back there', () => {
+    expect(view.pointToHit(bead)).toEqual({ row: 3, column: 5, layer: 'frame' })
+    expect(view.beadToPoint({ row: 3, column: 5 }, 'frame')).toEqual({ x: bead.x, y: bead.y })
+    expect(view.offShapeAt(bead)).toBe(false)
+  })
+
+  it('finds no bead Off-shape, and says so there and not off the Frame', () => {
+    expect(view.pointToHit({ x: 2, y: 2 })).toBeUndefined()
+    expect(view.offShapeAt({ x: 2, y: 2 })).toBe(true)
+    expect(view.offShapeAt({ x: -40, y: -40 })).toBe(false)
   })
 })

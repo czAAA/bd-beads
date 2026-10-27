@@ -10,6 +10,7 @@ import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { rowProgressStarted, type Project } from '../../domain/project'
+import { frameAllows } from '../../domain/frameKind'
 import { DEFAULT_TECHNIQUE, describeWeave } from '../../domain/weave'
 import { canvasWeave, frameWeave } from '../../domain/project'
 import { copyLayerSelection, selectionLayer, type Selection } from '../../domain/selection'
@@ -134,8 +135,9 @@ const items = computed<BarItem[]>(() => {
     ...(props.hasClipboard ? [{ id: 'paste', action: actions.paste, group: 1, run: () => emit('paste') }] : []),
   ]
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
-  // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407).
-  list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
+  // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407); not over
+  // a Frame whose kind keeps its own shape (a Custom frame, ticket 0592).
+  if (frameAllows(props.project?.frame, 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Not offered once a Row progress pass is done (the Frame lock of ticket 411, ticket 416), nor where a quarter turn
   // isn't a row (Netting, ticket 486).
   if (!props.project || (!rowProgressStarted(props.project) && describeWeave(selectionWeave.value).quarterTurn)) list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })

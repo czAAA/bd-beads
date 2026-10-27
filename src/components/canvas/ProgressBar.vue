@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { frameRowOrder, rowProgressPosition, type Project } from '../../domain/project'
+import { frameRowOrder, rowProgressOn, rowProgressPosition, type Project } from '../../domain/project'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
@@ -91,6 +91,8 @@ const arrowTurn = computed(() => {
         <AppButton variant="box" :action="actions.fitFrame" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-frame')" />
       </span>
     </template>
+    <!-- A Custom frame's Row order comes later (ticket 0594): one line, the bar keeping its height. -->
+    <p v-else-if="!rowProgressOn(project)" class="progress-bar__need" data-testid="progress-bar-not-for-shape">{{ t.frame.progressNotForShape }}</p>
     <template v-else>
       <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
       <IconButton

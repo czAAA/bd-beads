@@ -1,6 +1,7 @@
 import { colorAt } from './canvas'
 import type { Rotation } from './grid'
 import { frameRowOrder, frameWeave, type Project } from './project'
+import { hasRowOrder } from './frameKind'
 import { describeWeave, type PassDirection, type Technique } from './weave'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
@@ -59,12 +60,14 @@ const ASCENDS: Record<PassDirection, Record<Rotation, boolean>> = {
   columns: { 0: true, 90: false, 180: false, 270: true },
 }
 
-/** The Word chart of a Project's Frame, or undefined with Letters off, no Frame or a Technique without one. */
+/** The Word chart of a Project's Frame, or undefined with Letters off, no Frame, or a Technique or Frame kind without
+ * one. */
 export function wordChartOf(project: Project): WordChart | undefined {
   const { frame } = project
   const weave = frameWeave(project)
   const { wordChart, twoPasses } = describeWeave(weave)
-  if (!project.letters || !frame || !wordChart) {
+  // A Custom frame's Word chart waits for its Row order (ADR 0077).
+  if (!project.letters || !frame || !wordChart || !hasRowOrder(frame)) {
     return undefined
   }
   const { direction, reversed } = project.rowProgress

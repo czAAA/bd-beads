@@ -19,7 +19,10 @@ import {
   withTechnique,
   type Project,
   frameGrid,
+  paintCells,
 } from './project'
+import { changeFrame } from './changeFrame'
+import { onLayer } from './layers'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -30,6 +33,13 @@ function makeProject(name = 'Fox'): Project {
     beadId: cubeBead.id,
     size: { width: 15, height: 15, unit: 'mm' },
   })
+}
+
+/** A Project with a five-round Triangle holding two beads, one on its outer round. */
+function customFramed(): Project {
+  const result = changeFrame(makeProject('Kite'), { custom: { kind: 'triangle', rounds: 5, centre: { row: 10, column: 10 } } })
+  if (result.kind !== 'changed') throw new Error('expected a Triangle')
+  return onLayer(result.project, 'frame', (view) => paintCells(view, [{ row: 0, column: 2 }, { row: 4, column: 14 }], '#e63746'))
 }
 
 function decoratedProject(): Project {
@@ -100,11 +110,11 @@ describe('single-Project roundtrip', () => {
     expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 8 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
+  it('writes version 9 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(8)
+    expect(file.version).toBe(9)
     expect(file.patterns).toBeUndefined()
     expect(file.projects[0].beads).toBeUndefined()
     expect(file.projects[0].encodedBeads).toBeDefined()
@@ -122,8 +132,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 9
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 9')
+    file.version = 10
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 10')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {
@@ -205,6 +215,21 @@ describe('the Frame kind in a file (ticket 0591)', () => {
       expect(restored).toEqual(project)
       expect(restored!.frame).not.toHaveProperty('kind')
     }
+  })
+
+  it('carries a Custom frame through a file and the library: its kind, Rounds and beads by layout position (ticket 0592)', () => {
+    const triangle = customFramed()
+    expect(JSON.parse(serializeProject(triangle)).projects[0].frame).toMatchObject({ kind: 'triangle', settings: { rounds: 5 } })
+    expect(parseProjectsFile(serializeProject(triangle)).projects).toEqual([triangle])
+    const plain = makeProject()
+    expect(parseProjectsFile(serializeLibrary([triangle, plain])).projects).toEqual([triangle, plain])
+  })
+
+  it('reads a Custom frame\'s Rounds within its range, and a Rectangular Frame without settings', () => {
+    const wide = serializeProject(customFramed()).replace('"rounds":5', '"rounds":400')
+    expect(parseProjectsFile(wide).projects[0]!.frame!.settings).toEqual({ rounds: 40 })
+    const stray = serializeProject(decoratedProject()).replace('"frame":{', '"frame":{"settings":{"rounds":5},')
+    expect(parseProjectsFile(stray).projects[0]!.frame).not.toHaveProperty('settings')
   })
 })
 

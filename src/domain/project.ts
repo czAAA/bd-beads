@@ -21,7 +21,8 @@ import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
-import { DEFAULT_FRAME_KIND, isFrameKind, rowOrderOf, type KindedSheet } from './frameKind'
+import { DEFAULT_FRAME_KIND, frameLayoutOf, hasRowOrder, isFrameKind, rowOrderOf, settingsOf, type KindedSheet } from './frameKind'
+import { layoutNeighbors, layoutPosition } from './frameLayout'
 import type { RowOrder, RowWay } from './rowOrder'
 import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteColors, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersFor, type SwatchLetters } from './swatchLetters'
@@ -139,9 +140,10 @@ export interface CreateProjectInput {
  * to. */
 const INITIAL_ROW_PROGRESS: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
-/** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055). Derived, never
- * stored, so setting a Frame needn't remember it; an old file's saved flag is ignored. */
-export const rowProgressOn = (project: Pick<Project, 'frame'>): boolean => project.frame !== undefined
+/** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055) and its kind has a
+ * Row order (ADR 0077: a Custom frame waits for its own). Derived, never stored, so setting a Frame needn't remember
+ * it; an old file's saved flag is ignored. */
+export const rowProgressOn = (project: Pick<Project, 'frame'>): boolean => project.frame !== undefined && hasRowOrder(project.frame)
 
 /** The Weave of a layer given as its Technique, Brick block and Net size: those and nothing else (a Frame carries more). */
 export function weaveOf({ technique, brickBlock, netSize }: Weave): Weave {
@@ -522,9 +524,14 @@ function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
 }
 
 /** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
- * unsaved (ticket 0591): one without, or with one it does not know, reads as Rectangular. */
-function readFrameKind({ kind, ...frame }: FrameSheet): FrameSheet {
-  return isFrameKind(kind) && kind !== DEFAULT_FRAME_KIND ? { ...frame, kind } : frame
+ * unsaved (ticket 0591): one without, or with one it does not know, reads as Rectangular. A Custom frame keeps its
+ * settings, read within its kind's range (ticket 0592); a Rectangular one has none. */
+function readFrameKind({ kind, settings: stored, ...frame }: FrameSheet): FrameSheet {
+  if (!isFrameKind(kind) || kind === DEFAULT_FRAME_KIND) {
+    return frame
+  }
+  const settings = settingsOf({ kind, settings: stored })
+  return { ...frame, kind, ...(settings ? { settings } : {}) }
 }
 
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
@@ -551,6 +558,7 @@ export function withFrame(project: Project, rectangle: Frame | undefined): Proje
     ...weaveOf(current ?? project),
     ...(current?.name ? { name: current.name } : {}),
     ...(current?.kind ? { kind: current.kind } : {}),
+    ...(current?.settings ? { settings: current.settings } : {}),
   }
   return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }
 }
@@ -898,6 +906,12 @@ function fillLimit(project: Pick<Project, 'beads' | 'frame'>, start: GridPositio
  * Used by Fill (fillArea). */
 function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, start: GridPosition): GridPosition[] {
   const targetColor = colorAt(project.beads, start.row, start.column)
+  // A Custom frame's beads touch across its panels, not along rows and columns (ticket 0592).
+  const layout = project.frame && frameLayoutOf(project.frame)
+  if (layout) {
+    const inside = (position: GridPosition) => layoutPosition(layout, position) !== undefined && colorAt(project.beads, position.row, position.column) === targetColor
+    return reachable(start, inside, (position) => layoutNeighbors(layout, position))
+  }
   const limit = fillLimit(project, start)
   const weave = describeWeave(project)
   const visited = new Set<string>()
@@ -922,6 +936,27 @@ function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, st
   return region
 }
 
+/** Every position joined to `start` through positions that are `inside`, one `next` step at a time. */
+function reachable(start: GridPosition, inside: (position: GridPosition) => boolean, next: (position: GridPosition) => GridPosition[]): GridPosition[] {
+  const visited = new Set<string>()
+  const region: GridPosition[] = []
+  const stack = [start]
+  while (stack.length > 0) {
+    const position = stack.pop()!
+    const key = positionKey(position)
+    if (visited.has(key)) {
+      continue
+    }
+    visited.add(key)
+    if (!inside(position)) {
+      continue
+    }
+    region.push(position)
+    stack.push(...next(position))
+  }
+  return region
+}
+
 /** Bucket-fills every cell reachable from (row, column) through same-colored neighbors (see floodRegion), with the
  * given color. Returns the same Project instance, unchanged, if the clicked cell is already that color. */
 export function fillArea(project: Project, row: number, column: number, color: string | null): Project {
@@ -942,7 +977,11 @@ export function fillArea(project: Project, row: number, column: number, color: s
 export function paintCells(project: Project, positions: GridPosition[], color: string | null): Project {
   const { frame } = project
   const { hasPosition } = describeWeave(project)
-  const targets = positions.filter((position) => !frame || !frameContains(frame, position) || hasPosition(position, frame))
+  // A Custom frame's view holds only its layout's positions, named by round and place (ticket 0592).
+  const layout = frame && frameLayoutOf(frame)
+  const targets = layout
+    ? positions.filter((position) => layoutPosition(layout, position) !== undefined)
+    : positions.filter((position) => !frame || !frameContains(frame, position) || hasPosition(position, frame))
   const beads = withColors(project.beads, targets.map((position) => ({ ...position, color })))
   return beads === project.beads ? project : restoreBeads(project, beads)
 }

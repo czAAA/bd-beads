@@ -22,6 +22,7 @@ import libraryV4Weave from './fixtures/library-v4-frame-weave.json?raw'
 import projectFileV3Framed from './fixtures/project-file-v3-framed-covered.json?raw'
 import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
 import projectFileV7 from './fixtures/project-file-v7-bead-copy.json?raw'
+import projectFileV9Custom from './fixtures/project-file-v9-custom-frame.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
@@ -312,9 +313,16 @@ describe('stored-data compatibility', () => {
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('reads a version 4 file and writes it back as version 8 with the built-in Palette (ticket 0525)', () => {
+    it('opens a version 9 file with a Custom frame as its kind, Rounds and beads by layout position, and writes it back the same (ticket 0592)', () => {
+      const [opened] = parseProjectsFile(projectFileV9Custom).projects
+      expect(opened!.frame).toEqual({ row: 7, column: 7, rows: 12, columns: 10, technique: 'peyote', kind: 'triangle', settings: { rounds: 4 }, beads: { 0: { 1: '#e63746' }, 3: { 11: '#e63746' } } })
+      expect(opened!.beads).toEqual({ 0: { 0: '#2fb6ae' } })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('reads a version 4 file and writes it back as version 9 with the built-in Palette (ticket 0525)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 8, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 9, projects: [{ palette: defaultPaletteIds() }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })

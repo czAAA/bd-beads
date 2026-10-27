@@ -1,10 +1,11 @@
-import { frameContains, type Frame } from '../domain/canvas'
+import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import { frameFootprint } from '../domain/footprint'
 import { beadRoundness, describeWeave, isShiftedRow, rowPitch, type BeadCell, type Technique, type Weave } from '../domain/weave'
 import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
+import { layoutBeadPx, layoutPositionAtPx, placedLayout } from './customFrameView'
 
 // The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation, row shift
 // and pitch are private; geometry follows domain/grid.ts (ticket 0448). Grid space is px at zoom 1; displayed space is
@@ -180,7 +181,7 @@ export interface SurfaceViewInput {
   cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
    * its top-left position's corner. Left out, the view is one layer: the Canvas, or the Frame alone in an own space. */
-  frame?: Frame & Weave
+  frame?: Frame & Weave & Partial<Pick<FrameSheet, 'kind' | 'settings'>>
   rotation: Rotation
   zoom: number
   /** Where the viewport's top-left corner is in displayed space; nothing when left out. */
@@ -211,6 +212,9 @@ export interface SurfaceView {
   /** The bead under a point and the layer it is on (ADR 0070): where the Frame draws shorter than the rows it names, a
    * Frame bead and a Canvas bead share a position, and only the layer tells them apart. */
   pointToHit(point: Scroll): (GridPosition & { layer: ViewLayer }) | undefined
+  /** Whether a point is on a Custom frame where it has no bead (ticket 0592): a Seam, its centre or Off-shape, where a
+   * press is refused as on the keep-out margin. */
+  offShapeAt(point: Scroll): boolean
   /** The bead position nearest a point, gaps and rounded corners included, in a layer's geometry: what dragging a Frame
    * needs. */
   pointToCell(point: Scroll, layer?: ViewLayer): GridPosition
@@ -338,6 +342,8 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
   const canvas = layerOf(canvasWeave, { x: 0, y: 0 }, { row: 0, column: 0 }, space.open ? undefined : { rows: space.rows, columns: space.columns })
   const sheet = frame && space.open ? layerOf({ technique: frame.technique, brickBlock: frame.brickBlock, netSize: frame.netSize, cell: beadShapeCell }, frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }, { rows: frame.rows, columns: frame.columns }) : undefined
   const layerNamed = (name: ViewLayer | undefined): Layer => (name === 'frame' && sheet ? sheet : canvas)
+  // A Custom frame's beads lie where its layout puts them (ADR 0077), not on its rows and columns.
+  const placed = frame && sheet ? placedLayout(frame, sheet.weave) : undefined
   // The Canvas positions the Frame hides (ADR 0070): what it draws, which is not always the rows it names.
   const footprint = frame && sheet ? frameFootprint(canvasWeave, frame) : undefined
   const layerAtAddress = (position: GridPosition): Layer => (footprint && sheet && frameContains(footprint, position) ? sheet : canvas)
@@ -391,17 +397,23 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
     return { row: row + 0, column: Math.floor((gridX - shiftOf(weave, row)) / CELL_SIZE_PX) }
   }
 
+  /** A point of the viewport on the Frame, from its first position's corner, or none off it. */
+  const onSheet = (point: Scroll): { x: number; y: number } | undefined => {
+    if (!sheet || !frame) return undefined
+    const [gridX, gridY] = toGrid(point)
+    const extent = layerExtentPx(sheet.weave, frame.columns, frame.rows)
+    const x = gridX - sheet.origin.x
+    const y = gridY - sheet.origin.y
+    return x >= 0 && y >= 0 && x < extent.width && y < extent.height ? { x, y } : undefined
+  }
+
   const pointToHit = (point: Scroll): (GridPosition & { layer: ViewLayer }) | undefined => {
     const [gridX, gridY] = toGrid(point)
-    if (sheet && frame) {
-      const extent = layerExtentPx(sheet.weave, frame.columns, frame.rows)
-      const x = gridX - sheet.origin.x
-      const y = gridY - sheet.origin.y
-      // The Frame is opaque: a point on it is the Frame's bead or none, never the Canvas under it.
-      if (x >= 0 && y >= 0 && x < extent.width && y < extent.height) {
-        const found = beadIn(sheet, x, y)
-        return found && { ...addressOf(sheet, found), layer: 'frame' }
-      }
+    const at = onSheet(point)
+    // The Frame is opaque: a point on it is the Frame's bead or none, never the Canvas under it.
+    if (sheet && at) {
+      const found = placed ? layoutPositionAtPx(placed, at.x, at.y) : beadIn(sheet, at.x, at.y)
+      return found && { ...addressOf(sheet, found), layer: 'frame' }
     }
     const found = beadIn(canvas, gridX, gridY)
     return found && !(footprint && frameContains(footprint, found)) ? { ...found, layer: 'canvas' } : undefined
@@ -412,12 +424,21 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
     viewport,
     beadToPoint: (position, named) => {
       const layer = named ? layerNamed(named) : layerAtAddress(position)
+      const bead = layer === sheet && placed ? layoutBeadPx(placed, { row: position.row - layer.offset.row, column: position.column - layer.offset.column }) : undefined
+      if (bead) {
+        const at = displayed(layer.origin.x + bead.x, layer.origin.y + bead.y, zoom)
+        return { x: at.x - scroll.x, y: at.y - scroll.y }
+      }
       const box = positionBoxPx(layer.weave, position.row - layer.offset.row, position.column - layer.offset.column)
       const at = displayed(layer.origin.x + box.x + box.width / 2, layer.origin.y + box.y + box.height / 2, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
     },
     beadBox: (box, layer) => inViewport(displayedBox(box, zoom, layerNamed(layer))),
     pointToHit,
+    offShapeAt: (point) => {
+      const at = placed && onSheet(point)
+      return !!placed && !!at && layoutPositionAtPx(placed, at.x, at.y) === undefined
+    },
     pointToBead: (point) => {
       const hit = pointToHit(point)
       return hit && { row: hit.row, column: hit.column }
