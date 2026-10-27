@@ -109,7 +109,7 @@ export function drawCoverPage(project: Project, words: PrintText, layout: CoverL
   // The whole Project on its board, rulers with a number every 5 (10 when the beads are too small for that).
   const board = { ...layout.board, ...layout.extent }
   const whole = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, layout.zoom, project.rotation, frameWeave(project).cell)
-  drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board, shownLetters(project))
+  drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board, shownLetters(project), true)
   const grid = displayedGrid(project)
   const every = grid.stepAcross * layout.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
