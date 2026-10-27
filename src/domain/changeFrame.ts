@@ -3,6 +3,7 @@ import { movedFrame, sameFrame, snappedMove } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
+import { frameKindOf } from './frameKind'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
@@ -238,9 +239,12 @@ function placedFrame(project: Project, place: { frame: Frame; weave: Weave }): P
 
 /** The Project without its Frame (ticket 497): the Frame's footprint on the Canvas is cleared and its beads dropped in,
  * so the picture looks as the Frame did. The Frame's name stays on the Piece its beads form (the larger one if several);
- * the passes go with the Frame. */
+ * the passes go with the Frame. A Frame whose kind removes its beads with it leaves the Canvas as it is (ADR 0077). */
 function removedFrame(project: Project): Project {
   const frame = project.frame!
+  if (frameKindOf(frame).removedBeads === 'removed') {
+    return withFrame(project, undefined)
+  }
   const dropped = shiftedBeads(frame.beads, frame.row, frame.column)
   const beads = beadsOver(beadsWithout(project.beads, footprintOf(project)!), dropped)
   const canvas = carryNames(project, { ...withFrame(project, undefined), beads })

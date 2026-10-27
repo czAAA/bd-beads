@@ -193,6 +193,21 @@ describe('Right-angle weave in a file (ticket 482)', () => {
   })
 })
 
+describe('the Frame kind in a file (ticket 0591)', () => {
+  it('opens a Frame with no kind, or with one this build does not know, as Rectangular, left unsaved', () => {
+    const project = decoratedProject()
+    const stated = serializeProject(project).replace('"frame":{', '"frame":{"kind":"rectangular",')
+    const unknown = serializeProject(project).replace('"frame":{', '"frame":{"kind":"hexagon",')
+
+    expect(stated).toContain('"kind":"rectangular"')
+    for (const file of [serializeProject(project), stated, unknown]) {
+      const [restored] = parseProjectsFile(file).projects
+      expect(restored).toEqual(project)
+      expect(restored!.frame).not.toHaveProperty('kind')
+    }
+  })
+})
+
 describe('whole-library roundtrip', () => {
   it('restores every saved Project from one exported file', () => {
     const library = [decoratedProject(), makeProject('Owl')]

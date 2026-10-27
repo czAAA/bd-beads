@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { frameWeave, rowProgressPosition, type Project } from '../../domain/project'
-import { describeWeave } from '../../domain/weave'
+import { frameRowOrder, rowProgressPosition, type Project } from '../../domain/project'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
@@ -95,7 +94,7 @@ const arrowTurn = computed(() => {
     <template v-else>
       <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
       <IconButton
-        v-if="describeWeave(frameWeave(project)).rowDirection"
+        v-if="frameRowOrder(project).turns"
         variant="box"
         :action="actions.direction"
         :selected="columnWise"
