@@ -4,6 +4,7 @@ import IconButton from '../ui/IconButton.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { editPencilCentre, moveHandleCentre, overlapsSelectionHandles, removeFrameCentre, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { Project } from '../../domain/project'
+import { frameAllows } from '../../domain/frameKind'
 
 // What a Frame always carries on the canvas (tickets 452, 473, ADR 0062): the Move handle and the edit pencil, in the
 // gutter just outside its edge. They never scale with the zoom; only their centres follow the Frame, kept in the canvas
@@ -50,6 +51,7 @@ const pencilYields = computed(() => yields(editPencilCentre(props.anchor)))
 const removeYields = computed(() => yields(removeFrameCentre(props.anchor, props.pill)))
 
 const editEnabled = computed(() => toggleAction.enabled?.(deps.value) ?? true)
+const resizable = computed(() => frameAllows(props.project.frame, 'resize'))
 
 /** Whether the handle is being dragged: it turns accent until the canvas press ends. */
 const dragging = ref(false)
@@ -81,7 +83,8 @@ function onHandlePress(event: PointerEvent): void {
         <span class="frame-chrome__line" aria-hidden="true" />
       </IconButton>
     </div>
-    <div class="frame-chrome__control" :class="{ 'frame-chrome__control--yielding': pencilYields }" :style="pencilAt">
+    <!-- A Custom frame's shape comes from its settings, so it has no resize handles to show (ticket 0592). -->
+    <div v-if="resizable" class="frame-chrome__control" :class="{ 'frame-chrome__control--yielding': pencilYields }" :style="pencilAt">
       <IconButton
         variant="box"
         :icon-size="14"

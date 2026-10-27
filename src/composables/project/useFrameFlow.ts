@@ -3,7 +3,8 @@ import { hasBeads, type Frame } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
-import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
+import { changeCanvasWeave, changeFrame, customFrameLoss, frameChangeRefusal } from '../../domain/changeFrame'
+import { frameAllows, frameKindOf, settingsOf, type CustomFrameKindId } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { canvasWeave, createProject, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, weaveOf, type CreateProjectInput, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -75,7 +76,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   })
 
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
-  const settingFrame = computed(() => !!deps.currentProject()?.frame && handlesOn.value && !locked.value)
+  const settingFrame = computed(() => {
+    const frame = deps.currentProject()?.frame
+    // A Custom frame's shape comes from its settings, not handles (ticket 0592).
+    return !!frame && frameAllows(frame, 'resize') && handlesOn.value && !locked.value
+  })
 
   /** Whether the Frame panel shows: a Project and the panel opened, with or without a Frame (ticket 555). Once a pass
    * is done it holds the size and Remove Frame alone (ticket 475: a panel that closes on a press outside cannot stay up
@@ -354,9 +359,22 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * (tickets 426, 455). */
   const removeConfirmOpen = ref(false)
 
-  /** Remove Frame: always asks first. */
+  /** Whether Remove Frame takes the Frame's beads with it rather than dropping them onto the Canvas (ADR 0077): the
+   * question says so. */
+  const removeTakesBeads = computed(() => {
+    const frame = deps.currentProject()?.frame
+    return !!frame && frameKindOf(frame).removedBeads === 'removed'
+  })
+
+  /** Remove Frame: asks first, except for an empty Frame that takes its beads with it, as there is nothing to lose
+   * (ticket 0592). */
   function remove(): void {
-    if (!deps.currentProject()?.frame) return
+    const project = deps.currentProject()
+    if (!project?.frame) return
+    if (removeTakesBeads.value && !hasBeads(project.frame.beads) && !locked.value) {
+      commit(undefined)
+      return
+    }
     removeConfirmOpen.value = true
   }
 
@@ -371,22 +389,74 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     commit(undefined)
   }
 
-  /** Whether the Replace Frame question is open; the pending Starter choice waits behind it (ticket 495). */
+  /** Whether the Replace Frame question is open; the pending Starter or Custom frame waits behind it (tickets 495,
+   * 0592). */
   const replaceConfirmOpen = ref(false)
-  let pendingStarter: CreateProjectInput | undefined
+  let pendingPlace: (() => void) | undefined
+
+  /** Puts a Frame in place now, or once the weaver agrees to replace a Frame that holds beads, as they go with it. */
+  function replaceAsking(place: () => void): void {
+    const project = deps.currentProject()
+    if (!project || locked.value) return
+    if (project.frame && hasBeads(project.frame.beads)) {
+      pendingPlace = place
+      replaceConfirmOpen.value = true
+      return
+    }
+    place()
+  }
 
   /** Add Frame from Starter and Replace Frame (ticket 495): an empty Frame in the Starter's Technique, centred on what
    * is on screen and snapped to a Canvas position, over whatever lies there. Replacing a Frame that holds beads asks first,
    * as they go with it. */
   function placeFromStarter(input: CreateProjectInput): void {
+    replaceAsking(() => applyStarter(input))
+  }
+
+  /** Add Custom frame (ticket 0592, until the Starter gallery, ticket 0597): an empty Frame of the kind at its default
+   * Rounds, centred on what is on screen, in place of any Frame there; one Undo step. */
+  function placeCustom(kind: CustomFrameKindId): void {
+    replaceAsking(() => {
+      const rounds = settingsOf({ kind })!.rounds
+      const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
+      const outcome = deps.edit('frame', (project) => changeFrame(project, { custom: { kind, rounds, centre } }))
+      const t = deps.messages()
+      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', t.frame.customKinds[kind]).replace('{count}', String(rounds)))
+    })
+  }
+
+  /** The Rounds change waiting on its question: the Rounds asked for and how many painted beads they would drop. */
+  const roundsAsk = ref<{ rounds: number; lost: number } | undefined>()
+
+  /** A Custom frame's Rounds from the Frame panel (ticket 0592): one Undo step, asking first when painted beads on the
+   * outer rounds would go; held still once a pass is done. */
+  function setRounds(rounds: number): void {
     const project = deps.currentProject()
-    if (!project || locked.value) return
-    if (project.frame && Object.keys(project.frame.beads).length > 0) {
-      pendingStarter = input
-      replaceConfirmOpen.value = true
+    if (!project?.frame || locked.value) return
+    const lost = customFrameLoss(project, { rounds })
+    if (lost > 0) {
+      roundsAsk.value = { rounds, lost }
       return
     }
-    applyStarter(input)
+    applyRounds(rounds)
+  }
+
+  function applyRounds(rounds: number): void {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { settings: { rounds } }))
+    const settled = deps.currentProject()?.frame
+    if (outcome.kind === 'applied' && settled) deps.announce(deps.messages().frame.announceRounds.replace('{count}', String(settingsOf(settled)!.rounds)))
+  }
+
+  /** The Rounds question answered No: nothing changes. */
+  function cancelRounds(): void {
+    roundsAsk.value = undefined
+  }
+
+  /** The Rounds question answered Yes: the outer rounds go with their beads, as one Undo step. */
+  function confirmRounds(): void {
+    const ask = roundsAsk.value
+    roundsAsk.value = undefined
+    if (ask) applyRounds(ask.rounds)
   }
 
   function applyStarter(input: CreateProjectInput): void {
@@ -404,15 +474,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** The Replace Frame question answered No: nothing changes. */
   function cancelReplace(): void {
     replaceConfirmOpen.value = false
-    pendingStarter = undefined
+    pendingPlace = undefined
   }
 
   /** The question answered Yes: the Frame goes and the new one is made, as one Undo step. */
   function confirmReplace(): void {
     replaceConfirmOpen.value = false
-    const input = pendingStarter
-    pendingStarter = undefined
-    if (input) applyStarter(input)
+    const place = pendingPlace
+    pendingPlace = undefined
+    place?.()
   }
 
   /** A key on a focused Frame handle (ticket 452): arrows move the Frame with its beads, Shift + arrows resize it
@@ -471,9 +541,15 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setTo,
     remove,
     removeConfirmOpen,
+    removeTakesBeads,
     cancelRemove,
     confirmRemove,
     placeFromStarter,
+    placeCustom,
+    setRounds,
+    roundsAsk,
+    cancelRounds,
+    confirmRounds,
     replaceConfirmOpen,
     cancelReplace,
     confirmReplace,

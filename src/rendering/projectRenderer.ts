@@ -2,6 +2,7 @@ import type { GridPosition, Rotation } from '../domain/grid'
 import { beadRoundness, describeWeave, type Weave } from '../domain/weave'
 import { frameContains } from '../domain/canvas'
 import { footprintOf } from '../domain/footprint'
+import { frameLayoutOf } from '../domain/frameKind'
 import { MARGIN, withMargin } from '../domain/margin'
 import { canvasWeave, frameWeave, isInCurrentRow, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../domain/project'
 import {
@@ -17,6 +18,7 @@ import {
 } from './beadLook'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, spaceOf, type Space } from './space'
+import { centredBead, layoutPointPx, placedLayout, type PlacedLayout } from './customFrameView'
 import {
   CELL_SIZE_PX,
   cellSizePx,
@@ -223,7 +225,8 @@ function drawPositionMarks(
     strip(area.left, top, Math.min(hole.left, area.right), bottom)
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
   }
-  if (footprint) {
+  // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
+  if (footprint && !(project.frame && frameLayoutOf(project.frame))) {
     // The marks are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
     // between its beads.
     const edge = BEAD_GAP_PX / 2
@@ -301,6 +304,11 @@ interface LayerDraw {
 function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }): void {
   const { project, zoom, pixelRatio, look, drawBead, rowMarks, showFinished, rows: band, letters } = draw
   const weave = frameWeave(project)
+  const placed = project.frame && placedLayout(project.frame, weave)
+  if (placed) {
+    drawCustomFrame(context, draw, placed, origin)
+    return
+  }
   const description = describeWeave(weave)
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   const { area } = draw
@@ -342,6 +350,49 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
     }
   }
 }
+
+/** A Custom frame (ADR 0077, ticket 0592): every position of its layout at its centre, turned to its panel's angle, in
+ * the Project's Bead shape, and its Seams as thin lines from the centre to each corner. What lies round the shape is
+ * left as it is: the Canvas's colour, no position marks. It has no Row order yet, so no row is faded or lit. */
+function drawCustomFrame(context: DrawingContext, draw: LayerDraw, placed: PlacedLayout, origin: { x: number; y: number }): void {
+  const { project, zoom, pixelRatio, look, drawBead, letters } = draw
+  const weave = frameWeave(project)
+  const beads = project.frame!.beads
+  const box = centredBead(placed)
+  const cornerRadius = beadRoundness(weave.technique, weave.cell) * placed.scale
+  context.save()
+  context.translate(origin.x, origin.y)
+  // The beads are turned, so their bitmaps are smoothed as they are laid down.
+  context.imageSmoothingEnabled = true
+  for (const position of placed.layout.positions) {
+    const at = layoutPointPx(placed, position)
+    const painted = beads[position.row]?.[position.column] ?? null
+    context.save()
+    context.translate(at.x, at.y)
+    context.rotate(position.angle)
+    drawBead(context, { ...box, size: placed.scale, cornerRadius, color: painted, dimmed: false, deviceScale: zoom * pixelRatio, theme: look })
+    const letter = painted === null ? undefined : letters?.[painted]
+    if (painted !== null && letter) {
+      drawBeadLetter(context, { ...box, size: placed.scale, color: painted, letter, dimmed: false, theme: look })
+    }
+    context.restore()
+  }
+  context.imageSmoothingEnabled = false
+  context.beginPath()
+  for (const [from, to] of placed.layout.seams) {
+    const start = layoutPointPx(placed, from)
+    const end = layoutPointPx(placed, to)
+    context.moveTo(start.x, start.y)
+    context.lineTo(end.x, end.y)
+  }
+  context.strokeStyle = look.pieceLine
+  context.lineWidth = SEAM_WIDTH_PX
+  context.stroke()
+  context.restore()
+}
+
+/** A Seam's width in grid px: a hairline at 100%. */
+const SEAM_WIDTH_PX = 1
 
 /** The Canvas's beads, bead by bead, with the Frame's footprint cut out so none shows over it. */
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
