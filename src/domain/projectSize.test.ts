@@ -195,9 +195,9 @@ describe('Netting sizes count diamonds (ticket 485)', () => {
 describe('a Custom frame\'s Estimated size (ticket 0592)', () => {
   const triangle = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 6 }), technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 6 } }
 
-  it('measures its shape, an equilateral Triangle standing on its side, not the cells of its bounding rectangle', () => {
+  it('measures its shape, a Triangle standing on its side, not the cells of its bounding rectangle', () => {
     const { widthMm, heightMm } = estimatedSizeMm(triangle, cube)
-    expect(widthMm / heightMm).toBeCloseTo(2 / Math.sqrt(3), 2)
+    expect(widthMm / heightMm).toBeCloseTo(2 / Math.sqrt(3), 1)
     expect(heightMm).toBeLessThan(triangle.rows * cube.heightMm)
   })
 

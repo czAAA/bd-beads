@@ -377,8 +377,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           <PanelItem icon="select" :disabled="locked" :disabled-body="t.tooltips.frameSizeLocked" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
         </div>
       </PanelSection>
-
-      <BeadQuantities :project="settledProject ?? project" />
     </template>
 
     <template v-else>
@@ -403,6 +401,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       >{{ t.frame.customKinds[kind] }}</PanelItem>
       <p class="frame-panel__line" data-testid="frame-custom-line">{{ t.frame.customLine }}</p>
     </PanelSection>
+
+    <BeadQuantities v-if="frame" :project="settledProject ?? project" />
   </div>
 </template>
 

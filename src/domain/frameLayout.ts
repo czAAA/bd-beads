@@ -25,9 +25,7 @@ export interface FrameLayout {
   height: number
   /** Where the Seams meet. */
   centre: LayoutPoint
-  /** The shape's corners in order, round its outline. */
-  outline: readonly LayoutPoint[]
-  /** The Seams between panels, each a line from the centre to a corner. */
+  /** The Seams between panels, each a line from the centre towards a corner, as far as the bounding rectangle. */
   seams: readonly (readonly [LayoutPoint, LayoutPoint])[]
   /** How far a bead of it reaches across its panel, in bead widths: rounds that nest close leave less room. */
   beadDepth: number
@@ -39,10 +37,9 @@ const TOUCHING = 1.5
 
 const layouts = new Map<string, FrameLayout>()
 
-/** Geometric peyote worked from the centre in Rounds (research: custom-frame-beading-order.md): `corners` sides, each a
- * peyote panel at its own angle; round n holds n beads a side (k × n), the corner pair split between the two sides it
- * joins. Each round's beads sit two widths apart along the side and half a bead out from the round before, so the
- * rounds nest; the sides are straight, so a round lies 1 / tan(180° / k) further out. Built once per size. */
+/** Geometric peyote in Rounds from the centre (research: custom-frame-beading-order.md): `corners` panels, round n with n
+ * beads a side (k × n), a corner pair split between its two sides; a round's beads two widths apart, each round
+ * 1 / tan(180° / k) further out so the rounds nest and the sides stay straight. Built once per size. */
 export function roundsLayout(corners: number, rounds: number): FrameLayout {
   const key = `${corners}:${rounds}`
   const known = layouts.get(key)
@@ -51,21 +48,12 @@ export function roundsLayout(corners: number, rounds: number): FrameLayout {
   const pitch = 1 / Math.tan(half)
   // The first round sits far enough out that no bead crosses a Seam.
   const first = pitch / 2 + 0.5
-  const apothem = first + (rounds - 1) * pitch + 0.5
-  const radius = apothem / Math.cos(half)
+  const radius = (first + (rounds - 1) * pitch + 0.5) / Math.cos(half)
   const sideAngle = (panel: number) => (panel * 2 * Math.PI) / corners
-  const corner = (panel: number) => {
-    // A side's outward normal is its bead angle turned a quarter: panel 0 faces down, its side at the bottom.
-    const normal = sideAngle(panel) + Math.PI / 2 - half
-    return { x: radius * Math.cos(normal), y: radius * Math.sin(normal) }
-  }
-  const raw = Array.from({ length: corners }, (_unused, panel) => corner(panel))
-  const left = Math.min(...raw.map(({ x }) => x))
-  const top = Math.min(...raw.map(({ y }) => y))
-  const centre = { x: -left, y: -top }
-  const outline = raw.map(({ x, y }) => ({ x: x + centre.x, y: y + centre.y }))
+  const beadDepth = Math.min(1, 2 * pitch)
 
-  const positions: LayoutPosition[] = []
+  // Worked out round the centre at 0, 0, then moved so the beads sit in the middle of the box round them.
+  const raw: LayoutPosition[] = []
   for (let round = 0; round < rounds; round += 1) {
     const out = first + round * pitch
     for (let panel = 0; panel < corners; panel += 1) {
@@ -75,27 +63,35 @@ export function roundsLayout(corners: number, rounds: number): FrameLayout {
       for (let place = 0; place <= round; place += 1) {
         // Placed from the side's end that meets the panel before towards the next, so a round runs on round the shape.
         const offset = round - 2 * place
-        positions.push({
-          row: round,
-          column: panel * (round + 1) + place,
-          panel,
-          angle,
-          x: centre.x + normal.x * out + along.x * offset,
-          y: centre.y + normal.y * out + along.y * offset,
-        })
+        raw.push({ row: round, column: panel * (round + 1) + place, panel, angle, x: normal.x * out + along.x * offset, y: normal.y * out + along.y * offset })
       }
     }
+  }
+  // The box hugs the beads, half a bead's diagonal round their centres, not the empty points of the shape's corners.
+  const pad = Math.hypot(0.5, beadDepth / 2)
+  const left = Math.min(...raw.map(({ x }) => x)) - pad
+  const top = Math.min(...raw.map(({ y }) => y)) - pad
+  const width = Math.max(...raw.map(({ x }) => x)) + pad - left
+  const height = Math.max(...raw.map(({ y }) => y)) + pad - top
+  const centre = { x: -left, y: -top }
+  const positions = raw.map((position) => ({ ...position, x: position.x + centre.x, y: position.y + centre.y }))
+  // A Seam runs from the centre towards its corner, as far as the box.
+  const seamEnd = (panel: number) => {
+    const towards = sideAngle(panel) + Math.PI / 2 - half
+    const dx = Math.cos(towards)
+    const dy = Math.sin(towards)
+    const reach = Math.min(radius, dx > 0 ? (width - centre.x) / dx : dx < 0 ? -centre.x / dx : Infinity, dy > 0 ? (height - centre.y) / dy : dy < 0 ? -centre.y / dy : Infinity)
+    return { x: centre.x + dx * reach, y: centre.y + dy * reach }
   }
 
   const layout: FrameLayout = {
     positions,
     panels: corners,
-    width: Math.max(...outline.map(({ x }) => x)),
-    height: Math.max(...outline.map(({ y }) => y)),
+    width,
+    height,
     centre,
-    outline,
-    seams: outline.map((point) => [centre, point] as const),
-    beadDepth: Math.min(1, 2 * pitch),
+    seams: Array.from({ length: corners }, (_unused, panel) => [centre, seamEnd(panel)] as const),
+    beadDepth,
   }
   layouts.set(key, layout)
   return layout

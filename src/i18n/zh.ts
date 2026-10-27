@@ -631,6 +631,7 @@ export const zh: Translations = {
     countNeedsFrame: '设置边框后才能计数。',
     progressSelectToSet: '选择以设置',
     progressFrameWord: '边框',
+    progressNotForShape: '此形状暂不支持行进度',
     rotateCoveredMessage: '旋转后的片段落在了已有的珠子上方。',
   },
   size: {

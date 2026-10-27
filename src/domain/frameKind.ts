@@ -2,7 +2,7 @@ import type { FrameSheet } from './canvas'
 import { layoutPosition, roundsLayout, type FrameLayout } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { rowsOrder, type RowOrder, type RowWay } from './rowOrder'
-import { describeWeave, type Technique, type Weave } from './weave'
+import { describeWeave, ROUNDS_TECHNIQUE, type Technique, type Weave } from './weave'
 
 /** The Frame kinds (spec 0590, ADR 0077): what sort of Frame it is. Rectangular is the Frame as it has always been;
  * a Triangle and a Warped Square are Custom frames of peyote panels worked in Rounds from the centre (ticket 0592). */
@@ -19,7 +19,7 @@ export interface FrameSettings {
 }
 
 /** One setting of a kind: its default, its smallest and largest, and the sizes offered as presets. */
-export interface FrameSetting {
+interface FrameSetting {
   default: number
   min: number
   max: number
@@ -68,13 +68,13 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
     id: 'triangle',
     removedBeads: 'removed',
     allows: new Set(),
-    custom: { technique: 'peyote', rounds: ROUNDS, layout: ({ rounds }) => roundsLayout(3, rounds) },
+    custom: { technique: ROUNDS_TECHNIQUE, rounds: ROUNDS, layout: ({ rounds }) => roundsLayout(3, rounds) },
   },
   warpedSquare: {
     id: 'warpedSquare',
     removedBeads: 'removed',
     allows: new Set(),
-    custom: { technique: 'peyote', rounds: ROUNDS, layout: ({ rounds }) => roundsLayout(4, rounds) },
+    custom: { technique: ROUNDS_TECHNIQUE, rounds: ROUNDS, layout: ({ rounds }) => roundsLayout(4, rounds) },
   },
 }
 

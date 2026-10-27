@@ -649,6 +649,7 @@ export const es: Translations = {
     countNeedsFrame: 'Define el marco para contar las cuentas.',
     progressSelectToSet: 'Selecciona para definir el',
     progressFrameWord: 'marco',
+    progressNotForShape: 'El progreso por filas aún no está disponible para esta forma',
     rotateCoveredMessage: 'El fragmento girado quedó sobre cuentas existentes.',
   },
   size: {

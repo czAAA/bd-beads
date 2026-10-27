@@ -61,6 +61,9 @@ interface TechniqueRules {
   flatStarter: boolean
   /** Whether it is the one a narrow, shifted-row Starter (earrings) starts in. */
   narrowStarterDefault?: boolean
+  /** Whether geometric shapes are worked in it in rounds from the centre: a Triangle's or Warped Square's panels
+   * (Custom frames, ticket 0592). */
+  worksInRounds?: boolean
   /** Every other row (or block of rows) sits half a bead across. */
   shifted: boolean
   /** Distance from one row's top to the next, in bead heights: peyote rows nest into each other. */
@@ -117,6 +120,7 @@ const TECHNIQUE_RULES = {
   peyote: {
     nameKey: 'techniquePeyote',
     narrowStarterDefault: true,
+    worksInRounds: true,
     overviewKey: 'peyote',
     overviewBackground: true,
     flatStarter: true,
@@ -604,6 +608,9 @@ export function techniqueNameKey(technique: Technique): TechniqueNameKey {
 
 /** The Techniques a flat Starter (gerdan, bracelet, earrings, bag) can be woven in, in picker order. */
 export const FLAT_TECHNIQUES: readonly Technique[] = TECHNIQUES.filter((technique) => RULES[technique].flatStarter)
+
+/** The Technique a Custom frame worked in rounds from the centre is woven in (ticket 0592): geometric peyote. */
+export const ROUNDS_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksInRounds) ?? DEFAULT_TECHNIQUE
 
 /** The Techniques an earrings Starter offers: its default first, then the other flat ones. */
 export const NARROW_STARTER_TECHNIQUES: readonly Technique[] = [

@@ -54,6 +54,19 @@ describe('a layout built by Rounds (spec 0590, ticket 0592)', () => {
     expect(layout.width).toBeGreaterThan(layout.height)
   })
 
+  it('sits in the middle of its bounding rectangle, which hugs its beads and not the empty points of its corners', () => {
+    for (const corners of [3, 4] as const) {
+      const layout = roundsLayout(corners, 7)
+      const xs = layout.positions.map(({ x }) => x)
+      const ys = layout.positions.map(({ y }) => y)
+      // No bead centre is more than a bead from the edge, and the room left is the same on both sides.
+      expect(Math.min(...xs)).toBeLessThan(1)
+      expect(Math.min(...ys)).toBeLessThan(1)
+      expect(Math.min(...xs)).toBeCloseTo(layout.width - Math.max(...xs), 5)
+      expect(Math.min(...ys)).toBeCloseTo(layout.height - Math.max(...ys), 5)
+    }
+  })
+
   it('finds the bead under a point, and none on a Seam or Off-shape', () => {
     const layout = roundsLayout(4, 4)
     const bead = layout.positions[20]!

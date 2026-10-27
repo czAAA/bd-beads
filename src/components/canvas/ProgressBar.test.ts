@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import ProgressBar from './ProgressBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, moveToRow, toggleRowDirection, type Project } from '../../domain/project'
+import { changeFrame } from '../../domain/changeFrame'
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
@@ -229,5 +230,17 @@ describe('ProgressBar keyboard (ticket 563, ADR 0075)', () => {
     await buttons[0]!.trigger('keydown', { key: 'ArrowRight' })
     expect(document.activeElement).toBe(buttons[1]!.element)
     wrapper.unmount()
+  })
+})
+
+describe('ProgressBar on a Custom frame (ticket 0592)', () => {
+  it('says Row progress is not there for the shape yet, and offers no row buttons', () => {
+    const placed = changeFrame(makeProject(), { custom: { kind: 'triangle', rounds: 4, centre: { row: 10, column: 10 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+    const wrapper = mount(ProgressBar, { props: { project: placed.project } })
+
+    expect(wrapper.get('[data-testid="progress-bar-not-for-shape"]').text()).toBe(ru.frame.progressNotForShape)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').exists()).toBe(false)
   })
 })

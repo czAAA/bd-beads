@@ -18,4 +18,6 @@ Row done and Row not done show text and follow Row direction: top to bottom they
 
 **No Frame (v16).** Row progress works on the Frame: its rows are the Frame's rows. Until a Frame is set the bar shows the hint "[Select icon] Select to set a [Frame icon] Frame" (`meta`, `muted`; each icon, 14px, in a 20px hint chip like the CanvasHint's Kbd chips: `elevated`, 1px `line-strong` edge with a 2px bottom, `radius-xs`) and, right-aligned, a Fit to drawing button (secondary in a box, `frame` icon); Fit to drawing is shown only while there is no Frame (ticket 426). Row done and Row not done are not offered, and the bar keeps its height so the canvas does not jump.
 
+**A Frame with no Row order yet (ticket 0592).** A Custom frame's Row order comes later (ticket 0594), so its bar shows one line in the No Frame hint's type ("Row progress isn't available for this shape yet", `meta`, `muted`) and nothing else; it keeps its height.
+
 Hand-written from DESIGN.md §5.11 and the v16 sign-off; static rendition.

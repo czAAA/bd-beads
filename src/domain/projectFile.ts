@@ -8,10 +8,9 @@ import { isTechnique } from './weave'
 // `projectFileCodec`'s.
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
-/** Version 3 is the first gzipped one: `projects`, each with its beads in the compact encoding (ADR 0009). Version 4
- * (ADR 0066) saves the Frame with its own beads, 5 (ticket 0525) each Project's Palette and 6 (ticket 0528) the default
- * colors it removed, 7 (ticket 534) a full copy of its Bead, 8 (ticket 0538) the catalog codes of its swatches and 9 (ticket 0592) a Custom frame's kind,
- * settings and beads by layout position; a build that knows only the version before refuses the file rather than drop them. */
+/** Version 3 is the first gzipped one, beads in the compact encoding (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5
+ * (0525) the Palette, 6 (0528) removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame;
+ * a build that knows only the version before refuses the file rather than drop them. */
 const FILE_VERSION = 9
 
 interface ProjectFile {
