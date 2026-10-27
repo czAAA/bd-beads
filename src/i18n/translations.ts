@@ -435,6 +435,8 @@ export interface Translations {
     selectAllLabel: string
     copyButton: string
     pasteClippedMessage: PluralForms
+    /** A Paste or Rotate on a Custom frame: beads that landed on a Seam or Off-shape (ticket 0594). */
+    droppedOnShapeMessage: PluralForms
     cutButton: string
     /** Ctrl/Cmd+V (ticket 92) has no Toolbox button of its own — only the shortcuts help overlay (ticket 96) names
      * it. */
@@ -481,6 +483,15 @@ export interface Translations {
     rightToLeft: string
     /** The progress track's accessible name. */
     finishedLabel: string
+    /** A Custom frame's pass (ticket 0594): a round, a row, a part's round or a join, `{parts}` as `1–2`. */
+    stepRound: string
+    stepRow: string
+    stepPartRound: string
+    stepZip: string
+    stepHinge: string
+    stepClose: string
+    ofSteps: string
+    stepOfSteps: string
   }
   quantities: {
     heading: string
@@ -573,6 +584,10 @@ export interface Translations {
       oddCount: string
       sides: string
       runNote: string
+      /** Where a Custom frame's Word chart starts, by its Row order (ticket 0594). */
+      firstCentre: string
+      firstPoint: string
+      partsThenJoins: string
     }
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */
@@ -750,7 +765,6 @@ export interface Translations {
     progressSelectToSet: string
     progressFrameWord: string
     /** The Progress bar on a Frame whose kind has no Row order yet (a Custom frame, ticket 0592). */
-    progressNotForShape: string
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
   }

@@ -2,7 +2,8 @@ import { forEachBead } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
 import { countedDimensions, frameWeave, type Project } from '../domain/project'
 import { describeWeave } from '../domain/weave'
-import { planPrint, type PrintPart, type PrintPlan } from './printPlan'
+import { displayedGrid, planPrint, type PrintPart, type PrintPlan } from './printPlan'
+import { chartCellOf, customChart } from './customChart'
 
 // A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
 // no counts (the Specification has the totals). Its height is set once for the PDF, from the page with the most colors.
@@ -27,13 +28,23 @@ function displayedAt(rotation: Rotation, columns: number, rows: number, column: 
 export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): string[] {
   const { frame } = project
   if (!frame) return []
+  const onPart = (across: number, down: number) => parts.some((part) => across >= part.firstAcross - part.overlapAcross && across <= part.lastAcross && down >= part.firstDown - part.overlapDown && down <= part.lastDown)
+  // A Custom frame's beads lie at angles: each counts in the cell its centre falls in (ticket 0594).
+  const custom = customChart(project, { x: 0, y: 0, width: 0, height: 0 }, 1)
+  if (custom) {
+    const { stepAcross, stepDown } = displayedGrid(project)
+    return [...new Set(custom.beads.flatMap((bead) => {
+      const { across, down } = chartCellOf(bead, stepAcross, stepDown)
+      return bead.color && onPart(across, down) ? [bead.color] : []
+    }))]
+  }
   const weave = describeWeave(frameWeave(project))
   const { columns, rows } = countedDimensions(project)
   const found = new Set<string>()
   forEachBead(frame.beads, (row, column, hex) => {
     if (!weave.hasPosition({ row, column }, { ...frame, row: 0, column: 0 })) return
     const [across, down] = displayedAt(project.rotation, columns, rows, Math.floor(column / weave.columnsPerUnit), Math.floor(row / weave.rowsPerUnit))
-    if (parts.some((part) => across >= part.firstAcross - part.overlapAcross && across <= part.lastAcross && down >= part.firstDown - part.overlapDown && down <= part.lastDown)) {
+    if (onPart(across, down)) {
       found.add(hex)
     }
   })

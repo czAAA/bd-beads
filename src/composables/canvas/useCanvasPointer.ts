@@ -2,6 +2,7 @@ import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Layer } from '../../domain/layers'
 import { isInFinishedRow, type Project } from '../../domain/project'
+import { pasteAimAtBead } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 
 /** What pointer input on the canvas needs from the app shell: the open Project and tool, the paint color, and the
@@ -68,7 +69,11 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   // Ctrl/Cmd+V (ticket 92): pastes at the hovered cell under any tool. Claims the chord from the browser only when
   // something was pasted, so a no-op leaves the browser's own handling alone.
   function pasteAtPointer(event: KeyboardEvent) {
-    if (deps.pasteAt(hoveredCell.value)) {
+    const hovered = hoveredCell.value
+    const project = deps.currentProject()
+    // Select hovers cells; every other tool hovers beads, which a Custom frame names by round and place (ticket 0594).
+    const aim = hovered && project && deps.activeTool() !== 'select' ? pasteAimAtBead(project, hovered) : hovered
+    if (deps.pasteAt(aim)) {
       event.preventDefault()
     }
   }

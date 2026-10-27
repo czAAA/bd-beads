@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, type Project } from './project'
+import { changeFrame } from './changeFrame'
+import { frameLayoutOf } from './frameKind'
+import { kiteWingBeads } from './frameLayout'
+import { onLayer } from './layers'
+import { createProject, paintCells, type Project } from './project'
 import type { Technique } from './weave'
 import { hasWordChart, wordChartOf } from './wordChart'
 
@@ -89,5 +93,44 @@ describe('Word chart (ticket 0574)', () => {
     const chart = wordChartOf(project)!
     expect(chart.firstEdge).toBe(edge)
     expect(chart.rows[0]!.runs.map((run) => `${run.count}${run.letter}`).join(',')).toBe(runs)
+  })
+})
+
+describe('Word chart of a Custom frame (ticket 0594)', () => {
+  /** An open Canvas with a Custom frame of a kind and size, Letters on, its beads painted A where `paint` says. */
+  function shaped(kind: 'triangle' | 'kite' | 'star', size: number, paint: (position: { row: number; column: number }) => boolean): Project {
+    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+    const placed = changeFrame(open, { custom: { kind, size, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
+    const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, frameLayoutOf(placed.project.frame!)!.positions.filter(paint), HEX.A))
+    return { ...painted, letters: true, paletteLetters: { [HEX.A]: 'A' } }
+  }
+  const words = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.number} ${JSON.stringify(row.step)}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)
+
+  it('lists a Triangle round by round from the centre, each round round the shape', () => {
+    const chart = wordChartOf(shaped('triangle', 3, ({ column }) => column % 3 === 0))!
+    expect(chart.start).toBe('centre')
+    expect(chart.marked).toBe(false)
+    expect(words(shaped('triangle', 3, ({ column }) => column % 3 === 0))).toEqual([
+      '1 {"kind":"round","number":1}: 1A,2*',
+      '2 {"kind":"round","number":2}: 1A,2*,1A,2*',
+      '3 {"kind":"round","number":3}: 1A,2*,1A,2*,1A,2*',
+    ])
+  })
+
+  it('lists a Kite row by row from its point', () => {
+    const chart = wordChartOf(shaped('kite', 5, () => true))!
+    expect(chart.start).toBe('point')
+    // Each row a chevron: its two wings' beads, the spine pair included.
+    expect(chart.rows.map((row) => row.runs)).toEqual([0, 1, 2, 3, 4].map((row) => [{ count: 2 * (kiteWingBeads(row, 5) + 1), letter: 'A' }]))
+  })
+
+  it('lists a Star part by part and then its joins, each join a line with no runs', () => {
+    const chart = wordChartOf(shaped('star', 2, () => false))!
+    expect(chart.start).toBe('parts')
+    expect(chart.rows).toHaveLength(5 * 2 + 5)
+    expect(chart.rows[2]).toMatchObject({ number: 3, step: { kind: 'round', number: 1, part: 2 }, runs: [{ count: 4, letter: undefined }] })
+    expect(chart.rows[10]).toMatchObject({ number: 11, step: { kind: 'join', step: 'zip', parts: [1, 2] }, runs: [] })
+    expect(chart.lastNumber).toBe(15)
   })
 })
