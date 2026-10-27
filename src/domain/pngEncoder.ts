@@ -77,6 +77,12 @@ export async function deflateRgb(width: number, height: number, stripRows: numbe
   return compressed
 }
 
+/** `text` zlib-compressed (ASCII, as a PDF page's drawing operators are): a PDF stream's FlateDecode data (ticket 0585). */
+export async function deflateText(text: string): Promise<Uint8Array> {
+  const compressed = new Response(new Blob([text]).stream().pipeThrough(new CompressionStream('deflate')))
+  return new Uint8Array(await compressed.arrayBuffer())
+}
+
 /**
  * An opaque 8-bit RGB PNG, `width` × `height`, read `stripRows` rows at a time from `strip` (whose alpha is ignored).
  */

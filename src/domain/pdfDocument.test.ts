@@ -29,8 +29,22 @@ describe('buildPdf (ticket 74)', () => {
 
     expect(pdf).toContain('/ViewerPreferences << /PrintScaling /None >>')
     expect(pdf).toContain('/Title <feff004100e9>')
-    expect(pdf).toMatch(/\/Info 6 0 R/)
-    expect(pdf).toContain('/Size 7')
+    expect(pdf).toMatch(/\/Info 8 0 R/)
+    expect(pdf).toContain('/Size 9')
+  })
+
+  it('lays a chart page\'s drawing over its picture, with the two built-in Helvetica faces to set its letters in (ticket 0585)', async () => {
+    const drawing = Uint8Array.of(0x78, 0x9c, 9, 9)
+    const pdf = await text(buildPdf([{ ...page, drawing }, page], 100, 100))
+
+    expect(pdf).toContain('/BaseFont /Helvetica /Encoding /WinAnsiEncoding')
+    expect(pdf).toContain('/BaseFont /Helvetica-Bold')
+    expect(pdf).toContain('/Font << /F1 3 0 R /F2 4 0 R >>')
+    // The first page has four objects (page, content, picture, drawing), so the second starts at 9.
+    expect(pdf).toContain('/Contents [6 0 R 8 0 R]')
+    expect(pdf).toContain('/Kids [5 0 R 9 0 R]')
+    expect(pdf).toContain('8 0 obj\n<< /Filter /FlateDecode /Length 4 >>')
+    expect(pdf.match(/\/Subtype \/Image/g)).toHaveLength(2)
   })
 
   it('points its cross-reference table at where each object really starts', async () => {
@@ -38,7 +52,7 @@ describe('buildPdf (ticket 74)', () => {
 
     const table = pdf.slice(pdf.indexOf('xref\n')).split('\n').slice(3)
     const offsets = table.filter((line) => line.endsWith(' n ')).map((line) => Number(line.slice(0, 10)))
-    expect(offsets).toHaveLength(5)
+    expect(offsets).toHaveLength(7)
     offsets.forEach((offset, index) => {
       expect(pdf.slice(offset).startsWith(`${index + 1} 0 obj`)).toBe(true)
     })

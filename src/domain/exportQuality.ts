@@ -10,9 +10,9 @@ export function parseExportQuality(raw: string): ExportQuality | undefined {
   return EXPORT_QUALITIES.find((quality) => quality === raw)
 }
 
-/** The dpi the PDF's pages and the PNG's are drawn at for each quality (QualitySlider card, tickets 572, 0583); the sheet is
- * A4 whatever it is. */
-export const PDF_DPI_BY_QUALITY: Record<ExportQuality, number> = { low: 150, medium: 300, high: 450 }
+/** The dpi the PNG's pages are drawn at for each quality (QualitySlider card, tickets 572, 0583, 0585); the sheet is A4
+ * whatever it is. The PDF is not on the slider (ADR 0076). */
+export const PNG_DPI_BY_QUALITY: Record<ExportQuality, number> = { low: 150, medium: 300, high: 450 }
 
 /** A file size in whole megabytes, rounded the way an estimate should read: never to the digit ("≈ 12 MB", not 11.8). */
 export function roundedMegabytes(bytes: number): number {
@@ -21,3 +21,6 @@ export function roundedMegabytes(bytes: number): number {
   const step = mb < 100 ? 5 : 50
   return Math.round(mb / step) * step
 }
+
+/** The dpi the PDF's picture pages and the text picture under each chart page are drawn at (`print-dpi`, ADR 0076). */
+export const PDF_PAGE_DPI = 300

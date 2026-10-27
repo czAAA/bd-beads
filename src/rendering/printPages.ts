@@ -1,22 +1,15 @@
 import { countedDimensions } from '../domain/project'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
-import { groupThousands } from '../domain/formatNumber'
-import { shownLetters, type Project } from '../domain/project'
+import type { Project } from '../domain/project'
 import type { SwatchLetters } from '../domain/swatchLetters'
-import { drawBeadLetter, drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
-import { colorsOnParts } from './chartPageKey'
+import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import {
   PRINT_BOARD_PAD,
-  PRINT_HEADER,
-  PRINT_KEY,
-  PRINT_MARGIN,
   PRINT_RULER,
-  PRINT_PART_LABEL,
-  continuation,
   displayedGrid,
   mm,
   type PageSize,
@@ -180,13 +173,13 @@ function downReversed(rotation: Rotation): boolean {
 
 /** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted
  * from its far end when the turn reverses this axis. */
-function acrossNumber(project: RulerShape, index: number): number {
+export function acrossNumber(project: RulerShape, index: number): number {
   const dimension = rotationSwapsAxes(project.rotation) ? countedDimensions(project).rows : countedDimensions(project).columns
   return acrossReversed(project.rotation) ? dimension - index : index + 1
 }
 
 /** The down-axis equivalent of acrossNumber. */
-function downNumber(project: RulerShape, index: number): number {
+export function downNumber(project: RulerShape, index: number): number {
   const dimension = rotationSwapsAxes(project.rotation) ? countedDimensions(project).columns : countedDimensions(project).rows
   return downReversed(project.rotation) ? dimension - index : index + 1
 }
@@ -240,15 +233,9 @@ export function drawRulers(context: CanvasRenderingContext2D, project: Project, 
   context.restore()
 }
 
-/** How a chart page's ruler sets a number: every 10th bold and `ink`, every 5th `ink`, the rest `muted`. */
+/** How a chart page's ruler sets a number: every 10th bold and `ink`, every 5th regular and `muted`, the rest none. */
 export function rulerLevel(value: number): 'tenth' | 'fifth' | 'plain' {
   return value % 10 === 0 ? 'tenth' : value % 5 === 0 ? 'fifth' : 'plain'
-}
-
-/** Which band a number stands in on a chart page: odd on the top and left, even on the bottom and right, so each
- * number appears once (printed-output.md, Chart pages). */
-export function rulerSide(value: number): 'start' | 'end' {
-  return value % 2 === 1 ? 'start' : 'end'
 }
 
 /** Whether the line between two neighbouring beads (their Schema numbers) closes a block of 5 or 10: a fine line every
@@ -256,94 +243,6 @@ export function rulerSide(value: number): 'start' | 'end' {
 export function lineBetween(a: number, b: number): 'tenth' | 'fifth' | undefined {
   const level = rulerLevel(Math.min(a, b))
   return level === 'plain' ? undefined : level
-}
-
-/** A chart part's rulers (ticket 579): every column and row numbered in the Project's own numbers, odd top and left, even
- * bottom and right, columns turned. The overlap is shaded with `faint` numbers under an `accent` line where the part
- * begins; fine and heavier lines run over the beads. */
-function drawChartRulers(context: CanvasRenderingContext2D, project: Project, zoom: number, at: Board, part: PrintPart): void {
-  const grid = displayedGrid(project)
-  const gap = PRINT_BOARD_PAD + PRINT_RULER / 2
-  const firstAcross = part.firstAcross - part.overlapAcross
-  const firstDown = part.firstDown - part.overlapDown
-  const acrossAt = (index: number) => at.x + (index - firstAcross) * grid.stepAcross * zoom
-  const downAt = (index: number) => at.y + (index - firstDown) * grid.stepDown * zoom
-
-  context.save()
-  context.beginPath()
-  context.rect(at.x, at.y, at.width, at.height)
-  context.clip()
-  context.fillStyle = PRINT_COLORS.paper
-  context.globalAlpha = 0.6
-  if (part.overlapAcross) context.fillRect(at.x, at.y, acrossAt(part.firstAcross) - at.x, at.height)
-  if (part.overlapDown) context.fillRect(at.x, at.y, at.width, downAt(part.firstDown) - at.y)
-  context.restore()
-
-  // The lines over the beads: the first bead of an axis has no line before it.
-  context.save()
-  context.strokeStyle = PRINT_COLORS.ink
-  for (const level of ['fifth', 'tenth'] as const) {
-    context.globalAlpha = level === 'tenth' ? 0.7 : 0.3
-    context.lineWidth = pt(level === 'tenth' ? 0.8 : 0.4)
-    context.beginPath()
-    for (let index = firstAcross + 1; index <= part.lastAcross; index += 1) {
-      if (lineBetween(acrossNumber(project, index - 1), acrossNumber(project, index)) !== level) continue
-      context.moveTo(acrossAt(index), at.y)
-      context.lineTo(acrossAt(index), at.y + at.height)
-    }
-    for (let index = firstDown + 1; index <= part.lastDown; index += 1) {
-      if (lineBetween(downNumber(project, index - 1), downNumber(project, index)) !== level) continue
-      context.moveTo(at.x, downAt(index))
-      context.lineTo(at.x + at.width, downAt(index))
-    }
-    context.stroke()
-  }
-  context.restore()
-
-  // Where the part itself begins.
-  context.save()
-  context.strokeStyle = PRINT_COLORS.accent
-  context.lineWidth = pt(1.4)
-  context.beginPath()
-  if (part.overlapAcross) {
-    context.moveTo(acrossAt(part.firstAcross), at.y)
-    context.lineTo(acrossAt(part.firstAcross), at.y + at.height)
-  }
-  if (part.overlapDown) {
-    context.moveTo(at.x, downAt(part.firstDown))
-    context.lineTo(at.x + at.width, downAt(part.firstDown))
-  }
-  context.stroke()
-  context.restore()
-
-  const label = (value: number, x: number, y: number, turned: boolean, overlap: boolean) => {
-    const level = rulerLevel(value)
-    context.save()
-    context.font = font(level === 'tenth' ? '700' : '400', 6.5, MONO)
-    context.fillStyle = overlap ? PRINT_COLORS.faint : level === 'plain' ? PRINT_COLORS.muted : PRINT_COLORS.ink
-    context.textAlign = 'center'
-    context.textBaseline = 'middle'
-    context.translate(x, y)
-    if (turned) context.rotate(-Math.PI / 2)
-    context.fillText(String(value), 0, 0)
-    context.restore()
-  }
-  for (let index = firstAcross; index <= part.lastAcross; index += 1) {
-    const value = acrossNumber(project, index)
-    const x = acrossAt(index) + (grid.beadAcross * zoom) / 2
-    label(value, x, rulerSide(value) === 'start' ? at.y - gap : at.y + at.height + gap, true, index < part.firstAcross)
-  }
-  for (let index = firstDown; index <= part.lastDown; index += 1) {
-    const value = downNumber(project, index)
-    const y = downAt(index) + (grid.beadDown * zoom) / 2
-    label(value, rulerSide(value) === 'start' ? at.x - gap : at.x + at.width + gap, y, false, index < part.firstDown)
-  }
-}
-
-/** The technique word in the serif, in the accent, and the Project's name beside it; returns where the name ends. */
-function drawTitle(context: CanvasRenderingContext2D, words: PrintText, x: number, y: number, wordSize: number, nameSize: number, maxWidth: number): void {
-  const word = text(context, words.techniqueWord, x, y, font('italic 400', wordSize, SERIF), PRINT_COLORS.accent)
-  text(context, words.name, x + word + mm(2.5), y, font('700', nameSize, SANS), PRINT_COLORS.ink, 'left', Math.max(mm(20), maxWidth - word - mm(2.5)))
 }
 
 /** A white pill with an accent border holding `value`, its top left at (x, y); returns its width. */
@@ -406,143 +305,6 @@ export function drawParts(context: CanvasRenderingContext2D, project: Project, p
   }
 }
 
-// ---- Chart pages --------------------------------------------------------------------------------------------------
-
-/** Past this many blocks, the locator lays out as a horizontal strip instead of the block grid's own shape (ticket
- * 187). */
-export const MINI_MAP_GRID_LIMIT = 16
-
-export interface MiniMapCell {
-  across: number
-  down: number
-  /** Whether this cell is the page being drawn. */
-  here: boolean
-}
-
-// The locator's layout (ticket 187): the block grid's shape up to `MINI_MAP_GRID_LIMIT` blocks, or one horizontal row
-// past that, so a tall split doesn't add a tall locator and push the chart down. Pure, so checkable without a canvas;
-// `drawMiniMap` draws it.
-export function miniMapLayout(plan: PrintPlan, part: PrintPart): { cell: number; width: number; cells: MiniMapCell[] } {
-  const total = plan.partsAcross * plan.partsDown
-  const horizontal = total > MINI_MAP_GRID_LIMIT
-  const columns = horizontal ? total : plan.partsAcross
-  const cell = horizontal ? Math.min(mm(2), mm(40) / total) : Math.min(mm(3), mm(24) / Math.max(plan.partsAcross, plan.partsDown))
-  const at = (index: number): [number, number] => (horizontal ? [index, 0] : [index % plan.partsAcross, Math.floor(index / plan.partsAcross)])
-  const cells = Array.from({ length: total }, (_, index) => {
-    const [across, down] = at(index)
-    return { across, down, here: plan.parts[index]!.page === part.page }
-  })
-  return { cell, width: cell * columns, cells }
-}
-
-/** A small map of the Project's blocks, drawn from `miniMapLayout`, the one on this page filled. */
-function drawMiniMap(context: CanvasRenderingContext2D, plan: PrintPlan, part: PrintPart, right: number, top: number): number {
-  const layout = miniMapLayout(plan, part)
-  const x = right - layout.width
-
-  context.save()
-  context.lineWidth = pt(0.5)
-  context.strokeStyle = PRINT_COLORS.muted
-  for (const at of layout.cells) {
-    context.fillStyle = at.here ? PRINT_COLORS.ink : PRINT_COLORS.paper
-    context.fillRect(x + at.across * layout.cell, top + at.down * layout.cell, layout.cell - pt(1), layout.cell - pt(1))
-    context.strokeRect(x + at.across * layout.cell, top + at.down * layout.cell, layout.cell - pt(1), layout.cell - pt(1))
-  }
-  context.restore()
-  return layout.width
-}
-
-/** The header's page number, large, with "Page 3 of 9" under it; returns where its left edge is. */
-function drawPageNumber(context: CanvasRenderingContext2D, labels: PrintText['labels'], plan: PrintPlan, page: number, right: number): number {
-  const big = text(context, String(page), right, PRINT_MARGIN + mm(9), font('700', 26, SANS), PRINT_COLORS.ink, 'right')
-  const small = labels.page.replace('{page}', String(page)).replace('{pages}', String(plan.pageCount))
-  const width = text(context, small, right, PRINT_MARGIN + mm(14), font('400', 6.5, MONO), PRINT_COLORS.muted, 'right')
-  return right - Math.max(big, width)
-}
-
-/** The color key under the boards: a swatch, name and the beads of it on this page, in columns that read down, with the
- * reading line at the bottom. A list too long for the room ends in an ellipsis. */
-function drawColorKey(context: CanvasRenderingContext2D, project: Project, words: PrintText, parts: PrintPart[], pageWidth: number, area: { top: number; bottom: number }): void {
-  const { labels } = words
-  const left = PRINT_MARGIN
-  const width = pageWidth - PRINT_MARGIN * 2
-  text(context, labels.readNumbers, left, area.bottom, font('400', 7, SANS), PRINT_COLORS.muted, 'left', width)
-
-  let y = area.top + pt(8)
-  text(context, labels.keyOnPage, left, y, font('700', 8, SANS), PRINT_COLORS.ink)
-  y += mm(2)
-  const named = new Map(words.colors.map((color) => [color.hex, color]))
-  const colors = colorsOnParts(project, parts).filter(({ hex }) => named.has(hex))
-  const lettered = project.letters && colors.some(({ hex }) => named.get(hex)?.letter)
-  const rowHeight = lettered ? mm(5) : mm(4.2)
-  const swatch = lettered ? mm(4.2) : mm(3)
-  const columns = 3
-  const columnWidth = width / columns
-  const rows = Math.max(1, Math.floor((area.bottom - mm(5) - y) / rowHeight))
-  const fits = colors.length <= rows * columns
-  const shown = fits ? colors : colors.slice(0, rows * columns - 1)
-
-  shown.forEach(({ hex, count }, index) => {
-    const x = left + Math.floor(index / rows) * columnWidth
-    const top = y + (index % rows) * rowHeight
-    const middle = top + rowHeight / 2
-    const color = named.get(hex)!
-    context.fillStyle = hex
-    context.beginPath()
-    context.roundRect(x, middle - swatch / 2, swatch, swatch, swatch * 0.28)
-    context.fill()
-    context.strokeStyle = 'rgba(0, 0, 0, 0.2)'
-    context.lineWidth = pt(0.5)
-    context.stroke()
-    if (lettered && color.letter) drawBeadLetter(context, { x, y: middle - swatch / 2, size: swatch, color: hex, letter: color.letter, dimmed: false, theme: PRINT_THEME })
-    const countRight = x + columnWidth - mm(4)
-    const counted = text(context, groupThousands(count, words.locale), countRight, middle + pt(3), font('400', 7.5, MONO), PRINT_COLORS.ink, 'right')
-    text(context, color.name, x + swatch + mm(2), middle + pt(3), font('400', 8, SANS), PRINT_COLORS.ink, 'left', columnWidth - swatch - mm(2) - counted - mm(7))
-  })
-  if (!fits) {
-    const index = shown.length
-    text(context, '…', left + Math.floor(index / rows) * columnWidth, y + (index % rows) * rowHeight + rowHeight / 2 + pt(3), font('400', 8, SANS), PRINT_COLORS.muted)
-  }
-}
-
-/** A chart page: its parts, each on its own board under its label, where the plan placed them (ticket 578), with the
- * header, the page's color key and the footer (ticket 579). */
-export function drawChartPage(project: Project, words: PrintText, plan: PrintPlan, parts: PrintPart[], scale = 1): HTMLCanvasElement {
-  const { page } = plan
-  const { canvas, context } = blankPage(page, scale)
-  const { labels } = words
-  const inset = PRINT_RULER + PRINT_BOARD_PAD
-  const here = parts[0]!
-
-  // The 15 mm header: technique word and name, the part; a mini map and the page number, large. The date is in the footer.
-  const mapWidth = drawMiniMap(context, plan, here, page.width - PRINT_MARGIN, PRINT_MARGIN + mm(1))
-  const rightEdge = drawPageNumber(context, labels, plan, here.page, page.width - PRINT_MARGIN - mapWidth - mm(4)) - mm(4)
-  drawTitle(context, words, PRINT_MARGIN, PRINT_MARGIN + mm(6), 18, 11, rightEdge - PRINT_MARGIN)
-  const partLine = parts.length === 1 ? partLabel(project, labels, here) : labels.partArea.replace('{part}', parts.map((part) => part.letter).join(', ')).split(' · ')[0]!
-  text(context, partLine, PRINT_MARGIN, PRINT_MARGIN + mm(11), font('700', 8, SANS), PRINT_COLORS.ink, 'left', rightEdge - PRINT_MARGIN)
-
-  for (const part of parts) {
-    const left = PRINT_MARGIN + part.place.x
-    const top = PRINT_MARGIN + PRINT_HEADER + part.place.y
-    // A sheet with one part has its label in the header; parts sharing a sheet each carry theirs.
-    if (parts.length > 1) text(context, partLabel(project, labels, part), left + inset, top + mm(4), font('700', 8, SANS), PRINT_COLORS.ink)
-    const board: Board = { x: left + inset, y: top + PRINT_PART_LABEL + inset, width: part.region.width, height: part.region.height }
-    drawBoard(context, project, part.region, plan.zoom, board, shownLetters(project))
-    drawChartRulers(context, project, plan.zoom, board, part)
-  }
-
-  // Under the boards: the colors on this page, and how the numbers read.
-  drawColorKey(context, project, words, parts, page.width, { top: page.height - PRINT_MARGIN - mm(8) - PRINT_KEY + mm(3), bottom: page.height - PRINT_MARGIN - mm(8) })
-
-  // The 8 mm footer: the brand and the date, and where the chart goes on.
-  const footer = page.height - PRINT_MARGIN - mm(1.5)
-  drawMark(context, PRINT_MARGIN, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
-  const brand = text(context, 'openbeads', PRINT_MARGIN + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
-  text(context, words.exportedAt, PRINT_MARGIN + mm(5.5) + brand + mm(4), footer, font('400', 7.5, MONO), PRINT_COLORS.muted)
-  text(context, continuationText(labels, plan, parts), page.width - PRINT_MARGIN, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
-  return canvas
-}
-
 /** "Part B · columns 101–130 · rows 1–100": the Project's own numbers, lowest first (a turned Project's rows run
  * across). */
 export function partLabel(project: Project, labels: PrintText['labels'], part: PrintPart): string {
@@ -554,18 +316,4 @@ export function partLabel(project: Project, labels: PrintText['labels'], part: P
     .replace('{part}', part.letter)
     .replace('{columns}', turned ? down : across)
     .replace('{rows}', turned ? across : down)
-}
-
-/** Where the chart goes on from a sheet: the pages to the right of and below its parts, else the next sheet, else
- * "Last part". */
-function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: PrintPart[]): string {
-  const here = parts[0]!.page
-  const pages = (pick: (next: ReturnType<typeof continuation>) => number | undefined) =>
-    parts.map((part) => pick(continuation(plan, part))).filter((page): page is number => page !== undefined && page !== here)
-  const right = Math.min(...pages((next) => next.right))
-  const below = Math.min(...pages((next) => next.below))
-  if (Number.isFinite(right) && Number.isFinite(below)) return labels.continuesBoth.replace('{right}', String(right)).replace('{below}', String(below))
-  if (Number.isFinite(right)) return labels.continuesRight.replace('{right}', String(right))
-  if (Number.isFinite(below)) return labels.continuesBelow.replace('{below}', String(below))
-  return here < plan.specificationPage - 1 ? labels.continuesOn.replace('{next}', String(here + 1)) : labels.lastPart
 }

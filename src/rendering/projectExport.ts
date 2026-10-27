@@ -1,8 +1,10 @@
+import { PDF_PAGE_DPI } from '../domain/exportQuality'
 import type { Project } from '../domain/project'
 import { buildPdf, type PdfPage } from '../domain/pdfDocument'
-import { deflateRgb, encodePng } from '../domain/pngEncoder'
+import { deflateRgb, deflateText, encodePng } from '../domain/pngEncoder'
 import { coverLayout } from './coverLayout'
-import { planPrint, PRINT_DPI, type PrintPart } from './printPlan'
+import { planWithKey } from './chartPageKey'
+import { PRINT_DPI, type PrintPart } from './printPlan'
 import type { PrintText } from './printText'
 
 // Project exports (tickets 73, 74, 0583): drawn onto page canvases made here, one page at a time and compressed strip by
@@ -65,14 +67,15 @@ function flateOf(canvas: HTMLCanvasElement): Promise<Uint8Array[]> {
 }
 
 // The Project as a PDF (ticket 162): the Cover page and its list pages, then equal chart pages (planPrint), drawn one at a time so memory
-// stays bounded (ADR 0019). The pages are drawn at `dpi`; the sheet is the same size in points whatever it is.
-export async function exportProjectPdf(project: Project, words: PrintText, dpi = PRINT_DPI): Promise<Blob> {
+// stays bounded (ADR 0019). The pictures are drawn at `dpi` (ADR 0076: the PDF has no Export quality); the sheet is the same size in points whatever it is.
+export async function exportProjectPdf(project: Project, words: PrintText, dpi = PDF_PAGE_DPI): Promise<Blob> {
   const cover = coverLayout(project, words)
-  const plan = planPrint(project, undefined, cover.lists.length)
+  const plan = planWithKey(project, cover.lists.length)
   const scale = dpi / PRINT_DPI
   // Loaded when a PDF is asked for: the page drawing (and the mark it reads from the design system) isn't needed
   // before.
-  const { blankPage, drawChartPage, loadPrintFonts } = await import('./printPages')
+  const { blankPage, loadPrintFonts } = await import('./printPages')
+  const { drawChartPage } = await import('./chartPage')
   const { drawCoverPage, drawListPage } = await import('./coverPage')
   await loadPrintFonts()
   // The Specification (ticket 0581) follows the chart pages and the Word chart (ticket 0574) follows it; both count in
@@ -83,9 +86,9 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   const counted = wordPages > 0 ? { ...plan, pageCount: plan.specificationPage + wordPages } : plan
 
   const pages: PdfPage[] = []
-  const add = async (canvas: HTMLCanvasElement) => {
+  const add = async (canvas: HTMLCanvasElement, drawing?: string) => {
     const size = { pixelWidth: canvas.width, pixelHeight: canvas.height }
-    pages.push({ ...size, flate: await flateOf(canvas) })
+    pages.push({ ...size, flate: await flateOf(canvas), ...(drawing ? { drawing: await deflateText(drawing) } : {}) })
     // Let the canvas go before the next page is drawn.
     canvas.width = 0
     canvas.height = 0
@@ -98,7 +101,9 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   const sheets = new Map<number, PrintPart[]>()
   for (const part of plan.parts) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
   for (const parts of sheets.values()) {
-    await add(drawChartPage(project, words, counted, parts, scale))
+    // A chart page is the lines and letters as PDF drawing (ticket 0585, ADR 0043) over a picture of its text alone.
+    const chart = drawChartPage(project, words, counted, parts, scale)
+    await add(chart.canvas, chart.drawing)
   }
   await add(drawSpecificationPage(words, counted, wordPages > 0 ? plan.specificationPage + 1 : undefined, scale))
   for (const canvas of drawWordChartPages(words, plan.page, () => blankPage(plan.page, scale), plan.specificationPage + 1, counted.pageCount)) {
