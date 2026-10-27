@@ -324,6 +324,35 @@ The gallery's section label is "Start from". A Template is a card with a name an
 | Usual sizes | Обычные размеры |
 | This side is fixed. | Эта сторона не меняется. |
 
+## Starter gallery copy (ticket 0595)
+
+The copy of the two-step Starter gallery (StarterGallery card). Option and category names are card names, capitalized; counts sit before the noun in English and after a colon in Russian where the noun would need a plural ("кругов: 10"), and take `Intl.PluralRules` where they lead a phrase ("165 бисеринок"). The section labels and the unit lines are lowercased by style.
+
+| English | Russian |
+| --- | --- |
+| Starter · Each Starter is a finished design for one Frame. Use it as it is, or start with its shape empty. | Стартер · Стартер даёт готовый дизайн для одной рамки. Используйте его как есть или начните с пустой формы. |
+| Shapes · Earrings · Rings · Bands | Фигуры · Серьги · Кольца · Браслеты |
+| {n} shapes · {n} fringe styles · {n} motifs | фигур: {n} · видов бахромы: {n} · узоров: {n} |
+| Triangle · Warped Square · Kite · Star · Kaleidocycle | Треугольник · Изогнутый квадрат · Воздушный змей · Звезда · Калейдоцикл |
+| Straight fringe · V fringe | Прямая бахрома · V-образная бахрома |
+| Stripes · Chevrons · Diamonds · Plaid | Полосы · Шевроны · Ромбы · Клетка |
+| Each design is made for one size. Every Shape is woven in panels joined at seams. | Каждый дизайн сделан для одного размера. Каждая фигура сплетена из частей, соединённых швами. |
+| A brick-stitch top with a strand under each base bead. Each design is made for one size. | Верх кирпичным плетением и нить бахромы под каждой бисеринкой нижнего ряда. Каждый дизайн сделан для одного размера. |
+| Each design is made for one width and one ring size. · Each design is made for one width and one wrist. | Каждый дизайн сделан для одной ширины и одного размера кольца. · Каждый дизайн сделан для одной ширины и одного запястья. |
+| {n} rounds · {n} rows · part size {n} · {w} wide · eu {size} · wrist {n} cm | кругов: {n} · рядов: {n} · размер части {n} · ширина {w} · eu {size} · запястье {n} см |
+| {n} beads · ≈ {n} beads · {n} beads each · {n} for the pair | {n} бисеринок · ≈ {n} бисеринок · {n} на серьгу · {n} на пару |
+| design · Use design · Start empty · design size | дизайн · Использовать дизайн · Пустая рамка · размер дизайна |
+| The design is made for {size}. Set it back to turn the design on. · Choose it again to turn the design on. | Дизайн сделан для {size}. Верните это значение, чтобы включить дизайн. · Выберите его снова, чтобы включить дизайн. |
+| Start empty keeps the shape and its seams and leaves every Bead blank. | Пустая рамка сохраняет форму и швы, а все бисеринки оставляет пустыми. |
+| Rounds · Rows · Part size · Top width · Top rows · Fringe style · Fringe length · Width · Size system · Ring size · Wrist · Fit | Круги · Ряды · Размер части · Ширина верха · Ряды верха · Вид бахромы · Длина бахромы · Ширина · Система размеров · Размер кольца · Запястье · Посадка |
+| from the centre · from the point · beads per arm · rounds a triangle · beads in the base row · one bead fewer each · beads, longest strand · cm, measured snug · mm round the finger · us size | от центра · от острия · бисеринок на луч · кругов в треугольнике · бисеринок в нижнем ряду · каждый на бисеринку короче · бисеринок в самой длинной нити · см, обхват вплотную · мм по кругу пальца · размер us |
+| EU, mm round · US · Snug · Comfortable · Loose | EU, мм по кругу · US · Плотно · Удобно · Свободно |
+| ø {d} mm inside · {w} mm wide · {n} rows round · 1.5 cm left for the clasp | ø {d} мм внутри · ширина {w} мм · рядов по кругу: {n} · 1,5 см на застёжку |
+| Create Project · Add Frame · Replace Frame | Создать проект · Добавить рамку · Заменить рамку |
+| Back to Starter · Back to {category} | Назад к стартерам · Назад: {category} |
+
+Russian here is a proposal for review, like the section below.
+
 ## Panels redesign (tickets 0553 to 0555)
 
 `.openbeads` is named wherever a project file is read or written (Import a project, Export all projects, Project file, the file picker's Tooltip, the import error). The `project:`, `frame:`, `name:` and `maker:` labels are lowercase in every language, like the section labels.
