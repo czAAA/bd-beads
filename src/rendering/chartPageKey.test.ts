@@ -20,11 +20,13 @@ describe('colorsOnParts: the color key of a chart page (ticket 579)', () => {
   })
 
   it('counts only the beads a part owns, not the overlap it repeats', () => {
-    const wide = { technique: 'loom' as const, rotation: 0 as Rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 102, rows: 1, beads: { 0: Object.fromEntries(Array.from({ length: 102 }, (_, column) => [column, column < 100 ? '#ff0000' : '#0000ff'])) } } }
+    const wideOf = (edge: number) => ({ technique: 'loom' as const, rotation: 0 as Rotation, beads: {}, frame: { technique: 'loom' as const, row: 0, column: 0, columns: 100, rows: 1, beads: { 0: Object.fromEntries(Array.from({ length: 100 }, (_, column) => [column, column < edge ? '#ff0000' : '#0000ff'])) } } })
+    const edge = planPrint(wideOf(0)).parts[1]!.firstAcross
+    const wide = wideOf(edge)
     const [, second] = planPrint(wide).parts
 
     expect(second!.overlapAcross).toBe(2)
-    expect(colorsOnParts(wide, [second!])).toEqual([{ hex: '#0000ff', count: 2 }])
+    expect(colorsOnParts(wide, [second!])).toEqual([{ hex: '#0000ff', count: 100 - edge }])
   })
 
   it('follows a turned Project: a quarter turn puts the rows across', () => {

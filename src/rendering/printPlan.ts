@@ -4,8 +4,8 @@ import { describeWeave, type Weave } from '../domain/weave'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, cellSizePx, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
-// PDF page layout (ticket 162, 185, 578): the Cover page whole, then parts of at most 100 × 100 beads at one bead size, small
-// parts sharing a sheet; page px at 150 dpi.
+// PDF page layout (ticket 162, 185, 578, 0584): the Cover page whole, then parts of as many beads as fill a chart page at
+// one bead size, small parts sharing a sheet; page px at 150 dpi.
 
 export const PRINT_DPI = 150
 /** Millimetres as page px. */
@@ -13,12 +13,13 @@ export function mm(value: number): number {
   return (value * PRINT_DPI) / 25.4
 }
 
-/** One bead on every chart page (`print-chart-cell`), or with Letters on, `print-chart-cell-letters`. */
-export const PRINT_CHART_CELL_MM = 1.75
-export const PRINT_CHART_CELL_LETTERS_MM = 2.3
+/** One bead on every chart page (`print-chart-cell`), a size a weaver can work from (ticket 0584). */
+export const PRINT_CHART_CELL_MM = 3
 export const PRINT_MARGIN = mm(10)
-export const PRINT_HEADER = mm(17)
+export const PRINT_HEADER = mm(15)
 const PRINT_FOOTER = mm(8)
+/** The band under the boards for the page's color key and reading line. */
+export const PRINT_KEY = mm(30)
 /** The rulers' band on each side of a chart, and the board's own edge around the beads. */
 export const PRINT_RULER = mm(5)
 export const PRINT_BOARD_PAD = mm(2.5)
@@ -34,11 +35,11 @@ export interface PageSize {
 /** A4 portrait at 150 dpi: every page of the PDF. */
 export const A4_PORTRAIT: PageSize = { width: 1240, height: 1754 }
 
-/** What a chart page leaves for its boards: inside the margins, header and footer. */
+/** What a chart page leaves for its boards: inside the margins, header, color key and footer. */
 export function chartArea(page: PageSize): PageSize {
   return {
     width: page.width - PRINT_MARGIN * 2,
-    height: page.height - PRINT_MARGIN * 2 - PRINT_HEADER - PRINT_FOOTER,
+    height: page.height - PRINT_MARGIN * 2 - PRINT_HEADER - PRINT_KEY - PRINT_FOOTER,
   }
 }
 
@@ -108,11 +109,6 @@ function blockExtent(weave: Weave, rotation: Rotation, across: number, down: num
   return displayedExtentPx(weave.technique, columns, rows, 1, rotation, weave.cell)
 }
 
-/** A chart part's side, fixed (ticket 185): 100 beads, an edge part simply however many remain. */
-export const PRINT_BLOCK_BEADS = 100
-/** With Letters on a part holds at most this many beads a side, so a letter keeps room (`print-part-beads-letters`). */
-export const PRINT_BLOCK_BEADS_LETTERS = 75
-
 /** Columns or rows of the part before it that a part repeats, shaded, so the sheets line up (`print-part-overlap`). */
 export const PRINT_PART_OVERLAP = 2
 
@@ -157,23 +153,36 @@ function packSheets(sizes: PageSize[], area: PageSize): { sheet: number; x: numb
   })
 }
 
-/** Cuts the displayed chart into parts of at most 100 × 100 beads (75 with Letters on) from the top left, every one at
- * one bead size, and lays them on sheets in reading order (ticket 578). */
+/** How many beads of a side fill `room` px at `zoom`, `overlap` of them repeated from the part before; the whole `total`
+ * when they all fit with none repeated (a single part has no overlap). */
+function beadsThatFit(extentOf: (beads: number) => number, zoom: number, room: number, total: number): number {
+  const fits = (beads: number) => Math.ceil(extentOf(beads) * zoom) <= room
+  if (fits(total)) return total
+  let beads = 1
+  while (beads < total && fits(beads + 1 + PRINT_PART_OVERLAP)) beads += 1
+  return beads
+}
+
+/** Cuts the displayed chart into parts of the most beads a chart page holds across and down (3 mm a bead, rulers and
+ * overlap included), from the top left, and lays them on sheets in reading order (tickets 578, 0584). */
 export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT, listPages = 0): PrintPlan {
   const grid = displayedGrid(project)
-  const zoom = mm(project.letters ? PRINT_CHART_CELL_LETTERS_MM : PRINT_CHART_CELL_MM) / CELL_SIZE_PX
-  const block = project.letters ? PRINT_BLOCK_BEADS_LETTERS : PRINT_BLOCK_BEADS
-  const partsAcross = Math.ceil(grid.across / block)
-  const partsDown = Math.ceil(grid.down / block)
+  const zoom = mm(PRINT_CHART_CELL_MM) / CELL_SIZE_PX
   const inset = PRINT_RULER + PRINT_BOARD_PAD
+  const area = chartArea(page)
+  // Two rows (columns) are counted so a brick or peyote part's half-bead offset is in the width (height).
+  const blockAcross = beadsThatFit((beads) => blockExtent(project, project.rotation, beads, 2).width, zoom, area.width - inset * 2, grid.across)
+  const blockDown = beadsThatFit((beads) => blockExtent(project, project.rotation, 2, beads).height, zoom, area.height - PRINT_PART_LABEL - inset * 2, grid.down)
+  const partsAcross = Math.ceil(grid.across / blockAcross)
+  const partsDown = Math.ceil(grid.down / blockDown)
 
   const cut: Omit<PrintPart, 'page' | 'place'>[] = []
   for (let down = 0; down < partsDown; down += 1) {
     for (let across = 0; across < partsAcross; across += 1) {
-      const firstAcross = across * block
-      const firstDown = down * block
-      const lastAcross = Math.min(grid.across, firstAcross + block) - 1
-      const lastDown = Math.min(grid.down, firstDown + block) - 1
+      const firstAcross = across * blockAcross
+      const firstDown = down * blockDown
+      const lastAcross = Math.min(grid.across, firstAcross + blockAcross) - 1
+      const lastDown = Math.min(grid.down, firstDown + blockDown) - 1
       const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross)
       const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown)
       const extent = blockExtent(project, project.rotation, lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
@@ -202,9 +211,7 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT, listPage
   const parts = cut.map((part, index) => {
     const { sheet, x, y } = placed[index]!
     const size = sizes[index]!
-    // A part with its overlap can pass the sheet's width by a few beads: it stays centered, using the margins evenly.
-    const overflow = Math.max(0, size.width - chartArea(page).width)
-    return { ...part, page: sheet + 2 + listPages, place: { x: x - overflow / 2, y, ...size } }
+    return { ...part, page: sheet + 2 + listPages, place: { x, y, ...size } }
   })
   const sheets = placed.reduce((most, { sheet }) => Math.max(most, sheet + 1), 0)
   return { page, zoom, partsAcross, partsDown, parts, specificationPage: 2 + sheets + listPages, pageCount: 2 + sheets + listPages }

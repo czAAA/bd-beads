@@ -11,8 +11,15 @@ export interface PdfPage {
 
 const encoder = new TextEncoder()
 
-/** A PDF whose pages are the pictures, each laid over a sheet `widthPt` × `heightPt` points (1/72 in) big. */
-export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number): Blob {
+/** A PDF text string: UTF-16BE with a byte-order mark in hex, so any name survives. */
+function pdfText(value: string): string {
+  const units = ['feff', ...Array.from({ length: value.length }, (_, index) => value.charCodeAt(index).toString(16).padStart(4, '0'))]
+  return `<${units.join('')}>`
+}
+
+/** A PDF whose pages are the pictures, each laid over a sheet `widthPt` × `heightPt` points (1/72 in) big. It asks
+ * viewers to print at 100 % (ticket 0584: a 3 mm bead stays 3 mm) and carries `title` for a tab's name. */
+export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number, title = ''): Blob {
   const parts: Uint8Array[] = []
   const offsets: number[] = []
   let length = 0
@@ -31,7 +38,7 @@ export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number): B
   // Objects: 1 catalog, 2 page tree, then a page, its content and its picture for each page.
   const pageObject = (index: number) => 3 + index * 3
   push('%PDF-1.4\n%\xE2\xE3\xCF\xD3\n')
-  object(1, ['<< /Type /Catalog /Pages 2 0 R >>'])
+  object(1, ['<< /Type /Catalog /Pages 2 0 R /ViewerPreferences << /PrintScaling /None >> >>'])
   object(2, [`<< /Type /Pages /Count ${pages.length} /Kids [${pages.map((_p, i) => `${pageObject(i)} 0 R`).join(' ')}] >>`])
 
   pages.forEach((page, index) => {
@@ -52,13 +59,15 @@ export function buildPdf(pages: PdfPage[], widthPt: number, heightPt: number): B
     ])
   })
 
-  const objectCount = 3 + pages.length * 3
+  const info = 3 + pages.length * 3
+  if (title) object(info, [`<< /Title ${pdfText(title)} >>`])
+  const objectCount = title ? info + 1 : info
   const crossReference = length
   push(`xref\n0 ${objectCount}\n0000000000 65535 f \n`)
   for (let number = 1; number < objectCount; number += 1) {
     push(`${String(offsets[number]).padStart(10, '0')} 00000 n \n`)
   }
-  push(`trailer\n<< /Size ${objectCount} /Root 1 0 R >>\nstartxref\n${crossReference}\n%%EOF\n`)
+  push(`trailer\n<< /Size ${objectCount} /Root 1 0 R${title ? ` /Info ${info} 0 R` : ''} >>\nstartxref\n${crossReference}\n%%EOF\n`)
 
   return new Blob(parts as BlobPart[], { type: 'application/pdf' })
 }

@@ -21,7 +21,7 @@ describe('Specification page', () => {
     await loadPrintFonts()
     const project = withLetters(fixtureProject({ technique: 'loom', columns: 130, rows: 60 }), true)
     const plan = planPrint(project)
-    const canvas = drawSpecificationPage(project, printText(project, en, 'en', new Date()), plan, 5)
+    const canvas = drawSpecificationPage(printText(project, en, 'en', new Date()), plan, 5)
     expect(canvas.width).toBe(A4_PORTRAIT.width)
     expect(canvas.height).toBe(A4_PORTRAIT.height)
   })

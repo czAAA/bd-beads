@@ -1,9 +1,8 @@
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import { blankPage, drawMark, font, MONO, pt, SANS, text, wrap } from './printPages'
-import { mm, PRINT_BLOCK_BEADS, PRINT_BLOCK_BEADS_LETTERS, PRINT_MARGIN, PRINT_PART_OVERLAP, type PrintPlan } from './printPlan'
+import { mm, PRINT_MARGIN, PRINT_PART_OVERLAP, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
-import type { Project } from '../domain/project'
 
 // The Specification page of the PDF (ticket 0581; PrintSpecification card): the full Beads needed table a weaver takes
 // to the shop, then the Schema's facts and where each part is.
@@ -29,7 +28,7 @@ const CODE_WIDTH = mm(18)
 
 /** The page after the chart pages: header, Beads needed in full with the Total and the grams note, then the facts and the
  * map of the parts. `rowByRowPage` is the Word chart's first page, named in the footer when one follows. */
-export function drawSpecificationPage(project: Project, words: PrintText, plan: PrintPlan, rowByRowPage: number | undefined, scale = 1): HTMLCanvasElement {
+export function drawSpecificationPage(words: PrintText, plan: PrintPlan, rowByRowPage: number | undefined, scale = 1): HTMLCanvasElement {
   const { page } = plan
   const { canvas, context } = blankPage(page, scale)
   const { labels } = words
@@ -46,7 +45,7 @@ export function drawSpecificationPage(project: Project, words: PrintText, plan: 
   y += mm(8)
   const half = (width - COLUMN_GAP) / 2
   drawFacts(context, words, plan, left, y, half)
-  drawPartMap(context, project, words, plan, left + half + COLUMN_GAP, y, half)
+  drawPartMap(context, words, plan, left + half + COLUMN_GAP, y, half)
 
   const footer = page.height - PRINT_MARGIN - mm(1.5)
   drawMark(context, left, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
@@ -163,7 +162,7 @@ function drawFacts(context: CanvasRenderingContext2D, words: PrintText, plan: Pr
 
 /** Where each part is: the parts as the grid they sit in, each with its letter and page, and a line on the part size, the
  * shared sheets and the overlap. */
-function drawPartMap(context: CanvasRenderingContext2D, project: Project, words: PrintText, plan: PrintPlan, left: number, top: number, width: number): void {
+function drawPartMap(context: CanvasRenderingContext2D, words: PrintText, plan: PrintPlan, left: number, top: number, width: number): void {
   const { labels } = words
   text(context, labels.wherePartsAre, left, top, font('700', 8, SANS), PRINT_COLORS.ink)
   const cell = Math.min(MAX_MAP_CELL, width / plan.partsAcross, mm(40) / plan.partsDown)
@@ -181,7 +180,7 @@ function drawPartMap(context: CanvasRenderingContext2D, project: Project, words:
     text(context, String(part.page), x + cell / 2, y + cell * 0.8, font('400', 6.5, MONO), PRINT_COLORS.muted, 'center')
   })
   if (plan.parts.length < 2) return
-  const block = project.letters ? PRINT_BLOCK_BEADS_LETTERS : PRINT_BLOCK_BEADS
+  const block = Math.max(...plan.parts.map((part) => Math.max(part.lastAcross - part.firstAcross, part.lastDown - part.firstDown) + 1))
   const note = labels.partsNote.replace('{beads}', String(block)).replace('{overlap}', String(PRINT_PART_OVERLAP))
   let y = gridTop + plan.partsDown * cell + mm(2)
   for (const line of wrap(context, note, font('400', 6.5, SANS), width)) {
