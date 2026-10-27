@@ -405,7 +405,7 @@
     {
       "name": "StarterGallery",
       "group": "Screens",
-      "summary": "The Starters New Project starts from: a radiogroup of cards under its Pick a starter button, and the setup subpanel with its sizes, presets and Estimated size."
+      "summary": "The two-step Starter gallery: category and option cards with bead-drawn hero pictures, and the setup with Use design / Start empty, the option's sizes, the Estimated size and Create Project, Add Frame or Replace Frame."
     },
     {
       "name": "TextField",
