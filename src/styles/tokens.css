@@ -272,4 +272,16 @@
   --print-part-overlap: 2;
   --print-chart-cell: 3mm;
   --print-ruler: 5mm;
+  --print-letter: 6.5pt;
+  --print-line-cell: 0.1mm;
+  --print-line-five: 0.18mm;
+  --print-line-ten: 0.3mm;
+  --print-pad-line: 0.2mm;
+  --print-pad-radius: 2mm;
+  --print-overlap-tint: 60%;
+  --print-overlap-line: 0.5mm;
+  --print-key-columns: 6;
+  --print-word-row: 10pt;
+  --print-word-pitch: 5.6mm;
+  --print-word-gap: 8mm;
 }

@@ -3,6 +3,8 @@
 
 :root {
   --slider-thumb-scale: 1.15; /* QualitySlider card: the thumb while it is dragged. */
+  --print-letter-balance: 0.1791; /* PrintChartPage card: a bead whose luminance is above it gets an ink letter, else white (markOn). */
+  --print-letter-squeeze: 72%; /* PrintChartPage card: horizontal scale of a two-letter Swatch letter in a 3 mm cell (PDF Tz). */
 }
 
 :root,
