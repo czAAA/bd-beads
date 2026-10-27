@@ -322,10 +322,26 @@ describe('FramePanel (ticket 473)', () => {
   it('leads with Export, then the size, and ends with Beads needed, its total in the header (tickets 555, 568)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
-    // Add Custom frame sits before Beads needed until the Starter gallery takes it (tickets 0592, 0597).
-    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.frame.customReplaceHeading, en.quantities.heading])
+    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.quantities.heading])
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
     expect(sections.at(-1)!.attributes('data-testid')).toBe('bead-quantities')
+  })
+
+  it('offers Replace Frame from the Starter gallery, one level deeper, and Back brings focus back to it (ticket 0596)', async () => {
+    const wrapper = mountPanel()
+    const row = wrapper.get('[data-testid="frame-replace-from-starter"]')
+    expect(row.text()).toContain(en.frame.replaceFrame)
+    ;(row.element as HTMLElement).focus()
+    await row.trigger('click')
+    expect(wrapper.get('[data-testid="panel-sub-title"]').text()).toBe(en.starters.title)
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    await flushPromises()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="frame-replace-from-starter"]').element)
+  })
+
+  it('holds Replace Frame still once a pass is done (ticket 0596)', () => {
+    const wrapper = mountBar(moveToRow(framed(), 1))
+    expect(wrapper.get('[data-testid="frame-replace-from-starter"]').attributes('aria-disabled')).toBe('true')
   })
 
   it('with no Frame offers Frame from starter, Select a frame and Fit, and only Export besides, off (tickets 555, 568)', async () => {
@@ -333,7 +349,7 @@ describe('FramePanel (ticket 473)', () => {
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
-    expect(wrapper.findAll('.panel-section').map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.customHeading])
+    expect(wrapper.findAll('.panel-section').map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading])
     expect(wrapper.get('[data-testid="frame-select"]').text()).toContain(en.frame.selectAFrame)
     for (const id of ['export-png', 'export-pdf']) expect(wrapper.get(`[data-testid="${id}"]`).attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="export-needs-frame"]').text()).toBe(en.frame.exportNeedsFrame)
@@ -400,16 +416,6 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     return result.project
   }
   const triangle = (rounds = 4) => custom('triangle', rounds)
-
-  it('offers every Custom frame kind, each asking the shell for that Custom frame', async () => {
-    const wrapper = mountBar()
-    for (const kind of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite'] as const) {
-      expect(wrapper.get(`[data-testid="frame-custom-${kind}"]`).text()).toContain(en.frame.customKinds[kind])
-    }
-    await wrapper.get('[data-testid="frame-custom-warpedSquare"]').trigger('click')
-    await wrapper.get('[data-testid="frame-custom-kite"]').trigger('click')
-    expect(wrapper.emitted('add-custom')).toEqual([['warpedSquare'], ['kite']])
-  })
 
   it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {
     for (const [kind, size, words] of [

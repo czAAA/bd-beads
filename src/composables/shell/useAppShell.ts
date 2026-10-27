@@ -125,7 +125,7 @@ function wireAppShell(services: Services) {
   } = useConvertImage()
 
   /** New-Project creation, blank or from Convert image, and the framing step's gate (tickets 58, 196). */
-  const { framing, onNewProjectDraft, onCreateProject, onConvertImageCreate } = useNewProjectFlow({
+  const { framing, onNewProjectDraft, onCreateProject, onCreateFromStarter, onConvertImageCreate } = useNewProjectFlow({
     addProject,
     convertImage: () => convertImageSource.value,
     cancelConvertImage,
@@ -733,6 +733,7 @@ function wireAppShell(services: Services) {
     framing,
     onNewProjectDraft,
     onCreateProject,
+    onCreateFromStarter,
     onConvertImageCreate,
     startConvertImage,
     cancelConvertImage,
@@ -857,7 +858,6 @@ function wireAppShell(services: Services) {
     onConfirmRemoveFrame: frameFlow.confirmRemove,
     removeFrameTakesBeads: frameFlow.removeTakesBeads,
     onPlaceFrameFromStarter: frameFlow.placeFromStarter,
-    onAddCustomFrame: frameFlow.placeCustom,
     onSetFrameSize: frameFlow.setSize,
     sizeConfirm,
     onCancelSize: frameFlow.cancelSize,

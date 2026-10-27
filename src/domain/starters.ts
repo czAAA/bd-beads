@@ -1,107 +1,109 @@
-import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, FLAT_TECHNIQUES, NARROW_STARTER_TECHNIQUES, TECHNIQUES, type Technique } from './weave'
-import type { CreateProjectInput } from './project'
+import type { BeadMap } from './canvas'
+import { changeFrame, type FrameChangeResult } from './changeFrame'
+import { customFrameSize, frameKindOf, frameLayoutOf, sizeSettingOf, type CustomFrameKindId, type FrameSettingName } from './frameKind'
+import type { GridPosition } from './grid'
+import { createProject, type Project } from './project'
+import { parseProjectsFile } from './projectFile'
+import triangleDesign from '../data/starters/triangle.json'
+import warpedSquareDesign from '../data/starters/warpedSquare.json'
+import kiteDesign from '../data/starters/kite.json'
+import starDesign from '../data/starters/star.json'
+import kaleidocycleDesign from '../data/starters/kaleidocycle.json'
 
-/** The Starters New Project offers (ticket 493, spec 0488). The id is also the key of its copy (`starters.<id>` in
- * the translations). */
-export type StarterId = 'gerdan' | 'bracelet' | 'earrings' | 'bag' | 'custom'
+// The Starters (spec 0590, ticket 0596; StarterGallery card): each a design for one Frame kind at one best size, a
+// Project file kept with the app in `src/data/starters/` (the JSON inside an exported `.openbeads`, so a design tweaked
+// in the app replaces its file by `gunzip -c`). Its Frame's beads are the design; nothing else of the file is used.
 
-/** One side of a Starter's Frame, in beads (Units where the Technique counts them). */
-export interface StarterAxis {
-  default: number
-  min: number
-  max: number
-  /** The usual sizes, offered as chips; each lies inside min..max. */
-  presets?: readonly number[]
-  /** The side keeps its default: a product that isn't one at another size (earrings keep their width). */
-  lock?: boolean
-}
+/** The Starter gallery's categories: Earrings, Rings and Bands join with ticket 0597. */
+export type StarterCategoryId = 'shapes'
 
-/** A named starting point for a Frame (ADR 0066): a product with the Technique it is usually woven in, the ones it can
- * be, and its sizes. Nothing in a Project records the Starter it was made from. */
+/** A Starter by id; the id is also the key of its copy (`starters.options.<id>` in the translations). */
+export type StarterId = 'triangle' | 'warpedSquare' | 'kite' | 'star' | 'kaleidocycle'
+
+/** A ready-made design for one Frame kind (ADR 0077): the kind, the size the design is made for in its kind's one
+ * setting, the sizes offered as chips, and the design itself. */
 export interface Starter {
   id: StarterId
-  /** The Technique chosen first. */
-  technique: Technique
-  /** Every Technique it can be woven in, the default among them. */
-  techniques: readonly Technique[]
-  width: StarterAxis
-  height: StarterAxis
+  category: StarterCategoryId
+  kind: CustomFrameKindId
+  /** The kind's setting the size is in: Rounds, Part size or Rows. */
+  setting: FrameSettingName
+  /** The size the design is made for: it is never cropped, scaled or repeated to another. */
+  size: number
+  /** The usual sizes, offered as chips; the design's own among them. */
+  presets: readonly number[]
+  /** The Project file the design is, as its JSON. */
+  file: unknown
 }
 
-/** The registry, in the order the gallery shows it. The sizes are starting values, to be tuned against real pieces. */
-export const STARTERS: readonly Starter[] = [
-  {
-    id: 'gerdan',
-    technique: DEFAULT_TECHNIQUE,
-    techniques: FLAT_TECHNIQUES,
-    width: { default: 24, min: 8, max: 60, presets: [16, 24, 32] },
-    height: { default: 80, min: 20, max: 200, presets: [60, 80, 100] },
-  },
-  {
-    id: 'bracelet',
-    technique: DEFAULT_TECHNIQUE,
-    techniques: FLAT_TECHNIQUES,
-    width: { default: 12, min: 4, max: 40, presets: [8, 12, 16] },
-    height: { default: 90, min: 40, max: 200, presets: [70, 80, 90, 100, 110] },
-  },
-  {
-    id: 'earrings',
-    technique: NARROW_STARTER_TECHNIQUES[0],
-    techniques: NARROW_STARTER_TECHNIQUES,
-    width: { default: 10, min: 10, max: 10, lock: true },
-    height: { default: 48, min: 12, max: 120, presets: [32, 48, 64] },
-  },
-  {
-    id: 'bag',
-    technique: DEFAULT_TECHNIQUE,
-    techniques: FLAT_TECHNIQUES,
-    width: { default: 20, min: 8, max: 80, presets: [20, 30, 40] },
-    height: { default: 40, min: 12, max: 120, presets: [30, 40, 60] },
-  },
-  {
-    id: 'custom',
-    technique: DEFAULT_TECHNIQUE,
-    techniques: TECHNIQUES,
-    width: { default: 24, min: 1, max: 200 },
-    height: { default: 80, min: 1, max: 200 },
-  },
+/** A category of the gallery: its Starters in the order its step shows them, and the one whose design is its picture. */
+export interface StarterCategory {
+  id: StarterCategoryId
+  starters: readonly Starter[]
+  best: Starter
+}
+
+/** A Shape: a Custom frame of its kind, sized in its kind's setting. */
+function shape(kind: StarterId & CustomFrameKindId, size: number, presets: readonly number[], file: unknown): Starter {
+  return { id: kind, category: 'shapes', kind, setting: sizeSettingOf({ kind })!.name, size, presets, file }
+}
+
+const SHAPES: readonly Starter[] = [
+  shape('triangle', 10, [6, 8, 10, 12], triangleDesign),
+  shape('warpedSquare', 8, [6, 8, 10], warpedSquareDesign),
+  shape('kite', 21, [15, 21, 30], kiteDesign),
+  shape('star', 5, [3, 5, 7, 9], starDesign),
+  shape('kaleidocycle', 9, [9, 11, 13], kaleidocycleDesign),
 ]
+
+/** The registry, in the order step 1 shows the categories. */
+export const STARTER_CATEGORIES: readonly StarterCategory[] = [{ id: 'shapes', starters: SHAPES, best: SHAPES.find((starter) => starter.id === 'star')! }]
 
 /** The Starter with this id. */
 export function starterById(id: StarterId): Starter {
-  return STARTERS.find((starter) => starter.id === id)!
+  return SHAPES.find((starter) => starter.id === id)!
 }
 
-/** A side's value held to its limits: a locked side is its default, whatever was asked. */
-export function clampAxis(axis: StarterAxis, value: number): number {
-  if (axis.lock) {
-    return axis.default
-  }
-  return Math.min(axis.max, Math.max(axis.min, Math.round(value) || axis.default))
+const designs = new Map<StarterId, BeadMap>()
+
+/** A Starter's design: the beads of its Project file's Frame, by their position in the layout. Read once. */
+export function starterDesign(starter: Starter): BeadMap {
+  const known = designs.get(starter.id)
+  if (known) return known
+  const beads = parseProjectsFile(JSON.stringify(starter.file)).projects[0]?.frame?.beads ?? {}
+  designs.set(starter.id, beads)
+  return beads
 }
 
-/** What the setup subpanel asks for: the choices on top of the Starter. */
-export interface StarterChoices {
-  /** Defaults to the Starter's own; one it doesn't allow falls back to it. */
-  technique?: Technique
-  brickBlock?: number
-  beadId: string
-  /** Typed in the Name field; blank takes the Starter's name, which only the UI can say. */
-  name: string
-  columns: number
-  rows: number
+/** How many beads a Starter's Frame holds at a size: every position of its layout. */
+export function starterBeadCount(starter: Starter, size: number): number {
+  return frameLayoutOf({ kind: starter.kind, settings: { [starter.setting]: size } })!.positions.length
 }
 
-/** The input that makes the Project: Frame in place at the origin and empty, in the chosen Technique, and so the
- * Canvas too (createProject). */
-export function starterProjectInput(starter: Starter, choices: StarterChoices): CreateProjectInput {
-  const technique = choices.technique && starter.techniques.includes(choices.technique) ? choices.technique : starter.technique
-  return {
-    name: choices.name,
-    technique,
-    ...(describeWeave({ technique }).hasBrickBlock && choices.brickBlock && choices.brickBlock > 1 ? { brickBlock: choices.brickBlock } : {}),
-    ...(describeWeave({ technique }).hasNetSize ? { netSize: DEFAULT_NET_SIZE } : {}),
-    beadId: choices.beadId,
-    size: { width: clampAxis(starter.width, choices.columns), height: clampAxis(starter.height, choices.rows), unit: 'beads' },
-  }
+/** What the setup asks of a Starter: its size, and whether the design is put in place or the Frame starts empty. The
+ * design goes in only at its own size. */
+export interface StarterChoice {
+  size: number
+  useDesign: boolean
+}
+
+/** The beads a Starter puts in place: its design when asked for at its size, else none. */
+function chosenBeads(starter: Starter, { size, useDesign }: StarterChoice): BeadMap {
+  return useDesign && size === starter.size ? starterDesign(starter) : {}
+}
+
+/** Add Frame from Starter and Replace Frame (ticket 0596): the Starter's Frame round a Canvas position, in place of any
+ * Frame there, pre-filled with its design or empty. Colours stay as painted, whatever the Project's Bead. */
+export function placedStarter(project: Project, starter: Starter, choice: StarterChoice, centre: GridPosition): FrameChangeResult {
+  return changeFrame(project, { custom: { kind: starter.kind, size: choice.size, centre, beads: chosenBeads(starter, choice) } })
+}
+
+/** A new Project from a Starter (New Project's Pick a starter): its Canvas in the kind's Technique, and the Starter's
+ * Frame with its first row and column at the origin. Nothing in it records the Starter. */
+export function starterProject(starter: Starter, choice: StarterChoice & { name: string; beadId: string }): Project {
+  const technique = frameKindOf({ kind: starter.kind }).custom!.technique
+  const project = createProject({ name: choice.name, technique, beadId: choice.beadId })
+  const { rows, columns } = customFrameSize(starter.kind, { [starter.setting]: choice.size })
+  const placed = placedStarter(project, starter, choice, { row: Math.floor(rows / 2), column: Math.floor(columns / 2) })
+  return placed.kind === 'changed' ? placed.project : project
 }
