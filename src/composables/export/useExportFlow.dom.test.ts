@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject, type Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, wordChartFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectListFileName, wordChartFileName } from '../../domain/projectFile'
 import { en } from '../../i18n/en'
 import { useExportFlow } from './useExportFlow'
 
@@ -10,8 +10,9 @@ vi.mock('../../rendering/projectExport', () => ({
   exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
   exportWordChartPng: vi.fn(async () => new Blob(['words'], { type: 'image/png' })),
+  projectPageCount: vi.fn(() => 1),
 }))
-import { exportProjectPdf, exportProjectPng, exportWordChartPng } from '../../rendering/projectExport'
+import { exportProjectPdf, exportProjectPng, exportWordChartPng, projectPageCount } from '../../rendering/projectExport'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 
@@ -23,6 +24,7 @@ beforeEach(() => {
   vi.mocked(exportProjectPng).mockClear()
   vi.mocked(exportProjectPdf).mockClear()
   vi.mocked(exportWordChartPng).mockClear()
+  vi.mocked(projectPageCount).mockReturnValue(1)
   localStorage.clear()
 })
 
@@ -75,11 +77,11 @@ describe('useExportFlow Letters (ticket 0573)', () => {
 })
 
 describe('useExportFlow Word chart (ticket 0574)', () => {
-  it('hands over a second PNG named _instructions after the pattern when Letters is on, at the same quality', async () => {
+  it('hands over a second PNG named _instructions after the pattern when Letters is on, at the same Export quality', async () => {
     localStorage.setItem('openbeads:export-quality', 'high')
     await setup({ project: { ...project, letters: true } }).onExportPng()
 
-    expect(exportWordChartPng).toHaveBeenCalledWith(expect.objectContaining({ wordChart: expect.objectContaining({ title: 'Row by row' }) }), 90)
+    expect(exportWordChartPng).toHaveBeenCalledWith(expect.objectContaining({ wordChart: expect.objectContaining({ title: 'Row by row' }) }), 1.5)
     expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), wordChartFileName(project)])
     expect(wordChartFileName(project)).toBe('openbeads-my-scarf_instructions.png')
   })
@@ -126,15 +128,32 @@ describe('useExportFlow', () => {
       expect(exportProjectPng).toHaveBeenCalledWith(
         expect.objectContaining({ id: project.id }),
         expect.objectContaining({ name: 'My scarf', labels: en.print, maker: 'Ada' }),
-        60,
+        300,
       )
       expect(downloadFile).toHaveBeenCalledWith(projectExportFileName(project, 'png'), expect.any(Blob), 'image/png')
     })
 
-    it('draws a bead as many px across as the Export quality on the device says (ticket 571)', async () => {
+    it('draws the PNG page at the dpi of the Export quality on the device, like a PDF page (ticket 0583)', async () => {
       localStorage.setItem('openbeads:export-quality', 'high')
       await setup().onExportPng()
-      expect(exportProjectPng).toHaveBeenCalledWith(expect.anything(), expect.anything(), 90)
+      expect(exportProjectPng).toHaveBeenCalledWith(expect.anything(), expect.anything(), 450)
+    })
+
+    it('hands over the list pages Beads needed runs over onto as _2 and _3, in order, before the Word chart (ticket 0583)', async () => {
+      vi.mocked(projectPageCount).mockReturnValue(3)
+      await setup({ project: { ...project, letters: true } }).onExportPng()
+
+      expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), projectListFileName(project, 2), projectListFileName(project, 3), wordChartFileName(project)])
+      expect(projectListFileName(project, 2)).toBe('openbeads-my-scarf_2.png')
+      expect(vi.mocked(exportProjectPng).mock.calls.map((call) => call[3])).toEqual([undefined, 1, 2])
+    })
+
+    it('stops handing over pages when one is cancelled (ticket 0583)', async () => {
+      vi.mocked(projectPageCount).mockReturnValue(3)
+      downloadFile.mockResolvedValueOnce('saved').mockResolvedValueOnce('cancelled')
+      await setup().onExportPng()
+
+      expect(downloadFile).toHaveBeenCalledTimes(2)
     })
 
     it('draws the PDF at the dpi of the Export quality on the device (ticket 572)', async () => {

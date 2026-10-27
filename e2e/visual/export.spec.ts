@@ -1,14 +1,10 @@
-import { frameGrid } from '../../src/domain/project'
 import { readFile } from 'node:fs/promises'
 import { expect, test, type Page } from '@playwright/test'
 import { PNG } from 'pngjs'
-import { PRINT_THEME } from '../../src/rendering/beadLook'
-import { BUILT_IN_COLORS } from '../../src/domain/palette'
-import { PNG_BEAD_PX, PNG_MARGIN_PX, PNG_MAX_PIXELS, pngZoom } from '../../src/rendering/projectExport'
-import { A4_PORTRAIT, planPrint } from '../../src/rendering/printPlan'
+import { PRINT_COLORS } from '../../src/rendering/printColors'
+import { A4_PORTRAIT, planPrint, PRINT_DPI } from '../../src/rendering/printPlan'
 import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
-import { displayedExtentPx } from '../../src/rendering/surfaceView'
 
 /** Tickets 73 and 74: a Project exported as PNG and printable PDF in a real browser: right bead colors, and a
  * too-big Project comes out whole. */
@@ -37,59 +33,40 @@ function nonWhiteIn(png: PNG, x: number, y: number, width: number, height: numbe
   return false
 }
 
-/** Whether any pixel in the box has a pale warm tint (accent at low opacity over the board color), unlike the plain
- * margin (ticket 183). */
-function hasWarmTintIn(png: PNG, x: number, y: number, width: number, height: number): boolean {
-  for (let row = y; row < Math.min(y + height, png.height); row += 2) {
-    for (let column = x; column < Math.min(x + width, png.width); column += 2) {
-      const at = (row * png.width + column) * 4
-      const r = png.data[at]!
-      const g = png.data[at + 1]!
-      const b = png.data[at + 2]!
-      if (r > 247 && g < 240 && r - b > 8) return true
-    }
-  }
-  return false
-}
-
-test('PNG export draws each bead in its color, at a legible size, on the print board, with the story under it (tickets 164, 0582)', async ({ page }) => {
+test('PNG export is the Cover page: one A4 portrait picture, drawn on the print paper (tickets 164, 0583)', async ({ page }) => {
   const project = fixtureProject({ technique: 'loom', columns: 60, rows: 8 })
   await openApp(page, [project])
 
   const { name, bytes } = await downloadOf(page, 'export-png')
   const png = PNG.sync.read(bytes)
-  const chartWidth = 60 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
-  const chartHeight = 8 * PNG_BEAD_PX + PNG_MARGIN_PX * 2
+  const dpi = png.width / (A4_PORTRAIT.width / PRINT_DPI)
 
   expect(name).toBe('openbeads-fixture-loom.png')
-  // The story sits under the chart: a Schema as wide as this fills the picture, which is taller than the chart.
-  expect(png.width).toBe(chartWidth)
-  expect(png.height).toBeGreaterThan(chartHeight)
-  // Exports are always light, on the print board (DESIGN.md §4.3), whatever the app's theme — rounded, so its very
-  // corner is left white.
-  expect(hex(png, 15, 15)).toBe(PRINT_THEME.background)
-  // The middle of the bead in row 3, column 2 (the gap and rim are at its edge, so the middle is all its color).
-  const painted = frameGrid(project)[3]![2]!.color
-  expect(hex(png, PNG_MARGIN_PX + 2 * PNG_BEAD_PX + PNG_BEAD_PX / 2, PNG_MARGIN_PX + 3 * PNG_BEAD_PX + PNG_BEAD_PX / 2)).toBe(painted ?? PRINT_THEME.emptyBead)
-  expect(BUILT_IN_COLORS.some((color) => color.hex === painted)).toBe(true)
-  // The story tells its own words below the chart.
-  expect(nonWhiteIn(png, 0, chartHeight, png.width, png.height - chartHeight)).toBe(true)
+  // A4 portrait at the Export quality's dpi (Medium: 300).
+  expect(png.width / png.height).toBeCloseTo(A4_PORTRAIT.width / A4_PORTRAIT.height, 2)
+  expect(dpi).toBeCloseTo(300, 3)
+  // Exports are always light, on the print paper (DESIGN.md §4.3), whatever the app's theme.
+  expect(hex(png, 5, 5)).toBe(PRINT_COLORS.paper)
+  // The Schema, Beads needed and the footer are drawn: not all of the page is blank.
+  expect(nonWhiteIn(png, 0, 0, png.width, png.height)).toBe(true)
+  expect(nonWhiteIn(png, 0, png.height - 260, png.width, 140)).toBe(true)
 })
 
-test('PNG export puts the story under a tall Project too, and centres a narrow one (ticket 0582)', async ({ page }) => {
-  for (const [columns, rows] of [[40, 60], [10, 30]] as const) {
-    const project = fixtureProject({ technique: 'loom', columns, rows })
-    await openApp(page, [project])
+test('PNG export of a 250 × 250 peyote Project is the same single A4 page', async ({ page }) => {
+  const project = fixtureProject({ technique: 'peyote', columns: 250, rows: 250 })
+  await openApp(page, [project])
 
-    const { bytes } = await downloadOf(page, 'export-png')
-    const png = PNG.sync.read(bytes)
-    const chartWidth = columns * PNG_BEAD_PX + PNG_MARGIN_PX * 2
-    const chartHeight = rows * PNG_BEAD_PX + PNG_MARGIN_PX * 2
+  const { bytes } = await downloadOf(page, 'export-png')
+  const png = PNG.sync.read(bytes)
 
-    expect(png.width).toBeGreaterThanOrEqual(chartWidth)
-    expect(png.height).toBeGreaterThan(chartHeight)
-    expect(nonWhiteIn(png, 0, chartHeight, png.width, png.height - chartHeight)).toBe(true)
+  expect(png.width / png.height).toBeCloseTo(A4_PORTRAIT.width / A4_PORTRAIT.height, 2)
+  // The big Schema is scaled down to the page, so the last of its beads are drawn, not cut: the middle of the page
+  // holds beads of more than one color.
+  const middle = new Set<string>()
+  for (let y = Math.floor(png.height * 0.3); y < png.height * 0.5; y += 11) {
+    for (let x = Math.floor(png.width * 0.3); x < png.width * 0.7; x += 11) middle.add(hex(png, x, y))
   }
+  expect(middle.size).toBeGreaterThan(2)
 })
 
 test('a Project with no maker name leaves it out of the PNG (printed-output.md, The maker\'s name)', async ({ page }) => {
@@ -100,46 +77,6 @@ test('a Project with no maker name leaves it out of the PNG (printed-output.md, 
   // unset name).
   const png = PNG.sync.read(bytes)
   expect(png.width).toBeGreaterThan(0)
-})
-
-test('a Project with a maker name leaves no pale name or line behind the chart, wide or not (ticket 0577)', async ({ page }) => {
-  for (const [columns, rows] of [[10, 10], [60, 12]] as const) {
-    const project = { ...fixtureProject({ technique: 'loom', columns, rows }), makerName: 'Ada' }
-    await openApp(page, [project])
-
-    const { bytes } = await downloadOf(page, 'export-png')
-    const png = PNG.sync.read(bytes)
-    const zoom = pngZoom(project)
-    const chart = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
-    const chartWidth = Math.ceil(chart.width) + PNG_MARGIN_PX * 2
-    const chartHeight = Math.ceil(chart.height) + PNG_MARGIN_PX * 2
-    // The bottom margin under the board is blank: the background name and the accent line used to tint it.
-    expect(hasWarmTintIn(png, 0, chartHeight - PNG_MARGIN_PX + 4, chartWidth, PNG_MARGIN_PX - 8)).toBe(false)
-  }
-})
-
-test('PNG export of a 250 × 250 peyote Project is one picture within the pixel budget', async ({ page }) => {
-  const project = fixtureProject({ technique: 'peyote', columns: 250, rows: 250 })
-  await openApp(page, [project])
-
-  const { bytes } = await downloadOf(page, 'export-png')
-  const png = PNG.sync.read(bytes)
-
-  expect(png.width * png.height).toBeLessThanOrEqual(PNG_MAX_PIXELS)
-  expect(png.width).toBeGreaterThan(3000)
-  // The chart itself, drawn at the zoom the budget allows: the last bands are drawn, not left blank (some of the
-  // beads in its bottom-right corner are not white — the Palette has a white of its own, so not every one).
-  const zoom = pngZoom(project)
-  const chart = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
-  const chartRight = Math.ceil(chart.width) + PNG_MARGIN_PX
-  const chartBottom = Math.ceil(chart.height) + PNG_MARGIN_PX
-  const corner = new Set<string>()
-  for (let y = chartBottom - 60; y < chartBottom; y += 4) {
-    for (let x = chartRight - 60; x < chartRight; x += 4) {
-      corner.add(hex(png, x, y))
-    }
-  }
-  expect(corner.size).toBeGreaterThan(2)
 })
 
 test('PDF export holds the legend and the chart, and splits a large Project over pages', async ({ page }) => {

@@ -37,8 +37,8 @@ describe('Word chart pages and picture', () => {
 
   it('makes a PNG that is larger at a higher Export quality', async () => {
     const words = wordsOf('brick', 12, 30)
-    const medium = await exportWordChartPng(words, 60)
-    const high = await exportWordChartPng(words, 90)
+    const medium = await exportWordChartPng(words, 1)
+    const high = await exportWordChartPng(words, 1.5)
     expect(medium.type).toBe('image/png')
     expect(high.size).toBeGreaterThan(medium.size)
   })
