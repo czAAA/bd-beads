@@ -3,7 +3,7 @@ import { withMakerName } from '../../domain/makerName'
 import { withLetters, type Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
-import { pdfDpiFor } from '../../rendering/pdfDpi'
+import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
 import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
@@ -123,7 +123,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
     // The cover is the first; Beads needed that runs over follows as `_2`, `_3`. The Word chart is PDF pages only (ticket
     // 0586).
     const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date())
-    const dpi = pdfDpiFor(quality.value)
+    const dpi = pngDpiFor(quality.value)
     return runExport(
       (project) => exportProjectPng(project, wordsOf(project), dpi),
       'png',
@@ -141,7 +141,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   function onExportPdf() {
     // The words the pages print (ticket 162), in the app's language, with the Project's maker's name (ADR 0060).
     return runExport(
-      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date()), pdfDpiFor(quality.value)),
+      (project) => exportProjectPdf(project, printText(project, deps.messages(), deps.locale(), new Date()), pdfPageDpi()),
       'pdf',
       'application/pdf',
     )

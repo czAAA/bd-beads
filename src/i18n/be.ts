@@ -480,7 +480,6 @@ export const be: Translations = {
     chartStyleColor: 'Толькі колер',
     chartStyleLetters: 'Колер + літары',
     keyOnPage: 'Колеры на гэтай старонцы',
-    readNumbers: 'Няцотныя нумары зверху і злева, цотныя знізу і справа.',
     wordChart: {
       title: 'Рад за радам',
       empty: 'пуста',
@@ -556,7 +555,7 @@ export const be: Translations = {
     qualitySizeMb: '{n} МБ',
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
-    qualityPdfCapped: 'На гэтай прыладзе «Высокая» ў PDF і PNG дае {n} DPI.',
+    qualityPdfCapped: 'На гэтай прыладзе «Высокая» ў PNG дае {n} DPI.',
     lettersLabel: 'Літары',
     lettersLine: 'Друкаваць літару колеру на кожнай бісерынцы, каб колеры адрозніваліся на паперы і ў чорна-белым друку.',
     lettersUnavailable: 'Для гэтай тэхнікі пакуль недаступна',

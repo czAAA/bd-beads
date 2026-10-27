@@ -479,7 +479,6 @@ export const uk: Translations = {
     chartStyleColor: 'Лише колір',
     chartStyleLetters: 'Колір + літери',
     keyOnPage: 'Кольори на цій сторінці',
-    readNumbers: 'Непарні номери вгорі й ліворуч, парні внизу й праворуч.',
     wordChart: {
       title: 'Рядок за рядком',
       empty: 'порожньо',
@@ -555,7 +554,7 @@ export const uk: Translations = {
     qualitySizeMb: '{n} МБ',
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
-    qualityPdfCapped: 'На цьому пристрої «Висока» в PDF і PNG дає {n} DPI.',
+    qualityPdfCapped: 'На цьому пристрої «Висока» в PNG дає {n} DPI.',
     lettersLabel: 'Літери',
     lettersLine: 'Друкувати літеру кольору на кожній намистині, щоб кольори розрізнялися на папері й у чорно-білому друці.',
     lettersUnavailable: 'Для цієї техніки поки недоступно',

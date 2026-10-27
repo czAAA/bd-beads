@@ -474,7 +474,6 @@ export const en: Translations = {
     chartStyleColor: 'Color only',
     chartStyleLetters: 'Color + letters',
     keyOnPage: 'Colors on this page',
-    readNumbers: 'Odd numbers top and left, even numbers bottom and right.',
     wordChart: {
       title: 'Row by row',
       empty: 'empty',
@@ -550,7 +549,7 @@ export const en: Translations = {
     qualitySizeMb: '{n} MB',
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
-    qualityPdfCapped: 'High is {n} DPI in the PDF and PNG on this device.',
+    qualityPdfCapped: 'High is {n} DPI in the PNG on this device.',
     lettersLabel: 'Letters',
     lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
     lettersUnavailable: 'Not available for this Technique yet',

@@ -1,4 +1,4 @@
-import { PDF_DPI_BY_QUALITY, type ExportQuality } from '../domain/exportQuality'
+import { PDF_PAGE_DPI, PNG_DPI_BY_QUALITY, type ExportQuality } from '../domain/exportQuality'
 import { A4_PORTRAIT, PRINT_DPI } from './printPlan'
 
 const probed = new Map<number, boolean>()
@@ -6,7 +6,7 @@ const probed = new Map<number, boolean>()
 /** Whether this browser can hold an A4 page canvas at `dpi` (ticket 572): tried, not guessed from the device, since the
  * limit differs by browser and memory (iPad Safari stops near 16 megapixels). A canvas past it gives no context or a
  * blank one, so the last pixel is written and read back. */
-function canDrawPdfAt(dpi: number): boolean {
+function canDrawAt(dpi: number): boolean {
   const known = probed.get(dpi)
   if (known !== undefined) return known
   const scale = dpi / PRINT_DPI
@@ -30,9 +30,15 @@ function canDrawPdfAt(dpi: number): boolean {
   return works
 }
 
-/** The dpi the PDF is drawn at for this Export quality on this device: the quality's own, or the next one down when a
+/** The dpi the PNG is drawn at for this Export quality on this device: the quality's own, or the next one down when a
  * page that large cannot be allocated (the PRINT_DPI floor is always drawn). */
-export function pdfDpiFor(quality: ExportQuality): number {
-  const steps = Object.values(PDF_DPI_BY_QUALITY).sort((a, b) => b - a)
-  return steps.find((dpi) => dpi <= PDF_DPI_BY_QUALITY[quality] && (dpi === PRINT_DPI || canDrawPdfAt(dpi))) ?? PRINT_DPI
+export function pngDpiFor(quality: ExportQuality): number {
+  const steps = Object.values(PNG_DPI_BY_QUALITY).sort((a, b) => b - a)
+  return steps.find((dpi) => dpi <= PNG_DPI_BY_QUALITY[quality] && (dpi === PRINT_DPI || canDrawAt(dpi))) ?? PRINT_DPI
+}
+
+/** The dpi the PDF's picture pages are drawn at on this device: 300, or 150 where a page that large cannot be allocated
+ * (ADR 0076); no Export quality changes it. */
+export function pdfPageDpi(): number {
+  return canDrawAt(PDF_PAGE_DPI) ? PDF_PAGE_DPI : PRINT_DPI
 }

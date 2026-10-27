@@ -2,10 +2,10 @@ import { forEachBead } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
 import { countedDimensions, frameWeave, type Project } from '../domain/project'
 import { describeWeave } from '../domain/weave'
-import type { PrintPart } from './printPlan'
+import { planPrint, type PrintPart, type PrintPlan } from './printPlan'
 
-// A chart page's color key (ticket 579): how many beads of each color the parts on the page own. The overlap is the
-// previous part's beads again, so it is not counted.
+// A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
+// no counts (the Specification has the totals). Its height is set once for the PDF, from the page with the most colors.
 
 type Counted = Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'brickBlock' | 'netSize'>
 
@@ -23,19 +23,39 @@ function displayedAt(rotation: Rotation, columns: number, rows: number, column: 
   }
 }
 
-/** The beads of each color in the parts' own beads (not their overlap), most first. */
-export function colorsOnParts(project: Counted, parts: readonly PrintPart[]): { hex: string; count: number }[] {
+/** The colors in the parts' beads, overlap included. */
+export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): string[] {
   const { frame } = project
   if (!frame) return []
   const weave = describeWeave(frameWeave(project))
   const { columns, rows } = countedDimensions(project)
-  const counts = new Map<string, number>()
+  const found = new Set<string>()
   forEachBead(frame.beads, (row, column, hex) => {
     if (!weave.hasPosition({ row, column }, { ...frame, row: 0, column: 0 })) return
     const [across, down] = displayedAt(project.rotation, columns, rows, Math.floor(column / weave.columnsPerUnit), Math.floor(row / weave.rowsPerUnit))
-    if (parts.some((part) => across >= part.firstAcross && across <= part.lastAcross && down >= part.firstDown && down <= part.lastDown)) {
-      counts.set(hex, (counts.get(hex) ?? 0) + 1)
+    if (parts.some((part) => across >= part.firstAcross - part.overlapAcross && across <= part.lastAcross && down >= part.firstDown - part.overlapDown && down <= part.lastDown)) {
+      found.add(hex)
     }
   })
-  return [...counts.entries()].map(([hex, count]) => ({ hex, count })).sort((a, b) => b.count - a.count || a.hex.localeCompare(b.hex))
+  return [...found]
+}
+
+/** Colors in a row of the key (`print-key-columns`). */
+export const KEY_COLUMNS = 6
+
+/** The most rows a key may take: past it the key ends in an ellipsis rather than eat the chart. */
+const MAX_KEY_ROWS = 10
+
+/** The plan with a key tall enough for the chart page with the most colors. The key's height sets the parts' size, which
+ * sets the colors per page, so the rows grow from one until they hold the busiest page. */
+export function planWithKey(project: Parameters<typeof planPrint>[0] & Counted, listPages = 0): PrintPlan {
+  let plan = planPrint(project, undefined, listPages, 1)
+  for (;;) {
+    const sheets = new Map<number, PrintPart[]>()
+    for (const part of plan.parts) sheets.set(part.page, [...(sheets.get(part.page) ?? []), part])
+    const busiest = Math.max(0, ...[...sheets.values()].map((parts) => colorsOnPage(project, parts).length))
+    const rows = Math.min(MAX_KEY_ROWS, Math.max(1, Math.ceil(busiest / KEY_COLUMNS)))
+    if (rows <= plan.keyRows) return plan
+    plan = planPrint(project, undefined, listPages, rows)
+  }
 }

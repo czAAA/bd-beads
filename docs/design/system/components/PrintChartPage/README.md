@@ -14,11 +14,11 @@ Signed off in the design session of 2026-10-27 (tickets 0585, 0586, 0588; the cl
 | Band | Where | Size |
 | --- | --- | --- |
 | Margin | all four sides | `print-margin` (10 mm) |
-| Header | 10–22 mm | 12 mm (`print-header`, 15mm until 0585 changes it with the code) |
+| Header | 10–22 mm | 12 mm (`print-header`) |
 | Gap | 22–25 mm | 3 mm |
 | Pad | from 25 mm | ruler band + chart + ruler band |
 | Key | under the pad | 6.5 mm + 4.5 mm per row of colors |
-| Footer | 281–287 mm | 6 mm (`print-footer`, 8mm until 0585 changes it with the code) |
+| Footer | 281–287 mm | 6 mm (`print-footer`) |
 
 - The chart is `print-chart-cell` (3 mm) per bead. The chart area is 180 mm wide (190 mm less two `print-ruler` bands): **60 beads across**. Its height is 243 mm less the key, rounded down to whole beads: 75 rows with a two-row key (7–12 colors), 77 with one row (up to 6), 74 with three (up to 18).
 - **The key's height is set once per PDF** from the chart page with the most colors. Every part of the Schema then has the same height and the pages line up. A 100 × 100 is 2 × 2 parts (60 + 40 across, 75 + 25 down).

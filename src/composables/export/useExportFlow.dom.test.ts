@@ -4,8 +4,8 @@ import { libraryFileName, projectExportFileName, projectFileName, projectListFil
 import { en } from '../../i18n/en'
 import { useExportFlow } from './useExportFlow'
 
-import { PDF_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
-vi.mock('../../rendering/pdfDpi', () => ({ pdfDpiFor: vi.fn((quality: ExportQuality) => PDF_DPI_BY_QUALITY[quality]) }))
+import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
+vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 vi.mock('../../rendering/projectExport', () => ({
   exportProjectPng: vi.fn(async () => new Blob(['png'], { type: 'image/png' })),
   exportProjectPdf: vi.fn(async () => new Blob(['pdf'], { type: 'application/pdf' })),
@@ -136,10 +136,10 @@ describe('useExportFlow', () => {
       expect(downloadFile).toHaveBeenCalledTimes(2)
     })
 
-    it('draws the PDF at the dpi of the Export quality on the device (ticket 572)', async () => {
+    it('draws the PDF at its own dpi whatever the Export quality (ADR 0076)', async () => {
       localStorage.setItem('openbeads:export-quality', 'high')
       await setup().onExportPdf()
-      expect(exportProjectPdf).toHaveBeenCalledWith(expect.anything(), expect.anything(), 450)
+      expect(exportProjectPdf).toHaveBeenCalledWith(expect.anything(), expect.anything(), 300)
     })
 
     it('draws the open Project as a PDF', async () => {

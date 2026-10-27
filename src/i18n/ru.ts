@@ -479,7 +479,6 @@ export const ru: Translations = {
     chartStyleColor: 'Только цвет',
     chartStyleLetters: 'Цвет + буквы',
     keyOnPage: 'Цвета на этой странице',
-    readNumbers: 'Нечётные номера сверху и слева, чётные снизу и справа.',
     wordChart: {
       title: 'Ряд за рядом',
       empty: 'пусто',
@@ -555,7 +554,7 @@ export const ru: Translations = {
     qualitySizeMb: '{n} МБ',
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
-    qualityPdfCapped: 'На этом устройстве «Высокое» в PDF и PNG даёт {n} DPI.',
+    qualityPdfCapped: 'На этом устройстве «Высокое» в PNG даёт {n} DPI.',
     lettersLabel: 'Буквы',
     lettersLine: 'Печатать букву цвета на каждой бисеринке, чтобы цвета различались на бумаге и в чёрно-белой печати.',
     lettersUnavailable: 'Для этой техники пока недоступно',

@@ -471,7 +471,6 @@ export const zh: Translations = {
     chartStyleColor: '仅颜色',
     chartStyleLetters: '颜色 + 字母',
     keyOnPage: '本页的颜色',
-    readNumbers: '奇数在上方和左侧，偶数在下方和右侧。',
     wordChart: {
       title: '逐行说明',
       empty: '空',
@@ -547,7 +546,7 @@ export const zh: Translations = {
     qualitySizeMb: '{n} MB',
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
-    qualityPdfCapped: '在此设备上，PDF 和 PNG 的“高”为 {n} DPI。',
+    qualityPdfCapped: '在此设备上，PNG 的“高”为 {n} DPI。',
     lettersLabel: '字母',
     lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
     lettersUnavailable: '此编织方式暂不支持',
