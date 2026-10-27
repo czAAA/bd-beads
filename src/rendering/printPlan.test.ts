@@ -91,6 +91,16 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
     expect([...pages].sort((a, b) => a - b)).toEqual(Array.from({ length: plan.specificationPage - 2 }, (_, index) => index + 2))
   })
 
+  it('numbers the chart pages and the Specification after the list pages that follow the Cover page (ticket 0583)', () => {
+    const project = shape('loom', 150, 220)
+    const without = planPrint(project)
+    const withLists = planPrint(project, undefined, 2)
+
+    expect(withLists.parts.map((part) => part.page)).toEqual(without.parts.map((part) => part.page + 2))
+    expect(withLists.specificationPage).toBe(without.specificationPage + 2)
+    expect(withLists.pageCount).toBe(without.pageCount + 2)
+  })
+
   it('puts the Specification on the page after the last chart page, counted in the total (ticket 0581)', () => {
     const plan = planPrint(shape('loom', 150, 220))
 
