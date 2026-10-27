@@ -28,6 +28,7 @@ function setup(project: Project | null = framed, selection: Selection | null = s
     showToast: vi.fn(),
     onUndo: vi.fn(),
     messages: () => en,
+    locale: () => 'en' as const,
   }
   return { deps, harness, ...useRotateSelectionFlow(deps) }
 }

@@ -233,14 +233,27 @@ describe('ProgressBar keyboard (ticket 563, ADR 0075)', () => {
   })
 })
 
-describe('ProgressBar on a Custom frame (ticket 0592)', () => {
-  it('says Row progress is not there for the shape yet, and offers no row buttons', () => {
+describe('ProgressBar on a Custom frame (ticket 0594)', () => {
+  /** The bar's position line as it reads, its spans' spacing collapsed. */
+  const spoken = (wrapper: ReturnType<typeof mount>) => wrapper.get('[data-testid="progress-bar-position"]').text().replace(/\s+/g, ' ')
+
+  it('counts a Triangle\'s rounds, with no Turn row direction', () => {
     const placed = changeFrame(makeProject(), { custom: { kind: 'triangle', size: 4, centre: { row: 10, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
-    const wrapper = mount(ProgressBar, { props: { project: placed.project } })
+    const project = moveToRow(placed.project, 2)
+    const wrapper = mount(ProgressBar, { props: { project } })
 
-    expect(wrapper.get('[data-testid="progress-bar-not-for-shape"]').text()).toBe(ru.frame.progressNotForShape)
-    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="progress-bar-needs-frame"]').exists()).toBe(false)
+    expect(spoken(wrapper)).toBe('Круг 3 из 4')
+    expect(wrapper.find('[data-testid="progress-bar-next"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="progress-bar-direction"]').exists()).toBe(false)
+  })
+
+  it('names a Star\'s part and its joins', () => {
+    const placed = changeFrame(makeProject(), { custom: { kind: 'star', size: 3, centre: { row: 10, column: 10 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Star')
+    const inPart = mount(ProgressBar, { props: { project: moveToRow(placed.project, 4) } })
+    expect(spoken(inPart)).toBe('Часть 2, круг 2 · 5 из 20')
+    const joining = mount(ProgressBar, { props: { project: moveToRow(placed.project, 15) } })
+    expect(spoken(joining)).toBe('Сшить 1–2 · 16 из 20')
   })
 })

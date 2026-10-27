@@ -39,10 +39,10 @@ describe('a Custom frame put on the open Canvas (ticket 0592)', () => {
     expect(frame.column + frame.columns / 2).toBeCloseTo(30, -1)
   })
 
-  it('replaces the Frame there with its beads, and does not turn Row progress on by itself', () => {
+  it('replaces the Frame there with its beads, and turns Row progress on like any first Frame (ticket 0594)', () => {
     const square = changed(triangle(), { custom: { kind: 'warpedSquare', size: 3, centre: { row: 0, column: 0 } } })
     expect(square.frame).toMatchObject({ kind: 'warpedSquare', settings: { rounds: 3 } })
-    expect(rowProgressOn(square)).toBe(false)
+    expect(rowProgressOn(square)).toBe(true)
   })
 })
 
@@ -138,10 +138,10 @@ describe.each([
   const inner = () => layout().positions.find(({ row }) => row === 0)!
   const name = ({ row, column }: { row: number; column: number }) => ({ row, column })
 
-  it('is an empty peyote Frame of its kind, sized by its own setting, without Row progress', () => {
+  it('is an empty peyote Frame of its kind, sized by its own setting, with Row progress on', () => {
     const project = placed()
     expect(project.frame).toMatchObject({ kind, settings: { [setting]: size }, technique: 'peyote', beads: {} })
-    expect(rowProgressOn(project)).toBe(false)
+    expect(rowProgressOn(project)).toBe(true)
   })
 
   it('paints and erases its positions, and nothing where it has none', () => {

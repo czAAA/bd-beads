@@ -379,6 +379,7 @@ export const zh: Translations = {
     pasteClippedMessage: {
       other: '{count} 颗珠子超出边框，未放入。',
     },
+    droppedOnShapeMessage: { other: '{count} 颗珠子落在接缝上或形状外，未放入。' },
     cutButton: '剪切',
     pasteLabel: '粘贴',
     removeLineButton: '删除所选行/列',
@@ -414,6 +415,14 @@ export const zh: Translations = {
     bottomToTop: '从下到上',
     rightToLeft: '从右到左',
     finishedLabel: '已完成的行',
+    stepRound: '第 {number} 圈',
+    stepRow: '第 {number} 行',
+    stepPartRound: '第 {part} 部件 · 第 {number} 圈',
+    stepZip: '拼接 {parts}',
+    stepHinge: '铰接 {parts}',
+    stepClose: '闭合 {parts}',
+    ofSteps: '共 {total}',
+    stepOfSteps: '· {current} / {total}',
   },
   quantities: {
     heading: '所需珠子',
@@ -488,6 +497,9 @@ export const zh: Translations = {
       oddCount: '奇数颗珠。',
       sides: '(L) 从左边开始,(R) 从右边开始。',
       runNote: '一段由数量和字母组成:2C 是两颗 C 珠。',
+      firstCentre: '第 1 圈在中心，每圈绕形状一周。',
+      firstPoint: '第 1 行在尖端，每行从左往右读。',
+      partsThenJoins: '各部件按组装顺序从中心逐圈编织，最后进行拼接。',
     },
   },
   saveBox: {
@@ -655,7 +667,6 @@ export const zh: Translations = {
     countNeedsFrame: '设置边框后才能计数。',
     progressSelectToSet: '选择以设置',
     progressFrameWord: '边框',
-    progressNotForShape: '此形状暂不支持行进度',
     rotateCoveredMessage: '旋转后的片段落在了已有的珠子上方。',
   },
   size: {

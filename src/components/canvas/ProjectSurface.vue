@@ -719,7 +719,9 @@ function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPositi
     return undefined
   }
   const box = root.getBoundingClientRect()
-  return surface.value.pointToHit({ x: event.clientX - box.left, y: event.clientY - box.top })
+  const point = { x: event.clientX - box.left, y: event.clientY - box.top }
+  // The Select tool marks out a rectangle of a Custom frame's cells on screen, between its beads too (ticket 0594).
+  return (props.selectAnywhere ? surface.value.frameCellAt(point) : undefined) ?? surface.value.pointToHit(point)
 }
 
 /** The color chip beside the eyedropper (ticket 403): what a press would take, live over beads; none over an empty
@@ -935,6 +937,7 @@ function onPointerDown(event: PointerEvent): void {
         const near = cellUnder(event, 'canvas')
         if (props.selectAnywhere) {
           selectDrag = true
+          selectLayer = 'canvas'
           rootEl.value?.setPointerCapture?.(event.pointerId)
         }
         emit('cell-primary-down', near.row, near.column)
@@ -963,6 +966,7 @@ function onPointerDown(event: PointerEvent): void {
     // A press that starts a Selection is captured, so its release is delivered even off the canvas (ticket 503).
     if (props.selecting) rootEl.value?.setPointerCapture?.(event.pointerId)
     selectDrag = props.selectAnywhere === true
+    selectLayer = bead.layer === 'frame' ? 'frame' : 'canvas'
     // A press on a finished row never draws (the lock), and, while its dimming shows, toggles the finished rows between dimmed and normal.
     if (marksShown.value && isInFinishedRow(props.project, bead) && !(event.pointerType === 'touch' && !event.isPrimary)) {
       finishedRestored.value = !finishedRestored.value
@@ -1020,7 +1024,7 @@ function onPointerMove(event: PointerEvent): void {
   placeMarker()
   placePickChip(event, bead)
   if (selectDrag && event.buttons & 1) {
-    const near = cellUnder(event, 'canvas')
+    const near = cellUnder(event, selectLayer)
     emit('cell-primary-move', near.row, near.column)
     return
   }
@@ -1037,8 +1041,10 @@ function onPointerMove(event: PointerEvent): void {
   if (hoversFor(event)) emit('cell-hover', ...cellArguments(bead))
 }
 
-/** A Select drag in progress (ticket 505): every move reports the nearest bead position, over a bead or not. */
+/** A Select drag in progress (ticket 505): every move reports the nearest bead position, over a bead or not, in the
+ * geometry of the layer it began on. */
 let selectDrag = false
+let selectLayer: ViewLayer = 'canvas'
 
 /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
 let stroke: { from: { x: number; y: number }; last: GridPosition | undefined } | undefined

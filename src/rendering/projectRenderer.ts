@@ -306,7 +306,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const weave = frameWeave(project)
   const placed = project.frame && placedLayout(project.frame, weave)
   if (placed) {
-    drawCustomFrame(context, draw, placed, origin)
+    drawCustomFrame(context, draw, placed, origin, space)
     return
   }
   const description = describeWeave(weave)
@@ -351,11 +351,11 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   }
 }
 
-/** A Custom frame (ADR 0077, ticket 0592): every position of its layout at its centre, turned to its panel's angle, in
- * the Project's Bead shape, and its Seams as thin lines between panels and parts. What lies round the shape is
- * left as it is: the Canvas's colour, no position marks. It has no Row order yet, so no row is faded or lit. */
-function drawCustomFrame(context: DrawingContext, draw: LayerDraw, placed: PlacedLayout, origin: { x: number; y: number }): void {
-  const { project, zoom, pixelRatio, look, drawBead, letters } = draw
+/** A Custom frame (ADR 0077, ticket 0592): every position of its layout at its centre, turned to its panel's angle, and
+ * its Seams as thin lines; round the shape the Canvas's colour, no position marks. Finished rounds fade and the current
+ * one is lit as a Rectangular Frame's rows are (ticket 0594). */
+function drawCustomFrame(context: DrawingContext, draw: LayerDraw, placed: PlacedLayout, origin: { x: number; y: number }, space: Space): void {
+  const { project, zoom, pixelRatio, look, drawBead, letters, rowMarks, showFinished } = draw
   const weave = frameWeave(project)
   const beads = project.frame!.beads
   const box = centredBead(placed)
@@ -367,13 +367,16 @@ function drawCustomFrame(context: DrawingContext, draw: LayerDraw, placed: Place
   for (const position of placed.layout.positions) {
     const at = layoutPointPx(placed, position)
     const painted = beads[position.row]?.[position.column] ?? null
+    const address = { row: space.toAbsolute.row + position.row, column: space.toAbsolute.column + position.column, layer: 'frame' as const }
+    const dimmed = rowMarks && !showFinished && isInFinishedRow(project, address)
+    const shown = painted !== null && rowMarks && isInCurrentRow(project, address) ? brighten(painted, CURRENT_ROW_BRIGHTNESS) : painted
     context.save()
     context.translate(at.x, at.y)
     context.rotate(position.angle)
-    drawBead(context, { ...box, size: placed.scale, cornerRadius, color: painted, dimmed: false, deviceScale: zoom * pixelRatio, theme: look })
+    drawBead(context, { ...box, size: placed.scale, cornerRadius, color: shown, dimmed, deviceScale: zoom * pixelRatio, theme: look })
     const letter = painted === null ? undefined : letters?.[painted]
     if (painted !== null && letter) {
-      drawBeadLetter(context, { ...box, size: placed.scale, color: painted, letter, dimmed: false, theme: look })
+      drawBeadLetter(context, { ...box, size: placed.scale, color: painted, letter, dimmed, theme: look })
     }
     context.restore()
   }

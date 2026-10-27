@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createProject, withLetters } from '../domain/project'
+import { changeFrame } from '../domain/changeFrame'
 import { paintAt } from '../testUtils/layers'
 import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
@@ -126,6 +127,19 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(chart.rows[0]).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C, 3*' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)
     expect(chart.empty).toBe(ru.print.wordChart.empty)
+  })
+
+  it('names a Custom frame\'s round or join before its runs, and says where it starts (ticket 0594)', () => {
+    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const placed = changeFrame(open, { custom: { kind: 'star', size: 2, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Star')
+    const { row, column } = placed.project.frame!
+    const painted = paintAt(placed.project, [{ row, column, layer: 'frame' }], '#e63746')
+    const chart = printText(letters(painted), en, 'en', at).wordChart!
+
+    expect(chart.notes).toEqual([en.print.wordChart.partsThenJoins, en.print.wordChart.runNote])
+    expect(chart.rows[0]).toEqual({ label: '1', first: 1, last: 1, runs: 'Part 1, round 1: 1C, 3*' })
+    expect(chart.rows[10]).toEqual({ label: '11', first: 11, last: 11, runs: 'Zip 1–2' })
   })
 
   it('has none with Letters off or without a Technique that has one', () => {

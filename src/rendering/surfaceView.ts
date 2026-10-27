@@ -181,7 +181,7 @@ export interface SurfaceViewInput {
   cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
    * its top-left position's corner. Left out, the view is one layer: the Canvas, or the Frame alone in an own space. */
-  frame?: Frame & Weave & Partial<Pick<FrameSheet, 'kind' | 'settings'>>
+  frame?: Frame & Weave & Partial<Pick<FrameSheet, 'kind' | 'settings' | 'quarterTurns'>>
   rotation: Rotation
   zoom: number
   /** Where the viewport's top-left corner is in displayed space; nothing when left out. */
@@ -215,6 +215,9 @@ export interface SurfaceView {
   /** Whether a point is on a Custom frame where it has no bead (ticket 0592): a Seam, its centre or Off-shape, where a
    * press is refused as on the keep-out margin. */
   offShapeAt(point: Scroll): boolean
+  /** The Frame's cell under a point on a Custom frame, on a bead or not (ticket 0594): what the Select tool marks out
+   * there, a rectangle on screen; none off the Frame or on a Rectangular one. */
+  frameCellAt(point: Scroll): (GridPosition & { layer: 'frame' }) | undefined
   /** The bead position nearest a point, gaps and rounded corners included, in a layer's geometry: what dragging a Frame
    * needs. */
   pointToCell(point: Scroll, layer?: ViewLayer): GridPosition
@@ -438,6 +441,13 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
     offShapeAt: (point) => {
       const at = placed && onSheet(point)
       return !!placed && !!at && layoutPositionAtPx(placed, at.x, at.y) === undefined
+    },
+    frameCellAt: (point) => {
+      const at = placed && sheet && frame && onSheet(point)
+      if (!at) return undefined
+      const cell = cellIn(sheet!, at.x, at.y)
+      const within = { row: Math.min(Math.max(cell.row, 0), frame!.rows - 1), column: Math.min(Math.max(cell.column, 0), frame!.columns - 1) }
+      return { ...addressOf(sheet!, within), layer: 'frame' }
     },
     pointToBead: (point) => {
       const hit = pointToHit(point)

@@ -21,7 +21,7 @@ import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
-import { DEFAULT_FRAME_KIND, frameLayoutOf, hasRowOrder, isFrameKind, rowOrderOf, settingsOf, type KindedSheet } from './frameKind'
+import { DEFAULT_FRAME_KIND, frameLayoutOf, isFrameKind, rowOrderOf, settingsOf, type KindedSheet } from './frameKind'
 import { layoutNeighbors, layoutPosition } from './frameLayout'
 import type { RowOrder, RowWay } from './rowOrder'
 import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteColors, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
@@ -140,10 +140,10 @@ export interface CreateProjectInput {
  * to. */
 const INITIAL_ROW_PROGRESS: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
-/** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055) and its kind has a
- * Row order (ADR 0077: a Custom frame waits for its own). Derived, never stored, so setting a Frame needn't remember
- * it; an old file's saved flag is ignored. */
-export const rowProgressOn = (project: Pick<Project, 'frame'>): boolean => project.frame !== undefined && hasRowOrder(project.frame)
+/** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055), of any kind (a
+ * Custom frame's Row order, ticket 0594). Derived, never stored, so setting a Frame needn't remember it; an old file's
+ * saved flag is ignored. */
+export const rowProgressOn = (project: Pick<Project, 'frame'>): boolean => project.frame !== undefined
 
 /** The Weave of a layer given as its Technique, Brick block and Net size: those and nothing else (a Frame carries more). */
 export function weaveOf({ technique, brickBlock, netSize }: Weave): Weave {
@@ -444,7 +444,7 @@ export function normalizeProject(stored: StoredProject): Project {
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
   const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...readFrameKind(project.frame), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
   const { rows, columns } = projectFrame(placed)
-  const sheet: KindedSheet = { ...frameWeave({ ...canvas, ...placed }), kind: placed.frame?.kind, rows, columns }
+  const sheet: KindedSheet = { ...frameWeave({ ...canvas, ...placed }), ...laidOf(placed.frame), rows, columns }
   const turns = rowOrderOf(sheet, { direction: 'rows' }).turns
 
   return {
@@ -526,12 +526,19 @@ function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
 /** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
  * unsaved (ticket 0591): one without, or with one it does not know, reads as Rectangular. A Custom frame keeps its
  * settings, read within its kind's range (ticket 0592); a Rectangular one has none. */
-function readFrameKind({ kind, settings: stored, ...frame }: FrameSheet): FrameSheet {
+function readFrameKind({ kind, settings: stored, quarterTurns, ...frame }: FrameSheet): FrameSheet {
   if (!isFrameKind(kind) || kind === DEFAULT_FRAME_KIND) {
     return frame
   }
   const settings = settingsOf({ kind, settings: stored })
-  return { ...frame, kind, ...(settings ? { settings } : {}) }
+  // Rotate Frame's turn (ticket 0594): one, two or three quarters; anything else reads as none.
+  const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
+  return { ...frame, kind, ...(settings ? { settings } : {}), ...turned }
+}
+
+/** What a Frame's Row order is built from beside its rectangle and Weave: its kind, a Custom frame's settings and turn. */
+function laidOf(frame: FrameSheet | undefined): Pick<KindedSheet, 'kind' | 'settings' | 'quarterTurns'> {
+  return { kind: frame?.kind, settings: frame?.settings, quarterTurns: frame?.quarterTurns }
 }
 
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
@@ -559,6 +566,7 @@ export function withFrame(project: Project, rectangle: Frame | undefined): Proje
     ...(current?.name ? { name: current.name } : {}),
     ...(current?.kind ? { kind: current.kind } : {}),
     ...(current?.settings ? { settings: current.settings } : {}),
+    ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
   return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }
 }
@@ -686,18 +694,24 @@ type RowProgressed = Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'bric
 /** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
  * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */
 export function frameRowOrder(project: RowProgressed): RowOrder {
-  const { rows = 0, columns = 0, kind } = project.frame ?? {}
-  return rowOrderOf({ ...frameWeave(project), kind, rows, columns }, project.rowProgress)
+  const { rows = 0, columns = 0 } = project.frame ?? {}
+  return rowOrderOf({ ...frameWeave(project), ...laidOf(project.frame), rows, columns }, project.rowProgress)
 }
 
 /** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. */
 function framePassAt(project: RowProgressed, position: GridPosition): number | undefined {
   const frame = project.frame
   // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on.
-  if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
+  if (!frame || position.layer === 'canvas') {
     return undefined
   }
-  return frameRowOrder(project).passAt({ row: position.row - frame.row, column: position.column - frame.column })
+  const own = { row: position.row - frame.row, column: position.column - frame.column }
+  // A Custom frame's positions are its layout's, named by round and place, not its rectangle's (ticket 0594).
+  const layout = frameLayoutOf(frame)
+  if (layout ? !layoutPosition(layout, own) : !frameContains(frame, position)) {
+    return undefined
+  }
+  return frameRowOrder(project).passAt(own)
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)

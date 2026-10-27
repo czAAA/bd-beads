@@ -424,11 +424,11 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     }
   })
 
-  it('shows Rounds in place of Width and Height, and no Rotate or Select a frame', async () => {
+  it('shows Rounds in place of Width and Height, Rotate Frame (ticket 0594) and no Select a frame', async () => {
     const wrapper = mountBar(triangle(4))
     expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-select"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="frame-setting-value"]').text()).toBe('4')
     await wrapper.get('[data-testid="frame-setting-more"]').trigger('click')
     expect(wrapper.emitted('set-size')).toEqual([[5]])

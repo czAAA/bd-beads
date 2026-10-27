@@ -4,6 +4,12 @@ import { useSelectionGesture } from './useSelectionGesture'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject, frameGrid, withFrame, type Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
+import { beadCount } from '../../domain/canvas'
+import { changeFrame } from '../../domain/changeFrame'
+import { frameLayoutOf } from '../../domain/frameKind'
+import { onLayer } from '../../domain/layers'
+import { paintCells } from '../../domain/project'
+import type { PasteLoss } from '../../domain/selection'
 
 const cubeBeadId = BEAD_CATALOG[0]!.id
 const RED = '#e63746'
@@ -20,14 +26,18 @@ function paintedProject(): Project {
 
 function setup(project: Project | null = makeProject()) {
   const clipped: number[] = []
+  const losses: PasteLoss[] = []
   const harness = editHarness(project ?? undefined)
   const gesture = useSelectionGesture(
     harness.currentProject,
     harness.edit,
-    (count) => clipped.push(count),
+    (count, loss) => {
+      clipped.push(count)
+      losses.push(loss)
+    },
   )
   /** Counts the Edits that landed on the Project. */
-  return { gesture, commitGridChange: harness.replaceProject, harness, clipped }
+  return { gesture, commitGridChange: harness.replaceProject, harness, clipped, losses }
 }
 
 /** Drags a Selection over the top-left cell and copies it, which arms paste mode (ticket 437). */
@@ -769,5 +779,47 @@ describe('useSelectionGesture', () => {
       piece.endAdjust()
       expect(piece.selection.value).toBeUndefined()
     })
+  })
+})
+
+describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
+  /** A peyote Star on a loom Canvas, its first arm's last round painted. */
+  function star(): Project {
+    const { frame: _frame, ...open } = makeProject()
+    const placed = changeFrame(open, { custom: { kind: 'star', size: 4, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Star')
+    const arm = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row, column }) => row === 3 && column < 16)
+    return onLayer(placed.project, 'frame', (view) => paintCells(view, arm, RED))
+  }
+
+  it('selects all of it, clears it in one Undo step, and Undo brings every bead back', () => {
+    const { gesture, harness } = setup(star())
+    expect(gesture.selectAll()).toBe(true)
+    expect(gesture.selection.value).toMatchObject({ layer: 'frame' })
+    gesture.deleteSelection()
+    expect(beadCount(harness.project.frame!.beads)).toBe(0)
+    harness.history.onUndo()
+    expect(beadCount(harness.project.frame!.beads)).toBe(16)
+  })
+
+  it('pastes into the shape and says how many beads its Seams and Off-shape dropped, in one Undo step', () => {
+    const { gesture, harness, clipped, losses } = setup(star())
+    gesture.selectAll()
+    expect(gesture.copy()).toBe(true)
+    const { row, column } = harness.project.frame!
+    // Aimed at the Frame's top left corner, Off-shape: some of the arm lands past the shape.
+    expect(gesture.pasteAt({ row, column, layer: 'frame' })).toBe(true)
+    expect(losses).toEqual(['shape'])
+    expect(clipped[0]).toBeGreaterThan(0)
+    harness.history.onUndo()
+    expect(harness.project.frame!.beads).toEqual(star().frame!.beads)
+  })
+
+  it('refuses the Piece tool on it: its beads make no Pieces of a Grid', () => {
+    const { gesture, harness } = setup(star())
+    const { row, column } = harness.project.frame!
+    gesture.tapPiece(row + 5, column + 5, 'frame')
+    expect(gesture.selection.value).toBeUndefined()
+    expect(gesture.refusals.value).toBe(1)
   })
 })

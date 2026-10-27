@@ -1,8 +1,8 @@
 import { colorAt } from './canvas'
 import type { Rotation } from './grid'
 import { frameRowOrder, frameWeave, type Project } from './project'
-import { hasRowOrder } from './frameKind'
 import { describeWeave, type PassDirection, type Technique } from './weave'
+import type { OrderStep, RowOrder } from './rowOrder'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
  * line per row in the order Row progress counts them. Pure data here; the words and the drawing are the export's. */
@@ -26,6 +26,8 @@ interface WordRow {
   both: boolean
   /** Which end the row starts from, for peyote and brick stitch: L reads left to right, R right to left. */
   marker?: 'L' | 'R'
+  /** A Custom frame's pass (ticket 0594): the round, row, part's round or join it is. A join lists no runs. */
+  step?: OrderStep
   runs: WordRun[]
 }
 
@@ -43,6 +45,9 @@ export interface WordChart {
   lastNumber: number
   /** Whether any cell is empty, so the legend explains `*`. */
   hasEmpty: boolean
+  /** A Custom frame's start in place of the edge Row 1 is at (ticket 0594): rounds from the centre, rows from a Kite's
+   * point, or parts in making order and then their joins. */
+  start?: 'centre' | 'point' | 'parts'
 }
 
 // Where grid line 0 lies on the displayed picture: the grid never turns, only its presentation does (rotation), so a
@@ -66,14 +71,16 @@ export function wordChartOf(project: Project): WordChart | undefined {
   const { frame } = project
   const weave = frameWeave(project)
   const { wordChart, twoPasses } = describeWeave(weave)
-  // A Custom frame's Word chart waits for its Row order (ADR 0077).
-  if (!project.letters || !frame || !wordChart || !hasRowOrder(frame)) {
+  if (!project.letters || !frame || !wordChart) {
     return undefined
+  }
+  const order = frameRowOrder(project)
+  if (order.stepOf) {
+    return customWordChart(project, order)
   }
   const { direction, reversed } = project.rowProgress
   const along = direction === 'rows' ? frame.columns : frame.rows
   const ascends = ASCENDS[direction][project.rotation]
-  const order = frameRowOrder(project)
   let hasEmpty = false
 
   const rows: WordRow[] = []
@@ -86,15 +93,9 @@ export function wordChartOf(project: Project): WordChart | undefined {
     // A loom row, and an L row, read left to right; an R row right to left.
     const leftToRight = marker !== 'R'
     if (leftToRight !== ascends) colors.reverse()
-    const runs: WordRun[] = []
-    for (const letter of colors) {
-      const last = runs[runs.length - 1]
-      if (last && last.letter === letter) last.count += 1
-      else runs.push({ count: 1, letter })
-      hasEmpty ||= letter === undefined
-    }
+    hasEmpty ||= colors.includes(undefined)
     const first = twoPasses && pass === 0
-    rows.push({ number: twoPasses && pass > 0 ? pass + 2 : pass + 1, both: first, ...(marker ? { marker } : {}), runs })
+    rows.push({ number: twoPasses && pass > 0 ? pass + 2 : pass + 1, both: first, ...(marker ? { marker } : {}), runs: runsOf(colors) })
   }
 
   return {
@@ -104,5 +105,46 @@ export function wordChartOf(project: Project): WordChart | undefined {
     rows,
     lastNumber: rows[rows.length - 1]?.number ?? 0,
     hasEmpty,
+  }
+}
+
+/** A pass's letters in order as runs of one letter: `undefined` for an empty position. */
+function runsOf(letters: readonly (string | undefined)[]): WordRun[] {
+  const runs: WordRun[] = []
+  for (const letter of letters) {
+    const last = runs[runs.length - 1]
+    if (last && last.letter === letter) last.count += 1
+    else runs.push({ count: 1, letter })
+  }
+  return runs
+}
+
+/** A Custom frame's Word chart (ticket 0594): one line per pass of its Row order, numbered from 1, each round read round
+ * the shape and each Kite row left to right; a join is a line of its own with no runs. */
+function customWordChart(project: Project, order: RowOrder): WordChart {
+  const frame = project.frame!
+  let hasEmpty = false
+  let parts = false
+  const rows: WordRow[] = []
+  for (let pass = 0; pass < order.count; pass += 1) {
+    const step = order.stepOf!(pass)!
+    parts ||= step.kind === 'join' || step.part !== undefined
+    const letters = step.kind === 'join'
+      ? []
+      : order.positionsOf(pass).map(({ row, column }) => {
+          const hex = colorAt(frame.beads, row, column)
+          return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
+        })
+    hasEmpty ||= letters.includes(undefined)
+    rows.push({ number: pass + 1, both: false, step, runs: runsOf(letters) })
+  }
+  const first = order.stepOf!(0)
+  return {
+    marked: false,
+    firstEdge: 'top',
+    rows,
+    lastNumber: rows.length,
+    hasEmpty,
+    start: parts ? 'parts' : first?.kind === 'row' ? 'point' : 'centre',
   }
 }

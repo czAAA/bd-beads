@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Frame } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
-import { createProject, type Project, type RowProgress, type Technique } from '../domain/project'
+import { createProject, moveToRow, type Project, type RowProgress, type Technique } from '../domain/project'
+import { changeFrame } from '../domain/changeFrame'
+import { frameLayoutOf } from '../domain/frameKind'
+import { onLayer } from '../domain/layers'
+import { paintCells } from '../domain/project'
 import { DEFAULT_THEME } from './beadLook'
 import { beadRoundness } from '../domain/weave'
 import { recordingContext } from '../testUtils/recordingContext'
@@ -191,6 +195,24 @@ describe('renderOverlay', () => {
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
 
       expect(ringRects(calls)).toHaveLength(1)
+    })
+  })
+
+  describe('the pass being woven on a Custom frame (ticket 0594)', () => {
+    it('rings each bead of the current round turned to its panel\'s angle, and only the beads that hold a colour', () => {
+      const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+      const placed = changeFrame(open, { custom: { kind: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+      const round = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row }) => row === 1)
+      const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746'))
+      const project = moveToRow(painted, 1)
+      const { context, named } = recordingContext()
+
+      renderOverlay(context, { project, region: whole(project), zoom: 1, space: spaceOf(project, true) })
+
+      expect(named('rotate').map((call) => call.args[0])).toEqual(expect.arrayContaining(round.slice(0, 4).map(({ angle }) => angle)))
+      // Each of the four beads is lifted and ringed, both turned: eight turns, no more.
+      expect(named('rotate')).toHaveLength(8)
     })
   })
 

@@ -7,6 +7,7 @@ import { footprintOf } from './footprint'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells, restoreBeads, type Project } from './project'
+import { aimOf, cellOfBead, copiedFromCustom, isCustomView, landOnLayout, pointsOfCells, positionsInRectangle, type PlacedColor } from './customSelection'
 
 /** A rectangular area of a Project's grid, marked out with the Select tool (CONTEXT.md's Selection): top-left corner
  * plus size in cells. */
@@ -31,6 +32,9 @@ export interface CopiedBlock {
   /** First drawn bead in reading order, relative to the top-left: where the pointer's bead lands (ticket 437, ADR
    * 0057). */
   anchor: { row: number; column: number }
+  /** Copied from a Custom frame (ticket 0594): each bead's centre on screen from the anchor bead's, which a Paste onto a
+   * Custom frame lands as they lay; `colors` holds the same beads in the Frame's cells, for a Paste onto a rectangle. */
+  points?: readonly PlacedColor[]
 }
 
 /** One cell a Paste would land on, with the color it would get — what both the paste preview and the paste itself
@@ -282,12 +286,37 @@ export function selectionInLayer(project: Pick<Project, 'frame'>, layer: Layer, 
 /** Snapshots the drawn beads of a Selection on its layer (Copy). */
 export function copyLayerSelection(project: Project, selection: Selection): CopiedBlock | undefined {
   const layer = selectionLayer(project, selection)
-  return copySelection(layerView(project, layer), selectionInLayer(project, layer, selection))
+  const view = layerView(project, layer)
+  const local = selectionInLayer(project, layer, selection)
+  return isCustomView(view) ? copyCustomSelection(view, local) : copySelection(view, local)
+}
+
+/** Snapshots a Custom frame's Selection (ticket 0594): its beads' places on screen, and the same beads in its cells. */
+function copyCustomSelection(view: Project, selection: Selection): CopiedBlock | undefined {
+  const copied = copiedFromCustom(view, selection)
+  if (!copied) return undefined
+  const top = Math.min(...copied.cells.map(({ row }) => row))
+  const left = Math.min(...copied.cells.map(({ column }) => column))
+  const rows = Math.max(...copied.cells.map(({ row }) => row)) - top + 1
+  const columns = Math.max(...copied.cells.map(({ column }) => column)) - left + 1
+  const colors: (string | null)[][] = Array.from({ length: rows }, () => Array.from({ length: columns }, () => null))
+  for (const { row, column, color } of copied.cells) colors[row - top]![column - left] = color
+  const first = copied.cells[0]!
+  return { rows, columns, colors, anchor: { row: first.row - top, column: first.column - left }, points: copied.points }
+}
+
+/** Where a block's beads land on a Custom frame aimed at its cell `at`: its anchor bead on that cell's centre, each other
+ * bead as it lay on screen, and how many fell on a Seam or Off-shape (ticket 0594). */
+function landedOnCustom(view: Project, block: CopiedBlock, at: GridPosition): ReturnType<typeof landOnLayout> {
+  const points = block.points ?? pointsOfCells(view, pastedCells(block, { row: 0, column: 0 }), block.anchor)
+  const aim = aimOf(view, at)
+  return landOnLayout(view, points.map(({ x, y, color }) => ({ x: aim.x + x, y: aim.y + y, color })))
 }
 
 /** Every position in a Selection on its layer: the Selection's rectangle (a shape's own cells), cut to the Frame when it
- * is the Frame's. */
+ * is the Frame's; on a Custom frame every bead whose centre lies in it (ticket 0594). */
 function selectionCells(view: Project, selection: Selection): GridPosition[] {
+  if (isCustomView(view)) return positionsInRectangle(view, selection).map(({ row, column }) => ({ row, column }))
   const mask = selectionMask(selection)
   const cells: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
@@ -308,10 +337,15 @@ export function paintLayerSelection(project: Project, selection: Selection, colo
   return onLayer(project, layer, (view) => paintCells(view, selectionCells(view, local), color))
 }
 
-/** Paste on the layer the pointer is at: the block at `at`, cut to the Frame when it lands in it. */
+/** Paste on the layer the pointer is at: the block at `at`, cut to the Frame when it lands in it; on a Custom frame each
+ * bead on the nearest free position of the panel under it (ticket 0594). */
 export function pasteOnLayer(project: Project, block: CopiedBlock, at: GridPosition): Project {
   const layer = layerAt(project, at)
-  return onLayer(project, layer, (view, local) => stampBlock(view, block, local(at)))
+  return onLayer(project, layer, (view, local) => {
+    if (!isCustomView(view)) return stampBlock(view, block, local(at))
+    const beads = withColors(view.beads, landedOnCustom(view, block, local(at)).landed)
+    return beads === view.beads ? view : restoreBeads(view, beads)
+  })
 }
 
 /** The Selection a tap with the Piece tool makes at a position, on the layer the tap is on (ticket 414): the Piece of
@@ -333,16 +367,35 @@ export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selec
 export function pastedCellsOnLayer(project: Project, block: CopiedBlock, at: GridPosition): PastedCell[] {
   const layer = layerAt(project, at)
   const view = layerView(project, layer)
+  if (isCustomView(view)) {
+    // A Custom frame's positions are named by round and place, which only the Frame's layer reads (ticket 0594).
+    return landedOnCustom(view, block, positionInLayer(project, layer, at)).landed.map(({ row, column, color }) => ({ ...positionOnCanvas(project, layer, { row, column }), color: color!, layer }))
+  }
   return stampedCells(view, block, positionInLayer(project, layer, at))
     .filter((cell) => !view.frame || frameContains(view.frame, cell))
     .map((cell) => ({ ...cell, ...positionOnCanvas(project, layer, cell) }))
 }
 
-/** How many beads a Paste at `at` loses to the Frame's edge (ticket 491): those of a block landing in the Frame that fall
- * outside it. None on the Canvas, which has no edge. */
-export function pasteClippedCount(project: Project, block: CopiedBlock, at: GridPosition): number {
-  if (layerAt(project, at) !== 'frame') return 0
+/** Where a Paste loses beads: past the Frame's edge (ticket 491), or on a Custom frame's Seams and Off-shape (ticket
+ * 0594). */
+export type PasteLoss = 'edge' | 'shape'
+
+/** How many beads a Paste at `at` loses, and where: those of a block landing in the Frame that fall outside it, or on
+ * a Custom frame those that land on a Seam or Off-shape. None on the Canvas, which has no edge. */
+export function pasteLostCount(project: Project, block: CopiedBlock, at: GridPosition): { count: number; loss: PasteLoss } {
+  if (layerAt(project, at) !== 'frame') return { count: 0, loss: 'edge' }
   const view = layerView(project, 'frame')
-  const cells = stampedCells(view, block, positionInLayer(project, 'frame', at))
-  return cells.filter((cell) => !frameContains(view.frame!, cell)).length
+  const local = positionInLayer(project, 'frame', at)
+  if (isCustomView(view)) return { count: landedOnCustom(view, block, local).dropped, loss: 'shape' }
+  const cells = stampedCells(view, block, local)
+  return { count: cells.filter((cell) => !frameContains(view.frame!, cell)).length, loss: 'edge' }
+}
+
+/** Where Ctrl+V aims when the pointer is over a bead rather than a cell (a tool other than Select): on a Custom frame the
+ * cell over that bead, its position being named by round and place (ticket 0594); elsewhere the position itself. */
+export function pasteAimAtBead(project: Project, position: GridPosition): GridPosition {
+  if (layerAt(project, position) !== 'frame') return position
+  const view = layerView(project, 'frame')
+  if (!isCustomView(view)) return position
+  return { ...positionOnCanvas(project, 'frame', cellOfBead(view, positionInLayer(project, 'frame', position))), layer: 'frame' }
 }

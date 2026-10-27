@@ -28,6 +28,7 @@ Signed off in the design session of 2026-10-27 (the claude.ai canvas "Printed ch
 - A hairline under each row, across the column: 0.15 mm `line-soft`, and under every 5th row 0.2 mm `line-strong`, so the rows can be counted as on the chart.
 - The number of runs on the right is gone: it is not something a weaver works from.
 - A row too long for its column wraps at a run, with a hanging indent at the runs' start; the wrapped line adds one pitch. A row never splits across columns or pages.
+- **A Custom frame** (ticket 0594): one line per pass of its Row order, numbered from 1, the runs led by the pass in words ("Round 3: 2A, 1B", "Part 2, round 1: 4A", a join on its own as "Zip 1–2"); no (L) or (R). The notes say where it starts ("Round 1 is at the centre…", "Row 1 is at the point…", or parts in making order then the joins) in place of the edge Row 1 is at.
 
 ## Two columns
 
