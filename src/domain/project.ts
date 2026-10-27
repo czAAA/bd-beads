@@ -526,11 +526,11 @@ function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
 /** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
  * unsaved (ticket 0591): one without, or with one it does not know, reads as Rectangular. A Custom frame keeps its
  * settings, read within its kind's range (ticket 0592); a Rectangular one has none. */
-function readFrameKind({ kind, settings: _settings, ...frame }: FrameSheet): FrameSheet {
+function readFrameKind({ kind, settings: stored, ...frame }: FrameSheet): FrameSheet {
   if (!isFrameKind(kind) || kind === DEFAULT_FRAME_KIND) {
     return frame
   }
-  const settings = settingsOf({ kind, settings: _settings })
+  const settings = settingsOf({ kind, settings: stored })
   return { ...frame, kind, ...(settings ? { settings } : {}) }
 }
 
@@ -909,7 +909,8 @@ function floodRegion(project: Pick<Project, 'beads' | 'frame' | 'technique'>, st
   // A Custom frame's beads touch across its panels, not along rows and columns (ticket 0592).
   const layout = project.frame && frameLayoutOf(project.frame)
   if (layout) {
-    return reachable(start, (position) => layoutPosition(layout, position) !== undefined && colorAt(project.beads, position.row, position.column) === targetColor, (position) => layoutNeighbors(layout, position))
+    const inside = (position: GridPosition) => layoutPosition(layout, position) !== undefined && colorAt(project.beads, position.row, position.column) === targetColor
+    return reachable(start, inside, (position) => layoutNeighbors(layout, position))
   }
   const limit = fillLimit(project, start)
   const weave = describeWeave(project)
