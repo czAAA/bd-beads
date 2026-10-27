@@ -1,5 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
-import { sizeOf, type Sized } from './canvas'
+import { sizeOf, type FrameSheet, type Sized } from './canvas'
+import { frameLayoutOf } from './frameKind'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
 import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
 import { decimalSign } from './formatNumber'
@@ -40,6 +41,9 @@ export function formatMm(mm: number, locale: Locale = 'en'): string {
   return trimmedOneDecimal(mm, decimalSign(locale))
 }
 
+/** What a Frame's size is measured from beside its rectangle: its kind and a Custom frame's settings. */
+type Kinded = Partial<Pick<FrameSheet, 'kind' | 'settings'>>
+
 /** A grid's Estimated size in mm (CONTEXT.md): width first, as seen on screen. */
 export interface EstimatedSizeMm {
   widthMm: number
@@ -49,15 +53,19 @@ export interface EstimatedSizeMm {
 // A Project's Estimated size (CONTEXT.md, ADR 0026): Bead size times beads across and down, the exact inverse of
 // gridFromSize's mm conversion. Not Technique-aware (no peyote packing, slack, tension), hence only an estimate.
 // Width and height follow the rotated view, as summarizeProject's do.
-export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Partial<Weave> & { frame?: Weave }, bead: Bead): EstimatedSizeMm {
+export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Partial<Weave> & Kinded & { frame?: Weave & Kinded }, bead: Bead): EstimatedSizeMm {
   const { columns, rows } = sizeOf(project)
   // The Frame's own Weave when there is one (ticket 492): its size is what is measured.
   const woven = 'frame' in project && project.frame ? project.frame : project
   const description = describeWeave({ technique: woven.technique ?? DEFAULT_TECHNIQUE, netSize: woven.netSize })
-  // Right-angle weave: the Units' own pitch, not a column of beads (ticket 482).
-  const { width: widthMm, height: heightMm } = description.countsUnits
-    ? description.blockExtent(columns, rows, beadPitchMm(bead), bead.heightMm)
-    : { width: columns * beadPitchMm(bead), height: rows * bead.heightMm }
+  // A Custom frame is as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592); Right-angle
+  // weave counts the Units' own pitch, not a column of beads (ticket 482).
+  const layout = frameLayoutOf(woven)
+  const { width: widthMm, height: heightMm } = layout
+    ? { width: layout.width * beadPitchMm(bead), height: layout.height * beadPitchMm(bead) }
+    : description.countsUnits
+      ? description.blockExtent(columns, rows, beadPitchMm(bead), bead.heightMm)
+      : { width: columns * beadPitchMm(bead), height: rows * bead.heightMm }
   return project.rotation !== undefined && rotationSwapsAxes(project.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 

@@ -26,6 +26,8 @@ const {
   onNewProjectDraft,
   onCreateProject,
   onPlaceFrameFromStarter,
+  onAddCustomFrame,
+  onSetFrameRounds,
   startConvertImage,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
@@ -102,6 +104,8 @@ watch(openPanel, (open) => {
       @export-pdf="onExportPdf"
       @set-letters="onSetLetters"
       @key="onFrameKey"
+      @add-custom="(kind) => { onAddCustomFrame(kind); onCloseFramePanel() }"
+      @set-rounds="onSetFrameRounds"
     />
     <!-- Frame from starter (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->
     <template #sub="{ depth }">

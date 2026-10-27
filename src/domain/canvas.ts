@@ -1,5 +1,5 @@
 import type { GridDimensions, GridPosition } from './grid'
-import type { FrameKindId } from './frameKind'
+import type { FrameKindId, FrameSettings } from './frameKind'
 import type { Weave } from './weave'
 
 // The painted beads of a Canvas (ADR 0026) by row, then column, then the color's hex. Only painted positions are
@@ -27,6 +27,8 @@ export interface FrameSheet extends Frame, Weave {
   name?: string
   /** Its Frame kind (ticket 0591, ADR 0077). Absent means Rectangular, which is left unsaved. */
   kind?: FrameKindId
+  /** A Custom frame's settings (ticket 0592): what its layout is built from. Absent on a Rectangular Frame. */
+  settings?: FrameSettings
 }
 
 /** One bead's color at a position, or null where nothing is painted. */

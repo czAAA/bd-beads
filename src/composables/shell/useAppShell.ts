@@ -394,6 +394,11 @@ function wireAppShell(services: Services) {
   const addedColorCount = computed(() => palette.value.colors.filter((color) => isAddedColorId(color.id)).length)
   const removeAllColorsConfirmOpen = ref(false)
   const removeAllColorsMessage = computed(() => plural(locale.value, addedColorCount.value, t.value.palette.removeAllConfirmMessage))
+  /** The Rounds question's line (ticket 0592): how many painted beads the outer rounds would take with them. */
+  const roundsConfirmMessage = computed(() => {
+    const ask = frameFlow.roundsAsk.value
+    return ask ? plural(locale.value, ask.lost, t.value.frame.roundsConfirmMessage) : ''
+  })
   function onConfirmRemoveAllAddedColors() {
     removeAllColorsConfirmOpen.value = false
     const previous = selectedColorId.value
@@ -844,7 +849,14 @@ function wireAppShell(services: Services) {
     removeFrameConfirmOpen: frameFlow.removeConfirmOpen,
     onCancelRemoveFrame: frameFlow.cancelRemove,
     onConfirmRemoveFrame: frameFlow.confirmRemove,
+    removeFrameTakesBeads: frameFlow.removeTakesBeads,
     onPlaceFrameFromStarter: frameFlow.placeFromStarter,
+    onAddCustomFrame: frameFlow.placeCustom,
+    onSetFrameRounds: frameFlow.setRounds,
+    roundsConfirmOpen: computed(() => frameFlow.roundsAsk.value !== undefined),
+    roundsConfirmMessage,
+    onCancelRounds: frameFlow.cancelRounds,
+    onConfirmRounds: frameFlow.confirmRounds,
     replaceFrameConfirmOpen: frameFlow.replaceConfirmOpen,
     onCancelReplaceFrame: frameFlow.cancelReplace,
     onConfirmReplaceFrame: frameFlow.confirmReplace,

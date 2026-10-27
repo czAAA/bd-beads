@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } fro
 import { changedPositions } from '../../domain/canvas'
 import { layerAt } from '../../domain/layers'
 import { footprintOf } from '../../domain/footprint'
+import { frameAllows } from '../../domain/frameKind'
 import { inMargin, mayPlace } from '../../domain/margin'
 import type { Tool } from '../../domain/tool'
 import type { GridPosition, Layer, PreviewCell } from '../../domain/grid'
@@ -754,7 +755,9 @@ watch(
 /** Whether the Select tool is in hand and the bead lies in the margin, which a Selection cannot start in (ticket
  * 428). */
 function refusesSelectionStart(bead: GridPosition): boolean {
-  return props.selectionBlocksMargin === true && inMargin(footprintOf(props.project), bead)
+  if (props.selectionBlocksMargin !== true) return false
+  // A Frame whose kind offers no Selection refuses one as the margin does (a Custom frame, ticket 0592).
+  return inMargin(footprintOf(props.project), bead) || (layerAt(props.project, bead) === 'frame' && !frameAllows(props.project.frame, 'select'))
 }
 
 function refusesMargin(bead: GridPosition | undefined): boolean {
@@ -916,7 +919,14 @@ function onPointerDown(event: PointerEvent): void {
   // A ruler number is display-only (ticket 447): the press goes to the active tool at that spot.
   const bead = beadUnder(event)
   overBead.value = bead !== undefined
-  overRefusedMargin.value = refusesMargin(bead)
+  const offShape = !bead && surface.value.offShapeAt(pointInSurface(event))
+  overRefusedMargin.value = refusesMargin(bead) || offShape
+  // A Custom frame's Seams and Off-shape hold no bead (ticket 0592): a press there is refused, as on the margin.
+  if (offShape) {
+    lastBead = undefined
+    if (event.button === 0) refusePress()
+    return
+  }
   if (!bead) {
     lastBead = undefined
     // A press on empty background still opens the stroke (ticket 504); Fill lands on the nearest bead instead.
@@ -1006,7 +1016,7 @@ function onPointerMove(event: PointerEvent): void {
   }
 
   overBead.value = bead !== undefined
-  overRefusedMargin.value = refusesMargin(bead)
+  overRefusedMargin.value = refusesMargin(bead) || (!bead && surface.value.offShapeAt(pointInSurface(event)))
   placeMarker()
   placePickChip(event, bead)
   if (selectDrag && event.buttons & 1) {

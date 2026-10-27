@@ -694,6 +694,24 @@ export interface Translations {
     announceNothingToFit: string
     /** A Frame that would cut through a named Piece is refused (ticket 407); `{name}` is the Schema's name. */
     refusedCutsSchema: string
+    /** The temporary Add Custom frame entry (ticket 0592, removed by the Starter gallery, ticket 0597): its heading with
+     * and without a Frame, the Custom frame kinds and the line under them. */
+    customHeading: string
+    customReplaceHeading: string
+    customKinds: { triangle: string; warpedSquare: string }
+    customLine: string
+    /** A Custom frame's Rounds in the Frame panel (ticket 0592). */
+    roundsLabel: string
+    roundsLess: string
+    roundsMore: string
+    roundsSummary: PluralForms
+    roundsConfirmTitle: string
+    roundsConfirmMessage: PluralForms
+    roundsConfirmButton: string
+    /** Remove Frame's question for a Frame that takes its beads with it (ADR 0077). */
+    removeConfirmCustom: string
+    announceCustom: string
+    announceRounds: string
     /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows or columns added on each edge, and why. */
     snapAddedTop: PluralForms
     snapAddedBottom: PluralForms

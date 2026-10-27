@@ -1,6 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, findBead } from './beads'
+import { customFrameSize } from './frameKind'
 import {
   estimatedSizeMm,
   formatMm,
@@ -188,5 +189,20 @@ describe('Netting sizes count diamonds (ticket 485)', () => {
   it('says a size in the other unit in diamonds', () => {
     const labels = { ...units, beadsTemplate: '{columns}×{rows} Units' }
     expect(formatOtherUnit({ columns: 17, rows: 9 }, delica, 'mm', labels, 'en', weave(3))).toBe('4×3 Units')
+  })
+})
+
+describe('a Custom frame\'s Estimated size (ticket 0592)', () => {
+  const triangle = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 6 }), technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 6 } }
+
+  it('measures its shape, an equilateral Triangle standing on its side, not the cells of its bounding rectangle', () => {
+    const { widthMm, heightMm } = estimatedSizeMm(triangle, cube)
+    expect(widthMm / heightMm).toBeCloseTo(2 / Math.sqrt(3), 2)
+    expect(heightMm).toBeLessThan(triangle.rows * cube.heightMm)
+  })
+
+  it('grows with its Rounds', () => {
+    const larger = { ...triangle, ...customFrameSize('triangle', { rounds: 9 }), settings: { rounds: 9 } }
+    expect(estimatedSizeMm(larger, cube).widthMm).toBeGreaterThan(estimatedSizeMm(triangle, cube).widthMm)
   })
 })

@@ -3,6 +3,7 @@ import type { GridPosition, Layer } from './grid'
 
 export type { Layer }
 import { footprintOf } from './footprint'
+import { frameLayoutOf } from './frameKind'
 import { weaveOf, type Project } from './project'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
@@ -30,11 +31,17 @@ export function positionInLayer(project: Pick<Project, 'frame'>, layer: Layer, p
   return frame ? { row: position.row - frame.row, column: position.column - frame.column } : position
 }
 
-/** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies. For what
- * asks about the picture as a whole (Select all, Fit to drawing); the same map back when there is no Frame. */
+/** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies (a Custom
+ * frame's hide them, having no Canvas positions). For what asks about the picture as a whole (Select all, Fit to
+ * drawing); the same map back when there is no Frame. */
 export function shownBeads(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): BeadMap {
   const frame = project.frame
-  return frame ? beadsOver(beadsWithout(project.beads, footprintOf(project)!), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
+  if (!frame) {
+    return project.beads
+  }
+  const hidden = beadsWithout(project.beads, footprintOf(project)!)
+  // A Custom frame's beads lie at angles, named by round and place, not on the Canvas's positions (ADR 0077).
+  return frameLayoutOf(frame) ? hidden : beadsOver(hidden, shiftedBeads(frame.beads, frame.row, frame.column))
 }
 
 /** A position of a layer's own, back on the Canvas. */
@@ -49,7 +56,17 @@ export function positionOnCanvas(project: Pick<Project, 'frame'>, layer: Layer, 
 export function frameLayer(project: Project): Project {
   const frame = project.frame!
   const { pieceNames: _canvasNames, brickBlock: _canvasBlock, netSize: _canvasNet, ...rest } = project
-  const own: FrameSheet = { row: 0, column: 0, rows: frame.rows, columns: frame.columns, beads: frame.beads, ...weaveOf(frame) }
+  const own: FrameSheet = {
+    row: 0,
+    column: 0,
+    rows: frame.rows,
+    columns: frame.columns,
+    beads: frame.beads,
+    ...weaveOf(frame),
+    // A Custom frame's commands ask its layout (ticket 0592).
+    ...(frame.kind ? { kind: frame.kind } : {}),
+    ...(frame.settings ? { settings: frame.settings } : {}),
+  }
   return { ...rest, ...weaveOf(frame), beads: frame.beads, frame: own }
 }
 
