@@ -2,9 +2,9 @@ import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
-import { beadRoundness, describeWeave, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
+import { beadRoundness, describeWeave, mirrorLine, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
-import { canvasWeave, frameWeave, rowProgressOn } from '../domain/project'
+import { canvasWeave, currentPass, frameWeave, rowProgressOn } from '../domain/project'
 import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, spaceOf, type Space } from './space'
@@ -111,7 +111,8 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   const weave = frameWeave(project)
   const direction = project.rowProgress.direction
   const columnWise = direction === 'columns'
-  const pass = columnWise ? project.rowProgress.currentColumn : project.rowProgress.currentRow
+  const pass = currentPass(project.rowProgress)
+  const reversed = project.rowProgress.reversed
   const lines = columnWise ? space.columns : space.rows
   if (!space.hasFrame || pass < 0 || pass >= passCount(weave, lines, direction)) {
     return []
@@ -120,8 +121,9 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
   const beads: PassBead[] = []
   for (const line of passLines(weave, pass, direction)) {
     for (let along = 0; along < length; along += 1) {
-      const row = space.origin.row + (columnWise ? along : line)
-      const column = space.origin.column + (columnWise ? line : along)
+      const at = mirrorLine(line, lines, reversed)
+      const row = space.origin.row + (columnWise ? along : at)
+      const column = space.origin.column + (columnWise ? at : along)
       if (passOf(weave, line, along, direction) === pass) {
         // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
         const color = beadInSpace(project, space, row, column)

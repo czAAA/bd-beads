@@ -33,7 +33,12 @@ export function useRowOps(deps: RowOpsDeps) {
       deps.replaceProject(turned)
       // Said once per change, whether the button or its key turned it (ticket 411).
       const t = deps.messages().rowProgress
-      deps.showToast('row-direction', turned.rowProgress.direction === 'rows' ? t.directionToastRows : t.directionToastColumns, 'success')
+      const { direction, reversed } = turned.rowProgress
+      const toast = {
+        rows: reversed ? t.directionToastRowsReversed : t.directionToastRows,
+        columns: reversed ? t.directionToastColumnsReversed : t.directionToastColumns,
+      }[direction]
+      deps.showToast('row-direction', toast, 'success')
     }
   }
 

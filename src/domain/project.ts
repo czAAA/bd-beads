@@ -20,7 +20,7 @@ import { sameFrame } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
-import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
+import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, mirrorLine, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
 import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteColors, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersFor, type SwatchLetters } from './swatchLetters'
 import type { ColorCatalog } from './colorCatalog'
@@ -52,6 +52,11 @@ export interface RowProgress {
   /** The same pointer for when rows run down the grid's columns, kept apart so flipping the direction never loses
    * either place. */
   currentColumn: number
+  /** Rows run from the Frame's far end (bottom to top, or right to left), with their own two pointers so turning
+   * never loses a place (ticket 0589). Missing means false and 0. */
+  reversed?: boolean
+  currentRowBack?: number
+  currentColumnBack?: number
 }
 
 export interface Project {
@@ -257,10 +262,38 @@ function touch(project: Project, changes: Partial<Project>): Project {
   return { ...project, ...changes, updatedAt: Date.now() }
 }
 
+type PointerKey = 'currentRow' | 'currentColumn' | 'currentRowBack' | 'currentColumnBack'
+
+/** Which of the four pointers the weaver's current way (axis and end) counts on. */
+function pointerKey({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>): PointerKey {
+  if (direction === 'rows') return reversed ? 'currentRowBack' : 'currentRow'
+  return reversed ? 'currentColumnBack' : 'currentColumn'
+}
+
+/** The pass the weaver is on, in the current way; every pass before it is finished. */
+export function currentPass(rowProgress: RowProgress): number {
+  return rowProgress[pointerKey(rowProgress)] ?? 0
+}
+
+/** Row progress with every pointer back at the first pass, the way the weaver runs unchanged. */
+export function firstPasses(rowProgress: RowProgress): RowProgress {
+  const { currentRowBack: _row, currentColumnBack: _column, ...rest } = rowProgress
+  return { ...rest, currentRow: 0, currentColumn: 0 }
+}
+
 /** Keeps a pointer inside 0..passes: one past the last pass means every pass is done (ticket 411), which fills the
  * track. */
 function clampRow(row: number, passes: number): number {
   return Math.max(0, Math.min(passes, row))
+}
+
+/** The bottom to top and right to left pointers inside the Frame; absent while neither has moved. */
+function clampedBack(rowProgress: Partial<RowProgress>, frame: Frame, weave: Weave): Partial<RowProgress> {
+  const { currentRowBack, currentColumnBack } = rowProgress
+  return {
+    ...(currentRowBack ? { currentRowBack: clampRow(currentRowBack, passCount(weave, frame.rows, 'rows')) } : {}),
+    ...(currentColumnBack ? { currentColumnBack: clampRow(currentColumnBack, passCount(weave, frame.columns, 'columns')) } : {}),
+  }
 }
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame
@@ -270,6 +303,7 @@ function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, weave: 
     ...rowProgress,
     currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
     currentColumn: clampRow(rowProgress.currentColumn, passCount(weave, frame.columns, 'columns')),
+    ...clampedBack(rowProgress, frame, weave),
   }
 }
 
@@ -417,6 +451,8 @@ export function normalizeProject(stored: StoredProject): Project {
       // An old file's `enabled` and `decided` are read and dropped: Row progress follows the Frame (ticket 426, 434).
       currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
       currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(weave, frame.columns, 'columns')),
+      ...(describeWeave(weave).rowDirection && rowProgress.reversed === true ? { reversed: true } : {}),
+      ...clampedBack(rowProgress, frame, weave),
     },
     // A Project saved before the Palette belonged to it (or with an unreadable one) starts from its Bead's built-in colors.
     palette,
@@ -487,7 +523,7 @@ export function withFrame(project: Project, rectangle: Frame | undefined): Proje
   const { frame: current, ...rest } = project
   // With the Frame gone the passes are gone too (ticket 426).
   if (!rectangle) {
-    return { ...rest, rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 }, updatedAt: Date.now() }
+    return { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
   }
   const { rows, columns } = rectangle
   const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
@@ -583,8 +619,8 @@ export function clampBrickBlock(value: number): number {
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
  * (ticket 411). */
 export function rowProgressStarted(project: Pick<Project, 'rowProgress' | 'frame'>): boolean {
-  const { currentRow, currentColumn } = project.rowProgress
-  return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0)
+  const { currentRow, currentColumn, currentRowBack, currentColumnBack } = project.rowProgress
+  return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0 || !!currentRowBack || !!currentColumnBack)
 }
 
 /** The next quarter turn clockwise: 0, 90, 180, 270 and round again. */
@@ -598,7 +634,7 @@ export function rotateCanvas(project: Project): Project {
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
  * untouched. */
 export function resetRowProgress(project: Project): Project {
-  return touch(project, { rowProgress: { ...project.rowProgress, currentRow: 0, currentColumn: 0 } })
+  return touch(project, { rowProgress: firstPasses(project.rowProgress) })
 }
 
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
@@ -607,26 +643,35 @@ export function toggleRowDirection(project: Project): Project {
   if (!describeWeave(frameWeave(project)).rowDirection) {
     return project
   }
-  const direction = project.rowProgress.direction === 'rows' ? 'columns' : 'rows'
-  return touch(project, { rowProgress: { ...project.rowProgress, direction } })
+  const { direction, reversed } = project.rowProgress
+  // The four ways in turn: top to bottom, left to right, bottom to top, right to left (ticket 0589).
+  const next = direction === 'rows'
+    ? { direction: 'columns' as const, reversed }
+    : { direction: 'rows' as const, reversed: reversed ? undefined : true }
+  return touch(project, { rowProgress: { ...project.rowProgress, ...next } })
 }
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
 export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>): { current: number; total: number } {
-  const { direction, currentRow, currentColumn } = project.rowProgress
+  const { direction } = project.rowProgress
   const frame = project.frame
   const weave = frameWeave(project)
+  return { current: currentPass(project.rowProgress), total: passCount(weave, direction === 'rows' ? (frame?.rows ?? 0) : (frame?.columns ?? 0), direction) }
+}
+
+/** The pass that weaves the bead at a Frame-relative row and column, lines counted from the end the weaver starts at. */
+function passAt(weave: Weave, frame: Frame, direction: RowDirection, reversed: boolean | undefined, row: number, column: number): number {
   return direction === 'rows'
-    ? { current: currentRow, total: passCount(weave, frame?.rows ?? 0, 'rows') }
-    : { current: currentColumn, total: passCount(weave, frame?.columns ?? 0, 'columns') }
+    ? passOf(weave, mirrorLine(row, frame.rows, reversed), column, 'rows')
+    : passOf(weave, mirrorLine(column, frame.columns, reversed), row, 'columns')
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
  * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
  * Frame is set. */
 export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, position: GridPosition): boolean {
-  const { direction, currentRow, currentColumn } = project.rowProgress
+  const { direction, reversed } = project.rowProgress
   const frame = project.frame
   // The lock covers the Frame only: beads outside it stay editable whatever row the weaver is on.
   if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
@@ -635,15 +680,13 @@ export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' |
   const relativeRow = position.row - frame.row
   const relativeColumn = position.column - frame.column
   const weave = frameWeave(project)
-  return direction === 'rows'
-    ? passOf(weave, relativeRow, relativeColumn, 'rows') < currentRow
-    : passOf(weave, relativeColumn, relativeRow, 'columns') < currentColumn
+  return passAt(weave, frame, direction, reversed, relativeRow, relativeColumn) < currentPass(project.rowProgress)
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
 export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, position: GridPosition): boolean {
-  const { direction, currentRow, currentColumn } = project.rowProgress
+  const { direction, reversed } = project.rowProgress
   const frame = project.frame
   if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
     return false
@@ -651,9 +694,7 @@ export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 
   const relativeRow = position.row - frame.row
   const relativeColumn = position.column - frame.column
   const weave = frameWeave(project)
-  return direction === 'rows'
-    ? passOf(weave, relativeRow, relativeColumn, 'rows') === currentRow
-    : passOf(weave, relativeColumn, relativeRow, 'columns') === currentColumn
+  return passAt(weave, frame, direction, reversed, relativeRow, relativeColumn) === currentPass(project.rowProgress)
 }
 
 /** Whether the Project has a bead on either layer. */
@@ -697,9 +738,8 @@ export function keepFinishedRows(before: Project, after: Project): Project {
  * finished row and to go back to an earlier one. */
 export function moveToRow(project: Project, row: number): Project {
   const { total } = rowProgressPosition(project)
-  const pointer = project.rowProgress.direction === 'rows' ? 'currentRow' : 'currentColumn'
   return touch(project, {
-    rowProgress: { ...project.rowProgress, [pointer]: clampRow(row, total) },
+    rowProgress: { ...project.rowProgress, [pointerKey(project.rowProgress)]: clampRow(row, total) },
   })
 }
 
@@ -766,6 +806,9 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
 function isInitialRowProgress(rowProgress: RowProgress): boolean {
   return (
     rowProgress.direction === INITIAL_ROW_PROGRESS.direction &&
+    !rowProgress.reversed &&
+    !rowProgress.currentRowBack &&
+    !rowProgress.currentColumnBack &&
     rowProgress.currentRow === INITIAL_ROW_PROGRESS.currentRow &&
     rowProgress.currentColumn === INITIAL_ROW_PROGRESS.currentColumn
   )
