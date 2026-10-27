@@ -1,11 +1,11 @@
 import { computed, ref, toRaw } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import { withLetters, type Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, wordChartFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectListFileName, wordChartFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
-import { PNG_BEAD_PX_BY_QUALITY } from '../../domain/exportQuality'
+import { WORD_CHART_SCALE_BY_QUALITY } from '../../domain/exportQuality'
 import { pdfDpiFor } from '../../rendering/pdfDpi'
-import { exportProjectPdf, exportProjectPng, exportWordChartPng } from '../../rendering/projectExport'
+import { exportProjectPdf, exportProjectPng, exportWordChartPng, projectPageCount } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
@@ -68,9 +68,9 @@ export function useExportFlow(deps: ExportFlowDeps) {
     return true
   }
 
-  /** `second` is a file made after the first is handed over (the Word chart's PNG, ticket 0574): none when it has nothing to
-   * make. */
-  async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, second?: (project: Project) => { fileName: string; make: () => Promise<Blob> } | undefined) {
+  /** `more` are the files made, in order, after the first is handed over (the cover PNG's list pages, ticket 0583, and the
+   * Word chart's PNG, ticket 0574): none when there is nothing more to make. */
+  async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, more?: (project: Project) => { fileName: string; make: () => Promise<Blob> }[]) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
     if (!project?.frame || exporting.value) {
@@ -87,9 +87,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
         `export-${extension}`,
         extension === 'png' ? saveBox.readyPng : saveBox.readyPdf,
       )
-      const next = handed ? second?.(toRaw(project)) : undefined
-      if (next) {
-        await makeAndHandOver(next.fileName, next.make, type, `export-${extension}-instructions`, saveBox.readyPng)
+      for (const next of handed ? (more?.(toRaw(project)) ?? []) : []) {
+        if (!(await makeAndHandOver(next.fileName, next.make, type, `export-${extension}-instructions`, saveBox.readyPng))) break
       }
     } finally {
       exporting.value = undefined
@@ -121,16 +120,23 @@ export function useExportFlow(deps: ExportFlowDeps) {
   }
 
   function onExportPng() {
-    // The words the picture prints (ticket 164), in the app's language, with the Project's maker's name (ADR 0060).
-    // With Letters on, the Word chart follows as a second picture (ticket 0574).
+    // The words the pictures print (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
+    // The cover is the first; Beads needed that runs over follows as `_2`, `_3`, then, with Letters on, the Word chart as
+    // a last picture (ticket 0574).
     const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date())
+    const dpi = pdfDpiFor(quality.value)
     return runExport(
-      (project) => exportProjectPng(project, wordsOf(project), PNG_BEAD_PX_BY_QUALITY[quality.value]),
+      (project) => exportProjectPng(project, wordsOf(project), dpi),
       'png',
       'image/png',
       (project) => {
         const words = wordsOf(project)
-        return words.wordChart ? { fileName: wordChartFileName(project), make: () => exportWordChartPng(words, PNG_BEAD_PX_BY_QUALITY[quality.value]) } : undefined
+        const lists = Array.from({ length: projectPageCount(project, words) - 1 }, (_, index) => ({
+          fileName: projectListFileName(project, index + 2),
+          make: () => exportProjectPng(project, words, dpi, index + 1),
+        }))
+        const chart = words.wordChart ? [{ fileName: wordChartFileName(project), make: () => exportWordChartPng(words, WORD_CHART_SCALE_BY_QUALITY[quality.value]) }] : []
+        return [...lists, ...chart]
       },
     )
   }
