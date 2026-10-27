@@ -228,14 +228,26 @@
   --z-tooltip: 90; /* Tooltips: always on top, never interactive. */
   --print-page-width: 210mm; /* A4 portrait. */
   --print-page-height: 297mm; /* A4 portrait. */
-  --print-dpi: 150; /* Each PDF page is drawn at this resolution and embedded as one picture. */
+  --print-dpi: 300; /* The PDF's picture pages (Cover, list pages, Specification, Word chart) and the text picture under each chart page; 150 where a device cannot allocate a 300 dpi page. Not on the Export quality slider. */
   --print-margin: 10mm; /* Page margin on every side. */
-  --print-header: 15mm; /* Chart page header: technique word and name, part, page number, mini map. */
-  --print-footer: 8mm; /* Footer: the brand and the date, and where the chart continues. */
+  --print-header: 12mm; /* Chart page header: technique word and name, the part label, the mini map and the page number. No date line. */
+  --print-footer: 6mm; /* Footer: the mark, the brand and the date and time, and where the chart continues. */
   --print-bead-max: 6mm; /* Largest bead on the Cover page, where a small Schema is not enlarged past it; chart pages use print-chart-cell. */
   --print-part-overlap: 2; /* Columns or rows of the neighbouring part repeated, shaded, at the start of a part so the sheets line up. */
   --print-chart-cell: 3mm; /* Bead size on every chart page, Letters or not: a weaver can follow it, and a part is as many beads as fill the chart area at it. */
-  --print-ruler: 5mm; /* Ruler band on each side of a chart part: odd numbers top and left, even numbers bottom and right. */
+  --print-ruler: 5mm; /* Ruler band on each side of a chart part: upright numbers at every 5th row and column on all four sides, tens bold. */
+  --print-letter: 6.5pt; /* Swatch letters on chart beads (Helvetica-Bold) and ruler numbers (Helvetica, tens Helvetica-Bold); the print text floor. */
+  --print-line-cell: 0.1mm; /* Line between chart cells, in line-strong. */
+  --print-line-five: 0.18mm; /* Chart line after every 5th bead, in field-line. */
+  --print-line-ten: 0.3mm; /* Chart line after every 10th bead and the chart's outer edge, in ink. */
+  --print-pad-line: 0.2mm; /* The outline of the pad round a chart part and its rulers, and of the Word chart's key strip, in faint; no fill. */
+  --print-pad-radius: 2mm; /* Corner radius of the pad outline. */
+  --print-overlap-tint: 60%; /* How far the overlap beads' colors are mixed toward white; their letters muted, their numbers faint. */
+  --print-overlap-line: 0.5mm; /* The accent line where a part begins, through the rulers, the pad's full height or width. */
+  --print-key-columns: 6; /* Columns of "Colors on this page" under a chart part; the key's height is set once per PDF from the page with the most colors. */
+  --print-word-row: 10pt; /* Word chart rows: row number (DM Mono 500) and runs (DM Mono 400). */
+  --print-word-pitch: 5.6mm; /* Word chart row spacing; a hairline under each row, stronger every 5th. */
+  --print-word-gap: 8mm; /* Gutter between the Word chart's two columns (91 mm each), with no rule; two columns when the longest row fits one. */
   --font-sans: 'Inter', system-ui, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
   --font-mono: 'DM Mono', 'JetBrains Mono', ui-monospace, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', monospace;
   --font-serif: 'Instrument Serif', 'Source Serif 4', Georgia, 'Songti SC', 'Noto Serif CJK SC', serif;
