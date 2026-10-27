@@ -27,7 +27,7 @@ const {
   onCreateProject,
   onPlaceFrameFromStarter,
   onAddCustomFrame,
-  onSetFrameRounds,
+  onSetFrameSize,
   startConvertImage,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
@@ -105,7 +105,7 @@ watch(openPanel, (open) => {
       @set-letters="onSetLetters"
       @key="onFrameKey"
       @add-custom="(kind) => { onAddCustomFrame(kind); onCloseFramePanel() }"
-      @set-rounds="onSetFrameRounds"
+      @set-size="onSetFrameSize"
     />
     <!-- Frame from starter (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->
     <template #sub="{ depth }">

@@ -3,9 +3,10 @@ import { describe, expect, it } from 'vitest'
 import { computeColorQuantities } from './beadQuantities'
 import { beadCount, colorAt } from './canvas'
 import { changeFrame, customFrameLoss, type FrameChange } from './changeFrame'
-import { frameLayoutOf } from './frameKind'
+import { frameLayoutOf, type CustomFrameKindId } from './frameKind'
 import { onLayer } from './layers'
 import { projectPalette } from './palette'
+import { parseProjectsFile, serializeProject } from './projectFile'
 import { createProject, fillArea, paintCells, rowProgressOn, type Project } from './project'
 
 const RED = '#ff0000'
@@ -23,7 +24,7 @@ function changed(project: Project, change: FrameChange): Project {
   return result.project
 }
 
-const triangle = (rounds = 4, project = open()) => changed(project, { custom: { kind: 'triangle', rounds, centre: { row: 20, column: 30 } } })
+const triangle = (rounds = 4, project = open()) => changed(project, { custom: { kind: 'triangle', size: rounds, centre: { row: 20, column: 30 } } })
 
 /** Paints Frame positions (round, place in round) as a press on the Frame does. */
 const paintFrame = (project: Project, positions: { row: number; column: number }[], color: string | null) =>
@@ -39,7 +40,7 @@ describe('a Custom frame put on the open Canvas (ticket 0592)', () => {
   })
 
   it('replaces the Frame there with its beads, and does not turn Row progress on by itself', () => {
-    const square = changed(triangle(), { custom: { kind: 'warpedSquare', rounds: 3, centre: { row: 0, column: 0 } } })
+    const square = changed(triangle(), { custom: { kind: 'warpedSquare', size: 3, centre: { row: 0, column: 0 } } })
     expect(square.frame).toMatchObject({ kind: 'warpedSquare', settings: { rounds: 3 } })
     expect(rowProgressOn(square)).toBe(false)
   })
@@ -121,5 +122,65 @@ describe('Beads needed for a Custom frame', () => {
   it('counts every painted bead of it, on whichever panel', () => {
     const project = paintFrame(triangle(4), [{ row: 3, column: 0 }, { row: 3, column: 5 }, { row: 3, column: 11 }, { row: 0, column: 1 }], RED)
     expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: 4 }])
+  })
+})
+
+// A Kaleidocycle's triangles stand a gap apart round the hole, so a fill keeps to the one of its six it starts on.
+describe.each([
+  { kind: 'star', setting: 'partSize', size: 4, filledShare: 1 },
+  { kind: 'kaleidocycle', setting: 'partSize', size: 4, filledShare: 1 / 6 },
+  { kind: 'kite', setting: 'rows', size: 9, filledShare: 1 },
+] as const)('a $kind Custom frame (ticket 0593)', ({ kind, setting, size, filledShare }) => {
+  const placed = (at = size) => changed(open(), { custom: { kind: kind as CustomFrameKindId, size: at, centre: { row: 20, column: 30 } } })
+  const layout = () => frameLayoutOf(placed().frame!)!
+  /** A position on the last round or row, and one on the first. */
+  const outer = () => layout().positions.find(({ row }) => row === size - 1)!
+  const inner = () => layout().positions.find(({ row }) => row === 0)!
+  const name = ({ row, column }: { row: number; column: number }) => ({ row, column })
+
+  it('is an empty peyote Frame of its kind, sized by its own setting, without Row progress', () => {
+    const project = placed()
+    expect(project.frame).toMatchObject({ kind, settings: { [setting]: size }, technique: 'peyote', beads: {} })
+    expect(rowProgressOn(project)).toBe(false)
+  })
+
+  it('paints and erases its positions, and nothing where it has none', () => {
+    const painted = paintFrame(placed(), [name(outer()), { row: size, column: 0 }, { row: 0, column: 999 }], RED)
+    expect(beadCount(painted.frame!.beads)).toBe(1)
+    expect(beadCount(paintFrame(painted, [name(outer())], null).frame!.beads)).toBe(0)
+  })
+
+  it('fills every bead that touches, across its panels', () => {
+    const filled = onLayer(placed(), 'frame', (view) => fillArea(view, inner().row, inner().column, RED))
+    expect(beadCount(filled.frame!.beads)).toBe(layout().positions.length * filledShare)
+  })
+
+  it('grows by empty rounds or rows outside, keeping every bead, and asks before shrinking drops painted ones', () => {
+    const project = paintFrame(placed(), [name(inner()), name(outer())], RED)
+    const grown = changed(project, { settings: { [setting]: size + 3 } })
+    expect(grown.frame!.settings).toEqual({ [setting]: size + 3 })
+    expect(grown.frame!.beads).toEqual(project.frame!.beads)
+    expect(customFrameLoss(project, { [setting]: size - 1 })).toBeGreaterThanOrEqual(1)
+    expect(beadCount(changed(project, { settings: { [setting]: size - 1 } }).frame!.beads)).toBeLessThan(2)
+  })
+
+  it('moves with its beads, and takes them with it on Remove Frame', () => {
+    const project = paintFrame(placed(), [name(inner())], RED)
+    expect(changed(project, { move: { rows: 2, columns: 3 } }).frame).toMatchObject({ row: project.frame!.row + 2, beads: project.frame!.beads })
+    const removed = changed(project, { remove: true })
+    expect(removed.frame).toBeUndefined()
+    expect(removed.beads).toEqual(project.beads)
+  })
+
+  it('refuses a new rectangle, Remove row/column and another Technique', () => {
+    for (const change of [{ set: { row: 0, column: 0, rows: 3, columns: 3 } }, { removeLine: { axis: 'row', index: 0 } }, { technique: 'loom' }] as FrameChange[]) {
+      expect(changeFrame(placed(), change)).toEqual({ kind: 'refused', reason: 'not-offered' })
+    }
+  })
+
+  it('counts its painted beads in Beads needed, and comes back from the Project file as it was', () => {
+    const project = paintFrame(placed(), [name(inner()), name(outer())], RED)
+    expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: 2 }])
+    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
   })
 })

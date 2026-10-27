@@ -3,7 +3,7 @@ import { movedFrame, sameFrame, snapColumn, snappedMove, snapRow } from './frame
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
-import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, type FrameKindId, type FrameSettings } from './frameKind'
+import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, frameSizeOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings } from './frameKind'
 import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
@@ -39,11 +39,11 @@ export type FrameChange =
   /** Name the Frame (ticket 555), or clear its name with an empty one; allowed after Row progress has started, as it
    * touches no bead and no pass. */
   | { name: string }
-  /** Put a new empty Custom frame of a kind and Rounds round a Canvas position (ticket 0592), in place of any Frame
-   * there, as `place` does. */
-  | { custom: { kind: FrameKindId; rounds: number; centre: GridPosition } }
+  /** Put a new empty Custom frame of a kind and size (its Rounds, Part size or Rows) round a Canvas position (tickets
+   * 0592, 0593), in place of any Frame there, as `place` does. */
+  | { custom: { kind: FrameKindId; size: number; centre: GridPosition } }
   /** Change a Custom frame's settings (ticket 0592): its layout is built again round the same centre, and every bead
-   * whose position is still in it stays; growing adds empty rounds outside. */
+   * whose position is still in it stays; growing adds empty rounds or rows outside. */
   | { settings: FrameSettings }
 
 /** Why a change did not happen. */
@@ -160,7 +160,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   if ('settings' in change) {
     const frame = project.frame!
     const settings = settingsOf({ kind: frame.kind, settings: { ...frame.settings, ...change.settings } })!
-    if (settings.rounds === settingsOf(frame)!.rounds) {
+    if (frameSizeOf({ kind: frame.kind, settings }) === frameSizeOf(frame)) {
       return { kind: 'unchanged', project }
     }
     return { kind: 'changed', project: { ...project, frame: resettled(project, frame, settings), updatedAt: Date.now() } }
@@ -224,8 +224,8 @@ function customSheet(project: Project, kind: FrameKindId, settings: FrameSetting
 
 /** The Project with a new empty Custom frame in place of any Frame there (ticket 0592): Row progress starts at the first
  * pass, and the Canvas keeps every bead. */
-function placedCustomFrame(project: Project, { kind, rounds, centre }: { kind: FrameKindId; rounds: number; centre: GridPosition }): Project {
-  return { ...project, frame: customSheet(project, kind, { rounds }, centre), rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
+function placedCustomFrame(project: Project, { kind, size, centre }: { kind: FrameKindId; size: number; centre: GridPosition }): Project {
+  return { ...project, frame: customSheet(project, kind, { [sizeSettingOf({ kind })!.name]: size }, centre), rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
 }
 
 /** A Custom frame laid out again from new settings round its own centre, keeping each bead whose position is still in
