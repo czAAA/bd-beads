@@ -175,7 +175,13 @@ The Canvas color control (Russian "Цвет полотна") offers five backgro
 | Technique · Bead · Size · Colors | Техника плетения · Бисеринка · Размер · Цветов |
 | {maker} · {date} · {time} | {maker} · {date} · {time} (Мария Ковалева · 26 сент. 2026 г. · 14:32) |
 | Lines: the chart parts, each on its own page with every row and column numbered. | Линии: части схемы, каждая на своей странице; все ряды и столбцы пронумерованы. |
-| Odd numbers top and left, even numbers bottom and right. | Нечётные номера сверху и слева, чётные — снизу и справа. |
+| Colors on this page | Цвета на этой странице |
+| Row by row {from}–{to} | Ряд за рядом {from}–{to} |
+| Rows {from}–{to} on page {n} → | Ряды {from}–{to} на странице {n} → |
+| Row 1 is at the top of the picture. All rows read left to right; 3D is three beads of D. | Ряд 1 вверху картинки. Все ряды читаются слева направо; 3D — три бисеринки D. |
+| PNG ≈ {size} · {n} files · PDF ≈ {size} · {n} pages · < 0.1 MB | PNG ≈ {size} · файлов: {n} · PDF ≈ {size} · страниц: {n} · < 0,1 МБ |
+| For the picture. The printable chart is drawn in lines and stays sharp at any zoom. | Для картинки. Схема для печати нарисована линиями и остаётся чёткой при любом увеличении. |
+| High is {n} DPI in the picture on this device. | На этом устройстве «Высокое» для картинки — {n} DPI. |
 | Beads needed: {n} colors · {beads} beads · ≈ {g} · see page {p} | Нужно бисера: цветов — {n} · {beads} бисеринок · ≈ {g} · см. страницу {p} |
 | Specification · Color key · To buy · {n} × 5 g | Спецификация · Ключ цветов · Купить · {n} × 5 г |
 | Continues right on page {n}, below on page {m} → · Last part · chart from page 2 → | Продолжение справа на странице {n}, ниже на странице {m} → · Последняя часть · схема со страницы 2 → |
