@@ -477,8 +477,8 @@ export const en: Translations = {
     readNumbers: 'Odd numbers top and left, even numbers bottom and right.',
     wordChart: {
       title: 'Row by row',
-      row: 'Row {n}',
-      both: 'Rows 1&2',
+      empty: 'empty',
+      nextRows: 'Rows {rows} on page {page} →',
       firstTop: 'Row 1 is at the top of the picture.',
       firstRight: 'Row 1 is at the right of the picture.',
       firstBottom: 'Row 1 is at the bottom of the picture.',
@@ -488,7 +488,6 @@ export const en: Translations = {
       oddCount: 'Odd count.',
       sides: '(L) starts at the left, (R) at the right.',
       runNote: 'A run is a count and a letter: 2C is two beads of C.',
-      emptyNote: '* is an empty cell.',
     },
   },
   saveBox: {

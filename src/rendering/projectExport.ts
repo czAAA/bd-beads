@@ -8,13 +8,6 @@ import type { PrintText } from './printText'
 // Project exports (tickets 73, 74, 0583): drawn onto page canvases made here, one page at a time and compressed strip by
 // strip, so memory is bounded by the page, not the Project (ADR 0018, 250 × 250).
 
-function createCanvas(width: number, height: number): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-  return canvas
-}
-
 function contextOf(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
   const context = canvas.getContext('2d', { willReadFrequently: true })
   if (!context) {
@@ -60,28 +53,6 @@ export async function exportProjectPng(project: Project, words: PrintText, dpi =
   canvas.width = 0
   canvas.height = 0
   return blob
-}
-
-/** The Word chart as a PNG (ticket 0574): one tall picture of the written rows, `scale` times its Medium size (Export
- * quality). Drawn band by band like the pattern. */
-export async function exportWordChartPng(words: PrintText, scale = 1): Promise<Blob> {
-  const { wordChartPicture } = await import('./wordChartPages')
-  const { loadPrintFonts } = await import('./printPages')
-  await loadPrintFonts()
-  const picture = wordChartPicture(words)
-  const width = Math.ceil(picture.width * scale)
-  const height = Math.ceil(picture.height * scale)
-  const stripRows = Math.max(1, Math.floor(STRIP_PIXELS / width))
-  const canvas = createCanvas(width, Math.min(stripRows, height))
-  const context = contextOf(canvas)
-  return encodePng(width, height, stripRows, (y, rows) => {
-    context.setTransform(1, 0, 0, 1, 0, 0)
-    context.fillStyle = '#ffffff'
-    context.fillRect(0, 0, canvas.width, canvas.height)
-    context.scale(scale, scale)
-    picture.draw(context, y / scale, canvas.height / scale)
-    return context.getImageData(0, 0, width, rows).data
-  })
 }
 
 // ---- PDF -----------------------------------------------------------------------------------------------------------
