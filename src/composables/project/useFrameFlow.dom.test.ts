@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { withColors } from '../../domain/canvas'
+import { changeFrame } from '../../domain/changeFrame'
+import type { FrameKindId } from '../../domain/frameKind'
 import { createProject, moveToRow, withFrame, type Project } from '../../domain/project'
+import { starterById, starterDesign } from '../../domain/starters'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
@@ -613,38 +616,42 @@ describe('useFrameFlow', () => {
       expect(deps.harness.project.frame).toEqual(start.frame)
     })
   })
-  describe('Add Frame from Starter and Replace Frame (ticket 495)', () => {
-    const bracelet = { technique: 'loom' as const, beadId: 'toho-cube-1.5mm', size: { width: 12, height: 90, unit: 'beads' as const } }
+  describe('Add Frame from Starter and Replace Frame (tickets 495, 0596)', () => {
+    const star = starterById('star')
 
-    it('puts an empty Frame in the middle of the view in an open Project, over the Canvas, as one announced step', () => {
+    it('puts the Starter\'s design in the middle of the view in an open Project, over the Canvas, as one announced Undo step', () => {
       const painted = { ...open, beads: { 22: { 33: '#00ff00' } } }
       const { deps, placeFromStarter } = setup(painted)
-      placeFromStarter(bracelet)
-      expect(lastFrame(deps)).toEqual({ row: 20 - 45, column: 30 - 6, rows: 90, columns: 12 })
-      expect(deps.harness.project.frame!.beads).toEqual({})
+      placeFromStarter(star, { size: 5, useDesign: true })
+      const frame = deps.harness.project.frame!
+      expect(frame).toMatchObject({ kind: 'star', settings: { partSize: 5 } })
+      // Round the middle of the view, (20, 30).
+      expect([frame.row < 20, frame.row + frame.rows > 20, frame.column < 30, frame.column + frame.columns > 30]).toEqual([true, true, true, true])
+      expect(frame.beads).toEqual(starterDesign(star))
       expect(deps.harness.project.beads).toBe(painted.beads)
-      expect(deps.announce).toHaveBeenCalledWith('Frame set, width 12, height 90')
+      expect(deps.announce).toHaveBeenCalledWith('Star frame set, Part size 5')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.frame).toBeUndefined()
     })
 
-    it('weaves the new Frame in the Starter\'s Technique, whatever the Canvas is woven in', () => {
+    it('puts the same Frame in place empty on Start empty', () => {
       const { deps, placeFromStarter } = setup(open)
-      placeFromStarter({ ...bracelet, technique: 'peyote' })
-      expect(deps.harness.project.frame!.technique).toBe('peyote')
-      expect(deps.harness.project.technique).toBe('loom')
+      placeFromStarter(star, { size: 5, useDesign: false })
+      expect(deps.harness.project.frame).toMatchObject({ kind: 'star', beads: {} })
     })
 
     it('replaces an empty Frame at once, starting Row progress at the first pass', () => {
       const { deps, placeFromStarter, replaceConfirmOpen } = setup(sized)
-      placeFromStarter(bracelet)
+      placeFromStarter(star, { size: 5, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(false)
-      expect(deps.harness.project.frame).toMatchObject({ rows: 90, columns: 12, beads: {} })
+      expect(deps.harness.project.frame!.kind).toBe('star')
       expect(deps.harness.project.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
     })
 
     it('asks before replacing a Frame that holds beads, and replaces nothing on No', () => {
       const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
       const { deps, placeFromStarter, replaceConfirmOpen, cancelReplace } = setup(drawn)
-      placeFromStarter(bracelet)
+      placeFromStarter(star, { size: 5, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(true)
       expect(deps.replaceProject).not.toHaveBeenCalled()
       cancelReplace()
@@ -654,46 +661,33 @@ describe('useFrameFlow', () => {
 
     it('drops the old Frame with its beads on Yes, as one Undo step', () => {
       const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
-      const { deps, placeFromStarter, confirmReplace, replaceConfirmOpen } = setup(drawn)
-      placeFromStarter(bracelet)
+      const { deps, placeFromStarter, confirmReplace } = setup(drawn)
+      placeFromStarter(star, { size: 5, useDesign: true })
       confirmReplace()
-      expect(replaceConfirmOpen.value).toBe(false)
       expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-      expect(deps.harness.project.frame).toMatchObject({ rows: 90, columns: 12, beads: {} })
+      expect(deps.harness.project.frame!.kind).toBe('star')
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.frame).toEqual(drawn.frame)
     })
 
     it('does nothing once a pass is done', () => {
-      const done = moveToRow(sized, 1)
-      const { deps, placeFromStarter } = setup(done)
-      placeFromStarter(bracelet)
+      const { deps, placeFromStarter } = setup(moveToRow(sized, 1))
+      placeFromStarter(star, { size: 5, useDesign: true })
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
   })
 })
 
 describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
-  it('adds a Triangle round the middle of the view as one Undo step, and announces it', () => {
-    const { deps, placeCustom } = setup(open)
-    placeCustom('triangle')
-    expect(deps.harness.project.frame).toMatchObject({ kind: 'triangle', settings: { rounds: 9 }, beads: {} })
-    expect(deps.announce).toHaveBeenCalledWith('Triangle frame set, 9 rounds')
-    deps.harness.history.onUndo()
-    expect(deps.harness.project.frame).toBeUndefined()
-  })
-
-  it('asks before replacing a Frame that holds beads, and replaces it on Yes', () => {
-    const drawn = { ...sized, frame: { ...sized.frame!, beads: { 0: { 0: '#ff0000' } } } }
-    const { deps, placeCustom, replaceConfirmOpen, confirmReplace } = setup(drawn)
-    placeCustom('warpedSquare')
-    expect(replaceConfirmOpen.value).toBe(true)
-    expect(deps.harness.project.frame!.kind).toBeUndefined()
-    confirmReplace()
-    expect(deps.harness.project.frame).toMatchObject({ kind: 'warpedSquare', beads: {} })
-  })
+  /** The open Project with an empty Custom frame of a kind and size. */
+  function custom(kind: FrameKindId, size: number): Project {
+    const result = changeFrame(open, { custom: { kind, size, centre: { row: 20, column: 30 } } })
+    if (result.kind !== 'changed') throw new Error(result.kind)
+    return result.project
+  }
 
   it('grows its Rounds at once, and asks before fewer Rounds drop painted beads', () => {
-    const { deps, placeCustom, setSize, sizeAsk, confirmSize } = setup(open)
-    placeCustom('triangle')
+    const { deps, setSize, sizeAsk, confirmSize } = setup(custom('triangle', 9))
     setSize(10)
     expect(deps.harness.project.frame!.settings).toEqual({ rounds: 10 })
     deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 9: { 0: '#ff0000' } } } })
@@ -704,30 +698,26 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   })
 
   it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {
-    const { deps, placeCustom, setSize } = setup(open)
-    placeCustom('star')
-    expect(deps.harness.project.frame).toMatchObject({ kind: 'star', settings: { partSize: 10 } })
-    expect(deps.announce).toHaveBeenLastCalledWith('Star frame set, Part size 10')
-    setSize(8)
-    expect(deps.harness.project.frame!.settings).toEqual({ partSize: 8 })
-    expect(deps.announce).toHaveBeenLastCalledWith('Part size: 8')
-    placeCustom('kaleidocycle')
-    expect(deps.harness.project.frame).toMatchObject({ kind: 'kaleidocycle', settings: { partSize: 9 } })
-    placeCustom('kite')
-    expect(deps.harness.project.frame).toMatchObject({ kind: 'kite', settings: { rows: 21 } })
-    setSize(30)
-    expect(deps.announce).toHaveBeenLastCalledWith('Rows: 30')
+    const star = setup(custom('star', 10))
+    star.setSize(8)
+    expect(star.deps.harness.project.frame!.settings).toEqual({ partSize: 8 })
+    expect(star.deps.announce).toHaveBeenLastCalledWith('Part size: 8')
+    const kaleidocycle = setup(custom('kaleidocycle', 9))
+    kaleidocycle.setSize(11)
+    expect(kaleidocycle.deps.harness.project.frame!.settings).toEqual({ partSize: 11 })
+    const kite = setup(custom('kite', 21))
+    kite.setSize(30)
+    expect(kite.deps.announce).toHaveBeenLastCalledWith('Rows: 30')
   })
 
   it('removes an empty one at once, with nothing to ask, and asks first once it holds beads', () => {
-    const { deps, placeCustom, remove, removeConfirmOpen, removeTakesBeads } = setup(open)
-    placeCustom('triangle')
-    expect(removeTakesBeads.value).toBe(true)
-    remove()
-    expect(deps.harness.project.frame).toBeUndefined()
-    placeCustom('triangle')
-    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 0: { 0: '#ff0000' } } } })
-    remove()
-    expect(removeConfirmOpen.value).toBe(true)
+    const empty = setup(custom('triangle', 9))
+    expect(empty.removeTakesBeads.value).toBe(true)
+    empty.remove()
+    expect(empty.deps.harness.project.frame).toBeUndefined()
+    const triangle = custom('triangle', 9)
+    const painted = setup({ ...triangle, frame: { ...triangle.frame!, beads: { 0: { 0: '#ff0000' } } } })
+    painted.remove()
+    expect(painted.removeConfirmOpen.value).toBe(true)
   })
 })

@@ -57,10 +57,6 @@ interface TechniqueRules {
   overviewKey?: 'loom' | 'peyote' | 'brick'
   /** Whether the Overview's background is the empty positions of a Project worked in it. */
   overviewBackground?: boolean
-  /** Whether the flat Starters (gerdan, bracelet, earrings, bag) can be woven in it. */
-  flatStarter: boolean
-  /** Whether it is the one a narrow, shifted-row Starter (earrings) starts in. */
-  narrowStarterDefault?: boolean
   /** Whether geometric shapes are worked in it in rounds from the centre: a Triangle's or Warped Square's panels
    * (Custom frames, ticket 0592). */
   worksInRounds?: boolean
@@ -104,7 +100,6 @@ const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'techniqueLoom',
     overviewKey: 'loom',
-    flatStarter: true,
     shifted: false,
     rowPitch: 1,
     roundness: 0,
@@ -119,11 +114,9 @@ const TECHNIQUE_RULES = {
   },
   peyote: {
     nameKey: 'techniquePeyote',
-    narrowStarterDefault: true,
     worksInRounds: true,
     overviewKey: 'peyote',
     overviewBackground: true,
-    flatStarter: true,
     shifted: true,
     rowPitch: 0.75,
     roundness: ROUNDED_BEAD_CORNER,
@@ -139,7 +132,6 @@ const TECHNIQUE_RULES = {
   brick: {
     nameKey: 'techniqueBrick',
     overviewKey: 'brick',
-    flatStarter: true,
     shifted: true,
     rowPitch: 1,
     roundness: 0,
@@ -154,7 +146,6 @@ const TECHNIQUE_RULES = {
   },
   rightAngle: {
     nameKey: 'techniqueRightAngle',
-    flatStarter: false,
     shifted: false,
     rowPitch: 1,
     roundness: ROUNDED_BEAD_CORNER,
@@ -168,7 +159,6 @@ const TECHNIQUE_RULES = {
   },
   netting: {
     nameKey: 'techniqueNetting',
-    flatStarter: false,
     shifted: false,
     rowPitch: NETTING_STEP,
     roundness: 0.5,
@@ -606,17 +596,8 @@ export function techniqueNameKey(technique: Technique): TechniqueNameKey {
   return RULES[technique].nameKey
 }
 
-/** The Techniques a flat Starter (gerdan, bracelet, earrings, bag) can be woven in, in picker order. */
-export const FLAT_TECHNIQUES: readonly Technique[] = TECHNIQUES.filter((technique) => RULES[technique].flatStarter)
-
 /** The Technique a Custom frame worked in rounds from the centre is woven in (ticket 0592): geometric peyote. */
 export const ROUNDS_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksInRounds) ?? DEFAULT_TECHNIQUE
-
-/** The Techniques an earrings Starter offers: its default first, then the other flat ones. */
-export const NARROW_STARTER_TECHNIQUES: readonly Technique[] = [
-  ...FLAT_TECHNIQUES.filter((technique) => RULES[technique].narrowStarterDefault),
-  ...FLAT_TECHNIQUES.filter((technique) => !RULES[technique].narrowStarterDefault),
-]
 
 /** The Techniques the overview's Techniques example shows, each with its label key. */
 export const OVERVIEW_TECHNIQUES: readonly { technique: Technique; label: 'loom' | 'peyote' | 'brick' }[] = TECHNIQUES.flatMap((technique) => {

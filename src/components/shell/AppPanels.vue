@@ -9,8 +9,8 @@ import AppButton from '../ui/AppButton.vue'
 import ProjectsLibrary from '../project/ProjectsLibrary.vue'
 import PanelItem from './PanelItem.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
-import { ref, watch } from 'vue'
-import { starterById, type StarterId } from '../../domain/starters'
+import { ref } from 'vue'
+import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { useAppShell } from '../../composables/shell/useAppShell'
 
 // The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library as another. Each panel only asks; the app shell does the work.
@@ -25,8 +25,8 @@ const {
   settledProject,
   onNewProjectDraft,
   onCreateProject,
+  onCreateFromStarter,
   onPlaceFrameFromStarter,
-  onAddCustomFrame,
   onSetFrameSize,
   startConvertImage,
   onRequestDeleteAll,
@@ -77,13 +77,9 @@ const {
   onSelectProjectFromPhoneDrawer,
 } = useAppShell()
 
-/** The Starter whose setup is open (ticket 493): the gallery's card sets it as it pushes the setup subpanel. */
+/** The Starter gallery's category and Starter open (ticket 0596): a card sets its own as it pushes the next level. */
+const chosenCategory = ref<StarterCategoryId>()
 const chosenStarter = ref<StarterId>()
-/** Whether New Project's Pick a starter has unfolded the gallery (ticket 568); folded again whenever the panel closes. */
-const startersOpen = ref(false)
-watch(openPanel, (open) => {
-  if (open === null) startersOpen.value = false
-})
 </script>
 
 <template>
@@ -104,21 +100,22 @@ watch(openPanel, (open) => {
       @export-pdf="onExportPdf"
       @set-letters="onSetLetters"
       @key="onFrameKey"
-      @add-custom="(kind) => { onAddCustomFrame(kind); onCloseFramePanel() }"
       @set-size="onSetFrameSize"
     />
-    <!-- Frame from starter (ticket 495, 555): the gallery, then the setup, to put a Frame on the open Project. -->
+    <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
+      its Frame on the open Project. -->
     <template #sub="{ depth }">
-      <StarterGallery v-if="depth === 1" class="app-panels__gallery" @choose="chosenStarter = $event" />
+      <StarterGallery v-if="depth === 1" @choose-category="chosenCategory = $event" />
+      <StarterGallery v-else-if="depth === 2" :category="chosenCategory" @choose="chosenStarter = $event" />
       <StarterSetup
         v-else-if="chosenStarter"
         :starter="starterById(chosenStarter)"
         :project="activeProject"
-        @submit="(payload) => { onPlaceFrameFromStarter(payload); onCloseFramePanel() }"
+        @submit="(choice) => { onPlaceFrameFromStarter(starterById(chosenStarter!), choice); onCloseFramePanel() }"
       />
     </template>
     <template #footer="{ depth }">
-      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
+      <AppButton v-if="depth === 3" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
         {{ activeProject.frame ? t.frame.replaceFrame : t.frame.addFrameButton }}
       </AppButton>
     </template>
@@ -184,21 +181,22 @@ watch(openPanel, (open) => {
         @import="onImportProjects"
         @export-all="onExportLibraryFile"
       />
-      <!-- Level 1 is New Project, with the Starter gallery under its Pick a starter button. A card pushes level 2, its setup (ticket 493). -->
+      <!-- Level 1 is New Project; its Pick a starter pushes the Starter gallery's categories, then a category's options,
+        then a Starter's setup (ticket 0596). -->
       <template v-else-if="depth === 1">
         <NewProjectForm
-          v-model:starters-open="startersOpen"
           :decode-image="decodeImage"
           @submit="(payload) => { onCreateProject(payload); openPanel = null }"
           @draft="onNewProjectDraft"
-          @choose-starter="chosenStarter = $event"
           @convert-image="(draft) => { startConvertImage(draft); openPanel = null }"
         />
       </template>
+      <StarterGallery v-else-if="depth === 2" @choose-category="chosenCategory = $event" />
+      <StarterGallery v-else-if="depth === 3" :category="chosenCategory" @choose="chosenStarter = $event" />
       <StarterSetup
         v-else-if="chosenStarter"
         :starter="starterById(chosenStarter)"
-        @submit="(payload) => { onCreateProject(payload); openPanel = null }"
+        @submit="(choice) => { onCreateFromStarter(starterById(chosenStarter!), choice); openPanel = null }"
       />
     </template>
     <template #footer="{ depth }">
@@ -214,7 +212,7 @@ watch(openPanel, (open) => {
       >
         {{ t.panels.menu.deleteAll }}
       </PanelItem>
-      <AppButton v-if="depth === 2" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
+      <AppButton v-if="depth === 4" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
         {{ t.form.submit }}
       </AppButton>
     </template>
@@ -222,10 +220,6 @@ watch(openPanel, (open) => {
 </template>
 
 <style scoped>
-.app-panels__gallery {
-  margin-bottom: var(--space-16);
-}
-
 .app-panels__create {
   width: 100%;
   height: var(--field-height);

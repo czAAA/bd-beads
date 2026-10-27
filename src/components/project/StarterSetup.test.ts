@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import StarterSetup from './StarterSetup.vue'
-import { starterById, type Starter } from '../../domain/starters'
+import { createProject, type Project } from '../../domain/project'
+import { starterById, type StarterId } from '../../domain/starters'
 import { en } from '../../i18n/en'
 
 beforeEach(() => {
@@ -9,95 +10,74 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-const mountSetup = (starter: Starter) => mount(StarterSetup, { props: { starter } })
-const value = (wrapper: ReturnType<typeof mountSetup>, testId: string) => wrapper.get(`[data-testid="${testId}"]`).text()
+const mountSetup = (id: StarterId, project?: Project) => mount(StarterSetup, { props: { starter: starterById(id), ...(project ? { project } : {}) }, attachTo: document.body })
+type Setup = ReturnType<typeof mountSetup>
+const text = (wrapper: Setup, testId: string) => wrapper.get(`[data-testid="${testId}"]`).text()
+const design = (wrapper: Setup) => wrapper.get('[data-testid="starter-design"] [aria-checked="true"]').text()
 
 describe('the Starter setup', () => {
-  it('shows a sample picture and says the Frame starts empty', () => {
-    const wrapper = mountSetup(starterById('gerdan'))
-
-    expect(wrapper.find('canvas.starter-picture').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="starter-sample-note"]').text()).toBe(en.starters.sampleNote)
+  it('opens on the design at its own size: the picture named for it, Name, Bead, the size and its Estimated size', () => {
+    const wrapper = mountSetup('triangle')
+    expect(wrapper.get('[data-testid="starter-setup-picture"]').attributes()).toMatchObject({ role: 'img', 'aria-label': 'Triangle, with design' })
+    expect(wrapper.get('[data-testid="starter-name-input"]').attributes('placeholder')).toBe('Triangle')
+    expect(wrapper.find('[data-testid="starter-bead-picker"]').exists()).toBe(true)
+    expect(design(wrapper)).toBe(en.starters.useDesign)
+    expect(text(wrapper, 'starter-size-value')).toBe('10')
+    expect(text(wrapper, 'starter-size-label')).toContain('Rounds')
+    expect(text(wrapper, 'starter-size-label')).toContain('from the centre')
+    expect(wrapper.get('[data-testid="starter-size-preset-10"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="starter-size-preset-10"]').text()).toContain(en.starters.designSize)
+    expect(wrapper.find('[data-testid="starter-size-preset-8"]').text()).not.toContain(en.starters.designSize)
+    expect(text(wrapper, 'starter-estimate')).toMatch(/cm|mm/)
+    expect(text(wrapper, 'starter-count')).toBe('165 beads')
+    expect(wrapper.find('[data-testid="starter-design-note"]').exists()).toBe(false)
   })
 
-  it('names the Starter in the Name field and starts at its default size and Technique', () => {
-    const wrapper = mountSetup(starterById('gerdan'))
-
-    expect(wrapper.get('[data-testid="starter-name-input"]').attributes('placeholder')).toBe(en.starters.gerdan.name)
-    expect(value(wrapper, 'starter-width-value')).toBe('24')
-    expect(value(wrapper, 'starter-height-value')).toBe('80')
-    expect(wrapper.get('[data-testid="starter-technique"] [aria-checked="true"]').text()).toBe('Loom')
+  it('turns Use design off when the size changes, naming the design\'s size, and on again when it is set back', async () => {
+    const wrapper = mountSetup('triangle')
+    await wrapper.get('[data-testid="starter-size-preset-12"]').trigger('click')
+    expect(design(wrapper)).toBe(en.starters.startEmpty)
+    expect(text(wrapper, 'starter-design-note')).toBe('The design is made for 10 rounds. Set it back to turn the design on.')
+    expect(wrapper.get('[data-testid="starter-setup-picture"]').attributes('aria-label')).toBe('Triangle, empty shape with seams')
+    expect(text(wrapper, 'starter-count')).toBe('234 beads')
+    await wrapper.get('[data-testid="starter-size-decrease"]').trigger('click')
+    await wrapper.get('[data-testid="starter-size-decrease"]').trigger('click')
+    expect(design(wrapper)).toBe(en.starters.useDesign)
+    expect(wrapper.find('[data-testid="starter-design-note"]').exists()).toBe(false)
   })
 
-  it('offers only the Techniques the Starter can be woven in', () => {
-    const wrapper = mountSetup(starterById('earrings'))
-
-    expect(wrapper.findAll('[data-testid="starter-technique"] [role="radio"]').map((option) => option.text())).toEqual(['Peyote', 'Loom', 'Brick stitch'])
+  it('keeps Start empty when chosen, saying what it leaves, and puts back the design\'s size on Use design', async () => {
+    const wrapper = mountSetup('star')
+    await wrapper.get('[data-testid="starter-design"] [role="radio"]:last-child').trigger('click')
+    expect(text(wrapper, 'starter-design-note')).toBe(en.starters.emptyNote)
+    await wrapper.get('[data-testid="starter-size-preset-7"]').trigger('click')
+    expect(text(wrapper, 'starter-design-note')).toBe(en.starters.emptyNote)
+    await wrapper.get('[data-testid="starter-size-preset-5"]').trigger('click')
+    expect(design(wrapper)).toBe(en.starters.startEmpty)
+    await wrapper.get('[data-testid="starter-size-preset-9"]').trigger('click')
+    await wrapper.get('[data-testid="starter-design"] [role="radio"]:first-child').trigger('click')
+    expect(text(wrapper, 'starter-size-value')).toBe('5')
+    expect(design(wrapper)).toBe(en.starters.useDesign)
   })
 
-  it('hides the Technique choice when there is only one', () => {
-    const wrapper = mountSetup({ ...starterById('gerdan'), techniques: ['loom'] })
-
-    expect(wrapper.find('[data-testid="starter-technique"]').exists()).toBe(false)
-  })
-
-  it('shows Brick block for brick stitch only', async () => {
-    const wrapper = mountSetup(starterById('bag'))
-    expect(wrapper.find('[data-testid="starter-brick-block"]').exists()).toBe(false)
-
-    await wrapper.get('[data-testid="starter-technique"] [data-value="brick"]').trigger('click')
-    expect(wrapper.find('[data-testid="starter-brick-block"]').exists()).toBe(true)
-  })
-
-  it('steps a side and sets it from a preset chip', async () => {
-    const wrapper = mountSetup(starterById('bracelet'))
-
-    await wrapper.get('[data-testid="starter-height-preset-110"]').trigger('click')
-    expect(value(wrapper, 'starter-height-value')).toBe('110')
-    expect(wrapper.get('[data-testid="starter-height-preset-110"]').attributes('aria-pressed')).toBe('true')
-
-    await wrapper.get('[data-testid="starter-width-increase"]').trigger('pointerdown')
-    await wrapper.get('[data-testid="starter-width-increase"]').trigger('pointerup')
-    expect(value(wrapper, 'starter-width-value')).toBe('13')
-  })
-
-  it('holds a locked side: no stepper to move it, no chips, and a note', () => {
-    const wrapper = mountSetup(starterById('earrings'))
-
-    expect(wrapper.get('[data-testid="starter-width-fixed"]').text()).toBe(en.starters.fixedNote)
-    expect(wrapper.find('[data-testid="starter-width-preset-10"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="starter-height-fixed"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="starter-width-increase"]').attributes('aria-disabled') ?? wrapper.get('[data-testid="starter-width-increase"]').attributes('disabled')).toBeDefined()
-  })
-
-  it('shows an Estimated size that follows the size and the unit, and shows the sizes in mm and cm on request', async () => {
-    const wrapper = mountSetup(starterById('bracelet'))
-    const before = value(wrapper, 'starter-estimate')
-    expect(before).toContain(en.size.estimateLabel)
-
-    await wrapper.get('[data-testid="starter-height-preset-110"]').trigger('click')
-    expect(value(wrapper, 'starter-estimate')).not.toBe(before)
-
-    await wrapper.get('[data-testid="starter-unit"] [data-value="mm"]').trigger('click')
-    expect(wrapper.get('[data-testid="starter-width"]').text()).toContain(en.form.unitMm)
-    await wrapper.get('[data-testid="starter-unit"] [data-value="cm"]').trigger('click')
-    expect(wrapper.get('[data-testid="starter-width"]').text()).toContain(en.form.unitCm)
-  })
-
-  it('submits a Project input with the Frame size and the chosen Technique, named by what was typed', async () => {
-    const wrapper = mountSetup(starterById('earrings'))
-    await wrapper.get('[data-testid="starter-name-input"]').setValue('  Heron  ')
-    await wrapper.get('[data-testid="starter-technique"] [data-value="brick"]').trigger('click')
-    await wrapper.get('[data-testid="starter-height-preset-64"]').trigger('click')
+  it('asks for the Starter, its size and design, the name typed or else the Starter\'s, and the Bead chosen', async () => {
+    const wrapper = mountSetup('kite')
     await wrapper.get('form').trigger('submit')
-
-    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ name: 'Heron', technique: 'brick', size: { width: 10, height: 64, unit: 'beads' } })
+    await wrapper.get('[data-testid="starter-name-input"]').setValue('  Wings ')
+    await wrapper.get('[data-testid="starter-size-increase"]').trigger('click')
+    await wrapper.get('form').trigger('submit')
+    expect(wrapper.emitted('submit')).toEqual([
+      [{ size: 21, useDesign: true, name: 'Kite', beadId: expect.any(String) }],
+      [{ size: 22, useDesign: false, name: 'Wings', beadId: expect.any(String) }],
+    ])
   })
 
-  it('names the Project after the Starter when no name was typed', async () => {
-    const wrapper = mountSetup(starterById('bag'))
-    await wrapper.get('form').trigger('submit')
-
-    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ name: en.starters.bag.name, technique: 'loom', size: { width: 20, height: 40 } })
+  it('on an open Project asks no Name or Bead, and measures with the Project\'s own Bead', () => {
+    const project = createProject({ technique: 'loom', beadId: 'miyuki/delica/11-0', name: 'Open' })
+    const wrapper = mountSetup('warpedSquare', project)
+    expect(wrapper.find('[data-testid="starter-name-input"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="starter-bead-picker"]').exists()).toBe(false)
+    expect(text(wrapper, 'starter-estimate')).toMatch(/cm|mm/)
+    expect(text(wrapper, 'starter-count')).toBe('144 beads')
   })
 })

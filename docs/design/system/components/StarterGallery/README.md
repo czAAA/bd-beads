@@ -1,13 +1,14 @@
 # StarterGallery
 
-The Starter gallery: ready-made designs, each putting one Frame in place, filled or empty. It opens from New Project's **Pick a starter** and from the Frame panel's **Frame from starter** (Add Frame from Starter, or Replace Frame when there is a Frame), in the panel's subpanels: step 1 the categories, step 2 a category's options, then one option's setup. (Spec 0590, ticket 0595; design canvas https://claude.ai/artifact/Lz2xUWXXF6KpFkgxS39WJB.)
+The Starter gallery: ready-made designs, each putting one Frame in place, filled or empty. It opens from New Project's **Pick a starter** and from the Frame panel: **Frame from starter** with no Frame, or the **Replace Frame** row under the Frame's size when there is one (held still once a pass is done), in the panel's subpanels: step 1 the categories, step 2 a category's options, then one option's setup. (Spec 0590, ticket 0595; design canvas https://claude.ai/artifact/Lz2xUWXXF6KpFkgxS39WJB.)
 
-Built by ticket 0596 (step 1, the Shapes and the setup) and ticket 0597 (Earrings, Rings and Bands). Until 0596 lands the app still shows the one-step gallery of ticket 0493, described at the end of this card.
+Built by ticket 0596 (step 1, the Shapes and the setup) and ticket 0597 (Earrings, Rings and Bands). Until 0597, step 1 shows the Shapes alone.
 
 ## The levels
 
 All three are subpanels (MenuPanel card): the header is the Back icon button and the level's title in `title`, with a `meta` crumb at the right ("starter", "starter · shapes"). The body scrolls under the pinned header.
 
+- The crumb names the levels above: none on step 1, "starter" on step 2, "starter · shapes" on a setup.
 - **Step 1, Starter.** A lead line, "Each Starter is a finished design for one Frame. Use it as it is, or start with its shape empty.", then four category cards: **Shapes** ("5 shapes"), **Earrings** ("2 fringe styles"), **Rings** ("4 motifs"), **Bands** ("4 motifs").
 - **Step 2, the options.** The category's name as the title, a lead line, then one card per option:
   - Shapes: Triangle, Warped Square, Kite, Star, Kaleidocycle (Medallion later).
@@ -21,7 +22,7 @@ All three are subpanels (MenuPanel card): the header is the Back icon button and
 - **Picture well:** square, as wide as the column, `surface` fill, a 1px `line` under it. The column is the panel's width less two 16px gutters and the 12px gap: 173px in a 390px phone, 236px in the 520px desktop panel.
 - **Caption:** padding 10 12 12, 2px between lines. The name in `control`, `ink`. On a step 2 card, two `meta` lines in `muted`: the size the design is made for ("10 rounds", "part size 5", "7 wide · eu 54", "11 wide · wrist 16 cm") and its bead count ("165 beads", "87 beads each", "≈ 125 beads": ≈ where the count is an estimate). A step 1 card has one `meta` line, the count of options.
 - **Grid:** two columns at every width, 12px gap. The cards in a row take the tallest caption's height; text wraps, nothing is cut.
-- **States:** hover `hover-fill` with a `body` edge, the picture scaling to 1.04 (`duration-base`, `ease-out`), and in light a soft shadow (0 4px 12px at 10% black); pressed `press-fill` with an `ink` edge, the picture at 0.97; keyboard focus the 2px `focus-ring` just inside the edge. Dark: no shadow, the cards on `elevated` over the panel, the pictures' wells on `surface`, and the theme's `accent` (neon yellow) on the pressed chip, segment and footer button. High contrast: 2px `line-strong` edge, 3px focus ring. With reduced motion the picture does not scale.
+- **States:** hover `hover-fill` with a `body` edge, the picture scaling to 1.04 (`duration-base`, `ease-out`), and in light a soft shadow (`elevation-1`, 0 4px 12px; none in dark); pressed `press-fill` with an `ink` edge, the picture at 0.97; keyboard focus the 2px `focus-ring` just inside the edge. Dark: no shadow, the cards on `elevated` over the panel, the pictures' wells on `surface`, and the theme's `accent` (neon yellow) on the pressed chip, segment and footer button. High contrast: 2px `line-strong` edge, 3px focus ring. With reduced motion the picture does not scale.
 - **Keyboard:** each grid is one Tab stop with a roving tabindex: the arrows move along a row and between rows, Home and End go to the first and last card, Enter or Space opens its level.
 - The picture is decorative (`aria-hidden`); the card's name is its accessible name, its caption its description.
 
@@ -35,9 +36,9 @@ How each kind lays its Beads (these are also the Frame kinds' layouts and counts
 | --- | --- | --- | --- |
 | Triangle | Rounds *n* (design 10) | Three wedges, one per side, each Bead pointing straight in from its side. A wedge's row *d*, half a Bead in from the side, holds *n* − *d* Beads on every other column, so rows stagger and every column starts at the side; about 2.3 columns stay empty at each corner, where the rows step in along the seams to the centre. | 3*n*(*n* + 1) / 2, so 165 |
 | Warped Square | Rounds *n* (design 8) | An X of four wings, Beads pointing at the centre; every column starts at a seam diagonal, so the outer edges step and the notches between the wings stay open. Bead *k* in from the seam on column *j* is in round \|*j*\| + 2*k* + 1. | 2*n*(*n* + 1), so 144 |
-| Kite | Rows *n* from the point (design 16) | Two peyote wings meeting at a vertical spine; their rows rise at 30° to it, a Bead long apart down it, and the Beads lie along their rows. Row *r* from the bottom point holds ⌈*r*/2⌉ Beads a wing. | 144 at 16 rows |
-| Star | Part size *n*, Beads per arm (design 5) | Five diamond arms round the centre, *n* × *n* Beads each, each arm's Beads pointing out along it. | 5*n*², so 125 |
-| Kaleidocycle | Part size *n*, rounds a triangle (design 9, the least that folds well) | Six Triangles of *n* rounds round a small hexagonal hole, each beaded from its own centre. | ≈ 9*n*(*n* + 1), so ≈ 810 |
+| Kite | Rows *n* from the point (design 21) | Two peyote wings meeting at a vertical spine, as the Kite Frame kind lays them (ticket 0593): a row grows a Bead a wing to its widest a fifth of the way down, then loses one every fourth row. | 96 at 21 rows |
+| Star | Part size *n*, rounds of each arm (design 5) | Five Warped Square arms lying flat as rhombi round the centre, each beaded in *n* rounds from its own centre. | 10*n*(*n* + 1), so 300 |
+| Kaleidocycle | Part size *n*, rounds a triangle (design 9, the least that folds well) | Six Triangles of *n* rounds round a small hexagonal hole, each beaded from its own centre. | 9*n*(*n* + 1), so 810 |
 | Fringe earring | Top width, Top rows, Fringe style, Fringe length | A brick-stitch top worked up from its base row, one Bead shorter a row, and one strand under each base Bead. Fringe length is the longest strand; a V shortens by two Beads a strand out from the middle. | Top plus strands: V 87, Straight 97 |
 | Ring, Band | Width (design 7 and 11) and the product size | Peyote rolled out flat, a section of it. On its card a Ring lies across and a Band stands upright, so the two read apart; both lie along the setup's picture. | Setup, below |
 
@@ -61,8 +62,8 @@ Settings and sizes by option (Delica 11/0: 1.6 mm by 1.3 mm; peyote rows 0.8 mm 
 | Option | Settings (design size) | Chips | Estimated size |
 | --- | --- | --- | --- |
 | Triangle, Warped Square | Rounds, from the centre (10; 8) | 6 8 10 12; 6 8 10 | Its width × height in cm |
-| Kite | Rows, from the point (16) | 12 16 20 | Width × height |
-| Star | Part size, Beads per arm (5) | 3 5 7 9 | Width × height |
+| Kite | Rows, from the point (21) | 15 21 30 | Width × height |
+| Star | Part size, rounds a part (5) | 3 5 7 9 | Width × height |
 | Kaleidocycle | Part size, rounds a triangle (9; 9 to 15) | 9 11 13 | Width × height |
 | Fringe earrings | Top width, Beads in the base row (7); Top rows, one Bead fewer each, at most Top width − 1 (6); Fringe style, Straight fringe or V fringe; Fringe length, the longest strand (12 for V, 10 straight) | 5 7 9; 4 6 8 (those allowed); 8 12 16 | One earring's width × height; the count "87 beads each · 174 for the pair" |
 | Ring | Width, Beads (7); Size system, EU or US (a view, not a size); Ring size (EU 54, US 7) | 5 7 9; EU 50 52 54 56 58 or US 5 6 7 8 9 | "ø 17.2 mm inside · 9.1 mm wide"; rows round the middle of the band, 4 mm longer than the finger, because a woven ring runs small: "72 rows round" |
@@ -84,7 +85,3 @@ EU ring sizes are the inside circumference in mm; US is worked out from it to th
 ## Panel width
 
 On desktop and tablet the panel is `panel-width`, 520px (585px at the app's 18px root; ticket 0598, for every panel), as the canvas draws it, so the two columns of cards get 236px pictures. On a phone the panel stays the screen less its 8px gutters, so the cards' column is 173px at 390px and 157px at 360px.
-
-## Until ticket 0596: the one-step gallery
-
-The app's gallery today (spec 0488, ticket 0493): **Pick a starter** unfolds one column of cards under New Project's form, one per Starter (Gerdan, Bracelet, Earrings, Bag, Custom scheme), a `radiogroup` named "Start from", each with a small decorated example on the `board` (ticket 0494). A card pushes a setup with Name, Bead, the Technique the Starter allows, Brick block, a unit, and Width and Height as Steppers with usual sizes as chips; Create Project makes an empty Frame of that size. The Vue components `StarterGallery`, `TemplatePicture` and `TemplateSetup` are that gallery; 0596 replaces them.
