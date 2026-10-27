@@ -1,11 +1,12 @@
 # PrintPage1
 
-The first page of the PDF: the whole framed Schema across the full width of the sheet, the facts above it and Beads needed under it.
+The **Cover page**: the first page of the PDF and the whole of the PNG (PngExport card), one A4 portrait page inside a 10 mm margin on all four sides (`print-margin`), drawn by the same code for both.
 
-- Top line: the X1 mark and "bd-beads" on the left, date and time on the right. Then the technique word (Instrument Serif italic, `accent`) and the Project's name, and one row of facts under a hairline: made by, technique, bead, shape, size, finished size (labels DM Mono `muted`, values Inter 500).
-- The board (`print-board`) at the full page width: every bead, rulers on the top and left with a number every 5, the bead as large as the width allows while Beads needed fits, up to `print-bead-max`.
-- The chart parts: solid 2 px `accent` lines with a white keyline through the board and its rulers, "101 →" / "101 ↓" in `accent-strong` at each cut, and a white pill on each part with its page ("part A · page 2").
-- Beads needed under the board, two columns reading down: letter swatch, color name, code, beads, grams; the Total and the grams note. When it does not fit, one line ("Beads needed: 22 colors · 31 400 beads · ≈ 157 g · see page 7") and the full table is on the Specification page.
-- No watermark: nothing behind or over the board, the facts or Beads needed.
+- Top to bottom: the Project's name as the title (Inter 700 22, `ink`; left out when empty), "by {Maker's name}" under it (Instrument Serif italic 13, `muted`; left out when empty), one tech line (DM Mono `muted`: technique, Bead, grid, Estimated size), the framed Schema, Beads needed, the footer. The Bead's name is never the title.
+- The board (`print-board`): every bead, rulers on all four sides with a number every 5 (10 when the beads are small) and a hairline every 10. A small Schema's bead is capped at `print-bead-max` (6 mm) and the picture is centred in the room it has, Beads needed moving up under it at an even gap (8 mm); a big Schema is scaled down to fit, with no minimum bead size; a wide flat one fits the page width.
+- The chart parts, in the PDF only: solid 2 px `accent` lines with a white keyline through the board and its rulers, "101 →" / "101 ↓" in `accent-strong` at each cut, and a white pill on each part with its page ("part A · page 2").
+- Beads needed under the board, two columns reading down: letter swatch, color name, beads, grams; then the Total and the grams note. It takes at most 40% of the room under the title block; colors that do not fit continue on list pages (the name, small, over the same two columns, the Total on the last), PDF pages right after the cover and PNG files `_2`, `_3`.
+- Footer: the X1 mark and "openbeads" on the left, date and time on the right.
+- No watermark: nothing behind or over the board, the title or Beads needed.
 
-Rewritten for the export sheets signed off on 2026-10-26 (ticket 0575); the earlier card (a 48 mm column beside the canvas, the background name and accent line) is in git history.
+Rewritten in ticket 0583 (the facts row, the "see page N" line and the page number are gone, the title block replaces them); the earlier card (a row of facts above the board, one line pointing at the Specification page) is in git history.

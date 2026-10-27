@@ -3,12 +3,12 @@ import { resolve } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
-import { loadPrintFonts, lineBetween, MINI_MAP_GRID_LIMIT, miniMapLayout, pageOneLayout, partLabel, rulerLevel, rulerSide } from './printPages'
+import { COVER_BEAD_MAX } from './coverLayout'
+import { loadPrintFonts, lineBetween, MINI_MAP_GRID_LIMIT, miniMapLayout, partLabel, rulerLevel, rulerSide } from './printPages'
 import { en } from '../i18n/en'
 import type { Project } from '../domain/project'
 import { PRINT_COLORS } from './printColors'
-import { CELL_SIZE_PX } from './surfaceView'
-import { A4_PORTRAIT, mm, planPrint, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM, PRINT_BOARD_PAD, PRINT_HEADER, PRINT_MARGIN, PRINT_RULER } from './printPlan'
+import { mm, planPrint, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
@@ -28,59 +28,9 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
     const size = (name: string) => mm(Number.parseFloat(String(print(name))))
     expect(PRINT_MARGIN).toBeCloseTo(size('print-margin'))
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
+    expect(COVER_BEAD_MAX).toBeCloseTo(size('print-bead-max'))
     expect(PRINT_CHART_CELL_MM).toBe(Number.parseFloat(String(print('print-chart-cell'))))
     expect(PRINT_CHART_CELL_LETTERS_MM).toBe(Number.parseFloat(String(print('print-chart-cell-letters'))))
-  })
-})
-
-describe('pageOneLayout: the whole Schema at full width with Beads needed under it (ticket 580)', () => {
-  const page = A4_PORTRAIT
-  const fullWidth = page.width - PRINT_MARGIN * 2 - (PRINT_RULER + PRINT_BOARD_PAD) * 2
-
-  it('fills the page width for a wide Schema and keeps the table for a few colors', () => {
-    const layout = pageOneLayout(shape('loom', 300, 24), page, 5)
-
-    expect(layout.extent.width).toBeCloseTo(fullWidth)
-    expect(layout.beadsNeeded.kind).toBe('table')
-    expect(layout.board.x).toBeCloseTo(PRINT_MARGIN + PRINT_RULER + PRINT_BOARD_PAD)
-  })
-
-  it('never draws a bead past print-bead-max, and centers a small Schema', () => {
-    const layout = pageOneLayout(shape('loom', 20, 20), page, 5)
-
-    expect(layout.zoom).toBeCloseTo(mm(7) / CELL_SIZE_PX)
-    expect(layout.board.x + layout.extent.width / 2).toBeCloseTo(page.width / 2)
-  })
-
-  it('is limited by the height for a tall Schema, and Beads needed still fits the page', () => {
-    const layout = pageOneLayout(shape('loom', 60, 250), page, 8)
-
-    expect(layout.extent.width).toBeLessThan(fullWidth)
-    expect(layout.beadsNeeded.kind).toBe('table')
-    expect(layout.below + layout.beadsNeeded.height).toBeLessThanOrEqual(page.height - PRINT_MARGIN)
-  })
-
-  it('reads the table in two columns, so rows are half the colors, rounded up', () => {
-    const layout = pageOneLayout(shape('loom', 80, 60), page, 7).beadsNeeded
-
-    expect(layout.kind === 'table' && layout.rows).toBe(4)
-  })
-
-  it('swaps the table for the one line when many colors would shrink the board, and the board takes the room', () => {
-    const few = pageOneLayout(shape('loom', 100, 100), page, 6)
-    const many = pageOneLayout(shape('loom', 100, 100), page, 60)
-
-    expect(few.beadsNeeded.kind).toBe('table')
-    expect(many.beadsNeeded.kind).toBe('line')
-    expect(many.zoom).toBeGreaterThanOrEqual(few.zoom)
-    expect(many.below + many.beadsNeeded.height).toBeLessThanOrEqual(page.height - PRINT_MARGIN)
-  })
-
-  it('draws a huge Schema within the sheet', () => {
-    const layout = pageOneLayout(shape('peyote', 250, 250), page, 12)
-
-    expect(layout.board.x + layout.extent.width).toBeLessThanOrEqual(page.width - PRINT_MARGIN)
-    expect(layout.zoom).toBeGreaterThan(0.15)
   })
 })
 

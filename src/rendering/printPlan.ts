@@ -4,7 +4,7 @@ import { describeWeave, type Weave } from '../domain/weave'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, cellSizePx, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
-// PDF page layout (ticket 162, 185, 578): page 1 whole, then parts of at most 100 × 100 beads at one bead size, small
+// PDF page layout (ticket 162, 185, 578): the Cover page whole, then parts of at most 100 × 100 beads at one bead size, small
 // parts sharing a sheet; page px at 150 dpi.
 
 export const PRINT_DPI = 150
@@ -159,7 +159,7 @@ function packSheets(sizes: PageSize[], area: PageSize): { sheet: number; x: numb
 
 /** Cuts the displayed chart into parts of at most 100 × 100 beads (75 with Letters on) from the top left, every one at
  * one bead size, and lays them on sheets in reading order (ticket 578). */
-export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT): PrintPlan {
+export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT, listPages = 0): PrintPlan {
   const grid = displayedGrid(project)
   const zoom = mm(project.letters ? PRINT_CHART_CELL_LETTERS_MM : PRINT_CHART_CELL_MM) / CELL_SIZE_PX
   const block = project.letters ? PRINT_BLOCK_BEADS_LETTERS : PRINT_BLOCK_BEADS
@@ -204,10 +204,10 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT): PrintPl
     const size = sizes[index]!
     // A part with its overlap can pass the sheet's width by a few beads: it stays centered, using the margins evenly.
     const overflow = Math.max(0, size.width - chartArea(page).width)
-    return { ...part, page: sheet + 2, place: { x: x - overflow / 2, y, ...size } }
+    return { ...part, page: sheet + 2 + listPages, place: { x: x - overflow / 2, y, ...size } }
   })
   const sheets = placed.reduce((most, { sheet }) => Math.max(most, sheet + 1), 0)
-  return { page, zoom, partsAcross, partsDown, parts, specificationPage: 2 + sheets, pageCount: 2 + sheets }
+  return { page, zoom, partsAcross, partsDown, parts, specificationPage: 2 + sheets + listPages, pageCount: 2 + sheets + listPages }
 }
 
 /** Where the chart goes on from a part: the page to its right and the page below, if there are any. */
