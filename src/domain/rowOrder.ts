@@ -1,4 +1,4 @@
-import type { FrameLayout, LayoutJoin, LayoutPosition } from './frameLayout'
+import { keyOf, type FrameLayout, type LayoutJoin, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
 import { lineOfPass, passCount, passLines, passOf, turnsRowDirection, type PassDirection, type Weave } from './weave'
 
@@ -78,8 +78,6 @@ interface LayoutPass {
   step: OrderStep
   positions: GridPosition[]
 }
-
-const keyOf = ({ row, column }: GridPosition): string => `${row}:${column}`
 
 /** The beads of a part's last round that face another part: those within a bead of the nearest, where a zip or hinge
  * runs. */

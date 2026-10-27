@@ -1,6 +1,6 @@
 import { colorAt, type BeadChange } from './canvas'
 import { layoutPlacement, type LayoutPlacement } from './frameKind'
-import { landingAt, layoutPosition, type LayoutPoint, type LayoutPosition } from './frameLayout'
+import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
 import { frameWeave, type Project } from './project'
 import { describeWeave, rowPitch, type Weave } from './weave'
@@ -14,6 +14,9 @@ import { describeWeave, rowPitch, type Weave } from './weave'
 export interface PlacedColor extends LayoutPoint {
   color: string
 }
+
+/** A Selection's rectangle of the Frame's cells, counted from its first row and column. */
+type CellRectangle = { top: number; left: number; rows: number; columns: number }
 
 /** A Custom frame's layout as placed in its rectangle, or none for a Rectangular Frame. */
 function placementOf(view: Project): LayoutPlacement | undefined {
@@ -33,7 +36,7 @@ function cellsOf(weave: Weave): { description: ReturnType<typeof describeWeave>;
 
 /** The Selection's rectangle on screen, in cell widths: its rows and columns with the half bead a shifted row adds on
  * the right, as its outline is drawn. */
-function regionOf(weave: Weave, selection: { top: number; left: number; rows: number; columns: number }) {
+function regionOf(weave: Weave, selection: CellRectangle) {
   const { description, aspect, pitch } = cellsOf(weave)
   return {
     left: selection.left,
@@ -45,7 +48,7 @@ function regionOf(weave: Weave, selection: { top: number; left: number; rows: nu
 
 /** The beads of a Custom frame whose centres lie in a rectangle of its cells, in reading order on screen (top to bottom,
  * then left to right); none on a Rectangular Frame. Empty positions are included: a Selection fills them too. */
-export function positionsInRectangle(view: Project, selection: { top: number; left: number; rows: number; columns: number }): LayoutPosition[] {
+export function positionsInRectangle(view: Project, selection: CellRectangle): LayoutPosition[] {
   const placement = placementOf(view)
   if (!placement) return []
   const region = regionOf(frameWeave(view), selection)
@@ -90,12 +93,13 @@ export function cellOfBead(view: Project, position: GridPosition): GridPosition 
     const { x, y } = cellCentre(weave, cell)
     return landingAt(placement.layout, (x - placement.x) / placement.scale, (y - placement.y) / placement.scale) === found
   }
-  return near.find((cell) => cell.row === holding.row && cell.column === holding.column && onBead(cell)) ?? near.find(onBead) ?? holding
+  // The cell holding the centre first, if its own centre is on the bead; else a neighbour whose centre is.
+  return (onBead(holding) ? holding : near.find(onBead)) ?? holding
 }
 
 /** The copied beads of a Custom frame's Selection (Copy keeps each bead's place on screen): their centres from the first
  * bead's in reading order, and the same beads as a block of the Frame's cells, for a Paste onto a rectangle. */
-export function copiedFromCustom(view: Project, selection: { top: number; left: number; rows: number; columns: number }): { points: PlacedColor[]; cells: (GridPosition & { color: string })[] } | undefined {
+export function copiedFromCustom(view: Project, selection: CellRectangle): { points: PlacedColor[]; cells: (GridPosition & { color: string })[] } | undefined {
   const placement = placementOf(view)!
   const weave = frameWeave(view)
   const drawn = positionsInRectangle(view, selection).flatMap((position) => {
@@ -124,6 +128,17 @@ export function pointsOfCells(view: Project, cells: readonly (GridPosition & { c
 /** Beads closer than this to the position under them still find a free one of its panel, in bead widths: a neighbour. */
 const REACH = 1.7
 
+/** The free position of a panel nearest a point, within a neighbour's reach; none past it. */
+function nearestFree(layout: FrameLayout, panel: number, x: number, y: number, taken: ReadonlySet<string>): GridPosition | undefined {
+  let best: { position: LayoutPosition; distance: number } | undefined
+  for (const position of layout.positions) {
+    if (position.panel !== panel || taken.has(keyOf(position))) continue
+    const distance = Math.hypot(position.x - x, position.y - y)
+    if (distance <= REACH && (!best || distance < best.distance)) best = { position, distance }
+  }
+  return best && { row: best.position.row, column: best.position.column }
+}
+
 /** Where beads on screen land on a Custom frame: each on the position under it, or the nearest free one of that
  * position's panel when an earlier bead took it; one on a Seam or Off-shape, or with no free position near, is dropped.
  * `points` are in cell widths from the Frame's first position's corner. */
@@ -137,21 +152,12 @@ export function landOnLayout(view: Project, points: readonly PlacedColor[]): { l
     const x = (point.x - placement.x) / placement.scale
     const y = (point.y - placement.y) / placement.scale
     const under = landingAt(layout, x, y)
-    const panel = under?.panel
-    const free = under && !taken.has(`${under.row}:${under.column}`)
-      ? { row: under.row, column: under.column }
-      : panel === undefined
-        ? undefined
-        : layout.positions
-            .filter((position) => position.panel === panel && !taken.has(`${position.row}:${position.column}`))
-            .map((position) => ({ position, distance: Math.hypot(position.x - x, position.y - y) }))
-            .filter(({ distance }) => distance <= REACH)
-            .sort((a, b) => a.distance - b.distance)[0]?.position
+    const free = under && !taken.has(keyOf(under)) ? { row: under.row, column: under.column } : under && nearestFree(layout, under.panel, x, y, taken)
     if (!free) {
       dropped += 1
       continue
     }
-    taken.add(`${free.row}:${free.column}`)
+    taken.add(keyOf(free))
     landed.push({ row: free.row, column: free.column, color: point.color })
   }
   return { landed, dropped }
@@ -169,7 +175,7 @@ export function aimOf(view: Project, cell: GridPosition): LayoutPoint {
 
 /** A Custom frame's Selection turned a quarter clockwise about its middle on screen (Rotate, ticket 0594): where each of
  * its beads lands, how many land on a Seam or Off-shape, and every bead it lifts. */
-export function turnedOnLayout(view: Project, selection: { top: number; left: number; rows: number; columns: number }): { lifted: BeadChange[]; landed: BeadChange[]; dropped: number } {
+export function turnedOnLayout(view: Project, selection: CellRectangle): { lifted: BeadChange[]; landed: BeadChange[]; dropped: number } {
   const placement = placementOf(view)!
   const region = regionOf(frameWeave(view), selection)
   const middle = { x: (region.left + region.right) / 2, y: (region.top + region.bottom) / 2 }
@@ -187,6 +193,6 @@ export function turnedOnLayout(view: Project, selection: { top: number; left: nu
 
 /** How many beads of a Custom frame a set of landings replaced: positions that held another color and were not lifted. */
 export function coveredOnLayout(view: Project, landed: readonly BeadChange[], lifted: readonly BeadChange[]): number {
-  const liftedKeys = new Set(lifted.map(({ row, column }) => `${row}:${column}`))
-  return landed.filter(({ row, column }) => !liftedKeys.has(`${row}:${column}`) && colorAt(view.beads, row, column) !== null).length
+  const liftedKeys = new Set(lifted.map(keyOf))
+  return landed.filter(({ row, column }) => !liftedKeys.has(keyOf({ row, column })) && colorAt(view.beads, row, column) !== null).length
 }
