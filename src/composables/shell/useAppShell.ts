@@ -205,7 +205,7 @@ function wireAppShell(services: Services) {
   } = useSelectionGesture(
     currentProject,
     edit,
-    (count) => showToast('paste-clipped', plural(locale.value, count, t.value.tools.pasteClippedMessage), 'info'),
+    (count, loss) => showToast('paste-clipped', plural(locale.value, count, loss === 'shape' ? t.value.tools.droppedOnShapeMessage : t.value.tools.pasteClippedMessage), 'info'),
   )
 
   /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
@@ -541,6 +541,7 @@ function wireAppShell(services: Services) {
     showToast,
     onUndo,
     messages,
+    locale: () => locale.value,
   })
 
   /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0063, 0066). */

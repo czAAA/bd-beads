@@ -87,6 +87,14 @@ export class PdfContent {
     this.operators.push(`${path} ${paint.fill && paint.stroke ? 'B' : paint.fill ? 'f' : 'S'}`)
   }
 
+  /** A closed polygon through `points` (a turned bead of a Custom frame, ticket 0594), filled and/or outlined. */
+  polygon(points: readonly (readonly [number, number])[], paint: { fill?: string; stroke?: string; lineWidth?: number }): void {
+    const path = points.map(([x, y], index) => `${number(x)} ${this.y(y)} ${index === 0 ? 'm' : 'l'}`).join(' ')
+    if (paint.fill) this.fillColor(paint.fill)
+    if (paint.stroke) this.strokeColor(paint.stroke, paint.lineWidth ?? 1)
+    this.operators.push(`${path} h ${paint.fill && paint.stroke ? 'B' : paint.fill ? 'f' : 'S'}`)
+  }
+
   /** `value` in Helvetica with its baseline at `baseline`, starting at `x` (`align` left), or centred or ending there. */
   text(value: string, x: number, baseline: number, style: TextStyle, align: 'left' | 'center' | 'right' = 'left'): void {
     const scale = style.scale ?? 100

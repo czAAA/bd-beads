@@ -9,7 +9,7 @@ import {
   withinFrame,
   movedSelection,
   paintLayerSelection,
-  pasteClippedCount,
+  pasteLostCount,
   pasteOnLayer,
   pastedCellsOnLayer,
   pieceSelectionOnLayer,
@@ -18,10 +18,11 @@ import {
   selectionWithEdges,
   snapSelectionToUnits,
   type CopiedBlock,
+  type PasteLoss,
   type Selection,
 } from '../../domain/selection'
 import { footprintOf } from '../../domain/footprint'
-import { frameAllows } from '../../domain/frameKind'
+import { frameAllows, frameLayoutOf } from '../../domain/frameKind'
 import { clampOutOfMargin, inMargin, marginBoxFor, selectionAllowed } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
@@ -33,8 +34,9 @@ import type { FramePress } from '../../rendering/frameHandles'
 export function useSelectionGesture(
   currentProject: () => Project | undefined,
   edit: EditFn,
-  /** Told how many beads a Paste clipped to the Frame (ticket 491). */
-  onClipped: (count: number) => void,
+  /** Told how many beads a Paste lost: clipped to the Frame (ticket 491), or on a Custom frame's Seams and Off-shape
+   * (ticket 0594). */
+  onClipped: (count: number, loss: PasteLoss) => void,
 ) {
   /** The rectangle the Select tool has marked out, or none (ticket 31). Only one is ever active: a new drag replaces
    * it. */
@@ -137,11 +139,12 @@ export function useSelectionGesture(
     stamp(block, press.anchor)
   }
 
-  /** One Paste as one Edit; a Message says how many beads the Frame's edge clipped (ticket 491). */
+  /** One Paste as one Edit; a Message says how many beads the Frame's edge clipped (ticket 491) or a Custom frame's
+   * Seams and Off-shape dropped (ticket 0594). */
   function stamp(block: CopiedBlock, at: GridPosition) {
-    const clipped = pasteClippedCount(currentProject()!, block, at)
+    const lost = pasteLostCount(currentProject()!, block, at)
     const outcome = edit('drawing', (current) => pasteOnLayer(current, block, at))
-    if (clipped > 0 && outcome.kind === 'applied') onClipped(clipped)
+    if (lost.count > 0 && outcome.kind === 'applied') onClipped(lost.count, lost.loss)
   }
 
   /** The Piece tool's tap (ticket 414): the Selection becomes the bounding rectangle of the tapped bead's Piece, on
@@ -153,8 +156,10 @@ export function useSelectionGesture(
       return
     }
     const at = { row, column, ...(named ? { layer: named } : {}) }
-    const picked = pieceSelectionOnLayer(project, at)
-    if (refusesSelection(project, at) || (!picked && beadColorAt(project, row, column, named))) {
+    // A Custom frame's beads are named by round and place, not Pieces of a Grid (ticket 0594): the Piece tool refuses it.
+    const custom = layerAt(project, at) === 'frame' && frameLayoutOf(project.frame!) !== undefined
+    const picked = custom ? undefined : pieceSelectionOnLayer(project, at)
+    if (custom || refusesSelection(project, at) || (!picked && beadColorAt(project, row, column, named))) {
       refusals.value += 1
       return
     }

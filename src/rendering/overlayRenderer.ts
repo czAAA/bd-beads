@@ -98,13 +98,28 @@ export interface OverlayInput {
   letters?: Readonly<Record<string, string>>
 }
 
-/** A bead the current pass weaves: its cell, top left, and its color. */
+/** A bead the current pass weaves: its cell, top left, and its color; on a Custom frame (ticket 0594) its box is centred
+ * on 0, 0 and drawn turned to `angle` at `centre`. */
 interface PassBead {
   x: number
   y: number
   width: number
   height: number
   color: string
+  turned?: { centre: { x: number; y: number }; angle: number; radius: number }
+}
+
+/** Draws a pass bead where it lies: in place, or on a Custom frame turned about its centre. */
+function inPlace(context: DrawingContext, bead: PassBead, draw: () => void): void {
+  if (!bead.turned) {
+    draw()
+    return
+  }
+  context.save()
+  context.translate(bead.turned.centre.x, bead.turned.centre.y)
+  context.rotate(bead.turned.angle)
+  draw()
+  context.restore()
 }
 
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
@@ -114,8 +129,20 @@ function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
     return []
   }
   const weave = frameWeave(project)
+  const frame = project.frame
   // The Frame's Row order, or one over the Project drawn alone, measured as its space is.
-  const order = rowOrderOf({ ...weave, kind: project.frame?.kind, rows: space.rows, columns: space.columns }, project.rowProgress)
+  const order = rowOrderOf({ ...weave, kind: frame?.kind, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
+  const placed = frame && placedLayout(frame, weave)
+  if (placed) {
+    // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
+    const box = centredBead(placed)
+    const radius = beadRoundness(weave.technique, weave.cell) * placed.scale
+    return order.positionsOf(currentPass(project.rowProgress)).flatMap((position) => {
+      const color = frame.beads[position.row]?.[position.column] ?? null
+      const at = layoutBeadPx(placed, position)
+      return color === null || !at ? [] : [{ ...box, color, turned: { centre: { x: at.x, y: at.y }, angle: at.angle, radius } }]
+    })
+  }
   return order.positionsOf(currentPass(project.rowProgress)).flatMap((position) => {
     const row = space.origin.row + position.row
     const column = space.origin.column + position.column
@@ -135,11 +162,15 @@ function sizedLike(box: { width: number; height: number }): { width?: number; he
 function drawLiftedBeads(context: DrawingContext, beads: readonly PassBead[], weave: Weave, zoom: number, pixelRatio: number, theme: ProjectTheme, letters?: Readonly<Record<string, string>>): void {
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   for (const bead of beads) {
-    drawFlatBead(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, ...sizedLike(bead), cornerRadius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
-    const letter = letters?.[bead.color]
-    if (letter) {
-      drawBeadLetter(context, { x: bead.x, y: bead.y, size: CELL_SIZE_PX, ...sizedLike(bead), color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), letter, dimmed: false, theme })
-    }
+    const size = bead.turned ? { size: bead.width, width: bead.width, height: bead.height } : { size: CELL_SIZE_PX, ...sizedLike(bead) }
+    const radius = bead.turned?.radius ?? cornerRadius
+    inPlace(context, bead, () => {
+      drawFlatBead(context, { x: bead.x, y: bead.y, ...size, cornerRadius: radius, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), dimmed: false, deviceScale: zoom * pixelRatio, theme })
+      const letter = letters?.[bead.color]
+      if (letter) {
+        drawBeadLetter(context, { x: bead.x, y: bead.y, ...size, color: brighten(bead.color, CURRENT_ROW_BRIGHTNESS), letter, dimmed: false, theme })
+      }
+    })
   }
 }
 
@@ -152,10 +183,18 @@ function drawBeadRings(context: DrawingContext, beads: readonly PassBead[], weav
   context.strokeStyle = theme.marker
   context.lineWidth = MARKER_RING_PX
   context.beginPath()
-  for (const bead of beads) {
+  for (const bead of beads.filter(({ turned }) => !turned)) {
     roundedRect(context, bead.x + half, bead.y + half, bead.width - MARKER_RING_PX, bead.height - MARKER_RING_PX, Math.max(0, corner - half))
   }
   context.stroke()
+  // A Custom frame's beads each lie at their panel's angle (ticket 0594): a ring apiece, turned with it.
+  for (const bead of beads.filter(({ turned }) => turned)) {
+    inPlace(context, bead, () => {
+      context.beginPath()
+      roundedRect(context, bead.x + half, bead.y + half, bead.width - MARKER_RING_PX, bead.height - MARKER_RING_PX, Math.max(0, bead.turned!.radius - half))
+      context.stroke()
+    })
+  }
 }
 
 function roundedRect(context: DrawingContext, x: number, y: number, width: number, height: number, radius: number): void {

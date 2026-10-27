@@ -3,7 +3,7 @@ import { movedFrame, sameFrame, snapColumn, snappedMove, snapRow } from './frame
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
-import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, frameSizeOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings } from './frameKind'
+import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, frameSizeOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
 import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
@@ -163,7 +163,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     if (frameSizeOf({ kind: frame.kind, settings }) === frameSizeOf(frame)) {
       return { kind: 'unchanged', project }
     }
-    return { kind: 'changed', project: { ...project, frame: resettled(project, frame, settings), updatedAt: Date.now() } }
+    return { kind: 'changed', project: { ...project, frame: resettled(project, frame, settings, frame.quarterTurns), updatedAt: Date.now() } }
   }
 
   if ('remove' in change) {
@@ -213,13 +213,13 @@ function kindRefuses(frame: FrameSheet, change: FrameChange): boolean {
 
 /** A Custom frame built from its kind and settings round a Canvas position: its bounding rectangle in its own
  * Technique, its first row and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
-function customSheet(project: Project, kind: FrameKindId, settings: FrameSettings, centre: GridPosition): FrameSheet {
+function customSheet(project: Project, kind: FrameKindId, settings: FrameSettings, centre: GridPosition, quarterTurns?: QuarterTurns): FrameSheet {
   const read = settingsOf({ kind, settings })!
-  const { rows, columns } = customFrameSize(kind, read)
+  const { rows, columns } = customFrameSize(kind, read, quarterTurns)
   const weave = weaveOf({ technique: frameKindOf({ kind }).custom!.technique })
   const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
   const canvas = canvasWeave(project)
-  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, kind, settings: read }
+  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, kind, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
 }
 
 /** The Project with a new empty Custom frame in place of any Frame there (ticket 0592): Row progress starts at the first
@@ -230,10 +230,20 @@ function placedCustomFrame(project: Project, { kind, size, centre }: { kind: Fra
 
 /** A Custom frame laid out again from new settings round its own centre, keeping each bead whose position is still in
  * the layout. */
-function resettled(project: Project, frame: FrameSheet, settings: FrameSettings): FrameSheet {
+function resettled(project: Project, frame: FrameSheet, settings: FrameSettings, quarterTurns: QuarterTurns | undefined): FrameSheet {
   const centre = canvasDistance(project, frame, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
-  const sheet = customSheet(project, frame.kind!, settings, { row: frame.row + centre.row, column: frame.column + centre.column })
-  return { ...frame, ...sheet, beads: beadsInLayout(frame.beads, frameLayoutOf(sheet)!) }
+  const sheet = customSheet(project, frame.kind!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns)
+  const { quarterTurns: _turned, ...rest } = frame
+  return { ...rest, ...sheet, beads: beadsInLayout(frame.beads, frameLayoutOf(sheet)!) }
+}
+
+/** Rotate Frame on a Custom frame (ticket 0594): its layout a quarter turn further clockwise round its own centre, its
+ * rectangle's sides swapped; every bead keeps its name, so it turns with its panel. None for a Rectangular Frame. */
+export function turnedCustomFrame(project: Project): Project | undefined {
+  const frame = project.frame
+  if (!frame || !frameKindOf(frame).custom) return undefined
+  const turns = ((frame.quarterTurns ?? 0) + 1) % 4
+  return { ...project, frame: resettled(project, frame, frame.settings ?? {}, turns === 0 ? undefined : (turns as QuarterTurns)), updatedAt: Date.now() }
 }
 
 /** The beads of a map that have a position in a Custom frame's layout. */

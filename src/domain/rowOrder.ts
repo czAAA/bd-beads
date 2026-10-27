@@ -1,3 +1,4 @@
+import type { FrameLayout, LayoutJoin, LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
 import { lineOfPass, passCount, passLines, passOf, turnsRowDirection, type PassDirection, type Weave } from './weave'
 
@@ -24,7 +25,16 @@ export interface RowOrder {
   /** The Frame line (row or column, the way the rows run) a pass works on, as the rulers mark it; none where a pass is
    * not on one line. */
   lineOf(pass: number): number | undefined
+  /** What a pass of a Custom frame is, for the Word chart: a round or row (of a part, where there are several), or a
+   * join; none for a Rectangular Frame, whose passes are its lines. */
+  stepOf?(pass: number): OrderStep | undefined
 }
+
+/** A pass of a Custom frame's Row order (ticket 0594), numbered from 1 as a pattern counts: a round from the centre or a
+ * row from the point, of one part of several, or a join between parts. */
+export type OrderStep =
+  | { kind: 'round' | 'row'; number: number; part?: number }
+  | { kind: 'join'; step: LayoutJoin['step']; parts: readonly number[] }
 
 /** A line's index counted from the Frame's far end when the way is reversed, so every pass rule keeps working on lines
  * counted in weaving order (ticket 0589). */
@@ -61,4 +71,73 @@ export function rowsOrder(weave: Weave & { rows: number; columns: number }, { di
     },
     lineOf: (pass) => mirrorLine(lineOfPass(weave, pass, direction), lines, reversed),
   }
+}
+
+/** One pass of a Custom frame: what it is and the positions it weaves. */
+interface LayoutPass {
+  step: OrderStep
+  positions: GridPosition[]
+}
+
+const keyOf = ({ row, column }: GridPosition): string => `${row}:${column}`
+
+/** The beads of a part's last round that face another part: those within a bead of the nearest, where a zip or hinge
+ * runs. */
+function facingEdge(last: readonly LayoutPosition[], other: readonly LayoutPosition[]): LayoutPosition[] {
+  const gap = (bead: LayoutPosition) => Math.min(...other.map((each) => Math.hypot(each.x - bead.x, each.y - bead.y)))
+  const nearest = Math.min(...last.map(gap))
+  return last.filter((bead) => gap(bead) <= nearest + 1)
+}
+
+/** The passes of a Custom frame (spec 0590, ADR 0077): each part in making order, round by round from its centre (or
+ * row by row from a Kite's point, read left to right), then its joins, each ringing the edges it puts together. */
+function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[] {
+  const parts = [...new Set(layout.panels.map(({ part }) => part))].sort((a, b) => layout.panels.find((panel) => panel.part === a)!.order - layout.panels.find((panel) => panel.part === b)!.order)
+  const several = parts.length > 1
+  const ofPart = (part: number) => layout.positions.filter(({ panel }) => layout.panels[panel]!.part === part)
+  const lastRound = (part: number) => {
+    const beads = ofPart(part)
+    const last = Math.max(...beads.map(({ row }) => row))
+    return beads.filter(({ row }) => row === last)
+  }
+  const passes: LayoutPass[] = []
+  for (const part of parts) {
+    const beads = ofPart(part)
+    const count = Math.max(...beads.map(({ row }) => row)) + 1
+    for (let line = 0; line < count; line += 1) {
+      const positions = beads.filter(({ row }) => row === line).sort((a, b) => (lines === 'row' ? a.x - b.x : a.column - b.column))
+      passes.push({ step: { kind: lines, number: line + 1, ...(several ? { part: part + 1 } : {}) }, positions: positions.map(({ row, column }) => ({ row, column })) })
+    }
+  }
+  for (const join of layout.joins) {
+    const [first, second] = join.parts
+    // A part zipped on itself, or into what the face does not show, rings nothing.
+    const positions = second === undefined ? [] : [...facingEdge(lastRound(first!), lastRound(second)), ...facingEdge(lastRound(second), lastRound(first!))]
+    passes.push({ step: { kind: 'join', step: join.step, parts: join.parts.map((part) => part + 1) }, positions: positions.map(({ row, column }) => ({ row, column })) })
+  }
+  return passes
+}
+
+const layoutOrders = new WeakMap<FrameLayout, RowOrder>()
+
+/** A Custom frame's Row order (ticket 0594): its passes chained part after part, then its joins, so a (part, step)
+ * pointer is one number. Worked one way only, whichever way the rows were set to run. */
+export function layoutOrder(layout: FrameLayout, lines: 'round' | 'row'): RowOrder {
+  const known = layoutOrders.get(layout)
+  if (known) return known
+  const passes = layoutPasses(layout, lines)
+  const passOfBead = new Map<string, number>()
+  passes.forEach(({ step, positions }, pass) => {
+    if (step.kind !== 'join') for (const position of positions) passOfBead.set(keyOf(position), pass)
+  })
+  const order: RowOrder = {
+    turns: false,
+    count: passes.length,
+    passAt: (position) => passOfBead.get(keyOf(position)) ?? Number.POSITIVE_INFINITY,
+    positionsOf: (pass) => passes[pass]?.positions ?? [],
+    lineOf: () => undefined,
+    stepOf: (pass) => passes[pass]?.step,
+  }
+  layoutOrders.set(layout, order)
+  return order
 }

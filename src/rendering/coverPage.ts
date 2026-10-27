@@ -1,5 +1,6 @@
 import { frameWeave, projectDimensions, shownLetters } from '../domain/project'
 import type { Project } from '../domain/project'
+import { frameLayoutOf } from '../domain/frameKind'
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { TABLE_COLUMN_GAP, TABLE_HEAD, TITLE_MAKER_ROW, TITLE_NAME_ROW, listHeader, titleRows, type ColorsSlice, type CoverLayout } from './coverLayout'
 import { blankPage, drawBoard, drawMark, drawParts, drawRulers, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
@@ -112,7 +113,8 @@ export function drawCoverPage(project: Project, words: PrintText, layout: CoverL
   drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board, shownLetters(project), true)
   const grid = displayedGrid(project)
   const every = grid.stepAcross * layout.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
-  drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
+  // A Custom frame's beads keep no rows and columns to number (ticket 0594).
+  if (!project.frame || !frameLayoutOf(project.frame)) drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
   if (plan && plan.parts.length > 1) drawParts(context, project, plan, words.labels, layout.zoom, board)
 
   drawColors(context, A4_PORTRAIT, words, layout.cover, layout.cover.y)

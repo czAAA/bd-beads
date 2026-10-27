@@ -12,6 +12,8 @@ import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX, gridToRegion, rowPitchPx, rowShiftPx } from './surfaceView'
+import { customChart, type ChartBead } from './customChart'
+import type { LayoutPoint } from '../domain/frameLayout'
 
 // A chart page as PDF operators (ticket 0585, ADR 0043; PrintChartPage card): sharp at any zoom. The Project renderer places
 // every bead of every Technique (given a stand-in canvas that only keeps its transform) and this draws what it is told.
@@ -213,6 +215,13 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
 
   content.roundRect(pad.x * K, pad.y * K, pad.width * K, pad.height * K, mmPt(2), { stroke: PRINT_COLORS.faint, lineWidth: PAD_LINE })
 
+  const custom = customChart(project, part.region, plan.zoom)
+  if (custom) {
+    drawCustomPart(content, project, part, chart, custom, letters, { across: part.overlapAcross * stepAcross, down: part.overlapDown * stepDown })
+    drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
+    return
+  }
+
   const beads = placeBeads(project, plan, part)
   const round = beadsAreRound(project)
   const units = describeWeave(frameWeave(project)).countsUnits
@@ -282,11 +291,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
     letterAt(content, letters[bead.color] ?? '?', { x: chart.x + x, y: chart.y + y, width, height }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color))
   }
 
-  // Where the part itself begins.
-  const seam: [number, number, number, number][] = []
-  if (part.overlapAcross) seam.push([(chart.x + part.overlapAcross * stepAcross) * K, pad.y * K, (chart.x + part.overlapAcross * stepAcross) * K, (pad.y + pad.height) * K])
-  if (part.overlapDown) seam.push([pad.x * K, (chart.y + part.overlapDown * stepDown) * K, (pad.x + pad.width) * K, (chart.y + part.overlapDown * stepDown) * K])
-  content.lines(seam, OVERLAP_LINE, PRINT_COLORS.accent)
+  drawOverlapLine(content, part, pad, chart, stepAcross, stepDown)
 
   // Rulers: upright numbers at every 5th, on all four sides, tens bold in ink, fives regular in muted, overlap faint.
   const size = LETTER_PT
@@ -310,6 +315,68 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
     const overlap = index < part.overlapDown
     number(value, (chart.x - mm(1.3)) * K, baseline, 'right', overlap)
     number(value, (chart.x + chart.width + mm(1.3)) * K, baseline, 'left', overlap)
+  }
+}
+
+/** Where the part itself begins: the line past the overlap it repeats from the part before. */
+function drawOverlapLine(content: PdfContent, part: PrintPart, pad: Box, chart: Box, stepAcross: number, stepDown: number): void {
+  const seam: [number, number, number, number][] = []
+  if (part.overlapAcross) seam.push([(chart.x + part.overlapAcross * stepAcross) * K, pad.y * K, (chart.x + part.overlapAcross * stepAcross) * K, (pad.y + pad.height) * K])
+  if (part.overlapDown) seam.push([pad.x * K, (chart.y + part.overlapDown * stepDown) * K, (pad.x + pad.width) * K, (chart.y + part.overlapDown * stepDown) * K])
+  content.lines(seam, OVERLAP_LINE, PRINT_COLORS.accent)
+}
+
+/** A segment cut to a box, or none where it misses it (Liang–Barsky). */
+function clippedTo(box: Box, [from, to]: readonly [LayoutPoint, LayoutPoint]): [number, number, number, number] | undefined {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  let start = 0
+  let end = 1
+  for (const [p, q] of [[-dx, from.x - box.x], [dx, box.x + box.width - from.x], [-dy, from.y - box.y], [dy, box.y + box.height - from.y]] as const) {
+    if (p === 0) {
+      if (q < 0) return undefined
+      continue
+    }
+    const r = q / p
+    if (p < 0) start = Math.max(start, r)
+    else end = Math.min(end, r)
+  }
+  return start <= end ? [from.x + start * dx, from.y + start * dy, from.x + end * dx, from.y + end * dy] : undefined
+}
+
+/** A Custom frame's part of the chart (ticket 0594): each bead whose centre falls on the part, turned as it lies, with
+ * its Swatch letter upright; empty positions outlined so the shape reads; its Seams as lines. No cell lines or rulers:
+ * its beads keep no rows and columns. */
+function drawCustomPart(content: PdfContent, project: Project, part: PrintPart, chart: Box, custom: NonNullable<ReturnType<typeof customChart>>, letters: SwatchLetters, overlap: { across: number; down: number }): void {
+  const own = (bead: ChartBead) => bead.x >= 0 && bead.y >= 0 && bead.x <= part.region.width && bead.y <= part.region.height
+  const inOverlap = (bead: ChartBead) => bead.x < overlap.across || bead.y < overlap.down
+  const round = beadsAreRound(project)
+  const beads = custom.beads.filter(own)
+  for (const bead of beads) {
+    const fill = bead.color === null ? undefined : inOverlap(bead) ? tint(bead.color, OVERLAP_TINT) : bead.color
+    const paint = { ...(fill ? { fill } : {}), stroke: fill ? PRINT_COLORS.lineStrong : PRINT_COLORS.faint, lineWidth: LINE_CELL }
+    if (round) {
+      const size = Math.min(bead.width, bead.height) * ROUND_SHARE
+      content.roundRect((chart.x + bead.x - size / 2) * K, (chart.y + bead.y - size / 2) * K, size * K, size * K, size * K, paint)
+      continue
+    }
+    const cos = Math.cos(bead.angle)
+    const sin = Math.sin(bead.angle)
+    const corner = (across: number, out: number): [number, number] => [(chart.x + bead.x + across * cos - out * sin) * K, (chart.y + bead.y + across * sin + out * cos) * K]
+    const halfWide = bead.width / 2
+    const halfDeep = bead.height / 2
+    content.polygon([corner(-halfWide, -halfDeep), corner(halfWide, -halfDeep), corner(halfWide, halfDeep), corner(-halfWide, halfDeep)], paint)
+  }
+  const local = { x: 0, y: 0, width: part.region.width, height: part.region.height }
+  const seams = custom.seams.flatMap((seam) => {
+    const cut = clippedTo(local, seam)
+    return cut ? [[(chart.x + cut[0]) * K, (chart.y + cut[1]) * K, (chart.x + cut[2]) * K, (chart.y + cut[3]) * K] as [number, number, number, number]] : []
+  })
+  content.lines(seams, LINE_FIVE, PRINT_COLORS.fieldLine)
+  for (const bead of beads) {
+    if (bead.color === null) continue
+    const size = Math.min(bead.width, bead.height)
+    letterAt(content, letters[bead.color] ?? '?', { x: chart.x + bead.x - size / 2, y: chart.y + bead.y - size / 2, width: size, height: size }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color))
   }
 }
 

@@ -321,4 +321,10 @@ describe('a Custom frame on the Canvas (ticket 0592)', () => {
     expect(view.offShapeAt({ x: 2, y: 2 })).toBe(true)
     expect(view.offShapeAt({ x: -40, y: -40 })).toBe(false)
   })
+
+  it('gives the Select tool the Frame\'s cell under any point of it, on a bead or Off-shape, and none off it (ticket 0594)', () => {
+    expect(view.frameCellAt({ x: 2, y: 2 })).toEqual({ row: 0, column: 0, layer: 'frame' })
+    expect(view.frameCellAt(bead)).toEqual({ ...view.pointToCell(bead, 'frame'), layer: 'frame' })
+    expect(view.frameCellAt({ x: -40, y: -40 })).toBeUndefined()
+  })
 })

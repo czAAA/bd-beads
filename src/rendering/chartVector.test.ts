@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, type Project } from '../domain/project'
+import { changeFrame } from '../domain/changeFrame'
+import { frameLayoutOf } from '../domain/frameKind'
+import { onLayer } from '../domain/layers'
+import { createProject, paintCells, type Project } from '../domain/project'
 import { drawChartParts, letterColor, luminance, placeBeads } from './chartVector'
 import { planPrint, mm } from './printPlan'
 
@@ -171,3 +174,36 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
 function plan842(): number {
   return (1754 * 72) / 150
 }
+
+describe('a Custom frame\'s chart page (ticket 0594)', () => {
+  /** A peyote Triangle of 9 rounds on a loom Canvas, its inner rounds painted dark and its 4th round White. */
+  function triangle(): Project {
+    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+    const placed = changeFrame(open, { custom: { kind: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+    const positions = frameLayoutOf(placed.project.frame!)!.positions
+    const dark = onLayer(placed.project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row < 3), DARK))
+    const white = onLayer(dark, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row === 3), '#ffffff'))
+    return { ...white, paletteLetters: LETTERS, letters: false }
+  }
+
+  it('tiles the bounding rectangle and letters every painted bead once, across the parts', () => {
+    const project = triangle()
+    const plan = planPrint(project, undefined, 0, 2)
+    const lettered = plan.parts.flatMap((part) => texts(drawChartParts(project, plan, [part], plan.page.height, LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value)))
+    // 3 + 6 + 9 dark and 12 White, the overlap's repeats aside: at least each once.
+    expect(lettered.filter((text) => text.value === 'B').length).toBeGreaterThanOrEqual(18)
+    expect(lettered.filter((text) => text.value === 'A').length).toBeGreaterThanOrEqual(12)
+  })
+
+  it('draws each bead turned to its panel as a closed path, the empty ones outlined, and the Seams, with no rulers', () => {
+    const project = triangle()
+    const { content } = chartOf(project)
+    const pdf = content.toString()
+    const turned = pdf.split('\n').filter((line) => / l .* h [BfS]$/.test(line) && !line.includes(' c '))
+    expect(turned.length).toBe(frameLayoutOf(project.frame!)!.positions.length)
+    expect(turned.filter((line) => line.endsWith(' S')).length).toBe(frameLayoutOf(project.frame!)!.positions.length - 30)
+    // No ruler numbers: the only text is the beads' letters.
+    expect(texts(pdf).every((text) => /^[A-Z]+$/.test(text.value))).toBe(true)
+  })
+})
