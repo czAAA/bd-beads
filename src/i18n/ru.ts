@@ -481,8 +481,8 @@ export const ru: Translations = {
     keyOnPage: 'Цвета на этой странице',
     wordChart: {
       title: 'Ряд за рядом',
-      row: 'Ряд {n}',
-      both: 'Ряды 1&2',
+      empty: 'пусто',
+      nextRows: 'Ряды {rows} на странице {page} →',
       firstTop: 'Ряд 1 у верхнего края картинки.',
       firstRight: 'Ряд 1 у правого края картинки.',
       firstBottom: 'Ряд 1 у нижнего края картинки.',
@@ -492,7 +492,6 @@ export const ru: Translations = {
       oddCount: 'Нечётное число бусин.',
       sides: '(L) начинается слева, (R) справа.',
       runNote: 'Серия: число и буква, 2C значит две бисеринки C.',
-      emptyNote: '* значит пустая клетка.',
     },
   },
   saveBox: {

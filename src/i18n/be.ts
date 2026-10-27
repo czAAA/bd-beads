@@ -482,8 +482,8 @@ export const be: Translations = {
     keyOnPage: 'Колеры на гэтай старонцы',
     wordChart: {
       title: 'Рад за радам',
-      row: 'Рад {n}',
-      both: 'Рады 1&2',
+      empty: 'пуста',
+      nextRows: 'Рады {rows} на старонцы {page} →',
       firstTop: 'Рад 1 каля верхняга краю карцінкі.',
       firstRight: 'Рад 1 каля правага краю карцінкі.',
       firstBottom: 'Рад 1 каля ніжняга краю карцінкі.',
@@ -493,7 +493,6 @@ export const be: Translations = {
       oddCount: 'Няцотная колькасць бісерынак.',
       sides: '(L) пачынаецца злева, (R) справа.',
       runNote: 'Серыя: лік і літара, 2C азначае дзве бісерынкі C.',
-      emptyNote: '* азначае пустую клетку.',
     },
   },
   saveBox: {

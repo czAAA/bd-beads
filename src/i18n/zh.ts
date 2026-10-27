@@ -473,8 +473,8 @@ export const zh: Translations = {
     keyOnPage: '本页的颜色',
     wordChart: {
       title: '逐行说明',
-      row: '第 {n} 行',
-      both: '第 1&2 行',
+      empty: '空',
+      nextRows: '第 {rows} 行见第 {page} 页 →',
       firstTop: '第 1 行在图案顶部。',
       firstRight: '第 1 行在图案右侧。',
       firstBottom: '第 1 行在图案底部。',
@@ -484,7 +484,6 @@ export const zh: Translations = {
       oddCount: '奇数颗珠。',
       sides: '(L) 从左边开始,(R) 从右边开始。',
       runNote: '一段由数量和字母组成:2C 是两颗 C 珠。',
-      emptyNote: '* 表示空格。',
     },
   },
   saveBox: {

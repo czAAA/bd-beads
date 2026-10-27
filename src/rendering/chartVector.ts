@@ -21,9 +21,6 @@ import { CELL_SIZE_PX, gridToRegion, rowPitchPx, rowShiftPx } from './surfaceVie
 export const K = 72 / PRINT_DPI
 export const mmPt = (value: number) => (value * 72) / 25.4
 
-/** The page tokens a chart page uses beyond `PRINT_COLORS` (tokens.json). */
-export const CHART_COLORS = { lineStrong: '#c7c7c7', fieldLine: '#858585', white: '#ffffff' } as const
-
 const LINE_CELL = mmPt(0.1)
 const LINE_FIVE = mmPt(0.18)
 const LINE_TEN = mmPt(0.3)
@@ -60,7 +57,7 @@ function tint(hex: string, amount: number): string {
 
 /** The colour of a Swatch letter on a bead of this color: `ink` on a light one, white on a dark one. */
 export function letterColor(hex: string): string {
-  return luminance(hex) > LETTER_BALANCE ? PRINT_COLORS.ink : CHART_COLORS.white
+  return luminance(hex) > LETTER_BALANCE ? PRINT_COLORS.ink : PRINT_COLORS.paper
 }
 
 /** Whether the Project's beads are drawn round (a circle in the cell) rather than as squares. */
@@ -198,7 +195,7 @@ function letterAt(content: PdfContent, letter: string, box: Box, color: string):
 export function drawKeySwatch(content: PdfContent, x: number, y: number, hex: string, letter: string, round: boolean): void {
   const size = mm(3)
   const inset = round ? (size * (1 - ROUND_SHARE)) / 2 : 0
-  content.roundRect((x + inset) * K, (y + inset) * K, (size - inset * 2) * K, (size - inset * 2) * K, round ? size : 0, { fill: hex, stroke: CHART_COLORS.lineStrong, lineWidth: LINE_CELL })
+  content.roundRect((x + inset) * K, (y + inset) * K, (size - inset * 2) * K, (size - inset * 2) * K, round ? size : 0, { fill: hex, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
   letterAt(content, letter, { x, y, width: size, height: size }, letterColor(hex))
 }
 
@@ -233,7 +230,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
     const wide = (width - inset * 2) * K
     const tall = (height - inset * 2) * K
     if (round || units) {
-      content.roundRect(left, top, wide, tall, round ? Math.min(wide, tall) : 0, { fill, stroke: CHART_COLORS.lineStrong, lineWidth: LINE_CELL })
+      content.roundRect(left, top, wide, tall, round ? Math.min(wide, tall) : 0, { fill, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
     } else {
       content.fillRect(left, top, wide, tall, fill)
     }
@@ -269,8 +266,8 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
       if (level) (level === 'tenth' ? tenLines : fiveLines).add(true, (down + 1) * stepDown, 0, chart.width)
     }
   }
-  content.lines(cellLines.segments(chart.x, chart.y), LINE_CELL, CHART_COLORS.lineStrong)
-  content.lines(fiveLines.segments(chart.x, chart.y), LINE_FIVE, CHART_COLORS.fieldLine)
+  content.lines(cellLines.segments(chart.x, chart.y), LINE_CELL, PRINT_COLORS.lineStrong)
+  content.lines(fiveLines.segments(chart.x, chart.y), LINE_FIVE, PRINT_COLORS.fieldLine)
   content.lines(tenLines.segments(chart.x, chart.y), LINE_TEN, PRINT_COLORS.ink)
   if (!offset) {
     const right = chart.x + chart.width

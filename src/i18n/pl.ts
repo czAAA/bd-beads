@@ -481,8 +481,8 @@ export const pl: Translations = {
     keyOnPage: 'Kolory na tej stronie',
     wordChart: {
       title: 'Rząd po rzędzie',
-      row: 'Rząd {n}',
-      both: 'Rzędy 1&2',
+      empty: 'puste',
+      nextRows: 'Rzędy {rows} na stronie {page} →',
       firstTop: 'Rząd 1 jest na górze obrazka.',
       firstRight: 'Rząd 1 jest po prawej stronie obrazka.',
       firstBottom: 'Rząd 1 jest na dole obrazka.',
@@ -492,7 +492,6 @@ export const pl: Translations = {
       oddCount: 'Nieparzysta liczba koralików.',
       sides: '(L) zaczyna się z lewej, (R) z prawej.',
       runNote: 'Odcinek to liczba i litera: 2C to dwa koraliki C.',
-      emptyNote: '* oznacza puste pole.',
     },
   },
   saveBox: {

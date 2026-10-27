@@ -8,7 +8,6 @@ import { loadPrintFonts, lineBetween, partLabel, rulerLevel } from './printPages
 import { en } from '../i18n/en'
 import type { Project } from '../domain/project'
 import { PRINT_COLORS } from './printColors'
-import { CHART_COLORS } from './chartVector'
 import { mm, planPrint, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
@@ -22,8 +21,7 @@ const print = (name: string) => tokens.print.tokens.find((entry) => entry.name =
 
 describe('the printed pages keep to the tokens (ticket 162)', () => {
   it('uses the light colors and the print board', () => {
-    expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), faint: color('faint'), line: color('line'), accent: color('accent'), accentStrong: color('accent-strong'), board: color('print-board') })
-    expect(CHART_COLORS).toMatchObject({ lineStrong: color('line-strong'), fieldLine: color('field-line') })
+    expect(PRINT_COLORS).toMatchObject({ ink: color('ink'), muted: color('muted'), faint: color('faint'), line: color('line'), lineSoft: color('line-soft'), lineStrong: color('line-strong'), fieldLine: color('field-line'), accent: color('accent'), accentStrong: color('accent-strong'), board: color('print-board') })
   })
 
   it('uses the print sizes', () => {

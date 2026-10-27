@@ -481,8 +481,8 @@ export const uk: Translations = {
     keyOnPage: 'Кольори на цій сторінці',
     wordChart: {
       title: 'Рядок за рядком',
-      row: 'Ряд {n}',
-      both: 'Ряди 1&2',
+      empty: 'порожньо',
+      nextRows: 'Ряди {rows} на сторінці {page} →',
       firstTop: 'Ряд 1 біля верхнього краю картинки.',
       firstRight: 'Ряд 1 біля правого краю картинки.',
       firstBottom: 'Ряд 1 біля нижнього краю картинки.',
@@ -492,7 +492,6 @@ export const uk: Translations = {
       oddCount: 'Непарна кількість намистин.',
       sides: '(L) починається зліва, (R) справа.',
       runNote: 'Серія: число і літера, 2C означає дві намистини C.',
-      emptyNote: '* означає порожню клітинку.',
     },
   },
   saveBox: {
