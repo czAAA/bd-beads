@@ -8,7 +8,7 @@ import { loadPrintFonts, lineBetween, MINI_MAP_GRID_LIMIT, miniMapLayout, partLa
 import { en } from '../i18n/en'
 import type { Project } from '../domain/project'
 import { PRINT_COLORS } from './printColors'
-import { mm, planPrint, PRINT_CHART_CELL_LETTERS_MM, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
+import { mm, planPrint, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
@@ -30,20 +30,19 @@ describe('the printed pages keep to the tokens (ticket 162)', () => {
     expect(PRINT_HEADER).toBeCloseTo(size('print-header'))
     expect(COVER_BEAD_MAX).toBeCloseTo(size('print-bead-max'))
     expect(PRINT_CHART_CELL_MM).toBe(Number.parseFloat(String(print('print-chart-cell'))))
-    expect(PRINT_CHART_CELL_LETTERS_MM).toBe(Number.parseFloat(String(print('print-chart-cell-letters'))))
   })
 })
 
 describe('miniMapLayout: the chart-page locator (ticket 187)', () => {
   it('keeps the block grid’s own row/column shape at 16 blocks or fewer', () => {
-    const project = shape('loom', 150, 220) // 2 × 3 = 6 blocks
+    const project = shape('loom', 150, 220)
     const plan = planPrint(project)
-    const layout = miniMapLayout(plan, plan.parts[2]!) // across 0, down 1
+    const layout = miniMapLayout(plan, plan.parts.find((part) => part.across === 0 && part.down === 1)!)
 
     expect(plan.partsAcross * plan.partsDown).toBeLessThanOrEqual(MINI_MAP_GRID_LIMIT)
-    expect(layout.cells).toHaveLength(6)
-    // Two rows of three: the highlighted cell keeps its own (across, down), not squashed into a single row.
-    expect(new Set(layout.cells.map((cell) => cell.down))).toEqual(new Set([0, 1, 2]))
+    expect(layout.cells).toHaveLength(plan.partsAcross * plan.partsDown)
+    // The highlighted cell keeps its own (across, down), not squashed into a single row.
+    expect(new Set(layout.cells.map((cell) => cell.down)).size).toBe(plan.partsDown)
     expect(layout.cells.filter((cell) => cell.here)).toEqual([{ across: 0, down: 1, here: true }])
   })
 
@@ -60,10 +59,12 @@ describe('miniMapLayout: the chart-page locator (ticket 187)', () => {
   })
 
   it('marks every part of a shared sheet (ticket 578)', () => {
-    const plan = planPrint(shape('loom', 130, 130)) // B and D share page 3
-    const layout = miniMapLayout(plan, plan.parts[1]!)
+    // A few rows left over at the bottom: its two short parts share a sheet.
+    const plan = planPrint(shape('loom', 100, 70))
+    const shared = plan.parts.filter((part) => plan.parts.some((other) => other !== part && other.page === part.page))
+    const layout = miniMapLayout(plan, shared[0]!)
 
-    expect(layout.cells.filter((cell) => cell.here)).toEqual([{ across: 1, down: 0, here: true }, { across: 1, down: 1, here: true }])
+    expect(layout.cells.filter((cell) => cell.here)).toHaveLength(shared.filter((part) => part.page === shared[0]!.page).length)
   })
 })
 
@@ -75,12 +76,12 @@ describe('partLabel: the label above each board (ticket 578)', () => {
   }
 
   it('names the part and the Schema’s own columns and rows', () => {
-    expect(label(130, 100, 0, 1)).toBe('Part B · columns 101–130 · rows 1–100')
+    expect(label(100, 40, 0, 1)).toBe('Part B · columns 57–100 · rows 1–40')
   })
 
   it('counts a turned Schema from its far end, lowest number first, with rows running across', () => {
-    // A quarter turn: the 130 rows run across, so part B holds the last 30 rows, counted from the far end (1–30), and all 100 columns.
-    expect(label(100, 130, 90, 1)).toBe('Part B · columns 1–100 · rows 1–30')
+    // A quarter turn: the 130 rows run across, so part B holds the last rows, counted from the far end, and all 40 columns.
+    expect(label(40, 130, 90, 1)).toBe('Part B · columns 1–40 · rows 19–74')
   })
 })
 

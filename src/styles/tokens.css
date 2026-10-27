@@ -266,13 +266,10 @@
   --print-page-height: 297mm;
   --print-dpi: 150;
   --print-margin: 10mm;
-  --print-header: 17mm;
+  --print-header: 15mm;
   --print-footer: 8mm;
   --print-bead-max: 6mm;
-  --print-part-beads: 100;
   --print-part-overlap: 2;
-  --print-chart-cell: 1.75mm;
+  --print-chart-cell: 3mm;
   --print-ruler: 5mm;
-  --print-chart-cell-letters: 2.3mm;
-  --print-part-beads-letters: 75;
 }

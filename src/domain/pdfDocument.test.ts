@@ -24,6 +24,15 @@ describe('buildPdf (ticket 74)', () => {
     expect(pdf).toContain('q 595.20 0 0 841.68 0 0 cm /Im0 Do Q')
   })
 
+  it('asks viewers to print at 100 % and carries the Project\'s name as its title (ticket 0584)', async () => {
+    const pdf = await text(buildPdf([page], 100, 100, 'Aé'))
+
+    expect(pdf).toContain('/ViewerPreferences << /PrintScaling /None >>')
+    expect(pdf).toContain('/Title <feff004100e9>')
+    expect(pdf).toMatch(/\/Info 6 0 R/)
+    expect(pdf).toContain('/Size 7')
+  })
+
   it('points its cross-reference table at where each object really starts', async () => {
     const pdf = await text(buildPdf([page], 100, 100))
 
