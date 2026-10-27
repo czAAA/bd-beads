@@ -112,11 +112,10 @@ describe('printText Word chart (ticket 0574)', () => {
     const chart = printText(letters(painted), en, 'en', at).wordChart!
 
     expect(chart.title).toBe('Row by row')
-    expect(chart.range).toBe('1–2')
-    expect(chart.notes).toEqual([en.print.wordChart.firstTop, en.print.wordChart.sides, en.print.wordChart.runNote, en.print.wordChart.emptyNote])
+    expect(chart.notes).toEqual([en.print.wordChart.firstTop, en.print.wordChart.sides, en.print.wordChart.runNote])
     expect(chart.rows).toEqual([
-      { label: 'Row 1', marker: 'L', runs: '2C, 1*', runCount: 2 },
-      { label: 'Row 2', marker: 'R', runs: '1C, 2*', runCount: 2 },
+      { label: '1', first: 1, last: 1, marker: 'L', runs: '2C, 1*' },
+      { label: '2', first: 2, last: 2, marker: 'R', runs: '1C, 2*' },
     ])
   })
 
@@ -124,9 +123,9 @@ describe('printText Word chart (ticket 0574)', () => {
     const base = createProject({ technique: 'peyote', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 2, unit: 'beads' } })
     const chart = printText(letters(paintAt(base, [{ row: 0, column: 0 }], '#e63746')), ru, 'ru', at).wordChart!
 
-    expect(chart.rows[0]).toEqual({ label: ru.print.wordChart.both, marker: 'L', runs: '1C, 3*', runCount: 2 })
+    expect(chart.rows[0]).toEqual({ label: '1&2', first: 1, last: 2, marker: 'L', runs: '1C, 3*' })
     expect(chart.notes).toContain(ru.print.wordChart.evenCount)
-    expect(chart.range).toBe('1–4')
+    expect(chart.empty).toBe(ru.print.wordChart.empty)
   })
 
   it('has none with Letters off or without a Technique that has one', () => {
