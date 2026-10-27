@@ -45,7 +45,27 @@ describe('Cover page', () => {
     const grid = displayedGrid(project)
     const painted = frameGrid(project)[3]![2]!.color
 
-    expect(pixel(canvas, layout.board.x + (2 + 0.5) * grid.stepAcross * layout.zoom, layout.board.y + (3 + 0.5) * grid.stepDown * layout.zoom)).toBe(painted ?? PRINT_THEME.emptyBead)
+    expect(pixel(canvas, layout.board.x + (2 + 0.5) * grid.stepAcross * layout.zoom, layout.board.y + (3 + 0.5) * grid.stepDown * layout.zoom)).toBe(painted)
+  })
+
+  it('leaves an empty position as bare board, and a White bead drawn as a bead', () => {
+    const project = fixtureProject({ technique: 'loom', columns: 20, rows: 20, blank: true, override: [{ row: 3, column: 2, color: '#ffffff' }] })
+    const words = wordsOf(project)
+    const layout = coverLayout(project, words)
+    const canvas = drawCoverPage(project, words, layout, 1)
+    const grid = displayedGrid(project)
+    const at = (row: number, column: number) => [layout.board.x + (column + 0.5) * grid.stepAcross * layout.zoom, layout.board.y + (row + 0.5) * grid.stepDown * layout.zoom] as const
+
+    expect(pixel(canvas, ...at(5, 5))).toBe(PRINT_THEME.background)
+    expect(pixel(canvas, ...at(3, 2))).toBe('#ffffff')
+  })
+
+  it('exports the PNG without Swatch letters, whatever the Letters toggle says', async () => {
+    const lettered = { ...fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), letters: true, paletteLetters: { '#ff0000': 'R' } }
+    const plain = { ...lettered, letters: false }
+    const bytes = async (project: typeof lettered) => Array.from(new Uint8Array(await (await exportProjectPng(project, wordsOf(project), 150)).arrayBuffer()))
+
+    expect(await bytes(lettered)).toEqual(await bytes(plain))
   })
 
   it('draws a list page for the colors the cover has no room for', () => {
