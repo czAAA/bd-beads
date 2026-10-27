@@ -7,10 +7,10 @@ import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject, moveToRow, type Project } from '../../domain/project'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
-import { PDF_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
-import { pdfDpiFor } from '../../rendering/pdfDpi'
+import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
+import { pngDpiFor } from '../../rendering/exportDpi'
 
-vi.mock('../../rendering/pdfDpi', () => ({ pdfDpiFor: vi.fn((quality: ExportQuality) => PDF_DPI_BY_QUALITY[quality]) }))
+vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]) }))
 
 beforeEach(() => {
   localStorage.clear()
@@ -283,13 +283,13 @@ describe('FramePanel (ticket 473)', () => {
 
   it('says what High is when this device cannot draw a 450 dpi page, and shows that dpi on the stop (ticket 572)', () => {
     expect(mountBar().find('[data-testid="quality-pdf-capped"]').exists()).toBe(false)
-    vi.mocked(pdfDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
+    vi.mocked(pngDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
     try {
       const wrapper = mountBar()
       expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(en.frame.qualityPdfCapped.replace('{n}', '300'))
       expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('300 DPI')
     } finally {
-      vi.mocked(pdfDpiFor).mockImplementation((quality) => PDF_DPI_BY_QUALITY[quality])
+      vi.mocked(pngDpiFor).mockImplementation((quality) => PNG_DPI_BY_QUALITY[quality])
     }
   })
 

@@ -22,9 +22,9 @@ function documentHolding(limit: number) {
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe('pdfDpiFor (ticket 572)', () => {
+describe('pngDpiFor (ticket 572)', () => {
   // The probe remembers each dpi, so every case asks about a different device through a fresh module.
-  const fresh = async () => (vi.resetModules(), (await import('./pdfDpi')).pdfDpiFor)
+  const fresh = async () => (vi.resetModules(), (await import('./exportDpi')).pngDpiFor)
 
   it('gives each quality its own dpi where a page that large can be drawn', async () => {
     documentHolding(100_000_000)
@@ -43,5 +43,19 @@ describe('pdfDpiFor (ticket 572)', () => {
     const dpiFor = await fresh()
     expect(dpiFor('high')).toBe(150)
     expect(created.every((canvas) => canvas.width === 0)).toBe(true)
+  })
+})
+
+describe('pdfPageDpi (ADR 0076)', () => {
+  const fresh = async () => (vi.resetModules(), (await import('./exportDpi')).pdfPageDpi)
+
+  it('is 300 whatever the Export quality, where a 300 dpi page can be drawn', async () => {
+    documentHolding(100_000_000)
+    expect((await fresh())()).toBe(300)
+  })
+
+  it('is 150 where a 300 dpi page cannot be allocated', async () => {
+    documentHolding(5_000_000)
+    expect((await fresh())()).toBe(150)
   })
 })

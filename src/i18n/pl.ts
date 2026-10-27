@@ -479,7 +479,6 @@ export const pl: Translations = {
     chartStyleColor: 'Tylko kolor',
     chartStyleLetters: 'Kolor + litery',
     keyOnPage: 'Kolory na tej stronie',
-    readNumbers: 'Numery nieparzyste u góry i po lewej, parzyste na dole i po prawej.',
     wordChart: {
       title: 'Rząd po rzędzie',
       row: 'Rząd {n}',
@@ -556,7 +555,7 @@ export const pl: Translations = {
     qualitySizeMb: '{n} MB',
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
-    qualityPdfCapped: 'Na tym urządzeniu „Wysoka” w PDF i PNG to {n} DPI.',
+    qualityPdfCapped: 'Na tym urządzeniu „Wysoka” w PNG to {n} DPI.',
     lettersLabel: 'Litery',
     lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
     lettersUnavailable: 'Ta technika jeszcze nie jest obsługiwana',

@@ -128,12 +128,22 @@ describe('planPrint: parts as big as the chart page holds (ticket 0584)', () => 
     for (const part of plan.parts) {
       expect(part.place.width).toBeLessThanOrEqual(area.width + 1)
       expect(part.place.height).toBeLessThanOrEqual(area.height + 1)
-      if (part.across < plan.partsAcross - 1) expect(part.lastAcross - part.firstAcross + 1).toBe(fullAcross)
-      if (part.down < plan.partsDown - 1) expect(part.lastDown - part.firstDown + 1).toBe(fullDown)
-      // A full part with its overlap could take no more than one bead (a brick or peyote part's half bead aside).
+      // The first part fills the side; each later one owns two beads less, which it repeats from the part before.
+      const own = (first: number, last: number) => last - first + 1
+      if (part.across < plan.partsAcross - 1) expect(own(part.firstAcross, part.lastAcross)).toBe(part.across === 0 ? fullAcross : fullAcross - PRINT_PART_OVERLAP)
+      if (part.down < plan.partsDown - 1) expect(own(part.firstDown, part.lastDown)).toBe(part.down === 0 ? fullDown : fullDown - PRINT_PART_OVERLAP)
+      // With its overlap a full part takes the room of the first (a brick or peyote part's half bead aside).
       if (part.across > 0 && part.across < plan.partsAcross - 1) expect(part.place.width + bead / 2).toBeGreaterThan(area.width - bead)
       if (part.down > 0 && part.down < plan.partsDown - 1) expect(part.place.height + bead / 2).toBeGreaterThan(area.height - bead)
     }
+  })
+
+  it('fits 60 beads across and 74 to 77 down by the rows of the key: a 100 × 100 is 2 × 2 parts, 60 + 40 and 75 + 25 with a two-row key (PrintChartPage card)', () => {
+    const rows = (keyRows: number) => planPrint(shape('loom', 100, 250), undefined, 0, keyRows).parts[0]!.lastDown + 1
+    const plan = planPrint(shape('loom', 100, 100), undefined, 0, 2)
+
+    expect(plan.parts.map((part) => [part.lastAcross - part.firstAcross + 1, part.lastDown - part.firstDown + 1])).toEqual([[60, 75], [40, 75], [60, 25], [40, 25]])
+    expect([rows(1), rows(2), rows(3)]).toEqual([77, 75, 74])
   })
 
   it('holds the remainder in the last part of each direction', () => {
@@ -147,12 +157,14 @@ describe('planPrint: parts as big as the chart page holds (ticket 0584)', () => 
 })
 
 describe('planPrint: small parts share a sheet (ticket 578; printed-output.md, Chart pages)', () => {
-  it('puts the leftover parts of a 100 × 100 Schema on their own pages in reading order', () => {
+  it('puts the leftover parts of a 100 × 100 Schema on shared sheets in reading order', () => {
     const plan = planPrint(shape('loom', 100, 100))
 
     expect(plan.parts.map((part) => part.letter)).toEqual(['A', 'B', 'C', 'D'])
-    expect(plan.parts.map((part) => part.page)).toEqual([2, 3, 4, 5])
-    expect(plan.pageCount).toBe(6)
+    // C and D are short enough to share a sheet, 6 mm apart.
+    expect(plan.parts.map((part) => part.page)).toEqual([2, 3, 4, 4])
+    expect(plan.pageCount).toBe(5)
+    expect(plan.parts[3]!.place.y - (plan.parts[2]!.place.y + plan.parts[2]!.place.height)).toBeCloseTo(mm(6), 3)
   })
 
   it('keeps boxes on a sheet apart and inside its chart area', () => {

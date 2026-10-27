@@ -66,7 +66,7 @@ One A4 portrait page for both formats, drawn by the same code, inside a 10 mm ma
 
 ## Wide and long Schemas
 
-- The PDF's chart pages are vector; its other pages (Cover, list pages, Specification, Word chart) are lossless pictures at 300 dpi (`print-dpi`, set by 0585), or 150 where a device cannot allocate a 300 dpi page. Export quality sets the PNG only (QualitySlider card, ADR 0076). The PDF is always A4 portrait. A Schema wider than tall gets a shorter picture on the Cover page, which leaves more room for Beads needed; the chart pages are the same full-page parts.
+- The PDF's chart pages are vector; its other pages (Cover, list pages, Specification, Word chart) are lossless pictures at 300 dpi (`print-dpi`), or 150 where a device cannot allocate a 300 dpi page. Export quality sets the PNG only (QualitySlider card, ADR 0076). The PDF is always A4 portrait. A Schema wider than tall gets a shorter picture on the Cover page, which leaves more room for Beads needed; the chart pages are the same full-page parts.
 - Long thin Schemas (bracelets) stack their parts on shared sheets (Chart pages above). See the PrintWide and PrintStrips cards.
 
 ## PNG image

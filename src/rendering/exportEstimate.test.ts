@@ -17,17 +17,20 @@ describe('estimatePngBytes (QualitySlider card)', () => {
 })
 
 describe('estimatePdfBytes', () => {
-  it('scales with the DPI', () => {
-    const project = shape('loom', 20, 30)
-    expect(estimatePdfBytes(project, 300)).toBeCloseTo(estimatePdfBytes(project, 150) * 2, -3)
+  it('adds a chart page as drawing, far smaller than a picture page (ticket 0585)', () => {
+    // 100 × 100 takes three sheets where 20 × 20 takes one.
+    const added = estimatePdfBytes(shape('loom', 100, 100)) - estimatePdfBytes(shape('loom', 20, 20))
+
+    expect(added).toBe(2 * 150_000)
+    expect(added).toBeLessThan(estimatePngBytes(300, 0))
   })
 
   it('counts more pages for a larger Frame', () => {
-    expect(estimatePdfBytes(shape('loom', 100, 200), 150)).toBeGreaterThan(estimatePdfBytes(shape('loom', 20, 30), 150))
+    expect(estimatePdfBytes(shape('loom', 100, 200))).toBeGreaterThan(estimatePdfBytes(shape('loom', 20, 30)))
   })
 
   it('counts the list pages too', () => {
     const project = shape('loom', 20, 30)
-    expect(estimatePdfBytes(project, 150, 2)).toBeGreaterThan(estimatePdfBytes(project, 150))
+    expect(estimatePdfBytes(project, 2)).toBeGreaterThan(estimatePdfBytes(project))
   })
 })

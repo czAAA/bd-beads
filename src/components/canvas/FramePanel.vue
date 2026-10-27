@@ -23,10 +23,10 @@ import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
 import { hasWordChart } from '../../domain/wordChart'
-import { EXPORT_QUALITIES, PDF_DPI_BY_QUALITY, roundedMegabytes, type ExportQuality } from '../../domain/exportQuality'
+import { EXPORT_QUALITIES, PNG_DPI_BY_QUALITY, roundedMegabytes, type ExportQuality } from '../../domain/exportQuality'
 import { estimatePdfBytes, estimatePngBytes } from '../../rendering/exportEstimate'
 import { coverLayout } from '../../rendering/coverLayout'
-import { pdfDpiFor } from '../../rendering/pdfDpi'
+import { pngDpiFor } from '../../rendering/exportDpi'
 import { printText } from '../../rendering/printText'
 import { useI18n } from '../../i18n/useI18n'
 
@@ -134,17 +134,17 @@ const qualityStops = computed(() => {
   return EXPORT_QUALITIES.map((id) => {
     const word = t.value.frame[QUALITY_WORDS[id]]
     if (!frame.value) return { id, word }
-    const dpi = pdfDpiFor(id)
+    const dpi = pngDpiFor(id)
     const png = t.value.frame.qualityPngSize.replace('{size}', t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePngBytes(dpi, lists)))))
-    const pdf = t.value.frame.qualityPdfSize.replace('{size}', t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePdfBytes(props.project, dpi, lists)))))
+    const pdf = t.value.frame.qualityPdfSize.replace('{size}', t.value.frame.qualitySizeMb.replace('{n}', String(roundedMegabytes(estimatePdfBytes(props.project, lists)))))
     const detail = t.value.frame.qualityDpi.replace('{n}', String(dpi))
     return { id, word, detail, lines: [png, pdf], spoken: `${word}, ${detail}, ${png}, ${pdf}` }
   })
 })
-/** The dpi High draws the PDF at when the device cannot allocate a page that large, else nothing. */
-const highPdfDpi = computed(() => {
-  const dpi = pdfDpiFor('high')
-  return dpi < PDF_DPI_BY_QUALITY.high ? dpi : undefined
+/** The dpi High draws the PNG at when the device cannot allocate a page that large, else nothing. */
+const highPngDpi = computed(() => {
+  const dpi = pngDpiFor('high')
+  return dpi < PNG_DPI_BY_QUALITY.high ? dpi : undefined
 })
 const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
 const exportBusy = computed(() => !!props.exporting)
@@ -196,7 +196,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         :disabled="exportBusy"
         @update:model-value="quality = $event as ExportQuality"
       />
-      <p v-if="highPdfDpi" class="frame-panel__line" data-testid="quality-pdf-capped">{{ t.frame.qualityPdfCapped.replace('{n}', String(highPdfDpi)) }}</p>
+      <p v-if="highPngDpi" class="frame-panel__line" data-testid="quality-pdf-capped">{{ t.frame.qualityPdfCapped.replace('{n}', String(highPngDpi)) }}</p>
       <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
       <template v-if="frame">
         <div class="frame-panel__letters">

@@ -552,7 +552,6 @@ export interface Translations {
     /** The heading over a chart page's color key. */
     keyOnPage: string
     /** The line on how the numbers on a chart page read. */
-    readNumbers: string
     /** The Word chart pages and image (ticket 0574): words only, letters and numbers are not translated. */
     wordChart: {
       title: string

@@ -228,10 +228,10 @@
   --z-tooltip: 90; /* Tooltips: always on top, never interactive. */
   --print-page-width: 210mm; /* A4 portrait. */
   --print-page-height: 297mm; /* A4 portrait. */
-  --print-dpi: 150; /* Each PDF page is drawn at this resolution and embedded as one picture. Ticket 0585 makes it 300 (the PDF's picture pages and the text picture under each chart page) with the code. */
+  --print-dpi: 300; /* The PDF's picture pages and the text picture under each chart page are drawn at this resolution (150 where a device cannot allocate a page that large). */
   --print-margin: 10mm; /* Page margin on every side. */
-  --print-header: 15mm; /* Chart page header: technique word and name, part, page number, mini map. Ticket 0585 makes it 12mm with the code (PrintChartPage card). */
-  --print-footer: 8mm; /* Footer: the brand and the date, and where the chart continues. Ticket 0585 makes it 6mm with the code (PrintChartPage card). */
+  --print-header: 12mm; /* Chart page header: technique word and name, part, page number, mini map; a 3 mm gap follows it. */
+  --print-footer: 6mm; /* Footer: the brand and the date, and where the chart continues. */
   --print-bead-max: 6mm; /* Largest bead on the Cover page, where a small Schema is not enlarged past it; chart pages use print-chart-cell. */
   --print-part-overlap: 2; /* Columns or rows of the neighbouring part repeated, shaded, at the start of a part so the sheets line up. */
   --print-chart-cell: 3mm; /* Bead size on every chart page, Letters or not: a weaver can follow it, and a part is as many beads as fill the chart area at it. */

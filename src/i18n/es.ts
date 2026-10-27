@@ -477,7 +477,6 @@ export const es: Translations = {
     chartStyleColor: 'Solo color',
     chartStyleLetters: 'Color + letras',
     keyOnPage: 'Colores en esta página',
-    readNumbers: 'Números impares arriba y a la izquierda, pares abajo y a la derecha.',
     wordChart: {
       title: 'Fila por fila',
       row: 'Fila {n}',
@@ -554,7 +553,7 @@ export const es: Translations = {
     qualitySizeMb: '{n} MB',
     qualityPdfSize: 'PDF ≈ {size}',
     qualityDpi: '{n} DPI',
-    qualityPdfCapped: 'En este dispositivo, Alta en el PDF y el PNG es de {n} DPI.',
+    qualityPdfCapped: 'En este dispositivo, Alta en el PNG es de {n} DPI.',
     lettersLabel: 'Letras',
     lettersLine: 'Imprime la letra de cada color en sus cuentas, para distinguir los colores en papel y en blanco y negro.',
     lettersUnavailable: 'Aún no disponible para esta técnica',
