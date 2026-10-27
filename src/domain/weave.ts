@@ -754,10 +754,10 @@ export function neighborsOf(weave: Weave, bounds: GridBounds | undefined, positi
 /** The way a pass runs: along the Frame's rows, or down its columns. */
 export type PassDirection = 'rows' | 'columns'
 
-/** A line's index counted from the Frame's far end when the pass order is reversed (bottom to top, right to left),
- * so every pass rule keeps working on lines counted in weaving order (ticket 0589). */
-export function mirrorLine(line: number, lines: number, reversed: boolean | undefined): number {
-  return reversed ? lines - 1 - line : line
+/** Whether a Frame woven in the Technique can be worked along either axis, from either end (Turn row direction): the
+ * rows Row order asks it (ticket 0591). */
+export function turnsRowDirection(technique: Technique): boolean {
+  return RULES[technique].rowDirection
 }
 
 /** Positions from one shared bead down to the next in Netting (p, ticket 485). */

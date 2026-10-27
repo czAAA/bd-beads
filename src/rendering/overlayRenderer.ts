@@ -2,7 +2,8 @@ import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
-import { beadRoundness, describeWeave, mirrorLine, passCount, passLines, passOf, type BeadCell } from '../domain/weave'
+import { beadRoundness, describeWeave, type BeadCell } from '../domain/weave'
+import { rowOrderOf } from '../domain/frameKind'
 import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, currentPass, frameWeave, rowProgressOn } from '../domain/project'
 import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
@@ -108,32 +109,19 @@ interface PassBead {
 /** The beads the current pass weaves, in order along the line (on peyote's later lines only half the line is); none
  * when the Frame has no such pass. */
 function beadsInPass(project: DrawnProject, space: Space): PassBead[] {
-  const weave = frameWeave(project)
-  const direction = project.rowProgress.direction
-  const columnWise = direction === 'columns'
-  const pass = currentPass(project.rowProgress)
-  const reversed = project.rowProgress.reversed
-  const lines = columnWise ? space.columns : space.rows
-  if (!space.hasFrame || pass < 0 || pass >= passCount(weave, lines, direction)) {
+  if (!space.hasFrame) {
     return []
   }
-  const length = columnWise ? space.rows : space.columns
-  const beads: PassBead[] = []
-  for (const line of passLines(weave, pass, direction)) {
-    for (let along = 0; along < length; along += 1) {
-      const at = mirrorLine(line, lines, reversed)
-      const row = space.origin.row + (columnWise ? along : at)
-      const column = space.origin.column + (columnWise ? at : along)
-      if (passOf(weave, line, along, direction) === pass) {
-        // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
-        const color = beadInSpace(project, space, row, column)
-        if (color !== null) {
-          beads.push({ ...positionBoxPx(weave, row, column), color })
-        }
-      }
-    }
-  }
-  return beads
+  const weave = frameWeave(project)
+  // The Frame's Row order, or one over the Project drawn alone, measured as its space is.
+  const order = rowOrderOf({ ...weave, kind: project.frame?.kind, rows: space.rows, columns: space.columns }, project.rowProgress)
+  return order.positionsOf(currentPass(project.rowProgress)).flatMap((position) => {
+    const row = space.origin.row + position.row
+    const column = space.origin.column + position.column
+    // Only a cell that holds a bead is marked: an empty one gets no ring or lift (ticket 411).
+    const color = beadInSpace(project, space, row, column)
+    return color === null ? [] : [{ ...positionBoxPx(weave, row, column), color }]
+  })
 }
 
 // The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and

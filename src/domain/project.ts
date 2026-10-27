@@ -20,7 +20,9 @@ import { sameFrame } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
-import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, mirrorLine, neighborsOf, passCount, passOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
+import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
+import { DEFAULT_FRAME_KIND, isFrameKind, rowOrderOf, type KindedSheet } from './frameKind'
+import type { RowOrder, RowWay } from './rowOrder'
 import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteColors, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersFor, type SwatchLetters } from './swatchLetters'
 import type { ColorCatalog } from './colorCatalog'
@@ -287,23 +289,28 @@ function clampRow(row: number, passes: number): number {
   return Math.max(0, Math.min(passes, row))
 }
 
+/** How many passes the Frame's Row order takes, worked one way (spec 0590). */
+function passesOf(sheet: KindedSheet, way: RowWay): number {
+  return rowOrderOf(sheet, way).count
+}
+
 /** The bottom to top and right to left pointers inside the Frame; absent while neither has moved. */
-function clampedBack(rowProgress: Partial<RowProgress>, frame: Frame, weave: Weave): Partial<RowProgress> {
+function clampedBack(rowProgress: Partial<RowProgress>, sheet: KindedSheet): Partial<RowProgress> {
   const { currentRowBack, currentColumnBack } = rowProgress
   return {
-    ...(currentRowBack ? { currentRowBack: clampRow(currentRowBack, passCount(weave, frame.rows, 'rows')) } : {}),
-    ...(currentColumnBack ? { currentColumnBack: clampRow(currentColumnBack, passCount(weave, frame.columns, 'columns')) } : {}),
+    ...(currentRowBack ? { currentRowBack: clampRow(currentRowBack, passesOf(sheet, { direction: 'rows', reversed: true })) } : {}),
+    ...(currentColumnBack ? { currentColumnBack: clampRow(currentColumnBack, passesOf(sheet, { direction: 'columns', reversed: true })) } : {}),
   }
 }
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame
  * change uses. */
-function clampPointer(rowProgress: Project['rowProgress'], frame: Frame, weave: Weave): Project['rowProgress'] {
+function clampPointer(rowProgress: Project['rowProgress'], sheet: KindedSheet): Project['rowProgress'] {
   return {
     ...rowProgress,
-    currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
-    currentColumn: clampRow(rowProgress.currentColumn, passCount(weave, frame.columns, 'columns')),
-    ...clampedBack(rowProgress, frame, weave),
+    currentRow: clampRow(rowProgress.currentRow, passesOf(sheet, { direction: 'rows' })),
+    currentColumn: clampRow(rowProgress.currentColumn, passesOf(sheet, { direction: 'columns' })),
+    ...clampedBack(rowProgress, sheet),
   }
 }
 
@@ -433,9 +440,10 @@ export function normalizeProject(stored: StoredProject): Project {
   const netSize = describeWeave({ technique }).hasNetSize ? clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) : undefined
   const canvas = weaveOf({ technique, brickBlock, netSize })
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
-  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...project.frame, beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
-  const frame = projectFrame(placed)
-  const weave: Weave = frameWeave({ ...canvas, ...placed })
+  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...readFrameKind(project.frame), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
+  const { rows, columns } = projectFrame(placed)
+  const sheet: KindedSheet = { ...frameWeave({ ...canvas, ...placed }), kind: placed.frame?.kind, rows, columns }
+  const turns = rowOrderOf(sheet, { direction: 'rows' }).turns
 
   return {
     ...withoutNames,
@@ -446,13 +454,13 @@ export function normalizeProject(stored: StoredProject): Project {
     ...(storedShape === 'real' ? { beadShape: storedShape } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
     rowProgress: {
-      // Turn row direction isn't offered where a Technique is woven in rows only (ticket 487).
-      direction: describeWeave(weave).rowDirection ? (rowProgress.direction ?? 'rows') : 'rows',
+      // Turn row direction isn't offered where the Row order is worked one way only (Netting, ticket 487).
+      direction: turns ? (rowProgress.direction ?? 'rows') : 'rows',
       // An old file's `enabled` and `decided` are read and dropped: Row progress follows the Frame (ticket 426, 434).
-      currentRow: clampRow(rowProgress.currentRow, passCount(weave, frame.rows, 'rows')),
-      currentColumn: clampRow(rowProgress.currentColumn ?? 0, passCount(weave, frame.columns, 'columns')),
-      ...(describeWeave(weave).rowDirection && rowProgress.reversed === true ? { reversed: true } : {}),
-      ...clampedBack(rowProgress, frame, weave),
+      currentRow: clampRow(rowProgress.currentRow, passesOf(sheet, { direction: 'rows' })),
+      currentColumn: clampRow(rowProgress.currentColumn ?? 0, passesOf(sheet, { direction: 'columns' })),
+      ...(turns && rowProgress.reversed === true ? { reversed: true } : {}),
+      ...clampedBack(rowProgress, sheet),
     },
     // A Project saved before the Palette belonged to it (or with an unreadable one) starts from its Bead's built-in colors.
     palette,
@@ -513,6 +521,12 @@ function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
   return weaveOf({ technique, brickBlock, netSize })
 }
 
+/** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
+ * unsaved (ticket 0591): one without, or with one it does not know, reads as Rectangular. */
+function readFrameKind({ kind, ...frame }: FrameSheet): FrameSheet {
+  return isFrameKind(kind) && kind !== DEFAULT_FRAME_KIND ? { ...frame, kind } : frame
+}
+
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
  * place on the Canvas, those outside a smaller Frame are dropped, the Canvas is never touched, and a Frame set anew is
  * empty. Row progress's pointers stay inside it; an unchanged Frame is the same Project (no change). */
@@ -536,8 +550,9 @@ export function withFrame(project: Project, rectangle: Frame | undefined): Proje
     // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
     ...weaveOf(current ?? project),
     ...(current?.name ? { name: current.name } : {}),
+    ...(current?.kind ? { kind: current.kind } : {}),
   }
-  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame, frame), updatedAt: Date.now() }
+  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }
 }
 
 /** The layer's Weave switched to another Technique (ADR 0038): the Brick block stays, the Net size is the one given, the
@@ -640,7 +655,7 @@ export function resetRowProgress(project: Project): Project {
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
  * alone. */
 export function toggleRowDirection(project: Project): Project {
-  if (!describeWeave(frameWeave(project)).rowDirection) {
+  if (!frameRowOrder(project).turns) {
     return project
   }
   const { direction, reversed } = project.rowProgress
@@ -653,48 +668,43 @@ export function toggleRowDirection(project: Project): Project {
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
-export function rowProgressPosition(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>): { current: number; total: number } {
-  const { direction } = project.rowProgress
-  const frame = project.frame
-  const weave = frameWeave(project)
-  return { current: currentPass(project.rowProgress), total: passCount(weave, direction === 'rows' ? (frame?.rows ?? 0) : (frame?.columns ?? 0), direction) }
+export function rowProgressPosition(project: RowProgressed): { current: number; total: number } {
+  return { current: currentPass(project.rowProgress), total: frameRowOrder(project).count }
 }
 
-/** The pass that weaves the bead at a Frame-relative row and column, lines counted from the end the weaver starts at. */
-function passAt(weave: Weave, frame: Frame, direction: RowDirection, reversed: boolean | undefined, row: number, column: number): number {
-  return direction === 'rows'
-    ? passOf(weave, mirrorLine(row, frame.rows, reversed), column, 'rows')
-    : passOf(weave, mirrorLine(column, frame.columns, reversed), row, 'columns')
+/** What a Project's Row progress is read from: its pointers, its Frame and the Weave a Canvas with none counts in. */
+type RowProgressed = Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>
+
+/** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
+ * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */
+export function frameRowOrder(project: RowProgressed): RowOrder {
+  const { rows = 0, columns = 0, kind } = project.frame ?? {}
+  return rowOrderOf({ ...frameWeave(project), kind, rows, columns }, project.rowProgress)
+}
+
+/** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. */
+function framePassAt(project: RowProgressed, position: GridPosition): number | undefined {
+  const frame = project.frame
+  // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on.
+  if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
+    return undefined
+  }
+  return frameRowOrder(project).passAt({ row: position.row - frame.row, column: position.column - frame.column })
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
  * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
  * Frame is set. */
-export function isInFinishedRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, position: GridPosition): boolean {
-  const { direction, reversed } = project.rowProgress
-  const frame = project.frame
-  // The lock covers the Frame only: beads outside it stay editable whatever row the weaver is on.
-  if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
-    return false
-  }
-  const relativeRow = position.row - frame.row
-  const relativeColumn = position.column - frame.column
-  const weave = frameWeave(project)
-  return passAt(weave, frame, direction, reversed, relativeRow, relativeColumn) < currentPass(project.rowProgress)
+export function isInFinishedRow(project: RowProgressed, position: GridPosition): boolean {
+  const pass = framePassAt(project, position)
+  return pass !== undefined && pass < currentPass(project.rowProgress)
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
-export function isInCurrentRow(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>, position: GridPosition): boolean {
-  const { direction, reversed } = project.rowProgress
-  const frame = project.frame
-  if (!frame || position.layer === 'canvas' || !frameContains(frame, position)) {
-    return false
-  }
-  const relativeRow = position.row - frame.row
-  const relativeColumn = position.column - frame.column
-  const weave = frameWeave(project)
-  return passAt(weave, frame, direction, reversed, relativeRow, relativeColumn) === currentPass(project.rowProgress)
+export function isInCurrentRow(project: RowProgressed, position: GridPosition): boolean {
+  const pass = framePassAt(project, position)
+  return pass !== undefined && pass === currentPass(project.rowProgress)
 }
 
 /** Whether the Project has a bead on either layer. */
