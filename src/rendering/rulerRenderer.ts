@@ -1,7 +1,6 @@
 import { frameContains, type Frame } from '../domain/canvas'
-import { lineOfPass, mirrorLine } from '../domain/weave'
 import { namedPieces } from '../domain/pieceNames'
-import { currentPass, frameWeave, rowProgressOn } from '../domain/project'
+import { currentPass, frameRowOrder, rowProgressOn } from '../domain/project'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -54,11 +53,10 @@ function drawDot(context: DrawingContext, dot: RulerDot, scale: RulerScale, them
 
 /** One ruler number, in the style its role asks for (Rulers card). */
 function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, project: DrawnProject, theme: ProjectTheme, rowMarks: boolean): void {
-  const { direction, reversed } = project.rowProgress
+  const { direction } = project.rowProgress
   const frame = project.frame
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
-  const lines = direction === 'rows' ? (frame?.rows ?? 0) : (frame?.columns ?? 0)
-  const currentLine = mirrorLine(lineOfPass(frameWeave(project), currentPass(project.rowProgress), direction), lines, reversed)
+  const currentLine = frameRowOrder(project).lineOf(currentPass(project.rowProgress))
   const current = rowMarks && frame && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
 
   const weight = current || label.fifth ? 700 : 400
