@@ -123,10 +123,10 @@ export async function exportProjectPdf(project: Project, words: PrintText, dpi =
   for (const parts of sheets.values()) {
     await add(drawChartPage(project, words, counted, parts, scale))
   }
-  await add(drawSpecificationPage(project, words, counted, wordPages > 0 ? plan.specificationPage + 1 : undefined, scale))
+  await add(drawSpecificationPage(words, counted, wordPages > 0 ? plan.specificationPage + 1 : undefined, scale))
   for (const canvas of drawWordChartPages(words, plan.page, () => blankPage(plan.page, scale), plan.specificationPage + 1, counted.pageCount)) {
     await add(canvas)
   }
 
-  return buildPdf(pages, (plan.page.width * 72) / PRINT_DPI, (plan.page.height * 72) / PRINT_DPI)
+  return buildPdf(pages, (plan.page.width * 72) / PRINT_DPI, (plan.page.height * 72) / PRINT_DPI, words.name.trim())
 }
