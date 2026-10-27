@@ -10,7 +10,7 @@ import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
 import { pngDpiFor } from '../../rendering/exportDpi'
 
-vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]) }))
+vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
 beforeEach(() => {
   localStorage.clear()
@@ -248,6 +248,22 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="export-png"]').attributes('aria-disabled')).toBe('true')
   })
 
+  it('shows what each export gives in its value slot: the size and its count, or the extension with no Frame (ticket 0588)', async () => {
+    const wrapper = mountBar()
+    expect(wrapper.get('[data-testid="export-png"]').text()).toMatch(/PNG (≈ \d+\.\d MB|< 0\.1 MB) · 1 file$/)
+    expect(wrapper.get('[data-testid="export-pdf"]').text()).toMatch(/PDF (≈ \d+\.\d MB|< 0\.1 MB) · 3 pages$/)
+    // The PNG line follows the chosen stop; the PDF's does not.
+    const lines = () => [wrapper.get('[data-testid="export-png"]').text(), wrapper.get('[data-testid="export-pdf"]').text()]
+    const [medium, pdf] = lines()
+    await wrapper.get('[data-testid="quality-stop-high"]').trigger('click')
+    expect(lines()[0]).not.toBe(medium)
+    expect(lines()[1]).toBe(pdf)
+
+    const empty = mountBar({ ...framed(), frame: undefined })
+    expect(empty.get('[data-testid="export-png"]').text()).toContain('.png')
+    expect(empty.get('[data-testid="export-pdf"]').text()).toContain('.pdf')
+  })
+
   it('offers Export quality with Medium chosen, remembers a pick on the device and waits while exporting (ticket 576)', async () => {
     const wrapper = mountBar()
     const range = wrapper.get<HTMLInputElement>('[data-testid="quality-range"]')
@@ -270,10 +286,10 @@ describe('FramePanel (ticket 473)', () => {
     const small = mountBar()
     expect(small.get('[data-testid="quality-detail-low"]').text()).toBe('150 DPI')
     expect(small.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
-    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium300 DPIPNG ≈ \d+ MBPDF ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-stop-medium"]').text()).toMatch(/^Medium300 DPI(≈ \d+\.\d MB|< 0\.1 MB)$/)
     expect(small.get('[data-testid="quality-hint"]').attributes('aria-label')).toBe(en.frame.qualityHintLabel)
     expect(small.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
-    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 300 DPI, PNG ≈ \d+ MB, PDF ≈ \d+ MB$/)
+    expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 300 DPI, (≈ \d+\.\d MB|< 0\.1 MB)$/)
 
     // A Frame too large for any bead size to be reduced: the page is the same size, so there is no reduced stop.
     const large = mountBar({ ...framed(), frame: { ...framed().frame!, columns: 200, rows: 200 } })

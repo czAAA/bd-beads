@@ -637,9 +637,12 @@ export interface Translations {
     qualityLow: string
     qualityMedium: string
     qualityHigh: string
-    qualityPngSize: string
+    qualitySizeAbout: string
     qualitySizeMb: string
-    qualityPdfSize: string
+    qualitySizeUnder: string
+    exportSizeValue: string
+    exportFiles: PluralForms
+    exportPages: PluralForms
     qualityDpi: string
     qualityPdfCapped: string
     /** The Letters switch in the Frame panel (ticket 0573) and its one-line explanation. */
