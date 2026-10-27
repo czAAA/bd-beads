@@ -553,13 +553,13 @@ export interface Translations {
     keyOnPage: string
     /** The line on how the numbers on a chart page read. */
     readNumbers: string
-    /** The Word chart pages and image (ticket 0574): words only, letters and numbers are not translated. */
+    /** The Word chart pages (tickets 0574, 0586): words only, letters and numbers are not translated. */
     wordChart: {
       title: string
-      /** "Row {n}". */
-      row: string
-      /** The first line of a peyote chart, rows 1 and 2 together. */
-      both: string
+      /** The key's item for an empty position, next to `*`. */
+      empty: string
+      /** The footer where the rows go on: "Rows 83–120 on page 8 →". */
+      nextRows: string
       firstTop: string
       firstRight: string
       firstBottom: string
@@ -569,7 +569,6 @@ export interface Translations {
       oddCount: string
       sides: string
       runNote: string
-      emptyNote: string
     }
   }
   /** The save box (ticket 148; SaveBox and SaveStates cards). */
