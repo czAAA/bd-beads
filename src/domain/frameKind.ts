@@ -1,25 +1,28 @@
 import type { FrameSheet } from './canvas'
-import { layoutPosition, roundsLayout, type FrameLayout } from './frameLayout'
+import { kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, type FrameLayout } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import { describeWeave, ROUNDS_TECHNIQUE, type Technique, type Weave } from './weave'
 
 /** The Frame kinds (spec 0590, ADR 0077): what sort of Frame it is. Rectangular is the Frame as it has always been;
- * a Triangle and a Warped Square are Custom frames of peyote panels worked in Rounds from the centre (ticket 0592). */
-export type FrameKindId = 'rectangular' | 'triangle' | 'warpedSquare'
+ * a Triangle and a Warped Square are Custom frames of peyote panels worked in Rounds from the centre (ticket 0592), a
+ * Star and a Kaleidocycle are made of such parts, and a Kite is worked in Rows from its point (ticket 0593). */
+export type FrameKindId = 'rectangular' | 'triangle' | 'warpedSquare' | 'star' | 'kaleidocycle' | 'kite'
 
 /** The kind a Frame with none stored is: every Frame made before kinds, and every Rectangular one, as it is left
  * unsaved. */
 export const DEFAULT_FRAME_KIND: FrameKindId = 'rectangular'
 
-/** A Custom frame's settings as the Frame holds them: what its panel builder lays it out from. */
-export interface FrameSettings {
-  /** Rounds from the centre (Triangle, Warped Square). */
-  rounds?: number
-}
+/** What a Custom frame is sized by: Rounds from the centre (Triangle, Warped Square), Part size, the rounds of each
+ * part (Star, Kaleidocycle), or Rows from its point (Kite). */
+export type FrameSettingName = 'rounds' | 'partSize' | 'rows'
 
-/** One setting of a kind: its default, its smallest and largest, and the sizes offered as presets. */
+/** A Custom frame's settings as the Frame holds them: what its panel builder lays it out from, its kind's one setting. */
+export type FrameSettings = Partial<Record<FrameSettingName, number>>
+
+/** One setting of a kind: its name, its default, its smallest and largest, and the sizes offered as presets. */
 interface FrameSetting {
+  name: FrameSettingName
   default: number
   min: number
   max: number
@@ -44,16 +47,22 @@ export interface FrameKind {
   /** A Custom frame's shape comes from its settings, so it allows none of these until the tickets of spec 0590 add
    * them. */
   allows: ReadonlySet<FrameAction>
-  /** A Custom frame's own: the Technique its panels are woven in, its Rounds, and its panel builder. */
+  /** A Custom frame's own: the Technique its panels are woven in, the setting it is sized by, and its panel builder. */
   custom?: {
     technique: Technique
-    rounds: FrameSetting
-    layout(settings: Required<FrameSettings>): FrameLayout
+    size: FrameSetting
+    layout(size: number): FrameLayout
   }
 }
 
 /** Rounds as a Triangle and a Warped Square offer them: a Kaleidocycle's triangles are 9 a side (research). */
-const ROUNDS: FrameSetting = { default: 9, min: 2, max: 40, presets: [6, 9, 12] }
+const ROUNDS: FrameSetting = { name: 'rounds', default: 9, min: 2, max: 40, presets: [6, 9, 12] }
+/** A Star's arms in rounds: the MiniStar's squares are 10 rounds (research). */
+const STAR_PART: FrameSetting = { name: 'partSize', default: 10, min: 2, max: 30, presets: [6, 8, 10] }
+/** A Kaleidocycle's triangles, beads a side: 9 in the primer, which finds smaller ones fold badly (research). */
+const KALEIDOCYCLE_PART: FrameSetting = { name: 'partSize', default: 9, min: 3, max: 30, presets: [7, 9, 12] }
+/** A Kite's Rows from its point (inferred: the reference gives no size). */
+const KITE_ROWS: FrameSetting = { name: 'rows', default: 21, min: 4, max: 60, presets: [15, 21, 30] }
 
 /** The registry, one entry per kind, like the Starters'. */
 const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
@@ -68,13 +77,31 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
     id: 'triangle',
     removedBeads: 'removed',
     allows: new Set(),
-    custom: { technique: ROUNDS_TECHNIQUE, rounds: ROUNDS, layout: ({ rounds }) => roundsLayout(3, rounds) },
+    custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(3, rounds) },
   },
   warpedSquare: {
     id: 'warpedSquare',
     removedBeads: 'removed',
     allows: new Set(),
-    custom: { technique: ROUNDS_TECHNIQUE, rounds: ROUNDS, layout: ({ rounds }) => roundsLayout(4, rounds) },
+    custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(4, rounds) },
+  },
+  star: {
+    id: 'star',
+    removedBeads: 'removed',
+    allows: new Set(),
+    custom: { technique: ROUNDS_TECHNIQUE, size: STAR_PART, layout: starLayout },
+  },
+  kaleidocycle: {
+    id: 'kaleidocycle',
+    removedBeads: 'removed',
+    allows: new Set(),
+    custom: { technique: ROUNDS_TECHNIQUE, size: KALEIDOCYCLE_PART, layout: kaleidocycleLayout },
+  },
+  kite: {
+    id: 'kite',
+    removedBeads: 'removed',
+    allows: new Set(),
+    custom: { technique: ROUNDS_TECHNIQUE, size: KITE_ROWS, layout: kiteLayout },
   },
 }
 
@@ -82,7 +109,7 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
 export type CustomFrameKindId = Exclude<FrameKindId, 'rectangular'>
 
 /** The Custom frame kinds, in the order Add Custom frame offers them. */
-export const CUSTOM_FRAME_KINDS: readonly CustomFrameKindId[] = ['triangle', 'warpedSquare']
+export const CUSTOM_FRAME_KINDS: readonly CustomFrameKindId[] = ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite']
 
 /** The order of a kind with none: no passes, and no bead in one, so nothing is ever finished or current. */
 const NO_ROW_ORDER: RowOrder = {
@@ -118,20 +145,31 @@ export function hasRowOrder(frame: Pick<FrameSheet, 'kind'>): boolean {
   return frameKindOf(frame).rowOrder !== undefined
 }
 
-/** A Custom frame's settings, each read within its kind's range, its default where missing; none for a Rectangular
- * Frame. */
-export function settingsOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): Required<FrameSettings> | undefined {
-  const custom = frameKindOf(frame).custom
-  if (!custom) return undefined
-  const { min, max } = custom.rounds
-  const stored = frame.settings?.rounds
-  return { rounds: typeof stored === 'number' && Number.isFinite(stored) ? Math.min(max, Math.max(min, Math.round(stored))) : custom.rounds.default }
+/** The setting a Custom frame is sized by, its name and range; none for a Rectangular Frame. */
+export function sizeSettingOf(frame: Pick<FrameSheet, 'kind'>): Readonly<FrameSetting> | undefined {
+  return frameKindOf(frame).custom?.size
 }
 
-/** A Custom frame's layout, built from its settings; none for a Rectangular Frame. */
+/** A Custom frame's size, its kind's one setting read within its range, its default where missing; none for a
+ * Rectangular Frame. */
+export function frameSizeOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): number | undefined {
+  const setting = sizeSettingOf(frame)
+  if (!setting) return undefined
+  const stored = frame.settings?.[setting.name]
+  return typeof stored === 'number' && Number.isFinite(stored) ? Math.min(setting.max, Math.max(setting.min, Math.round(stored))) : setting.default
+}
+
+/** A Custom frame's settings as it keeps them: its size under its setting's name, and nothing else; none for a
+ * Rectangular Frame. */
+export function settingsOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FrameSettings | undefined {
+  const setting = sizeSettingOf(frame)
+  return setting && { [setting.name]: frameSizeOf(frame) }
+}
+
+/** A Custom frame's layout, built from its size; none for a Rectangular Frame. */
 export function frameLayoutOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FrameLayout | undefined {
-  const settings = settingsOf(frame)
-  return settings && frameKindOf(frame).custom!.layout(settings)
+  const size = frameSizeOf(frame)
+  return size === undefined ? undefined : frameKindOf(frame).custom!.layout(size)
 }
 
 /** Whether a Frame has a bead position here, counted from its own first row and column: a Custom frame's layout

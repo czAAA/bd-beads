@@ -352,7 +352,7 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
 }
 
 /** A Custom frame (ADR 0077, ticket 0592): every position of its layout at its centre, turned to its panel's angle, in
- * the Project's Bead shape, and its Seams as thin lines from the centre to each corner. What lies round the shape is
+ * the Project's Bead shape, and its Seams as thin lines between panels and parts. What lies round the shape is
  * left as it is: the Canvas's colour, no position marks. It has no Row order yet, so no row is faded or lit. */
 function drawCustomFrame(context: DrawingContext, draw: LayerDraw, placed: PlacedLayout, origin: { x: number; y: number }): void {
   const { project, zoom, pixelRatio, look, drawBead, letters } = draw

@@ -2,6 +2,7 @@ import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { isAddedColorId } from '../../domain/palette'
+import { sizeSettingOf } from '../../domain/frameKind'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
@@ -394,10 +395,14 @@ function wireAppShell(services: Services) {
   const addedColorCount = computed(() => palette.value.colors.filter((color) => isAddedColorId(color.id)).length)
   const removeAllColorsConfirmOpen = ref(false)
   const removeAllColorsMessage = computed(() => plural(locale.value, addedColorCount.value, t.value.palette.removeAllConfirmMessage))
-  /** The Rounds question's line (ticket 0592): how many painted beads the outer rounds would take with them. */
-  const roundsConfirmMessage = computed(() => {
-    const ask = frameFlow.roundsAsk.value
-    return ask ? plural(locale.value, ask.lost, t.value.frame.roundsConfirmMessage) : ''
+  /** The question before a Custom frame gets smaller (tickets 0592, 0593), in its size setting's words: how many painted
+   * beads the outer rounds or last rows would take with them. */
+  const sizeConfirm = computed(() => {
+    const ask = frameFlow.sizeAsk.value
+    const setting = ask && activeProject.value?.frame && sizeSettingOf(activeProject.value.frame)
+    if (!ask || !setting) return undefined
+    const words = t.value.frame.sizeSettings[setting.name]
+    return { title: words.confirmTitle, message: plural(locale.value, ask.lost, words.confirmMessage), button: words.confirmButton }
   })
   function onConfirmRemoveAllAddedColors() {
     removeAllColorsConfirmOpen.value = false
@@ -852,11 +857,10 @@ function wireAppShell(services: Services) {
     removeFrameTakesBeads: frameFlow.removeTakesBeads,
     onPlaceFrameFromStarter: frameFlow.placeFromStarter,
     onAddCustomFrame: frameFlow.placeCustom,
-    onSetFrameRounds: frameFlow.setRounds,
-    roundsConfirmOpen: computed(() => frameFlow.roundsAsk.value !== undefined),
-    roundsConfirmMessage,
-    onCancelRounds: frameFlow.cancelRounds,
-    onConfirmRounds: frameFlow.confirmRounds,
+    onSetFrameSize: frameFlow.setSize,
+    sizeConfirm,
+    onCancelSize: frameFlow.cancelSize,
+    onConfirmSize: frameFlow.confirmSize,
     replaceFrameConfirmOpen: frameFlow.replaceConfirmOpen,
     onCancelReplaceFrame: frameFlow.cancelReplace,
     onConfirmReplaceFrame: frameFlow.confirmReplace,

@@ -1,4 +1,5 @@
 import type { FormFactorNames } from '../domain/beads'
+import type { CustomFrameKindId, FrameSettingName } from '../domain/frameKind'
 import type { Locale } from '../domain/locale'
 import type { PluralForms } from './plural'
 
@@ -698,20 +699,27 @@ export interface Translations {
      * and without a Frame, the Custom frame kinds and the line under them. */
     customHeading: string
     customReplaceHeading: string
-    customKinds: { triangle: string; warpedSquare: string }
+    customKinds: Record<CustomFrameKindId, string>
     customLine: string
-    /** A Custom frame's Rounds in the Frame panel (ticket 0592). */
-    roundsLabel: string
-    roundsLess: string
-    roundsMore: string
-    roundsSummary: PluralForms
-    roundsConfirmTitle: string
-    roundsConfirmMessage: PluralForms
-    roundsConfirmButton: string
+    /** A Custom frame's size setting in the Frame panel, one entry per setting (tickets 0592, 0593): its stepper, the
+     * Size line's summary, the question before a smaller size drops painted beads, and what is announced. */
+    sizeSettings: Record<
+      FrameSettingName,
+      {
+        label: string
+        less: string
+        more: string
+        summary: PluralForms
+        confirmTitle: string
+        confirmMessage: PluralForms
+        confirmButton: string
+        announce: string
+      }
+    >
     /** Remove Frame's question for a Frame that takes its beads with it (ADR 0077). */
     removeConfirmCustom: string
+    /** `{kind}` is the kind's name, `{size}` its size setting's summary. */
     announceCustom: string
-    announceRounds: string
     /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows or columns added on each edge, and why. */
     snapAddedTop: PluralForms
     snapAddedBottom: PluralForms
