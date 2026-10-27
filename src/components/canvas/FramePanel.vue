@@ -19,7 +19,7 @@ import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
-import { CUSTOM_FRAME_KINDS, frameAllows, frameSizeOf, sizeSettingOf, type CustomFrameKindId } from '../../domain/frameKind'
+import { frameAllows, frameSizeOf, sizeSettingOf } from '../../domain/frameKind'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -56,7 +56,6 @@ const emit = defineEmits<{
   'export-pdf': []
   'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
-  'add-custom': [kind: CustomFrameKindId]
   'set-size': [size: number]
 }>()
 
@@ -377,32 +376,28 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             <IconButton variant="plain" icon="info" :icon-size="16" :label="t.size.estimateLabel" :tooltip="{ body: t.frame.estimateInfo }" data-testid="frame-estimate-info" />
           </div>
           <PanelItem icon="select" :disabled="locked" :disabled-body="t.tooltips.frameSizeLocked" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
+          <!-- Replace Frame (ticket 0596): the Starter gallery, its Frame put in place of this one. -->
+          <PanelItem
+            icon="frame"
+            sub
+            stays
+            :disabled="locked"
+            :disabled-body="t.tooltips.rowProgressLockedFrameFromStarter"
+            data-testid="frame-replace-from-starter"
+            @select="context?.openSub(t.starters.title, { opener: 'frame-replace-from-starter' })"
+          >{{ t.frame.replaceFrame }}</PanelItem>
         </div>
       </PanelSection>
     </template>
 
     <template v-else>
       <div class="frame-panel__none">
-        <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.frame.fromStarter)">{{ t.frame.fromStarter }}</PanelItem>
+        <PanelItem icon="frame" accent accent-icon sub stays data-testid="frame-from-starter" @select="context?.openSub(t.starters.title, { opener: 'frame-from-starter' })">{{ t.frame.fromStarter }}</PanelItem>
         <PanelItem icon="select" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
         <PanelItem icon="fit" stays :disabled="nothingToFit" :name="t.frame.fitAFrame" :disabled-body="t.frame.fitNothing" data-testid="frame-fit" @select="emit('fit')">{{ t.frame.fitAFrame }}</PanelItem>
         <p class="frame-panel__line" data-testid="frame-none-line">{{ t.frame.noFrameLine }}</p>
       </div>
     </template>
-
-    <!-- Add Custom frame (ticket 0592): temporary, until the Starter gallery offers the shapes (ticket 0597). -->
-    <PanelSection id="frame:custom" :label="frame ? t.frame.customReplaceHeading : t.frame.customHeading">
-      <PanelItem
-        v-for="kind in CUSTOM_FRAME_KINDS"
-        :key="kind"
-        icon="frame"
-        :disabled="locked"
-        :disabled-body="t.tooltips.rowProgressLockedFrameFromStarter"
-        :data-testid="`frame-custom-${kind}`"
-        @select="emit('add-custom', kind)"
-      >{{ t.frame.customKinds[kind] }}</PanelItem>
-      <p class="frame-panel__line" data-testid="frame-custom-line">{{ t.frame.customLine }}</p>
-    </PanelSection>
 
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />
   </div>

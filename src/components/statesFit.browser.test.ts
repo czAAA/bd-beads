@@ -17,7 +17,7 @@ import { createProject } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
 import { armSelectionBar } from '../testUtils/pill'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
-import { STARTERS } from '../domain/starters'
+import { starterById } from '../domain/starters'
 import { CENTERED_PAN } from '../domain/imageFraming'
 import { DEFAULT_MAX_IMAGE_COLORS, type PixelData } from '../domain/imageConversion'
 
@@ -89,7 +89,9 @@ const CASES: FitCase[] = [
     async () => void (await armSelectionBar()),
   ],
   ['StarterGallery', StarterGallery, {}],
-  ['StarterSetup', StarterSetup, { starter: STARTERS[0]! }],
+  ['StarterGallery (Shapes)', StarterGallery, { category: 'shapes' }],
+  ['StarterSetup', StarterSetup, { starter: starterById('kaleidocycle') }],
+  ['StarterSetup (on a Project)', StarterSetup, { starter: starterById('warpedSquare'), project: framed }],
   ['BeadColorList', BeadColorList, { colors: beadColors('ready') }],
   ['BeadColorList failed', BeadColorList, { colors: beadColors('failed') }],
   [

@@ -30,6 +30,14 @@ const triangle = (rounds = 4, project = open()) => changed(project, { custom: { 
 const paintFrame = (project: Project, positions: { row: number; column: number }[], color: string | null) =>
   onLayer(project, 'frame', (view) => paintCells(view, positions, color))
 
+describe('a Custom frame put in place holding beads (ticket 0596)', () => {
+  it('keeps the beads its layout has a position for, and drops the rest', () => {
+    // A Triangle of 2 rounds has 3 beads in round 0 and 6 in round 1, none in round 2 or at place 3 of round 0.
+    const placed = changed(open(), { custom: { kind: 'triangle', size: 2, centre: { row: 20, column: 30 }, beads: { 0: { 0: RED, 3: RED }, 1: { 5: BLUE }, 2: { 0: BLUE } } } })
+    expect(placed.frame!.beads).toEqual({ 0: { 0: RED }, 1: { 5: BLUE } })
+  })
+})
+
 describe('a Custom frame put on the open Canvas (ticket 0592)', () => {
   it('is a peyote Frame of its kind and Rounds, empty, round the centre it was given', () => {
     const frame = triangle(4).frame!

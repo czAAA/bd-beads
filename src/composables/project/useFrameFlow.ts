@@ -4,9 +4,10 @@ import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, fr
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, customFrameLoss, frameChangeRefusal } from '../../domain/changeFrame'
-import { frameAllows, frameKindOf, frameSizeOf, sizeSettingOf, type CustomFrameKindId, type FrameSettingName } from '../../domain/frameKind'
+import { frameAllows, frameKindOf, frameSizeOf, sizeSettingOf, type FrameSettingName } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { canvasWeave, createProject, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, weaveOf, type CreateProjectInput, type Project } from '../../domain/project'
+import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
+import { canvasWeave, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -389,8 +390,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     commit(undefined)
   }
 
-  /** Whether the Replace Frame question is open; the pending Starter or Custom frame waits behind it (tickets 495,
-   * 0592). */
+  /** Whether the Replace Frame question is open; the pending Starter waits behind it (tickets 495, 0596). */
   const replaceConfirmOpen = ref(false)
   let pendingPlace: (() => void) | undefined
 
@@ -406,23 +406,16 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     place()
   }
 
-  /** Add Frame from Starter and Replace Frame (ticket 495): an empty Frame in the Starter's Technique, centred on what
-   * is on screen and snapped to a Canvas position, over whatever lies there. Replacing a Frame that holds beads asks first,
-   * as they go with it. */
-  function placeFromStarter(input: CreateProjectInput): void {
-    replaceAsking(() => applyStarter(input))
-  }
-
-  /** Add Custom frame (tickets 0592, 0593, until the Starter gallery, ticket 0597): an empty Frame of the kind at its
-   * default size, centred on what is on screen, in place of any Frame there; one Undo step. */
-  function placeCustom(kind: CustomFrameKindId): void {
+  /** Add Frame from Starter and Replace Frame (tickets 495, 0596): the Starter's Frame, pre-filled with its design or
+   * empty, round the middle of the view, in place of any Frame there; one Undo step. Replacing a Frame that holds beads
+   * asks first, as they go with it. */
+  function placeFromStarter(starter: Starter, choice: StarterChoice): void {
     replaceAsking(() => {
-      const size = frameSizeOf({ kind })!
       const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
-      const outcome = deps.edit('frame', (project) => changeFrame(project, { custom: { kind, size, centre } }))
+      const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
       const t = deps.messages()
-      const setting = t.frame.sizeSettings[sizeSettingOf({ kind })!.name]
-      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', t.frame.customKinds[kind]).replace('{size}', plural(deps.locale(), size, setting.summary)))
+      const words = t.frame.sizeSettings[starter.setting]
+      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', t.frame.customKinds[starter.kind]).replace('{size}', plural(deps.locale(), choice.size, words.summary)))
     })
   }
 
@@ -460,18 +453,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const ask = sizeAsk.value
     sizeAsk.value = undefined
     if (ask) applySize(ask.setting, ask.size)
-  }
-
-  function applyStarter(input: CreateProjectInput): void {
-    const made = createProject(input).frame!
-    const weave = weaveOf(made)
-    const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
-    const outcome = deps.edit('frame', (project) => {
-      const row = snapRow(canvasWeave(project), snapRow(weave, centre.row - Math.floor(made.rows / 2)))
-      const column = snapColumn(canvasWeave(project), snapColumn(weave, centre.column - Math.floor(made.columns / 2)))
-      return changeFrame(project, { place: { frame: { row, column, rows: made.rows, columns: made.columns }, weave } })
-    })
-    if (outcome.kind === 'applied') deps.announce(describe(deps.currentProject()!.frame!))
   }
 
   /** The Replace Frame question answered No: nothing changes. */
@@ -548,7 +529,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     cancelRemove,
     confirmRemove,
     placeFromStarter,
-    placeCustom,
     setSize,
     sizeAsk,
     cancelSize,

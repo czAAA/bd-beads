@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/project'
-import type { StarterId } from '../../domain/starters'
 import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type BeadShape, type Technique } from '../../domain/weave'
 import {
   formatImageLimits,
@@ -19,7 +18,6 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import BeadSection from './BeadSection.vue'
 import NamesSection from './NamesSection.vue'
-import StarterGallery from './StarterGallery.vue'
 import TechniqueSection from './TechniqueSection.vue'
 import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
 import AppButton from '../ui/AppButton.vue'
@@ -28,6 +26,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import FileButton from '../ui/form/FileButton.vue'
 import FormField from '../ui/form/FormField.vue'
 import LoadingState from '../ui/LoadingState.vue'
+import { PANEL_CONTEXT } from '../shell/panelContext'
 
 const { t } = useI18n()
 
@@ -52,8 +51,6 @@ const emit = defineEmits<{
   draft: [payload: CreateProjectInput]
   /** A picture that passed validation and decoded — the framing step's starting point. */
   'convert-image': [image: PixelData]
-  /** A Starter card was tapped: its setup is the panel's next subpanel (ticket 568). */
-  'choose-starter': [id: StarterId]
 }>()
 
 const name = ref('')
@@ -80,9 +77,12 @@ onMounted(focusName)
 const selectedBead = computed(() => findBead(beadId.value))
 const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value, t.value.formFactors) : ''))
 
-/** Whether Pick a starter has unfolded the gallery (ticket 568); the panel keeps it, so Back from a Starter's setup finds
- * the gallery as it was left. */
-const startersOpen = defineModel<boolean>('startersOpen', { default: false })
+const panel = inject(PANEL_CONTEXT, undefined)
+
+/** Pick a starter (ticket 0596): the Starter gallery's first step, one level deeper; Back brings focus back here. */
+function pickStarter() {
+  panel?.openSub(t.value.starters.title, { opener: 'pick-starter' })
+}
 
 /** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342). */
 function currentInput(): CreateProjectInput {
@@ -248,18 +248,9 @@ function onDropImage(file: File) {
 
     <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
     <div class="new-project-form__starters">
-      <AppButton
-        variant="primary"
-        icon="frame"
-        :trailing-icon="startersOpen ? 'chevron-up' : 'chevron-down'"
-        :aria-expanded="startersOpen"
-        aria-controls="new-project-starters"
-        data-testid="pick-starter"
-        @click="startersOpen = !startersOpen"
-      >
+      <AppButton variant="primary" icon="frame" data-testid="pick-starter" @click="pickStarter">
         {{ t.form.pickStarter }}
       </AppButton>
-      <StarterGallery v-if="startersOpen" id="new-project-starters" @choose="emit('choose-starter', $event)" />
     </div>
 
     <ConvertImageSizeDialog

@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { ref } from 'vue'
 import NewProjectForm from './NewProjectForm.vue'
+import { PANEL_CONTEXT } from '../shell/panelContext'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import { chooseBeadInSection } from '../../testUtils/beadPicker'
 import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
@@ -70,17 +72,12 @@ describe('NewProjectForm', () => {
     expect(buttons.map((button) => button.getAttribute('data-testid') ?? 'convert')).toEqual(['create-project', 'convert', 'pick-starter'])
   })
 
-  it('keeps the Starter gallery folded until Pick a starter, and reports the Starter chosen in it (ticket 568)', async () => {
-    const wrapper = mount(NewProjectForm)
-    const pick = wrapper.get('[data-testid="pick-starter"]')
-
+  it('opens the Starter gallery one level deeper from Pick a starter, focus to come back to it (ticket 0596)', async () => {
+    const openSub = vi.fn()
+    const wrapper = mount(NewProjectForm, { global: { provide: { [PANEL_CONTEXT as symbol]: { itemRole: ref(undefined), close: vi.fn(), openSub } } } })
     expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
-    expect(pick.attributes('aria-expanded')).toBe('false')
-    await pick.trigger('click')
-    await wrapper.get('[data-testid="starter-card-bracelet"]').trigger('click')
-    expect(wrapper.emitted('choose-starter')).toEqual([['bracelet']])
-    await pick.trigger('click')
-    expect(wrapper.find('[data-testid="starter-gallery"]').exists()).toBe(false)
+    await wrapper.get('[data-testid="pick-starter"]').trigger('click')
+    expect(openSub).toHaveBeenCalledWith(ru.starters.title, { opener: 'pick-starter' })
   })
 
   it('focuses and selects the Name input as soon as the form opens (ticket 181)', () => {

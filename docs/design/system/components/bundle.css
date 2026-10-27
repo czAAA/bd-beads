@@ -7,6 +7,10 @@
   --slider-thumb-scale: 1.15; /* QualitySlider card: the thumb while it is dragged. */
   --print-letter-balance: 0.1791; /* PrintChartPage card: a bead whose luminance is above it gets an ink letter, else white (markOn). */
   --print-letter-squeeze: 72%; /* PrintChartPage card: horizontal scale of a two-letter Swatch letter in a 3 mm cell (PDF Tz). */
+  --starter-hover-scale: 1.04; /* StarterGallery card: a card's picture under the pointer. */
+  --starter-press-scale: 0.97; /* StarterGallery card: a card's picture while pressed. */
+  --starter-picture-height: 280px; /* StarterGallery card: the setup's large live picture. */
+  --starter-size-dot: 5px; /* StarterGallery card: the dot on the chip of the design's own size. */
 }
 :root, [data-theme="light"] {
   --track-fill: linear-gradient(90deg, #fa520f, #ffa110);

@@ -27,7 +27,7 @@ A level inside a panel (Menu panel, Project panel, Frame panel), stacked over it
 _Avoid_: New Project panel, New Project modal (gone)
 
 **New Project**:
-The Menu's accent-coloured row and the Subpanel it opens (spec 0478). It opens with the title **Open canvas** and its subtitle ("Draw on open canvas, set frame to export picture or pdf when needed"), then the form that makes a Canvas (Name, Maker's name, Bead, Technique, each the same shared section the Project panel uses), and last three accent buttons separated by "or": Create Project, Convert image and **Pick a starter**. Pick a starter unfolds the gallery of Starters, collapsed by default; a tap on a Starter card pushes its **Starter setup** one level deeper. On New Project the Technique section applies a change straight to the draft, with no confirmation.
+The Menu's accent-coloured row and the Subpanel it opens (spec 0478). It opens with the title **Open canvas** and its subtitle ("Draw on open canvas, set frame to export picture or pdf when needed"), then the form that makes a Canvas (Name, Maker's name, Bead, Technique, each the same shared section the Project panel uses), and last three accent buttons separated by "or": Create Project, Convert image and **Pick a starter**. Pick a starter pushes the Starter gallery one level deeper: its categories, then a category's options, then a Starter's **Starter setup**. On New Project the Technique section applies a change straight to the draft, with no confirmation.
 _Avoid_: New Pattern, new project sheet
 
 **Starter**:
@@ -39,7 +39,7 @@ The two steps a Starter is picked in. Step 1 shows the categories (Shapes, Earri
 _Avoid_: template gallery, catalog, wizard
 
 **Starter setup**:
-The setup in step 2 of the Starter gallery, once an option is tapped (its fields are being settled with the rework: the Custom frame's own settings, the Start empty toggle, and on New Project its Name and Bead). Today: Name (the Starter's name as its placeholder), Bead, Technique (only the allowed ones, no choice when there is one), Brick block for brick stitch, the unit, Width and Height as steppers with the Starter's usual sizes as chips, a live Estimated size, and Create Project in the pinned footer; on an open Project it has no Name or Bead and its footer button is Add Frame or Replace Frame.
+The setup in step 2 of the Starter gallery, once an option is tapped (ticket 0596): the large live picture, Name (the option's name as its placeholder) and Bead on New Project only, Use design or Start empty, the kind's size setting as a stepper with the usual sizes as chips (the design's own dotted), the Estimated size with the bead count, and Create Project in the pinned footer; on an open Project its footer button is Add Frame or Replace Frame.
 _Avoid_: Template setup, Starter form, Starter dialog
 
 **Project panel**:
