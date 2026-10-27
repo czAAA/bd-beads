@@ -3,7 +3,7 @@ import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
 import type { SwatchLetters } from '../domain/swatchLetters'
-import { PRINT_THEME } from './beadLook'
+import { drawFlatBead, PRINT_THEME, type BeadDrawer } from './beadLook'
 import { PRINT_COLORS } from './printColors'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
@@ -129,8 +129,14 @@ export interface Board {
   height: number
 }
 
-/** The pale rounded board and the beads of `region` on it (the whole chart on page 1, a part on a chart page). */
-export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, letters?: SwatchLetters): void {
+/** A bead drawn as the flat look draws it, except an empty position, which is left bare so the board shows through. */
+const bareWhereEmpty: BeadDrawer = (context, bead) => {
+  if (bead.color !== null) drawFlatBead(context, bead)
+}
+
+/** The pale rounded board and the beads of `region` on it (the whole chart on page 1, a part on a chart page). With
+ * `bareEmpty` an empty position draws nothing (the Cover page, ticket 0587). */
+export function drawBoard(context: CanvasRenderingContext2D, project: Project, region: { x: number; y: number; width: number; height: number }, zoom: number, at: Board, letters?: SwatchLetters, bareEmpty = false): void {
   context.fillStyle = PRINT_COLORS.board
   context.beginPath()
   context.roundRect(at.x - PRINT_BOARD_PAD, at.y - PRINT_BOARD_PAD, at.width + PRINT_BOARD_PAD * 2, at.height + PRINT_BOARD_PAD * 2, mm(4))
@@ -144,7 +150,7 @@ export function drawBoard(context: CanvasRenderingContext2D, project: Project, r
   const tileContext = tile.getContext('2d')
   if (!tileContext) return
   const scaled = { x: region.x * scale, y: region.y * scale, width: tile.width, height: tile.height }
-  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, letters })
+  renderProject(tileContext, { project, space: spaceOf(project, false), region: scaled, zoom: zoom * scale, theme: PRINT_THEME, rowMarks: false, letters, drawBead: bareEmpty ? bareWhereEmpty : undefined })
   context.drawImage(tile, at.x, at.y, tile.width / scale, tile.height / scale)
 }
 
