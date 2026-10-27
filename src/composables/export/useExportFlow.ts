@@ -1,11 +1,10 @@
 import { computed, ref, toRaw } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import { withLetters, type Project } from '../../domain/project'
-import { libraryFileName, projectExportFileName, projectFileName, projectListFileName, wordChartFileName } from '../../domain/projectFile'
+import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
-import { WORD_CHART_SCALE_BY_QUALITY } from '../../domain/exportQuality'
 import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
-import { exportProjectPdf, exportProjectPng, exportWordChartPng, projectPageCount } from '../../rendering/projectExport'
+import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
 import { printText } from '../../rendering/printText'
 import { downloadFile as browserDownloadFile, type DownloadFile } from '../../services/fileDownload'
 import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
@@ -121,8 +120,8 @@ export function useExportFlow(deps: ExportFlowDeps) {
 
   function onExportPng() {
     // The words the pictures print (tickets 164, 0583), in the app's language, with the Project's maker's name (ADR 0060).
-    // The cover is the first; Beads needed that runs over follows as `_2`, `_3`, then, with Letters on, the Word chart as
-    // a last picture (ticket 0574).
+    // The cover is the first; Beads needed that runs over follows as `_2`, `_3`. The Word chart is PDF pages only (ticket
+    // 0586).
     const wordsOf = (project: Project) => printText(project, deps.messages(), deps.locale(), new Date())
     const dpi = pngDpiFor(quality.value)
     return runExport(
@@ -131,12 +130,10 @@ export function useExportFlow(deps: ExportFlowDeps) {
       'image/png',
       (project) => {
         const words = wordsOf(project)
-        const lists = Array.from({ length: projectPageCount(project, words) - 1 }, (_, index) => ({
+        return Array.from({ length: projectPageCount(project, words) - 1 }, (_, index) => ({
           fileName: projectListFileName(project, index + 2),
           make: () => exportProjectPng(project, words, dpi, index + 1),
         }))
-        const chart = words.wordChart ? [{ fileName: wordChartFileName(project), make: () => exportWordChartPng(words, WORD_CHART_SCALE_BY_QUALITY[quality.value]) }] : []
-        return [...lists, ...chart]
       },
     )
   }

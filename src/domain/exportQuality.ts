@@ -10,9 +10,6 @@ export function parseExportQuality(raw: string): ExportQuality | undefined {
   return EXPORT_QUALITIES.find((quality) => quality === raw)
 }
 
-/** How much larger than at Medium the Word chart's picture is drawn at each quality (QualitySlider card, ticket 0574). */
-export const WORD_CHART_SCALE_BY_QUALITY: Record<ExportQuality, number> = { low: 0.75, medium: 1, high: 1.5 }
-
 /** The dpi the PNG's pages are drawn at for each quality (QualitySlider card, tickets 572, 0583, 0585); the sheet is A4
  * whatever it is. The PDF is not on the slider (ADR 0076). */
 export const PNG_DPI_BY_QUALITY: Record<ExportQuality, number> = { low: 150, medium: 300, high: 450 }

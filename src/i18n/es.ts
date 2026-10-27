@@ -479,8 +479,8 @@ export const es: Translations = {
     keyOnPage: 'Colores en esta página',
     wordChart: {
       title: 'Fila por fila',
-      row: 'Fila {n}',
-      both: 'Filas 1&2',
+      empty: 'vacío',
+      nextRows: 'Filas {rows} en la página {page} →',
       firstTop: 'La fila 1 está arriba del dibujo.',
       firstRight: 'La fila 1 está a la derecha del dibujo.',
       firstBottom: 'La fila 1 está abajo del dibujo.',
@@ -490,7 +490,6 @@ export const es: Translations = {
       oddCount: 'Número impar de cuentas.',
       sides: '(L) empieza por la izquierda, (R) por la derecha.',
       runNote: 'Un tramo es un número y una letra: 2C son dos cuentas C.',
-      emptyNote: '* es una celda vacía.',
     },
   },
   saveBox: {
