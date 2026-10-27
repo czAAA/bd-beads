@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { frameRowOrder, rowProgressOn, rowProgressPosition, type Project } from '../../domain/project'
+import { frameRowOrder, rowProgressPosition, type Project } from '../../domain/project'
+import { orderStepLabel } from '../../i18n/orderStep'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { useI18n } from '../../i18n/useI18n'
@@ -63,6 +64,17 @@ const notDoneLabel = computed(() => (columnWise.value ? t.value.rowProgress.colu
 /** The row shown as current: the last one once every pass is done. */
 const shownRow = computed(() => Math.min(position.value.current + 1, position.value.total))
 
+/** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): "Round 3 of 9", or for a
+ * part or a join "Part 2, round 3 · 8 of 20". None for a Rectangular Frame. */
+const customPosition = computed(() => {
+  const step = frameRowOrder(props.project).stepOf?.(shownRow.value - 1)
+  if (!step) return undefined
+  const words = t.value.rowProgress
+  const single = step.kind !== 'join' && step.part === undefined
+  const of = single ? words.ofSteps : words.stepOfSteps
+  return { label: orderStepLabel(words, step), of: of.replace('{current}', String(shownRow.value)).replace('{total}', String(position.value.total)) }
+})
+
 const directionLabel = computed(() => {
   const { direction, reversed } = props.project.rowProgress
   const words = t.value.rowProgress
@@ -91,8 +103,6 @@ const arrowTurn = computed(() => {
         <AppButton variant="box" :action="actions.fitFrame" :deps="deps" data-testid="progress-bar-fit-frame" @click="emit('fit-frame')" />
       </span>
     </template>
-    <!-- A Custom frame's Row order comes later (ticket 0594): one line, the bar keeping its height. -->
-    <p v-else-if="!rowProgressOn(project)" class="progress-bar__need" data-testid="progress-bar-not-for-shape">{{ t.frame.progressNotForShape }}</p>
     <template v-else>
       <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
       <IconButton
@@ -118,10 +128,10 @@ const arrowTurn = computed(() => {
         @click="emit('reset-progress')"
       />
       <p class="progress-bar__position progress-bar__phone-hide" data-testid="progress-bar-position">
-        <span class="progress-bar__row">{{ t.rowProgress.positionLabel }} {{ shownRow }}</span>
+        <span class="progress-bar__row">{{ customPosition?.label ?? `${t.rowProgress.positionLabel} ${shownRow}` }}</span>
         {{ ' ' }}
         <span class="progress-bar__of">{{
-          t.rowProgress.ofTotal.replace('{total}', String(position.total)).replace('{direction}', directionLabel)
+          customPosition?.of ?? t.rowProgress.ofTotal.replace('{total}', String(position.total)).replace('{direction}', directionLabel)
         }}</span>
       </p>
       <!-- The compact counter (ticket 188): "1/222" in place of the spelled-out row count; the buttons keep their text (ticket 411). -->

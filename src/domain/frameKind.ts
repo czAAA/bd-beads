@@ -1,7 +1,7 @@
 import type { FrameSheet } from './canvas'
-import { kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, type FrameLayout } from './frameLayout'
+import { kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
-import { rowsOrder, type RowOrder, type RowWay } from './rowOrder'
+import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import { describeWeave, ROUNDS_TECHNIQUE, type Technique, type Weave } from './weave'
 
 /** The Frame kinds (spec 0590, ADR 0077): what sort of Frame it is. Rectangular is the Frame as it has always been;
@@ -29,8 +29,14 @@ interface FrameSetting {
   presets: readonly number[]
 }
 
-/** A Frame as its kind reads it: its kind, its settings, its size and its Weave. */
-export type KindedSheet = Pick<FrameSheet, 'kind' | 'settings' | 'rows' | 'columns'> & Weave
+/** How many quarter turns clockwise a Custom frame's layout lies at (Rotate Frame, ticket 0594). */
+export type QuarterTurns = 1 | 2 | 3
+
+/** What a Custom frame's layout is built from: its kind, its settings and how far it is turned. */
+type Laid = Pick<FrameSheet, 'kind' | 'settings' | 'quarterTurns'>
+
+/** A Frame as its kind reads it: its kind, its settings, its turn, its size and its Weave. */
+export type KindedSheet = Laid & Pick<FrameSheet, 'rows' | 'columns'> & Weave
 
 /** What a Frame lets the weaver do to it beyond painting and moving it: change its rectangle (the resize handles, Width
  * and Height, Remove row/column, Frame from Selection), turn it, weave it in another Technique, or select on it. */
@@ -42,10 +48,9 @@ export interface FrameKind {
   /** What Remove Frame does with the Frame's beads: drop them onto the Canvas where they stand (ticket 497), or
    * remove them with the Frame. */
   removedBeads: 'dropped' | 'removed'
-  /** How Row progress steps through the Frame, worked one way; a kind without one does not turn Row progress on. */
-  rowOrder?(sheet: KindedSheet, way: RowWay): RowOrder
-  /** A Custom frame's shape comes from its settings, so it allows none of these until the tickets of spec 0590 add
-   * them. */
+  /** How Row progress steps through the Frame, worked one way. */
+  rowOrder(sheet: KindedSheet, way: RowWay): RowOrder
+  /** A Custom frame's shape comes from its settings, so it is turned and selected on but never reshaped as a rectangle. */
   allows: ReadonlySet<FrameAction>
   /** A Custom frame's own: the Technique its panels are woven in, the setting it is sized by, and its panel builder. */
   custom?: {
@@ -64,6 +69,14 @@ const KALEIDOCYCLE_PART: FrameSetting = { name: 'partSize', default: 9, min: 3, 
 /** A Kite's Rows from its point (inferred: the reference gives no size). */
 const KITE_ROWS: FrameSetting = { name: 'rows', default: 21, min: 4, max: 60, presets: [15, 21, 30] }
 
+/** A Custom frame's Row order (ticket 0594): its layout's passes, worked in rounds from the centre or rows from a point. */
+function layoutRowOrder(lines: 'round' | 'row'): FrameKind['rowOrder'] {
+  return (sheet) => layoutOrder(frameLayoutOf(sheet)!, lines)
+}
+
+/** What a Custom frame offers (ticket 0594): a Selection over it by a rectangle on screen, and Rotate Frame. */
+const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['rotate', 'select'])
+
 /** The registry, one entry per kind, like the Starters'. */
 const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
   rectangular: {
@@ -76,31 +89,36 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
   triangle: {
     id: 'triangle',
     removedBeads: 'removed',
-    allows: new Set(),
+    rowOrder: layoutRowOrder('round'),
+    allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(3, rounds) },
   },
   warpedSquare: {
     id: 'warpedSquare',
     removedBeads: 'removed',
-    allows: new Set(),
+    rowOrder: layoutRowOrder('round'),
+    allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(4, rounds) },
   },
   star: {
     id: 'star',
     removedBeads: 'removed',
-    allows: new Set(),
+    rowOrder: layoutRowOrder('round'),
+    allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: STAR_PART, layout: starLayout },
   },
   kaleidocycle: {
     id: 'kaleidocycle',
     removedBeads: 'removed',
-    allows: new Set(),
+    rowOrder: layoutRowOrder('round'),
+    allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: KALEIDOCYCLE_PART, layout: kaleidocycleLayout },
   },
   kite: {
     id: 'kite',
     removedBeads: 'removed',
-    allows: new Set(),
+    rowOrder: layoutRowOrder('row'),
+    allows: CUSTOM_ALLOWS,
     custom: { technique: ROUNDS_TECHNIQUE, size: KITE_ROWS, layout: kiteLayout },
   },
 }
@@ -110,15 +128,6 @@ export type CustomFrameKindId = Exclude<FrameKindId, 'rectangular'>
 
 /** The Custom frame kinds, in the order Add Custom frame offers them. */
 export const CUSTOM_FRAME_KINDS: readonly CustomFrameKindId[] = ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite']
-
-/** The order of a kind with none: no passes, and no bead in one, so nothing is ever finished or current. */
-const NO_ROW_ORDER: RowOrder = {
-  turns: false,
-  count: 0,
-  passAt: () => Number.POSITIVE_INFINITY,
-  positionsOf: () => [],
-  lineOf: () => undefined,
-}
 
 /** Whether a stored value names a Frame kind. */
 export function isFrameKind(value: unknown): value is FrameKindId {
@@ -137,12 +146,7 @@ export function frameAllows(frame: Pick<FrameSheet, 'kind'> | undefined, action:
 
 /** The Frame's Row order worked one way: what Row progress's first row, current row, next row and pass count ask. */
 export function rowOrderOf(sheet: KindedSheet, way: RowWay): RowOrder {
-  return frameKindOf(sheet).rowOrder?.(sheet, way) ?? NO_ROW_ORDER
-}
-
-/** Whether the Frame's kind steps Row progress through it: a Custom frame waits for its Row order (ticket 0594). */
-export function hasRowOrder(frame: Pick<FrameSheet, 'kind'>): boolean {
-  return frameKindOf(frame).rowOrder !== undefined
+  return frameKindOf(sheet).rowOrder(sheet, way)
 }
 
 /** The setting a Custom frame is sized by, its name and range; none for a Rectangular Frame. */
@@ -166,10 +170,30 @@ export function settingsOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FrameS
   return setting && { [setting.name]: frameSizeOf(frame) }
 }
 
-/** A Custom frame's layout, built from its size; none for a Rectangular Frame. */
-export function frameLayoutOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FrameLayout | undefined {
+/** A Custom frame's layout, built from its size and turned as Rotate Frame left it; none for a Rectangular Frame. */
+export function frameLayoutOf(frame: Laid): FrameLayout | undefined {
   const size = frameSizeOf(frame)
-  return size === undefined ? undefined : frameKindOf(frame).custom!.layout(size)
+  return size === undefined ? undefined : turnedLayout(frameKindOf(frame).custom!.layout(size), frame.quarterTurns ?? 0)
+}
+
+/** Where a Custom frame's layout lies in its rectangle, in cell widths from its first position's corner: a bead width to
+ * a cell's width, smaller only where the Bead shape makes the rectangle shorter than the layout, and centred. The
+ * renderer, the hit test and a Selection over it (ticket 0594) all place it here, so they agree where each bead is. */
+export interface LayoutPlacement {
+  layout: FrameLayout
+  scale: number
+  x: number
+  y: number
+}
+
+/** A Frame's layout as placed in its rectangle, or none for a Rectangular Frame. */
+export function layoutPlacement(frame: Laid & Pick<FrameSheet, 'rows' | 'columns'>, weave: Weave): LayoutPlacement | undefined {
+  const layout = frameLayoutOf(frame)
+  if (!layout) return undefined
+  const description = describeWeave(weave)
+  const extent = description.blockExtent(frame.columns, frame.rows, 1, description.cellAspect)
+  const scale = Math.min(1, extent.width / layout.width, extent.height / layout.height)
+  return { layout, scale, x: (extent.width - layout.width * scale) / 2, y: (extent.height - layout.height * scale) / 2 }
 }
 
 /** Whether a Frame has a bead position here, counted from its own first row and column: a Custom frame's layout
@@ -182,9 +206,9 @@ export function frameHasPosition(frame: KindedSheet, position: GridPosition): bo
 
 /** The rows and columns of a Custom frame's Technique that cover its layout: the bounding rectangle its footprint is
  * made from (ADR 0077), counted in the Technique's own square cell. */
-export function customFrameSize(kind: FrameKindId, settings: FrameSettings): GridDimensions {
+export function customFrameSize(kind: FrameKindId, settings: FrameSettings, quarterTurns?: QuarterTurns): GridDimensions {
   const custom = FRAME_KINDS[kind].custom!
-  const layout = frameLayoutOf({ kind, settings })!
+  const layout = frameLayoutOf({ kind, settings, quarterTurns })!
   const description = describeWeave({ technique: custom.technique })
   let columns = 1
   while (description.blockExtent(columns, 2, 1, 1).width < layout.width) columns += 1

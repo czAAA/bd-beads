@@ -25,7 +25,7 @@ interface LayoutPanel {
 
 /** A join between parts, in making order: a zip of two parts' edges, a hinge laced between them, or the join that
  * closes the piece, made last. A zip of one part closes it on itself or into the strip it belongs to. */
-interface LayoutJoin {
+export interface LayoutJoin {
   step: 'zip' | 'hinge' | 'close'
   parts: readonly number[]
 }
@@ -285,10 +285,38 @@ export function kiteLayout(rows: number): FrameLayout {
   })
 }
 
+const turnedLayouts = new WeakMap<FrameLayout, FrameLayout[]>()
+
+/** A layout turned a quarter clockwise on screen `turns` times (Rotate Frame, ticket 0594): every bead keeps its name and
+ * panel and turns with its panel, and the bounding rectangle's sides swap at each turn. */
+export function turnedLayout(layout: FrameLayout, turns: number): FrameLayout {
+  const quarter = ((turns % 4) + 4) % 4
+  if (quarter === 0) return layout
+  const known = turnedLayouts.get(layout) ?? []
+  if (known[quarter]) return known[quarter]!
+  const once = (from: FrameLayout): FrameLayout => {
+    // A quarter turn clockwise with y down: right becomes down, and what was at the bottom comes to the left.
+    const turn = ({ x, y }: LayoutPoint): LayoutPoint => ({ x: from.height - y, y: x })
+    return {
+      ...from,
+      positions: from.positions.map((position) => ({ ...position, ...turn(position), angle: position.angle + Math.PI / 2 })),
+      width: from.height,
+      height: from.width,
+      centre: turn(from.centre),
+      seams: from.seams.map(([start, end]) => [turn(start), turn(end)] as const),
+    }
+  }
+  let turned = layout
+  for (let step = 0; step < quarter; step += 1) turned = once(turned)
+  known[quarter] = turned
+  turnedLayouts.set(layout, known)
+  return turned
+}
+
 const indexes = new WeakMap<FrameLayout, Map<string, LayoutPosition>>()
 
-/** A position's key in a layout's index. */
-const keyOf = ({ row, column }: GridPosition): string => `${row}:${column}`
+/** A position's key in a layout's index, and in what is keyed by layout position (Row order, a Paste's landings). */
+export const keyOf = ({ row, column }: GridPosition): string => `${row}:${column}`
 
 function indexOf(layout: FrameLayout): Map<string, LayoutPosition> {
   let index = indexes.get(layout)
@@ -315,6 +343,38 @@ export function layoutPositionAt(layout: FrameLayout, x: number, y: number): Gri
     if (Math.abs(across) <= 0.5 && Math.abs(out) <= depth) return { row: position.row, column: position.column }
   }
   return undefined
+}
+
+/** How far a point may lie from the nearest bead's centre and still be on the shape, in bead widths: a peyote panel's
+ * gaps between the beads of a round, which the rounds either side leave open, lie a bead from every neighbour. */
+const ON_SHAPE = 1.05
+
+/** How near a Seam a bead's centre may not lie, in bead widths: its bead would cross it. */
+const SEAM_CLEARANCE = 0.45
+
+/** The distance from a point to a Seam's line. */
+function seamDistance({ x, y }: LayoutPoint, [from, to]: readonly [LayoutPoint, LayoutPoint]): number {
+  const dx = to.x - from.x
+  const dy = to.y - from.y
+  const along = Math.max(0, Math.min(1, ((x - from.x) * dx + (y - from.y) * dy) / (dx * dx + dy * dy || 1)))
+  return Math.hypot(x - from.x - along * dx, y - from.y - along * dy)
+}
+
+/** The position a bead put down at a point lands on (Paste and Rotate on a Custom frame, ticket 0594): the nearest one,
+ * whose panel is the one under it; none on a Seam, or Off-shape where no bead is near. */
+export function landingAt(layout: FrameLayout, x: number, y: number): LayoutPosition | undefined {
+  const point = { x, y }
+  if (layout.seams.some((seam) => seamDistance(point, seam) < SEAM_CLEARANCE)) return undefined
+  let nearest: LayoutPosition | undefined
+  let distance = Infinity
+  for (const position of layout.positions) {
+    const to = Math.hypot(position.x - x, position.y - y)
+    if (to < distance) {
+      nearest = position
+      distance = to
+    }
+  }
+  return distance <= ON_SHAPE ? nearest : undefined
 }
 
 const neighbors = new WeakMap<FrameLayout, Map<string, GridPosition[]>>()

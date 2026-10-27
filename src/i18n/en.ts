@@ -381,6 +381,10 @@ export const en: Translations = {
       one: '{count} bead was cut off by the Frame.',
       other: '{count} beads were cut off by the Frame.',
     },
+    droppedOnShapeMessage: {
+      one: '{count} bead landed on a Seam or off the shape and was left out.',
+      other: '{count} beads landed on a Seam or off the shape and were left out.',
+    },
     cutButton: 'Cut',
     pasteLabel: 'Paste',
     removeLineButton: 'Remove selected row/column',
@@ -416,6 +420,14 @@ export const en: Translations = {
     bottomToTop: 'Bottom to top',
     rightToLeft: 'Right to left',
     finishedLabel: 'Rows done',
+    stepRound: 'Round {number}',
+    stepRow: 'Row {number}',
+    stepPartRound: 'Part {part}, round {number}',
+    stepZip: 'Zip {parts}',
+    stepHinge: 'Hinge {parts}',
+    stepClose: 'Close {parts}',
+    ofSteps: 'of {total}',
+    stepOfSteps: '· {current} of {total}',
   },
   quantities: {
     heading: 'Beads needed',
@@ -491,6 +503,9 @@ export const en: Translations = {
       oddCount: 'Odd count.',
       sides: '(L) starts at the left, (R) at the right.',
       runNote: 'A run is a count and a letter: 2C is two beads of C.',
+      firstCentre: 'Round 1 is at the centre; each round goes round the shape.',
+      firstPoint: 'Row 1 is at the point; each row reads left to right.',
+      partsThenJoins: 'Each part is beaded round by round from its centre, in making order, then the joins.',
     },
   },
   saveBox: {
@@ -671,7 +686,6 @@ export const en: Translations = {
     countNeedsFrame: 'Set Frame to count beads.',
     progressSelectToSet: 'Select to set a',
     progressFrameWord: 'Frame',
-    progressNotForShape: "Row progress isn't available for this shape yet",
     rotateCoveredMessage: 'The turned fragment landed on top of existing beads.',
   },
   size: {

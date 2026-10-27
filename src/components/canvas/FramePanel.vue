@@ -19,7 +19,7 @@ import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
-import { CUSTOM_FRAME_KINDS, frameAllows, frameSizeOf, hasRowOrder, sizeSettingOf, type CustomFrameKindId } from '../../domain/frameKind'
+import { CUSTOM_FRAME_KINDS, frameAllows, frameSizeOf, sizeSettingOf, type CustomFrameKindId } from '../../domain/frameKind'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -75,7 +75,7 @@ const size = computed(() => {
   const setting = frame.value && sizeSettingOf(frame.value)
   return setting && { value: frameSizeOf(frame.value!)!, min: setting.min, max: setting.max, words: t.value.frame.sizeSettings[setting.name] }
 })
-/** Whether the Frame can be turned a quarter: its kind allows it (a Custom frame does not yet). */
+/** Whether the Frame can be turned a quarter: its kind allows it (a Custom frame too, ticket 0594). */
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 
 /** The edge the last press stepped, lit in its cell. */
@@ -236,7 +236,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         </div>
         <p class="frame-panel__line" data-testid="frame-letters-line">{{ t.frame.lettersLine }}</p>
         <!-- The Word chart follows Letters (ticket 0574) but not in every Technique. -->
-        <p v-if="project.letters && (!hasWordChart(frameWeave(project).technique) || !hasRowOrder(frame))" class="frame-panel__line" data-testid="frame-letters-unavailable">{{ t.frame.lettersUnavailable }}</p>
+        <p v-if="project.letters && !hasWordChart(frameWeave(project).technique)" class="frame-panel__line" data-testid="frame-letters-unavailable">{{ t.frame.lettersUnavailable }}</p>
       </template>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />

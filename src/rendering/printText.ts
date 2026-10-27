@@ -11,6 +11,7 @@ import { plural } from '../i18n/plural'
 import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
+import { orderStepLabel } from '../i18n/orderStep'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -84,10 +85,14 @@ export function headerMaker(maker: string): string {
 
 const FIRST_ROW_KEY = { top: 'firstTop', right: 'firstRight', bottom: 'firstBottom', left: 'firstLeft' } as const
 
-/** The Word chart's words in the app's language; letters and numbers stay as they are. */
-function wordChartText(chart: WordChart, t: Translations['print']['wordChart']): PrintedWordChart {
-  const notes = [t[FIRST_ROW_KEY[chart.firstEdge]]]
-  if (!chart.marked) notes.push(t.loomRead)
+/** Where a Custom frame's Word chart starts, as its note (ticket 0594). */
+const START_KEY = { centre: 'firstCentre', point: 'firstPoint', parts: 'partsThenJoins' } as const
+
+/** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its
+ * round, row, part or join before its runs (ticket 0594). */
+function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], steps: Translations['rowProgress']): PrintedWordChart {
+  const notes = [chart.start ? t[START_KEY[chart.start]] : t[FIRST_ROW_KEY[chart.firstEdge]]]
+  if (!chart.marked && !chart.start) notes.push(t.loomRead)
   if (chart.count) notes.push(chart.count === 'even' ? t.evenCount : t.oddCount)
   if (chart.marked) notes.push(t.sides)
   notes.push(t.runNote)
@@ -100,7 +105,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart']):
       first: row.number,
       last: row.both ? 2 : row.number,
       ...(row.marker ? { marker: row.marker } : {}),
-      runs: row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(', '),
+      runs: [row.step && orderStepLabel(steps, row.step), row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(', ')].filter(Boolean).join(': '),
     })),
   }
 }
@@ -168,7 +173,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       perGram && bead
         ? `${t.print.gramsNote.replace('{count}', groupThousands(perGram, locale)).replace('{bead}', `${t.formFactors[bead.formFactor.nameKey]} ${bead.size}`)} ${t.print.spares}`
         : undefined,
-    wordChart: wordChart && wordChartText(wordChart, t.print.wordChart),
+    wordChart: wordChart && wordChartText(wordChart, t.print.wordChart, t.rowProgress),
     labels: t.print,
   }
 }

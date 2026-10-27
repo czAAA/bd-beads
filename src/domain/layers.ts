@@ -66,6 +66,7 @@ export function frameLayer(project: Project): Project {
     // A Custom frame's commands ask its layout (ticket 0592).
     ...(frame.kind ? { kind: frame.kind } : {}),
     ...(frame.settings ? { settings: frame.settings } : {}),
+    ...(frame.quarterTurns ? { quarterTurns: frame.quarterTurns } : {}),
   }
   return { ...rest, ...weaveOf(frame), beads: frame.beads, frame: own }
 }
