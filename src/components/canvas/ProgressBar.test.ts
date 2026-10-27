@@ -235,7 +235,7 @@ describe('ProgressBar keyboard (ticket 563, ADR 0075)', () => {
 
 describe('ProgressBar on a Custom frame (ticket 0592)', () => {
   it('says Row progress is not there for the shape yet, and offers no row buttons', () => {
-    const placed = changeFrame(makeProject(), { custom: { kind: 'triangle', rounds: 4, centre: { row: 10, column: 10 } } })
+    const placed = changeFrame(makeProject(), { custom: { kind: 'triangle', size: 4, centre: { row: 10, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
     const wrapper = mount(ProgressBar, { props: { project: placed.project } })
 

@@ -19,7 +19,7 @@ import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
-import { CUSTOM_FRAME_KINDS, frameAllows, frameKindOf, hasRowOrder, settingsOf, type CustomFrameKindId } from '../../domain/frameKind'
+import { CUSTOM_FRAME_KINDS, frameAllows, frameSizeOf, hasRowOrder, sizeSettingOf, type CustomFrameKindId } from '../../domain/frameKind'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -57,7 +57,7 @@ const emit = defineEmits<{
   'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
   'add-custom': [kind: CustomFrameKindId]
-  'set-rounds': [rounds: number]
+  'set-size': [size: number]
 }>()
 
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
@@ -69,10 +69,11 @@ const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
 const frame = computed(() => props.project.frame)
 
-/** A Custom frame's Rounds and their range (ticket 0592), in place of Width and Height; none for a Rectangular Frame. */
-const rounds = computed(() => {
-  const custom = frame.value && frameKindOf(frame.value).custom
-  return custom && { value: settingsOf(frame.value!)!.rounds, min: custom.rounds.min, max: custom.rounds.max }
+/** A Custom frame's size, its range and its setting's words (Rounds, Part size or Rows; tickets 0592, 0593), in place
+ * of Width and Height; none for a Rectangular Frame. */
+const size = computed(() => {
+  const setting = frame.value && sizeSettingOf(frame.value)
+  return setting && { value: frameSizeOf(frame.value!)!, min: setting.min, max: setting.max, words: t.value.frame.sizeSettings[setting.name] }
 })
 /** Whether the Frame can be turned a quarter: its kind allows it (a Custom frame does not yet). */
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
@@ -136,7 +137,7 @@ const estimate = computed(() => {
   return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
-  [rounds.value ? plural(locale.value, rounds.value.value, t.value.frame.roundsSummary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
+  [size.value ? plural(locale.value, size.value.value, size.value.words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
 )
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
@@ -262,24 +263,25 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </div>
 
       <PanelSection id="frame:size" :label="t.frame.sizeHeading" :summary="sizeSummary">
-        <!-- A Custom frame is sized by its Rounds (ticket 0592): growing adds empty rounds outside, shrinking asks first. -->
-        <div v-if="rounds" class="frame-panel__body">
-          <div class="frame-panel__rounds" data-testid="frame-rounds">
-            <span class="frame-panel__rounds-label">{{ t.frame.roundsLabel }}</span>
+        <!-- A Custom frame is sized by its Rounds, Part size or Rows (tickets 0592, 0593): growing adds empty rounds or
+             rows outside, shrinking asks first. -->
+        <div v-if="size" class="frame-panel__body">
+          <div class="frame-panel__setting" data-testid="frame-setting">
+            <span class="frame-panel__setting-label">{{ size.words.label }}</span>
             <AppStepper
-              :model-value="rounds.value"
-              :min="rounds.min"
-              :max="rounds.max"
-              :decrease-label="t.frame.roundsLess"
-              :increase-label="t.frame.roundsMore"
-              :value-label="t.frame.roundsLabel"
+              :model-value="size.value"
+              :min="size.min"
+              :max="size.max"
+              :decrease-label="size.words.less"
+              :increase-label="size.words.more"
+              :value-label="size.words.label"
               :disabled="locked"
               tooltip
               :disabled-body="t.tooltips.frameSizeLocked"
-              decrease-testid="frame-rounds-less"
-              increase-testid="frame-rounds-more"
-              value-testid="frame-rounds-value"
-              @update:model-value="emit('set-rounds', $event)"
+              decrease-testid="frame-setting-less"
+              increase-testid="frame-setting-more"
+              value-testid="frame-setting-value"
+              @update:model-value="emit('set-size', $event)"
             />
           </div>
           <p v-if="locked" class="frame-panel__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>
@@ -446,7 +448,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   flex-direction: column;
 }
 
-.frame-panel__rounds {
+.frame-panel__setting {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -454,7 +456,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   min-height: var(--panel-item-height);
 }
 
-.frame-panel__rounds-label {
+.frame-panel__setting-label {
   font: var(--type-control);
 }
 

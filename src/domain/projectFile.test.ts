@@ -37,7 +37,7 @@ function makeProject(name = 'Fox'): Project {
 
 /** A Project with a five-round Triangle holding two beads, one on its outer round. */
 function customFramed(): Project {
-  const result = changeFrame(makeProject('Kite'), { custom: { kind: 'triangle', rounds: 5, centre: { row: 10, column: 10 } } })
+  const result = changeFrame(makeProject('Kite'), { custom: { kind: 'triangle', size: 5, centre: { row: 10, column: 10 } } })
   if (result.kind !== 'changed') throw new Error('expected a Triangle')
   return onLayer(result.project, 'frame', (view) => paintCells(view, [{ row: 0, column: 2 }, { row: 4, column: 14 }], '#e63746'))
 }
