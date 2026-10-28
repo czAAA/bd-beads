@@ -22,7 +22,8 @@ const asShown = (translations: Translations): Translations => {
     .map(([key, copy]) => [key, { ...copy, tabName: copy.tabName ?? copy.name, tabLine: copy.tabLine ?? copy.text }])
   return { ...translations, overview: { ...translations.overview, features: Object.fromEntries(features) } }
 }
-const DICTIONARIES: Translations[] = [en, RUSSIAN, uk, be, zh, es, pl].map(asShown)
+const BY_LOCALE: Record<Locale, Translations> = { en, ru: RUSSIAN, uk, be, zh, es, pl }
+const DICTIONARIES: Translations[] = Object.values(BY_LOCALE).map(asShown)
 const PLURAL_RULES: readonly Intl.LDMLPluralRule[] = ['zero', 'one', 'two', 'few', 'many', 'other']
 /** The UI's own font, in which the translations are compared. */
 const FONT = '500 13px Inter'
@@ -55,20 +56,26 @@ function widest(values: unknown[], measure: Measure): unknown {
   return first
 }
 
+/** A measure of text in the UI's own font, once the font's faces for every character of `texts` are loaded. */
+export async function measureInUiFont(texts: readonly string[]): Promise<Measure> {
+  await document.fonts.load(FONT, [...new Set(texts.join(''))].join(''))
+  const context = document.createElement('canvas').getContext('2d')!
+  context.font = FONT
+  const widths = new Map<string, number>()
+  return (text) => widths.get(text) ?? widths.set(text, context.measureText(text).width).get(text)!
+}
+
 let longest: Promise<Translations> | undefined
 
 /** The "longest" language, built once per test file, after the font's faces for every script are loaded. */
 function longestTranslations(): Promise<Translations> {
-  longest ??= (async () => {
-    const every = new Set(JSON.stringify(DICTIONARIES))
-    await document.fonts.load(FONT, [...every].join(''))
-    const context = document.createElement('canvas').getContext('2d')!
-    context.font = FONT
-    const widths = new Map<string, number>()
-    const measure: Measure = (text) => widths.get(text) ?? widths.set(text, context.measureText(text).width).get(text)!
-    return widest(DICTIONARIES, measure) as Translations
-  })()
+  longest ??= (async () => widest(DICTIONARIES, await measureInUiFont([JSON.stringify(DICTIONARIES)])) as Translations)()
   return longest
+}
+
+/** The text a test mounted in `locale` shows. */
+export async function textIn(locale: FitLocale): Promise<Translations> {
+  return locale === 'longest' ? longestTranslations() : BY_LOCALE[locale]
 }
 
 /** Russian's text becomes the "longest" language's, until `showRussian`; set the language to Russian to see it. */
