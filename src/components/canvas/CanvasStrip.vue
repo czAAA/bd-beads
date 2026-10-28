@@ -27,6 +27,9 @@ const props = defineProps<{
   canUndo?: boolean
   canRedo?: boolean
   zoomPercent?: number
+  /** The zoom range the buttons stop at, when it isn't the Project canvas's (the Homepage has its own). */
+  zoomMinPercent?: number
+  zoomMaxPercent?: number
 }>()
 const emit = defineEmits<{
   'select-panel': [sheet: 'menu' | 'project']
@@ -58,6 +61,8 @@ const actions = {
 }
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 const onHomepage = computed(() => props.page === 'homepage')
+const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
+const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
 const homepageHref = homepageUrl(import.meta.env.BASE_URL)
 
 // One Tab stop per section (ADR 0075): the panels, the Brand with the coffee link and the right-hand tools. ←/→ step inside
@@ -140,8 +145,8 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <IconButton variant="plain" :icon-size="18" :action="actions.redo" :deps="deps" data-testid="strip-redo" @click="emit('redo')" />
       </div>
       <div v-if="zoomPercent !== undefined" class="canvas-strip__zoom" :data-zoom-percent="zoomPercent" data-testid="canvas-strip-zoom">
-        <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= MIN_ZOOM_PERCENT" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
-        <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= MAX_ZOOM_PERCENT" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.zoomOut" :disabled="zoomPercent <= min" :disabled-body="t.tooltips.zoomOutLimit" data-testid="zoom-out" @click="emit('zoom-out')" />
+        <IconButton variant="plain" :icon-size="18" :action="actions.zoomIn" :disabled="zoomPercent >= max" :disabled-body="t.tooltips.zoomInLimit" data-testid="zoom-in" @click="emit('zoom-in')" />
         <IconButton variant="plain" :icon-size="18" :action="actions.zoomFit" data-testid="zoom-reset" @click="emit('reset')" />
       </div>
     </div>

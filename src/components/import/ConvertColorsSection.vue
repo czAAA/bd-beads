@@ -48,6 +48,9 @@ const remapping = ref<string>()
       <SegmentedControl v-model="source" :options="sourceOptions" :labelledby="sourceLabelId" data-testid="convert-color-source" />
       <span v-if="wizard.source.value === 'bead-colors'" class="convert-colors__codes" data-testid="convert-codes">{{ codes }}</span>
     </div>
+    <AppNote v-if="wizard.source.value === 'bead-colors' && wizard.catalogState.value === 'failed'" role="alert" data-testid="convert-catalog-failed">
+      {{ t.palette.beadColors.failed }}
+    </AppNote>
     <AppNote data-testid="convert-source-note">{{ note }}</AppNote>
 
     <div class="convert-colors__row">

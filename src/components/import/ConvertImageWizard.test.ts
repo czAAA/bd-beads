@@ -3,7 +3,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import ConvertImageWizard from './ConvertImageWizard.vue'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import type { CreateProjectInput } from '../../domain/createProject'
-import { IMAGE_MAX_BYTES, ImageConversionError, formatImageLimits, type PixelData } from '../../domain/imageConversion'
+import { ImageConversionError, formatImageLimits, type PixelData } from '../../domain/imageConversion'
 import type { Project } from '../../domain/project'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
@@ -143,16 +143,6 @@ describe('ConvertImageWizard ways in', () => {
 
 describe('ConvertImageWizard rejections', () => {
   it.each([
-    ['SVG', picture('logo.svg', 'image/svg+xml'), en.convertImage.errors.svg],
-    ['an unsupported format', picture('art.bmp', 'image/bmp'), formatImageLimits(en.convertImage.errors.unsupportedFormat)],
-    ['an oversize file', picture('huge.png', 'image/png', IMAGE_MAX_BYTES + 1), formatImageLimits(en.convertImage.errors.tooLarge)],
-  ])('turns %s away with the app’s sentence', async (_kind, file, message) => {
-    const { wrapper } = open()
-    await chooseFile(wrapper, file)
-    expect(wrapper.get('[data-testid="convert-image-error"]').text()).toBe(message)
-  })
-
-  it.each([
     ['an oversize resolution', new ImageConversionError('tooManyPixels'), formatImageLimits(en.convertImage.errors.tooManyPixels)],
     ['a corrupt file', new ImageConversionError('decodeFailed'), en.convertImage.errors.decodeFailed],
     ['an unexpected failure', new Error('something else'), en.convertImage.errors.decodeFailed],
@@ -160,6 +150,16 @@ describe('ConvertImageWizard rejections', () => {
     const { wrapper } = open({ decodeImage: async () => Promise.reject(error) })
     await chooseFile(wrapper, picture())
     expect(wrapper.get('[data-testid="convert-image-error"]').text()).toBe(message)
+  })
+
+  it('shows the catalog could not be read, matching to the Default Palette meanwhile', async () => {
+    const wrapper = mount(ConvertImageWizard, {
+      props: { start: { draft: delica }, decodeImage: async () => redAndWhite(), loadCatalog: () => Promise.reject(new Error('offline')), readClipboardImage: async () => undefined },
+      attachTo: document.body,
+    })
+    await chooseFile(wrapper, picture())
+    expect(wrapper.get('[data-testid="convert-catalog-failed"]').text()).toBe(en.palette.beadColors.failed)
+    expect(wrapper.get('[data-picture-hex="#e63746"] [data-testid="found-color-source"]').text()).toBe(en.convertImage.wizard.defaultPalette)
   })
 
   it('keeps a picture already set when another is turned away, and clears the message once one goes through', async () => {

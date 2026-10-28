@@ -3,6 +3,7 @@ import { computed, ref, useId } from 'vue'
 import { useConvertImageWizardState, type ConvertSizeUnit } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
 import { LARGE_SCHEMA_BEADS, type SizeMode } from '../../domain/convertSize'
+import { clamp } from '../../domain/clamp'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM, CONVERT_ZOOM_STEP } from '../../domain/imageFraming'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -56,7 +57,7 @@ const at = computed(() => (wizard.zoom.value - CONVERT_MIN_ZOOM) / (CONVERT_MAX_
 function zoomAt(clientX: number) {
   const box = trackEl.value?.getBoundingClientRect()
   if (!box || box.width === 0) return
-  const fraction = Math.min(1, Math.max(0, (clientX - box.left) / box.width))
+  const fraction = clamp((clientX - box.left) / box.width, 0, 1)
   wizard.setZoom(CONVERT_MIN_ZOOM + fraction * (CONVERT_MAX_ZOOM - CONVERT_MIN_ZOOM))
 }
 function onTrackDown(event: PointerEvent) {

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
+import { CONVERT_SHEET_QUERY, useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { computeColorQuantities, estimatedGrams, formatGrams } from '../../domain/beadQuantities'
 import { formFactorName } from '../../domain/beads'
@@ -20,7 +20,7 @@ import NamesSection from '../project/NamesSection.vue'
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
-const phone = useMediaQuery('(max-width: 63.99rem), (orientation: portrait)')
+const phone = useMediaQuery(CONVERT_SHEET_QUERY)
 const detailsShown = ref(false)
 
 const project = computed(() => wizard.draftProject.value)

@@ -45,7 +45,6 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
   return { columns, rows }
 }
 
-
 /** The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. */
 export type Layer = 'canvas' | 'frame'
 

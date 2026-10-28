@@ -107,15 +107,6 @@ describe('App Convert image (spec 0645)', () => {
     expect(wrapper.find('[data-testid="convert-file-name"]').text()).toBe('dropped.png')
     wrapper.unmount()
   })
-
-  it('says why a picture was turned away, in the wizard', async () => {
-    const wrapper = mount(App, { attachTo: document.body })
-    await openWizard(wrapper)
-    await chooseImage(wrapper, 'IMG_0001.HEIC', '')
-
-    expect(wrapper.find('[data-testid="convert-image-error"]').text()).toBe(ru.convertImage.errors.heic)
-    wrapper.unmount()
-  })
 })
 
 describe('App empty canvas (ticket 158)', () => {

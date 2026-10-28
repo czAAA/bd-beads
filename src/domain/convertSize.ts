@@ -5,9 +5,8 @@ import type { PixelData } from './imageConversion'
 import { CENTERED_PAN, clampConvertZoom, coverScaleMm, type FrameSizeMm, type FramingView, type ImageSize, type PanFraction } from './imageFraming'
 import { describeWeave, type Technique, type TechniqueSettings } from './weave'
 import { fillBlanks } from './fillBlanks'
-import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
-import { estimatedSizeMm, formatSizeMm } from './projectSize'
+import { estimatedSizeMm, formatMm, formatSizeMm } from './projectSize'
 
 /** How the Convert image wizard sizes a Schema (spec 0645): By Pixel to bead ratio, the size read from the picture, or
  * By size, a stated size the picture is zoomed and panned under (imageFraming.ts). */
@@ -174,6 +173,7 @@ export function viewForCrop(image: ImageSize, frame: FrameSizeMm, crop: PixelCro
  * draws at most PREVIEW_MAX_CELLS around the Frame, so the Frame itself is what grows. */
 export const LARGE_SCHEMA_BEADS = 300
 
+/** Whether a Schema is large enough for the Large Schema note: more than LARGE_SCHEMA_BEADS on a side. */
 export function isLargeSchema({ columns, rows }: GridDimensions): boolean {
   return columns > LARGE_SCHEMA_BEADS || rows > LARGE_SCHEMA_BEADS
 }
@@ -231,8 +231,8 @@ export interface ResultInput {
  * when a size is not a whole ratio. */
 export function convertResult({ grid, bead, ratio, crop }: ResultInput, labels: ResultLabels, locale: Locale = 'en'): { grid: string; measured: string; ratio: string } {
   const exactRatio = ratio ?? (crop && wholeRatio(ratioOfSize(crop, grid)))
-  const decimal = decimalSign(locale)
-  const oneDecimal = (value: number) => String(Number(value.toFixed(1))).replace('.', decimal)
+  // Pixels per bead read as formatMm reads a length: one decimal at most, in the language's decimal sign.
+  const oneDecimal = (value: number) => formatMm(value, locale)
   let ratioText = ''
   if (exactRatio) {
     ratioText = exactRatio.beads > 1 ? fillBlanks(labels.perPixel, { n: exactRatio.beads }) : fillBlanks(labels.exact, { n: exactRatio.pixels })
@@ -247,8 +247,11 @@ export function convertResult({ grid, bead, ratio, crop }: ResultInput, labels: 
   }
 }
 
-/** The ratio a size is when it is a whole one: the same whole number of pixels per bead each way. */
+/** The ratio a size is when it is a whole one: the same whole number of pixels per bead each way, or of beads per
+ * pixel. */
 function wholeRatio({ x, y }: { x: number; y: number }): PixelToBeadRatio | undefined {
-  const whole = Math.round(x)
-  return whole >= 1 && Math.abs(x - whole) < 1e-9 && Math.abs(y - whole) < 1e-9 ? { pixels: whole, beads: 1 } : undefined
+  const same = (a: number, b: number) => Math.abs(a - b) < 1e-9
+  if (!same(x, y)) return undefined
+  if (x >= 1) return same(x, Math.round(x)) ? { pixels: Math.round(x), beads: 1 } : undefined
+  return same(1 / x, Math.round(1 / x)) ? { pixels: 1, beads: Math.round(1 / x) } : undefined
 }
