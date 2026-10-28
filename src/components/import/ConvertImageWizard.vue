@@ -516,9 +516,26 @@ function onCreate() {
     pointer-events: none;
   }
 
-  .convert-wizard__preview {
-    pointer-events: auto;
+  /* The band behind the preview, full width, at the height the preview takes now: the scaled preview is narrower than
+   * the sheet, and nothing may show through beside it. Absolutely placed, so its height changes nothing else. */
+  .convert-wizard__preview-pane::before {
+    position: absolute;
+    inset: 0 0 auto;
+    height: var(--preview-height);
+    content: '';
+    background: var(--box);
     border-bottom: 1px solid var(--panel-rule);
+    transition: height var(--duration-base) var(--ease-out);
+  }
+
+  .convert-wizard--shrunk .convert-wizard__preview-pane::before {
+    height: var(--preview-shrunk);
+  }
+
+  .convert-wizard__preview {
+    position: relative;
+    height: var(--preview-height);
+    pointer-events: auto;
     transform-origin: top center;
     transition: transform var(--duration-base) var(--ease-out);
   }
@@ -575,7 +592,8 @@ function onCreate() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .convert-wizard__preview {
+  .convert-wizard__preview,
+  .convert-wizard__preview-pane::before {
     transition: none;
   }
 }

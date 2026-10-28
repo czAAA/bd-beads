@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { flushPromises, mount } from '@vue/test-utils'
+import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import NewProjectForm from './NewProjectForm.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
