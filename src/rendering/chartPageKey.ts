@@ -1,9 +1,7 @@
 import { forEachBead } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
-import { countedDimensions } from '../domain/projectExtent'
-import { frameWeave } from '../domain/layerWeave'
+import { projectDimensions } from '../domain/projectExtent'
 import type { Project } from '../domain/project'
-import { describeWeave } from '../domain/weave'
 import { displayedGrid, planPrint, type PrintPart, type PrintPlan } from './printPlan'
 import { chartCellOf, customChart } from './customChart'
 
@@ -12,7 +10,7 @@ import { chartCellOf, customChart } from './customChart'
 
 type Counted = Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'techniqueSettings'>
 
-/** Where a bead (a Unit's, for the Units techniques) lands in the displayed chart, across and down from 0. */
+/** Where a bead lands in the displayed chart, across and down from 0. */
 function displayedAt(rotation: Rotation, columns: number, rows: number, column: number, row: number): [number, number] {
   switch (rotation) {
     case 90:
@@ -40,12 +38,10 @@ export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): str
       return bead.color && onPart(across, down) ? [bead.color] : []
     }))]
   }
-  const weave = describeWeave(frameWeave(project))
-  const { columns, rows } = countedDimensions(project)
+  const { columns, rows } = projectDimensions(project)
   const found = new Set<string>()
   forEachBead(frame.beads, (row, column, hex) => {
-    if (!weave.hasPosition({ row, column }, { ...frame, row: 0, column: 0 })) return
-    const [across, down] = displayedAt(project.rotation, columns, rows, Math.floor(column / weave.columnsPerUnit), Math.floor(row / weave.rowsPerUnit))
+    const [across, down] = displayedAt(project.rotation, columns, rows, column, row)
     if (onPart(across, down)) {
       found.add(hex)
     }

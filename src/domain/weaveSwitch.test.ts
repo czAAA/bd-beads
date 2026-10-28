@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { isInCurrentRow, isInFinishedRow, rowProgressPosition, toggleRowDirection } from './rowProgress'
+import { isInCurrentRow, isInFinishedRow, rowProgressPosition } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
@@ -25,9 +25,9 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
 
   it('reads each layer\'s settings map, and keeps a Brick block off brick stitch for a switch back (tickets 0624, 0625)', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-    const netFrame = { ...brick, frame: { ...brick.frame!, technique: 'netting' as const, techniqueSettings: { netSize: 5 } } }
-    expect(canvasWeave(netFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
-    expect(frameWeave(netFrame)).toEqual({ technique: 'netting', techniqueSettings: { netSize: 5 } })
+    const brickFrame = { ...brick, technique: 'peyote' as const, techniqueSettings: {}, frame: { ...brick.frame!, techniqueSettings: { brickBlock: 5 } } }
+    expect(canvasWeave(brickFrame)).toEqual({ technique: 'peyote' })
+    expect(frameWeave(brickFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 5 } })
     // A Brick block kept off brick stitch, for a switch back, lays nothing out in loom.
     const loom = withWeave(brick, 'canvas', { technique: 'loom' })
     expect(canvasWeave(loom).techniqueSettings).toEqual({ brickBlock: 3 })
@@ -46,13 +46,6 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
     expect(isInFinishedRow(project, { row: 10, column: 10 })).toBe(true)
     expect(isInFinishedRow(project, { row: 11, column: 10 })).toBe(false)
     expect(isInCurrentRow(project, { row: 11, column: 10 })).toBe(true)
-  })
-
-  it('is the Frame\'s own Weave that Turn row direction asks: a Netting Frame on a loom Canvas stays on rows', () => {
-    const base = peyoteOnLoom()
-    const netting = { ...base, frame: { ...base.frame!, technique: 'netting' as const } }
-    expect(toggleRowDirection(netting)).toBe(netting)
-    expect(toggleRowDirection({ ...base, frame: { ...base.frame!, technique: 'loom' as const } }).rowProgress.direction).toBe('columns')
   })
 
   it('switches the Canvas without touching the Frame, and the Frame without touching the Canvas', () => {

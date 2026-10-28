@@ -1,4 +1,4 @@
-import { countedDimensions } from '../domain/projectExtent'
+import { projectDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'
@@ -175,13 +175,13 @@ function downReversed(rotation: Rotation): boolean {
 /** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted
  * from its far end when the turn reverses this axis. */
 export function acrossNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(project.rotation) ? countedDimensions(project).rows : countedDimensions(project).columns
+  const dimension = rotationSwapsAxes(project.rotation) ? projectDimensions(project).rows : projectDimensions(project).columns
   return acrossReversed(project.rotation) ? dimension - index : index + 1
 }
 
 /** The down-axis equivalent of acrossNumber. */
 export function downNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(project.rotation) ? countedDimensions(project).columns : countedDimensions(project).rows
+  const dimension = rotationSwapsAxes(project.rotation) ? projectDimensions(project).columns : projectDimensions(project).rows
   return downReversed(project.rotation) ? dimension - index : index + 1
 }
 

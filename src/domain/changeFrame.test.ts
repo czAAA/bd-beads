@@ -1,12 +1,11 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Rect, type FrameSheet } from './canvas'
-import { describeWeave } from './weave'
+import { TECHNIQUES } from './weave'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
 import { shownBeads } from './layers'
 import { createProject } from './createProject'
 import { rowProgressOn } from './rowProgress'
-import { switchLoss } from './weaveSwitch'
 import { frameWithEdgeStep, withFrame } from './frame'
 import { frameWeave } from './layerWeave'
 import type { Project } from './project'
@@ -22,24 +21,6 @@ function framed(overrides: Partial<Project> = {}): Project {
 }
 
 const woven = (direction: 'rows' | 'columns', currentRow = 5, currentColumn = 3) => ({ direction, currentRow, currentColumn })
-
-describe('changeFrame in Right-angle weave (ticket 482)', () => {
-  const woven = () => ({ ...createProject({ technique: 'rightAngle', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }) })
-
-  it('switches the Frame to and from another Technique (ticket 507)', () => {
-    expect(changeFrame(woven(), { technique: 'peyote' }).kind).toBe('changed')
-    expect(changeFrame(framed(), { technique: 'rightAngle' }).kind).toBe('changed')
-  })
-
-  it('does not take out a single line, which is not a Unit', () => {
-    expect(changeFrame(woven(), { removeLine: { axis: 'row', index: 0 } })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
-  })
-
-  it('still moves, in whole Units', () => {
-    const result = changeFrame(woven(), { move: { rows: 2, columns: 1 } })
-    expect(result.kind === 'changed' && result.project.frame).toMatchObject({ row: 2, column: 1, rows: 5, columns: 4 })
-  })
-})
 
 describe('changeFrame naming the Frame (ticket 555)', () => {
   it('sets the name, keeps the rest of the Frame, and an empty name clears it', () => {
@@ -267,28 +248,23 @@ describe('changeFrame', () => {
       expect(changeCanvasWeave(project, { technique: 'loom' })).toBe(project)
     })
 
-    const TECHNIQUES_ALL = ['loom', 'peyote', 'brick', 'rightAngle', 'netting'] as const
-
-    it('switches between every ordered pair of Techniques, keeping the beads that have a position and dropping the rest (ticket 507)', () => {
-      for (const from of TECHNIQUES_ALL) {
-        for (const to of TECHNIQUES_ALL) {
+    it('switches between every ordered pair of Techniques, every bead keeping its row and column (tickets 507, 0644)', () => {
+      const beads = { 0: { 0: '#111111', 1: '#222222' }, 3: { 2: '#333333' } }
+      for (const from of TECHNIQUES) {
+        for (const to of TECHNIQUES) {
           if (from === to) continue
-          const start = framed({ technique: from, ...(from === 'netting' ? { techniqueSettings: { netSize: 3 } } : {}), beads: { 0: { 0: '#111111', 1: '#222222' }, 3: { 2: '#333333' } } })
-          const next = changeCanvasWeave(start, { technique: to, techniqueSettings: { netSize: 3 } })
-          const target = describeWeave({ technique: to, techniqueSettings: { netSize: 3 } })
+          const start = framed({ technique: from, beads })
+          const next = changeCanvasWeave(start, { technique: to })
           expect(next.technique).toBe(to)
-          for (const [row, column, color] of [[0, 0, '#111111'], [0, 1, '#222222'], [3, 2, '#333333']] as const) {
-            expect(colorAt(next.beads, row, column)).toBe(target.hasPosition({ row, column }) ? color : null)
-          }
+          expect(next.beads).toEqual(beads)
           expect(next.frame).toBe(start.frame)
         }
       }
     })
 
-    it('takes the Net size given for Netting, and leaves none behind when it leaves Netting', () => {
-      const net = changeCanvasWeave(framed(), { technique: 'netting', techniqueSettings: { netSize: 7 } })
-      expect(net.techniqueSettings).toEqual({ netSize: 7 })
-      expect(changeCanvasWeave(net, { technique: 'loom' }).techniqueSettings).toBeUndefined()
+    it('leaves behind no setting no Technique describes', () => {
+      const stray = changeCanvasWeave(framed(), { technique: 'brick', techniqueSettings: { beadsPerLoop: 7 } })
+      expect(stray.techniqueSettings).toEqual({ brickBlock: 1 })
     })
 
     it('takes the Brick block given with the switch to brick stitch, and keeps the layer\'s own when none is given (ticket 568)', () => {
@@ -298,13 +274,6 @@ describe('changeFrame', () => {
       const result = changeFrame(framed(), { technique: 'brick', techniqueSettings: { brickBlock: 2 } })
       expect(result.kind === 'changed' && result.project.frame).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
       expect(changeFrame(framed(), { technique: 'loom', techniqueSettings: { brickBlock: 1 } }).kind).toBe('unchanged')
-    })
-
-    it('counts the beads a switch would drop', () => {
-      const project = framed({ beads: { 0: { 0: '#111111', 1: '#222222' } } })
-      // Netting of size 3 has no position at (0, 0) or (0, 1): both are holes.
-      expect(switchLoss(project, 'canvas', 'netting', { netSize: 3 })).toEqual({ lost: 2, folded: 0 })
-      expect(switchLoss(project, 'canvas', 'peyote')).toEqual({ lost: 0, folded: 0 })
     })
 
     it('changes the Brick block of a brick stitch Canvas', () => {
@@ -534,42 +503,6 @@ describe('Remove Frame keeps the Frame\'s beads (ticket 497)', () => {
   })
 })
 
-describe('changeFrame in Netting (ticket 485)', () => {
-  const woven = () => createProject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
-
-  it('switches the Frame to and from Netting, with its Net size (ticket 507)', () => {
-    expect(changeFrame(woven(), { technique: 'peyote' }).kind).toBe('changed')
-    const result = changeFrame(framed(), { technique: 'netting', techniqueSettings: { netSize: 5 } })
-    expect(result.kind === 'changed' && result.project.frame).toMatchObject({ technique: 'netting', techniqueSettings: { netSize: 5 } })
-  })
-
-  it('drops the Frame\'s beads that fall in a hole, counted from its own corner, and is blocked once a pass is done (ticket 507)', () => {
-    const start = framed({ frame: sheet(frame, { 0: { 0: '#111111' }, 1: { 1: '#222222' } }) })
-    const result = changeFrame(start, { technique: 'netting', techniqueSettings: { netSize: 3 } })
-    expect(result.kind === 'changed' && result.project.frame?.beads).toEqual({ 1: { 1: '#222222' } })
-    expect(changeFrame({ ...start, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }, { technique: 'netting', techniqueSettings: { netSize: 3 } })).toEqual({ kind: 'refused', reason: 'locked' })
-  })
-
-  it('changes only the Net size when the Technique stays, and is no change for the size it has (ticket 568)', () => {
-    const start = framed({ frame: sheet(frame, { 0: { 0: '#111111' }, 1: { 1: '#222222' } }) })
-    const net = changeFrame(start, { technique: 'netting', techniqueSettings: { netSize: 3 } })
-    const project = net.kind === 'changed' ? net.project : start
-    const wider = changeFrame(project, { technique: 'netting', techniqueSettings: { netSize: 7 } })
-    expect(wider.kind === 'changed' && wider.project.frame).toMatchObject({ technique: 'netting', techniqueSettings: { netSize: 7 } })
-    expect(changeFrame(project, { technique: 'netting', techniqueSettings: { netSize: 3 } }).kind).toBe('unchanged')
-    expect(changeCanvasWeave(changeCanvasWeave(framed(), { technique: 'netting', techniqueSettings: { netSize: 3 } }), { technique: 'netting', techniqueSettings: { netSize: 5 } }).techniqueSettings).toEqual({ netSize: 5 })
-  })
-
-  it('does not take out a single line, which is not a diamond', () => {
-    expect(changeFrame(woven(), { removeLine: { axis: 'row', index: 0 } })).toEqual({ kind: 'refused', reason: 'fixed-weave' })
-  })
-
-  it('moves in whole diamonds', () => {
-    const result = changeFrame(woven(), { move: { rows: 4, columns: 4 } })
-    expect(result.kind === 'changed' && result.project.frame).toMatchObject({ row: 4, column: 4, rows: 7, columns: 13 })
-  })
-})
-
 describe('changeFrame placing a Frame (ticket 495)', () => {
   const place = { frame: { row: 2, column: 3, rows: 8, columns: 5 }, weave: { technique: 'peyote' as const } }
   const canvas = withColors({}, [{ row: 3, column: 4, color: '#123456' }])
@@ -681,34 +614,7 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
     expect(matched.beads).toBe(folded.beads)
     const canvasMatched = changeCanvasWeave(folded, { technique: 'peyote' })
     expect(canvasMatched.frame!.folded).toEqual(folded.frame!.folded)
-
-    // In a net of 3 the Folded bead at row 2, column 3 falls in a hole, as a bead the Frame shows would.
-    const holed = narrower(peyote(withColors(own, [{ row: 2, column: 3, color: RED }])))
-    expect(changed(holed, { technique: 'netting', techniqueSettings: { netSize: 3 } }).frame!.folded).toEqual(folded.frame!.folded)
-  })
-
-  describe('counting what a switch of the Frame\'s Technique would drop (ticket 0641)', () => {
-    // In a net of 3, row 2 column 0 and row 1 column 3 have a position; row 0 column 0 and row 2 column 3 are holes.
-    it('counts a Folded bead that would be dropped though no bead the Frame shows would', () => {
-      const folded = narrower(peyote(withColors({}, [{ row: 2, column: 0, color: RED }, { row: 1, column: 3, color: BLUE }, { row: 2, column: 3, color: GREEN }])))
-      expect(switchLoss(folded, 'frame', 'netting', { netSize: 3 })).toEqual({ lost: 1, folded: 1 })
-    })
-
-    it('tells the Folded beads apart among the beads it would drop', () => {
-      const holed = narrower(peyote(withColors(own, [{ row: 2, column: 3, color: RED }])))
-      expect(switchLoss(holed, 'frame', 'netting', { netSize: 3 })).toEqual({ lost: 2, folded: 1 })
-    })
-
-    it('counts nothing where every bead keeps a place', () => {
-      expect(switchLoss(narrower(peyote(own)), 'frame', 'loom')).toEqual({ lost: 0, folded: 0 })
-    })
-
-    it('counts from the Frame\'s own corner, as the switch drops', () => {
-      // In Right-angle weave the last column of a horizontal line (row 0 here) has no position.
-      const project = peyote(withColors({}, [{ row: 0, column: 3, color: RED }]))
-      expect(switchLoss(project, 'frame', 'rightAngle')).toEqual({ lost: 1, folded: 0 })
-      expect(changed(project, { technique: 'rightAngle' }).frame!.beads).toEqual({})
-    })
+    expect(changed(folded, { technique: 'brick' }).frame!.folded).toEqual(folded.frame!.folded)
   })
 
   it('shifts them with Remove row/column, the removed line\'s Folded beads going with it', () => {

@@ -26,7 +26,6 @@ import { hasProjectBeads } from '../../domain/layerBeads'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
-import { describeWeave } from '../../domain/weave'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 const {
@@ -175,8 +174,7 @@ const frameTooltip = computed(() => {
   if (!project || !frame) return ''
   const bead = resolveProjectBead(project)
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
-  const { columns, rows } = describeWeave(frame).unitsOf(frame)
-  return fillBlanks(t.value.frame.sizeTooltip, { columns, rows, estimate })
+  return fillBlanks(t.value.frame.sizeTooltip, { columns: frame.columns, rows: frame.rows, estimate })
 })
 
 /** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar

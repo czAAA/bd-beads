@@ -103,7 +103,7 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
     // A bead's cell ends where the bead below it starts (peyote's rows nest), and the unshifted cell's middle names its
     // position, so an offset row stays in its own column.
     const below = { row: position.row + 1, column: position.column }
-    const share = description.hasPosition(below) ? Math.min(height, description.box(below, size.width, size.height).y - y) : height
+    const share = Math.min(height, description.box(below, size.width, size.height).y - y)
     const cell = rectOf(x, y, width, share)
     const middle = at(x - description.rowOffset(position.row, size.width) + width / 2, y + share / 2)
     const across = Math.floor(middle[0] / stepAcross)
@@ -201,9 +201,6 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
 
   const beads = placeBeads(project, plan, part)
   const round = beadsAreRound(project)
-  // The Technique's policy picks the chart's look, not where beads are: a cell per bead, or each bead outlined with the
-  // 5th and 10th lines between the geometry's steps (ticket 0642).
-  const outlined = describeWeave(frameWeave(project)).policy.chart === 'outlined'
   const offset = beads.some((bead) => Math.abs(bead.cell.x - bead.across * stepAcross) > 0.5 || Math.abs(bead.cell.y - bead.down * stepDown) > 0.5)
 
   // Fills, one colour after another.
@@ -211,14 +208,14 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
   for (const bead of filled) {
     const fill = inOverlap(bead) ? tint(bead.color!, OVERLAP_TINT) : bead.color!
     // A square bead fills its cell, so beads that nest (peyote's rows sit closer than a bead is tall) don't overlap.
-    const { x, y, width, height } = round || outlined ? bead.box : bead.cell
+    const { x, y, width, height } = round ? bead.box : bead.cell
     const inset = round ? (Math.min(width, height) * (1 - ROUND_SHARE)) / 2 : 0
     const left = (chart.x + x + inset) * K
     const top = (chart.y + y + inset) * K
     const wide = (width - inset * 2) * K
     const tall = (height - inset * 2) * K
-    if (round || outlined) {
-      content.roundRect(left, top, wide, tall, round ? Math.min(wide, tall) : 0, { fill, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
+    if (round) {
+      content.roundRect(left, top, wide, tall, Math.min(wide, tall), { fill, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
     } else {
       content.fillRect(left, top, wide, tall, fill)
     }
@@ -231,28 +228,16 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
   for (const { cell, across, down } of beads) {
     const acrossIndex = firstIndexAcross + across
     const downIndex = firstIndexDown + down
-    if (!round && !outlined) {
+    if (!round) {
       cellLines.add(false, cell.x, cell.y, cell.y + cell.height)
       cellLines.add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
       cellLines.add(true, cell.y, cell.x, cell.x + cell.width)
       cellLines.add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
     }
-    if (outlined) continue
     const right = across < lastAcross && lineBetween(acrossNumber(project, acrossIndex), acrossNumber(project, acrossIndex + 1))
     if (right) (right === 'tenth' ? tenLines : fiveLines).add(false, cell.x + cell.width, cell.y, cell.y + cell.height)
     const below = down < lastDown && lineBetween(downNumber(project, downIndex), downNumber(project, downIndex + 1))
     if (below) (below === 'tenth' ? tenLines : fiveLines).add(true, cell.y + cell.height, cell.x, cell.x + cell.width)
-  }
-  if (outlined) {
-    // An outlined bead is a line of its own; the steps' edges (a Unit's, in Right-angle weave and Netting) carry the 5th and 10th.
-    for (let across = 0; across < lastAcross; across += 1) {
-      const level = lineBetween(acrossNumber(project, firstIndexAcross + across), acrossNumber(project, firstIndexAcross + across + 1))
-      if (level) (level === 'tenth' ? tenLines : fiveLines).add(false, (across + 1) * stepAcross, 0, chart.height)
-    }
-    for (let down = 0; down < lastDown; down += 1) {
-      const level = lineBetween(downNumber(project, firstIndexDown + down), downNumber(project, firstIndexDown + down + 1))
-      if (level) (level === 'tenth' ? tenLines : fiveLines).add(true, (down + 1) * stepDown, 0, chart.width)
-    }
   }
   content.lines(cellLines.segments(chart.x, chart.y), LINE_CELL, PRINT_COLORS.lineStrong)
   content.lines(fiveLines.segments(chart.x, chart.y), LINE_FIVE, PRINT_COLORS.fieldLine)
@@ -266,7 +251,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
   // Letters over the lines: every bead carries its Swatch letter, whether the Letters toggle is on or not.
   for (const bead of beads) {
     if (bead.color === null) continue
-    const { x, y, width, height } = round || outlined ? bead.box : bead.cell
+    const { x, y, width, height } = round ? bead.box : bead.cell
     letterAt(content, letters[bead.color] ?? '?', { x: chart.x + x, y: chart.y + y, width, height }, inOverlap(bead) ? PRINT_COLORS.muted : letterColor(bead.color))
   }
 

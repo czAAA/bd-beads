@@ -94,7 +94,7 @@ export function readRowProgress(stored: (Partial<RowProgress> & { currentRow: nu
   const rowProgress: Partial<RowProgress> & { currentRow: number } = stored ?? { currentRow: 0 }
   const turns = rowOrderOf(sheet, { direction: 'rows' }).turns
   return {
-    // Turn row direction isn't offered where the Row order is worked one way only (Netting, ticket 487).
+    // Turn row direction isn't offered where the Row order is worked one way only (a Custom frame, ticket 0594).
     direction: turns ? (rowProgress.direction ?? 'rows') : 'rows',
     currentRow: clampRow(rowProgress.currentRow, passesOf(sheet, { direction: 'rows' })),
     currentColumn: clampRow(rowProgress.currentColumn ?? 0, passesOf(sheet, { direction: 'columns' })),
@@ -154,7 +154,7 @@ function framePassAt(project: RowProgressed, position: GridPosition): number | u
     return undefined
   }
   const own = { row: position.row - frame.row, column: position.column - frame.column }
-  // Its rectangle, holes included, and its positions: a Custom frame's are named by round and place and reach past it
+  // Its rectangle and its positions: a Custom frame's are named by round and place and reach past it
   // (ticket 0594); its Row order puts none of the rectangle's others in a pass.
   if (!frameContains(frame, position) && !frameGeometryOf(project).hasPosition(own)) {
     return undefined

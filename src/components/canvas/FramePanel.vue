@@ -22,13 +22,10 @@ import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameKind'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { frameWeave } from '../../domain/layerWeave'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
-import { describeWeave } from '../../domain/weave'
-import { hasWordChart } from '../../domain/wordChart'
 import { EXPORT_QUALITIES, PNG_DPI_BY_QUALITY, parseExportQuality, shownMegabytes } from '../../domain/exportQuality'
 import { decimalSign } from '../../domain/formatNumber'
 import { estimatePdf, estimatePng, exportFacts, type SizeEstimate } from '../../rendering/exportEstimate'
@@ -101,10 +98,7 @@ const cells = FRAME_EDGES.map((edge) => {
 const typedWidth = ref('')
 const typedHeight = ref('')
 const sizeEdited = computed(() => typedWidth.value !== '' || typedHeight.value !== '')
-/** Whether a quarter turn is offered: not in Netting, where a turned diamond row isn't a row (ticket 486). */
-const turnable = computed(() => describeWeave(frameWeave(props.project)).quarterTurn)
-const counted = computed(() => describeWeave(frameWeave(props.project)).unitsOf(frame.value ?? { columns: 0, rows: 0 }))
-const sizeUnit = computed(() => (describeWeave(frameWeave(props.project)).countsUnits ? t.value.frame.sizeUnitUnits : t.value.frame.sizeUnit))
+const counted = computed(() => frame.value ?? { columns: 0, rows: 0 })
 function clearSize(): void {
   typedWidth.value = ''
   typedHeight.value = ''
@@ -199,7 +193,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       <span class="frame-panel__label">{{ t.frame.titleLabel }}</span>
       <span v-if="frame" class="frame-panel__tools">
         <IconButton
-          v-if="!locked && turnable && rotatable"
+          v-if="!locked && rotatable"
           variant="plain"
           :icon-size="16"
           :action="rotateAction"
@@ -240,8 +234,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
         </div>
         <p class="frame-panel__line" data-testid="frame-letters-line">{{ t.frame.lettersLine }}</p>
-        <!-- The Word chart follows Letters (ticket 0574) but not in every Technique. -->
-        <p v-if="project.letters && !hasWordChart(frameWeave(project).technique)" class="frame-panel__line" data-testid="frame-letters-unavailable">{{ t.frame.lettersUnavailable }}</p>
       </template>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
@@ -355,7 +347,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               @input="cleanSizeInput"
               @keydown="onSizeKey"
             />
-            <span class="frame-panel__unit">{{ sizeUnit }}</span>
+            <span class="frame-panel__unit">{{ t.frame.sizeUnit }}</span>
           </component>
 
           <p v-if="locked" class="frame-panel__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>

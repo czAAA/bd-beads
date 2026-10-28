@@ -15,22 +15,19 @@ const mountSection = (technique: Technique, props: Record<string, unknown> = {})
   mount(TechniqueSection, { props: { technique, settings: {}, testid: 'x', 'onUpdate:technique': () => {}, ...props } })
 
 describe('TechniqueSection (tickets 568, 0626)', () => {
-  it('shows a stepper for each setting the Technique describes: the Brick block for brick stitch, the Net size for Netting', async () => {
+  it('shows a stepper for each setting the Technique describes: the Brick block for brick stitch', async () => {
     const wrapper = mountSection('loom')
     expect(wrapper.find('[data-testid="x-brick-block"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="x-net-size"]').exists()).toBe(false)
 
     await wrapper.setProps({ technique: 'brick' })
     expect(wrapper.find('[data-testid="x-brick-block"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="x-net-size"]').exists()).toBe(false)
-    await wrapper.setProps({ technique: 'netting' })
-    expect(wrapper.find('[data-testid="x-net-size"]').exists()).toBe(true)
+    await wrapper.setProps({ technique: 'peyote' })
     expect(wrapper.find('[data-testid="x-brick-block"]').exists()).toBe(false)
   })
 
   it('shows each setting at its value, or its default where it has none', () => {
-    expect(mountSection('netting', { settings: { netSize: 7 } }).get('[data-testid="x-net-size-value"]').text()).toBe('7')
-    expect(mountSection('netting').get('[data-testid="x-net-size-value"]').text()).toBe('3')
+    expect(mountSection('brick', { settings: { brickBlock: 7 } }).get('[data-testid="x-brick-block-value"]').text()).toBe('7')
+    expect(mountSection('brick').get('[data-testid="x-brick-block-value"]').text()).toBe('1')
   })
 
   it('reports each change, a setting by its id, and leaves what is shown to its parent', async () => {
@@ -49,9 +46,5 @@ describe('TechniqueSection (tickets 568, 0626)', () => {
     expect(wrapper.get('[data-testid="x-technique"] button').attributes('aria-disabled')).toBe('true')
     expect(wrapper.get('[data-testid="x-brick-block-more"]').attributes('aria-disabled')).toBe('true')
     expect(wrapper.text()).toContain(en.weaveSettings.brickBlock!.locked)
-
-    await wrapper.setProps({ technique: 'netting' })
-    expect(wrapper.get('[data-testid="x-net-size-more"]').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.text()).toContain(en.weaveSettings.netSize!.locked)
   })
 })

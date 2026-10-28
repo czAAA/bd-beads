@@ -157,79 +157,6 @@ describe('the Surface view lays out a block of beads', () => {
   })
 })
 
-describe('the Surface view in Right-angle weave (ticket 482)', () => {
-  // Five Units across and two down: 6 columns, 5 rows; a bead is 20 long and 14 across, so a Unit is 34.
-  const extent = projectExtentPx('rightAngle', 6, 5)
-  const frameOnly: Space = { open: false, origin: { row: 0, column: 0 }, columns: 6, rows: 5, hasFrame: true, toAbsolute: { row: 0, column: 0 }, extent }
-  const beads = [{ row: 0, column: 0 }, { row: 1, column: 5 }, { row: 2, column: 4 }, { row: 3, column: 2 }, { row: 4, column: 3 }]
-
-  it('measures a block of Units from their corner', () => {
-    expect(extent).toEqual({ width: 5 * 34 + 14, height: 2 * 34 + 14 })
-  })
-
-  describe.each(ROTATIONS)('turned %i°', (rotation) => {
-    it.each([frameOnly, OPEN_SPACE])('finds the bead at the point its centre is drawn at', (space) => {
-      const view = surfaceView({ space, technique: 'rightAngle', rotation, zoom: 2.5, scroll: { x: 37, y: -12 } })
-      for (const bead of beads) {
-        expect(view.pointToBead(view.beadToPoint(bead))).toEqual(bead)
-        expect(view.pointToCell(view.beadToPoint(bead))).toEqual(bead)
-      }
-    })
-  })
-
-  it('finds no bead in the hole of a Unit, or at the empty end of a line of horizontal beads', () => {
-    const view = surfaceView({ space: frameOnly, technique: 'rightAngle', rotation: 0, zoom: 1 })
-    expect(view.pointToBead({ x: 24, y: 24 })).toBeUndefined()
-    expect(view.pointToBead({ x: 5 * 34 + 7, y: 5 })).toBeUndefined()
-  })
-
-  it('counts a step along and a step down in Units', () => {
-    expect(surfaceView({ space: frameOnly, technique: 'rightAngle', rotation: 0, zoom: 2 }).beadStep()).toEqual({ column: { x: 68, y: 0 }, row: { x: 0, y: 68 } })
-  })
-
-  it('boxes a Frame\'s beads from the first vertical bead to the last', () => {
-    const box = surfaceView({ space: OPEN_SPACE, technique: 'rightAngle', rotation: 0, zoom: 1 }).beadBox({ row: 2, column: 1, rows: 5, columns: 6 })
-    expect(box).toEqual({ x: 34, y: 34, width: 5 * 34 + 14, height: 2 * 34 + 14 })
-  })
-})
-
-describe('the Surface view in Netting (ticket 485)', () => {
-  // Two diamonds across and one down at Net size 3: 9 columns, 5 rows; a strand step is 15 and a bead 20.
-  const extent = projectExtentPx('netting', 9, 5)
-  const frameOnly: Space = { open: false, origin: { row: 0, column: 0 }, columns: 9, rows: 5, hasFrame: true, toAbsolute: { row: 0, column: 0 }, extent }
-  const beads = [{ row: 0, column: 2 }, { row: 1, column: 1 }, { row: 2, column: 4 }, { row: 3, column: 5 }, { row: 4, column: 6 }]
-
-  it('measures a block of positions from their corner', () => {
-    expect(extent).toEqual({ width: 8 * 15 + 20, height: 4 * 15 + 20 })
-  })
-
-  describe.each(ROTATIONS)('turned %i°', (rotation) => {
-    it.each([frameOnly, OPEN_SPACE])('finds the bead at the point its centre is drawn at', (space) => {
-      const view = surfaceView({ space, technique: 'netting', rotation, zoom: 2.5, scroll: { x: 37, y: -12 } })
-      for (const bead of beads) {
-        expect(view.pointToBead(view.beadToPoint(bead))).toEqual(bead)
-        expect(view.pointToCell(view.beadToPoint(bead))).toEqual(bead)
-      }
-    })
-  })
-
-  it('finds no bead in a hole, but the nearest bead for dragging a Frame', () => {
-    const view = surfaceView({ space: frameOnly, technique: 'netting', rotation: 0, zoom: 1 })
-    const hole = view.beadToPoint({ row: 2, column: 2 })
-    expect(view.pointToBead(hole)).toBeUndefined()
-    expect(view.pointToCell(hole)).not.toEqual({ row: 2, column: 2 })
-  })
-
-  it('counts a step along and a step down in diamonds', () => {
-    expect(surfaceView({ space: frameOnly, technique: 'netting', rotation: 0, zoom: 2 }).beadStep()).toEqual({ column: { x: 120, y: 0 }, row: { x: 0, y: 60 } })
-  })
-
-  it('boxes a Frame\'s beads from the first position to the last', () => {
-    const box = surfaceView({ space: OPEN_SPACE, technique: 'netting', rotation: 0, zoom: 1 }).beadBox({ row: 4, column: 4, rows: 5, columns: 9 })
-    expect(box).toEqual({ x: 60, y: 60, width: 8 * 15 + 20, height: 4 * 15 + 20 })
-  })
-})
-
 describe('the Surface view with a Frame woven in its own Technique (ticket 492)', () => {
   // A 4 × 4 peyote Frame at row 2, column 3 of a loom Canvas: its corner is the Canvas position (2, 3), at (60, 40).
   const frame = { technique: 'peyote' as const, row: 2, column: 3, rows: 4, columns: 4 }
@@ -285,7 +212,7 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
 
 describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
   const cell = { aspect: 1.3 / 1.6, roundness: 0.1 }
-  const TECHS: Technique[] = ['loom', 'peyote', 'brick', 'rightAngle']
+  const TECHS: Technique[] = ['loom', 'peyote', 'brick']
 
   it('puts each bead under its own centre in every Technique and rotation', () => {
     for (const technique of TECHS) {

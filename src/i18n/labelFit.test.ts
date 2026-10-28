@@ -98,8 +98,8 @@ const CHECKED_ELSEWHERE: Record<string, string> = {
   tools: 'tool names are registry Tooltips and menu rows, tried by tooltips.browser.test.ts',
   inputMode: 'input mode names are registry Tooltips and menu rows, tried by tooltips.browser.test.ts',
   print: 'printed on a paper page that is sized to its text, not a box on the screen',
-  techniques: 'read through techniqueName(), which this search does not follow, by NewProjectForm and SwitchTechniqueModal, which panelsFit.browser.test.ts mounts',
-  weaveSettings: 'read through weaveSettingWords(), which this search does not follow, by SettingStepper, which panelsFit.browser.test.ts mounts in the Project panel and the Technique switch question, brick stitch and Netting',
+  techniques: 'read through techniqueName(), which this search does not follow, by NewProjectForm and the Project panel, which panelsFit.browser.test.ts mounts',
+  weaveSettings: 'read through weaveSettingWords(), which this search does not follow, by SettingStepper, which panelsFit.browser.test.ts mounts in the Project panel for brick stitch',
 }
 
 describe('every text has a room that is checked', () => {

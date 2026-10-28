@@ -11,7 +11,7 @@ const props = withDefaults(
   defineProps<{
     min?: number
     max?: number
-    /** How far a press moves the number (Net size goes by two, ticket 485). */
+    /** How far a press moves the number (a setting's step, ticket 0624). */
     stepBy?: number
     decreaseLabel: string
     /** The name of the number for screen readers, e.g. "Width": it is a button that opens the number for typing

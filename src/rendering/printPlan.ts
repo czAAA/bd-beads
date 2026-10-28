@@ -1,10 +1,10 @@
-import { countedDimensions } from '../domain/projectExtent'
+import { projectDimensions } from '../domain/projectExtent'
 import { frameWeave } from '../domain/layerWeave'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
-import { describeWeave, type Weave } from '../domain/weave'
+import type { Weave } from '../domain/weave'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
-import { displayedExtentPx, unitStepPx, type Region } from './surfaceView'
+import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
 
 // PDF page layout (ticket 162, 185, 578, 0584): the Cover page whole, then parts of as many beads as fill a chart page at
 // one bead size, small parts sharing a sheet; page px at 150 dpi.
@@ -100,20 +100,17 @@ type Shape = Pick<Project, 'technique' | 'techniqueSettings' | 'frame' | 'beads'
 export function displayedGrid(project: Shape) {
   const { rotation } = project
   const weave = frameWeave(project)
-  const { columns, rows } = countedDimensions(project)
-  // Techniques that count Units step a whole Unit across and down (tickets 482, 485).
-  const step = unitStepPx(weave)
+  const { columns, rows } = projectDimensions(project)
+  const step = beadStepPx(weave)
   const cell = cellSizePx(weave.technique, weave.cell)
-  const size = describeWeave(weave).unitSize(cell.width, cell.height)
   return rotationSwapsAxes(rotation)
-    ? { across: rows, down: columns, stepAcross: step.down, stepDown: step.across, beadAcross: size.height, beadDown: size.width }
-    : { across: columns, down: rows, stepAcross: step.across, stepDown: step.down, beadAcross: size.width, beadDown: size.height }
+    ? { across: rows, down: columns, stepAcross: step.down, stepDown: step.across, beadAcross: cell.height, beadDown: cell.width }
+    : { across: columns, down: rows, stepAcross: step.across, stepDown: step.down, beadAcross: cell.width, beadDown: cell.height }
 }
 
 /** The displayed size of a block of beads `across` × `down`, at zoom 1. */
 function blockExtent(weave: Weave, rotation: Rotation, across: number, down: number): PageSize {
-  const counted = rotationSwapsAxes(rotation) ? { columns: down, rows: across } : { columns: across, rows: down }
-  const { columns, rows } = describeWeave(weave).positionsOf(counted)
+  const { columns, rows } = rotationSwapsAxes(rotation) ? { columns: down, rows: across } : { columns: across, rows: down }
   return displayedExtentPx(weave.technique, columns, rows, 1, rotation, weave.cell)
 }
 

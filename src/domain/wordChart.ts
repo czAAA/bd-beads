@@ -3,18 +3,12 @@ import type { Rotation } from './grid'
 import { frameRowOrder } from './rowProgress'
 import { frameWeave } from './layerWeave'
 import type { Project } from './project'
-import { describeWeave, type Technique } from './weave'
+import { describeWeave } from './weave'
 import type { PassDirection } from './weaveGeometry'
 import type { OrderStep, RowOrder } from './rowOrder'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
  * line per row in the order Row progress counts them. Pure data here; the words and the drawing are the export's. */
-
-/** Whether a Technique has a Word chart (the Letters toggle says so when it has none): Right-angle weave and Netting
- * have none yet. */
-export function hasWordChart(technique: Technique): boolean {
-  return describeWeave({ technique }).wordChart !== undefined
-}
 
 /** A run of beads of one color in a row; no letter for empty cells. */
 interface WordRun {
@@ -69,13 +63,12 @@ const ASCENDS: Record<PassDirection, Record<Rotation, boolean>> = {
   columns: { 0: true, 90: false, 180: false, 270: true },
 }
 
-/** The Word chart of a Project's Frame, or undefined with Letters off, no Frame, or a Technique or Frame kind without
- * one. */
+/** The Word chart of a Project's Frame, or undefined with Letters off or no Frame. */
 export function wordChartOf(project: Project): WordChart | undefined {
   const { frame } = project
   const weave = frameWeave(project)
   const { wordChart, twoPasses } = describeWeave(weave)
-  if (!project.letters || !frame || !wordChart) {
+  if (!project.letters || !frame) {
     return undefined
   }
   const order = frameRowOrder(project)

@@ -273,7 +273,6 @@ describe('ProjectSurface', () => {
 
     it.each([
       ['Bead shape', (project: Project): Project => ({ ...project, beadShape: 'real' })],
-      ['net size', (project: Project): Project => ({ ...project, techniqueSettings: { netSize: 5 } })],
       ['piece names', (project: Project): Project => ({ ...project, pieceNames: [{ row: 0, column: 0, name: 'Strap' }] })],
       ['Technique', (project: Project): Project => ({ ...project, technique: 'peyote' })],
       ['Bead', (project: Project): Project => ({ ...project, beadId: `${project.beadId}-other`, bead: undefined })],
@@ -591,16 +590,6 @@ describe('ProjectSurface', () => {
     const at = (project: Project, row: number, column: number) =>
       surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row, column })
 
-    /** A point of the screen between beads, which a Netting layer has. */
-    function holeIn(view: ReturnType<typeof surfaceView>): { x: number; y: number } {
-      for (let y = 80; y < 400; y += 3) {
-        for (let x = 80; x < 400; x += 3) {
-          if (!view.pointToBead({ x, y })) return { x, y }
-        }
-      }
-      throw new Error('no hole found')
-    }
-
     it('paints every bead along a fast swipe, with no gaps', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project)
@@ -613,21 +602,6 @@ describe('ProjectSurface', () => {
 
       const moves = wrapper.emitted('cell-primary-move') as [number, number][]
       expect(moves.map(([, column]) => column)).toEqual([2, 3, 4, 5, 6, 7, 8])
-    })
-
-    it('starts from empty background and paints from the first bead on its way', async () => {
-      const project = projectOf(20, 10, {}, 'netting')
-      const { wrapper } = await mountSurface(project)
-      const surface = wrapper.find('[data-testid="project-surface"]')
-      const view = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } })
-      const hole = holeIn(view)
-      const first = at(project, 3, 2)
-
-      await surface.trigger('pointerdown', { clientX: hole.x, clientY: hole.y, button: 0, buttons: 1 })
-      expect(wrapper.emitted('cell-primary-down')).toBeUndefined()
-      await surface.trigger('pointermove', { clientX: first.x, clientY: first.y, buttons: 1 })
-
-      expect(wrapper.emitted('cell-primary-down')).toHaveLength(1)
     })
 
     it('ends at release', async () => {

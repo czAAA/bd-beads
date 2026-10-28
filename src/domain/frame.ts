@@ -2,7 +2,7 @@ import { footprintOf } from './footprint'
 import { beadBounds, beadsOver, beadsWithout, sameFrame, shiftedBeads, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import { refitSheet } from './folding'
 import type { GridPosition } from './grid'
-import { DEFAULT_TECHNIQUE, describeWeave, rowCycle, type Weave } from './weave'
+import { rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
 import { canvasDistance, canvasWeave, weaveOf } from './layerWeave'
 import type { Project } from './project'
@@ -23,13 +23,6 @@ export function snapRow(weave: Weave, row: number): number {
   return row - (((row % cycle) + cycle) % cycle)
 }
 
-/** The column a Frame may start on: the column itself, or the nearest start of a diamond to its left where a net's
- * lattice repeats across (ticket 485). */
-export function snapColumn(weave: Weave, column: number): number {
-  const step = describeWeave(weave).columnStep
-  return column - (((column % step) + step) % step)
-}
-
 // The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
 // the bead under the pointer, in the Frame's own geometry. An edge never passes the opposite one, so a Frame stays at
 // least one bead each way. Worked out in the Frame's own rows, whose row 0 is always an unshifted one (ticket 492).
@@ -40,22 +33,12 @@ export function frameWithEdges(weave: Weave, frame: Rect, edges: readonly FrameE
   let right = frame.columns - 1
   const at = { row: cell.row - frame.row, column: cell.column - frame.column }
 
-  const { smallest, snapBottom, snapRight } = describeWeave(weave)
-  if (edges.includes('top')) top = Math.min(snapRow(weave, at.row), snapBottom(top, bottom) - smallest.rows + 1)
-  if (edges.includes('bottom')) bottom = snapBottom(top, Math.max(at.row, top + smallest.rows - 1))
-  if (edges.includes('left')) left = Math.min(snapColumn(weave, at.column), right - smallest.columns + 1)
-  if (edges.includes('right')) right = snapRight(left, Math.max(at.column, left + smallest.columns - 1))
+  if (edges.includes('top')) top = Math.min(snapRow(weave, at.row), bottom)
+  if (edges.includes('bottom')) bottom = Math.max(at.row, top)
+  if (edges.includes('left')) left = Math.min(at.column, right)
+  if (edges.includes('right')) right = Math.max(at.column, left)
 
   return { row: frame.row + top, column: frame.column + left, rows: bottom - top + 1, columns: right - left + 1 }
-}
-
-/** A move counted in whole Canvas positions (ticket 492): the Frame's own first row is always an unshifted one, so no
- * stagger is kept; where a Unit takes more than one row or column the move goes by whole Units, so its corner stays
- * on one. */
-export function snappedMove(canvas: Weave, rows: number, columns: number): { rows: number; columns: number } {
-  const { rowsPerUnit, columnStep } = describeWeave(canvas)
-  const by = (distance: number, step: number) => (step > 1 ? Math.sign(distance) * Math.round(Math.abs(distance) / step) * step : distance)
-  return { rows: by(rows, rowsPerUnit), columns: by(columns, columnStep) }
 }
 
 /** The Frame moved by whole Canvas positions. */
@@ -65,51 +48,39 @@ export function movedFrame(frame: Rect, rows: number, columns: number): Rect {
 
 /** The Frame with its size changed from the top-left corner, which stays where it is; never smaller than one bead
  * each way. */
-export function frameWithSize(frame: Rect, columns: number, rows: number, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Rect {
-  const { smallest, snapBottom, snapRight } = describeWeave(weave)
-  const tall = snapBottom(0, Math.max(smallest.rows, Math.round(rows)) - 1) + 1
-  const wide = snapRight(0, Math.max(smallest.columns, Math.round(columns)) - 1) + 1
-  return { ...frame, columns: wide, rows: tall }
+export function frameWithSize(frame: Rect, columns: number, rows: number): Rect {
+  return { ...frame, columns: Math.max(1, Math.round(columns)), rows: Math.max(1, Math.round(rows)) }
 }
 
-const MIN_STEPPED_SIDE = 4
+/** The fewest beads a side of the Frame keeps when stepped or typed (ticket 473). */
+const FEWEST_SIDE = 4
 const MAX_TYPED_SIDE = 999
 
 // The Frame with one edge moved a bead out (`step` 1) or in (`step` -1), the others staying put (Edit Frame's steppers,
 // ticket 417). Where rows alternate (peyote, brick stitch) the top edge goes by a whole cycle of rows so the first row
 // keeps its place, as dragging the top handle does. A step that would leave less than four beads each way changes nothing (ticket 473).
 export function frameWithEdgeStep(weave: Weave, frame: Rect, edge: FrameEdge, step: 1 | -1): Rect {
-  const description = describeWeave(weave)
   const rowStep = rowCycle(weave) * step
-  const columnStep = description.columnStep * step
-  // A net's smallest Frame is a diamond, wider than the four beads other Techniques keep.
-  const fewest = { columns: Math.max(MIN_STEPPED_SIDE, description.smallest.columns), rows: Math.max(MIN_STEPPED_SIDE, description.smallest.rows) }
   switch (edge) {
     case 'left':
-      return step < 0 && frame.columns + columnStep < fewest.columns ? frame : { ...frame, column: frame.column - columnStep, columns: frame.columns + columnStep }
+      return step < 0 && frame.columns + step < FEWEST_SIDE ? frame : { ...frame, column: frame.column - step, columns: frame.columns + step }
     case 'right':
-      return step < 0 && frame.columns + columnStep < fewest.columns ? frame : { ...frame, columns: frame.columns + columnStep }
+      return step < 0 && frame.columns + step < FEWEST_SIDE ? frame : { ...frame, columns: frame.columns + step }
     case 'top':
-      return step < 0 && frame.rows + rowStep < fewest.rows ? frame : { ...frame, row: frame.row - rowStep, rows: frame.rows + rowStep }
-    case 'bottom': {
-      const down = description.rowsPerUnit * step
-      return step < 0 && frame.rows + down < fewest.rows ? frame : { ...frame, rows: frame.rows + down }
-    }
+      return step < 0 && frame.rows + rowStep < FEWEST_SIDE ? frame : { ...frame, row: frame.row - rowStep, rows: frame.rows + rowStep }
+    case 'bottom':
+      return step < 0 && frame.rows + step < FEWEST_SIDE ? frame : { ...frame, rows: frame.rows + step }
   }
 }
 
-/** The Frame resized to `columns` × `rows` (Units where counted), each side changing evenly on both edges (ticket 473),
- * the right or bottom taking an odd change's extra bead. Where rows alternate the top edge moves by whole cycles. A side
- * keeps between the Technique's fewest typed side (four beads, or one Unit) and MAX_TYPED_SIDE beads. */
+/** The Frame resized to `columns` × `rows`, each side changing evenly on both edges (ticket 473), the right or bottom
+ * taking an odd change's extra bead. Where rows alternate the top edge moves by whole cycles. A side keeps between
+ * FEWEST_SIDE and MAX_TYPED_SIDE beads. */
 export function frameResizedAround(weave: Weave, frame: Rect, columns: number, rows: number): Rect {
-  const description = describeWeave(weave)
-  const typed = description.positionsOf({ columns, rows })
-  const side = (n: number, fewest: number) => Math.min(MAX_TYPED_SIDE, Math.max(fewest, Math.round(n)))
-  const fewest = description.positionsOf({ columns: description.policy.fewestTypedSide, rows: description.policy.fewestTypedSide })
-  const wide = side(typed.columns, fewest.columns)
-  const tall = description.snapBottom(0, side(typed.rows, fewest.rows) - 1) + 1
-  const across = description.columnStep
-  const left = across > 1 ? across * Math.trunc((wide - frame.columns) / (2 * across)) : Math.trunc((wide - frame.columns) / 2)
+  const side = (n: number) => Math.min(MAX_TYPED_SIDE, Math.max(FEWEST_SIDE, Math.round(n)))
+  const wide = side(columns)
+  const tall = side(rows)
+  const left = Math.trunc((wide - frame.columns) / 2)
   const cycle = rowCycle(weave)
   const top = cycle > 1 ? cycle * Math.trunc((tall - frame.rows) / (2 * cycle)) : Math.trunc((tall - frame.rows) / 2)
   return { row: frame.row - top, column: frame.column - left, rows: tall, columns: wide }
@@ -126,10 +97,7 @@ export function fitToDrawing(project: Pick<Project, 'technique' | 'techniqueSett
     return undefined
   }
   const top = snapRow(project, bounds.row)
-  const bottom = describeWeave(project).snapBottom(top, bounds.row + bounds.rows - 1)
-  const left = snapColumn(project, bounds.column)
-  const right = describeWeave(project).snapRight(left, Math.max(bounds.column + bounds.columns - 1, left + describeWeave(project).smallest.columns - 1))
-  return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
+  return { row: top, column: bounds.column, rows: bounds.row + bounds.rows - top, columns: bounds.columns }
 }
 
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and

@@ -7,12 +7,11 @@ import { describeWeave, positionStep, type Weave } from './weave'
 const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
 
 /** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where both layers are woven
- * alike or either Technique's policy names it (Units), else the rows whose middle lies inside what the Frame draws,
- * which is shorter or taller than `rows` Canvas rows where it is woven otherwise. */
+ * alike, else the rows whose middle lies inside what the Frame draws, which is shorter or taller than `rows` Canvas rows
+ * where it is woven otherwise. */
 export function frameFootprint(canvas: Weave, frame: Rect & Weave): Rect {
   const rectangle = { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }
-  const named = (weave: Weave) => describeWeave(weave).policy.footprint === 'named'
-  if (sameWeave(canvas, frame) || named(canvas) || named(frame)) {
+  if (sameWeave(canvas, frame)) {
     return rectangle
   }
   const drawn = describeWeave(frame).blockExtent(frame.columns, frame.rows, 1, aspectOf(frame)).height
