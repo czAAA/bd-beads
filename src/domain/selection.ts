@@ -110,9 +110,9 @@ function selectionOfBox(box: Frame): Selection {
   return { top: box.row, left: box.column, rows: box.rows, columns: box.columns }
 }
 
-// The Selection a tap with the Piece tool makes (ticket 414): the tapped bead's Piece, its bounding rectangle carrying
-// its exact cells (ticket 547); none on an empty position. With a Frame (ticket 433) only the part on the tapped
-// bead's side counts, trimmed to a legal rectangle; a tap in the margin selects nothing.
+/** The Selection a Piece tool tap makes (ticket 414): the tapped bead's Piece, its rectangle carrying its exact cells
+ * (ticket 547), or none. With a Frame (ticket 433), only its part on the bead's side, trimmed; nothing in the margin.
+ * @internal Tests check the Piece tool's Selection on its own. */
 export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Frame): Selection | undefined {
   const members = pieceBeadsAt(beads, weave, at).filter((member) => {
     if (!frame) return true
@@ -139,7 +139,8 @@ export function selectAllSelection(beads: BeadMap, frame: Frame | undefined): Se
   return all && { ...all, layer: 'canvas' }
 }
 
-/** The rectangle round every placed bead (ticket 414), or none on an empty canvas. */
+/** The rectangle round every placed bead (ticket 414), or none on an empty canvas.
+ * @internal Tests check the select-all rectangle on its own. */
 export function allBeadsSelection(beads: BeadMap): Selection | undefined {
   const bounds = beadBounds(beads)
   return bounds ? selectionOfBox(bounds) : undefined
@@ -196,7 +197,8 @@ export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?:
 }
 
 /** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
- * the first bead. */
+ * the first bead.
+ * @internal Tests copy a block to paste it. */
 export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {
   const { rowsPerUnit } = describeWeave(project)
   const mask = selectionMask(selection)
@@ -222,7 +224,8 @@ export function copySelection(project: Project, selection: Selection): CopiedBlo
 }
 
 /** Where a block's painted cells land with its top-left at `at`; empty cells are holes, nothing is clipped (ADR
- * 0026). */
+ * 0026).
+ * @internal Tests check where a pasted block lands on its own. */
 export function pastedCells(block: CopiedBlock, at: GridPosition): PastedCell[] {
   const cells: PastedCell[] = []
 
@@ -242,7 +245,8 @@ export function pastedCells(block: CopiedBlock, at: GridPosition): PastedCell[] 
 }
 
 /** Every cell `block` lands on when aimed at `at` (CONTEXT.md's Paste entry): its anchor bead on `at` (ticket 437), on
- * a Unit's line and clear of the holes where beads are laid in Units (tickets 483, 486). */
+ * a Unit's line and clear of the holes where beads are laid in Units (tickets 483, 486).
+ * @internal Tests check where a block is aimed on its own. */
 export function stampedCells(
   project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
   block: CopiedBlock,

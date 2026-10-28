@@ -73,8 +73,9 @@ export type FrameChangeResult =
   | { kind: 'unchanged'; project: Project }
   | { kind: 'changed'; project: Project }
 
-// Whether the change throws away finished passes: only Remove Frame once a pass is done, as the passes go with the
-// Frame (ticket 434, ADR 0055). The one place that rule lives; the Remove frame flow asks it before confirming.
+/** Whether the change throws away finished passes: only Remove Frame once a pass is done, as the passes go with the
+ * Frame (ticket 434, ADR 0055). The one place that rule lives; the Remove frame flow asks it before confirming.
+ * @internal Its test checks the rule on its own. */
 export function frameChangeDiscardsProgress(project: Project, change: FrameChange): boolean {
   return 'remove' in change && rowProgressStarted(project)
 }

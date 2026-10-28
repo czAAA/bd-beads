@@ -31,6 +31,7 @@ export const LETTER_COLORS: Record<string, PaletteColor['id'] | 'accent' | 'mute
 
 /** The screen-size bands the placements are made for: under 744, from 744, from 1024, from 1440, from 1920. */
 export const TIERS = ['sm', 'md', 'lg', 'xl', 'xxl'] as const
+/** @internal Its test names each tier. */
 export type Tier = (typeof TIERS)[number]
 
 // Where a drawing sits (tickets 290, 540, 549): `left`/`right`: `gap` px outside the column's edge (negative: inside);

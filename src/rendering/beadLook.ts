@@ -102,7 +102,8 @@ export const LIGHT_THEME: ProjectTheme = {
   finished: { grey: false, opacity: FINISHED_OPACITY },
 }
 
-/** The dark theme: a white rim, so two beads of one color stay apart. */
+/** The dark theme: a white rim, so two beads of one color stay apart.
+ * @internal Tests draw in the dark theme. */
 export const DARK_THEME: ProjectTheme = {
   canvas: '#202020',
   positionMark: '#3c3c3c',
@@ -149,7 +150,8 @@ export const PROJECT_THEMES: Readonly<Record<'light' | 'dark' | 'contrast', Proj
 }
 
 /** Everything a bead drawer is told about the bead it is drawing. Positions and sizes are in the Project's own px at
- * zoom 1: the renderer has already set the transform for zoom and rotation. */
+ * zoom 1: the renderer has already set the transform for zoom and rotation.
+ * @internal Tests type the shapes they draw. */
 export interface BeadShape {
   x: number
   y: number
@@ -197,8 +199,9 @@ function isNearBlack(color: string): boolean {
   return !!rgb && luma(rgb) < NEAR_BLACK_LUMA
 }
 
-// A color's grey, worked out directly: canvas filters (`ctx.filter = 'grayscale(1)'`) are missing on iPad Safari. The
-// weights are CSS grayscale()'s, so the result is the grey the DOM grid showed.
+/** A color's grey, worked out directly: canvas filters (`ctx.filter = 'grayscale(1)'`) are missing on iPad Safari. The
+ * weights are CSS grayscale()'s, so the result is the grey the DOM grid showed.
+ * @internal Tests check a dimmed bead's grey. */
 export function greyscale(color: string): string {
   const rgb = parseHex(color)
   if (!rgb) {
@@ -265,7 +268,8 @@ function fillShape(context: DrawingContext, x: number, y: number, width: number,
   context.fill()
 }
 
-/** A color faded to a fraction of itself over another: what a translucent bead over a known backdrop comes to. */
+/** A color faded to a fraction of itself over another: what a translucent bead over a known backdrop comes to.
+ * @internal Tests check a faded bead's color. */
 export function fadeOver(color: string, backdrop: string, opacity: number): string {
   const top = parseHex(color)
   const under = parseHex(backdrop)
@@ -280,7 +284,8 @@ export function fadeOver(color: string, backdrop: string, opacity: number): stri
 // or framing drag would pay.
 const blends = new Map<string, string>()
 
-/** A translucent rgba(r,g,b,a) over an opaque color, as one opaque color; anything else is returned as it is. */
+/** A translucent rgba(r,g,b,a) over an opaque color, as one opaque color; anything else is returned as it is.
+ * @internal Tests check a translucent color laid over another. */
 export function blendOver(color: string, backdrop: string): string {
   const key = `${color}|${backdrop}`
   let blended = blends.get(key)
@@ -342,9 +347,11 @@ export const drawFlatBead: BeadDrawer = (context, bead) => {
   drawBeadShapes(context, bead)
 }
 
-/** A letter on a dark bead (ticket 0573; printed-output.md, Color + letters). */
+/** A letter on a dark bead (ticket 0573; printed-output.md, Color + letters).
+ * @internal Tests check the letter drawn on a dark bead. */
 export const LETTER_ON_DARK = '#ffffff'
-/** A letter on a light bead: the design system's `ink`, which is the same in every theme because bead colors are. */
+/** A letter on a light bead: the design system's `ink`, which is the same in every theme because bead colors are.
+ * @internal Tests check the letter drawn on a light bead. */
 export const LETTER_ON_LIGHT = '#1f1f1f'
 
 /** Below this luma (0-255) a bead is dark enough for a white letter. */

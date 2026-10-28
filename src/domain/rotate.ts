@@ -19,9 +19,9 @@ export interface RotatedSelection {
   selection: Selection
 }
 
-/** The Selection turned a quarter about its centre: rows and columns swap, and on stitches whose rows alternate it
- * starts on a multiple of the shift's cycle. `inset` is how far inside the Selection the row that must land on one
- * begins (ticket 477). */
+/** The Selection turned a quarter about its centre: rows and columns swap, and where rows alternate it starts on a
+ * multiple of the shift's cycle, `inset` being how far inside it the row that must land on one begins (ticket 477).
+ * @internal Its test checks the turned rectangle on its own. */
 export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
   const weave = describeWeave(project)
@@ -56,7 +56,8 @@ function beadsIn(project: Project, area: Frame, mask?: (row: number, column: num
 }
 
 /** The Project with the Selection turned a quarter clockwise, and the turned rectangle; covered beads are replaced. A
- * shape turns its own beads only, and what it lands on is replaced; the result is the turned shape (ticket 547). */
+ * shape turns its own beads only, and what it lands on is replaced; the result is the turned shape (ticket 547).
+ * @internal Tests turn a Selection without the App. */
 export function rotateSelection(project: Project, selection: Selection, inset = 0): RotatedSelection {
   const area = selectionFrame(selection)
   const turned = rotatedSelection(project, selection, inset)
@@ -134,7 +135,8 @@ function rotateCustomSelection(project: Project, local: Selection, view: Project
 }
 
 /** How many beads outside the Selection the turn replaced: under the turned footprint, outside the old rectangle,
- * gone from `after`. */
+ * gone from `after`.
+ * @internal Its test checks the count on its own. */
 export function coveredByRotation(before: Project, after: Project, selection: Selection, turned: Selection): number {
   const area = selectionFrame(selection)
   const footprint = selectionFrame(turned)

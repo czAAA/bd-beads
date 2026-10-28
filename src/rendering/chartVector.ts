@@ -38,7 +38,8 @@ const LETTER_BALANCE = 0.1791
 /** `--print-letter-squeeze`: horizontal scale of a two-letter Swatch letter. */
 const LETTER_SQUEEZE = 72
 
-/** The WCAG relative luminance of a `#rrggbb` color. */
+/** The WCAG relative luminance of a `#rrggbb` color.
+ * @internal Its test checks the WCAG values on their own. */
 export function luminance(hex: string): number {
   const rgb = fromHex(hex)
   if (!rgb) return 1
@@ -57,7 +58,8 @@ function tint(hex: string, amount: number): string {
   return `#${mix(rgb.r)}${mix(rgb.g)}${mix(rgb.b)}`
 }
 
-/** The colour of a Swatch letter on a bead of this color: `ink` on a light one, white on a dark one. */
+/** The colour of a Swatch letter on a bead of this color: `ink` on a light one, white on a dark one.
+ * @internal Its test checks the switch from ink to white on its own. */
 export function letterColor(hex: string): string {
   return luminance(hex) > LETTER_BALANCE ? PRINT_COLORS.ink : PRINT_COLORS.paper
 }
@@ -76,7 +78,7 @@ interface Box {
 }
 
 /** One position of a part as the renderer placed it, in px from the part's top left corner. */
-export interface PlacedBead {
+interface PlacedBead {
   /** The bead's own rectangle. */
   box: Box
   /** Its cell: where the lines run, a half bead over in an offset row or column. */
@@ -88,7 +90,8 @@ export interface PlacedBead {
 }
 
 /** The positions of a part, bead by bead, for any Technique, rotation or Bead shape: the Project renderer is run with a
- * stand-in context that remembers only the transform, and a bead drawer that records where each bead lands. */
+ * stand-in context that remembers only the transform, and a bead drawer that records where each bead lands.
+ * @internal Its test checks where each bead lands on its own. */
 export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): PlacedBead[] {
   const grid = displayedGrid(project)
   const weave = frameWeave(project)

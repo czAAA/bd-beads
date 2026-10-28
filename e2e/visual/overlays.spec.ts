@@ -1,4 +1,3 @@
-import { frameGrid } from '../../src/domain/project'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test } from '@playwright/test'
@@ -7,6 +6,7 @@ import { openApp, projectBox, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
 import { SCENARIOS } from './scenarios'
+import { frameGrid } from '../../src/testUtils/frameGrid'
 
 // Overlays that come with a tool vs the references: Selection marquee and paste preview, at 100% and 300% upright and
 // 100% rotated. Scenarios (scenarios.ts) drive the app by its controls

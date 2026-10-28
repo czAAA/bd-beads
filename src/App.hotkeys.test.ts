@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { pickColor, pickTool } from './testUtils/pill'
 import { hoverBead, leaveSurface, pressBead, previewedBeads, selectedBeadCount } from './testUtils/beads'
-import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
+import { frameGrid } from './testUtils/frameGrid'
 
 // The App's wiring for keys and the canvas pointer, one test per key → flow (docs/testing.md). Guards and variants are
 // in useAppShortcutTable, useSpaceDragPan, useCanvasPointer, usePaintStroke and ToolPill; Ctrl+Z is driven by App.frame,

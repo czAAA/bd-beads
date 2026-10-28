@@ -1,7 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { createProject, keepFinishedRows, type Project, frameGrid } from './project'
+import { createProject, keepFinishedRows, type Project } from './project'
 import { paintAt } from '../testUtils/layers'
+import { frameGrid } from '../testUtils/frameGrid'
 
 
 function blank(columns: number, rows: number): Project {

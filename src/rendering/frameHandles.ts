@@ -16,7 +16,9 @@ export interface Handle {
   size: number
 }
 
+/** @internal Tests find a handle by its size. */
 export const HANDLE_PX = 9
+/** @internal Tests find a touch handle by its size. */
 export const TOUCH_HANDLE_PX = 16
 
 const ALL: readonly HandleId[] = ['top-left', 'top', 'top-right', 'right', 'bottom-right', 'bottom', 'bottom-left', 'left']
@@ -74,13 +76,15 @@ const HIT_RADIUS_PX = 14
 const TOUCH_HIT_RADIUS_PX = 24
 
 /** The reach of a handle on a rectangle: 14px for a mouse or pen, 24px for touch, never more than a third of the
- * shorter side so a small rectangle keeps an inside to move. */
+ * shorter side so a small rectangle keeps an inside to move.
+ * @internal Tests check a handle's reach on its own. */
 export function hitRadius(box: { width: number; height: number }, touch: boolean): number {
   return Math.min(touch ? TOUCH_HIT_RADIUS_PX : HIT_RADIUS_PX, Math.min(box.width, box.height) / 3)
 }
 
 /** The handle a press grabs, if any: the nearest within `radius`, except that a corner in reach beats a nearer edge
- * handle. */
+ * handle.
+ * @internal Tests check which handle a press grabs on its own. */
 export function handleAt(handles: readonly Handle[], point: { x: number; y: number }, radius: number): Handle | undefined {
   const reached = handles
     .map((handle) => ({ handle, distance: Math.hypot(point.x - handle.x, point.y - handle.y) }))
@@ -98,7 +102,8 @@ const GRID_SIDE: Record<Rotation, Record<'top' | 'bottom' | 'left' | 'right', Fr
   270: { top: 'right', right: 'bottom', bottom: 'left', left: 'top' },
 }
 
-/** The edges of the Frame, in grid space, that dragging a handle moves: one for a side's handle, two for a corner's. */
+/** The edges of the Frame, in grid space, that dragging a handle moves: one for a side's handle, two for a corner's.
+ * @internal Tests check which edges a handle moves, in every rotation. */
 export function handleEdges(rotation: Rotation, id: HandleId): FrameEdge[] {
   const sides = id.split('-') as ('top' | 'bottom' | 'left' | 'right')[]
   return sides.map((side) => GRID_SIDE[rotation][side])

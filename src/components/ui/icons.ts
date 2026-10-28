@@ -1,6 +1,7 @@
 /** Icons v2 (DESIGN.md §4.5): the design system's SVG files drawn inline; don't redraw one, refresh the files
  * instead (DESIGN.md §6). */
 
+/** @internal Its test checks every name against the design system's icon files. */
 export const ICON_NAMES = [
   'arrow-down',
   'arrow-up',

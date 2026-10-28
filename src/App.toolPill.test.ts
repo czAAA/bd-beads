@@ -3,7 +3,7 @@ import { mountWithProject } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
 import { choosePanelOption } from './testUtils/choosePanelOption'
 import { openPanel, pickColor } from './testUtils/pill'
-import { frameGrid } from './domain/project'
+import { frameGrid } from './testUtils/frameGrid'
 
 // The Tool pill's wiring (ticket 439, ADR 0059): one test per control → flow. Where it docks and how it reads and keeps
 // the edge are in ToolPill and devicePreferences, the recents and color keys in toolPill and useToolPill, the popover's

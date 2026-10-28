@@ -9,7 +9,8 @@ function channelHex(value: number): string {
   return Math.round(value).toString(16).padStart(2, '0')
 }
 
-/** The `#rrggbb` a grid cell stores, lowercase — the same shape a Palette's own hexes are written in. */
+/** The `#rrggbb` a grid cell stores, lowercase — the same shape a Palette's own hexes are written in.
+ * @internal Its test checks the hex a cell stores. */
 export function toHex({ r, g, b }: Rgb): string {
   return `#${channelHex(r)}${channelHex(g)}${channelHex(b)}`
 }
@@ -20,7 +21,8 @@ export function channelsOf(hex: string): Rgb {
 }
 
 /** Straight-line RGB distance between two colors. Not perceptual (a cell is a plain hex), but enough for
- * "same color as far as an eye can tell". */
+ * "same color as far as an eye can tell".
+ * @internal Its test checks the distance on its own. */
 export function colorDistance(a: Rgb, b: Rgb): number {
   return Math.sqrt((a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2)
 }
@@ -43,7 +45,8 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
 }
 
 /** The Palette color nearest `hex` (ticket 177, amending ADR 0011): unconditional, no threshold. The *nearest*, not
- * the first in range, so the answer doesn't depend on Palette order. An empty Palette leaves the color as it is. */
+ * the first in range, so the answer doesn't depend on Palette order. An empty Palette leaves the color as it is.
+ * @internal Its test checks the nearest color on its own. */
 export function snapToPalette(palette: Palette, hex: string): string {
   return palette.nearest(hex)?.hex ?? hex
 }

@@ -7,7 +7,8 @@ import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
 // Where everything sits on the Cover page (ticket 0583; glossary: Cover page), worked out without a canvas so the PDF, the
 // PNG and the page count agree. Page px at 150 dpi, like the rest of the print layout.
 
-/** A bead on the cover is never larger than this across, so a ring is not blown up to the page. */
+/** A bead on the cover is never larger than this across, so a ring is not blown up to the page.
+ * @internal Tests check a small Schema's beads stop at it. */
 export const COVER_BEAD_MAX = mm(6)
 /** Between the framed Schema and Beads needed. */
 const COVER_GAP = mm(8)

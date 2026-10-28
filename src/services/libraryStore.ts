@@ -123,9 +123,9 @@ export function loadProjects(): Project[] {
   return []
 }
 
-// Writes the whole library, replacing what was there; the in-memory library is the truth (useProjectLibrary), so no
-// read-back merge (ticket 55). Grids are encoded compactly (ADR 0009): a 60×90 Project is about 3KB, not 100KB. Throws
-// what the browser throws when the write doesn't fit (QuotaExceededError); the caller must surface it.
+/** Writes the whole library over what was there, compactly (ADR 0009): the in-memory library is the truth (ticket 55).
+ * Throws what the browser throws when the write doesn't fit (QuotaExceededError); the caller must surface it.
+ * @internal Tests seed a library with it before mounting the App. */
 export function saveProjects(projects: Project[]): void {
   const stored: StoredLibrary = { version: STORED_VERSION, patterns: projects.map(encodeProject) }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))

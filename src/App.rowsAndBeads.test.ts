@@ -3,10 +3,10 @@ import type { mount } from '@vue/test-utils'
 import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
 import { findBead } from './domain/beads'
-import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
 import { deleteAll, openPanel, pickColor, panelRead } from './testUtils/pill'
+import { frameGrid } from './testUtils/frameGrid'
 
 // Each test drives one control to its flow. What the flows decide is in useRowOps, useDeleteAllFlow and
 // useReplaceBeadFlow, the rules in domain/project, and what the controls show in ProgressBar, ProjectPanel,

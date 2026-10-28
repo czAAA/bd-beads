@@ -565,14 +565,6 @@ export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {
   return keys.some((key) => key.toLowerCase() === event.key.toLowerCase())
 }
 
-/** Every distinct (modifier, Shift, key) a chord answers to: two actions must share none of them. */
-export function chordSlots(chord: Chord): string[] {
-  const modifiers = chord.mod ? ['ctrl', 'meta'] : chord.ctrl ? ['ctrl'] : ['']
-  const shifts = chord.shift === 'any' ? ['', 'shift'] : [chord.shift ? 'shift' : '']
-  const keys = chord.code !== undefined ? [`code:${chord.code}`] : (typeof chord.key === 'string' ? [chord.key] : (chord.key ?? [])).map((key) => key.toLowerCase())
-  return modifiers.flatMap((modifier) => shifts.flatMap((shift) => keys.map((key) => `${modifier}+${shift}+${key}`)))
-}
-
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
  * passes this, not the handlers. */
 export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>

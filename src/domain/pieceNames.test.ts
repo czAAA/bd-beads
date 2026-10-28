@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
 import { carryNames, namedPieceCutBy, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
-import { createProject, deleteAll, frameGrid, restoreSnapshot, snapshotOf, type Project } from './project'
+import { createProject, deleteAll, restoreSnapshot, snapshotOf, type Project } from './project'
 import { removeSelectedLine } from './removeLine'
 import { rotateSelection } from './rotate'
 import { changeFrame } from './changeFrame'
+import { frameGrid } from '../testUtils/frameGrid'
 
 const R = '#e63746'
 const row = (r: number, from: number, to: number): BeadChange[] =>

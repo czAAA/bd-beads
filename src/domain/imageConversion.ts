@@ -27,7 +27,8 @@ const ALPHA_THRESHOLD = 128
 export const NO_COLOR = -1
 
 /** A pixel's color as one number 0xRRGGBB, or NO_COLOR below half alpha (see ALPHA_THRESHOLD); partly transparent
- * pixels composite over white. A number, not a string, since a drag samples tens of thousands per move. */
+ * pixels composite over white. A number, not a string, since a drag samples tens of thousands per move.
+ * @internal Its test checks a pixel's color on its own. */
 export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   const at = (y * image.width + x) * 4
   const alpha = image.data[at + 3] ?? 0
@@ -43,14 +44,15 @@ export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   )
 }
 
-/** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores. */
+/** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores.
+ * @internal Tests write an expected color the way the preview reads it. */
 export function packedToHex(packed: number): string {
   return `#${packed.toString(16).padStart(6, '0')}`
 }
 
 /** A picture format Convert image accepts, named the way the file input, the validation and the helper text each
  * need it. */
-export interface ImageFormat {
+interface ImageFormat {
   mimeType: string
   /** A brand name, so it reads the same in every language. */
   label: string
@@ -58,7 +60,8 @@ export interface ImageFormat {
 }
 
 /** The accepted formats, in one place: file input `accept`, media-type check, extension fallback and helper text
- * all read this, so the UI's promise and the validation cannot drift apart. */
+ * all read this, so the UI's promise and the validation cannot drift apart.
+ * @internal Its test checks every format against the file checks. */
 export const ACCEPTED_IMAGE_FORMATS: readonly ImageFormat[] = [
   { mimeType: 'image/png', label: 'PNG', extensions: ['.png'] },
   { mimeType: 'image/jpeg', label: 'JPEG', extensions: ['.jpg', '.jpeg'] },
@@ -66,9 +69,13 @@ export const ACCEPTED_IMAGE_FORMATS: readonly ImageFormat[] = [
   { mimeType: 'image/webp', label: 'WebP', extensions: ['.webp'] },
 ]
 
+/** @internal Tests try a file just over the cap. */
 export const IMAGE_MAX_MEGABYTES = 10
+/** @internal Tests try a file just over the cap. */
 export const IMAGE_MAX_BYTES = IMAGE_MAX_MEGABYTES * 1024 * 1024
+/** @internal Tests try a picture just over the cap. */
 export const IMAGE_MAX_MEGAPIXELS = 16
+/** @internal Tests try a picture just over the cap. */
 export const IMAGE_MAX_PIXELS = IMAGE_MAX_MEGAPIXELS * 1_000_000
 
 /** HEIC/HEIF (iPhone photos) gets its own rejection message: browsers can't decode it. Matched on extension too,

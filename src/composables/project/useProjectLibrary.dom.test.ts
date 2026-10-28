@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, type Project, frameGrid } from '../../domain/project'
+import { createProject, type Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { loadProjects } from '../../services/libraryStore'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'
 import { useProjectLibrary } from './useProjectLibrary'
+import { frameGrid } from '../../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 

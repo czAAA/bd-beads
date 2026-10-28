@@ -27,17 +27,6 @@ export function snapColumn(weave: Weave, column: number): number {
   return column - (((column % step) + step) % step)
 }
 
-/** The Frame covering the beads from one corner to the other, whichever way the drag went, snapped to a legal top
- * row. */
-export function frameFromCells(weave: Weave, a: GridPosition, b: GridPosition): Frame {
-  const description = describeWeave(weave)
-  const top = snapRow(weave, Math.min(a.row, b.row))
-  const bottom = description.snapBottom(top, Math.max(a.row, b.row))
-  const left = snapColumn(weave, Math.min(a.column, b.column))
-  const right = description.snapRight(left, Math.max(a.column, b.column, left + description.smallest.columns - 1))
-  return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
-}
-
 // The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
 // the bead under the pointer, in the Frame's own geometry. An edge never passes the opposite one, so a Frame stays at
 // least one bead each way. Worked out in the Frame's own rows, whose row 0 is always an unshifted one (ticket 492).
