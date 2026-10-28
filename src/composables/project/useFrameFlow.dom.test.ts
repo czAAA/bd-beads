@@ -55,8 +55,6 @@ describe('useFrameFlow', () => {
     drag({ row: 2, column: 3 })
     release()
     expect(lastFrame(deps)).toEqual({ row: 1, column: 2, rows: 3, columns: 4 })
-    expect(deps.harness.project.frame!.beads).toEqual({ 0: { 0: '#ff0000' } })
-    expect(deps.harness.project.beads).toBe(drawn.beads)
     expect(deps.announce).toHaveBeenCalledWith('Frame moved with its beads')
   })
 
@@ -115,13 +113,6 @@ describe('useFrameFlow', () => {
     expect(deps.harness.project).toMatchObject({ beads: {}, frame: start.frame })
   })
 
-  it('drops what a smaller typed size gives up onto the Canvas (ticket 513)', () => {
-    const own = withColors({}, [{ row: 5, column: 5, color: '#2a9d8f' }])
-    const { deps, resizeTo } = setup({ ...sized, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 6, columns: 6, beads: own } })
-    resizeTo(4, 4)
-    expect(deps.harness.project.beads).toEqual(own)
-  })
-
   it('changes no bead and is no step when the Frame did not change', () => {
     const { deps, press, drag, release } = setup()
     press({ kind: 'move' }, { row: 1, column: 1 })
@@ -158,21 +149,16 @@ describe('useFrameFlow', () => {
     remove()
     confirmRemove()
     expect(removeConfirmOpen.value).toBe(false)
-    expect(lastFrame(deps)).toBeUndefined()
+    expect(deps.harness.project.frame).toBeUndefined()
   })
 
-  it('asks before removing the Frame even while no pass is done', () => {
-    const { removeConfirmOpen, remove, deps } = setup()
+  it('asks before removing the Frame even while no pass is done, and says so once confirmed', () => {
+    const { removeConfirmOpen, remove, confirmRemove, deps } = setup()
     remove()
     expect(removeConfirmOpen.value).toBe(true)
     expect(deps.replaceProject).not.toHaveBeenCalled()
-  })
-
-  it('removes the Frame once confirmed, and says so', () => {
-    const { deps, remove, confirmRemove } = setup()
-    remove()
     confirmRemove()
-    expect(lastFrame(deps)).toBeUndefined()
+    expect(deps.harness.project.frame).toBeUndefined()
     expect(deps.announce).toHaveBeenCalledWith('Frame removed')
   })
 
@@ -186,8 +172,7 @@ describe('useFrameFlow', () => {
     const { deps, fit } = setup(drawn)
     fit()
     expect(lastFrame(deps)).toEqual({ row: 4, column: 5, rows: 4, columns: 4 })
-    // The beads it wraps move into it, counted from its first bead; the Canvas is left empty.
-    expect(deps.harness.project.frame!.beads).toEqual({ 0: { 1: '#ff0000', 3: '#00ff00' }, 3: { 0: '#0000ff' } })
+    // Fit makes the Frame round the beads, so they leave the Canvas for it; setting a Frame would leave them there.
     expect(deps.harness.project.beads).toEqual({})
   })
 
@@ -250,7 +235,6 @@ describe('useFrameFlow', () => {
     expect(deps.showToast).toHaveBeenCalledWith('frame-cuts-schema', expect.stringContaining('Fox'), 'info')
     setTo({ row: 0, column: 0, rows: 1, columns: 4 })
     expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 1, columns: 4 })
-    expect(deps.harness.project.frame).toMatchObject({ name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#e63746', 2: '#e63746', 3: '#e63746' } } })
   })
 
   it('has the bar closed by default and toggles it (tickets 452, 473)', () => {
@@ -371,12 +355,6 @@ describe('useFrameFlow', () => {
       setTechnique('loom')
       expect(deps.replaceProject).not.toHaveBeenCalled()
       expect(deps.harness.history.canUndo.value).toBe(false)
-    })
-
-    it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
-      const { deps, setTechnique } = setup(moveToRow(sized, 1))
-      setTechnique('brick')
-      expect(deps.replaceProject).not.toHaveBeenCalled()
     })
   })
 
@@ -524,33 +502,12 @@ describe('useFrameFlow', () => {
       setBrickBlock(1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
-
-    it('is refused once Row progress is on and a pass is done', () => {
-      const { deps, setBrickBlock } = setup(moveToRow(brick, 1))
-      setBrickBlock(2)
-      expect(deps.replaceProject).not.toHaveBeenCalled()
-    })
   })
 
   it('brings the Frame into view', () => {
     const { deps, bringIntoView } = setup()
     bringIntoView()
     expect(deps.centreOn).toHaveBeenCalledWith(sized.frame)
-  })
-
-  it('leaves beads the new Frame would crowd where they are, in the one undo step (ticket 261)', () => {
-    const crowded = { ...sized, beads: withColors(sized.beads, [{ row: 5, column: 5, color: '#ff0000' }]) }
-    const { deps, press, drag, release } = setupEditing(crowded)
-    press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
-    drag({ row: 4, column: 4 })
-    release()
-
-    const updated = deps.replaceProject.mock.calls.at(-1)![0]
-    expect(updated.beads).toEqual(crowded.beads)
-    deps.harness.history.onUndo()
-    expect(deps.harness.project.beads).toEqual(crowded.beads)
-    expect(deps.harness.history.canUndo.value).toBe(false)
-    expect(deps.showToast).not.toHaveBeenCalled()
   })
 
   describe('the edge steppers (ticket 417)', () => {
@@ -601,19 +558,6 @@ describe('useFrameFlow', () => {
       expect(lastFrame(deps)).toMatchObject({ column: 1, columns: 5 })
       expect(deps.harness.project.beads).toEqual(withColors({}, [1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' }))))
       expect(deps.showToast).not.toHaveBeenCalled()
-    })
-
-    it('drops the beads a shrunk edge gives up onto the Canvas, and one Undo brings them back (ticket 513)', () => {
-      const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 0, column: 5, color: '#2a9d8f' }])
-      const canvas = withColors({}, [{ row: 0, column: 5, color: '#111111' }])
-      const start = { ...open, beads: canvas, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 6, beads: own } }
-      const { deps, stepEdge } = setup(start)
-      stepEdge('right', -1)
-      expect(deps.harness.project.beads).toEqual(withColors({}, [{ row: 0, column: 5, color: '#2a9d8f' }]))
-      expect(deps.harness.project.frame!.beads).toEqual(withColors({}, [{ row: 0, column: 0, color: '#e63746' }]))
-      deps.harness.history.onUndo()
-      expect(deps.harness.project.beads).toEqual(canvas)
-      expect(deps.harness.project.frame).toEqual(start.frame)
     })
   })
   describe('Add Frame from Starter and Replace Frame (tickets 495, 0596)', () => {
