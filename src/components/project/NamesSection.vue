@@ -7,6 +7,7 @@ import { useI18n } from '../../i18n/useI18n'
 import FormField from '../ui/form/FormField.vue'
 import TextField from '../ui/form/TextField.vue'
 import EditableLine from './EditableLine.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Project's Name and Maker's name, shared by New Project and the Project panel (tickets 182, 554, 568). By default
 // two always-open fields (the form); `inline` shows each as a line with a pencil that swaps in a field, saved at once,
@@ -21,7 +22,7 @@ const makerName = defineModel<string>('makerName', { required: true })
 
 const { t } = useI18n()
 const rename = controlAction('rename-project')
-const renameLabel = computed(() => t.value.panels.project.rename.replace('{name}', name.value))
+const renameLabel = computed(() => fillBlanks(t.value.panels.project.rename, { name: name.value }))
 
 const nameField = ref<InstanceType<typeof TextField>>()
 

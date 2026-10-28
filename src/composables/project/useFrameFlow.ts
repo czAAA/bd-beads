@@ -16,6 +16,7 @@ import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from './useEdit'
 import type { OpenPanel } from '../shell/openPanel'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
@@ -121,7 +122,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const t = deps.messages()
     const project = deps.currentProject()
     const { columns, rows } = describeWeave(project ? frameWeave(project) : { technique: DEFAULT_TECHNIQUE }).unitsOf(frame)
-    return t.frame.announceSet.replace('{width}', String(columns)).replace('{height}', String(rows))
+    return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
   }
 
   /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step. */
@@ -131,7 +132,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
       const project = deps.currentProject()
       const name = project && namedPieceCutBy(project, frame)
-      if (name !== undefined) deps.showToast('frame-cuts-schema', deps.messages().frame.refusedCutsSchema.replace('{name}', name), 'info')
+      if (name !== undefined) deps.showToast('frame-cuts-schema', fillBlanks(deps.messages().frame.refusedCutsSchema, { name }), 'info')
       return false
     }
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
@@ -174,9 +175,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
         : deps.edit('exempt', (current) => changeCanvasWeave(current, { technique, netSize, brickBlock }))
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
-    if (technique !== before.technique) deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
-    else if (brickBlock !== undefined && brickBlock !== (before.brickBlock ?? 1)) deps.announce(t.frame.announceBrickBlock.replace('{count}', String(brickBlock)))
-    else if (netSize !== undefined) deps.announce(t.frame.announceNetSize.replace('{count}', String(netSize)))
+    if (technique !== before.technique) deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
+    else if (brickBlock !== undefined && brickBlock !== (before.brickBlock ?? 1)) deps.announce(fillBlanks(t.frame.announceBrickBlock, { count: brickBlock }))
+    else if (netSize !== undefined) deps.announce(fillBlanks(t.frame.announceNetSize, { count: netSize }))
   }
 
   /** Changes a layer's Technique, Net size or Brick block (tickets 507, 568). Asks first when a Technique switch has
@@ -416,7 +417,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
       const t = deps.messages()
       const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
-      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', starterName(t, starter)).replace('{size}', size))
+      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { kind: starterName(t, starter), size }))
     })
   }
 
@@ -444,11 +445,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const t = deps.messages()
     const name = changedSetting(change)
     if (name === 'fringeStyle') {
-      deps.announce(t.frame.fringeStyle.announce.replace('{style}', t.starters.picks.fringeStyle.options[change.fringeStyle!]))
+      deps.announce(fillBlanks(t.frame.fringeStyle.announce, { style: t.starters.picks.fringeStyle.options[change.fringeStyle!] }))
       return
     }
     const value = settingValuesOf(settled).find((each) => each.name === name)?.value
-    deps.announce(t.frame.sizeSettings[name].announce.replace('{count}', String(value)))
+    deps.announce(fillBlanks(t.frame.sizeSettings[name].announce, { count: String(value) }))
   }
 
   /** The size question answered No: nothing changes. */

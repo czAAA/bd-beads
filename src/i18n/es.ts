@@ -472,6 +472,7 @@ export const es: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Líneas: las partes del gráfico, cada una en su página, con todas las filas y columnas numeradas.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Cuentas necesarias: {summary} · ver página {page}',
