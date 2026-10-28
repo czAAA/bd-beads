@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { withColors } from '../domain/canvas'
+import { withColors, type Rect } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { rulerLayout, type RulerDot, type RulerLabel } from './rulers'
@@ -7,7 +7,6 @@ import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 
 const R = '#e63746'
-type Frame = { row: number; column: number; rows: number; columns: number }
 interface Look {
   technique?: Technique
   rotation?: Rotation
@@ -16,13 +15,13 @@ interface Look {
   /** Left out, the surface is unmeasured and the numbers are not cut at any edge. */
   viewport?: { width: number; height: number }
   /** Put this box of beads in the middle of a 2000px viewport. */
-  centred?: Frame
+  centred?: Rect
   numbers?: boolean
 }
 
 const block = (row: number, column: number, rows = 3, columns = 3): [number, number][] =>
   Array.from({ length: rows * columns }, (_, i) => [row + Math.floor(i / columns), column + (i % columns)])
-const project = (positions: [number, number][], frame?: Frame, technique: Technique = 'loom') => ({
+const project = (positions: [number, number][], frame?: Rect, technique: Technique = 'loom') => ({
   technique,
   frame: frame && { ...frame, technique },
   beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
@@ -35,7 +34,7 @@ const layoutOf = (subject: ReturnType<typeof project>, { technique = subject.tec
   const surface = looking ? view(looking.scrollToCentre(centred), { width: 2000, height: 2000 }) : view(scroll)
   return rulerLayout(subject, surface, { fontPx: 11, numbers })
 }
-const framed = (frame: Frame, look: Look = {}) => layoutOf(project([], frame, look.technique), look)
+const framed = (frame: Rect, look: Look = {}) => layoutOf(project([], frame, look.technique), look)
 
 describe('which boxes carry rulers', () => {
   it('is each piece, with only the start sides, until a Frame is set', () => {
@@ -284,7 +283,7 @@ describe('numbers and dots lay out at every technique, turn and zoom', () => {
 })
 
 describe('the rulers at different zooms (ticket 377)', () => {
-  const frame: Frame = { row: 0, column: 0, rows: 8, columns: 150 }
+  const frame: Rect = { row: 0, column: 0, rows: 8, columns: 150 }
 
   it('holds the dots to a 2-digit number’s half band, so a turned 3-digit column number does not push them off the line', () => {
     const { dots, scale } = framed(frame, { zoom: 0.6 })
@@ -310,7 +309,7 @@ describe('the rulers at different zooms (ticket 377)', () => {
 })
 
 describe('the dots below the zoom where only the last number shows (ticket 378)', () => {
-  const frame: Frame = { row: 0, column: 0, rows: 8, columns: 150 }
+  const frame: Rect = { row: 0, column: 0, rows: 8, columns: 150 }
 
   it('stand close to the Frame’s line, within a few px of it, not out at the numbers’ band', () => {
     const { dots, boxes, scale } = framed(frame, { zoom: 0.2 })

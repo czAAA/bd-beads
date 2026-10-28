@@ -12,13 +12,12 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-const thresholds = { loom: 5000, peyote: 5000, brick: 5000, rightAngle: 5000, netting: 5000 }
 const dialogs = {
   'Duplicate project': () => mount(DuplicateProjectModal, { props: { suggested: 'Copy' }, attachTo: document.body }),
   'Name piece': () => mount(NamePieceModal, { props: { name: 'Leaf' }, attachTo: document.body }),
   'Convert image size': () =>
     mount(ConvertImageSizeDialog, {
-      props: { bead: findBead('toho-cube-1.5mm')!, technique: 'loom', slowFramingCellThresholds: thresholds },
+      props: { bead: findBead('toho-cube-1.5mm')!, technique: 'loom' },
       attachTo: document.body,
     }),
 }
