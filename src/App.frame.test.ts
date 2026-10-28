@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
-import { withColors } from './domain/canvas'
+import { withColors, type Rect } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
@@ -69,7 +69,7 @@ const savedFrame = () => {
 }
 
 /** The sketch with a Frame made round the beads in `rectangle`: they are the Frame's own (Frame from Selection). */
-const framedAround = (rectangle: { row: number; column: number; rows: number; columns: number }): Project => {
+const framedAround = (rectangle: Rect): Project => {
   const made = changeFrame(unframedProject(), { make: rectangle })
   if (made.kind !== 'changed') throw new Error('expected a Frame')
   return made.project

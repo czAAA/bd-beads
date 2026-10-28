@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { withColors } from '../../domain/canvas'
+import { withColors, type Rect } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
 import type { FrameKindId } from '../../domain/frameKind'
 import { createProject, moveToRow, withFrame, type Project } from '../../domain/project'
@@ -37,7 +37,7 @@ function setupEditing(project: Project | null = sized) {
 }
 
 /** A Frame\'s rectangle alone, without its Weave. */
-const rect = ({ technique: _technique, ...rectangle }: { technique: string; row: number; column: number; rows: number; columns: number }) => rectangle
+const rect = ({ technique: _technique, ...rectangle }: Rect & { technique: string }) => rectangle
 
 /** The rectangle of the Frame the last change left (its beads and name aside). */
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
