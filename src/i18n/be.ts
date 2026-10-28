@@ -476,6 +476,7 @@ export const be: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Лініі: часткі схемы, кожная на сваёй старонцы; усе рады і слупкі пранумараваны.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Патрэбна бісеру: {summary} · гл. старонку {page}',

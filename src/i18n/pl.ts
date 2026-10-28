@@ -475,6 +475,7 @@ export const pl: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Linie: części wykresu, każda na własnej stronie, z ponumerowanymi wszystkimi rzędami i kolumnami.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Potrzebne koraliki: {summary} · zob. stronę {page}',

@@ -546,6 +546,8 @@ export interface Translations {
   print: {
     /** "60×80 · TOHO Cube 1.5mm · ≈ 9 × 12 cm" */
     metaLine: string
+    /** The same line for a Bead with no Estimated size: "60×80 · Unknown bead". */
+    metaLineNoEstimate: string
     /** On page 1, when the chart is split over pages. */
     readParts: string
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */

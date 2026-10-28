@@ -147,10 +147,9 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     techniqueWord: technique,
     maker,
     exportedAt: `${date} · ${time}`,
-    // With no Estimated size the line ends at the Bead: its " · ≈ {estimate}" is cut before the line is filled.
     metaLine: estimate
       ? fillBlanks(t.print.metaLine, { size, bead: beadName, estimate })
-      : fillBlanks(t.print.metaLine.replace(' · ≈ {estimate}', ''), { size, bead: beadName }),
+      : fillBlanks(t.print.metaLineNoEstimate, { size, bead: beadName }),
     bead: beadName,
     shape: project.beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
     size,
