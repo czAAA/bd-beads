@@ -17,6 +17,7 @@ import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from './useEdit'
 import type { OpenPanel } from '../shell/openPanel'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
@@ -31,6 +32,8 @@ export interface FrameFlowDeps {
   visibleCentre: () => GridPosition | undefined
   /** The app's one open panel (ticket 510): the Frame panel is open while it is 'frame'. Its own when none is given. */
   openPanel?: Ref<OpenPanel | null>
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 type Layer = 'canvas' | 'frame'
@@ -47,6 +50,7 @@ type Gesture =
 export function useFrameFlow(deps: FrameFlowDeps) {
   /** The weaver's choice on the edit toggle (the Frame panel open); false until they turn it on. Never saved. */
   const openPanel = deps.openPanel ?? ref<OpenPanel | null>(null)
+  const dialogs = deps.dialogs ?? useDialogs()
   const barOpen = computed({
     get: () => openPanel.value === 'frame',
     set: (on: boolean) => {
@@ -142,7 +146,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** The weave change waiting on its question (tickets 507, 568): a layer with drawn beads says what would be lost, and
    * Netting asks for its Net size and Brick stitch for its Brick block, before anything changes. */
-  const switchAsk = ref<{ layer: Layer; technique: Technique; netSize: number; brickBlock: number } | undefined>()
+  const switchAsk = dialogs.question<{ layer: Layer; technique: Technique; netSize: number; brickBlock: number }>('switch-technique')
 
   /** The open question as the dialog shows it: the Technique, the beads that would be lost, the Net size and Brick block
    * asked for, whether the layer has beads at all, and whether the Technique stays (only a setting changes). */
@@ -360,7 +364,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** Whether the Remove frame confirmation is open: always asked; any done passes go with the Frame
    * (tickets 426, 455). */
-  const removeConfirmOpen = ref(false)
+  const removeConfirmOpen = dialogs.flag('remove-frame')
 
   /** Whether Remove Frame takes the Frame's beads with it rather than dropping them onto the Canvas (ADR 0077): the
    * question says so. */
@@ -393,7 +397,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /** Whether the Replace Frame question is open; the pending Starter waits behind it (tickets 495, 0596). */
-  const replaceConfirmOpen = ref(false)
+  const replaceConfirmOpen = dialogs.flag('replace-frame')
   let pendingPlace: (() => void) | undefined
 
   /** Puts a Frame in place now, or once the weaver agrees to replace a Frame that holds beads, as they go with it. */
@@ -422,7 +426,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /** The settings change waiting on its question: the one setting asked for and how many painted beads it would drop. */
-  const sizeAsk = ref<{ change: FrameSettings; lost: number } | undefined>()
+  const sizeAsk = dialogs.question<{ change: FrameSettings; lost: number }>('frame-size')
 
   /** One of a Custom frame's settings from the Frame panel (tickets 0592, 0593, 0597): its Rounds, Part size or Rows, a
    * Fringe earring's Top width, Top rows, Fringe length or Fringe style. One Undo step, asking first when painted beads

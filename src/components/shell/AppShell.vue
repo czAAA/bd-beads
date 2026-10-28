@@ -4,7 +4,7 @@ import AppMessage from '../ui/AppMessage.vue'
 import AppDialogs from './AppDialogs.vue'
 import CanvasPanel from '../canvas/CanvasPanel.vue'
 import AppPanels from './AppPanels.vue'
-import { useAppShell } from '../../composables/shell/useAppShell'
+import { useShellFrame } from '../../composables/shell/useAppShell'
 
 const {
   t,
@@ -12,7 +12,7 @@ const {
   announcement,
   endStroke,
   onExportProjectFile,
-} = useAppShell()
+} = useShellFrame()
 </script>
 
 <template>

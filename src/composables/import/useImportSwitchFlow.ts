@@ -1,5 +1,6 @@
-import { computed, ref, shallowRef } from 'vue'
+import { computed, ref } from 'vue'
 import { mostRecentlyUpdated, type Project } from '../../domain/project'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What importing needs from the app shell: the library's add and open, and its manual save. */
 export interface ImportSwitchFlowDeps {
@@ -9,14 +10,17 @@ export interface ImportSwitchFlowDeps {
   openProject: (id: string) => void
   /** Writes the library now; false when the device refused it. */
   saveNow: () => boolean
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 /** Project import and the keep / save-and-switch / switch decision when a Project is open (tickets 154, 200; ADR
  * 0020). Touches no history. Deps are lazy. */
 export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
   /** Imported Projects held back until the person says whether to switch (ticket 154); undefined when nothing to
-   * ask. They join the library either way, as they are: shallow, like the library (ticket 0616). */
-  const pendingImport = shallowRef<Project[] | undefined>()
+   * ask. They join the library either way, as they are: the registry holds them shallowly, like the library (ticket
+   * 0616). */
+  const pendingImport = (deps.dialogs ?? useDialogs()).question<Project[]>('import-switch')
 
   /** Whether Save current, offered when the last save failed, was tried and the device refused it too. */
   const importSaveRefused = ref(false)

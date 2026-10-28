@@ -1,8 +1,9 @@
-import { computed, ref, type Ref } from 'vue'
+import { computed, type Ref } from 'vue'
 import { isAddedColorId, type Palette } from '../../domain/palette'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What removing added colors needs from the app shell: the Palette and how its added swatches leave it (Edits, ADR
  * 0036), the chosen color and how another is chosen, and the toast that offers Undo. */
@@ -16,12 +17,15 @@ export interface RemoveColorFlowDeps {
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   messages: () => Translations
   locale: () => Locale
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 /** Removing an added swatch (tickets 228, 304) or every one at once (ticket 0532), each after a confirmation. Painted
  * cells keep their hex. Removing the active color steps back to the default one; the toast's Undo puts the colors
  * back and selects the active one again, unless another was chosen since. */
 export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
+  const dialogs = deps.dialogs ?? useDialogs()
   /** Takes the colors out with `remove` and offers their Undo in a toast; `removesChosen` says whether the chosen
    * color is among them. */
   function removeWithUndo(removesChosen: (colorId: string) => boolean, remove: () => (() => void) | undefined, toastId: string, text: string) {
@@ -41,7 +45,7 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
   }
 
   /** The added swatch whose removal awaits confirmation (ticket 304); undefined when no such dialog is open. */
-  const pendingColorRemovalId = ref<string>()
+  const pendingColorRemovalId = dialogs.question<string>('remove-color')
   const pendingColorRemovalHex = computed(() => deps.palette.value.byId(pendingColorRemovalId.value)?.hex)
   function onRequestRemoveAddedColor(colorId: string) {
     pendingColorRemovalId.value = colorId
@@ -58,7 +62,7 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
   }
 
   /** The bin in Edit palette asks first, and the dialog names how many leave. */
-  const removeAllColorsConfirmOpen = ref(false)
+  const removeAllColorsConfirmOpen = dialogs.flag('remove-all-colors')
   const addedColorCount = computed(() => deps.palette.value.colors.filter((color) => isAddedColorId(color.id)).length)
   const removeAllColorsMessage = computed(() => plural(deps.locale(), addedColorCount.value, deps.messages().palette.removeAllConfirmMessage))
   function onRequestRemoveAllAddedColors() {

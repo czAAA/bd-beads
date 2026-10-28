@@ -2,27 +2,19 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { mount } from '@vue/test-utils'
 import ProjectSurface from './components/canvas/ProjectSurface.vue'
 import { pressBead, rowProgressView } from './testUtils/beads'
-import { findBead } from './domain/beads'
 import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
-import { deleteAll, openPanel, pickColor, panelRead } from './testUtils/pill'
+import { deleteAll, pickColor, panelRead } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
 
-// Each test drives one control to its flow. What the flows decide is in useRowOps, useDeleteAllFlow and
-// useReplaceBeadFlow, the rules in domain/project, and what the controls show in ProgressBar, ProjectPanel,
-// BeadQuantities and ConfirmModal (ticket 0603).
+// Each test drives one control to its flow. What the flows decide is in useRowOps and useDeleteAllFlow, the rules in
+// domain/project, what the controls show in ProgressBar, BeadQuantities and ConfirmModal (ticket 0603), and Replace
+// bead from the Project panel in AppPanels.test (ticket 0618).
 
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
 })
-
-/** Switches the open Project to another Type of its Brand from the Project panel, which opens the confirmation. */
-async function pickReplacement(wrapper: ReturnType<typeof mount>, beadId: string) {
-  await openPanel(wrapper, 'strip-project')
-  await wrapper.get('[data-testid="bead-type"] button').trigger('click')
-  await wrapper.get(`[data-testid="bead-type"] [data-value="${findBead(beadId)!.formFactor.id}"]`).trigger('click')
-}
 
 /** Presses and releases one bead without moving: a click. */
 async function click(wrapper: ReturnType<typeof mount>, index: number) {
@@ -77,23 +69,6 @@ describe('App delete all', () => {
     await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
 
     expect(frameGrid(loadedProject()).flat().every((cell) => cell.color === null)).toBe(true)
-  })
-})
-
-describe('App replace bead', () => {
-  it('asks first from the Project panel: Cancel keeps the Bead, confirming switches it', async () => {
-    const wrapper = await mountWithProject(15, 30)
-
-    await pickReplacement(wrapper, 'toho/round/11-0')
-    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
-    await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
-    expect(wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
-    expect(loadedProject().beadId).toBe('toho/cube/1.5mm')
-
-    await pickReplacement(wrapper, 'toho/round/11-0')
-    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
-
-    expect(loadedProject().beadId).toBe('toho/round/11-0')
   })
 })
 

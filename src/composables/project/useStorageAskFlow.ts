@@ -1,18 +1,20 @@
-import { ref } from 'vue'
 import type { DevicePreferences } from '../../services/devicePreferences'
 import type { PersistentStorage } from '../../services/persistentStorage'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What the storage ask needs from the app shell: the browser's storage and the device's preferences. */
 export interface StorageAskFlowDeps {
   persistentStorage: PersistentStorage
   devicePreferences: DevicePreferences
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 // Asking the browser to keep the library (ticket 399): never on open; on the first write, if not already kept, a note
 // explains and its button triggers the prompt. Shown once whatever the answer; nothing here can fail a save.
 export function useStorageAskFlow(deps: StorageAskFlowDeps) {
   /** Whether the note before the browser's prompt is open. */
-  const storageNoteOpen = ref(false)
+  const storageNoteOpen = (deps.dialogs ?? useDialogs()).flag('keep-note')
 
   const asked = deps.devicePreferences.get('storageNoteSeen')
   /** Whether a check is under way or has found nothing to ask, so later saves don't repeat it. */
