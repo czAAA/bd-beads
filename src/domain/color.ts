@@ -68,8 +68,37 @@ export function luma({ r, g, b }: Rgb): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b
 }
 
-/** Straight-line RGB distance between two colors, what Convert image and the Palette's nearest color both snap by.
- * Not perceptual (a cell is a plain hex), but enough for "same color as far as an eye can tell". */
-export function colorDistance(a: Rgb, b: Rgb): number {
-  return Math.sqrt((a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2)
+/** A color in OKLab (Björn Ottosson's perceptual space): `l` is lightness, 0 for black to 1 for white; `a` runs
+ * green to red and `b` blue to yellow. Equal steps in it look about equally different, which RGB's don't. */
+export interface Oklab {
+  l: number
+  a: number
+  b: number
+}
+
+/** A channel, 0 to 255 as stored, as the linear light it stands for (the sRGB transfer curve undone). */
+function linear(channel: number): number {
+  const value = channel / 255
+  return value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
+}
+
+/** A color's place in OKLab, what colorDistance measures between: convert a color once to compare it with many. */
+export function toOklab({ r, g, b }: Rgb): Oklab {
+  const red = linear(r)
+  const green = linear(g)
+  const blue = linear(b)
+  const long = Math.cbrt(0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue)
+  const medium = Math.cbrt(0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue)
+  const short = Math.cbrt(0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue)
+  return {
+    l: 0.2104542553 * long + 0.793617785 * medium - 0.0040720468 * short,
+    a: 1.9779984951 * long - 2.428592205 * medium + 0.4505937099 * short,
+    b: 0.0259040371 * long + 0.7827717662 * medium - 0.808675766 * short,
+  }
+}
+
+/** How different two colors look: straight-line distance in OKLab (ΔEOK, ticket 0634), 1 from black to white. The
+ * one distance Convert image and the Palette's nearest color both snap by; plain RGB distance misjudged hue. */
+export function colorDistance(a: Oklab, b: Oklab): number {
+  return Math.sqrt((a.l - b.l) ** 2 + (a.a - b.a) ** 2 + (a.b - b.b) ** 2)
 }

@@ -51,11 +51,11 @@ describe('nearestColorLookup', () => {
   })
 
   it('breaks a tie towards the earlier color, as nearestColor does', () => {
-    // #808080 is exactly as far from black as from #ffffff plus one; pick a true tie: 0x00 and 0x02 around 0x01.
-    const colors = ['#020000', '#000000']
+    // A true tie: the same color written twice, so neither is nearer than the other.
+    const colors = ['#ff0000', '#FF0000']
 
-    expect(nearestColorLookup(colors)(pack('#010000'))).toBe(nearestColor(colors, '#010000'))
-    expect(nearestColorLookup(colors)(pack('#010000'))).toBe('#020000')
+    expect(nearestColorLookup(colors)(pack('#fe0000'))).toBe(nearestColor(colors, '#fe0000'))
+    expect(nearestColorLookup(colors)(pack('#fe0000'))).toBe('#ff0000')
   })
 
   it('says nothing for a cell with no color, and for no colors to choose from', () => {
