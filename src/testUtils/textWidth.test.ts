@@ -3,7 +3,6 @@ import { textWidth } from './textWidth'
 
 // Widths Chromium reports for the same text in the same bundled fonts (measured once with Playwright, ticket 552).
 const IN_A_BROWSER: [string, number, number, number][] = [
-  ['Right-angle weave', 14, 500, 124.69],
   ['Создать бесплатный аккаунт', 14, 500, 202.78],
   ['Zapisz wzór na później', 13, 500, 142.77],
   ['Hello world, AV To Wa', 14, 400, 146.23],

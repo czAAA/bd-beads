@@ -26,13 +26,13 @@ describe('snapshotOf and restoreSnapshot', () => {
   })
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
-    const netting = createProject({ technique: 'netting', techniqueSettings: { netSize: 5 }, beadId: cubeBead.id })
-    const brick = { ...netting, technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } }
+    const peyote = createProject({ technique: 'peyote', beadId: cubeBead.id })
+    const brick = { ...peyote, technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } }
 
-    const undone = restoreSnapshot(brick, snapshotOf(netting))
-    expect(undone).toMatchObject({ technique: 'netting', techniqueSettings: { netSize: 5 } })
-    expect(undone.techniqueSettings).toEqual({ netSize: 5 })
-    const redone = restoreSnapshot(netting, snapshotOf(brick))
+    const undone = restoreSnapshot(brick, snapshotOf(peyote))
+    expect(undone.technique).toBe('peyote')
+    expect(undone.techniqueSettings).toBeUndefined()
+    const redone = restoreSnapshot(peyote, snapshotOf(brick))
     expect(redone).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
     expect(redone.techniqueSettings).toEqual({ brickBlock: 4 })
   })

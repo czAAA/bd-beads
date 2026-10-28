@@ -322,46 +322,6 @@ describe('the dots below the zoom where only the last number shows (ticket 378)'
   })
 })
 
-describe('rulers in Right-angle weave count Units (ticket 482)', () => {
-  // 4 Units across and 3 down: 5 columns, 7 rows.
-  const frame = { row: 0, column: 0, rows: 7, columns: 5 }
-  const layout = () => framed(frame, { technique: 'rightAngle', viewport: { width: 2000, height: 2000 } })
-
-  it('numbers a Unit each, not a bead', () => {
-    const { labels } = layout()
-    expect(labels.filter((label) => label.axis === 'column').map((label) => label.text)).toEqual(['1', '2', '3', '4', '1', '2', '3', '4'])
-    expect(labels.filter((label) => label.axis === 'row').map((label) => label.text)).toEqual(['1', '2', '3', '1', '2', '3'])
-  })
-
-  it('marks out a Unit\'s two columns, or its three lines, when a number is pressed', () => {
-    const { labels } = layout()
-    const column = labels.find((label) => label.axis === 'column' && label.text === '2')!
-    const row = labels.find((label) => label.axis === 'row' && label.text === '2')!
-    expect(column.selection).toEqual({ top: 0, left: 1, rows: 7, columns: 2 })
-    expect(row.selection).toEqual({ top: 2, left: 0, rows: 3, columns: 5 })
-  })
-})
-
-describe('rulers in Netting count diamonds (ticket 485)', () => {
-  // 3 diamonds across and 2 down at Net size 3: 13 columns, 7 rows.
-  const frame = { row: 0, column: 0, rows: 7, columns: 13 }
-  const layout = () => framed(frame, { technique: 'netting', viewport: { width: 2000, height: 2000 } })
-
-  it('numbers a diamond each, not a bead', () => {
-    const { labels } = layout()
-    expect(labels.filter((label) => label.axis === 'column').map((label) => label.text)).toEqual(['1', '2', '3', '1', '2', '3'])
-    expect(labels.filter((label) => label.axis === 'row').map((label) => label.text)).toEqual(['1', '2', '1', '2'])
-  })
-
-  it('marks out a diamond\'s columns, or its rows, when a number is pressed', () => {
-    const { labels } = layout()
-    const column = labels.find((label) => label.axis === 'column' && label.text === '2')!
-    const row = labels.find((label) => label.axis === 'row' && label.text === '2')!
-    expect(column.selection).toEqual({ top: 0, left: 4, rows: 7, columns: 5 })
-    expect(row.selection).toEqual({ top: 2, left: 0, rows: 5, columns: 13 })
-  })
-})
-
 describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => {
   // A peyote Frame of 3 rows × 4 columns at row 2, column 3 of a loom Canvas: its corner is at (60, 40).
   const frame = { technique: 'peyote' as const, row: 2, column: 3, rows: 3, columns: 4 }

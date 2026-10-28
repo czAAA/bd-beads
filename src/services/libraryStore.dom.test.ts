@@ -61,6 +61,17 @@ describe('projectStorage', () => {
     expect(loadProjects()).toEqual([project])
   })
 
+  it('skips a Project woven in a Technique this build does not know, and loads the rest (ticket 0644)', () => {
+    const first = makeProject()
+    const second = makeProject()
+    saveProjects([first, second])
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
+    stored.patterns[0].technique = 'herringbone'
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
+
+    expect(loadProjects()).toEqual([second])
+  })
+
   it('saves a whole library in one write', () => {
     const first = makeProject()
     const second = makeProject()

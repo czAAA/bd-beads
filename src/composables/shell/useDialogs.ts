@@ -5,7 +5,6 @@ type DialogId =
   | 'delete-all'
   | 'reset-progress'
   | 'remove-frame'
-  | 'switch-technique'
   | 'replace-frame'
   | 'remove-color'
   | 'remove-all-colors'

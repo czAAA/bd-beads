@@ -17,7 +17,6 @@ import {
   selectionLayer,
   selectionBetween,
   selectionWithEdges,
-  snapSelectionToUnits,
   type CopiedBlock,
   type PasteLoss,
   type Selection,
@@ -75,12 +74,6 @@ export function useSelectionGesture(
     return inMargin(footprintOf(project), at) || (layerAt(project, at) === 'frame' && !frameAllows(project.frame, 'select'))
   }
 
-  /** A Selection grown to whole Units where the Technique has them (ticket 483), kept in the Frame it began in. */
-  function snapped(next: Selection): Selection {
-    const project = currentProject()
-    return project ? snapSelectionToUnits(project, next, project.frame) : next
-  }
-
   function beginPress(row: number, column: number, named?: Layer) {
     const project = currentProject()
     if (!project) {
@@ -100,7 +93,7 @@ export function useSelectionGesture(
     // one active Paste claims the gesture, hence re-selecting a single cell takes a drag out and back: a click must
     // mean one thing, and stamping is it.
     if (!pasteProjectionActive.value) {
-      selection.value = snapped(selectionBetween({ row, column }, { row, column }, layer))
+      selection.value = selectionBetween({ row, column }, { row, column }, layer)
     }
   }
 
@@ -121,7 +114,7 @@ export function useSelectionGesture(
     // The drag stays on the layer it began on (ticket 491), and out of the margin (ticket 433).
     const focus = dragFocusOnLayer(project, press.layer, { row, column, ...(named ? { layer: named } : {}) }, press.focus)
     press.focus = clampOutOfMargin(marginBoxFor(project, press.layer), press.anchor, focus)
-    selection.value = snapped(selectionBetween(press.anchor, press.focus, press.layer))
+    selection.value = selectionBetween(press.anchor, press.focus, press.layer)
     return press.focus.row === row && press.focus.column === column
   }
 
@@ -165,7 +158,7 @@ export function useSelectionGesture(
       return
     }
     dropClipboard()
-    selection.value = picked && snapped(picked)
+    selection.value = picked
   }
 
   /** Select all (tickets 414, 428): the Selection becomes the Frame's inside, or without a Frame the rectangle round
@@ -206,14 +199,14 @@ export function useSelectionGesture(
       const layer = project ? selectionLayer(project, adjust.start) : 'canvas'
       const reached = project ? dragFocusOnLayer(project, layer, cell, adjust.held) : cell
       adjust.held = reached
-      keepOutOfMargin(snapped(selectionWithEdges(adjust.start, adjust.edges, reached)))
+      keepOutOfMargin(selectionWithEdges(adjust.start, adjust.edges, reached))
       return
     }
     const rows = cell.row - adjust.origin.row
     const columns = cell.column - adjust.origin.column
     adjust.moved ||= rows !== 0 || columns !== 0
     const project = currentProject()
-    const moved = movedSelection(adjust.start, rows, columns, project)
+    const moved = movedSelection(adjust.start, rows, columns)
     // A Frame's Selection is moved within the Frame (ticket 491).
     keepOutOfMargin(project?.frame && selectionLayer(project, moved) === 'frame' ? withinFrame(moved, project.frame) : moved)
   }
@@ -237,7 +230,7 @@ export function useSelectionGesture(
     } else {
       dropClipboard()
       const project = currentProject()
-      selection.value = snapped(selectionBetween(done.origin, done.origin, project && layerAt(project, done.origin)))
+      selection.value = selectionBetween(done.origin, done.origin, project && layerAt(project, done.origin))
     }
   }
 

@@ -27,19 +27,18 @@ export interface Region {
   height: number
 }
 
-/** How far one Unit's step across and one step down go in a layer, in grid px: a bead across and a row pitch down where
- * beads are counted, a whole Unit where Units are. */
-export function unitStepPx(weave: Weave): { across: number; down: number } {
+/** How far one bead's step across and one row's step down go in a layer, in grid px: a bead across and a row pitch
+ * down. */
+export function beadStepPx(weave: Weave): { across: number; down: number } {
   const description = describeWeave(weave)
   const cell = cellSizePx(weave.technique, weave.cell)
   return {
-    across: description.origin({ row: 0, column: description.columnsPerUnit }, cell.width, cell.height).x,
-    down: description.origin({ row: description.rowsPerUnit, column: 0 }, cell.width, cell.height).y,
+    across: description.origin({ row: 0, column: 1 }, cell.width, cell.height).x,
+    down: description.origin({ row: 1, column: 0 }, cell.width, cell.height).y,
   }
 }
 
-/** Where a position's bead is in a space, in grid px: its rectangle from the top-left. Beads of Right-angle weave
- * are longer one way than the other, so every layer asks for the rectangle, not a square from a top-left corner. */
+/** Where a position's bead is in a space, in grid px: its rectangle from the top-left. */
 export function positionBoxPx(weave: Weave, row: number, column: number): Region {
   const cell = cellSizePx(weave.technique, weave.cell)
   return describeWeave(weave).box({ row, column }, cell.width, cell.height)
@@ -135,7 +134,7 @@ export function regionInGridSpace(extent: Extent, region: Region, zoom: number, 
 export interface SurfaceViewInput {
   space: Space
   technique: Technique
-  /** The Canvas's Technique settings (ticket 0625): its Brick block, its Net size; one left out is its default. */
+  /** The Canvas's Technique settings (ticket 0625): its Brick block; one left out is its default. */
   techniqueSettings?: TechniqueSettings
   /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. Both layers use it. */
   cell?: BeadCell
@@ -356,8 +355,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: beadSha
     },
     beadStep: (name) => {
       const origin = displayed(0, 0, zoom)
-      // Where Units are counted a step is a whole Unit across and down.
-      const { across, down } = unitStepPx(layerNamed(name).weave)
+      const { across, down } = beadStepPx(layerNamed(name).weave)
       const column = displayed(across, 0, zoom)
       const row = displayed(0, down, zoom)
       return { column: { x: column.x - origin.x, y: column.y - origin.y }, row: { x: row.x - origin.x, y: row.y - origin.y } }

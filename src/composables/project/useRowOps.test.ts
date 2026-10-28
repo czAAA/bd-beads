@@ -35,14 +35,6 @@ describe('useRowOps', () => {
     expect(replaced(deps)).toEqual(toggleRowDirection(tracking))
   })
 
-  it('changes and says nothing for a Technique woven in rows only, which has nothing to turn (ticket 487)', () => {
-    const netting = createProject({ technique: 'netting', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 3, unit: 'beads' } })
-    const { deps, onToggleRowDirection } = setup(netting)
-    onToggleRowDirection()
-    expect(deps.replaceProject).not.toHaveBeenCalled()
-    expect(deps.showToast).not.toHaveBeenCalled()
-  })
-
   it('says the new direction in a success toast, once per change, whoever turned it (ticket 411)', () => {
     const showToast = vi.fn()
     const deps = { currentProject: () => tracking, replaceProject: vi.fn(), showToast, messages: () => en }

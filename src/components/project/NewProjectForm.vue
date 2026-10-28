@@ -249,7 +249,6 @@ function onDropImage(file: File) {
       v-if="pendingImage && selectedBead"
       :bead="selectedBead"
       :technique="technique"
-      :technique-settings="techniqueSettings"
       @confirm="onSizeConfirm"
       @cancel="pendingImage = undefined"
     />

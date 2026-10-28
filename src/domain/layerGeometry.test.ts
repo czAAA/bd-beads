@@ -18,7 +18,7 @@ const REAL: BeadCell = { aspect: 1.3, roundness: 0.35 }
 
 /** Every Technique, with its settings at their defaults and moved off them, in each Bead shape. */
 const WEAVES: Weave[] = TECHNIQUES.flatMap((technique) =>
-  [{ technique }, { technique, techniqueSettings: { brickBlock: 2, netSize: 5 } }].flatMap((weave) => [weave, { ...weave, cell: REAL }]),
+  [{ technique }, { technique, techniqueSettings: { brickBlock: 2 } }].flatMap((weave) => [weave, { ...weave, cell: REAL }]),
 )
 
 const named = (weave: Weave) => `${weave.technique} ${Object.values(weave.techniqueSettings ?? {}).join('')} ${weave.cell ? 'real' : 'symmetric'}`
@@ -56,7 +56,7 @@ const CUSTOM_FRAMES: KindedSheet[] = (Object.entries(CUSTOM) as [CustomFrameKind
 
 const customNamed = (frame: KindedSheet) => `${frame.kind} ${JSON.stringify(frame.settings)} turned ${frame.quarterTurns ?? 0} ${frame.cell ? 'real' : 'symmetric'}`
 
-/** A Rectangular Frame of a Weave, 7 rows by 6 columns: a whole number of every Technique's Units and row cycles. */
+/** A Rectangular Frame of a Weave, 7 rows by 6 columns. */
 const rectangular = (weave: Weave): KindedSheet => ({ ...weave, rows: 7, columns: 6 })
 
 /** A Box in grid px, as the Surface view gives one. */
@@ -98,7 +98,7 @@ function expectMiddlesHit(geometry: LayerGeometry, positions: readonly GridPosit
 }
 
 /** Every position whose bead touches a box is among those `positionsIn` gives for it, and those are positions it has,
- * a few beads from the box at most (a Weave of Units hands out whole Units). */
+ * a few beads from the box at most. */
 function expectPositionsIn(geometry: LayerGeometry, everywhere: readonly GridPosition[], box: Box) {
   const given = geometry.positionsIn(box)
   for (const position of given) {
@@ -142,14 +142,12 @@ describe('a Rectangular Frame answers as its Weave does', () => {
 describe('the open Canvas answers as its Weave does', () => {
   it.each(WEAVES.map((weave) => [named(weave), weave] as const))('%s', (_name, weave) => {
     const geometry = gridGeometry(weave)
-    const description = describeWeave(weave)
-    for (const position of around({ row: -4, column: -4, rows: 9, columns: 9 })) {
-      expect(geometry.hasPosition(position)).toBe(description.hasPosition(position))
-      if (!description.hasPosition(position)) continue
-      expect(sorted(geometry.neighbors(position))).toEqual(sorted(neighborsOf(weave, undefined, position).filter((next) => description.hasPosition(next))))
+    const near = around({ row: -4, column: -4, rows: 9, columns: 9 })
+    for (const position of near) {
+      expect(geometry.hasPosition(position)).toBe(true)
+      expect(sorted(geometry.neighbors(position))).toEqual(sorted(neighborsOf(weave, undefined, position)))
       expectSameBox(inPx(geometry.place(position)!.box), positionBoxPx(weave, position.row, position.column))
     }
-    const near = around({ row: -4, column: -4, rows: 9, columns: 9 }).filter((position) => description.hasPosition(position))
     expectMiddlesHit(geometry, near)
     expectPositionsIn(geometry, near, { x: -1.7, y: -2.2, width: 3.4, height: 2.9 })
   })
@@ -164,9 +162,7 @@ describe('a rectangle of a Weave away from the first position', () => {
   it.each(WEAVES.map((weave) => [named(weave), weave] as const))('%s answers as its Weave does within that edge', (_name, weave) => {
     const bounds = { row: 4, column: -3, rows: 5, columns: 4 }
     const geometry = gridGeometry(weave, bounds)
-    const description = describeWeave(weave)
-    const inside = (position: GridPosition) => position.row >= 4 && position.row < 9 && position.column >= -3 && position.column < 1
-    const has = (position: GridPosition) => inside(position) && description.hasPosition(position, bounds)
+    const has = (position: GridPosition) => position.row >= 4 && position.row < 9 && position.column >= -3 && position.column < 1
     for (const position of around(bounds)) {
       expect(geometry.hasPosition(position)).toBe(has(position))
       if (!has(position)) continue
@@ -178,7 +174,7 @@ describe('a rectangle of a Weave away from the first position', () => {
     // Each bead's middle is on it; a bead just past the edge is not the Layer's.
     expectMiddlesHit(geometry, geometry.positions())
     expectPositionsIn(geometry, around(bounds), { x: -2.5, y: 5, width: 2, height: 30 })
-    const past = around(bounds).find((position) => position.row >= 4 && position.row < 9 && position.column >= 1 && description.hasPosition(position))!
+    const past = around(bounds).find((position) => position.row >= 4 && position.row < 9 && position.column >= 1)!
     const outside = gridGeometry(weave).place(past)!.box
     expect(geometry.positionAt({ x: outside.x + outside.width / 2, y: outside.y + outside.height / 2 })).toBeUndefined()
   })
@@ -221,13 +217,10 @@ describe('a Custom frame answers as its layout does', () => {
 })
 
 describe('a point between beads', () => {
-  it('hits none in a round bead\'s corner, nor where a Right-angle weave line holds no bead', () => {
+  it('hits none in a round bead\'s corner', () => {
     const round = gridGeometry({ technique: 'loom', cell: REAL })
     const { x, y } = round.place({ row: 2, column: 3 })!.box
     expect(round.positionAt({ x: x + 0.02, y: y + 0.02 })).toBeUndefined()
-    const line = frameGeometry(rectangular({ technique: 'rightAngle' }))
-    const missing = around({ row: 0, column: 0, rows: 7, columns: 6 }).find((position) => !line.hasPosition(position) && position.row >= 0 && position.row < 7 && position.column >= 0 && position.column < 6)!
-    expect(line.place(missing)).toBeUndefined()
   })
 })
 

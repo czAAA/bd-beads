@@ -4,13 +4,13 @@ import type { GridPosition } from './grid'
 import { canvasWeave, frameWeave } from './layerWeave'
 import { pieceBeadsAt } from './pieces'
 import type { Project } from './project'
-import { describeWeave, rowCycle } from './weave'
+import { rowCycle } from './weave'
 
 // A Frame woven like the Canvas grown over it (ticket 0639, ADR 0066): positions match one to one, so it lifts the
 // Canvas beads it newly covers, as Frame from Selection does, and takes a named Piece whole or not at all.
 
-/** Whether a resize of the Project's Frame trades beads with the Canvas: a Frame woven like it (Technique, Brick block
- * and Net size alike), whose own positions are the Canvas's (ADR 0066). */
+/** Whether a resize of the Project's Frame trades beads with the Canvas: a Frame woven like it (Technique and Brick
+ * block alike), whose own positions are the Canvas's (ADR 0066). */
 function tradesWithCanvas(project: Project): boolean {
   return !!project.frame && !foldsOver(canvasWeave(project), project.frame)
 }
@@ -30,9 +30,7 @@ export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect
   const frame = project.frame
   const pieces = frame && tradesWithCanvas(project) ? namedPieceBeads(project) : []
   if (!frame || pieces.length === 0) return { rectangle }
-  const weave = frameWeave(project)
-  const cycle = rowCycle(weave)
-  const { rowsPerUnit, columnStep } = describeWeave(weave)
+  const cycle = rowCycle(frameWeave(project))
   let at = rectangle
   let stoppedAt: string | undefined
   for (;;) {
@@ -46,9 +44,9 @@ export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect
     let left = at.column
     let right = at.column + at.columns - 1
     if (inStrips.some(({ row }) => row < frame.row)) top = Math.min(frame.row, top + cycle)
-    if (inStrips.some(({ row }) => row >= frame.row + frame.rows)) bottom = Math.max(frame.row + frame.rows - 1, bottom - rowsPerUnit)
-    if (inStrips.some(({ column }) => column < frame.column)) left = Math.min(frame.column, left + columnStep)
-    if (inStrips.some(({ column }) => column >= frame.column + frame.columns)) right = Math.max(frame.column + frame.columns - 1, right - columnStep)
+    if (inStrips.some(({ row }) => row >= frame.row + frame.rows)) bottom = Math.max(frame.row + frame.rows - 1, bottom - 1)
+    if (inStrips.some(({ column }) => column < frame.column)) left = Math.min(frame.column, left + 1)
+    if (inStrips.some(({ column }) => column >= frame.column + frame.columns)) right = Math.max(frame.column + frame.columns - 1, right - 1)
     at = { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
   }
 }

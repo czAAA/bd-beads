@@ -19,7 +19,6 @@ import {
   pastedCells,
   selectionBetween,
   selectionHasHandles,
-  snapSelectionToUnits,
   type CopiedBlock,
 } from './selection'
 import { withColors } from './canvas'
@@ -182,7 +181,7 @@ describe('a stamp lands the anchor bead on the aimed cell (ticket 437)', () => {
   it('shifts the block back by the anchor, so no empty corner offsets it', () => {
     const block: CopiedBlock = { rows: 2, columns: 2, colors: [[null, RED], [BLUE, null]], anchor: { row: 0, column: 1 } }
 
-    expect(stampedCells({ frame: undefined, technique: 'loom' }, block, { row: 3, column: 3 })).toEqual([
+    expect(stampedCells(block, { row: 3, column: 3 })).toEqual([
       { row: 3, column: 3, color: RED },
       { row: 4, column: 2, color: BLUE },
     ])
@@ -193,10 +192,9 @@ describe('stampedCells and pasteOnLayer', () => {
   const dot: CopiedBlock = { rows: 1, columns: 1, colors: [[RED]], anchor: { row: 0, column: 0 } }
 
   it('stamps the block once, as a plain pastedCells would', () => {
-    const target = painted(['....', '....', '....', '....'])
     const at = { row: 1, column: 1 }
 
-    expect(stampedCells(target, dot, at)).toEqual(pastedCells(dot, at))
+    expect(stampedCells(dot, at)).toEqual(pastedCells(dot, at))
   })
 
   it('aims the anchor bead, not the block corner (ticket 437)', () => {
@@ -430,8 +428,4 @@ describe('a Piece-tool shape (ticket 547)', () => {
     expect(picture(paintLayerSelection(target, L, BLUE))).toEqual(['bbbbb', 'b...b', 'b.b.b', 'b...b', 'bbbbb'])
   })
 
-  it('keeps its cells when snapped to Units, and a rectangle without them', () => {
-    expect(snapSelectionToUnits({ technique: 'loom' }, L)).toBe(L)
-    expect(snapSelectionToUnits({ technique: 'brick' }, L).cells).toEqual(L.cells)
-  })
 })

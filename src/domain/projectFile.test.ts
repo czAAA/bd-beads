@@ -188,23 +188,28 @@ describe('single-Project roundtrip', () => {
   })
 })
 
-describe('Right-angle weave in a file (ticket 482)', () => {
-  const woven = () =>
-    paintAt(createProject({ technique: 'rightAngle', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }), [{ row: 1, column: 2 }], '#e63746')
-
-  it('keeps the Technique and every bead through the file', () => {
-    const project = woven()
-
-    const [restored] = parseProjectsFile(serializeProject(project)).projects
-
-    expect(restored).toEqual(project)
-    expect(restored!.technique).toBe('rightAngle')
-  })
-
-  it('is refused as an unknown Technique by an app that does not have it', () => {
-    const file = serializeProject(woven()).replace('"rightAngle"', '"herringbone"')
+describe('a Technique this build does not know in a file (ticket 0644)', () => {
+  it('refuses a Project woven in it, as a file this build cannot read', () => {
+    const file = serializeProject(decoratedProject()).replace('"technique":"peyote"', '"technique":"herringbone"')
 
     expect(() => parseProjectsFile(file)).toThrow()
+  })
+
+  it('skips a Project of a library woven in it, and reads the rest', () => {
+    const fox = makeProject('Fox')
+    const owl = makeProject('Owl')
+    const file = JSON.parse(serializeLibrary([fox, owl]))
+    file.projects[0].technique = 'herringbone'
+
+    expect(parseProjectsFile(JSON.stringify(file)).projects).toEqual([owl])
+  })
+
+  it('reads a Frame woven in it in the Canvas\'s Weave', () => {
+    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    const file = JSON.parse(serializeProject(project))
+    file.projects[0].frame.technique = 'herringbone'
+
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.frame).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
   })
 })
 
@@ -360,28 +365,6 @@ describe('importProjects', () => {
     const added = importProjects([incoming, incoming], [], () => 'fresh-id')
 
     expect(added.map((project) => project.id)).toEqual([incoming.id, 'fresh-id'])
-  })
-})
-
-describe('Netting in a file (ticket 485)', () => {
-  const woven = (netSize: number) =>
-    paintAt(createProject({ technique: 'netting', techniqueSettings: { netSize }, beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }), [{ row: 1, column: 1 }], '#e63746')
-
-  it('keeps the Technique, the Net size and every bead through the file', () => {
-    for (const netSize of [3, 5, 9]) {
-      const project = woven(netSize)
-
-      const [restored] = parseProjectsFile(serializeProject(project)).projects
-
-      expect(restored).toEqual(project)
-      expect(restored).toMatchObject({ technique: 'netting', techniqueSettings: { netSize } })
-    }
-  })
-
-  it('reads a Net size that is not odd from 3 to 9 as 3', () => {
-    const file = serializeProject(woven(5)).replace('"netSize":5', '"netSize":4')
-
-    expect(parseProjectsFile(file).projects[0]!.techniqueSettings).toEqual({ netSize: 3 })
   })
 })
 

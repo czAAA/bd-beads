@@ -2,7 +2,6 @@ import { beadPitchMm, type Bead } from './beads'
 import { sizeOf, type FrameSheet, type Sized } from './canvas'
 import { frameLayoutOf } from './frameKind'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
-import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
 import { fillBlanks } from './fillBlanks'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
@@ -14,18 +13,9 @@ export interface StatedSize {
   unit: SizeUnit
 }
 
-const BEADS_WEAVE: Weave = { technique: DEFAULT_TECHNIQUE }
-
 /** The positions a stated size works out to. mm/cm go through the chosen Bead's footprint once and are forgotten (ADR
- * 0026). Where the Technique measures what it draws (Units, ticket 482) the size is whole Units, a Unit's pitch being
- * its geometry's step, and comes back as the positions they take. */
-export function gridFromSize(size: StatedSize, bead: Bead, weave: Weave = BEADS_WEAVE): GridDimensions {
-  const description = describeWeave(weave)
-  if (description.policy.measure === 'drawn') {
-    const { across, down } = description.stepMm(bead)
-    const units = (value: number, step: number) => Math.max(1, size.unit === 'beads' ? Math.round(value) : Math.ceil(toMillimeters(value, size.unit) / step - 1e-9))
-    return description.positionsOf({ columns: units(size.width, across), rows: units(size.height, down) })
-  }
+ * 0026). */
+export function gridFromSize(size: StatedSize, bead: Bead): GridDimensions {
   if (size.unit === 'beads') {
     return { columns: Math.max(1, Math.round(size.width)), rows: Math.max(1, Math.round(size.height)) }
   }
@@ -54,19 +44,15 @@ export interface EstimatedSizeMm {
 // A Project's Estimated size (CONTEXT.md, ADR 0026): Bead size times beads across and down, the exact inverse of
 // gridFromSize's mm conversion. Not Technique-aware (no peyote packing, slack, tension), hence only an estimate.
 // Width and height follow the rotated view, as summarizeProject's do.
-export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Partial<Weave> & Kinded & { frame?: Weave & Kinded }, bead: Bead): EstimatedSizeMm {
+export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Kinded & { frame?: Kinded }, bead: Bead): EstimatedSizeMm {
   const { columns, rows } = sizeOf(project)
-  // The Frame's own Weave when there is one (ticket 492): its size is what is measured.
+  // The Frame's own kind when there is one (ticket 0592): a Custom frame's shape is what is measured.
   const woven = 'frame' in project && project.frame ? project.frame : project
-  const description = describeWeave({ technique: woven.technique ?? DEFAULT_TECHNIQUE, techniqueSettings: woven.techniqueSettings })
-  // A Custom frame is as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592); a
-  // Technique that measures what it draws (Units, ticket 482) counts its geometry's extent, not a column of beads.
+  // A Custom frame is as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592).
   const layout = frameLayoutOf(woven)
   const { width: widthMm, height: heightMm } = layout
     ? { width: layout.width * beadPitchMm(bead), height: layout.height * beadPitchMm(bead) }
-    : description.policy.measure === 'drawn'
-      ? description.blockExtent(columns, rows, beadPitchMm(bead), bead.heightMm)
-      : { width: columns * beadPitchMm(bead), height: rows * bead.heightMm }
+    : { width: columns * beadPitchMm(bead), height: rows * bead.heightMm }
   return project.rotation !== undefined && rotationSwapsAxes(project.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 
@@ -114,11 +100,9 @@ export function formatOtherUnit(
   unit: SchemaSizeUnit,
   labels: SizeUnitLabels & { beadsTemplate: string },
   locale: Locale = 'en',
-  weave: Weave = BEADS_WEAVE,
 ): string {
   if (unit === 'mm') {
-    const { columns, rows } = describeWeave(weave).unitsOf(grid)
-    return fillBlanks(labels.beadsTemplate, { columns, rows })
+    return fillBlanks(labels.beadsTemplate, { columns: grid.columns, rows: grid.rows })
   }
-  return `≈ ${formatSizeMm(estimatedSizeMm({ ...grid, ...weave }, bead), labels, locale)}`
+  return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), labels, locale)}`
 }

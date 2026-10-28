@@ -113,6 +113,12 @@ export function normalizeProject(stored: StoredProject): Project {
   }
 }
 
+/** The stored Projects this build can read (ticket 0644): one woven in a Technique it doesn't know, such as one since
+ * removed, is skipped, so the rest still load. */
+export function inKnownTechniques<T>(stored: readonly T[]): T[] {
+  return stored.filter((project) => isTechnique((project as { technique?: unknown } | null)?.technique))
+}
+
 /** The copy a file without one gets: the catalog's Bead of that id, if it knows it. */
 function catalogCopy(beadId: string): Bead | undefined {
   const bead = findBead(beadId)

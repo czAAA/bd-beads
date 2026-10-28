@@ -2,7 +2,6 @@
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogsContext } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
-import SwitchTechniqueModal from '../project/SwitchTechniqueModal.vue'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
@@ -21,10 +20,6 @@ const {
   removeFrameTakesBeads,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
-  switchQuestion,
-  onSetSwitchSetting,
-  onCancelSwitchTechnique,
-  onConfirmSwitchTechnique,
   onCancelReplaceFrame,
   onConfirmReplaceFrame,
   pendingColorRemovalHex,
@@ -99,14 +94,6 @@ const {
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
     @cancel="onCancelRemoveFrame"
-  />
-
-  <SwitchTechniqueModal
-    v-if="open === 'switch-technique' && switchQuestion"
-    :question="switchQuestion"
-    @set-setting="onSetSwitchSetting"
-    @confirm="onConfirmSwitchTechnique"
-    @cancel="onCancelSwitchTechnique"
   />
 
   <ConfirmModal

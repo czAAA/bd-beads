@@ -24,7 +24,7 @@ export interface RefitSheet extends SheetBeads {
 }
 
 /** Whether a sheet over a layer folds what it gives up rather than giving it to the layer: when the two are woven
- * unlike (Technique, Brick block or Net size), as their positions then do not match one to one. */
+ * unlike (Technique or Brick block), as their positions then do not match one to one. */
 export function foldsOver(under: Weave, sheet: Weave): boolean {
   return !sameWeave(under, sheet)
 }

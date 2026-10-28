@@ -1,5 +1,5 @@
 import { beadLabel, findBead } from '../domain/beads'
-import { normalizeProject, type StoredProject } from '../domain/storedProject'
+import { inKnownTechniques, normalizeProject, type StoredProject } from '../domain/storedProject'
 import type { Project } from '../domain/project'
 import {
   decodeEarlierProject,
@@ -114,7 +114,7 @@ export function loadProjects(): Project[] {
     const version = versionOf(parsed)
     const read = version === undefined ? undefined : READERS[version]
     if (read) {
-      return withDevicePalette(read(parsed).map(withName)).map(normalizeProject)
+      return withDevicePalette(inKnownTechniques(read(parsed)).map(withName)).map(normalizeProject)
     }
   } catch {
     // Unparseable, or not the shape the version it claims implies — the same situation either way: unreadable here.

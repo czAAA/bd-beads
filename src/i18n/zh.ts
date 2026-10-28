@@ -32,7 +32,6 @@ export const zh: Translations = {
     increaseHeightButton: '增大高度',
     unitLabel: '单位',
     unitBeads: '颗',
-    unitUnits: '单元',
     unitMm: '毫米',
     unitCm: '厘米',
     makerNameLabel: '制作者姓名',
@@ -47,7 +46,6 @@ export const zh: Translations = {
     openCanvasSubtitle: '在开放画布上自由绘制，需要导出图片或 PDF 时再设边框',
     pickStarter: '选择起始方案',
     estimateBeads: '≈ {columns}×{rows} 颗',
-    estimateUnits: '≈ {columns}×{rows} 单元',
   },
   a11y: {
     toolsLandmark: '工具',
@@ -171,8 +169,6 @@ export const zh: Translations = {
     loom: '织机',
     peyote: '佩奥',
     brick: '砖形',
-    rightAngle: '直角',
-    netting: '网状',
   },
   weaveSettings: {
     brickBlock: {
@@ -183,20 +179,6 @@ export const zh: Translations = {
       body: '先把这么多行直直地叠在一起编织，下面的几行再错开半颗珠子。设为 1 时每一行都错开。',
       locked: '已有标记完成的行。移除边框后才能更改砖块行数。',
       changed: '砖块行数已改为{count}',
-    },
-    netSize: {
-      label: '网眼大小',
-      less: '减少每圈珠数',
-      more: '增加每圈珠数',
-      value: '每圈珠数',
-      locked: '已有标记完成的行。移除边框后才能更改网眼大小。',
-      changed: '网眼大小已改为{count}',
-      loss: {
-        title: '更改网眼大小？',
-        message: '新网中没有位置的珠子将被移除：{count}。可以撤销。',
-        foldedMessage: '新网中没有位置的珠子将被移除：{count}。其中看不见的折叠珠子：{folded}。可以撤销。',
-        button: '更改网眼大小',
-      },
     },
   },
   formFactors: { cube: '方形', round: '圆形', delica: 'Delica' },
@@ -612,7 +594,6 @@ export const zh: Translations = {
     qualityPdfCapped: '在此设备上，PNG 的“高”为 {n} DPI。',
     lettersLabel: '字母',
     lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
-    lettersUnavailable: '此编织方式暂不支持',
     qualityHintLabel: '低质量的用途',
     qualityHint: '低质量节省内存：文件更小，手机始终能生成图片。',
     exportCoffee: 'openbeads 由一个家庭制作、维护并慢慢完善。如果它对你有用，请我们喝杯咖啡，它就能继续走下去。',
@@ -627,7 +608,6 @@ export const zh: Translations = {
     sizeUnit: '颗珠子',
     widthLabel: '宽',
     heightLabel: '高',
-    sizeUnitUnits: '单元',
     fitToDrawing: '贴合图形',
     removeFrame: '移除边框',
     removeConfirmTitle: '移除边框？',
@@ -678,21 +658,7 @@ export const zh: Translations = {
     snapAddedTop: {
       other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
     },
-    snapAddedBottom: {
-      other: '在下方添加了 {count} 行空白：边框必须是完整的单元或循环。',
-    },
-    snapAddedLeft: {
-      other: '在左侧添加了 {count} 列空白：边框必须是完整的单元或循环。',
-    },
-    snapAddedRight: {
-      other: '在右侧添加了 {count} 列空白：边框必须是完整的单元或循环。',
-    },
     announceTechnique: '编织技法已改为{technique}',
-    switchConfirmTitle: '更改编织技法？',
-    switchConfirmMessage: '图案在{technique}中可能看起来不同。在其中没有位置的珠子将被移除：{count}。可以撤销。',
-    switchConfirmFoldedMessage: '图案在{technique}中可能看起来不同。在其中没有位置的珠子将被移除：{count}。其中看不见的折叠珠子：{folded}。可以撤销。',
-    switchSettingsMessage: '请选择新技法的设置。',
-    switchConfirmButton: '更改编织技法',
     announceSelectionRotated: '选区已旋转',
     rotateFrameLabel: '旋转边框',
     announceFrameRotated: '边框已旋转',

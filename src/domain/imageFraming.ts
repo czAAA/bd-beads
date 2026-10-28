@@ -142,7 +142,7 @@ export interface PreviewLatticeInput {
   dimensions: GridDimensions
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
   technique: Technique
-  /** Its settings (ticket 0625): the Brick block, the Net size; one left out is its default. */
+  /** Its settings (ticket 0625): the Brick block; one left out is its default. */
   techniqueSettings?: TechniqueSettings
 }
 
@@ -161,13 +161,12 @@ export function previewLattice({
   const overhangY = Math.max(-view.offsetYMm, view.offsetYMm + view.pictureHeightMm - frame.heightMm)
 
   const description = describeWeave({ technique, techniqueSettings })
-  // A step of the positions: where Units are counted, a Unit is `columnsPerUnit` columns across and `rowsPerUnit` rows down.
   const step = description.stepMm(bead)
-  const wantedColumns = Math.max(0, Math.ceil(overhangX / (step.across / description.columnsPerUnit)))
-  const wantedRows = Math.max(0, Math.ceil(overhangY / (step.down / description.rowsPerUnit)))
+  const wantedColumns = Math.max(0, Math.ceil(overhangX / step.across))
+  const wantedRows = Math.max(0, Math.ceil(overhangY / step.down))
 
   const fit = marginFit(dimensions, wantedColumns, wantedRows)
-  const frameColumn = description.columnStep * Math.floor((wantedColumns * fit) / description.columnStep)
+  const frameColumn = Math.floor(wantedColumns * fit)
   // Rounded down to whole cycles of the shift, so the frame keeps its place in it (see PreviewLattice.frameRow).
   // Loom has a cycle of 1 but its frame row has always been even.
   const cycle = Math.max(2, rowCycle({ technique, techniqueSettings }))

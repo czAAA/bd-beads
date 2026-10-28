@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Bead } from '../../domain/beads'
-import type { Technique, TechniqueSettings } from '../../domain/weave'
+import type { Technique } from '../../domain/weave'
 import { isSlowFramingSize } from '../../domain/imageFraming'
 import { formatOtherUnit, gridFromSize, isSizeStated, type StatedSize } from '../../domain/projectSize'
 import { useSizeUnit } from '../../composables/project/useSizeUnit'
@@ -21,8 +21,6 @@ import { fillBlanks } from '../../domain/fillBlanks'
 const props = defineProps<{
   bead: Bead
   technique: Technique
-  /** The settings of the Project being made (ticket 0625), its Net size among them; one left out is its default. */
-  techniqueSettings?: TechniqueSettings
 }>()
 
 const emit = defineEmits<{
@@ -32,7 +30,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 
-const { unit, unitOptions, countTemplate } = useSizeUnit(() => props.technique)
+const { unit, unitOptions, countTemplate } = useSizeUnit()
 
 /** What the fields hold: a number field hands back a number once it is typed into or stepped. */
 /** What the number fields ask for in each unit: whole beads from 1, or any mm above 0. */
@@ -52,13 +50,13 @@ const isStated = computed(
 )
 
 const dimensions = computed(() =>
-  isStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead, { technique: props.technique, techniqueSettings: props.techniqueSettings }) : undefined,
+  isStated.value ? gridFromSize({ width: width.value, height: height.value, unit: unit.value }, props.bead) : undefined,
 )
 
 /** The stated size in the other unit: "≈ 3.0 × 2.2 cm" for beads, "≈ 20×10 beads" for mm. */
 const estimate = computed(() =>
   dimensions.value
-    ? formatOtherUnit(dimensions.value, props.bead, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value, { technique: props.technique, techniqueSettings: props.techniqueSettings })
+    ? formatOtherUnit(dimensions.value, props.bead, unit.value, { mm: t.value.form.unitMm, cm: t.value.form.unitCm, beadsTemplate: countTemplate.value }, locale.value)
     : undefined,
 )
 

@@ -41,7 +41,6 @@ export function liftVersionThree(stored: VersionThreeProject): SavedProject {
       // The file's flat Weave fields, for normalizeProject to read (file boundary, until ticket 0636).
       technique: rest.technique,
       brickBlock: rest.brickBlock,
-      netSize: rest.netSize,
       ...(named ? { name: named.name } : {}),
     },
     ...(kept?.length ? { pieceNames: kept } : {}),
