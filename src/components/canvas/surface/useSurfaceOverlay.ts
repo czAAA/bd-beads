@@ -1,4 +1,4 @@
-import { computed, onBeforeUnmount, ref, toRaw, watch, type Ref } from 'vue'
+import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import type { PreviewCell } from '../../../domain/grid'
 import { shownLetters, type Project } from '../../../domain/project'
 import type { Selection } from '../../../domain/selection'
@@ -135,14 +135,14 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
     const { tools } = props
     if (context) {
       renderOverlay(context, {
-        project: toRaw(props.project),
+        project: props.project,
         space: space.value,
         region,
         zoom: props.zoom,
         pixelRatio,
         theme: theme.value,
         rowMarks: marksShown.value,
-        letters: shownLetters(toRaw(props.project)),
+        letters: shownLetters(props.project),
         pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
         preview: !tools.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
         selection: props.selection,

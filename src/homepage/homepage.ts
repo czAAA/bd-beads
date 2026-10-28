@@ -7,6 +7,8 @@ import '../styles/contrast.css'
 import '../style.css'
 import { followDeviceTheme } from '../theme/theme'
 import { currentThemePick } from '../theme/useThemePick'
+import { loadLocale } from '../i18n/useI18n'
+import { browserDevicePreferences } from '../services/devicePreferences'
 import { loadProjects } from '../services/libraryStore'
 import { startOfflineShell } from '../services/offlineShell'
 import { markEditorChosen } from './homepageRoute'
@@ -23,14 +25,17 @@ function goToEditor() {
   location.assign(base)
 }
 
-createApp({
-  render: () =>
-    h(HomePage, {
-      projectCount: loadProjects().length,
-      onMakeFirstProject: goToEditor,
-      onOpenEditor: goToEditor,
-    }),
-}).mount('#app')
+// Only the language in use is fetched before the page starts (ticket 0616).
+void loadLocale(browserDevicePreferences.get('locale').value).then(() => {
+  createApp({
+    render: () =>
+      h(HomePage, {
+        projectCount: loadProjects().length,
+        onMakeFirstProject: goToEditor,
+        onOpenEditor: goToEditor,
+      }),
+  }).mount('#app')
 
-// A first visit that lands here still downloads the offline copy of the whole app (ticket 69).
-startOfflineShell(base)
+  // A first visit that lands here still downloads the offline copy of the whole app (ticket 69).
+  startOfflineShell(base)
+})

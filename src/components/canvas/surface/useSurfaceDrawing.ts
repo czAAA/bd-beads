@@ -1,4 +1,4 @@
-import { onBeforeUnmount, toRaw, watch, type Ref } from 'vue'
+import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedPositions } from '../../../domain/canvas'
 import { canvasWeave, sameWeave, shownLetters, type Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
@@ -157,7 +157,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
 
     const pixelRatio = globalThis.devicePixelRatio || 1
     const region = { x: props.scroll.x, y: props.scroll.y, width: size.value.width, height: size.value.height }
-    const project = toRaw(props.project)
+    const project = props.project
     const letters = shownLetters(project)
     const resized = sizeCanvas(canvas, region.width, region.height, pixelRatio)
     const context = canvas.getContext('2d')
@@ -207,7 +207,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
   function drawCellsOrMove(): void {
     const before = drawn
     const canvas = canvasEl.value
-    const project = toRaw(props.project)
+    const project = props.project
     const pixelRatio = globalThis.devicePixelRatio || 1
     const onlyViewMoved =
       before &&
