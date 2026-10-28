@@ -9,8 +9,8 @@ import { measureOpenBubble } from '../../testUtils/hoverInPage'
 import IconButton from './IconButton.vue'
 
 // Every registry action's Tooltip stays on the screen and inside what clips it, at the screen's left and right edges,
-// in every language (ticket 552). Whether a Tooltip opens does not depend on the language: English is opened all three
-// ways, the others by hover alone.
+// in English and the longest text (tickets 552, 0606). Whether a Tooltip opens does not depend on the language: English
+// is opened all three ways, the longest text by hover alone.
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 // The narrowest screen is where a bubble has least room; the wide one adds nothing a Tooltip can fail on.
 const WIDTH = TOOLTIP_WIDTH
