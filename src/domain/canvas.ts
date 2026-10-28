@@ -24,6 +24,9 @@ export interface FrameSheet extends Rect, Weave {
   /** The Frame's own beads, counted from its first row and column. Its Technique, Brick block and Net size (Weave) are
    * its own too (ticket 492): the Canvas is woven in another if the weaver likes. */
   beads: BeadMap
+  /** Its Folded beads (ticket 0638): those it gave up when made smaller over a Canvas woven unlike it, beyond its edge
+   * in the same own rows and columns, out of sight until it grows back over them. Absent when there are none. */
+  folded?: BeadMap
   /** The name of the Piece the Frame was made from (ticket 489), drawn under the Frame. Absent: unnamed. */
   name?: string
   /** Its Frame kind (ticket 0591, ADR 0077). Absent means Rectangular, which is left unsaved. */
