@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Weave } from './weave'
+import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Technique, type Weave } from './weave'
 import type { GeometryRef } from './weaveGeometry'
 
 /** A Weave's passes, as Row progress asks for them (ticket 0621). */
@@ -328,6 +328,8 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     expect(description.passes.lines(3, 'rows')).toEqual([description.passes.lineOf(3, 'rows')])
     expect(description.stepMm(bead).across).toBeCloseTo(1.7)
     expect(description.stepMm(bead).down).toBe(rowPitch(weave.technique, 1.3))
+    // A Frame's first row is never shifted, so its corner is a whole row pitch down per row (ticket 0622).
+    expect(description.origin({ row: 2, column: 3 }, 2, 2)).toEqual({ x: 6, y: 4 * description.rowPitch })
   })
 })
 
@@ -562,11 +564,15 @@ describe('positionStep (ticket 492)', () => {
   })
 
   it('is a position of a Unit where beads are laid in Units', () => {
-    const net = positionStep({ technique: 'netting' })
-    expect(net.across).toBeGreaterThan(0)
-    expect(net.down).toBeGreaterThan(0)
+    // A diamond of a 3-bead net is four strand steps across and two down; a Unit of Right-angle weave a length and a width.
+    expect(positionStep({ technique: 'netting' })).toEqual({ across: 0.75, down: 0.75 })
     const right = positionStep({ technique: 'rightAngle' })
-    expect(right.down).toBeGreaterThan(0)
+    expect(right.across).toBeCloseTo(1.7)
+    expect(right.down).toBeCloseTo(0.85)
+  })
+
+  it('stretches a step down by a Real bead\'s cell', () => {
+    expect(positionStep({ technique: 'peyote', cell: { aspect: 1.2, roundness: 0 } })).toEqual({ across: 1, down: 1.2 * 0.75 })
   })
 })
 
@@ -597,6 +603,11 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
 
   it('gives every Technique a known geometry kind with valid values', () => {
     expect(TECHNIQUES.flatMap((technique) => problems(techniqueGeometry(technique)).map((problem) => `${technique}: ${problem}`))).toEqual([])
+  })
+
+  it('gives every Technique a typed Frame side of at least one whole bead or Unit (ticket 0622)', () => {
+    const fewest = (technique: Technique) => describeWeave({ technique }).policy.fewestTypedSide
+    expect(TECHNIQUES.filter((technique) => !Number.isInteger(fewest(technique)) || fewest(technique) < 1)).toEqual([])
   })
 
   it('builds a Weave\'s description once, and another for other settings or another Bead', () => {

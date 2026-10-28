@@ -17,11 +17,11 @@ export interface StatedSize {
 const BEADS_WEAVE: Weave = { technique: DEFAULT_TECHNIQUE }
 
 /** The positions a stated size works out to. mm/cm go through the chosen Bead's footprint once and are forgotten (ADR
- * 0026). Where the Technique counts Units (ticket 482) the size is whole Units, a Unit's pitch being a bead's length
- * plus its width, and comes back as the positions they take. */
+ * 0026). Where the Technique measures what it draws (Units, ticket 482) the size is whole Units, a Unit's pitch being
+ * its geometry's step, and comes back as the positions they take. */
 export function gridFromSize(size: StatedSize, bead: Bead, weave: Weave = BEADS_WEAVE): GridDimensions {
   const description = describeWeave(weave)
-  if (description.countsUnits) {
+  if (description.policy.measure === 'drawn') {
     const { across, down } = description.stepMm(bead)
     const units = (value: number, step: number) => Math.max(1, size.unit === 'beads' ? Math.round(value) : Math.ceil(toMillimeters(value, size.unit) / step - 1e-9))
     return description.positionsOf({ columns: units(size.width, across), rows: units(size.height, down) })
@@ -59,12 +59,12 @@ export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Parti
   // The Frame's own Weave when there is one (ticket 492): its size is what is measured.
   const woven = 'frame' in project && project.frame ? project.frame : project
   const description = describeWeave({ technique: woven.technique ?? DEFAULT_TECHNIQUE, netSize: woven.netSize })
-  // A Custom frame is as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592); Right-angle
-  // weave counts the Units' own pitch, not a column of beads (ticket 482).
+  // A Custom frame is as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592); a
+  // Technique that measures what it draws (Units, ticket 482) counts its geometry's extent, not a column of beads.
   const layout = frameLayoutOf(woven)
   const { width: widthMm, height: heightMm } = layout
     ? { width: layout.width * beadPitchMm(bead), height: layout.height * beadPitchMm(bead) }
-    : description.countsUnits
+    : description.policy.measure === 'drawn'
       ? description.blockExtent(columns, rows, beadPitchMm(bead), bead.heightMm)
       : { width: columns * beadPitchMm(bead), height: rows * bead.heightMm }
   return project.rotation !== undefined && rotationSwapsAxes(project.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }

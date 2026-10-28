@@ -50,10 +50,11 @@ export function frameWithEdges(weave: Weave, frame: Rect, edges: readonly FrameE
 }
 
 /** A move counted in whole Canvas positions (ticket 492): the Frame's own first row is always an unshifted one, so no
- * stagger is kept; where the Canvas counts Units the move goes by whole Units, so its corner stays on one. */
+ * stagger is kept; where a Unit takes more than one row or column the move goes by whole Units, so its corner stays
+ * on one. */
 export function snappedMove(canvas: Weave, rows: number, columns: number): { rows: number; columns: number } {
-  const { rowsPerUnit, columnStep, countsUnits } = describeWeave(canvas)
-  const by = (distance: number, step: number) => (countsUnits && step > 1 ? Math.sign(distance) * Math.round(Math.abs(distance) / step) * step : distance)
+  const { rowsPerUnit, columnStep } = describeWeave(canvas)
+  const by = (distance: number, step: number) => (step > 1 ? Math.sign(distance) * Math.round(Math.abs(distance) / step) * step : distance)
   return { rows: by(rows, rowsPerUnit), columns: by(columns, columnStep) }
 }
 
@@ -97,15 +98,14 @@ export function frameWithEdgeStep(weave: Weave, frame: Rect, edge: FrameEdge, st
   }
 }
 
-/** The Frame resized to `columns` × `rows` (Units where the Technique counts them), each side growing or shrinking evenly on both of its edges (ticket 473): an
- * odd change gives the extra bead to the right or bottom. Where rows alternate the top edge moves by whole cycles of
- * rows, so the first row keeps its place in the stagger. A side is kept between four and MAX_TYPED_SIDE beads. */
+/** The Frame resized to `columns` × `rows` (Units where counted), each side changing evenly on both edges (ticket 473),
+ * the right or bottom taking an odd change's extra bead. Where rows alternate the top edge moves by whole cycles. A side
+ * keeps between the Technique's fewest typed side (four beads, or one Unit) and MAX_TYPED_SIDE beads. */
 export function frameResizedAround(weave: Weave, frame: Rect, columns: number, rows: number): Rect {
   const description = describeWeave(weave)
   const typed = description.positionsOf({ columns, rows })
   const side = (n: number, fewest: number) => Math.min(MAX_TYPED_SIDE, Math.max(fewest, Math.round(n)))
-  // Where Units are counted a side may be a single Unit.
-  const fewest = description.countsUnits ? description.smallest : { columns: MIN_STEPPED_SIDE, rows: MIN_STEPPED_SIDE }
+  const fewest = description.positionsOf({ columns: description.policy.fewestTypedSide, rows: description.policy.fewestTypedSide })
   const wide = side(typed.columns, fewest.columns)
   const tall = description.snapBottom(0, side(typed.rows, fewest.rows) - 1) + 1
   const across = description.columnStep
@@ -146,22 +146,26 @@ export function withFrame(project: Project, rectangle: Rect | undefined): Projec
   return withFrameGiving(project, rectangle).project
 }
 
-/** `withFrame`, and the beads the resized Frame gives up to the Canvas, by Canvas position: those it no longer holds
- * where it is woven like the Canvas, none where it folds them (ticket 0638). The resize lays them there. */
-export function withFrameGiving(project: Project, rectangle: Rect | undefined): { project: Project; given: BeadMap } {
+/** `withFrame`, and the beads the resized Frame trades with the Canvas, by Canvas position. Woven like the Canvas it
+ * gives up those it no longer holds and takes in the Canvas beads `offered` where it shows none of its own (ticket
+ * 0639); woven unlike it, it folds and takes nothing (ticket 0638). The resize lays and lifts them there. */
+export function withFrameGiving(project: Project, rectangle: Rect | undefined, offered: BeadMap = {}): { project: Project; given: BeadMap; taken: BeadMap } {
   if (sameFrame(project.frame, rectangle)) {
-    return { project, given: {} }
+    return { project, given: {}, taken: {} }
   }
   const { frame: current, ...rest } = project
   // With the Frame gone the passes are gone too (ticket 426).
   if (!rectangle) {
-    return { project: { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }, given: {} }
+    return { project: { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }, given: {}, taken: {} }
   }
   const { rows, columns } = rectangle
   const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
   const holds = (at: GridPosition) => at.row >= 0 && at.row < rows && at.column >= 0 && at.column < columns
-  // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638); one made anew is empty.
-  const refit = current ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds) : { beads: {}, given: {} }
+  // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638) and takes what is offered (ticket
+  // 0639); one made anew is empty.
+  const refit = current
+    ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
+    : { beads: {}, given: {}, taken: {} }
   const frame: FrameSheet = {
     row,
     column,
@@ -176,5 +180,9 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined): 
     ...(current?.settings ? { settings: current.settings } : {}),
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
-  return { project: { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }, given: shiftedBeads(refit.given, row, column) }
+  return {
+    project: { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() },
+    given: shiftedBeads(refit.given, row, column),
+    taken: shiftedBeads(refit.taken, row, column),
+  }
 }
