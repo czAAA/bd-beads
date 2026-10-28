@@ -19,6 +19,7 @@ import {
   pastedCells,
   selectionBetween,
   selectionHasHandles,
+  selectionInFinishedRows,
   type CopiedBlock,
 } from './selection'
 import { withColors } from './canvas'
@@ -428,4 +429,34 @@ describe('a Piece-tool shape (ticket 547)', () => {
     expect(picture(paintLayerSelection(target, L, BLUE))).toEqual(['bbbbb', 'b...b', 'b.b.b', 'b...b', 'bbbbb'])
   })
 
+})
+
+describe('selectionInFinishedRows (ticket 0647, ADR 0052)', () => {
+  /** A loom Frame of 6 x 6 at (10, 10) whose first two rows are done. */
+  const woven: Project = {
+    ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }),
+    frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} },
+    rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 },
+  }
+
+  it('is true for a Frame Selection that holds a position of a finished pass', () => {
+    expect(selectionInFinishedRows(woven, { top: 11, left: 12, rows: 2, columns: 2 })).toBe(true)
+    // Select all with a Frame: the whole Frame.
+    expect(selectionInFinishedRows(woven, { top: 10, left: 10, rows: 6, columns: 6 })).toBe(true)
+  })
+
+  it('is false for a Frame Selection clear of finished passes, and for any Selection on the Canvas', () => {
+    expect(selectionInFinishedRows(woven, { top: 12, left: 10, rows: 4, columns: 6 })).toBe(false)
+    expect(selectionInFinishedRows(woven, { top: 0, left: 0, rows: 4, columns: 4 })).toBe(false)
+    // Begun on the Canvas beside the Frame's finished rows, it stays the Canvas's.
+    expect(selectionInFinishedRows(woven, { top: 10, left: 2, rows: 2, columns: 12, layer: 'canvas' })).toBe(false)
+  })
+
+  it('reads a shaped Selection by its own cells, and the way the rows run', () => {
+    const shape = { top: 11, left: 10, rows: 2, columns: 2, cells: [{ row: 12, column: 11 }] }
+    expect(selectionInFinishedRows(woven, shape)).toBe(false)
+    const fromTheLeft = { ...woven, rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } }
+    expect(selectionInFinishedRows(fromTheLeft, { top: 14, left: 11, rows: 1, columns: 1 })).toBe(true)
+    expect(selectionInFinishedRows(fromTheLeft, { top: 10, left: 12, rows: 1, columns: 1 })).toBe(false)
+  })
 })

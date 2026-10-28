@@ -6,6 +6,7 @@ import { layerSheet, onLayer, positionOnCanvas, type Layer, type LayerSheet } fr
 import { carryNames } from './pieceNames'
 import { canvasDistance, frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
+import { turnedRowProgress } from './rowProgress'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
@@ -173,7 +174,8 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
 }
 
 /** Rotate Frame (ticket 471, ADR 0052, 0066): the Frame and its own beads turned a quarter clockwise about their centre,
- * as Rotate does a Selection; Width and Height swap. The Canvas under it is not touched. No Frame: undefined. */
+ * as Rotate does a Selection; Width and Height swap, and Row progress turns with them (ticket 0647; a Custom frame's
+ * order turns with its layout, so its pointer stays). The Canvas under it is not touched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
@@ -193,6 +195,7 @@ export function rotateFrame(project: Project): Project | undefined {
   return {
     ...project,
     frame: { ...rest, row: frame.row + moved.row, column: frame.column + moved.column, rows: turned.rows, columns: turned.columns, ...carried },
+    rowProgress: turnedRowProgress(project.rowProgress, { twoPasses: weave.twoPasses, rows: frame.rows }),
     updatedAt: Date.now(),
   }
 }

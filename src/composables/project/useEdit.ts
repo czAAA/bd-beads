@@ -6,9 +6,9 @@ import { sameBeads, sameLayers } from '../../domain/layerBeads'
 import type { Project } from '../../domain/project'
 import type { ReplaceOptions } from './useProjectLibrary'
 
-// The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Rotate, Rotate Frame: lock
-// applied silently, a no-op is no step), frame (through changeFrame, which refuses; the session resets after),
-// exempt (Delete all, Replace Bead: no guards).
+// The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Rotate: lock applied silently,
+// a no-op is no step), frame (through changeFrame, which refuses; the session resets after), exempt (Delete all,
+// Replace Bead, Rotate Frame, whose passes turn with its beads: no guards).
 type EditKind = 'drawing' | 'frame' | 'exempt'
 
 /** What a command of each kind hands back: the Project it makes, or for a Frame change changeFrame's result. */
@@ -71,7 +71,7 @@ export function useEdit(deps: EditDeps) {
     }
     record(project)
     deps.replaceProject(updated)
-    // A drawing command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
+    // A command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
     if (!sameFrame(project.frame, updated.frame) || project.technique !== updated.technique) {
       deps.resetAfterFrameChange()
     }
