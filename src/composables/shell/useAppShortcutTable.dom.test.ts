@@ -33,6 +33,7 @@ function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
     onFrameFromSelection: vi.fn(),
     pasteAtPointer: vi.fn(),
     onRotate: vi.fn(),
+    selectionInFinishedRows: () => false,
     canRemoveSelectedLine: () => true,
     canNamePiece: () => false,
     hasPaintColor: () => true,

@@ -712,8 +712,6 @@ export interface Translations {
     lettersLine: string
     qualityHintLabel: string
     qualityHint: string
-    exportCoffee: string
-    exportCoffeeLink: string
     estimateInfo: string
     sizeLockedLine: string
     editFrame: string
@@ -825,6 +823,20 @@ export interface Translations {
     confirmButton: string
     cancelButton: string
   }
+  /** Remove row/column's question where it touches finished rows (ticket 0647), worded for rows or columns as the rows
+   * run: `{number}` is the line's number the way the rows run, `{backTo}` the row Row progress shows after. */
+  removeLine: {
+    rowTitle: string
+    columnTitle: string
+    finishedRow: string
+    finishedColumn: string
+    rowsShift: string
+    columnsShift: string
+    acrossRows: PluralForms
+    acrossColumns: PluralForms
+    confirmButton: string
+    cancelButton: string
+  }
   // Convert image (CONTEXT.md, ADR 0010). Strings holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` are
   // filled by formatImageLimits (domain/imageConversion.ts) from the validation constants, so never write the numbers
   // here.
@@ -925,8 +937,8 @@ export interface Translations {
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
-    rowProgressLockedRotate: string
-    rowProgressLockedRemoveLine: string
+    /** Rotate held back (ticket 0647): the Selection holds a bead of a finished pass. */
+    rotateInFinishedRows: string
     removeLine: string
     removeLineDisabled: string
     namePiece: string
