@@ -62,6 +62,7 @@ describe('the Tool pill', () => {
   it('shows a recent color as a chip, left out of the popover Palette, and the chip picks it', async () => {
     const wrapper = await mountWithProject(15, 30)
     await pickColor(wrapper, 'blue')
+    expect(wrapper.find('[data-testid="color-popover"]').exists()).toBe(false) // a pick closes the popover
     await pickColor(wrapper, 'green')
 
     await wrapper.get('[data-testid="pill-color"]').trigger('click')

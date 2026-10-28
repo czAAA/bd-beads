@@ -64,3 +64,20 @@ describe('ColorPopover, Edit palette (tickets 531, 0532)', () => {
     wrapper.unmount()
   })
 })
+
+describe('ColorPopover, picking (tickets 397, 398, 444)', () => {
+  it('closes once a Palette color is picked, and once a Custom color is committed, after handing each on', async () => {
+    const { wrapper, popover } = open(defaultPaletteIds())
+    await wrapper.get('[data-color-id="blue"]').trigger('click')
+    expect(popover.emitted('select-color')).toEqual([['blue']])
+    expect(popover.emitted('close')).toHaveLength(1)
+
+    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+    const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
+    await field.setValue('#123456')
+    await field.trigger('keydown', { key: 'Enter' })
+    expect(popover.emitted('select-custom-color')).toEqual([['#123456']])
+    expect(popover.emitted('close')).toHaveLength(2)
+    wrapper.unmount()
+  })
+})

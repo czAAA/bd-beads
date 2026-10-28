@@ -5,12 +5,13 @@ import { withColors } from './domain/canvas'
 import { createProject, type Project } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
-import { pickColor } from './testUtils/pill'
+import { pickColor, pickTool } from './testUtils/pill'
 
 /** The Canvas (ticket 233, ADR 0026) as the app shows it: an endless field to draw on, moved by wheel, Hand tool and
  * Space, read via rulers. */
 
 const RED = '#e63746'
+const BLUE = '#2f6fed'
 
 beforeEach(() => {
   localStorage.clear()
@@ -61,6 +62,25 @@ describe('Rotate canvas (ticket 471)', () => {
   })
 })
 
+describe('Undo and Redo in the Canvas strip', () => {
+  it('take a stroke back and bring it again, Redo lit only once there is something to redo (tickets 295, 296)', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mountApp()
+    await flushPromises()
+    const redo = () => wrapper.get('[data-testid="strip-redo"]')
+    expect(redo().attributes('aria-disabled')).toBe('true')
+
+    await pressBead(wrapper, { row: 5, column: 5 })
+    await wrapper.trigger('mouseup')
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
+    expect(loadProjects()[0]!.beads[5]?.[5]).toBeUndefined()
+    expect(redo().attributes('aria-disabled')).toBeUndefined()
+
+    await redo().trigger('click')
+    expect(loadProjects()[0]!.beads[5]![5]).toBe('#1a1a1a') // the Palette's first color, picked at start
+  })
+})
+
 describe('drawing anywhere', () => {
   it('paints far from the first bead, at positions the canvas never had a size for, and keeps it through a reload', async () => {
     saveProjects([unframedProject()])
@@ -86,6 +106,18 @@ describe('drawing anywhere', () => {
     expect(beadColor(reloaded, { row: -30, column: -12 })).toBe(RED)
   })
 
+  it('fills the pressed bead\'s same-colored region with the Fill tool', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mountApp()
+    await flushPromises()
+    await pickColor(wrapper, 'blue')
+    await pickTool(wrapper, 'fill')
+
+    await pressBead(wrapper, { row: 0, column: 0 })
+
+    const beads = loadProjects()[0]!.beads
+    expect([beads[0]![0], beads[0]![1], beads[1]![1]]).toEqual([BLUE, BLUE, BLUE])
+  })
 })
 
 describe('the Hand tool', () => {

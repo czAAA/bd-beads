@@ -57,7 +57,7 @@ describe('Saved Projects confirms remove (ticket 232)', () => {
 })
 
 describe('Saved Projects confirms switching (ticket 232)', () => {
-  it('names both Projects and opens the picked one only on confirm', async () => {
+  it('names both Projects and opens the picked one only on confirm, putting the library away', async () => {
     const { wrapper, otherId } = await twoProjects()
 
     await click(wrapper, `select-project-${otherId}`)
@@ -70,6 +70,7 @@ describe('Saved Projects confirms switching (ticket 232)', () => {
 
     await click(wrapper, 'confirm-modal-confirm')
     expect(wrapper.find('[data-testid="switch-project-modal"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false) // the pick puts the Projects library away
     expect(await openName(wrapper)).toContain('Other')
   })
 
