@@ -443,10 +443,10 @@ function wireAppShell(services: Services) {
     beginSelectPress,
     extendSelection,
     tapPiece,
-    beginOrCommitPress: (mode, color, row, column) => {
+    beginOrCommitPress: (mode, color, row, column, layer) => {
       // Before the press, so the Palette's Undo step comes before the stroke's own.
       if (mode === 'paint' && color) onPaintColorUsed(color)
-      beginOrCommitPress(mode, color, row, column)
+      beginOrCommitPress(mode, color, row, column, layer)
     },
     paintStrokeCell,
     pasteAt: pasteAtCell,
