@@ -1,4 +1,5 @@
 import { beadPitchMm, type Bead } from './beads'
+import { toHex, type Rgb } from './color'
 import { type GridDimensions } from './grid'
 import { describeWeave, rowPitch, rowOffset, type Technique } from './weave'
 import { resolveImageColors } from './imageColors'
@@ -47,7 +48,12 @@ export function pixelPackedAt(image: PixelData, x: number, y: number): number {
 /** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores.
  * @internal Tests write an expected color the way the preview reads it. */
 export function packedToHex(packed: number): string {
-  return `#${packed.toString(16).padStart(6, '0')}`
+  return toHex(unpacked(packed))
+}
+
+/** A packed color (see pixelPackedAt) as its channels. */
+export function unpacked(packed: number): Rgb {
+  return { r: (packed >> 16) & 0xff, g: (packed >> 8) & 0xff, b: packed & 0xff }
 }
 
 /** A picture format Convert image accepts, named the way the file input, the validation and the helper text each

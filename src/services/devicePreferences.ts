@@ -6,7 +6,7 @@ import { CANVAS_BACKGROUND_MAX, migratedChoice } from '../rendering/canvasBackgr
 import type { ThemePick } from '../theme/theme'
 import type { SchemaSizeUnit } from '../domain/projectSize'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
-import { normalizeHex } from '../domain/palette'
+import { normalizeHex } from '../domain/color'
 import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
 import { readKey, removeKey } from './storageKeys'
 

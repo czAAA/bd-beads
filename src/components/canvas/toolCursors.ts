@@ -1,3 +1,4 @@
+import { fromHex } from '../../domain/color'
 import type { Tool } from '../../domain/tool'
 
 // The Tool pointers (ticket 542): the design system's cursor files, one per tool, as the CSS `cursor` value. A cursor
@@ -24,7 +25,6 @@ const POINTERS: Readonly<Record<Tool, Pointer>> = {
   piece: { file: 'piece', hotSpot: [12, 12], fallback: 'crosshair' },
 }
 
-const HEX = /^#[0-9a-f]{3,8}$/i
 const cache = new Map<string, string>()
 
 /** The Tool pointer as a plain image (ticket 546): the same file, colour and hot spot as `toolPointer`, for the app to
@@ -35,7 +35,7 @@ export function toolPointerImage(
 ): { url: string; hotSpot: readonly [number, number] } {
   const { hotSpot, file } = POINTERS[tool]
   const dragging = tool === 'hand' && options.dragging === true
-  const color = options.color && HEX.test(options.color) ? options.color : undefined
+  const color = options.color && fromHex(options.color) ? options.color : undefined
   const key = `${tool}|${dragging}|${color ?? ''}`
   let url = cache.get(key)
   if (url === undefined) {

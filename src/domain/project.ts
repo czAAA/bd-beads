@@ -15,6 +15,7 @@ import {
   type Rect,
   type FrameSheet,
 } from './canvas'
+import { normalizeHex } from './color'
 import { sameFrame } from './frame'
 import { frameLayer } from './layers'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
@@ -23,7 +24,7 @@ import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describe
 import { DEFAULT_FRAME_KIND, frameLayoutOf, isFrameKind, rowOrderOf, settingsOf, type KindedSheet } from './frameKind'
 import { layoutNeighbors, layoutPosition } from './frameLayout'
 import type { RowOrder, RowWay } from './rowOrder'
-import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizeHex, normalizePaletteCodes, normalizePaletteIds, paletteColors, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
+import { codesForBead, codesInPalette, defaultPalette, defaultPaletteIds, normalizePaletteCodes, normalizePaletteIds, paletteColors, paletteForBead, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersFor, type SwatchLetters } from './swatchLetters'
 import type { ColorCatalog } from './colorCatalog'
 import { normalizeMakerName } from './makerName'
