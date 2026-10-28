@@ -156,8 +156,7 @@ export interface BeadShape {
   x: number
   y: number
   size: number
-  /** The bead's own width and height where it isn't `size` square (Right-angle weave, ticket 482): a bead lying the
-   * other way is the same bead turned a quarter. */
+  /** The bead's own width and height where it isn't `size` square (a Real cell, ADR 0068). */
   width?: number
   height?: number
   /** 0 for a square bead. */

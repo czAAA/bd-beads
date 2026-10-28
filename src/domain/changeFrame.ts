@@ -13,7 +13,7 @@ import {
   type FrameSheet,
   sameFrame,
 } from './canvas'
-import { movedFrame, snapColumn, snappedMove, snapRow, withFrame, withFrameGiving } from './frame'
+import { movedFrame, snapRow, withFrame, withFrameGiving } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
@@ -21,10 +21,10 @@ import { refoldSheet, withEachBead } from './folding'
 import { canvasLift, grownFrame, namedPieceTaken } from './frameGrowth'
 import { customFrameSize, frameAllows, frameKindOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
 import { frameGeometry, type LayerGeometry } from './layerGeometry'
-import { describeWeave, type Weave } from './weave'
+import type { Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { canvasDistance, canvasWeave, frameWeave, weaveOf } from './layerWeave'
+import { canvasDistance, canvasWeave, weaveOf } from './layerWeave'
 import { firstPasses, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
@@ -48,9 +48,9 @@ export type FrameChange =
   /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0054); allowed after Row progress has
    * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
-  /** Change the Frame's Technique or its settings (tickets 351, 477, 492, 507, 568, 0625): the geometry changes, every
-   * bead keeps its row and column where the Weave has a position there and the rest are dropped. A Technique takes its
-   * settings with it (Netting its Net size, Brick stitch its Brick block); the same Technique changes just those. */
+  /** Change the Frame's Technique or its settings (tickets 351, 477, 492, 507, 0625): the geometry changes and every
+   * bead keeps its row and column. A Technique takes its settings with it (brick stitch its Brick block); the same
+   * Technique changes just those. */
   | WeaveChange
   /** Put a new empty Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
    * the Canvas under the new one is hidden, not changed. */
@@ -80,8 +80,6 @@ export type FrameChangeRefusal =
   /** The new Frame would cut through a named Piece (an unframed Schema) on the Canvas, which it must take whole or
    * leave whole (ticket 407). */
   | 'cuts-schema'
-  /** A line of a Technique counted in Units isn't a Unit (ADR 0038), so it can't be removed alone. */
-  | 'fixed-weave'
   /** The Frame's kind does not offer it (ADR 0077): a Custom frame's shape comes from its settings, not a rectangle,
    * and a Rectangular Frame has no settings. */
   | 'not-offered'
@@ -111,9 +109,6 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
   }
   if (('technique' in change || 'techniqueSettings' in change || 'settings' in change) && !frame) {
     return 'no-frame'
-  }
-  if ('removeLine' in change && !describeWeave(frameWeave(project)).policy.removeLine) {
-    return 'fixed-weave'
   }
   if ('removeLine' in change) {
     if (!frame) {
@@ -155,8 +150,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
 
   if ('move' in change) {
     const frame = project.frame!
-    const by = snappedMove(canvasWeave(project), change.move.rows, change.move.columns)
-    const moved = movedFrame(frame, by.rows, by.columns)
+    const moved = movedFrame(frame, change.move.rows, change.move.columns)
     if (sameFrame(frame, moved)) {
       return { kind: 'unchanged', project }
     }
@@ -232,7 +226,7 @@ function customSheet(project: Project, kind: FrameKindId, settings: FrameSetting
   const weave = weaveOf({ technique: frameKindOf({ kind }).custom!.technique })
   const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
   const canvas = canvasWeave(project)
-  return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, kind, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
+  return { row: snapRow(canvas, centre.row - half.row), column: centre.column - half.column, rows, columns, beads: {}, ...weave, kind, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
 }
 
 /** A new Custom frame: its kind, its size or all its settings, the Canvas position it goes round, and any beads. */

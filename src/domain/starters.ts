@@ -333,10 +333,10 @@ export function starterMeasure(starter: Starter, choice: StarterChoice, bead: Be
   const { rows, columns } = starterFrameSize(starter, choice, bead)
   if (frameKindOf(starter).custom) {
     const settings = customSettings(starter, choice)
-    return { shape: 'frame', ...estimatedSizeMm({ rows, columns, technique: starter.technique, kind: starter.kind, settings }, bead) }
+    return { shape: 'frame', ...estimatedSizeMm({ rows, columns, kind: starter.kind, settings }, bead) }
   }
   // Lying across, the strip's length is the Frame's width on screen and its width the Frame's height.
-  const { widthMm: lengthMm, heightMm: widthMm } = estimatedSizeMm({ rows, columns, technique: starter.technique }, bead)
+  const { widthMm: lengthMm, heightMm: widthMm } = estimatedSizeMm({ rows, columns }, bead)
   // A peyote column is two rows, as a pattern counts them round the band.
   if (starter.category === 'rings') return { shape: 'ring', insideMm: sizeIn(starter, choice.sizes, 'ringSize') / Math.PI, widthMm, rows: 2 * columns }
   return { shape: 'band', widthMm, lengthMm, rows: 2 * columns }

@@ -45,9 +45,8 @@ function mirrorLine(line: number, lines: number, reversed: boolean | undefined):
   return reversed ? lines - 1 - line : line
 }
 
-/** The rows Row order (tickets 347, 484, 487): a Rectangular Frame woven line by line in its Weave's passes, loom and
- * brick stitch one pass a line, peyote two after the first, Right-angle weave a line of Units, Netting a row of
- * diamonds. */
+/** The rows Row order (ticket 347): a Rectangular Frame woven line by line in its Weave's passes, loom and brick stitch
+ * one pass a line, peyote two after the first. */
 export function rowsOrder(weave: Weave & { rows: number; columns: number }, { direction, reversed }: RowWay): RowOrder {
   const columnWise = direction === 'columns'
   const lines = columnWise ? weave.columns : weave.rows
@@ -56,7 +55,7 @@ export function rowsOrder(weave: Weave & { rows: number; columns: number }, { di
   const passes = description.passes
   const count = passes.count(lines, direction)
   return {
-    turns: description.rowDirection,
+    turns: true,
     count,
     passAt: ({ row, column }) => (columnWise ? passes.of(mirrorLine(column, lines, reversed), row, direction) : passes.of(mirrorLine(row, lines, reversed), column, direction)),
     positionsOf: (pass) => {

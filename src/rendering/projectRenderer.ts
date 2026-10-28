@@ -334,10 +334,9 @@ const SEAM_WIDTH_PX = 1
 /** The Canvas's beads, bead by bead, with the Frame's footprint cut out so none shows over it. */
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin } = draw
-  const { beads, frame, rotation } = project
+  const { beads, rotation } = project
   const covered = footprintOf(project)
   const weave = canvasWeave(project)
-  const description = describeWeave(weave)
   const cornerRadius = beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX
   const visible = visibleBeadsInSpace(weave, space, region, zoom, rotation)
   const firstRow = band ? Math.max(visible.firstRow, band.first - 1) : visible.firstRow
@@ -364,10 +363,6 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
     for (const column of Object.keys(stored).map(Number).filter((column) => column >= first && column <= last).sort((a, b) => a - b)) {
       // The keep-out margin covers any bead that lies in it (ticket 261): it stays in the Project, undrawn.
       if (covered && frameContains(withMargin(covered, margin), { row, column })) {
-        continue
-      }
-      // The last column of a line's horizontal beads holds no bead (Right-angle weave).
-      if (!description.hasPosition({ row, column }, frame)) {
         continue
       }
       const box = positionBoxPx(weave, row, column)

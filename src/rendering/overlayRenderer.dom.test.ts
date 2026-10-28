@@ -98,29 +98,6 @@ describe('renderOverlay', () => {
       expect(ringRects(calls)).toHaveLength(2)
     })
 
-    it('rings every bead of a line of Units in Right-angle weave, horizontal and vertical (ticket 484)', () => {
-      const project = projectOf('rightAngle', 3, 7, { currentRow: 1 })
-      project.frame!.beads = { 3: { 0: '#e63746', 1: '#e63746', 2: '#e63746' }, 4: { 0: '#e63746', 1: '#e63746' }, 2: { 0: '#e63746' } }
-      const { context, calls } = recordingContext()
-
-      renderOverlay(context, { project, region: whole(project), zoom: 1 })
-
-      // Pass 1 weaves rows 3 and 4; the shared row 2 was woven in pass 0.
-      expect(ringRects(calls)).toHaveLength(5)
-    })
-
-    it('rings the beads of a row of diamonds in Netting, shared beads included (ticket 487)', () => {
-      const project = projectOf('netting', 2, 3, { currentRow: 1 }, 0, false)
-      const bead = '#e63746'
-      project.frame!.beads = { 4: { 2: bead }, 5: { 1: bead, 3: bead }, 6: { 0: bead, 4: bead } }
-      const { context, calls } = recordingContext()
-
-      renderOverlay(context, { project, region: whole(project), zoom: 1 })
-
-      // Pass 1 weaves rows 5 and 6; the shared bead of row 4 was woven in pass 0.
-      expect(ringRects(calls)).toHaveLength(4)
-    })
-
     it('keeps the last row\'s rings inside the Project, with no clamping needed', () => {
       const project = projectOf('loom', 4, 5, { currentRow: 4 })
       const { context, calls } = recordingContext()
@@ -308,17 +285,6 @@ describe('renderOverlay', () => {
 
       const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 2))
       expect(cutOuts).toEqual([[60.5, 30.5], [70.5, 15.5]])
-    })
-
-    it('leaves out the next-row beads of a net where its description puts them, a strand step aside (ticket 0623)', () => {
-      const project = projectOf('netting', 9, 5, noProgress)
-      const { context, named } = recordingContext()
-
-      // A 3-bead net's tip at row 0, column 2 (30px across) touches row 1's beads at columns 1 and 3, 15px apart a step.
-      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 0, column: 2 }], color: '#e63746' } })
-
-      const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 2))
-      expect(cutOuts).toEqual([[15.5, 15.5], [45.5, 15.5], [30.5, 0.5]])
     })
 
     it('leaves a bead on the last peyote row whole, and a loom bead too', () => {

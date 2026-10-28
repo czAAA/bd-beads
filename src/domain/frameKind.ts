@@ -247,12 +247,12 @@ export function layoutPlacement(frame: Laid & Pick<FrameSheet, 'rows' | 'columns
 }
 
 /** Whether a Frame has a bead position here, counted from its own first row and column: a Custom frame's layout
- * position, or for a Rectangular Frame wherever its Weave has a bead (a Right-angle weave line's empty end has none).
+ * position, or for a Rectangular Frame anywhere inside it.
  * @internal Code asks the Layer geometry (ticket 0629); its test compares against this until ticket 0632 deletes it. */
 export function frameHasPosition(frame: KindedSheet, position: GridPosition): boolean {
   const layout = frameLayoutOf(frame)
   if (layout) return layoutPosition(layout, position) !== undefined
-  return describeWeave(frame).hasPosition(position, { row: 0, column: 0, rows: frame.rows, columns: frame.columns })
+  return position.row >= 0 && position.row < frame.rows && position.column >= 0 && position.column < frame.columns
 }
 
 /** The rows and columns of a Custom frame's Technique that cover its layout: the bounding rectangle its footprint is

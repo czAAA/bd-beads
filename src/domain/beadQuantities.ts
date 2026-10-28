@@ -24,8 +24,7 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
   }
 
   const frame = project.frame
-  // Every real bead counts once: the empty end of a Right-angle weave line is no bead (ticket 482), a Custom frame's are
-  // its layout's (ticket 0592).
+  // Every real bead counts once: a Custom frame's are its layout's (ticket 0592).
   const geometry = frameGeometryOf(project)
   forEachBead(frame.beads, (row, column, color) => {
     if (geometry.hasPosition({ row, column })) {

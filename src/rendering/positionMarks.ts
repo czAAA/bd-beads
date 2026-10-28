@@ -13,7 +13,7 @@ const tiles = new Map<string, CanvasImageSource | null>()
 /** What a tile is made from: the Technique's row pitch, how big the grid is on screen, and the mark's color. */
 export interface MarkTileInput {
   technique: Technique
-  /** Its settings (ticket 0625): the Brick block, the Net size; one left out is its default. */
+  /** Its settings (ticket 0625): the Brick block; one left out is its default. */
   techniqueSettings?: TechniqueSettings
   /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. */
   cell?: BeadCell
@@ -30,8 +30,7 @@ interface Tile {
   beads: Region[]
 }
 
-/** What one tile holds, as the Weave's description gives it: a bead across and a cycle of rows down, or the two beads
- * of Right-angle weave that a Unit's pitch repeats (ticket 482), or a net's diamond (ticket 485). */
+/** What one tile holds, as the Weave's description gives it: a bead across and a cycle of rows down. */
 function tileOf(input: Pick<MarkTileInput, 'technique' | 'techniqueSettings' | 'cell'>): Tile {
   const cell = cellSizePx(input.technique, input.cell)
   return describeWeave(input).tile(cell.width, cell.height)

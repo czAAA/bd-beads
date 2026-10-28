@@ -32,11 +32,6 @@ function framed(frame: { row: number; column: number; rows: number; columns: num
   return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame: { ...frame, technique: 'loom' } }
 }
 
-/** The Project with its Canvas and its Frame woven in a Technique (ticket 492). */
-function woven(project: Project, technique: Project['technique'], extra: Pick<Project, 'techniqueSettings'> = {}): Project {
-  return { ...project, technique, ...extra, frame: project.frame && { ...project.frame, technique, ...extra } }
-}
-
 function mountBar(project = framed()) {
   return mount(FramePanel, { props: { project }, attachTo: document.body })
 }
@@ -50,28 +45,6 @@ function mountPanel(project = framed()) {
 }
 const closed = (wrapper: ReturnType<typeof mountPanel>) => wrapper.findComponent(PanelHost).emitted('close')
 
-
-describe('FramePanel in Right-angle weave (ticket 482)', () => {
-  const wovenBar = () => woven(framed({ row: 2, column: 3, rows: 7, columns: 5, beads: {} }), 'rightAngle')
-
-  it('shows the size in Units: 4 across and 3 down for 5 columns and 7 rows', () => {
-    const wrapper = mountBar(wovenBar())
-
-    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('placeholder')).toBe('4')
-    expect(wrapper.get('[data-testid="frame-panel-height"]').attributes('placeholder')).toBe('3')
-    expect(wrapper.text()).toContain(en.frame.sizeUnitUnits)
-  })
-
-  it('takes a size typed in Units', async () => {
-    const wrapper = mountBar(wovenBar())
-
-    await wrapper.get('[data-testid="frame-panel-width"]').setValue('6')
-    await wrapper.get('[data-testid="frame-panel-height"]').setValue('4')
-    await wrapper.get('[data-testid="frame-panel-height"]').trigger('keydown', { key: 'Enter' })
-
-    expect(wrapper.emitted('resize')).toEqual([[6, 4]])
-  })
-})
 
 describe('FramePanel (ticket 473)', () => {
   it('shows the size as two empty fields with the current size as placeholders, then the unit, Rotate and Remove Frame', () => {
@@ -184,13 +157,6 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
-  })
-
-  it('does not offer Rotate in Netting (ticket 486)', () => {
-    const net = woven(framed({ row: 2, column: 3, rows: 5, columns: 9, beads: {} }), 'netting', { techniqueSettings: { netSize: 3 } })
-    const wrapper = mountBar(net)
-    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
   })
 
   it('asks its parent to remove and rotate, and passes keys up', async () => {
@@ -399,15 +365,6 @@ describe('FramePanel Letters (ticket 0573)', () => {
     expect(mountBar({ ...framed(), letters: true }).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
     const { frame: _frame, ...bare } = framed()
     expect(mountBar(bare).find('[data-testid="frame-letters"]').exists()).toBe(false)
-  })
-})
-
-describe('FramePanel Letters note (ticket 0574)', () => {
-  it('says the Word chart is not available for a Technique without one, only while Letters is on', () => {
-    const rightAngle = { ...framed(), technique: 'rightAngle' as const, frame: { ...framed().frame!, technique: 'rightAngle' as const } }
-    expect(mountBar({ ...rightAngle, letters: true }).get('[data-testid="frame-letters-unavailable"]').text()).toBe(en.frame.lettersUnavailable)
-    expect(mountBar(rightAngle).find('[data-testid="frame-letters-unavailable"]').exists()).toBe(false)
-    expect(mountBar({ ...framed(), letters: true }).find('[data-testid="frame-letters-unavailable"]').exists()).toBe(false)
   })
 })
 

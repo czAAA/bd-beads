@@ -7,7 +7,7 @@ import { createProject } from './createProject'
 import { paintCells } from './drawing'
 import type { Project } from './project'
 import type { Technique } from './weave'
-import { hasWordChart, wordChartOf } from './wordChart'
+import { wordChartOf } from './wordChart'
 
 const HEX: Record<string, string> = { A: '#111111', B: '#222222', C: '#333333' }
 
@@ -27,9 +27,7 @@ function framed(technique: Technique, rows: string[], changes: Partial<Project> 
 const lines = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.both ? '1&2' : row.number}${row.marker ? `(${row.marker})` : ''}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)
 
 describe('Word chart (ticket 0574)', () => {
-  it('has none for Right-angle weave and Netting, nor with Letters off', () => {
-    expect([hasWordChart('loom'), hasWordChart('peyote'), hasWordChart('brick')]).toEqual([true, true, true])
-    expect([hasWordChart('rightAngle'), hasWordChart('netting')]).toEqual([false, false])
+  it('has none with Letters off or no Frame', () => {
     expect(wordChartOf(framed('loom', ['AB'], { letters: false }))).toBeUndefined()
     expect(wordChartOf({ ...framed('loom', ['AB']), frame: undefined })).toBeUndefined()
   })

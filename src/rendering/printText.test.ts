@@ -154,9 +154,7 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(chart.rows[2]).toEqual({ label: '3', first: 3, last: 3, runs: 'Strand 1: 2*' })
   })
 
-  it('has none with Letters off or without a Technique that has one', () => {
+  it('has none with Letters off', () => {
     expect(printText(delicaProject(3), en, 'en', at).wordChart).toBeUndefined()
-    const rightAngle = createProject({ technique: 'rightAngle', beadId: 'miyuki-delica-11-0', size: { width: 8, height: 8, unit: 'beads' } })
-    expect(printText(withLetters(rightAngle, true), en, 'en', at).wordChart).toBeUndefined()
   })
 })

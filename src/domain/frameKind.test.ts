@@ -44,24 +44,8 @@ describe('the Row order of a Rectangular Frame', () => {
     expect(order.positionsOf(-1)).toEqual([])
   })
 
-  it('weaves Right-angle weave a line of Units a pass, the first one with its top', () => {
-    const order = rowOrderOf(sheet(5, 3, { technique: 'rightAngle' }), { direction: 'rows' })
-    expect(order.count).toBe(2)
-    expect(order.passAt({ row: 2, column: 0 })).toBe(0)
-    expect(order.passAt({ row: 3, column: 0 })).toBe(1)
-  })
-
-  it('weaves Netting a row of diamonds a pass, each later one the rows below the last', () => {
-    const order = rowOrderOf(sheet(9, 5, { technique: 'netting', techniqueSettings: { netSize: 3 } }), { direction: 'rows' })
-    expect(order.count).toBe(3)
-    expect([...new Set(order.positionsOf(0).map(({ row }) => row))]).toEqual([0, 1, 2, 3, 4])
-    expect([...new Set(order.positionsOf(1).map(({ row }) => row))]).toEqual([5, 6])
-    expect(order.lineOf(1)).toBe(2)
-  })
-
-  it('lets the weaver turn the way rows run, except on Netting, woven in rows only', () => {
+  it('lets the weaver turn the way rows run', () => {
     expect(rowOrderOf(sheet(3, 3), { direction: 'rows' }).turns).toBe(true)
-    expect(rowOrderOf(sheet(9, 9, { technique: 'netting', techniqueSettings: { netSize: 3 } }), { direction: 'rows' }).turns).toBe(false)
   })
 })
 

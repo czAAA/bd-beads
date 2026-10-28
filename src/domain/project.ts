@@ -44,7 +44,7 @@ export interface Project {
   name: string
   technique: Technique
   /** The Canvas's Technique settings (tickets 0624, 0625): each its Technique describes (brick stitch's Brick block,
-   * ticket 477, Netting's Net size, ticket 485), and a Brick block kept off brick stitch for a switch back. */
+   * ticket 477), and a Brick block kept off brick stitch for a switch back. */
   techniqueSettings?: TechniqueSettings
   beadId: string
   /** A full copy of the Bead, saved in the file so the Project opens, draws and is sized the same whatever the catalog

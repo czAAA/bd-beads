@@ -177,7 +177,7 @@ interface SamplingInput {
   image: PixelData
   view: FramingView
   technique: Technique
-  /** The settings of the Project being made (ticket 0625): its Brick block, its Net size; one left out is its default. */
+  /** The settings of the Project being made (ticket 0625): its Brick block; one left out is its default. */
   techniqueSettings?: TechniqueSettings
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
 }
@@ -196,12 +196,11 @@ export function sampleLatticePacked({
   const cellWidth = beadPitchMm(bead)
   const cellHeight = bead.heightMm
   const description = describeWeave({ technique, techniqueSettings })
-  // The frame's corner: its first row is never shifted, and where Units are counted it is its first Unit's corner.
+  // The frame's corner: its first row is never shifted.
   const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, cellWidth, cellHeight)
   const packed = new Int32Array(lattice.rows * lattice.columns).fill(NO_COLOR)
   for (let row = 0; row < lattice.rows; row += 1) {
     for (let column = 0; column < lattice.columns; column += 1) {
-      if (!description.hasPosition({ row, column })) continue
       const { x, y } = description.center({ row, column }, cellWidth, cellHeight)
       const sourceX = Math.floor((x - originX - view.offsetXMm) / view.scaleMm)
       const sourceY = Math.floor((y - originY - view.offsetYMm) / view.scaleMm)

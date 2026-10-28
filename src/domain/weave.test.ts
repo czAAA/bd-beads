@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, describeWeave, heldSettings, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Technique, type Weave, type WeaveDescription } from './weave'
+import { cellCenter, describeWeave, heldSettings, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Weave } from './weave'
 import type { GeometryRef } from './weaveGeometry'
 
 /** A Weave's passes, as Row progress asks for them (ticket 0621). */
@@ -47,62 +47,6 @@ describe('loom and brick stitch passes', () => {
     expect(passesOf({ technique }).lines(3, 'rows')).toEqual([3])
   })
 })
-
-describe('Netting passes (ticket 487)', () => {
-  const weave = (netSize: number) => ({ technique: 'netting' as const, techniqueSettings: { netSize } })
-
-  it('counts a row of diamonds per pass', () => {
-    // A Frame of V rows of diamonds holds (V + 1)p + 1 rows of positions.
-    expect([5, 9, 13].map((rows) => passesOf(weave(3)).count(rows, 'rows'))).toEqual([1, 3, 5])
-    expect([7, 10, 13].map((rows) => passesOf(weave(5)).count(rows, 'rows'))).toEqual([1, 2, 3])
-    expect([0, 1, 4].map((rows) => passesOf(weave(3)).count(rows, 'rows'))).toEqual([0, 0, 0])
-  })
-
-  it('weaves the first row of diamonds whole and each later one from below the row the one before ended on', () => {
-    expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map((row) => passesOf(weave(3)).of(row, 0, 'rows'))).toEqual([0, 0, 0, 0, 0, 1, 1, 2, 2])
-    expect([0, 1, 2].map((pass) => passesOf(weave(3)).lines(pass, 'rows'))).toEqual([[0, 1, 2, 3, 4], [5, 6], [7, 8]])
-    expect([0, 1].map((pass) => passesOf(weave(5)).lines(pass, 'rows'))).toEqual([[0, 1, 2, 3, 4, 5, 6], [7, 8, 9]])
-  })
-
-  it('puts the ruler marker on the first row of the diamonds a pass weaves', () => {
-    expect([0, 1, 2].map((pass) => passesOf(weave(3)).lineOf(pass, 'rows'))).toEqual([0, 2, 4])
-    expect([0, 1, 2].map((pass) => passesOf(weave(7)).lineOf(pass, 'rows'))).toEqual([0, 4, 8])
-  })
-
-  it('gives every row of positions to the lines of one pass', () => {
-    const rows = 5 * 3 + 1
-    const lines = [0, 1, 2, 3].flatMap((pass) => passesOf(weave(5)).lines(pass, 'rows').map((line) => ({ line, pass })))
-    expect(lines.map(({ line }) => line)).toEqual(Array.from({ length: rows }, (_row, line) => line))
-    expect(lines.every(({ line, pass }) => passesOf(weave(5)).of(line, 0, 'rows') === pass)).toBe(true)
-  })
-})
-
-describe('Right-angle weave passes (ticket 484)', () => {
-  // A Frame of 3 lines of Units across 2 columns of Units: 7 rows and 3 columns of positions.
-  it('counts a line of Units per pass, in rows and in columns', () => {
-    expect([1, 3, 5, 7].map((rows) => passesOf({ technique: 'rightAngle' }).count(rows, 'rows'))).toEqual([0, 1, 2, 3])
-    expect([2, 3, 4].map((columns) => passesOf({ technique: 'rightAngle' }).count(columns, 'columns'))).toEqual([1, 2, 3])
-    expect([0, 1].map((n) => passesOf({ technique: 'rightAngle' }).count(n, 'rows'))).toEqual([0, 0])
-  })
-
-  it('weaves the first line of Units in three rows of positions and every later one in the two below', () => {
-    expect([0, 1, 2, 3, 4, 5, 6].map((row) => passesOf({ technique: 'rightAngle' }).of(row, 0, 'rows'))).toEqual([0, 0, 0, 1, 1, 2, 2])
-    expect([0, 1, 2, 3].map((pass) => passesOf({ technique: 'rightAngle' }).lines(pass, 'rows'))).toEqual([[0, 1, 2], [3, 4], [5, 6], [7, 8]])
-  })
-
-  it('weaves a column of Units in its horizontal beads and the vertical beads either side of it', () => {
-    const along = (row: number) => [0, 1, 2, 3].map((column) => passesOf({ technique: 'rightAngle' }).of(column, row, 'columns'))
-    expect(along(0)).toEqual([0, 1, 2, 3])
-    expect(along(1)).toEqual([0, 0, 1, 2])
-    expect([0, 1, 2].map((pass) => passesOf({ technique: 'rightAngle' }).lines(pass, 'columns'))).toEqual([[0, 1], [1, 2], [2, 3]])
-  })
-
-  it('puts the ruler marker on the Unit line a pass weaves', () => {
-    expect([0, 1, 2].map((pass) => passesOf({ technique: 'rightAngle' }).lineOf(pass, 'rows'))).toEqual([0, 2, 4])
-    expect([0, 1, 2].map((pass) => passesOf({ technique: 'rightAngle' }).lineOf(pass, 'columns'))).toEqual([0, 1, 2])
-  })
-})
-
 
 describe('rowOffset', () => {
   it('never offsets loom rows', () => {
@@ -319,9 +263,7 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     ['brick stitch, Brick block 3', { technique: 'brick' as const, techniqueSettings: { brickBlock: 3 } }, { frameStep: 6, shifted: true, rowPitch: 1, twoPasses: false }],
   ])('%s', (_name, weave, expected) => {
     const description = describeWeave(weave)
-    expect(description).toMatchObject({ ...expected, quarterTurn: true, rowDirection: true })
-    expect(description.hasPosition(here)).toBe(true)
-    expect(description.orientationAt(here)).toBe('upright')
+    expect(description).toMatchObject(expected)
     expect(description.box(here, 2, 2)).toMatchObject({ width: 2, height: 2 })
     expect(description.turned({ row: 1, column: 2 }, { rows: 5, columns: 4 })).toEqual({ row: 2, column: 3 })
     expect(description.center(here, 2, 2)).toEqual({ x: 15 + rowOffset(weave, here.row, 2), y: 1 + 8 * description.rowPitch })
@@ -333,242 +275,11 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
   })
 })
 
-describe('describeWeave: Right-angle weave (ticket 482)', () => {
-  const weave = { technique: 'rightAngle' as const }
-  const description = describeWeave(weave)
-
-  it('turns a block a quarter clockwise by Units, and leaves a horizontal bead past the last Unit', () => {
-    const block = { rows: 5, columns: 4 }
-    expect(description.turned({ row: 0, column: 0 }, block)).toEqual({ row: 1, column: 2 })
-    expect(description.turned({ row: 4, column: 2 }, block)).toEqual({ row: 5, column: 0 })
-    expect(description.turned({ row: 1, column: 0 }, block)).toEqual({ row: 0, column: 1 })
-    expect(description.turned({ row: 3, column: 3 }, block)).toEqual({ row: 6, column: 0 })
-    expect(description.turned({ row: 0, column: 3 }, block)).toBeUndefined()
-  })
-  // A bead 20 long and 14 across: a Unit is 34 a side.
-  const box = (row: number, column: number) => description.box({ row, column }, 20, 14)
-
-  it('counts Units, steps by a whole Unit and is fixed once the Project is made', () => {
-    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, quarterTurn: true })
-  })
-
-  it('lays horizontal beads lying along a line and vertical beads upright, round a hole one length square', () => {
-    expect(box(0, 0)).toEqual({ x: 14, y: 0, width: 20, height: 14 })
-    expect(box(1, 0)).toEqual({ x: 0, y: 14, width: 14, height: 20 })
-    expect(box(1, 1)).toEqual({ x: 34, y: 14, width: 14, height: 20 })
-    expect(box(2, 0)).toEqual({ x: 14, y: 34, width: 20, height: 14 })
-    expect([0, 1, 2, 3].map((row) => description.orientationAt({ row, column: 0 }))).toEqual(['sideways', 'upright', 'sideways', 'upright'])
-  })
-
-  it('keeps the same pattern above row 0', () => {
-    expect(box(-1, 0)).toEqual({ x: 0, y: -20, width: 14, height: 20 })
-    expect(box(-2, 0)).toEqual({ x: 14, y: -34, width: 20, height: 14 })
-  })
-
-  it('has beads touching only at their corners, none overlapping', () => {
-    const boxes = [0, 1, 2, 3].flatMap((row) => [0, 1, 2].map((column) => box(row, column)))
-    for (const [index, a] of boxes.entries()) {
-      for (const b of boxes.slice(index + 1)) {
-        const across = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)
-        const down = Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y)
-        expect(across > 0 && down > 0).toBe(false)
-      }
-    }
-  })
-
-  it('finds the bead under a point, and none in a hole or a corner gap', () => {
-    expect(description.positionAt(20, 5, 20, 14)).toEqual({ row: 0, column: 0 })
-    expect(description.positionAt(5, 25, 20, 14)).toEqual({ row: 1, column: 0 })
-    expect(description.positionAt(60, 5, 20, 14)).toEqual({ row: 0, column: 1 })
-    expect(description.positionAt(24, 24, 20, 14)).toBeUndefined()
-    expect(description.positionAt(5, 5, 20, 14)).toBeUndefined()
-  })
-
-  it('names the bead nearest a point in a gap', () => {
-    expect(description.nearestPosition(7, 20, 20, 14)).toEqual({ row: 1, column: 0 })
-    expect(description.nearestPosition(30, 8, 20, 14)).toEqual({ row: 0, column: 0 })
-  })
-
-  it('has one more vertical bead than horizontal ones on a line, so a Frame of Units takes one more column and two rows each', () => {
-    expect(description.positionsOf({ columns: 3, rows: 2 })).toEqual({ columns: 4, rows: 5 })
-    expect(description.unitsOf({ columns: 4, rows: 5 })).toEqual({ columns: 3, rows: 2 })
-    expect(description.blockExtent(4, 5, 20, 14)).toEqual({ width: 3 * 34 + 14, height: 2 * 34 + 14 })
-    const frame = { row: 0, column: 0, columns: 4, rows: 5 }
-    expect(description.hasPosition({ row: 0, column: 2 }, frame)).toBe(true)
-    expect(description.hasPosition({ row: 0, column: 3 }, frame)).toBe(false)
-    expect(description.hasPosition({ row: 1, column: 3 }, frame)).toBe(true)
-  })
-
-  it('makes a Frame end on a whole Unit', () => {
-    expect(description.snapBottom(0, 3)).toBe(4)
-    expect(description.snapBottom(0, 4)).toBe(4)
-    expect(description.snapBottom(4, 4)).toBe(6)
-  })
-
-  it('touches only the beads at its corners, each both ways', () => {
-    expect(sorted(description.neighbors(undefined, { row: 0, column: 2 }))).toEqual(
-      sorted([{ row: -1, column: 2 }, { row: -1, column: 3 }, { row: 1, column: 2 }, { row: 1, column: 3 }]),
-    )
-    expect(sorted(description.neighbors(undefined, { row: 1, column: 2 }))).toEqual(
-      sorted([{ row: 0, column: 1 }, { row: 0, column: 2 }, { row: 2, column: 1 }, { row: 2, column: 2 }]),
-    )
-    for (const row of [0, 1, 2, 3]) {
-      for (const column of [0, 1, 2]) {
-        for (const neighbor of description.neighbors(undefined, { row, column })) {
-          expect(description.neighbors(undefined, neighbor)).toContainEqual({ row, column })
-        }
-      }
-    }
-  })
-
-  it('measures a Unit in mm as the Bead\'s length plus its width, each way', () => {
-    expect(description.stepMm({ widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 })).toEqual({ across: 1.6 + 0.1 + 1.3, down: 1.6 + 0.1 + 1.3 })
-  })
-})
-
-describe('describeWeave: Netting (ticket 485)', () => {
-  const nets = [3, 5, 7, 9].map((netSize) => ({ netSize, p: (netSize + 1) / 2, description: describeWeave({ technique: 'netting', techniqueSettings: { netSize } }) }))
-  const beadsIn = (description: ReturnType<typeof describeWeave>, rows: number, columns: number, top = 0, left = 0) =>
-    Array.from({ length: rows * columns }, (_cell, at) => ({ row: top + Math.floor(at / columns), column: left + (at % columns) })).filter((position) => description.hasPosition(position))
-
-  it('counts Units, steps by a whole diamond, offers no turn or row direction and is fixed once the Project is made', () => {
-    for (const { p, description } of nets) {
-      expect(description).toMatchObject({ countsUnits: true, frameStep: 2 * p, columnStep: 2 * p, rowsPerUnit: p, columnsPerUnit: 2 * p, quarterTurn: false, rowDirection: false })
-      expect(description.turned({ row: 1, column: 1 }, { columns: 9, rows: 9 })).toBeUndefined()
-    }
-  })
-
-  it('reads a missing or odd-out Net size as the nearest odd one from 3 to 9', () => {
-    expect([undefined, 4, 5, 8, 12, 1].map((netSize) => heldSettings('netting', { netSize }).netSize)).toEqual([3, 3, 5, 7, 9, 3])
-    expect(describeWeave({ technique: 'netting' })).toMatchObject({ frameStep: 4 })
-  })
-
-  it('lays a 3-bead net as a diamond tip, two edge beads, the side corners, two more and the bottom tip', () => {
-    const { description } = nets[0]!
-    expect(beadsIn(description, 5, 5)).toEqual([
-      { row: 0, column: 2 },
-      { row: 1, column: 1 },
-      { row: 1, column: 3 },
-      { row: 2, column: 0 },
-      { row: 2, column: 4 },
-      { row: 3, column: 1 },
-      { row: 3, column: 3 },
-      { row: 4, column: 2 },
-    ])
-  })
-
-  it('lays a 5-bead net with two beads along each strand between shared beads', () => {
-    const { description } = nets[1]!
-    expect(beadsIn(description, 7, 7).filter(({ row }) => row <= 3)).toEqual([
-      { row: 0, column: 3 },
-      { row: 1, column: 2 },
-      { row: 1, column: 4 },
-      { row: 2, column: 1 },
-      { row: 2, column: 5 },
-      { row: 3, column: 0 },
-      { row: 3, column: 6 },
-    ])
-  })
-
-  it('holds as many beads as its Net size in each diamond, shared beads once', () => {
-    for (const { netSize, p, description } of nets) {
-      // A cell of the lattice (2p each way) holds two diamonds.
-      expect(beadsIn(description, 2 * p, 2 * p)).toHaveLength(2 * netSize)
-    }
-  })
-
-  it('repeats the same lattice a diamond across and down, and above and left of row 0', () => {
-    for (const { p, description } of nets) {
-      for (let row = -3; row < 6; row += 1) {
-        for (let column = -3; column < 6; column += 1) {
-          expect(description.hasPosition({ row, column })).toBe(description.hasPosition({ row: row + 2 * p, column: column + 2 * p }))
-          expect(description.hasPosition({ row, column })).toBe(description.hasPosition({ row: row + 2 * p, column: column - 2 * p }))
-        }
-      }
-    }
-  })
-
-  it('draws every bead round and upright where it sits, never overlapping its neighbours', () => {
-    for (const { p, description } of nets) {
-      const beads = beadsIn(description, 4 * p, 4 * p).map((position) => description.center(position, 20, 20))
-      expect(description.orientationAt({ row: 0, column: p })).toBe('upright')
-      expect(description.box({ row: 1, column: p + 1 }, 20, 20)).toEqual({ x: (p + 1) * 15, y: 15, width: 20, height: 20 })
-      for (const [at, a] of beads.entries()) {
-        for (const b of beads.slice(at + 1)) {
-          expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThanOrEqual(20)
-        }
-      }
-    }
-  })
-
-  it('has a Frame of whole diamonds: a diamond across and down is its width plus one and its height plus one', () => {
-    for (const { p, description } of nets) {
-      expect(description.positionsOf({ columns: 1, rows: 1 })).toEqual({ columns: 2 * p + 1, rows: 2 * p + 1 })
-      expect(description.positionsOf({ columns: 3, rows: 2 })).toEqual({ columns: 6 * p + 1, rows: 3 * p + 1 })
-      expect(description.unitsOf(description.positionsOf({ columns: 3, rows: 2 }))).toEqual({ columns: 3, rows: 2 })
-      expect(description.smallest).toEqual({ columns: 2 * p + 1, rows: 2 * p + 1 })
-    }
-  })
-
-  it('ends a Frame on a whole diamond across and down', () => {
-    const { description } = nets[0]!
-    expect(description.snapBottom(0, 4)).toBe(4)
-    expect(description.snapBottom(0, 5)).toBe(6)
-    expect(description.snapBottom(4, 4)).toBe(8)
-    expect(description.snapRight(0, 4)).toBe(4)
-    expect(description.snapRight(8, 9)).toBe(12)
-    expect(description.snapRight(8, 8)).toBe(12)
-  })
-
-  it('touches along the strands: four beads at a shared bead, two on a strand', () => {
-    const { description } = nets[0]!
-    expect(sorted(description.neighbors(undefined, { row: 1, column: 1 }))).toEqual([
-      { row: 0, column: 2 },
-      { row: 2, column: 0 },
-    ])
-    expect(sorted(description.neighbors(undefined, { row: 2, column: 0 }))).toEqual([
-      { row: 1, column: -1 },
-      { row: 1, column: 1 },
-      { row: 3, column: -1 },
-      { row: 3, column: 1 },
-    ])
-    expect(sorted(description.neighbors({ row: 0, column: 0, rows: 5, columns: 5 }, { row: 4, column: 2 }))).toEqual([
-      { row: 3, column: 1 },
-      { row: 3, column: 3 },
-    ])
-  })
-
-  it('finds the bead under a point, none in a hole, and the nearest bead from a hole', () => {
-    const { description } = nets[0]!
-    const at = description.center({ row: 1, column: 1 }, 20, 20)
-    expect(description.positionAt(at.x, at.y, 20, 20)).toEqual({ row: 1, column: 1 })
-    const hole = description.center({ row: 0, column: 0 }, 20, 20)
-    expect(description.hasPosition({ row: 0, column: 0 })).toBe(false)
-    expect(description.positionAt(hole.x, hole.y, 20, 20)).toBeUndefined()
-    expect(description.hasPosition(description.nearestPosition(hole.x, hole.y, 20, 20))).toBe(true)
-  })
-
-  it('measures a diamond in mm from the Bead, a strand step being three quarters of it', () => {
-    const bead = { widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 }
-    expect(nets[0]!.description.stepMm(bead).across).toBeCloseTo(4 * 0.75 * 1.7)
-    expect(nets[0]!.description.stepMm(bead).down).toBeCloseTo(2 * 0.75 * 1.3)
-    expect(nets[1]!.description.stepMm(bead).across).toBeCloseTo(6 * 0.75 * 1.7)
-  })
-})
-
 describe('positionStep (ticket 492)', () => {
   it('is a bead across and a row pitch down for beads laid on rows', () => {
     expect(positionStep({ technique: 'loom' })).toEqual({ across: 1, down: 1 })
     expect(positionStep({ technique: 'peyote' })).toEqual({ across: 1, down: 0.75 })
     expect(positionStep({ technique: 'brick' })).toEqual({ across: 1, down: 1 })
-  })
-
-  it('is a position of a Unit where beads are laid in Units', () => {
-    // A diamond of a 3-bead net is four strand steps across and two down; a Unit of Right-angle weave a length and a width.
-    expect(positionStep({ technique: 'netting' })).toEqual({ across: 0.75, down: 0.75 })
-    const right = positionStep({ technique: 'rightAngle' })
-    expect(right.across).toBeCloseTo(1.7)
-    expect(right.down).toBeCloseTo(0.85)
   })
 
   it('stretches a step down by a Real bead\'s cell', () => {
@@ -591,13 +302,6 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
         if (!['one', 'twoAfterFirst'].includes(geometry.passes)) found.push('passes')
         if (!(Number.isInteger(geometry.block) && geometry.block >= 1)) found.push('block')
         return found
-      case 'rightAngleUnits':
-        return step(geometry.aspect) ? found : [...found, 'aspect']
-      case 'netDiamonds':
-        if (!step(geometry.step)) found.push('step')
-        if (!(Number.isFinite(geometry.cellAspect) && geometry.cellAspect > 0)) found.push('cellAspect')
-        if (!(Number.isInteger(geometry.loopBeads) && geometry.loopBeads >= 3 && geometry.loopBeads % 2 === 1)) found.push('loopBeads')
-        return found
       default:
         return [`unknown kind ${(geometry as { kind: string }).kind}`]
     }
@@ -607,19 +311,8 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
     expect(TECHNIQUES.flatMap((technique) => problems(techniqueGeometry(technique)).map((problem) => `${technique}: ${problem}`))).toEqual([])
   })
 
-  it('gives every Technique a typed Frame side of at least one whole bead or Unit (ticket 0622)', () => {
-    const fewest = (technique: Technique) => describeWeave({ technique }).policy.fewestTypedSide
-    expect(TECHNIQUES.filter((technique) => !Number.isInteger(fewest(technique)) || fewest(technique) < 1)).toEqual([])
-  })
-
-  it('names a known chart look for every Technique: cells for loom, peyote and brick stitch, outlined beads for the rest (ticket 0642)', () => {
-    const known = { cells: true, outlined: true } satisfies Record<WeaveDescription['policy']['chart'], true>
-    const look = (technique: Technique) => describeWeave({ technique }).policy.chart
-
-    expect(TECHNIQUES.filter((technique) => !Object.hasOwn(known, look(technique)))).toEqual([])
-    expect(Object.fromEntries(TECHNIQUES.map((technique) => [technique, look(technique)]))).toEqual({
-      loom: 'cells', peyote: 'cells', brick: 'cells', rightAngle: 'outlined', netting: 'outlined',
-    })
+  it('offers loom, peyote and brick stitch, in that order (ticket 0644)', () => {
+    expect(TECHNIQUES).toEqual(['loom', 'peyote', 'brick'])
   })
 
   it('builds a Weave\'s description once, and another for other settings or another Bead', () => {
@@ -627,21 +320,18 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
       expect(describeWeave({ technique })).toBe(describeWeave({ technique }))
     }
     expect(describeWeave({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })).not.toBe(describeWeave({ technique: 'brick' }))
-    expect(describeWeave({ technique: 'netting', techniqueSettings: { netSize: 5 } })).not.toBe(describeWeave({ technique: 'netting' }))
     expect(describeWeave({ technique: 'loom', cell: { aspect: 0.8, roundness: 0.3 } }).cellAspect).toBe(0.8)
     expect(describeWeave({ technique: 'loom' }).cellAspect).toBe(1)
   })
 
   it('reads a Weave\'s settings from its map alone, each its Technique describes within its range (ticket 0625)', () => {
-    expect(weaveSettings({ technique: 'netting', techniqueSettings: { netSize: 7 } })).toEqual({ netSize: 7 })
     expect(weaveSettings({ technique: 'brick', techniqueSettings: { brickBlock: 99 } })).toEqual({ brickBlock: 20 })
     expect(weaveSettings({ technique: 'loom', techniqueSettings: { brickBlock: 3 } })).toEqual({})
   })
 
-  it('holds every setting a Technique describes, a Brick block kept off brick stitch, and no Net size off Netting (ticket 0625)', () => {
+  it('holds every setting a Technique describes, a Brick block kept off brick stitch, and no setting no Technique describes (ticket 0625)', () => {
     expect(heldSettings('brick')).toEqual({ brickBlock: 1 })
-    expect(heldSettings('loom', { brickBlock: 3, netSize: 5 })).toEqual({ brickBlock: 3 })
-    expect(heldSettings('netting', { brickBlock: 3 })).toEqual({ brickBlock: 3, netSize: 3 })
+    expect(heldSettings('loom', { brickBlock: 3, beadsPerLoop: 5 })).toEqual({ brickBlock: 3 })
     expect(heldSettings('peyote')).toEqual({})
   })
 })

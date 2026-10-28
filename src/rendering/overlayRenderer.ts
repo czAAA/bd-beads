@@ -2,7 +2,7 @@ import { type GridPosition, type PreviewCell } from '../domain/grid'
 import { type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
-import { beadRoundness, describeWeave, type BeadCell } from '../domain/weave'
+import { beadRoundness, type BeadCell } from '../domain/weave'
 import { rowOrderOf } from '../domain/frameKind'
 import type { LayerGeometry } from '../domain/layerGeometry'
 import { colorAt, frameContains, type Rect, type FrameSheet } from '../domain/canvas'
@@ -156,7 +156,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
 
 // The beads of the current pass lifted above their neighbours (ticket 375): drawn again over the cells so on peyote and
 // brick stitch, where the next row nests into the gaps, their corners aren't covered.
-/** A bead's width and height, where they aren't a square of the drawn size (Right-angle weave). */
+/** A bead's width and height, where they aren't a square of the drawn size (a Real cell, ADR 0068). */
 function sizedLike(box: { width: number; height: number }): { width?: number; height?: number } {
   return box.width === CELL_SIZE_PX && box.height === CELL_SIZE_PX ? {} : { width: box.width, height: box.height }
 }
@@ -214,13 +214,13 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 // The hover preview on each bead it names, inside the rim: its color at a faint opacity over what the bead holds (a
 // pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape,
 // less what the next row's beads lie over.
-function drawPreview(context: DrawingContext, weave: Weave, bounds: Rect | undefined, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
+function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = weave
   const inset = BEAD_GAP_PX / 2
   const roundness = beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset
 
   for (const cell of cells) {
-    if (!inSpace(space, cell.row, cell.column) || !describeWeave(weave).hasPosition(cell, bounds)) {
+    if (!inSpace(space, cell.row, cell.column)) {
       continue
     }
     const box = positionBoxPx(weave, cell.row, cell.column)
@@ -275,13 +275,12 @@ interface BeadRect {
 // in as far from its box as this bead is.
 function nextRowBeads(weave: Weave, space: Space, cell: GridPosition, bead: BeadRect): BeadRect[] {
   const own = positionBoxPx(weave, cell.row, cell.column)
-  const description = describeWeave(weave)
   const beads: BeadRect[] = []
   for (const column of [cell.column - 1, cell.column, cell.column + 1]) {
     const next = positionBoxPx(weave, cell.row + 1, column)
     const overlaps = next.x < own.x + own.width && next.x + next.width > own.x && next.y < own.y + own.height && next.y + next.height > own.y
     // One the Project does not have is not drawn, so it covers nothing.
-    if (overlaps && inSpace(space, cell.row + 1, column) && description.hasPosition({ row: cell.row + 1, column })) {
+    if (overlaps && inSpace(space, cell.row + 1, column)) {
       beads.push({ ...bead, x: bead.x + next.x - own.x, y: bead.y + next.y - own.y })
     }
   }
@@ -454,7 +453,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   // over that, and the marker lifted above its row.
   if (space.open) {
     if (canvasSelection) drawSelection(context, canvasWeaveOf, space, canvasSelection, theme)
-    if (canvasPreview?.cells.length) drawPreview(context, canvasWeaveOf, project.frame, space, canvasPreview.cells, canvasPreview, theme)
+    if (canvasPreview?.cells.length) drawPreview(context, canvasWeaveOf, space, canvasPreview.cells, canvasPreview, theme)
   }
 
   // The Frame's layer, or the Project drawn alone.
@@ -464,7 +463,6 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const origin = frame ? frameOriginPx(canvasWeaveOf, frame) : { x: 0, y: 0 }
     const local = <T extends GridPosition>(cell: T): T => (frame ? inFrameTerms(frame, cell) : cell)
     const onSheet = <T extends GridPosition>(cells: readonly T[]): T[] => (frame ? cells.filter((cell) => onFrame(frame, geometry, covered, cell)).map(local) : [...cells])
-    const sheetBounds = space.open ? { row: 0, column: 0, rows: sheetSpace.rows, columns: sheetSpace.columns } : project.frame
     const sheetSelection = selection && ownLayer === 'frame' ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column, ...(selection.cells ? { cells: selection.cells.map(local) } : {}) } : selection) : undefined
     context.save()
     context.translate(origin.x, origin.y)
@@ -476,7 +474,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const sheetCells = preview && onSheet(preview.cells)
     if (preview && sheetCells?.length) {
       if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), sheetCells, preview, theme)
-      else drawPreview(context, sheetWeave, sheetBounds, sheetSpace, sheetCells, preview, theme)
+      else drawPreview(context, sheetWeave, sheetSpace, sheetCells, preview, theme)
     }
     if (inPass.length > 0) {
       drawBeadRings(context, inPass, sheetWeave, theme)

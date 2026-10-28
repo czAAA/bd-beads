@@ -33,7 +33,7 @@ const props = defineProps<{
   image: PixelData
   /** The New Project form's live values: these size the frame, and the frame follows them as they are edited. */
   technique: Technique
-  /** The settings of the Project being made (ticket 0625): its Brick block, its Net size; one left out is its default. */
+  /** The settings of the Project being made (ticket 0625): its Brick block; one left out is its default. */
   techniqueSettings?: TechniqueSettings
   bead: Bead
   dimensions: GridDimensions

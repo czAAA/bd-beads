@@ -261,7 +261,7 @@ export function kiteWingBeads(row: number, rows: number): number {
 /** How many rows below its widest a Kite's wings take to lose a bead each. */
 const KITE_SHRINK_EVERY = 4
 
-/** A Kite (the maintainer's reference): two peyote wings at right angles meeting at a herringbone spine, worked in Rows
+/** A Kite (the maintainer's reference): two peyote wings at 90 degrees meeting at a herringbone spine, worked in Rows
  * from its point, each row a chevron of peyote out from a two-bead pair at the centre. A bead is named by its row and its
  * place out from the spine, the left wing's even and the right's odd, so it keeps its name when Rows change. */
 export function kiteLayout(rows: number): FrameLayout {

@@ -214,12 +214,6 @@ describe('rotateFrame (ticket 471, ADR 0066)', () => {
     expect(back.frame).toEqual(folded.frame)
   })
 
-  it('keeps a Folded horizontal bead past a Right-angle weave Frame\'s last Unit through four turns (ticket 0638)', () => {
-    const raw = { ...base, beads: {}, frame: { technique: 'rightAngle' as const, row: 20, column: 20, rows: 5, columns: 4, beads: {}, folded: withColors({}, [{ row: 0, column: 5, color: '#cc0000' }]) } }
-    let turned: Project = raw
-    for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
-    expect(turned.frame!.folded).toEqual(raw.frame.folded)
-  })
 })
 
 describe('rotating a Piece-tool shape (ticket 547)', () => {

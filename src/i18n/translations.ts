@@ -16,8 +16,7 @@ interface FeatureCopy {
 }
 
 /** A Technique setting's words (tickets 0624, 0626): its name, its two buttons, its number's name for screen readers,
- * its hover text where it has one, why it is locked while rows are done, what is read out once it changed, and the
- * question before a change, for a setting described as able to lose beads. */
+ * its hover text where it has one, why it is locked while rows are done and what is read out once it changed. */
 export interface SettingWords {
   label: string
   less: string
@@ -27,9 +26,6 @@ export interface SettingWords {
   locked: string
   /** `{count}` is the new value. */
   changed: string
-  /** `{count}` is the beads with no place after the change; `foldedMessage` says too how many of them are the Frame's
-   * Folded beads, `{folded}` (ticket 0641). */
-  loss?: { title: string; message: string; foldedMessage: string; button: string }
 }
 
 export interface Translations {
@@ -65,7 +61,6 @@ export interface Translations {
     unitLabel: string
     /** The unit a Project's size can be stated in when it is a count of beads (ADR 0026) — the default. */
     unitBeads: string
-    unitUnits: string
     unitMm: string
     unitCm: string
     /** This Project's own maker's name (ticket 182), overriding the device-wide one; blank by default. */
@@ -87,7 +82,6 @@ export interface Translations {
     pickStarter: string
     /** The Estimated size when the unit is mm: the same size as a count of beads, "≈ 40×30 beads" (ticket 342). */
     estimateBeads: string
-    estimateUnits: string
   }
   /** Screen-reader words (ticket 159; `accessibility.md`, ScreenReaders card). */
   a11y: {
@@ -715,8 +709,6 @@ export interface Translations {
     /** The Letters switch in the Frame panel (ticket 0573) and its one-line explanation. */
     lettersLabel: string
     lettersLine: string
-    /** Said under the Letters switch where the Technique has no Word chart (ticket 0574). */
-    lettersUnavailable: string
     qualityHintLabel: string
     qualityHint: string
     exportCoffee: string
@@ -734,7 +726,6 @@ export interface Translations {
     sizeUnit: string
     widthLabel: string
     heightLabel: string
-    sizeUnitUnits: string
     fitToDrawing: string
     removeFrame: string
     /** The question before Remove frame throws away finished rows (ticket 426). */
@@ -769,21 +760,10 @@ export interface Translations {
     removeConfirmCustom: string
     /** `{kind}` is the kind's name, `{size}` its size setting's summary. */
     announceCustom: string
-    /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows or columns added on each edge, and why. */
+    /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows added on top, and why. */
     snapAddedTop: PluralForms
-    snapAddedBottom: PluralForms
-    snapAddedLeft: PluralForms
-    snapAddedRight: PluralForms
     /** `{technique}` is the new Technique's name. */
     announceTechnique: string
-    /** Changing a layer's Technique (ticket 507): `{technique}` is the new one, `{count}` the beads with no place in it. */
-    switchConfirmTitle: string
-    switchConfirmMessage: string
-    /** The same where some of the beads lost are the Frame's Folded beads (ticket 0641): `{folded}` how many. */
-    switchConfirmFoldedMessage: string
-    /** Asked of a layer with no beads when the new Technique has settings to choose. */
-    switchSettingsMessage: string
-    switchConfirmButton: string
     /** Announced after Rotate turned the Selection and covered no bead. */
     announceSelectionRotated: string
     rotateFrameLabel: string

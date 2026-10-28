@@ -3,7 +3,7 @@ import { computeColorQuantities } from '../domain/beadQuantities'
 import { projectPalette } from '../domain/palette'
 import { listedColorName } from '../i18n/colorName'
 import { rotationSwapsAxes } from '../domain/grid'
-import { countedDimensions } from '../domain/projectExtent'
+import { projectDimensions } from '../domain/projectExtent'
 import { frameWeave } from '../domain/layerWeave'
 import { resolveProjectBead } from '../domain/projectBead'
 import type { Project } from '../domain/project'
@@ -118,7 +118,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
 export function printText(project: Project, t: Translations, locale: Locale, at: Date): PrintText {
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
-  const { columns, rows } = countedDimensions(project)
+  const { columns, rows } = projectDimensions(project)
   const [across, down] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined

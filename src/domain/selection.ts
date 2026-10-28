@@ -1,7 +1,7 @@
 import { type GridPosition } from './grid'
 import { beadBounds, colorAt, frameContains, withColors, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
-import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
+import type { Weave } from './weave'
 import { layerAt, layerSheet, onLayer, positionInLayer, positionOnCanvas, type Layer, type LayerSheet, type Placed } from './layers'
 import { footprintOf } from './footprint'
 import { inMargin, trimToAllowed, withMargin } from './margin'
@@ -176,11 +176,9 @@ export function selectionWithEdges(selection: Selection, edges: readonly FrameEd
   return { ...selection, top, left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-/** The Selection moved by whole beads, its size kept; its beads stay where they are. Where beads are laid in Units it
- * moves by whole Units down. */
-export function movedSelection(selection: Selection, rows: number, columns: number, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Selection {
-  const { rowsPerUnit } = describeWeave(weave)
-  return { ...selection, top: selection.top + Math.round(rows / rowsPerUnit) * rowsPerUnit, left: selection.left + columns }
+/** The Selection moved by whole beads, its size kept; its beads stay where they are. */
+export function movedSelection(selection: Selection, rows: number, columns: number): Selection {
+  return { ...selection, top: selection.top + rows, left: selection.left + columns }
 }
 
 /** The Selection slid back inside `frame` when it was moved past an edge; as it is when it is larger than the Frame. */
@@ -190,18 +188,9 @@ export function withinFrame(selection: Selection, frame: Rect): Selection {
   return { ...selection, top, left }
 }
 
-/** The Selection grown to whole Units where the Technique has them (ticket 483), kept inside the Frame it started in. */
-export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Rect): Selection {
-  const snapped = describeWeave(weave).snapSelection(selection, frame)
-  if (snapped === selection) return selection
-  return { ...snapped, ...(selection.layer ? { layer: selection.layer } : {}), ...(selection.cells ? { cells: selection.cells } : {}) }
-}
-
 /** Snapshots a Selection's drawn beads on a layer laid on a grid into a block (ticket 437, ADR 0016): trimmed to the
- * bounding box, anchored on the first bead.
- * @internal Tests copy a block to paste it. */
-export function copySelection({ beads, weave }: Pick<LayerSheet, 'beads' | 'weave'>, selection: Selection): CopiedBlock | undefined {
-  const { rowsPerUnit } = describeWeave(weave)
+ * bounding box, anchored on the first bead. */
+function copySelection({ beads }: Pick<LayerSheet, 'beads'>, selection: Selection): CopiedBlock | undefined {
   const mask = selectionMask(selection)
   const colorIn = (row: number, column: number) => (!mask || mask(row, column) ? colorAt(beads, row, column) : null)
   const drawn: GridPosition[] = []
@@ -212,8 +201,7 @@ export function copySelection({ beads, weave }: Pick<LayerSheet, 'beads' | 'weav
   }
   if (drawn.length === 0) return undefined
 
-  // Where beads are laid in Units the block starts on a Unit's line, so Paste can keep each bead lying as it does.
-  const top = drawn[0].row - (((drawn[0].row % rowsPerUnit) + rowsPerUnit) % rowsPerUnit)
+  const top = drawn[0].row
   const bottom = Math.max(...drawn.map((cell) => cell.row))
   const left = Math.min(...drawn.map((cell) => cell.column))
   const right = Math.max(...drawn.map((cell) => cell.column))
@@ -245,29 +233,17 @@ export function pastedCells(block: CopiedBlock, at: GridPosition): PastedCell[] 
   return cells
 }
 
-/** Every cell `block` lands on when aimed at `at` (CONTEXT.md's Paste entry): its anchor bead on `at` (ticket 437), on
- * a Unit's line and clear of the holes where beads are laid in Units (tickets 483, 486).
+/** Every cell `block` lands on when aimed at `at` (CONTEXT.md's Paste entry): its anchor bead on `at` (ticket 437).
  * @internal Tests check where a block is aimed on its own. */
-export function stampedCells(project: Weave & { frame?: Rect }, block: CopiedBlock, at: GridPosition): PastedCell[] {
-  const weave = describeWeave(project)
-  const { rowsPerUnit } = weave
-  const row = at.row - block.anchor.row
-  const topLeft = { row: row - (((row % rowsPerUnit) + rowsPerUnit) % rowsPerUnit), column: at.column - block.anchor.column }
-  const placed = weave.fitBlock(topLeft, pastedCells(block, { row: 0, column: 0 }))
-  // A position that holds no bead (a hole in a net) takes nothing (ticket 486).
-  return pastedCells(block, placed).filter((cell) => weave.hasPosition(cell, project.frame))
-}
-
-/** Every cell `block` lands on when aimed at `at` on a layer laid on a grid, as `stampedCells` aims it. */
-function stampedOn({ weave, edge }: LayerSheet, block: CopiedBlock, at: GridPosition): PastedCell[] {
-  return stampedCells({ ...weave, ...(edge ? { frame: edge } : {}) }, block, at)
+export function stampedCells(block: CopiedBlock, at: GridPosition): PastedCell[] {
+  return pastedCells(block, { row: at.row - block.anchor.row, column: at.column - block.anchor.column })
 }
 
 /** The paste stamp: `block` at `at` on a layer laid on a grid, as one edit (one undo step). */
 function stampBlock(sheet: LayerSheet, block: CopiedBlock, at: GridPosition): BeadMap {
   const { edge } = sheet
   // A Frame holds only its own cells: what a stamp puts outside it is dropped (ADR 0066).
-  const cells = stampedOn(sheet, block, at).filter((cell) => !edge || frameContains(edge, cell))
+  const cells = stampedCells(block, at).filter((cell) => !edge || frameContains(edge, cell))
   return withColors(sheet.beads, cells.map(({ row, column, color }) => ({ row, column, color })))
 }
 
@@ -371,7 +347,7 @@ export function pastedCellsOnLayer(project: Project, block: CopiedBlock, at: Gri
     return landedOnCustom(sheet, block, positionInLayer(project, layer, at)).landed.map(({ row, column, color }) => ({ ...positionOnCanvas(project, layer, { row, column }), color: color!, layer }))
   }
   const { edge } = sheet
-  return stampedOn(sheet, block, positionInLayer(project, layer, at))
+  return stampedCells(block, positionInLayer(project, layer, at))
     .filter((cell) => !edge || frameContains(edge, cell))
     .map((cell) => ({ ...cell, ...positionOnCanvas(project, layer, cell) }))
 }
@@ -387,7 +363,7 @@ export function pasteLostCount(project: Project, block: CopiedBlock, at: GridPos
   const sheet = layerSheet(project, 'frame')
   const local = positionInLayer(project, 'frame', at)
   if (!sheet.geometry.grid) return { count: landedOnCustom(sheet, block, local).dropped, loss: 'shape' }
-  const cells = stampedOn(sheet, block, local)
+  const cells = stampedCells(block, local)
   return { count: cells.filter((cell) => !frameContains(sheet.edge!, cell)).length, loss: 'edge' }
 }
 

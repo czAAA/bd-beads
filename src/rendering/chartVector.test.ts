@@ -5,7 +5,7 @@ import { onLayer } from '../domain/layers'
 import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
-import { describeWeave, TECHNIQUES } from '../domain/weave'
+import { TECHNIQUES, type Technique } from '../domain/weave'
 import { drawChartParts, letterColor, placeBeads } from './chartVector'
 import { planPrint, mm } from './printPlan'
 
@@ -14,7 +14,7 @@ import { planPrint, mm } from './printPlan'
 const DARK = '#1f2a44'
 const LETTERS = { '#ffffff': 'A', [DARK]: 'B', '#f2c94c': 'AA' }
 
-function schema(technique: 'loom' | 'peyote' | 'brick' | 'rightAngle' | 'netting' = 'loom', columns = 100, rows = 100, extra: Partial<Project> = {}): Project {
+function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra: Partial<Project> = {}): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   // Dark in the top left 10 × 10, White in the next 5 columns of its first 10 rows, a pale yellow beyond them; the rest empty.
   const beads: Record<number, Record<number, string>> = {}
@@ -156,7 +156,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(pdf).toContain('0.98 0.322 0.059 RG\n1.417 w')
   })
 
-  it.each(['peyote', 'brick', 'rightAngle', 'netting'] as const)('places and letters every bead of a %s Schema', (technique) => {
+  it.each(['peyote', 'brick'] as const)('places and letters every bead of a %s Schema', (technique) => {
     const project = schema(technique, 40, 40)
     const { content } = chartOf(project)
     const letters = texts(content.toString()).filter((text) => text.font === 'F2' && /^[A-Z]+$/.test(text.value))
@@ -165,15 +165,11 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(content.toString()).not.toContain('NaN')
   })
 
-  it.each(TECHNIQUES)('draws a %s chart in the look its Technique\'s policy names (ticket 0642)', (technique) => {
-    const look = describeWeave({ technique }).policy.chart
+  it.each(TECHNIQUES)('draws a %s chart as cells, no bead outlined on its own (tickets 0642, 0644)', (technique) => {
     const pdf = chartOf(schema(technique, 40, 40)).content.toString()
-    // A cell is a plain filled rectangle under the cell lines; an outlined bead is a closed path, filled and stroked.
-    const cells = (pdf.match(/ re f$/gm) ?? []).length
-    const outlined = (pdf.match(/ h B$/gm) ?? []).length
-
-    expect(cells > 0).toBe(look === 'cells')
-    expect(outlined > 0).toBe(look === 'outlined')
+    // A cell is a plain filled rectangle under the cell lines; an outlined bead would be a closed path, filled and stroked.
+    expect((pdf.match(/ re f$/gm) ?? []).length).toBeGreaterThan(0)
+    expect(pdf).not.toMatch(/ h B$/m)
   })
 
   it('places the beads of a turned Schema from the Project renderer', () => {

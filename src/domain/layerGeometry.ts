@@ -16,7 +16,7 @@ export interface BeadPlace {
   angle: number
 }
 
-/** What a Layer answers about where its beads are, whatever lays them out: its Weave's rows and Units, or a Custom
+/** What a Layer answers about where its beads are, whatever lays them out: its Weave's rows, or a Custom
  * frame's layout (ADR 0077). Positions are the Layer's own (a Frame's from its first row and column, a Custom frame's
  * by round and place); points are in bead widths from the Layer's first position's corner. */
 export interface LayerGeometry {
@@ -26,7 +26,7 @@ export interface LayerGeometry {
   readonly grid: boolean
   /** Every position that holds a bead, within the Layer's edge; none on an open Canvas, which has no edge. */
   positions(): readonly GridPosition[]
-  /** Whether a position holds a bead: inside the edge, and where the Weave or the layout has one. */
+  /** Whether a position holds a bead: inside the edge, and where the layout has one. */
   hasPosition(position: GridPosition): boolean
   /** The positions whose beads touch this one's, each a position the Layer has: where a Fill spreads. */
   neighbors(position: GridPosition): GridPosition[]
@@ -44,12 +44,12 @@ export interface LayerGeometry {
 }
 
 /** A Layer laid out by its Weave: the Canvas (open, with no `bounds`), a Rectangular Frame (its own rows and columns from
- * 0, 0), or any rectangle of a Weave's positions whose edge is the Layer's (a Right-angle weave line's last bead is
- * missing at the edge). Its answers are the Weave description's (ticket 0623), cut to the edge. */
+ * 0, 0), or any rectangle of a Weave's positions whose edge is the Layer's. Its answers are the Weave description's
+ * (ticket 0623), cut to the edge. */
 export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
   const description = describeWeave(weave)
   const height = description.cellAspect
-  const has = (position: GridPosition): boolean => insideBounds(bounds, position) && description.hasPosition(position, bounds)
+  const has = (position: GridPosition): boolean => insideBounds(bounds, position)
   const box = (position: GridPosition): Box => description.box(position, 1, height)
   const extent = bounds && description.blockBox(bounds, 1, height)
   // Where rows nest, the bead drawn last wins among the edge's own rows: the description takes an edge from the first
@@ -62,7 +62,7 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
       const all: GridPosition[] = []
       for (let row = bounds.row; row < bounds.row + bounds.rows; row += 1) {
         for (let column = bounds.column; column < bounds.column + bounds.columns; column += 1) {
-          if (has({ row, column })) all.push({ row, column })
+          all.push({ row, column })
         }
       }
       return all
