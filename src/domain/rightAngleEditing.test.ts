@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { colorAt, forEachBead, withColors, type BeadMap } from './canvas'
 import { createProject } from './createProject'
 import { fillArea } from './fill'
+import { layerSheet } from './layers'
 import { weaveOf } from './layerWeave'
 import type { Project } from './project'
 import { rotateFrame, rotateSelection } from './rotate'
@@ -77,7 +78,7 @@ describe('Selection and Paste in Right-angle weave (ticket 483)', () => {
   })
 
   it('copies from a Unit\'s line and pastes keeping each bead lying as it did', () => {
-    const copied = copySelection(paint(woven, [[1, 1, RED], [2, 1, BLUE]]), { top: 0, left: 0, rows: 5, columns: 4 })!
+    const copied = copySelection({ beads: paint(woven, [[1, 1, RED], [2, 1, BLUE]]).beads, weave }, { top: 0, left: 0, rows: 5, columns: 4 })!
     expect(copied.anchor).toEqual({ row: 1, column: 0 })
 
     const cells = stampedCells(woven, copied, { row: 7, column: 5 })
@@ -89,10 +90,10 @@ describe('Selection and Paste in Right-angle weave (ticket 483)', () => {
 
 describe('Fill in Right-angle weave (ticket 483)', () => {
   it('spreads through beads that touch at a corner of a Unit, and stops at an empty one', () => {
-    const filled = fillArea(woven, 0, 0, RED)
-    expect(found(filled.beads)).toContain('1,0:' + RED)
-    expect(found(filled.beads)).toContain('1,1:' + RED)
-    expect(colorAt(filled.beads, 0, 3)).toBeNull()
-    expect(colorAt(filled.beads, 2, 0)).toBe(RED)
+    const filled = fillArea(layerSheet(woven, 'frame'), 0, 0, RED)
+    expect(found(filled)).toContain('1,0:' + RED)
+    expect(found(filled)).toContain('1,1:' + RED)
+    expect(colorAt(filled, 0, 3)).toBeNull()
+    expect(colorAt(filled, 2, 0)).toBe(RED)
   })
 })

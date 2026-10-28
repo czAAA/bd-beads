@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { beadColorAt } from '../../domain/layerBeads'
+import { changeFrame } from '../../domain/changeFrame'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
@@ -159,6 +160,21 @@ describe('usePaintStroke', () => {
 
       expect(harness.project.beads).toEqual({ 5: { 5: '#ff0000', 6: '#ff0000' } })
       expect(harness.project.frame!.beads).toEqual({})
+    })
+
+    it('paints a Custom frame\'s bead named past its rectangle, as its layout has one there (ticket 0629)', () => {
+      const { frame: _frame, ...open } = over()
+      const placed = changeFrame(open, { custom: { kind: 'triangle', size: 9, centre: { row: 20, column: 30 } } })
+      if (placed.kind !== 'changed') throw new Error('expected a Triangle')
+      const { stroke, harness } = setup('paint', placed.project)
+      const { row, column, columns } = harness.project.frame!
+      // The outer round of a Triangle of 9 rounds has 27 places, more than its rectangle has columns.
+      expect(columns).toBeLessThan(27)
+
+      stroke.beginOrCommitPress('paint', '#ff0000', row + 8, column + 26, 'frame')
+      stroke.endStroke()
+
+      expect(harness.project.frame!.beads).toEqual({ 8: { 26: '#ff0000' } })
     })
 
     it('fills and erases the layer the press is on, as one undo step each', () => {

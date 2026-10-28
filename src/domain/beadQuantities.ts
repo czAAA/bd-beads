@@ -4,7 +4,7 @@ import type { Locale } from './locale'
 import type { Palette } from './palette'
 import { forEachBead } from './canvas'
 import type { Project } from './project'
-import { frameHasPosition } from './frameKind'
+import { frameGeometryOf } from './layers'
 
 /** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
 export interface ColorQuantity {
@@ -26,8 +26,9 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
   const frame = project.frame
   // Every real bead counts once: the empty end of a Right-angle weave line is no bead (ticket 482), a Custom frame's are
   // its layout's (ticket 0592).
+  const geometry = frameGeometryOf(project)
   forEachBead(frame.beads, (row, column, color) => {
-    if (frameHasPosition(frame, { row, column })) {
+    if (geometry.hasPosition({ row, column })) {
       counts.set(color, (counts.get(color) ?? 0) + 1)
     }
   })

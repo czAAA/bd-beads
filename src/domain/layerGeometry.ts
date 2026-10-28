@@ -11,7 +11,7 @@ import { insideBounds, type Box } from './weaveGeometry'
 
 /** Where a bead lies: its rectangle as an upright bead, and the angle it is turned by about the rectangle's centre
  * (radians, clockwise on screen). */
-export interface BeadPlace {
+interface BeadPlace {
   box: Box
   angle: number
 }
@@ -20,6 +20,9 @@ export interface BeadPlace {
  * frame's layout (ADR 0077). Positions are the Layer's own (a Frame's from its first row and column, a Custom frame's
  * by round and place); points are in bead widths from the Layer's first position's corner. */
 export interface LayerGeometry {
+  /** Whether its positions are a grid's rows and columns (the Canvas, a Rectangular Frame), which a Frame's first row and
+   * column put on the Canvas's and Pieces are found on; a Custom frame's are named by round and place (ADR 0077). */
+  readonly grid: boolean
   /** Every position that holds a bead, within the Layer's edge; none on an open Canvas, which has no edge. */
   positions(): readonly GridPosition[]
   /** Whether a position holds a bead: inside the edge, and where the Weave or the layout has one. */
@@ -68,6 +71,7 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
     return found && (!bounds || has(found)) ? found : undefined
   }
   return {
+    grid: true,
     positions: () => {
       if (!bounds) return []
       const all: GridPosition[] = []
@@ -122,6 +126,7 @@ function layoutGeometry({ layout, scale, x, y }: LayoutPlacement, frame: KindedS
   const height = scale * Math.min(describeWeave(frame).cellAspect, layout.beadDepth)
   const rectangle = gridExtent(frame, { row: 0, column: 0, rows: frame.rows, columns: frame.columns })
   return {
+    grid: false,
     positions: () => layout.positions.map(({ row, column }) => ({ row, column })),
     hasPosition: (position) => layoutPosition(layout, position) !== undefined,
     neighbors: (position) => layoutNeighbors(layout, position),
