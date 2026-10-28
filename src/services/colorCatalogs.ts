@@ -1,11 +1,14 @@
 import { parseColorCatalog, type ColorCatalog } from '../domain/colorCatalog'
 
-// One lazy chunk per catalog (ADR 0072, ticket 536): a Project loads only the catalog its Bead points at. The files
-// are made by the script in the docs repo.
-const CATALOG_FILES: Readonly<Record<string, () => Promise<{ default: unknown }>>> = {
-  'miyuki-delica': () => import('../data/colorCatalogs/miyuki-delica.json'),
-  'miyuki-round': () => import('../data/colorCatalogs/miyuki-round.json'),
-}
+// One lazy chunk per catalog (ADR 0072, ticket 536): a Project loads only the catalog its Bead points at. A file in the
+// folder is found at build time and known by its name, so a new catalog is its file alone (ADR 0078). The files are
+// made by the script in the docs repo.
+const CATALOG_FILES = Object.fromEntries(
+  Object.entries(import.meta.glob('../data/colorCatalogs/*.json', { import: 'default' })).map(([path, file]) => [
+    path.slice(path.lastIndexOf('/') + 1, -'.json'.length),
+    file,
+  ]),
+)
 
 const loaded = new Map<string, Promise<ColorCatalog>>()
 
@@ -15,7 +18,7 @@ export function loadColorCatalog(id: string): Promise<ColorCatalog> {
   if (!file) return Promise.reject(new Error(`No color catalog ${id}`))
   let catalog = loaded.get(id)
   if (!catalog) {
-    catalog = file().then((module) => parseColorCatalog(module.default, id))
+    catalog = file().then((contents) => parseColorCatalog(contents, id))
     catalog.catch(() => loaded.delete(id))
     loaded.set(id, catalog)
   }

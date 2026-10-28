@@ -24,11 +24,6 @@ export const uk: Translations = {
     beadShapeSymmetricTip: 'Малювати кожну бісерину рівною клітинкою; змінюється лише вигляд полотна.',
     beadShapeRealTip: 'Малювати кожну бісерину в її справжніх пропорціях; змінюється лише вигляд полотна.',
     techniqueLabel: 'Техніка плетіння',
-    techniqueLoom: 'Ткацтво',
-    techniquePeyote: 'Мозаїчне плетіння',
-    techniqueBrick: 'Цегляне плетіння',
-    techniqueRightAngle: 'Хрестик',
-    techniqueNetting: 'Сітка',
     netSizeLabel: 'Розмір сітки',
     netSizeLess: 'Менше бісерин у петлі',
     netSizeMore: 'Більше бісерин у петлі',
@@ -179,6 +174,13 @@ export const uk: Translations = {
   },
   languageSwitcher: {
     ariaLabel: 'Мова інтерфейсу',
+  },
+  techniques: {
+    loom: 'Ткацтво',
+    peyote: 'Мозаїчне плетіння',
+    brick: 'Цегляне плетіння',
+    rightAngle: 'Хрестик',
+    netting: 'Сітка',
   },
   formFactors: { cube: 'Куб', round: 'Круглий', delica: 'Delica' },
   projects: {

@@ -25,11 +25,6 @@ export const be: Translations = {
     beadShapeSymmetricTip: 'Маляваць кожную бісерыну роўнай клеткай; змяняецца толькі выгляд палатна.',
     beadShapeRealTip: 'Маляваць кожную бісерыну ў яе сапраўдных прапорцыях; змяняецца толькі выгляд палатна.',
     techniqueLabel: 'Тэхніка пляцення',
-    techniqueLoom: 'Ткацтва',
-    techniquePeyote: 'Мазаічнае пляценне',
-    techniqueBrick: 'Цаглянае пляценне',
-    techniqueRightAngle: 'Крэсьчык',
-    techniqueNetting: 'Сетка',
     netSizeLabel: 'Памер сеткі',
     netSizeLess: 'Менш пацерак у пятлі',
     netSizeMore: 'Больш пацерак у пятлі',
@@ -180,6 +175,13 @@ export const be: Translations = {
   },
   languageSwitcher: {
     ariaLabel: 'Мова інтэрфейсу',
+  },
+  techniques: {
+    loom: 'Ткацтва',
+    peyote: 'Мазаічнае пляценне',
+    brick: 'Цаглянае пляценне',
+    rightAngle: 'Крэсьчык',
+    netting: 'Сетка',
   },
   formFactors: { cube: 'Куб', round: 'Круглы', delica: 'Delica' },
   projects: {
