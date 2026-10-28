@@ -39,7 +39,7 @@ The Canvas or the Frame: a set of beads woven in one Weave. A Project has one or
 _Avoid_: sheet, level
 
 **Folded beads**:
-The Frame's own beads beyond its edge: what a Frame woven unlike the Canvas, or a Custom frame, gives up when it is made smaller, kept with the Frame instead of dropped onto the Canvas, and shown again when it grows back over them. Saved with the Project and carried by every Frame command (moved, turned, re-woven and shifted with the Frame's other beads), they are not drawn, exported, counted or woven; Remove Frame, or a Frame made elsewhere, does with them what it does with the Frame's other beads.
+The Frame's own beads beyond its edge: what a Frame woven unlike the Canvas, or a Custom frame, gives up when it is made smaller, kept with the Frame instead of dropped onto the Canvas, and shown again when it grows back over them. Saved with the Project and carried by every Frame command (moved, turned, re-woven and shifted with the Frame's other beads; Remove row/column takes the whole line, its Folded beads too), they are not drawn, exported, counted or woven; Remove Frame, or a Frame made elsewhere, does with them what it does with the Frame's other beads.
 _Avoid_: hidden beads, trimmed beads, offcut (and Off-shape, which is a part of a Custom frame with no positions)
 
 **Keep-out margin**:

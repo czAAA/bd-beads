@@ -52,6 +52,13 @@ describe('computeColorQuantities', () => {
     ])
   })
 
+  it('leaves the Frame\'s Folded beads out, as they are not woven (ticket 0638)', () => {
+    const project = painted([[0, 0, RED]])
+    const folded = { ...project, frame: { ...project.frame!, folded: { 0: { [-1]: BLUE } } } }
+
+    expect(computeColorQuantities(folded, palette)).toEqual([{ colorId: 'red', hex: RED, count: 1 }])
+  })
+
   it('lists the most-needed color first', () => {
     const quantities = computeColorQuantities(
       painted([

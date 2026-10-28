@@ -1,5 +1,6 @@
 import type { GridPosition, Rotation } from './grid'
-import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
+import { beadBounds, colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type Rect } from './canvas'
+import { withEachBead } from './folding'
 import { snapRow } from './frame'
 import { layerView, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
@@ -167,19 +168,16 @@ export function rotateFrame(project: Project): Project | undefined {
   const turned = rotatedSelection(own, { top: 0, left: 0, rows: frame.rows, columns: frame.columns })
   const weave = describeWeave(own)
   const block = { columns: frame.columns, rows: frame.rows }
-  const beads: BeadMap = {}
-  forEachBead(frame.beads, (row, column, color) => {
-    // A bead that belongs to no whole Unit of the Frame (a horizontal bead past its last Unit) is dropped.
-    const to = weave.turned({ row, column }, block)
-    if (to) {
-      beads[to.row] ??= {}
-      beads[to.row]![to.column] = color
-    }
-  })
+  // A turn clockwise reads only the block's height, so a block widened to reach the Folded beads turns them as the
+  // rest, and keeps a Folded bead past the last Unit (ticket 0638); a bead it shows there is dropped.
+  const bounds = frame.folded && beadBounds(frame.folded)
+  const reach = bounds ? { rows: frame.rows, columns: Math.max(frame.columns, bounds.column + bounds.columns + 1) } : block
+  const { folded: _folded, ...rest } = frame
+  const carried = withEachBead(frame, (position, folded) => weave.turned(position, folded ? reach : block))
   const moved = canvasDistance(project, own, turned.top, turned.left)
   return {
     ...project,
-    frame: { ...frame, row: frame.row + moved.row, column: frame.column + moved.column, rows: turned.rows, columns: turned.columns, beads },
+    frame: { ...rest, row: frame.row + moved.row, column: frame.column + moved.column, rows: turned.rows, columns: turned.columns, ...carried },
     updatedAt: Date.now(),
   }
 }

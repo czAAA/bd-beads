@@ -10,9 +10,9 @@ import { isTechnique } from './weave'
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
 /** Version 3 is the first gzipped one, beads in the compact encoding (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5
- * (0525) the Palette, 6 (0528) removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame;
- * a build that knows only the version before refuses the file rather than drop them. */
-const FILE_VERSION = 9
+ * (0525) the Palette, 6 (0528) removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame,
+ * 10 (0638) the Frame's Folded beads; a build that knows only the version before refuses the file rather than drop them. */
+const FILE_VERSION = 10
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
@@ -32,6 +32,7 @@ const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   7: (projects) => (projects as EncodedProject[]).map(decodeProject),
   8: (projects) => (projects as EncodedProject[]).map(decodeProject),
   9: (projects) => (projects as EncodedProject[]).map(decodeProject),
+  10: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
 /** What an exported file holds once read back. */

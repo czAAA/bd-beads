@@ -26,6 +26,7 @@ import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
 import projectFileV7 from './fixtures/project-file-v7-bead-copy.json?raw'
 import projectFileV9Custom from './fixtures/project-file-v9-custom-frame.json?raw'
 import projectFileV9Turned from './fixtures/project-file-v9-custom-frame-turned.json?raw'
+import projectFileV10Folded from './fixtures/project-file-v10-folded.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
@@ -329,9 +330,16 @@ describe('stored-data compatibility', () => {
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('reads a version 4 file and writes it back as version 9 with the built-in Palette (ticket 0525)', () => {
+    it('opens a version 10 file with the Frame\'s Folded beads beyond its edge, and writes it back the same (ticket 0638)', () => {
+      const [opened] = parseProjectsFile(projectFileV10Folded).projects
+      expect(opened!.frame).toEqual({ row: 7, column: 7, rows: 6, columns: 2, technique: 'peyote', beads: { 0: { 0: '#e63746' } }, folded: { 1: { 3: '#2f6fed' }, 4: { [-2]: '#27ae60', [-1]: '#27ae60' } } })
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 10 })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('reads a version 4 file and writes it back as version 10 with the built-in Palette (ticket 0525)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 9, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 10, projects: [{ palette: defaultPaletteIds() }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })

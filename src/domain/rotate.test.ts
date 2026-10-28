@@ -201,6 +201,25 @@ describe('rotateFrame (ticket 471, ADR 0066)', () => {
   it('does nothing without a Frame', () => {
     expect(rotateFrame({ ...base, beads: {}, frame: undefined })).toBeUndefined()
   })
+
+  it('turns its Folded beads with it, kept folded beyond the turned edge (ticket 0638)', () => {
+    const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]))
+    const folded = { ...project, frame: { ...project.frame!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }, { row: 3, column: -2, color: '#dd0000' }]) } }
+    const turned = rotateFrame(folded)!
+    expect(positionsOf(turned.frame!.beads)).toEqual(['0,3:#aa0000'])
+    // Past the right edge before, below the bottom after; past the left edge before, above the top after.
+    expect(positionsOf(turned.frame!.folded!)).toEqual(['-2,0:#dd0000', '7,3:#cc0000'])
+    let back = turned
+    for (let i = 0; i < 3; i++) back = rotateFrame(back)!
+    expect(back.frame).toEqual(folded.frame)
+  })
+
+  it('keeps a Folded horizontal bead past a Right-angle weave Frame\'s last Unit through four turns (ticket 0638)', () => {
+    const raw = { ...base, beads: {}, frame: { technique: 'rightAngle' as const, row: 20, column: 20, rows: 5, columns: 4, beads: {}, folded: withColors({}, [{ row: 0, column: 5, color: '#cc0000' }]) } }
+    let turned: Project = raw
+    for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
+    expect(turned.frame!.folded).toEqual(raw.frame.folded)
+  })
 })
 
 describe('rotating a Piece-tool shape (ticket 547)', () => {
