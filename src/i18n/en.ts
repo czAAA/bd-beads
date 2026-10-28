@@ -193,6 +193,7 @@ export const en: Translations = {
       loss: {
         title: 'Change Net size?',
         message: 'Beads with no place in the new net will be removed: {count}. This can be undone.',
+        foldedMessage: 'Beads with no place in the new net will be removed: {count}. Of these, Folded beads out of sight: {folded}. This can be undone.',
         button: 'Change Net size',
       },
     },
@@ -699,6 +700,7 @@ export const en: Translations = {
     announceTechnique: 'Technique changed to {technique}',
     switchConfirmTitle: 'Change Technique?',
     switchConfirmMessage: 'The picture may look different in {technique}. Beads with no place there will be removed: {count}. This can be undone.',
+    switchConfirmFoldedMessage: 'The picture may look different in {technique}. Beads with no place there will be removed: {count}. Of these, Folded beads out of sight: {folded}. This can be undone.',
     switchSettingsMessage: 'Choose the settings for the new Technique.',
     switchConfirmButton: 'Change Technique',
     announceSelectionRotated: 'Selection rotated',

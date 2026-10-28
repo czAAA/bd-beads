@@ -194,6 +194,7 @@ export const es: Translations = {
       loss: {
         title: '¿Cambiar el tamaño de la red?',
         message: 'Se quitarán las cuentas sin lugar en la nueva red: {count}. Se puede deshacer.',
+        foldedMessage: 'Se quitarán las cuentas sin lugar en la nueva red: {count}. De ellas, cuentas plegadas que no se ven: {folded}. Se puede deshacer.',
         button: 'Cambiar tamaño de la red',
       },
     },
@@ -707,6 +708,7 @@ export const es: Translations = {
     announceTechnique: 'Técnica cambiada a {technique}',
     switchConfirmTitle: '¿Cambiar la técnica?',
     switchConfirmMessage: 'El dibujo puede verse distinto en {technique}. Se quitarán las cuentas que no tengan lugar allí: {count}. Se puede deshacer.',
+    switchConfirmFoldedMessage: 'El dibujo puede verse distinto en {technique}. Se quitarán las cuentas que no tengan lugar allí: {count}. De ellas, cuentas plegadas que no se ven: {folded}. Se puede deshacer.',
     switchSettingsMessage: 'Elige los ajustes de la nueva técnica.',
     switchConfirmButton: 'Cambiar técnica',
     announceSelectionRotated: 'Selección girada',

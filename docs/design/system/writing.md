@@ -60,6 +60,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Mirror | Отражение | Estimated size / Примерный размер |
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
+| Folded beads | свёрнутые бисерины | The Frame's own beads beyond its edge, out of sight (ADR 0066); proposed, ticket 0641 |
 | Canvas · Hand · Rulers | Полотно · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | A Project made from a picture |
@@ -299,6 +300,14 @@ The Frame panel, the Move handle and the edit pencil (Frame card). The Russian i
 | Top edge: add one row · Top edge: remove one row | Верхний край: добавить ряд · Верхний край: убрать ряд |
 | Left edge: add one column · Left edge: remove one column | Левый край: добавить столбец · Левый край: убрать столбец |
 | The Frame can’t get any smaller on this side. | Рамку нельзя сделать меньше с этой стороны. |
+
+## Copy added in ticket 0641
+
+Change Technique? and Change Net size? say how many of the beads lost are the Frame's Folded beads, out of sight, so the count doesn't look wrong against what the Frame shows. The sentence comes only when a Folded bead would be lost, between the count and "This can be undone.", in the Result pattern (Label: number). The Russian is proposed and not yet reviewed; the other five languages follow it.
+
+| English | Russian |
+| --- | --- |
+| Of these, Folded beads out of sight: 2. | Из них свёрнутых бисерин, которых не видно: 2. |
 
 ## Copy changed in ticket 0489
 

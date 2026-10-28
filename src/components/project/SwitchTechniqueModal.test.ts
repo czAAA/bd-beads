@@ -10,7 +10,7 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-const question = { technique: 'peyote' as const, lost: 4, drawn: true, settings: [] }
+const question = { technique: 'peyote' as const, lost: 4, folded: 0, drawn: true, settings: [] }
 const netting = { ...question, technique: 'netting' as const, settings: [{ setting: NET_SIZE_SETTING, value: 3 }] }
 
 describe('SwitchTechniqueModal', () => {
@@ -20,6 +20,20 @@ describe('SwitchTechniqueModal', () => {
     expect(message).toContain('may look different')
     expect(message).toContain('removed: 4')
     expect(document.body.querySelector('[data-testid="switch-net-size"]')).toBeNull()
+    wrapper.unmount()
+  })
+
+  it('says how many of the beads lost are Folded beads, out of sight (ticket 0641)', () => {
+    const wrapper = mount(SwitchTechniqueModal, { props: { question: { ...question, folded: 1 } }, attachTo: document.body })
+    expect(document.body.querySelector('[data-testid="confirm-modal-message"]')!.textContent).toBe(
+      'The picture may look different in Peyote. Beads with no place there will be removed: 4. Of these, Folded beads out of sight: 1. This can be undone.',
+    )
+    wrapper.unmount()
+  })
+
+  it('counts the Folded beads lost where the layer shows no bead, rather than only asking for the settings', () => {
+    const wrapper = mount(SwitchTechniqueModal, { props: { question: { ...netting, drawn: false, lost: 2, folded: 2 } }, attachTo: document.body })
+    expect(document.body.querySelector('[data-testid="confirm-modal-message"]')!.textContent).toContain('Folded beads out of sight: 2')
     wrapper.unmount()
   })
 
@@ -48,6 +62,14 @@ describe('SwitchTechniqueModal', () => {
     expect(document.body.textContent).toContain(loss.title)
     expect(document.body.querySelector('[data-testid="confirm-modal-message"]')!.textContent).toBe(fillBlanks(loss.message, { count: 4 }))
     expect(document.body.querySelector('[data-testid="confirm-modal-confirm"]')!.textContent).toContain(loss.button)
+    wrapper.unmount()
+  })
+
+  it('says how many of the beads a setting change loses are Folded beads', () => {
+    const wrapper = mount(SwitchTechniqueModal, { props: { question: { ...netting, changing: NET_SIZE_SETTING, folded: 3 } }, attachTo: document.body })
+    expect(document.body.querySelector('[data-testid="confirm-modal-message"]')!.textContent).toBe(
+      'Beads with no place in the new net will be removed: 4. Of these, Folded beads out of sight: 3. This can be undone.',
+    )
     wrapper.unmount()
   })
 })

@@ -62,8 +62,8 @@ const CASES: FitCase[] = [
   ['ProjectPanel (netting, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'netting', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (brick, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['NewProjectForm', NewProjectForm, {}],
-  ['SwitchTechniqueModal (brick stitch)', SwitchTechniqueModal, { question: { technique: 'brick', lost: 12, drawn: true, settings: [{ setting: BRICK_BLOCK_SETTING, value: 2 }] } }],
-  ['SwitchTechniqueModal (Net size)', SwitchTechniqueModal, { question: { technique: 'netting', lost: 12, drawn: true, changing: NET_SIZE_SETTING, settings: [{ setting: NET_SIZE_SETTING, value: 5 }] } }],
+  ['SwitchTechniqueModal (brick stitch)', SwitchTechniqueModal, { question: { technique: 'brick', lost: 12, folded: 4, drawn: true, settings: [{ setting: BRICK_BLOCK_SETTING, value: 2 }] } }],
+  ['SwitchTechniqueModal (Net size)', SwitchTechniqueModal, { question: { technique: 'netting', lost: 12, folded: 4, drawn: true, changing: NET_SIZE_SETTING, settings: [{ setting: NET_SIZE_SETTING, value: 5 }] } }],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
   ['ConvertImageSizeDialog', ConvertImageSizeDialog, { bead: findBead('toho-cube-1.5mm')!, technique: 'loom' }],
 ]
