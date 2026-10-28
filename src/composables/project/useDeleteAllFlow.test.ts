@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, moveToRow, type Project, frameGrid, withFrameGrid } from '../../domain/project'
+import { createProject, moveToRow, type Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { useDeleteAllFlow } from './useDeleteAllFlow'
+import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 
 const blank = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
 const painted: Project = withFrameGrid(

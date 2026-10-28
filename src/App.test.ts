@@ -3,13 +3,14 @@ import { mount } from '@vue/test-utils'
 import App from './App.vue'
 import { drawnProject, hoverBead, pressBead } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
-import { createProject, frameGrid } from './domain/project'
+import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { ru } from './i18n/ru'
 import { mountWithProject } from './testUtils/seedProject'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 import { chooseAppLanguage, pickColor } from './testUtils/pill'
+import { frameGrid } from './testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 

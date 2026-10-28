@@ -1,4 +1,3 @@
-import { frameGrid } from '../../src/domain/project'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { expect, test, type Page } from '@playwright/test'
@@ -9,6 +8,7 @@ import { BUILT_IN_COLORS } from '../../src/domain/palette'
 import { gridBox, openApp, projectBox, savedProject, selectTool, setZoom, settle } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFERENCES, writeReference, zoomsFor } from '../support/referenceCheck'
+import { frameGrid } from '../../src/testUtils/frameGrid'
 
 // The pointer tools on the Drawing surface in a real browser: hover preview matches references, and paint, erase, Fill,
 // Row progress lock, Undo, Space-drag pan and touch strokes change only the right beads.

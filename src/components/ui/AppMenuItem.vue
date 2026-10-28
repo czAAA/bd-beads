@@ -5,8 +5,8 @@ import AppTooltip from './AppTooltip.vue'
 import type { IconName } from './icons'
 import { MENU_CLOSE } from './menuContext'
 
-// One item of an AppMenu (Menu card): 34px, icon and label; choosing runs `select` and closes the menu. `chosen` marks
-// a set to pick from (ticket 368) with a check. With `href` it is a link. A disabled item given `name` and
+// One item of a MenuButton's menu (Menu card): 34px, icon and label; choosing runs `select` and closes the menu.
+// `chosen` marks a set to pick from (ticket 368) with a check. With `href` it is a link. A disabled item given `name` and
 // `disabledBody` says why in the Tooltip (ADR 0035) but stays natively disabled, so the arrows skip it.
 const props = withDefaults(
   defineProps<{ icon?: IconName; disabled?: boolean; href?: string; current?: boolean; chosen?: boolean; name?: string; disabledBody?: string }>(),

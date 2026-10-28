@@ -12,7 +12,8 @@ export interface PaletteColor {
 }
 
 /** The twelve built-in colors a Palette starts from when its Bead's brand has no set of its own (see CONTEXT.md's
- * Palette entry, ticket 227, ADR 0002). */
+ * Palette entry, ticket 227, ADR 0002).
+ * @internal Tests and the visual check's fixtures paint with the built-in colors. */
 export const BUILT_IN_COLORS: readonly PaletteColor[] = [
   { id: 'black', hex: '#1a1a1a' },
   { id: 'white', hex: '#ffffff' },
@@ -99,7 +100,8 @@ export function normalizeHex(hex: string): string | undefined {
 
 const ADDED_PREFIX = 'added-'
 
-/** The id an added swatch is known by: its hex, so the same color is the same swatch on every device. */
+/** The id an added swatch is known by: its hex, so the same color is the same swatch on every device.
+ * @internal Tests name an added swatch by its id. */
 export function addedColorId(hex: string): string {
   return `${ADDED_PREFIX}${hex.slice(1)}`
 }

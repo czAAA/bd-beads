@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
 import { turnedClockwise } from '../../testUtils/rotated'
-import { createProject, moveToRow, type Project, frameGrid, withFrameGrid } from '../../domain/project'
+import { createProject, moveToRow, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useProjectLabels } from './useProjectLabels'
+import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 
 const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho/cube/1.5mm')!
 const base = createProject({ technique: 'loom', beadId: bead.id, name: 'Logo panel', size: { width: 4, height: 3, unit: 'beads' } })

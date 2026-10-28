@@ -125,18 +125,6 @@ export function wordChartPageCount(words: PrintText, page: PageSize): number {
   return layoutWordChart(scratch(), words, page).pages.length
 }
 
-/** The title with this page's own rows, e.g. "Row by row 83–120". */
-export function wordChartPageTitles(words: PrintText, page: PageSize): string[] {
-  if (!words.wordChart) return []
-  return layoutWordChart(scratch(), words, page).pages.map((sheet) => `${words.wordChart!.title} ${sheet.range}`)
-}
-
-/** How many columns the Word chart runs in on this page size. */
-export function wordChartColumns(words: PrintText, page: PageSize): number {
-  if (!words.wordChart) return 0
-  return Math.max(...layoutWordChart(scratch(), words, page).pages.map((sheet) => sheet.columns.length))
-}
-
 function drawHeader(context: CanvasRenderingContext2D, words: PrintText, range: string, pageNumber: number, total: number, left: number, width: number): void {
   const meta = [words.techniqueWord, words.name, headerMaker(words.maker)].filter(Boolean).join(' · ')
   text(context, meta, left, mm(14), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width - mm(40))

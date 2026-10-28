@@ -17,9 +17,9 @@ const MIN_ROW_HEIGHT = mm(3.4)
 const COLUMN_GAP = mm(8)
 const FACT_STEP = mm(5.5)
 const LABEL_WIDTH = mm(30)
-/** The room the fact labels and the column heads have before they would touch the next thing (checked in every language). */
+/** The room the fact labels have before they would touch their values.
+ * @internal Its test checks every language's labels against it. */
 export const SPEC_LABEL_ROOM = LABEL_WIDTH - mm(2)
-export const SPEC_HEAD_ROOM = mm(20)
 const MAX_MAP_CELL = mm(14)
 /** The table's right-hand columns (to buy, grams, beads) and the code's room, from the right edge leftwards. */
 const TO_BUY_WIDTH = mm(24)

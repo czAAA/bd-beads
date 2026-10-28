@@ -2,8 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { BUILT_IN_COLORS } from './palette'
-import { createProject, frameGrid, normalizeProject, withFrameGrid, type Grid, type Project } from './project'
+import { createProject, normalizeProject, type Grid, type Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
+import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 

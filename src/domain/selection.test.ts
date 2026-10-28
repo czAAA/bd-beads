@@ -23,8 +23,9 @@ import {
   type CopiedBlock,
 } from './selection'
 import { withColors } from './canvas'
-import { createProject, withFrameGrid, type Project, frameGrid } from './project'
+import { createProject, type Project } from './project'
 import { BEAD_CATALOG } from './beads'
+import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 

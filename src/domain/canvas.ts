@@ -144,7 +144,8 @@ export function frameDimensions(frame: Frame): GridDimensions {
   return { columns: frame.columns, rows: frame.rows }
 }
 
-/** The painted colors inside a Frame as a dense rows × columns array of hex-or-null, top-left first. */
+/** The painted colors inside a Frame as a dense rows × columns array of hex-or-null, top-left first.
+ * @internal The test helpers' frame grid (`src/testUtils/frameGrid.ts`) reads the Frame with it. */
 export function colorsInFrame(beads: BeadMap, frame: Frame): (string | null)[][] {
   return Array.from({ length: frame.rows }, (_row, rowOffset) =>
     Array.from({ length: frame.columns }, (_column, columnOffset) =>

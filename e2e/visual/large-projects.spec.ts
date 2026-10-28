@@ -1,4 +1,3 @@
-import { frameGrid } from '../../src/domain/project'
 import { readFileSync } from 'node:fs'
 import { gunzipSync } from 'node:zlib'
 import { expect, test, type Page } from '@playwright/test'
@@ -9,6 +8,7 @@ import { parseProjectsFile } from '../../src/domain/projectFile'
 import { currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, savedProject, settle, stateConvertSize } from '../support/app'
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
+import { frameGrid } from '../../src/testUtils/frameGrid'
 
 // Ticket 108: with the size limit gone (ADR 0019), 70 × 250 and 250 × 250 Projects can be created, edited, saved,
 // reloaded, exported and undone, and a full device says so and keeps the edit on screen. Real browser, default

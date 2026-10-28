@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, type Project, frameGrid, withFrameGrid } from '../../domain/project'
+import { createProject, type Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
+import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 
 function newProject(): Project {
   return createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })

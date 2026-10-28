@@ -16,7 +16,7 @@ export function usesDraftLook(technique: Technique, beadCount: number): boolean 
   return beadCount * COST_PER_BEAD[technique] > DRAWING_BUDGET
 }
 
-export interface DraftImage {
+interface DraftImage {
   width: number
   height: number
   /** RGBA, row by row. */
@@ -37,8 +37,9 @@ function channels(color: string): readonly [number, number, number] {
   return known
 }
 
-// The beads as an image: a pixel per bead, or in peyote and brick stitch two per bead with every other row starting a
-// pixel in (half a bead aside). `colors` is one entry per bead, row by row; undefined is empty.
+/** The beads as an image: a pixel per bead, or in peyote and brick stitch two per bead with every other row starting a
+ * pixel in (half a bead aside). `colors` is one entry per bead, row by row; undefined is empty.
+ * @internal Its test reads the pixels on their own. */
 export function draftImage(weave: Weave, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
   const offset = isOffsetTechnique(weave.technique)
   const wide = offset ? 2 : 1

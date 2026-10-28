@@ -1,6 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
-import { frameGrid } from '../domain/project'
 import { be } from '../i18n/be'
 import { en } from '../i18n/en'
 import { es } from '../i18n/es'
@@ -16,6 +15,7 @@ import { A4_PORTRAIT, displayedGrid, PRINT_MARGIN } from './printPlan'
 import { PRINT_THEME } from './beadLook'
 import { printText } from './printText'
 import { exportProjectPng, projectPageCount } from './projectExport'
+import { frameGrid } from '../testUtils/frameGrid'
 
 const wordsOf = (project: ReturnType<typeof fixtureProject>, messages: Translations = en, locale: Locale = 'en') => printText(project, messages, locale, new Date())
 

@@ -6,11 +6,13 @@ import { readKey, removeKey } from './storageKeys'
 // TEMPORARY (ADR 0060, ticket 441): remove this file, its test and its useAppShell call with ticket 0391 (public
 // release).
 
-/** Where the device-wide Maker's name was kept (ticket 161) before it moved onto each Project. */
+/** Where the device-wide Maker's name was kept (ticket 161) before it moved onto each Project.
+ * @internal Tests seed the old device-wide name under it. */
 export const LEGACY_MAKER_NAME_KEY = 'openbeads:maker-name'
 
-// Every Project with no name of its own gets the device-wide one; a Project with its own keeps it. Empty device name:
-// no change.
+/** Every Project with no name of its own gets the device-wide one; a Project with its own keeps it. Empty device name:
+ * no change.
+ * @internal Its test checks the move on its own. */
 export function applyLegacyMakerName(projects: Project[], deviceName: string): Project[] {
   const name = normalizeMakerName(deviceName)
   if (!name) return projects

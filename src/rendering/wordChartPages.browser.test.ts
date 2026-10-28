@@ -12,12 +12,40 @@ import { blankPage, loadPrintFonts } from './printPages'
 import { A4_PORTRAIT } from './printPlan'
 import { printText } from './printText'
 import type { Locale, Translations } from '../i18n/translations'
-import { drawWordChartPages, wordChartColumns, wordChartPageCount, wordChartPageTitles } from './wordChartPages'
+import type { PrintText } from './printText'
+import { drawWordChartPages, wordChartPageCount } from './wordChartPages'
 
 // The Word chart drawn for real (ticket 0574): how many sheets it takes, and that its picture is a PNG.
 function wordsOf(technique: 'loom' | 'peyote' | 'brick', columns: number, rows: number) {
   const project = withLetters(fixtureProject({ technique, columns, rows }), true)
   return printText(project, en, 'en', new Date())
+}
+
+/** What each drawn sheet says: its title with its own rows, and how many columns of rows it runs in (the row numbers'
+ * distinct left edges under the title). */
+function drawnSheets(words: PrintText): { title: string; columns: number }[] {
+  const chart = words.wordChart!
+  const labels = new Set(chart.rows.map((row) => row.label))
+  const sheets: { value: string; x: number; y: number }[][] = []
+  const makePage = () => {
+    const made = blankPage(A4_PORTRAIT, 1)
+    const texts: { value: string; x: number; y: number }[] = []
+    const fill = made.context.fillText.bind(made.context)
+    made.context.fillText = (value, x, y, maxWidth) => {
+      texts.push({ value, x, y })
+      fill(value, x, y, maxWidth)
+    }
+    sheets.push(texts)
+    return made
+  }
+  const count = wordChartPageCount(words, A4_PORTRAIT)
+  expect([...drawWordChartPages(words, A4_PORTRAIT, makePage, 1, count)]).toHaveLength(count)
+  return sheets.map((texts) => {
+    const at = texts.findIndex((drawn) => drawn.value === chart.title)
+    const title = texts[at]!
+    const rows = texts.filter((drawn) => drawn.y > title.y && labels.has(drawn.value))
+    return { title: `${title.value} ${texts[at + 1]!.value}`, columns: new Set(rows.map((drawn) => drawn.x)).size }
+  })
 }
 
 describe('Word chart pages', () => {
@@ -41,15 +69,18 @@ describe('Word chart pages', () => {
     const painted = ['#e63746', '#2a9d8f', '#264653'].map((color, index) => ({ row: index, column: index, color }))
     const project = withLetters(fixtureProject({ technique: 'loom', columns: 35, rows: 120, blank: true, override: painted }), true)
     const words = printText(project, en, 'en', new Date())
-    expect(wordChartColumns(words, A4_PORTRAIT)).toBe(2)
-    expect(wordChartPageTitles(words, A4_PORTRAIT)).toEqual(['Row by row 1–82', 'Row by row 83–120'])
+    expect(drawnSheets(words)).toEqual([
+      { title: 'Row by row 1–82', columns: 2 },
+      { title: 'Row by row 83–120', columns: 1 },
+    ])
   })
 
   it('runs a 100 × 100 loom in one column, each page titled with the rows it holds', async () => {
     await loadPrintFonts()
     const words = wordsOf('loom', 100, 100)
-    expect(wordChartColumns(words, A4_PORTRAIT)).toBe(1)
-    const titles = wordChartPageTitles(words, A4_PORTRAIT)
+    const sheets = drawnSheets(words)
+    expect(sheets.every((sheet) => sheet.columns === 1)).toBe(true)
+    const titles = sheets.map((sheet) => sheet.title)
     expect(titles.length).toBeGreaterThan(1)
     expect(titles[0]).toMatch(/^Row by row 1–\d+$/)
     expect(titles.at(-1)).toMatch(/–100$/)
@@ -61,9 +92,7 @@ describe('Word chart pages', () => {
     await loadPrintFonts()
     const project = withLetters(fixtureProject({ technique: 'brick', columns: 8, rows: 250 }), true)
     const words = printText(project, messages, locale, new Date())
-    const count = wordChartPageCount(words, A4_PORTRAIT)
 
-    expect(wordChartColumns(words, A4_PORTRAIT)).toBe(2)
-    expect([...drawWordChartPages(words, A4_PORTRAIT, () => blankPage(A4_PORTRAIT, 1), 1, count)]).toHaveLength(count)
+    expect(Math.max(...drawnSheets(words).map((sheet) => sheet.columns))).toBe(2)
   })
 })

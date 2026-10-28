@@ -4,8 +4,8 @@ import type { mount } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { armSelectionBar, pressBar, pickColor, pickTool, rotate } from './testUtils/pill'
-import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
+import { frameGrid } from './testUtils/frameGrid'
 
 beforeEach(() => {
   localStorage.clear()

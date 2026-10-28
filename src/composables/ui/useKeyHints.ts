@@ -39,7 +39,8 @@ function watchDevice() {
   )
 }
 
-/** Forgets the session's keyboard and reads the pointer afresh. For tests, which share one page. */
+/** Forgets the session's keyboard and reads the pointer afresh.
+ * @internal A reset hook for tests, which share one page. */
 export function resetKeyHintsDevice() {
   keyboardSeen.value = false
   if (watching) watchPointer()

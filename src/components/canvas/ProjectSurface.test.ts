@@ -2,11 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
-import { createProject, type Project, type RowProgress, type Technique, frameGrid, withFrameGrid } from '../../domain/project'
+import { createProject, type Project, type RowProgress, type Technique } from '../../domain/project'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
+import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */

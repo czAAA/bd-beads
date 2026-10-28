@@ -17,7 +17,7 @@
     "tailnet:stop": "bash scripts/tailnet.sh stop",
     "tailnet:status": "bash scripts/tailnet.sh status",
     "lint": "eslint . --max-warnings=0",
-    "knip": "knip",
+    "knip": "knip && knip --production",
     "visual": "playwright test",
     "visual:update": "playwright test --update-snapshots=changed",
     "perf": "playwright test -c playwright.perf.config.ts"

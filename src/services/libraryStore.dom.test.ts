@@ -1,9 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProject, type Grid, type Project, type Technique, frameGrid, withFrameGrid } from '../domain/project'
+import { createProject, type Grid, type Project, type Technique } from '../domain/project'
 import { loadProjects, saveProjects } from './libraryStore'
 import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
+import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 
 const STORAGE_KEY = 'openbeads:patterns'
 
