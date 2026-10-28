@@ -1,11 +1,12 @@
 import { channelsOf, colorDistance, toOklab } from './color'
-import { NO_COLOR, unpacked, type ConvertedImage } from './imageConversion'
+import { NO_COLOR, unpacked } from './imageConversion'
 import type { PreviewLattice } from './imageFraming'
 import type { GridDimensions } from './grid'
+import type { Grid } from './project'
 
-// What color each bead of the Convert image framing preview shows (ticket 104, ADR 0018): a `#rrggbb` per bead,
-// undefined if empty. The exact reduction is too slow per drag move, so while the picture moves each bead takes the
-// nearest color from drag start (approximatePreviewColors); at rest it is exact (exactPreviewColors).
+// What color each bead of the Convert image preview shows (ticket 104, ADR 0018): a `#rrggbb` per bead, undefined if
+// empty. The exact reduction is too slow per drag move, so while the picture moves each bead takes the held color from
+// drag start (approximatePreviewColors); at rest it is exact (exactPreviewColors).
 export type PreviewColors = (string | undefined)[]
 
 /** A memoised nearest of `colors` for a packed color, by the same colorDistance as nearestColor and earlier-color
@@ -40,16 +41,26 @@ export function nearestColorLookup(colors: readonly string[]): (packed: number) 
   }
 }
 
-// The exact colors of a lattice at rest: inside the frame, the Project a Create would make (reduced to the count asked
-// for); around it, the nearest of the Image colors that conversion found, so the surround reads as part of the same
-// bead picture, not unquantized pixels.
+/** What a bead outside the Frame, or any bead while the picture moves, shows (spec 0645): the result of the found color
+ * nearest its picture color, so the surround reads as part of the same bead picture and an emptied color stays empty. */
+export function heldColorLookup(found: readonly { pictureHex: string; result?: { hex: string } }[]): (packed: number) => string | undefined {
+  const nearest = nearestColorLookup(found.map((color) => color.pictureHex))
+  const results = new Map(found.map((color) => [color.pictureHex, color.result?.hex]))
+  return (packed) => {
+    const picture = nearest(packed)
+    return picture === undefined ? undefined : results.get(picture)
+  }
+}
+
+/** The exact colors of a lattice at rest: inside the frame, the Project a Create would make; around it, the held color
+ * (heldColorLookup). */
 export function exactPreviewColors(
   sampled: Int32Array,
   lattice: PreviewLattice,
   dimensions: GridDimensions,
-  converted: ConvertedImage,
+  grid: Grid,
+  held: (packed: number) => string | undefined,
 ): PreviewColors {
-  const nearest = nearestColorLookup(converted.imageColors)
   const colors: PreviewColors = new Array(lattice.rows * lattice.columns)
 
   for (let row = 0; row < lattice.rows; row += 1) {
@@ -59,18 +70,14 @@ export function exactPreviewColors(
       const frameColumn = column - lattice.frameColumn
       const inFrame = insideRows && frameColumn >= 0 && frameColumn < dimensions.columns
       const at = row * lattice.columns + column
-      colors[at] = inFrame
-        ? (converted.grid[frameRow]![frameColumn]!.color ?? undefined)
-        : nearest(sampled[at]!)
+      colors[at] = inFrame ? (grid[frameRow]![frameColumn]!.color ?? undefined) : held(sampled[at]!)
     }
   }
 
   return colors
 }
 
-/** The colors of a lattice while the picture is being moved: every bead, the frame's included, the nearest of the
- * colors held from before the move. */
-export function approximatePreviewColors(sampled: Int32Array, held: readonly string[]): PreviewColors {
-  const nearest = nearestColorLookup(held)
-  return Array.from(sampled, (packed) => nearest(packed))
+/** The colors of a lattice while the picture is being moved: every bead, the frame's included, the held color. */
+export function approximatePreviewColors(sampled: Int32Array, held: (packed: number) => string | undefined): PreviewColors {
+  return Array.from(sampled, (packed) => held(packed))
 }
