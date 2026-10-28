@@ -115,7 +115,7 @@ describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
   })
 })
 
-describe('a Frame that draws shorter than the rows it names (ADR 0070)', () => {
+describe('a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   // 48 peyote rows over a loom Canvas: the Frame covers the first 36 Canvas rows, the other 12 it names are Canvas.
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
   const project: Project = { ...base, frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: withColors({}, [{ row: 40, column: 2, color: BLUE }]) } }

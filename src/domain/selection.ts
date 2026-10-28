@@ -196,7 +196,7 @@ export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?:
   return { ...snapped, ...(selection.layer ? { layer: selection.layer } : {}), ...(selection.cells ? { cells: selection.cells } : {}) }
 }
 
-/** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
+/** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0016): trimmed to the bounding box, anchored on
  * the first bead.
  * @internal Tests copy a block to paste it. */
 export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {

@@ -154,7 +154,7 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
   return width * height > IMAGE_MAX_PIXELS ? 'tooManyPixels' : undefined
 }
 
-/** How many colors a conversion may keep. Ceiling 14. Floor 1, down from 2 (ticket 177, amending ADR 0011):
+/** How many colors a conversion may keep. Ceiling 14. Floor 1, down from 2 (ticket 177, ADR 0010):
  * quantization is unconditional. */
 export const MIN_IMAGE_COLORS = 1
 export const MAX_IMAGE_COLORS = 14
@@ -223,7 +223,7 @@ export function sampleLatticePacked({
   return packed
 }
 
-/** The Project a conversion produced: its grid, and the colors it found (frozen onto the Project — ADR 0011). */
+/** The Project a conversion produced: its grid, and the colors it found, shown while framing (ADR 0010). */
 export interface ConvertedImage {
   grid: Grid
   imageColors: string[]

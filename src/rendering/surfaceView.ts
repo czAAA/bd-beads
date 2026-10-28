@@ -200,7 +200,7 @@ export interface SurfaceView {
   viewport: Size
   /** Where a bead's centre is in the viewport. A position under the Frame is the Frame's: its own row and column from
    * the Frame's first. With a `layer` the position is read on it, for the rows of a Frame that draws shorter than it
-   * names (ADR 0070). */
+   * names (ADR 0066). */
   beadToPoint(position: GridPosition, layer?: ViewLayer): Scroll
   // The rectangle a block of beads covers in the viewport, with the half bead an offset technique's shifted rows add on
   // the right.
@@ -209,7 +209,7 @@ export interface SurfaceView {
    * as a position of the Frame's rectangle (its first row and column added); a point on the Canvas beside it, whose
    * position the rectangle's own count would claim, is none. */
   pointToBead(point: Scroll): GridPosition | undefined
-  /** The bead under a point and the layer it is on (ADR 0070): where the Frame draws shorter than the rows it names, a
+  /** The bead under a point and the layer it is on (ADR 0066): where the Frame draws shorter than the rows it names, a
    * Frame bead and a Canvas bead share a position, and only the layer tells them apart. */
   pointToHit(point: Scroll): (GridPosition & { layer: ViewLayer }) | undefined
   /** Whether a point is on a Custom frame where it has no bead (ticket 0592): a Seam, its centre or Off-shape, where a
@@ -347,7 +347,7 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
   const layerNamed = (name: ViewLayer | undefined): Layer => (name === 'frame' && sheet ? sheet : canvas)
   // A Custom frame's beads lie where its layout puts them (ADR 0077), not on its rows and columns.
   const placed = frame && sheet ? placedLayout(frame, sheet.weave) : undefined
-  // The Canvas positions the Frame hides (ADR 0070): what it draws, which is not always the rows it names.
+  // The Canvas positions the Frame hides (ADR 0066): what it draws, which is not always the rows it names.
   const footprint = frame && sheet ? frameFootprint(canvasWeave, frame) : undefined
   const layerAtAddress = (position: GridPosition): Layer => (footprint && sheet && frameContains(footprint, position) ? sheet : canvas)
   /** Grid space to displayed space, at a zoom: the matrix gridToRegion gives for a region at the origin. */

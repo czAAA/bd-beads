@@ -1,6 +1,6 @@
 # Responsive
 
-One layout at every width: the Dock layout (ADR 0046, ticket 412; ADR 0032 and ticket 295 laid it down for phones). The width only decides how much room the canvas has, never which controls there are or where they sit. Every tool and button is reachable at every size.
+One layout at every width: the Tool pill layout (ADR 0046; tickets 295, 412 and 439). The width only decides how much room the canvas has, never which controls there are or where they sit. Every tool and button is reachable at every size.
 
 Devices (CSS px) the layout is checked on: iPhone 16e 390×844, iPhone 17 · 17 Pro 402×874, iPhone Air 420×912, iPhone 17 Pro Max 440×956, the same on their side (844×390, 956×440), iPad mini 744×1133, iPad · iPad Air 11″ 820×1180, iPad Pro 11″ 834×1210, iPad Air 13″ 1024×1366, iPad Pro 13″ 1032×1376, the same on their side, MacBook Air 13″ 1470×956, 24″ Full HD 1920×1080, iMac 24″ 2240×1260, 27″ QHD 2560×1440, 32″ 4K 3840×2160.
 
@@ -47,7 +47,7 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 
 ## Header menu and Overview (v15)
 
-- **Menu and Project (spec 0440):** both open as a dropdown under their buttons on every screen size (ADR 0071), with the same rows, sizes and animation; the strip's two buttons stay lit. On a narrow screen the dropdown is held 8px from the screen's edge, and a tall panel scrolls inside the room below its button. Rows grow with their content and never have a fixed height. See the MenuPanel and ProjectPanel cards.
+- **Menu and Project (spec 0440):** both open as a dropdown under their buttons on every screen size (ADR 0046), with the same rows, sizes and animation; the strip's two buttons stay lit. On a narrow screen the dropdown is held 8px from the screen's edge, and a tall panel scrolls inside the room below its button. Rows grow with their content and never have a fixed height. See the MenuPanel and ProjectPanel cards.
 - **Overview:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Overview card.
 
 ## Open canvas and Frame (v16)

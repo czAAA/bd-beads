@@ -404,7 +404,7 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Rect, z
 }
 
 /** Whether a position of the Canvas is on the Frame (ticket 492): the layer it names, or else whether it lies under what
- * the Frame draws (ADR 0070). */
+ * the Frame draws (ADR 0066). */
 function onFrame(frame: FrameSheet | undefined, covered: Rect | undefined, position: GridPosition): boolean {
   if (frame === undefined) return false
   // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).

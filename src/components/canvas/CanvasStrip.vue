@@ -12,7 +12,7 @@ import AppLogo from '../ui/AppLogo.vue'
 import IconButton from '../ui/IconButton.vue'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
-// The canvas box's header strip on the editor and the Overview (tickets 143, 540, ADR 0055, ADR 0073; CanvasStrip card):
+// The canvas box's header strip on the editor and the Overview (tickets 143, 540, ADR 0046, ADR 0073; CanvasStrip card):
 // three slots: Menu · Project · Frame on the left, the Brand in the middle, Rotate · Rulers · Undo · Redo and the zoom
 // on the right (ticket 543). Under 1024px the words and the wordmark hide; on an editor phone there is no Brand.
 const props = defineProps<{

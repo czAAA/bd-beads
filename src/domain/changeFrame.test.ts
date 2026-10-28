@@ -602,7 +602,7 @@ describe('changeFrame placing a Frame (ticket 495)', () => {
   })
 })
 
-describe('changing the Technique of a Frame over a Canvas woven alike (ADR 0070)', () => {
+describe('changing the Technique of a Frame over a Canvas woven alike (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
   const withStrayBead = { ...base, beads: withColors({}, [{ row: 40, column: 3, color: '#e63746' }]), frame: sheet({ row: 0, column: 0, rows: 48, columns: 11 }) }
 

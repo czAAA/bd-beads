@@ -67,7 +67,7 @@ const props = withDefaults(defineProps<{
    * `not-allowed` there, and a press there is refused (ticket 276). */
   blocksMargin?: boolean
   /** Whether the Select tool is in hand: the margin cannot be selected, so a press starting there is refused with
-   * `not-allowed` and starts no Selection (ticket 428, ADR 0055). */
+   * `not-allowed` and starts no Selection (ticket 428, ADR 0051). */
   selectionBlocksMargin?: boolean
   /** How many Selections have been refused off the pointer (a Shift+arrow into the margin, a Piece tap there, ticket
    * 433): each one shows the not-allowed cue, the margin outline for 1s. */
@@ -768,7 +768,7 @@ function refusesMargin(bead: GridPosition | undefined): boolean {
   return props.blocksMargin === true && !mayPlace(props.project, bead)
 }
 
-/** A bead's row and column for an event, and its layer only where the position alone would name the other one (ADR 0070):
+/** A bead's row and column for an event, and its layer only where the position alone would name the other one (ADR 0066):
  * where the Frame draws shorter than the rows it names. */
 function cellArguments(bead: GridPosition): [row: number, column: number, layer?: Layer] {
   const named = bead.layer

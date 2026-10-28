@@ -53,7 +53,7 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   // woven rows (ticket 33). The one caller that defers its save (ticket 55): a stroke touches hundreds of cells a
   // second. The cell lands in the library at once; endStroke makes the stroke one write.
   function paintStrokeCell(row: number, column: number, color: string | null, layer?: Layer) {
-    // The pointer is over the other layer, where this one's positions are not (ADR 0070): nothing lands.
+    // The pointer is over the other layer, where this one's positions are not (ADR 0066): nothing lands.
     if (layer && layer !== strokeLayer) {
       return
     }
