@@ -12,8 +12,8 @@ import {
   snapRow,
   type FrameEdge,
 } from '../../domain/frame'
-import type { GridPosition } from '../../domain/grid'
-import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
+import type { GridPosition, Layer } from '../../domain/grid'
+import { DEFAULT_TECHNIQUE, describeWeave, withTechniqueSettings, type Technique, type TechniqueSettings, type Weave } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
@@ -24,6 +24,7 @@ import { canvasWeave, frameWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave, switchLoss } from '../../domain/weaveSwitch'
 import type { Project } from '../../domain/project'
+import { weaveSettingWords } from '../../i18n/settingWords'
 import { techniqueName } from '../../i18n/techniqueName'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -55,7 +56,12 @@ export interface FrameFlowDeps {
   dialogs?: Dialogs
 }
 
-type Layer = 'canvas' | 'frame'
+/** The values of the settings the Weave's Technique describes, each within its range: from its map, else its flat
+ * field, else the default. */
+const techniqueValues = (weave: Weave): TechniqueSettings => withTechniqueSettings(weave).techniqueSettings ?? {}
+
+/** The settings as the domain's Weave switch still takes them, the flat fields their ids name, until ticket 0625. */
+const flatSettings = (values: TechniqueSettings) => ({ netSize: values.netSize, brickBlock: values.brickBlock })
 
 const layerHasBeads = (project: Project, layer: Layer): boolean => hasBeads(layer === 'frame' ? (project.frame?.beads ?? {}) : project.beads)
 
@@ -170,72 +176,80 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return true
   }
 
-  /** The weave change waiting on its question (tickets 507, 568): a layer with drawn beads says what would be lost, and
-   * Netting asks for its Net size and Brick stitch for its Brick block, before anything changes. */
-  const switchAsk = dialogs.question<{ layer: Layer; technique: Technique; netSize: number; brickBlock: number }>('switch-technique')
+  /** The Weave change waiting on its question (tickets 507, 568, 0626): its Technique, its settings' values by id and,
+   * where the Technique stays, the setting whose change asks. */
+  const switchAsk = dialogs.question<{ layer: Layer; technique: Technique; settings: TechniqueSettings; changing?: string }>('switch-technique')
 
-  /** The open question as the dialog shows it: the Technique, the beads that would be lost, the Net size and Brick block
-   * asked for, whether the layer has beads at all, and whether the Technique stays (only a setting changes). */
+  /** The open question as the dialog shows it: the Technique, the beads that would be lost, whether the layer has beads
+   * at all, each setting the Technique describes at the value asked for, and the setting whose change asks. */
   const switchQuestion = computed(() => {
     const ask = switchAsk.value
     const project = deps.currentProject()
     if (!ask || !project) return undefined
-    const { hasNetSize, hasBrickBlock } = describeWeave({ technique: ask.technique })
+    const { settings } = describeWeave({ technique: ask.technique })
+    const values = techniqueValues({ technique: ask.technique, techniqueSettings: ask.settings })
     return {
       technique: ask.technique,
-      lost: switchLoss(project, ask.layer, ask.technique, ask.netSize),
+      lost: switchLoss(project, ask.layer, ask.technique, flatSettings(values).netSize),
       drawn: layerHasBeads(project, ask.layer),
-      keeps: ask.technique === layerWeave(project, ask.layer).technique,
-      asksNetSize: hasNetSize,
-      netSize: ask.netSize,
-      asksBrickBlock: hasBrickBlock,
-      brickBlock: ask.brickBlock,
+      changing: settings.find((setting) => setting.id === ask.changing),
+      settings: settings.map((setting) => ({ setting, value: values[setting.id] ?? setting.default })),
     }
   })
 
   const layerWeave = (project: Project, layer: Layer) => (layer === 'frame' ? frameWeave(project) : canvasWeave(project))
 
-  function applySwitch(layer: Layer, technique: Technique, netSize?: number, brickBlock?: number): void {
+  function applySwitch(layer: Layer, technique: Technique, values: TechniqueSettings): void {
     const project = deps.currentProject()
     if (!project) return
     const before = layerWeave(project, layer)
+    const change = { technique, ...flatSettings(values) }
     const outcome =
       layer === 'frame'
-        ? deps.edit('frame', (current) => changeFrame(current, { technique, netSize, brickBlock }))
-        : deps.edit('exempt', (current) => changeCanvasWeave(current, { technique, netSize, brickBlock }))
+        ? deps.edit('frame', (current) => changeFrame(current, change))
+        : deps.edit('exempt', (current) => changeCanvasWeave(current, change))
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
-    if (technique !== before.technique) deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
-    else if (brickBlock !== undefined && brickBlock !== (before.brickBlock ?? 1)) deps.announce(fillBlanks(t.frame.announceBrickBlock, { count: brickBlock }))
-    else if (netSize !== undefined) deps.announce(fillBlanks(t.frame.announceNetSize, { count: netSize }))
+    if (technique !== before.technique) {
+      deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
+      return
+    }
+    const changed = describeWeave({ technique }).settings.find((setting) => values[setting.id] !== before.techniqueSettings?.[setting.id])
+    if (changed) deps.announce(fillBlanks(weaveSettingWords(t, changed).changed, { count: values[changed.id] ?? changed.default }))
   }
 
-  /** Changes a layer's Technique, Net size or Brick block (tickets 507, 568). Asks first when a Technique switch has
-   * drawn beads or settings to choose, or when a Net size would drop beads; otherwise changes at once. */
-  function askWeave(layer: Layer, change: { technique?: Technique; netSize?: number; brickBlock?: number }): void {
+  /** Changes a layer's Technique or one of its settings (tickets 507, 568, 0626). Asks first when a Technique switch has
+   * drawn beads or settings to choose, or when a setting described as able to lose beads would drop some; otherwise
+   * changes at once. */
+  function askWeave(layer: Layer, change: { technique: Technique } | { setting: string; value: number }): void {
     const project = deps.currentProject()
     if (!project || (layer === 'frame' && !project.frame)) return
     const current = layerWeave(project, layer)
-    const technique = change.technique ?? current.technique
-    const netSize = change.netSize ?? current.netSize ?? DEFAULT_NET_SIZE
-    const brickBlock = change.brickBlock ?? current.brickBlock ?? 1
-    const { hasNetSize, hasBrickBlock } = describeWeave({ technique })
-    if (sameWeave(current, switchedWeave(current, technique, netSize, hasBrickBlock ? brickBlock : undefined))) return
+    const technique = 'technique' in change ? change.technique : current.technique
+    // The layer's values for the Technique's settings, one kept from before it was woven in another (a Brick block) too.
+    const held = techniqueValues({ ...current, technique })
+    const values = 'setting' in change ? techniqueValues({ technique, techniqueSettings: { ...held, [change.setting]: change.value } }) : held
+    const flat = flatSettings(values)
+    if (sameWeave(current, switchedWeave(current, technique, flat.netSize, flat.brickBlock))) return
     if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
-    const switching = technique !== current.technique
-    if ((switching && (layerHasBeads(project, layer) || hasNetSize || hasBrickBlock)) || switchLoss(project, layer, technique, netSize) > 0) {
-      switchAsk.value = { layer, technique, netSize, brickBlock }
+    const { settings } = describeWeave({ technique })
+    if (technique !== current.technique) {
+      if (layerHasBeads(project, layer) || settings.length > 0) switchAsk.value = { layer, technique, settings: values }
+      else applySwitch(layer, technique, values)
       return
     }
-    applySwitch(layer, technique, hasNetSize ? netSize : undefined, hasBrickBlock ? brickBlock : undefined)
+    const changing = settings.find((setting) => setting.lossOnChange && values[setting.id] !== current.techniqueSettings?.[setting.id])
+    if (changing && switchLoss(project, layer, technique, flat.netSize) > 0) {
+      switchAsk.value = { layer, technique, settings: values, changing: changing.id }
+      return
+    }
+    applySwitch(layer, technique, values)
   }
 
-  function setSwitchNetSize(netSize: number): void {
-    if (switchAsk.value) switchAsk.value = { ...switchAsk.value, netSize }
-  }
-
-  function setSwitchBrickBlock(brickBlock: number): void {
-    if (switchAsk.value) switchAsk.value = { ...switchAsk.value, brickBlock }
+  /** A setting changed inside the open question (tickets 568, 0626). */
+  function setSwitchSetting(id: string, value: number): void {
+    const ask = switchAsk.value
+    if (ask) switchAsk.value = { ...ask, settings: { ...ask.settings, [id]: value } }
   }
 
   function cancelSwitch(): void {
@@ -246,25 +260,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const ask = switchAsk.value
     switchAsk.value = undefined
     if (!ask) return
-    const { hasNetSize, hasBrickBlock } = describeWeave({ technique: ask.technique })
-    applySwitch(ask.layer, ask.technique, hasNetSize ? ask.netSize : undefined, hasBrickBlock ? ask.brickBlock : undefined)
+    applySwitch(ask.layer, ask.technique, techniqueValues({ technique: ask.technique, techniqueSettings: ask.settings }))
   }
 
   /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, once a pass is done not at all. */
   function setTechnique(technique: Technique): void {
     askWeave('frame', { technique })
-  }
-
-  /** Weaves the open brick stitch Project with another Brick block (ticket 477): every bead keeps its cell, one Undo
-   * step. */
-  function setBrickBlock(brickBlock: number): void {
-    askWeave('frame', { brickBlock })
-  }
-
-  /** Weaves the open Netting Project's Frame with another Net size (ticket 568): beads without a place in the new net are
-   * dropped, after asking. */
-  function setNetSize(netSize: number): void {
-    askWeave('frame', { netSize })
   }
 
   /** Weaves the Canvas in another Technique (tickets 492, 507): any time, since Row progress belongs to the Frame; one
@@ -273,14 +274,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     askWeave('canvas', { technique })
   }
 
-  /** The Canvas with another Brick block (ticket 492). */
-  function setCanvasBrickBlock(brickBlock: number): void {
-    askWeave('canvas', { brickBlock })
-  }
-
-  /** The Canvas with another Net size (ticket 568). */
-  function setCanvasNetSize(netSize: number): void {
-    askWeave('canvas', { netSize })
+  /** Sets any setting of a layer's Technique (ticket 0626, ADR 0078), the Brick block or the Net size today: one Undo
+   * step, asked first where its description says the change can lose beads and it would. */
+  function setWeaveSetting(layer: Layer, id: string, value: number): void {
+    askWeave(layer, { setting: id, value })
   }
 
   function press(target: FramePress, cell: GridPosition): void {
@@ -527,16 +524,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     resizeTo,
     rename,
     setTechnique,
-    setBrickBlock,
-    setNetSize,
     setCanvasTechnique,
+    setWeaveSetting,
     switchQuestion,
-    setSwitchNetSize,
-    setSwitchBrickBlock,
+    setSwitchSetting,
     cancelSwitch,
     confirmSwitch,
-    setCanvasBrickBlock,
-    setCanvasNetSize,
     fit,
     setTo,
     remove,
