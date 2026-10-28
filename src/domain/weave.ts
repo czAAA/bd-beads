@@ -73,6 +73,9 @@ interface TechniquePolicy {
   /** How a size in mm reads as positions and back (ADR 0026): by a Bead's own width and height per position, how rows
    * pack left out, or by the steps and extent its geometry draws. */
   measure: 'bead' | 'drawn'
+  /** How its PDF chart draws a bead (ticket 0642): a cell each, with cell lines and the 5th and 10th lines between beads,
+   * or each bead outlined on its own, with the 5th and 10th lines between the geometry's steps. */
+  chart: 'cells' | 'outlined'
 }
 
 /** A Technique's own facts: its geometry kind with its values (ADR 0078), and what it offers and costs. */
@@ -119,7 +122,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: false },
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead', chart: 'cells' },
   },
   peyote: {
     nameKey: 'peyote',
@@ -130,7 +133,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: true },
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead', chart: 'cells' },
   },
   brick: {
     nameKey: 'brick',
@@ -141,7 +144,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: true },
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead', chart: 'cells' },
   },
   rightAngle: {
     nameKey: 'rightAngle',
@@ -152,7 +155,7 @@ const TECHNIQUE_RULES = {
     rowDirection: true,
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: false, footprint: 'named', fewestTypedSide: 1, measure: 'drawn' },
+    policy: { removeLine: false, footprint: 'named', fewestTypedSide: 1, measure: 'drawn', chart: 'outlined' },
   },
   netting: {
     nameKey: 'netting',
@@ -163,7 +166,7 @@ const TECHNIQUE_RULES = {
     rowDirection: false,
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: false, footprint: 'named', fewestTypedSide: 1, measure: 'drawn' },
+    policy: { removeLine: false, footprint: 'named', fewestTypedSide: 1, measure: 'drawn', chart: 'outlined' },
   },
 } satisfies Record<string, CheckedRules>
 
