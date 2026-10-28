@@ -1,6 +1,6 @@
 # ProgressBar
 
-The bar along the canvas box's bottom edge holding every Row progress control. It is always shown, at every width including under 1024px, whatever the Pattern's shape. Its height is its tallest item (the large Row done / Row not done buttons, 38px) plus 1px above and 1px below, 40px (ticket 544; it was 48px); `--progress-height` (controls.css) is the same rule for the Overview's empty Canvas footer. It has a 1px edge on its left, right and top, and its bottom corners take the canvas box's radius (`radius-lg`, `--canvas-box-radius`).
+The bar along the canvas box's bottom edge holding every Row progress control. It is always shown, at every width including under 1024px, whatever the Pattern's shape. Its height is its tallest item (the large Row done / Row not done buttons, 38px) plus 1px above and 1px below, 40px (ticket 544; it was 48px); `--progress-height` (controls.css) is the same rule for the Homepage's empty Canvas footer. It has a 1px edge on its left, right and top, and its bottom corners take the canvas box's radius (`radius-lg`, `--canvas-box-radius`).
 
 Left to right, padding 0 12 0 16, gap 12, top divider `box-muted` at 22%:
 1. **Remove frame (ticket 426)** was a box button here until ticket 0455: it is now the cross on the Frame's corner (Frame card), and still asks first. Row progress is on whenever the Project has a Frame, so there is no switch and no `P` key.

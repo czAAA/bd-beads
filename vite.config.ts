@@ -8,7 +8,7 @@ import { resolveBase } from './vite.base.ts'
 import { offlineShell } from './vite.pwa.ts'
 
 /** What needs a page (ticket 420); every other `src/**\/*.test.ts` runs in Node. */
-const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/overview/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
+const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/homepage/**/*.test.ts', 'src/App*.test.ts', '**/*.dom.test.ts']
 
 /** Component tests that need a real browser for layout (ticket 552): `*.browser.test.ts`. They run where Chromium is
  * installed and skip themselves where it is not (the Pi); `BD_BROWSER_TESTS=1` makes a missing Chromium an error, `=0`
@@ -40,9 +40,9 @@ export default defineConfig(({ mode }) => ({
   // The version the Menu's About section shows (ticket 443).
   define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   build: {
-    // Two pages: the editor and the Overview (ticket 77), which is a folder with its own index.html so a static host
-    // serves /overview/ with no rewrite rules (ADR 0014).
-    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), overview: resolve(import.meta.dirname, 'overview/index.html') } },
+    // Two pages: the editor and the Homepage (ticket 77), which is a folder with its own index.html so a static host
+    // serves /homepage/ with no rewrite rules (ADR 0014).
+    rollupOptions: { input: { main: resolve(import.meta.dirname, 'index.html'), homepage: resolve(import.meta.dirname, 'homepage/index.html') } },
   },
   test: {
     // Generous on purpose: a shared CI runner can be several times slower than a dev machine, and a healthy test
@@ -54,7 +54,7 @@ export default defineConfig(({ mode }) => ({
       {
         // Tests that need no page (ticket 420): domain, rendering, services, pure composables. Plain Node, no jsdom and no
         // per-file isolation, so a file costs its tests and not a fresh page. A page test is named `*.dom.test.ts`, or sits
-        // under `src/components/`, `src/overview/` or is an `src/App*.test.ts` (docs/testing.md, Where a test goes).
+        // under `src/components/`, `src/homepage/` or is an `src/App*.test.ts` (docs/testing.md, Where a test goes).
         extends: true,
         test: {
           name: 'unit',
