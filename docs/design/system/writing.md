@@ -377,7 +377,7 @@ Russian here is a proposal for review; the other five languages follow it in the
 
 ## Convert image wizard copy (ticket 0646)
 
-The popup of spec 0645 (ConvertImage, PixelToBeadRatio and FoundColorRow cards). Errors, the slow-framing warning, Colors at most, the drag hint and the Finish names keep the app's existing strings. Grid sizes follow Numbers and units ("32×24 beads"); a count with a noun in Russian, Ukrainian and Polish takes the "Label: number" form ("цветов: 8"); after a grid size the noun is the genitive plural, as with "1920×1080 пикселей". Belarusian, Spanish and Chinese follow in the build.
+The popup of spec 0645 (ConvertImage, PixelToBeadRatio and FoundColorRow cards). Errors, the slow-framing warning, Colors at most, the drag hint and the Finish names on Bead colors keep the app's existing strings. Grid sizes follow Numbers and units ("32×24 beads"); a count with a noun in Russian, Ukrainian and Polish takes the "Label: number" form ("цветов: 8"); after a grid size the noun is the genitive plural, as with "1920×1080 пикселей". Belarusian, Spanish and Chinese follow in the build.
 
 | English | Русский | Українська | Polski |
 |---|---|---|---|
@@ -402,7 +402,7 @@ The popup of spec 0645 (ConvertImage, PixelToBeadRatio and FoundColorRow cards).
 | match to · Bead colors · Default Palette · Exact | подбирать из · Цвета бисера · Палитра по умолчанию · Точные | підбирати з · Кольори бісеру · Типова палітра · Точні | dopasuj do · Kolory koralików · Domyślna paleta · Dokładne |
 | Matches each color to the nearest of the Bead’s {n} default colors. | Подбирает каждому цвету ближайший из {n} цветов бисера по умолчанию. | Підбирає кожному кольору найближчий із {n} типових кольорів бісеру. | Dopasowuje każdy kolor do najbliższego z {n} domyślnych kolorów koralika. |
 | Keeps the picture’s own colors. Each joins the Palette as a Custom color. | Оставляет цвета изображения как есть. Каждый попадёт в палитру как свой цвет. | Залишає кольори зображення як є. Кожен потрапить у палітру як власний колір. | Zachowuje własne kolory obrazu. Każdy trafi do palety jako własny kolor. |
-| finish · Include discontinued · codes in {size}: {n} · shown: {m} | покрытие · Показывать снятые с производства · кодов в {size}: {n} · показано: {m} | покриття · Показувати зняті з виробництва · кодів у {size}: {n} · показано: {m} | wykończenie · Uwzględnij wycofane · kodów w {size}: {n} · widocznych: {m} |
+| Include discontinued · codes in {size}: {n} · shown: {m} | Показывать снятые с производства · кодов в {size}: {n} · показано: {m} | Показувати зняті з виробництва · кодів у {size}: {n} · показано: {m} | Uwzględnij wycofane · kodów w {size}: {n} · widocznych: {m} |
 | colors found · Treat as empty · Tap a color on the preview to make it empty | найдено цветов · Считать пустым · Нажмите на цвет на превью, чтобы сделать его пустым | знайдено кольорів · Вважати порожнім · Торкніться кольору на прев’ю, щоб зробити його порожнім | znalezione kolory · Traktuj jako puste · Dotknij koloru na podglądzie, aby był pusty |
 | Keep exact · Remap · Empty · No bead · Kept exact · Remapped · Custom color | Оставить точный · Заменить · Пусто · Без бисерины · Точный цвет · Заменён · Свой цвет | Залишити точний · Замінити · Порожньо · Без бісерини · Точний колір · Замінено · Власний колір | Zachowaj dokładny · Zamień · Puste · Bez koralika · Dokładny kolor · Zamieniony · Własny kolor |
 | Picture colors · used here | Цвета изображения · уже используются | Кольори зображення · уже використано | Kolory obrazu · już użyte |
