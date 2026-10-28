@@ -6,14 +6,11 @@ import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 import { layoutBeadPx, layoutPositionAtPx, placedLayout } from './customFrameView'
+import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 
 // The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation, row shift
 // and pitch are private; geometry follows domain/grid.ts (ticket 0448). Grid space is px at zoom 1; displayed space is
 // zoomed and turned about the beads' box (Canvas: the origin); a point is displayed space less the scroll.
-
-// The pixel size a bead is drawn at, at zoom 1 (the Project renderer's own size), so every layer lines up with what is
-// drawn.
-export const CELL_SIZE_PX = 20
 
 export interface Scroll {
   x: number
@@ -55,12 +52,6 @@ export function rowShiftPx(weave: Weave, row: number): number {
 // (ticket 492).
 export function shiftOf(weave: Weave, row: number): number {
   return rowShiftPx(weave, row)
-}
-
-/** A bead's cell in grid px: square, except where the Technique draws beads longer than they are wide (ticket 482) or
- * the Bead shape is Real, which draws the Bead's own proportions (ADR 0068). */
-export function cellSizePx(technique: Technique, cell?: BeadCell): Size {
-  return { width: CELL_SIZE_PX, height: CELL_SIZE_PX * describeWeave({ technique, cell }).cellAspect }
 }
 
 /** Where a position's bead is in a space, in grid px: its rectangle from the top-left. Beads of Right-angle weave

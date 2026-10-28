@@ -1,4 +1,4 @@
-import { normalizeProject, type StoredProject } from '../domain/project'
+import { normalizeProject, type StoredProject } from '../domain/storedProject'
 import { looksLikeProject, type ProjectFileContents } from '../domain/projectFile'
 
 const LEGACY_KINDS = ['bd-beads/pattern', 'bd-beads/library']

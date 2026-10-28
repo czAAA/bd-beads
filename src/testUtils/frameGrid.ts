@@ -1,5 +1,6 @@
 import { beadsFromColors, colorsInFrame } from '../domain/canvas'
-import { projectFrame, type Grid, type Project } from '../domain/project'
+import { projectFrame } from '../domain/projectExtent'
+import type { Grid, Project } from '../domain/project'
 
 // A Project's beads as a dense grid of rows and columns, the shape a test writes its expectation in, and back (ticket
 // 0609: the app itself no longer thinks in a grid).

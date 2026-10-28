@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { framedGrid, type Grid } from '../../domain/project'
+import { framedGrid } from '../../domain/layerBeads'
+import type { Grid } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import { thumbnailPixels } from '../../rendering/projectThumbnail'
 import ExampleFrame from './ExampleFrame.vue'

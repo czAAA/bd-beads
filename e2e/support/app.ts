@@ -1,6 +1,7 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 import { STORAGE_KEY, storedLibrary } from './projects'
-import { normalizeProject, type Project } from '../../src/domain/project'
+import { normalizeProject } from '../../src/domain/storedProject'
+import type { Project } from '../../src/domain/project'
 import { decodeProject, type EncodedProject } from '../../src/domain/projectEncoding'
 import type { Tool } from '../../src/domain/tool'
 

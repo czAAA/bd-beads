@@ -1,6 +1,7 @@
 import { computed } from 'vue'
 import { beadLabel, beadsDiffer, findBead, offeredBeads, type Bead } from '../../domain/beads'
-import { replaceBead, resolveProjectBead, type Project } from '../../domain/project'
+import { replaceBead, resolveProjectBead } from '../../domain/projectBead'
+import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
 import { loadColorCatalog } from '../../services/colorCatalogs'

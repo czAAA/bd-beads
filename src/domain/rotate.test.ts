@@ -2,7 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, forEachBead, withColors, type BeadMap } from './canvas'
 import { namedPieces, withPieceName } from './pieceNames'
-import { createProject, type Project } from './project'
+import { createProject } from './createProject'
+import type { Project } from './project'
 import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, rotatedSelection } from './rotate'
 import type { Selection } from './selection'
 

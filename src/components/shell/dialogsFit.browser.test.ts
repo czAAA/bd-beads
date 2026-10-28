@@ -3,7 +3,7 @@ import { defineComponent, h, nextTick } from 'vue'
 import { FIT_LOCALES, FIT_WIDTHS, fitProblems, mountAt, problemsAcrossWidths } from '../../testUtils/browserFit'
 import { provideAppShell } from '../../composables/shell/useAppShell'
 import type { Dialogs } from '../../composables/shell/useDialogs'
-import { createProject } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
 import { saveProjects } from '../../services/libraryStore'
 import AppDialogs from './AppDialogs.vue'
 

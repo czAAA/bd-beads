@@ -2,7 +2,7 @@ import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from '../App.vue'
 import { DEFAULT_BEAD } from '../domain/beads'
-import { createProject } from '../domain/project'
+import { createProject } from '../domain/createProject'
 import { saveProjects } from '../services/libraryStore'
 import { openNewProject } from './pill'
 

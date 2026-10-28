@@ -4,7 +4,7 @@ import { rotationSwapsAxes } from '../domain/grid'
 import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { A4_PORTRAIT, type PrintPart, PRINT_PART_OVERLAP, chartArea, continuation, mm, partLetter, planPrint, PRINT_CHART_CELL_MM } from './printPlan'
-import { CELL_SIZE_PX } from './surfaceView'
+import { CELL_SIZE_PX } from './cellSize'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 const beadMm = (zoom: number) => (CELL_SIZE_PX * zoom) / mm(1)

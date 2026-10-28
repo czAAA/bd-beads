@@ -1,4 +1,6 @@
-import { frameWeave, projectDimensions, shownLetters } from '../domain/project'
+import { frameWeave } from '../domain/layerWeave'
+import { projectDimensions } from '../domain/projectExtent'
+import { shownLetters } from '../domain/paletteEdits'
 import type { Project } from '../domain/project'
 import { frameLayoutOf } from '../domain/frameKind'
 import { drawBeadLetter, PRINT_THEME } from './beadLook'

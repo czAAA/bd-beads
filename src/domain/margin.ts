@@ -1,9 +1,10 @@
 import { footprintOf } from './footprint'
-import { sameFrame } from './frame'
 import type { Layer, Placed } from './layers'
-import { forEachBead, frameContains, withColors, type BeadChange, type Rect } from './canvas'
+import { forEachBead, frameContains, withColors, type BeadChange, type Rect, sameFrame } from './canvas'
 import type { GridPosition } from './grid'
-import { isInFinishedRow, sameBeads, type Project } from './project'
+import { isInFinishedRow } from './rowProgress'
+import { sameBeads } from './layerBeads'
+import type { Project } from './project'
 import type { Selection } from './selection'
 
 /** The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0066): 6 bead positions (3 until ticket 427,

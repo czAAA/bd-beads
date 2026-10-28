@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import FrameChrome from './FrameChrome.vue'
-import { createProject, moveToRow, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import { moveToRow } from '../../domain/rowProgress'
+import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 
 beforeEach(() => {

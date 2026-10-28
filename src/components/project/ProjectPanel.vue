@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { beadLabel, type Bead } from '../../domain/beads'
-import { resolveProjectBead, type Project } from '../../domain/project'
+import { resolveProjectBead } from '../../domain/projectBead'
+import type { Project } from '../../domain/project'
 import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 

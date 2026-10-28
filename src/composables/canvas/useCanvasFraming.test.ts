@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, ref } from 'vue'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { useCanvasFraming } from './useCanvasFraming'
 
 const project = createProject({

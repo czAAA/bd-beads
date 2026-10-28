@@ -11,15 +11,12 @@ import {
   serializeLibrary,
   serializeProject,
 } from './projectFile'
-import {
-  createProject,
-  moveToRow,
-  setPalette,
-  withBrickBlock,
-  withTechnique,
-  type Project,
-  paintCells,
-} from './project'
+import { createProject } from './createProject'
+import { moveToRow } from './rowProgress'
+import { setPalette } from './paletteEdits'
+import { withBrickBlock, withTechnique } from './weaveSwitch'
+import type { Project } from './project'
+import { paintCells } from './drawing'
 import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'

@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from '../domain/beads'
-import { createProject, createProjectFromImage, moveToRow, withFrame, type Project } from '../domain/project'
+import { createProject, createProjectFromImage } from '../domain/createProject'
+import { moveToRow } from '../domain/rowProgress'
+import { withFrame } from '../domain/frame'
+import type { Project } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
 import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'

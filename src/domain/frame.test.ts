@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { withColors } from './canvas'
-import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow } from './frame'
+import { withColors, sameFrame } from './canvas'
+import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapRow } from './frame'
 
 describe('snapRow', () => {
   it('starts on an even row where rows alternate, reaching one row up rather than losing a row', () => {

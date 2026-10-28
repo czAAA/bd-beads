@@ -1,4 +1,5 @@
-import { frameWeave, type Project } from '../domain/project'
+import { frameWeave } from '../domain/layerWeave'
+import type { Project } from '../domain/project'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { placedLayout } from './customFrameView'
 import { gridToRegion, projectExtentPx, type Region } from './surfaceView'

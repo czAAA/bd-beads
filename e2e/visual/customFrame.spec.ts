@@ -6,7 +6,9 @@ import { fixtureProject } from '../support/projects'
 import { changeFrame } from '../../src/domain/changeFrame'
 import { frameLayoutOf, type CustomFrameKindId } from '../../src/domain/frameKind'
 import { onLayer } from '../../src/domain/layers'
-import { moveToRow, paintCells, type Project } from '../../src/domain/project'
+import { moveToRow } from '../../src/domain/rowProgress'
+import { paintCells } from '../../src/domain/drawing'
+import type { Project } from '../../src/domain/project'
 
 // A Custom frame (tickets 0592, 0593): a peyote Triangle, Warped Square, Star, Kaleidocycle and Kite on a loom Canvas, every bead at the angle its panel
 // lies, the Seams as thin lines and the Off-shape round them in the Canvas colour with no position marks. Each round

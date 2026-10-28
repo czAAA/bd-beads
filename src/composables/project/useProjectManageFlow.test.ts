@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { useProjectManageFlow } from './useProjectManageFlow'
 
 const make = (name: string) => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name, size: { width: 3, height: 3, unit: 'beads' } })

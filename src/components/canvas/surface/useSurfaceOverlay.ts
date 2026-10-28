@@ -1,6 +1,7 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import type { PreviewCell } from '../../../domain/grid'
-import { shownLetters, type Project } from '../../../domain/project'
+import { shownLetters } from '../../../domain/paletteEdits'
+import type { Project } from '../../../domain/project'
 import type { Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
 import type { ProjectTheme } from '../../../rendering/beadLook'
