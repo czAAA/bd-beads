@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { localesAt, misfitsNow, mountAt } from '../testUtils/browserFit'
+import { FIT_LOCALES, misfitsNow, mountAt } from '../testUtils/browserFit'
 import { unexplainedFit } from '../testUtils/fitPending'
 import { settleForMeasuring } from '../testUtils/textFitInPage'
 import OverviewPage from './OverviewPage.vue'
@@ -10,7 +10,7 @@ const WIDTHS = [1900, 1280, 1024, 844, 820, 768, 390, 360, 320]
 describe('OverviewPage text fit', () => {
   for (const width of WIDTHS) {
     // Mounted fresh at each width: the carousel is tabs or arrows by width, and its position would carry over a resize.
-    for (const locale of localesAt(width)) {
+    for (const locale of FIT_LOCALES) {
       it(`${locale} at ${width}px, the page and every feature of the carousel`, async () => {
         const mounted = await mountAt(OverviewPage, { projectCount: 0 }, { locale, width })
         const found = await misfitsNow()
