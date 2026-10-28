@@ -18,6 +18,7 @@ import {
 import { normalizeHex } from './color'
 import { sameFrame } from './frame'
 import { frameLayer } from './layers'
+import { refitSheet, withEachBead } from './folding'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
 import { positionKey, rotationSwapsAxes, type GridDimensions, type GridPosition, type Layer, type Rotation } from './grid'
 import { beadCell, clampNetSize, DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, describeWeave, isTechnique, MAX_BRICK_BLOCK, neighborsOf, positionStep, withCell, type BeadCell, type BeadShape, type PassDirection, type Technique, type Weave } from './weave'
@@ -474,7 +475,8 @@ function readRemovedDefaults(stored: unknown): string[] {
 }
 
 /** A distance counted in the Frame's own rows and columns, as Canvas positions (ticket 492): the nearest whole ones,
- * exactly the same where Frame and Canvas are woven alike. */
+ * exactly the same where Frame and Canvas are woven alike. A half rounds away from zero both ways, so an edge moved out
+ * and back puts the Frame where it was (ticket 0638). */
 export function canvasDistance(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, frame: Weave, rows: number, columns: number): GridPosition {
   const canvas = canvasWeave(project)
   if (sameWeave(canvas, frame)) {
@@ -482,7 +484,8 @@ export function canvasDistance(project: Pick<Project, 'technique' | 'brickBlock'
   }
   const own = positionStep(frame)
   const target = positionStep(canvas)
-  return { row: Math.round((rows * own.down) / target.down), column: Math.round((columns * own.across) / target.across) }
+  const nearest = (distance: number) => Math.sign(distance) * Math.round(Math.abs(distance)) || 0
+  return { row: nearest((rows * own.down) / target.down), column: nearest((columns * own.across) / target.across) }
 }
 
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
@@ -527,25 +530,35 @@ function laidOf(frame: FrameSheet | undefined): Pick<KindedSheet, 'kind' | 'sett
 }
 
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
- * place on the Canvas, those outside a smaller Frame are dropped, the Canvas is never touched, and a Frame set anew is
- * empty. Row progress's pointers stay inside it; an unchanged Frame is the same Project (no change). */
+ * place, those outside a smaller Frame are dropped or, woven unlike the Canvas, folded (ticket 0638), the Canvas is
+ * never touched, a Frame set anew is empty, Row progress stays inside it; an unchanged Frame is the same Project. */
 export function withFrame(project: Project, rectangle: Rect | undefined): Project {
+  return withFrameGiving(project, rectangle).project
+}
+
+/** `withFrame`, and the beads the resized Frame gives up to the Canvas, by Canvas position: those it no longer holds
+ * where it is woven like the Canvas, none where it folds them (ticket 0638). The resize lays them there. */
+export function withFrameGiving(project: Project, rectangle: Rect | undefined): { project: Project; given: BeadMap } {
   if (sameFrame(project.frame, rectangle)) {
-    return project
+    return { project, given: {} }
   }
   const { frame: current, ...rest } = project
   // With the Frame gone the passes are gone too (ticket 426).
   if (!rectangle) {
-    return { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
+    return { project: { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }, given: {} }
   }
   const { rows, columns } = rectangle
   const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
+  const holds = (at: GridPosition) => at.row >= 0 && at.row < rows && at.column >= 0 && at.column < columns
+  // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638); one made anew is empty.
+  const refit = current ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds) : { beads: {}, given: {} }
   const frame: FrameSheet = {
     row,
     column,
     rows,
     columns,
-    beads: current ? shiftedBeads(current.beads, current.row - rectangle.row, current.column - rectangle.column, { rows, columns }) : {},
+    beads: refit.beads,
+    ...(refit.folded ? { folded: refit.folded } : {}),
     // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
     ...weaveOf(current ?? project),
     ...(current?.name ? { name: current.name } : {}),
@@ -553,7 +566,7 @@ export function withFrame(project: Project, rectangle: Rect | undefined): Projec
     ...(current?.settings ? { settings: current.settings } : {}),
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
-  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }
+  return { project: { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }, given: shiftedBeads(refit.given, row, column) }
 }
 
 /** The layer's Weave switched to another Technique (ADR 0038): the Brick block stays, the Net size is the one given, the
@@ -606,15 +619,18 @@ export function withBrickBlock(project: Project, brickBlock: number): Project {
 }
 
 /** The Frame woven in another Technique (ticket 492, ADR 0038): its beads keep their row and column where the Technique
- * has a position there and the rest are dropped. Its local row 0 is always an unshifted one, so nothing else moves. A
- * Project with no Frame is unchanged. */
+ * has a position there and the rest are dropped, its Folded beads too, which stay folded (ticket 0638). Its local row 0
+ * is always an unshifted one, so nothing else moves. A Project with no Frame is unchanged. */
 export function withFrameTechnique(project: Project, technique: Technique, netSize?: number, brickBlock?: number): Project {
   if (!project.frame) {
     return project
   }
   const weave = switchedWeave(frameWeave(project), technique, netSize, brickBlock)
-  const { netSize: _netSize, brickBlock: _brickBlock, ...frame } = project.frame
-  return touch(project, { frame: { ...frame, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}), technique: weave.technique, beads: beadsInWeave(project.frame.beads, weave, project.frame).kept } })
+  const { netSize: _netSize, brickBlock: _brickBlock, folded: _folded, ...frame } = project.frame
+  const { hasPosition } = describeWeave(weave)
+  const own = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
+  const rewoven = withEachBead(project.frame, (position) => (hasPosition(position, own) ? position : undefined))
+  return touch(project, { frame: { ...frame, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}), technique: weave.technique, ...rewoven } })
 }
 
 /** The Frame with its Brick block changed (ticket 492). */
@@ -838,7 +854,7 @@ function isInitialRowProgress(rowProgress: RowProgress): boolean {
  * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
  * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
-  if (!hasProjectBeads(project) && isInitialRowProgress(project.rowProgress)) {
+  if (!hasProjectBeads(project) && !project.frame?.folded && isInitialRowProgress(project.rowProgress)) {
     return project
   }
 
@@ -846,9 +862,14 @@ export function deleteAll(project: Project): Project {
   const { pieceNames: _names, ...rest } = project
   return touch(rest, {
     beads: {},
-    ...(project.frame ? { frame: { ...project.frame, beads: {} } } : {}),
+    ...(project.frame ? { frame: emptied(project.frame) } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
+}
+
+/** A Frame with no bead left, its Folded beads gone too (ticket 0638). */
+function emptied({ folded: _folded, ...frame }: FrameSheet): FrameSheet {
+  return { ...frame, beads: {} }
 }
 
 /** The Swatch letters of a Palette (ticket 0573): each color keeps the letter it had and a new one takes the lowest unused. */
