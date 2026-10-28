@@ -50,6 +50,3 @@ docs/personal/
 # The backend wizard's hand-off of ids and site keys to the agent (ticket 71; no secrets)
 backend-handoff.local
 .vitest/
-
-# Mutation testing's reports and sandbox (ticket 0599)
-.stryker/
