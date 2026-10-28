@@ -1,7 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
 import type { BeadMap } from './canvas'
 import { changeFrame, type FrameChangeResult } from './changeFrame'
-import { customFrameSize, frameKindOf, frameLayoutOf, FRINGE_STYLES, settingValuesOf, type FrameKindId, type FrameSettingName, type FrameSettings, type FringeStyle } from './frameKind'
+import { customFrameSize, frameGeometry, frameKindOf, FRINGE_STYLES, settingValuesOf, type FrameKindId, type FrameSettingName, type FrameSettings, type FringeStyle } from './frameKind'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
 import { resolveProjectBead } from './projectBead'
@@ -313,12 +313,10 @@ export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: 
   return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(lengthMm(starter, choice) / beadPitchMm(bead))) }
 }
 
-/** How many beads a Starter's Frame holds for a choice on a Bead: every position of its layout or rectangle. */
+/** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has. */
 export function starterBeadCount(starter: Starter, choice: StarterChoice, bead: Bead): number {
-  const layout = frameLayoutOf({ kind: starter.kind, settings: customSettings(starter, choice) })
-  if (layout) return layout.positions.length
-  const { rows, columns } = starterFrameSize(starter, choice, bead)
-  return rows * columns
+  const size = starterFrameSize(starter, choice, bead)
+  return frameGeometry({ kind: starter.kind, settings: customSettings(starter, choice), ...size, technique: starter.technique }).positions().length
 }
 
 /** What a Starter's setup measures with a Bead (StarterGallery card, Setup): a Shape's or earring's width and height; a

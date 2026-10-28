@@ -1,7 +1,8 @@
 import { colorAt, type BeadChange } from './canvas'
-import { layoutPlacement, type LayoutPlacement } from './frameKind'
+import { frameLayoutOf } from './frameKind'
 import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
+import { layoutPlacement, type LayoutPlacement } from './layerGeometry'
 import type { LayerSheet } from './layers'
 import { describeWeave, rowPitch, type Weave } from './weave'
 
@@ -20,7 +21,7 @@ type CellRectangle = { top: number; left: number; rows: number; columns: number 
 
 /** The Custom frame's layout as placed in its rectangle. */
 function placementOf(sheet: LayerSheet): LayoutPlacement {
-  return layoutPlacement(sheet.frame!, sheet.weave)!
+  return layoutPlacement(frameLayoutOf(sheet.frame!)!, sheet.frame!, sheet.weave)
 }
 
 /** A position's centre on screen, in cell widths from the Frame's first position's corner. */
