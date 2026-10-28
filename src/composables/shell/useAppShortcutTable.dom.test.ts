@@ -130,13 +130,6 @@ describe('useAppShortcutTable', () => {
     wrapper.unmount()
   })
 
-  it('E picks the eraser, but not while a modal is open', () => {
-    const { deps, wrapper } = mountTable()
-    press({ key: '4' })
-    expect(deps.onSelectTool).toHaveBeenCalledWith('erase')
-    wrapper.unmount()
-  })
-
   it('Delete empties the Selection and does nothing without one, never picking the eraser', () => {
     const { deps, wrapper } = mountTable({ activeTool: () => 'select', hasSelection: () => true })
     press({ key: 'Delete' })
@@ -201,15 +194,13 @@ describe('useAppShortcutTable', () => {
     backed.wrapper.unmount()
   })
 
-  it('4, 5 and 6 pick Erase, Hand and Piece, and Ctrl+A selects all (tickets 292, 414, 431)', () => {
+  it('4, 5 and 6 pick Erase, Hand and Piece (tickets 292, 414, 431)', () => {
     const { deps, wrapper } = mountTable({ activeProject: () => ({}) as never })
     for (const key of ['4', '5', '6']) press({ key })
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(1, 'erase')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(2, 'hand')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(3, 'piece')
     expect(deps.onEditFrame).not.toHaveBeenCalled()
-    press({ key: 'a', ctrlKey: true })
-    expect(deps.onSelectAll).toHaveBeenCalledOnce()
     wrapper.unmount()
   })
 

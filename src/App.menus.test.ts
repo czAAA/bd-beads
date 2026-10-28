@@ -4,12 +4,12 @@ import { nextTick } from 'vue'
 import App from './App.vue'
 import { createProject } from './domain/project'
 import { loadProjects, saveProjects } from './services/libraryStore'
-import { starterById, starterDesign } from './domain/starters'
 import { en } from './i18n/en'
-import { choosePanelOption } from './testUtils/choosePanelOption'
 import { openPanel, openSavedProjects } from './testUtils/pill'
 
-/** Menu and Project (spec 0440, ticket 443): one happy path per flow; both open as a dropdown on every screen size. */
+/** Menu and Project (spec 0440, ticket 443): one test per control → flow (docs/testing.md, "Assert each behavior at one
+ * level only"). What the panels hold is in MenuPanel and ProjectPanel, opening, Back, Escape and focus in AppPanel and
+ * useOverlayLayer, the rules in useProjectManageFlow and useNewProjectFlow, and fitting in panelsFit. */
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 10, height: 10, unit: 'beads' } })
 
@@ -30,98 +30,38 @@ function mountApp() {
 
 const names = () => loadProjects().map((project) => project.name).sort()
 const text = (wrapper: ReturnType<typeof mountApp>, testId: string) => wrapper.get(`[data-testid="${testId}"]`).text()
-
-describe('Menu and Project open as a dropdown on every screen size', () => {
-  it('opens as a dropdown with no scrim, and swaps one for the other', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
-
-    expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('menu')
-    expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="theme-picker"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).toBe('true')
-
-    await wrapper.get('[data-testid="strip-project"]').trigger('click')
-    expect(wrapper.find('[data-testid="project-panel"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="strip-project"]').attributes('aria-pressed')).toBe('true')
-    expect(wrapper.get('[data-testid="strip-menu"]').attributes('aria-pressed')).not.toBe('true')
-  })
-
-  it('closes on Escape and on a press outside, and gives focus back to the button', async () => {
-    const wrapper = mountApp()
-    const button = wrapper.get('[data-testid="strip-project"]')
-    await button.trigger('click')
-    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    await flushPromises()
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-    expect(document.activeElement).toBe(button.element)
-
-    await button.trigger('click')
-    wrapper.get('[data-testid="app-canvas"]').element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true }))
-    await flushPromises()
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-  })
-
-  it('has no fixed height on its rows, so a stacked row is not clipped', async () => {
-    const wrapper = mountApp()
-    for (const panel of ['strip-menu', 'strip-project'] as const) {
-      await openPanel(wrapper, panel)
-      for (const row of wrapper.findAll('[data-testid="panel-body"] :is([class*="panel-item"], [class*="panel-picker"], [class*="menu-panel__"], [class*="name-row"], [class*="save-export"]):not(svg)')) expect(row.attributes('style') ?? '').not.toMatch(/(^|;|\s)height:/)
-    }
-  })
-})
+const escape = async () => {
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+  await nextTick()
+}
 
 describe('Menu', () => {
-  it('holds Projects, Preferences, Help and About in that order, with the Projects library last in Projects', async () => {
+  it('closes on Escape', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-menu')
-
-    const sections = wrapper.findAll('[data-testid="menu-panel"] [role="group"]').filter((group) => group.find('h3').exists())
-    expect(sections.map((section) => section.get('h3').text())).toEqual([en.panels.menu.projects, en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
-    const projects = sections[0]!.findAll('.panel-item').map((item) => item.text())
-    expect(projects[0]).toBe(en.projects.newProjectButton)
-    expect(projects.at(-1)).toContain(en.projects.heading)
-    expect(text(wrapper, 'menu-saved-projects')).toContain('1')
+    await escape()
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('moves the pill from Tools position, applied at once', async () => {
+  it('opens the Projects library and New Project as its subpanels, each under its own title', async () => {
     const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
+    await openSavedProjects(wrapper)
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.heading)
 
-    await choosePanelOption(wrapper, 'menu-tools-position', 'top')
-
-    expect(localStorage.getItem('openbeads:tool-pill-position')).toBe('top')
-  })
-
-  it('has no Pen/Mouse in the pill, and no Input row in Menu until a pen has been seen', async () => {
-    const wrapper = mountApp()
-    expect(wrapper.find('[data-testid="pill-input-mode"]').exists()).toBe(false)
-    await openPanel(wrapper, 'strip-menu')
-    expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(false)
-  })
-
-  it('has an Input row once a pen has been seen, where Pen | Mouse is chosen and kept', async () => {
-    localStorage.setItem('openbeads:pen-seen', 'yes')
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
-
-    expect(wrapper.find('[data-testid="menu-input-mode"]').exists()).toBe(true)
-    await choosePanelOption(wrapper, 'menu-input-mode', 'mouse')
-    expect(localStorage.getItem('openbeads:input-mode')).toBe('mouse')
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
+    expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
+    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
   })
 
   it('deletes every Project after a confirmation, and lands on the empty state; Cancel keeps them', async () => {
     saveProjects([moth(), { ...moth(), id: 'other', name: 'Other' }])
     const wrapper = mountApp()
     await openSavedProjects(wrapper)
-    expect(text(wrapper, 'menu-delete-all')).toBe(en.panels.menu.deleteAll)
-
     await wrapper.get('[data-testid="menu-delete-all"]').trigger('click')
     await flushPromises()
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-    expect(text(wrapper, 'delete-all-projects-modal')).toContain(en.panels.menu.deleteAllTitle)
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
+    expect(wrapper.find('[data-testid="delete-all-projects-modal"]').exists()).toBe(false)
     expect(loadProjects()).toHaveLength(2)
 
     await openSavedProjects(wrapper)
@@ -131,81 +71,24 @@ describe('Menu', () => {
     await flushPromises()
 
     expect(loadProjects()).toEqual([])
-    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
   })
 
-  it('opens New Project as a subpanel in the Menu, and Back returns to the list with the Project untouched', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
-    const open = wrapper.get('[data-testid="strip-project"]').text()
-    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-
-    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(false)
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.projects.newProjectButton)
-
-    await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="strip-project"]').text()).toBe(open)
-  })
-
-  it('goes back one level on Escape, then closes', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
-    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    await nextTick()
-    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
-
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    await nextTick()
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-  })
-
-  it('creates the Project from the Create button, switches to it and closes the panel', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
-    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-    await wrapper.get('[data-testid="name-input"]').setValue('Heron')
-    expect(wrapper.find('[data-testid="create-project"]').exists()).toBe(true)
-    await wrapper.get('form.new-project-form').trigger('submit')
-    await flushPromises()
-
-    expect(names()).toEqual(['Heron', 'Moth'])
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-    await openPanel(wrapper, 'strip-project')
-    expect(text(wrapper, 'project-name')).toBe('Heron')
-  })
-
-  it('starts a Project from a Starter: Pick a starter, a category, an option, Back up a level, and Create puts its design in place (ticket 0596)', async () => {
+  it('starts a Project from a Starter: a category, an option, and Create puts it in place and closes the panel (ticket 0596)', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-menu')
     await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
     await wrapper.get('[data-testid="pick-starter"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.starters.title)
     await wrapper.get('[data-testid="starter-category-shapes"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-meta')).toBe('starter')
-    await wrapper.get('[data-testid="starter-card-star"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.frame.customKinds.star)
-    expect(text(wrapper, 'panel-sub-meta')).toBe('starter · shapes')
-
-    await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    expect(text(wrapper, 'panel-sub-title')).toBe(en.starters.categories.shapes.name)
     await wrapper.get('[data-testid="starter-card-star"]').trigger('click')
     await wrapper.get('[data-testid="create-starter-project"]').trigger('click')
     await flushPromises()
 
-    expect(names()).toEqual(['Moth', en.frame.customKinds.star])
-    const made = loadProjects().find((project) => project.name === en.frame.customKinds.star)!
-    expect(made.frame).toMatchObject({ kind: 'star', settings: { partSize: 5 } })
-    expect(made.frame!.beads).toEqual(starterDesign(starterById('star')))
+    expect(loadProjects().find((project) => project.name === en.frame.customKinds.star)!.frame).toMatchObject({ kind: 'star' })
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('puts a Starter on the open Project from the Frame panel, empty on Start empty, and closes the panel (tickets 555, 0596)', async () => {
+  it('puts a Starter on the open Project from the Frame panel, and closes the panel (tickets 555, 0596)', async () => {
     const { frame: _frame, ...open } = moth()
     saveProjects([open])
     const wrapper = mountApp()
@@ -213,110 +96,29 @@ describe('Menu', () => {
     await wrapper.get('[data-testid="frame-from-starter"]').trigger('click')
     await wrapper.get('[data-testid="starter-category-shapes"]').trigger('click')
     await wrapper.get('[data-testid="starter-card-triangle"]').trigger('click')
-    expect(text(wrapper, 'create-starter-project')).toBe(en.frame.addFrameButton)
-    await wrapper.get('[data-testid="starter-design"] [role="radio"]:last-child').trigger('click')
     await wrapper.get('[data-testid="create-starter-project"]').trigger('click')
     await flushPromises()
 
-    expect(loadProjects().find((project) => project.name === 'Moth')!.frame).toMatchObject({ kind: 'triangle', settings: { rounds: 10 }, beads: {} })
+    expect(loadProjects()[0]!.frame).toMatchObject({ kind: 'triangle' })
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
-  it('discards the draft on Back', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-menu')
-    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-    await wrapper.get('[data-testid="name-input"]').setValue('Heron')
-    await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    await wrapper.get('[data-testid="menu-new-project"]').trigger('click')
-
-    expect((wrapper.get('[data-testid="name-input"]').element as HTMLInputElement).value).toBe('')
-  })
-
-  it('opens Menu on the form with an empty library, Escape closes it, and Back shows the list', async () => {
+  it('opens on the form by itself with an empty library, and again from the empty-canvas bar button', async () => {
     saveProjects([])
     const wrapper = mountApp()
-    // The empty canvas opens Menu on the form by itself.
     expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
 
-    await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    expect(wrapper.find('[data-testid="menu-saved-projects"]').exists()).toBe(true)
-
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
-    await wrapper.get('[data-testid="strip-menu"]').trigger('click')
-    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
-    await nextTick()
+    await escape()
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-  })
-
-  it('opens Menu on the form by itself when the empty canvas shows', async () => {
-    saveProjects([])
-    const wrapper = mountApp()
-    expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
-  })
-
-  it('opens Menu on the form from the empty-canvas bar button', async () => {
-    saveProjects([])
-    const wrapper = mountApp()
     await wrapper.get('[data-testid="phone-bar-new-project"]').trigger('click')
-
-    expect(wrapper.find('[data-testid="panel-dropdown"]').exists()).toBe(true)
     expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="panel-dropdown"]').attributes('role')).toBe('dialog')
-  })
-
-  it('has no Menu section for the open Project: Project is hidden with none open, and Menu stays', async () => {
-    localStorage.clear()
-    localStorage.setItem('openbeads:locale', 'en')
-    const wrapper = mountApp()
-
-    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
-    await wrapper.get('[data-testid="panel-back"]').trigger('click')
-    expect(wrapper.find('[data-testid="menu-panel"]').exists()).toBe(true)
   })
 })
 
 describe('Project', () => {
-  it('renames from the pencil on Enter, saved at once; an empty name is refused and Escape changes nothing', async () => {
+  it('renames from the pencil, and Try again saves what a full storage refused', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-project')
-    expect(text(wrapper, 'project-name')).toBe('Moth')
-    expect(wrapper.get('[data-testid="project-name-edit"]').attributes('aria-label')).toBe('Rename Moth')
-
-    await wrapper.get('[data-testid="project-name-edit"]').trigger('click')
-    await flushPromises()
-    const input = wrapper.get<HTMLInputElement>('[data-testid="project-name-input"]')
-    expect(input.attributes('maxlength')).toBe('40')
-    expect(document.activeElement).toBe(input.element)
-
-    await input.setValue('   ')
-    await input.trigger('keydown', { key: 'Enter' })
-    await wrapper.get('[data-testid="project-name-form"]').trigger('submit')
-    expect(text(wrapper, 'project-name-error')).toBe(en.panels.project.nameRequired)
-    expect(names()).toEqual(['Moth'])
-
-    await input.setValue('Owl')
-    expect(text(wrapper, 'project-name-form')).toContain('3/40')
-    await wrapper.get('[data-testid="project-name-form"]').trigger('submit')
-    await flushPromises()
-    expect(names()).toEqual(['Owl'])
-    expect(text(wrapper, 'project-name')).toBe('Owl')
-
-    await wrapper.get('[data-testid="project-name-edit"]').trigger('click')
-    await wrapper.get<HTMLInputElement>('[data-testid="project-name-input"]').setValue('Fox')
-    await wrapper.get('[data-testid="project-name-form"]').trigger('keydown', { key: 'Escape' })
-    expect(names()).toEqual(['Owl'])
-    expect(text(wrapper, 'project-name')).toBe('Owl')
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(true)
-  })
-
-  it('shows the save state: saved, then failed with the reason and Try again', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-project')
-    expect(text(wrapper, 'save-state')).toBe(en.panels.project.savedLocal)
-    expect(wrapper.get('[data-testid="save-state"]').attributes('aria-live')).toBe('polite')
-
     const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('full', 'QuotaExceededError')
     })
@@ -325,27 +127,20 @@ describe('Project', () => {
     await wrapper.get<HTMLInputElement>('[data-testid="project-name-input"]').setValue('Owl')
     await wrapper.get('[data-testid="project-name-form"]').trigger('submit')
     await flushPromises()
-    expect(text(wrapper, 'save-state')).toContain('Not saved. ')
-    expect(wrapper.find('[data-testid="save-try-again"]').exists()).toBe(true)
+    expect(names()).toEqual(['Moth'])
 
     setItem.mockRestore()
     await wrapper.get('[data-testid="save-try-again"]').trigger('click')
     await flushPromises()
+    expect(names()).toEqual(['Owl'])
     expect(text(wrapper, 'save-state')).toBe(en.panels.project.savedLocal)
   })
 
-  it('duplicates through the popup with the suggested name, keeps Row progress and opens the copy; Cancel changes nothing', async () => {
-    saveProjects([{ ...moth(), rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }])
+  it('duplicates through the popup and opens the copy; Cancel changes nothing', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-project')
-
     await wrapper.get('[data-testid="project-duplicate"]').trigger('click')
     await flushPromises()
-    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
-    const input = wrapper.get<HTMLInputElement>('[data-testid="duplicate-name-input"]')
-    expect(input.element.value).toBe('Moth 2')
-    expect(wrapper.get('[data-testid="duplicate-project-modal"]').text()).toContain(en.panels.project.duplicateNote)
-
     await wrapper.get('[data-testid="duplicate-cancel"]').trigger('click')
     expect(names()).toEqual(['Moth'])
 
@@ -356,39 +151,18 @@ describe('Project', () => {
     await flushPromises()
 
     expect(names()).toEqual(['Moth', 'Moth 2'])
-    const copy = loadProjects().find((project) => project.name === 'Moth 2')!
-    expect(copy.rowProgress.currentRow).toBe(2)
     await openPanel(wrapper, 'strip-project')
     expect(text(wrapper, 'project-name')).toBe('Moth 2')
   })
 
-  it('clears this Project from its own item, after the usual confirmation, and keeps the Project', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-project')
-    expect(text(wrapper, 'project-clear')).toBe(en.panels.project.clear)
-
-    await wrapper.get('[data-testid="project-clear"]').trigger('click')
-    await flushPromises()
-    expect(wrapper.find('[data-testid="delete-all-modal"]').exists()).toBe(true)
-    await wrapper.get('[data-testid="confirm-modal-confirm"]').trigger('click')
-    await flushPromises()
-
-    expect(loadProjects()).toHaveLength(1)
-    expect(Object.keys(loadProjects()[0]!.beads)).toHaveLength(0)
-  })
-
-  it('deletes after a confirmation naming the Project, and lands on the empty state', async () => {
+  it('deletes after a confirmation naming the Project, and lands on the empty state; Cancel keeps it', async () => {
     saveProjects([moth(), { ...moth(), id: 'other', name: 'Other' }])
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-project')
     const open = text(wrapper, 'project-name')
-
     await wrapper.get('[data-testid="project-delete"]').trigger('click')
     await flushPromises()
-    const modal = wrapper.get('[data-testid="delete-project-modal"]')
-    expect(modal.text()).toContain(`Delete ${open}?`)
-    expect(modal.text()).toContain('Export it first')
-
+    expect(text(wrapper, 'delete-project-modal')).toContain(`Delete ${open}?`)
     await wrapper.get('[data-testid="confirm-modal-cancel"]').trigger('click')
     expect(loadProjects()).toHaveLength(2)
 
@@ -399,31 +173,6 @@ describe('Project', () => {
     await flushPromises()
 
     expect(loadProjects()).toHaveLength(1)
-    expect(wrapper.find('[data-testid="project-surface"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="phone-bar-new-project"]').exists()).toBe(true)
-  })
-
-  it('holds the Canvas color, which left the strip, and has no Frame Edit, Fit or Remove', async () => {
-    const wrapper = mountApp()
-    expect(wrapper.find('[data-testid="canvas-color-button"]').exists()).toBe(false)
-    await openPanel(wrapper, 'strip-project')
-
-    await wrapper.get('[data-testid="canvas-color-linen"]').trigger('click')
-    expect(localStorage.getItem('openbeads:canvas-background-2')).toBe('2')
-    for (const gone of ['frame-edit', 'frame-fit', 'frame-remove']) expect(wrapper.find(`[data-testid="${gone}"]`).exists()).toBe(false)
-  })
-
-  it('sets the Maker\'s name from the row onto this Project', async () => {
-    const wrapper = mountApp()
-    await openPanel(wrapper, 'strip-project')
-
-    await wrapper.get('[data-testid="project-maker-add"]').trigger('click')
-    await flushPromises()
-    await wrapper.get('[data-testid="project-maker-input"]').setValue('Maria')
-    await wrapper.get('[data-testid="project-maker-form"]').trigger('submit')
-    await flushPromises()
-
-    expect(loadProjects()[0]!.makerName).toBe('Maria')
   })
 })

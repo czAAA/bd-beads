@@ -98,6 +98,12 @@ describe('the device preferences', () => {
     createDevicePreferences(storage).get('theme').value = 'device'
     expect(storage.data.has('openbeads:theme')).toBe(false)
   })
+
+  it('forgets the saved Tool pill edge when it is moved back to the bottom', () => {
+    const storage = memory({ 'openbeads:tool-pill-position': 'right' })
+    createDevicePreferences(storage).get('toolPillPosition').value = 'bottom'
+    expect(storage.data.has('openbeads:tool-pill-position')).toBe(false)
+  })
 })
 
 describe('the canvas background preference, from the first list (ticket 554)', () => {

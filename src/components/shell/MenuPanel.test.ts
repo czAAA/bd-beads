@@ -72,13 +72,12 @@ describe('MenuPanel (ticket 443)', () => {
     expect(localStorage.getItem('openbeads:locale')).toBe('pl')
   })
 
+  // How a theme is stored, Match device as none, is devicePreferences'.
   it('applies a theme at once and remembers it on this device', async () => {
     const wrapper = mountIn()
     await choosePanelOption(wrapper, 'theme-picker', 'dark')
     expect(document.documentElement.dataset.theme).toBe('dark')
     expect(localStorage.getItem('openbeads:theme')).toBe('dark')
-    await choosePanelOption(wrapper, 'theme-picker', 'device')
-    expect(localStorage.getItem('openbeads:theme')).toBeNull()
   })
 
   it('has a Buy me a coffee row opening the Coffee link in a new tab', () => {
@@ -101,15 +100,11 @@ describe('MenuPanel (ticket 443)', () => {
     expect(panel.emitted('update:toolsPosition')).toEqual([['left']])
   })
 
-  it('folds a section shut and remembers it on this device', async () => {
+  // Folding and remembering is PanelSection's; the Menu names each section for it.
+  it('folds a section shut, remembered under the Menu\'s own name for it', async () => {
     const wrapper = mountIn()
-    const header = wrapper.get('[aria-expanded]')
-    expect(header.attributes('aria-expanded')).toBe('true')
-    await header.trigger('click')
-    expect(wrapper.find('[data-testid="menu-new-project"]').exists()).toBe(false)
+    await wrapper.get('[aria-expanded]').trigger('click')
     expect(localStorage.getItem('openbeads:panel-sections-closed')).toBe('menu:projects')
-    wrapper.unmount()
-    expect(mountIn().find('[data-testid="menu-new-project"]').exists()).toBe(false)
   })
 })
 

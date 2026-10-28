@@ -100,6 +100,18 @@ describe('usePaintStroke', () => {
     expect(at(1, 1)).toBeNull()
   })
 
+  it('erases just the pressed bead under the Eraser, not its same-color neighbours, as one undo step', () => {
+    const { stroke, harness, at, frame } = setup('erase')
+    harness.edit('drawing', (project) => paintAt(project, [{ row: frame.row, column: frame.column }, { row: frame.row, column: frame.column + 1 }], '#00ff00'))
+
+    stroke.beginOrCommitPress('erase', null, frame.row, frame.column)
+    stroke.endStroke()
+    expect([at(0, 0), at(0, 1)]).toEqual([null, '#00ff00'])
+
+    harness.history.onUndo()
+    expect(at(0, 0)).toBe('#00ff00')
+  })
+
   it('flood-erases the connected region in one click under Fill, as one undo step', () => {
     const { stroke, harness, at, frame } = setup('fill')
     stroke.beginOrCommitPress('paint', '#00ff00', frame.row, frame.column)
