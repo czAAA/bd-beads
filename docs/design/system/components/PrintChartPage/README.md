@@ -91,7 +91,6 @@ The beads follow the canvas drawing (ticket 0585). The letters, rulers, key and 
 - **Round beads**: a circle 2.6 mm across, centred in its 3 mm cell, filled, with a 0.1 mm `line-strong` edge so a White bead shows. There are no lines between cells; the 5th and 10th lines run in the gaps between the circles. An empty position draws nothing.
 - **Brick stitch**: every other row is offset by half a bead, as on the canvas. The cells are squares with their cell lines. The 5th and 10th lines across the rows are straight; the ones down the columns step with each row's offset. Column numbers sit over the first row's beads. No outer edge line: the outermost cell lines are the edge.
 - **Peyote**: the same, with every other column offset half a bead down. The lines down the columns are straight; the ones across step with each column. Row numbers sit beside the first column's beads.
-- **Units** (Right-angle weave, Netting): each Unit's beads are drawn as on the canvas, each with its letter; the rulers count Units.
 - **A Custom frame** (ticket 0594): the parts tile its bounding rectangle as for any Frame. Each bead is drawn at its centre, turned to its panel's angle, filled, with a 0.1 mm `line-strong` edge (round beads as circles), its letter upright at its centre; an empty position is outlined 0.1 mm `faint` so the shape reads; the Seams are 0.18 mm `field-line` lines. A bead belongs to the part its centre falls in. There are no cell lines, no 5th or 10th lines and no rulers: its beads keep no rows and columns.
 
 ## Shared sheets
