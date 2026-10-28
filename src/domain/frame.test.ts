@@ -1,24 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from './canvas'
-import { fitToDrawing, frameFromCells, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow } from './frame'
+import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapRow } from './frame'
 
-describe('frameFromCells', () => {
-  it('covers the beads from one corner to the other, whichever way the drag went', () => {
-    const down = frameFromCells({ technique: 'loom' }, { row: 2, column: 3 }, { row: 5, column: 9 })
-    expect(down).toEqual({ row: 2, column: 3, rows: 4, columns: 7 })
-    expect(frameFromCells({ technique: 'loom' }, { row: 5, column: 9 }, { row: 2, column: 3 })).toEqual(down)
-    expect(frameFromCells({ technique: 'loom' }, { row: 5, column: 3 }, { row: 2, column: 9 })).toEqual(down)
-  })
-
-  it('is one bead when the drag never left the bead it started on', () => {
-    expect(frameFromCells({ technique: 'loom' }, { row: -4, column: 7 }, { row: -4, column: 7 })).toEqual({ row: -4, column: 7, rows: 1, columns: 1 })
-  })
-
+describe('snapRow', () => {
   it('starts on an even row where rows alternate, reaching one row up rather than losing a row', () => {
-    expect(frameFromCells({ technique: 'peyote' }, { row: 3, column: 0 }, { row: 6, column: 4 })).toEqual({ row: 2, column: 0, rows: 5, columns: 5 })
-    expect(frameFromCells({ technique: 'brick' }, { row: -3, column: 0 }, { row: 0, column: 0 })).toEqual({ row: -4, column: 0, rows: 5, columns: 1 })
     expect(snapRow({ technique: 'loom' }, 3)).toBe(3)
+    expect(snapRow({ technique: 'peyote' }, 3)).toBe(2)
     expect(snapRow({ technique: 'peyote' }, -1)).toBe(-2)
+    expect(snapRow({ technique: 'brick' }, -3)).toBe(-4)
   })
 })
 
@@ -152,7 +141,6 @@ describe('a Brick block (ticket 477)', () => {
     expect(snapRow(block2, 4)).toBe(4)
     expect(snapRow(block2, -1)).toBe(-4)
     expect(snapRow(block3, 11)).toBe(6)
-    expect(frameFromCells(block2, { row: 5, column: 0 }, { row: 9, column: 2 })).toEqual({ row: 4, column: 0, rows: 6, columns: 3 })
   })
 
   it('leaves a Brick block of 1 going by pairs, and peyote and loom as they were', () => {
@@ -190,9 +178,8 @@ describe('the Frame in Right-angle weave holds whole Units (ticket 482)', () => 
   const weave = { technique: 'rightAngle' as const }
   const frame = { row: 4, column: 3, rows: 7, columns: 5 }
 
-  it('starts on a line of horizontal beads and ends on one, at least a Unit across and down', () => {
-    expect(frameFromCells(weave, { row: 3, column: 1 }, { row: 8, column: 4 })).toEqual({ row: 2, column: 1, rows: 7, columns: 4 })
-    expect(frameFromCells(weave, { row: 2, column: 2 }, { row: 2, column: 2 })).toEqual({ row: 2, column: 2, rows: 3, columns: 2 })
+  it('keeps at least a Unit across and down', () => {
+    expect(frameWithEdges(weave, frame, ['bottom', 'right'], { row: 0, column: 0 })).toEqual({ ...frame, rows: 3, columns: 2 })
   })
 
   it('drags an edge to the nearest whole Unit', () => {
@@ -227,9 +214,8 @@ describe('the Frame in Netting holds whole diamonds (ticket 485)', () => {
   // Net size 3: a diamond is 4 positions across and down.
   const frame = { row: 8, column: 4, rows: 9, columns: 9 }
 
-  it('starts on a diamond across and down, and ends on one, at least a diamond each way', () => {
-    expect(frameFromCells(weave, { row: 9, column: 5 }, { row: 14, column: 9 })).toEqual({ row: 8, column: 4, rows: 7, columns: 9 })
-    expect(frameFromCells(weave, { row: 2, column: 2 }, { row: 2, column: 2 })).toEqual({ row: 0, column: 0, rows: 5, columns: 5 })
+  it('keeps at least a diamond each way', () => {
+    expect(frameWithEdges(weave, frame, ['bottom', 'right'], { row: 0, column: 0 })).toEqual({ ...frame, rows: 5, columns: 5 })
   })
 
   it('drags an edge to the nearest whole diamond', () => {

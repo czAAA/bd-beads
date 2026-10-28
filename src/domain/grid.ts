@@ -11,11 +11,6 @@ export type SizeUnit = 'beads' | PhysicalUnit
 // Project.rotation: the grid never turns, only its on-screen (and printed/exported) presentation.
 export type Rotation = 0 | 90 | 180 | 270
 
-/** The next quarter-turn clockwise, wrapping from 270° back to 0° (Rotate: ticket 171). */
-export function nextRotation(rotation: Rotation): Rotation {
-  return ((rotation + 90) % 360) as Rotation
-}
-
 // Whether this rotation swaps which grid axis runs across the screen: true for a quarter turn either way (90°/270°),
 // false for 0°/180°. The rule every on-screen axis mapping shares (Estimated size, Row direction, the Frame's
 // Width and Height).
@@ -84,8 +79,11 @@ export function positionKey(position: GridPosition): string {
   return `${position.row},${position.column}`
 }
 
-/** The Zoom floor (ADR 0033): the same on every screen. */
+/** The Zoom floor (ADR 0033): the same on every screen.
+ * @internal Tests zoom to the floor. */
 export const MIN_ZOOM = 0.1
+/** The Zoom ceiling, the same on every screen.
+ * @internal Tests zoom to the ceiling. */
 export const MAX_ZOOM = 4
 const ZOOM_STEP = 0.1
 /** The Zoom range as the whole percents the level label and the buttons' disabled states compare against. */

@@ -651,7 +651,8 @@ export function rowOffset(weave: Weave, rowIndex: number, cellSize: number): num
   return isShiftedRow(weave, rowIndex) ? cellSize * SHIFT : 0
 }
 
-/** Total grid width, including the extra half-cell an offset technique's shifted rows take up. */
+/** Total grid width, including the extra half-cell an offset technique's shifted rows take up.
+ * @internal Tests check a Technique's width on its own. */
 export function gridWidth(technique: Technique, columns: number, cellSize: number): number {
   return columns * cellSize + (RULES[technique].shifted ? cellSize * SHIFT : 0)
 }
@@ -663,7 +664,8 @@ export function rowPitch(technique: Technique, cellSize: number): number {
   return cellSize * RULES[technique].rowPitch
 }
 
-/** Total grid height, accounting for peyote's tighter row packing. */
+/** Total grid height, accounting for peyote's tighter row packing.
+ * @internal Tests check a Technique's height on its own. */
 export function gridHeight(technique: Technique, rows: number, cellSize: number): number {
   if (rows === 0) {
     return 0
@@ -683,13 +685,14 @@ export function positionStep(weave: Weave): { across: number; down: number } {
 }
 
 /** A point inside a grid's own footprint, in whatever unit the cell size was given in. */
-export interface CellCenter {
+interface CellCenter {
   x: number
   y: number
 }
 
 /** Where a cell's centre sits from the grid's top-left, in the unit of the cell size passed (real mm for a Bead's
- * footprint, ticket 58, ADR 0010), using the Technique's real shift and row pitch. */
+ * footprint, ticket 58, ADR 0010), using the Technique's real shift and row pitch.
+ * @internal Tests check where a Technique puts a cell on its own. */
 export function cellCenter(
   weave: Weave,
   { row, column }: GridPosition,

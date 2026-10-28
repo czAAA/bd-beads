@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
-import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { createProjectViaForm, mountWithProject } from './testUtils/seedProject'
 import { pressBar, copySelection, pickColor, pickTool, selectAll } from './testUtils/pill'
+import { frameGrid } from './testUtils/frameGrid'
 
 beforeEach(() => {
   localStorage.clear()

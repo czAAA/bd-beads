@@ -8,11 +8,13 @@ import { OPEN_SPACE } from '../../rendering/space'
 import { surfaceView, type Scroll, type Size, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
 
 /** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and
- * BeadBoard cards). */
+ * BeadBoard cards).
+ * @internal Its test works out the fit zoom with it. */
 export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
 
 /** The block of beads a view fits to and centres on: the Frame when there is one, otherwise the box round every
- * bead, otherwise nothing. */
+ * bead, otherwise nothing.
+ * @internal Its test checks what a view fits to on its own. */
 export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Frame | undefined {
   return project.frame ?? beadBounds(project.beads)
 }

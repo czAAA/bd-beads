@@ -4,9 +4,10 @@ import { gzipJson } from '../../testUtils/gzipJson'
 import { mount } from '@vue/test-utils'
 import ProjectImport from './ProjectImport.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, type Project, frameGrid } from '../../domain/project'
+import { createProject, type Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { serializeLibrary, serializeProject } from '../../domain/projectFile'
+import { frameGrid } from '../../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 

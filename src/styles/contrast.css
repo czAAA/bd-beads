@@ -69,7 +69,7 @@
     outline-offset: 2px;
   }
 
-  html:root :is(.app-shell__canvas, .app-modal, .app-menu__list, .app-message) {
+  html:root :is(.app-shell__canvas, .app-modal, .menu-button__list, .app-message) {
     border: 1px solid CanvasText;
   }
 }

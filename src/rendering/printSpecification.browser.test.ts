@@ -9,13 +9,18 @@ import { ru } from '../i18n/ru'
 import { uk } from '../i18n/uk'
 import { zh } from '../i18n/zh'
 import { font, loadPrintFonts, MONO } from './printPages'
-import { A4_PORTRAIT, planPrint } from './printPlan'
+import { A4_PORTRAIT, mm, planPrint } from './printPlan'
 import { printText } from './printText'
-import { drawSpecificationPage, SPEC_HEAD_ROOM, SPEC_LABEL_ROOM } from './printSpecification'
+import { drawSpecificationPage, SPEC_LABEL_ROOM } from './printSpecification'
 import type { Locale, Translations } from '../i18n/translations'
 
 // The Specification page drawn for real (ticket 0581): the size of the page, and the labels fit their room in every
 // language.
+
+/** The room a column head has: two heads side by side share the 18 mm code column and the 22 mm beads column, so each
+ * gets half. */
+const HEAD_ROOM = mm(20)
+
 describe('Specification page', () => {
   it('is one A4 page', async () => {
     await loadPrintFonts()
@@ -36,7 +41,7 @@ describe('Specification page', () => {
       expect(width(label), label).toBeLessThanOrEqual(SPEC_LABEL_ROOM)
     }
     for (const head of [print.columnLetter, print.columnColor, print.columnCode, print.columnBeads, print.columnGrams, print.columnToBuy]) {
-      expect(width(head), head).toBeLessThanOrEqual(SPEC_HEAD_ROOM)
+      expect(width(head), head).toBeLessThanOrEqual(HEAD_ROOM)
     }
   })
 })

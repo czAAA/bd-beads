@@ -57,6 +57,9 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `storageWrites.ts`: count localStorage writes, or make one fail.
 - `sharedPage.ts`: what the setup resets before each `page` file, and its never-repeating clock.
 - `rotated.ts`: a ready-made rotated Project.
+- `frameGrid.ts`: `frameGrid` reads a Project's beads as a dense grid of rows and columns, the shape an expectation is written in, and `withFrameGrid` puts one back (ticket 0609).
+
+App code holds only what the app uses (ticket 0609): `npm run knip`'s second run, `knip --production`, leaves the tests and these helpers out and fails on a file or export only a test reaches. A fixture builder belongs here, not in `src/`. An export the app keeps that a test also names on purpose (a limit it counts with, a step it drives on its own, a reset hook) is tagged `@internal` in its doc comment with the reason, and that run leaves it out.
 
 `src/testSetup.ts` runs before every `page` test file: it empties the module cache and re-arms auto-unmount, which the library only lets be armed once. `testUtils/sharedPage.ts`'s `resetSharedPage` empties what the last file left on the page: the body, styles, `<html>`'s `class`, `style` and `lang`, the title, both storages, and puts back the default `matchMedia` (a desk with a mouse, so key chips show) over any a file assigned. So each file starts in English and with the default key-hint state, as if it ran first (ticket 0608).
 
@@ -72,7 +75,7 @@ Deleting a test that repeats a lower level (ticket 0599) loses nothing only when
 
 ## The Worker's tests
 
-`worker/test/*.test.ts` (ticket 71) are their own Vitest project (`worker`, in `vite.config.ts`), run in Node by the same `vitest run`. They start the real Worker in workerd through Miniflare 4, configured from the repo's own `wrangler.jsonc` for dev or production (`worker/test/harness.ts`), with local D1 and R2, and drive it black-box over HTTP and its `scheduled()` entry. Outbound calls (Turnstile, GraphQL Analytics, Healthchecks.io) are caught by the harness and answered by the test. `worker/test/fixtureWorker.ts` is the deployed Worker plus routes and a daily hook that exist only for the tests (the guards and blob stores have no caller until the feature tickets); never deployed.
+`worker/test/*.test.ts` (ticket 71) are their own Vitest project (`worker`, in `vite.config.ts`), run in Node by the same `vitest run`. They start the real Worker in workerd through Miniflare 4, configured from the repo's own `wrangler.jsonc` for dev or production (`worker/test/harness.ts`), with local D1 and R2, and drive it black-box over HTTP and its `scheduled()` entry. Outbound calls (Turnstile, GraphQL Analytics, Healthchecks.io) are caught by the harness and answered by the test. `worker/test/fixtureWorker.ts` is the deployed Worker plus routes and a daily hook that exist only for the tests (the guards and blob stores have no caller until the feature tickets); never deployed. Until ticket 0078 gives them a caller, `knip --production` takes the guards, body reader, blob stores and the fixture Worker as entries of their own (`knip.jsonc`), so they are not reported as test-only; 0078 removes that.
 
 - **Seam 1** (`api.test.ts`): requests in, responses out: health, an unknown path, kill switches, the Origin check, Turnstile with Cloudflare's dummy keys, size caps, the blob storage limit, rate limits through Miniflare's own Rate Limiting binding, both blob stores, no CORS, static assets.
 - **Seam 2** (`watchdog.test.ts`): the Cron Trigger's run: success and `/fail` pings, dev's and production's levels, what each counts, a reader that fails, the daily hook.

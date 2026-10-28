@@ -1,4 +1,4 @@
-import { beadColorAt, frameGrid, projectDimensions, rowProgressOn } from '../domain/project'
+import { beadColorAt, projectDimensions, rowProgressOn } from '../domain/project'
 import type { VueWrapper } from '@vue/test-utils'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
@@ -7,6 +7,7 @@ import type { Selection } from '../domain/selection'
 import { OPEN_SPACE } from '../rendering/space'
 import type { RulerLabel } from '../rendering/rulers'
 import { surfaceView } from '../rendering/surfaceView'
+import { frameGrid } from './frameGrid'
 
 // Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109, 110). jsdom does no layout, so
 // a bead is found by its coordinates and hit-tested as for a real pointer (Surface view's pointToBead); results are

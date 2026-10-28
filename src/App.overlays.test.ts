@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { drawnProject, pressBead } from './testUtils/beads'
 import { openPanel } from './testUtils/pill'
-import { frameGrid } from './domain/project'
+import { frameGrid } from './testUtils/frameGrid'
 
 /** Ticket 449, ADR 0061: the first press outside an open overlay only closes it, never draws. Stack and exemptions:
  * `useOverlayLayer.dom.test.ts`. */

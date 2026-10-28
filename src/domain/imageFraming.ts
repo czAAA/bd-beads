@@ -42,7 +42,8 @@ export function frameSizeMm(
 }
 
 /** Millimetres per source pixel at the smallest scale that still covers the frame (the framing step's 100%);
- * a smaller picture is upscaled by this. */
+ * a smaller picture is upscaled by this.
+ * @internal Its test checks the framing step's 100% on its own. */
 export function coverScaleMm(image: ImageSize, frame: FrameSizeMm): number {
   return Math.max(frame.widthMm / image.width, frame.heightMm / image.height)
 }
@@ -97,15 +98,18 @@ export function framingView(
   }
 }
 
-/** Most bead cells the framing preview renders. High zoom reaches far past the frame (800% is 64x the beads), so the
- * surround shrinks evenly to fit; the frame is always whole. Kept since ticket 104 (canvas): redrawn on every drag
- * move. */
+/** Most bead cells the framing preview renders, redrawn on every drag move (ticket 104). High zoom reaches far past the
+ * frame (800% is 64x the beads), so the surround shrinks evenly to fit; the frame is always whole.
+ * @internal Its test checks the preview stays under it. */
 export const PREVIEW_MAX_CELLS = 12000
 
 /** Per-Technique slow-framing warning thresholds for the New Project form (ticket 61): the frame's own grid size
- * (not the margin). Three constants though equal, since no profiling shows techniques differ, so one can move alone. */
+ * (not the margin). Three constants though equal, since no profiling shows techniques differ, so one can move alone.
+ * @internal Its test checks the warning starts there. */
 export const LOOM_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
+/** @internal Its test checks the warning starts there. */
 export const PEYOTE_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
+/** @internal Its test checks the warning starts there. */
 export const BRICK_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
 
 /** The three per-Technique thresholds above, keyed by Technique — isSlowFramingSize's default, overridable in tests. */

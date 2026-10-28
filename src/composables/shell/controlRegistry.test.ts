@@ -2,7 +2,34 @@ import { describe, expect, it } from 'vitest'
 import { en } from '../../i18n/en'
 import { ru } from '../../i18n/ru'
 import { actionKey } from '../../components/ui/controlAction'
-import { CONTROLS, chordSlots, controlAction } from './controlRegistry'
+import type { Chord } from '../../domain/chord'
+import { CONTROLS, chordMatches, controlAction } from './controlRegistry'
+
+interface Press {
+  key?: string
+  code?: string
+  ctrlKey?: boolean
+  metaKey?: boolean
+  shiftKey?: boolean
+}
+
+/** A key press as the shortcut table reads it: only these fields. */
+function press(fields: Press): KeyboardEvent {
+  return { key: '', code: '', ctrlKey: false, metaKey: false, shiftKey: false, altKey: false, ...fields } as KeyboardEvent
+}
+
+/** Every distinct key press a chord is written to answer: each modifier, Shift state and key it lists. */
+function pressesOf(chord: Chord): KeyboardEvent[] {
+  const modifiers: Press[] = chord.mod ? [{ ctrlKey: true }, { metaKey: true }] : chord.ctrl ? [{ ctrlKey: true }] : [{}]
+  const shifts = chord.shift === 'any' ? [false, true] : [!!chord.shift]
+  const keys: Press[] = chord.code !== undefined ? [{ code: chord.code }] : (typeof chord.key === 'string' ? [chord.key] : (chord.key ?? [])).map((key) => ({ key }))
+  return modifiers.flatMap((modifier) => shifts.flatMap((shiftKey) => keys.map((key) => press({ ...modifier, shiftKey, ...key }))))
+}
+
+/** The actions the shortcut table would run for a press. */
+function answering(event: KeyboardEvent): string[] {
+  return CONTROLS.filter((control) => control.chords.some((chord) => chordMatches(chord, event))).map((control) => control.id)
+}
 
 describe('the control registry', () => {
   it('has Rotate canvas and Rotate Frame, both without a key (ticket 471)', () => {
@@ -10,28 +37,24 @@ describe('the control registry', () => {
       expect(CONTROLS.filter((control) => control.id === id)).toHaveLength(1)
       expect(controlAction(id).chords).toEqual([])
     }
-    expect(controlAction('rotate').chords.flatMap(chordSlots)).toContain('+shift+r')
+    expect(answering(press({ key: 'R', shiftKey: true }))).toEqual(['rotate'])
   })
 
-  it('has no two actions that declare the same key or combination', () => {
-    const owner = new Map<string, string>()
+  it('has no two actions that answer the same key or combination', () => {
     const clashes: string[] = []
     for (const control of CONTROLS) {
-      for (const slot of control.chords.flatMap(chordSlots)) {
-        const other = owner.get(slot)
-        if (other !== undefined && other !== control.id) clashes.push(`${slot}: ${other} and ${control.id}`)
-        owner.set(slot, control.id)
+      for (const event of control.chords.flatMap(pressesOf)) {
+        const ids = answering(event)
+        if (ids.length > 1) clashes.push(`${JSON.stringify(event)}: ${ids.join(' and ')}`)
       }
     }
     expect(clashes).toEqual([])
   })
 
-  it('catches a clash, shifted or not, between modifier-sensitive keys', () => {
+  it('counts a modifier-sensitive key shifted or not, and Ctrl or Cmd, as one action\'s', () => {
     // Zoom takes Ctrl/Cmd+= with or without Shift: a second action on Ctrl+Shift+= would clash.
-    const zoomIn = CONTROLS.find((control) => control.id === 'zoom-in')!
-    const slots = zoomIn.chords.flatMap(chordSlots)
-    expect(slots).toContain('ctrl+shift+=')
-    expect(slots).toContain('meta++=')
+    expect(answering(press({ key: '=', ctrlKey: true, shiftKey: true }))).toEqual(['zoom-in'])
+    expect(answering(press({ key: '=', metaKey: true }))).toEqual(['zoom-in'])
   })
 
   it('defines each action once, with a name in English and Russian', () => {

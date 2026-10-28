@@ -26,9 +26,11 @@ export function packLibraryFile(projects: Project[]): Promise<Uint8Array<ArrayBu
 
 // Limits on a picked file (ticket 469), against a crafted "gzip bomb" (real files are tiny, ADR 0048): over 25 MB is
 // refused unread, and unpacking aborts, counting streamed bytes, past 100 MB.
-/** The largest picked file read at all. */
+/** The largest picked file read at all.
+ * @internal Its test tries a file just over the cap. */
 export const MAX_FILE_BYTES = 25 * 1024 * 1024
-/** The most a gzip may unpack to before reading aborts. */
+/** The most a gzip may unpack to before reading aborts.
+ * @internal Its test tries a gzip that unpacks just over the cap. */
 export const MAX_UNPACKED_BYTES = 100 * 1024 * 1024
 
 async function unpack(bytes: Uint8Array<ArrayBuffer>): Promise<Uint8Array<ArrayBuffer>> {

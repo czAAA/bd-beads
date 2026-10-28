@@ -248,9 +248,9 @@ export function kaleidocycleLayout(partSize: number): FrameLayout {
   })
 }
 
-/** A Kite row's single beads on each wing, besides its half of the centre pair (inferred: the reference gives no counts):
- * two rows of the pair alone, then a bead more a row to the widest row a fifth of the way down, and a bead fewer every
- * fourth row to a pair at the tail, so the edges above the widest row are short and those below long, as on a kite. */
+/** A Kite row's single beads a wing, besides its half of the centre pair (inferred; the reference gives no counts): two
+ * rows of the pair alone, a bead more a row to the widest row a fifth down, a bead fewer every fourth row to the tail.
+ * @internal Tests check the Kite's wing counts row by row. */
 export function kiteWingBeads(row: number, rows: number): number {
   // Growing a bead a row for a fifth of the rows and shrinking one every fourth row for the rest ends on the pair.
   const widest = Math.max(1, Math.floor((rows + KITE_SHRINK_EVERY - 1) / (KITE_SHRINK_EVERY + 1)))

@@ -2,11 +2,12 @@ import { findBead } from '../domain/beads'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { withColors } from '../domain/canvas'
-import { createProject, weaveOf, withFrameGrid, type Grid, type Project, type Technique } from '../domain/project'
+import { createProject, weaveOf, type Grid, type Project, type Technique } from '../domain/project'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, projectExtentPx, rowPitchPx, rowShiftPx, rowTopPx, type Region } from './surfaceView'
+import { withFrameGrid } from '../testUtils/frameGrid'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {

@@ -1,7 +1,8 @@
 import { shallowRef, watch, type Ref } from 'vue'
 import type { Project } from '../../domain/project'
 
-/** How often, while a stroke is going on, what only summarises the Project looks at it again. */
+/** How often, while a stroke is going on, what only summarises the Project looks at it again.
+ * @internal Its test advances the clock by it. */
 export const SUMMARY_INTERVAL_MS = 250
 
 // The open Project as summaries should see it (ticket 106): itself when idle, and during a stroke only every 250 ms,

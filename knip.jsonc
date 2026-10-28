@@ -1,13 +1,32 @@
-// knip (ticket 311): unused files, exports and dependencies. `npm run knip` runs in CI's "Typecheck and lint" job.
-// A test that reads an export counts as a use, so test-only code is found by hand, not by this run.
+// knip (ticket 311): unused files, exports and dependencies. `npm run knip` runs two runs, in CI's "Typecheck and lint"
+// job and in `npm run check`:
+// 1. `knip`: the whole repo, tests included, so a test that reads an export counts as a use.
+// 2. `knip --production` (ticket 0609): the app alone, from the entries and project files marked `!`, with tests and
+//    their helpers left out. It fails on a file or export only tests reach: delete it, or move a fixture builder into
+//    the test helpers. An export the app keeps and tests also name on purpose (a limit a test counts with, a step a
+//    test drives on its own) is tagged `@internal` in its doc comment, with the reason; this run leaves those out.
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
   // The Vite config's two pages (the editor and the Overview, ADR 0040) are the app's entries; Vitest and Playwright
   // entries come from their plugins. These are the helpers those find no importer for, and the
   // test-only Worker its harness bundles (knip finds the Worker itself through wrangler.jsonc). browserSetup.ts is the
   // browser project's setup file, which a machine without Chromium (CI's check job) leaves out of the Vitest config.
-  "entry": ["index.html", "overview/index.html", "src/browserSetup.ts", "src/testUtils/*.ts", "e2e/support/*.ts", "worker/test/fixtureWorker.ts"],
-  "project": ["src/**/*.{ts,vue}", "e2e/**/*.ts", "worker/**/*.ts", "*.ts"],
+  // Until ticket 0078 the Worker's guards, body reader and blob stores have no caller but the fixture Worker
+  // (docs/testing.md, the Worker's tests), so the production run takes those and the fixture Worker as entries of
+  // their own. 0078 gives them their caller and removes the `!` from the fixture Worker and the three entries after it.
+  "entry": [
+    "index.html!",
+    "overview/index.html!",
+    "src/browserSetup.ts",
+    "src/testUtils/*.ts",
+    "e2e/support/*.ts",
+    "worker/test/fixtureWorker.ts!",
+    "worker/src/guards.ts!",
+    "worker/src/body.ts!",
+    "worker/src/blobs.ts!"
+  ],
+  // `src/testSetup.ts` is the `page` tests' setup file, which the production run does not know as one.
+  "project": ["src/**/*.{ts,vue}!", "!src/testSetup.ts!", "e2e/**/*.ts", "worker/src/**/*.ts!", "worker/**/*.ts", "*.ts"],
   "rules": {
     // Deliberate aliases: the three per-Technique slow-framing thresholds (imageFraming.ts), DEFAULT_THEME (beadLook.ts).
     "duplicates": "off"
