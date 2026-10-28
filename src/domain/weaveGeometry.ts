@@ -65,6 +65,13 @@ export interface CellCenter {
   y: number
 }
 
+/** The rows of positions in view, and the columns in view on each. */
+export interface VisiblePositions {
+  firstRow: number
+  lastRow: number
+  columnsOf(row: number): { first: number; last: number }
+}
+
 /** The settings a geometry reads, already resolved for the Technique: 1 and the default where they don't apply. */
 export interface GeometrySettings {
   brickBlock: number
@@ -93,12 +100,27 @@ export interface WeaveGeometry {
   orientationAt(position: GridPosition): Orientation
   /** The rectangle a position's bead takes, in the unit of the cell size passed (px, or mm of a Bead). */
   box(position: GridPosition, cellWidth: number, cellHeight: number): Box
+  /** How far a row's beads sit across from an unshifted row's: its shift where rows shift, 0 everywhere else. */
+  rowOffset(row: number, cellWidth: number): number
   /** The size of a block of positions, rows and columns counted in positions. */
   blockExtent(columns: number, rows: number, cellWidth: number, cellHeight: number): { width: number; height: number }
-  /** The position whose bead covers a point of the grid, or undefined between beads; only where beads aren't laid on
-   * rows (Units). */
-  positionAt(x: number, y: number, cellWidth: number, cellHeight: number): GridPosition | undefined
-  /** The position whose bead is nearest a point of the grid, gaps included; only where beads aren't laid on rows. */
+  /** The rectangle a block of positions takes, from the grid's top-left: on rows its rows' lattice, with the room a
+   * shifted row takes on the right, whichever rows it holds; elsewhere its beads' box. What a Frame's line goes round. */
+  blockBox(block: Rect, cellWidth: number, cellHeight: number): Box
+  /** The line between a block's positions and the ones round it (ticket 0623): elsewhere its beads' box; on rows half a
+   * row pitch round its first and last rows' middles, its columns a quarter bead right, between a shifted row's cells
+   * and an unshifted one's. Where Position marks stop round a Frame's margin. */
+  boundary(block: Rect, cellWidth: number, cellHeight: number): Box
+  /** The size of what is counted: a bead where beads are counted, a Unit's square or diamond where Units are. */
+  unitSize(cellWidth: number, cellHeight: number): { width: number; height: number }
+  /** Where a ruler marks a Unit, from its top-left: a bead's centre where beads are counted, the middle of a Unit's
+   * step across and down where Units are. */
+  unitMiddle(cellWidth: number, cellHeight: number): CellCenter
+  /** The position whose bead covers a point of the grid, or undefined between beads. Where beads overlap (rows nest)
+   * the one drawn last wins, of the rows and columns of `within` when given (a block from row 0, column 0); where they
+   * don't, the bead found is the only one there, and the caller checks it is inside. */
+  positionAt(x: number, y: number, cellWidth: number, cellHeight: number, within?: GridDimensions): GridPosition | undefined
+  /** The position whose bead is nearest a point of the grid, gaps included. */
   nearestPosition(x: number, y: number, cellWidth: number, cellHeight: number): GridPosition
   /** How many rows of positions one step down a Unit takes: 1, 2 where lines alternate, a diamond's half height in a net. */
   rowsPerUnit: number
@@ -108,12 +130,14 @@ export interface WeaveGeometry {
   columnStep: number
   /** The last column of a Frame that starts on `left` and reaches across to `right`, so it ends on a whole Unit. */
   snapRight(left: number, right: number): number
-  /** The rows and columns of positions whose beads can touch a stretch of grid space, a little more than needed; only
-   * where beads aren't laid on rows. */
-  visible(area: { left: number; right: number; top: number; bottom: number }, cellWidth: number, cellHeight: number): { firstRow: number; lastRow: number; first: number; last: number }
-  /** The repeating tile of a Technique that counts Units: its size and the bead boxes it holds, from its top-left. */
+  /** The rows of positions whose beads can touch a stretch of grid space, and each row's columns, a little more than
+   * needed where beads aren't laid on rows. */
+  visible(area: { left: number; right: number; top: number; bottom: number }, cellWidth: number, cellHeight: number): VisiblePositions
+  /** The repeating tile of the lattice: its size and the bead boxes it holds, from its top-left. On rows a bead across
+   * and a cycle of rows down, at least two. */
   tile(cellWidth: number, cellHeight: number): { size: { width: number; height: number }; beads: Box[] }
-  /** Where a Frame's top-left position sits from the grid's top-left, in the unit of the cell size passed. */
+  /** Where a Frame's top-left position sits from the grid's top-left, in the unit of the cell size passed: on rows its
+   * bead's corner, elsewhere its Unit's. */
   origin(position: GridPosition, cellWidth: number, cellHeight: number): CellCenter
   /** Positions a block of Units takes, and back: the Units a block of positions holds. */
   positionsOf(units: GridDimensions): GridDimensions
@@ -159,6 +183,19 @@ export type GeometryStrategy<G extends GeometryRef> = (geometry: G, settings: Ge
 
 /** A value's remainder that is never negative, so lattices repeat the same way above and left of row 0. */
 export const modulo = (value: number, by: number): number => ((value % by) + by) % by
+
+/** The rectangle round a block's corner beads (where beads don't nest, every bead lies within them). A line of
+ * horizontal beads (Right-angle weave) stops a column short of the block, so its far corner is the one before. */
+export function beadsBox(geometry: Pick<WeaveGeometry, 'box' | 'orientationAt'>, { row, column, rows, columns }: Rect, cellWidth: number, cellHeight: number): Box {
+  const corners = [row, Math.min(row + 1, row + rows - 1), Math.max(row, row + rows - 2), row + rows - 1].flatMap((r) =>
+    [column, column + columns - (geometry.orientationAt({ row: r, column }) === 'sideways' && columns > 1 ? 2 : 1)].map((c) =>
+      geometry.box({ row: r, column: c }, cellWidth, cellHeight),
+    ),
+  )
+  const x = Math.min(...corners.map((box) => box.x))
+  const y = Math.min(...corners.map((box) => box.y))
+  return { x, y, width: Math.max(...corners.map((box) => box.x + box.width)) - x, height: Math.max(...corners.map((box) => box.y + box.height)) - y }
+}
 
 /** Whether a position lies inside a rectangle; anywhere when there is none. */
 export function insideBounds(bounds: Rect | undefined, position: GridPosition): boolean {

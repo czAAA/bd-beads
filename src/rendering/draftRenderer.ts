@@ -1,5 +1,6 @@
 import { channelsOf } from '../domain/color'
-import { draftCost, isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/weave'
+import { describeWeave, draftCost, type Technique } from '../domain/weave'
+import type { WeaveGeometry } from '../domain/weaveGeometry'
 import type { ProjectTheme } from './beadLook'
 
 // A coarse look for a block of beads being moved (ticket 122, ADR 0018): one flat pixel per bead stretched in a single
@@ -35,13 +36,30 @@ function channels(color: string): readonly [number, number, number] {
   return known
 }
 
-/** The beads as an image: a pixel per bead, or in peyote and brick stitch two per bead with every other row starting a
- * pixel in (half a bead aside). `colors` is one entry per bead, row by row; undefined is empty.
+/** The most pixels a bead takes across in the draft: a row shift finer than this many parts of a bead is drawn to the
+ * nearest of them. */
+const MAX_PIXELS_PER_BEAD = 8
+
+/** How close to a whole number of pixels a shift must come to count as one: a third times three is not exactly 1. */
+const WHOLE_PIXEL_TOLERANCE = 1e-9
+
+/** How many pixels a bead takes across so its row shift is a whole number of them: 1 where rows don't shift, 2 for half
+ * a bead, 3 for a third. */
+function pixelsPerBead(shift: number): number {
+  for (let wide = 1; wide < MAX_PIXELS_PER_BEAD; wide += 1) {
+    if (Math.abs(shift * wide - Math.round(shift * wide)) < WHOLE_PIXEL_TOLERANCE) {
+      return wide
+    }
+  }
+  return MAX_PIXELS_PER_BEAD
+}
+
+/** The beads as an image at the description's own row shift: as many pixels a bead as put a shifted row a whole number
+ * of them in (one for loom, two for peyote). `colors` is one entry per bead, row by row; undefined is empty.
  * @internal Its test reads the pixels on their own. */
-export function draftImage(weave: Weave, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
-  const offset = isOffsetTechnique(weave.technique)
-  const wide = offset ? 2 : 1
-  const width = columns * wide + (offset ? 1 : 0)
+export function draftImage(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, columns: number, rows: number, colors: readonly (string | undefined)[], theme: ProjectTheme): DraftImage {
+  const wide = pixelsPerBead(geometry.shift)
+  const width = columns * wide + Math.round(geometry.shift * wide)
   const data = new Uint8ClampedArray(width * rows * 4)
   const [backgroundR, backgroundG, backgroundB] = channels(theme.background)
   for (let at = 0; at < data.length; at += 4) {
@@ -52,7 +70,7 @@ export function draftImage(weave: Weave, columns: number, rows: number, colors: 
   }
 
   for (let row = 0; row < rows; row += 1) {
-    const start = isShiftedRow(weave, row) ? 1 : 0
+    const start = Math.round(geometry.rowOffset(row, wide))
     for (let column = 0; column < columns; column += 1) {
       const [r, g, b] = channels(colors[row * columns + column] ?? theme.emptyBead)
       for (let across = 0; across < wide; across += 1) {
@@ -84,7 +102,7 @@ export function renderDraft(
   },
 ): void {
   const { technique, brickBlock, columns, rows, colors, theme, bitmapWidth, bitmapHeight } = input
-  const image = draftImage({ technique, brickBlock }, columns, rows, colors, theme)
+  const image = draftImage(describeWeave({ technique, brickBlock }), columns, rows, colors, theme)
 
   scratch ??= document.createElement('canvas')
   scratch.width = image.width
