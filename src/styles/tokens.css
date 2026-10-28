@@ -239,6 +239,9 @@
   --pill-gap: 0.375rem;
   --pill-thickness: 3rem;
   --panel-width: 32.5rem;
+  --modal-large-width: 75rem;
+  --modal-large-height: 51.25rem;
+  --convert-sections-width: 27.5rem;
   --item-height: 2.125rem;
   --panel-row: 1.75rem;
   --panel-row-touch: 2.25rem;
