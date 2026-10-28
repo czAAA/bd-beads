@@ -41,7 +41,7 @@ type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Rect }
   | { kind: 'resize'; edges: FrameEdge[]; start: Rect }
 
-// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit pencil shows the handles and the strip's Frame
+// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054): the edit pencil shows the handles and the strip's Frame
 // button opens the Frame panel; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
 // Move handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
 export function useFrameFlow(deps: FrameFlowDeps) {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, shallowRef, watch, watchPostEffect } from 'vue'
+import { clamp } from '../../domain/clamp'
 import { defaultPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import type { Bead } from '../../domain/beads'
 import { CANVAS_MAX_PX, type GridDimensions } from '../../domain/grid'
@@ -277,10 +278,6 @@ const mmPerScreenPx = computed(() => {
 
 const drag = ref<{ pointerId: number; x: number; y: number; pan: PanFraction } | null>(null)
 
-function clampFraction(value: number): number {
-  return Math.min(1, Math.max(0, value))
-}
-
 // Dragging right shows more of the picture's left side, a *smaller* pan fraction (0 = the picture's left edge against
 // the frame's). An axis the picture can't move along stays put rather than dividing by a zero range.
 function onDragMove(event: PointerEvent): void {
@@ -294,8 +291,8 @@ function onDragMove(event: PointerEvent): void {
   const range = panRangeMm.value
 
   emit('pan', {
-    x: range.x === 0 ? started.pan.x : clampFraction(started.pan.x - movedXMm / range.x),
-    y: range.y === 0 ? started.pan.y : clampFraction(started.pan.y - movedYMm / range.y),
+    x: range.x === 0 ? started.pan.x : clamp(started.pan.x - movedXMm / range.x, 0, 1),
+    y: range.y === 0 ? started.pan.y : clamp(started.pan.y - movedYMm / range.y, 0, 1),
   })
 }
 

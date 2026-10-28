@@ -1,5 +1,5 @@
-import { channelsOf } from './imageColors'
-import { NO_COLOR, type ConvertedImage } from './imageConversion'
+import { channelsOf, colorDistance } from './color'
+import { NO_COLOR, unpacked, type ConvertedImage } from './imageConversion'
 import type { PreviewLattice } from './imageFraming'
 import type { GridDimensions } from './grid'
 
@@ -8,7 +8,7 @@ import type { GridDimensions } from './grid'
 // nearest color from drag start (approximatePreviewColors); at rest it is exact (exactPreviewColors).
 export type PreviewColors = (string | undefined)[]
 
-/** A memoised nearest of `colors` for a packed color, by imageColors's nearestColor's RGB distance and earlier-color
+/** A memoised nearest of `colors` for a packed color, by the same colorDistance as nearestColor and earlier-color
  * tie: a picture has far fewer distinct colors than beads, so it searches once per distinct color, not per bead.
  * @internal Its test checks it matches nearestColor. */
 export function nearestColorLookup(colors: readonly string[]): (packed: number) => string | undefined {
@@ -23,14 +23,11 @@ export function nearestColorLookup(colors: readonly string[]): (packed: number) 
       return answers.get(packed)
     }
 
-    const r = (packed >> 16) & 0xff
-    const g = (packed >> 8) & 0xff
-    const b = packed & 0xff
+    const color = unpacked(packed)
     let best: number | undefined
     let bestDistance = Infinity
     candidates.forEach((candidate, index) => {
-      // Squared, which orders distances the same way the square root does and stays exact in integers.
-      const distance = (r - candidate.r) ** 2 + (g - candidate.g) ** 2 + (b - candidate.b) ** 2
+      const distance = colorDistance(color, candidate)
       if (distance < bestDistance) {
         best = index
         bestDistance = distance

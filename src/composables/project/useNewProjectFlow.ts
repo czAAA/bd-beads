@@ -69,8 +69,8 @@ export function useNewProjectFlow(deps: NewProjectFlowDeps) {
     deps.addProject(starterProject(starter, choice))
   }
 
-  // Creates the Project the frame was holding (ticket 58): an ordinary new Project arriving painted with the Image
-  // colors (ADR 0011), from the framing preview grid. Cancel creates nothing, so it goes straight to the composable.
+  // Creates the Project the frame was holding (ticket 58): an ordinary new Project arriving painted with the colors
+  // the conversion found (ADR 0010), from the framing preview grid. Cancel creates nothing, so it goes straight to the composable.
   function onConvertImageCreate(converted: ConvertedImage) {
     const draft = framing.value?.draft
     if (!draft) {

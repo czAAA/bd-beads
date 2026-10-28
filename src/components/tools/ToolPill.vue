@@ -16,7 +16,7 @@ import ColorPopover from './ColorPopover.vue'
 import { PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// The Tool pill (ticket 439, ADR 0059; ToolPill card): the tools floating over the drawing area, replacing the Dock:
+// The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
 // grip, six tool tiles, a divider, the colour control. It docks to one of four edges (drag, or the grip's arrow keys).
 // This layer takes no pointer events itself and sits outside the canvas's zoom transform (ADR 0034).
 const props = defineProps<{

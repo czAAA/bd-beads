@@ -5,7 +5,7 @@ import type { PillPosition } from '../../domain/toolPill'
 import { useI18n } from '../../i18n/useI18n'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useKeyHints } from '../../composables/ui/useKeyHints'
-import { overviewUrl } from '../../overview/overviewRoute'
+import { homepageUrl } from '../../homepage/homepageRoute'
 import { LOCALES, LOCALE_NAMES, localeCode } from '../../domain/locale'
 import type { ThemePick } from '../../theme/theme'
 import { useThemePick } from '../../theme/useThemePick'
@@ -19,12 +19,12 @@ import { PANEL_CONTEXT } from './panelContext'
 import { COFFEE_URL } from '../../data/coffeeLink'
 
 // The body of Menu (spec 0440, tickets 443, 0553; MenuPanel card): what is about the app and the device, in four sections
-// (Projects, Preferences, Help, About), each folding shut. Import, Export all and Delete all live in the Projects library. It only asks: the app shell does the work. On the Overview (ticket 540, ADR 0073)
-// the same panel shows its Overview item as the current page and leaves out what belongs to the editor.
+// (Projects, Preferences, Help, About), each folding shut. Import, Export all and Delete all live in the Projects library. It only asks: the app shell does the work. On the Homepage (ticket 540, ADR 0073)
+// the same panel shows its Homepage item as the current page and leaves out what belongs to the editor.
 const props = withDefaults(
   defineProps<{
     /** The page the panel is opened on. */
-    page?: 'editor' | 'overview'
+    page?: 'editor' | 'homepage'
     projects?: Project[]
     toolsPosition?: PillPosition
     inputMode?: InputMode
@@ -50,7 +50,7 @@ const { shown: hintsShown } = useKeyHints()
 const context = inject(PANEL_CONTEXT)
 
 const SOURCE_URL = 'https://github.com/czAAA/bd-beads'
-const overviewHref = overviewUrl(import.meta.env.BASE_URL)
+const homepageHref = homepageUrl(import.meta.env.BASE_URL)
 
 const actions = {
   newProject: controlAction('new-project'),
@@ -140,7 +140,7 @@ const inputOptions = computed(() => [
 
     <PanelSection id="menu:help" :label="t.panels.menu.help">
       <PanelItem v-if="inEditor" icon="keyboard" :value="hintsShown ? '?' : undefined" data-testid="menu-item-shortcuts" @select="emit('shortcuts')">{{ t.shortcutsHelp.title }}</PanelItem>
-      <PanelItem icon="bead" :href="overviewHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-overview">{{ t.header.overviewItem }}</PanelItem>
+      <PanelItem icon="bead" :href="homepageHref" :aria-current="inEditor ? undefined : 'page'" data-testid="menu-item-homepage">{{ t.header.homepageItem }}</PanelItem>
     </PanelSection>
 
     <PanelSection id="menu:about" :label="t.panels.menu.about">

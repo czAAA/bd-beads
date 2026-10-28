@@ -6,7 +6,7 @@ import { editPencilCentre, moveHandleCentre, overlapsSelectionHandles, removeFra
 import type { Project } from '../../domain/project'
 import { frameAllows } from '../../domain/frameKind'
 
-// What a Frame always carries on the canvas (tickets 452, 473, ADR 0062): the Move handle and the edit pencil, in the
+// What a Frame always carries on the canvas (tickets 452, 473, ADR 0054): the Move handle and the edit pencil, in the
 // gutter just outside its edge. They never scale with the zoom; only their centres follow the Frame, kept in the canvas
 // box. The handle hands its press to the canvas to drag; arrows move the Frame, Shift+arrows resize.
 const props = defineProps<{

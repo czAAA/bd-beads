@@ -56,7 +56,7 @@ export type Layer = 'canvas' | 'frame'
 export interface GridPosition {
   row: number
   column: number
-  /** The layer a pointer hit named (ADR 0070): where the Frame draws shorter than the rows it names, a Frame bead and a
+  /** The layer a pointer hit named (ADR 0066): where the Frame draws shorter than the rows it names, a Frame bead and a
    * Canvas bead share a position. Left out where the position alone says it. */
   layer?: Layer
 }

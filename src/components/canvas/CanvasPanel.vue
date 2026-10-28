@@ -21,6 +21,7 @@ import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selec
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { PillRect } from '../../domain/toolPill'
 import { hasGuides } from '../../domain/selection'
+import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads, resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -159,8 +160,10 @@ const colorPick = useColorPick()
 
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on
  * release. */
-/** Whether Select or Piece is in hand: the pointer is the native arrow, not the bead-shaped marker (ticket 414). */
-const selecting = computed(() => activeTool.value === 'select' || activeTool.value === 'piece')
+/** What the tool in hand and the modes on let the Drawing surface do (ticket 0619): one value, worked out once. */
+const surfaceTools = computed(() =>
+  toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value }),
+)
 
 const shownProject = frameDraftProject
 
@@ -237,7 +240,7 @@ const drawingStyle = computed(() => {
       data-testid="app-canvas"
     >
       <!--
-        The canvas box's header strip (ticket 143, ADR 0055, 0073): Menu, the Brand and the canvas controls (Rulers, Undo,
+        The canvas box's header strip (ticket 143, ADR 0046, 0073): Menu, the Brand and the canvas controls (Rulers, Undo,
         Redo, zoom, Fit). While a picture is being framed (ticket 58) its zoom is the framing step's own, over its own
         100–800% range (domain/imageFraming), since that zoom moves the picture under a fixed frame rather than
         scaling the Project on screen. The strip never scrolls, zooms or rotates with the Project below it.
@@ -300,27 +303,18 @@ const drawingStyle = computed(() => {
               v-else-if="activeProject"
               ref="surfaceRef"
               :project="shownProject!"
-              :setting-frame="settingFrame"
+              :tools="surfaceTools"
               :frame-tooltip="frameTooltip"
               :zoom="zoom"
               :scroll="scroll"
               :show-rulers="showRulers"
               :row-marks="rowHighlight"
-              :tool="activeTool"
-              :moving="activeTool === 'hand'"
-              :nearest-on-press="activeTool === 'fill'"
-              :select-anywhere="activeTool === 'select'"
-              :marker-hidden="spaceHeld"
-              :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"
               :handedness="handedness"
-              :blocks-margin="!colorPick?.picking.value && (activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive)"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
-              :selection-blocks-margin="selecting"
               :selection-refusals="selectionRefusals"
-              :selecting="selecting"
               :label="projectLabel"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
@@ -350,7 +344,7 @@ const drawingStyle = computed(() => {
 
         </div>
 
-        <!-- The Tool pill (ticket 439, ADR 0059): floats over the drawing, outside the zoom transform. -->
+        <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
         <ToolPill
           v-if="activeProject && !framing"
           v-model:position="toolPillPosition"
