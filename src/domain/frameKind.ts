@@ -2,6 +2,7 @@ import type { FrameSheet } from './canvas'
 import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
+import type { SettingSpec } from './settingSpec'
 import { describeWeave, type Technique, type Weave } from './weave'
 
 /** The Frame kinds (spec 0590, ADR 0077). Rectangular is the Frame as it has always been; the Custom frames are a
@@ -27,17 +28,10 @@ export const FRINGE_STYLES: readonly FringeStyle[] = ['straight', 'v']
 /** A Custom frame's settings as the Frame holds them: what its panel builder lays it out from. */
 export type FrameSettings = Partial<Record<FrameSettingName, number>> & { fringeStyle?: FringeStyle }
 
-/** One setting of a kind: its name, its default, its smallest and largest, and the sizes offered as presets; below
- * another setting's value where one bounds it (a Fringe earring's top has fewer rows than its base has beads, so it
- * ends on a pair: StarterGallery card). */
-interface FrameSetting {
-  name: FrameSettingName
-  default: number
-  min: number
-  max: number
-  presets: readonly number[]
-  below?: FrameSettingName
-}
+/** One setting of a kind, in the shape a Technique's has (ticket 0624): its words are under its id in `frame.sizeSettings`,
+ * a smaller one asks before it drops beads, and one bounded by another stays below it (a Fringe earring's top has fewer
+ * rows than its base has beads, so it ends on a pair: StarterGallery card). */
+type FrameSetting = SettingSpec<FrameSettingName>
 
 /** How many quarter turns clockwise a Custom frame's layout lies at (Rotate Frame, ticket 0594). */
 export type QuarterTurns = 1 | 2 | 3
@@ -74,17 +68,17 @@ export interface FrameKind {
 }
 
 /** Rounds as a Triangle and a Warped Square offer them: a Kaleidocycle's triangles are 9 a side (research). */
-const ROUNDS: FrameSetting = { name: 'rounds', default: 9, min: 2, max: 40, presets: [6, 9, 12] }
+const ROUNDS: FrameSetting = { id: 'rounds', labelKey: 'rounds', min: 2, max: 40, step: 1, default: 9, presets: [6, 9, 12], lossOnChange: true }
 /** A Star's arms in rounds: the MiniStar's squares are 10 rounds (research). */
-const STAR_PART: FrameSetting = { name: 'partSize', default: 10, min: 2, max: 30, presets: [6, 8, 10] }
+const STAR_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', min: 2, max: 30, step: 1, default: 10, presets: [6, 8, 10], lossOnChange: true }
 /** A Kaleidocycle's triangles, beads a side: 9 in the primer, which finds smaller ones fold badly (research). */
-const KALEIDOCYCLE_PART: FrameSetting = { name: 'partSize', default: 9, min: 3, max: 30, presets: [7, 9, 12] }
+const KALEIDOCYCLE_PART: FrameSetting = { id: 'partSize', labelKey: 'partSize', min: 3, max: 30, step: 1, default: 9, presets: [7, 9, 12], lossOnChange: true }
 /** A Kite's Rows from its point (inferred: the reference gives no size). */
-const KITE_ROWS: FrameSetting = { name: 'rows', default: 21, min: 4, max: 60, presets: [15, 21, 30] }
+const KITE_ROWS: FrameSetting = { id: 'rows', labelKey: 'rows', min: 4, max: 60, step: 1, default: 21, presets: [15, 21, 30], lossOnChange: true }
 /** A Fringe earring's base row, its rows up to a pair at the top, and its longest strand (StarterGallery card). */
-const TOP_WIDTH: FrameSetting = { name: 'topWidth', default: 7, min: 2, max: 30, presets: [5, 7, 9] }
-const TOP_ROWS: FrameSetting = { name: 'topRows', default: 6, min: 1, max: 29, presets: [4, 6, 8], below: 'topWidth' }
-const FRINGE_LENGTH: FrameSetting = { name: 'fringeLength', default: 12, min: 2, max: 80, presets: [8, 12, 16] }
+const TOP_WIDTH: FrameSetting = { id: 'topWidth', labelKey: 'topWidth', min: 2, max: 30, step: 1, default: 7, presets: [5, 7, 9], lossOnChange: true }
+const TOP_ROWS: FrameSetting = { id: 'topRows', labelKey: 'topRows', min: 1, max: 29, step: 1, default: 6, presets: [4, 6, 8], lossOnChange: true, below: 'topWidth' }
+const FRINGE_LENGTH: FrameSetting = { id: 'fringeLength', labelKey: 'fringeLength', min: 2, max: 80, step: 1, default: 12, presets: [8, 12, 16], lossOnChange: true }
 
 /** A Custom frame's Row order (ticket 0594): its layout's passes, worked in rounds from the centre or rows from a point. */
 function layoutRowOrder(lines: 'round' | 'row'): FrameKind['rowOrder'] {
@@ -152,6 +146,10 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
   },
 }
 
+/** Every Frame kind, in the registry's order.
+ * @internal The registry test checks every kind's settings (ticket 0624). */
+export const FRAME_KIND_IDS = Object.keys(FRAME_KINDS) as readonly FrameKindId[]
+
 /** A Custom frame's kind: every kind but Rectangular. */
 export type CustomFrameKindId = Exclude<FrameKindId, 'rectangular'>
 
@@ -175,7 +173,7 @@ export function rowOrderOf(sheet: KindedSheet, way: RowWay): RowOrder {
   return frameKindOf(sheet).rowOrder(sheet, way)
 }
 
-/** The setting a Custom frame is sized by, its first, its name and range; none for a Rectangular Frame. */
+/** The setting a Custom frame is sized by, its first, its id and range; none for a Rectangular Frame. */
 export function sizeSettingOf(frame: Pick<FrameSheet, 'kind'>): Readonly<FrameSetting> | undefined {
   return frameKindOf(frame).custom?.settings[0]
 }
@@ -194,10 +192,10 @@ export function settingValuesOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): S
   const read: Partial<Record<FrameSettingName, number>> = {}
   return (frameKindOf(frame).custom?.settings ?? []).map((setting) => {
     const max = setting.below ? Math.min(setting.max, (read[setting.below] ?? setting.max + 1) - 1) : setting.max
-    const stored = frame.settings?.[setting.name]
+    const stored = frame.settings?.[setting.id]
     const value = typeof stored === 'number' && Number.isFinite(stored) ? Math.min(max, Math.max(setting.min, Math.round(stored))) : Math.min(max, setting.default)
-    read[setting.name] = value
-    return { name: setting.name, value, min: setting.min, max }
+    read[setting.id] = value
+    return { name: setting.id, value, min: setting.min, max }
   })
 }
 

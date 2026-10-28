@@ -19,13 +19,22 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   it('is made in the Technique the Project was made in, and its Weave is the Frame\'s own', () => {
     const brick = createProject({ technique: 'brick', brickBlock: 3, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
     expect(brick.frame).toMatchObject({ technique: 'brick', brickBlock: 3 })
-    expect(frameWeave(peyoteOnLoom())).toEqual({ technique: 'peyote' })
-    expect(canvasWeave(peyoteOnLoom())).toEqual({ technique: 'loom' })
+    expect(frameWeave(peyoteOnLoom())).toEqual({ technique: 'peyote', techniqueSettings: {} })
+    expect(canvasWeave(peyoteOnLoom())).toEqual({ technique: 'loom', techniqueSettings: {} })
+  })
+
+  it('carries each layer\'s settings map, in step with its flat fields (ticket 0624)', () => {
+    const brick = createProject({ technique: 'brick', brickBlock: 3, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
+    const netFrame = { ...brick, frame: { ...brick.frame!, technique: 'netting' as const, netSize: 5 } }
+    expect(canvasWeave(netFrame).techniqueSettings).toEqual({ brickBlock: 3 })
+    expect(frameWeave(netFrame).techniqueSettings).toEqual({ netSize: 5 })
+    // A Brick block kept off brick stitch is no setting of loom's.
+    expect(canvasWeave(withTechnique(brick, 'loom')).techniqueSettings).toEqual({})
   })
 
   it('counts a Canvas with no Frame in the Canvas\'s own Weave', () => {
     const { frame: _frame, ...open } = peyoteOnLoom()
-    expect(frameWeave(open)).toEqual({ technique: 'loom' })
+    expect(frameWeave(open)).toEqual({ technique: 'loom', techniqueSettings: {} })
   })
 
   it('counts its rows, passes and size in its own Weave: peyote\'s first line takes one pass and every later one two', () => {
