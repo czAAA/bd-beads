@@ -1,11 +1,11 @@
 import { frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import { frameFootprint } from '../domain/footprint'
-import { beadRoundness, describeWeave, isShiftedRow, rowPitch, type BeadCell, type Technique, type Weave } from '../domain/weave'
+import { frameGeometry, gridGeometry, type LayerGeometry } from '../domain/layerGeometry'
+import { describeWeave, isShiftedRow, rowPitch, type BeadCell, type Technique, type Weave } from '../domain/weave'
 import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
-import { layoutBeadPx, layoutPositionAtPx, placedLayout } from './customFrameView'
 import { CELL_SIZE_PX, cellSizePx, type Size } from './cellSize'
 
 // The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation, row shift
@@ -227,67 +227,15 @@ export interface SurfaceView {
   gridDirection(x: number, y: number): Scroll
 }
 
-// The bead position of a point in grid space, in the rows and columns a layer has: the row it falls in by the row
-// pitch, and (where rows nest) the one above it. A bound left out is no bound.
-function beadInGrid(
-  weave: Weave,
-  gridX: number,
-  gridY: number,
-  limits: { firstRow?: number; lastRow?: number; columns?: number },
-): GridPosition | undefined {
-  // Later rows are drawn over earlier ones, so try the lowest first.
-  const { technique } = weave
-  const { cell } = weave
-  const { height } = cellSizePx(technique, cell)
-  const pitch = rowPitchPx(technique, cell)
-  const lowest = Math.min(limits.lastRow ?? Infinity, Math.floor(gridY / pitch))
-  const highest = Math.max(limits.firstRow ?? -Infinity, Math.ceil((gridY - height) / pitch))
-  const radius = beadRoundness(technique, cell) * CELL_SIZE_PX
-
-  for (let row = lowest; row >= highest; row -= 1) {
-    const offsetY = gridY - rowTopPx(technique, row, cell)
-    const offsetX = gridX - shiftOf(weave, row)
-    if (offsetY < 0 || offsetY >= height || (limits.columns !== undefined && offsetX < 0)) {
-      continue
-    }
-    const column = Math.floor(offsetX / CELL_SIZE_PX)
-    if (limits.columns !== undefined && column >= limits.columns) {
-      continue
-    }
-    if (inRoundedCorner(offsetX - column * CELL_SIZE_PX, offsetY, radius, height)) {
-      continue
-    }
-    return { row, column }
-  }
-  return undefined
-}
-
-function inRoundedCorner(x: number, y: number, wanted: number, height: number): boolean {
-  // A corner can't be rounder than half the shorter side (a pill).
-  const radius = Math.min(wanted, CELL_SIZE_PX / 2, height / 2)
-  if (radius <= 0) {
-    return false
-  }
-  const cornerX = x < radius ? radius : x > CELL_SIZE_PX - radius ? CELL_SIZE_PX - radius : x
-  const cornerY = y < radius ? radius : y > height - radius ? height - radius : y
-  return (x - cornerX) ** 2 + (y - cornerY) ** 2 > radius ** 2
-}
-
 /** A box's rectangle in a layer's grid space: its beads, and the half bead an offset technique's shifted rows add on
  * the right. */
 export function gridBox(weave: Weave, box: Rect): Region {
-  const { technique } = weave
-  if (describeWeave(weave).countsUnits) {
-    return positionsBoxPx(weave, box.row, box.column, box.rows, box.columns)
-  }
-  const { height } = cellSizePx(technique, weave.cell)
-  const top = rowTopPx(technique, box.row, weave.cell)
-  return {
-    x: box.column * CELL_SIZE_PX,
-    y: top,
-    width: describeWeave(weave).blockExtent(box.columns, 0, CELL_SIZE_PX, height).width,
-    height: rowTopPx(technique, box.row + box.rows - 1, weave.cell) + height - top,
-  }
+  return inGridPx(gridGeometry(weave, box).extent()!)
+}
+
+/** A box of a Layer geometry, in bead widths, in grid px (ticket 0630). */
+export function inGridPx({ x, y, width, height }: Region): Region {
+  return { x: x * CELL_SIZE_PX, y: y * CELL_SIZE_PX, width: width * CELL_SIZE_PX, height: height * CELL_SIZE_PX }
 }
 
 /** The size in grid px of a block of beads from the first position of a layer: what a Frame covers on the Canvas. */
@@ -311,28 +259,32 @@ export function frameOriginPx(canvas: Weave, frame: Pick<Rect, 'row' | 'column'>
   return { x, y }
 }
 
-/** One layer of a view: its Weave, where its first position sits in grid space, and the address of that position. */
+/** One layer of a view: its Weave and Layer geometry, where its first position sits in grid space, and the address of
+ * that position. */
 interface Layer {
   weave: Weave
+  geometry: LayerGeometry
   description: ReturnType<typeof describeWeave>
   cell: Size
   origin: Scroll
   offset: GridPosition
-  /** The rows and columns it has, where it has an edge (a Frame; a Project drawn on its own). */
-  bounds?: { rows: number; columns: number }
 }
 
-function layerOf(weave: Weave, origin: Scroll, offset: GridPosition, bounds?: Layer['bounds']): Layer {
-  return { weave, description: describeWeave(weave), cell: cellSizePx(weave.technique, weave.cell), origin, offset, ...(bounds ? { bounds } : {}) }
+function layerOf(weave: Weave, geometry: LayerGeometry, origin: Scroll, offset: GridPosition): Layer {
+  return { weave, geometry, description: describeWeave(weave), cell: cellSizePx(weave.technique, weave.cell), origin, offset }
 }
 
 export function surfaceView({ space, technique, brickBlock, netSize, cell: beadShapeCell, frame, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
   const canvasWeave: Weave = { technique, brickBlock, netSize, cell: beadShapeCell }
-  const canvas = layerOf(canvasWeave, { x: 0, y: 0 }, { row: 0, column: 0 }, space.open ? undefined : { rows: space.rows, columns: space.columns })
-  const sheet = frame && space.open ? layerOf({ technique: frame.technique, brickBlock: frame.brickBlock, netSize: frame.netSize, cell: beadShapeCell }, frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }, { rows: frame.rows, columns: frame.columns }) : undefined
+  // The Canvas has no edge; a Project drawn on its own is its rows and columns from its first.
+  const edge = space.open ? undefined : { row: 0, column: 0, rows: space.rows, columns: space.columns }
+  const canvas = layerOf(canvasWeave, gridGeometry(canvasWeave, edge), { x: 0, y: 0 }, { row: 0, column: 0 })
+  const sheetWeave: Weave | undefined = frame && { technique: frame.technique, brickBlock: frame.brickBlock, netSize: frame.netSize, cell: beadShapeCell }
+  const sheet = frame && sheetWeave && space.open ? layerOf(sheetWeave, frameGeometry({ ...frame, ...sheetWeave }), frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }) : undefined
   const layerNamed = (name: ViewLayer | undefined): Layer => (name === 'frame' && sheet ? sheet : canvas)
-  // A Custom frame's beads lie where its layout puts them (ADR 0077), not on its rows and columns.
-  const placed = frame && sheet ? placedLayout(frame, sheet.weave) : undefined
+  // A Custom frame's beads lie where its layout puts them (ADR 0077), not on rows and columns: a point between them is
+  // off its shape.
+  const laidOut = sheet && !sheet.geometry.inRowsAndColumns ? sheet : undefined
   // The Canvas positions the Frame hides (ADR 0066): what it draws, which is not always the rows it names.
   const footprint = frame && sheet ? frameFootprint(canvasWeave, frame) : undefined
   const layerAtAddress = (position: GridPosition): Layer => (footprint && sheet && frameContains(footprint, position) ? sheet : canvas)
@@ -362,23 +314,7 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
   const addressOf = (layer: Layer, local: GridPosition): GridPosition => ({ row: local.row + layer.offset.row, column: local.column + layer.offset.column })
 
   /** The bead of a layer under a point of grid space (relative to the layer's first position), or undefined. */
-  const beadIn = (layer: Layer, gridX: number, gridY: number): GridPosition | undefined => {
-    const { description, cell, bounds, weave } = layer
-    if (description.countsUnits) {
-      const found = description.positionAt(gridX, gridY, cell.width, cell.height)
-      if (!found || !bounds) return found
-      const within = found.row >= 0 && found.row < bounds.rows && found.column >= 0 && found.column < bounds.columns
-      // The last column of a Frame's horizontal lines holds no bead.
-      return within && description.hasPosition(found, { row: 0, column: 0, rows: bounds.rows, columns: bounds.columns }) ? found : undefined
-    }
-    if (!bounds) {
-      return beadInGrid(weave, gridX, gridY, {})
-    }
-    if (gridX < 0 || gridY < 0 || gridY >= layerExtentPx(weave, bounds.columns, bounds.rows).height) {
-      return undefined
-    }
-    return beadInGrid(weave, gridX, gridY, { firstRow: 0, lastRow: bounds.rows - 1, columns: bounds.columns })
-  }
+  const beadIn = (layer: Layer, gridX: number, gridY: number): GridPosition | undefined => layer.geometry.positionAt({ x: gridX / CELL_SIZE_PX, y: gridY / CELL_SIZE_PX })
   const cellIn = (layer: Layer, gridX: number, gridY: number): GridPosition => {
     const { description, cell, weave } = layer
     if (description.countsUnits) return description.nearestPosition(gridX, gridY, cell.width, cell.height)
@@ -401,7 +337,7 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
     const at = onSheet(point)
     // The Frame is opaque: a point on it is the Frame's bead or none, never the Canvas under it.
     if (sheet && at) {
-      const found = placed ? layoutPositionAtPx(placed, at.x, at.y) : beadIn(sheet, at.x, at.y)
+      const found = beadIn(sheet, at.x, at.y)
       return found && { ...addressOf(sheet, found), layer: 'frame' }
     }
     const found = beadIn(canvas, gridX, gridY)
@@ -413,27 +349,25 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
     viewport,
     beadToPoint: (position, named) => {
       const layer = named ? layerNamed(named) : layerAtAddress(position)
-      const bead = layer === sheet && placed ? layoutBeadPx(placed, { row: position.row - layer.offset.row, column: position.column - layer.offset.column }) : undefined
-      if (bead) {
-        const at = displayed(layer.origin.x + bead.x, layer.origin.y + bead.y, zoom)
-        return { x: at.x - scroll.x, y: at.y - scroll.y }
-      }
-      const box = positionBoxPx(layer.weave, position.row - layer.offset.row, position.column - layer.offset.column)
+      const local = { row: position.row - layer.offset.row, column: position.column - layer.offset.column }
+      // A position the Layer has lies where its geometry places it; one past its edge, as its Weave would put it.
+      const place = layer === sheet ? sheet.geometry.place(local) : undefined
+      const box = place ? inGridPx(place.box) : positionBoxPx(layer.weave, local.row, local.column)
       const at = displayed(layer.origin.x + box.x + box.width / 2, layer.origin.y + box.y + box.height / 2, zoom)
       return { x: at.x - scroll.x, y: at.y - scroll.y }
     },
     beadBox: (box, layer) => inViewport(displayedBox(box, zoom, layerNamed(layer))),
     pointToHit,
     offShapeAt: (point) => {
-      const at = placed && onSheet(point)
-      return !!placed && !!at && layoutPositionAtPx(placed, at.x, at.y) === undefined
+      const at = laidOut && onSheet(point)
+      return !!laidOut && !!at && beadIn(laidOut, at.x, at.y) === undefined
     },
     frameCellAt: (point) => {
-      const at = placed && sheet && frame && onSheet(point)
+      const at = laidOut && frame && onSheet(point)
       if (!at) return undefined
-      const cell = cellIn(sheet!, at.x, at.y)
+      const cell = cellIn(laidOut!, at.x, at.y)
       const within = { row: Math.min(Math.max(cell.row, 0), frame!.rows - 1), column: Math.min(Math.max(cell.column, 0), frame!.columns - 1) }
-      return { ...addressOf(sheet!, within), layer: 'frame' }
+      return { ...addressOf(laidOut!, within), layer: 'frame' }
     },
     pointToBead: (point) => {
       const hit = pointToHit(point)

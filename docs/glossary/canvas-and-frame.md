@@ -35,7 +35,7 @@ The one small sheet per Canvas, on whole Canvas positions, that holds the beads 
 _Avoid_: border, crop, artboard, page, grid size; in code, Frame for any other rectangle of positions, which is a `Rect` (ticket 0617): the Frame itself is `FrameSheet`
 
 **Layer**:
-The Canvas or the Frame: a set of beads woven in one Weave. A Project has one or two, and a press, a stroke, a Selection or a paste acts on one layer at a time. Its **Layer geometry** (ADR 0078, ticket 0628) answers where its beads are, whatever lays them out: its positions, whether a position holds a bead, the beads touching one, where a bead lies and at what angle, which bead a point is on, and the box round its edge. A grid's answers come from its Weave (the Canvas, open, or a Rectangular Frame), a Custom frame's from its layout.
+The Canvas or the Frame: a set of beads woven in one Weave. A Project has one or two, and a press, a stroke, a Selection or a paste acts on one layer at a time. Its **Layer geometry** (ADR 0078, ticket 0628) answers where its beads are, whatever lays them out: its positions, whether a position holds a bead, the beads touching one, where a bead lies and at what angle, which bead a point is on, the box round its edge, which beads a view of part of it draws, whether its beads keep rows and columns (which rulers number), and its Seams. A grid's answers come from its Weave (the Canvas, open, or a Rectangular Frame), a Custom frame's from its layout. Drawing, the hit test and the exports ask it, never whether the Frame has a layout (ticket 0630).
 _Avoid_: sheet, level
 
 **Folded beads**:
