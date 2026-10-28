@@ -60,8 +60,10 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     const wrapper = mountPanel({ project: miyuki, replaceCandidates: offeredBeads().filter((bead) => bead.id !== 'miyuki/delica/11-0') })
     const names = ['bead-brand', 'bead-type', 'bead-size'].map((id) => wrapper.get(`[data-testid="${id}"] button`).attributes('aria-label'))
     expect(names).toEqual(['Brand: Miyuki', 'Type: Delica', 'Size: 11/0'])
-    // Type only lists the Brand's own, Size the Type's own.
+    // Type only lists the Brand's own, Size the Type's own, in an app-drawn menu: a native select's picker swallowed
+    // the pick on an iPad mini (ticket 442).
     await wrapper.get('[data-testid="bead-size"] button').trigger('click')
+    expect(wrapper.find('select').exists()).toBe(false)
     expect(wrapper.findAll('[data-testid="bead-size"] [role="menuitemradio"]').map((item) => item.text())).toEqual(['11/0', '15/0', '10/0', '8/0'])
     await wrapper.get('[data-testid="bead-size"] [data-value="miyuki/delica/15-0"]').trigger('click')
     expect(wrapper.emitted('replace-bead')).toEqual([['miyuki/delica/15-0']])

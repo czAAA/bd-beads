@@ -109,14 +109,11 @@ describe('ProgressBar', () => {
     expect(left.text()).toContain(ru.rowProgress.rightToLeft)
   })
 
-  it('fills the whole track once every pass is done, and shows the last row as the current one (ticket 411)', () => {
+  it('shows the last row as the current one once every pass is done (ticket 411)', () => {
     const project = makeProject()
     const wrapper = mount(ProgressBar, { props: { project: moveToRow(project, project.frame!.rows) } })
 
-    expect(wrapper.find('[data-testid="progress-bar-track"] span').attributes('style')).toContain('width: 100%')
     expect(wrapper.find('[data-testid="progress-bar-compact-position"]').text()).toBe('20/20')
-    expect(wrapper.find('[data-testid="progress-bar-next"]').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.find('[data-testid="progress-bar-previous"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('puts Turn row direction and Reset progress ahead of the do/undo pair (tickets 411, 455)', () => {

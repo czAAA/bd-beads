@@ -41,14 +41,19 @@ describe('useReplaceBeadFlow', () => {
     expect(none.replaceBeadPendingBead.value).toBeUndefined()
   })
 
-  it('describes the swap with both Beads and the Estimated size', () => {
-    const { replaceBeadConfirmMessage, onRequestReplaceBead } = setup()
+  it('describes the swap with the new Bead and its Estimated size before the current one, as the screen shows the Project', () => {
+    const tall = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 15, height: 30, unit: 'mm' } }) // 10x20
+    const { replaceBeadConfirmMessage, onRequestReplaceBead } = setup(tall)
     expect(replaceBeadConfirmMessage.value).toBe('')
 
-    onRequestReplaceBead(other.id)
+    onRequestReplaceBead('toho/round/11-0')
 
-    expect(replaceBeadConfirmMessage.value).not.toContain('{')
-    expect(replaceBeadConfirmMessage.value).not.toBe('')
+    // The same 10x20 grid at Round (1.65 x 2.2mm): 16.5 x 44mm.
+    expect(replaceBeadConfirmMessage.value).toContain('With TOHO Round 11/0, this Project will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
+
+    const turned = setup({ ...tall, rotation: 90 })
+    turned.onRequestReplaceBead('toho/round/11-0')
+    expect(turned.replaceBeadConfirmMessage.value).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
   })
 
   it('cancelling closes the modal and changes nothing', () => {
