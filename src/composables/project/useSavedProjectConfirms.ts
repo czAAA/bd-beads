@@ -1,5 +1,6 @@
 import { ref } from 'vue'
 import type { Project } from '../../domain/project'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What the Saved Projects confirmations need from the app shell: the library's lookup, open, remove and manual
  * save. */
@@ -10,16 +11,19 @@ export interface SavedProjectConfirmsDeps {
   removeProject: (id: string) => void
   /** Writes the library now; false when the device refused it. */
   saveNow: () => boolean
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 /** The questions Saved Projects asks before acting on a thumbnail (ticket 232): remove, or "Switch?" like Import
  * (ticket 154). Nothing changes until confirmed. Deps are lazy. */
 export function useSavedProjectConfirms(deps: SavedProjectConfirmsDeps) {
   /** The Project whose × was pressed, until the person answers. */
-  const pendingRemove = ref<Project | undefined>()
+  const dialogs = deps.dialogs ?? useDialogs()
+  const pendingRemove = dialogs.question<Project>('remove-project')
 
   /** The Project a thumbnail pick would open, until the person answers. */
-  const pendingSwitch = ref<Project | undefined>()
+  const pendingSwitch = dialogs.question<Project>('switch-project')
 
   /** What to do once a confirmed switch has opened its Project (the phone drawer puts its sheets away). */
   let afterSwitch: (() => void) | undefined

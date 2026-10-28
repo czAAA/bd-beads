@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { beadLabel, beadsDiffer, findBead, offeredBeads, type Bead } from '../../domain/beads'
 import { replaceBead, resolveProjectBead, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -6,6 +6,7 @@ import type { Locale, Translations } from '../../i18n/translations'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { EditFn } from '../project/useEdit'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What Replace Bead needs from the app shell: the open Project, Edit, and the app's language. */
 export interface ReplaceBeadFlowDeps {
@@ -13,13 +14,15 @@ export interface ReplaceBeadFlowDeps {
   edit: EditFn
   messages: () => Translations
   locale: () => Locale
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 /** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0020). Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   /** The Bead id picked from the Replace bead menu, awaiting confirmation (ticket 48); undefined when its modal is
    * closed. */
-  const pendingId = ref<string | undefined>()
+  const pendingId = (deps.dialogs ?? useDialogs()).question<string>('replace-bead')
 
   /** The catalog's current Bead of the Project's own id, when the Project's copy differs from it (ticket 534, ADR 0072);
    * undefined when they match, or when that Bead is retired and so offered nowhere. */

@@ -11,7 +11,7 @@ import PanelItem from './PanelItem.vue'
 import ProjectPanel from '../project/ProjectPanel.vue'
 import { ref } from 'vue'
 import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
-import { useAppShell } from '../../composables/shell/useAppShell'
+import { usePanelsContext } from '../../composables/shell/useAppShell'
 
 // The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library as another. Each panel only asks; the app shell does the work.
 const {
@@ -71,11 +71,11 @@ const {
   onFrameKey,
   onCloseFramePanel,
   toolPillPosition,
-  shortcutsHelpOpen,
   menuOpensOnForm,
   phoneSavedProjectsOpen,
   onSelectProjectFromPhoneDrawer,
-} = useAppShell()
+  onOpenShortcutsHelp,
+} = usePanelsContext()
 
 /** The Starter gallery's category and Starter open (ticket 0596): a card sets its own as it pushes the next level. */
 const chosenCategory = ref<StarterCategoryId>()
@@ -146,7 +146,7 @@ const chosenStarter = ref<StarterId>()
       @saved-projects="phoneSavedProjectsOpen = true"
       @update:input-mode="setInputMode"
       @update:handedness="setHandedness"
-      @shortcuts="shortcutsHelpOpen = true"
+      @shortcuts="onOpenShortcutsHelp"
     />
     <ProjectPanel
       v-else-if="activeProject"

@@ -1,15 +1,18 @@
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { pieceInSelection, pieceNameAt, withPieceName } from '../../domain/pieceNames'
 import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { selectionLayer, type Selection } from '../../domain/selection'
 import type { EditFn } from './useEdit'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What Name Piece needs from the app shell: the open Project, Edit and the Selection. */
 export interface NamePieceFlowDeps {
   currentProject: () => Project | undefined
   edit: EditFn
   selection: () => Selection | undefined
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 // "Name Piece" (ticket 406, ADR 0050): names the Selection's one Piece in a dialog; an empty name makes it plain. One
@@ -27,7 +30,7 @@ export function useNamePieceFlow(deps: NamePieceFlowDeps) {
   const canNamePiece = computed(() => !!target.value)
 
   /** The Piece being named while the dialog is open. */
-  const naming = ref<{ at: GridPosition; name: string }>()
+  const naming = (deps.dialogs ?? useDialogs()).question<{ at: GridPosition; name: string }>('name-piece')
 
   function onNamePiece() {
     const at = target.value
