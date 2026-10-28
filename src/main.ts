@@ -13,14 +13,14 @@ import { browserDevicePreferences } from './services/devicePreferences'
 import { loadProjects } from './services/libraryStore'
 import { startOfflineShell } from './services/offlineShell'
 import { installTouchFocusGuard } from './services/touchFocusGuard'
-import { isEditorChosen, overviewUrl, shouldOpenOverview } from './overview/overviewRoute'
+import { isEditorChosen, homepageUrl, shouldOpenHomepage } from './homepage/homepageRoute'
 
 installTouchFocusGuard()
 followDeviceTheme(window, document.documentElement, currentThemePick)
 
-// A new visitor (an empty Project library) is sent to the Overview first (ticket 77).
-if (shouldOpenOverview(loadProjects().length === 0, isEditorChosen())) {
-  location.replace(overviewUrl(import.meta.env.BASE_URL))
+// A new visitor (an empty Project library) is sent to the Homepage first (ticket 77).
+if (shouldOpenHomepage(loadProjects().length === 0, isEditorChosen())) {
+  location.replace(homepageUrl(import.meta.env.BASE_URL))
 } else {
   // Only the language in use is fetched before the app starts (ticket 0616); the splash shows meanwhile.
   void loadLocale(browserDevicePreferences.get('locale').value).then(() => {

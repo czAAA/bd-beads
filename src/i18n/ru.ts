@@ -24,11 +24,6 @@ export const ru: Translations = {
     beadShapeSymmetricTip: 'Рисовать каждую бисеринку ровной клеткой; меняется только вид полотна.',
     beadShapeRealTip: 'Рисовать каждую бисеринку в её настоящих пропорциях; меняется только вид полотна.',
     techniqueLabel: 'Техника плетения',
-    techniqueLoom: 'Ткачество',
-    techniquePeyote: 'Мозаичное плетение',
-    techniqueBrick: 'Кирпичное плетение',
-    techniqueRightAngle: 'Крестик',
-    techniqueNetting: 'Сетка',
     netSizeLabel: 'Размер сетки',
     netSizeLess: 'Меньше бисерин в петле',
     netSizeMore: 'Больше бисерин в петле',
@@ -180,6 +175,13 @@ export const ru: Translations = {
   languageSwitcher: {
     ariaLabel: 'Язык интерфейса',
   },
+  techniques: {
+    loom: 'Ткачество',
+    peyote: 'Мозаичное плетение',
+    brick: 'Кирпичное плетение',
+    rightAngle: 'Крестик',
+    netting: 'Сетка',
+  },
   formFactors: { cube: 'Куб', round: 'Круглый', delica: 'Delica' },
   projects: {
     heading: 'Библиотека проектов',
@@ -269,12 +271,12 @@ export const ru: Translations = {
   },
   header: {
     menuButton: 'Меню',
-    overviewItem: 'Обзор',
+    homepageItem: 'Главная',
     sourceItem: 'Исходный код',
     projectPanelLabel: 'Проект',
   },
-  overview: {
-    pageTitle: 'Обзор',
+  homepage: {
+    pageTitle: 'Главная',
     tagline: 'сохраним. посчитаем. экспортируем',
     makeFirstProject: 'Сделать первый проект',
     openEditor: 'Открыть редактор',
@@ -475,6 +477,7 @@ export const ru: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Линии: части схемы, каждая на своей странице; все ряды и столбцы пронумерованы.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Нужно бисера: {summary} · см. страницу {page}',

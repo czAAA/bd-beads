@@ -2,7 +2,7 @@
 
 **Replaced by the `ToolPill` card (Tool pill proposal, 2026-10-16).** Kept as the record of the bottom bar until the ToolPill ticket ships; build new work to ToolPill.
 
-The bottom bar: the six tool tiles, the colour button and, where the device needs it, the Pen/Mouse toggle (ticket 431, ADR 0055). Menu and Project are not here: they are the first two buttons of the Canvas strip.
+The bottom bar: the six tool tiles, the colour button and, where the device needs it, the Pen/Mouse toggle (ticket 431). Menu and Project are not here: they are the first two buttons of the Canvas strip.
 
 - **48px** tall plus `env(safe-area-inset-bottom)` capped at 4px, at most 480px wide and centred, on `canvas` with a 1px `line-soft` rule above, in portrait and landscape alike (there is no left rail). **No text labels at any height:** each button's name is its accessible name and its Tooltip.
 - **Layout, left to right:** `Paint | Fill | Select | Piece | Eraser | Hand`, a divider, the colour button, and, once a pen has been seen (ticket 326), a second divider and the Pen/Mouse toggle. Slots share the width equally, a 22px icon each, `muted`; the tiles take the width they need and the bar stays centred, so with fewer slots it reads narrower than before.

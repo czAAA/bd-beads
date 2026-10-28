@@ -18,9 +18,9 @@ export type FitLocale = Locale | 'longest'
 const RUSSIAN: Translations = { ...ru }
 /** Each language as its carousel tab shows it: a feature with no shorter wording for the tab shows its full one. */
 const asShown = (translations: Translations): Translations => {
-  const features = Object.entries(translations.overview.features)
+  const features = Object.entries(translations.homepage.features)
     .map(([key, copy]) => [key, { ...copy, tabName: copy.tabName ?? copy.name, tabLine: copy.tabLine ?? copy.text }])
-  return { ...translations, overview: { ...translations.overview, features: Object.fromEntries(features) } }
+  return { ...translations, homepage: { ...translations.homepage, features: Object.fromEntries(features) } }
 }
 const BY_LOCALE: Record<Locale, Translations> = { en, ru: RUSSIAN, uk, be, zh, es, pl }
 const DICTIONARIES: Translations[] = Object.values(BY_LOCALE).map(asShown)

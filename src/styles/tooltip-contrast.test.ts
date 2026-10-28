@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { channelsOf, mix, relativeLuminance, type Rgb } from '../domain/color'
 
 // The see-through Tooltip (ticket 327) must pass WCAG 4.5:1 over black and white canvas colors; its fill alpha and
 // `tooltip-muted` clear both.
@@ -16,20 +17,8 @@ function token(css: string, theme: string, name: string): string {
   return new RegExp(`--${name}:\\s*([^;]+);`).exec(block(css, theme))![1]!.trim()
 }
 
-function rgb(hex: string): number[] {
-  return [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16))
-}
-
-function luminance([r, g, b]: number[]): number {
-  const [lr, lg, lb] = [r!, g!, b!].map((v) => {
-    const c = v / 255
-    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
-  })
-  return 0.2126 * lr! + 0.7152 * lg! + 0.0722 * lb!
-}
-
-function ratio(a: number[], b: number[]): number {
-  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+function ratio(a: Rgb, b: Rgb): number {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x)
   return (hi! + 0.05) / (lo! + 0.05)
 }
 
@@ -45,11 +34,11 @@ describe.each(['light', 'dark', 'contrast'])('the Tooltip in %s', (theme) => {
   }
   const fill = themeValues('tooltip-fill')
   const alpha = fill.startsWith('color-mix') ? Number(/(\d+)%/.exec(fill)![1]) / 100 : 1
-  const surface = rgb(token(tokens, theme, 'elevated'))
+  const surface = channelsOf(token(tokens, theme, 'elevated'))
   const text = [token(tokens, theme, 'ink'), resolve(themeValues('tooltip-muted'))]
 
   it.each([0, 255])('keeps its text at 4.5:1 or more over a canvas of %i', (under) => {
-    const bubble = surface.map((v) => v * alpha + under * (1 - alpha))
-    for (const color of text) expect(ratio(bubble, rgb(color))).toBeGreaterThanOrEqual(4.5)
+    const bubble = mix({ r: under, g: under, b: under }, surface, alpha)
+    for (const color of text) expect(ratio(bubble, channelsOf(color))).toBeGreaterThanOrEqual(4.5)
   })
 })

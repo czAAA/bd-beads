@@ -58,7 +58,7 @@ const CASES: FitCase[] = [
   ['SwitchTechniqueModal (brick stitch)', SwitchTechniqueModal, { question: { technique: 'brick', lost: 12, drawn: true, keeps: false, asksNetSize: false, netSize: 3, asksBrickBlock: true, brickBlock: 2 } }],
   ['SwitchTechniqueModal (Net size)', SwitchTechniqueModal, { question: { technique: 'netting', lost: 12, drawn: true, keeps: true, asksNetSize: true, netSize: 5, asksBrickBlock: false, brickBlock: 1 } }],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
-  ['ConvertImageSizeDialog', ConvertImageSizeDialog, { bead: findBead('toho-cube-1.5mm')!, technique: 'loom', slowFramingCellThresholds: { loom: 5000, peyote: 5000, brick: 5000, rightAngle: 5000, netting: 5000 } }],
+  ['ConvertImageSizeDialog', ConvertImageSizeDialog, { bead: findBead('toho-cube-1.5mm')!, technique: 'loom' }],
 ]
 
 describeFits(CASES)

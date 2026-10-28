@@ -28,13 +28,6 @@ export interface GridDimensions {
   rows: number
 }
 
-/** A rectangle of positions: dimensions, and — for a Frame on a Canvas — where its top-left bead sits (0, 0 when
- * left out). */
-export interface GridBounds extends GridDimensions {
-  row?: number
-  column?: number
-}
-
 export function toMillimeters(value: number, unit: PhysicalUnit): number {
   return unit === 'cm' ? value * 10 : value
 }
@@ -63,7 +56,7 @@ export type Layer = 'canvas' | 'frame'
 export interface GridPosition {
   row: number
   column: number
-  /** The layer a pointer hit named (ADR 0070): where the Frame draws shorter than the rows it names, a Frame bead and a
+  /** The layer a pointer hit named (ADR 0066): where the Frame draws shorter than the rows it names, a Frame bead and a
    * Canvas bead share a position. Left out where the position alone says it. */
   layer?: Layer
 }

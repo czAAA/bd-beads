@@ -1,10 +1,10 @@
-import { forEachBead, frameContains, type BeadMap, type Frame } from './canvas'
+import { forEachBead, frameContains, type BeadMap, type Rect } from './canvas'
 import { type GridPosition } from './grid'
 import { neighborsOf, rowCycle, type Weave } from './weave'
 
 /** A Piece (CONTEXT.md): beads that touch by a side or a corner. Pieces merge and split as beads change, so they are
  * never stored; worked out on demand (cached per set of beads). */
-export interface Piece extends Frame {
+export interface Piece extends Rect {
   /** How many beads it holds. */
   beads: number
 }
@@ -102,7 +102,7 @@ export function piecesOf(beads: BeadMap, weave: Weave): Piece[] {
 
 /** Whether two rectangles overlap, one lies inside the other, or they touch: a cell of one is in the other's cell
  * ring (side or corner, by the Technique's own neighbour geometry). */
-function areasJoin(weave: Weave, a: Frame, b: Frame): boolean {
+function areasJoin(weave: Weave, a: Rect, b: Rect): boolean {
   const aBottom = a.row + a.rows - 1
   const aRight = a.column + a.columns - 1
   const bBottom = b.row + b.rows - 1
@@ -132,7 +132,7 @@ const JOIN_MARGIN = 1
 
 /** Whether two Pieces' areas join: `areasJoin` once `a` is counted with the margin. The margin is a distance, so the
  * answer is the same either way round. */
-function areasJoinWithMargin(weave: Weave, a: Frame, b: Frame): boolean {
+function areasJoinWithMargin(weave: Weave, a: Rect, b: Rect): boolean {
   return areasJoin(weave, {
     row: a.row - JOIN_MARGIN,
     column: a.column - JOIN_MARGIN,
@@ -141,22 +141,22 @@ function areasJoinWithMargin(weave: Weave, a: Frame, b: Frame): boolean {
   }, b)
 }
 
-const areaCache = new WeakMap<BeadMap, Map<number, Frame[]>>()
+const areaCache = new WeakMap<BeadMap, Map<number, Rect[]>>()
 
 /** Every Piece area (CONTEXT.md): the rectangle round one or more Pieces. A Piece's area plus one bead outside its
  * bounds that overlaps or touches another's joins it, repeated until none do (the margin joins, it isn't drawn).
  * Top to bottom, left to right; cached per set of beads like `piecesOf`. */
-export function pieceAreasOf(beads: BeadMap, weave: Weave): Frame[] {
+export function pieceAreasOf(beads: BeadMap, weave: Weave): Rect[] {
   const known = areaCache.get(beads)?.get(rowCycle(weave))
   if (known) {
     return known
   }
 
-  let areas: Frame[] = piecesOf(beads, weave).map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))
+  let areas: Rect[] = piecesOf(beads, weave).map(({ row, column, rows, columns }) => ({ row, column, rows, columns }))
   let merged = true
   while (merged) {
     merged = false
-    const next: Frame[] = []
+    const next: Rect[] = []
     for (const area of areas) {
       const at = next.findIndex((other) => areasJoinWithMargin(weave, other, area))
       if (at === -1) {
@@ -175,7 +175,7 @@ export function pieceAreasOf(beads: BeadMap, weave: Weave): Frame[] {
   }
 
   areas.sort((a, b) => a.row - b.row || a.column - b.column)
-  const byCycle = areaCache.get(beads) ?? new Map<number, Frame[]>()
+  const byCycle = areaCache.get(beads) ?? new Map<number, Rect[]>()
   byCycle.set(rowCycle(weave), areas)
   areaCache.set(beads, byCycle)
   return areas

@@ -10,6 +10,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import PanelSection from '../shell/PanelSection.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // Beads needed (tickets 146, 178, 555; BeadsNeeded card): the Frame panel's last section, with the total and the weight
 // ("1 512 · ≈ 7.6 g", none when the Bead has none) in its header. Five colors show, then "Show all {n} colors" opens the
@@ -96,11 +97,11 @@ const total = computed(() => {
         </tbody>
       </table>
       <button v-if="quantities.length > SUMMARY_ROWS" class="ui-control bead-quantities__more" type="button" :aria-expanded="expanded" data-testid="quantities-toggle" @click="expanded = !expanded">
-        <span>{{ expanded ? t.quantities.showFewer : t.quantities.showAll.replace('{count}', String(quantities.length)) }}</span>
+        <span>{{ expanded ? t.quantities.showFewer : fillBlanks(t.quantities.showAll, { count: quantities.length }) }}</span>
         <AppIcon name="chevron-down" :size="14" class="bead-quantities__chevron" :class="{ 'bead-quantities__chevron--up': expanded }" />
       </button>
       <AppNote v-if="quantities.length > 0 && averageGrams !== undefined" class="bead-quantities__note" data-testid="quantities-weight-note">
-        {{ t.quantities.weightInfo.replace('{grams}', String(averageGrams)) }}
+        {{ fillBlanks(t.quantities.weightInfo, { grams: String(averageGrams) }) }}
       </AppNote>
     </div>
   </PanelSection>

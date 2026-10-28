@@ -1,5 +1,6 @@
+import { channelsOf, mix, toHex } from './color'
 import type { ColorCatalog } from './colorCatalog'
-import { familyHex } from './palette'
+import { familyHex, type PaletteColor } from './palette'
 
 type Finish = ColorCatalog['codes'][number]['finish']
 
@@ -23,20 +24,16 @@ const FINISH_CHANGES: Readonly<Record<Finish, FinishChange>> = {
   plated: { toward: 0, by: 0.12 },
 }
 
-const channels = (hex: string) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16))
-const toHex = (values: number[]) => `#${values.map((value) => Math.round(value).toString(16).padStart(2, '0')).join('')}`
-const mix = (from: number, to: number, by: number) => from + (to - from) * by
-
-/** The generated swatch of a color family in a Finish: the family's hex changed by the Finish. Pure and approximate;
- * undefined for a family with no single color (ticket 0537).
+/** The generated swatch of a color family in a Finish: the family's hex in its Brand's `colors` changed by the Finish.
+ * Pure and approximate; undefined for a family with no single color (ticket 0537).
  * @internal Its test checks each Finish's change on its own. */
-export function swatchHex(family: string, finish: Finish): string | undefined {
-  const base = familyHex(family)
+export function swatchHex(family: string, finish: Finish, colors: readonly PaletteColor[]): string | undefined {
+  const base = familyHex(family, colors)
   if (!base) return undefined
   const { toward, by, grey = 0 } = FINISH_CHANGES[finish]
-  const rgb = channels(base)
-  const average = (rgb[0]! + rgb[1]! + rgb[2]!) / 3
-  return toHex(rgb.map((value) => mix(mix(value, average, grey), toward, by)))
+  const rgb = channelsOf(base)
+  const average = (rgb.r + rgb.g + rgb.b) / 3
+  return toHex(mix(mix(rgb, { r: average, g: average, b: average }, grey), { r: toward, g: toward, b: toward }, by))
 }
 
 /** One code of a Bead's Color catalog as the picker lists it. */
@@ -52,14 +49,15 @@ export interface CatalogSwatch {
   taken: boolean
 }
 
-/** The codes of `catalog` that exist in Bead size `size`, in catalog order, each with its swatch. A code whose families
- * have no single color (a Mix) is left out. `paletteHexes` are the hexes the Palette already holds (ticket 0537). */
-export function catalogSwatches(catalog: ColorCatalog, size: string, paletteHexes: readonly string[]): CatalogSwatch[] {
+/** The codes of `catalog` that exist in Bead size `size`, in catalog order, each with its swatch from the catalog's own
+ * Brand's `colors` (`brandColors`, ADR 0078). A code whose families have no single color there (a Mix) is left out.
+ * `paletteHexes` are the hexes the Palette already holds (ticket 0537). */
+export function catalogSwatches(catalog: ColorCatalog, size: string, paletteHexes: readonly string[], colors: readonly PaletteColor[]): CatalogSwatch[] {
   const held = new Set(paletteHexes)
   return catalog.codes.flatMap((entry) => {
     if (!entry.sizes.includes(size)) return []
-    const family = entry.family.find((name) => familyHex(name))
-    const hex = entry.hex ?? (family ? swatchHex(family, entry.finish) : undefined)
+    const family = entry.family.find((name) => familyHex(name, colors))
+    const hex = entry.hex ?? (family ? swatchHex(family, entry.finish, colors) : undefined)
     if (!family || !hex) return []
     return [{ code: entry.code, family, finish: entry.finish, hex, approximate: !entry.hex, discontinued: !!entry.discontinued, taken: held.has(hex) }]
   })

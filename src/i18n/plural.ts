@@ -1,3 +1,4 @@
+import { fillBlanks } from '../domain/fillBlanks'
 import { groupThousands } from '../domain/formatNumber'
 import type { Locale } from './translations'
 
@@ -14,5 +15,6 @@ export function plural(locale: Locale, count: number, forms: PluralForms): strin
     rules.set(locale, rule)
   }
   const form = forms[rule.select(count)] ?? forms.other
-  return form.replace('{count}', groupThousands(count, locale))
+  // A form may spell its count out ("Added an empty row"), so the count is optional.
+  return fillBlanks(form, {}, { count: groupThousands(count, locale) })
 }
