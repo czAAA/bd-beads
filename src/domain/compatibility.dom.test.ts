@@ -373,7 +373,9 @@ describe('stored-data compatibility', () => {
     it.each([4, 5, 7, 8, 9, 10])('opens the same file labelled version %i as the same Project: every version 4 to 10 stores the Brick block flat (ticket 0636)', (version) => {
       const [six] = parseProjectsFile(projectFileV6BrickBlock).projects
 
-      expect(parseProjectsFile(projectFileV6BrickBlock.replace('"version":6', `"version":${version}`)).projects).toEqual([six])
+      const relabelled = { ...JSON.parse(projectFileV6BrickBlock), version }
+
+      expect(parseProjectsFile(JSON.stringify(relabelled)).projects).toEqual([six])
     })
 
     it('opens a version 8 file with a swatch code, the Canvas\'s flat Brick block kept off brick stitch and the Frame\'s in its settings (ticket 0636)', () => {
