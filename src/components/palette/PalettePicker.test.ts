@@ -4,6 +4,7 @@ import PalettePicker from './PalettePicker.vue'
 import { BUILT_IN_COLORS, addedColorId, defaultPaletteIds } from '../../domain/palette'
 import { ru } from '../../i18n/ru'
 import { mountWithPalette } from '../../testUtils/paletteHost'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 const added = addedColorId('#123456')
 
@@ -102,7 +103,7 @@ describe('PalettePicker', () => {
       const { wrapper, requestRemove } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], { editing: true })
       expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
       const swatch = wrapper.get(`[data-color-id="${added}"]`)
-      expect(swatch.attributes('aria-label')).toBe(ru.palette.removeSwatch.replace('{hex}', '#123456'))
+      expect(swatch.attributes('aria-label')).toBe(fillBlanks(ru.palette.removeSwatch, { hex: '#123456' }))
       await swatch.trigger('click')
       expect(requestRemove).toHaveBeenCalledWith(added)
       expect(wrapper.findComponent(PalettePicker).emitted('select')).toBeUndefined()

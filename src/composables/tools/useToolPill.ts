@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { provideRecentColors } from './usePalette'
-import { RECENT_SHORTCUTS, normalizeHex, type Palette } from '../../domain/palette'
+import { normalizeHex } from '../../domain/color'
+import { RECENT_SHORTCUTS, type Palette } from '../../domain/palette'
 import { RECENTS_IN_PILL, pushRecentColor, recentsBeside } from '../../domain/toolPill'
 import type { DevicePreferences } from '../../services/devicePreferences'
 
@@ -14,7 +15,7 @@ export interface ToolPillDeps {
   onSelectCustomColor: (hex: string) => void
 }
 
-// The Tool pill's own state (ticket 439, ADR 0059): docked edge, the eight recents, and whether the colour popover
+// The Tool pill's own state (ticket 439, ADR 0046): docked edge, the eight recents, and whether the colour popover
 // is open. The first two are kept on this device like the theme (ADR 0020). A colour joins the recents at the front
 // when the paint colour changes, with the one it replaced.
 export function useToolPill(deps: ToolPillDeps) {

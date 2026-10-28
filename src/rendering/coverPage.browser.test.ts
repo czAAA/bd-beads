@@ -12,16 +12,18 @@ import { drawCoverPage, drawListPage } from './coverPage'
 import { coverLayout, listHeader, TABLE_HEAD } from './coverLayout'
 import { font, loadPrintFonts, MONO, SERIF } from './printPages'
 import { A4_PORTRAIT, displayedGrid, PRINT_MARGIN } from './printPlan'
+import { toHex } from '../domain/color'
 import { PRINT_THEME } from './beadLook'
 import { printText } from './printText'
 import { exportProjectPng, projectPageCount } from './projectExport'
 import { frameGrid } from '../testUtils/frameGrid'
+import { fillBlanks } from '../domain/fillBlanks'
 
 const wordsOf = (project: ReturnType<typeof fixtureProject>, messages: Translations = en, locale: Locale = 'en') => printText(project, messages, locale, new Date())
 
 const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => {
   const [r, g, b] = canvas.getContext('2d')!.getImageData(Math.round(x), Math.round(y), 1, 1).data
-  return `#${[r, g, b].map((channel) => channel!.toString(16).padStart(2, '0')).join('')}`
+  return toHex({ r: r!, g: g!, b: b! })
 }
 
 // The Cover page drawn for real (ticket 0583): one A4 portrait page for both formats.
@@ -99,7 +101,7 @@ describe('Cover page', () => {
     const tech = [words.techniqueWord, words.metaLine].join(' · ')
     expect(context.measureText(tech).width, tech).toBeLessThanOrEqual(room)
     context.font = font('italic 400', 13, SERIF)
-    const byMaker = words.labels.byMaker.replace('{maker}', words.maker)
+    const byMaker = fillBlanks(words.labels.byMaker, { maker: words.maker })
     expect(context.measureText(byMaker).width, byMaker).toBeLessThanOrEqual(room)
   })
 })

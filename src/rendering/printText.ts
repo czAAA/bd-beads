@@ -12,6 +12,7 @@ import { techniqueName } from '../i18n/techniqueName'
 import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
+import { fillBlanks } from '../domain/fillBlanks'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -125,7 +126,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     return weight === undefined ? undefined : formatPrintedGrams(weight, locale, t.quantities.gramsUnit)
   }
 
-  const tubes = (count: number) => t.print.tubes.replace('{count}', groupThousands(count, locale))
+  const tubes = (count: number) => fillBlanks(t.print.tubes, { count: groupThousands(count, locale) })
   const wordChart = wordChartOf(project)
   const palette = projectPalette(project)
   const quantities = computeColorQuantities(project, palette)
@@ -146,10 +147,9 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     techniqueWord: technique,
     maker,
     exportedAt: `${date} · ${time}`,
-    metaLine: t.print.metaLine
-      .replace('{size}', size)
-      .replace('{bead}', beadName)
-      .replace(' · ≈ {estimate}', estimate ? ` · ≈ ${estimate}` : ''),
+    metaLine: estimate
+      ? fillBlanks(t.print.metaLine, { size, bead: beadName, estimate })
+      : fillBlanks(t.print.metaLineNoEstimate, { size, bead: beadName }),
     bead: beadName,
     shape: project.beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
     size,
@@ -171,7 +171,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     chartStyle: project.letters ? t.print.chartStyleLetters : t.print.chartStyleColor,
     gramsNote:
       perGram && bead
-        ? `${t.print.gramsNote.replace('{count}', groupThousands(perGram, locale)).replace('{bead}', `${formFactorName(bead.formFactor, t.formFactors)} ${bead.size}`)} ${t.print.spares}`
+        ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor, t.formFactors)} ${bead.size}` })} ${t.print.spares}`
         : undefined,
     wordChart: wordChart && wordChartText(wordChart, t.print.wordChart, t.rowProgress),
     labels: t.print,

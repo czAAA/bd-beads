@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { en } from '../../i18n/en'
 import SwitchTechniqueModal from './SwitchTechniqueModal.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 beforeEach(() => {
   localStorage.clear()
@@ -44,7 +45,7 @@ describe('SwitchTechniqueModal', () => {
       attachTo: document.body,
     })
     expect(document.body.textContent).toContain(en.frame.switchNetSizeTitle)
-    expect(document.body.querySelector('[data-testid="confirm-modal-message"]')!.textContent).toBe(en.frame.switchNetSizeMessage.replace('{count}', '4'))
+    expect(document.body.querySelector('[data-testid="confirm-modal-message"]')!.textContent).toBe(fillBlanks(en.frame.switchNetSizeMessage, { count: 4 }))
     wrapper.unmount()
   })
 })

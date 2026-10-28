@@ -1,4 +1,5 @@
 import { beadPitchMm, type Bead } from './beads'
+import { clamp } from './clamp'
 import { type GridDimensions } from './grid'
 import { describeWeave, rowCycle, slowFramingCells, type Technique } from './weave'
 
@@ -69,10 +70,6 @@ export interface FramingView {
   pictureHeightMm: number
 }
 
-function clampFraction(value: number): number {
-  return Math.min(1, Math.max(0, value))
-}
-
 /** The picture's position and scale under the frame, for a zoom (multiple of the cover scale) and a pan fraction.
  * Always covers the frame: scale starts at cover and the offset ranges only over the overhang. */
 export function framingView(
@@ -91,8 +88,8 @@ export function framingView(
 
   return {
     scaleMm,
-    offsetXMm: -clampFraction(pan.x) * rangeXMm,
-    offsetYMm: -clampFraction(pan.y) * rangeYMm,
+    offsetXMm: -clamp(pan.x, 0, 1) * rangeXMm,
+    offsetYMm: -clamp(pan.y, 0, 1) * rangeYMm,
     pictureWidthMm,
     pictureHeightMm,
   }

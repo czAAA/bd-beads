@@ -1,15 +1,15 @@
 # HeaderMenu
 
-**Replaced in v20 by the MenuPanel card; do not use for the editor.** (The Overview page keeps its own header and header menu, as below.) The menu button next to the logo at every screen size and the menu it opens, built on the Menu card; it replaces the More menu (OverflowMenu, archived in v15).
+**Replaced in v20 by the MenuPanel card; do not use for the editor.** (The Homepage keeps its own header and header menu, as below.) The menu button next to the logo at every screen size and the menu it opens, built on the Menu card; it replaces the More menu (OverflowMenu, archived in v15).
 
 - **Button:** the `menu` icon, right after the wordmark (after the mark on the phone), 10px gap. 34px ghost icon button from 744 (18px icon), 40px on the phone (20px icon). Hover `--hover-fill`, open `--press-fill`, focus the 2px `focus-ring` (3px in high contrast).
-- **Phone (0–743):** Theme (opens the four-way theme sheet), Language, Name on exports, Keyboard shortcuts when a keyboard is attached; a rule; Overview, Source code. The imports stay in the Pattern sheet.
+- **Phone (0–743):** Theme (opens the four-way theme sheet), Language, Name on exports, Keyboard shortcuts when a keyboard is attached; a rule; Homepage, Source code. The imports stay in the Pattern sheet.
 - **Under 1024:** there is no header; the same items live in the Dock's Menu panel (ticket 295).
-- **1024 and up:** Overview and Source code only; the header's own controls stay where they are.
-- **On /overview:** Overview and Source code at every size. They are navigation links: no check on the current page, only `aria-current="page"` on Overview.
-- **Menu:** 4px under the button, left edges aligned, `canvas` / `panel`, 1px `panel-line` (`line-strong` in dark, 2px in high contrast), radius-md, `elevation-3`, padding 4, `z-popover`. Items 40px below 1024, 34px from 1024; 16px icons: `bead` for Overview, `code` for Source code, the More menu's icons for the rest; values right in `meta`. Rules in `line-soft`.
+- **1024 and up:** Homepage and Source code only; the header's own controls stay where they are.
+- **On /homepage:** Homepage and Source code at every size. They are navigation links: no check on the current page, only `aria-current="page"` on Homepage.
+- **Menu:** 4px under the button, left edges aligned, `canvas` / `panel`, 1px `panel-line` (`line-strong` in dark, 2px in high contrast), radius-md, `elevation-3`, padding 4, `z-popover`. Items 40px below 1024, 34px from 1024; 16px icons: `bead` for Homepage, `code` for Source code, the More menu's icons for the rest; values right in `meta`. Rules in `line-soft`.
 - **Motion:** `--duration-base` in, 150ms out, opacity and a 4px move; a fade only under reduced motion.
 - **Keyboard and screen readers:** the button is "Menu" / «Меню» with `aria-haspopup="menu"` and `aria-expanded`; Enter, Space or Down opens on the first item, Up on the last; arrows, Home and End move; Enter chooses; Escape or Tab closes and returns focus to the button. `role="menu"`, items are links with `role="menuitem"`, `separator`.
-- Overview opens /overview; Source code opens the repository in a new tab (v18, ticket 269: the AGPL-3.0 network clause requires a hosted copy to link to its source), the only item that does.
+- Homepage opens /homepage; Source code opens the repository in a new tab (v18, ticket 269: the AGPL-3.0 network clause requires a hosted copy to link to its source), the only item that does.
 
 Hand-written from the v15 sign-off.

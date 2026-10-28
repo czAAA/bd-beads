@@ -11,10 +11,10 @@ import { weaveOf, type Project } from './project'
 // the layer as a Project of its own, so none of them has to know there are two.
 
 
-/** What `layerAt` needs of a Project (ADR 0070): the Frame, and the Weaves that say how much of the Canvas it covers. */
+/** What `layerAt` needs of a Project (ADR 0066): the Frame, and the Weaves that say how much of the Canvas it covers. */
 export type Placed = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
 
-/** Which layer a press at a Canvas position lands on (ADR 0066, 0070): the one the pointer's hit named, else under what
+/** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
  * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its
  * press, and keeps the answer. */
 export function layerAt(project: Placed, position: GridPosition): Layer {
