@@ -8,7 +8,7 @@ import { projectExportFileName } from './domain/projectFile'
 import { saveProjects } from './services/libraryStore'
 import { en } from './i18n/en'
 import { exportProjectPdf, exportProjectPng } from './rendering/projectExport'
-import { openPanel } from './testUtils/pill'
+import { openPanel, openSavedProjects } from './testUtils/pill'
 
 /** Drawing needs a real canvas and the hand-over a real browser, which jsdom is not: both are observed instead (the exports are checked in a browser by e2e/visual/export.spec.ts). */
 vi.mock('./services/fileDownload', () => ({ downloadFile: vi.fn() }))
@@ -81,6 +81,16 @@ describe('App PNG and PDF export (tickets 73, 74)', () => {
     expect(downloadFile).toHaveBeenCalledWith('openbeads-my-scarf.pdf', expect.any(Blob), 'application/pdf')
   })
 
+})
+
+describe('App library export (ticket 385)', () => {
+  it('hands over the whole library from the Projects library', async () => {
+    const wrapper = mountApp()
+    await openSavedProjects(wrapper)
+
+    await wrapper.get('[data-testid="menu-export-all"]').trigger('click')
+    await vi.waitFor(() => expect(downloadFile).toHaveBeenCalledWith(expect.stringMatching(/\.openbeads$/), expect.any(Uint8Array), 'application/json'))
+  })
 })
 
 describe('App empty, loading and failed states (ticket 158)', () => {

@@ -155,7 +155,7 @@ describe('useProjectLibrary', () => {
     expect(grid[1]![1]!.color).toBe('#e63746')
   })
 
-  it('removes a Project, persists the removal, and opens another remaining one', () => {
+  it('removes a Project, persists the removal, and opens another remaining one, or none once the last is gone', () => {
     const library = useProjectLibrary()
     const first = makeProject({ updatedAt: 1000 })
     const second = makeProject({ updatedAt: 2000 })
@@ -167,6 +167,10 @@ describe('useProjectLibrary', () => {
     expect(library.projects.value.map((project) => project.id)).toEqual([first.id])
     expect(library.activeProjectId.value).toBe(first.id)
     expect(loadProjects().map((project) => project.id)).toEqual([first.id])
+
+    library.removeProject(first.id)
+    expect(library.activeProjectId.value).toBeUndefined()
+    expect(loadProjects()).toEqual([])
   })
 
   it('leaves the open Project alone when a different one is removed', () => {

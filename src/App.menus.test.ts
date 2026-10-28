@@ -112,10 +112,26 @@ describe('Menu', () => {
     expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
     await wrapper.get('[data-testid="phone-bar-new-project"]').trigger('click')
     expect(wrapper.find('[data-testid="bead-section"]').exists()).toBe(true)
+
+    await wrapper.get('[data-testid="panel-body"] form').trigger('submit')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+    expect(loadProjects()).toHaveLength(1)
   })
 })
 
 describe('Project', () => {
+  it('changes the Technique from its picker as one Undo step (tickets 351, 492, 554)', async () => {
+    const wrapper = mountApp()
+    await openPanel(wrapper, 'strip-project')
+    await wrapper.get('[data-testid="project-technique"] button').trigger('click')
+    await wrapper.get('[data-testid="project-technique"] [data-value="peyote"]').trigger('click')
+    expect(loadProjects()[0]!.frame!.technique).toBe('peyote')
+
+    await wrapper.get('[data-testid="strip-undo"]').trigger('click')
+    expect(loadProjects()[0]!.frame!.technique).toBe('loom')
+  })
+
   it('renames from the pencil, and Try again saves what a full storage refused', async () => {
     const wrapper = mountApp()
     await openPanel(wrapper, 'strip-project')
