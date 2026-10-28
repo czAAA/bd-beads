@@ -6,7 +6,7 @@ import type { GridDimensions, GridPosition } from './grid'
 import { createProject, resolveProjectBead, weaveOf, type Project } from './project'
 import { parseProjectsFile } from './projectFile'
 import { estimatedSizeMm } from './projectSize'
-import { STRIP_TECHNIQUE, type Technique } from './weave'
+import type { Technique } from './weave'
 import triangleDesign from '../data/starters/triangle.json'
 import warpedSquareDesign from '../data/starters/warpedSquare.json'
 import kiteDesign from '../data/starters/kite.json'
@@ -150,7 +150,7 @@ function ring(id: OptionId, file: unknown): Starter {
     { name: 'width', size: 7, min: 3, max: 20, presets: [5, 7, 9] },
     { name: 'ringSize', size: 54, min: 44, max: 76, presets: [50, 52, 54, 56, 58] },
   ]
-  return { id, category: 'rings', kind: 'rectangular', technique: STRIP_TECHNIQUE, sizes, picks: [], file }
+  return { id, category: 'rings', kind: 'rectangular', technique: 'peyote', sizes, picks: [], file }
 }
 
 /** A Band (ticket 0597): a peyote band of Width beads, lying across, round the wrist with its Fit and the clasp. */
@@ -159,7 +159,7 @@ function band(id: OptionId, file: unknown): Starter {
     { name: 'width', size: 11, min: 3, max: 40, presets: [7, 9, 11, 13] },
     { name: 'wrist', size: 16, min: 12, max: 24, presets: [15, 16, 17, 18] },
   ]
-  return { id, category: 'bands', kind: 'rectangular', technique: STRIP_TECHNIQUE, sizes, picks: [{ name: 'fit', value: 'comfortable', values: BAND_FITS }], file }
+  return { id, category: 'bands', kind: 'rectangular', technique: 'peyote', sizes, picks: [{ name: 'fit', value: 'comfortable', values: BAND_FITS }], file }
 }
 
 const SHAPES: readonly Starter[] = [

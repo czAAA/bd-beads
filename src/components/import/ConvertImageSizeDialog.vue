@@ -22,7 +22,6 @@ const props = defineProps<{
   technique: Technique
   /** The Net size of the Project being made (ticket 485); nothing is the default. */
   netSize?: number
-  slowFramingCellThresholds: Record<Technique, number>
 }>()
 
 const emit = defineEmits<{
@@ -63,7 +62,7 @@ const estimate = computed(() =>
 )
 
 const slowFramingWarning = computed(() =>
-  dimensions.value && isSlowFramingSize(props.technique, dimensions.value, props.slowFramingCellThresholds)
+  dimensions.value && isSlowFramingSize(props.technique, dimensions.value)
     ? t.value.convertImage.slowFramingWarning.replace('{technique}', techniqueName(t.value, props.technique))
     : undefined,
 )

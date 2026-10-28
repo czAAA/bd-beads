@@ -13,7 +13,7 @@ const cube = findBead('toho-cube-1.5mm')!
 
 function open(props: Record<string, unknown> = {}) {
   return mount(ConvertImageSizeDialog, {
-    props: { bead: cube, technique: 'loom', slowFramingCellThresholds: { loom: 5000, peyote: 5000, brick: 5000, rightAngle: 5000, netting: 5000 }, ...props },
+    props: { bead: cube, technique: 'loom', ...props },
   })
 }
 
@@ -83,10 +83,10 @@ describe('ConvertImageSizeDialog (ticket 342)', () => {
   it('warns that framing may be slow at a big size, naming the Technique', async () => {
     const wrapper = open()
 
-    await fill(wrapper, '100', '49')
+    await fill(wrapper, '20', '20')
     expect(wrapper.find('[data-testid="convert-image-slow-framing-warning"]').exists()).toBe(false)
 
-    await fill(wrapper, '100', '50')
+    await fill(wrapper, '200', '200')
     expect(wrapper.find('[data-testid="convert-image-slow-framing-warning"]').text()).toContain(en.form.techniqueLoom)
   })
 

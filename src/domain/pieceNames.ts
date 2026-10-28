@@ -1,4 +1,4 @@
-import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import { forEachBead, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { type GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
@@ -34,7 +34,7 @@ export function readPieceNames(stored: unknown): PieceName[] {
 }
 
 /** A named Piece as drawn and listed: its name, its rectangle and how many beads it holds. */
-export interface NamedPiece extends Frame {
+export interface NamedPiece extends Rect {
   name: string
   beads: number
 }
@@ -71,7 +71,7 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'bric
 
 /** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
  * A Frame frames a Schema whole or not at all. */
-export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize' | 'pieceNames'>, frame: Frame): string | undefined {
+export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize' | 'pieceNames'>, frame: Rect): string | undefined {
   for (const { name, row, column } of project.pieceNames ?? []) {
     const members = pieceBeadsAt(project.beads, project, { row, column })
     const inside = members.filter((at) => frameContains(frame, at)).length
