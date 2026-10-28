@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import OverviewPage from './OverviewPage.vue'
-import { DEFAULT_TECHNIQUE, OVERVIEW_BACKGROUND_TECHNIQUE } from '../domain/weave'
 import { chooseLanguage } from '../testUtils/chooseLanguage'
 
 const FEATURES = ['techniques', 'projectEditing', 'convertImage', 'rowProgress', 'beadsNeeded', 'exports', 'savedProjects']
@@ -267,8 +266,7 @@ vi.mock('../rendering/positionMarks', () => ({ positionMarkBackground }))
 describe('OverviewPage background', () => {
   it("draws the Canvas's empty positions of a Delica 11/0 Symmetric peyote Project, not the loom's square grid", () => {
     page()
-    expect(OVERVIEW_BACKGROUND_TECHNIQUE).not.toBe(DEFAULT_TECHNIQUE)
-    expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: OVERVIEW_BACKGROUND_TECHNIQUE }))
+    expect(positionMarkBackground).toHaveBeenLastCalledWith(expect.objectContaining({ technique: 'peyote' }))
   })
 
   it("is the editor's tile: a bead across", () => {
