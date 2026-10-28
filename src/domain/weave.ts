@@ -1,7 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
-import type { Frame } from './canvas'
+import type { Rect } from './canvas'
 import type { Selection } from './selection'
-import type { GridBounds, GridDimensions, GridPosition } from './grid'
+import type { GridDimensions, GridPosition } from './grid'
 
 /** The weaving method, which determines a Project's grid geometry: a key of the config map below. */
 export type Technique = keyof typeof TECHNIQUE_RULES
@@ -50,17 +50,6 @@ type Orientation = 'upright' | 'sideways'
 interface TechniqueRules {
   /** Its name's key in the `techniques` translations: a plain string, checked in every language by a test (ADR 0078). */
   nameKey: string
-  /** The `overview.examples` label it has in the overview's Techniques example; absent when the example leaves it out. */
-  overviewKey?: 'loom' | 'peyote' | 'brick'
-  /** Whether the Overview's background is the empty positions of a Project worked in it. */
-  overviewBackground?: boolean
-  /** Whether geometric shapes are worked in it in rounds from the centre: a Triangle's or Warped Square's panels
-   * (Custom frames, ticket 0592). */
-  worksInRounds?: boolean
-  /** Whether a Ring's or Band's strip is woven in it, rolled out flat (ticket 0597; StarterGallery card). */
-  worksStrips?: boolean
-  /** Whether a Fringe earring's top is worked in it from its base row up (ticket 0597). */
-  worksFringeTops?: boolean
   /** Every other row (or block of rows) sits half a bead across. */
   shifted: boolean
   /** Distance from one row's top to the next, in bead heights: peyote rows nest into each other. */
@@ -84,6 +73,11 @@ interface TechniqueRules {
   wordChart?: { marked: boolean }
   /** A drawn bead's height over its width in px, where the Technique draws beads that aren't square. */
   cellAspect: number
+  /** What one of its beads costs to draw on every move of a drag, in square beads: a rounded bead costs three (measured,
+   * ticket 122). */
+  draftCost: number
+  /** From how many cells of a Frame's own grid (not the margin) framing a picture in it may be slow to update (ticket 61). */
+  slowFramingCells: number
 }
 
 const ROUNDED_BEAD_CORNER = 0.22
@@ -95,12 +89,14 @@ const RIGHT_ANGLE_ASPECT = 0.7
 const NETTING_STEP = 0.75
 /** A bead's face reaches half a cell from its centre: squared, in cells, for a round bead's hit test. */
 const BEAD_FACE_DISTANCE = 0.25
+/** Every Technique's slow-framing limit: as many cells as the framing preview draws (imageFraming's PREVIEW_MAX_CELLS),
+ * since no profiling shows Techniques differ. A Technique found slower lowers its own. */
+const SLOW_FRAMING_CELLS = 12_000
 
 /** The single config map: one entry per Technique. Adding a Technique is adding an entry here. */
 const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'loom',
-    overviewKey: 'loom',
     shifted: false,
     rowPitch: 1,
     roundness: 0,
@@ -112,13 +108,11 @@ const TECHNIQUE_RULES = {
     countsUnits: false,
     wordChart: { marked: false },
     cellAspect: 1,
+    draftCost: 1,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   peyote: {
     nameKey: 'peyote',
-    worksInRounds: true,
-    worksStrips: true,
-    overviewKey: 'peyote',
-    overviewBackground: true,
     shifted: true,
     rowPitch: 0.75,
     roundness: ROUNDED_BEAD_CORNER,
@@ -130,11 +124,11 @@ const TECHNIQUE_RULES = {
     countsUnits: false,
     wordChart: { marked: true },
     cellAspect: 1,
+    draftCost: 3,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   brick: {
     nameKey: 'brick',
-    worksFringeTops: true,
-    overviewKey: 'brick',
     shifted: true,
     rowPitch: 1,
     roundness: 0,
@@ -146,6 +140,8 @@ const TECHNIQUE_RULES = {
     countsUnits: false,
     wordChart: { marked: true },
     cellAspect: 1,
+    draftCost: 1,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   rightAngle: {
     nameKey: 'rightAngle',
@@ -159,6 +155,8 @@ const TECHNIQUE_RULES = {
     twoPasses: false,
     countsUnits: true,
     cellAspect: RIGHT_ANGLE_ASPECT,
+    draftCost: 3,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   netting: {
     nameKey: 'netting',
@@ -172,6 +170,8 @@ const TECHNIQUE_RULES = {
     twoPasses: false,
     countsUnits: true,
     cellAspect: 1,
+    draftCost: 3,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
 } satisfies Record<string, TechniqueRules>
 
@@ -211,7 +211,7 @@ export interface WeaveDescription extends TechniqueRules {
   /** After how many rows the shift repeats; Frame starts, edges and moves go by multiples of it. */
   frameStep: number
   /** Whether a position holds a bead: in Right-angle weave the last column of a Frame's horizontal lines is empty. */
-  hasPosition(position: GridPosition, frame?: Frame): boolean
+  hasPosition(position: GridPosition, frame?: Rect): boolean
   /** How the bead at a position lies. */
   orientationAt(position: GridPosition): Orientation
   /** The rectangle a position's bead takes, in the unit of the cell size passed (px, or mm of a Bead). */
@@ -248,7 +248,7 @@ export interface WeaveDescription extends TechniqueRules {
   /** A position's centre from the grid's top-left, in the unit of the cell size passed (px, or mm of a Bead). */
   center(position: GridPosition, cellWidth: number, cellHeight: number): CellCenter
   /** The positions that touch a position, for Fill; only those inside `bounds` when given. */
-  neighbors(bounds: GridBounds | undefined, position: GridPosition): GridPosition[]
+  neighbors(bounds: Rect | undefined, position: GridPosition): GridPosition[]
   /** Row progress's passes: how many a number of lines takes, which pass weaves a bead, which line a pass works on. */
   passes: {
     count(lines: number, direction: PassDirection): number
@@ -262,7 +262,7 @@ export interface WeaveDescription extends TechniqueRules {
   /** The Selection grown to whole Units (a Technique with none returns it as is): from an even row (a line of
    * horizontal beads) to an even row, at least one Unit each way. `within` keeps a grown Selection that started
    * inside it from leaving it. */
-  snapSelection(selection: Selection, within?: Frame): Selection
+  snapSelection(selection: Selection, within?: Rect): Selection
   /** Where a block of beads, given by its beads' offsets from its top-left, lands when aimed at `topLeft`: nudged so its
    * beads fall on beads of the Weave (a Technique whose positions aren't all beads); as aimed otherwise (ticket 486). */
   fitBlock(topLeft: GridPosition, offsets: GridPosition[]): GridPosition
@@ -332,14 +332,14 @@ const unitsOf = ({ columns, rows }: GridDimensions): GridDimensions => ({
   rows: Math.max(0, Math.floor((rows - 1) / 2)),
 })
 
-const inside = (frame: Frame, selection: Selection): boolean =>
+const inside = (frame: Rect, selection: Selection): boolean =>
   selection.top >= frame.row &&
   selection.left >= frame.column &&
   selection.top + selection.rows <= frame.row + frame.rows &&
   selection.left + selection.columns <= frame.column + frame.columns
 
 /** A grown Selection kept inside `within` when the Selection it grew from started inside it (ticket 483). */
-function keptWithin(box: Selection, from: Selection, within?: Frame): Selection {
+function keptWithin(box: Selection, from: Selection, within?: Rect): Selection {
   if (!within || !inside(within, from)) {
     return box
   }
@@ -353,14 +353,14 @@ const isHorizontalLine = (row: number): boolean => ((row % 2) + 2) % 2 === 0
 /** The positions whose beads touch a Right-angle weave bead at their corners (ticket 482): a horizontal bead meets the
  * vertical beads on the lines above and below at its own column and the next, a vertical one the horizontal beads
  * on the lines above and below at its own and the previous. */
-function rightAngleNeighbors(bounds: GridBounds | undefined, { row, column }: GridPosition): GridPosition[] {
+function rightAngleNeighbors(bounds: Rect | undefined, { row, column }: GridPosition): GridPosition[] {
   const across = isHorizontalLine(row) ? [column, column + 1] : [column - 1, column]
   const candidates = [row - 1, row + 1].flatMap((next) => across.map((c) => ({ row: next, column: c })))
   if (!bounds) {
     return candidates
   }
-  const top = bounds.row ?? 0
-  const left = bounds.column ?? 0
+  const top = bounds.row
+  const left = bounds.column
   return candidates.filter(
     (p) => p.row >= top && p.row < top + bounds.rows && p.column >= left && p.column < left + bounds.columns,
   )
@@ -550,10 +550,10 @@ function nettingDescription(rules: TechniqueRules, netSize: number): WeaveDescri
       const candidates = [-1, 1].flatMap((down) => [-1, 1].map((across) => ({ row: row + down, column: column + across })))
       const inside = (position: GridPosition): boolean =>
         !bounds ||
-        (position.row >= (bounds.row ?? 0) &&
-          position.row < (bounds.row ?? 0) + bounds.rows &&
-          position.column >= (bounds.column ?? 0) &&
-          position.column < (bounds.column ?? 0) + bounds.columns)
+        (position.row >= bounds.row &&
+          position.row < bounds.row + bounds.rows &&
+          position.column >= bounds.column &&
+          position.column < bounds.column + bounds.columns)
       return candidates.filter((position) => hasPosition(position) && inside(position))
     },
     passes: {
@@ -599,23 +599,15 @@ export function techniqueNameKey(technique: Technique): string {
   return RULES[technique].nameKey
 }
 
-/** The Technique a Custom frame worked in rounds from the centre is woven in (ticket 0592): geometric peyote. */
-export const ROUNDS_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksInRounds) ?? DEFAULT_TECHNIQUE
+/** What one of the Technique's beads costs to draw on every move of a drag, in square beads. */
+export function draftCost(technique: Technique): number {
+  return RULES[technique].draftCost
+}
 
-/** The Technique a Ring's or Band's strip is woven in (ticket 0597). */
-export const STRIP_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksStrips) ?? DEFAULT_TECHNIQUE
-
-/** The Technique a Fringe earring's top is worked in (ticket 0597). */
-export const FRINGE_TOP_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksFringeTops) ?? DEFAULT_TECHNIQUE
-
-/** The Techniques the overview's Techniques example shows, each with its label key. */
-export const OVERVIEW_TECHNIQUES: readonly { technique: Technique; label: 'loom' | 'peyote' | 'brick' }[] = TECHNIQUES.flatMap((technique) => {
-  const label = RULES[technique].overviewKey
-  return label ? [{ technique, label }] : []
-})
-
-/** The Technique whose empty positions are the Overview's background. */
-export const OVERVIEW_BACKGROUND_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].overviewBackground) ?? DEFAULT_TECHNIQUE
+/** From how many cells of a Frame's own grid framing a picture in the Technique may be slow to update. */
+export function slowFramingCells(technique: Technique): number {
+  return RULES[technique].slowFramingCells
+}
 
 /** Whether the Technique is one of these. */
 export function isTechnique(value: unknown): value is Technique {
@@ -721,7 +713,7 @@ function overlappingColumns(weave: Weave, fromRow: number, toRow: number, column
 /** The cells adjacent to (row, column) for the Project's grid geometry: same-row left/right plus overlapping cell(s)
  * above/below per the Technique's offset (ticket 06), so fill respects real adjacency. Only positions inside `bounds`
  * come back; with no bounds the canvas is open. */
-export function neighborsOf(weave: Weave, bounds: GridBounds | undefined, position: GridPosition): GridPosition[] {
+export function neighborsOf(weave: Weave, bounds: Rect | undefined, position: GridPosition): GridPosition[] {
   if (RULES[weave.technique].countsUnits) {
     return describeWeave(weave).neighbors(bounds, position)
   }
@@ -740,8 +732,8 @@ export function neighborsOf(weave: Weave, bounds: GridBounds | undefined, positi
   if (!bounds) {
     return candidates
   }
-  const top = bounds.row ?? 0
-  const left = bounds.column ?? 0
+  const top = bounds.row
+  const left = bounds.column
   return candidates.filter(
     (p) => p.row >= top && p.row < top + bounds.rows && p.column >= left && p.column < left + bounds.columns,
   )

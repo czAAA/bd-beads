@@ -1,4 +1,4 @@
-import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, shiftedBeads, withColors, type BeadMap, type Frame, type FrameSheet } from './canvas'
+import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, shiftedBeads, withColors, type BeadMap, type Rect, type FrameSheet } from './canvas'
 import type { GridPosition, Layer } from './grid'
 
 export type { Layer }
@@ -84,7 +84,7 @@ export function layerView(project: Project, layer: Layer): Project {
 
 /** `after` with every position under the Frame put back as `before` had it: the Canvas beads a Frame covers are neither
  * changed nor drawn. The same map back when nothing was under it. */
-function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Frame): BeadMap {
+function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect): BeadMap {
   const reverts = changedPositions(before, after)
     .filter((position) => frameContains(frame, position))
     .map(({ row, column }) => ({ row, column, color: colorAt(before, row, column) }))

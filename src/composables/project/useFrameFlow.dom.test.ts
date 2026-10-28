@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { withColors } from '../../domain/canvas'
+import { withColors, type Rect } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
 import type { FrameKindId } from '../../domain/frameKind'
 import { createProject, moveToRow, withFrame, type Project } from '../../domain/project'
@@ -37,7 +37,7 @@ function setupEditing(project: Project | null = sized) {
 }
 
 /** A Frame\'s rectangle alone, without its Weave. */
-const rect = ({ technique: _technique, ...rectangle }: { technique: string; row: number; column: number; rows: number; columns: number }) => rectangle
+const rect = ({ technique: _technique, ...rectangle }: Rect & { technique: string }) => rectangle
 
 /** The rectangle of the Frame the last change left (its beads and name aside). */
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
@@ -405,6 +405,7 @@ describe('useFrameFlow', () => {
       expect(deps.harness.project.netSize).toBe(5)
       deps.harness.history.onUndo()
       expect(deps.harness.project).toMatchObject({ technique: 'loom', beads: drawnCanvas.beads })
+      expect(deps.harness.project).not.toHaveProperty('netSize')
     })
 
     it('changes nothing when cancelled', () => {
@@ -473,6 +474,30 @@ describe('useFrameFlow', () => {
       confirmSwitch()
       expect(deps.harness.project.netSize).toBe(7)
       expect(lost).toBeGreaterThan(0)
+    })
+
+    it('Undo brings back the Canvas\'s Net size along with its beads, and Redo the new size without them (ticket 0610)', () => {
+      const drawn = { ...net, beads: { 0: { 0: '#111111', 1: '#222222' } } }
+      const { deps, setCanvasNetSize, confirmSwitch } = setup(drawn)
+      setCanvasNetSize(5)
+      confirmSwitch()
+      deps.harness.history.onUndo()
+      expect(deps.harness.project).toMatchObject({ netSize: 3, beads: drawn.beads })
+      deps.harness.history.onRedo()
+      expect(deps.harness.project.netSize).toBe(5)
+      expect(deps.harness.project.beads).toEqual({})
+    })
+
+    it('Undo brings back the Frame\'s Net size along with its beads, and Redo the new size without them (ticket 0610)', () => {
+      const drawn = { ...net, frame: { ...net.frame, beads: { 0: { 0: '#111111', 1: '#222222' } } } }
+      const { deps, setNetSize, confirmSwitch } = setup(drawn)
+      setNetSize(5)
+      confirmSwitch()
+      deps.harness.history.onUndo()
+      expect(deps.harness.project.frame).toMatchObject({ netSize: 3, beads: drawn.frame.beads })
+      deps.harness.history.onRedo()
+      expect(deps.harness.project.frame?.netSize).toBe(5)
+      expect(deps.harness.project.frame?.beads).toEqual({})
     })
 
     it('is no step for the size already used', () => {
