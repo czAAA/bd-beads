@@ -3,6 +3,7 @@ import { sizeOf, type FrameSheet, type Sized } from './canvas'
 import { frameLayoutOf } from './frameKind'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
 import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
+import { fillBlanks } from './fillBlanks'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 
@@ -117,7 +118,7 @@ export function formatOtherUnit(
 ): string {
   if (unit === 'mm') {
     const { columns, rows } = describeWeave(weave).unitsOf(grid)
-    return labels.beadsTemplate.replace('{columns}', String(columns)).replace('{rows}', String(rows))
+    return fillBlanks(labels.beadsTemplate, { columns, rows })
   }
   return `≈ ${formatSizeMm(estimatedSizeMm({ ...grid, ...weave }, bead), labels, locale)}`
 }

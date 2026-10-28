@@ -6,6 +6,7 @@ import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import AppIcon from '../ui/AppIcon.vue'
 import AppSwatch from '../ui/AppSwatch.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The body of the Project panel's canvas section (ProjectPanel and CanvasBackground cards, tickets 252, 348, 443, 554):
 // Canvas background swatches (five in each theme; a radio group applying at once) and the chosen one's name and hex. High
@@ -22,10 +23,7 @@ function nameOf(index: number): string {
 }
 
 function swatchLabel(index: number): string {
-  return t.value.canvas.canvasColor.swatchLabel
-    .replace('{name}', nameOf(index))
-    .replace('{n}', String(index + 1))
-    .replace('{count}', String(swatches.value.length))
+  return fillBlanks(t.value.canvas.canvasColor.swatchLabel, { name: nameOf(index), n: index + 1, count: swatches.value.length })
 }
 
 function choose(index: number) {

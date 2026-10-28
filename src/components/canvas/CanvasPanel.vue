@@ -25,6 +25,7 @@ import { hasProjectBeads, resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 const {
   t,
@@ -171,7 +172,7 @@ const frameTooltip = computed(() => {
   const bead = resolveProjectBead(project)
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   const { columns, rows } = describeWeave(frame).unitsOf(frame)
-  return t.value.frame.sizeTooltip.replace('{columns}', String(columns)).replace('{rows}', String(rows)).replace('{estimate}', estimate)
+  return fillBlanks(t.value.frame.sizeTooltip, { columns, rows, estimate })
 })
 
 /** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar
@@ -186,7 +187,7 @@ const selectionSummary = computed(() => {
   if (!project || !current) return undefined
   const bead = resolveProjectBead(project)
   const estimate = bead ? formatSizeMm(estimatedSizeMm(current, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
-  return t.value.frame.sizeTooltip.replace('{columns}', String(current.columns)).replace('{rows}', String(current.rows)).replace('{estimate}', estimate)
+  return fillBlanks(t.value.frame.sizeTooltip, { columns: current.columns, rows: current.rows, estimate })
 })
 
 /** Where the Selection is on the surface and whether a pointer is down on it: the bar anchors to the one and steps

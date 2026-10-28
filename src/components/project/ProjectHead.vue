@@ -9,6 +9,7 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import NamesSection from './NamesSection.vue'
 import TechniqueSection from './TechniqueSection.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The head of the Project panel, always shown (ProjectPanel card, ticket 554): the `project:` title with the local save
 // state, the Project's name and maker, and the one Technique control with Brick block. It only asks; the shell works.
@@ -40,7 +41,7 @@ const stateText = computed(() =>
     ? t.value.panels.project.savedLocal
     : state.value === 'unsaved'
       ? t.value.panels.project.notSavedYet
-      : t.value.panels.project.notSaved.replace('{reason}', t.value.panels.project.saveRefused),
+      : fillBlanks(t.value.panels.project.notSaved, { reason: t.value.panels.project.saveRefused }),
 )
 
 const weave = computed(() => frameWeave(props.project))
