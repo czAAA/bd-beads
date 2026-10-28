@@ -1,5 +1,5 @@
 import type { Rect, FrameSheet } from '../domain/canvas'
-import { frameLayoutOf } from '../domain/frameKind'
+import { frameGeometry } from '../domain/layerGeometry'
 import { describeWeave, withCell, type Technique, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
@@ -64,7 +64,7 @@ export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'k
 // rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
-    return frameLayoutOf(project.frame) ? [] : [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }]
+    return frameGeometry(project.frame).grid ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }] : []
   }
   return pieceAreasOf(project.beads, canvasWeave(project))
     .filter(hasGuides)
