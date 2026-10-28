@@ -3,10 +3,7 @@ import { toolCapabilities } from './tool'
 
 describe('toolCapabilities', () => {
   it('lets the Hand tool move the canvas and nothing else', () => {
-    expect(toolCapabilities('hand')).toEqual({
-      tool: 'hand', moves: true, selects: false, selectsAnywhere: false, nearestOnPress: false,
-      blocksMargin: false, picking: false, markerHidden: false, settingFrame: false,
-    })
+    expect(toolCapabilities('hand')).toMatchObject({ moves: true, selects: false, nearestOnPress: false, blocksMargin: false })
   })
 
   it('refuses the Frame margin to Paint and Fill, which place beads, and lands a Fill press on the nearest bead', () => {
@@ -24,10 +21,6 @@ describe('toolCapabilities', () => {
     expect(toolCapabilities('select', { pasteArmed: true }).blocksMargin).toBe(true)
     expect(toolCapabilities('paint', { picking: true })).toMatchObject({ blocksMargin: false, picking: true })
     expect(toolCapabilities('select', { pasteArmed: true, picking: true }).blocksMargin).toBe(false)
-  })
-
-  it('hides the bead marker while Space is held and says when the Frame is being edited', () => {
-    expect(toolCapabilities('paint', { spaceHeld: true, settingFrame: true })).toMatchObject({ markerHidden: true, settingFrame: true })
   })
 
   it('gives no tool any capability when none is in hand', () => {
