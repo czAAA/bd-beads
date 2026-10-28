@@ -20,6 +20,9 @@ const {
   removeFrameTakesBeads,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
+  removeLinePrompt,
+  onCancelRemoveLine,
+  onConfirmRemoveLine,
   onCancelReplaceFrame,
   onConfirmReplaceFrame,
   pendingColorRemovalHex,
@@ -94,6 +97,17 @@ const {
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
     @cancel="onCancelRemoveFrame"
+  />
+
+  <ConfirmModal
+    v-if="open === 'remove-line' && removeLinePrompt"
+    data-testid="remove-line-modal"
+    :title="removeLinePrompt.title"
+    :message="removeLinePrompt.message"
+    :confirm-label="t.removeLine.confirmButton"
+    :cancel-label="t.removeLine.cancelButton"
+    @confirm="onConfirmRemoveLine"
+    @cancel="onCancelRemoveLine"
   />
 
   <ConfirmModal

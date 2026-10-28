@@ -93,9 +93,20 @@ describe('useRotateSelectionFlow', () => {
     expect(harness.project.frame).toBe(sketch.frame)
   })
 
-  it('does nothing with no Selection, no Project, or once a Row progress pass is done (ticket 411)', () => {
-    const locked = moveToRow(framed, 1)
-    for (const [project, selection] of [[framed, null], [null, strip], [locked, strip]] as const) {
+  it('turns a Selection clear of finished passes once rows are marked done, on the Frame or the Canvas (ticket 0647)', () => {
+    const { harness, onRotate } = setup(moveToRow(framed, 1))
+    onRotate()
+    expect(colorAt(harness.project.frame!.beads, 9, 11)).toBe(RED)
+
+    const sketch: Project = moveToRow({ ...framed, frame: { technique: 'loom' as const, row: 30, column: 30, rows: 4, columns: 4, beads: {} }, beads: withColors({}, [10, 11, 12].map((column) => ({ row: 10, column, color: RED }))) }, 4)
+    const onCanvas = setup(sketch)
+    onCanvas.onRotate()
+    expect(colorAt(onCanvas.harness.project.beads, 9, 11)).toBe(RED)
+  })
+
+  it('does nothing with no Selection, no Project, or a Selection that reaches into finished rows (ticket 0647)', () => {
+    const reached = moveToRow(framed, 11)
+    for (const [project, selection] of [[framed, null], [null, strip], [reached, strip]] as const) {
       const { harness, onRotate } = setup(project, selection)
       onRotate()
       expect(harness.replaceProject).not.toHaveBeenCalled()

@@ -6,6 +6,7 @@ import { frameGeometryOf } from './layers'
 import { frameWeave } from './layerWeave'
 import { touch, type Project, type RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
+import type { AreaLine } from './removeLine'
 
 // Row progress (CONTEXT.md): which pass of the Frame's Row order the weaver is on, the lock on finished rows, and
 // reading the pointers back from a stored Project.
@@ -108,6 +109,61 @@ export function readRowProgress(stored: (Partial<RowProgress> & { currentRow: nu
 export function rowProgressStarted(project: Pick<Project, 'rowProgress' | 'frame'>): boolean {
   const { currentRow, currentColumn, currentRowBack, currentColumnBack } = project.rowProgress
   return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0 || !!currentRowBack || !!currentColumnBack)
+}
+
+/** The four pointers and the way each counts (ticket 0589). */
+const POINTER_WAYS: readonly (readonly [PointerKey, RowWay])[] = [
+  ['currentRow', { direction: 'rows' }],
+  ['currentColumn', { direction: 'columns' }],
+  ['currentRowBack', { direction: 'rows', reversed: true }],
+  ['currentColumnBack', { direction: 'columns', reversed: true }],
+]
+
+/** Whether a Frame line is one of the rows worked `way`, rather than a line across them. */
+export const lineRunsAlong = (line: AreaLine, way: RowWay): boolean => (line.axis === 'row') === (way.direction === 'rows')
+
+/** The beads of a Frame line in passes finished `way` (the way the rows run now unless given): how many, and how many
+ * passes they make up. */
+export function finishedOnLine(project: RowProgressed, line: AreaLine, way: RowWay = project.rowProgress): { beads: number; passes: number } {
+  const { rows = 0, columns = 0 } = project.frame ?? {}
+  const pointer = project.rowProgress[pointerKey(way)] ?? 0
+  const order = rowOrderOf({ ...frameWeave(project), ...laidOf(project.frame), rows, columns }, way)
+  const length = line.axis === 'row' ? columns : rows
+  const at = (along: number) => (line.axis === 'row' ? { row: line.index, column: along } : { row: along, column: line.index })
+  const finished = Array.from({ length }, (_bead, along) => order.passAt(at(along))).filter((pass) => pass < pointer)
+  return { beads: finished.length, passes: new Set(finished).size }
+}
+
+/** Row progress once a line of the Frame is taken out (Remove line, ticket 0647, ADR 0055): each way whose rows run
+ * along it goes back by that row's finished passes, so the rows after it, moved up, stay finished; a line across the
+ * rows leaves them finished, a bead short. */
+export function progressWithoutLine(project: RowProgressed, line: AreaLine): RowProgress {
+  const rowProgress = { ...project.rowProgress }
+  for (const [key, way] of POINTER_WAYS) {
+    const { passes } = lineRunsAlong(line, way) ? finishedOnLine(project, line, way) : { passes: 0 }
+    if (passes > 0) rowProgress[key] = (rowProgress[key] ?? 0) - passes
+  }
+  return rowProgress
+}
+
+/** Row progress turned with its Frame a quarter clockwise (Rotate Frame, ticket 0647, ADR 0052): each way's pointer
+ * and the current way move a quarter turn on (top to bottom to right to left, left to right to top to bottom, and so
+ * on), so the same beads stay finished. `twoPasses` and `rows` are the Frame's before the turn. */
+export function turnedRowProgress(rowProgress: RowProgress, { twoPasses, rows }: { twoPasses: boolean; rows: number }): RowProgress {
+  // A column's beads run the other way once turned: on peyote with even columns its two passes swap, so a column half
+  // woven can't keep its done half and goes back to its start.
+  const alongTurned = (pointer: number) => (twoPasses && rows % 2 === 0 && pointer >= 2 && pointer % 2 === 0 ? pointer - 1 : pointer)
+  const { direction, reversed, currentRow, currentColumn, currentRowBack = 0, currentColumnBack = 0 } = rowProgress
+  const way = direction === 'rows' ? { direction: 'columns' as const, reversed: !reversed } : { direction: 'rows' as const, reversed: !!reversed }
+  const rowBack = alongTurned(currentColumnBack)
+  return {
+    direction: way.direction,
+    ...(way.reversed ? { reversed: true } : {}),
+    currentRow: alongTurned(currentColumn),
+    currentColumn: currentRowBack,
+    ...(rowBack ? { currentRowBack: rowBack } : {}),
+    ...(currentRow ? { currentColumnBack: currentRow } : {}),
+  }
 }
 
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is

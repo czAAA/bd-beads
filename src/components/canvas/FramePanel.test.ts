@@ -9,7 +9,6 @@ import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { CustomFrameKindId } from '../../domain/frameKind'
 import { changeFrame } from '../../domain/changeFrame'
-import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
 import { pngDpiFor } from '../../rendering/exportDpi'
@@ -150,11 +149,11 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.emitted('step')).toHaveLength(count)
   })
 
-  it('turns the fields off, hides the edges and says why, and drops Rotate once a pass is done', () => {
+  it('turns the fields off, hides the edges and says why once a pass is done, and keeps Rotate Frame (ticket 0647)', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
     expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
   })
@@ -280,12 +279,8 @@ describe('FramePanel (ticket 473)', () => {
     }
   })
 
-  it('ends the export section with a plain Buy me a coffee link to the Coffee link, in a new tab (ticket 560)', () => {
-    const wrapper = mountBar()
-    const link = wrapper.get('[data-testid="frame-coffee-link"]')
-    expect(link.text()).toBe(en.frame.exportCoffeeLink)
-    expect(link.attributes()).toMatchObject({ href: COFFEE_URL, target: '_blank', rel: 'noopener' })
-    expect(wrapper.get('[data-testid="frame-coffee"]').text()).toContain(en.frame.exportCoffee)
+  it('has no Buy me a coffee line', () => {
+    expect(mountBar().find('[data-testid="frame-coffee"]').exists()).toBe(false)
   })
 
   it('leads with Export, then the size, and ends with Beads needed, its total in the header (tickets 555, 568)', () => {

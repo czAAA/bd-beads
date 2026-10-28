@@ -10,7 +10,7 @@ import { parseProjectsFile, serializeProject } from './projectFile'
 import { createProject } from './createProject'
 import { fillArea } from './fill'
 import { paintCells } from './drawing'
-import { rowProgressOn } from './rowProgress'
+import { isInFinishedRow, rowProgressOn } from './rowProgress'
 import { rotateFrame } from './rotate'
 import type { Project } from './project'
 
@@ -108,6 +108,16 @@ describe('changing a Custom frame\'s Rounds', () => {
     expect(turned.frame!.folded).toEqual(shrunk.frame!.folded)
     expect(changed(turned, { settings: { rounds: 4 } }).frame!.beads).toEqual({ 3: { 0: RED } })
     expect(changed(shrunk, { remove: true }).beads).toEqual(shrunk.beads)
+  })
+
+  it('keeps its pointer and the same beads finished on Rotate Frame, as its order turns with its layout (ticket 0647)', () => {
+    const project = { ...triangle(4), rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
+    const turned = rotateFrame(project)!
+    const finished = (woven: Project) =>
+      frameLayoutOf(woven.frame!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row: row + woven.frame!.row, column: column + woven.frame!.column, layer: 'frame' })).map(({ row, column }) => `${row},${column}`)
+    expect(turned.rowProgress).toEqual(project.rowProgress)
+    expect(finished(turned)).toEqual(finished(project))
+    expect(finished(project)).toHaveLength(3 + 6)
   })
 
   it('is no change at the Rounds it has, and keeps within the kind\'s range', () => {

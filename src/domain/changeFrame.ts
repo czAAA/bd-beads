@@ -25,15 +25,15 @@ import type { Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
 import { canvasDistance, canvasWeave, weaveOf } from './layerWeave'
-import { firstPasses, rowProgressStarted } from './rowProgress'
+import { firstPasses, progressWithoutLine, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
 import type { Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove
-// Frame and Remove row/column. It owns the rules: Row progress's lock (only Remove Frame passes it, clearing the
-// passes), Row progress following the Frame.
+// Frame and Remove row/column. It owns the rules: Row progress's lock (Remove Frame passes it, clearing the passes;
+// moving, naming and Remove row/column keep them), Row progress following the Frame.
 export type FrameChange =
   /** Resize the Frame (handles, steppers, typed size), its beads keeping their place. Woven like the Canvas it lays what
    * it gives up there (ticket 513) and lifts what it grows over, a named Piece whole or not at all (ticket 0639); woven
@@ -43,7 +43,8 @@ export type FrameChange =
    * it move into it. A Frame already there lays its beads back on the Canvas first. */
   | { make: Rect }
   | { remove: true }
-  /** One whole row or column of the Frame, counted from its first. */
+  /** One whole row or column of the Frame, counted from its first; allowed after Row progress has started, a finished
+   * row taking its passes with it (ticket 0647). */
   | { removeLine: AreaLine }
   /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0054); allowed after Row progress has
    * started, which then travels with the Frame. */
@@ -100,7 +101,7 @@ export function frameChangeDiscardsProgress(project: Project, change: FrameChang
 /** Why the change would be refused on this Project, or undefined when it would be allowed. Cheap: it builds nothing. */
 export function frameChangeRefusal(project: Project, change: FrameChange): FrameChangeRefusal | undefined {
   // Remove Frame is how the weaver lets go of finished passes: it clears them with the Frame (ticket 426, ADR 0055).
-  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change) && !('move' in change) && !('name' in change)) {
+  if (rowProgressStarted(project) && !frameChangeDiscardsProgress(project, change) && !('move' in change) && !('name' in change) && !('removeLine' in change)) {
     return 'locked'
   }
   const frame = project.frame
@@ -145,7 +146,8 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     // The line runs on through the Folded beads beyond the Frame's edge, so they shift with the rest (ticket 0638).
     const { folded: _folded, ...kept } = frame
     const carried = withEachBead(frame, (position) => shiftedAcrossLine(change.removeLine, position))
-    return { kind: 'changed', project: withFrame({ ...project, frame: { ...kept, ...carried } }, smaller) }
+    const rowProgress = progressWithoutLine(project, change.removeLine)
+    return { kind: 'changed', project: withFrame({ ...project, rowProgress, frame: { ...kept, ...carried } }, smaller) }
   }
 
   if ('move' in change) {

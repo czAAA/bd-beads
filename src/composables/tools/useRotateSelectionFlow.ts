@@ -1,8 +1,7 @@
-import type { Ref } from 'vue'
+import { computed, type Ref } from 'vue'
 import { rotateLayerSelection } from '../../domain/rotate'
-import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import type { Selection } from '../../domain/selection'
+import { selectionInFinishedRows, type Selection } from '../../domain/selection'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
@@ -21,15 +20,22 @@ export interface RotateSelectionFlowDeps {
   locale: () => Locale
 }
 
-// Rotate (CONTEXT.md, ADR 0052): a quarter turn of the Selection's beads about its centre as one drawing Edit (Undo
-// restores all). Finished rows trim it silently, as Paste. The turned rectangle becomes the Selection; a Message says
-// when it landed on beads, with Undo, or how many a Custom frame's Seams and Off-shape dropped (ticket 0594).
+// Rotate (CONTEXT.md, ADR 0052): a quarter turn of the Selection's beads about its centre as one drawing Edit, held back
+// where the Selection reaches into finished rows and trimmed where it lands on them (ticket 0647). The turned rectangle
+// becomes the Selection; a Message says when it covered beads, with Undo, or how many a Custom frame dropped (0594).
 export function useRotateSelectionFlow(deps: RotateSelectionFlowDeps) {
+  /** Whether the Selection reaches into finished rows, so Rotate shows disabled and saying why. */
+  const heldBack = computed(() => {
+    const selection = deps.selection.value
+    const project = deps.currentProject()
+    return !!selection && !!project && selectionInFinishedRows(project, selection)
+  })
+
   function onRotate(): void {
     const selection = deps.selection.value
     const before = deps.currentProject()
-    // Shift+R reaches here without asking the control, so the lock of ticket 411 is checked here too.
-    if (!selection || !before || rowProgressStarted(before)) {
+    // Shift+R reaches here without asking the control, so the rule is checked here too.
+    if (!selection || !before || heldBack.value) {
       return
     }
 
@@ -57,5 +63,5 @@ export function useRotateSelectionFlow(deps: RotateSelectionFlowDeps) {
     }
   }
 
-  return { onRotate }
+  return { onRotate, heldBack }
 }

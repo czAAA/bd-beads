@@ -58,6 +58,19 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
   })
 
+  it('asks before Remove line takes a finished row, and takes it on confirm (ticket 0647)', async () => {
+    const wrapper = await mountWithProject(3, 30)
+    await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
+    await pickTool(wrapper, 'select')
+    await drag(wrapper, [0, 1])
+
+    const rows = loadProjects()[0]!.frame!.rows
+    await pressBar(wrapper, 'remove-line')
+    expect(loadProjects()[0]!.frame!.rows).toBe(rows)
+    await wrapper.get('[data-testid="remove-line-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
+    expect(loadProjects()[0]!.frame!.rows).toBe(rows - 1)
+  })
+
   it('turns the Selection a quarter through Rotate (ticket 416)', async () => {
     const wrapper = await mountWithProject(4.5, 3) // 3 columns x 2 rows
     await pickColor(wrapper, 'red')
