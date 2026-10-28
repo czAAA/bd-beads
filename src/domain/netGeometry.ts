@@ -1,6 +1,7 @@
 import { beadPitchMm } from './beads'
+import type { Rect } from './canvas'
 import type { GridPosition } from './grid'
-import { insideBounds, keptWithin, modulo, type Box, type GeometryStrategy, type NetGeometry } from './weaveGeometry'
+import { beadsBox, insideBounds, keptWithin, modulo, type Box, type GeometryStrategy, type NetGeometry } from './weaveGeometry'
 
 /** A bead's face reaches half a cell from its centre: squared, in cells, for a round bead's hit test. */
 const BEAD_FACE_DISTANCE = 0.25
@@ -19,6 +20,7 @@ export const netGeometry: GeometryStrategy<NetGeometry> = ({ step, cellAspect, r
     width: cellWidth,
     height: cellHeight,
   })
+  const beadsBoxOf = (block: Rect, cellWidth: number, cellHeight: number): Box => beadsBox({ box, orientationAt: () => 'upright' }, block, cellWidth, cellHeight)
   const extent = (count: number, size: number): number => (count > 0 ? (count - 1) * step * size + size : 0)
   // The bead nearest a point, among the positions within `reach` steps of the one it falls on.
   const nearest = (x: number, y: number, cellWidth: number, cellHeight: number, reach: number): { position: GridPosition; distance: number } | undefined => {
@@ -46,6 +48,11 @@ export const netGeometry: GeometryStrategy<NetGeometry> = ({ step, cellAspect, r
     hasPosition,
     orientationAt: () => 'upright',
     box,
+    rowOffset: () => 0,
+    blockBox: beadsBoxOf,
+    boundary: beadsBoxOf,
+    unitSize: (cellWidth, cellHeight) => ({ width: period * step * cellWidth, height: period * step * cellHeight }),
+    unitMiddle: (cellWidth, cellHeight) => ({ x: (period * step * cellWidth) / 2, y: (p * step * cellHeight) / 2 }),
     blockExtent: (columns, rows, cellWidth, cellHeight) => ({ width: extent(columns, cellWidth), height: extent(rows, cellHeight) }),
     // A press lands on a bead only inside its round face.
     positionAt: (x, y, cellWidth, cellHeight) => {
@@ -63,12 +70,10 @@ export const netGeometry: GeometryStrategy<NetGeometry> = ({ step, cellAspect, r
         .filter(hasPosition)
         .map((position) => box(position, cellWidth, cellHeight)),
     }),
-    visible: (area, cellWidth, cellHeight) => ({
-      firstRow: Math.floor((area.top - cellHeight) / (step * cellHeight)),
-      lastRow: Math.ceil(area.bottom / (step * cellHeight)),
-      first: Math.floor((area.left - cellWidth) / (step * cellWidth)),
-      last: Math.ceil(area.right / (step * cellWidth)),
-    }),
+    visible: (area, cellWidth, cellHeight) => {
+      const columns = { first: Math.floor((area.left - cellWidth) / (step * cellWidth)), last: Math.ceil(area.right / (step * cellWidth)) }
+      return { firstRow: Math.floor((area.top - cellHeight) / (step * cellHeight)), lastRow: Math.ceil(area.bottom / (step * cellHeight)), columnsOf: () => columns }
+    },
     origin: ({ row, column }, cellWidth, cellHeight) => ({ x: column * step * cellWidth, y: row * step * cellHeight }),
     positionsOf: ({ columns, rows }) => ({ columns: columns * period + 1, rows: (rows + 1) * p + 1 }),
     unitsOf: ({ columns, rows }) => ({

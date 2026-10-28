@@ -10,7 +10,7 @@ import { BEAD_GAP_PX, DEFAULT_THEME, type BeadShape } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
-import { gridToRegion, rowShiftPx, rowTopPx, type Region } from './surfaceView'
+import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {
@@ -64,7 +64,8 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
         const row = origin.row + Math.floor(index / 3)
         const column = origin.column + (index % 3)
         // The Frame starts on an even row, so a row's shift is the same numbered in the space or in the Project.
-        return { x: rowShiftPx({ technique }, row) + column * CELL_SIZE_PX, y: rowTopPx(technique, row) }
+        const { x, y } = positionBoxPx({ technique }, row, column)
+        return { x, y }
       })
       expect(painted.map(({ x, y }) => ({ x, y }))).toEqual(expected)
     })
@@ -119,9 +120,9 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
     })
 
     it('starts a band at the top of its first row, with no seam above it', () => {
-      expect(topOf(false, 2)[1]).toBe(rowTopPx(technique, 2))
-      expect(topOf(false, 0)[1]).toBe(rowTopPx(technique, 0))
-      expect(topOf(true, 8)[1]).toBe(rowTopPx(technique, 8))
+      expect(topOf(false, 2)[1]).toBe(positionBoxPx({ technique }, 2, 0).y)
+      expect(topOf(false, 0)[1]).toBe(positionBoxPx({ technique }, 0, 0).y)
+      expect(topOf(true, 8)[1]).toBe(positionBoxPx({ technique }, 8, 0).y)
     })
   })
 })
@@ -291,7 +292,7 @@ describe.each<{ canvas: Technique; frame: Technique }>([
   { canvas: 'peyote', frame: 'loom' },
   { canvas: 'loom', frame: 'brick' },
 ])('a $frame Frame over a $canvas Canvas (ticket 492)', ({ canvas, frame }) => {
-  const origin = { x: 5 * CELL_SIZE_PX + rowShiftPx({ technique: canvas }, 6), y: rowTopPx(canvas, 6) }
+  const origin = positionBoxPx({ technique: canvas }, 6, 5)
 
   it('draws the Frame\'s beads in its own Weave from the corner of the Canvas position it lies on, its first row straight', () => {
     const painted = render(mixedProject(canvas, frame), true).beads.filter(({ color }) => color !== null)
@@ -299,7 +300,8 @@ describe.each<{ canvas: Technique; frame: Technique }>([
     expect(painted.map(({ x, y }) => ({ x, y }))).toEqual(
       Array.from({ length: 12 }, (_, index) => {
         const row = Math.floor(index / 3)
-        return { x: origin.x + rowShiftPx({ technique: frame }, row) + (index % 3) * CELL_SIZE_PX, y: origin.y + rowTopPx(frame, row) }
+        const own = positionBoxPx({ technique: frame }, row, index % 3)
+        return { x: origin.x + own.x, y: origin.y + own.y }
       }),
     )
   })

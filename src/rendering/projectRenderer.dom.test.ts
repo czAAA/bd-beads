@@ -5,11 +5,11 @@ import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
 import { weaveOf } from '../domain/layerWeave'
 import type { Grid, Project } from '../domain/project'
-import type { Technique } from '../domain/weave'
+import type { Technique, Weave } from '../domain/weave'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
-import { displayedExtentPx, projectExtentPx, rowPitchPx, rowShiftPx, rowTopPx, type Region } from './surfaceView'
+import { displayedExtentPx, positionBoxPx, projectExtentPx, unitStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
@@ -43,24 +43,24 @@ const whole = (project: Project, zoom = 1): Region => {
 }
 
 describe('Technique geometry', () => {
+  // Each row's first bead, where the Weave's description puts it: [x, y].
+  const rowStarts = (weave: Weave) => [0, 1, 2, 3].map((row) => positionBoxPx(weave, row, 0)).map(({ x, y }) => [x, y])
+
   it('stacks loom rows a bead apart and never shifts them', () => {
-    expect(rowPitchPx('loom')).toBe(20)
-    expect(rowTopPx('loom', 3)).toBe(60)
-    expect([0, 1, 2, 3].map((row) => rowShiftPx({ technique: 'loom' }, row))).toEqual([0, 0, 0, 0])
+    expect(unitStepPx({ technique: 'loom' })).toEqual({ across: 20, down: 20 })
+    expect(rowStarts({ technique: 'loom' })).toEqual([[0, 0], [0, 20], [0, 40], [0, 60]])
     expect(projectExtentPx('loom', 4, 3)).toEqual({ width: 80, height: 60 })
   })
 
   it('nests peyote rows and shifts every other one half a bead', () => {
-    expect(rowPitchPx('peyote')).toBe(15)
-    expect(rowTopPx('peyote', 2)).toBe(30)
-    expect([0, 1, 2, 3].map((row) => rowShiftPx({ technique: 'peyote' }, row))).toEqual([0, 10, 0, 10])
+    expect(unitStepPx({ technique: 'peyote' })).toEqual({ across: 20, down: 15 })
+    expect(rowStarts({ technique: 'peyote' })).toEqual([[0, 0], [10, 15], [0, 30], [10, 45]])
     expect(projectExtentPx('peyote', 4, 3)).toEqual({ width: 90, height: 50 })
   })
 
   it('stacks brick stitch rows a bead apart, with no seam between them', () => {
-    expect(rowPitchPx('brick')).toBe(20)
-    expect(rowTopPx('brick', 2)).toBe(40)
-    expect([0, 1, 2, 3].map((row) => rowShiftPx({ technique: 'brick' }, row))).toEqual([0, 10, 0, 10])
+    expect(unitStepPx({ technique: 'brick' })).toEqual({ across: 20, down: 20 })
+    expect(rowStarts({ technique: 'brick' })).toEqual([[0, 0], [10, 20], [0, 40], [10, 60]])
     expect(projectExtentPx('brick', 4, 3)).toEqual({ width: 90, height: 60 })
   })
 
@@ -142,7 +142,6 @@ describe('renderProject', () => {
     expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([
       [0, 0], [20, 0], [0, 20], [20, 20], [10, 40], [30, 40], [10, 60], [30, 60], [0, 80], [20, 80],
     ])
-    expect(rowShiftPx({ technique: 'brick', techniqueSettings: { brickBlock: 2 } }, 2)).toBe(10)
   })
 
   it('draws no seams in any Technique', () => {

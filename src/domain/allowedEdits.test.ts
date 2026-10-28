@@ -1,15 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { colorAt } from './canvas'
+import { colorAt, withColors } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
 import { createProject } from './createProject'
-import { paintCells } from './drawing'
 import { paintAt } from '../testUtils/layers'
 
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 
 describe('what a drawing edit may leave', () => {
   it('does nothing with no Frame', () => {
-    const painted = paintCells(open, [{ row: 1, column: 1 }], '#ff0000')
+    const painted = { ...open, beads: withColors(open.beads, [{ row: 1, column: 1, color: '#ff0000' }]) }
     expect(keepAllowedEdits(open, painted).beads).toEqual(painted.beads)
   })
 })
