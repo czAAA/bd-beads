@@ -1,4 +1,4 @@
-import { normalizeHex } from './palette'
+import { normalizeHex } from './color'
 
 /** The four edges of the drawing area the Tool pill can dock to (ticket 439, ADR 0059). */
 export const PILL_POSITIONS = ['left', 'top', 'right', 'bottom'] as const
@@ -66,17 +66,17 @@ export function popoverPlacement(
   gap: number,
   edge: number,
 ): { left: number; top: number } {
-  const clamp = (value: number, extent: number, limit: number) => Math.max(edge, Math.min(value, limit - extent - edge))
+  const onScreen = (value: number, extent: number, limit: number) => Math.max(edge, Math.min(value, limit - extent - edge))
   const centredX = tile.left + tile.width / 2 - size.width / 2
   const centredY = tile.top + tile.height / 2 - size.height / 2
   switch (position) {
     case 'bottom':
-      return { left: clamp(centredX, size.width, screen.width), top: clamp(pill.top - gap - size.height, size.height, screen.height) }
+      return { left: onScreen(centredX, size.width, screen.width), top: onScreen(pill.top - gap - size.height, size.height, screen.height) }
     case 'top':
-      return { left: clamp(centredX, size.width, screen.width), top: clamp(pill.top + pill.height + gap, size.height, screen.height) }
+      return { left: onScreen(centredX, size.width, screen.width), top: onScreen(pill.top + pill.height + gap, size.height, screen.height) }
     case 'left':
-      return { left: pill.left + pill.width + gap, top: clamp(centredY, size.height, screen.height) }
+      return { left: pill.left + pill.width + gap, top: onScreen(centredY, size.height, screen.height) }
     case 'right':
-      return { left: pill.left - gap - size.width, top: clamp(centredY, size.height, screen.height) }
+      return { left: pill.left - gap - size.width, top: onScreen(centredY, size.height, screen.height) }
   }
 }

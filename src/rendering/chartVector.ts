@@ -1,4 +1,4 @@
-import { fromHex } from '../domain/color'
+import { BLACK_WHITE_BALANCE, fromHex, mix, relativeLuminance, toHex, WHITE } from '../domain/color'
 import { HELVETICA_CAP_HEIGHT } from '../domain/helvetica'
 import { PdfContent } from '../domain/pdfContent'
 import type { SwatchLetters } from '../domain/swatchLetters'
@@ -33,35 +33,21 @@ const LETTER_PT = 6.5
 const ROUND_SHARE = 2.6 / 3
 /** `print-overlap-tint`: how far toward white an overlap bead is mixed. */
 const OVERLAP_TINT = 0.6
-/** `--print-letter-balance`: above it a bead's letter is `ink`, otherwise white (the same rule as markOn). */
-const LETTER_BALANCE = 0.1791
 /** `--print-letter-squeeze`: horizontal scale of a two-letter Swatch letter. */
 const LETTER_SQUEEZE = 72
-
-/** The WCAG relative luminance of a `#rrggbb` color.
- * @internal Its test checks the WCAG values on their own. */
-export function luminance(hex: string): number {
-  const rgb = fromHex(hex)
-  if (!rgb) return 1
-  const [r, g, b] = [rgb.r, rgb.g, rgb.b].map((channel) => {
-    const value = channel / 255
-    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4
-  })
-  return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!
-}
 
 /** A color mixed toward white. */
 function tint(hex: string, amount: number): string {
   const rgb = fromHex(hex)
-  if (!rgb) return hex
-  const mix = (channel: number) => Math.round(channel + (255 - channel) * amount).toString(16).padStart(2, '0')
-  return `#${mix(rgb.r)}${mix(rgb.g)}${mix(rgb.b)}`
+  return rgb ? toHex(mix(rgb, WHITE, amount)) : hex
 }
 
-/** The colour of a Swatch letter on a bead of this color: `ink` on a light one, white on a dark one.
+/** The colour of a Swatch letter on a bead of this color: `ink` on a light one, white on a dark one, by the same
+ * balance as markOn (`--print-letter-balance`); ink on a color it cannot read.
  * @internal Its test checks the switch from ink to white on its own. */
 export function letterColor(hex: string): string {
-  return luminance(hex) > LETTER_BALANCE ? PRINT_COLORS.ink : PRINT_COLORS.paper
+  const rgb = fromHex(hex)
+  return !rgb || relativeLuminance(rgb) > BLACK_WHITE_BALANCE ? PRINT_COLORS.ink : PRINT_COLORS.paper
 }
 
 /** Whether the Project's beads are drawn round (a circle in the cell) rather than as squares. */

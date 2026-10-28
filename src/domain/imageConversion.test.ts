@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { computeGridDimensions, type GridDimensions } from './grid'
 import { cellCenter, describeWeave, rowPitch, type Technique } from './weave'
-import { channelsOf } from './imageColors'
+import { channelsOf } from './color'
 import { CENTERED_PAN, frameSizeMm, framingView, previewLattice, type PreviewLattice } from './imageFraming'
 import {
   ACCEPTED_IMAGE_FORMATS,

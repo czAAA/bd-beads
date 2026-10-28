@@ -618,7 +618,12 @@ describe('the bead look', () => {
 
     expect(rims('#1a1a1a')).toBe(blendOver(DARK_THEME.rim, '#1a1a1a'))
     expect(rims('#2c2c2c')).toBe(blendOver(DARK_THEME.rim, '#2c2c2c'))
+    expect(rims('#2d2d2d')).toBe(blendOver(DEFAULT_THEME.rim, '#2d2d2d'))
     expect(rims('#2e2e2e')).toBe(blendOver(DEFAULT_THEME.rim, '#2e2e2e'))
+    // Near-black is judged on the channels as stored, not WCAG luminance: full blue counts, a mid green does not.
+    expect(rims('#0000ff')).toBe(blendOver(DARK_THEME.rim, '#0000ff'))
+    expect(rims('#003e00')).toBe(blendOver(DARK_THEME.rim, '#003e00'))
+    expect(rims('#004000')).toBe(blendOver(DEFAULT_THEME.rim, '#004000'))
     expect(rims('#1f3f8a')).toBe(blendOver(DEFAULT_THEME.rim, '#1f3f8a'))
     expect(rims('#1a1a1a', PROJECT_THEMES.contrast)).toBe(blendOver(PROJECT_THEMES.contrast.rim, '#1a1a1a'))
   })
