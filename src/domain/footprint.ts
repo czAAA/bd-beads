@@ -1,5 +1,6 @@
 import type { Rect } from './canvas'
-import { canvasWeave, frameWeave, sameWeave, type Project } from './project'
+import { canvasWeave, frameWeave, sameWeave } from './layerWeave'
+import type { Project } from './project'
 import { describeWeave, positionStep, type Weave } from './weave'
 
 /** A Weave's cell height over its width: what a Real bead stretches a row by (ADR 0068); 1 where the cell is square. */

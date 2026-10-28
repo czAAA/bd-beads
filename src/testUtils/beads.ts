@@ -1,4 +1,6 @@
-import { beadColorAt, projectDimensions, rowProgressOn } from '../domain/project'
+import { beadColorAt } from '../domain/layerBeads'
+import { projectDimensions } from '../domain/projectExtent'
+import { rowProgressOn } from '../domain/rowProgress'
 import type { VueWrapper } from '@vue/test-utils'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'

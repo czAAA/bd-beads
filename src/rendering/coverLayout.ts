@@ -1,8 +1,10 @@
-import { frameWeave, projectDimensions } from '../domain/project'
+import { frameWeave } from '../domain/layerWeave'
+import { projectDimensions } from '../domain/projectExtent'
 import type { Project } from '../domain/project'
 import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER, type PageSize } from './printPlan'
 import type { PrintText } from './printText'
-import { CELL_SIZE_PX, displayedExtentPx } from './surfaceView'
+import { CELL_SIZE_PX } from './cellSize'
+import { displayedExtentPx } from './surfaceView'
 
 // Where everything sits on the Cover page (ticket 0583; glossary: Cover page), worked out without a canvas so the PDF, the
 // PNG and the page count agree. Page px at 150 dpi, like the rest of the print layout.

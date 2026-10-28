@@ -7,7 +7,11 @@ import { frameLayoutOf, type CustomFrameKindId, type FrameSettings } from './fra
 import { onLayer } from './layers'
 import { projectPalette } from './palette'
 import { parseProjectsFile, serializeProject } from './projectFile'
-import { createProject, fillArea, paintCells, rowProgressOn, type Project } from './project'
+import { createProject } from './createProject'
+import { fillArea } from './fill'
+import { paintCells } from './drawing'
+import { rowProgressOn } from './rowProgress'
+import type { Project } from './project'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'

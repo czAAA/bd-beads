@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, colorAt, withColors } from './canvas'
-import { createProject, moveToRow, type Project, type Technique } from './project'
+import { createProject } from './createProject'
+import { moveToRow } from './rowProgress'
+import type { Project } from './project'
+import type { Technique } from './weave'
 import { removeLineRefusal, removeSelectedLine as removeLineChange, selectedAreaLine } from './removeLine'
 import type { Selection } from './selection'
 

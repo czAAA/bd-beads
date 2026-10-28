@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { createProject, paintCells } from './project'
+import { createProject } from './createProject'
+import { paintCells } from './drawing'
 import { paintAt } from '../testUtils/layers'
 
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })

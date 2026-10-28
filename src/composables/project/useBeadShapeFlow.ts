@@ -1,4 +1,4 @@
-import { withBeadShape } from '../../domain/project'
+import { withBeadShape } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { DEFAULT_BEAD_SHAPE, type BeadShape } from '../../domain/weave'
 import type { EditFn } from './useEdit'

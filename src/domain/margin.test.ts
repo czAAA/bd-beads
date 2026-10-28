@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
 import { clampOutOfMargin, inMargin, MARGIN, marginBoxFor, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
-import { createProject, paintCells, withFrame, type Project } from './project'
+import { createProject } from './createProject'
+import { paintCells } from './drawing'
+import { withFrame } from './frame'
+import type { Project } from './project'
 
 const frame: Rect = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })

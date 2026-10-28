@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { colorAt, forEachBead, withColors, type BeadMap } from './canvas'
-import { createProject, fillArea, weaveOf, type Project } from './project'
+import { createProject } from './createProject'
+import { fillArea } from './fill'
+import { weaveOf } from './layerWeave'
+import type { Project } from './project'
 import { rotateFrame, rotateSelection } from './rotate'
 import { copySelection, stampedCells, movedSelection, snapSelectionToUnits, type Selection } from './selection'
 

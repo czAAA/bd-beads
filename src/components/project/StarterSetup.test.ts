@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import StarterSetup from './StarterSetup.vue'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { starterById, type StarterId } from '../../domain/starters'
 import { en } from '../../i18n/en'
 

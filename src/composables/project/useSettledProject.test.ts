@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, shallowRef } from 'vue'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { SUMMARY_INTERVAL_MS, useSettledProject } from './useSettledProject'
 
 function projectNamed(name: string): Project {

@@ -1,6 +1,8 @@
 import { colorAt } from './canvas'
 import type { Rotation } from './grid'
-import { frameRowOrder, frameWeave, type Project } from './project'
+import { frameRowOrder } from './rowProgress'
+import { frameWeave } from './layerWeave'
+import type { Project } from './project'
 import { describeWeave, type PassDirection, type Technique } from './weave'
 import type { OrderStep, RowOrder } from './rowOrder'
 

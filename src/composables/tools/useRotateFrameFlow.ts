@@ -1,5 +1,6 @@
 import { rotateFrame } from '../../domain/rotate'
-import { rowProgressStarted, type Project } from '../../domain/project'
+import { rowProgressStarted } from '../../domain/rowProgress'
+import type { Project } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
 import type { EditFn } from '../project/useEdit'
 

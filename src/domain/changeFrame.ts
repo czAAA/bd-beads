@@ -1,5 +1,20 @@
-import { beadCount, beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, hasBeads, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect, type FrameSheet } from './canvas'
-import { movedFrame, sameFrame, snapColumn, snappedMove, snapRow } from './frame'
+import {
+  beadCount,
+  beadsInFrame,
+  beadsOver,
+  beadsWithout,
+  forEachBead,
+  frameContains,
+  hasBeads,
+  shiftedBeads,
+  withColors,
+  type BeadChange,
+  type BeadMap,
+  type Rect,
+  type FrameSheet,
+  sameFrame,
+} from './canvas'
+import { movedFrame, snapColumn, snappedMove, snapRow, withFrame, withFrameGiving } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
@@ -9,7 +24,11 @@ import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { canvasDistance, canvasWeave, clampBrickBlock, firstPasses, frameWeave, rowProgressStarted, sameBeads, withBrickBlock, withFrame, withFrameBrickBlock, withFrameGiving, withFrameTechnique, withTechnique, weaveOf, sameWeave, switchedWeave, type Project } from './project'
+import { canvasDistance, canvasWeave, clampBrickBlock, frameWeave, weaveOf, sameWeave } from './layerWeave'
+import { firstPasses, rowProgressStarted } from './rowProgress'
+import { sameBeads } from './layerBeads'
+import { withBrickBlock, withFrameBrickBlock, withFrameTechnique, withTechnique, switchedWeave } from './weaveSwitch'
+import type { Project } from './project'
 import type { AreaLine } from './removeLine'
 
 // The one operation behind every change of the Frame (ticket 361): make a Frame, resize, move, Fit to drawing, Remove

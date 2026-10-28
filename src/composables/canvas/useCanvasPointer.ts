@@ -1,7 +1,8 @@
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Layer } from '../../domain/layers'
-import { isInFinishedRow, type Project } from '../../domain/project'
+import { isInFinishedRow } from '../../domain/rowProgress'
+import type { Project } from '../../domain/project'
 import { pasteAimAtBead } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 

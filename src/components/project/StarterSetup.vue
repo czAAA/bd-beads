@@ -2,7 +2,8 @@
 import { computed, reactive, ref } from 'vue'
 import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
 import type { FrameSettingName } from '../../domain/frameKind'
-import { resolveProjectBead, type Project } from '../../domain/project'
+import { resolveProjectBead } from '../../domain/projectBead'
+import type { Project } from '../../domain/project'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
 import {
   BAND_CLASP_MM,

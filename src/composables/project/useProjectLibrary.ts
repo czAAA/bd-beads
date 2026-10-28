@@ -1,5 +1,6 @@
 import { computed, ref, shallowRef, type ComputedRef, type Ref, type ShallowRef } from 'vue'
-import { inSavedOrder, markSaved, mostRecentlyUpdated, type Project } from '../../domain/project'
+import { inSavedOrder, markSaved, mostRecentlyUpdated } from '../../domain/projectLibrary'
+import type { Project } from '../../domain/project'
 import { browserLibraryStore, type LibraryStore } from '../../services/libraryStore'
 
 /** How a change to a Project should reach storage (see replaceProject). */

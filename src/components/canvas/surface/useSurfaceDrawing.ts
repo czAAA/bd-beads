@@ -1,11 +1,14 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedPositions } from '../../../domain/canvas'
-import { canvasWeave, sameWeave, shownLetters, type Project } from '../../../domain/project'
+import { canvasWeave, sameWeave } from '../../../domain/layerWeave'
+import { shownLetters } from '../../../domain/paletteEdits'
+import type { Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
 import { renderProject } from '../../../rendering/projectRenderer'
 import type { Space } from '../../../rendering/space'
-import type { Scroll, Size } from '../../../rendering/surfaceView'
+import type { Scroll } from '../../../rendering/surfaceView'
+import type { Size } from '../../../rendering/cellSize'
 
 /** The Drawing surface's draw scheduler (ticket 0619): a draw asked for any number of times waits for the next
  * animation frame and runs once there (a pinch or wheel burst); without frames it draws at once. Frames still asked

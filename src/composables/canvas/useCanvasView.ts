@@ -1,11 +1,12 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { beadBounds, type Rect } from '../../domain/canvas'
+import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
-import { sameFrame } from '../../domain/frame'
-import { projectCell, type Project } from '../../domain/project'
+import { projectCell } from '../../domain/projectBead'
+import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { OPEN_SPACE } from '../../rendering/space'
-import { surfaceView, type Scroll, type Size, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
+import { surfaceView, type Scroll, type SurfaceView, type ViewLayer } from '../../rendering/surfaceView'
+import type { Size } from '../../rendering/cellSize'
 
 /** Room left clear round the Project at the fit level: the ruler gutter (28px) and a little air (CanvasStrip and
  * BeadBoard cards).

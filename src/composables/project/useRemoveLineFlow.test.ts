@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, moveToRow, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import { moveToRow } from '../../domain/rowProgress'
+import type { Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRemoveLineFlow } from './useRemoveLineFlow'

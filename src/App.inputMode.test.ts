@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
-import { createProject } from './domain/project'
+import { createProject } from './domain/createProject'
 import { saveProjects } from './services/libraryStore'
 import { beadColor, pressBead } from './testUtils/beads'
 import { en } from './i18n/en'

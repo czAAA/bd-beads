@@ -1,5 +1,6 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
-import type { Grid, GridProject, Project } from './project'
+import type { Grid, Project } from './project'
+import type { GridProject } from './storedProject'
 import type { VersionThreeProject } from './versionThree'
 
 // The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with a

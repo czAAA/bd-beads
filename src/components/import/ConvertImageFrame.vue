@@ -15,7 +15,8 @@ import {
   type PixelData,
 } from '../../domain/imageConversion'
 import { frameSizeMm, framingView, previewLattice, type PanFraction } from '../../domain/imageFraming'
-import { framedGrid, type Cell, type Grid } from '../../domain/project'
+import { framedGrid } from '../../domain/layerBeads'
+import type { Cell, Grid } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
