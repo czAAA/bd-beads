@@ -4,7 +4,8 @@ import type { GridPosition, Layer } from './grid'
 export type { Layer }
 import { footprintOf } from './footprint'
 import { frameLayoutOf } from './frameKind'
-import { weaveOf, type Project } from './project'
+import { weaveOf } from './layerWeave'
+import type { Project } from './project'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
 // Eraser, Paste, Selection fills) works on one Project's beads in one coordinate system; `onLayer` hands it

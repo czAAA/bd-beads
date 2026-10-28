@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { forEachBead, withColors, type BeadMap } from './canvas'
 import { frameLayer } from './layers'
-import { createProject, fillArea, type Project } from './project'
+import { createProject } from './createProject'
+import { fillArea } from './fill'
+import type { Project } from './project'
 import { copySelection, stampedCells, snapSelectionToUnits } from './selection'
 import { describeWeave } from './weave'
 

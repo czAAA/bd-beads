@@ -1,6 +1,7 @@
 import { colorAt } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
-import { frameWeave, projectDimensions, projectFrame } from '../domain/project'
+import { frameWeave } from '../domain/layerWeave'
+import { projectDimensions, projectFrame } from '../domain/projectExtent'
 import { type DrawnProject } from './projectRenderer'
 import { OPEN_EXTENT, projectExtentPx, type Extent } from './surfaceView'
 

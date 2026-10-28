@@ -1,7 +1,8 @@
 import { computed, ref } from 'vue'
 import { layerAt, type Layer } from '../../domain/layers'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
-import { beadColorAt, type Project } from '../../domain/project'
+import { beadColorAt } from '../../domain/layerBeads'
+import type { Project } from '../../domain/project'
 import {
   selectAllSelection,
   copyLayerSelection,

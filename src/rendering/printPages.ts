@@ -1,4 +1,4 @@
-import { countedDimensions } from '../domain/project'
+import { countedDimensions } from '../domain/projectExtent'
 import markSvg from '../../docs/design/system/assets/Logos/bd-beads-mark.svg?raw'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Project } from '../domain/project'

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import App from './App.vue'
-import { createProject } from './domain/project'
+import { createProject } from './domain/createProject'
 import { loadProjects, saveProjects } from './services/libraryStore'
 
 /** Menu (spec 0440, ticket 443): what only the whole App shows, the empty canvas raising New Project. Each panel

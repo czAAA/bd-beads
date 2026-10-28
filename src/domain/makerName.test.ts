@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MAX_MAKER_NAME, normalizeMakerName, withMakerName } from './makerName'
-import { createProject } from './project'
+import { createProject } from './createProject'
 
 describe('normalizeMakerName', () => {
   it('trims and caps at the field length', () => {

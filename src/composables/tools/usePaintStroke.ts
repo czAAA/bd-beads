@@ -1,7 +1,9 @@
 import { ref } from 'vue'
 import { frameContains } from '../../domain/canvas'
 import { layerAt, onLayer, type Layer } from '../../domain/layers'
-import { fillArea, paintCells, type Project } from '../../domain/project'
+import { fillArea } from '../../domain/fill'
+import { paintCells } from '../../domain/drawing'
+import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Edit } from '../project/useEdit'
 

@@ -9,7 +9,8 @@ import { rowPitch } from '../../domain/weave'
 import { DEFAULT_MAX_IMAGE_COLORS, MIN_IMAGE_COLORS, type PixelData } from '../../domain/imageConversion'
 import { CENTERED_PAN, frameSizeMm, framingView } from '../../domain/imageFraming'
 import { installFakeCanvas } from '../../testUtils/fakeCanvas'
-import { CELL_SIZE_PX, projectExtentPx } from '../../rendering/surfaceView'
+import { CELL_SIZE_PX } from '../../rendering/cellSize'
+import { projectExtentPx } from '../../rendering/surfaceView'
 
 // Whether a block is too big to draw bead by bead is the draft renderer's own rule (tested there); here it is made to
 // answer as a huge one would, and what is drawn is what is watched.

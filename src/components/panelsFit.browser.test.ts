@@ -13,7 +13,7 @@ import ConvertImageSizeDialog from './import/ConvertImageSizeDialog.vue'
 import { BEAD_CATALOG, findBead, offeredBeads } from '../domain/beads'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { changeFrame } from '../domain/changeFrame'
-import { createProject } from '../domain/project'
+import { createProject } from '../domain/createProject'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
 // (ticket 552).

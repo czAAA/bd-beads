@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ProjectsLibrary from './ProjectsLibrary.vue'
-import { createProject, summarizeProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import { summarizeProject } from '../../domain/projectLibrary'
+import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 
 beforeEach(() => {

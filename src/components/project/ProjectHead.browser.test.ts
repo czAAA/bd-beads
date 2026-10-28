@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createProject } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
 import { LOCALES } from '../../domain/locale'
 import { mountAt } from '../../testUtils/browserFit'
 import ProjectHead from './ProjectHead.vue'

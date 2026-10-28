@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, type Project } from '../domain/project'
+import { createProject } from '../domain/createProject'
+import type { Project } from '../domain/project'
 import { applyLegacyMakerName, LEGACY_MAKER_NAME_KEY, migrateLegacyMakerName } from './legacyMakerName'
 import type { LibraryStore } from './libraryStore'
 

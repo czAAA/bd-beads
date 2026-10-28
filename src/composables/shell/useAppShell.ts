@@ -1,5 +1,5 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
-import { beadColorAt } from '../../domain/project'
+import { beadColorAt } from '../../domain/layerBeads'
 import { provideI18n } from '../../i18n/useI18n'
 import { changedSetting } from '../../domain/frameKind'
 import { plural } from '../../i18n/plural'

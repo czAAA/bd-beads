@@ -3,7 +3,7 @@ import { findBead } from './beads'
 import { beadCount } from './canvas'
 import { changeFrame, type FrameChangeResult } from './changeFrame'
 import { frameLayoutOf, settingsOf, type FrameSettings } from './frameKind'
-import { createProject } from './project'
+import { createProject } from './createProject'
 import {
   designDifferences,
   designFits,

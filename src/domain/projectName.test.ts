@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createProject } from './project'
+import { createProject } from './createProject'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from './projectName'
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })

@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
-import { createProject } from '../domain/project'
+import { createProject } from '../domain/createProject'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
 import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
 import { rulerLayout } from './rulers'
