@@ -1,4 +1,4 @@
-import { ref, toRaw } from 'vue'
+import { ref } from 'vue'
 import type { Project } from '../../domain/project'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from '../../domain/projectName'
 
@@ -48,9 +48,7 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
     const project = deps.currentProject()
     if (!project || !normalizeProjectName(name)) return false
     duplicating.value = undefined
-    // The library holds reactive Projects, which structuredClone refuses; the copy is made from the plain data
-    // underneath.
-    deps.addProject(duplicateProject(toRaw(project), name))
+    deps.addProject(duplicateProject(project, name))
     return true
   }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref } from 'vue'
 import { createPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import { listedColorName } from '../../i18n/colorName'
 import { gramsPerBead } from '../../domain/beads'
@@ -25,7 +25,7 @@ const { t, locale } = useI18n()
 // so its identity is all this needs to depend on, and reading each of tens of thousands of beads through a proxy is
 // slow.
 const palette = computed(() => (props.project ? projectPalette(props.project) : createPalette(defaultPaletteIds())))
-const quantities = computed(() => (props.project ? computeColorQuantities(toRaw(props.project), palette.value) : []))
+const quantities = computed(() => (props.project ? computeColorQuantities(props.project, palette.value) : []))
 
 /** How many colors show before "Show all". */
 const SUMMARY_ROWS = 5

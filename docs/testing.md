@@ -17,7 +17,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - The workflow uses `pull_request` (never `pull_request_target`), a read-only token and no secrets, and pins every action to a commit SHA.
 - The browser component and visual jobs run in the `mcr.microsoft.com/playwright` image (Chromium and its system libraries built in, so no apt install on the runner). Its tag must equal the `@playwright/test` version in `package-lock.json`; bump both together.
 - A failed visual shard uploads its `test-results`, and the shards' reports are merged into one HTML report artifact.
-- The performance check (`npm run perf`, README) is run by hand, never in CI: its timings depend on an idle machine.
+- The performance check (`npm run perf`, README) is run by hand, never in CI: its timings depend on an idle machine. What can be counted rather than timed is a unit test instead: how many times a stroke draws and which rows (`ProjectSurface.test.ts`, ticket 0616).
 
 ## Where a test goes
 
@@ -61,7 +61,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 
 App code holds only what the app uses (ticket 0609): `npm run knip`'s second run, `knip --production`, leaves the tests and these helpers out and fails on a file or export only a test reaches. A fixture builder belongs here, not in `src/`. An export the app keeps that a test also names on purpose (a limit it counts with, a step it drives on its own, a reset hook) is tagged `@internal` in its doc comment with the reason, and that run leaves it out.
 
-`src/testSetup.ts` runs before every `page` test file: it empties the module cache and re-arms auto-unmount, which the library only lets be armed once. `testUtils/sharedPage.ts`'s `resetSharedPage` empties what the last file left on the page: the body, styles, `<html>`'s `class`, `style` and `lang`, the title, both storages, and puts back the default `matchMedia` (a desk with a mouse, so key chips show) over any a file assigned. So each file starts in English and with the default key-hint state, as if it ran first (ticket 0608).
+`src/testSetup.ts` runs before every `page` test file: it empties the module cache and re-arms auto-unmount, which the library only lets be armed once. `testUtils/sharedPage.ts`'s `resetSharedPage` empties what the last file left on the page: the body, styles, `<html>`'s `class`, `style` and `lang`, the title, both storages, and puts back the default `matchMedia` (a desk with a mouse, so key chips show) over any a file assigned. So each file starts in English and with the default key-hint state, as if it ran first (ticket 0608). It also fetches every language before the file runs: the app fetches only the one in use and each other one when it is chosen (ticket 0616), but a test mounts in any of them at once (`src/browserSetup.ts` does the same).
 
 The setup also makes `Date.now` never read the same twice: Vue drops an event stamped no later than its listener was attached, so in a warm worker a click made in the same millisecond as the mount was lost whenever a capture listener saw it first.
 

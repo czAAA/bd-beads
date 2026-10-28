@@ -1,4 +1,3 @@
-import { toRaw } from 'vue'
 import type { FrameChangeRefusal, FrameChangeResult } from '../../domain/changeFrame'
 import { keepAllowedEdits } from '../../domain/allowedEdits'
 import { sameFrame } from '../../domain/frame'
@@ -93,10 +92,7 @@ export function useEdit(deps: EditDeps) {
   /** One step of a stroke: a drawing edit that lands on screen at once but defers its save and its Undo step to
    * endStroke. */
   function strokeStep(command: EditCommands['drawing']) {
-    // Worked on as the Project itself, not through the library's reactive wrapper: a step reads a bead or two, but
-    // comparing what it left for finished rows reads them all, and each read through a proxy is many times the cost.
-    const current = deps.currentProject()
-    const project = current && toRaw(current)
+    const project = deps.currentProject()
     if (!project) {
       return
     }

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject, type Project, type RowProgress, type Technique } from '../../domain/project'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
@@ -282,6 +282,79 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ project: change(project) })
 
       expect(draws()).toBe(1)
+    })
+
+    // A whole stroke, as the app runs it (ticket 0616): the parent paints each bead the surface reports, and the surface
+    // draws once per animation frame, only the rows that frame changed. A draw of more rows, or a second draw in a frame,
+    // fails here.
+    it('draws a stroke once per frame, and only the rows each frame painted', async () => {
+      viewport = { width: 400, height: 600 }
+      const frames: (() => void)[] = []
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+      vi.stubGlobal('cancelAnimationFrame', () => undefined)
+      const cells = recordingContext()
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+        return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
+      } as never)
+      const project = shallowRef(projectOf(20, 30))
+      const paint = (row: number, column: number) => {
+        project.value = painted(project.value, row, column)
+      }
+      const scroll = { x: 0, y: 0 }
+      /** How tall a row of beads is drawn at zoom 1, from the top of the view. */
+      const ROW_PX = 20
+      const wrapper = mount(
+        defineComponent(() => () => h(ProjectSurface, { project: project.value, zoom: 1, scroll, onCellPrimaryDown: paint, onCellPrimaryMove: paint })),
+        { attachTo: document.body },
+      )
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const view = surfaceView({ space: OPEN_SPACE, technique: project.value.technique, rotation: project.value.rotation, zoom: 1, scroll })
+      const pointAt = (row: number, column: number) => {
+        const point = view.beadToPoint({ row, column })
+        return { clientX: point.x, clientY: point.y }
+      }
+
+      /** Runs the animation frames asked for so far, and says what the bead layer drew since the last time: per draw,
+       * the rows it covered, or `all`. */
+      async function nextFrame(): Promise<({ first: number; last: number } | 'all')[]> {
+        await nextTick()
+        frames.splice(0).forEach((frame) => frame())
+        const drawn: ({ first: number; last: number } | 'all')[] = []
+        let band: { first: number; last: number } | undefined
+        cells.calls.forEach((call, index) => {
+          // A band's draw is cut to it with rect() and clip() before it clears; a draw of everything is not.
+          const before = cells.calls[index - 1]
+          if (call.name === 'clip' && before?.name === 'rect') {
+            const [, top, , height] = before.args as number[]
+            band = { first: top! / ROW_PX, last: (top! + height!) / ROW_PX - 1 }
+          }
+          if (call.name === 'clearRect') {
+            drawn.push(band ?? 'all')
+            band = undefined
+          }
+        })
+        cells.calls.length = 0
+        return drawn
+      }
+
+      await nextTick()
+      expect(await nextFrame()).toEqual(['all'])
+
+      await surface.trigger('pointerdown', { ...pointAt(2, 1), button: 0, buttons: 1 })
+      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
+
+      // Two moves in one frame, seven beads along row 2: still one draw, of that row.
+      await surface.trigger('pointermove', { ...pointAt(2, 4), buttons: 1 })
+      await surface.trigger('pointermove', { ...pointAt(2, 8), buttons: 1 })
+      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
+
+      await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
+      expect(await nextFrame()).toEqual([{ first: 3, last: 6 }])
+
+      // Over a bead already painted, and the release: nothing changed, so nothing is drawn.
+      await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
+      await surface.trigger('pointerup')
+      expect(await nextFrame()).toEqual([])
     })
 
     it('draws no beads when Row progress is replaced by an equal one', async () => {

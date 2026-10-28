@@ -38,6 +38,16 @@ describe('useUndoHistory', () => {
     expect(ctx.history.canRedo.value).toBe(false)
   })
 
+  it('puts back the very state it recorded, not a reactive copy of it (ticket 0616)', () => {
+    const ctx = editHarness(newProject())
+    const before = ctx.project
+
+    ctx.edit('drawing', () => painted(before))
+    ctx.history.onUndo()
+
+    expect(ctx.project.frame).toBe(before.frame)
+  })
+
   it('does nothing without an open Project', () => {
     const ctx = editHarness(undefined)
     ctx.history.onUndo()
