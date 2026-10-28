@@ -1,5 +1,5 @@
 import { channelsOf } from '../domain/color'
-import { describeWeave, draftCost, type Technique } from '../domain/weave'
+import { describeWeave, draftCost, type Technique, type TechniqueSettings } from '../domain/weave'
 import type { WeaveGeometry } from '../domain/weaveGeometry'
 import type { ProjectTheme } from './beadLook'
 
@@ -92,7 +92,7 @@ export function renderDraft(
   context: CanvasRenderingContext2D,
   input: {
     technique: Technique
-    brickBlock?: number
+    techniqueSettings?: TechniqueSettings
     columns: number
     rows: number
     colors: readonly (string | undefined)[]
@@ -101,8 +101,8 @@ export function renderDraft(
     bitmapHeight: number
   },
 ): void {
-  const { technique, brickBlock, columns, rows, colors, theme, bitmapWidth, bitmapHeight } = input
-  const image = draftImage(describeWeave({ technique, brickBlock }), columns, rows, colors, theme)
+  const { technique, techniqueSettings, columns, rows, colors, theme, bitmapWidth, bitmapHeight } = input
+  const image = draftImage(describeWeave({ technique, techniqueSettings }), columns, rows, colors, theme)
 
   scratch ??= document.createElement('canvas')
   scratch.width = image.width

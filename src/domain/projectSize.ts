@@ -58,7 +58,7 @@ export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Parti
   const { columns, rows } = sizeOf(project)
   // The Frame's own Weave when there is one (ticket 492): its size is what is measured.
   const woven = 'frame' in project && project.frame ? project.frame : project
-  const description = describeWeave({ technique: woven.technique ?? DEFAULT_TECHNIQUE, netSize: woven.netSize })
+  const description = describeWeave({ technique: woven.technique ?? DEFAULT_TECHNIQUE, techniqueSettings: woven.techniqueSettings })
   // A Custom frame is as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592); a
   // Technique that measures what it draws (Units, ticket 482) counts its geometry's extent, not a column of beads.
   const layout = frameLayoutOf(woven)

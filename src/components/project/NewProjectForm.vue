@@ -2,7 +2,7 @@
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/createProject'
-import { DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, withTechniqueSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -53,7 +53,7 @@ const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
  * the Technique that describes it only; one never changed is its default. */
 const settings = ref<TechniqueSettings>({})
 /** The chosen Technique's settings at their values, each within its range. */
-const techniqueSettings = computed(() => withTechniqueSettings({ technique: technique.value, techniqueSettings: settings.value }).techniqueSettings)
+const techniqueSettings = computed(() => weaveSettings({ technique: technique.value, techniqueSettings: settings.value }))
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
 
@@ -82,8 +82,7 @@ function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
     technique: technique.value,
-    // The settings' ids name the flat fields a new Project still takes, until ticket 0627.
-    ...techniqueSettings.value,
+    ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
     beadId: beadId.value,
     ...(beadShape.value !== DEFAULT_BEAD_SHAPE ? { beadShape: beadShape.value } : {}),
     makerName: makerName.value.trim(),
@@ -250,7 +249,7 @@ function onDropImage(file: File) {
       v-if="pendingImage && selectedBead"
       :bead="selectedBead"
       :technique="technique"
-      :net-size="techniqueSettings?.netSize"
+      :technique-settings="techniqueSettings"
       @confirm="onSizeConfirm"
       @cancel="pendingImage = undefined"
     />

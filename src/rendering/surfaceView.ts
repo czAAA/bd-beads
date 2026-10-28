@@ -2,7 +2,7 @@ import { frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import { frameFootprint } from '../domain/footprint'
 import { frameGeometry, gridGeometry, type LayerGeometry } from '../domain/layerGeometry'
-import { describeWeave, type BeadCell, type Technique, type Weave } from '../domain/weave'
+import { describeWeave, type BeadCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import { beadsBox } from '../domain/weaveGeometry'
 import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
@@ -135,10 +135,8 @@ export function regionInGridSpace(extent: Extent, region: Region, zoom: number, 
 export interface SurfaceViewInput {
   space: Space
   technique: Technique
-  /** The Brick block (ticket 477); nothing is 1. */
-  brickBlock?: number
-  /** The Net size (ticket 485); nothing is the default. */
-  netSize?: number
+  /** The Canvas's Technique settings (ticket 0625): its Brick block, its Net size; one left out is its default. */
+  techniqueSettings?: TechniqueSettings
   /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. Both layers use it. */
   cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
@@ -241,12 +239,12 @@ function layerOf(weave: Weave, geometry: LayerGeometry, origin: Scroll, offset: 
   return { weave, geometry, description: describeWeave(weave), cell: cellSizePx(weave.technique, weave.cell), origin, offset }
 }
 
-export function surfaceView({ space, technique, brickBlock, netSize, cell: beadShapeCell, frame, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
-  const canvasWeave: Weave = { technique, brickBlock, netSize, cell: beadShapeCell }
+export function surfaceView({ space, technique, techniqueSettings, cell: beadShapeCell, frame, rotation, zoom, scroll = { x: 0, y: 0 }, viewport = { width: 0, height: 0 } }: SurfaceViewInput): SurfaceView {
+  const canvasWeave: Weave = { technique, techniqueSettings, cell: beadShapeCell }
   // The Canvas has no edge; a Project drawn on its own is its rows and columns from its first.
   const edge = space.open ? undefined : { row: 0, column: 0, rows: space.rows, columns: space.columns }
   const canvas = layerOf(canvasWeave, gridGeometry(canvasWeave, edge), { x: 0, y: 0 }, { row: 0, column: 0 })
-  const sheetWeave: Weave | undefined = frame && { technique: frame.technique, brickBlock: frame.brickBlock, netSize: frame.netSize, cell: beadShapeCell }
+  const sheetWeave: Weave | undefined = frame && { technique: frame.technique, techniqueSettings: frame.techniqueSettings, cell: beadShapeCell }
   const sheet = frame && sheetWeave && space.open ? layerOf(sheetWeave, frameGeometry({ ...frame, ...sheetWeave }), frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }) : undefined
   const layerNamed = (name: ViewLayer | undefined): Layer => (name === 'frame' && sheet ? sheet : canvas)
   // A Custom frame's beads lie where its layout puts them (ADR 0077), not on rows and columns: a point between them is

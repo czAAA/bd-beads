@@ -166,7 +166,7 @@ describe('Right-angle weave sizes count Units (ticket 482)', () => {
 })
 
 describe('Netting sizes count diamonds (ticket 485)', () => {
-  const weave = (netSize: number) => ({ technique: 'netting' as const, netSize })
+  const weave = (netSize: number) => ({ technique: 'netting' as const, techniqueSettings: { netSize } })
 
   it('takes a size in diamonds as the positions they take', () => {
     // Net size 3: a diamond is 4 positions across, and each row of them adds 2 more rows.
@@ -181,7 +181,7 @@ describe('Netting sizes count diamonds (ticket 485)', () => {
   })
 
   it('estimates the size from the diamond: its diamonds across, plus the bead that closes the last', () => {
-    const { widthMm, heightMm } = estimatedSizeMm({ columns: 17, rows: 9, technique: 'netting', netSize: 3 }, delica)
+    const { widthMm, heightMm } = estimatedSizeMm({ columns: 17, rows: 9, technique: 'netting', techniqueSettings: { netSize: 3 } }, delica)
     expect(widthMm).toBeCloseTo(4 * 4.8 + 1.6)
     expect(heightMm).toBeCloseTo(8 * 0.75 * 1.3 + 1.3)
   })

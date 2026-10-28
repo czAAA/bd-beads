@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Technique, type Weave } from './weave'
+import { cellCenter, describeWeave, heldSettings, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Technique, type Weave } from './weave'
 import type { GeometryRef } from './weaveGeometry'
 
 /** A Weave's passes, as Row progress asks for them (ticket 0621). */
@@ -49,7 +49,7 @@ describe('loom and brick stitch passes', () => {
 })
 
 describe('Netting passes (ticket 487)', () => {
-  const weave = (netSize: number) => ({ technique: 'netting' as const, netSize })
+  const weave = (netSize: number) => ({ technique: 'netting' as const, techniqueSettings: { netSize } })
 
   it('counts a row of diamonds per pass', () => {
     // A Frame of V rows of diamonds holds (V + 1)p + 1 rows of positions.
@@ -124,29 +124,29 @@ describe('rowOffset', () => {
   })
 
   it('shifts brick stitch in blocks of the Brick block: N straight rows, then N shifted (ticket 477)', () => {
-    const rows = (brickBlock: number) => Array.from({ length: 8 }, (_row, row) => rowOffset({ technique: 'brick', brickBlock }, row, 20))
+    const rows = (brickBlock: number) => Array.from({ length: 8 }, (_row, row) => rowOffset({ technique: 'brick', techniqueSettings: { brickBlock } }, row, 20))
     expect(rows(1)).toEqual([0, 10, 0, 10, 0, 10, 0, 10])
     expect(rows(2)).toEqual([0, 0, 10, 10, 0, 0, 10, 10])
     expect(rows(3)).toEqual([0, 0, 0, 10, 10, 10, 0, 0])
   })
 
   it('keeps the rhythm unbroken on rows above row 0', () => {
-    const rows = Array.from({ length: 6 }, (_row, index) => rowOffset({ technique: 'brick', brickBlock: 2 }, index - 4, 20))
+    const rows = Array.from({ length: 6 }, (_row, index) => rowOffset({ technique: 'brick', techniqueSettings: { brickBlock: 2 } }, index - 4, 20))
     expect(rows).toEqual([0, 0, 10, 10, 0, 0])
   })
 
   it('ignores the Brick block on loom and peyote', () => {
-    expect(rowOffset({ technique: 'peyote', brickBlock: 3 }, 1, 20)).toBe(10)
-    expect(rowOffset({ technique: 'loom', brickBlock: 3 }, 3, 20)).toBe(0)
+    expect(rowOffset({ technique: 'peyote', techniqueSettings: { brickBlock: 3 } }, 1, 20)).toBe(10)
+    expect(rowOffset({ technique: 'loom', techniqueSettings: { brickBlock: 3 } }, 3, 20)).toBe(0)
   })
 })
 
 describe('rowCycle', () => {
   it('is 1 for loom, 2 for peyote and 2N for brick stitch with a Brick block of N', () => {
     expect(rowCycle({ technique: 'loom' })).toBe(1)
-    expect(rowCycle({ technique: 'peyote', brickBlock: 4 })).toBe(2)
+    expect(rowCycle({ technique: 'peyote', techniqueSettings: { brickBlock: 4 } })).toBe(2)
     expect(rowCycle({ technique: 'brick' })).toBe(2)
-    expect(rowCycle({ technique: 'brick', brickBlock: 3 })).toBe(6)
+    expect(rowCycle({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })).toBe(6)
   })
 })
 
@@ -302,7 +302,7 @@ describe('cellCenter', () => {
 
 describe('neighborsOf with a Brick block (ticket 477)', () => {
   it('has only the bead above and below inside a block of straight rows', () => {
-    const weave = { technique: 'brick' as const, brickBlock: 2 }
+    const weave = { technique: 'brick' as const, techniqueSettings: { brickBlock: 2 } }
     expect(neighborsOf(weave, undefined, { row: 0, column: 3 }).filter((p) => p.row === 1)).toEqual([{ row: 1, column: 3 }])
     expect(neighborsOf(weave, undefined, { row: 1, column: 3 }).filter((p) => p.row === 2)).toEqual([{ row: 2, column: 2 }, { row: 2, column: 3 }])
   })
@@ -316,7 +316,7 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, hasBrickBlock: false, twoPasses: false }],
     ['peyote', { technique: 'peyote' as const }, { frameStep: 2, shifted: true, rowPitch: 0.75, hasBrickBlock: false, twoPasses: true }],
     ['brick stitch', { technique: 'brick' as const }, { frameStep: 2, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
-    ['brick stitch, Brick block 3', { technique: 'brick' as const, brickBlock: 3 }, { frameStep: 6, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
+    ['brick stitch, Brick block 3', { technique: 'brick' as const, techniqueSettings: { brickBlock: 3 } }, { frameStep: 6, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
   ])('%s', (_name, weave, expected) => {
     const description = describeWeave(weave)
     expect(description).toMatchObject({ ...expected, quarterTurn: true, rowDirection: true })
@@ -427,7 +427,7 @@ describe('describeWeave: Right-angle weave (ticket 482)', () => {
 })
 
 describe('describeWeave: Netting (ticket 485)', () => {
-  const nets = [3, 5, 7, 9].map((netSize) => ({ netSize, p: (netSize + 1) / 2, description: describeWeave({ technique: 'netting', netSize }) }))
+  const nets = [3, 5, 7, 9].map((netSize) => ({ netSize, p: (netSize + 1) / 2, description: describeWeave({ technique: 'netting', techniqueSettings: { netSize } }) }))
   const beadsIn = (description: ReturnType<typeof describeWeave>, rows: number, columns: number, top = 0, left = 0) =>
     Array.from({ length: rows * columns }, (_cell, at) => ({ row: top + Math.floor(at / columns), column: left + (at % columns) })).filter((position) => description.hasPosition(position))
 
@@ -439,7 +439,7 @@ describe('describeWeave: Netting (ticket 485)', () => {
   })
 
   it('reads a missing or odd-out Net size as the nearest odd one from 3 to 9', () => {
-    expect([undefined, 4, 5, 8, 12, 1].map(clampNetSize)).toEqual([3, 3, 5, 7, 9, 3])
+    expect([undefined, 4, 5, 8, 12, 1].map((netSize) => heldSettings('netting', { netSize }).netSize)).toEqual([3, 3, 5, 7, 9, 3])
     expect(describeWeave({ technique: 'netting' })).toMatchObject({ frameStep: 4 })
   })
 
@@ -614,17 +614,23 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
     for (const technique of TECHNIQUES) {
       expect(describeWeave({ technique })).toBe(describeWeave({ technique }))
     }
-    expect(describeWeave({ technique: 'brick', brickBlock: 2 })).not.toBe(describeWeave({ technique: 'brick' }))
-    expect(describeWeave({ technique: 'netting', netSize: 5 })).not.toBe(describeWeave({ technique: 'netting' }))
+    expect(describeWeave({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })).not.toBe(describeWeave({ technique: 'brick' }))
+    expect(describeWeave({ technique: 'netting', techniqueSettings: { netSize: 5 } })).not.toBe(describeWeave({ technique: 'netting' }))
     expect(describeWeave({ technique: 'loom', cell: { aspect: 0.8, roundness: 0.3 } }).cellAspect).toBe(0.8)
     expect(describeWeave({ technique: 'loom' }).cellAspect).toBe(1)
   })
 
-  it('reads a Weave\'s settings from its map ahead of its flat fields, each within its range (ticket 0624)', () => {
-    expect(weaveSettings({ technique: 'netting', netSize: 5 })).toEqual({ netSize: 5 })
-    expect(weaveSettings({ technique: 'netting', netSize: 5, techniqueSettings: { netSize: 7 } })).toEqual({ netSize: 7 })
+  it('reads a Weave\'s settings from its map alone, each its Technique describes within its range (ticket 0625)', () => {
+    expect(weaveSettings({ technique: 'netting', techniqueSettings: { netSize: 7 } })).toEqual({ netSize: 7 })
+    expect(weaveSettings({ technique: 'netting', netSize: 5 })).toEqual({ netSize: 3 })
     expect(weaveSettings({ technique: 'brick', techniqueSettings: { brickBlock: 99 } })).toEqual({ brickBlock: 20 })
-    expect(weaveSettings({ technique: 'loom', brickBlock: 3 })).toEqual({})
-    expect(describeWeave({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })).toBe(describeWeave({ technique: 'brick', brickBlock: 2 }))
+    expect(weaveSettings({ technique: 'loom', techniqueSettings: { brickBlock: 3 } })).toEqual({})
+  })
+
+  it('holds every setting a Technique describes, a Brick block kept off brick stitch, and no Net size off Netting (ticket 0625)', () => {
+    expect(heldSettings('brick')).toEqual({ brickBlock: 1 })
+    expect(heldSettings('loom', { brickBlock: 3, netSize: 5 })).toEqual({ brickBlock: 3 })
+    expect(heldSettings('netting', { brickBlock: 3 })).toEqual({ brickBlock: 3, netSize: 3 })
+    expect(heldSettings('peyote')).toEqual({})
   })
 })

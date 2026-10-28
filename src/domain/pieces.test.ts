@@ -125,7 +125,7 @@ describe('piece areas', () => {
 })
 
 describe('pieces with a Brick block (ticket 477)', () => {
-  const block2 = { technique: 'brick' as const, brickBlock: 2 }
+  const block2 = { technique: 'brick' as const, techniqueSettings: { brickBlock: 2 } }
 
   it('joins straight rows by the bead above only, and shifted rows by the two they overlap', () => {
     expect(piecesOf(place([0, 0], [1, 1]), block2)).toHaveLength(2)

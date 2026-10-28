@@ -68,6 +68,7 @@ function expectedProject(fields: Partial<Omit<Project, 'beads' | 'frame'>> & Pic
     beadId: CUBE_COPY.id,
     bead: CUBE_COPY,
     ...framedGrid(cells, weaveOf(fields)),
+    ...weaveOf(fields),
     rowProgress: noProgress,
     palette: defaultPaletteIds(),
     paletteLetters: defaultLetters,
@@ -362,9 +363,9 @@ describe('stored-data compatibility', () => {
 
     it('opens a Project file that holds a Brick block (ticket 477), and one without as 1', async () => {
       const [block] = (await readProjectsFile(new File([await gzipJson(projectFileBrickBlock)], 'c.openbeads'))).projects
-      expect(block).toMatchObject({ technique: 'brick', brickBlock: 3 })
+      expect(block).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       const [plain] = (await readProjectsFile(new File([await gzipJson(projectFileV3)], 'a.openbeads'))).projects
-      expect(plain!.brickBlock).toBeUndefined()
+      expect(plain!.techniqueSettings?.brickBlock ?? 1).toBe(1)
     })
   })
 })

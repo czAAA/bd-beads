@@ -137,7 +137,7 @@ describe('renderProject', () => {
   })
 
   it('draws brick stitch rows in blocks of the Brick block, N straight then N shifted (ticket 477)', () => {
-    const project = projectOf('brick', 2, 5, { brickBlock: 2 })
+    const project = projectOf('brick', 2, 5, { techniqueSettings: { brickBlock: 2 } })
 
     expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([
       [0, 0], [20, 0], [0, 20], [20, 20], [10, 40], [30, 40], [10, 60], [30, 60], [0, 80], [20, 80],
@@ -887,7 +887,7 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
 
 describe('Netting (ticket 485)', () => {
   // One diamond at Net size 3: 5 columns and 5 rows of positions, 8 of them beads. A bead is 20 and a strand step 15.
-  const project = (extra: Partial<Project> = {}) => ({ ...createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } }), ...extra })
+  const project = (extra: Partial<Project> = {}) => ({ ...createProject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } }), ...extra })
 
   it('measures a block of positions as the steps between them plus one bead', () => {
     expect(projectExtentPx('netting', 5, 5)).toEqual({ width: 4 * 15 + 20, height: 4 * 15 + 20 })

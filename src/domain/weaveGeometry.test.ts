@@ -12,7 +12,7 @@ const netting = describeWeave({ technique: 'netting' })
 describe('rows of beads', () => {
   it('offsets every other row by its shift, and nothing else does', () => {
     expect([0, 1, 2, 3].map((row) => peyote.rowOffset(row, 20))).toEqual([0, 10, 0, 10])
-    expect([0, 1, 2, 3].map((row) => describeWeave({ technique: 'brick', brickBlock: 2 }).rowOffset(row, 20))).toEqual([0, 0, 10, 10])
+    expect([0, 1, 2, 3].map((row) => describeWeave({ technique: 'brick', techniqueSettings: { brickBlock: 2 } }).rowOffset(row, 20))).toEqual([0, 0, 10, 10])
     expect([0, 1, 2, 3].map((row) => loom.rowOffset(row, 20))).toEqual([0, 0, 0, 0])
     expect([0, 1, 2, 3].map((row) => rightAngle.rowOffset(row, 20))).toEqual([0, 0, 0, 0])
   })
@@ -64,7 +64,7 @@ describe('rows of beads', () => {
 
   it('repeats a bead across and a cycle of rows down, at least two', () => {
     expect(loom.tile(20, 20)).toEqual({ size: { width: 20, height: 40 }, beads: [{ x: 0, y: 0, width: 20, height: 20 }, { x: 0, y: 20, width: 20, height: 20 }] })
-    expect(describeWeave({ technique: 'brick', brickBlock: 2 }).tile(20, 20).beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [0, 20], [10, 40], [10, 60]])
+    expect(describeWeave({ technique: 'brick', techniqueSettings: { brickBlock: 2 } }).tile(20, 20).beads.map(({ x, y }) => [x, y])).toEqual([[0, 0], [0, 20], [10, 40], [10, 60]])
   })
 
   it('counts and marks a bead: its size, and its centre', () => {

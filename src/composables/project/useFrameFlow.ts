@@ -13,14 +13,14 @@ import {
   type FrameEdge,
 } from '../../domain/frame'
 import type { GridPosition, Layer } from '../../domain/grid'
-import { DEFAULT_TECHNIQUE, describeWeave, withTechniqueSettings, type Technique, type TechniqueSettings, type Weave } from '../../domain/weave'
+import { DEFAULT_TECHNIQUE, describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
-import { canvasWeave, frameWeave, sameWeave } from '../../domain/layerWeave'
+import { canvasWeave, frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave, switchLoss } from '../../domain/weaveSwitch'
 import type { Project } from '../../domain/project'
@@ -55,13 +55,6 @@ export interface FrameFlowDeps {
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
-
-/** The values of the settings the Weave's Technique describes, each within its range: from its map, else its flat
- * field, else the default. */
-const techniqueValues = (weave: Weave): TechniqueSettings => withTechniqueSettings(weave).techniqueSettings ?? {}
-
-/** The settings as the domain's Weave switch still takes them, the flat fields their ids name, until ticket 0625. */
-const flatSettings = (values: TechniqueSettings) => ({ netSize: values.netSize, brickBlock: values.brickBlock })
 
 const layerHasBeads = (project: Project, layer: Layer): boolean => hasBeads(layer === 'frame' ? (project.frame?.beads ?? {}) : project.beads)
 
@@ -187,23 +180,21 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!ask || !project) return undefined
     const { settings } = describeWeave({ technique: ask.technique })
-    const values = techniqueValues({ technique: ask.technique, techniqueSettings: ask.settings })
+    const values = weaveSettings({ technique: ask.technique, techniqueSettings: ask.settings })
     return {
       technique: ask.technique,
-      lost: switchLoss(project, ask.layer, ask.technique, flatSettings(values).netSize),
+      lost: switchLoss(project, ask.layer, ask.technique, values),
       drawn: layerHasBeads(project, ask.layer),
       changing: settings.find((setting) => setting.id === ask.changing),
       settings: settings.map((setting) => ({ setting, value: values[setting.id] ?? setting.default })),
     }
   })
 
-  const layerWeave = (project: Project, layer: Layer) => (layer === 'frame' ? frameWeave(project) : canvasWeave(project))
-
   function applySwitch(layer: Layer, technique: Technique, values: TechniqueSettings): void {
     const project = deps.currentProject()
     if (!project) return
     const before = layerWeave(project, layer)
-    const change = { technique, ...flatSettings(values) }
+    const change = { technique, techniqueSettings: values }
     const outcome =
       layer === 'frame'
         ? deps.edit('frame', (current) => changeFrame(current, change))
@@ -227,10 +218,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const current = layerWeave(project, layer)
     const technique = 'technique' in change ? change.technique : current.technique
     // The layer's values for the Technique's settings, one kept from before it was woven in another (a Brick block) too.
-    const held = techniqueValues({ ...current, technique })
-    const values = 'setting' in change ? techniqueValues({ technique, techniqueSettings: { ...held, [change.setting]: change.value } }) : held
-    const flat = flatSettings(values)
-    if (sameWeave(current, switchedWeave(current, technique, flat.netSize, flat.brickBlock))) return
+    const held = weaveSettings({ ...current, technique })
+    const values = 'setting' in change ? weaveSettings({ technique, techniqueSettings: { ...held, [change.setting]: change.value } }) : held
+    if (sameWeave(current, switchedWeave(current, technique, values))) return
     if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
     const { settings } = describeWeave({ technique })
     if (technique !== current.technique) {
@@ -239,7 +229,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       return
     }
     const changing = settings.find((setting) => setting.lossOnChange && values[setting.id] !== current.techniqueSettings?.[setting.id])
-    if (changing && switchLoss(project, layer, technique, flat.netSize) > 0) {
+    if (changing && switchLoss(project, layer, technique, values) > 0) {
       switchAsk.value = { layer, technique, settings: values, changing: changing.id }
       return
     }
@@ -260,7 +250,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const ask = switchAsk.value
     switchAsk.value = undefined
     if (!ask) return
-    applySwitch(ask.layer, ask.technique, techniqueValues({ technique: ask.technique, techniqueSettings: ask.settings }))
+    applySwitch(ask.layer, ask.technique, weaveSettings({ technique: ask.technique, techniqueSettings: ask.settings }))
   }
 
   /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, once a pass is done not at all. */

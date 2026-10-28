@@ -190,7 +190,7 @@ describe('ContextBar', () => {
   })
 
   it('does not offer Rotate in Netting, where a turned diamond row is not a row (ticket 486)', () => {
-    const net = createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } })
+    const net = createProject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } })
     const wrapper = mount(ContextBar, { props: { selectionSummary: '3×5', pasteArmed: false, canRemoveLine: false, project: net } })
     expect(wrapper.find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="context-bar-fill"]').exists()).toBe(true)

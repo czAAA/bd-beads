@@ -85,7 +85,7 @@ describe('rotateSelection', () => {
   })
 
   it('snaps the turned top row to a multiple of 2N on brick stitch (ticket 477)', () => {
-    const turned = rotatedSelection({ technique: 'brick', brickBlock: 3 }, { top: 10, left: 10, rows: 2, columns: 5 })
+    const turned = rotatedSelection({ technique: 'brick', techniqueSettings: { brickBlock: 3 } }, { top: 10, left: 10, rows: 2, columns: 5 })
     expect(turned.top % 6).toBe(0)
     expect(turned).toMatchObject({ rows: 5, columns: 2 })
   })
@@ -190,7 +190,7 @@ describe('rotateFrame (ticket 471, ADR 0066)', () => {
 
   it('moves the turned Frame by whole cycles of its own rows on brick stitch with a Brick block of N (tickets 477, 492)', () => {
     for (const brickBlock of [2, 3, 5]) {
-      const brick = { ...base, technique: 'brick' as const, brickBlock, beads: {}, frame: { technique: 'brick' as const, brickBlock, row: 30, column: 20, rows: 7, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
+      const brick = { ...base, technique: 'brick' as const, brickBlock, beads: {}, frame: { technique: 'brick' as const, techniqueSettings: { brickBlock }, row: 30, column: 20, rows: 7, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
       const turned = rotateFrame(brick)!
       expect((turned.frame!.row - brick.frame.row) % (2 * brickBlock)).toBe(0)
       expect(turned.frame).toMatchObject({ rows: 4, columns: 7 })

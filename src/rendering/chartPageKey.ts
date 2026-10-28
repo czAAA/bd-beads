@@ -10,7 +10,7 @@ import { chartCellOf, customChart } from './customChart'
 // A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
 // no counts (the Specification has the totals). Its height is set once for the PDF, from the page with the most colors.
 
-type Counted = Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'brickBlock' | 'netSize'>
+type Counted = Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'techniqueSettings'>
 
 /** Where a bead (a Unit's, for the Units techniques) lands in the displayed chart, across and down from 0. */
 function displayedAt(rotation: Rotation, columns: number, rows: number, column: number, row: number): [number, number] {

@@ -4,7 +4,7 @@ import { clamp } from '../../domain/clamp'
 import { defaultPalette, defaultPaletteIds, projectPalette } from '../../domain/palette'
 import type { Bead } from '../../domain/beads'
 import { CANVAS_MAX_PX, type GridDimensions } from '../../domain/grid'
-import { describeWeave, type Technique } from '../../domain/weave'
+import { describeWeave, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { approximatePreviewColors, exactPreviewColors } from '../../domain/framingPreview'
 import {
   MAX_IMAGE_COLORS,
@@ -33,10 +33,8 @@ const props = defineProps<{
   image: PixelData
   /** The New Project form's live values: these size the frame, and the frame follows them as they are edited. */
   technique: Technique
-  /** The Brick block of the Project being made (ticket 477); nothing is 1. */
-  brickBlock?: number
-  /** The Net size of the Project being made (ticket 485); nothing is the default. */
-  netSize?: number
+  /** The settings of the Project being made (ticket 0625): its Brick block, its Net size; one left out is its default. */
+  techniqueSettings?: TechniqueSettings
   bead: Bead
   dimensions: GridDimensions
   /** A multiple of the scale at which the picture just covers the frame (see domain/imageFraming). */
@@ -104,8 +102,7 @@ function latticeFor(view: ReturnType<typeof framingView>) {
     dimensions: props.dimensions,
     bead: props.bead,
     technique: props.technique,
-    brickBlock: props.brickBlock,
-    netSize: props.netSize,
+    techniqueSettings: props.techniqueSettings,
   })
 }
 
@@ -114,8 +111,7 @@ function sampledFor(view: ReturnType<typeof framingView>, lattice: ReturnType<ty
     image: props.image,
     view,
     technique: props.technique,
-    brickBlock: props.brickBlock,
-    netSize: props.netSize,
+    techniqueSettings: props.techniqueSettings,
     bead: props.bead,
     lattice,
   })
@@ -157,9 +153,8 @@ const drawnProject = computed(() => {
   )
   return {
     technique: props.technique,
-    brickBlock: props.brickBlock,
-    netSize: props.netSize,
-    ...framedGrid(grid, { technique: props.technique, brickBlock: props.brickBlock, netSize: props.netSize }),
+    techniqueSettings: props.techniqueSettings,
+    ...framedGrid(grid, { technique: props.technique, techniqueSettings: props.techniqueSettings }),
     rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
     rotation: 0 as const,
   }
@@ -169,7 +164,7 @@ const drawnProject = computed(() => {
 const latticeSpace = computed(() => spaceOf(drawnProject.value, false))
 
 /** The lattice seen upright and unscaled, with no scroll: where its beads are in the preview's own px. */
-const unscaledView = computed(() => surfaceView({ space: latticeSpace.value, technique: props.technique, brickBlock: props.brickBlock, netSize: props.netSize, rotation: 0, zoom: 1 }))
+const unscaledView = computed(() => surfaceView({ space: latticeSpace.value, technique: props.technique, techniqueSettings: props.techniqueSettings, rotation: 0, zoom: 1 }))
 
 /** The lattice at its natural bead size, in unscaled px. */
 const latticeExtent = computed(() => latticeSpace.value.extent)
@@ -183,8 +178,7 @@ const fitScale = computed(() =>
   surfaceView({
     space: latticeSpace.value,
     technique: props.technique,
-    brickBlock: props.brickBlock,
-    netSize: props.netSize,
+    techniqueSettings: props.techniqueSettings,
     rotation: 0,
     zoom: 1,
     viewport: { width: props.availableWidth || CANVAS_MAX_PX, height: Infinity },
@@ -232,7 +226,7 @@ watchPostEffect(() => {
   if (moving.value && usesDraftLook(props.technique, lattice.value.columns * lattice.value.rows)) {
     renderDraft(context, {
       technique: props.technique,
-      brickBlock: props.brickBlock,
+      techniqueSettings: props.techniqueSettings,
       columns: lattice.value.columns,
       rows: lattice.value.rows,
       colors: beadColors.value,
@@ -272,8 +266,8 @@ const panRangeMm = computed(() => ({
 // piece (the Bead's width along a row, the Technique's row spacing down the page), so the point under the pointer stays
 // under it in every Technique.
 const mmPerScreenPx = computed(() => {
-  const step = surfaceView({ space: latticeSpace.value, technique: props.technique, brickBlock: props.brickBlock, netSize: props.netSize, rotation: 0, zoom: fitScale.value }).beadStep()
-  const mm = describeWeave({ technique: props.technique, netSize: props.netSize }).stepMm(props.bead)
+  const step = surfaceView({ space: latticeSpace.value, technique: props.technique, techniqueSettings: props.techniqueSettings, rotation: 0, zoom: fitScale.value }).beadStep()
+  const mm = describeWeave({ technique: props.technique, techniqueSettings: props.techniqueSettings }).stepMm(props.bead)
   return { x: mm.across / step.column.x, y: mm.down / step.row.y }
 })
 

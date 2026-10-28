@@ -28,10 +28,10 @@ export interface LayerSheet {
 }
 
 /** What `layerAt` needs of a Project (ADR 0066): the Frame, and the Weaves that say how much of the Canvas it covers. */
-export type Placed = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+export type Placed = Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
 
 /** A Project as what reads its Frame's geometry needs it: the Frame, the Weaves and the Bead shape's cell. */
-type Framed = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & ShapedBead
+type Framed = Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & ShapedBead
 
 /** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
  * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its

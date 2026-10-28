@@ -1,22 +1,21 @@
 import { forEachBead, type BeadMap, type Rect } from './canvas'
 import { withEachBead } from './folding'
-import { canvasWeave, clampBrickBlock, frameWeave, weaveOf } from './layerWeave'
+import type { Layer } from './grid'
+import { layerWeave, sameWeave, unwoven, weaveOf } from './layerWeave'
 import { touch, type Project } from './project'
-import { clampNetSize, describeWeave, withTechniqueSettings, type Technique, type Weave } from './weave'
+import { describeWeave, type Technique, type TechniqueSettings, type Weave } from './weave'
 
-// Switching a layer's Weave (ADR 0038): its Technique, Brick block and Net size, and the beads a switch drops.
+// Switching a layer's Weave (ADR 0038): its Technique and its settings, and the beads a switch drops.
 
-/** The layer's Weave switched to another Technique (ADR 0038): the Brick block stays, the Net size is the one given, the
- * layer's own if it has one, or the default, and only a Technique with a Net size keeps one. A Brick block given (ticket 568)
- * replaces the layer's. */
-export function switchedWeave(current: Weave, technique: Technique, netSize?: number, brickBlock?: number): Weave {
-  return withTechniqueSettings(
-    weaveOf({
-      technique,
-      brickBlock: brickBlock === undefined ? current.brickBlock : clampBrickBlock(brickBlock),
-      netSize: describeWeave({ technique }).hasNetSize ? clampNetSize(netSize ?? current.netSize) : undefined,
-    }),
-  )
+/** A change of a layer's Weave (tickets 351, 477, 568, 0625): another Technique with any settings given for it, or the
+ * same Technique with other settings. */
+export type WeaveChange = { technique: Technique; techniqueSettings?: TechniqueSettings } | { techniqueSettings: TechniqueSettings }
+
+/** The layer's Weave switched to another Technique, or to its own with other settings (ADR 0038, ticket 0625): each
+ * setting given replaces the layer's, and the rest are held as `heldSettings` says (a Brick block stays, a Net size off
+ * Netting goes, one the Technique describes and the layer lacks is its default). */
+export function switchedWeave(current: Weave, technique: Technique, settings: TechniqueSettings = {}): Weave {
+  return weaveOf({ technique, techniqueSettings: { ...current.techniqueSettings, ...settings } })
 }
 
 /** The beads of a layer that keep a place in `weave` (a Frame's counted from its own corner, `shape`), and how many are
@@ -36,43 +35,30 @@ function beadsInWeave(beads: BeadMap, weave: Weave, shape?: Pick<Rect, 'rows' | 
   return { kept, lost }
 }
 
-/** How many beads of the Canvas, or of the Frame, a switch to `weave` would drop. */
-export function switchLoss(project: Project, layer: 'canvas' | 'frame', technique: Technique, netSize?: number): number {
-  if (layer === 'frame') {
-    return project.frame ? beadsInWeave(project.frame.beads, switchedWeave(frameWeave(project), technique, netSize), project.frame).lost : 0
+/** How many beads of the Canvas, or of the Frame, a switch to `technique` with `settings` would drop. */
+export function switchLoss(project: Project, layer: Layer, technique: Technique, settings?: TechniqueSettings): number {
+  if (layer === 'frame' && !project.frame) {
+    return 0
   }
-  return beadsInWeave(project.beads, switchedWeave(canvasWeave(project), technique, netSize)).lost
+  const weave = switchedWeave(layerWeave(project, layer), technique, settings)
+  return layer === 'frame' ? beadsInWeave(project.frame!.beads, weave, project.frame).lost : beadsInWeave(project.beads, weave).lost
 }
 
-/** The Canvas woven in another Technique (ticket 351, 492, ADR 0038): its beads keep their row and column where the
- * Technique has a position there and the rest are dropped. The Frame is another layer and stays as it is. */
-export function withTechnique(project: Project, technique: Technique, netSize?: number, brickBlock?: number): Project {
-  const weave = switchedWeave(canvasWeave(project), technique, netSize, brickBlock)
-  const { netSize: _netSize, brickBlock: _brickBlock, ...rest } = project
-  return touch({ ...rest, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}) }, { technique: weave.technique, beads: beadsInWeave(project.beads, weave).kept })
-}
-
-/** The Project with the Canvas's Brick block changed (ticket 477): the same cells, only the shift's rhythm changes. */
-export function withBrickBlock(project: Project, brickBlock: number): Project {
-  return touch(project, { brickBlock: clampBrickBlock(brickBlock) })
-}
-
-/** The Frame woven in another Technique (ticket 492, ADR 0038): its beads keep their row and column where the Technique
- * has a position there and the rest are dropped, its Folded beads too, which stay folded (ticket 0638). Its local row 0
- * is always an unshifted one, so nothing else moves. A Project with no Frame is unchanged. */
-export function withFrameTechnique(project: Project, technique: Technique, netSize?: number, brickBlock?: number): Project {
-  if (!project.frame) {
+/** The layer woven anew (tickets 351, 477, 492, 568, ADR 0038): its beads, and a Frame's Folded ones (ticket 0638), keep
+ * their row and column where the new Weave has a position and the rest are dropped; the other layer stays as it is. The
+ * same Project comes back where the Weave lays positions out as before, or the layer is a Frame the Project lacks. */
+export function withWeave(project: Project, layer: Layer, change: WeaveChange): Project {
+  const current = layerWeave(project, layer)
+  const weave = switchedWeave(current, 'technique' in change ? change.technique : current.technique, change.techniqueSettings)
+  if ((layer === 'frame' && !project.frame) || sameWeave(current, weave)) {
     return project
   }
-  const weave = switchedWeave(frameWeave(project), technique, netSize, brickBlock)
-  const { netSize: _netSize, brickBlock: _brickBlock, folded: _folded, ...frame } = project.frame
+  if (layer === 'canvas') {
+    return touch({ ...unwoven(project), ...weave }, { beads: beadsInWeave(project.beads, weave).kept })
+  }
+  const { folded: _folded, ...frame } = unwoven(project.frame!)
   const { hasPosition } = describeWeave(weave)
   const own = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
-  const rewoven = withEachBead(project.frame, (position) => (hasPosition(position, own) ? position : undefined))
-  return touch(project, { frame: { ...frame, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}), technique: weave.technique, ...rewoven } })
-}
-
-/** The Frame with its Brick block changed (ticket 492). */
-export function withFrameBrickBlock(project: Project, brickBlock: number): Project {
-  return project.frame ? touch(project, { frame: { ...project.frame, brickBlock: clampBrickBlock(brickBlock) } }) : project
+  const rewoven = withEachBead(project.frame!, (position) => (hasPosition(position, own) ? position : undefined))
+  return touch(project, { frame: { ...frame, ...weave, ...rewoven } })
 }

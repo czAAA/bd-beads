@@ -3,7 +3,7 @@ import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
 import { DEFAULT_FRAME_KIND, isFrameKind, settingsOf, type KindedSheet } from './frameKind'
 import type { Rotation } from './grid'
-import { frameWeave, weaveOf } from './layerWeave'
+import { frameWeave, unwoven, weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { readPieceNames } from './pieceNames'
@@ -11,7 +11,7 @@ import type { Grid, Project } from './project'
 import { projectFrame } from './projectExtent'
 import { laidOf, readRowProgress } from './rowProgress'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
-import { clampNetSize, describeWeave, isTechnique, MAX_BRICK_BLOCK, type Weave } from './weave'
+import { BRICK_BLOCK_SETTING, isTechnique, MAX_BRICK_BLOCK, NET_SIZE_SETTING, type Technique, type Weave } from './weave'
 
 // Reading a Project from storage or a file (CONTEXT.md, docs/testing.md's Stored-data compatibility): every shape an
 // older app saved becomes today's Project, so nothing else has to know the old ones.
@@ -85,22 +85,18 @@ export function normalizeProject(stored: StoredProject): Project {
 
   const paletteLetters = lettersOfPalette(palette, project.beadId, legacy.paletteLetters)
 
-  const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, letters: storedLetters, bead: _storedBead, pieceNames: _stored, brickBlock: storedBlock, netSize: storedNet, beadShape: storedShape, ...withoutNames } = rest
-  // An unreadable Brick block reads as the default; a valid one is kept even off brick stitch.
-  const brickBlock = readBrickBlock(storedBlock)
+  const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, letters: storedLetters, bead: _storedBead, pieceNames: _stored, beadShape: storedShape, ...withoutNames } = unwoven(rest)
   const pieceNames = readPieceNames(legacy.pieceNames)
-  const netSize = describeWeave({ technique }).hasNetSize ? clampNetSize(typeof storedNet === 'number' ? storedNet : undefined) : undefined
-  const canvas = weaveOf({ technique, brickBlock, netSize })
+  const canvas = readWeave(technique, rest)
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
-  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...readFrameKind(project.frame), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
+  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...unwoven(readFrameKind(project.frame)), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
   const { rows, columns } = projectFrame(placed)
   const sheet: KindedSheet = { ...frameWeave({ ...canvas, ...placed }), ...laidOf(placed.frame), rows, columns }
 
   return {
     ...withoutNames,
     ...placed,
-    ...(brickBlock ? { brickBlock } : {}),
-    ...(netSize ? { netSize } : {}),
+    ...canvas,
     // An unreadable or missing Bead shape reads as Symmetric, which is left unsaved.
     ...(storedShape === 'real' ? { beadShape: storedShape } : {}),
     ...(pieceNames.length > 0 ? { pieceNames } : {}),
@@ -131,13 +127,20 @@ function readRemovedDefaults(stored: unknown): string[] {
 
 /** A stored Frame's Weave, or the Project's where it has none or an unreadable one. */
 function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
-  const technique = isTechnique(stored.technique) ? stored.technique : undefined
-  if (!technique) {
-    return fallback
-  }
-  const brickBlock = readBrickBlock(stored.brickBlock)
-  const netSize = describeWeave({ technique }).hasNetSize ? clampNetSize(typeof stored.netSize === 'number' ? stored.netSize : undefined) : undefined
-  return weaveOf({ technique, brickBlock, netSize })
+  return isTechnique(stored.technique) ? readWeave(stored.technique, stored) : fallback
+}
+
+/** A layer's Weave from the flat fields a file stores (until ticket 0636) as its settings map (ticket 0625), over any
+ * map it holds: an unreadable Brick block reads as the default and a valid one is kept even off brick stitch; a Net
+ * size is read within its range, on Netting alone. */
+function readWeave(technique: Technique, stored: Partial<Weave>): Weave {
+  const netSize = typeof stored.netSize === 'number' ? stored.netSize : undefined
+  return weaveOf({ technique, techniqueSettings: { ...stored.techniqueSettings, ...flatSetting(BRICK_BLOCK_SETTING.id, readBrickBlock(stored.brickBlock)), ...flatSetting(NET_SIZE_SETTING.id, netSize) } })
+}
+
+/** One flat field as a setting, where it holds a value. */
+function flatSetting(id: string, value: number | undefined): Record<string, number> {
+  return value === undefined ? {} : { [id]: value }
 }
 
 /** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
