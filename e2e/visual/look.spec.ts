@@ -11,7 +11,8 @@ import { MAX_DIFFERING_BLOCKS, compareToReference, shownRegion, UPDATING_REFEREN
 // interaction.spec.ts; overlays: overlays.spec.ts.
 const REFERENCES = fileURLToPath(new URL('./__screenshots__/', import.meta.url))
 const ZOOMS = [100, 300]
-const TECHNIQUES = ['loom', 'peyote', 'brick'] as const
+// Square stitch's references are copies of loom's: the same layout, so it must draw the same (ticket 0635).
+const TECHNIQUES = ['loom', 'peyote', 'brick', 'square'] as const
 
 const scenarios = [
   ...TECHNIQUES.map((technique) => ({ name: `${technique}-plain`, technique, rowProgress: undefined })),
