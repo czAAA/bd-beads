@@ -1,5 +1,5 @@
-import { forEachBead, type BeadMap, type Rect } from './canvas'
-import { withEachBead } from './folding'
+import { forEachBead, type BeadMap, type FrameSheet } from './canvas'
+import { withEachBead, type SheetBeads } from './folding'
 import type { Layer } from './grid'
 import { layerWeave, sameWeave, unwoven, weaveOf } from './layerWeave'
 import { touch, type Project } from './project'
@@ -18,14 +18,13 @@ export function switchedWeave(current: Weave, technique: Technique, settings: Te
   return weaveOf({ technique, techniqueSettings: { ...current.techniqueSettings, ...settings } })
 }
 
-/** The beads of a layer that keep a place in `weave` (a Frame's counted from its own corner, `shape`), and how many are
- * left without one: a hole of Netting, the empty last column of a Right-angle weave line. */
-function beadsInWeave(beads: BeadMap, weave: Weave, shape?: Pick<Rect, 'rows' | 'columns'>): { kept: BeadMap; lost: number } {
+/** The Canvas's beads that keep a place in `weave`, and how many are left without one: a hole of Netting. */
+function beadsInWeave(beads: BeadMap, weave: Weave): { kept: BeadMap; lost: number } {
   const { hasPosition } = describeWeave(weave)
   const kept: BeadMap = {}
   let lost = 0
   forEachBead(beads, (row, column, color) => {
-    if (hasPosition({ row, column }, shape && { row: 0, column: 0, ...shape })) {
+    if (hasPosition({ row, column })) {
       kept[row] ??= {}
       kept[row]![column] = color
     } else {
@@ -35,13 +34,36 @@ function beadsInWeave(beads: BeadMap, weave: Weave, shape?: Pick<Rect, 'rows' | 
   return { kept, lost }
 }
 
-/** How many beads of the Canvas, or of the Frame, a switch to `technique` with `settings` would drop. */
-export function switchLoss(project: Project, layer: Layer, technique: Technique, settings?: TechniqueSettings): number {
+/** The beads a switch drops (ticket 0641): `lost` all of them, `folded` how many of those are Folded beads, out of sight. */
+export interface SwitchLoss {
+  lost: number
+  folded: number
+}
+
+const NO_LOSS: SwitchLoss = { lost: 0, folded: 0 }
+
+/** A Frame's beads, shown and Folded (ticket 0638), that keep their row and column in `weave`, counted from its own
+ * corner, and what is dropped: a hole of Netting, the empty last column of a Right-angle weave line. */
+function frameInWeave(frame: FrameSheet, weave: Weave): { kept: SheetBeads; loss: SwitchLoss } {
+  const { hasPosition } = describeWeave(weave)
+  const own = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
+  const loss = { ...NO_LOSS }
+  const kept = withEachBead(frame, (position, folded) => {
+    if (hasPosition(position, own)) return position
+    loss.lost++
+    if (folded) loss.folded++
+    return undefined
+  })
+  return { kept, loss }
+}
+
+/** The beads of the Canvas, or of the Frame with its Folded ones, a switch to `technique` with `settings` would drop. */
+export function switchLoss(project: Project, layer: Layer, technique: Technique, settings?: TechniqueSettings): SwitchLoss {
   if (layer === 'frame' && !project.frame) {
-    return 0
+    return NO_LOSS
   }
   const weave = switchedWeave(layerWeave(project, layer), technique, settings)
-  return layer === 'frame' ? beadsInWeave(project.frame!.beads, weave, project.frame).lost : beadsInWeave(project.beads, weave).lost
+  return layer === 'frame' ? frameInWeave(project.frame!, weave).loss : { lost: beadsInWeave(project.beads, weave).lost, folded: 0 }
 }
 
 /** The layer woven anew (tickets 351, 477, 492, 568, ADR 0038): its beads, and a Frame's Folded ones (ticket 0638), keep
@@ -57,8 +79,5 @@ export function withWeave(project: Project, layer: Layer, change: WeaveChange): 
     return touch({ ...unwoven(project), ...weave }, { beads: beadsInWeave(project.beads, weave).kept })
   }
   const { folded: _folded, ...frame } = unwoven(project.frame!)
-  const { hasPosition } = describeWeave(weave)
-  const own = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
-  const rewoven = withEachBead(project.frame!, (position) => (hasPosition(position, own) ? position : undefined))
-  return touch(project, { frame: { ...frame, ...weave, ...rewoven } })
+  return touch(project, { frame: { ...frame, ...weave, ...frameInWeave(project.frame!, weave).kept } })
 }

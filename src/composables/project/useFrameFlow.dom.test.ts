@@ -534,6 +534,42 @@ describe('useFrameFlow', () => {
       expect(deps.harness.project.frame?.beads).toEqual({})
     })
 
+    describe('with Folded beads (ticket 0641)', () => {
+      // Row 5 column 1 is a position in a net of 3 but a hole in a net of 5; row 5 column 7 has one in nets of 3 and 7.
+      const folded = (row: number, column: number) => ({ ...net, frame: { ...net.frame, folded: withColors({}, [{ row, column, color: '#111111' }]) } })
+
+      it('asks first when only Folded beads would lose their place, counting them apart', () => {
+        const { deps, setWeaveSetting, switchQuestion } = setup(folded(5, 1))
+        setWeaveSetting('frame', 'netSize', 5)
+        expect(deps.replaceProject).not.toHaveBeenCalled()
+        expect(switchQuestion.value).toMatchObject({ changing: NET_SIZE_SETTING, lost: 1, folded: 1 })
+      })
+
+      it('changes at once while every Folded bead keeps its place', () => {
+        const { deps, setWeaveSetting, switchQuestion } = setup(folded(5, 7))
+        setWeaveSetting('frame', 'netSize', 7)
+        expect(switchQuestion.value).toBeUndefined()
+        expect(deps.harness.project.frame).toMatchObject({ techniqueSettings: { netSize: 7 }, folded: { 5: { 7: '#111111' } } })
+      })
+
+      it('counts them in the question of a Technique switch, though the Frame shows no bead', () => {
+        // Row 5 column 0 is a hole in a net of 3, the size a switch to Netting starts at.
+        const loom = { ...sized, frame: { ...sized.frame!, folded: withColors({}, [{ row: 5, column: 0, color: '#111111' }]) } }
+        const { setTechnique, switchQuestion } = setup(loom)
+        setTechnique('netting')
+        expect(switchQuestion.value).toMatchObject({ technique: 'netting', drawn: false, lost: 1, folded: 1 })
+      })
+
+      it('asks before a switch to a Technique with no settings that would drop a Folded bead', () => {
+        // In Right-angle weave the last column of a horizontal line (row 0) has no position.
+        const loom = { ...sized, frame: { ...sized.frame!, folded: withColors({}, [{ row: 0, column: 3, color: '#111111' }]) } }
+        const { deps, setTechnique, switchQuestion } = setup(loom)
+        setTechnique('rightAngle')
+        expect(deps.replaceProject).not.toHaveBeenCalled()
+        expect(switchQuestion.value).toMatchObject({ technique: 'rightAngle', drawn: false, folded: 1 })
+      })
+    })
+
     it('is no step for the size already used', () => {
       const { deps, setWeaveSetting } = setup(net)
       setWeaveSetting('frame', 'netSize', 3)

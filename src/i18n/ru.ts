@@ -194,6 +194,7 @@ export const ru: Translations = {
       loss: {
         title: 'Изменить размер сетки?',
         message: 'Бисерины без места в новой сетке будут удалены: {count}. Это можно отменить.',
+        foldedMessage: 'Бисерины без места в новой сетке будут удалены: {count}. Из них свёрнутых бисерин, которых не видно: {folded}. Это можно отменить.',
         button: 'Изменить размер сетки',
       },
     },
@@ -714,6 +715,7 @@ export const ru: Translations = {
     announceTechnique: 'Техника изменена: {technique}',
     switchConfirmTitle: 'Изменить технику?',
     switchConfirmMessage: 'Рисунок может выглядеть иначе в технике «{technique}». Бисерины, которым там нет места, будут удалены: {count}. Это можно отменить.',
+    switchConfirmFoldedMessage: 'Рисунок может выглядеть иначе в технике «{technique}». Бисерины, которым там нет места, будут удалены: {count}. Из них свёрнутых бисерин, которых не видно: {folded}. Это можно отменить.',
     switchSettingsMessage: 'Выберите настройки новой техники.',
     switchConfirmButton: 'Изменить технику',
     announceSelectionRotated: 'Выделение повёрнуто',

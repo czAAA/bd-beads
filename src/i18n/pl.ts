@@ -194,6 +194,7 @@ export const pl: Translations = {
       loss: {
         title: 'Zmienić rozmiar siatki?',
         message: 'Koraliki bez miejsca w nowej siatce zostaną usunięte: {count}. Można to cofnąć.',
+        foldedMessage: 'Koraliki bez miejsca w nowej siatce zostaną usunięte: {count}. W tym złożonych, niewidocznych koralików: {folded}. Można to cofnąć.',
         button: 'Zmień rozmiar siatki',
       },
     },
@@ -714,6 +715,7 @@ export const pl: Translations = {
     announceTechnique: 'Zmieniono technikę na: {technique}',
     switchConfirmTitle: 'Zmienić technikę?',
     switchConfirmMessage: 'Obraz może wyglądać inaczej w technice: {technique}. Koraliki bez miejsca w niej zostaną usunięte: {count}. Można to cofnąć.',
+    switchConfirmFoldedMessage: 'Obraz może wyglądać inaczej w technice: {technique}. Koraliki bez miejsca w niej zostaną usunięte: {count}. W tym złożonych, niewidocznych koralików: {folded}. Można to cofnąć.',
     switchSettingsMessage: 'Wybierz ustawienia nowej techniki.',
     switchConfirmButton: 'Zmień technikę',
     announceSelectionRotated: 'Obrócono zaznaczenie',
