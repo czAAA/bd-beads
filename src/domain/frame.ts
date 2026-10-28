@@ -146,22 +146,26 @@ export function withFrame(project: Project, rectangle: Rect | undefined): Projec
   return withFrameGiving(project, rectangle).project
 }
 
-/** `withFrame`, and the beads the resized Frame gives up to the Canvas, by Canvas position: those it no longer holds
- * where it is woven like the Canvas, none where it folds them (ticket 0638). The resize lays them there. */
-export function withFrameGiving(project: Project, rectangle: Rect | undefined): { project: Project; given: BeadMap } {
+/** `withFrame`, and the beads the resized Frame trades with the Canvas, by Canvas position. Woven like the Canvas it
+ * gives up those it no longer holds and takes in the Canvas beads `offered` where it shows none of its own (ticket
+ * 0639); woven unlike it, it folds and takes nothing (ticket 0638). The resize lays and lifts them there. */
+export function withFrameGiving(project: Project, rectangle: Rect | undefined, offered: BeadMap = {}): { project: Project; given: BeadMap; taken: BeadMap } {
   if (sameFrame(project.frame, rectangle)) {
-    return { project, given: {} }
+    return { project, given: {}, taken: {} }
   }
   const { frame: current, ...rest } = project
   // With the Frame gone the passes are gone too (ticket 426).
   if (!rectangle) {
-    return { project: { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }, given: {} }
+    return { project: { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }, given: {}, taken: {} }
   }
   const { rows, columns } = rectangle
   const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
   const holds = (at: GridPosition) => at.row >= 0 && at.row < rows && at.column >= 0 && at.column < columns
-  // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638); one made anew is empty.
-  const refit = current ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds) : { beads: {}, given: {} }
+  // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638) and takes what is offered (ticket
+  // 0639); one made anew is empty.
+  const refit = current
+    ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds, shiftedBeads(offered, -row, -column))
+    : { beads: {}, given: {}, taken: {} }
   const frame: FrameSheet = {
     row,
     column,
@@ -176,5 +180,9 @@ export function withFrameGiving(project: Project, rectangle: Rect | undefined): 
     ...(current?.settings ? { settings: current.settings } : {}),
     ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
   }
-  return { project: { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }, given: shiftedBeads(refit.given, row, column) }
+  return {
+    project: { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() },
+    given: shiftedBeads(refit.given, row, column),
+    taken: shiftedBeads(refit.taken, row, column),
+  }
 }

@@ -130,6 +130,20 @@ describe('useFrameFlow', () => {
     expect(deps.harness.project.frame!.folded).toBeUndefined()
   })
 
+  it('lifts the Canvas beads a growing handle drag covers once, on release, previewed while dragging, and one Undo puts them back (ticket 0639)', () => {
+    const start = { ...sized, beads: withColors({}, [{ row: 3, column: 1, color: '#e63746' }]) }
+    const { deps, draftProject, press, drag, release } = setupEditing(start)
+    press({ kind: 'handle', edges: ['bottom'] }, { row: 2, column: 1 })
+    drag({ row: 4, column: 1 })
+    expect(draftProject.value?.frame!.beads).toEqual(withColors({}, [{ row: 3, column: 1, color: '#e63746' }]))
+    expect(deps.replaceProject).not.toHaveBeenCalled()
+    release()
+    expect(deps.replaceProject).toHaveBeenCalledTimes(1)
+    expect(deps.harness.project.beads).toEqual({})
+    deps.harness.history.onUndo()
+    expect(deps.harness.project).toMatchObject({ beads: start.beads, frame: start.frame })
+  })
+
   it('changes no bead and is no step when the Frame did not change', () => {
     const { deps, press, drag, release } = setup()
     press({ kind: 'move' }, { row: 1, column: 1 })
@@ -592,16 +606,28 @@ describe('useFrameFlow', () => {
       }
     })
 
-    it('does not refuse an edge over a named Schema: the Frame covers the Canvas, and a strip it gives up clears it (ADR 0066, ticket 513)', () => {
+    it('gives up a strip over a hidden named Schema, which shows again, and hides it again growing back (ticket 0639)', () => {
       const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
-      const named = { ...open, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+      const named = { ...open, frame: { technique: 'loom' as const, row: 0, column: 2, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
       const { deps, stepEdge } = setup(named)
       stepEdge('left', -1)
-      expect(lastFrame(deps)).toMatchObject({ column: 1, columns: 5 })
-      expect(deps.harness.project.beads).toEqual(withColors({}, [1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' }))))
+      expect(lastFrame(deps)).toMatchObject({ column: 3, columns: 5 })
+      expect(deps.harness.project.beads).toEqual(beads)
+      stepEdge('left', 1)
+      expect(deps.harness.project).toMatchObject({ frame: named.frame, beads, pieceNames: named.pieceNames })
       expect(deps.showToast).not.toHaveBeenCalled()
     })
+
+    it('stops an edge growing into a named Schema at its edge, saying why, and is no step (ticket 0639)', () => {
+      const beads = withColors({}, [0, 1].map((column) => ({ row: 0, column, color: '#e63746' })))
+      const named = { ...open, frame: { technique: 'loom' as const, row: 0, column: 2, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+      const { deps, stepEdge } = setup(named)
+      stepEdge('left', 1)
+      expect(deps.replaceProject).not.toHaveBeenCalled()
+      expect(deps.showToast).toHaveBeenCalledWith('frame-cuts-schema', expect.stringContaining('Fox'), 'info')
+    })
   })
+
   describe('Add Frame from Starter and Replace Frame (tickets 495, 0596)', () => {
     const star = starterById('star')
 
