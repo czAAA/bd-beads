@@ -3,6 +3,7 @@ import { PRINT_COLORS } from './printColors'
 import { blankPage, drawMark, font, MONO, pt, SANS, text, wrap } from './printPages'
 import { mm, PRINT_MARGIN, PRINT_PART_OVERLAP, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
+import { fillBlanks } from '../domain/fillBlanks'
 
 // The Specification page of the PDF (ticket 0581; PrintSpecification card): the full Beads needed table a weaver takes
 // to the shop, then the Schema's facts and where each part is.
@@ -38,7 +39,7 @@ export function drawSpecificationPage(words: PrintText, plan: PrintPlan, rowByRo
   drawMark(context, left, PRINT_MARGIN, mm(5), PRINT_COLORS.accent)
   const meta = [words.techniqueWord, words.name, headerMaker(words.maker)].filter(Boolean).join(' · ')
   text(context, meta, left + mm(7), PRINT_MARGIN + mm(3.8), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width - mm(40))
-  text(context, labels.page.replace('{page}', String(plan.specificationPage)).replace('{pages}', String(plan.pageCount)), left + width, PRINT_MARGIN + mm(3.8), font('700', 9, SANS), PRINT_COLORS.ink, 'right')
+  text(context, fillBlanks(labels.page, { page: plan.specificationPage, pages: plan.pageCount }), left + width, PRINT_MARGIN + mm(3.8), font('700', 9, SANS), PRINT_COLORS.ink, 'right')
   text(context, labels.specification, left, PRINT_MARGIN + mm(13), font('600', 14, SANS), PRINT_COLORS.ink)
 
   let y = drawBeadsNeededTable(context, words, plan, left, PRINT_MARGIN + HEADER, width)
@@ -50,7 +51,7 @@ export function drawSpecificationPage(words: PrintText, plan: PrintPlan, rowByRo
   const footer = page.height - PRINT_MARGIN - mm(1.5)
   drawMark(context, left, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
   text(context, 'openbeads', left + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
-  if (rowByRowPage) text(context, labels.rowByRowOn.replace('{page}', String(rowByRowPage)), left + width, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
+  if (rowByRowPage) text(context, fillBlanks(labels.rowByRowOn, { page: rowByRowPage }), left + width, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
   return canvas
 }
 
@@ -181,7 +182,7 @@ function drawPartMap(context: CanvasRenderingContext2D, words: PrintText, plan: 
   })
   if (plan.parts.length < 2) return
   const block = Math.max(...plan.parts.map((part) => Math.max(part.lastAcross - part.firstAcross, part.lastDown - part.firstDown) + 1))
-  const note = labels.partsNote.replace('{beads}', String(block)).replace('{overlap}', String(PRINT_PART_OVERLAP))
+  const note = fillBlanks(labels.partsNote, { beads: block, overlap: PRINT_PART_OVERLAP })
   let y = gridTop + plan.partsDown * cell + mm(2)
   for (const line of wrap(context, note, font('400', 6.5, SANS), width)) {
     y += pt(9)

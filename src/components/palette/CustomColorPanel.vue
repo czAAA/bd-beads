@@ -6,6 +6,7 @@ import { hexToHsv, hsToWheelPoint, hsvToHex, parseHexInput, wheelPointToHs, wrap
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import TextField from '../ui/form/TextField.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Custom color picker (ticket 449; ColorPickers card): wheel (hue = angle, saturation = distance), brightness
 // slider, hex field and preview swatch; it only previews. A layer of the overlay registry (ADR 0061): a press outside,
@@ -158,7 +159,7 @@ const sliderStyle = computed(() => ({
 }))
 const sliderThumb = computed(() => ({ left: `${hsv.value.v * 100}%`, background: hex.value }))
 const wheelValue = computed(() =>
-  t.value.palette.wheelValue.replace('{hue}', String(Math.round(hsv.value.h))).replace('{saturation}', String(Math.round(hsv.value.s * 100))),
+  fillBlanks(t.value.palette.wheelValue, { hue: Math.round(hsv.value.h), saturation: Math.round(hsv.value.s * 100) }),
 )
 
 onMounted(async () => {

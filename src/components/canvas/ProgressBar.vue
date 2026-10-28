@@ -9,6 +9,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // Progress bar (CONTEXT.md; tickets 144, 411, 426, ProgressBar card): every Row progress control, in one bar along the
 // canvas box's bottom. On whenever there is a Frame (ADR 0055); without one it offers Fit to drawing. With a Frame:
@@ -75,8 +76,9 @@ const customPosition = computed(() => {
   // The last pass is a join or a strand wherever the passes are not all rounds or rows of one part.
   const last = order.stepOf!(order.count - 1)!
   const single = last.kind !== 'join' && last.kind !== 'strand' && last.part === undefined
-  const of = single ? words.ofSteps : words.stepOfSteps
-  return { label: orderStepLabel(words, step), of: of.replace('{current}', String(shownRow.value)).replace('{total}', String(position.value.total)) }
+  const total = position.value.total
+  const of = single ? fillBlanks(words.ofSteps, { total }) : fillBlanks(words.stepOfSteps, { current: shownRow.value, total })
+  return { label: orderStepLabel(words, step), of }
 })
 
 const directionLabel = computed(() => {
@@ -135,7 +137,7 @@ const arrowTurn = computed(() => {
         <span class="progress-bar__row">{{ customPosition?.label ?? `${t.rowProgress.positionLabel} ${shownRow}` }}</span>
         {{ ' ' }}
         <span class="progress-bar__of">{{
-          customPosition?.of ?? t.rowProgress.ofTotal.replace('{total}', String(position.total)).replace('{direction}', directionLabel)
+          customPosition?.of ?? fillBlanks(t.rowProgress.ofTotal, { total: position.total, direction: directionLabel })
         }}</span>
       </p>
       <!-- The compact counter (ticket 188): "1/222" in place of the spelled-out row count; the buttons keep their text (ticket 411). -->

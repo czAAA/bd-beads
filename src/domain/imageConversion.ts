@@ -1,5 +1,6 @@
 import { beadPitchMm, type Bead } from './beads'
 import { toHex, type Rgb } from './color'
+import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
 import { describeWeave, rowPitch, rowOffset, type Technique } from './weave'
 import { resolveImageColors } from './imageColors'
@@ -129,12 +130,13 @@ export function imageInputAccept(): string {
 }
 
 /** Fills `{formats}`, `{maxSizeMb}` and `{maxMegapixels}` into a localised sentence, so the numbers the UI promises
- * are the constants the validation enforces (ticket 58's "cannot drift apart"). */
+ * are the constants the validation enforces (ticket 58's "cannot drift apart"). A sentence holds the ones it needs. */
 export function formatImageLimits(template: string): string {
-  return template
-    .replace('{formats}', ACCEPTED_IMAGE_FORMATS.map((format) => format.label).join(', '))
-    .replace('{maxSizeMb}', String(IMAGE_MAX_MEGABYTES))
-    .replace('{maxMegapixels}', String(IMAGE_MAX_MEGAPIXELS))
+  return fillBlanks(template, {}, {
+    formats: ACCEPTED_IMAGE_FORMATS.map((format) => format.label).join(', '),
+    maxSizeMb: IMAGE_MAX_MEGABYTES,
+    maxMegapixels: IMAGE_MAX_MEGAPIXELS,
+  })
 }
 
 /** Whether a chosen file can be converted, judged before decoding: format and size. The resolution limit needs

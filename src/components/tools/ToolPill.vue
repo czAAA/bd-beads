@@ -14,6 +14,7 @@ import IconButton from '../ui/IconButton.vue'
 import { markOn } from '../ui/swatchMark'
 import ColorPopover from './ColorPopover.vue'
 import { PASTE_TILE_HOTKEY, PILL_TOOLS, TOOL_HOTKEYS } from './toolIcons'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Tool pill (ticket 439, ADR 0046; ToolPill card): the tools floating over the drawing area, replacing the Dock:
 // grip, six tool tiles, a divider, the colour control. It docks to one of four edges (drag, or the grip's arrow keys).
@@ -62,7 +63,7 @@ const pasteAction = controlAction('tool-paste')
 /** Paste mode runs under Select, but the Paste tile is the one lit then (ticket 447). */
 const isActive = (tool: Tool) => props.activeTool === tool && !(tool === 'select' && props.pasteArmed && props.hasClipboard)
 const colorAction = controlAction('pill-colors')
-const colorLabel = computed(() => t.value.toolPill.color.replace('{name}', props.colorName ?? ''))
+const colorLabel = computed(() => fillBlanks(t.value.toolPill.color, { name: props.colorName ?? '' }))
 
 /** The grip, the tool tiles and the colour control are one Tab stop (the active tool); the arrows of the pill's axis move
  * along them, the other axis does nothing (ADR 0075). */
@@ -238,7 +239,7 @@ watch(
             <button
               type="button"
               class="ui-control tool-pill__stop tool-pill__recent"
-              :aria-label="`${t.toolPill.recent} ${index + 1}, ${t.toolPill.useColor.replace('{color}', hex)}`"
+              :aria-label="`${t.toolPill.recent} ${index + 1}, ${fillBlanks(t.toolPill.useColor, { color: hex })}`"
               :aria-describedby="describedby"
               :tabindex="-1"
               data-testid="pill-recent"
