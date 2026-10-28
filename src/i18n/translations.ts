@@ -841,22 +841,15 @@ export interface Translations {
   // filled by formatImageLimits (domain/imageConversion.ts) from the validation constants, so never write the numbers
   // here.
   convertImage: {
-    /** The size step Convert image asks for before framing a picture (ADR 0026; ticket 342). */
-    sizeTitle: string
-    sizeMessage: string
-    sizeContinue: string
     /** While a chosen picture is read (Loading card). */
     readingPicture: string
-    /** The file input's own label in the New Project form. */
+    /** The New Project form's button that opens the wizard. */
     fileLabel: string
-    fileName: string
     /** The limits, shown as helper text under the file input and repeated as its `title`. */
     limitsHint: string
     /** Heads-up once the grid passes isSlowFramingSize (ticket 61): informational, never blocks. `{technique}` is
      * its localized name. */
     slowFramingWarning: string
-    /** The framing step's heading in the canvas panel. */
-    heading: string
     /** How to move the picture under the frame. */
     panHint: string
     createButton: string
@@ -865,8 +858,110 @@ export interface Translations {
     maxColorsLabel: string
     decreaseColorsButton: string
     increaseColorsButton: string
-    /** Prefix for how many colors this conversion actually found, e.g. "Colors found: 6". */
-    foundColorsLabel: string
+    /** The Convert image wizard (spec 0645; ConvertImage, PixelToBeadRatio, FoundColorRow cards; writing.md). */
+    wizard: {
+      title: string
+      close: string
+      /** The five sections' titles, and their short labels on the step rail. */
+      sections: Record<'picture' | 'bead' | 'size' | 'colors' | 'review', string>
+      rail: Record<'picture' | 'bead' | 'size' | 'colors' | 'review', string>
+      /** The step rail's accessible name. */
+      railLabel: string
+      /** A disabled section's summary until a picture is set. */
+      addPictureFirst: string
+      chooseFile: string
+      paste: string
+      takePhoto: string
+      turn: string
+      flip: string
+      replace: string
+      /** The Picture section's Note until the first picture: every way in and the limits (formatImageLimits). */
+      pictureNote: string
+      pictureNoteTouch: string
+      /** Under the file name: "256×192 px · png". */
+      pictureSize: string
+      /** Paste found no picture on the clipboard, or the browser would not read it. */
+      nothingToPaste: string
+      dropHere: string
+      dropOrPaste: string
+      dropOrChoose: string
+      dropToUse: string
+      dropToConvert: string
+      dropLimits: string
+      byRatio: string
+      bySize: string
+      /** The Pixel to bead ratio's label, and each chip's name: "2:1, picture pixels : beads". */
+      ratioLabel: string
+      ratioChip: string
+      custom: string
+      customRatio: string
+      pixelsPerBead: string
+      beadsPerPixel: string
+      /** The Custom ratio Stepper's buttons. */
+      fewerPixels: string
+      morePixels: string
+      /** The explainer sentence and the drawing's captions. */
+      everyBlock: string
+      everyPixel: string
+      everyPixelBeads: string
+      blockPx: string
+      onePx: string
+      oneBead: string
+      blockBeads: string
+      /** The crop handles' names, each edge and corner. */
+      crop: Record<'top' | 'right' | 'bottom' | 'left' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight', string>
+      cropHint: string
+      keepProportions: string
+      pictureZoom: string
+      /** The Large Schema Note; `{beads}` is the threshold. */
+      largeSchema: string
+      /** The result box: its label, then the grid size, and the ratio exact, approximate or one pixel as beads. */
+      result: string
+      resultGrid: string
+      resultExact: string
+      resultApprox: string
+      resultPerPixel: string
+      /** The footer's color count after the size. */
+      colorsCount: PluralForms
+      noPicture: string
+      /** Cancel's question in the footer, once a picture is set. */
+      discardQuestion: string
+      discard: string
+      /** The preview's accessible name. */
+      previewName: string
+      previewEmpty: string
+      zoomLevel: string
+      /** The Colors section's source control and what each source does. */
+      matchTo: string
+      beadColors: string
+      defaultPalette: string
+      exact: string
+      defaultNote: string
+      exactNote: string
+      codesInSize: string
+      colorsFound: string
+      treatAsEmpty: string
+      treatAsEmptyBanner: string
+      /** A found color's actions and states (FoundColorRow card). */
+      keepExact: string
+      remap: string
+      empty: string
+      noBead: string
+      keptExact: string
+      remapped: string
+      pictureColor: string
+      newPalette: string
+      /** A found color's row, as a screen reader names it. */
+      rowName: PluralForms
+      /** The Review summary's rows. */
+      summarySize: string
+      summaryColors: string
+      summaryBeadsNeeded: string
+      summaryWeight: string
+      summaryToBuy: string
+      showDetails: string
+      hideDetails: string
+    }
     /** One per reason a picture can be turned away (see domain/imageConversion.ts's ImageRejection). */
     errors: {
       heic: string

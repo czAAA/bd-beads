@@ -10,8 +10,7 @@ import type { Grid } from './project'
 export type PreviewColors = (string | undefined)[]
 
 /** A memoised nearest of `colors` for a packed color, by the same colorDistance as nearestColor and earlier-color
- * tie: a picture has far fewer distinct colors than beads, so it searches once per distinct color, not per bead.
- * @internal Its test checks it matches nearestColor. */
+ * tie: a picture has far fewer distinct colors than beads, so it searches once per distinct color, not per bead. */
 export function nearestColorLookup(colors: readonly string[]): (packed: number) => string | undefined {
   const candidates = colors.map((hex) => toOklab(channelsOf(hex)))
   const answers = new Map<number, string | undefined>()

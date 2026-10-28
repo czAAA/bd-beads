@@ -70,7 +70,7 @@ export function matchFoundColors(reduced: ReducedColors, targets: readonly Targe
 }
 
 /** What each sampled hex becomes: its found color's result, or no bead. */
-export function resultLookup(reduced: ReducedColors, found: readonly FoundColor[]): (hex: string) => string | null {
+function resultLookup(reduced: ReducedColors, found: readonly FoundColor[]): (hex: string) => string | null {
   const byPicture = new Map(found.map((color) => [color.pictureHex, color.result?.hex ?? null]))
   return (hex) => byPicture.get(reduced.byHex.get(hex) ?? '') ?? null
 }

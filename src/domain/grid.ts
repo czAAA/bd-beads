@@ -45,10 +45,6 @@ export function computeGridDimensions(size: PhysicalSizeMm, bead: Bead): GridDim
   return { columns, rows }
 }
 
-// The canvas box's largest on-screen size (ticket 16); it only grows to this, so a smaller Project gets a box its own
-// shape (ticket 18). Raised from 480 (editing tools left the left panel, ADR 0021), then from 640, which opened
-// ordinary Projects (a few dozen columns/rows) zoomed below 100%. Bigger Projects open fit-to-box.
-export const CANVAS_MAX_PX = 900
 
 /** The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. */
 export type Layer = 'canvas' | 'frame'

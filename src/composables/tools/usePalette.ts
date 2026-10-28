@@ -106,6 +106,12 @@ export function useRemoveAllAddedColors() {
   return inject(removeAllKey, undefined)
 }
 
+/** A Palette that is not the open Project's, for the swatch components under the caller: the Convert image wizard's
+ * remap picker shows the Palette the new Project will get (spec 0645). */
+export function providePalette(palette: ComputedRef<Palette>) {
+  provide(paletteKey, palette)
+}
+
 /** The Palette for a swatch component: a new Project's when no app shell provides one (mounted alone). */
 export function usePalette(): ComputedRef<Palette> {
   return inject(paletteKey, () => computed(() => createPalette(defaultPaletteIds())), true)

@@ -43,8 +43,7 @@ export function frameSizeMm(
 }
 
 /** Millimetres per source pixel at the smallest scale that still covers the frame (the framing step's 100%);
- * a smaller picture is upscaled by this.
- * @internal Its test checks the framing step's 100% on its own. */
+ * a smaller picture is upscaled by this. */
 export function coverScaleMm(image: ImageSize, frame: FrameSizeMm): number {
   return Math.max(frame.widthMm / image.width, frame.heightMm / image.height)
 }

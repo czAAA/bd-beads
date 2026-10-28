@@ -7,7 +7,7 @@ import BeadColorList from './palette/BeadColorList.vue'
 import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import StarterGallery from './project/StarterGallery.vue'
 import StarterSetup from './project/StarterSetup.vue'
-import ConvertImageFrame from './import/ConvertImageFrame.vue'
+import ConvertImageWizard from './import/ConvertImageWizard.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
 import FrameChrome from './canvas/FrameChrome.vue'
@@ -18,11 +18,11 @@ import { paintAt } from '../testUtils/layers'
 import { armSelectionBar } from '../testUtils/pill'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
-import { CENTERED_PAN } from '../domain/imageFraming'
-import { DEFAULT_MAX_IMAGE_COLORS, type PixelData } from '../domain/imageConversion'
+import type { PixelData } from '../domain/imageConversion'
+import type { ColorCatalog } from '../domain/colorCatalog'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
-// notice, the notes, panels expanded, the convert-image box, the empty library (ticket 552).
+// notice, the notes, panels expanded, the Convert image wizard, the empty library (ticket 552).
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const empty = createProject({ technique: 'loom', beadId: cubeBead.id, name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })
 /** Six colours: more rows than the panel's summary shows, so that it can be expanded. */
@@ -57,7 +57,7 @@ const SaveFailedNotice = defineComponent({
   setup: () => () => h(AppMessage, { tone: 'danger', placement: 'notice' }, () => 'This device could not save your Project. Download it to keep it.'),
 })
 
-/** An image of a few flat colours, large enough for the 16 × 10 beads of the convert-image box. */
+/** An image of a few flat colours, for the Convert image wizard. */
 function picture(): PixelData {
   const width = 16
   const height = 10
@@ -71,6 +71,36 @@ function beadColors(state: 'ready' | 'failed') {
   const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: 'metallic', hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
   return { available: ref(true), state: ref(state), swatches: ref(swatches), load: () => {}, add: () => 'added' as const }
 }
+
+/** A Delica catalog of a few codes, so Bead colors is offered and matched to. */
+const catalog: ColorCatalog = {
+  id: 'miyuki-delica',
+  codes: [
+    { code: 'DB723', family: ['Red'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'] },
+    { code: 'DB726', family: ['Blue'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'] },
+    { code: 'DB721', family: ['Yellow'], finish: 'opaque', wording: 'Opaque', sizes: ['11/0'] },
+  ],
+}
+
+/** The wizard as the app opens it, with or without a picture set. */
+function wizardProps(withPicture: boolean) {
+  return {
+    start: {
+      draft: { technique: 'peyote', beadId: 'miyuki/delica/11-0', name: '', makerName: '' },
+      ...(withPicture ? { file: new File(['x'], 'sunflower-in-a-long-file-name.png', { type: 'image/png' }) } : {}),
+    },
+    decodeImage: async () => picture(),
+    loadCatalog: async () => catalog,
+    readClipboardImage: async () => undefined,
+  }
+}
+
+/** Waits for the picture the wizard was opened with to be read. */
+async function pictureSet(root: HTMLElement) {
+  for (let tries = 0; tries < 50 && !root.querySelector('[data-testid="found-color"]'); tries += 1) await new Promise((done) => setTimeout(done, 20))
+}
+
+const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)?.click()
 
 const framed = { ...empty, frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } }
 
@@ -100,10 +130,26 @@ const CASES: FitCase[] = [
   ['StarterSetup (Band)', StarterSetup, { starter: starterById('bandPlaid') }],
   ['BeadColorList', BeadColorList, { colors: beadColors('ready') }],
   ['BeadColorList failed', BeadColorList, { colors: beadColors('failed') }],
+  ['ConvertImageWizard (no picture)', ConvertImageWizard, wizardProps(false)],
   [
-    'ConvertImageFrame',
-    ConvertImageFrame,
-    { image: picture(), technique: 'loom', bead: cubeBead, dimensions: { columns: 16, rows: 10 }, zoom: 1, pan: { ...CENTERED_PAN }, maxColors: DEFAULT_MAX_IMAGE_COLORS, availableWidth: 300 },
+    'ConvertImageWizard (remapping)',
+    ConvertImageWizard,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      press(root, 'ratio-custom')
+      press(root, 'found-color-remap')
+    },
+  ],
+  [
+    'ConvertImageWizard (by size, discarding)',
+    ConvertImageWizard,
+    wizardProps(true),
+    async (root) => {
+      await pictureSet(root)
+      root.querySelector<HTMLElement>('[data-testid="convert-size-mode"] [data-value="size"]')?.click()
+      press(root, 'convert-image-cancel')
+    },
   ],
 ]
 

@@ -2,6 +2,7 @@
 import AppButton from '../ui/AppButton.vue'
 import AppMessage from '../ui/AppMessage.vue'
 import AppDialogs from './AppDialogs.vue'
+import PictureDropOverlay from '../import/PictureDropOverlay.vue'
 import CanvasPanel from '../canvas/CanvasPanel.vue'
 import AppPanels from './AppPanels.vue'
 import { useShellFrame } from '../../composables/shell/useAppShell'
@@ -12,6 +13,8 @@ const {
   announcement,
   endStroke,
   onExportProjectFile,
+  onPictureForConvert,
+  dialogOpen,
 } = useShellFrame()
 </script>
 
@@ -45,6 +48,9 @@ const {
     <AppPanels />
 
     <AppDialogs />
+
+    <!-- A picture dropped or pasted on the app opens Convert image (spec 0645). -->
+    <PictureDropOverlay :disabled="!!dialogOpen" @picture="onPictureForConvert" />
 
   </div>
 </template>

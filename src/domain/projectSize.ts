@@ -2,7 +2,6 @@ import type { Bead } from './beads'
 import { sizeOf, type FrameSheet, type Sized } from './canvas'
 import { frameSizeMm } from './frameKind'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
-import { fillBlanks } from './fillBlanks'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 
@@ -87,18 +86,4 @@ export type SchemaSizeUnit = 'beads' | 'mm'
 export function isSizeStated(width: number, height: number, unit: SchemaSizeUnit): boolean {
   const stated = width > 0 && height > 0
   return unit === 'beads' ? stated && Number.isInteger(width) && Number.isInteger(height) : stated
-}
-
-/** A size in the unit it is not stated in (ticket 342): "≈ 3.0 × 2.2 cm" in beads, "≈ 20×10 beads" in mm. */
-export function formatOtherUnit(
-  grid: GridDimensions,
-  bead: Bead,
-  unit: SchemaSizeUnit,
-  labels: SizeUnitLabels & { beadsTemplate: string },
-  locale: Locale = 'en',
-): string {
-  if (unit === 'mm') {
-    return fillBlanks(labels.beadsTemplate, { columns: grid.columns, rows: grid.rows })
-  }
-  return `≈ ${formatSizeMm(estimatedSizeMm(grid, bead), labels, locale)}`
 }

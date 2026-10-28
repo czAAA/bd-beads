@@ -5,6 +5,7 @@ import ConfirmModal from '../ui/ConfirmModal.vue'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
+import ConvertImageWizard from '../import/ConvertImageWizard.vue'
 
 // The app's dialogs (ticket 0618): the registry shows one at a time, named by `open`; each flow holds what its dialog
 // asks about and answers it.
@@ -62,10 +63,26 @@ const {
   onCloseShortcutsHelp,
   onConfirmStorageNote,
   onCancelStorageNote,
+  convertImageStart,
+  decodeImage,
+  readClipboardImage,
+  loadColorCatalog,
+  onConvertImageCreate,
+  onConvertImageCancel,
 } = useDialogsContext()
 </script>
 
 <template>
+  <ConvertImageWizard
+    v-if="open === 'convert-image' && convertImageStart"
+    :start="convertImageStart"
+    :decode-image="decodeImage"
+    :load-catalog="loadColorCatalog"
+    :read-clipboard-image="readClipboardImage"
+    @create="onConvertImageCreate"
+    @cancel="onConvertImageCancel"
+  />
+
   <ConfirmModal
     v-if="open === 'delete-all'"
     data-testid="delete-all-modal"

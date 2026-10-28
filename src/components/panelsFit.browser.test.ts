@@ -8,8 +8,7 @@ import FramePanel from './canvas/FramePanel.vue'
 import ProjectPanel from './project/ProjectPanel.vue'
 import NewProjectForm from './project/NewProjectForm.vue'
 import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
-import ConvertImageSizeDialog from './import/ConvertImageSizeDialog.vue'
-import { BEAD_CATALOG, findBead, offeredBeads } from '../domain/beads'
+import { BEAD_CATALOG, offeredBeads } from '../domain/beads'
 import { withColors } from '../domain/canvas'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { changeFrame } from '../domain/changeFrame'
@@ -61,7 +60,6 @@ const CASES: FitCase[] = [
   ['ProjectPanel (brick, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['NewProjectForm', NewProjectForm, {}],
   ['DuplicateProjectModal', DuplicateProjectModal, { suggested: 'Moth copy' }],
-  ['ConvertImageSizeDialog', ConvertImageSizeDialog, { bead: findBead('toho-cube-1.5mm')!, technique: 'loom' }],
 ]
 
 describeFits(CASES)

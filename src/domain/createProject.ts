@@ -1,6 +1,5 @@
-import { beadCopy, beadLabel, findBead, type Bead } from './beads'
+import { beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
-import type { GridDimensions } from './grid'
 import { weaveOf } from './layerWeave'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
@@ -27,23 +26,6 @@ export interface CreateProjectInput {
   size?: StatedSize
   /** This Project's own maker's name (ticket 182); blank or omitted keeps the device-wide one instead. */
   makerName?: string
-}
-
-/** What a new Project's stated size and Bead work out to: the Bead, and the grid that implies. */
-export interface ProjectGeometry extends GridDimensions {
-  bead: Bead
-}
-
-/** The grid a New Project form state implies, or undefined when the Bead isn't in the catalog. Shared with Convert
- * image (ticket 58) so its frame is exactly the grid the Project will be created at. */
-export function projectGeometry(input: CreateProjectInput & { size: StatedSize }): ProjectGeometry | undefined {
-  // findBead looks the id up in the fixed built-in catalog (ADR 0007 / ticket 38).
-  const bead = findBead(input.beadId)
-  if (!bead) {
-    return undefined
-  }
-
-  return { bead, ...gridFromSize(input.size, bead) }
 }
 
 export function createProject(input: CreateProjectInput): Project {

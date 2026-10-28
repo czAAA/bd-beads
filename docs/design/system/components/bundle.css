@@ -18,7 +18,22 @@
   --convert-preview-tablet-shrunk: 200px; /* PhoneForms card: the tablet preview once scrolled. */
   --step-disc: 20px; /* ConvertImage card: a section's numbered disc and the step rail's. */
   --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
+  --crop-handle-radius: 3px; /* ConvertImage card: a crop handle's corners. */
+  --crop-bar-length: 28px; /* ConvertImage card: an edge handle of the crop, along its edge. */
+  --crop-bar-width: 8px; /* ConvertImage card: an edge handle's thickness. */
   --ratio-chip-min: 40px; /* PixelToBeadRatio card: the narrowest preset chip. */
+  --modal-large-header: 56px; /* Modal card: the large Modal's header (title, Close); 52px as a phone sheet. */
+  --modal-large-header-phone: 52px; /* PhoneForms card: the wizard sheet's header on a phone. */
+  --modal-large-footer: 64px; /* Modal card: the large Modal's pinned footer. */
+  --step-rail: 44px; /* ConvertImage card: the sticky step rail atop the sections pane; 40px on a phone. */
+  --step-rail-phone: 40px; /* PhoneForms card: the step rail under the sticky preview. */
+  --found-swatch: 20px; /* FoundColorRow card: the picture and matched color swatches. */
+  --convert-thumb-width: 64px; /* ConvertImage card: the Picture section's thumbnail. */
+  --convert-thumb-height: 48px; /* ConvertImage card: the thumbnail's height. */
+  --ratio-bead-width: 22px; /* PixelToBeadRatio card: the explainer's one bead. */
+  --ratio-bead-height: 18px; /* PixelToBeadRatio card: its height. */
+  --picture-drop-width: 400px; /* ConvertImage card: the card a picture dragged over the app shows. */
+  --picture-drop-height: 220px; /* ConvertImage card: its height. */
 }
 :root, [data-theme="light"] {
   --track-fill: linear-gradient(90deg, #fa520f, #ffa110);

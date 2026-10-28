@@ -3,15 +3,13 @@ import type { Project } from '../../domain/project'
 import { useElementSize } from '../ui/useElementSize'
 import { useCanvasView } from './useCanvasView'
 
-/** What the canvas strip needs to know about the framing step: whether it is running, and the grid it frames. */
+/** What the canvas view needs from the app shell: the open Project. */
 export interface CanvasFramingDeps {
   currentProject: () => Project | undefined
-  framing: () => { dimensions: { columns: number; rows: number } } | undefined
-  convertZoomPercent: () => number
 }
 
 /** How the canvas is sized and zoomed (tickets 27, 57, 197; ADR 0020): the measured area, fit zoom and the strip's
- * meta, following the framing step while it runs. */
+ * meta. */
 export function useCanvasFraming(deps: CanvasFramingDeps) {
   /** The canvas area's own element, measured live (ticket 27) so the Project's fit zoom tracks the real available
    * space instead of a guessed constant. */
@@ -25,10 +23,8 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
    * threaded down as a second prop. */
   const zoomPercent = computed(() => Math.round(zoom.value * 100))
 
-  /** The strip's zoom level: framing's own while framing, the Project's otherwise, none with nothing on the board. */
-  const stripZoomPercent = computed(() =>
-    deps.framing() ? deps.convertZoomPercent() : deps.currentProject() ? zoomPercent.value : undefined,
-  )
+  /** The strip's zoom level: the Project's, none with nothing on the board. */
+  const stripZoomPercent = computed(() => (deps.currentProject() ? zoomPercent.value : undefined))
 
   /** A template function ref for the canvas area, so the element stays this composable's own rather than a name
    * App.vue has to declare. */
@@ -38,7 +34,6 @@ export function useCanvasFraming(deps: CanvasFramingDeps) {
 
   return {
     bindCanvasArea,
-    canvasAreaWidth: width,
     canvasViewport: viewport,
     zoom,
     scroll,

@@ -44,8 +44,7 @@ export function pixelPackedAt(image: PixelData, x: number, y: number): number {
   )
 }
 
-/** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores.
- * @internal Tests write an expected color the way the preview reads it. */
+/** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores. */
 export function packedToHex(packed: number): string {
   return toHex(unpacked(packed))
 }
