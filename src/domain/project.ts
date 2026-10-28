@@ -788,18 +788,20 @@ export interface UndoEntry {
   technique: Technique
   /** The Brick block the entry was taken with, so Undo undoes a change of it (ticket 477). */
   brickBlock?: number
+  /** The Net size the entry was taken with, so Undo undoes a change of it along with the beads it moved (ticket 0610). */
+  netSize?: number
   /** The Bead shape the entry was taken with, so Undo undoes a change of it (ticket 508). */
   beadShape?: BeadShape
 }
 
 /** The Project's state as an undo entry. */
 export function snapshotOf(project: Project): UndoEntry {
-  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, paletteCodes: project.paletteCodes, paletteLetters: project.paletteLetters, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, beadShape: project.beadShape }
+  return { beads: project.beads, rowProgress: project.rowProgress, palette: project.palette, removedDefaults: project.removedDefaults, paletteCodes: project.paletteCodes, paletteLetters: project.paletteLetters, beadId: project.beadId, bead: project.bead, frame: project.frame, pieceNames: project.pieceNames, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, beadShape: project.beadShape }
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, bead: _bead, ...rest } = project
+  const { pieceNames: _current, brickBlock: _block, netSize: _net, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, bead: _bead, ...rest } = project
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,
@@ -809,6 +811,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     frame: entry.frame,
     technique: entry.technique,
     ...(entry.brickBlock ? { brickBlock: entry.brickBlock } : {}),
+    ...(entry.netSize ? { netSize: entry.netSize } : {}),
     ...(entry.beadShape ? { beadShape: entry.beadShape } : {}),
     ...(entry.pieceNames ? { pieceNames: entry.pieceNames } : {}),
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
