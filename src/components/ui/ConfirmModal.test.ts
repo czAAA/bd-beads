@@ -37,6 +37,12 @@ describe('ConfirmModal', () => {
     expect(wrapper.emitted('cancel')).toBeUndefined()
   })
 
+  it('focuses Cancel first, so Enter does not confirm by accident', () => {
+    const wrapper = mountModal()
+
+    expect(document.activeElement).toBe(wrapper.find('[data-testid="confirm-modal-cancel"]').element)
+  })
+
   it('emits cancel when the cancel button is clicked', async () => {
     const wrapper = mountModal()
 
