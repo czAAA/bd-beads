@@ -1,14 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { pickColor, pickTool, toolState } from './testUtils/pill'
+import { pickColor, pickTool } from './testUtils/pill'
 import { hoverBead, leaveSurface, pressBead, previewedBeads, selectedBeadCount } from './testUtils/beads'
 import { frameGrid } from './domain/project'
 import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
 
-// The App's wiring for keys and nearby controls: one happy path per group (docs/testing.md, "Where a test goes"). The
-// key table, its guards, Row progress, Toolbox labels and the Progress bar are tested in useAppShortcutTable,
-// ProgressBar, Toolbox, usePaintStroke, useSelectionGesture.
+// The App's wiring for keys and the canvas pointer, one test per key → flow (docs/testing.md). Guards and variants are
+// in useAppShortcutTable, useSpaceDragPan, useCanvasPointer, usePaintStroke and ToolPill; Ctrl+Z is driven by App.frame,
+// a digit by App.canvas, Shift+a digit by App.palette and Ctrl+V by App.selection.
 
 beforeEach(() => {
   localStorage.clear()
@@ -36,185 +36,94 @@ async function click(wrapper: ReturnType<typeof mount>, index: number) {
   await wrapper.trigger('mouseup')
 }
 
+/** Two red beads, and a Selection of the first and its empty neighbour: not the whole drawing, which Del asks about
+ * first (ticket 415). */
+async function selectPaintedBead(wrapper: ReturnType<typeof mount>) {
+  await pickColor(wrapper, 'red')
+  await click(wrapper, 0)
+  await click(wrapper, 3)
+  await pickTool(wrapper, 'select')
+  await pressBead(wrapper, 0)
+  await hoverBead(wrapper, 1, { buttons: 1 })
+  await wrapper.trigger('mouseup')
+}
+
 const firstCellColor = () => frameGrid(loadProjects()[0]!)[0]![0]!.color
 
 describe('App Progress bar', () => {
-  it('has Row progress on with the Project\'s Frame, and Row done moves the pointer, saved with the Project (ticket 426)', async () => {
+  it('is the last control in the page order bar the Selection bar\'s layer (ADR 0075)', async () => {
     const wrapper = await mountApp(15, 30)
-    const bar = wrapper.find('[data-testid="progress-bar"]')
-    // The Progress bar is the last control in the page order bar the Selection bar's layer (ADR 0075).
     const layer = wrapper.find('[data-testid="selection-layer"]')
     expect(wrapper.find('[data-testid="app-canvas"]').element.lastElementChild).toBe(layer.element)
-    expect(layer.element.previousElementSibling).toBe(bar.element)
-
-    expect(wrapper.find('[data-testid="progress-bar-switch"]').exists()).toBe(false)
-    await wrapper.find('[data-testid="progress-bar-next"]').trigger('click')
-
-    expect(loadProjects()[0]!.rowProgress).toMatchObject({ currentRow: 1 })
+    expect(layer.element.previousElementSibling).toBe(wrapper.find('[data-testid="progress-bar"]').element)
   })
 })
 
 describe('App keyboard shortcuts', () => {
-  it('Ctrl+Z undoes a painted bead and Ctrl+Shift+Z brings it back', async () => {
+  it('Ctrl+Shift+Z brings back what Ctrl+Z undid', async () => {
     const wrapper = await mountApp(15, 30)
     await pickColor(wrapper, 'red')
     await click(wrapper, 0)
 
     await pressKey({ key: 'z', ctrlKey: true })
-    expect(firstCellColor()).toBeNull()
-
     await pressKey({ key: 'z', ctrlKey: true, shiftKey: true })
+
     expect(firstCellColor()).toBe('#e63746')
   })
 
-  it('a digit picks its tool, as clicking it does, even with a Selection active', async () => {
+  it('Del empties the Selection', async () => {
     const wrapper = await mountApp(6, 6)
-    await pickTool(wrapper, 'select')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await wrapper.trigger('mouseup')
-
-    await pressKey({ key: '2' })
-
-    expect(toolState(wrapper, 'fill').pressed).toBe(true)
-  })
-
-  it('Escape switches Fill back to Paint', async () => {
-    const wrapper = await mountApp(15, 30)
-    await pickTool(wrapper, 'fill')
-
-    await pressKey({ key: 'Escape' })
-
-    expect(toolState(wrapper, 'paint').pressed).toBe(true)
-  })
-
-  it('Shift+a color key switches to Paint and paints with that Palette color', async () => {
-    const wrapper = await mountApp(15, 30)
-    await pickTool(wrapper, 'select')
-
-    await pressKey({ code: 'Digit5', shiftKey: true })
-    await click(wrapper, 0)
-
-    expect(toolState(wrapper, 'paint').pressed).toBe(true)
-    expect(firstCellColor()).not.toBeNull()
-    expect(firstCellColor()).not.toBe('#e63746') // not the default red
-  })
-
-  it('Del empties the Selection as one undo step, keeping it and staying on Select', async () => {
-    const wrapper = await mountApp(6, 6)
-    await pickColor(wrapper, 'red')
-    for (let index = 0; index < 16; index++) await click(wrapper, index)
-    await pickTool(wrapper, 'select')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 5, { buttons: 1 })
-    await wrapper.trigger('mouseup')
+    await selectPaintedBead(wrapper)
 
     await pressKey({ key: 'Delete' })
 
     expect(firstCellColor()).toBeNull()
-    expect(selectedBeadCount(wrapper)).toBe(4)
-    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
-    expect(firstCellColor()).toBe('#e63746')
   })
 
-  it('Ctrl+C copies the Selection, as the Copy button does', async () => {
+  it('Ctrl+C copies the Selection into paste mode, and the Paste tile and 7 enter it again (ticket 447)', async () => {
     const wrapper = await mountApp(6, 6)
-    await pickColor(wrapper, 'red')
-    await click(wrapper, 0) // one drawn bead for Copy to take
-    await pickTool(wrapper, 'select')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await wrapper.trigger('mouseup')
+    await selectPaintedBead(wrapper)
 
     await pressKey({ key: 'c', ctrlKey: true })
+    await hoverBead(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(1)
 
-    expect(selectedBeadCount(wrapper)).toBe(0) // Copy clears the Selection and arms paste mode (ticket 437)
-    expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
+    await pressKey({ key: 'Escape' }) // leaves paste mode; the clipboard stays
+    await wrapper.get('[data-testid="pill-tool-paste"]').trigger('click')
+    await hoverBead(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(1)
+
+    await pressKey({ key: 'Escape' })
+    await pressKey({ key: '7' })
+    await hoverBead(wrapper, 8)
+    expect(previewedBeads(wrapper)).toHaveLength(1)
+    expect(frameGrid(loadProjects()[0]!).flat().filter((cell) => cell.color)).toHaveLength(2) // nothing stamped
   })
 
-  it('Ctrl+X cuts the Selection, clears it and arms paste mode: hover previews, a click stamps (ticket 447)', async () => {
+  it('Ctrl+X cuts the Selection into paste mode (ticket 447)', async () => {
     const wrapper = await mountApp(6, 6)
-    await pickColor(wrapper, 'red')
-    await click(wrapper, 0)
-    await pickTool(wrapper, 'select')
-    await pressBead(wrapper, 0)
-    await hoverBead(wrapper, 1, { buttons: 1 })
-    await wrapper.trigger('mouseup')
+    await selectPaintedBead(wrapper)
 
     await pressKey({ key: 'x', ctrlKey: true })
 
-    expect(selectedBeadCount(wrapper)).toBe(0)
     expect(firstCellColor()).toBeNull()
     await hoverBead(wrapper, 8)
     expect(previewedBeads(wrapper)).toHaveLength(1)
-    await click(wrapper, 8)
-    expect(previewedBeads(wrapper)).toHaveLength(1) // still armed: repeatable
-    expect(wrapper.find('[data-testid="pill-tool-paste"]').exists()).toBe(true)
   })
 
-  it('the Paste tool follows Hand only while the clipboard holds something, and enters paste mode without stamping (ticket 447)', async () => {
-    const wrapper = await mountApp(6, 6)
-    expect(wrapper.find('[data-testid="pill-tool-paste"]').exists()).toBe(false)
-    await pickColor(wrapper, 'red')
-    await click(wrapper, 0)
-    await pickTool(wrapper, 'select')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await pressKey({ key: 'c', ctrlKey: true })
-    await pressKey({ key: 'Escape' }) // leaves paste mode; the clipboard stays
-    await hoverBead(wrapper, 8)
-    expect(previewedBeads(wrapper)).toHaveLength(0)
-
-    await wrapper.get('[data-testid="pill-tool-paste"]').trigger('click')
-
-    expect(wrapper.get('[data-testid="pill-tool-paste"]').attributes('aria-pressed')).toBe('true')
-    await hoverBead(wrapper, 8)
-    expect(previewedBeads(wrapper)).toHaveLength(1)
-    expect(frameGrid(loadProjects()[0]!).flat().filter((cell) => cell.color).length).toBe(1) // nothing stamped
-  })
-
-  it('7 enters paste mode when the clipboard holds something (ticket 447)', async () => {
-    const wrapper = await mountApp(6, 6)
-    await pickColor(wrapper, 'red')
-    await click(wrapper, 0)
-    await pickTool(wrapper, 'select')
-    await pressBead(wrapper, 0)
-    await wrapper.trigger('mouseup')
-    await pressKey({ key: 'c', ctrlKey: true })
-    await pressKey({ key: 'Escape' })
-
-    await pressKey({ key: '7' })
-
-    await hoverBead(wrapper, 8)
-    expect(previewedBeads(wrapper)).toHaveLength(1)
-  })
-
-  it('R shows and hides the rulers, and the choice is kept on the device', async () => {
+  it('R shows and hides the rulers', async () => {
     const wrapper = await mountApp(15, 30)
-
     await pressKey({ key: 'r' })
-
     expect(wrapper.find('[data-testid="strip-rulers"]').attributes('aria-pressed')).toBe('false')
-    expect(localStorage.getItem('openbeads:rulers')).toBe('off')
   })
 
-  it('Enter moves to the next row, and Shift+Enter to the previous', async () => {
+  it('Enter moves to the next row and D turns the row direction, saved with the Project', async () => {
     await mountApp(15, 30)
 
     await pressKey({ key: 'Enter' })
     expect(loadProjects()[0]!.rowProgress.currentRow).toBe(1)
 
-    await pressKey({ key: 'Enter', shiftKey: true })
-    expect(loadProjects()[0]!.rowProgress.currentRow).toBe(0)
-  })
-
-  it('D turns the row direction and P does nothing (ticket 426)', async () => {
-    await mountApp(15, 30)
-
-    await pressKey({ key: 'p' })
-    expect(loadProjects()[0]!.rowProgress.direction).toBe('rows')
     await pressKey({ key: 'd' })
-
     expect(loadProjects()[0]!.rowProgress.direction).toBe('columns')
   })
 
@@ -242,39 +151,6 @@ describe('App keyboard shortcuts', () => {
     await pressKey({ key: 'Escape' })
     expect(wrapper.find('[data-testid="shortcuts-help-dialog"]').exists()).toBe(false)
     expect(selectedBeadCount(wrapper)).toBe(2)
-  })
-})
-
-describe('App Eraser tool', () => {
-  it('erases just the pressed bead, not its same-color neighbours, as one undo step', async () => {
-    const wrapper = await mountApp(3, 3) // 2x2
-    await pickColor(wrapper, 'red')
-    for (let index = 0; index < 4; index++) await click(wrapper, index)
-    await pickTool(wrapper, 'erase')
-
-    await click(wrapper, 0)
-
-    const grid = frameGrid(loadProjects()[0]!)
-    expect([grid[0]![0]!.color, grid[0]![1]!.color]).toEqual([null, '#e63746'])
-    await wrapper.find('[data-testid="strip-undo"]').trigger('click')
-    expect(frameGrid(loadProjects()[0]!).flat().every((cell) => cell.color === '#e63746')).toBe(true)
-  })
-})
-
-describe('App picking a color', () => {
-  it('while Fill is active keeps Fill, and the next press floods with the new color', async () => {
-    const wrapper = await mountApp(15, 30)
-    await pickColor(wrapper, 'red')
-    await pressBead(wrapper, 0)
-    await pressBead(wrapper, 1)
-    await wrapper.trigger('mouseup')
-    await pickTool(wrapper, 'fill')
-
-    await pickColor(wrapper, 'blue')
-    await click(wrapper, 0)
-
-    const row = frameGrid(loadProjects()[0]!)[0]!
-    expect([row[0]!.color, row[1]!.color]).toEqual(['#2f6fed', '#2f6fed'])
   })
 })
 
