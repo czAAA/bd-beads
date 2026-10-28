@@ -1,6 +1,6 @@
 import type { Rect } from './canvas'
-import { layoutPlacement, type KindedSheet, type LayoutPlacement } from './frameKind'
-import { layoutNeighbors, layoutPosition, layoutPositionAt, type LayoutPoint } from './frameLayout'
+import type { KindedSheet } from './frameKind'
+import { layoutNeighbors, layoutPosition, layoutPositionAt, type FrameLayout, type LayoutPoint } from './frameLayout'
 import type { GridPosition } from './grid'
 import { describeWeave, type Weave } from './weave'
 import { insideBounds, type Box } from './weaveGeometry'
@@ -90,9 +90,29 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
   }
 }
 
+/** Where a Custom frame's layout lies in its rectangle, in cell widths from its first position's corner: a bead width to
+ * a cell's width, smaller only where the Bead shape makes the rectangle shorter than the layout, and centred. The
+ * renderer, the hit test and a Selection over it (ticket 0594) all place it here, so they agree where each bead is. */
+export interface LayoutPlacement {
+  layout: FrameLayout
+  scale: number
+  x: number
+  y: number
+}
+
+/** A Custom frame's layout as placed in its rectangle of its Weave's cells. */
+export function layoutPlacement(layout: FrameLayout, frame: Pick<KindedSheet, 'rows' | 'columns'>, weave: Weave): LayoutPlacement {
+  const description = describeWeave(weave)
+  const extent = description.blockExtent(frame.columns, frame.rows, 1, description.cellAspect)
+  const scale = Math.min(1, extent.width / layout.width, extent.height / layout.height)
+  return { layout, scale, x: (extent.width - layout.width * scale) / 2, y: (extent.height - layout.height * scale) / 2 }
+}
+
 /** A Custom frame laid out by its layout (ADR 0077), placed in its rectangle as `layoutPlacement` puts it: a bead a
- * cell wide, as deep as the Bead shape's cell where the rounds leave it room, turned to its panel. */
-function layoutGeometry({ layout, scale, x, y }: LayoutPlacement, frame: KindedSheet): LayerGeometry {
+ * cell wide, as deep as the Bead shape's cell where the rounds leave it room, turned to its panel. Its kind's own
+ * geometry (`frameGeometry`). */
+export function layoutGeometry(layout: FrameLayout, frame: KindedSheet): LayerGeometry {
+  const { scale, x, y } = layoutPlacement(layout, frame, frame)
   const description = describeWeave(frame)
   const width = scale
   const height = scale * Math.min(description.cellAspect, layout.beadDepth)
@@ -119,11 +139,4 @@ function layoutGeometry({ layout, scale, x, y }: LayoutPlacement, frame: KindedS
     positionsIn: all,
     seams: () => layout.seams.map(([from, to]) => [at(from), at(to)] as const),
   }
-}
-
-/** A Frame's Layer geometry: its layout's for a Custom frame, its Weave's over its own rows and columns otherwise. The one
- * place the Frame kind picks how its beads are laid out; `frame` carries the Bead shape's cell, as the Frame is drawn. */
-export function frameGeometry(frame: KindedSheet): LayerGeometry {
-  const placement = layoutPlacement(frame, frame)
-  return placement ? layoutGeometry(placement, frame) : gridGeometry(frame, { row: 0, column: 0, rows: frame.rows, columns: frame.columns })
 }
