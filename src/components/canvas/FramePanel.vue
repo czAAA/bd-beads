@@ -29,7 +29,7 @@ import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { describeWeave } from '../../domain/weave'
 import { hasWordChart } from '../../domain/wordChart'
-import { EXPORT_QUALITIES, PNG_DPI_BY_QUALITY, shownMegabytes, type ExportQuality } from '../../domain/exportQuality'
+import { EXPORT_QUALITIES, PNG_DPI_BY_QUALITY, parseExportQuality, shownMegabytes } from '../../domain/exportQuality'
 import { decimalSign } from '../../domain/formatNumber'
 import { estimatePdf, estimatePng, exportFacts, type SizeEstimate } from '../../rendering/exportEstimate'
 import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
@@ -230,7 +230,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         :hint="qualityHint"
         :model-value="quality"
         :disabled="exportBusy"
-        @update:model-value="quality = $event as ExportQuality"
+        @update:model-value="quality = parseExportQuality($event) ?? quality"
       />
       <p v-if="highPngDpi" class="frame-panel__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
       <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
