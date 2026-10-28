@@ -9,6 +9,14 @@
   --starter-press-scale: 0.97; /* StarterGallery card: a card's picture while pressed. */
   --starter-picture-height: 280px; /* StarterGallery card: the setup's large live picture. */
   --starter-size-dot: 5px; /* StarterGallery card: the dot on the chip of the design's own size. */
+  --convert-sections-width-narrow: 400px; /* ConvertImage card: the sections pane while the popup is under 1100px wide. */
+  --convert-preview-phone: 300px; /* PhoneForms card: the wizard's sticky preview at the top of the scroll on a phone. */
+  --convert-preview-phone-shrunk: 132px; /* PhoneForms card: the same preview once the sections scroll under it. */
+  --convert-preview-tablet: 440px; /* PhoneForms card: the sticky preview on a portrait tablet. */
+  --convert-preview-tablet-shrunk: 200px; /* PhoneForms card: the tablet preview once scrolled. */
+  --step-disc: 20px; /* ConvertImage card: a section's numbered disc and the step rail's. */
+  --crop-handle: 16px; /* ConvertImage card: a corner handle of the crop on the preview. */
+  --ratio-chip-min: 40px; /* PixelToBeadRatio card: the narrowest preset chip. */
 }
 
 :root,
