@@ -199,7 +199,8 @@ describe('ProjectSurface', () => {
 
     await mountSurface(projectOf(2, 2), 1, scroll)
 
-    // The bead layer is handed the view as its region, which moves to its top-left (projectRenderer's own test).
+    // The bead layer is handed the view as its region: what the renderer draws there is projectRenderer's to assert
+    // ("moves the region to the origin…", "draws only the Frame's cells and the painted beads in view…").
     expect(cells.named('setTransform').at(-1)!.args).toEqual([1, 0, 0, 1, -scroll.x, -scroll.y])
   })
 
