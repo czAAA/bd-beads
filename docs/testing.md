@@ -30,6 +30,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - Why sharing: setting up jsdom per file was most of the suite's time. Measured on the Pi with 2 workers (ticket 420), the App files take 217 s wall and 374 s CPU sharing one page per worker and 378 s and 567 s isolated, so they share too.
 - Test at the highest seam that already exists for the behavior, through its public interface, and don't add a seam only to reach an internal. Mount the whole App only when the App's wiring is the subject; otherwise test the domain function, the flow composable or the component on its own (ticket 253 moved logic tests down out of the App tests).
 - An App test proves the wiring (control → flow → storage or screen) with one happy path. Edge cases and every variant (each key, each guard, each label, each tool) live at the lowest level that has them: the shortcut table, the component, the flow. Use one language unless the language switch is the subject; the `Translations` type already makes both languages complete. A mount costs 250–330 ms on the Pi, so every extra App mount is paid by every CI run (ticket 421).
+- Assert each behavior at one level only (ticket 0599). The domain test holds the rule (which beads move, what is refused); the flow test what the flow decides (which layer, whether it asks, one Undo step, what it announces); the component test what it shows and emits; an App test only that a control reaches its flow. A test that repeats what a lower level asserts costs lines and run time and catches nothing more; how to cut one safely is in [Cutting tests](#cutting-tests).
 - App-level tests are split by area: `src/App.<area>.test.ts`. Add to the file for the area, or start a new one; don't grow `App.test.ts`.
 
 ## Prior art to copy
@@ -56,6 +57,14 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `rotated.ts`: a ready-made rotated Project.
 
 `src/testSetup.ts` runs before every `page` test file: it empties the module cache and the page the last file left (body, styles, storage), and re-arms auto-unmount, which the library only lets be armed once.
+
+## Cutting tests
+
+Deleting a test that repeats a lower level (ticket 0599) loses nothing only when each of these holds; the Frame's pilot found a gap with each.
+
+1. For every test deleted, name the test that still asserts its behavior, at the level that owns it. If there is none, keep the assertion there instead, not back in the App.
+2. Every binding a template makes between a control and its handler (`@cancel="onCancelRemoveFrame"`) stays driven by one test: nothing else notices a control no test presses.
+3. For a flow test that is trimmed, break each decision the flow makes by hand (which change it commits, whether it asks first), run the flow's tests, see one fail, and `git checkout` the file. An assertion that still passes is too weak: a Remove test that reads the last save passes when nothing was saved at all.
 
 ## The Worker's tests
 
