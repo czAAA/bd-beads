@@ -424,10 +424,24 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
       ['kite', 21, en.frame.sizeSettings.rows],
     ] as const) {
       const wrapper = mountBar(custom(kind, size))
-      expect(wrapper.get('[data-testid="frame-setting"]').text()).toContain(words.label)
-      expect(wrapper.get('[data-testid="frame-setting-value"]').text()).toBe(String(size))
-      expect(wrapper.get('[data-testid="frame-setting-less"]').attributes('aria-label')).toBe(words.less)
+      const name = kind === 'kite' ? 'rows' : 'partSize'
+      expect(wrapper.get(`[data-testid="frame-setting-${name}"]`).text()).toContain(words.label)
+      expect(wrapper.get(`[data-testid="frame-setting-${name}-value"]`).text()).toBe(String(size))
+      expect(wrapper.get(`[data-testid="frame-setting-${name}-less"]`).attributes('aria-label')).toBe(words.less)
     }
+  })
+
+  it('offers a Fringe earring\'s Top width, Top rows and Fringe length, and its Fringe style (ticket 0597)', async () => {
+    const result = changeFrame(framed(), { custom: { kind: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 10, column: 10 } } })
+    if (result.kind !== 'changed') throw new Error('expected an earring')
+    const wrapper = mountBar(result.project)
+    expect(['topWidth', 'topRows', 'fringeLength'].map((name) => wrapper.get(`[data-testid="frame-setting-${name}-value"]`).text())).toEqual(['7', '6', '12'])
+    // Top rows stop one short of Top width, so the top ends on a pair.
+    expect(wrapper.get('[data-testid="frame-setting-topRows-more"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="frame-fringe-style"]').text()).toContain(en.starters.picks.fringeStyle.options.straight)
+    await wrapper.get('[data-testid="frame-setting-fringeLength-more"]').trigger('click')
+    await wrapper.get('[data-testid="frame-fringe-style"] [data-value="straight"]').trigger('click')
+    expect(wrapper.emitted('set-settings')).toEqual([[{ fringeLength: 13 }], [{ fringeStyle: 'straight' }]])
   })
 
   it('shows Rounds in place of Width and Height, Rotate Frame (ticket 0594) and no Select a frame', async () => {
@@ -435,8 +449,8 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
     expect(wrapper.find('[data-testid="frame-panel-width"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-select"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(true)
-    expect(wrapper.get('[data-testid="frame-setting-value"]').text()).toBe('4')
-    await wrapper.get('[data-testid="frame-setting-more"]').trigger('click')
-    expect(wrapper.emitted('set-size')).toEqual([[5]])
+    expect(wrapper.get('[data-testid="frame-setting-rounds-value"]').text()).toBe('4')
+    await wrapper.get('[data-testid="frame-setting-rounds-more"]').trigger('click')
+    expect(wrapper.emitted('set-settings')).toEqual([[{ rounds: 5 }]])
   })
 })

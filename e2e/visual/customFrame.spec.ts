@@ -25,10 +25,10 @@ function customFramed(kind: CustomFrameKindId, size: number): Project {
 }
 
 // Each at a size that fits the screen whole: a Star's arms and a Kaleidocycle's triangles in Part size rounds, a Kite in
-// Rows.
-const SIZES = { triangle: 7, warpedSquare: 7, star: 5, kaleidocycle: 5, kite: 15 } as const satisfies Record<CustomFrameKindId, number>
+// Rows, a Fringe earring by its Top width (ticket 0597).
+const SIZES = { triangle: 7, warpedSquare: 7, star: 5, kaleidocycle: 5, kite: 15, fringeEarring: 7 } as const satisfies Record<CustomFrameKindId, number>
 
-for (const kind of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite'] as const) {
+for (const kind of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite', 'fringeEarring'] as const) {
   test(`a ${kind} Custom frame`, async ({ page }) => {
     await openApp(page, [customFramed(kind, SIZES[kind])])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)

@@ -1,12 +1,30 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
-import { customFrameSize, frameKindOf, sizeSettingOf } from '../../domain/frameKind'
+import type { FrameSettingName } from '../../domain/frameKind'
 import { resolveProjectBead, type Project } from '../../domain/project'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
-import { starterBeadCount, type Starter, type StarterChoice } from '../../domain/starters'
+import { formatMm, formatSizeMm } from '../../domain/projectSize'
+import {
+  BAND_CLASP_MM,
+  designDifferences,
+  designFits,
+  designPicks,
+  designSizes,
+  euRingSize,
+  starterBeadCount,
+  starterMeasure,
+  starterSizeRanges,
+  US_RING_PRESETS,
+  usRingSize,
+  type Starter,
+  type StarterChoice,
+  type StarterPick,
+  type StarterPickName,
+  type StarterSize,
+  type StarterSizeName,
+} from '../../domain/starters'
 import { plural } from '../../i18n/plural'
-import { starterSizeWords } from '../../i18n/starterWords'
+import { designWords, starterCountWords, starterName } from '../../i18n/starterWords'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
@@ -16,9 +34,9 @@ import TextField from '../ui/form/TextField.vue'
 import BeadPicker from './BeadPicker.vue'
 import StarterPicture from './StarterPicture.vue'
 
-// A Starter's setup (ticket 0596; StarterGallery card, Setup), the level under its card: the large live picture, Name
-// and Bead on New Project only, Use design or Start empty, its size with the usual sizes as chips, and the Estimated
-// size. The panel's pinned footer submits it. A design is made for one size, so changing the size turns it off.
+// A Starter's setup (tickets 0596, 0597; StarterGallery card, Setup): the live picture, Name and Bead on New Project only,
+// Use design or Start empty, its sizes with chips and its choices, a Ring's Size system, and the Estimated size. The
+// footer submits it. Moving any size or choice off the design turns it off; setting them all back turns it on.
 const props = defineProps<{ starter: Starter; project?: Project }>()
 const emit = defineEmits<{ submit: [choice: StarterChoice & { name: string; beadId: string }] }>()
 
@@ -26,68 +44,161 @@ const { t, locale } = useI18n()
 
 const name = ref('')
 const beadId = ref(DEFAULT_BEAD.id)
-const size = ref(props.starter.size)
+const sizes = reactive(designSizes(props.starter))
+const picks = reactive(designPicks(props.starter))
 const useDesign = ref(true)
-/** Use design was turned off by a size change, not chosen off, so setting the size back turns it on again. */
-const offBySize = ref(false)
+/** Use design was turned off by a size or choice, not chosen off, so setting them back turns it on again. */
+const offByChange = ref(false)
+/** How a Ring size is shown and stepped: a view of the one size, kept in EU (not a size of the design). */
+const system = ref<'eu' | 'us'>('eu')
 
-const setting = computed(() => sizeSettingOf({ kind: props.starter.kind })!)
-const words = computed(() => t.value.frame.sizeSettings[props.starter.setting])
-const optionName = computed(() => t.value.frame.customKinds[props.starter.kind])
+const optionName = computed(() => starterName(t.value, props.starter))
+const choice = computed<StarterChoice>(() => ({ sizes: { ...sizes }, picks: { ...picks }, useDesign: useDesign.value }))
 
-function setSize(value: number) {
-  size.value = Math.min(setting.value.max, Math.max(setting.value.min, Math.round(value) || props.starter.size))
-  if (size.value !== props.starter.size && useDesign.value) {
+/** Turns the design off when the sizes and choices leave it, and back on when they all return to it. */
+function followDesign() {
+  const fits = designFits(props.starter, choice.value)
+  if (!fits && useDesign.value) {
     useDesign.value = false
-    offBySize.value = true
-  } else if (size.value === props.starter.size && offBySize.value) {
+    offByChange.value = true
+  } else if (fits && offByChange.value) {
     useDesign.value = true
-    offBySize.value = false
+    offByChange.value = false
   }
 }
 
-/** Use design puts back the design's own size; Start empty keeps the size as it is. */
+/** Whether a size is the Ring size shown in US sizes. */
+const inUs = (size: StarterSize) => size.name === 'ringSize' && system.value === 'us'
+
+/** A size's value as its stepper shows it: a Ring size in the Size system chosen. */
+function shownValue(size: StarterSize): number {
+  const value = sizes[size.name] ?? size.size
+  return inUs(size) ? usRingSize(value) : value
+}
+
+/** A size set from its stepper or a chip, within its range, and every size after it kept within its own (Top rows
+ * within a narrower Top width). A Ring size set in US is kept as the whole EU size it comes to. */
+function setSize(size: StarterSize, shown: number) {
+  const range = starterSizeRanges(props.starter, sizes)[size.name]!
+  const eu = inUs(size) ? euRingSize(shown) : shown
+  if (!Number.isFinite(eu)) return
+  sizes[size.name] = Math.min(range.max, Math.max(range.min, Math.round(eu)))
+  const ranges = starterSizeRanges(props.starter, sizes)
+  for (const each of props.starter.sizes) sizes[each.name] = Math.min(ranges[each.name]!.max, sizes[each.name] ?? each.size)
+  followDesign()
+}
+
+function setPick(pick: StarterPick, value: string) {
+  picks[pick.name] = value
+  followDesign()
+}
+
+/** Use design puts back the design's own sizes and choices; Start empty keeps them as they are. */
 function setDesign(value: 'design' | 'empty') {
-  offBySize.value = false
+  offByChange.value = false
   useDesign.value = value === 'design'
-  if (useDesign.value) size.value = props.starter.size
+  if (useDesign.value) {
+    Object.assign(sizes, designSizes(props.starter))
+    Object.assign(picks, designPicks(props.starter))
+  }
 }
 
 const designOptions = computed(() => [
   { value: 'design' as const, label: t.value.starters.useDesign },
   { value: 'empty' as const, label: t.value.starters.startEmpty },
 ])
+const systemOptions = computed(() => [
+  { value: 'eu' as const, label: t.value.starters.sizeSystem.eu },
+  { value: 'us' as const, label: t.value.starters.sizeSystem.us },
+])
 
-/** Why the design is off: a size change, which setting it back undoes, or Start empty chosen. */
+/** Why the design is off: a size or choice changed, which setting it back undoes, or Start empty chosen. */
 const note = computed(() => {
   if (useDesign.value) return undefined
-  if (!offBySize.value) return t.value.starters.emptyNote
-  return t.value.starters.designOffNote.replace('{size}', starterSizeWords(t.value, locale.value, props.starter, props.starter.size))
+  if (!offByChange.value) return t.value.starters.emptyNote
+  const differences = designDifferences(props.starter, choice.value)
+  const template = differences.every((each) => 'pick' in each) ? t.value.starters.designOffChoiceNote : t.value.starters.designOffNote
+  return template.replace('{size}', designWords(t.value, locale.value, props.starter, differences))
 })
+
+/** What one row of settings is: a size's stepper and chips, a choice, or the Ring size's Size system. */
+type Row = { size: StarterSize } | { pick: StarterPick } | { system: true }
+
+/** The setup's settings in the card's order: each size, a choice before the size it names or after them all, and the
+ * Size system before the Ring size. */
+const rows = computed<Row[]>(() => {
+  const { sizes: all, picks: chosen } = props.starter
+  const ordered: Row[] = []
+  for (const size of all) {
+    for (const pick of chosen) if (pick.before === size.name) ordered.push({ pick })
+    if (size.name === 'ringSize') ordered.push({ system: true })
+    ordered.push({ size })
+  }
+  return [...ordered, ...chosen.filter((pick) => !pick.before).map((pick) => ({ pick }))]
+})
+
+/** A size's words: a Custom frame setting's from the Frame panel, a Ring's or Band's its own; its hint beside it. */
+function sizeWords(size: StarterSize): { label: string; less: string; more: string; hint: string } {
+  const custom = size.name !== 'width' && size.name !== 'ringSize' && size.name !== 'wrist'
+  const words = custom ? t.value.frame.sizeSettings[size.name as FrameSettingName] : t.value.starters.setupSizes[size.name as 'width' | 'ringSize' | 'wrist']
+  const hints = t.value.starters.sizeHints as Partial<Record<StarterSizeName | 'ringSizeUs', string>>
+  const hint = size === props.starter.sizes[0] && custom ? t.value.starters.hints[props.starter.kind as keyof typeof t.value.starters.hints] : hints[inUs(size) ? 'ringSizeUs' : size.name]
+  return { label: words.label, less: words.less, more: words.more, hint: hint ?? '' }
+}
+
+/** A size's stepper range and step as shown: a Ring size in US goes by halves. */
+function stepperOf(size: StarterSize): { min: number; max: number; stepBy: number } {
+  const { min, max } = starterSizeRanges(props.starter, sizes)[size.name]!
+  return inUs(size) ? { min: usRingSize(min), max: usRingSize(max), stepBy: 0.5 } : { min, max, stepBy: 1 }
+}
+
+/** A size's chips: the usual sizes its range allows now, US sizes for a Ring size shown in US. */
+function presetsOf(size: StarterSize): readonly number[] {
+  const { min, max } = stepperOf(size)
+  return (inUs(size) ? US_RING_PRESETS : size.presets).filter((preset) => preset >= min && preset <= max)
+}
+
+/** Whether a chip is the design's own size. */
+const designChip = (size: StarterSize, preset: number) => (inUs(size) ? preset === usRingSize(size.size) : preset === size.size)
+
+const pickOptions = (pick: StarterPick) =>
+  pick.values.map((value) => ({ value, label: (t.value.starters.picks[pick.name as StarterPickName].options as Record<string, string>)[value] ?? value }))
 
 const bead = computed(() => (props.project ? resolveProjectBead(props.project) : findBead(beadId.value)))
 
-/** The Frame's Estimated size with the Bead: its shape's bounding size. */
+/** The Estimated size and the lines under it (StarterGallery card, Setup 5): a Shape's or earring's width × height, a
+ * Ring's inside and width, a Band's width × length; the bead count, a pair's, and a Ring's or Band's rows. */
 const estimate = computed(() => {
-  if (!bead.value) return ''
-  const settings = { [props.starter.setting]: size.value }
-  const technique = frameKindOf({ kind: props.starter.kind }).custom!.technique
-  const mm = estimatedSizeMm({ ...customFrameSize(props.starter.kind, settings), technique, kind: props.starter.kind, settings }, bead.value)
-  return formatSizeMm(mm, { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)
+  if (!bead.value) return { value: '', lines: [] as string[] }
+  const words = t.value.starters
+  const units = { mm: t.value.form.unitMm, cm: t.value.form.unitCm }
+  const measure = starterMeasure(props.starter, choice.value, bead.value)
+  const count = starterCountWords(t.value, locale.value, props.starter, choice.value, bead.value)
+  if (measure.shape === 'ring') {
+    const value = words.ringEstimate.replace('{inside}', formatMm(measure.insideMm, locale.value)).replace('{width}', formatMm(measure.widthMm, locale.value))
+    return { value, lines: [count, plural(locale.value, measure.rows, words.rowsRound)] }
+  }
+  if (measure.shape === 'band') {
+    const clasp = `${formatMm(BAND_CLASP_MM / 10, locale.value)} ${t.value.form.unitCm}`
+    const value = formatSizeMm({ widthMm: measure.widthMm, heightMm: measure.lengthMm }, units, locale.value)
+    return { value, lines: [count, plural(locale.value, measure.rows, words.bandRows), words.claspLeft.replace('{clasp}', clasp)] }
+  }
+  const value = formatSizeMm(measure, units, locale.value)
+  if (props.starter.category !== 'earrings') return { value, lines: [count] }
+  return { value, lines: [count, plural(locale.value, 2 * starterBeadCount(props.starter, choice.value, bead.value), words.forPair)] }
 })
-const count = computed(() => plural(locale.value, starterBeadCount(props.starter, size.value), t.value.starters.beads))
 
 const pictureName = computed(() => (useDesign.value ? t.value.starters.pictureWithDesign : t.value.starters.pictureEmpty).replace('{option}', optionName.value))
 
 function onSubmit() {
-  emit('submit', { size: size.value, useDesign: useDesign.value, name: name.value.trim() || optionName.value, beadId: props.project?.beadId ?? beadId.value })
+  emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: props.project?.beadId ?? beadId.value })
 }
 </script>
 
 <template>
   <form id="starter-setup-form" class="starter-setup" novalidate data-testid="starter-setup" @submit.prevent="onSubmit">
     <div class="starter-setup__picture" role="img" :aria-label="pictureName" data-testid="starter-setup-picture">
-      <StarterPicture :starter="starter" :size="size" :design="useDesign" :bead-id="bead?.id" :drawn-px="320" />
+      <StarterPicture :starter="starter" :choice="choice" :bead-id="bead?.id" :drawn-px="320" />
     </div>
 
     <div v-if="!project" class="starter-setup__pair">
@@ -110,47 +221,62 @@ function onSubmit() {
       <AppNote v-if="note" data-testid="starter-design-note">{{ note }}</AppNote>
     </FormField>
 
-    <div class="starter-setup__size">
-      <span id="starter-size-label" class="starter-setup__label" data-testid="starter-size-label">
-        <span>{{ words.label }}</span>
-        <span class="starter-setup__hint">{{ t.starters.hints[starter.kind] }}</span>
-      </span>
-      <div class="starter-setup__controls">
-        <AppStepper
-          :model-value="size"
-          :min="setting.min"
-          :max="setting.max"
-          :value-label="words.label"
-          :decrease-label="words.less"
-          :increase-label="words.more"
-          decrease-testid="starter-size-decrease"
-          increase-testid="starter-size-increase"
-          value-testid="starter-size-value"
-          @update:model-value="setSize"
-        />
-        <div class="starter-setup__presets" role="group" :aria-label="t.starters.presetsLabel">
-          <button
-            v-for="preset in starter.presets"
-            :key="preset"
-            class="starter-setup__chip"
-            type="button"
-            :aria-pressed="size === preset"
-            :data-testid="`starter-size-preset-${preset}`"
-            @click="setSize(preset)"
-          >
-            {{ preset }}
-            <span v-if="preset === starter.size" class="starter-setup__dot"><span class="starter-setup__hidden">{{ t.starters.designSize }}</span></span>
-          </button>
+    <template v-for="row in rows" :key="'size' in row ? row.size.name : 'pick' in row ? row.pick.name : 'system'">
+      <div v-if="'size' in row" class="starter-setup__size" :data-testid="`starter-size-${row.size.name}`">
+        <span class="starter-setup__label" :data-testid="`starter-size-label-${row.size.name}`">
+          <span>{{ sizeWords(row.size).label }}</span>
+          <span class="starter-setup__hint">{{ sizeWords(row.size).hint }}</span>
+        </span>
+        <div class="starter-setup__controls">
+          <AppStepper
+            :model-value="shownValue(row.size)"
+            :min="stepperOf(row.size).min"
+            :max="stepperOf(row.size).max"
+            :step-by="stepperOf(row.size).stepBy"
+            :value-label="sizeWords(row.size).label"
+            :decrease-label="sizeWords(row.size).less"
+            :increase-label="sizeWords(row.size).more"
+            :decrease-testid="`starter-size-decrease-${row.size.name}`"
+            :increase-testid="`starter-size-increase-${row.size.name}`"
+            :value-testid="`starter-size-value-${row.size.name}`"
+            @update:model-value="setSize(row.size, $event)"
+          />
+          <div class="starter-setup__presets" role="group" :aria-label="t.starters.presetsLabel">
+            <button
+              v-for="preset in presetsOf(row.size)"
+              :key="preset"
+              class="starter-setup__chip"
+              type="button"
+              :aria-pressed="shownValue(row.size) === preset"
+              :data-testid="`starter-size-preset-${row.size.name}-${preset}`"
+              @click="setSize(row.size, preset)"
+            >
+              {{ preset }}
+              <span v-if="designChip(row.size, preset)" class="starter-setup__dot"><span class="starter-setup__hidden">{{ t.starters.designSize }}</span></span>
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+      <FormField v-else-if="'pick' in row" :label="t.starters.picks[row.pick.name].label" :label-id="`starter-pick-label-${row.pick.name}`">
+        <SegmentedControl
+          :model-value="picks[row.pick.name] ?? row.pick.value"
+          :options="pickOptions(row.pick)"
+          :labelledby="`starter-pick-label-${row.pick.name}`"
+          :data-testid="`starter-pick-${row.pick.name}`"
+          @update:model-value="setPick(row.pick, $event)"
+        />
+      </FormField>
+      <FormField v-else :label="t.starters.sizeSystem.label" label-id="starter-system-label">
+        <SegmentedControl v-model="system" :options="systemOptions" labelledby="starter-system-label" data-testid="starter-size-system" />
+      </FormField>
+    </template>
 
     <div class="starter-setup__estimate" role="group" :aria-label="t.size.estimateLabel">
       <p class="starter-setup__estimate-row">
         <span>{{ t.size.estimateLabel }}</span>
-        <strong data-testid="starter-estimate">{{ estimate }}</strong>
+        <strong data-testid="starter-estimate">{{ estimate.value }}</strong>
       </p>
-      <p class="starter-setup__count" data-testid="starter-count">{{ count }}</p>
+      <p class="starter-setup__count" data-testid="starter-count">{{ estimate.lines.join(' · ') }}</p>
     </div>
   </form>
 </template>

@@ -125,6 +125,23 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
     expect(chart.rows.map((row) => row.runs)).toEqual([0, 1, 2, 3, 4].map((row) => [{ count: 2 * (kiteWingBeads(row, 5) + 1), letter: 'A' }]))
   })
 
+  it('lists a Fringe earring\'s top from its base row up, then each strand from the top down (ticket 0597)', () => {
+    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+    const placed = changeFrame(open, { custom: { kind: 'fringeEarring', settings: { topWidth: 3, topRows: 2, fringeStyle: 'v', fringeLength: 3 }, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
+    // The strands' last beads painted, a drop at each tip.
+    const tips = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row, column }) => row === 1000 + (column === 1 ? 2 : 0))
+    const project = { ...onLayer(placed.project, 'frame', (view) => paintCells(view, tips, HEX.A)), letters: true, paletteLetters: { [HEX.A]: 'A' } }
+    expect(wordChartOf(project)!.start).toBe('base')
+    expect(words(project)).toEqual([
+      '1 {"kind":"row","number":1}: 3*',
+      '2 {"kind":"row","number":2}: 2*',
+      '3 {"kind":"strand","number":1}: 1A',
+      '4 {"kind":"strand","number":2}: 2*,1A',
+      '5 {"kind":"strand","number":3}: 1A',
+    ])
+  })
+
   it('lists a Star part by part and then its joins, each join a line with no runs', () => {
     const chart = wordChartOf(shaped('star', 2, () => false))!
     expect(chart.start).toBe('parts')

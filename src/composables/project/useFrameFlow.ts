@@ -4,9 +4,10 @@ import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, fr
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, customFrameLoss, frameChangeRefusal } from '../../domain/changeFrame'
-import { frameAllows, frameKindOf, frameSizeOf, sizeSettingOf, type FrameSettingName } from '../../domain/frameKind'
+import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
+import { starterName, starterSizeWords } from '../../i18n/starterWords'
 import { canvasWeave, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, type Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import { plural } from '../../i18n/plural'
@@ -414,33 +415,40 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
       const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
       const t = deps.messages()
-      const words = t.frame.sizeSettings[starter.setting]
-      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', t.frame.customKinds[starter.kind]).replace('{size}', plural(deps.locale(), choice.size, words.summary)))
+      const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
+      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', starterName(t, starter)).replace('{size}', size))
     })
   }
 
-  /** The size change waiting on its question: the size asked for and how many painted beads it would drop. */
-  const sizeAsk = ref<{ setting: FrameSettingName; size: number; lost: number } | undefined>()
+  /** The settings change waiting on its question: the one setting asked for and how many painted beads it would drop. */
+  const sizeAsk = ref<{ change: FrameSettings; lost: number } | undefined>()
 
-  /** A Custom frame's size (its Rounds, Part size or Rows) from the Frame panel (tickets 0592, 0593): one Undo step,
-   * asking first when painted beads on the outer rounds or last rows would go; held still once a pass is done. */
-  function setSize(size: number): void {
+  /** One of a Custom frame's settings from the Frame panel (tickets 0592, 0593, 0597): its Rounds, Part size or Rows, a
+   * Fringe earring's Top width, Top rows, Fringe length or Fringe style. One Undo step, asking first when painted beads
+   * would go; held still once a pass is done. */
+  function setSettings(change: FrameSettings): void {
     const project = deps.currentProject()
-    const setting = project?.frame && sizeSettingOf(project.frame)
-    if (!setting || locked.value) return
-    const lost = customFrameLoss(project!, { [setting.name]: size })
+    if (!project?.frame || !settingsOf(project.frame) || locked.value) return
+    const lost = customFrameLoss(project, change)
     if (lost > 0) {
-      sizeAsk.value = { setting: setting.name, size, lost }
+      sizeAsk.value = { change, lost }
       return
     }
-    applySize(setting.name, size)
+    applySettings(change)
   }
 
-  function applySize(setting: FrameSettingName, size: number): void {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, { settings: { [setting]: size } }))
+  function applySettings(change: FrameSettings): void {
+    const outcome = deps.edit('frame', (project) => changeFrame(project, { settings: change }))
     const settled = deps.currentProject()?.frame
-    const words = deps.messages().frame.sizeSettings[setting]
-    if (outcome.kind === 'applied' && settled) deps.announce(words.announce.replace('{count}', String(frameSizeOf(settled))))
+    if (outcome.kind !== 'applied' || !settled) return
+    const t = deps.messages()
+    const name = changedSetting(change)
+    if (name === 'fringeStyle') {
+      deps.announce(t.frame.fringeStyle.announce.replace('{style}', t.starters.picks.fringeStyle.options[change.fringeStyle!]))
+      return
+    }
+    const value = settingValuesOf(settled).find((each) => each.name === name)?.value
+    deps.announce(t.frame.sizeSettings[name].announce.replace('{count}', String(value)))
   }
 
   /** The size question answered No: nothing changes. */
@@ -448,11 +456,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     sizeAsk.value = undefined
   }
 
-  /** The size question answered Yes: the outer rounds or last rows go with their beads, as one Undo step. */
+  /** The size question answered Yes: the outer rounds, last rows or strands' ends go with their beads, as one Undo step. */
   function confirmSize(): void {
     const ask = sizeAsk.value
     sizeAsk.value = undefined
-    if (ask) applySize(ask.setting, ask.size)
+    if (ask) applySettings(ask.change)
   }
 
   /** The Replace Frame question answered No: nothing changes. */
@@ -529,7 +537,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     cancelRemove,
     confirmRemove,
     placeFromStarter,
-    setSize,
+    setSettings,
     sizeAsk,
     cancelSize,
     confirmSize,

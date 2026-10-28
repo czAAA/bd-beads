@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { kaleidocycleLayout, kiteLayout, kiteWingBeads, layoutNeighbors, layoutPositionAt, roundsLayout, starLayout, type FrameLayout } from './frameLayout'
+import { fringeLayout, kaleidocycleLayout, kiteLayout, kiteWingBeads, layoutNeighbors, layoutPositionAt, roundsLayout, starLayout, type FrameLayout } from './frameLayout'
 
 /** How many positions each round holds, from the centre out. */
 const roundSizes = (corners: 3 | 4, rounds: number) => rowSizes(roundsLayout(corners, rounds))
@@ -237,5 +237,70 @@ describe('a Kite (ticket 0593)', () => {
 
   it('fills across the spine, where the centre pair touch', () => {
     expect(layoutNeighbors(kiteLayout(6), { row: 3, column: 0 })).toContainEqual({ row: 3, column: 1 })
+  })
+})
+
+describe('a Fringe earring (ticket 0597)', () => {
+  const earring = (fringeStyle: 'straight' | 'v' = 'straight', topWidth = 8, topRows = 5, fringeLength = 12) => fringeLayout({ topWidth, topRows, fringeStyle, fringeLength })
+  /** The beads of each strand, from the first on the left. */
+  const strandLengths = (layout: FrameLayout) => layout.panels.flatMap((panel, index) => (panel.strand ? [layout.positions.filter((position) => position.panel === index).length] : []))
+  const top = (layout: FrameLayout) => layout.positions.filter(({ panel }) => panel === 0)
+
+  it('has a brick-stitch top worked from its base row up, each row one bead shorter', () => {
+    expect(rowSizes({ ...earring(), positions: top(earring()) })).toEqual([8, 7, 6, 5, 4])
+    // Each row sits half a bead in from the one under it, and above it.
+    const [base, second] = [0, 1].map((row) => top(earring()).filter((position) => position.row === row))
+    expect(second![0]!.x - base![0]!.x).toBeCloseTo(0.5)
+    expect(second![0]!.y).toBeLessThan(base![0]!.y)
+  })
+
+  it('hangs a strand under each bead of the base row, all as long as the Fringe length when straight', () => {
+    expect(strandLengths(earring('straight'))).toEqual([12, 12, 12, 12, 12, 12, 12, 12])
+    const layout = earring()
+    const base = top(layout).filter(({ row }) => row === 0)
+    for (const [strand, bead] of base.entries()) {
+      const hanging = layout.positions.filter(({ panel }) => panel === strand + 1)
+      expect(hanging.every(({ x, y }) => Math.abs(x - bead.x) < 1e-9 && y > bead.y)).toBe(true)
+    }
+  })
+
+  it('makes a V of the strands, the middle one or pair the Fringe length and each strand out two beads shorter', () => {
+    expect(strandLengths(earring('v', 8, 5, 12))).toEqual([6, 8, 10, 12, 12, 10, 8, 6])
+    // The card's V fringe: a top of 7 and 6 rows, 27 beads, and 60 in its strands.
+    const card = earring('v', 7, 6, 12)
+    expect(strandLengths(card)).toEqual([6, 8, 10, 12, 10, 8, 6])
+    expect(card.positions).toHaveLength(87)
+    // A short fringe on a wide top keeps a bead on every strand.
+    expect(strandLengths(earring('v', 9, 3, 4))).toEqual([1, 1, 1, 2, 4, 2, 1, 1, 1])
+  })
+
+  it('is one part with its strands, a Seam between the top and the strands, and no joins', () => {
+    const layout = earring()
+    expect(layout.panels).toEqual([{ part: 0, order: 0 }, ...[1, 2, 3, 4, 5, 6, 7, 8].map((part) => ({ part, order: part, strand: true }))])
+    expect(layout.joins).toEqual([])
+    expect(layout.seams).toHaveLength(1)
+    const base = top(layout).find(({ row, column }) => row === 0 && column === 3)!
+    const hanging = layout.positions.find(({ panel, y }) => panel === 4 && y > base.y)!
+    expect(layoutPositionAt(layout, base.x, (base.y + hanging.y) / 2)).toBeUndefined()
+  })
+
+  it('shares no position, lies inside its bounding rectangle, and refuses a press beside a short strand', () => {
+    const layout = earring('v')
+    sharesNothing(layout)
+    liesInside(layout)
+    expect(layoutPositionAt(layout, 0.71, layout.height - 0.71)).toBeUndefined()
+  })
+
+  it('keeps a bead\'s name when the top or the strands change size', () => {
+    const name = ({ row, column }: { row: number; column: number }) => `${row}:${column}`
+    const small = new Set(earring('straight', 8, 5, 12).positions.map(name))
+    const big = new Set(earring('straight', 10, 7, 20).positions.map(name))
+    expect([...small].every((key) => big.has(key))).toBe(true)
+  })
+
+  it('fills down a strand and up into the top, where beads touch', () => {
+    const layout = earring()
+    const firstOfStrand = layout.positions.filter(({ panel }) => panel === 1).sort((a, b) => a.y - b.y)[0]!
+    expect(layoutNeighbors(layout, firstOfStrand)).toContainEqual({ row: 0, column: 0 })
   })
 })

@@ -92,6 +92,12 @@ const CASES: FitCase[] = [
   ['StarterGallery (Shapes)', StarterGallery, { category: 'shapes' }],
   ['StarterSetup', StarterSetup, { starter: starterById('kaleidocycle') }],
   ['StarterSetup (on a Project)', StarterSetup, { starter: starterById('warpedSquare'), project: framed }],
+  ['StarterGallery (Earrings)', StarterGallery, { category: 'earrings' }],
+  ['StarterGallery (Rings)', StarterGallery, { category: 'rings' }],
+  ['StarterGallery (Bands)', StarterGallery, { category: 'bands' }],
+  ['StarterSetup (V fringe)', StarterSetup, { starter: starterById('vFringe') }],
+  ['StarterSetup (Ring)', StarterSetup, { starter: starterById('ringDiamonds'), project: framed }],
+  ['StarterSetup (Band)', StarterSetup, { starter: starterById('bandPlaid') }],
   ['BeadColorList', BeadColorList, { colors: beadColors('ready') }],
   ['BeadColorList failed', BeadColorList, { colors: beadColors('failed') }],
   [

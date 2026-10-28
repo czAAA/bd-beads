@@ -256,4 +256,12 @@ describe('ProgressBar on a Custom frame (ticket 0594)', () => {
     const joining = mount(ProgressBar, { props: { project: moveToRow(placed.project, 15) } })
     expect(spoken(joining)).toBe('Сшить 1–2 · 16 из 20')
   })
+
+  it('goes through a Fringe earring\'s top and then its strands, each counted of all its passes (ticket 0597)', () => {
+    const settings = { topWidth: 5, topRows: 4, fringeStyle: 'straight', fringeLength: 6 } as const
+    const placed = changeFrame(makeProject(), { custom: { kind: 'fringeEarring', settings, centre: { row: 10, column: 10 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
+    expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 1) } }))).toBe('Ряд 2 · 2 из 9')
+    expect(spoken(mount(ProgressBar, { props: { project: moveToRow(placed.project, 6) } }))).toBe('Нить 3 · 7 из 9')
+  })
 })

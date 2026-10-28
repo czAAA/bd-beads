@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { computed, inject, ref, useId } from 'vue'
-import { STARTER_CATEGORIES, starterBeadCount, type Starter, type StarterCategoryId, type StarterId } from '../../domain/starters'
+import { DEFAULT_BEAD, findBead } from '../../domain/beads'
+import { designSizes, STARTER_BEAD_ID, STARTER_CATEGORIES, type Starter, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { plural } from '../../i18n/plural'
-import { starterCrumb, starterSizeWords } from '../../i18n/starterWords'
+import { starterCountWords, starterCrumb, starterName, starterSizeWords } from '../../i18n/starterWords'
 import { useI18n } from '../../i18n/useI18n'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 import StarterPicture from './StarterPicture.vue'
 
-// The Starter gallery (ticket 0596; StarterGallery card), a level of the panel's subpanels: step 1 a card per category,
-// or with a `category`, step 2 a card per option of it. Two columns, one Tab stop with a roving tabindex; a card opens
-// the next level under its name, and Back brings focus back to it.
+// The Starter gallery (tickets 0596, 0597; StarterGallery card), a level of the panel's subpanels: step 1 a card per
+// category, or with a `category`, step 2 a card per option of it. Two columns, one Tab stop with a roving tabindex; a
+// card opens the next level under its name, and Back brings focus back to it.
 const props = defineProps<{ category?: StarterCategoryId }>()
 const emit = defineEmits<{ 'choose-category': [id: StarterCategoryId]; choose: [id: StarterId] }>()
 
@@ -17,14 +18,19 @@ const { t, locale } = useI18n()
 const panel = inject(PANEL_CONTEXT, undefined)
 const id = useId()
 
-/** What a card shows: its name, its caption lines and the Starter whose design is its picture. */
+/** What a card shows: its name, its caption lines and the Starter whose design is its picture, drawn as a pair for the
+ * Earrings' category card. */
 interface Card {
   testid: string
   name: string
   lines: string[]
   starter: Starter
+  pair?: boolean
   open: () => void
 }
+
+/** The Bead a card counts with, as its picture is drawn: Delica 11/0 (StarterGallery card). */
+const CARD_BEAD = findBead(STARTER_BEAD_ID) ?? DEFAULT_BEAD
 
 const shown = computed(() => STARTER_CATEGORIES.find((category) => category.id === props.category))
 
@@ -38,6 +44,7 @@ const cards = computed<Card[]>(() => {
         name,
         lines: [plural(locale.value, each.starters.length, t.value.starters.categories[each.id].count)],
         starter: each.best,
+        pair: each.id === 'earrings',
         open: () => {
           emit('choose-category', each.id)
           panel?.openSub(name, { meta: starterCrumb(t.value, locale.value), opener: `starter-category-${each.id}` })
@@ -46,11 +53,12 @@ const cards = computed<Card[]>(() => {
     })
   }
   return category.starters.map((starter) => {
-    const name = t.value.frame.customKinds[starter.kind]
+    const name = starterName(t.value, starter)
+    const designed = { sizes: designSizes(starter), useDesign: true }
     return {
       testid: `starter-card-${starter.id}`,
       name,
-      lines: [starterSizeWords(t.value, locale.value, starter, starter.size), plural(locale.value, starterBeadCount(starter, starter.size), t.value.starters.beads)],
+      lines: [starterSizeWords(t.value, locale.value, starter), starterCountWords(t.value, locale.value, starter, designed, CARD_BEAD)],
       starter,
       open: () => {
         emit('choose', starter.id)
@@ -99,7 +107,7 @@ function onKeydown(event: KeyboardEvent, index: number) {
         @keydown="onKeydown($event, index)"
       >
         <span class="starter-card__well">
-          <StarterPicture :starter="card.starter" />
+          <StarterPicture :starter="card.starter" :pair="card.pair" upright />
         </span>
         <span class="starter-card__caption">
           <span :id="`${id}-${index}-name`" class="starter-card__name">{{ card.name }}</span>
