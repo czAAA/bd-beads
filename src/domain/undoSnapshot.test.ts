@@ -25,6 +25,19 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(restored.frame).toEqual(before.frame)
   })
 
+  it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
+    const netting = createProject({ technique: 'netting', netSize: 5, beadId: cubeBead.id })
+    const { netSize: _netSize, ...rest } = netting
+    const brick = { ...rest, technique: 'brick' as const, brickBlock: 4 }
+
+    const undone = restoreSnapshot(brick, snapshotOf(netting))
+    expect(undone).toMatchObject({ technique: 'netting', netSize: 5 })
+    expect(undone).not.toHaveProperty('brickBlock')
+    const redone = restoreSnapshot(netting, snapshotOf(brick))
+    expect(redone).toMatchObject({ technique: 'brick', brickBlock: 4 })
+    expect(redone).not.toHaveProperty('netSize')
+  })
+
   it('restore a Project that had no Frame', () => {
     const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined)
     const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })

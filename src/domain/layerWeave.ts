@@ -1,7 +1,8 @@
 import type { GridPosition } from './grid'
 import type { Project } from './project'
 import { projectCell, type ShapedBead } from './projectBead'
-import { MAX_BRICK_BLOCK, positionStep, withCell, type Weave } from './weave'
+import { settingValue } from './settingSpec'
+import { BRICK_BLOCK_SETTING, positionStep, withCell, withTechniqueSettings, type Weave } from './weave'
 
 // The Weave each layer is woven in (ticket 492): the Canvas's from the Project's own fields, the Frame's from its own,
 // and how a distance in one reads in the other.
@@ -11,15 +12,15 @@ export function weaveOf({ technique, brickBlock, netSize }: Weave): Weave {
   return { technique, ...(brickBlock ? { brickBlock } : {}), ...(netSize ? { netSize } : {}) }
 }
 
-/** The Canvas's Weave: the Project's own Technique, Brick block and Net size (ticket 492). */
+/** The Canvas's Weave: the Project's own Technique, Brick block and Net size (ticket 492), and their settings map. */
 export function canvasWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'> & ShapedBead): Weave {
-  return withCell(weaveOf(project), projectCell(project))
+  return withCell(withTechniqueSettings(weaveOf(project)), projectCell(project))
 }
 
 /** The Frame's Weave (ticket 492), which may differ from the Canvas's; a Canvas with no Frame counts its rows in its
  * own. The one place that says which Weave a Frame's rows, rulers, passes and exports are counted in. */
 export function frameWeave(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & ShapedBead): Weave {
-  return withCell(weaveOf(project.frame ?? project), projectCell(project))
+  return withCell(withTechniqueSettings(weaveOf(project.frame ?? project)), projectCell(project))
 }
 
 /** Whether two Weaves lay positions out alike. */
@@ -43,5 +44,5 @@ export function canvasDistance(project: Pick<Project, 'technique' | 'brickBlock'
 
 /** A Brick block as a whole number from 1 to MAX_BRICK_BLOCK. */
 export function clampBrickBlock(value: number): number {
-  return Math.min(MAX_BRICK_BLOCK, Math.max(1, Math.round(value) || 1))
+  return settingValue(BRICK_BLOCK_SETTING, value)
 }

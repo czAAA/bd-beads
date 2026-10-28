@@ -2,7 +2,7 @@ import { forEachBead, type BeadMap, type Rect } from './canvas'
 import { withEachBead } from './folding'
 import { canvasWeave, clampBrickBlock, frameWeave, weaveOf } from './layerWeave'
 import { touch, type Project } from './project'
-import { clampNetSize, describeWeave, type Technique, type Weave } from './weave'
+import { clampNetSize, describeWeave, withTechniqueSettings, type Technique, type Weave } from './weave'
 
 // Switching a layer's Weave (ADR 0038): its Technique, Brick block and Net size, and the beads a switch drops.
 
@@ -10,11 +10,13 @@ import { clampNetSize, describeWeave, type Technique, type Weave } from './weave
  * layer's own if it has one, or the default, and only a Technique with a Net size keeps one. A Brick block given (ticket 568)
  * replaces the layer's. */
 export function switchedWeave(current: Weave, technique: Technique, netSize?: number, brickBlock?: number): Weave {
-  return weaveOf({
-    technique,
-    brickBlock: brickBlock === undefined ? current.brickBlock : clampBrickBlock(brickBlock),
-    netSize: describeWeave({ technique }).hasNetSize ? clampNetSize(netSize ?? current.netSize) : undefined,
-  })
+  return withTechniqueSettings(
+    weaveOf({
+      technique,
+      brickBlock: brickBlock === undefined ? current.brickBlock : clampBrickBlock(brickBlock),
+      netSize: describeWeave({ technique }).hasNetSize ? clampNetSize(netSize ?? current.netSize) : undefined,
+    }),
+  )
 }
 
 /** The beads of a layer that keep a place in `weave` (a Frame's counted from its own corner, `shape`), and how many are

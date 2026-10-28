@@ -310,6 +310,17 @@ describe('renderOverlay', () => {
       expect(cutOuts).toEqual([[60.5, 30.5], [70.5, 15.5]])
     })
 
+    it('leaves out the next-row beads of a net where its description puts them, a strand step aside (ticket 0623)', () => {
+      const project = projectOf('netting', 9, 5, noProgress)
+      const { context, named } = recordingContext()
+
+      // A 3-bead net's tip at row 0, column 2 (30px across) touches row 1's beads at columns 1 and 3, 15px apart a step.
+      renderOverlay(context, { project, region: whole(project), zoom: 1, preview: { cells: [{ row: 0, column: 2 }], color: '#e63746' } })
+
+      const cutOuts = named('roundRect').map((call) => (call.args as number[]).slice(0, 2))
+      expect(cutOuts).toEqual([[15.5, 15.5], [45.5, 15.5], [30.5, 0.5]])
+    })
+
     it('leaves a bead on the last peyote row whole, and a loom bead too', () => {
       const peyote = projectOf('peyote', 4, 3, noProgress)
       const last = recordingContext()
