@@ -20,8 +20,8 @@ export interface EncodedBeads {
  * from the Frame's first row and column; its Folded beads beside them, where it has any (file version 10, ticket 0638). */
 type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded'> & FlatWeave & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
-/** A Project as file version 4 and the library store it: the Canvas's beads, and the Frame with its own. Each layer's
- * settings are its map as the app holds it (file version 11, ticket 0636); an earlier version's Brick block is flat. */
+/** A Project as a file (version 4 on) and the library store it: the Canvas's beads, and the Frame with its own. Each
+ * layer's settings are its map as the app holds it (file version 11, ticket 0636); before, its Brick block was flat. */
 export type EncodedProject = Omit<Project, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
 
 /** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
@@ -161,7 +161,7 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
 
 /** A layer as a file stores its Weave (ticket 0636): its settings map as the app holds it, a setting at its default left
  * out and the map with it when nothing is left. */
-function savedWeave<T extends Weave>({ techniqueSettings, ...layer }: T): Omit<T, 'techniqueSettings'> & Partial<Weave> {
+function savedWeave<T extends Weave>({ techniqueSettings, ...layer }: T): Omit<T, 'techniqueSettings'> & Pick<Weave, 'techniqueSettings'> {
   const changed = settingsOffDefault(techniqueSettings)
   return { ...layer, ...(Object.keys(changed).length > 0 ? { techniqueSettings: changed } : {}) }
 }

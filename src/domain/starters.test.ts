@@ -82,8 +82,7 @@ describe('the Starter manifests (ticket 0633)', () => {
   })
 
   it('keeps each design as its Frame\'s size and beads alone, no Project around them (ticket 0636)', () => {
-    const designs = import.meta.glob<object>(['../data/starters/*.json', '!**/*.starter.json', '!**/categories.json'], { eager: true, import: 'default' })
-    for (const [path, design] of Object.entries(designs)) expect(Object.keys(design).sort(), path).toEqual(['columns', 'encodedBeads', 'rows'])
+    for (const starter of allStarters) expect(Object.keys(starter.file).sort(), starter.id).toEqual(['columns', 'encodedBeads', 'rows'])
   })
 
   for (const starter of allStarters) {
