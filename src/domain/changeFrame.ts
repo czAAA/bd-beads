@@ -5,6 +5,7 @@ import {
   beadsWithout,
   forEachBead,
   frameContains,
+  hasBeads,
   shiftedBeads,
   withColors,
   type BeadChange,
@@ -13,10 +14,11 @@ import {
   type FrameSheet,
   sameFrame,
 } from './canvas'
-import { movedFrame, snapColumn, snappedMove, snapRow, withFrame } from './frame'
+import { movedFrame, snapColumn, snappedMove, snapRow, withFrame, withFrameGiving } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
+import { foldsOver, withEachBead } from './folding'
 import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
 import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
@@ -34,7 +36,8 @@ import type { AreaLine } from './removeLine'
 // passes), Row progress following the Frame.
 export type FrameChange =
   /** Resize the Frame (the handles, the steppers, the typed size): its beads keep their place on the Canvas, those the
-   * Frame no longer holds are dropped onto the Canvas where they stand (ticket 513), over what is there. */
+   * Frame no longer holds are dropped onto the Canvas where they stand (ticket 513), over what is there, or folded where
+   * the two are woven unlike (ticket 0638); growing shows Folded beads again. */
   | { set: Rect }
   /** Frame from Selection and Fit to drawing (ADR 0066): the Frame becomes this rectangle and the Canvas's beads inside
    * it move into it. A Frame already there lays its beads back on the Canvas first. */
@@ -146,8 +149,10 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     const frame = project.frame!
     const { axis } = change.removeLine
     const smaller = { ...frame, rows: axis === 'row' ? frame.rows - 1 : frame.rows, columns: axis === 'column' ? frame.columns - 1 : frame.columns }
-    const beads = beadsWithoutLine(frame.beads, { row: 0, column: 0, rows: frame.rows, columns: frame.columns }, change.removeLine)
-    return { kind: 'changed', project: withFrame({ ...project, frame: { ...frame, beads } }, smaller) }
+    // The line runs on through the Folded beads beyond the Frame's edge, so they shift with the rest (ticket 0638).
+    const { folded: _folded, ...kept } = frame
+    const carried = withEachBead(frame, (position) => shiftedAcrossLine(change.removeLine, position))
+    return { kind: 'changed', project: withFrame({ ...project, frame: { ...kept, ...carried } }, smaller) }
   }
 
   if ('move' in change) {
@@ -296,43 +301,36 @@ export function customFrameLoss(project: Project, settings: FrameSettings): numb
   return beadCount(frame.beads) - beadCount(beadsInLayout(frame.beads, layout))
 }
 
-/** The Project with its Frame set to `rectangle` (ticket 513): the strip the Frame gives up is laid on the Canvas as
- * Remove Frame lays the whole Frame (ticket 497), the Canvas under it cleared first, empty positions included.
- * Growing leaves the Canvas alone. */
+/** The Project with its Frame set to `rectangle` (ticket 513): woven like the Canvas, the strip the Frame gives up is
+ * laid on the Canvas as Remove Frame lays the whole Frame (ticket 497), the Canvas under it cleared first, empty
+ * positions included; woven unlike it, the Frame folds what it gives up (ticket 0638). Growing leaves the Canvas alone. */
 function resizedFrame(project: Project, rectangle: Rect | undefined): Project {
-  const resized = withFrame(project, rectangle)
+  const { project: resized, given } = withFrameGiving(project, rectangle)
   const before = project.frame
   const after = resized.frame
-  if (!before || !after) {
+  if (!before || !after || foldsOver(canvasWeave(project), before)) {
     return resized
   }
-  const givenBead = (position: GridPosition) => frameContains(before, position) && !frameContains(after, position)
   const was = footprintOf(project)!
   const now = footprintOf(resized)!
   const givenCanvas = (position: GridPosition) => frameContains(was, position) && !frameContains(now, position)
-  const dropped: BeadMap = {}
-  forEachBead(shiftedBeads(before.beads, before.row, before.column), (row, column, color) => {
-    if (givenBead({ row, column })) {
-      dropped[row] ??= {}
-      dropped[row]![column] = color
-    }
-  })
   const cleared: BeadChange[] = []
   forEachBead(project.beads, (row, column) => {
     if (givenCanvas({ row, column })) {
       cleared.push({ row, column, color: null })
     }
   })
-  if (!cleared.length && !Object.keys(dropped).length) {
+  if (!cleared.length && !hasBeads(given)) {
     return resized
   }
-  return carryNames(project, { ...resized, beads: beadsOver(withColors(project.beads, cleared), dropped) })
+  return carryNames(project, { ...resized, beads: beadsOver(withColors(project.beads, cleared), given) })
 }
 
 /** The Project with a Frame at `rectangle` holding the Canvas's beads inside it (ADR 0066). A Frame there before lays
  * its beads on the Canvas where they stand, over what they covered. A named Piece the rectangle takes whole gives the
  * Frame its name. */
-function madeFrame(project: Project, rectangle: Rect): Project {
+function madeFrame(original: Project, rectangle: Rect): Project {
+  const project = withFoldedLaid(original)
   const previous = project.frame
   // What shows is lifted. Canvas beads hidden under a Frame there before stay on the Canvas; its own beads outside the
   // new rectangle go back on it.
@@ -349,6 +347,15 @@ function madeFrame(project: Project, rectangle: Rect): Project {
   const frame = { ...framed.frame!, beads: shiftedBeads(lifted, -rectangle.row, -rectangle.column), ...(named ? { name: named } : {}) }
   const carried = carryNames(project, { ...framed, frame })
   return first && previous?.name ? { ...carried, pieceNames: [...(carried.pieceNames ?? []), { name: previous.name, row: first.row + previous.row, column: first.column + previous.column }] } : carried
+}
+
+/** The Project with its Frame's Folded beads laid on the Canvas where they stand, over what is there (ticket 0638), as
+ * a Frame made elsewhere lays the beads it shows. */
+function withFoldedLaid(project: Project): Project {
+  const frame = project.frame
+  if (!frame?.folded) return project
+  const { folded, ...shown } = frame
+  return { ...project, beads: beadsOver(project.beads, shiftedBeads(folded, frame.row, frame.column)), frame: shown }
 }
 
 /** The Project with a new empty Frame at `place.frame`, woven as `place.weave`, instead of the one it had (ticket 495):
@@ -369,7 +376,9 @@ function removedFrame(project: Project): Project {
     return withFrame(project, undefined)
   }
   const dropped = shiftedBeads(frame.beads, frame.row, frame.column)
-  const beads = beadsOver(beadsWithout(project.beads, footprintOf(project)!), dropped)
+  // Its Folded beads land where they stand too, over the Canvas, under the beads it shows (ticket 0638).
+  const unfolded = beadsOver(beadsWithout(project.beads, footprintOf(project)!), shiftedBeads(frame.folded ?? {}, frame.row, frame.column))
+  const beads = beadsOver(unfolded, dropped)
   const canvas = carryNames(project, { ...withFrame(project, undefined), beads })
   const name = frame.name
   const landed = name ? largestPieceBead(beads, canvas, dropped) : undefined
@@ -424,6 +433,15 @@ export function shiftedByLine(area: Rect, line: AreaLine, position: GridPosition
     }
   }
   return position
+}
+
+/** Where a position of a sheet goes when one of its whole lines is taken out, the line running on beyond its edge: past
+ * the line it shifts up or left, on it it goes (undefined). */
+function shiftedAcrossLine(line: AreaLine, position: GridPosition): GridPosition | undefined {
+  const along = line.axis === 'row' ? position.row : position.column
+  if (along === line.index) return undefined
+  if (along < line.index) return position
+  return line.axis === 'row' ? { row: position.row - 1, column: position.column } : { row: position.row, column: position.column - 1 }
 }
 
 /** The Project's beads with one line of `area` taken out and the area's later beads shifted up or left to close the

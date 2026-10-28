@@ -28,7 +28,8 @@ export function sameWeave(a: Weave, b: Weave): boolean {
 }
 
 /** A distance counted in the Frame's own rows and columns, as Canvas positions (ticket 492): the nearest whole ones,
- * exactly the same where Frame and Canvas are woven alike. */
+ * exactly the same where Frame and Canvas are woven alike. A half rounds away from zero both ways, so an edge moved out
+ * and back puts the Frame where it was (ticket 0638). */
 export function canvasDistance(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, frame: Weave, rows: number, columns: number): GridPosition {
   const canvas = canvasWeave(project)
   if (sameWeave(canvas, frame)) {
@@ -36,7 +37,8 @@ export function canvasDistance(project: Pick<Project, 'technique' | 'brickBlock'
   }
   const own = positionStep(frame)
   const target = positionStep(canvas)
-  return { row: Math.round((rows * own.down) / target.down), column: Math.round((columns * own.across) / target.across) }
+  const nearest = (distance: number) => Math.sign(distance) * Math.round(Math.abs(distance)) || 0
+  return { row: nearest((rows * own.down) / target.down), column: nearest((columns * own.across) / target.across) }
 }
 
 /** A Brick block as a whole number from 1 to MAX_BRICK_BLOCK. */

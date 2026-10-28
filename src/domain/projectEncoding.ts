@@ -1,4 +1,4 @@
-import { forEachBead, type BeadMap, type FrameSheet } from './canvas'
+import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
 import type { Grid, Project } from './project'
 import type { GridProject } from './storedProject'
 import type { VersionThreeProject } from './versionThree'
@@ -15,8 +15,8 @@ interface EncodedBeads {
 }
 
 /** The Frame as stored (ADR 0066): its place and size, its name, and its own beads in the same compact form, counted
- * from the Frame's first row and column. */
-type EncodedFrame = Omit<FrameSheet, 'beads'> & { encodedBeads: EncodedBeads }
+ * from the Frame's first row and column; its Folded beads beside them, where it has any (file version 10, ticket 0638). */
+type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
 /** A Project as file and library version 4 store it: the Canvas's beads, and the Frame with its own. */
 export type EncodedProject = Omit<Project, 'beads' | 'frame'> & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
@@ -155,12 +155,13 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
   )
 }
 
-function encodeFrame({ beads, ...place }: FrameSheet): EncodedFrame {
-  return { ...place, encodedBeads: encodeBeads(beads) }
+function encodeFrame({ beads, folded, ...place }: FrameSheet): EncodedFrame {
+  return { ...place, encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
 }
 
-function decodeFrame({ encodedBeads, ...place }: EncodedFrame): FrameSheet {
-  return { ...place, beads: decodeBeads(encodedBeads) }
+function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): FrameSheet {
+  const folded = encodedFolded && decodeBeads(encodedFolded)
+  return { ...place, beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
 export function encodeProject(project: Project): EncodedProject {

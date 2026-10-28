@@ -132,4 +132,11 @@ describe('deleteAll', () => {
 
     expect(deleteAll(fresh)).toBe(fresh)
   })
+
+  it('drops the Frame\'s Folded beads too, even when they are all it holds (ticket 0638)', () => {
+    const fresh = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 4, unit: 'beads' } })
+    const folded = { ...fresh, frame: { ...fresh.frame!, folded: { 0: { 6: '#e63746' } } } }
+
+    expect(deleteAll(folded).frame).toEqual(fresh.frame)
+  })
 })

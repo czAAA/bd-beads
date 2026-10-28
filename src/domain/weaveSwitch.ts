@@ -1,4 +1,5 @@
 import { forEachBead, type BeadMap, type Rect } from './canvas'
+import { withEachBead } from './folding'
 import { canvasWeave, clampBrickBlock, frameWeave, weaveOf } from './layerWeave'
 import { touch, type Project } from './project'
 import { clampNetSize, describeWeave, type Technique, type Weave } from './weave'
@@ -55,15 +56,18 @@ export function withBrickBlock(project: Project, brickBlock: number): Project {
 }
 
 /** The Frame woven in another Technique (ticket 492, ADR 0038): its beads keep their row and column where the Technique
- * has a position there and the rest are dropped. Its local row 0 is always an unshifted one, so nothing else moves. A
- * Project with no Frame is unchanged. */
+ * has a position there and the rest are dropped, its Folded beads too, which stay folded (ticket 0638). Its local row 0
+ * is always an unshifted one, so nothing else moves. A Project with no Frame is unchanged. */
 export function withFrameTechnique(project: Project, technique: Technique, netSize?: number, brickBlock?: number): Project {
   if (!project.frame) {
     return project
   }
   const weave = switchedWeave(frameWeave(project), technique, netSize, brickBlock)
-  const { netSize: _netSize, brickBlock: _brickBlock, ...frame } = project.frame
-  return touch(project, { frame: { ...frame, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}), technique: weave.technique, beads: beadsInWeave(project.frame.beads, weave, project.frame).kept } })
+  const { netSize: _netSize, brickBlock: _brickBlock, folded: _folded, ...frame } = project.frame
+  const { hasPosition } = describeWeave(weave)
+  const own = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
+  const rewoven = withEachBead(project.frame, (position) => (hasPosition(position, own) ? position : undefined))
+  return touch(project, { frame: { ...frame, ...(weave.netSize ? { netSize: weave.netSize } : {}), ...(weave.brickBlock ? { brickBlock: weave.brickBlock } : {}), technique: weave.technique, ...rewoven } })
 }
 
 /** The Frame with its Brick block changed (ticket 492). */

@@ -107,11 +107,11 @@ describe('single-Project roundtrip', () => {
     expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 9 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
+  it('writes version 10 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(9)
+    expect(file.version).toBe(10)
     expect(file.patterns).toBeUndefined()
     expect(file.projects[0].beads).toBeUndefined()
     expect(file.projects[0].encodedBeads).toBeDefined()
@@ -129,8 +129,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 10
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 10')
+    file.version = 11
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 11')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {

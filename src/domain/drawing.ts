@@ -1,4 +1,4 @@
-import { frameContains, withColors, type BeadMap } from './canvas'
+import { frameContains, withColors, type BeadMap, type FrameSheet } from './canvas'
 import { frameLayoutOf } from './frameKind'
 import { layoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
@@ -33,7 +33,7 @@ export function paintCells(project: Project, positions: GridPosition[], color: s
  * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
  * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
-  if (!hasProjectBeads(project) && isInitialRowProgress(project.rowProgress)) {
+  if (!hasProjectBeads(project) && !project.frame?.folded && isInitialRowProgress(project.rowProgress)) {
     return project
   }
 
@@ -41,7 +41,12 @@ export function deleteAll(project: Project): Project {
   const { pieceNames: _names, ...rest } = project
   return touch(rest, {
     beads: {},
-    ...(project.frame ? { frame: { ...project.frame, beads: {} } } : {}),
+    ...(project.frame ? { frame: emptied(project.frame) } : {}),
     rowProgress: { ...INITIAL_ROW_PROGRESS },
   })
+}
+
+/** A Frame with no bead left, its Folded beads gone too (ticket 0638). */
+function emptied({ folded: _folded, ...frame }: FrameSheet): FrameSheet {
+  return { ...frame, beads: {} }
 }

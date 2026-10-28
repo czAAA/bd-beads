@@ -116,6 +116,20 @@ describe('useFrameFlow', () => {
     expect(deps.harness.project).toMatchObject({ beads: {}, frame: start.frame })
   })
 
+  it('folds what a shrinking handle drag gives up on a Frame woven unlike the Canvas, and one Undo unfolds it (ticket 0638)', () => {
+    const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 2, column: 3, color: '#2a9d8f' }])
+    const start = { ...sized, beads: { 1: { 3: '#999999' } }, frame: { ...sized.frame!, technique: 'peyote' as const, beads: own } }
+    const { deps, press, drag, release } = setupEditing(start)
+    press({ kind: 'handle', edges: ['right'] }, { row: 1, column: 3 })
+    drag({ row: 1, column: 2 })
+    release()
+    expect(deps.replaceProject).toHaveBeenCalledTimes(1)
+    expect(deps.harness.project.frame!.folded).toBeDefined()
+    deps.harness.history.onUndo()
+    expect(deps.harness.project).toMatchObject({ beads: start.beads, frame: start.frame })
+    expect(deps.harness.project.frame!.folded).toBeUndefined()
+  })
+
   it('changes no bead and is no step when the Frame did not change', () => {
     const { deps, press, drag, release } = setup()
     press({ kind: 'move' }, { row: 1, column: 1 })
