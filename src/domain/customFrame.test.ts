@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { computeColorQuantities } from './beadQuantities'
 import { beadCount, colorAt } from './canvas'
-import { changeFrame, customFrameLoss, type FrameChange } from './changeFrame'
+import { changeFrame, type FrameChange } from './changeFrame'
 import { frameLayoutOf, type CustomFrameKindId, type FrameSettings } from './frameKind'
 import { onLayer } from './layers'
 import { projectPalette } from './palette'
@@ -11,6 +11,7 @@ import { createProject } from './createProject'
 import { fillArea } from './fill'
 import { paintCells } from './drawing'
 import { rowProgressOn } from './rowProgress'
+import { rotateFrame } from './rotate'
 import type { Project } from './project'
 
 const RED = '#ff0000'
@@ -90,12 +91,23 @@ describe('changing a Custom frame\'s Rounds', () => {
     expect(Math.abs(centre(grown.frame) - centre(project.frame))).toBeLessThanOrEqual(1)
   })
 
-  it('shrinks by dropping the outer rounds, and says how many painted beads that would drop', () => {
+  it('shrinks by folding the outer rounds\' painted beads, and shows them again where they were when grown back (ticket 0640)', () => {
     const project = paintFrame(triangle(4), [{ row: 3, column: 0 }, { row: 3, column: 1 }, { row: 0, column: 0 }], RED)
-    expect(customFrameLoss(project, { rounds: 3 })).toBe(2)
-    expect(customFrameLoss(project, { rounds: 5 })).toBe(0)
-    const shrunk = changed(project, { settings: { rounds: 3 } })
-    expect(beadCount(shrunk.frame!.beads)).toBe(1)
+    const shrunk = changed(project, { settings: { rounds: 2 } })
+    expect(shrunk.frame!.beads).toEqual({ 0: { 0: RED } })
+    expect(shrunk.frame!.folded).toEqual({ 3: { 0: RED, 1: RED } })
+    expect(computeColorQuantities(shrunk, projectPalette(shrunk))).toMatchObject([{ hex: RED, count: 1 }])
+    const grown = changed(changed(shrunk, { settings: { rounds: 3 } }), { settings: { rounds: 4 } })
+    expect(grown.frame!.beads).toEqual(project.frame!.beads)
+    expect(grown.frame!.folded).toBeUndefined()
+  })
+
+  it('turns its Folded beads with it, and takes them with it on Remove Frame (ticket 0640)', () => {
+    const shrunk = changed(paintFrame(triangle(4), [{ row: 3, column: 0 }], RED), { settings: { rounds: 3 } })
+    const turned = rotateFrame(shrunk)!
+    expect(turned.frame!.folded).toEqual(shrunk.frame!.folded)
+    expect(changed(turned, { settings: { rounds: 4 } }).frame!.beads).toEqual({ 3: { 0: RED } })
+    expect(changed(shrunk, { remove: true }).beads).toEqual(shrunk.beads)
   })
 
   it('is no change at the Rounds it has, and keeps within the kind\'s range', () => {
@@ -167,13 +179,17 @@ describe.each([
     expect(beadCount(filled.frame!.beads)).toBe(layout().positions.length * filledShare)
   })
 
-  it('grows by empty rounds or rows outside, keeping every bead, and asks before shrinking drops painted ones', () => {
+  it('grows by empty rounds or rows outside, keeping every bead, and folds what a shrink leaves out until it grows back (ticket 0640)', () => {
     const project = paintFrame(placed(), [name(inner()), name(outer())], RED)
     const grown = changed(project, { settings: { [setting]: size + 3 } })
     expect(grown.frame!.settings).toEqual({ [setting]: size + 3 })
     expect(grown.frame!.beads).toEqual(project.frame!.beads)
-    expect(customFrameLoss(project, { [setting]: size - 1 })).toBeGreaterThanOrEqual(1)
-    expect(beadCount(changed(project, { settings: { [setting]: size - 1 } }).frame!.beads)).toBeLessThan(2)
+    const shrunk = changed(project, { settings: { [setting]: size - 1 } })
+    expect(shrunk.frame!.beads).toEqual({ [inner().row]: { [inner().column]: RED } })
+    expect(shrunk.frame!.folded).toEqual({ [outer().row]: { [outer().column]: RED } })
+    const back = changed(shrunk, { settings: { [setting]: size } })
+    expect(back.frame!.beads).toEqual(project.frame!.beads)
+    expect(back.frame!.folded).toBeUndefined()
   })
 
   it('moves with its beads, and takes them with it on Remove Frame', () => {
@@ -220,13 +236,19 @@ describe('a Fringe earring Custom frame (ticket 0597)', () => {
     expect(beadCount(painted.frame!.beads)).toBe(2)
   })
 
-  it('changes one setting at a time, keeping every bead still in it, and asks before a V drops the outer strands\' ends', () => {
+  it('changes one setting at a time, keeping every bead still in it, and folds the strands\' ends a V or a shorter fringe leaves out until they come back (ticket 0640)', () => {
     const project = paintFrame(earring(), [base, strandEnd], RED)
     const longer = changed(project, { settings: { fringeLength: 12 } })
     expect(longer.frame!.settings).toEqual({ ...settings, fringeLength: 12 })
     expect(longer.frame!.beads).toEqual(project.frame!.beads)
-    expect(customFrameLoss(project, { fringeStyle: 'v' })).toBe(1)
-    expect(colorAt(changed(project, { settings: { fringeStyle: 'v' } }).frame!.beads, 0, 0)).toBe(RED)
+    const shorter = changed(project, { settings: { fringeLength: 8 } })
+    expect(shorter.frame!.beads).toEqual({ [base.row]: { [base.column]: RED } })
+    expect(shorter.frame!.folded).toEqual({ [strandEnd.row]: { [strandEnd.column]: RED } })
+    expect(changed(shorter, { settings: { fringeLength: 9 } }).frame!.beads).toEqual(project.frame!.beads)
+    const v = changed(project, { settings: { fringeStyle: 'v' } })
+    expect(colorAt(v.frame!.beads, 0, 0)).toBe(RED)
+    expect(colorAt(v.frame!.folded!, strandEnd.row, strandEnd.column)).toBe(RED)
+    expect(changed(v, { settings: { fringeStyle: 'straight' } }).frame!.beads).toEqual(project.frame!.beads)
     expect(changeFrame(project, { settings: { fringeStyle: 'straight' } }).kind).toBe('unchanged')
   })
 

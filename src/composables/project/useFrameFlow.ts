@@ -14,7 +14,7 @@ import {
 } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
-import { changeCanvasWeave, changeFrame, customFrameLoss, frameChangeRefusal } from '../../domain/changeFrame'
+import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
@@ -28,7 +28,7 @@ import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
-import type { EditFn } from './useEdit'
+import type { Edit, EditFn } from './useEdit'
 import type { OpenPanel } from '../shell/openPanel'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
@@ -36,6 +36,10 @@ import { useDialogs, type Dialogs } from '../shell/useDialogs'
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
   edit: EditFn
+  /** Edit's held Frame change and its settle (ticket 0640): a Custom frame's steppers show each press at once and
+   * commit once, when the Frame panel closes. */
+  hold: Edit['hold']
+  settle: Edit['settle']
   announce: (message: string) => void
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   messages: () => Translations
@@ -119,6 +123,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     { flush: 'sync' },
   )
   watch([() => deps.currentProject()?.id, () => !!deps.currentProject()?.frame, locked], cancel, { flush: 'sync' })
+  // The steppers' presses are one Undo step, taken as the panel closes (ticket 0640).
+  watch(barOpen, (open) => open || deps.settle(), { flush: 'sync' })
 
   /** The edit pencil: shows or hides the Frame's handles; nothing happens without a Frame. */
   function toggleHandles(): void {
@@ -439,47 +445,24 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     })
   }
 
-  /** The settings change waiting on its question: the one setting asked for and how many painted beads it would drop. */
-  const sizeAsk = dialogs.question<{ change: FrameSettings; lost: number }>('frame-size')
-
-  /** One of a Custom frame's settings from the Frame panel (tickets 0592, 0593, 0597): its Rounds, Part size or Rows, a
-   * Fringe earring's Top width, Top rows, Fringe length or Fringe style. One Undo step, asking first when painted beads
-   * would go; held still once a pass is done. */
+  /** A Custom frame's setting from the Frame panel (tickets 0592, 0593, 0597, 0640): a stepper's press shows at once
+   * and is held, all of them one Undo step once the panel closes; the Fringe style is a step of its own. Nothing is
+   * asked, as what a smaller setting leaves out folds until it grows again (ADR 0066). Held still once a pass is done. */
   function setSettings(change: FrameSettings): void {
     const project = deps.currentProject()
     if (!project?.frame || !settingsOf(project.frame) || locked.value) return
-    const lost = customFrameLoss(project, change)
-    if (lost > 0) {
-      sizeAsk.value = { change, lost }
-      return
-    }
-    applySettings(change)
-  }
-
-  function applySettings(change: FrameSettings): void {
-    const outcome = deps.edit('frame', (project) => changeFrame(project, { settings: change }))
+    const name = changedSetting(change)
+    const command = (current: Project) => changeFrame(current, { settings: change })
+    const outcome = name === 'fringeStyle' ? deps.edit('frame', command) : deps.hold(command)
     const settled = deps.currentProject()?.frame
     if (outcome.kind !== 'applied' || !settled) return
     const t = deps.messages()
-    const name = changedSetting(change)
     if (name === 'fringeStyle') {
       deps.announce(fillBlanks(t.frame.fringeStyle.announce, { style: t.starters.picks.fringeStyle.options[change.fringeStyle!] }))
       return
     }
     const value = settingValuesOf(settled).find((each) => each.name === name)?.value
     deps.announce(fillBlanks(t.frame.sizeSettings[name].announce, { count: String(value) }))
-  }
-
-  /** The size question answered No: nothing changes. */
-  function cancelSize(): void {
-    sizeAsk.value = undefined
-  }
-
-  /** The size question answered Yes: the outer rounds, last rows or strands' ends go with their beads, as one Undo step. */
-  function confirmSize(): void {
-    const ask = sizeAsk.value
-    sizeAsk.value = undefined
-    if (ask) applySettings(ask.change)
   }
 
   /** The Replace Frame question answered No: nothing changes. */
@@ -557,9 +540,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     confirmRemove,
     placeFromStarter,
     setSettings,
-    sizeAsk,
-    cancelSize,
-    confirmSize,
     replaceConfirmOpen,
     cancelReplace,
     confirmReplace,

@@ -19,9 +19,6 @@ const {
   onCancelResetProgress,
   onConfirmResetProgress,
   removeFrameTakesBeads,
-  sizeConfirm,
-  onCancelSize,
-  onConfirmSize,
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
   switchQuestion,
@@ -103,17 +100,6 @@ const {
     :cancel-label="t.frame.removeConfirmCancel"
     @confirm="onConfirmRemoveFrame"
     @cancel="onCancelRemoveFrame"
-  />
-
-  <ConfirmModal
-    v-if="open === 'frame-size' && sizeConfirm"
-    data-testid="size-modal"
-    :title="sizeConfirm.title"
-    :message="sizeConfirm.message"
-    :confirm-label="sizeConfirm.button"
-    :cancel-label="t.frame.removeConfirmCancel"
-    @confirm="onConfirmSize"
-    @cancel="onCancelSize"
   />
 
   <SwitchTechniqueModal
