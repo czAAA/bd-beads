@@ -1,5 +1,5 @@
 import { computed, ref } from 'vue'
-import { layerAt, type Layer } from '../../domain/layers'
+import { layerAt, layerSheet, type Layer } from '../../domain/layers'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import { beadColorAt } from '../../domain/layerBeads'
 import type { Project } from '../../domain/project'
@@ -23,7 +23,7 @@ import {
   type Selection,
 } from '../../domain/selection'
 import { footprintOf } from '../../domain/footprint'
-import { frameAllows, frameLayoutOf } from '../../domain/frameKind'
+import { frameAllows } from '../../domain/frameKind'
 import { clampOutOfMargin, inMargin, marginBoxFor, selectionAllowed } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
@@ -158,7 +158,7 @@ export function useSelectionGesture(
     }
     const at = { row, column, ...(named ? { layer: named } : {}) }
     // A Custom frame's beads are named by round and place, not Pieces of a Grid (ticket 0594): the Piece tool refuses it.
-    const custom = layerAt(project, at) === 'frame' && frameLayoutOf(project.frame!) !== undefined
+    const custom = !layerSheet(project, layerAt(project, at)).geometry.grid
     const picked = custom ? undefined : pieceSelectionOnLayer(project, at)
     if (custom || refusesSelection(project, at) || (!picked && beadColorAt(project, row, column, named))) {
       refusals.value += 1

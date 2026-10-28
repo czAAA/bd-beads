@@ -11,6 +11,7 @@ import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
 import SwitchTechniqueModal from './project/SwitchTechniqueModal.vue'
 import ConvertImageSizeDialog from './import/ConvertImageSizeDialog.vue'
 import { BEAD_CATALOG, findBead, offeredBeads } from '../domain/beads'
+import { withColors } from '../domain/canvas'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { changeFrame } from '../domain/changeFrame'
 import { createProject } from '../domain/createProject'
@@ -21,7 +22,7 @@ const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', na
 const framed = { ...project, frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom' as const, beads: {} } }
 /** A named Frame with seven colors painted, so Beads needed lists more rows than it shows at first. */
 const colors = createPalette(defaultPaletteIds()).colors.slice(0, 7).map((color) => color.hex)
-const painted = { ...framed, frame: { ...framed.frame, name: 'Moth wing, the long left one', beads: { 0: Object.fromEntries(colors.map((hex, column) => [column, hex])) } } }
+const painted = { ...framed, frame: { ...framed.frame, name: 'Moth wing, the long left one', beads: withColors({}, colors.map((hex, at) => ({ row: Math.floor(at / 5), column: at % 5, color: hex }))) } }
 // A Fringe earring's four settings in place of Width and Height (ticket 0597).
 const earringPlaced = changeFrame(project, { custom: { kind: 'fringeEarring', size: 7, centre: { row: 6, column: 6 } } })
 const earring = earringPlaced.kind === 'changed' ? earringPlaced.project : project
