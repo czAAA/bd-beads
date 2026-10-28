@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject, moveToRow, resetRowProgress, toggleRowDirection, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
@@ -19,6 +19,14 @@ function setup(project: Project | null = base) {
 const replaced = (deps: { replaceProject: ReturnType<typeof vi.fn> }) => deps.replaceProject.mock.calls[0]![0] as Project
 
 describe('useRowOps', () => {
+  // The flow and the expected Project each stamp `updatedAt`: a clock that ticks between them fails the comparison.
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('commits the turned Row direction', () => {
     const { deps, onToggleRowDirection } = setup(tracking)
     onToggleRowDirection()
