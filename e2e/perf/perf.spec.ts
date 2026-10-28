@@ -1,5 +1,5 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
-import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, stateConvertSize } from '../support/app'
+import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, convertPicture } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
@@ -247,12 +247,7 @@ for (const slowdown of SLOWDOWNS) {
         await openApp(page, [])
         await openNewProjectForm(page)
         await chooseNewProjectTechnique(page, technique)
-        await page.getByTestId('convert-image-input').setInputFiles({
-          name: 'fixture.png',
-          mimeType: 'image/png',
-          buffer: fixturePicture(480, 320),
-        })
-        await stateConvertSize(page, size.columns, size.rows)
+        await convertPicture(page, fixturePicture(480, 320), size)
         const preview = page.getByTestId('convert-image-box')
         try {
           await preview.waitFor({ timeout: 10_000 })
@@ -260,8 +255,10 @@ for (const slowdown of SLOWDOWNS) {
           results.push({ slowdown, size: name, what: 'framing drag', ms: NaN, note: 'no framing step appeared' })
           return
         }
-        await page.getByTestId('zoom-in').click()
-        await page.getByTestId('zoom-in').click()
+        // The picture at 150%, so there is picture to drag under the Frame (By size).
+        await page.getByTestId('convert-picture-zoom').focus()
+        await page.keyboard.press('ArrowRight')
+        await page.keyboard.press('ArrowRight')
         const cdp = await throttle(page, slowdown)
         // The part of the preview that is on screen: a tall frame reaches far below the fold.
         await preview.scrollIntoViewIfNeeded()
