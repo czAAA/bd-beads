@@ -160,14 +160,16 @@ describe('App Convert image rejections (ticket 58)', () => {
 })
 
 describe('App empty canvas (ticket 158)', () => {
-  it('keeps the canvas box with an empty board, what is missing and what to do, and no Progress bar', () => {
+  it('keeps the canvas box with an empty board, what is missing and what to do, and no Progress bar or Tool pill', () => {
     const wrapper = mount(App)
 
     const empty = wrapper.find('[data-testid="app-canvas-placeholder"]')
     expect(empty.find('.empty-canvas__board').exists()).toBe(true)
     expect(empty.text()).toContain(ru.shell.canvasPlaceholder)
     expect(empty.text()).toContain(ru.shell.canvasPlaceholderHint)
-    expect(wrapper.find('[data-testid="app-canvas"] [data-testid="canvas-strip"]').exists()).toBe(true)
+    // The strip heads the canvas box, above the board (ticket 143).
+    expect(wrapper.get('[data-testid="app-canvas"]').element.firstElementChild?.getAttribute('data-testid')).toBe('canvas-strip')
     expect(wrapper.find('[data-testid="progress-bar"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="tool-pill"]').exists()).toBe(false)
   })
 })

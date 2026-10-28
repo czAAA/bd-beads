@@ -40,6 +40,8 @@ describe('MenuPanel (ticket 443)', () => {
     const rows = projects.findAll('.panel-item').map((row) => row.text())
     expect(rows).toEqual([en.projects.newProjectButton, `${en.projects.heading}1`])
     expect(projects.findAll('.panel-item__mark--sub')).toHaveLength(2)
+    // Its own library icon (ticket 188), not the Save Project icon it used to reuse.
+    expect(wrapper.get('[data-testid="menu-saved-projects"] svg').attributes('data-icon')).toBe('library')
   })
 
   it('shows the Input row only once a pen has been seen', () => {
@@ -60,6 +62,7 @@ describe('MenuPanel (ticket 443)', () => {
 
   it('has Source code opening a new tab, and the version as text', () => {
     const wrapper = mountIn()
+    expect(wrapper.get('[data-testid="menu-item-source"]').attributes('href')).toContain('github.com')
     expect(wrapper.get('[data-testid="menu-item-source"]').attributes('target')).toBe('_blank')
     expect(wrapper.get('[data-testid="menu-version"]').text()).toContain(en.panels.menu.version)
   })
@@ -120,7 +123,10 @@ describe('MenuPanel on the Overview (ticket 540)', () => {
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
   })
 
-  it('does not mark Overview as current in the editor', () => {
-    expect(mountIn().get('[data-testid="menu-item-overview"]').attributes('aria-current')).toBeUndefined()
+  it('links to the Overview without marking it current in the editor, and has the shortcuts there', () => {
+    const wrapper = mountIn()
+    expect(wrapper.get('[data-testid="menu-item-overview"]').attributes('aria-current')).toBeUndefined()
+    expect(wrapper.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
+    expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
   })
 })

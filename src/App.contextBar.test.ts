@@ -3,7 +3,9 @@ import { nextTick } from 'vue'
 import type { mount } from '@vue/test-utils'
 import { mountWithProject } from './testUtils/seedProject'
 import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
-import { armSelectionBar, pressBar, pickColor, pickTool } from './testUtils/pill'
+import { armSelectionBar, pressBar, pickColor, pickTool, rotate } from './testUtils/pill'
+import { frameGrid } from './domain/project'
+import { loadProjects } from './services/libraryStore'
 
 beforeEach(() => {
   localStorage.clear()
@@ -54,6 +56,20 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     await pressBar(wrapper, 'remove-line')
     // A removed line shifts the grid up by one row; the Selection no longer applies (cleared by the command).
     expect(wrapper.find('[data-testid="context-bar-size"]').exists()).toBe(false)
+  })
+
+  it('turns the Selection a quarter through Rotate (ticket 416)', async () => {
+    const wrapper = await mountWithProject(4.5, 3) // 3 columns x 2 rows
+    await pickColor(wrapper, 'red')
+    await drag(wrapper, [0, 1]) // the top row's first two beads
+
+    await pickTool(wrapper, 'piece') // a tap on the strip selects its rectangle
+    await drag(wrapper, [0])
+    await rotate(wrapper)
+
+    // The 1 x 2 strip becomes a 2 x 1 column on its right: the left bead goes to the top, the right one below it.
+    const grid = frameGrid(loadProjects()[0]!)
+    expect([grid[0]![0]!.color, grid[0]![1]!.color, grid[1]![1]!.color]).toEqual([null, '#e63746', '#e63746'])
   })
 
   it('sits inside the drawing area, above the Selection when there is room', async () => {
