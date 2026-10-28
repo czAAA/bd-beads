@@ -6,11 +6,11 @@ import { beadsBox, insideBounds, keptWithin, modulo, type Box, type GeometryStra
 /** A bead's face reaches half a cell from its centre: squared, in cells, for a round bead's hit test. */
 const BEAD_FACE_DISTANCE = 0.25
 
-/** Netting, horizontal (ticket 485): beads on the two diagonals of a diamond mesh, p = (netSize + 1) / 2 positions from
- * one shared bead to the next. A diamond is 2p wide and tall and holds `netSize` beads; a position off a diagonal is a
- * hole, no position. A Frame starts on a multiple of 2p each way, so its lattice is the Canvas's. */
-export const netGeometry: GeometryStrategy<NetGeometry> = ({ step, cellAspect, roundness }, { netSize }, cell) => {
-  const p = (netSize + 1) / 2
+/** Netting, horizontal (ticket 485): beads on the two diagonals of a diamond mesh, p = (loopBeads + 1) / 2 positions
+ * from one shared bead to the next. A diamond is 2p wide and tall and holds `loopBeads` beads; a position off a
+ * diagonal is a hole, no position. A Frame starts on a multiple of 2p each way, so its lattice is the Canvas's. */
+export const netGeometry: GeometryStrategy<NetGeometry> = ({ step, cellAspect, roundness, loopBeads }, cell) => {
+  const p = (loopBeads + 1) / 2
   const period = 2 * p
   const hasPosition = ({ row, column }: GridPosition): boolean =>
     modulo(column - row - p, period) === 0 || modulo(column + row - p, period) === 0

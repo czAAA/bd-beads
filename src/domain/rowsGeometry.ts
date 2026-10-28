@@ -2,12 +2,12 @@ import { beadPitchMm } from './beads'
 import type { GridPosition } from './grid'
 import { insideBounds, type Box, type CellCenter, type GeometryStrategy, type RowsGeometry } from './weaveGeometry'
 
-/** Beads laid on rows (loom, peyote, brick stitch; ADR 0078): every other row, or block of `brickBlock` rows, sits
+/** Beads laid on rows (loom, peyote, brick stitch; ADR 0078): every other row, or block of `block` rows, sits
  * `shift` across where the rows are shifted, and rows sit `rowPitch` apart. Passes are lines: one each, or peyote's
  * first line in one pass and every later one in two. */
-export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, { brickBlock }, cell) => {
-  const { shifted, shift, rowPitch, passes } = geometry
-  const frameStep = shifted ? 2 * brickBlock : 1
+export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => {
+  const { shifted, shift, rowPitch, passes, block } = geometry
+  const frameStep = shifted ? 2 * block : 1
   const twoPasses = passes === 'twoAfterFirst'
   // A Real cell's own rounding, which a press in a bead's corner misses.
   const roundness = cell?.roundness ?? geometry.roundness

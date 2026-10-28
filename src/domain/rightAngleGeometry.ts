@@ -13,7 +13,7 @@ const unitsOf = ({ columns, rows }: GridDimensions): GridDimensions => ({
 /** Right-angle weave (ticket 482): rows alternate between horizontal beads, lying along their line (one per Unit), and
  * upright vertical ones (one more). A Unit's side is a bead's length plus its width: `cellWidth` the length, `cellHeight`
  * the width. Beads touch at their corners, round a hole one length square. A pass weaves a line of Units (ticket 484). */
-export const rightAngleGeometry: GeometryStrategy<RightAngleGeometry> = (geometry, _settings, cell) => {
+export const rightAngleGeometry: GeometryStrategy<RightAngleGeometry> = (geometry, cell) => {
   const orientationAt = ({ row }: GridPosition): 'sideways' | 'upright' => (isHorizontalLine(row) ? 'sideways' : 'upright')
   const box = (position: GridPosition, length: number, width: number): Box => {
     const side = length + width

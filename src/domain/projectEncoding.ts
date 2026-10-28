@@ -1,9 +1,8 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
-import { unwoven } from './layerWeave'
+import { flattened, type FlatWeave, type SavedProject } from './flatWeave'
 import type { Grid, Project } from './project'
 import type { GridProject } from './storedProject'
 import type { VersionThreeProject } from './versionThree'
-import { BRICK_BLOCK_SETTING, NET_SIZE_SETTING, type Weave } from './weave'
 
 // The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with a
 // bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex): it
@@ -18,10 +17,10 @@ interface EncodedBeads {
 
 /** The Frame as stored (ADR 0066): its place and size, its name, and its own beads in the same compact form, counted
  * from the Frame's first row and column; its Folded beads beside them, where it has any (file version 10, ticket 0638). */
-type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
+type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded'> & FlatWeave & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
 /** A Project as file and library version 4 store it: the Canvas's beads, and the Frame with its own. */
-export type EncodedProject = Omit<Project, 'beads' | 'frame'> & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
+export type EncodedProject = Omit<Project, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
 
 /** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
  * rectangle, the beads it covered beside them. */
@@ -157,33 +156,22 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
   )
 }
 
-/** A layer as the file stores its Weave until ticket 0636: its settings map as the flat Brick block and Net size. */
-function flatWeave<T extends Weave>(layer: T) {
-  const { techniqueSettings, ...rest } = layer
-  if (!techniqueSettings) return rest
-  const brickBlock = techniqueSettings[BRICK_BLOCK_SETTING.id]
-  const netSize = techniqueSettings[NET_SIZE_SETTING.id]
-  // A Brick block of 1, every other row, was never written, and still is not.
-  const written = brickBlock !== undefined && brickBlock !== BRICK_BLOCK_SETTING.default
-  return { ...unwoven(layer), ...(written ? { brickBlock } : {}), ...(netSize !== undefined ? { netSize } : {}) }
-}
-
 function encodeFrame({ beads, folded, ...place }: FrameSheet): EncodedFrame {
-  return { ...flatWeave(place), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
+  return { ...flattened(place), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
 }
 
-function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): FrameSheet {
+function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): FrameSheet & FlatWeave {
   const folded = encodedFolded && decodeBeads(encodedFolded)
   return { ...place, beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
 export function encodeProject(project: Project): EncodedProject {
   const { beads, frame, ...rest } = project
-  return { ...flatWeave(rest), encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
+  return { ...flattened(rest), encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
 }
 
 /** The Project a version 4 value holds; it still goes through normalizeProject. */
-export function decodeProject(encoded: EncodedProject): Project {
+export function decodeProject(encoded: EncodedProject): SavedProject {
   const { encodedBeads, frame, ...rest } = encoded
   return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
 }
