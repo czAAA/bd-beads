@@ -76,7 +76,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   it('reads a Frame stored without a Weave of its own as woven like the Project, and an unreadable one the same', () => {
     const base = withWeave(canvasLoom(), 'canvas', { technique: 'brick' })
     const { technique: _technique, ...bare } = base.frame!
-    expect(normalizeProject({ ...base, brickBlock: 2, frame: bare as never }).frame).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
+    expect(normalizeProject({ ...base, techniqueSettings: { brickBlock: 2 }, frame: bare as never }).frame).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
     expect(normalizeProject({ ...base, frame: { ...base.frame!, technique: 'sideways' as never } }).frame?.technique).toBe('brick')
   })
 

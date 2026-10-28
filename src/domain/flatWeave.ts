@@ -1,26 +1,31 @@
 import type { FrameSheet } from './canvas'
 import type { Project } from './project'
-import { BRICK_BLOCK_SETTING, type TechniqueSettings, type Weave } from './weave'
+import { BRICK_BLOCK_SETTING, type TechniqueSettings } from './weave'
 
-// The file boundary's Weave (ticket 0627, until ticket 0636): a file stores a layer's Brick block as a flat field beside
-// its Technique, where the app holds one settings map. Only the Project readers and encoder know it.
+// The flat Brick block of earlier stored versions (file v4–v10, library v1–v4; ticket 0636): a layer's Brick block was a
+// field beside its Technique. Read only: their readers lift it into the settings map the app holds, and v11 writes that.
 
-/** A layer's Technique settings as a file stores them: the Brick block flat, any other setting in a map. */
+/** A layer's Technique settings as a stored record may hold them: the map, and an earlier version's flat Brick block. */
 export interface FlatWeave {
   brickBlock?: number
   techniqueSettings?: TechniqueSettings
 }
 
-/** A Project as a store or file saves it today: the Canvas's settings and the Frame's flat. */
+/** A Project as a store or file has saved it since the Frame had its own beads, before normalizeProject reads it. */
 export type SavedProject = Omit<Project, 'frame'> & FlatWeave & { frame?: FrameSheet & FlatWeave }
 
-/** A stored layer's settings map: any map it holds, with its flat Brick block read into it. An unreadable Brick block is
- * none (the default) and a valid one is kept even off brick stitch. */
-export function storedSettings({ brickBlock, techniqueSettings }: FlatWeave): TechniqueSettings {
-  return {
-    ...techniqueSettings,
-    ...(isBrickBlock(brickBlock) ? { [BRICK_BLOCK_SETTING.id]: brickBlock } : {}),
-  }
+/** A stored Project of an earlier version with each layer's flat Brick block moved into its settings map, where it wins
+ * over the map as it did when both were read. An unreadable one is dropped, so the layer reads as the default. */
+export function liftFlatWeave<T extends FlatWeave & { frame?: object }>(stored: T): T {
+  const project = lifted(stored)
+  return project.frame ? { ...project, frame: lifted(project.frame) } : project
+}
+
+function lifted<T extends FlatWeave>(layer: T): T {
+  const { brickBlock, ...rest } = layer
+  if (!isBrickBlock(brickBlock)) return rest as T
+  const settings = isSettingsMap(layer.techniqueSettings) ? layer.techniqueSettings : {}
+  return { ...rest, techniqueSettings: { ...settings, [BRICK_BLOCK_SETTING.id]: brickBlock } } as T
 }
 
 /** A stored Brick block if it is a whole number within its setting's range. */
@@ -28,20 +33,14 @@ function isBrickBlock(value: unknown): value is number {
   return typeof value === 'number' && Number.isInteger(value) && value >= BRICK_BLOCK_SETTING.min && value <= BRICK_BLOCK_SETTING.max
 }
 
-/** A stored record without its Weave's settings, flat or mapped: what a reader builds a layer over. */
+/** Whether a stored settings map is one: an object of named values, not a list or anything else. */
+export function isSettingsMap(value: unknown): value is TechniqueSettings {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+/** A stored record without its Weave's settings, mapped or flat (a stray flat Brick block in a v11 file is dropped):
+ * what a reader builds a layer over. */
 export function unflattened<T extends FlatWeave>(record: T): Omit<T, keyof FlatWeave> {
   const { brickBlock: _brickBlock, techniqueSettings: _settings, ...rest } = record
   return rest
-}
-
-/** A layer as the file stores it: its Brick block (one of 1, every other row, was never written) flat, and any other
- * setting in its map, so a Technique's new setting is saved with no change here (ADR 0078). */
-export function flattened<T extends Weave>(layer: T): Omit<T, 'techniqueSettings'> & FlatWeave {
-  const { techniqueSettings, ...rest } = layer
-  const { [BRICK_BLOCK_SETTING.id]: brickBlock, ...others } = techniqueSettings ?? {}
-  return {
-    ...rest,
-    ...(brickBlock !== undefined && brickBlock !== BRICK_BLOCK_SETTING.default ? { brickBlock } : {}),
-    ...(Object.keys(others).length > 0 ? { techniqueSettings: others } : {}),
-  }
 }

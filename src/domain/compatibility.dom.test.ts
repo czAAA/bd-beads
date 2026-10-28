@@ -21,12 +21,16 @@ import libraryFileV4Weave from './fixtures/library-file-v4-openbeads-frame-weave
 import libraryV3 from './fixtures/library-v3.json?raw'
 import libraryV4 from './fixtures/library-v4.json?raw'
 import libraryV4Weave from './fixtures/library-v4-frame-weave.json?raw'
+import libraryV4BrickBlock from './fixtures/library-v4-brick-block.json?raw'
 import projectFileV3Framed from './fixtures/project-file-v3-framed-covered.json?raw'
 import projectFileV4 from './fixtures/project-file-v4-openbeads.json?raw'
 import projectFileV7 from './fixtures/project-file-v7-bead-copy.json?raw'
 import projectFileV9Custom from './fixtures/project-file-v9-custom-frame.json?raw'
 import projectFileV9Turned from './fixtures/project-file-v9-custom-frame-turned.json?raw'
 import projectFileV10Folded from './fixtures/project-file-v10-folded.json?raw'
+import projectFileV6BrickBlock from './fixtures/project-file-v6-removed-defaults-brick-block.json?raw'
+import projectFileV8BrickBlock from './fixtures/project-file-v8-swatch-codes-brick-block.json?raw'
+import projectFileV11 from './fixtures/project-file-v11-weave-settings.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
@@ -253,8 +257,21 @@ describe('stored-data compatibility', () => {
       expect(loadProjects()).toEqual(opened)
     })
 
+    it('opens a version 4 library holding a flat Brick block with it in each layer\'s settings, and saves it back as a map (ticket 0636)', () => {
+      localStorage.setItem(STORAGE_KEY, libraryV4BrickBlock)
+
+      const opened = loadProjects()
+      expect(opened[0]).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, frame: { technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#e63746' } } } })
+      saveProjects(opened)
+
+      const [saved] = JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns
+      expect(saved).toMatchObject({ techniqueSettings: { brickBlock: 2 }, frame: { techniqueSettings: { brickBlock: 3 } } })
+      expect(saved).not.toHaveProperty('brickBlock')
+      expect(loadProjects()).toEqual(opened)
+    })
+
     it('keeps an unreadable value aside only for a value it cannot read, never for these', () => {
-      for (const stored of [libraryV1, libraryV2, libraryV2OverCap, libraryV3, libraryV4]) {
+      for (const stored of [libraryV1, libraryV2, libraryV2OverCap, libraryV3, libraryV4, libraryV4BrickBlock]) {
         localStorage.setItem(STORAGE_KEY, stored)
         loadProjects()
       }
@@ -334,15 +351,43 @@ describe('stored-data compatibility', () => {
     it('opens a version 10 file with the Frame\'s Folded beads beyond its edge, and writes it back the same (ticket 0638)', () => {
       const [opened] = parseProjectsFile(projectFileV10Folded).projects
       expect(opened!.frame).toEqual({ row: 7, column: 7, rows: 6, columns: 2, technique: 'peyote', beads: { 0: { 0: '#e63746' } }, folded: { 1: { 3: '#2f6fed' }, 4: { [-2]: '#27ae60', [-1]: '#27ae60' } } })
-      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 10 })
+      expect(JSON.parse(serializeProject(opened!))).toMatchObject({ version: 11 })
       expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
     })
 
-    it('reads a version 4 file and writes it back as version 10 with the built-in Palette (ticket 0525)', () => {
+    it('reads a version 4 file and writes it back as version 11 with the built-in Palette (ticket 0525)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 10, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 11, projects: [{ palette: defaultPaletteIds() }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
+    })
+
+    it('opens a version 6 file with a removed default and a flat Brick block on both layers, the Brick block in each layer\'s settings (ticket 0636)', () => {
+      const [opened] = parseProjectsFile(projectFileV6BrickBlock).projects
+      expect(opened).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 }, removedDefaults: ['#2fb6ae'], beads: { [-3]: { [-1]: '#e63746' } } })
+      expect(opened!.frame).toEqual({ row: 0, column: 0, columns: 3, rows: 2, technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#1a1a1a', 1: '#ffffff' }, 1: { 1: '#1a1a1a' } } })
+      expect(opened).not.toHaveProperty('brickBlock')
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it.each([4, 5, 7, 8, 9, 10])('opens the same file labelled version %i as the same Project: every version 4 to 10 stores the Brick block flat (ticket 0636)', (version) => {
+      const [six] = parseProjectsFile(projectFileV6BrickBlock).projects
+
+      expect(parseProjectsFile(projectFileV6BrickBlock.replace('"version":6', `"version":${version}`)).projects).toEqual([six])
+    })
+
+    it('opens a version 8 file with a swatch code, the Canvas\'s flat Brick block kept off brick stitch and the Frame\'s in its settings (ticket 0636)', () => {
+      const [opened] = parseProjectsFile(projectFileV8BrickBlock).projects
+      expect(opened).toMatchObject({ technique: 'loom', techniqueSettings: { brickBlock: 2 }, paletteCodes: { '#123456': 'DB1' } })
+      expect(opened!.frame).toEqual({ row: 4, column: 2, columns: 2, rows: 2, technique: 'brick', techniqueSettings: { brickBlock: 4 }, beads: { 1: { 0: '#123456', 1: '#123456' } } })
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
+    it('opens a version 11 file with each layer\'s settings map as it holds it, and writes it back the same (ticket 0636)', () => {
+      const [opened] = parseProjectsFile(projectFileV11).projects
+      expect(opened).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, beads: { 0: { 0: '#2fb6ae' } } })
+      expect(opened!.frame).toEqual({ row: 7, column: 7, rows: 2, columns: 3, technique: 'peyote', techniqueSettings: { brickBlock: 2 }, beads: { 1: { 2: '#e63746' } } })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV11))
     })
 
     it('opens a version 5 file written on Delica with the twelve and an added color showing the same swatches (ticket 0528)', () => {
