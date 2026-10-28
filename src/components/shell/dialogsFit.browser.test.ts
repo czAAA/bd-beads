@@ -3,11 +3,11 @@ import { defineComponent, h, nextTick } from 'vue'
 import { FIT_LOCALES, FIT_WIDTHS, fitProblems, mountAt, problemsAcrossWidths } from '../../testUtils/browserFit'
 import { provideAppShell } from '../../composables/shell/useAppShell'
 import type { Dialogs } from '../../composables/shell/useDialogs'
-
-type DialogId = Parameters<Dialogs['flag']>[0]
 import { createProject } from '../../domain/project'
 import { saveProjects } from '../../services/libraryStore'
 import AppDialogs from './AppDialogs.vue'
+
+type DialogId = Parameters<Dialogs['flag']>[0]
 
 // The shell's dialogs that ask about nothing, opened through the registry, in every language at the layout's width
 // edges (ticket 552).
