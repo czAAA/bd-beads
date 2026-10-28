@@ -19,7 +19,7 @@ export interface TextMisfit {
 /** Controls that are meant to be one line; running paragraphs are exempt from the wrap check. */
 const ONE_LINE = 'button, a, label, th, h1, h2, h3, h4, h5, h6, summary, legend, [role="tab"], [role="menuitem"], [role="button"], .ui-pill, [data-one-line]'
 
-/** One-line controls that are designed to take more lines than one, with how many: the Overview's tab line, the
+/** One-line controls that are designed to take more lines than one, with how many: the Homepage's tab line, the
  * segmented control's two-line options, a dialog's title. */
 const MORE_LINES: [string, number][] = [
   ['.carousel__tab-line', 2],
@@ -32,7 +32,7 @@ const MORE_LINES: [string, number][] = [
 /** Boxes that hold artwork or the scrolling drawing, whose content is meant to be wider than the box. */
 const CUT_OFF_BY_DESIGN = '[data-testid="app-canvas"], [data-testid="example-paper"]'
 
-/** Words that roll through a one-line window (the Overview's slogan, ticket 550): the window cuts them vertically on
+/** Words that roll through a one-line window (the Homepage's slogan, ticket 550): the window cuts them vertically on
  * purpose, so only sideways overflow counts. */
 const ROLLING = '[data-testid="slogan-column"]'
 
@@ -54,7 +54,7 @@ export const MEASURE_ARGS: MeasureArgs = { oneLine: ONE_LINE, userText: USER_TEX
 /** Waits for the fonts and the animations that end, so what is measured is where things end up. */
 export async function settleForMeasuring(): Promise<void> {
   await document.fonts.ready
-  // Two frames, for what is sized from a resize report (the Overview's examples scale to their stage).
+  // Two frames, for what is sized from a resize report (the Homepage's examples scale to their stage).
   await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())))
   // Dialogs and sheets arrive with a short animation; what is measured is where they end up.
   await Promise.all(document.getAnimations().filter((animation) => Number.isFinite(animation.effect?.getComputedTiming().endTime ?? 0)).map((animation) => animation.finished.catch(() => undefined)))
@@ -151,7 +151,7 @@ export const measureTextMisfits = ({ oneLine, userText, moreLines, cutOffByDesig
         // A scroll container scrolls vertically, so text cut at its bottom edge is not a fault; hidden is.
         vertical: clipsY && style.overflowY !== 'auto' && style.overflowY !== 'scroll',
         scrolls: style.overflowY === 'auto' || style.overflowY === 'scroll',
-        // A strip that scrolls sideways (the Overview carousel, the Canvas strip's middle on a phone, ticket 431)
+        // A strip that scrolls sideways (the Homepage carousel, the Canvas strip's middle on a phone, ticket 431)
         // is meant to have its content cut at its edge.
         snaps: style.overflowX === 'auto' || style.overflowX === 'scroll',
       })
