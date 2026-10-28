@@ -748,29 +748,11 @@ export interface Translations {
     /** The Custom frame kinds' names (tickets 0592, 0596): the Shapes' names in the Starter gallery and what is announced. */
     customKinds: Record<CustomFrameKindId, string>
     /** A Custom frame's size setting in the Frame panel, one entry per setting (tickets 0592, 0593): its stepper, the
-     * Size line's summary, the question before a smaller size drops painted beads, and what is announced. */
-    sizeSettings: Record<
-      FrameSettingName,
-      {
-        label: string
-        less: string
-        more: string
-        summary: PluralForms
-        confirmTitle: string
-        confirmMessage: PluralForms
-        confirmButton: string
-        announce: string
-      }
-    >
-    /** A Fringe earring's Fringe style in the Frame panel (ticket 0597), its options the setup's: its label, the question
-     * before a change drops painted beads at the strands' ends, and what is announced. */
-    fringeStyle: {
-      label: string
-      confirmTitle: string
-      confirmMessage: PluralForms
-      confirmButton: string
-      announce: string
-    }
+     * Size line's summary and what is announced. A smaller size folds what it leaves out, so nothing is asked (0640). */
+    sizeSettings: Record<FrameSettingName, { label: string; less: string; more: string; summary: PluralForms; announce: string }>
+    /** A Fringe earring's Fringe style in the Frame panel (ticket 0597), its options the setup's: its label and what is
+     * announced. */
+    fringeStyle: { label: string; announce: string }
     /** Remove Frame's question for a Frame that takes its beads with it (ADR 0077). */
     removeConfirmCustom: string
     /** `{kind}` is the kind's name, `{size}` its size setting's summary. */
