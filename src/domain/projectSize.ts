@@ -32,8 +32,8 @@ export function formatMm(mm: number, locale: Locale = 'en'): string {
   return trimmedOneDecimal(mm, decimalSign(locale))
 }
 
-/** What a Frame's size is measured from beside its rectangle: its kind and a Custom frame's settings. */
-type Kinded = Partial<Pick<FrameSheet, 'kind' | 'settings'>>
+/** What a Frame's size is measured from beside its rectangle: its kind, and a Custom frame's settings and turn. */
+type Kinded = Partial<Pick<FrameSheet, 'kind' | 'settings' | 'quarterTurns'>>
 
 /** A grid's Estimated size in mm (CONTEXT.md): width first, as seen on screen. */
 export interface EstimatedSizeMm {
@@ -48,7 +48,7 @@ export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Kinde
   const { columns, rows } = sizeOf(project)
   // The Frame's own kind when there is one (ticket 0592): a Custom frame's shape is what is measured.
   const woven = 'frame' in project && project.frame ? project.frame : project
-  const { widthMm, heightMm } = frameSizeMm({ ...woven, columns, rows }, bead)
+  const { widthMm, heightMm } = frameSizeMm({ kind: woven.kind, settings: woven.settings, quarterTurns: woven.quarterTurns, columns, rows }, bead)
   return project.rotation !== undefined && rotationSwapsAxes(project.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 

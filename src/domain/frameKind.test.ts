@@ -132,6 +132,9 @@ interface Golden {
 /** Where a kind's golden layouts are kept, read from disk on each run (a module cache would keep a removed one). */
 const goldenFile = (kind: string) => new URL(`./fixtures/layouts/${kind}.json`, import.meta.url)
 
+/** How far a bead may lie from its golden place, in bead widths, as the files keep six decimals: none moves. */
+const UNMOVED = 1e-5
+
 describe('every Custom frame kind\'s golden layout (ADR 0078, ticket 0632)', () => {
   const customKinds = FRAME_KIND_IDS.filter((kind) => frameKindOf({ kind }).custom)
 
@@ -140,7 +143,7 @@ describe('every Custom frame kind\'s golden layout (ADR 0078, ticket 0632)', () 
   })
 
   it.each(customKinds)('builds %s where its golden layout has every position', (kind) => {
-    const close = (a: number, b: number) => Math.abs(a - b) < 1e-5
+    const close = (a: number, b: number) => Math.abs(a - b) < UNMOVED
     const golden = JSON.parse(readFileSync(goldenFile(kind), 'utf8')) as Golden
     for (const { settings, positions } of golden.layouts) {
       const built = frameKindOf({ kind }).custom!.layout(settings).positions

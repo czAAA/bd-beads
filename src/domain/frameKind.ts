@@ -216,8 +216,7 @@ export function settingsOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FrameS
  * What a Selection over a Custom frame lands beads by (ticket 0594); finding, drawing or hitting a bead asks the Frame's
  * geometry. */
 export function frameLayoutOf(frame: Laid): FrameLayout | undefined {
-  const custom = frameKindOf(frame).custom
-  return custom && laidLayout(frame)
+  return frameKindOf(frame).custom && laidLayout(frame)
 }
 
 /** The layout a Custom frame's own kind lays it out by: called only on a kind that has one. */
