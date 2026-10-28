@@ -23,11 +23,6 @@ export const en: Translations = {
     beadShapeSymmetricTip: 'Draw every bead as an even cell; this changes only how the Canvas looks.',
     beadShapeRealTip: 'Draw each bead in its real proportions; this changes only how the Canvas looks.',
     techniqueLabel: 'Technique',
-    techniqueLoom: 'Loom',
-    techniquePeyote: 'Peyote',
-    techniqueBrick: 'Brick stitch',
-    techniqueRightAngle: 'Right‑angle weave',
-    techniqueNetting: 'Netting',
     netSizeLabel: 'Net size',
     netSizeLess: 'Fewer beads in a loop',
     netSizeMore: 'More beads in a loop',
@@ -178,6 +173,13 @@ export const en: Translations = {
   },
   languageSwitcher: {
     ariaLabel: 'Language',
+  },
+  techniques: {
+    loom: 'Loom',
+    peyote: 'Peyote',
+    brick: 'Brick stitch',
+    rightAngle: 'Right‑angle weave',
+    netting: 'Netting',
   },
   formFactors: FORM_FACTOR_NAMES_EN,
   projects: {

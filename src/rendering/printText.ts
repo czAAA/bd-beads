@@ -1,4 +1,4 @@
-import { beadLabel } from '../domain/beads'
+import { beadLabel, formFactorName } from '../domain/beads'
 import { computeColorQuantities } from '../domain/beadQuantities'
 import { projectPalette } from '../domain/palette'
 import { listedColorName } from '../i18n/colorName'
@@ -171,7 +171,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
     chartStyle: project.letters ? t.print.chartStyleLetters : t.print.chartStyleColor,
     gramsNote:
       perGram && bead
-        ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${t.formFactors[bead.formFactor.nameKey]} ${bead.size}` })} ${t.print.spares}`
+        ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor, t.formFactors)} ${bead.size}` })} ${t.print.spares}`
         : undefined,
     wordChart: wordChart && wordChartText(wordChart, t.print.wordChart, t.rowProgress),
     labels: t.print,

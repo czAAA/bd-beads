@@ -98,6 +98,7 @@ const CHECKED_ELSEWHERE: Record<string, string> = {
   tools: 'tool names are registry Tooltips and menu rows, tried by tooltips.browser.test.ts',
   inputMode: 'input mode names are registry Tooltips and menu rows, tried by tooltips.browser.test.ts',
   print: 'printed on a paper page that is sized to its text, not a box on the screen',
+  techniques: 'read through techniqueName(), which this search does not follow, by NewProjectForm and SwitchTechniqueModal, which panelsFit.browser.test.ts mounts',
 }
 
 describe('every text has a room that is checked', () => {

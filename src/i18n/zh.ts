@@ -24,11 +24,6 @@ export const zh: Translations = {
     beadShapeSymmetricTip: '把每颗珠子画成相同的方格，只改变画布的外观。',
     beadShapeRealTip: '按真实比例绘制每颗珠子，只改变画布的外观。',
     techniqueLabel: '编织技法',
-    techniqueLoom: '织机',
-    techniquePeyote: '佩奥',
-    techniqueBrick: '砖形',
-    techniqueRightAngle: '直角',
-    techniqueNetting: '网状',
     netSizeLabel: '网眼大小',
     netSizeLess: '减少每圈珠数',
     netSizeMore: '增加每圈珠数',
@@ -179,6 +174,13 @@ export const zh: Translations = {
   },
   languageSwitcher: {
     ariaLabel: '界面语言',
+  },
+  techniques: {
+    loom: '织机',
+    peyote: '佩奥',
+    brick: '砖形',
+    rightAngle: '直角',
+    netting: '网状',
   },
   formFactors: { cube: '方形', round: '圆形', delica: 'Delica' },
   projects: {

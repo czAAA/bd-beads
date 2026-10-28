@@ -24,11 +24,6 @@ export const pl: Translations = {
     beadShapeSymmetricTip: 'Rysuje każdy koralik jako równą komórkę; zmienia tylko wygląd płótna.',
     beadShapeRealTip: 'Rysuje każdy koralik w prawdziwych proporcjach; zmienia tylko wygląd płótna.',
     techniqueLabel: 'Technika',
-    techniqueLoom: 'Krosno',
-    techniquePeyote: 'Peyote',
-    techniqueBrick: 'Ścieg ceglasty',
-    techniqueRightAngle: 'Splot kątowy',
-    techniqueNetting: 'Siatka',
     netSizeLabel: 'Rozmiar siatki',
     netSizeLess: 'Mniej koralików w oczku',
     netSizeMore: 'Więcej koralików w oczku',
@@ -179,6 +174,13 @@ export const pl: Translations = {
   },
   languageSwitcher: {
     ariaLabel: 'Język interfejsu',
+  },
+  techniques: {
+    loom: 'Krosno',
+    peyote: 'Peyote',
+    brick: 'Ścieg ceglasty',
+    rightAngle: 'Splot kątowy',
+    netting: 'Siatka',
   },
   formFactors: { cube: 'Kostka', round: 'Okrągły', delica: 'Delica' },
   projects: {

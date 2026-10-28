@@ -87,7 +87,7 @@ describe('ConvertImageSizeDialog (ticket 342)', () => {
     expect(wrapper.find('[data-testid="convert-image-slow-framing-warning"]').exists()).toBe(false)
 
     await fill(wrapper, '200', '200')
-    expect(wrapper.find('[data-testid="convert-image-slow-framing-warning"]').text()).toContain(en.form.techniqueLoom)
+    expect(wrapper.find('[data-testid="convert-image-slow-framing-warning"]').text()).toContain(en.techniques.loom)
   })
 
   it('cancels with the Cancel button', async () => {

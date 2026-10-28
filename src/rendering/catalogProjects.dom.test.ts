@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, gramsPerBead } from '../domain/beads'
+import { BEAD_CATALOG, beadCopy, gramsPerBead } from '../domain/beads'
 import { createProject, replaceBead } from '../domain/project'
 import { parseProjectsFile, serializeProject } from '../domain/projectFile'
 import { recordingContext } from '../testUtils/recordingContext'
@@ -21,7 +21,7 @@ describe('every Bead in the catalog', () => {
 
       const [reopened] = parseProjectsFile(serializeProject(painted)).projects
       expect(reopened!.beadId).toBe(bead.id)
-      expect(reopened!.bead).toEqual(bead)
+      expect(reopened!.bead).toEqual(beadCopy(bead))
       expect(gramsPerBead(bead) !== undefined).toBe(bead.beadsPerKg !== undefined)
 
       for (const other of BEAD_CATALOG) expect(replaceBead(painted, other).beadId).toBe(other.id)

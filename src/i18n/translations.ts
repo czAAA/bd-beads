@@ -38,11 +38,6 @@ export interface Translations {
     beadShapeSymmetricTip: string
     beadShapeRealTip: string
     techniqueLabel: string
-    techniqueLoom: string
-    techniquePeyote: string
-    techniqueBrick: string
-    techniqueRightAngle: string
-    techniqueNetting: string
     netSizeLabel: string
     netSizeLess: string
     netSizeMore: string
@@ -202,6 +197,9 @@ export interface Translations {
   languageSwitcher: {
     ariaLabel: string
   }
+  /** The Techniques' names, by each Technique's name key (ADR 0078): open, so a new Technique is its entry and its strings;
+   * `registryNames.test.ts` checks every key is in every language. */
+  techniques: Readonly<Record<string, string>>
   /** The Form factors' names, the middle word of a Bead's label (ticket 533); a maker's product name stays as it is. */
   formFactors: FormFactorNames
   projects: {
