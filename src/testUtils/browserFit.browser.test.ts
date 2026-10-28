@@ -12,7 +12,7 @@ import { showLongestText, showRussian } from './longestText'
 import MenuPanel from '../components/shell/MenuPanel.vue'
 
 // The measurement has to see what it is for: a one-line button too narrow for its words is a misfit, a roomy one is not.
-const button = (width: number) => defineComponent({ render: () => h('button', { style: { width: `${width}px`, overflow: 'hidden', whiteSpace: 'nowrap' } }, 'Right-angle weave and more') })
+const button = (width: number) => defineComponent({ render: () => h('button', { style: { width: `${width}px`, overflow: 'hidden', whiteSpace: 'nowrap' } }, 'Brick stitch and more') })
 
 it('reports a button whose text is wider than the button', async () => {
   const mounted = await mountAt(button(40), {}, { locale: 'en', width: 1024 })
@@ -41,7 +41,7 @@ it('renders in the language it is asked for, every time', async () => {
 })
 
 it('shows, in the longest text, each string as its widest translation and each count in its widest words', async () => {
-  const russian = { makerName: ru.form.makerNameLabel, rightAngle: ru.techniques.rightAngle, pieces: ru.projects.pieces.few }
+  const russian = { makerName: ru.form.makerNameLabel, pieces: ru.projects.pieces.few }
   const languages = [en, ru, uk, be, zh, es, pl]
   const piecesWords = languages.map(({ projects: { pieces } }) => pieces.few ?? pieces.other)
   const tabLines = languages.map(({ homepage: { features: { projectEditing } } }) => projectEditing.tabLine ?? projectEditing.text)
@@ -49,9 +49,8 @@ it('shows, in the longest text, each string as its widest translation and each c
   const lists = languages.map((language) => language.tooltips.list(names))
   await showLongestText()
   try {
-    // Spanish and English are the widest here, by 70 and 63 px at the UI's size.
+    // Spanish is the widest here, by 70 px at the UI's size.
     expect(ru.form.makerNameLabel).toBe(es.form.makerNameLabel)
-    expect(ru.techniques.rightAngle).toBe(en.techniques.rightAngle)
     // A language with no "few" lends its "other": a Russian "few" count takes whichever language's words are widest.
     expect(piecesWords).toContain(ru.projects.pieces.few)
     // A tab shows a feature's shorter wording where its language has one, and its full one where not (Russian).
@@ -60,7 +59,7 @@ it('shows, in the longest text, each string as its widest translation and each c
   } finally {
     showRussian()
   }
-  expect({ makerName: ru.form.makerNameLabel, rightAngle: ru.techniques.rightAngle, pieces: ru.projects.pieces.few }).toEqual(russian)
+  expect({ makerName: ru.form.makerNameLabel, pieces: ru.projects.pieces.few }).toEqual(russian)
 })
 
 it('opens a Tooltip all three ways in English and by hover alone in the longest text', () => {

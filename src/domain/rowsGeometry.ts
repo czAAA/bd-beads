@@ -48,10 +48,7 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
     rowPitch,
     cellAspect: cell?.aspect ?? geometry.cellAspect,
     roundness: geometry.roundness,
-    countsUnits: false,
     frameStep,
-    hasPosition: () => true,
-    orientationAt: () => 'upright',
     box,
     rowOffset,
     blockExtent,
@@ -67,8 +64,6 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
       const left = column * cellWidth + cellWidth / 4
       return { x: left, y: top, width: (column + columns) * cellWidth + cellWidth / 4 - left, height: (row + rows - 1) * pitch + cellHeight / 2 + pitch / 2 - top }
     },
-    unitSize: (cellWidth, cellHeight) => ({ width: cellWidth, height: cellHeight }),
-    unitMiddle: (cellWidth, cellHeight) => ({ x: cellWidth / 2, y: cellHeight / 2 }),
     // Later rows are drawn over earlier ones, so the lowest row whose bead holds the point wins; a rounded corner misses.
     positionAt: (x, y, cellWidth, cellHeight, within) => {
       const { firstRow, lastRow } = rowsAt(y, y, cellHeight)
@@ -90,10 +85,6 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
       const row = Math.round((y - cellHeight / 2) / (cellHeight * rowPitch)) + 0
       return { row, column: Math.floor((x - rowOffset(row, cellWidth)) / cellWidth) }
     },
-    rowsPerUnit: 1,
-    columnsPerUnit: 1,
-    columnStep: 1,
-    snapRight: (_left, right) => right,
     visible: (area, cellWidth, cellHeight) => ({
       ...rowsAt(area.top, area.bottom, cellHeight),
       columnsOf: (row) => {
@@ -112,10 +103,6 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
       const { x, y } = box(position, cellWidth, cellHeight)
       return { x, y }
     },
-    positionsOf: (units) => units,
-    unitsOf: (positions) => positions,
-    snapBottom: (_top, bottom) => bottom,
-    smallest: { columns: 1, rows: 1 },
     center,
     // Same-row left and right, plus the overlapping cells above and below, so Fill follows real adjacency (ticket 06).
     neighbors: (bounds, { row, column }) => {
@@ -136,8 +123,6 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
       lines: (pass) => [lineOf(pass)],
     },
     turned: ({ row, column }, block) => ({ row: column, column: block.rows - 1 - row }),
-    snapSelection: (selection) => selection,
-    fitBlock: (topLeft) => topLeft,
     stepMm: (bead) => ({ across: beadPitchMm(bead), down: bead.heightMm * rowPitch }),
   }
 }

@@ -1,4 +1,4 @@
-import { normalizeProject, type GridProject, type StoredProject } from './storedProject'
+import { inKnownTechniques, normalizeProject, type GridProject, type StoredProject } from './storedProject'
 import type { Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
 import type { VersionThreeProject } from './versionThree'
@@ -134,11 +134,13 @@ export function parseProjectsFile(text: string): ProjectFileContents {
     throw new Error(`Unsupported openbeads file version: ${String(file.version)}`)
   }
 
-  if (!Array.isArray(file.projects) || !file.projects.every(looksLikeEncodedProject)) {
+  // A Project in a Technique this build doesn't know is skipped; a file of nothing else is one it can't read (ticket 0644).
+  const known = Array.isArray(file.projects) ? inKnownTechniques(file.projects) : []
+  if (!Array.isArray(file.projects) || (file.projects.length > 0 && known.length === 0) || !known.every(looksLikeEncodedProject)) {
     throw new Error('This openbeads file does not contain readable Projects')
   }
 
-  return { projects: read(file.projects).map(normalizeProject) }
+  return { projects: read(known).map(normalizeProject) }
 }
 
 /** Picks which imported Projects to add. Importing never overwrites: a taken id comes in under a fresh id (ticket

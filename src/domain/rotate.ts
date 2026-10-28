@@ -1,5 +1,5 @@
 import type { GridPosition, Rotation } from './grid'
-import { beadBounds, colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
+import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { withEachBead } from './folding'
 import { snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
@@ -26,20 +26,16 @@ export interface RotatedSelection {
  * @internal Its test checks the turned rectangle on its own. */
 export function rotatedSelection(project: Pick<Project, 'technique' | 'techniqueSettings'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
-  const weave = describeWeave(project)
-  // Whole Units turn: a Technique with none counts beads as its Units.
-  const units = weave.unitsOf(frame)
   // Rows and columns swap about the middle. When they differ by an odd number the middle falls between beads, and which
   // way it rounds depends on which side is longer, so that four turns come back to where they began.
-  const difference = units.rows - units.columns
+  const difference = frame.rows - frame.columns
   const rowShift = difference >= 0 ? Math.floor(difference / 2) : -Math.floor(-difference / 2)
   const columnShift = difference >= 0 ? -Math.ceil(difference / 2) : Math.ceil(-difference / 2)
-  const turned = weave.positionsOf({ columns: units.rows, rows: units.columns })
   return {
-    top: snapRow(project, frame.row + rowShift * weave.rowsPerUnit + inset) - inset,
+    top: snapRow(project, frame.row + rowShift + inset) - inset,
     left: frame.column + columnShift,
-    rows: turned.rows,
-    columns: turned.columns,
+    rows: frame.columns,
+    columns: frame.rows,
   }
 }
 
@@ -71,15 +67,14 @@ function turnedBeads({ beads, weave }: Pick<LayerSheet, 'beads' | 'weave'>, sele
 
   const description = describeWeave(weave)
   const block = { columns: selection.columns, rows: selection.rows }
-  const turn = (row: number, column: number): GridPosition | undefined => {
+  const turn = (row: number, column: number): GridPosition => {
     const to = description.turned({ row: row - selection.top, column: column - selection.left }, block)
-    return to && { row: turned.top + to.row, column: turned.left + to.column }
+    return { row: turned.top + to.row, column: turned.left + to.column }
   }
 
-  // A bead that belongs to no whole Unit of the Selection (a horizontal bead past its last Unit) stays where it is.
   const mask = selectionMask(selection)
-  const lifted = beadsIn(beads, area, mask).filter(({ row, column }) => turn(row, column))
-  const landed = mask && lifted.map(({ row, column }) => turn(row, column)!)
+  const lifted = beadsIn(beads, area, mask)
+  const landed = mask && lifted.map(({ row, column }) => turn(row, column))
   const covered = landed ? landed.flatMap((at) => beadsIn(beads, { row: at.row, column: at.column, rows: 1, columns: 1 })) : beadsIn(beads, footprint)
   const cleared = withColors(beads, [...lifted, ...covered].map(({ row, column }) => ({ row, column, color: null })))
 
@@ -92,7 +87,7 @@ function turnedBeads({ beads, weave }: Pick<LayerSheet, 'beads' | 'weave'>, sele
     return frameContains(footprint, position) ? undefined : position
   }
   return {
-    beads: withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column)!, color }))),
+    beads: withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column), color }))),
     selection: landed ? { ...turned, cells: landed } : turned,
     moved,
   }
@@ -183,20 +178,17 @@ export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
   const frame = project.frame
-  const own = frame && frameWeave(project)
-  if (!frame || !own || !describeWeave(own).quarterTurn) {
+  if (!frame) {
     return undefined
   }
+  const own = frameWeave(project)
   // Turned in the Frame's own rows (its first is 0), then placed on the Canvas by as far as its corner moved.
   const turned = rotatedSelection(own, { top: 0, left: 0, rows: frame.rows, columns: frame.columns })
   const weave = describeWeave(own)
   const block = { columns: frame.columns, rows: frame.rows }
-  // A turn clockwise reads only the block's height, so a block widened to reach the Folded beads turns them as the
-  // rest, and keeps a Folded bead past the last Unit (ticket 0638); a bead it shows there is dropped.
-  const bounds = frame.folded && beadBounds(frame.folded)
-  const reach = bounds ? { rows: frame.rows, columns: Math.max(frame.columns, bounds.column + bounds.columns + 1) } : block
+  // Folded beads beyond the Frame's edge turn with the rest (ticket 0638).
   const { folded: _folded, ...rest } = frame
-  const carried = withEachBead(frame, (position, folded) => weave.turned(position, folded ? reach : block))
+  const carried = withEachBead(frame, (position) => weave.turned(position, block))
   const moved = canvasDistance(project, own, turned.top, turned.left)
   return {
     ...project,

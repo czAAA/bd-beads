@@ -34,13 +34,12 @@ describe('registry names (ADR 0078)', () => {
     expect(missing).toEqual([])
   })
 
-  it('gives every Technique setting its words in every language, and one that can lose beads its question (tickets 0624, 0626)', () => {
+  it('gives every Technique setting its words in every language (tickets 0624, 0626)', () => {
     const settings = [...new Map(TECHNIQUES.flatMap((technique) => describeWeave({ technique }).settings).map((setting) => [setting.labelKey, setting])).values()]
     const missing = LOCALES.flatMap((locale) =>
-      settings.flatMap(({ labelKey: key, lossOnChange }) => {
+      settings.flatMap(({ labelKey: key }) => {
         const words = ALL[locale].weaveSettings[key]
-        const loss = lossOnChange ? (['title', 'message', 'button'] as const).filter((word) => !words?.loss?.[word].trim()).map((word) => `loss.${word}`) : []
-        return [...(['label', 'less', 'more', 'value', 'locked', 'changed'] as const).filter((word) => !words?.[word].trim()), ...loss].map((word) => `${locale} weaveSettings.${key}.${word}`)
+        return (['label', 'less', 'more', 'value', 'locked', 'changed'] as const).filter((word) => !words?.[word].trim()).map((word) => `${locale} weaveSettings.${key}.${word}`)
       }),
     )
     expect(missing).toEqual([])

@@ -7,7 +7,6 @@ import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
-import { describeWeave } from './weave'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
 
@@ -301,81 +300,6 @@ describe('peyote passes (ticket 347)', () => {
   it('does the same along the rows', () => {
     expect(finished(peyote('rows', 1))).toHaveLength(3)
     expect(finished(peyote('rows', 2)).filter((bead) => bead.startsWith('1,'))).toEqual(['1,0', '1,2'])
-  })
-})
-
-describe('Right-angle weave Row progress (ticket 484)', () => {
-  /** A Frame of 2 columns by 3 lines of Units: 3 columns by 7 rows of positions. */
-  function rightAngle(direction: 'rows' | 'columns', pass: number) {
-    const project = createProject({ technique: 'rightAngle', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } })
-    return moveToRow(direction === 'columns' ? toggleRowDirection(project) : project, pass)
-  }
-
-  /** Which positions of the Frame are finished (or current, with `isInCurrentRow`), as "row,column"; a hole counts. */
-  function marked(project: ReturnType<typeof rightAngle>, test: typeof isInFinishedRow): string[] {
-    const { rows, columns } = project.frame!
-    return Array.from({ length: rows * columns }, (_, index) => ({ row: Math.floor(index / columns), column: index % columns }))
-      .filter((position) => test(project, position))
-      .map(({ row, column }) => `${row},${column}`)
-  }
-
-  it('counts lines of Units, down the rows and across the columns', () => {
-    expect(rowProgressPosition(rightAngle('rows', 0))).toEqual({ current: 0, total: 3 })
-    expect(rowProgressPosition(rightAngle('columns', 0))).toEqual({ current: 0, total: 2 })
-  })
-
-  it('weaves the first line of Units in three rows of positions, and each later one in the two below', () => {
-    expect(marked(rightAngle('rows', 0), isInCurrentRow).map((bead) => bead.split(',')[0])).toEqual(['0', '0', '0', '1', '1', '1', '2', '2', '2'])
-    expect(marked(rightAngle('rows', 1), isInCurrentRow).map((bead) => bead.split(',')[0])).toEqual(['3', '3', '3', '4', '4', '4'])
-  })
-
-  it('finishes every line of Units above the pointer, shared row included', () => {
-    expect(marked(rightAngle('rows', 0), isInFinishedRow)).toEqual([])
-    expect(marked(rightAngle('rows', 1), isInFinishedRow)).toHaveLength(9)
-    expect(marked(rightAngle('rows', 2), isInFinishedRow).every((bead) => Number(bead.split(',')[0]) <= 4)).toBe(true)
-  })
-
-  it('weaves a column of Units in its horizontal beads and the vertical beads either side of it', () => {
-    expect(marked(rightAngle('columns', 0), isInCurrentRow)).toEqual(['0,0', '1,0', '1,1', '2,0', '3,0', '3,1', '4,0', '5,0', '5,1', '6,0'])
-    expect(marked(rightAngle('columns', 1), isInCurrentRow)).toEqual(['0,1', '1,2', '2,1', '3,2', '4,1', '5,2', '6,1'])
-  })
-})
-
-describe('Netting Row progress (ticket 487)', () => {
-  /** A Frame of 2 columns by 3 rows of diamonds at Net size 3: 5 columns by 9 rows of positions. */
-  function netting(pass: number) {
-    return moveToRow(createProject({ technique: 'netting', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } }), pass)
-  }
-
-  /** The rows of the Frame's positions, holes left out, that `test` holds for. */
-  function rowsMarked(project: ReturnType<typeof netting>, test: typeof isInFinishedRow): number[] {
-    const { rows, columns } = project.frame!
-    return Array.from({ length: rows * columns }, (_, index) => ({ row: Math.floor(index / columns), column: index % columns }))
-      .filter((position) => describeWeave(project).hasPosition(position) && test(project, position))
-      .map(({ row }) => row)
-  }
-
-  it('weaves the first row of diamonds whole, shared beads included, and each later one its lower sides', () => {
-    expect(new Set(rowsMarked(netting(0), isInCurrentRow))).toEqual(new Set([0, 1, 2, 3, 4]))
-    expect(new Set(rowsMarked(netting(1), isInCurrentRow))).toEqual(new Set([5, 6]))
-    expect(new Set(rowsMarked(netting(2), isInCurrentRow))).toEqual(new Set([7, 8]))
-  })
-
-  it('finishes every row of diamonds before the pointer', () => {
-    expect(rowsMarked(netting(0), isInFinishedRow)).toEqual([])
-    expect(Math.max(...rowsMarked(netting(1), isInFinishedRow))).toBe(4)
-    expect(Math.max(...rowsMarked(netting(2), isInFinishedRow))).toBe(6)
-  })
-
-  it('reads a stored column direction as rows', () => {
-    const toggled = toggleRowDirection(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 2, height: 3, unit: 'beads' } }))
-    const stored = { ...toggled, technique: 'netting' as const, frame: { ...toggled.frame!, technique: 'netting' as const } }
-    expect(normalizeProject(stored).rowProgress.direction).toBe('rows')
-  })
-
-  it('stays on rows: Turn row direction does nothing', () => {
-    const project = netting(1)
-    expect(toggleRowDirection(project)).toBe(project)
   })
 })
 

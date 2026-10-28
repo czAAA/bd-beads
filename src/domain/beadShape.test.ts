@@ -43,10 +43,8 @@ describe('the Bead shape geometry (ADR 0068)', () => {
     }
   })
 
-  it('draws a Right-angle weave or Netting cell with the Bead height, and the steps follow it', () => {
+  it('steps a row pitch of the Bead height down and a bead across', () => {
     const cell = beadCell(delica, 'real')!
-    expect(describeWeave({ technique: 'rightAngle', cell }).cellAspect).toBe(cell.aspect)
-    expect(describeWeave({ technique: 'netting', cell }).cellAspect).toBe(cell.aspect)
     expect(positionStep({ technique: 'peyote', cell }).down).toBeCloseTo(0.75 * cell.aspect)
     expect(positionStep({ technique: 'loom', cell }).across).toBe(1)
   })

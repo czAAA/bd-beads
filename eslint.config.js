@@ -152,7 +152,7 @@ export default tseslint.config(
     };
     // A Technique is named only in its entry (tickets 506, 0611): no other code writes its id as a value or a key, and
     // the registries that use one (Frame kinds, Starters, the Homepage) name it as their entry's `technique`.
-    const ids = 'loom|peyote|brick|rightAngle|netting';
+    const ids = 'loom|peyote|brick';
     const message = 'Read the Technique from its entry in domain/weave.ts (TECHNIQUES, DEFAULT_TECHNIQUE, describeWeave) instead of writing its id (tickets 506, 0611).';
     const techniqueValue = { selector: `Literal[value=/^(${ids})$/]`, message };
     const techniqueKey = { selector: `Property > Identifier.key[name=/^(${ids})$/]`, message };

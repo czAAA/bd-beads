@@ -2,17 +2,20 @@
 import { describe, expect, it } from 'vitest'
 import { FRAME_KIND_IDS, frameKindOf } from './frameKind'
 import { settingValue, type SettingSpec } from './settingSpec'
-import { describeWeave, NET_SIZE_SETTING, TECHNIQUES } from './weave'
+import { describeWeave, TECHNIQUES } from './weave'
 
 describe('settingValue (ticket 0624)', () => {
+  /** A setting that goes by two, from 3 to 9. */
+  const odd: SettingSpec = { id: 'odd', labelKey: 'odd', min: 3, max: 9, step: 2, default: 3 }
+
   it('keeps a value within its range, on one of its steps from the minimum', () => {
-    expect([1, 3, 4, 8, 9, 12].map((value) => settingValue(NET_SIZE_SETTING, value))).toEqual([3, 3, 3, 7, 9, 9])
-    expect(settingValue(NET_SIZE_SETTING, 5.4)).toBe(5)
+    expect([1, 3, 4, 8, 9, 12].map((value) => settingValue(odd, value))).toEqual([3, 3, 3, 7, 9, 9])
+    expect(settingValue(odd, 5.4)).toBe(5)
   })
 
   it('reads none or no number as its default', () => {
-    expect(settingValue(NET_SIZE_SETTING, undefined)).toBe(3)
-    expect(settingValue(NET_SIZE_SETTING, Number.NaN)).toBe(3)
+    expect(settingValue(odd, undefined)).toBe(3)
+    expect(settingValue(odd, Number.NaN)).toBe(3)
   })
 })
 

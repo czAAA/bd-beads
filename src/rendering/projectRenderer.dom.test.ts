@@ -9,7 +9,7 @@ import type { Technique, Weave } from '../domain/weave'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
 import { renderProject as renderInSpace, visibleBeads, type RenderInput } from './projectRenderer'
 import { spaceOf, type Space } from './space'
-import { displayedExtentPx, positionBoxPx, projectExtentPx, unitStepPx, type Region } from './surfaceView'
+import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
@@ -47,19 +47,19 @@ describe('Technique geometry', () => {
   const rowStarts = (weave: Weave) => [0, 1, 2, 3].map((row) => positionBoxPx(weave, row, 0)).map(({ x, y }) => [x, y])
 
   it('stacks loom rows a bead apart and never shifts them', () => {
-    expect(unitStepPx({ technique: 'loom' })).toEqual({ across: 20, down: 20 })
+    expect(beadStepPx({ technique: 'loom' })).toEqual({ across: 20, down: 20 })
     expect(rowStarts({ technique: 'loom' })).toEqual([[0, 0], [0, 20], [0, 40], [0, 60]])
     expect(projectExtentPx('loom', 4, 3)).toEqual({ width: 80, height: 60 })
   })
 
   it('nests peyote rows and shifts every other one half a bead', () => {
-    expect(unitStepPx({ technique: 'peyote' })).toEqual({ across: 20, down: 15 })
+    expect(beadStepPx({ technique: 'peyote' })).toEqual({ across: 20, down: 15 })
     expect(rowStarts({ technique: 'peyote' })).toEqual([[0, 0], [10, 15], [0, 30], [10, 45]])
     expect(projectExtentPx('peyote', 4, 3)).toEqual({ width: 90, height: 50 })
   })
 
   it('stacks brick stitch rows a bead apart, with no seam between them', () => {
-    expect(unitStepPx({ technique: 'brick' })).toEqual({ across: 20, down: 20 })
+    expect(beadStepPx({ technique: 'brick' })).toEqual({ across: 20, down: 20 })
     expect(rowStarts({ technique: 'brick' })).toEqual([[0, 0], [10, 20], [0, 40], [10, 60]])
     expect(projectExtentPx('brick', 4, 3)).toEqual({ width: 90, height: 60 })
   })
@@ -72,38 +72,6 @@ describe('Technique geometry', () => {
 
   it('leaves the displayed width and height as they are upside down (180°, ticket 171)', () => {
     expect(displayedExtentPx('loom', 4, 3, 2, 180)).toEqual({ width: 160, height: 120 })
-  })
-})
-
-describe('Right-angle weave (ticket 482)', () => {
-  // Two Units across and one down: three lines, 2 + 3 + 2 beads. A bead is 20 long and 14 across, so a Unit is 34.
-  const project = () => projectOf('rightAngle', 2, 1)
-
-  it('measures a Unit as a bead length plus a bead width, and a block as its Units plus one bead width', () => {
-    expect(projectExtentPx('rightAngle', 3, 3)).toEqual({ width: 2 * 34 + 14, height: 34 + 14 })
-  })
-
-  it('draws horizontal beads lying along their line and vertical beads upright, each at its own place', () => {
-    const beads = beadsDrawn(project(), whole(project()))
-
-    expect(beads.map(({ x, y, width, height }) => [x, y, width, height])).toEqual([
-      [14, 0, 20, 14],
-      [48, 0, 20, 14],
-      [0, 14, 14, 20],
-      [34, 14, 14, 20],
-      [68, 14, 14, 20],
-      [14, 34, 20, 14],
-      [48, 34, 20, 14],
-    ])
-  })
-
-  it('paints each bead on its own', () => {
-    const base = projectOf('rightAngle', 2, 1)
-    const colored = { ...base, frame: { ...base.frame!, beads: { 1: { 2: '#e63746' }, 0: { 1: '#2f6fed' } } } }
-
-    const colors = beadsDrawn(colored, whole(colored)).map(({ color }) => color)
-
-    expect(colors).toEqual([null, '#2f6fed', null, null, '#e63746', null, null])
   })
 })
 
@@ -885,43 +853,6 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
   })
 })
 
-describe('Netting (ticket 485)', () => {
-  // One diamond at Net size 3: 5 columns and 5 rows of positions, 8 of them beads. A bead is 20 and a strand step 15.
-  const project = (extra: Partial<Project> = {}) => ({ ...createProject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } }), ...extra })
-
-  it('measures a block of positions as the steps between them plus one bead', () => {
-    expect(projectExtentPx('netting', 5, 5)).toEqual({ width: 4 * 15 + 20, height: 4 * 15 + 20 })
-  })
-
-  it('draws round beads, upright, at the places of the mesh and nothing in a hole', () => {
-    const woven = project()
-    const everyPosition = Array.from({ length: 25 }, (_cell, at) => ({ row: Math.floor(at / 5), column: at % 5, color: '#e63746' }))
-    const painted = { ...woven, frame: { ...woven.frame!, beads: withColors({}, everyPosition) } }
-
-    const beads = beadsDrawn(painted, whole(painted))
-
-    expect(beads.map(({ x, y, width, height }) => [x, y, width ?? 20, height ?? 20])).toEqual([
-      [30, 0, 20, 20],
-      [15, 15, 20, 20],
-      [45, 15, 20, 20],
-      [0, 30, 20, 20],
-      [60, 30, 20, 20],
-      [15, 45, 20, 20],
-      [45, 45, 20, 20],
-      [30, 60, 20, 20],
-    ])
-    expect(beads.every(({ cornerRadius }) => cornerRadius === 10)).toBe(true)
-    expect(beads.every(({ color }) => color === '#e63746')).toBe(true)
-  })
-
-  it('paints a bead on its own and leaves the others empty', () => {
-    const woven = project()
-    const colored = { ...woven, frame: { ...woven.frame!, beads: withColors({}, [{ row: 2, column: 0, color: '#2f6fed' }]) } }
-
-    expect(beadsDrawn(colored, whole(colored)).map(({ color }) => color)).toEqual([null, null, null, '#2f6fed', null, null, null, null])
-  })
-})
-
 describe('Bead shape (ADR 0068)', () => {
   const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
@@ -947,13 +878,6 @@ describe('Bead shape (ADR 0068)', () => {
     const rows = [...new Set(beads.map((bead) => bead.y))]
     expect(rows[1]! - rows[0]!).toBeCloseTo(0.75 * 20 * delicaCell.aspect)
     expect(projectExtentPx('peyote', 3, 3, delicaCell).height).toBeCloseTo(20 * delicaCell.aspect * (1 + 2 * 0.75))
-  })
-
-  it('lays a Right-angle weave Unit out from the Bead, not from the Technique\'s own 0.7', () => {
-    const unit = (cell?: typeof delicaCell) => projectExtentPx('rightAngle', 3, 3, cell)
-    const flatter = projectExtentPx('rightAngle', 3, 3, { aspect: 0.7, roundness: 0.1 })
-    expect(flatter).toEqual(unit())
-    expect(unit(delicaCell)).not.toEqual(unit())
   })
 })
 

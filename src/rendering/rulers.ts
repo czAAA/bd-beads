@@ -7,7 +7,7 @@ import { pieceAreasOf } from '../domain/pieces'
 import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { cellSizePx } from './cellSize'
-import { frameOriginPx, gridBox, unitStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
+import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
 // Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -175,14 +175,11 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   const beads: RulerDot[] = []
 
   const description = describeWeave(weave)
-  // What the rulers count: beads, or Units where the Technique counts them (ticket 482).
-  const count = description.unitsOf({ columns: box.columns, rows: box.rows })
+  const count = { columns: box.columns, rows: box.rows }
   const cell = cellSizePx(weave.technique, weave.cell)
-  // A Unit's step across and down in grid px, where its middle sits, and the positions a line of them spans (a
-  // Right-angle weave Unit spans its column and the next, three lines; a diamond its whole width and height).
-  const { across: unitAcross, down: unitDown } = unitStepPx(weave)
-  const middle = description.unitMiddle(cell.width, cell.height)
-  const span = description.positionsOf({ columns: 1, rows: 1 })
+  // A bead's step across and a row's down in grid px, and where a bead's middle sits.
+  const { across: beadAcross, down: rowDown } = beadStepPx(weave)
+  const middle = { x: cell.width / 2, y: cell.height / 2 }
   const area = gridBox(weave, { ...box, ...start })
   const lastRow = start.row + box.rows - 1
   const bottom = area.y + area.height
@@ -205,7 +202,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   const columnPitch = Math.hypot(columnStepOnScreen.x, columnStepOnScreen.y)
   const rowPitch = Math.hypot(rowStepOnScreen.x, rowStepOnScreen.y)
 
-  // Unit step outward from a side, in grid space and then once turned.
+  // A step outward from a side, in grid space and then once turned.
   const outward = (gridX: number, gridY: number, normal: [number, number]) => {
     const { x, y } = surface.gridToPoint(place.origin.x + gridX, place.origin.y + gridY)
     const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
@@ -255,16 +252,16 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   // A row of numbers stands over the beads of the row it runs along, shifted with them.
   const columnsAt = (alongRow: number, gridY: number, normal: [number, number]) => {
     for (let index = 0; index < count.columns; index += 1) {
-      const gridX = area.x + description.rowOffset(alongRow, cell.width) + index * unitAcross + middle.x
-      const marked = { top: box.row, left: box.column + index * description.columnsPerUnit, rows: box.rows, columns: span.columns }
-      along('column', index, gridX, gridY, normal, marked, box.column + index * description.columnsPerUnit)
+      const gridX = area.x + description.rowOffset(alongRow, cell.width) + index * beadAcross + middle.x
+      const marked = { top: box.row, left: box.column + index, rows: box.rows, columns: 1 }
+      along('column', index, gridX, gridY, normal, marked, box.column + index)
     }
   }
   const rowsAt = (gridX: number, normal: [number, number]) => {
     for (let index = 0; index < count.rows; index += 1) {
-      const gridY = area.y + index * unitDown + middle.y
-      const first = box.row + index * description.rowsPerUnit
-      const marked = { top: first, left: box.column, rows: span.rows, columns: box.columns }
+      const gridY = area.y + index * rowDown + middle.y
+      const first = box.row + index
+      const marked = { top: first, left: box.column, rows: 1, columns: box.columns }
       along('row', index, gridX, gridY, normal, marked, first)
     }
   }

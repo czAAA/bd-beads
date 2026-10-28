@@ -8,7 +8,7 @@ import { INITIAL_ROW_PROGRESS, isInitialRowProgress } from './rowProgress'
 // The drawing commands' changes to beads: painting a stroke on a layer, and Delete all.
 
 /** Paints `positions` on a layer as one edit, so a whole stroke (ticket 24) is one undo step: a Frame only where its
- * geometry has a position (not a net's hole, ticket 486, nor off a Custom frame's layout, ticket 0592), the open Canvas
+ * geometry has a position (not off a Custom frame's layout, ticket 0592), the open Canvas
  * anywhere. The same beads back if nothing changes; only the touched rows are copied (see withColors). */
 export function paintCells({ beads, geometry, edge }: LayerSheet, positions: GridPosition[], color: string | null): BeadMap {
   const targets = !edge ? positions : positions.filter((position) => geometry.hasPosition(position))

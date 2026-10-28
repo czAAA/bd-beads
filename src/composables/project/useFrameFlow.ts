@@ -7,22 +7,20 @@ import {
   frameWithEdgeStep,
   frameWithSize,
   movedFrame,
-  snapColumn,
-  snappedMove,
   snapRow,
   type FrameEdge,
 } from '../../domain/frame'
 import type { GridPosition, Layer } from '../../domain/grid'
-import { DEFAULT_TECHNIQUE, describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
-import { canvasWeave, frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
+import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
-import { switchedWeave, switchLoss } from '../../domain/weaveSwitch'
+import { switchedWeave } from '../../domain/weaveSwitch'
 import type { Project } from '../../domain/project'
 import { weaveSettingWords } from '../../i18n/settingWords'
 import { techniqueName } from '../../i18n/techniqueName'
@@ -55,8 +53,6 @@ export interface FrameFlowDeps {
   /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
   dialogs?: Dialogs
 }
-
-const layerHasBeads = (project: Project, layer: Layer): boolean => hasBeads(layer === 'frame' ? (project.frame?.beads ?? {}) : project.beads)
 
 type Gesture =
   | { kind: 'move'; origin: GridPosition; start: Rect }
@@ -144,9 +140,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   function describe(frame: Rect): string {
     const t = deps.messages()
-    const project = deps.currentProject()
-    const { columns, rows } = describeWeave(project ? frameWeave(project) : { technique: DEFAULT_TECHNIQUE }).unitsOf(frame)
-    return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
+    return fillBlanks(t.frame.announceSet, { width: frame.columns, height: frame.rows })
   }
 
   /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step.
@@ -169,28 +163,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return true
   }
 
-  /** The Weave change waiting on its question (tickets 507, 568, 0626): its Technique, its settings' values by id and,
-   * where the Technique stays, the setting whose change asks. */
-  const switchAsk = dialogs.question<{ layer: Layer; technique: Technique; settings: TechniqueSettings; changing?: string }>('switch-technique')
-
-  /** The open question as the dialog shows it: the Technique, the beads that would be lost and how many of them are
-   * Folded beads (ticket 0641), whether the layer shows beads at all, each setting the Technique describes at the value
-   * asked for, and the setting whose change asks. */
-  const switchQuestion = computed(() => {
-    const ask = switchAsk.value
-    const project = deps.currentProject()
-    if (!ask || !project) return undefined
-    const { settings } = describeWeave({ technique: ask.technique })
-    const values = weaveSettings({ technique: ask.technique, techniqueSettings: ask.settings })
-    return {
-      technique: ask.technique,
-      ...switchLoss(project, ask.layer, ask.technique, values),
-      drawn: layerHasBeads(project, ask.layer),
-      changing: settings.find((setting) => setting.id === ask.changing),
-      settings: settings.map((setting) => ({ setting, value: values[setting.id] ?? setting.default })),
-    }
-  })
-
   function applySwitch(layer: Layer, technique: Technique, values: TechniqueSettings): void {
     const project = deps.currentProject()
     if (!project) return
@@ -210,10 +182,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (changed) deps.announce(fillBlanks(weaveSettingWords(t, changed).changed, { count: values[changed.id] ?? changed.default }))
   }
 
-  /** Changes a layer's Technique or one of its settings (tickets 507, 568, 0626). Asks first when a Technique switch has
-   * drawn beads or settings to choose, or when a switch or a setting described as able to lose beads would drop some,
-   * shown or Folded (ticket 0641); otherwise changes at once. */
-  function askWeave(layer: Layer, change: { technique: Technique } | { setting: string; value: number }): void {
+  /** Changes a layer's Technique or one of its settings (tickets 507, 0626, ADR 0038): at once, as every bead keeps its
+   * row and column. */
+  function changeWeave(layer: Layer, change: { technique: Technique } | { setting: string; value: number }): void {
     const project = deps.currentProject()
     if (!project || (layer === 'frame' && !project.frame)) return
     const current = layerWeave(project, layer)
@@ -223,53 +194,23 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const values = 'setting' in change ? weaveSettings({ technique, techniqueSettings: { ...held, [change.setting]: change.value } }) : held
     if (sameWeave(current, switchedWeave(current, technique, values))) return
     if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
-    const { settings } = describeWeave({ technique })
-    if (technique !== current.technique) {
-      const asks = layerHasBeads(project, layer) || settings.length > 0 || switchLoss(project, layer, technique, values).lost > 0
-      if (asks) switchAsk.value = { layer, technique, settings: values }
-      else applySwitch(layer, technique, values)
-      return
-    }
-    const changing = settings.find((setting) => setting.lossOnChange && values[setting.id] !== current.techniqueSettings?.[setting.id])
-    if (changing && switchLoss(project, layer, technique, values).lost > 0) {
-      switchAsk.value = { layer, technique, settings: values, changing: changing.id }
-      return
-    }
     applySwitch(layer, technique, values)
-  }
-
-  /** A setting changed inside the open question (tickets 568, 0626). */
-  function setSwitchSetting(id: string, value: number): void {
-    const ask = switchAsk.value
-    if (ask) switchAsk.value = { ...ask, settings: { ...ask.settings, [id]: value } }
-  }
-
-  function cancelSwitch(): void {
-    switchAsk.value = undefined
-  }
-
-  function confirmSwitch(): void {
-    const ask = switchAsk.value
-    switchAsk.value = undefined
-    if (!ask) return
-    applySwitch(ask.layer, ask.technique, weaveSettings({ technique: ask.technique, techniqueSettings: ask.settings }))
   }
 
   /** Weaves the open Project's Frame in another Technique (tickets 351, 507): one Undo step, once a pass is done not at all. */
   function setTechnique(technique: Technique): void {
-    askWeave('frame', { technique })
+    changeWeave('frame', { technique })
   }
 
   /** Weaves the Canvas in another Technique (tickets 492, 507): any time, since Row progress belongs to the Frame; one
    * Undo step. */
   function setCanvasTechnique(technique: Technique): void {
-    askWeave('canvas', { technique })
+    changeWeave('canvas', { technique })
   }
 
-  /** Sets any setting of a layer's Technique (ticket 0626, ADR 0078), the Brick block or the Net size today: one Undo
-   * step, asked first where its description says the change can lose beads and it would. */
+  /** Sets any setting of a layer's Technique (ticket 0626, ADR 0078), the Brick block today: one Undo step. */
   function setWeaveSetting(layer: Layer, id: string, value: number): void {
-    askWeave(layer, { setting: id, value })
+    changeWeave(layer, { setting: id, value })
   }
 
   function press(target: FramePress, cell: GridPosition): void {
@@ -290,7 +231,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (gesture.kind === 'resize') {
       draft.value = { frame: frameWithEdges(frameWeave(project), gesture.start, gesture.edges, cell) }
     } else {
-      const next = snappedMove(canvasWeave(project), cell.row - gesture.origin.row, cell.column - gesture.origin.column)
+      const next = { rows: cell.row - gesture.origin.row, columns: cell.column - gesture.origin.column }
       // A pointer move inside the same bead changes nothing, so the draft (and the preview built from it) is left
       // alone.
       if (draft.value && next.rows === moved.rows && next.columns === moved.columns) return
@@ -350,23 +291,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function setTo(frame: Rect): void {
     const project = deps.currentProject()
     const top = project ? snapRow(project, frame.row) : frame.row
-    const bottom = project ? describeWeave(project).snapBottom(top, frame.row + frame.rows - 1) : frame.row + frame.rows - 1
-    const left = project ? snapColumn(project, frame.column) : frame.column
-    const right = project ? describeWeave(project).snapRight(left, frame.column + frame.columns - 1) : frame.column + frame.columns - 1
-    const applied = commit({ row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }, 'make')
-    if (applied) explainSnap(frame, { top, bottom, left, right })
-  }
-
-  /** Ticket 570: one toast saying how much each edge grew when the snap pushed the Frame past what was picked. */
-  function explainSnap(picked: Rect, snapped: Record<FrameEdge, number>): void {
-    const grown: ['snapAddedTop' | 'snapAddedBottom' | 'snapAddedLeft' | 'snapAddedRight', number][] = [
-      ['snapAddedTop', picked.row - snapped.top],
-      ['snapAddedBottom', snapped.bottom - (picked.row + picked.rows - 1)],
-      ['snapAddedLeft', picked.column - snapped.left],
-      ['snapAddedRight', snapped.right - (picked.column + picked.columns - 1)],
-    ]
-    const lines = grown.filter(([, added]) => added > 0).map(([key, added]) => plural(deps.locale(), added, deps.messages().frame[key]))
-    if (lines.length > 0) deps.showToast('frame-snapped', lines.join(' '), 'info')
+    const applied = commit({ ...frame, row: top, rows: frame.row + frame.rows - top }, 'make')
+    // Ticket 570: a toast saying how many rows the snap added on top of what was picked.
+    if (applied && top < frame.row) deps.showToast('frame-snapped', plural(deps.locale(), frame.row - top, deps.messages().frame.snapAddedTop), 'info')
   }
 
   function fit(): void {
@@ -482,9 +409,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!step || !project?.frame) return false
     if (event.shiftKey) {
-      const weave = frameWeave(project)
-      const { rowsPerUnit, columnsPerUnit } = describeWeave(weave)
-      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1] * columnsPerUnit, project.frame.rows + step[0] * rowsPerUnit, weave))
+      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]))
     } else {
       moveBy(step[0], step[1])
     }
@@ -518,10 +443,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setTechnique,
     setCanvasTechnique,
     setWeaveSetting,
-    switchQuestion,
-    setSwitchSetting,
-    cancelSwitch,
-    confirmSwitch,
     fit,
     setTo,
     remove,
