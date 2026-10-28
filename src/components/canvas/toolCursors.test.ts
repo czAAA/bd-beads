@@ -36,4 +36,11 @@ describe('toolPointerImage', () => {
     expect(hotSpot).toEqual([5, 19])
     expect(toolPointer('paint', { color: '#ff0000' })).toContain(`url("${url}") 5 19`)
   })
+
+  it('puts each tool\'s hot spot on the point that acts: the tip, or the middle of the Hand and Piece (ticket 546)', () => {
+    const hotSpots = { paint: [5, 19], erase: [6, 17], hand: [11, 12], select: [4, 3], fill: [18, 18], piece: [12, 12] } as const
+    for (const [tool, hotSpot] of Object.entries(hotSpots)) {
+      expect(toolPointerImage(tool as keyof typeof hotSpots).hotSpot, tool).toEqual(hotSpot)
+    }
+  })
 })

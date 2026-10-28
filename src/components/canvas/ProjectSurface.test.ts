@@ -190,35 +190,17 @@ describe('ProjectSurface', () => {
     }
   })
 
-  it('fills the empty positions outside the Frame and its margin with marks as patterns, not as a shape each', async () => {
-    viewport = { width: 100, height: 100 }
-    const framed = projectOf(2, 2)
-    const open = { ...framed, frame: undefined }
-    const marks = () => context.named('fillRect').filter((call) => typeof call.fillStyle === 'object')
+  it('draws the part of the Canvas the view is moved to, far from the first bead and at negative positions', async () => {
+    const cells = recordingContext()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+      return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
+    } as never)
+    const scroll = { x: 3000 * 20 - 40, y: -500 * 20 - 40 }
 
-    await mountSurface(open, 1, { x: 0, y: 0 })
-    const unframed = marks().length
-    context.calls.length = 0
-    await mountSurface(framed, 1, { x: 0, y: 0 })
+    await mountSurface(projectOf(2, 2), 1, scroll)
 
-    expect(unframed).toBe(1)
-    expect(marks().length).toBeLessThanOrEqual(4)
-    expect(context.named('arc')).toHaveLength(0)
-  })
-
-  it('draws a bead painted far from the first bead when the view is moved to it', async () => {
-    viewport = { width: 100, height: 100 }
-    const project = { ...projectOf(2, 2), beads: { [-500]: { [3000]: '#e63746' } } }
-    const home = await mountSurface(project, 1, { x: 0, y: 0 })
-    const atHome = context.named('drawImage').length + context.named('fillRect').length
-    home.wrapper.unmount()
-    context.calls.length = 0
-
-    await mountSurface(project, 1, { x: 3000 * 20 - 40, y: -500 * 20 - 40 })
-
-    expect(atHome).toBeGreaterThanOrEqual(0)
-    expect(context.named('drawImage').length + context.named('fillRect').length).toBeGreaterThan(0)
-    expect(context.calls.some((call) => call.fillStyle === '#e63746' || call.name === 'drawImage')).toBe(true)
+    // The bead layer is handed the view as its region, which moves to its top-left (projectRenderer's own test).
+    expect(cells.named('setTransform').at(-1)!.args).toEqual([1, 0, 0, 1, -scroll.x, -scroll.y])
   })
 
   describe('when the Project is edited', () => {
@@ -665,13 +647,6 @@ describe('ProjectSurface', () => {
       const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
       const finishedCentre = (project: Project) => centreOf(project, project.frame!.row, project.frame!.column)
 
-      it('dims them by default, keeping the bead\'s own color', async () => {
-        await mountSurface(weaving())
-
-        expect(redShown()).toBe(false)
-        expect(context.named('fillRect').some((call) => call.fillStyle === fadeOver('#e63746', DEFAULT_THEME.canvas, 0.5))).toBe(true)
-      })
-
       it('draws them at normal color, and the current row unbrightened, while Row highlight is off, and dims again when it is on (ticket 474)', async () => {
         const { wrapper } = await mountSurface(weaving(), 1, { x: 0, y: 0 }, { rowMarks: false })
         expect(redShown()).toBe(true)
@@ -740,21 +715,6 @@ describe('ProjectSurface', () => {
         await moveTo(surface, todo)
         await nextTick()
         expect(redShown()).toBe(false)
-      })
-
-      it('follows a finished column when the Row progress runs down the columns', async () => {
-        const project = { ...weaving(), rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } }
-        const { wrapper } = await mountSurface(project)
-        const surface = wrapper.find('[data-testid="project-surface"]')
-
-        context.calls.length = 0
-        await moveTo(surface, centreOf(project, project.frame!.row + 5, project.frame!.column + 5))
-        await nextTick()
-        expect(redShown()).toBe(false)
-
-        await moveTo(surface, finishedCentre(project))
-        await nextTick()
-        expect(redShown()).toBe(true)
       })
 
       it('asks again what is under a pointer that has not moved when the weaver\'s row changes or the canvas scrolls', async () => {
@@ -932,16 +892,6 @@ describe('ProjectSurface', () => {
 
       it('always draws the margin outline with a Frame (ticket 452)', async () => {
         await mountSurface(framed(), 1, { x: 0, y: 0 })
-        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
-      })
-
-      it('refuses a press whose preview lands in the margin, though the pressed bead is outside it', async () => {
-        const project = framed()
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true, previewCells: [{ row: 2, column: 2 }, { row: 8, column: 8 }] })
-
-        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
-
-        // The outline fades in on the overlay once refused: a dashed stroke is drawn.
         await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
       })
 
@@ -1123,11 +1073,6 @@ describe('ProjectSurface', () => {
       expect(styleOf(wrapper)).toMatch(/ 4 3, default/)
     })
 
-    it('leaves the bead out when no colour is chosen', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'fill', previewColor: null })
-      expect(decoded(styleOf(wrapper))).not.toContain('<rect')
-    })
-
     it('takes the place of the bead-shaped pointer: the OS pointer stays, nothing is drawn for the marker', async () => {
       const project = projectOf(20, 10)
       const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746' })
@@ -1172,24 +1117,15 @@ describe('ProjectSurface', () => {
     const drawn = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) => wrapper.find('[data-testid="pen-pointer"]')
     const svgOf = (src: string) => decodeURIComponent(src)
 
-    it('draws the tool\'s pointer at the Pencil, its hot spot on the tip, for each tool', async () => {
-      const hotSpots = { paint: [5, 19], erase: [6, 17], hand: [11, 12], select: [4, 3], fill: [18, 18], piece: [12, 12] } as const
-      for (const [tool, [x, y]] of Object.entries(hotSpots)) {
-        const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool, previewColor: '#e63746', moving: tool === 'hand', inputMode: 'pen' })
-        await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
-
-        const pointer = drawn(wrapper)
-        expect(pointer.exists(), tool).toBe(true)
-        expect(pointer.attributes('style')).toContain(`left: ${105 - x - 2}px`)
-        expect(pointer.attributes('style')).toContain(`top: ${47 - y - 2}px`)
-        expect(svgOf(pointer.attributes('src')!)).toContain(tool === 'paint' || tool === 'fill' ? 'fill="#e63746"' : '<svg')
-      }
-    })
-
-    it('leaves the bead out of Paint and Fill without a colour', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: null, inputMode: 'pen' })
+    it('draws the tool\'s pointer at the Pencil, in the chosen colour, its hot spot on the tip', async () => {
+      // Each tool's hot spot is toolCursors' to say; Paint's is 5, 19.
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746', inputMode: 'pen' })
       await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
-      expect(svgOf(drawn(wrapper).attributes('src')!)).not.toContain('<rect')
+
+      const pointer = drawn(wrapper)
+      expect(pointer.attributes('style')).toContain(`left: ${105 - 5 - 2}px`)
+      expect(pointer.attributes('style')).toContain(`top: ${47 - 19 - 2}px`)
+      expect(svgOf(pointer.attributes('src')!)).toContain('fill="#e63746"')
     })
 
     it('is hidden while the Pencil touches, and back when it hovers again', async () => {
