@@ -174,12 +174,12 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.get('[data-testid="project-net-size-value"]').text()).toBe('3')
     await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerdown')
     await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerup')
-    expect(wrapper.emitted('set-net-size')).toEqual([[5]])
+    expect(wrapper.emitted('set-weave-setting')).toEqual([['frame', 'netSize', 5]])
 
     await wrapper.setProps({ project: { ...netting, frame: undefined } })
     await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerdown')
     await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerup')
-    expect(wrapper.emitted('set-canvas-net-size')).toEqual([[5]])
+    expect(wrapper.emitted('set-weave-setting')!.at(-1)).toEqual(['canvas', 'netSize', 5])
   })
 
   it('locks the Technique, with the reason, once a Row progress pass is done', async () => {

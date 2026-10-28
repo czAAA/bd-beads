@@ -7,6 +7,7 @@ import { moveToRow } from '../../domain/rowProgress'
 import { withFrame } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { starterById, starterDesign } from '../../domain/starters'
+import { BRICK_BLOCK_SETTING, NET_SIZE_SETTING } from '../../domain/weave'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
@@ -409,8 +410,8 @@ describe('useFrameFlow', () => {
     })
 
     it('changes the Brick block of the Canvas alone', () => {
-      const { deps, setCanvasBrickBlock } = setup({ ...sized, technique: 'brick' })
-      setCanvasBrickBlock(3)
+      const { deps, setWeaveSetting } = setup({ ...sized, technique: 'brick' })
+      setWeaveSetting('canvas', 'brickBlock', 3)
       expect(deps.harness.project.techniqueSettings?.brickBlock).toBe(3)
       expect(deps.harness.project.frame?.techniqueSettings?.brickBlock).toBeUndefined()
     })
@@ -423,17 +424,17 @@ describe('useFrameFlow', () => {
       const { deps, setCanvasTechnique, switchQuestion, confirmSwitch } = setup(drawnCanvas)
       setCanvasTechnique('netting')
       expect(deps.replaceProject).not.toHaveBeenCalled()
-      expect(switchQuestion.value).toMatchObject({ technique: 'netting', drawn: true, asksNetSize: true, lost: 2 })
+      expect(switchQuestion.value).toMatchObject({ technique: 'netting', drawn: true, settings: [{ setting: NET_SIZE_SETTING, value: 3 }], lost: 2 })
       confirmSwitch()
       expect(switchQuestion.value).toBeUndefined()
       expect(deps.harness.project).toMatchObject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beads: {} })
     })
 
     it('recounts the loss as the Net size is chosen, and applies the one chosen as one Undo step', () => {
-      const { deps, setCanvasTechnique, setSwitchNetSize, switchQuestion, confirmSwitch } = setup(drawnCanvas)
+      const { deps, setCanvasTechnique, setSwitchSetting, switchQuestion, confirmSwitch } = setup(drawnCanvas)
       setCanvasTechnique('netting')
-      setSwitchNetSize(5)
-      expect(switchQuestion.value?.netSize).toBe(5)
+      setSwitchSetting('netSize', 5)
+      expect(switchQuestion.value?.settings).toEqual([{ setting: NET_SIZE_SETTING, value: 5 }])
       confirmSwitch()
       expect(deps.harness.project.techniqueSettings?.netSize).toBe(5)
       deps.harness.history.onUndo()
@@ -454,16 +455,16 @@ describe('useFrameFlow', () => {
       setCanvasTechnique('peyote')
       expect(deps.harness.project.technique).toBe('peyote')
       setCanvasTechnique('netting')
-      expect(switchQuestion.value).toMatchObject({ drawn: false, asksNetSize: true, asksBrickBlock: false, keeps: false })
+      expect(switchQuestion.value).toMatchObject({ drawn: false, settings: [{ setting: NET_SIZE_SETTING, value: 3 }], changing: undefined })
       cancelSwitch()
       setCanvasTechnique('brick')
-      expect(switchQuestion.value).toMatchObject({ drawn: false, asksNetSize: false, asksBrickBlock: true, brickBlock: 1 })
+      expect(switchQuestion.value).toMatchObject({ drawn: false, settings: [{ setting: BRICK_BLOCK_SETTING, value: 1 }] })
     })
 
     it('takes the Brick block chosen in the question along with the switch to brick stitch (ticket 568)', () => {
-      const { deps, setCanvasTechnique, setSwitchBrickBlock, confirmSwitch } = setup(drawnCanvas)
+      const { deps, setCanvasTechnique, setSwitchSetting, confirmSwitch } = setup(drawnCanvas)
       setCanvasTechnique('brick')
-      setSwitchBrickBlock(3)
+      setSwitchSetting('brickBlock', 3)
       confirmSwitch()
       expect(deps.harness.project).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
@@ -486,8 +487,8 @@ describe('useFrameFlow', () => {
     const net = { ...sized, technique: 'netting' as const, techniqueSettings: { netSize: 3 }, frame: { ...sized.frame!, technique: 'netting' as const, techniqueSettings: { netSize: 3 } } }
 
     it('changes at once while no bead would be lost, as one announced Undo step', () => {
-      const { deps, setNetSize, switchQuestion } = setup(net)
-      setNetSize(5)
+      const { deps, setWeaveSetting, switchQuestion } = setup(net)
+      setWeaveSetting('frame', 'netSize', 5)
       expect(switchQuestion.value).toBeUndefined()
       expect(deps.harness.project.frame).toMatchObject({ technique: 'netting', techniqueSettings: { netSize: 5 } })
       expect(deps.announce).toHaveBeenCalledWith('Net size changed to 5')
@@ -497,13 +498,13 @@ describe('useFrameFlow', () => {
 
     it('asks first when beads would lose their place, counting them as the size is chosen, and keeps the Technique', () => {
       const drawn = { ...net, beads: { 0: { 0: '#111111', 1: '#222222' } } }
-      const { deps, setCanvasNetSize, setSwitchNetSize, switchQuestion, confirmSwitch } = setup(drawn)
-      setCanvasNetSize(5)
+      const { deps, setWeaveSetting, setSwitchSetting, switchQuestion, confirmSwitch } = setup(drawn)
+      setWeaveSetting('canvas', 'netSize', 5)
       expect(deps.replaceProject).not.toHaveBeenCalled()
-      expect(switchQuestion.value).toMatchObject({ technique: 'netting', keeps: true, asksNetSize: true, netSize: 5 })
+      expect(switchQuestion.value).toMatchObject({ technique: 'netting', changing: NET_SIZE_SETTING, settings: [{ setting: NET_SIZE_SETTING, value: 5 }] })
       const lost = switchQuestion.value!.lost
-      setSwitchNetSize(7)
-      expect(switchQuestion.value!.netSize).toBe(7)
+      setSwitchSetting('netSize', 7)
+      expect(switchQuestion.value!.settings).toEqual([{ setting: NET_SIZE_SETTING, value: 7 }])
       confirmSwitch()
       expect(deps.harness.project.techniqueSettings?.netSize).toBe(7)
       expect(lost).toBeGreaterThan(0)
@@ -511,8 +512,8 @@ describe('useFrameFlow', () => {
 
     it('Undo brings back the Canvas\'s Net size along with its beads, and Redo the new size without them (ticket 0610)', () => {
       const drawn = { ...net, beads: { 0: { 0: '#111111', 1: '#222222' } } }
-      const { deps, setCanvasNetSize, confirmSwitch } = setup(drawn)
-      setCanvasNetSize(5)
+      const { deps, setWeaveSetting, confirmSwitch } = setup(drawn)
+      setWeaveSetting('canvas', 'netSize', 5)
       confirmSwitch()
       deps.harness.history.onUndo()
       expect(deps.harness.project).toMatchObject({ techniqueSettings: { netSize: 3 }, beads: drawn.beads })
@@ -523,8 +524,8 @@ describe('useFrameFlow', () => {
 
     it('Undo brings back the Frame\'s Net size along with its beads, and Redo the new size without them (ticket 0610)', () => {
       const drawn = { ...net, frame: { ...net.frame, beads: { 0: { 0: '#111111', 1: '#222222' } } } }
-      const { deps, setNetSize, confirmSwitch } = setup(drawn)
-      setNetSize(5)
+      const { deps, setWeaveSetting, confirmSwitch } = setup(drawn)
+      setWeaveSetting('frame', 'netSize', 5)
       confirmSwitch()
       deps.harness.history.onUndo()
       expect(deps.harness.project.frame).toMatchObject({ techniqueSettings: { netSize: 3 }, beads: drawn.frame.beads })
@@ -534,8 +535,8 @@ describe('useFrameFlow', () => {
     })
 
     it('is no step for the size already used', () => {
-      const { deps, setNetSize } = setup(net)
-      setNetSize(3)
+      const { deps, setWeaveSetting } = setup(net)
+      setWeaveSetting('frame', 'netSize', 3)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
   })
@@ -544,9 +545,9 @@ describe('useFrameFlow', () => {
     const brick = { ...sized, frame: { ...sized.frame!, technique: 'brick' as const } }
 
     it('changes the Brick block as one announced undo step, keeping every bead and the Frame row', () => {
-      const { deps, setBrickBlock } = setup(brick)
+      const { deps, setWeaveSetting } = setup(brick)
       const before = deps.harness.project
-      setBrickBlock(3)
+      setWeaveSetting('frame', 'brickBlock', 3)
       expect(deps.harness.project).toMatchObject({ frame: { ...before.frame, techniqueSettings: { brickBlock: 3 } }, beads: before.beads })
       expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
       deps.harness.history.onUndo()
@@ -556,9 +557,17 @@ describe('useFrameFlow', () => {
     })
 
     it('is no step for the number already used', () => {
-      const { deps, setBrickBlock } = setup(brick)
-      setBrickBlock(1)
+      const { deps, setWeaveSetting } = setup(brick)
+      setWeaveSetting('frame', 'brickBlock', 1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
+    })
+
+    it('never asks, even over drawn beads, as its description says a change loses none (ticket 0626)', () => {
+      const drawn = { ...brick, frame: { ...brick.frame, beads: { 0: { 0: '#111111', 1: '#222222' } } } }
+      const { deps, setWeaveSetting, switchQuestion } = setup(drawn)
+      setWeaveSetting('frame', 'brickBlock', 2)
+      expect(switchQuestion.value).toBeUndefined()
+      expect(deps.harness.project.frame).toMatchObject({ techniqueSettings: { brickBlock: 2 }, beads: drawn.frame.beads })
     })
   })
 

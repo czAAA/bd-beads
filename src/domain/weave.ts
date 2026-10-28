@@ -18,14 +18,15 @@ const MIN_NET_SIZE = 3
 /** The most beads in a Netting loop. */
 const MAX_NET_SIZE = 9
 /** The Net size a new Netting Project starts with. */
-export const DEFAULT_NET_SIZE = 3
+const DEFAULT_NET_SIZE = 3
 
 /** Brick stitch's Brick block, as its entry describes it (ticket 0624): 1, every other row, up to MAX_BRICK_BLOCK; the
  * same cells, so a change loses no bead. */
 export const BRICK_BLOCK_SETTING: SettingSpec = { id: 'brickBlock', labelKey: 'brickBlock', min: 1, max: MAX_BRICK_BLOCK, step: 1, default: 1, keptOffTechnique: true }
 
 /** Netting's Net size, as its entry describes it (ticket 0624): odd, from 3 to 9. A change moves the holes, so it asks
- * before beads are lost (ADR 0038). */
+ * before beads are lost (ADR 0038).
+ * @internal Tests name it; the app reads it from Netting's entry (ticket 0626). */
 export const NET_SIZE_SETTING: SettingSpec = { id: 'netSize', labelKey: 'netSize', min: MIN_NET_SIZE, max: MAX_NET_SIZE, step: 2, default: DEFAULT_NET_SIZE, lossOnChange: true }
 
 /** A layer's Technique settings by id (ticket 0624): each its Technique describes, and any kept off it (a Brick block). */
