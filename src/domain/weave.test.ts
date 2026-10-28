@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, type Technique, type Weave } from './weave'
+import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Technique, type Weave } from './weave'
 import type { GeometryRef } from './weaveGeometry'
 
 /** A Weave's passes, as Row progress asks for them (ticket 0621). */
@@ -618,5 +618,13 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
     expect(describeWeave({ technique: 'netting', netSize: 5 })).not.toBe(describeWeave({ technique: 'netting' }))
     expect(describeWeave({ technique: 'loom', cell: { aspect: 0.8, roundness: 0.3 } }).cellAspect).toBe(0.8)
     expect(describeWeave({ technique: 'loom' }).cellAspect).toBe(1)
+  })
+
+  it('reads a Weave\'s settings from its map ahead of its flat fields, each within its range (ticket 0624)', () => {
+    expect(weaveSettings({ technique: 'netting', netSize: 5 })).toEqual({ netSize: 5 })
+    expect(weaveSettings({ technique: 'netting', netSize: 5, techniqueSettings: { netSize: 7 } })).toEqual({ netSize: 7 })
+    expect(weaveSettings({ technique: 'brick', techniqueSettings: { brickBlock: 99 } })).toEqual({ brickBlock: 20 })
+    expect(weaveSettings({ technique: 'loom', brickBlock: 3 })).toEqual({})
+    expect(describeWeave({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })).toBe(describeWeave({ technique: 'brick', brickBlock: 2 }))
   })
 })

@@ -260,7 +260,7 @@ function sameSettings(a: FrameSettings, b: FrameSettings): boolean {
  * layout has a position for: Row progress starts at the first pass, and the Canvas keeps every bead. */
 function placedCustomFrame(project: Project, placement: CustomPlacement): Project {
   const { kind, centre, beads = {} } = placement
-  const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ kind })!.name]: placement.size }
+  const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ kind })!.id]: placement.size }
   const sheet = customSheet(project, kind, settings, centre)
   return { ...project, frame: { ...sheet, beads: beadsInLayout(beads, frameLayoutOf(sheet)!) }, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
 }
