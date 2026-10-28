@@ -1,4 +1,4 @@
-import type { Frame } from './canvas'
+import type { Rect } from './canvas'
 import { pieceAreasOf } from './pieces'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
 import { carryNames } from './pieceNames'
@@ -17,13 +17,13 @@ export interface AreaLine {
 
 /** An AreaLine and the rectangle it is a line of: the Frame, or with no Frame the Piece area. */
 interface ProjectLine extends AreaLine {
-  area: Frame
+  area: Rect
 }
 
 /** Which whole line of an area a Selection covers exactly, or undefined; a one-bead area counts as a row (fixed
  * tiebreak).
  * @internal Its test checks which line a Selection covers on its own. */
-export function selectedAreaLine(frame: Frame | undefined, selection: Selection | undefined): AreaLine | undefined {
+export function selectedAreaLine(frame: Rect | undefined, selection: Selection | undefined): AreaLine | undefined {
   if (!frame || !selection) {
     return undefined
   }
