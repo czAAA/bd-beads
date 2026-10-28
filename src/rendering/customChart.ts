@@ -3,7 +3,7 @@ import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { CELL_SIZE_PX } from './cellSize'
-import { sheetGeometry } from './space'
+import { geometryDrawnAlone } from './space'
 import { gridToRegion, projectExtentPx, type Region } from './surfaceView'
 
 // A Custom frame on a printed chart (ticket 0594): its beads lie at angles, not on rows and columns, so a chart page
@@ -24,7 +24,7 @@ export interface ChartBead {
  * Every bead is given, wherever it lies: the caller keeps those of its own part. */
 export function customChart(project: Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'brickBlock' | 'netSize'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>, region: Region, zoom: number): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
   const frame = project.frame
-  const geometry = sheetGeometry(project)
+  const geometry = geometryDrawnAlone(project)
   if (!frame || geometry.inRowsAndColumns) return undefined
   const weave = frameWeave(project)
   // The Frame drawn on its own, as a chart is: its first position at 0, 0.
