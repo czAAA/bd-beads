@@ -3,7 +3,8 @@ import { computed } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { frameWeave } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
-import { DEFAULT_NET_SIZE, type Technique } from '../../domain/weave'
+import type { Layer } from '../../domain/grid'
+import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
@@ -13,7 +14,7 @@ import TechniqueSection from './TechniqueSection.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 // The head of the Project panel, always shown (ProjectPanel card, ticket 554): the `project:` title with the local save
-// state, the Project's name and maker, and the one Technique control with Brick block. It only asks; the shell works.
+// state, the Project's name and maker, and the one Technique control with its settings. It only asks; the shell works.
 const props = defineProps<{
   project: Project
   saveFailed: boolean
@@ -24,16 +25,13 @@ const emit = defineEmits<{
   'save-maker-name': [name: string]
   save: []
   'set-technique': [technique: Technique]
-  'set-brick-block': [brickBlock: number]
-  'set-net-size': [netSize: number]
   'set-canvas-technique': [technique: Technique]
-  'set-canvas-brick-block': [brickBlock: number]
-  'set-canvas-net-size': [netSize: number]
+  /** A setting of the woven layer's Technique (ticket 0626): the Frame's where there is one, else the Canvas's. */
+  'set-weave-setting': [layer: Layer, id: string, value: number]
 }>()
 
 const { t } = useI18n()
 const techniqueAction = controlAction('change-technique')
-const brickBlockAction = controlAction('change-brick-block')
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 
 const state = computed(() => (props.saveFailed ? 'failed' : props.unsaved ? 'unsaved' : 'saved'))
@@ -55,14 +53,8 @@ function setTechnique(technique: Technique) {
   else emit('set-canvas-technique', technique)
 }
 
-function setBrickBlock(brickBlock: number) {
-  if (hasFrame.value) emit('set-brick-block', brickBlock)
-  else emit('set-canvas-brick-block', brickBlock)
-}
-
-function setNetSize(netSize: number) {
-  if (hasFrame.value) emit('set-net-size', netSize)
-  else emit('set-canvas-net-size', netSize)
+function setSetting(id: string, value: number) {
+  emit('set-weave-setting', hasFrame.value ? 'frame' : 'canvas', id, value)
 }
 </script>
 
@@ -96,14 +88,11 @@ function setNetSize(netSize: number) {
       class="project-head__technique"
       testid="project"
       :technique="weave.technique"
-      :brick-block="weave.brickBlock ?? 1"
-      :net-size="weave.netSize ?? DEFAULT_NET_SIZE"
+      :settings="weave.techniqueSettings ?? {}"
       :disabled="locked"
       :technique-disabled-body="techniqueAction.disabledBody?.(t, deps)"
-      :brick-block-disabled-body="brickBlockAction.disabledBody?.(t, deps)"
       @update:technique="setTechnique"
-      @update:brick-block="setBrickBlock"
-      @update:net-size="setNetSize"
+      @set-setting="setSetting"
     />
   </section>
 </template>

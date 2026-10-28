@@ -32,11 +32,8 @@ const {
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
   onSetTechnique,
-  onSetBrickBlock,
-  onSetNetSize,
-  onSetCanvasNetSize,
   onSetCanvasTechnique,
-  onSetCanvasBrickBlock,
+  onSetWeaveSetting,
   onSetBeadShape,
   onFitFrame,
   onSelectFrame,
@@ -156,11 +153,8 @@ const chosenStarter = ref<StarterId>()
       :unsaved="unsaved"
       @rename="onRenameProject"
       @set-technique="onSetTechnique"
-      @set-brick-block="onSetBrickBlock"
       @set-canvas-technique="onSetCanvasTechnique"
-      @set-canvas-brick-block="onSetCanvasBrickBlock"
-      @set-net-size="onSetNetSize"
-      @set-canvas-net-size="onSetCanvasNetSize"
+      @set-weave-setting="onSetWeaveSetting"
       @set-bead-shape="onSetBeadShape"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"

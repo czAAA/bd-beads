@@ -18,14 +18,15 @@ const MIN_NET_SIZE = 3
 /** The most beads in a Netting loop. */
 const MAX_NET_SIZE = 9
 /** The Net size a new Netting Project starts with. */
-export const DEFAULT_NET_SIZE = 3
+const DEFAULT_NET_SIZE = 3
 
 /** Brick stitch's Brick block, as its entry describes it (ticket 0624): 1, every other row, up to MAX_BRICK_BLOCK; the
  * same cells, so a change loses no bead. */
 export const BRICK_BLOCK_SETTING: SettingSpec = { id: 'brickBlock', labelKey: 'brickBlock', min: 1, max: MAX_BRICK_BLOCK, step: 1, default: 1 }
 
 /** Netting's Net size, as its entry describes it (ticket 0624): odd, from 3 to 9. A change moves the holes, so it asks
- * before beads are lost (ADR 0038). */
+ * before beads are lost (ADR 0038).
+ * @internal Tests name it; the app reads it from Netting's entry (ticket 0626). */
 export const NET_SIZE_SETTING: SettingSpec = { id: 'netSize', labelKey: 'netSize', min: MIN_NET_SIZE, max: MAX_NET_SIZE, step: 2, default: DEFAULT_NET_SIZE, lossOnChange: true }
 
 /** A Net size the Weave can lay out: odd, from 3 to 9; anything else is the default. */
@@ -34,7 +35,7 @@ export function clampNetSize(value: number | undefined): number {
 }
 
 /** A Technique's settings by id (ticket 0624): each its entry describes, at its value. */
-type TechniqueSettings = Readonly<Record<string, number>>
+export type TechniqueSettings = Readonly<Record<string, number>>
 
 /** The settings of a Technique that describes none, shared: a Weave's description is asked for per bead. */
 const NO_SETTINGS: TechniqueSettings = Object.freeze({})
