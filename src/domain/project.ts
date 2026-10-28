@@ -12,7 +12,7 @@ import {
   withColors,
   type BeadChange,
   type BeadMap,
-  type Frame,
+  type Rect,
   type FrameSheet,
 } from './canvas'
 import { sameFrame } from './frame'
@@ -317,7 +317,7 @@ function clampPointer(rowProgress: Project['rowProgress'], sheet: KindedSheet): 
 
 /** The Project's Frame, or for a Canvas without one the smallest box round its beads (nothing for an empty one). For
  * the parts of the app that still think in a Project's extent. */
-export function projectFrame(project: Pick<Project, 'frame' | 'beads'>): Frame {
+export function projectFrame(project: Pick<Project, 'frame' | 'beads'>): Rect {
   return project.frame ?? beadBounds(project.beads) ?? { row: 0, column: 0, columns: 0, rows: 0 }
 }
 
@@ -486,7 +486,7 @@ export function canvasDistance(project: Pick<Project, 'technique' | 'brickBlock'
 
 /** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
  * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas. */
-function resizedOrigin(project: Project, current: FrameSheet, rectangle: Frame): GridPosition {
+function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
   const moved = canvasDistance(project, current, rectangle.row - current.row, rectangle.column - current.column)
   return { row: current.row + moved.row, column: current.column + moved.column }
 }
@@ -528,7 +528,7 @@ function laidOf(frame: FrameSheet | undefined): Pick<KindedSheet, 'kind' | 'sett
 /** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
  * place on the Canvas, those outside a smaller Frame are dropped, the Canvas is never touched, and a Frame set anew is
  * empty. Row progress's pointers stay inside it; an unchanged Frame is the same Project (no change). */
-export function withFrame(project: Project, rectangle: Frame | undefined): Project {
+export function withFrame(project: Project, rectangle: Rect | undefined): Project {
   if (sameFrame(project.frame, rectangle)) {
     return project
   }
@@ -568,7 +568,7 @@ export function switchedWeave(current: Weave, technique: Technique, netSize?: nu
 
 /** The beads of a layer that keep a place in `weave` (a Frame's counted from its own corner, `shape`), and how many are
  * left without one: a hole of Netting, the empty last column of a Right-angle weave line. */
-function beadsInWeave(beads: BeadMap, weave: Weave, shape?: Pick<Frame, 'rows' | 'columns'>): { kept: BeadMap; lost: number } {
+function beadsInWeave(beads: BeadMap, weave: Weave, shape?: Pick<Rect, 'rows' | 'columns'>): { kept: BeadMap; lost: number } {
   const { hasPosition } = describeWeave(weave)
   const kept: BeadMap = {}
   let lost = 0
@@ -886,12 +886,12 @@ export function setPalette(project: Project, palette: PaletteIds, codes: Palette
 
 /** Where a Fill stops (ADR 0026): the Frame when it starts inside one, else the box round the Frame and every bead,
  * one position wider each side, so filling open space stays a finite patch. */
-function fillLimit(project: Pick<Project, 'beads' | 'frame'>, start: GridPosition): Frame {
+function fillLimit(project: Pick<Project, 'beads' | 'frame'>, start: GridPosition): Rect {
   if (project.frame && frameContains(project.frame, start)) {
     return project.frame
   }
   const boxes = [project.frame, beadBounds(project.beads), { row: start.row, column: start.column, rows: 1, columns: 1 }].filter(
-    (box): box is Frame => box !== undefined,
+    (box): box is Rect => box !== undefined,
   )
   const top = Math.min(...boxes.map((box) => box.row)) - 1
   const left = Math.min(...boxes.map((box) => box.column)) - 1

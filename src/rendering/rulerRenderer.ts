@@ -1,4 +1,4 @@
-import { frameContains, type Frame } from '../domain/canvas'
+import { frameContains, type Rect } from '../domain/canvas'
 import { namedPieces } from '../domain/pieceNames'
 import { currentPass, frameRowOrder, rowProgressOn } from '../domain/project'
 import type { DrawingContext } from './beadLook'
@@ -105,9 +105,9 @@ const NAME_GAP_PX = 4
 function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
   // The Frame's name, when it was made from a named Piece (ticket 489), stands under the Frame as a Piece's does.
   const frame = project.frame
-  const covered = (piece: Frame) =>
+  const covered = (piece: Rect) =>
     frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
-  const pieces: { name: string; row: number; column: number; rows: number; columns: number; layer: 'canvas' | 'frame' }[] = namedPieces(project)
+  const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = namedPieces(project)
     .filter((piece) => !covered(piece))
     .map((piece) => ({ ...piece, layer: 'canvas' as const }))
   if (project.frame?.name) {
@@ -158,7 +158,7 @@ export function drawBoxHandles(context: DrawingContext, box: { x: number; y: num
 
 // What the Frame carries while being set (Frame card): its handles, the size tooltip at the bottom-right, in viewport
 // px over all else.
-export function drawFrameEditing(context: DrawingContext, input: { frame: Frame; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string }): void {
+export function drawFrameEditing(context: DrawingContext, input: { frame: Rect; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string }): void {
   const { frame, surface, pixelRatio, theme, touch, tooltip } = input
   const { viewport } = surface
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)

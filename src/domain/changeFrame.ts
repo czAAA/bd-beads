@@ -1,4 +1,4 @@
-import { beadCount, beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame, type FrameSheet } from './canvas'
+import { beadCount, beadsInFrame, beadsOver, beadsWithout, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect, type FrameSheet } from './canvas'
 import { movedFrame, sameFrame, snapColumn, snappedMove, snapRow } from './frame'
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
@@ -17,10 +17,10 @@ import type { AreaLine } from './removeLine'
 export type FrameChange =
   /** Resize the Frame (the handles, the steppers, the typed size): its beads keep their place on the Canvas, those the
    * Frame no longer holds are dropped onto the Canvas where they stand (ticket 513), over what is there. */
-  | { set: Frame }
+  | { set: Rect }
   /** Frame from Selection and Fit to drawing (ADR 0066): the Frame becomes this rectangle and the Canvas's beads inside
    * it move into it. A Frame already there lays its beads back on the Canvas first. */
-  | { make: Frame }
+  | { make: Rect }
   | { remove: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
@@ -35,7 +35,7 @@ export type FrameChange =
   | { brickBlock: number }
   /** Put a new empty Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
    * the Canvas under the new one is hidden, not changed. */
-  | { place: { frame: Frame; weave: Weave } }
+  | { place: { frame: Rect; weave: Weave } }
   /** Name the Frame (ticket 555), or clear its name with an empty one; allowed after Row progress has started, as it
    * touches no bead and no pass. */
   | { name: string }
@@ -281,7 +281,7 @@ export function customFrameLoss(project: Project, settings: FrameSettings): numb
 /** The Project with its Frame set to `rectangle` (ticket 513): the strip the Frame gives up is laid on the Canvas as
  * Remove Frame lays the whole Frame (ticket 497), the Canvas under it cleared first, empty positions included.
  * Growing leaves the Canvas alone. */
-function resizedFrame(project: Project, rectangle: Frame | undefined): Project {
+function resizedFrame(project: Project, rectangle: Rect | undefined): Project {
   const resized = withFrame(project, rectangle)
   const before = project.frame
   const after = resized.frame
@@ -314,7 +314,7 @@ function resizedFrame(project: Project, rectangle: Frame | undefined): Project {
 /** The Project with a Frame at `rectangle` holding the Canvas's beads inside it (ADR 0066). A Frame there before lays
  * its beads on the Canvas where they stand, over what they covered. A named Piece the rectangle takes whole gives the
  * Frame its name. */
-function madeFrame(project: Project, rectangle: Frame): Project {
+function madeFrame(project: Project, rectangle: Rect): Project {
   const previous = project.frame
   // What shows is lifted. Canvas beads hidden under a Frame there before stay on the Canvas; its own beads outside the
   // new rectangle go back on it.
@@ -335,7 +335,7 @@ function madeFrame(project: Project, rectangle: Frame): Project {
 
 /** The Project with a new empty Frame at `place.frame`, woven as `place.weave`, instead of the one it had (ticket 495):
  * Row progress starts at the first pass, and the Canvas keeps every bead. */
-function placedFrame(project: Project, place: { frame: Frame; weave: Weave }): Project {
+function placedFrame(project: Project, place: { frame: Rect; weave: Weave }): Project {
   const { frame: _previous, ...rest } = project
   const { row, column, rows, columns } = place.frame
   const frame = { row, column, rows, columns, beads: {}, ...weaveOf(place.weave) }
@@ -391,7 +391,7 @@ function firstBead(beads: BeadMap): GridPosition | undefined {
 
 /** Where a position goes when one line of `area` is taken out and the area's later beads shift up or left; undefined
  * for a position on the removed line. */
-export function shiftedByLine(area: Frame, line: AreaLine, position: GridPosition): GridPosition | undefined {
+export function shiftedByLine(area: Rect, line: AreaLine, position: GridPosition): GridPosition | undefined {
   if (!frameContains(area, position)) {
     return position
   }
@@ -410,7 +410,7 @@ export function shiftedByLine(area: Frame, line: AreaLine, position: GridPositio
 
 /** The Project's beads with one line of `area` taken out and the area's later beads shifted up or left to close the
  * gap. */
-export function beadsWithoutLine(beads: BeadMap, area: Frame, line: AreaLine): BeadMap {
+export function beadsWithoutLine(beads: BeadMap, area: Rect, line: AreaLine): BeadMap {
   const result: BeadMap = {}
   forEachBead(beads, (row, column, color) => {
     const to = shiftedByLine(area, line, { row, column })
