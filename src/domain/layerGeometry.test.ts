@@ -134,7 +134,7 @@ describe('a Rectangular Frame answers as its Weave does', () => {
     expectSameBox(inPx(geometry.extent()!), { x: 0, y: 0, width, height })
     expectMiddlesHit(geometry, geometry.positions(), width / CELL_SIZE_PX, height / CELL_SIZE_PX)
     expectPositionsIn(geometry, everywhere, { x: 1.3, y: 0.6, width: 2.2, height: 3.1 })
-    expect(geometry.inRowsAndColumns).toBe(true)
+    expect(geometry.grid).toBe(true)
     expect(geometry.seams()).toEqual([])
   })
 })
@@ -215,7 +215,7 @@ describe('a Custom frame answers as its layout does', () => {
     }
     // A Custom frame is small: a view of any part of it draws every bead.
     expect(geometry.positionsIn({ x: 0, y: 0, width: 0.5, height: 0.5 })).toEqual(geometry.positions())
-    expect(geometry.inRowsAndColumns).toBe(false)
+    expect(geometry.grid).toBe(false)
     expect(geometry.seams()).toEqual(layout.seams.map((seam) => seam.map(({ x, y }) => ({ x: placement.x + x * placement.scale, y: placement.y + y * placement.scale }))))
   })
 })

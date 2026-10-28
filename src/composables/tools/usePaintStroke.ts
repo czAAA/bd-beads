@@ -1,5 +1,4 @@
 import { ref } from 'vue'
-import { frameContains } from '../../domain/canvas'
 import { layerAt, onLayer, type Layer } from '../../domain/layers'
 import { fillArea } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
@@ -60,11 +59,8 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
       return
     }
     deps.edit.strokeStep((project) =>
-      onLayer(project, strokeLayer, (view, local) => {
-        const at = local({ row, column })
-        // The Frame holds only its own cells: a stroke that began in it leaves nothing where the pointer goes outside.
-        return view.frame && !frameContains(view.frame, at) ? view : paintCells(view, [at], color)
-      }),
+      // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
+      onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, [local({ row, column })], color)),
     )
   }
 
@@ -77,9 +73,9 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
 
     const layer = layerAt(project, { row, column, ...(named ? { layer: named } : {}) })
     if (deps.activeTool() === 'fill') {
-      deps.edit.edit('drawing', (current) => onLayer(current, layer, (view, local) => {
+      deps.edit.edit('drawing', (current) => onLayer(current, layer, (sheet, local) => {
         const at = local({ row, column })
-        return fillArea(view, at.row, at.column, color)
+        return fillArea(sheet, at.row, at.column, color)
       }))
       return
     }

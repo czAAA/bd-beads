@@ -64,7 +64,7 @@ export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'k
 // rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
-    return frameGeometry(project.frame).inRowsAndColumns ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }] : []
+    return frameGeometry(project.frame).grid ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }] : []
   }
   return pieceAreasOf(project.beads, canvasWeave(project))
     .filter(hasGuides)

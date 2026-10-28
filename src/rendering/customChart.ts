@@ -25,7 +25,7 @@ export interface ChartBead {
 export function customChart(project: Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'brickBlock' | 'netSize'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>, region: Region, zoom: number): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
   const frame = project.frame
   const geometry = geometryDrawnAlone(project)
-  if (!frame || geometry.inRowsAndColumns) return undefined
+  if (!frame || geometry.grid) return undefined
   const weave = frameWeave(project)
   // The Frame drawn on its own, as a chart is: its first position at 0, 0.
   const extent = projectExtentPx(weave.technique, frame.columns, frame.rows, weave.cell)
