@@ -3,13 +3,14 @@ import { inKnownTechniques, normalizeProject, type StoredProject } from '../doma
 import type { Project } from '../domain/project'
 import {
   decodeEarlierProject,
-  decodeProject,
+  decodeFlatProject,
   encodeProject,
   type EncodedGridProject,
   type EncodedProject,
   type EncodedVersionThreeProject,
 } from '../domain/projectEncoding'
 import { paletteFromDevice } from '../domain/palette'
+import { liftFlatWeave, type SavedProject } from '../domain/flatWeave'
 import { ADDED_COLORS_KEY, PALETTE_ORDER_KEY, readDeviceAddedColors, readDevicePaletteOrder } from './legacyDevicePalette'
 import { readKey } from './storageKeys'
 
@@ -21,7 +22,8 @@ const STORAGE_KEY = 'openbeads:patterns'
 const UNREADABLE_KEY = 'openbeads:patterns:unreadable'
 
 // The stored format saveProjects writes (ADR 0009): v1 a bare array of Projects with full hex cells, v2 an envelope
-// with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame with its own beads.
+// with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame with its own beads. v4 now holds each layer's
+// settings map (ticket 0636) where it held a flat Brick block; its reader reads both, so a build rolled back reads it.
 const STORED_VERSION = 4
 
 interface StoredLibrary {
@@ -45,10 +47,10 @@ interface StoredGridLibrary {
 // Every readable stored format by version: each takes parsed JSON and returns plain Projects. v1 is recognised by being
 // an array; a reader may throw on a wrong shape, which loadProjects treats like unparseable JSON.
 const READERS: Record<number, (parsed: unknown) => StoredProject[]> = {
-  1: (parsed) => parsed as StoredProject[],
+  1: (parsed) => (parsed as SavedProject[]).map(liftFlatWeave),
   2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeEarlierProject),
   3: (parsed) => (parsed as StoredVersionThreeLibrary).patterns.map(decodeEarlierProject),
-  4: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
+  4: (parsed) => (parsed as StoredLibrary).patterns.map(decodeFlatProject),
 }
 
 /** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned

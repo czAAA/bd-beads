@@ -81,6 +81,10 @@ describe('the Starter manifests (ticket 0633)', () => {
     for (const category of STARTER_CATEGORIES) expect(category.starters, `${category.id}'s best`).toContain(category.best)
   })
 
+  it('keeps each design as its Frame\'s size and beads alone, no Project around them (ticket 0636)', () => {
+    for (const starter of allStarters) expect(Object.keys(starter.file).sort(), starter.id).toEqual(['columns', 'encodedBeads', 'rows'])
+  })
+
   for (const starter of allStarters) {
     it(`gives the ${starter.id} Starter a known kind and Technique and the sizes and choices its measuring rule reads`, () => {
       const custom = frameKindOf(starter).custom
