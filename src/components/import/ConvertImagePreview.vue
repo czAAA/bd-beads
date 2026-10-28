@@ -403,19 +403,23 @@ onBeforeUnmount(() => endDrag())
             @pointerleave="hovered = undefined"
             @keydown="onBoxKey"
           >
-            <canvas
-              ref="canvasEl"
-              class="convert-preview__canvas"
-              role="img"
-              :aria-label="previewName"
-              :style="boxStyle"
-              :data-columns="lattice?.columns"
-              :data-rows="lattice?.rows"
-              data-testid="convert-image-canvas"
-            />
-            <div v-if="frameStyle" class="convert-preview__frame" :style="frameStyle" data-testid="convert-image-frame-outline">
-              <span v-if="!shrunk && grid" class="convert-preview__tag" aria-hidden="true">{{ grid.columns }}×{{ grid.rows }}</span>
+            <!-- The beads and the Frame's dimming are clipped to the box; the size tag and handles may stand past it. -->
+            <div class="convert-preview__clip">
+              <canvas
+                ref="canvasEl"
+                class="convert-preview__canvas"
+                role="img"
+                :aria-label="previewName"
+                :style="boxStyle"
+                :data-columns="lattice?.columns"
+                :data-rows="lattice?.rows"
+                data-testid="convert-image-canvas"
+              />
+              <div v-if="frameStyle" class="convert-preview__frame" :style="frameStyle" data-testid="convert-image-frame-outline" />
             </div>
+            <span v-if="frameStyle && !shrunk && grid" class="convert-preview__tag" :style="{ left: frameStyle.left, top: frameStyle.top }" aria-hidden="true">
+              {{ grid.columns }}×{{ grid.rows }}
+            </span>
             <template v-if="wizard.mode.value === 'ratio' && !shrunk && !eyedropper">
               <button
                 v-for="handle in HANDLES"
@@ -536,6 +540,11 @@ onBeforeUnmount(() => endDrag())
 
 .convert-preview__box {
   position: relative;
+}
+
+.convert-preview__clip {
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   border-radius: var(--radius-sm);
 }
@@ -575,8 +584,8 @@ onBeforeUnmount(() => endDrag())
 
 .convert-preview__tag {
   position: absolute;
-  bottom: calc(100% + var(--space-4));
-  left: 0;
+  z-index: 1;
+  transform: translateY(calc(-100% - var(--space-4)));
   padding: 0 var(--space-4);
   font: var(--type-meta-small);
   color: var(--canvas);

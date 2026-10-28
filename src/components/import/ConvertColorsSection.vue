@@ -50,7 +50,7 @@ const remapping = ref<string>()
     </div>
     <AppNote data-testid="convert-source-note">{{ note }}</AppNote>
 
-    <label class="convert-colors__row">
+    <div class="convert-colors__row">
       <span>{{ t.convertImage.maxColorsLabel }}</span>
       <AppStepper
         v-model="maxColors"
@@ -63,7 +63,7 @@ const remapping = ref<string>()
         increase-testid="convert-image-colors-increase"
         value-testid="convert-image-max-colors"
       />
-    </label>
+    </div>
 
     <div class="convert-colors__found-head">
       <span class="convert-colors__label">{{ words.colorsFound }}</span>

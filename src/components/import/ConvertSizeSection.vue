@@ -79,7 +79,7 @@ function onSliderKey(event: KeyboardEvent) {
 <template>
   <div class="convert-size" data-testid="convert-size">
     <span :id="modeLabelId" class="convert-size__hidden">{{ t.convertImage.wizard.sections.size }}</span>
-    <SegmentedControl v-model="mode" :options="modeOptions" :labelledby="modeLabelId" data-testid="convert-size-mode" />
+    <SegmentedControl v-model="mode" class="convert-size__mode" :options="modeOptions" :labelledby="modeLabelId" data-testid="convert-size-mode" />
 
     <template v-if="wizard.mode.value === 'ratio'">
       <PixelToBeadRatio :ratio="wizard.ratio.value" :custom="wizard.customRatio.value" :lead-color="leadColor" @choose="wizard.setRatio" />
@@ -120,10 +120,10 @@ function onSliderKey(event: KeyboardEvent) {
           />
         </FormField>
       </div>
-      <label class="convert-size__row">
-        <span>{{ words.keepProportions }}</span>
+      <div class="convert-size__row">
+        <span aria-hidden="true">{{ words.keepProportions }}</span>
         <AppSwitch v-model="keep" :label="words.keepProportions" data-testid="convert-keep-proportions" />
-      </label>
+      </div>
       <div class="convert-size__zoom">
         <span class="convert-size__label">{{ words.pictureZoom }}</span>
         <AppIcon name="zoom-out" :size="16" />
@@ -176,6 +176,13 @@ function onSliderKey(event: KeyboardEvent) {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+/* On a phone the two long mode labels stack, one option a row, rather than squeeze to three lines each. */
+@media (max-width: 30rem) {
+  .convert-size__mode :deep(.segmented__option) {
+    flex-basis: 100%;
+  }
 }
 
 .convert-size__hint {

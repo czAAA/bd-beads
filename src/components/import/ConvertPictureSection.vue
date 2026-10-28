@@ -87,7 +87,7 @@ watchPostEffect(() => {
       <div class="convert-picture__set">
         <canvas ref="thumbEl" class="convert-picture__thumb" width="64" height="48" aria-hidden="true" />
         <div class="convert-picture__facts">
-          <span class="convert-picture__name" data-testid="convert-file-name">{{ wizard.fileName.value }}</span>
+          <span class="convert-picture__name" data-user-text data-testid="convert-file-name">{{ wizard.fileName.value }}</span>
           <span class="convert-picture__size" data-testid="convert-picture-size">{{ facts }}</span>
         </div>
       </div>

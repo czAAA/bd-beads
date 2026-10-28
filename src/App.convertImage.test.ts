@@ -3,16 +3,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { beadColor, drawnProject } from './testUtils/beads'
 import { BEAD_CATALOG } from './domain/beads'
-import { projectExtentPx } from './rendering/surfaceView'
 import type { PixelData } from './domain/imageConversion'
 import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
 import { openNewProject } from './testUtils/pill'
 import { chooseBeadInSection } from './testUtils/beadPicker'
 
-// Convert image end to end through the app shell (ticket 58): the form's file input, the framing step, and the Project
-// it creates. Only the decode is stubbed (jsdom decodes no image bytes, see imageDecode.ts): the picture arrives as
-// hand-built pixel data.
+// Convert image end to end through the app shell (spec 0645): New Project's button or a picture dropped on the app opens
+// the wizard, and Create adds the Project it shows. Only the decode is stubbed (jsdom decodes no image bytes, see
+// imageDecode.ts): the picture arrives as hand-built pixel data.
 const decodeState = vi.hoisted(() => ({
   image: undefined as PixelData | undefined,
   error: undefined as Error | undefined,
@@ -44,48 +43,18 @@ function twoBlocks(width = 8, height = 8): PixelData {
   return { width, height, data: new Uint8ClampedArray(rgba.flat()) }
 }
 
-/** Raises the New Project panel. The form states no size (ticket 342): all it has to settle before a picture is the
- * Bead. */
-async function pickBead(wrapper: ReturnType<typeof mount>, beadId = cubeBead.id) {
+/** Opens Convert image from the New Project form, after choosing the form's Bead. */
+async function openWizard(wrapper: ReturnType<typeof mount>, beadId = cubeBead.id) {
   await openNewProject(wrapper)
   await chooseBeadInSection(wrapper, beadId)
-}
-
-async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', type = 'image/png') {
-  const input = wrapper.find('[data-testid="convert-image-input"]')
-  Object.defineProperty(input.element, 'files', {
-    value: [new File(['pretend this is a picture'], name, { type })],
-    configurable: true,
-  })
-  await input.trigger('change')
+  await wrapper.find('[data-testid="convert-image"]').trigger('click')
   await flushPromises()
 }
 
-/** Starts framing a 15 x 30mm Project (10 x 20 cells in 1.5mm cubes) from the two-block picture, its size stated in
- * the size step. */
-async function startFraming(
-  wrapper: ReturnType<typeof mount>,
-  width = '15',
-  height = '30',
-  form: { technique?: string; beadId?: string; name?: string } = {},
-) {
-  await pickBead(wrapper, form.beadId)
-  if (form.technique) {
-    await wrapper.find(`[data-testid="technique-select"] [data-value="${form.technique}"]`).trigger('click')
-  }
-  if (form.name) {
-    await wrapper.find('[data-testid="name-input"]').setValue(form.name)
-  }
-  await chooseImage(wrapper)
-  await stateSizeStep(wrapper, width, height)
-}
-
-/** Fills in the size step a chosen picture opens (ticket 342), in mm, and continues to framing. */
-async function stateSizeStep(wrapper: ReturnType<typeof mount>, width = '15', height = '30') {
-  await wrapper.find('[data-testid="convert-size-unit"] [data-value="mm"]').trigger('click')
-  await wrapper.find('[data-testid="width-input"]').setValue(width)
-  await wrapper.find('[data-testid="height-input"]').setValue(height)
-  await wrapper.find('[data-testid="convert-size-continue"]').trigger('click')
+async function chooseImage(wrapper: ReturnType<typeof mount>, name = 'art.png', type = 'image/png') {
+  const input = wrapper.find('[data-testid="convert-choose-file"]')
+  Object.defineProperty(input.element, 'files', { value: [new File(['pretend this is a picture'], name, { type })], configurable: true })
+  await input.trigger('change')
   await flushPromises()
 }
 
@@ -96,66 +65,56 @@ beforeEach(() => {
   decodeState.error = undefined
 })
 
-describe('App Convert image framing (ticket 58)', () => {
-  it('takes the canvas panel over, in the slot the empty-canvas placeholder occupies', async () => {
-    const wrapper = mount(App)
-    expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
+describe('App Convert image (spec 0645)', () => {
+  it('opens the wizard from New Project on the form’s Bead, and creates the Project it shows', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await openWizard(wrapper)
+    expect(wrapper.find('[data-testid="convert-image-wizard"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="convert-section-bead-summary"]').exists()).toBe(true)
 
-    await startFraming(wrapper)
-
-    expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(false)
-  })
-
-  it('frames the size stated in the size step, a size in mm rounding up to whole beads (ticket 342)', async () => {
-    const wrapper = mount(App)
-    await startFraming(wrapper, '15.1', '30')
-
-    // 15.1mm is 10.07 cubes across: 11 columns.
-    expect(wrapper.find('[data-testid="convert-image-frame-outline"]').attributes('style')).toContain(
-      `width: ${projectExtentPx('loom', 11, 1).width}px`,
-    )
-  })
-})
-
-describe('App Convert image creating the Project (ticket 58)', () => {
-  it('creates a Project from the picture and opens it', async () => {
-    const wrapper = mount(App)
-    await startFraming(wrapper)
-
+    await chooseImage(wrapper)
     await wrapper.find('[data-testid="convert-image-create"]').trigger('click')
+    await flushPromises()
 
-    expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
-    expect(drawnProject(wrapper)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
-    // The left half of the picture is red, the right half blue.
+    expect(wrapper.find('[data-testid="convert-image-wizard"]').exists()).toBe(false)
+    // 8 px on its long side starts at 1:4: 32 × 32 beads of 1.5 mm cubes, the left half red, the right half blue.
+    expect(drawnProject(wrapper)).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 32, columns: 32 } })
     expect(beadColor(wrapper, 0)).toBe('#e63746')
-    expect(beadColor(wrapper, 9)).toBe('#2f6fed')
+    expect(beadColor(wrapper, 31)).toBe('#2f6fed')
+    wrapper.unmount()
   })
-})
 
-describe('App Convert image cancelling (ticket 58)', () => {
-  it('creates nothing and gives the empty canvas panel back', async () => {
-    const wrapper = mount(App)
-    await startFraming(wrapper)
-
+  it('creates nothing on Cancel and gives the empty canvas back', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await openWizard(wrapper)
     await wrapper.find('[data-testid="convert-image-cancel"]').trigger('click')
+    await flushPromises()
 
     expect(loadProjects()).toEqual([])
-    expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="convert-image-wizard"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
+    wrapper.unmount()
   })
-})
 
-describe('App Convert image rejections (ticket 58)', () => {
-  it('says why a picture was turned away and stays on the form', async () => {
-    const wrapper = mount(App)
-    await pickBead(wrapper)
+  it('opens with the picture set when one is dropped on the app', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    const drop = new Event('drop', { bubbles: true, cancelable: true })
+    Object.defineProperty(drop, 'dataTransfer', { value: { files: [new File(['x'], 'dropped.png', { type: 'image/png' })], items: [] } })
+    window.dispatchEvent(drop)
+    await flushPromises()
 
+    expect(wrapper.find('[data-testid="convert-image-wizard"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="convert-file-name"]').text()).toBe('dropped.png')
+    wrapper.unmount()
+  })
+
+  it('says why a picture was turned away, in the wizard', async () => {
+    const wrapper = mount(App, { attachTo: document.body })
+    await openWizard(wrapper)
     await chooseImage(wrapper, 'IMG_0001.HEIC', '')
 
     expect(wrapper.find('[data-testid="convert-image-error"]').text()).toBe(ru.convertImage.errors.heic)
-    expect(wrapper.find('[data-testid="convert-image-frame"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="app-canvas-placeholder"]').exists()).toBe(true)
+    wrapper.unmount()
   })
 })
 

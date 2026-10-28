@@ -30,16 +30,18 @@ const headingId = useId()
     :data-step="step"
     :data-testid="testid"
   >
-    <h3 :id="headingId" class="convert-section__header" tabindex="-1" :data-testid="`${testid}-header`">
-      <span class="convert-section__disc" :class="{ 'convert-section__disc--done': done }" aria-hidden="true">
-        <AppIcon v-if="done" name="check" :size="12" />
-        <template v-else>{{ step }}</template>
-      </span>
-      <span class="convert-section__title">{{ title }}</span>
+    <div class="convert-section__header">
+      <h3 :id="headingId" class="convert-section__heading" tabindex="-1" :data-testid="`${testid}-header`">
+        <span class="convert-section__disc" :class="{ 'convert-section__disc--done': done }" aria-hidden="true">
+          <AppIcon v-if="done" name="check" :size="12" />
+          <template v-else>{{ step }}</template>
+        </span>
+        <span class="convert-section__title">{{ title }}</span>
+      </h3>
       <span v-if="disabled ? disabledSummary : summary" class="convert-section__summary" :data-testid="`${testid}-summary`">
         {{ disabled ? disabledSummary : summary }}
       </span>
-    </h3>
+    </div>
     <div v-if="!disabled" class="convert-section__body">
       <slot />
     </div>
@@ -58,20 +60,29 @@ const headingId = useId()
 
 .convert-section__header {
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-4) var(--space-10);
+  min-height: var(--panel-row);
+}
+
+/* The title keeps its line; the summary takes the rest of the row, or a row of its own when it is long. */
+.convert-section__heading {
+  display: flex;
+  flex: none;
   align-items: center;
   gap: var(--space-10);
-  min-height: var(--panel-row);
   margin: 0;
   font: var(--type-control);
   font-weight: 600;
   color: var(--ink);
 }
 
-.convert-section__header:focus {
+.convert-section__heading:focus {
   outline: none;
 }
 
-.convert-section__header:focus-visible {
+.convert-section__heading:focus-visible {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: 2px;
 }
@@ -97,13 +108,8 @@ const headingId = useId()
   border-color: var(--ink);
 }
 
-.convert-section__title {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
 .convert-section__summary {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   min-width: 0;
   overflow-wrap: anywhere;
   font: var(--type-meta);

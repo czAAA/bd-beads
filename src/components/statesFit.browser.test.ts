@@ -1,4 +1,4 @@
-import { defineComponent, h, ref, type Component } from 'vue'
+import { defineComponent, h, onMounted, ref, type Component } from 'vue'
 import { describeFits, type FitCase } from '../testUtils/browserFit'
 import ColorPopover from './tools/ColorPopover.vue'
 import ToastRegion from './ui/ToastRegion.vue'
@@ -8,6 +8,7 @@ import ProjectsLibrary from './project/ProjectsLibrary.vue'
 import StarterGallery from './project/StarterGallery.vue'
 import StarterSetup from './project/StarterSetup.vue'
 import ConvertImageWizard from './import/ConvertImageWizard.vue'
+import PictureDropOverlay from './import/PictureDropOverlay.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
 import FrameChrome from './canvas/FrameChrome.vue'
@@ -38,6 +39,18 @@ const ColorPopoverHost = defineComponent({
         h('button', { ref: tile, type: 'button' }, 'Color'),
         h(ColorPopover, { tile: tile.value, pill: pill.value, position: 'bottom', colorHex: '#e63746', colorName: 'Red', selectedColorId: 'red' }),
       ])
+  },
+})
+
+/** The app's drop look, a picture being dragged over it. */
+const PictureDragged = defineComponent({
+  setup() {
+    onMounted(() => {
+      const transfer = new DataTransfer()
+      transfer.items.add(new File(['x'], 'fox.png', { type: 'image/png' }))
+      window.dispatchEvent(new DragEvent('dragover', { dataTransfer: transfer, bubbles: true, cancelable: true }))
+    })
+    return () => h(PictureDropOverlay, { disabled: false })
   },
 })
 
@@ -131,6 +144,7 @@ const CASES: FitCase[] = [
   ['BeadColorList', BeadColorList, { colors: beadColors('ready') }],
   ['BeadColorList failed', BeadColorList, { colors: beadColors('failed') }],
   ['ConvertImageWizard (no picture)', ConvertImageWizard, wizardProps(false)],
+  ['PictureDropOverlay', PictureDragged, {}],
   [
     'ConvertImageWizard (remapping)',
     ConvertImageWizard,
