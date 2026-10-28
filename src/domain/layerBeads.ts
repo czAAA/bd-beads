@@ -1,6 +1,6 @@
-import { beadsFromColors, changedPositions, colorAt, forEachBead, frameContains, hasBeads, type BeadMap } from './canvas'
+import { beadsFromColors, changedPositions, colorAt, forEachBead, frameContains, hasBeads, sameFrame, type BeadMap } from './canvas'
 import type { Layer } from './grid'
-import { weaveOf } from './layerWeave'
+import { sameWeave, weaveOf } from './layerWeave'
 import type { Grid, Project } from './project'
 import { DEFAULT_TECHNIQUE, type Weave } from './weave'
 
@@ -32,6 +32,25 @@ export function projectColors(project: Pick<Project, 'beads' | 'frame'>): string
 export function sameBeads(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project, 'beads' | 'frame'>): boolean {
   const same = (x: BeadMap | undefined, y: BeadMap | undefined) => x === y || changedPositions(x ?? {}, y ?? {}).length === 0
   return same(a.beads, b.beads) && same(a.frame?.beads, b.frame?.beads)
+}
+
+/** Whether two states of a Project hold the same Frame and beads: the Frame's place, size, Weave, name, kind, settings
+ * and turn, its shown and Folded beads, and the Canvas's. How a held Frame change (ticket 0640) knows it came back to
+ * where it began, and so is no Undo step. */
+export function sameLayers(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project, 'beads' | 'frame'>): boolean {
+  const [x, y] = [a.frame, b.frame]
+  if (!x || !y) return x === y && sameBeads(a, b)
+  const names = new Set([...Object.keys(x.settings ?? {}), ...Object.keys(y.settings ?? {})]) as Set<keyof NonNullable<typeof x.settings>>
+  return (
+    sameFrame(x, y) &&
+    sameWeave(x, y) &&
+    x.name === y.name &&
+    x.kind === y.kind &&
+    x.quarterTurns === y.quarterTurns &&
+    [...names].every((name) => x.settings?.[name] === y.settings?.[name]) &&
+    sameBeads(a, b) &&
+    (x.folded === y.folded || changedPositions(x.folded ?? {}, y.folded ?? {}).length === 0)
+  )
 }
 
 /** A dense grid of cells as a Frame the size of the grid holding them: what the Convert image preview, the Homepage's

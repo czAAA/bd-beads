@@ -2,7 +2,7 @@ import type { FrameChangeRefusal, FrameChangeResult } from '../../domain/changeF
 import { keepAllowedEdits } from '../../domain/allowedEdits'
 import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
-import { sameBeads } from '../../domain/layerBeads'
+import { sameBeads, sameLayers } from '../../domain/layerBeads'
 import type { Project } from '../../domain/project'
 import type { ReplaceOptions } from './useProjectLibrary'
 
@@ -19,7 +19,7 @@ export interface EditCommands {
 }
 
 /** What an Edit came to. */
-type EditOutcome =
+export type EditOutcome =
   | { kind: 'unchanged' }
   | { kind: 'refused'; reason: FrameChangeRefusal }
   | { kind: 'applied' }
@@ -46,29 +46,22 @@ export interface EditDeps {
 export function useEdit(deps: EditDeps) {
   /** What a stroke started from, taken at its start; undefined when none is in progress. */
   let strokeBaseline: UndoEntry | undefined
+  /** What a held Frame change started from, and the Project it belongs to; undefined while none is held. */
+  let held: { id: string; baseline: UndoEntry } | undefined
 
   function record(project: Project) {
     deps.recordHistory(snapshotOf(project))
   }
 
   const edit: EditFn = (kind, command) => {
+    settle()
     const project = deps.currentProject()
     if (!project) {
       return { kind: 'unchanged' }
     }
 
     if (kind === 'frame') {
-      const result = (command as EditCommands['frame'])(project)
-      if (result.kind === 'refused') {
-        return { kind: 'refused', reason: result.reason }
-      }
-      if (result.kind === 'unchanged') {
-        return { kind: 'unchanged' }
-      }
-      record(project)
-      deps.replaceProject(result.project)
-      deps.resetAfterFrameChange()
-      return { kind: 'applied' }
+      return applyFrame((command as EditCommands['frame'])(project), () => record(project))
     }
 
     const made = (command as EditCommands['drawing'])(project)
@@ -85,8 +78,49 @@ export function useEdit(deps: EditDeps) {
     return { kind: 'applied' }
   }
 
+  /** A Frame change held open (ticket 0640, ADR 0066): it lands on screen and is saved at once, as a frame edit is,
+   * but its Undo step waits for `settle`, so however many held changes follow make one step. How a Custom frame's
+   * steppers commit once, when the Frame panel closes. */
+  function hold(command: EditCommands['frame']): EditOutcome {
+    const project = deps.currentProject()
+    if (!project) {
+      return { kind: 'unchanged' }
+    }
+    return applyFrame(command(project), () => {
+      if (held?.id === project.id) return
+      settle()
+      held = { id: project.id, baseline: snapshotOf(project) }
+    })
+  }
+
+  /** A Frame change's result put on the open Project, after `before` takes its Undo step or holds it. */
+  function applyFrame(result: FrameChangeResult, before: () => void): EditOutcome {
+    if (result.kind === 'refused') {
+      return { kind: 'refused', reason: result.reason }
+    }
+    if (result.kind === 'unchanged') {
+      return { kind: 'unchanged' }
+    }
+    before()
+    deps.replaceProject(result.project)
+    deps.resetAfterFrameChange()
+    return { kind: 'applied' }
+  }
+
+  /** Ends a held Frame change: its one Undo step, unless it came back to where it began or its Project is no longer
+   * open. Every other Edit, a stroke, Undo and Redo settle first, so the steps stay in order. A no-op when none is held. */
+  function settle() {
+    const was = held
+    held = undefined
+    const project = deps.currentProject()
+    if (was && project?.id === was.id && !sameLayers(project, was.baseline)) {
+      deps.recordHistory(was.baseline)
+    }
+  }
+
   /** Starts a Paint/Eraser stroke: the baseline its one Undo step will go back to (ticket 55). */
   function beginStroke() {
+    settle()
     const project = deps.currentProject()
     strokeBaseline = project && snapshotOf(project)
   }
@@ -140,7 +174,7 @@ export function useEdit(deps: EditDeps) {
     }
   }
 
-  return { edit, beginStroke, strokeStep, endStroke, cancelStroke, restore }
+  return { edit, hold, settle, beginStroke, strokeStep, endStroke, cancelStroke, restore }
 }
 
 export type Edit = ReturnType<typeof useEdit>
