@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, describeWeave, heldSettings, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Technique, type Weave } from './weave'
+import { cellCenter, describeWeave, heldSettings, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, weaveSettings, type Technique, type Weave, type WeaveDescription } from './weave'
 import type { GeometryRef } from './weaveGeometry'
 
 /** A Weave's passes, as Row progress asks for them (ticket 0621). */
@@ -610,6 +610,16 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
   it('gives every Technique a typed Frame side of at least one whole bead or Unit (ticket 0622)', () => {
     const fewest = (technique: Technique) => describeWeave({ technique }).policy.fewestTypedSide
     expect(TECHNIQUES.filter((technique) => !Number.isInteger(fewest(technique)) || fewest(technique) < 1)).toEqual([])
+  })
+
+  it('names a known chart look for every Technique: cells for loom, peyote and brick stitch, outlined beads for the rest (ticket 0642)', () => {
+    const known = { cells: true, outlined: true } satisfies Record<WeaveDescription['policy']['chart'], true>
+    const look = (technique: Technique) => describeWeave({ technique }).policy.chart
+
+    expect(TECHNIQUES.filter((technique) => !Object.hasOwn(known, look(technique)))).toEqual([])
+    expect(Object.fromEntries(TECHNIQUES.map((technique) => [technique, look(technique)]))).toEqual({
+      loom: 'cells', peyote: 'cells', brick: 'cells', rightAngle: 'outlined', netting: 'outlined',
+    })
   })
 
   it('builds a Weave\'s description once, and another for other settings or another Bead', () => {

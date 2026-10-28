@@ -5,6 +5,7 @@ import { onLayer } from '../domain/layers'
 import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
 import type { Project } from '../domain/project'
+import { describeWeave, TECHNIQUES } from '../domain/weave'
 import { drawChartParts, letterColor, placeBeads } from './chartVector'
 import { planPrint, mm } from './printPlan'
 
@@ -162,6 +163,17 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
 
     expect(letters.length).toBeGreaterThan(0)
     expect(content.toString()).not.toContain('NaN')
+  })
+
+  it.each(TECHNIQUES)('draws a %s chart in the look its Technique\'s policy names (ticket 0642)', (technique) => {
+    const look = describeWeave({ technique }).policy.chart
+    const pdf = chartOf(schema(technique, 40, 40)).content.toString()
+    // A cell is a plain filled rectangle under the cell lines; an outlined bead is a closed path, filled and stroked.
+    const cells = (pdf.match(/ re f$/gm) ?? []).length
+    const outlined = (pdf.match(/ h B$/gm) ?? []).length
+
+    expect(cells > 0).toBe(look === 'cells')
+    expect(outlined > 0).toBe(look === 'outlined')
   })
 
   it('places the beads of a turned Schema from the Project renderer', () => {

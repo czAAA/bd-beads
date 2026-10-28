@@ -91,7 +91,8 @@ export interface WeaveGeometry {
   /** How much of a bead's width its corners are rounded by, in the Technique's own cell. */
   roundness: number
   /** Whether columns and rows count Units (a square of four beads, a diamond) rather than beads (ticket 482): what a
-   * size's unit is called. The domain asks the answers below or the Technique's policy, never this (ticket 0622). */
+   * size's unit is called. The domain and the PDF chart ask the answers below or the Technique's policy, never this
+   * (tickets 0622, 0642). */
   countsUnits: boolean
   /** After how many rows the shift repeats; Frame starts, edges and moves go by multiples of it. */
   frameStep: number
