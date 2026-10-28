@@ -12,7 +12,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 
 - Cancel (secondary), the result line in `meta` (`body`), centred, and Create Project (primary), both `field-height`: "32×24 beads · 5.1 × 3.1 cm · 8 colors". With no picture the line reads "No picture yet" in `muted` and Create Project is disabled (the disabled sections say why).
 - Create Project makes the Project from the popup's own copy of the setup and closes it. Its Palette is its built-in colors plus every color its beads use (spec 0645).
-- **Cancel asks in place.** One modal at a time (accessibility.md), so with a picture set, Cancel, Close and Escape turn the footer into the question: the warning icon, "**Discard conversion?** The picture and every setting here will be lost. The New Project form stays as it was.", then Cancel (first, focused) and Discard (`danger` fill). With no picture they close at once.
+- **Cancel asks in place.** One modal at a time (accessibility.md), so with a picture set, Cancel, Close and Escape turn the footer into the question: the warning icon and "Discard conversion?" in `control`, then Cancel (first, focused) and Discard (`danger` fill). No explanation under it: the title says it. With no picture they close at once.
 
 ## Sections as steps
 
@@ -42,8 +42,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 
 ## 2 Bead & Technique
 
-- The New Project form's own sections in panel rows (ProjectPanel card): bead (Brand, Type and Size PanelPickers), bead shape (small SegmentedControl, Symmetric | Real), technique (PanelPicker, with the Brick block row for brick stitch). They start from the form's values and are the popup's own copy.
-- Note: "Starts from the New Project form. Cancel leaves the form as it was."
+- The New Project form's own sections in panel rows (ProjectPanel card): bead (Brand, Type and Size PanelPickers), bead shape (small SegmentedControl, Symmetric | Real), technique (PanelPicker, with the Brick block row for brick stitch). They start from the form's values and are the popup's own copy. No Note: nothing here needs explaining.
 
 ## 3 Size
 
