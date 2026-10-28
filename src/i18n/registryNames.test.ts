@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from '../domain/beads'
 import { LOCALES, type Locale } from '../domain/locale'
 import { BUILT_IN_COLORS } from '../domain/palette'
+import { STARTER_CATEGORIES } from '../domain/starters'
 import { describeWeave, TECHNIQUES, techniqueNameKey } from '../domain/weave'
 import { be } from './be'
 import { en } from './en'
@@ -24,10 +25,16 @@ const NAMED: { group: string; names: (t: Translations) => Readonly<Record<string
     names: (t) => t.colorNames,
     keys: [...BUILT_IN_COLORS, ...BEAD_CATALOG.flatMap((bead) => bead.brand.colorFamilies ?? [])].map((color) => color.id),
   },
+  {
+    // A Starter whose id is its kind's (a Shape) is named by the kind (ticket 0633).
+    group: 'starters.options',
+    names: (t) => t.starters.options,
+    keys: STARTER_CATEGORIES.flatMap((category) => category.starters).flatMap((starter) => (starter.id === starter.kind ? [] : [starter.id])),
+  },
 ]
 
 describe('registry names (ADR 0078)', () => {
-  it('names every Technique, Form factor and Brand color in every language', () => {
+  it('names every Technique, Form factor, Brand color and Starter in every language', () => {
     const missing = NAMED.flatMap(({ group, names, keys }) =>
       LOCALES.flatMap((locale) => [...new Set(keys)].filter((key) => !names(ALL[locale])[key]?.trim()).map((key) => `${locale} ${group}.${key}`)),
     )

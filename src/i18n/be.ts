@@ -170,6 +170,7 @@ export const be: Translations = {
     loom: 'Ткацтва',
     peyote: 'Мазаічнае пляценне',
     brick: 'Цаглянае пляценне',
+    square: 'Квадратнае пляценне',
   },
   weaveSettings: {
     brickBlock: {

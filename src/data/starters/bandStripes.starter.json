@@ -1,0 +1,14 @@
+{
+  "id": "bandStripes",
+  "design": "bandStripes.json",
+  "kind": "rectangular",
+  "technique": "peyote",
+  "measure": "band",
+  "sizes": [
+    {"id": "width", "labelKey": "width", "min": 3, "max": 40, "step": 1, "default": 11, "presets": [7, 9, 11, 13]},
+    {"id": "wrist", "labelKey": "wrist", "min": 12, "max": 24, "step": 1, "default": 16, "presets": [15, 16, 17, 18]}
+  ],
+  "picks": [
+    {"id": "fit", "default": "comfortable", "values": ["snug", "comfortable", "loose"]}
+  ]
+}

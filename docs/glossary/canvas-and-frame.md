@@ -15,7 +15,7 @@ The open area a Project is drawn on: an endless field of bead positions with no 
 _Avoid_: open canvas, board, infinite grid, sheet
 
 **Grid**:
-The endless arrangement of positions on the Canvas set by the Technique: loom rows stack, peyote rows nest, brick stitch rows are offset by half a bead, a bead apart, in blocks of one or more rows (Brick block). It has no edge and no size; the Frame, not the Grid, gives a Schema its size.
+The endless arrangement of positions on the Canvas set by the Technique: loom and square stitch rows stack, peyote rows nest, brick stitch rows are offset by half a bead, a bead apart, in blocks of one or more rows (Brick block). It has no edge and no size; the Frame, not the Grid, gives a Schema its size.
 _Avoid_: board, for the beads themselves or for the Schema
 
 **Position marks**:
@@ -35,7 +35,7 @@ The one small sheet per Canvas, on whole Canvas positions, that holds the beads 
 _Avoid_: border, crop, artboard, page, grid size; in code, Frame for any other rectangle of positions, which is a `Rect` (ticket 0617): the Frame itself is `FrameSheet`
 
 **Layer**:
-The Canvas or the Frame: a set of beads woven in one Weave. A Project has one or two, and a press, a stroke, a Selection or a paste acts on one layer at a time. Its **Layer geometry** (ADR 0078, ticket 0628) answers where its beads are, whatever lays them out: its positions, whether a position holds a bead, the beads touching one, where a bead lies and at what angle, which bead a point is on, the box round its edge, which beads a view of part of it draws, whether its beads keep rows and columns (which rulers number), and its Seams. A grid's answers come from its Weave (the Canvas, open, or a Rectangular Frame), a Custom frame's from its layout. Drawing, the hit test and the exports ask it, never whether the Frame has a layout (ticket 0630).
+The Canvas or the Frame: a set of beads woven in one Weave. A Project has one or two, and a press, a stroke, a Selection or a paste acts on one layer at a time. Its **Layer geometry** (ADR 0078, ticket 0628) answers where its beads are, whatever lays them out: its positions, whether a position holds a bead, the beads touching one, where a bead lies and at what angle, which bead a point is on, the box round its edge, which beads a view of part of it draws, whether its beads keep rows and columns (which rulers number), and its Seams. A grid's answers come from its Weave (the Canvas, open, or a Rectangular Frame), a Custom frame's from its layout. Editing, drawing, the hit test, the exports and a Starter's bead count ask it, never whether the Frame has a layout (tickets 0629, 0630, 0632).
 _Avoid_: sheet, level
 
 **Folded beads**:
@@ -50,7 +50,7 @@ A Frame that is not a rectangle on one Grid: a fixed layout of bead positions gi
 _Avoid_: Shaped Frame, shape, expert mode, mixed technique (for the Frame itself), template
 
 **Frame kind** (ticket 0591, ADR 0077):
-What sort of Frame it is: **Rectangular** (the Frame as it has always been) or one of the Custom frame kinds (Warped Square, Triangle, Kite, Star, Kaleidocycle, Fringe earring; Medallion later). One entry in a typed registry, like the Starters', that holds everything that differs by kind: its settings, how its panels are built, which tools it allows, what Remove Frame does with its beads, its Row order and how it is exported. Code asks the Frame's kind rather than testing for it. Saved with the Project; a Frame with none, as a Rectangular one is saved, reads as Rectangular.
+What sort of Frame it is: **Rectangular** (the Frame as it has always been) or one of the Custom frame kinds (Warped Square, Triangle, Kite, Star, Kaleidocycle, Fringe earring; Medallion later). One entry in a typed registry, like the Starters', that holds everything that differs by kind: its settings, how its panels are built, its Layer geometry and Estimated size, which tools it allows, what Remove Frame does with its beads, its Row order and how it is exported. Code asks the Frame's kind rather than testing for it. A new Custom frame shape is its layout builder, its entry, a golden layout and its words (ADR 0078, ticket 0632). Saved with the Project; a Frame with none, as a Rectangular one is saved, reads as Rectangular.
 _Avoid_: frame type, shape, template
 
 **Seam** (ticket 0592):

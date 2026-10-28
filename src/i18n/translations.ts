@@ -1,7 +1,7 @@
 import type { FormFactorNames } from '../domain/beads'
 import type { CustomFrameKindId, FrameSettingName, FringeStyle } from '../domain/frameKind'
 import type { Locale } from '../domain/locale'
-import type { BandFit, OptionId, StarterCategoryId, StarterSizeName } from '../domain/starters'
+import type { BandFit, StarterCategoryId, StarterSizeName } from '../domain/starters'
 import type { PluralForms } from './plural'
 
 export type { Locale }
@@ -259,8 +259,9 @@ export interface Translations {
     setupSizes: Record<'width' | 'ringSize' | 'wrist', { label: string; less: string; more: string }>
     /** The setup's choices (ticket 0597): a Fringe earring's style and a Band's Fit, each a label and its options. */
     picks: { fringeStyle: { label: string; options: Record<FringeStyle, string> }; fit: { label: string; options: Record<BandFit, string> } }
-    /** The Earrings', Rings' and Bands' options by name (ticket 0597); a Shape is named by its kind. */
-    options: Record<OptionId, string>
+    /** The Earrings', Rings' and Bands' names by Starter id (tickets 0597, 0633): a plain key per Starter, checked in
+     * every language by a test (ADR 0078); a Shape is named by its kind. */
+    options: Record<string, string>
     /** A Ring size's Size system, a view of the one size: EU (the inside round in mm) or US. */
     sizeSystem: { label: string; eu: string; us: string }
     /** Under Design once a choice has turned the design off ("The design is made for V fringe."). */

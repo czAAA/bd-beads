@@ -1,0 +1,11 @@
+{
+  "id": "triangle",
+  "design": "triangle.json",
+  "kind": "triangle",
+  "technique": "peyote",
+  "measure": "frame",
+  "sizes": [
+    {"id": "rounds", "default": 10, "presets": [6, 8, 10, 12]}
+  ],
+  "picks": []
+}

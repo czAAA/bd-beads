@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
-import type { FrameSettingName } from '../../domain/frameKind'
+import { frameKindOf, type FrameSettingName } from '../../domain/frameKind'
 import { resolveProjectBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
@@ -70,28 +70,28 @@ function followDesign() {
 }
 
 /** Whether a size is the Ring size shown in US sizes. */
-const inUs = (size: StarterSize) => size.name === 'ringSize' && system.value === 'us'
+const inUs = (size: StarterSize) => size.id === 'ringSize' && system.value === 'us'
 
 /** A size's value as its stepper shows it: a Ring size in the Size system chosen. */
 function shownValue(size: StarterSize): number {
-  const value = sizes[size.name] ?? size.size
+  const value = sizes[size.id] ?? size.default
   return inUs(size) ? usRingSize(value) : value
 }
 
 /** A size set from its stepper or a chip, within its range, and every size after it kept within its own (Top rows
  * within a narrower Top width). A Ring size set in US is kept as the whole EU size it comes to. */
 function setSize(size: StarterSize, shown: number) {
-  const range = starterSizeRanges(props.starter, sizes)[size.name]!
+  const range = starterSizeRanges(props.starter, sizes)[size.id]!
   const eu = inUs(size) ? euRingSize(shown) : shown
   if (!Number.isFinite(eu)) return
-  sizes[size.name] = Math.min(range.max, Math.max(range.min, Math.round(eu)))
+  sizes[size.id] = Math.min(range.max, Math.max(range.min, Math.round(eu)))
   const ranges = starterSizeRanges(props.starter, sizes)
-  for (const each of props.starter.sizes) sizes[each.name] = Math.min(ranges[each.name]!.max, sizes[each.name] ?? each.size)
+  for (const each of props.starter.sizes) sizes[each.id] = Math.min(ranges[each.id]!.max, sizes[each.id] ?? each.default)
   followDesign()
 }
 
 function setPick(pick: StarterPick, value: string) {
-  picks[pick.name] = value
+  picks[pick.id] = value
   followDesign()
 }
 
@@ -132,25 +132,26 @@ const rows = computed<Row[]>(() => {
   const { sizes: all, picks: chosen } = props.starter
   const ordered: Row[] = []
   for (const size of all) {
-    for (const pick of chosen) if (pick.before === size.name) ordered.push({ pick })
-    if (size.name === 'ringSize') ordered.push({ system: true })
+    for (const pick of chosen) if (pick.before === size.id) ordered.push({ pick })
+    if (size.id === 'ringSize') ordered.push({ system: true })
     ordered.push({ size })
   }
   return [...ordered, ...chosen.filter((pick) => !pick.before).map((pick) => ({ pick }))]
 })
 
-/** A size's words: a Custom frame setting's from the Frame panel, a Ring's or Band's its own; its hint beside it. */
+/** A size's words: a setting of the Starter's kind its words from the Frame panel, a Ring's or Band's its own; its hint
+ * beside it. */
 function sizeWords(size: StarterSize): { label: string; less: string; more: string; hint: string } {
-  const custom = size.name !== 'width' && size.name !== 'ringSize' && size.name !== 'wrist'
-  const words = custom ? t.value.frame.sizeSettings[size.name as FrameSettingName] : t.value.starters.setupSizes[size.name as 'width' | 'ringSize' | 'wrist']
+  const custom = frameKindOf(props.starter).custom?.settings.some((setting) => setting.id === size.id) ?? false
+  const words = custom ? t.value.frame.sizeSettings[size.labelKey as FrameSettingName] : t.value.starters.setupSizes[size.labelKey as 'width' | 'ringSize' | 'wrist']
   const hints = t.value.starters.sizeHints as Partial<Record<StarterSizeName | 'ringSizeUs', string>>
-  const hint = size === props.starter.sizes[0] && custom ? t.value.starters.hints[props.starter.kind as keyof typeof t.value.starters.hints] : hints[inUs(size) ? 'ringSizeUs' : size.name]
+  const hint = size === props.starter.sizes[0] && custom ? t.value.starters.hints[props.starter.kind as keyof typeof t.value.starters.hints] : hints[inUs(size) ? 'ringSizeUs' : size.id]
   return { label: words.label, less: words.less, more: words.more, hint: hint ?? '' }
 }
 
 /** A size's stepper range and step as shown: a Ring size in US goes by halves. */
 function stepperOf(size: StarterSize): { min: number; max: number; stepBy: number } {
-  const { min, max } = starterSizeRanges(props.starter, sizes)[size.name]!
+  const { min, max } = starterSizeRanges(props.starter, sizes)[size.id]!
   return inUs(size) ? { min: usRingSize(min), max: usRingSize(max), stepBy: 0.5 } : { min, max, stepBy: 1 }
 }
 
@@ -161,10 +162,10 @@ function presetsOf(size: StarterSize): readonly number[] {
 }
 
 /** Whether a chip is the design's own size. */
-const designChip = (size: StarterSize, preset: number) => (inUs(size) ? preset === usRingSize(size.size) : preset === size.size)
+const designChip = (size: StarterSize, preset: number) => (inUs(size) ? preset === usRingSize(size.default) : preset === size.default)
 
 const pickOptions = (pick: StarterPick) =>
-  pick.values.map((value) => ({ value, label: (t.value.starters.picks[pick.name as StarterPickName].options as Record<string, string>)[value] ?? value }))
+  pick.values.map((value) => ({ value, label: (t.value.starters.picks[pick.id as StarterPickName].options as Record<string, string>)[value] ?? value }))
 
 const bead = computed(() => (props.project ? resolveProjectBead(props.project) : findBead(beadId.value)))
 
@@ -186,7 +187,7 @@ const estimate = computed(() => {
     return { value, lines: [count, plural(locale.value, measure.rows, words.bandRows), fillBlanks(words.claspLeft, { clasp })] }
   }
   const value = formatSizeMm(measure, units, locale.value)
-  if (props.starter.category !== 'earrings') return { value, lines: [count] }
+  if (!props.starter.pair) return { value, lines: [count] }
   return { value, lines: [count, plural(locale.value, 2 * starterBeadCount(props.starter, choice.value, bead.value), words.forPair)] }
 })
 
@@ -223,9 +224,9 @@ function onSubmit() {
       <AppNote v-if="note" data-testid="starter-design-note">{{ note }}</AppNote>
     </FormField>
 
-    <template v-for="row in rows" :key="'size' in row ? row.size.name : 'pick' in row ? row.pick.name : 'system'">
-      <div v-if="'size' in row" class="starter-setup__size" :data-testid="`starter-size-${row.size.name}`">
-        <span class="starter-setup__label" :data-testid="`starter-size-label-${row.size.name}`">
+    <template v-for="row in rows" :key="'size' in row ? row.size.id : 'pick' in row ? row.pick.id : 'system'">
+      <div v-if="'size' in row" class="starter-setup__size" :data-testid="`starter-size-${row.size.id}`">
+        <span class="starter-setup__label" :data-testid="`starter-size-label-${row.size.id}`">
           <span>{{ sizeWords(row.size).label }}</span>
           <span class="starter-setup__hint">{{ sizeWords(row.size).hint }}</span>
         </span>
@@ -238,9 +239,9 @@ function onSubmit() {
             :value-label="sizeWords(row.size).label"
             :decrease-label="sizeWords(row.size).less"
             :increase-label="sizeWords(row.size).more"
-            :decrease-testid="`starter-size-decrease-${row.size.name}`"
-            :increase-testid="`starter-size-increase-${row.size.name}`"
-            :value-testid="`starter-size-value-${row.size.name}`"
+            :decrease-testid="`starter-size-decrease-${row.size.id}`"
+            :increase-testid="`starter-size-increase-${row.size.id}`"
+            :value-testid="`starter-size-value-${row.size.id}`"
             @update:model-value="setSize(row.size, $event)"
           />
           <div class="starter-setup__presets" role="group" :aria-label="t.starters.presetsLabel">
@@ -250,7 +251,7 @@ function onSubmit() {
               class="starter-setup__chip"
               type="button"
               :aria-pressed="shownValue(row.size) === preset"
-              :data-testid="`starter-size-preset-${row.size.name}-${preset}`"
+              :data-testid="`starter-size-preset-${row.size.id}-${preset}`"
               @click="setSize(row.size, preset)"
             >
               {{ preset }}
@@ -259,12 +260,12 @@ function onSubmit() {
           </div>
         </div>
       </div>
-      <FormField v-else-if="'pick' in row" :label="t.starters.picks[row.pick.name].label" :label-id="`starter-pick-label-${row.pick.name}`">
+      <FormField v-else-if="'pick' in row" :label="t.starters.picks[row.pick.id].label" :label-id="`starter-pick-label-${row.pick.id}`">
         <SegmentedControl
-          :model-value="picks[row.pick.name] ?? row.pick.value"
+          :model-value="picks[row.pick.id] ?? row.pick.default"
           :options="pickOptions(row.pick)"
-          :labelledby="`starter-pick-label-${row.pick.name}`"
-          :data-testid="`starter-pick-${row.pick.name}`"
+          :labelledby="`starter-pick-label-${row.pick.id}`"
+          :data-testid="`starter-pick-${row.pick.id}`"
           @update:model-value="setPick(row.pick, $event)"
         />
       </FormField>
