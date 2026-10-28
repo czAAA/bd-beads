@@ -27,7 +27,7 @@ const {
   onCreateProject,
   onCreateFromStarter,
   onPlaceFrameFromStarter,
-  onSetFrameSize,
+  onSetFrameSettings,
   startConvertImage,
   onRequestDeleteAll,
   onRequestDeleteAllProjects,
@@ -100,7 +100,7 @@ const chosenStarter = ref<StarterId>()
       @export-pdf="onExportPdf"
       @set-letters="onSetLetters"
       @key="onFrameKey"
-      @set-size="onSetFrameSize"
+      @set-settings="onSetFrameSettings"
     />
     <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
       its Frame on the open Project. -->

@@ -622,27 +622,27 @@ describe('useFrameFlow', () => {
     it('puts the Starter\'s design in the middle of the view in an open Project, over the Canvas, as one announced Undo step', () => {
       const painted = { ...open, beads: { 22: { 33: '#00ff00' } } }
       const { deps, placeFromStarter } = setup(painted)
-      placeFromStarter(star, { size: 5, useDesign: true })
+      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       const frame = deps.harness.project.frame!
       expect(frame).toMatchObject({ kind: 'star', settings: { partSize: 5 } })
       // Round the middle of the view, (20, 30).
       expect([frame.row < 20, frame.row + frame.rows > 20, frame.column < 30, frame.column + frame.columns > 30]).toEqual([true, true, true, true])
       expect(frame.beads).toEqual(starterDesign(star))
       expect(deps.harness.project.beads).toBe(painted.beads)
-      expect(deps.announce).toHaveBeenCalledWith('Star frame set, Part size 5')
+      expect(deps.announce).toHaveBeenCalledWith('Star frame set, part size 5')
       deps.harness.history.onUndo()
       expect(deps.harness.project.frame).toBeUndefined()
     })
 
     it('puts the same Frame in place empty on Start empty', () => {
       const { deps, placeFromStarter } = setup(open)
-      placeFromStarter(star, { size: 5, useDesign: false })
+      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: false })
       expect(deps.harness.project.frame).toMatchObject({ kind: 'star', beads: {} })
     })
 
     it('replaces an empty Frame at once, starting Row progress at the first pass', () => {
       const { deps, placeFromStarter, replaceConfirmOpen } = setup(sized)
-      placeFromStarter(star, { size: 5, useDesign: true })
+      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(false)
       expect(deps.harness.project.frame!.kind).toBe('star')
       expect(deps.harness.project.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
@@ -651,7 +651,7 @@ describe('useFrameFlow', () => {
     it('asks before replacing a Frame that holds beads, and replaces nothing on No', () => {
       const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
       const { deps, placeFromStarter, replaceConfirmOpen, cancelReplace } = setup(drawn)
-      placeFromStarter(star, { size: 5, useDesign: true })
+      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(true)
       expect(deps.replaceProject).not.toHaveBeenCalled()
       cancelReplace()
@@ -662,7 +662,7 @@ describe('useFrameFlow', () => {
     it('drops the old Frame with its beads on Yes, as one Undo step', () => {
       const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
       const { deps, placeFromStarter, confirmReplace } = setup(drawn)
-      placeFromStarter(star, { size: 5, useDesign: true })
+      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       confirmReplace()
       expect(deps.replaceProject).toHaveBeenCalledTimes(1)
       expect(deps.harness.project.frame!.kind).toBe('star')
@@ -672,7 +672,7 @@ describe('useFrameFlow', () => {
 
     it('does nothing once a pass is done', () => {
       const { deps, placeFromStarter } = setup(moveToRow(sized, 1))
-      placeFromStarter(star, { size: 5, useDesign: true })
+      placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
   })
@@ -687,27 +687,43 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   }
 
   it('grows its Rounds at once, and asks before fewer Rounds drop painted beads', () => {
-    const { deps, setSize, sizeAsk, confirmSize } = setup(custom('triangle', 9))
-    setSize(10)
+    const { deps, setSettings, sizeAsk, confirmSize } = setup(custom('triangle', 9))
+    setSettings({ rounds: 10 })
     expect(deps.harness.project.frame!.settings).toEqual({ rounds: 10 })
     deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 9: { 0: '#ff0000' } } } })
-    setSize(9)
-    expect(sizeAsk.value).toEqual({ setting: 'rounds', size: 9, lost: 1 })
+    setSettings({ rounds: 9 })
+    expect(sizeAsk.value).toEqual({ change: { rounds: 9 }, lost: 1 })
     confirmSize()
     expect(deps.harness.project.frame).toMatchObject({ settings: { rounds: 9 }, beads: {} })
   })
 
   it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {
     const star = setup(custom('star', 10))
-    star.setSize(8)
+    star.setSettings({ partSize: 8 })
     expect(star.deps.harness.project.frame!.settings).toEqual({ partSize: 8 })
     expect(star.deps.announce).toHaveBeenLastCalledWith('Part size: 8')
     const kaleidocycle = setup(custom('kaleidocycle', 9))
-    kaleidocycle.setSize(11)
+    kaleidocycle.setSettings({ partSize: 11 })
     expect(kaleidocycle.deps.harness.project.frame!.settings).toEqual({ partSize: 11 })
     const kite = setup(custom('kite', 21))
-    kite.setSize(30)
+    kite.setSettings({ rows: 30 })
     expect(kite.deps.announce).toHaveBeenLastCalledWith('Rows: 30')
+  })
+
+  it('changes a Fringe earring one setting at a time, and asks before a V drops painted strands\' ends (ticket 0597)', () => {
+    const placed = changeFrame(open, { custom: { kind: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
+    if (placed.kind !== 'changed') throw new Error(placed.kind)
+    const { deps, setSettings, sizeAsk, confirmSize } = setup(placed.project)
+    setSettings({ fringeLength: 14 })
+    expect(deps.harness.project.frame!.settings).toMatchObject({ fringeLength: 14 })
+    expect(deps.announce).toHaveBeenLastCalledWith('Fringe length: 14')
+    // The first strand's last bead, which a V leaves off.
+    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 1013: { 0: '#ff0000' } } } })
+    setSettings({ fringeStyle: 'v' })
+    expect(sizeAsk.value).toEqual({ change: { fringeStyle: 'v' }, lost: 1 })
+    confirmSize()
+    expect(deps.harness.project.frame).toMatchObject({ settings: { fringeStyle: 'v' }, beads: {} })
+    expect(deps.announce).toHaveBeenLastCalledWith('Fringe style: V fringe')
   })
 
   it('removes an empty one at once, with nothing to ask, and asks first once it holds beads', () => {

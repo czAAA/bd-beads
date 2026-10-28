@@ -31,9 +31,11 @@ export interface RowOrder {
 }
 
 /** A pass of a Custom frame's Row order (ticket 0594), numbered from 1 as a pattern counts: a round from the centre or a
- * row from the point, of one part of several, or a join between parts. */
+ * row from the point, of one part of several, a Fringe earring's strand from the first (ticket 0597), or a join between
+ * parts. */
 export type OrderStep =
   | { kind: 'round' | 'row'; number: number; part?: number }
+  | { kind: 'strand'; number: number }
   | { kind: 'join'; step: LayoutJoin['step']; parts: readonly number[] }
 
 /** A line's index counted from the Frame's far end when the way is reversed, so every pass rule keeps working on lines
@@ -88,10 +90,13 @@ function facingEdge(last: readonly LayoutPosition[], other: readonly LayoutPosit
 }
 
 /** The passes of a Custom frame (spec 0590, ADR 0077): each part in making order, round by round from its centre (or
- * row by row from a Kite's point, read left to right), then its joins, each ringing the edges it puts together. */
+ * row by row from a Kite's point or a Fringe earring's base, read left to right), a strand in one pass strung from the
+ * top down, then its joins, each ringing the edges it puts together. */
 function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[] {
   const parts = [...new Set(layout.panels.map(({ part }) => part))].sort((a, b) => layout.panels.find((panel) => panel.part === a)!.order - layout.panels.find((panel) => panel.part === b)!.order)
-  const several = parts.length > 1
+  const strandOf = (part: number) => layout.panels.find((panel) => panel.part === part)!.strand === true
+  const several = parts.filter((part) => !strandOf(part)).length > 1
+  let strands = 0
   const ofPart = (part: number) => layout.positions.filter(({ panel }) => layout.panels[panel]!.part === part)
   const lastRound = (part: number) => {
     const beads = ofPart(part)
@@ -101,6 +106,12 @@ function layoutPasses(layout: FrameLayout, lines: 'round' | 'row'): LayoutPass[]
   const passes: LayoutPass[] = []
   for (const part of parts) {
     const beads = ofPart(part)
+    if (strandOf(part)) {
+      strands += 1
+      // By name, from the top down, so a strand turned by Rotate Frame is still strung from the top.
+      passes.push({ step: { kind: 'strand', number: strands }, positions: [...beads].sort((a, b) => a.row - b.row).map(({ row, column }) => ({ row, column })) })
+      continue
+    }
     const count = Math.max(...beads.map(({ row }) => row)) + 1
     for (let line = 0; line < count; line += 1) {
       const positions = beads.filter(({ row }) => row === line).sort((a, b) => (lines === 'row' ? a.x - b.x : a.column - b.column))

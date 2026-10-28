@@ -2,8 +2,9 @@ import { expect, test, type Page } from '@playwright/test'
 import { openApp, openStripPanel } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** The Starter gallery from New Project's Pick a starter (ticket 0596): step 1 the categories, step 2 the Shapes, and the
- * Star's setup, in the Menu's dropdown in light and dark; the Shapes also in high contrast and at phone width. */
+/** The Starter gallery from New Project's Pick a starter (tickets 0596, 0597): step 1 the categories, step 2 the Shapes,
+ * Earrings, Rings and Bands, and the Star's and the V fringe's setups, in the Menu's dropdown in light and dark; the
+ * Shapes also in high contrast and at phone width. */
 const LEVELS: readonly { name: string; open: (page: Page) => Promise<void> }[] = [
   { name: 'categories', open: async () => {} },
   { name: 'shapes', open: async (page) => page.getByTestId('starter-category-shapes').click() },
@@ -12,6 +13,14 @@ const LEVELS: readonly { name: string; open: (page: Page) => Promise<void> }[] =
     open: async (page) => {
       await page.getByTestId('starter-category-shapes').click()
       await page.getByTestId('starter-card-star').click()
+    },
+  },
+  ...(['earrings', 'rings', 'bands'] as const).map((category) => ({ name: category, open: async (page: Page) => page.getByTestId(`starter-category-${category}`).click() })),
+  {
+    name: 'earring-setup',
+    open: async (page) => {
+      await page.getByTestId('starter-category-earrings').click()
+      await page.getByTestId('starter-card-vFringe').click()
     },
   },
 ]

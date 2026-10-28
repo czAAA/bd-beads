@@ -142,6 +142,17 @@ describe('printText Word chart (ticket 0574)', () => {
     expect(chart.rows[10]).toEqual({ label: '11', first: 11, last: 11, runs: 'Zip 1–2' })
   })
 
+  it('starts a Fringe earring\'s Word chart at its top\'s base row and names each strand (ticket 0597)', () => {
+    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const settings = { topWidth: 3, topRows: 2, fringeStyle: 'straight', fringeLength: 2 } as const
+    const placed = changeFrame(open, { custom: { kind: 'fringeEarring', settings, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
+    const chart = printText(letters(placed.project), en, 'en', at).wordChart!
+
+    expect(chart.notes).toEqual([en.print.wordChart.firstBase, en.print.wordChart.runNote])
+    expect(chart.rows[2]).toEqual({ label: '3', first: 3, last: 3, runs: 'Strand 1: 2*' })
+  })
+
   it('has none with Letters off or without a Technique that has one', () => {
     expect(printText(delicaProject(3), en, 'en', at).wordChart).toBeUndefined()
     const rightAngle = createProject({ technique: 'rightAngle', beadId: 'miyuki-delica-11-0', size: { width: 8, height: 8, unit: 'beads' } })

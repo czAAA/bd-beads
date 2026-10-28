@@ -21,6 +21,8 @@ export interface LayoutPosition extends GridPosition, LayoutPoint {
 interface LayoutPanel {
   part: number
   order: number
+  /** A Fringe earring's strand (ticket 0597): strung top to bottom in one pass, not in rows. */
+  strand?: true
 }
 
 /** A join between parts, in making order: a zip of two parts' edges, a hinge laced between them, or the join that
@@ -282,6 +284,50 @@ export function kiteLayout(rows: number): FrameLayout {
     // The spine runs from the first row's point down past the last row's pair.
     const spine: [LayoutPoint, LayoutPoint] = [{ x: 0, y: Math.SQRT2 }, { x: 0, y: (rows + 1) * Math.SQRT2 }]
     return boxed({ positions, panels: wings.map(() => ({ part: 0, order: 0 })), seams: [spine], beadDepth: 1 }, { x: 0, y: ((rows + 2) * Math.SQRT2) / 2 })
+  })
+}
+
+/** A Fringe earring's settings (ticket 0597): its brick-stitch top's base row and rows, and its strands' style and
+ * length. */
+export interface FringeSettings {
+  topWidth: number
+  topRows: number
+  fringeStyle: 'straight' | 'v'
+  fringeLength: number
+}
+
+/** A strand's beads are named from this row down, and by their strand as the column, so neither the top's rows nor a
+ * strand's beads are renamed when Top rows or Fringe length change. */
+const STRAND_ROW = 1000
+
+/** How far below the base row the strands hang, past touching, so the Seam between them shows. */
+const FRINGE_GAP = 0.25
+
+/** How long a strand is (StarterGallery card): the Fringe length straight; in a V the middle one or pair the Fringe
+ * length, two beads shorter a strand out from the middle, and never less than one bead. */
+function strandLength({ topWidth, fringeStyle, fringeLength }: FringeSettings, strand: number): number {
+  if (fringeStyle === 'straight') return fringeLength
+  return Math.max(1, fringeLength - 2 * Math.floor(Math.abs(strand - (topWidth - 1) / 2)))
+}
+
+/** A Fringe earring (ticket 0597): a brick-stitch triangle worked from its base row of Top width beads upwards, each
+ * row one bead shorter and half a bead in, and a strand hanging under each bead of the base row, a Seam between the top
+ * and the strands. Every bead lies upright, as brick stitch and a strung strand hold it. */
+export function fringeLayout(settings: FringeSettings): FrameLayout {
+  const { topWidth, topRows, fringeStyle, fringeLength } = settings
+  return remembered(`fringe:${topWidth}:${topRows}:${fringeStyle}:${fringeLength}`, () => {
+    const positions: LayoutPosition[] = []
+    for (let row = 0; row < Math.min(topRows, topWidth - 1); row += 1) {
+      for (let column = 0; column < topWidth - row; column += 1) positions.push({ row, column, panel: 0, angle: 0, x: row / 2 + column, y: -row })
+    }
+    for (let strand = 0; strand < topWidth; strand += 1) {
+      for (let bead = 0; bead < strandLength(settings, strand); bead += 1) {
+        positions.push({ row: STRAND_ROW + bead, column: strand, panel: strand + 1, angle: 0, x: strand, y: 1 + FRINGE_GAP + bead })
+      }
+    }
+    const panels: LayoutPanel[] = [{ part: 0, order: 0 }, ...Array.from({ length: topWidth }, (_unused, strand) => ({ part: strand + 1, order: strand + 1, strand: true as const }))]
+    const seam: [LayoutPoint, LayoutPoint] = [{ x: -0.5, y: (1 + FRINGE_GAP) / 2 }, { x: topWidth - 0.5, y: (1 + FRINGE_GAP) / 2 }]
+    return boxed({ positions, panels, seams: [seam], beadDepth: 1 }, { x: (topWidth - 1) / 2, y: 0 })
   })
 }
 
