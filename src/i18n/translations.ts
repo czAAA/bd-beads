@@ -712,8 +712,6 @@ export interface Translations {
     lettersLine: string
     qualityHintLabel: string
     qualityHint: string
-    exportCoffee: string
-    exportCoffeeLink: string
     estimateInfo: string
     sizeLockedLine: string
     editFrame: string
