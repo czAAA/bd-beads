@@ -14,8 +14,8 @@ import { beadInSpace, inSpace, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import type { DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
-import { CELL_SIZE_PX, cellSizePx } from './cellSize'
-import { frameOriginPx, gridBox, positionBoxPx, positionsBoxPx, rowPitchPx, setGridTransform, shiftOf, type Region, type SurfaceView } from './surfaceView'
+import { CELL_SIZE_PX } from './cellSize'
+import { frameOriginPx, gridBox, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
@@ -271,22 +271,18 @@ interface BeadRect {
   radius: number
 }
 
-// The beads of the next row that lie over this one as drawn (peyote's rows nest): none where rows stack. The next row
-// sits half a bead over, so two of its beads reach this one.
+// The beads of the next row that lie over this one as drawn (peyote's rows nest): none where rows stack. Each is drawn
+// in as far from its box as this bead is.
 function nextRowBeads(weave: Weave, space: Space, cell: GridPosition, bead: BeadRect): BeadRect[] {
-  const pitch = rowPitchPx(weave.technique, weave.cell)
-  if (pitch >= cellSizePx(weave.technique, weave.cell).height) {
-    return []
-  }
-  const shiftNow = shiftOf(weave, cell.row)
-  const shiftNext = shiftOf(weave, cell.row + 1)
-  const across = (((shiftNext - shiftNow) % CELL_SIZE_PX) + CELL_SIZE_PX) % CELL_SIZE_PX
+  const own = positionBoxPx(weave, cell.row, cell.column)
+  const description = describeWeave(weave)
   const beads: BeadRect[] = []
-  for (const dx of [across - CELL_SIZE_PX, across]) {
-    // The covering bead's own column in the next row; one the Project does not have is not drawn, so it covers nothing.
-    const column = cell.column + (shiftNow + dx - shiftNext) / CELL_SIZE_PX
-    if (inSpace(space, cell.row + 1, column)) {
-      beads.push({ ...bead, x: bead.x + dx, y: bead.y + pitch })
+  for (const column of [cell.column - 1, cell.column, cell.column + 1]) {
+    const next = positionBoxPx(weave, cell.row + 1, column)
+    const overlaps = next.x < own.x + own.width && next.x + next.width > own.x && next.y < own.y + own.height && next.y + next.height > own.y
+    // One the Project does not have is not drawn, so it covers nothing.
+    if (overlaps && inSpace(space, cell.row + 1, column) && description.hasPosition({ row: cell.row + 1, column })) {
+      beads.push({ ...bead, x: bead.x + next.x - own.x, y: bead.y + next.y - own.y })
     }
   }
   return beads
