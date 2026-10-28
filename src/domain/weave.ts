@@ -53,7 +53,7 @@ interface TechniquePolicy {
   removeLine: boolean
   /** What a Frame woven unlike the Canvas hides of it (ADR 0066, ticket 514): the Canvas rows under what it draws,
    * where both layers' Techniques measure it so, or else the rectangle it names. */
-  footprint: 'drawn' | 'named'
+  footprint: 'covered' | 'named'
   /** The fewest a side of a typed Frame size counts, in what the size counts (beads or Units; ticket 473). */
   fewestTypedSide: number
   /** How a size in mm reads as positions and back (ADR 0026): by a Bead's own width and height per position, how rows
@@ -104,7 +104,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: false },
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: true, footprint: 'drawn', fewestTypedSide: 4, measure: 'bead' },
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
   },
   peyote: {
     nameKey: 'peyote',
@@ -116,7 +116,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: true },
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: true, footprint: 'drawn', fewestTypedSide: 4, measure: 'bead' },
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
   },
   brick: {
     nameKey: 'brick',
@@ -128,7 +128,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: true },
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
-    policy: { removeLine: true, footprint: 'drawn', fewestTypedSide: 4, measure: 'bead' },
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
   },
   rightAngle: {
     nameKey: 'rightAngle',

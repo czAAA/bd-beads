@@ -50,7 +50,8 @@ export function frameWithEdges(weave: Weave, frame: Rect, edges: readonly FrameE
 }
 
 /** A move counted in whole Canvas positions (ticket 492): the Frame's own first row is always an unshifted one, so no
- * stagger is kept; where the Canvas counts Units the move goes by whole Units, so its corner stays on one. */
+ * stagger is kept; where a Unit takes more than one row or column the move goes by whole Units, so its corner stays
+ * on one. */
 export function snappedMove(canvas: Weave, rows: number, columns: number): { rows: number; columns: number } {
   const { rowsPerUnit, columnStep } = describeWeave(canvas)
   const by = (distance: number, step: number) => (step > 1 ? Math.sign(distance) * Math.round(Math.abs(distance) / step) * step : distance)

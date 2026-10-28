@@ -11,7 +11,8 @@ const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
  * which is shorter or taller than `rows` Canvas rows where it is woven otherwise. */
 export function frameFootprint(canvas: Weave, frame: Rect & Weave): Rect {
   const rectangle = { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }
-  if (sameWeave(canvas, frame) || describeWeave(canvas).policy.footprint === 'named' || describeWeave(frame).policy.footprint === 'named') {
+  const named = (weave: Weave) => describeWeave(weave).policy.footprint === 'named'
+  if (sameWeave(canvas, frame) || named(canvas) || named(frame)) {
     return rectangle
   }
   const drawn = describeWeave(frame).blockExtent(frame.columns, frame.rows, 1, aspectOf(frame)).height
