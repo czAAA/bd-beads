@@ -1,6 +1,8 @@
+import { beadPitchMm, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
-import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
-import type { GridDimensions, GridPosition } from './grid'
+import { fringeLayout, kaleidocycleLayout, kiteLayout, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
+import type { GridDimensions } from './grid'
+import { gridGeometry, layoutGeometry, type LayerGeometry } from './layerGeometry'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import type { SettingSpec } from './settingSpec'
 import { describeWeave, type Technique, type Weave } from './weave'
@@ -46,9 +48,17 @@ export type KindedSheet = Laid & Pick<FrameSheet, 'rows' | 'columns'> & Weave
  * and Height, Remove row/column, Frame from Selection), turn it, weave it in another Technique, or select on it. */
 export type FrameAction = 'resize' | 'remove-line' | 'from-selection' | 'rotate' | 'technique' | 'select'
 
+/** A Frame's rectangle as its kind measures it. */
+type Measured = Laid & Pick<FrameSheet, 'rows' | 'columns'>
+
 /** Everything that differs by Frame kind; code asks the Frame's kind rather than testing which it is. */
 export interface FrameKind {
   id: FrameKindId
+  /** Where its beads are (ADR 0078): its Weave's rows over its own rectangle, or its layout laid in it. */
+  geometry(sheet: KindedSheet): LayerGeometry
+  /** Its Estimated size in mm (CONTEXT.md) on a Bead, before the view turns it: a Bead's pitch a column and its height a
+   * row, or a Custom frame as big as its shape, a bead's pitch to a bead width of its layout (ticket 0592). */
+  sizeMm(frame: Measured, bead: Bead): { widthMm: number; heightMm: number }
   /** What Remove Frame does with the Frame's beads: drop them onto the Canvas where they stand (ticket 497), or
    * remove them with the Frame. */
   removedBeads: 'dropped' | 'removed'
@@ -80,70 +90,52 @@ const TOP_WIDTH: FrameSetting = { id: 'topWidth', labelKey: 'topWidth', min: 2, 
 const TOP_ROWS: FrameSetting = { id: 'topRows', labelKey: 'topRows', min: 1, max: 29, step: 1, default: 6, presets: [4, 6, 8], lossOnChange: true, below: 'topWidth' }
 const FRINGE_LENGTH: FrameSetting = { id: 'fringeLength', labelKey: 'fringeLength', min: 2, max: 80, step: 1, default: 12, presets: [8, 12, 16], lossOnChange: true }
 
-/** A Custom frame's Row order (ticket 0594): its layout's passes, worked in rounds from the centre or rows from a point. */
-function layoutRowOrder(lines: 'round' | 'row'): FrameKind['rowOrder'] {
-  return (sheet) => layoutOrder(frameLayoutOf(sheet)!, lines)
-}
-
 /** What a Custom frame offers (ticket 0594): a Selection over it by a rectangle on screen, and Rotate Frame. */
 const CUSTOM_ALLOWS: ReadonlySet<FrameAction> = new Set(['rotate', 'select'])
+
+/** A Custom frame's kind (ADR 0078): its panel builder and settings, and its Row order's passes worked in rounds from
+ * the centre or rows from a point (ticket 0594). Its beads are where its layout puts them, laid in its rectangle. */
+function customKind(id: CustomFrameKindId, lines: 'round' | 'row', custom: NonNullable<FrameKind['custom']>): FrameKind {
+  return {
+    id,
+    geometry: (sheet) => layoutGeometry(laidLayout(sheet), sheet),
+    sizeMm: (frame, bead) => {
+      const { width, height } = laidLayout(frame)
+      return { widthMm: width * beadPitchMm(bead), heightMm: height * beadPitchMm(bead) }
+    },
+    removedBeads: 'removed',
+    rowOrder: (sheet) => layoutOrder(laidLayout(sheet), lines),
+    allows: CUSTOM_ALLOWS,
+    custom,
+  }
+}
 
 /** The registry, one entry per kind, like the Starters'. */
 const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
   rectangular: {
     id: 'rectangular',
+    geometry: (sheet) => gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns }),
+    sizeMm: ({ columns, rows }, bead) => ({ widthMm: columns * beadPitchMm(bead), heightMm: rows * bead.heightMm }),
     removedBeads: 'dropped',
     // Chosen by the Frame's Technique, through its Weave's passes.
     rowOrder: rowsOrder,
     allows: new Set(['resize', 'remove-line', 'from-selection', 'rotate', 'technique', 'select']),
   },
-  triangle: {
-    id: 'triangle',
-    removedBeads: 'removed',
-    rowOrder: layoutRowOrder('round'),
-    allows: CUSTOM_ALLOWS,
-    custom: { technique: 'peyote', settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(3, rounds!) },
-  },
-  warpedSquare: {
-    id: 'warpedSquare',
-    removedBeads: 'removed',
-    rowOrder: layoutRowOrder('round'),
-    allows: CUSTOM_ALLOWS,
-    custom: { technique: 'peyote', settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(4, rounds!) },
-  },
-  star: {
-    id: 'star',
-    removedBeads: 'removed',
-    rowOrder: layoutRowOrder('round'),
-    allows: CUSTOM_ALLOWS,
-    custom: { technique: 'peyote', settings: [STAR_PART], layout: ({ partSize }) => starLayout(partSize!) },
-  },
-  kaleidocycle: {
-    id: 'kaleidocycle',
-    removedBeads: 'removed',
-    rowOrder: layoutRowOrder('round'),
-    allows: CUSTOM_ALLOWS,
-    custom: { technique: 'peyote', settings: [KALEIDOCYCLE_PART], layout: ({ partSize }) => kaleidocycleLayout(partSize!) },
-  },
-  kite: {
-    id: 'kite',
-    removedBeads: 'removed',
-    rowOrder: layoutRowOrder('row'),
-    allows: CUSTOM_ALLOWS,
-    custom: { technique: 'peyote', settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) },
-  },
-  fringeEarring: {
-    id: 'fringeEarring',
-    removedBeads: 'removed',
-    rowOrder: layoutRowOrder('row'),
-    allows: CUSTOM_ALLOWS,
-    custom: {
-      technique: 'brick',
-      settings: [TOP_WIDTH, TOP_ROWS, FRINGE_LENGTH],
-      styles: FRINGE_STYLES,
-      layout: (settings) => fringeLayout(settings as FringeSettings),
-    },
-  },
+  triangle: customKind('triangle', 'round', { technique: 'peyote', settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(3, rounds!) }),
+  warpedSquare: customKind('warpedSquare', 'round', { technique: 'peyote', settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(4, rounds!) }),
+  star: customKind('star', 'round', { technique: 'peyote', settings: [STAR_PART], layout: ({ partSize }) => starLayout(partSize!) }),
+  kaleidocycle: customKind('kaleidocycle', 'round', {
+    technique: 'peyote',
+    settings: [KALEIDOCYCLE_PART],
+    layout: ({ partSize }) => kaleidocycleLayout(partSize!),
+  }),
+  kite: customKind('kite', 'row', { technique: 'peyote', settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) }),
+  fringeEarring: customKind('fringeEarring', 'row', {
+    technique: 'brick',
+    settings: [TOP_WIDTH, TOP_ROWS, FRINGE_LENGTH],
+    styles: FRINGE_STYLES,
+    layout: (settings) => fringeLayout(settings as FringeSettings),
+  }),
 }
 
 /** Every Frame kind, in the registry's order.
@@ -220,47 +212,35 @@ export function settingsOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FrameS
   return { ...Object.fromEntries(settingValuesOf(frame).map(({ name, value }) => [name, value])), ...(style ? { fringeStyle: style } : {}) }
 }
 
-/** A Custom frame's layout, built from its settings and turned as Rotate Frame left it; none for a Rectangular Frame. */
+/** A Custom frame's layout, built from its settings and turned as Rotate Frame left it; none for a Rectangular Frame.
+ * What a Selection over a Custom frame lands beads by (ticket 0594); finding, drawing or hitting a bead asks the Frame's
+ * geometry. */
 export function frameLayoutOf(frame: Laid): FrameLayout | undefined {
-  const settings = settingsOf(frame)
-  return settings && turnedLayout(frameKindOf(frame).custom!.layout(settings), frame.quarterTurns ?? 0)
+  const custom = frameKindOf(frame).custom
+  return custom && laidLayout(frame)
 }
 
-/** Where a Custom frame's layout lies in its rectangle, in cell widths from its first position's corner: a bead width to
- * a cell's width, smaller only where the Bead shape makes the rectangle shorter than the layout, and centred. The
- * renderer, the hit test and a Selection over it (ticket 0594) all place it here, so they agree where each bead is. */
-export interface LayoutPlacement {
-  layout: FrameLayout
-  scale: number
-  x: number
-  y: number
+/** The layout a Custom frame's own kind lays it out by: called only on a kind that has one. */
+function laidLayout(frame: Laid): FrameLayout {
+  return turnedLayout(frameKindOf(frame).custom!.layout(settingsOf(frame)!), frame.quarterTurns ?? 0)
 }
 
-/** A Frame's layout as placed in its rectangle, or none for a Rectangular Frame. */
-export function layoutPlacement(frame: Laid & Pick<FrameSheet, 'rows' | 'columns'>, weave: Weave): LayoutPlacement | undefined {
-  const layout = frameLayoutOf(frame)
-  if (!layout) return undefined
-  const description = describeWeave(weave)
-  const extent = description.blockExtent(frame.columns, frame.rows, 1, description.cellAspect)
-  const scale = Math.min(1, extent.width / layout.width, extent.height / layout.height)
-  return { layout, scale, x: (extent.width - layout.width * scale) / 2, y: (extent.height - layout.height * scale) / 2 }
+/** A Frame's Layer geometry (ADR 0078): what its kind lays its beads out by. `frame` carries the Bead shape's cell, as
+ * the Frame is drawn. */
+export function frameGeometry(frame: KindedSheet): LayerGeometry {
+  return frameKindOf(frame).geometry(frame)
 }
 
-/** Whether a Frame has a bead position here, counted from its own first row and column: a Custom frame's layout
- * position, or for a Rectangular Frame anywhere inside it.
- * @internal Code asks the Layer geometry (ticket 0629); its test compares against this until ticket 0632 deletes it. */
-export function frameHasPosition(frame: KindedSheet, position: GridPosition): boolean {
-  const layout = frameLayoutOf(frame)
-  if (layout) return layoutPosition(layout, position) !== undefined
-  return position.row >= 0 && position.row < frame.rows && position.column >= 0 && position.column < frame.columns
+/** A Frame's Estimated size in mm on a Bead, as its kind measures it, before the view turns it. */
+export function frameSizeMm(frame: Measured, bead: Bead): { widthMm: number; heightMm: number } {
+  return frameKindOf(frame).sizeMm(frame, bead)
 }
 
 /** The rows and columns of a Custom frame's Technique that cover its layout: the bounding rectangle its footprint is
  * made from (ADR 0077), counted in the Technique's own square cell. */
 export function customFrameSize(kind: FrameKindId, settings: FrameSettings, quarterTurns?: QuarterTurns): GridDimensions {
-  const custom = FRAME_KINDS[kind].custom!
-  const layout = frameLayoutOf({ kind, settings, quarterTurns })!
-  const description = describeWeave({ technique: custom.technique })
+  const layout = laidLayout({ kind, settings, quarterTurns })
+  const description = describeWeave({ technique: FRAME_KINDS[kind].custom!.technique })
   let columns = 1
   while (description.blockExtent(columns, 2, 1, 1).width < layout.width) columns += 1
   let rows = 1
