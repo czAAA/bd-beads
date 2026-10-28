@@ -1,5 +1,5 @@
 import { footprintOf } from './footprint'
-import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Frame } from './canvas'
+import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { DEFAULT_TECHNIQUE, describeWeave, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
@@ -30,7 +30,7 @@ export function snapColumn(weave: Weave, column: number): number {
 // The Frame with the given edges dragged to a bead: `edges` are the sides a handle moves (a corner moves two), `cell`
 // the bead under the pointer, in the Frame's own geometry. An edge never passes the opposite one, so a Frame stays at
 // least one bead each way. Worked out in the Frame's own rows, whose row 0 is always an unshifted one (ticket 492).
-export function frameWithEdges(weave: Weave, frame: Frame, edges: readonly FrameEdge[], cell: GridPosition): Frame {
+export function frameWithEdges(weave: Weave, frame: Rect, edges: readonly FrameEdge[], cell: GridPosition): Rect {
   let top = 0
   let bottom = frame.rows - 1
   let left = 0
@@ -55,13 +55,13 @@ export function snappedMove(canvas: Weave, rows: number, columns: number): { row
 }
 
 /** The Frame moved by whole Canvas positions. */
-export function movedFrame(frame: Frame, rows: number, columns: number): Frame {
+export function movedFrame(frame: Rect, rows: number, columns: number): Rect {
   return { ...frame, row: frame.row + rows, column: frame.column + columns }
 }
 
 /** The Frame with its size changed from the top-left corner, which stays where it is; never smaller than one bead
  * each way. */
-export function frameWithSize(frame: Frame, columns: number, rows: number, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Frame {
+export function frameWithSize(frame: Rect, columns: number, rows: number, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Rect {
   const { smallest, snapBottom, snapRight } = describeWeave(weave)
   const tall = snapBottom(0, Math.max(smallest.rows, Math.round(rows)) - 1) + 1
   const wide = snapRight(0, Math.max(smallest.columns, Math.round(columns)) - 1) + 1
@@ -74,7 +74,7 @@ const MAX_TYPED_SIDE = 999
 // The Frame with one edge moved a bead out (`step` 1) or in (`step` -1), the others staying put (Edit Frame's steppers,
 // ticket 417). Where rows alternate (peyote, brick stitch) the top edge goes by a whole cycle of rows so the first row
 // keeps its place, as dragging the top handle does. A step that would leave less than four beads each way changes nothing (ticket 473).
-export function frameWithEdgeStep(weave: Weave, frame: Frame, edge: FrameEdge, step: 1 | -1): Frame {
+export function frameWithEdgeStep(weave: Weave, frame: Rect, edge: FrameEdge, step: 1 | -1): Rect {
   const description = describeWeave(weave)
   const rowStep = rowCycle(weave) * step
   const columnStep = description.columnStep * step
@@ -97,7 +97,7 @@ export function frameWithEdgeStep(weave: Weave, frame: Frame, edge: FrameEdge, s
 /** The Frame resized to `columns` × `rows` (Units where the Technique counts them), each side growing or shrinking evenly on both of its edges (ticket 473): an
  * odd change gives the extra bead to the right or bottom. Where rows alternate the top edge moves by whole cycles of
  * rows, so the first row keeps its place in the stagger. A side is kept between four and MAX_TYPED_SIDE beads. */
-export function frameResizedAround(weave: Weave, frame: Frame, columns: number, rows: number): Frame {
+export function frameResizedAround(weave: Weave, frame: Rect, columns: number, rows: number): Rect {
   const description = describeWeave(weave)
   const typed = description.positionsOf({ columns, rows })
   const side = (n: number, fewest: number) => Math.min(MAX_TYPED_SIDE, Math.max(fewest, Math.round(n)))
@@ -114,7 +114,7 @@ export function frameResizedAround(weave: Weave, frame: Frame, columns: number, 
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
  * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
-export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'>): Frame | undefined {
+export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'>): Rect | undefined {
   const frame = project.frame
   const covered = footprintOf(project)
   const shown = frame && covered ? beadsOver(beadsWithout(project.beads, withMargin(covered)), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads
@@ -129,6 +129,6 @@ export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' |
   return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-export function sameFrame(a: Frame | undefined, b: Frame | undefined): boolean {
+export function sameFrame(a: Rect | undefined, b: Rect | undefined): boolean {
   return a === b || (!!a && !!b && a.row === b.row && a.column === b.column && a.rows === b.rows && a.columns === b.columns)
 }

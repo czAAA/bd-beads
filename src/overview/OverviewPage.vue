@@ -5,7 +5,6 @@ import CanvasStrip from '../components/canvas/CanvasStrip.vue'
 import MenuPanel from '../components/shell/MenuPanel.vue'
 import PanelHost from '../components/shell/PanelHost.vue'
 import { useElementSize } from '../composables/ui/useElementSize'
-import { OVERVIEW_BACKGROUND_TECHNIQUE } from '../domain/weave'
 import { positionMarkBackground } from '../rendering/positionMarks'
 import { useCanvasBackground } from '../theme/useCanvasBackground'
 import DrawnLayer from './DrawnLayer.vue'
@@ -47,7 +46,7 @@ const boxStyle = computed(() => {
   const zoomScale = zoom.percent.value / 100
   const pixelRatio = window.devicePixelRatio || 1
   const marks = positionMarkBackground({
-    technique: OVERVIEW_BACKGROUND_TECHNIQUE,
+    technique: 'peyote',
     deviceScale: zoomScale * pixelRatio,
     pixelRatio,
     color: canvasBackground.projectTheme.value.positionMark,

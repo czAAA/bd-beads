@@ -28,13 +28,6 @@ export interface GridDimensions {
   rows: number
 }
 
-/** A rectangle of positions: dimensions, and — for a Frame on a Canvas — where its top-left bead sits (0, 0 when
- * left out). */
-export interface GridBounds extends GridDimensions {
-  row?: number
-  column?: number
-}
-
 export function toMillimeters(value: number, unit: PhysicalUnit): number {
   return unit === 'cm' ? value * 10 : value
 }

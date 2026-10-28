@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { hasBeads, type Frame } from '../../domain/canvas'
+import { hasBeads, type Rect } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
@@ -26,7 +26,7 @@ export interface FrameFlowDeps {
   messages: () => Translations
   locale: () => Locale
   /** Brings a block of beads into the middle of the view. */
-  centreOn: (frame: Frame) => void
+  centreOn: (frame: Rect) => void
   /** The Canvas position under the middle of the view, or nothing until the area is measured. */
   visibleCentre: () => GridPosition | undefined
   /** The app's one open panel (ticket 510): the Frame panel is open while it is 'frame'. Its own when none is given. */
@@ -38,8 +38,8 @@ type Layer = 'canvas' | 'frame'
 const layerHasBeads = (project: Project, layer: Layer): boolean => hasBeads(layer === 'frame' ? (project.frame?.beads ?? {}) : project.beads)
 
 type Gesture =
-  | { kind: 'move'; origin: GridPosition; start: Frame }
-  | { kind: 'resize'; edges: FrameEdge[]; start: Frame }
+  | { kind: 'move'; origin: GridPosition; start: Rect }
+  | { kind: 'resize'; edges: FrameEdge[]; start: Rect }
 
 // Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit pencil shows the handles and the strip's Frame
 // button opens the Frame panel; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
@@ -58,7 +58,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const handlesOn = ref(false)
   /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its
    * beads. */
-  const draft = ref<{ frame: Frame; move?: { rows: number; columns: number } } | undefined>()
+  const draft = ref<{ frame: Rect; move?: { rows: number; columns: number } } | undefined>()
   let gesture: Gesture | undefined
   /** How far the Move handle has been dragged, in whole beads. */
   let moved = { rows: 0, columns: 0 }
@@ -118,7 +118,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     barOpen.value = false
   }
 
-  function describe(frame: Frame): string {
+  function describe(frame: Rect): string {
     const t = deps.messages()
     const project = deps.currentProject()
     const { columns, rows } = describeWeave(project ? frameWeave(project) : { technique: DEFAULT_TECHNIQUE }).unitsOf(frame)
@@ -126,7 +126,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step. */
-  function commit(frame: Frame | undefined, how: 'set' | 'make' = 'set'): boolean {
+  function commit(frame: Rect | undefined, how: 'set' | 'make' = 'set'): boolean {
     const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }))
     if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
@@ -328,7 +328,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
   // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407); with a Frame already
   // set, it moves it there.
-  function setTo(frame: Frame): void {
+  function setTo(frame: Rect): void {
     const project = deps.currentProject()
     const top = project ? snapRow(project, frame.row) : frame.row
     const bottom = project ? describeWeave(project).snapBottom(top, frame.row + frame.rows - 1) : frame.row + frame.rows - 1
@@ -339,7 +339,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /** Ticket 570: one toast saying how much each edge grew when the snap pushed the Frame past what was picked. */
-  function explainSnap(picked: Frame, snapped: Record<FrameEdge, number>): void {
+  function explainSnap(picked: Rect, snapped: Record<FrameEdge, number>): void {
     const grown: ['snapAddedTop' | 'snapAddedBottom' | 'snapAddedLeft' | 'snapAddedRight', number][] = [
       ['snapAddedTop', picked.row - snapped.top],
       ['snapAddedBottom', snapped.bottom - (picked.row + picked.rows - 1)],

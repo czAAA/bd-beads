@@ -1,7 +1,7 @@
 import { footprintOf } from './footprint'
 import { sameFrame } from './frame'
 import type { Layer, Placed } from './layers'
-import { forEachBead, frameContains, withColors, type BeadChange, type Frame } from './canvas'
+import { forEachBead, frameContains, withColors, type BeadChange, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { isInFinishedRow, sameBeads, type Project } from './project'
 import type { Selection } from './selection'
@@ -14,13 +14,13 @@ import type { Selection } from './selection'
 export const MARGIN = 6
 
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
-export function withMargin(frame: Frame, margin: number = MARGIN): Frame {
+export function withMargin(frame: Rect, margin: number = MARGIN): Rect {
   return { row: frame.row - margin, column: frame.column - margin, rows: frame.rows + 2 * margin, columns: frame.columns + 2 * margin }
 }
 
 /** The rectangle the margin's rules measure from for something on a layer (ADR 0070): the Frame's own rectangle for what
  * is on the Frame, where a Selection stays inside it, and the footprint for what is on the Canvas, which is held off it. */
-export function marginBoxFor(project: Placed, layer: Layer): Frame | undefined {
+export function marginBoxFor(project: Placed, layer: Layer): Rect | undefined {
   return layer === 'frame' ? project.frame : footprintOf(project)
 }
 
@@ -33,14 +33,14 @@ export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'techn
 
 /** Whether a position lies in the Frame's margin: within MARGIN of the Frame's footprint (ADR 0070), but not in it. A
  * position that names the Frame's layer is in the Frame, whatever its number says. */
-export function inMargin(frame: Frame | undefined, position: GridPosition, margin: number = MARGIN): boolean {
+export function inMargin(frame: Rect | undefined, position: GridPosition, margin: number = MARGIN): boolean {
   return !!frame && position.layer !== 'frame' && frameContains(withMargin(frame, margin), position) && !frameContains(frame, position)
 }
 
 /** The one statement of what a Selection may be (ticket 433, ADR 0055, spec 432): wholly inside the Frame, wholly
  * clear of its margin band, or round the whole Frame and band. No Frame, no rule. Every Selection path asks this:
  * a drag clamps, a resize or move is refused, a one-shot Selection is trimmed. */
-export function selectionAllowed(frame: Frame | undefined, selection: Selection): boolean {
+export function selectionAllowed(frame: Rect | undefined, selection: Selection): boolean {
   if (!frame) return true
   const box = withMargin(frame)
   const overlaps =
@@ -63,7 +63,7 @@ export function selectionAllowed(frame: Frame | undefined, selection: Selection)
 
 /** `selection` cut to the largest allowed rectangle holding `anchor` (ticket 433), taking the band out on the axis
  * that keeps more. Unchanged if allowed; none if `anchor` is in the margin or no cut is left. */
-export function trimToAllowed(frame: Frame | undefined, selection: Selection, anchor: GridPosition): Selection | undefined {
+export function trimToAllowed(frame: Rect | undefined, selection: Selection, anchor: GridPosition): Selection | undefined {
   if (selectionAllowed(frame, selection)) return selection
   if (!frame || inMargin(frame, anchor)) return undefined
   const bottom = selection.top + selection.rows
@@ -98,7 +98,7 @@ function outsideEdge(start: number, length: number, anchor: number, value: numbe
 /** Where a Selection drag from `anchor` to `cell` ends (ticket 428, ADR 0055), never stopping in or cutting the
  * margin. Begun inside the Frame it stays inside; begun outside it stops at the margin's outer edge on the axis that
  * keeps more. Begun in the margin (ticket 433) is refused: `anchor` is returned. */
-export function clampOutOfMargin(frame: Frame | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
+export function clampOutOfMargin(frame: Rect | undefined, anchor: GridPosition, cell: GridPosition): GridPosition {
   if (!frame) return cell
   if (frameContains(frame, anchor)) {
     return {

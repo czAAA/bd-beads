@@ -1,4 +1,4 @@
-import type { Frame } from '../domain/canvas'
+import type { Rect } from '../domain/canvas'
 import type { FrameEdge } from '../domain/frame'
 import type { Rotation } from '../domain/grid'
 import type { SurfaceView } from './surfaceView'
@@ -129,7 +129,7 @@ export function pointInBox(box: { x: number; y: number; width: number; height: n
 }
 
 /** The handle of the Frame a point is within reach of (ticket 414), for the resize cursor a hover shows. */
-export function frameHandleIdAt(frame: Frame | undefined, surface: Pick<SurfaceView, 'frameBox' | 'viewport'>, point: { x: number; y: number }, touch: boolean): HandleId | undefined {
+export function frameHandleIdAt(frame: Rect | undefined, surface: Pick<SurfaceView, 'frameBox' | 'viewport'>, point: { x: number; y: number }, touch: boolean): HandleId | undefined {
   if (!frame) return undefined
   const box = surface.frameBox(frame)
   return handleAt(gutterHandles(box, touch, surface.viewport), point, hitRadius(box, touch))?.id
@@ -154,7 +154,7 @@ export const HANDLE_CURSORS: Record<HandleId, string> = {
 
 /** What a press at a point of the viewport grabs of the Frame: a handle in its gutter first, which wins over whatever
  * lies under it. */
-export function framePressAt(frame: Frame | undefined, surface: Pick<SurfaceView, 'frameBox' | 'viewport'>, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
+export function framePressAt(frame: Rect | undefined, surface: Pick<SurfaceView, 'frameBox' | 'viewport'>, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
   if (!frame) return { kind: 'outside' }
   const box = surface.frameBox(frame)
   return boxPressAt(box, rotation, point, touch, gutterHandles(box, touch, surface.viewport))
