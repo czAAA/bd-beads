@@ -22,6 +22,8 @@ export interface RowsGeometry {
   roundness: number
   /** How lines are woven: one pass each, or the first in one and every later one in two (peyote: even beads, then odd). */
   passes: 'one' | 'twoAfterFirst'
+  /** How many rows lie straight on each other before the next block of them shifts, where rows shift: 1, every other. */
+  block: number
 }
 
 /** Right-angle weave (ticket 482): Units of four beads touching at their corners. */
@@ -40,6 +42,8 @@ export interface NetGeometry {
   /** A drawn bead's height over its width. */
   cellAspect: number
   roundness: number
+  /** The beads in one loop of the mesh, odd: the middle one is shared with the next row. */
+  loopBeads: number
 }
 
 /** A Technique's geometry: its kind and the values that kind reads. Values and enums only, never expressions. */
@@ -72,11 +76,8 @@ export interface VisiblePositions {
   columnsOf(row: number): { first: number; last: number }
 }
 
-/** The settings a geometry reads, already resolved for the Technique: 1 and the default where they don't apply. */
-export interface GeometrySettings {
-  brickBlock: number
-  netSize: number
-}
+/** The values of a geometry that are numbers: what a Technique's setting may set in place of its entry's own. */
+export type GeometryNumber<G extends GeometryRef = GeometryRef> = G extends unknown ? { [K in keyof G]-?: G[K] extends number ? K : never }[keyof G] : never
 
 /** Everything a geometry answers about a Weave's layout, built once per Weave. */
 export interface WeaveGeometry {
@@ -178,8 +179,8 @@ export interface WeaveGeometry {
   stepMm(bead: Pick<Bead, 'widthMm' | 'widthCorrectionMm' | 'heightMm'>): { across: number; down: number }
 }
 
-/** One geometry module: builds a Weave's answers from its kind's values, once. */
-export type GeometryStrategy<G extends GeometryRef> = (geometry: G, settings: GeometrySettings, cell: BeadCell | undefined) => WeaveGeometry
+/** One geometry module: builds a Weave's answers from its kind's values, with its settings' in place, once. */
+export type GeometryStrategy<G extends GeometryRef> = (geometry: G, cell: BeadCell | undefined) => WeaveGeometry
 
 /** A value's remainder that is never negative, so lattices repeat the same way above and left of row 0. */
 export const modulo = (value: number, by: number): number => ((value % by) + by) % by

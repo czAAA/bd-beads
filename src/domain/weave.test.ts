@@ -313,10 +313,10 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
   const here = { row: 4, column: 7 }
 
   it.each([
-    ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, hasBrickBlock: false, twoPasses: false }],
-    ['peyote', { technique: 'peyote' as const }, { frameStep: 2, shifted: true, rowPitch: 0.75, hasBrickBlock: false, twoPasses: true }],
-    ['brick stitch', { technique: 'brick' as const }, { frameStep: 2, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
-    ['brick stitch, Brick block 3', { technique: 'brick' as const, techniqueSettings: { brickBlock: 3 } }, { frameStep: 6, shifted: true, rowPitch: 1, hasBrickBlock: true, twoPasses: false }],
+    ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, twoPasses: false }],
+    ['peyote', { technique: 'peyote' as const }, { frameStep: 2, shifted: true, rowPitch: 0.75, twoPasses: true }],
+    ['brick stitch', { technique: 'brick' as const }, { frameStep: 2, shifted: true, rowPitch: 1, twoPasses: false }],
+    ['brick stitch, Brick block 3', { technique: 'brick' as const, techniqueSettings: { brickBlock: 3 } }, { frameStep: 6, shifted: true, rowPitch: 1, twoPasses: false }],
   ])('%s', (_name, weave, expected) => {
     const description = describeWeave(weave)
     expect(description).toMatchObject({ ...expected, quarterTurn: true, rowDirection: true })
@@ -349,7 +349,7 @@ describe('describeWeave: Right-angle weave (ticket 482)', () => {
   const box = (row: number, column: number) => description.box({ row, column }, 20, 14)
 
   it('counts Units, steps by a whole Unit and is fixed once the Project is made', () => {
-    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, quarterTurn: true, hasBrickBlock: false })
+    expect(description).toMatchObject({ countsUnits: true, frameStep: 2, rowsPerUnit: 2, quarterTurn: true })
   })
 
   it('lays horizontal beads lying along a line and vertical beads upright, round a hole one length square', () => {
@@ -433,7 +433,7 @@ describe('describeWeave: Netting (ticket 485)', () => {
 
   it('counts Units, steps by a whole diamond, offers no turn or row direction and is fixed once the Project is made', () => {
     for (const { p, description } of nets) {
-      expect(description).toMatchObject({ countsUnits: true, frameStep: 2 * p, columnStep: 2 * p, rowsPerUnit: p, columnsPerUnit: 2 * p, quarterTurn: false, rowDirection: false, hasNetSize: true, hasBrickBlock: false })
+      expect(description).toMatchObject({ countsUnits: true, frameStep: 2 * p, columnStep: 2 * p, rowsPerUnit: p, columnsPerUnit: 2 * p, quarterTurn: false, rowDirection: false })
       expect(description.turned({ row: 1, column: 1 }, { columns: 9, rows: 9 })).toBeUndefined()
     }
   })
@@ -589,12 +589,14 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
         if (!(Number.isFinite(geometry.cellAspect) && geometry.cellAspect > 0)) found.push('cellAspect')
         if (geometry.shifted ? !(geometry.shift > 0 && geometry.shift < 1) : geometry.shift !== 0) found.push('shift')
         if (!['one', 'twoAfterFirst'].includes(geometry.passes)) found.push('passes')
+        if (!(Number.isInteger(geometry.block) && geometry.block >= 1)) found.push('block')
         return found
       case 'rightAngleUnits':
         return step(geometry.aspect) ? found : [...found, 'aspect']
       case 'netDiamonds':
         if (!step(geometry.step)) found.push('step')
         if (!(Number.isFinite(geometry.cellAspect) && geometry.cellAspect > 0)) found.push('cellAspect')
+        if (!(Number.isInteger(geometry.loopBeads) && geometry.loopBeads >= 3 && geometry.loopBeads % 2 === 1)) found.push('loopBeads')
         return found
       default:
         return [`unknown kind ${(geometry as { kind: string }).kind}`]
@@ -622,7 +624,6 @@ describe('the Technique registry (ADR 0078, ticket 0621)', () => {
 
   it('reads a Weave\'s settings from its map alone, each its Technique describes within its range (ticket 0625)', () => {
     expect(weaveSettings({ technique: 'netting', techniqueSettings: { netSize: 7 } })).toEqual({ netSize: 7 })
-    expect(weaveSettings({ technique: 'netting', netSize: 5 })).toEqual({ netSize: 3 })
     expect(weaveSettings({ technique: 'brick', techniqueSettings: { brickBlock: 99 } })).toEqual({ brickBlock: 20 })
     expect(weaveSettings({ technique: 'loom', techniqueSettings: { brickBlock: 3 } })).toEqual({})
   })

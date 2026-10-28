@@ -3,7 +3,8 @@ import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
 import { DEFAULT_FRAME_KIND, isFrameKind, settingsOf, type KindedSheet } from './frameKind'
 import type { Rotation } from './grid'
-import { frameWeave, unwoven, weaveOf } from './layerWeave'
+import { storedSettings, unflattened, type FlatWeave, type SavedProject } from './flatWeave'
+import { frameWeave, weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { readPieceNames } from './pieceNames'
@@ -11,17 +12,17 @@ import type { Grid, Project } from './project'
 import { projectFrame } from './projectExtent'
 import { laidOf, readRowProgress } from './rowProgress'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
-import { BRICK_BLOCK_SETTING, isTechnique, MAX_BRICK_BLOCK, NET_SIZE_SETTING, type Technique, type Weave } from './weave'
+import { isTechnique, type Technique, type Weave } from './weave'
 
 // Reading a Project from storage or a file (CONTEXT.md, docs/testing.md's Stored-data compatibility): every shape an
 // older app saved becomes today's Project, so nothing else has to know the old ones.
 
 /** A Project as saved before the Canvas (ADR 0026): a fixed `columns` x `rows` grid instead of beads by position and
  * a Frame. Read by normalizeProject only, which gives it a Frame the size of the grid. */
-export type GridProject = Omit<Project, 'beads' | 'frame'> & { columns: number; rows: number; grid: Grid }
+export type GridProject = Omit<Project, 'beads' | 'frame'> & FlatWeave & { columns: number; rows: number; grid: Grid }
 
 /** A Project in any shape a store or file has held it in, for normalizeProject to read. */
-export type StoredProject = Project | GridProject | VersionThreeProject
+export type StoredProject = SavedProject | GridProject | VersionThreeProject
 
 function isGridProject(project: StoredProject): project is GridProject {
   return Array.isArray((project as GridProject).grid)
@@ -29,7 +30,7 @@ function isGridProject(project: StoredProject): project is GridProject {
 
 /** A Project as an older app may have saved it: with the color-to-bead override (ADR 0007/ticket 36), the stored
  * `widthMm`/`heightMm` (ADR 0026) and ticket 28's `rotated` boolean instead of ticket 171's `rotation`. */
-type ProjectWithLegacyFields = Project & {
+type ProjectWithLegacyFields = SavedProject & {
   columns?: unknown
   rows?: unknown
   grid?: unknown
@@ -56,14 +57,14 @@ function normalizeRotation(project: ProjectWithLegacyFields): Rotation {
 export function normalizeProject(stored: StoredProject): Project {
   // A Project from before the Canvas becomes beads by position with a Frame the size of its old grid; a Project from
   // before the Frame was a sheet of its own has its Frame's beads lifted into it (versionThree.ts, temporary).
-  const upright: Project | VersionThreeProject = isGridProject(stored)
+  const upright: SavedProject | VersionThreeProject = isGridProject(stored)
     ? {
         ...stored,
         beads: beadsFromColors(stored.grid.map((row) => row.map((cell) => cell.color))),
         frame: { row: 0, column: 0, columns: stored.columns, rows: stored.rows },
       }
     : stored
-  const project: Project = isVersionThree(upright) ? liftVersionThree(upright) : upright
+  const project: SavedProject = isVersionThree(upright) ? liftVersionThree(upright) : upright
   const legacy = project as ProjectWithLegacyFields
   const {
     colorBeadOverrides: _legacyOverrides,
@@ -85,11 +86,11 @@ export function normalizeProject(stored: StoredProject): Project {
 
   const paletteLetters = lettersOfPalette(palette, project.beadId, legacy.paletteLetters)
 
-  const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, letters: storedLetters, bead: _storedBead, pieceNames: _stored, beadShape: storedShape, ...withoutNames } = unwoven(rest)
+  const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, letters: storedLetters, bead: _storedBead, pieceNames: _stored, beadShape: storedShape, ...withoutNames } = unflattened(rest)
   const pieceNames = readPieceNames(legacy.pieceNames)
   const canvas = readWeave(technique, rest)
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
-  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...unwoven(readFrameKind(project.frame)), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
+  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...unflattened(readFrameKind(project.frame)), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
   const { rows, columns } = projectFrame(placed)
   const sheet: KindedSheet = { ...frameWeave({ ...canvas, ...placed }), ...laidOf(placed.frame), rows, columns }
 
@@ -126,21 +127,13 @@ function readRemovedDefaults(stored: unknown): string[] {
 }
 
 /** A stored Frame's Weave, or the Project's where it has none or an unreadable one. */
-function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
+function readFrameWeave(stored: Partial<Weave> & FlatWeave, fallback: Weave): Weave {
   return isTechnique(stored.technique) ? readWeave(stored.technique, stored) : fallback
 }
 
-/** A layer's Weave from the flat fields a file stores (until ticket 0636) as its settings map (ticket 0625), over any
- * map it holds: an unreadable Brick block reads as the default and a valid one is kept even off brick stitch; a Net
- * size is read within its range, on Netting alone. */
-function readWeave(technique: Technique, stored: Partial<Weave>): Weave {
-  const netSize = typeof stored.netSize === 'number' ? stored.netSize : undefined
-  return weaveOf({ technique, techniqueSettings: { ...stored.techniqueSettings, ...flatSetting(BRICK_BLOCK_SETTING.id, readBrickBlock(stored.brickBlock)), ...flatSetting(NET_SIZE_SETTING.id, netSize) } })
-}
-
-/** One flat field as a setting, where it holds a value. */
-function flatSetting(id: string, value: number | undefined): Record<string, number> {
-  return value === undefined ? {} : { [id]: value }
+/** A layer's Weave from the settings a file stores (flatWeave.ts, ticket 0625), each its Technique holds. */
+function readWeave(technique: Technique, stored: FlatWeave): Weave {
+  return weaveOf({ technique, techniqueSettings: storedSettings(stored) })
 }
 
 /** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
@@ -154,9 +147,4 @@ function readFrameKind({ kind, settings: stored, quarterTurns, ...frame }: Frame
   // Rotate Frame's turn (ticket 0594): one, two or three quarters; anything else reads as none.
   const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
   return { ...frame, kind, ...(settings ? { settings } : {}), ...turned }
-}
-
-/** A stored Brick block if it is a whole number from 1 to MAX_BRICK_BLOCK, otherwise nothing (read as 1). */
-function readBrickBlock(value: unknown): number | undefined {
-  return typeof value === 'number' && Number.isInteger(value) && value >= 1 && value <= MAX_BRICK_BLOCK ? value : undefined
 }

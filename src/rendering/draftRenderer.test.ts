@@ -35,7 +35,7 @@ describe('draftImage', () => {
   })
 
   it('draws any shift the geometry has: a third of a bead is three pixels a bead, a shifted row one in (ticket 0623)', () => {
-    const thirds = rowsGeometry({ kind: 'rows', shifted: true, shift: 1 / 3, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one' }, { brickBlock: 1, netSize: 3 }, undefined)
+    const thirds = rowsGeometry({ kind: 'rows', shifted: true, shift: 1 / 3, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: 1 }, undefined)
     const image = draftImage(thirds, 2, 2, ['#ff0000', '#00ff00', '#0000ff', '#ffff00'], DEFAULT_THEME)
 
     expect([image.width, image.height]).toEqual([7, 2])
