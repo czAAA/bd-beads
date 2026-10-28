@@ -203,6 +203,9 @@
   --pill-gap: 6px; /* The Tool pill's inset from the drawing area's edge (between the Canvas strip and the Progress bar), and from the colour popover. */
   --pill-thickness: 48px; /* The Tool pill across its short side: 40px tiles plus 4px padding. */
   --panel-width: 520px; /* The Menu, Project and Frame panel dropdown, at every screen size; held 8px from the screen's edge on a narrow one. */
+  --modal-large-width: 1200px; /* The large Modal (the Convert image wizard) from 1024px wide in landscape; never more than the viewport less 24px a side (Modal card). */
+  --modal-large-height: 820px; /* The large Modal's height; never more than the viewport less 24px top and bottom (Modal card). */
+  --convert-sections-width: 440px; /* The Convert image wizard's sections pane beside the preview (ConvertImage card); 400px while the popup is under 1100px wide. */
   --item-height: 34px; /* A Menu or Project panel item, setting row or pencil row; 44px (touch-target) on a coarse pointer. */
   --panel-row: 28px; /* A row of the Menu, Project or Frame panel (ticket 0553): item, section header, setting, pencil or beads-needed row. Replaces item-height there. */
   --panel-row-touch: 36px; /* panel-row on a coarse pointer: a deliberate exception to touch-target, since the rows touch and each row is its own hit area (responsive.md). */
