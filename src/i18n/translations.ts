@@ -6,7 +6,7 @@ import type { PluralForms } from './plural'
 
 export type { Locale }
 
-/** One Overview feature; `tabName` and `tabLine` are shorter wordings for the carousel tab where the full ones don't
+/** One Homepage feature; `tabName` and `tabLine` are shorter wordings for the carousel tab where the full ones don't
  * fit. */
 interface FeatureCopy {
   name: string
@@ -314,7 +314,7 @@ export interface Translations {
   /** The header's own addition at the iPad mini tier (ticket 168): the More button (OverflowMenu card). */
   header: {
     menuButton: string
-    overviewItem: string
+    homepageItem: string
     /** The HeaderMenu's link to the repository (ADR 0031, ticket 269): the AGPL-3.0 network clause requires a hosted
      * copy to offer one. */
     sourceItem: string
@@ -323,7 +323,7 @@ export interface Translations {
     projectPanelLabel: string
   }
   /** The ContextBar (ticket 168; ContextBar card): what a Selection can do, floating above the Progress bar. */
-  overview: {
+  homepage: {
     pageTitle: string
     tagline: string
     makeFirstProject: string
@@ -333,11 +333,11 @@ export interface Translations {
     /** The carousel's ‹ › buttons. */
     previousFeature: string
     nextFeature: string
-    /** The hand-written notes of the hero (Overview card); decorative, hidden from screen readers. */
+    /** The hand-written notes of the hero (Homepage card); decorative, hidden from screen readers. */
     notes: { onUs: string }
-    /** The coffee tile (ticket 219; Overview card). */
+    /** The coffee tile (ticket 219; Homepage card). */
     coffee: { title: string; text: string; button: string }
-    /** The plan tiles (ticket 220; Overview card): placeholders until accounts and payment exist. */
+    /** The plan tiles (ticket 220; Homepage card): placeholders until accounts and payment exist. */
     plans: {
       label: string
       heading: string
@@ -354,7 +354,7 @@ export interface Translations {
       exports: FeatureCopy
       savedProjects: FeatureCopy
     }
-    /** The words inside the carousel's examples (ticket 218; Overview card): decorative, so hidden from screen
+    /** The words inside the carousel's examples (ticket 218; Homepage card): decorative, so hidden from screen
      * readers with them. */
     examples: {
       loom: string
@@ -544,6 +544,8 @@ export interface Translations {
   print: {
     /** "60×80 · TOHO Cube 1.5mm · ≈ 9 × 12 cm" */
     metaLine: string
+    /** The same line for a Bead with no Estimated size: "60×80 · Unknown bead". */
+    metaLineNoEstimate: string
     /** On page 1, when the chart is split over pages. */
     readParts: string
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
@@ -851,7 +853,7 @@ export interface Translations {
     confirmButton: string
     cancelButton: string
   }
-  // Convert image (CONTEXT.md, ADR 0010/0011). Strings holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` are
+  // Convert image (CONTEXT.md, ADR 0010). Strings holding `{formats}`, `{maxSizeMb}` or `{maxMegapixels}` are
   // filled by formatImageLimits (domain/imageConversion.ts) from the validation constants, so never write the numbers
   // here.
   convertImage: {

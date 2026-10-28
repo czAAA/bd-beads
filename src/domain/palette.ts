@@ -1,5 +1,6 @@
 import { BEAD_CATALOG, findBead, findBrand } from './beads'
 import type { ColorCatalog } from './colorCatalog'
+import { normalizeHex } from './color'
 import { nearestColor } from './imageColors'
 
 export interface PaletteColor {
@@ -52,7 +53,7 @@ export function defaultPalette(beadId: string): readonly PaletteColor[] {
   return brandColors(findBead(beadId)?.brand.id)
 }
 
-/** A built-in color by id, for the fixed artwork (Starters, the overview) that names the colors it draws with. */
+/** A built-in color by id, for the fixed artwork (Starters, the homepage) that names the colors it draws with. */
 export function findBuiltInColor(id: string): PaletteColor | undefined {
   return BUILT_IN_COLORS.find((color) => color.id === id)
 }
@@ -79,13 +80,6 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
 
 /** The first keys, Shift+1…3, pick the recent colors, not Palette slots (ticket 529). */
 export const RECENT_SHORTCUTS = 3
-
-/** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for
- * anything else. */
-export function normalizeHex(hex: string): string | undefined {
-  const lower = hex.trim().toLowerCase()
-  return /^#[0-9a-f]{6}$/.test(lower) ? lower : undefined
-}
 
 const ADDED_PREFIX = 'added-'
 

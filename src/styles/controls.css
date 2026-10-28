@@ -9,7 +9,7 @@
   --control-height-plain: 1.875rem;
   /* Canvas strip and Canvas footer (ticket 544): each is as tall as its tallest item plus 1px above and below. The
      bars take their height from their content; these derived values are the same rule for the one bar with no
-     content of its own (the Overview's empty footer), so the canvas box never changes height between pages. The
+     content of its own (the Homepage's empty footer), so the canvas box never changes height between pages. The
      strip's tallest item is the Menu button (a coarse pointer grows its icon buttons to the touch target); the
      footer's is a large button (its touch target overhangs the bar). */
   --bar-pad: 1px;

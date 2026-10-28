@@ -271,12 +271,12 @@ export const uk: Translations = {
   },
   header: {
     menuButton: 'Меню',
-    overviewItem: 'Огляд',
+    homepageItem: 'Головна',
     sourceItem: 'Вихідний код',
     projectPanelLabel: 'Проєкт',
   },
-  overview: {
-    pageTitle: 'Огляд',
+  homepage: {
+    pageTitle: 'Головна',
     tagline: 'збережемо. порахуємо. експортуємо',
     makeFirstProject: 'Створити перший проєкт',
     openEditor: 'Відкрити редактор',
@@ -477,6 +477,7 @@ export const uk: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Лінії: частини схеми, кожна на своїй сторінці; усі ряди й стовпці пронумеровано.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Потрібно бісеру: {summary} · див. сторінку {page}',

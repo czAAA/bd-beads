@@ -31,7 +31,7 @@ interface Budget {
   texts: (t: Translations) => Record<string, string>
 }
 
-/** The Overview carousel's list column from 1024 (FeatureCarousel.vue): 18.75rem wide, 14px padding each side, a 1.75rem
+/** The Homepage carousel's list column from 1024 (FeatureCarousel.vue): 18.75rem wide, 14px padding each side, a 1.75rem
  * icon and a 10px gap before the text. */
 const CAROUSEL_TEXT_ROOM = 300 - 2 * 14 - 28 - 10
 
@@ -42,7 +42,7 @@ const BUDGETS: Budget[] = [
     breakpoint: 'from 1024px',
     lines: 1,
     style: { size: 16, weight: 600 },
-    texts: (t) => Object.fromEntries(Object.entries(t.overview.features).map(([key, copy]) => [key, copy.tabName ?? copy.name])),
+    texts: (t) => Object.fromEntries(Object.entries(t.homepage.features).map(([key, copy]) => [key, copy.tabName ?? copy.name])),
   },
   {
     name: 'carousel tab line',
@@ -50,7 +50,7 @@ const BUDGETS: Budget[] = [
     breakpoint: 'from 1024px',
     lines: 2,
     style: { size: 14, weight: 400 },
-    texts: (t) => Object.fromEntries(Object.entries(t.overview.features).map(([key, copy]) => [key, copy.tabLine ?? copy.text])),
+    texts: (t) => Object.fromEntries(Object.entries(t.homepage.features).map(([key, copy]) => [key, copy.tabLine ?? copy.text])),
   },
 ]
 

@@ -270,12 +270,12 @@ export const en: Translations = {
   },
   header: {
     menuButton: 'Menu',
-    overviewItem: 'Overview',
+    homepageItem: 'Homepage',
     sourceItem: 'Source code',
     projectPanelLabel: 'Project',
   },
-  overview: {
-    pageTitle: 'Overview',
+  homepage: {
+    pageTitle: 'Homepage',
     tagline: 'save. count. export',
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',
@@ -470,6 +470,7 @@ export const en: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Lines: the chart parts, each on its own page with every row and column numbered.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Beads needed: {summary} · see page {page}',

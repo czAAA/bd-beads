@@ -270,12 +270,12 @@ export const zh: Translations = {
   },
   header: {
     menuButton: '菜单',
-    overviewItem: '概览',
+    homepageItem: '首页',
     sourceItem: '源代码',
     projectPanelLabel: '项目',
   },
-  overview: {
-    pageTitle: '概览',
+  homepage: {
+    pageTitle: '首页',
     tagline: '保存。计数。导出',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
@@ -464,6 +464,7 @@ export const zh: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: '线条：图表各部分，每部分占一页，所有行和列均已编号。',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: '所需珠子：{summary} · 见第 {page} 页',

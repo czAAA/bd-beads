@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { fillBlanks } from '../../domain/fillBlanks'
 import { useAppShell } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
 import SwitchTechniqueModal from '../project/SwitchTechniqueModal.vue'
@@ -144,7 +145,7 @@ const {
     v-if="pendingColorRemovalHex"
     data-testid="remove-color-modal"
     :title="t.palette.removeConfirmTitle"
-    :message="t.palette.removeConfirmMessage.replace('{hex}', pendingColorRemovalHex)"
+    :message="fillBlanks(t.palette.removeConfirmMessage, { hex: pendingColorRemovalHex })"
     :confirm-label="t.palette.removeConfirmButton"
     :cancel-label="t.palette.removeCancelButton"
     @confirm="onConfirmRemoveAddedColor"
@@ -180,11 +181,10 @@ const {
     :title="t.importSwitch.title"
     :message="
       saveFailed
-        ? t.importSwitch.unsavedMessage.replace('{current}', () => activeProject!.name)
-        : (pendingImport.length === 1 ? t.importSwitch.messageOne : t.importSwitch.messageMany)
-            .replace('{count}', () => String(pendingImport!.length))
-            .replaceAll('{imported}', () => pendingImportOpens!.name)
-            .replaceAll('{current}', () => activeProject!.name)
+        ? fillBlanks(t.importSwitch.unsavedMessage, { current: activeProject.name })
+        : pendingImport.length === 1
+          ? fillBlanks(t.importSwitch.messageOne, { imported: pendingImportOpens.name, current: activeProject.name })
+          : fillBlanks(t.importSwitch.messageMany, { count: pendingImport.length, imported: pendingImportOpens.name, current: activeProject.name })
     "
     :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.importSwitch.switchButton"
     :cancel-label="t.importSwitch.keepButton"
@@ -204,7 +204,7 @@ const {
     v-if="pendingRemove"
     data-testid="remove-project-modal"
     :title="t.removeProject.title"
-    :message="t.removeProject.message.replaceAll('{name}', () => pendingRemove!.name)"
+    :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
     :confirm-label="t.removeProject.confirmButton"
     :cancel-label="t.removeProject.cancelButton"
     @confirm="onConfirmRemove"
@@ -216,9 +216,9 @@ const {
     data-testid="switch-project-modal"
     :title="t.switchProject.title"
     :message="
-      (saveFailed ? t.importSwitch.unsavedMessage : t.switchProject.message)
-        .replaceAll('{current}', () => activeProject!.name)
-        .replaceAll('{picked}', () => pendingSwitch!.name)
+      saveFailed
+        ? fillBlanks(t.importSwitch.unsavedMessage, { current: activeProject.name })
+        : fillBlanks(t.switchProject.message, { current: activeProject.name, picked: pendingSwitch.name })
     "
     :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.switchProject.confirmButton"
     :cancel-label="t.switchProject.cancelButton"
@@ -254,8 +254,8 @@ const {
   <ConfirmModal
     v-if="deleting && activeProject"
     data-testid="delete-project-modal"
-    :title="t.panels.project.deleteTitle.replace('{name}', () => activeProject!.name)"
-    :message="t.panels.project.deleteMessage.replaceAll('{name}', () => activeProject!.name)"
+    :title="fillBlanks(t.panels.project.deleteTitle, { name: activeProject.name })"
+    :message="fillBlanks(t.panels.project.deleteMessage, { name: activeProject.name })"
     :confirm-label="t.panels.project.deleteConfirm"
     :cancel-label="t.panels.project.cancel"
     @confirm="onConfirmDelete"

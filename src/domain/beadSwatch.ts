@@ -1,3 +1,4 @@
+import { channelsOf, mix, toHex } from './color'
 import type { ColorCatalog } from './colorCatalog'
 import { familyHex, type PaletteColor } from './palette'
 
@@ -23,10 +24,6 @@ const FINISH_CHANGES: Readonly<Record<Finish, FinishChange>> = {
   plated: { toward: 0, by: 0.12 },
 }
 
-const channels = (hex: string) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16))
-const toHex = (values: number[]) => `#${values.map((value) => Math.round(value).toString(16).padStart(2, '0')).join('')}`
-const mix = (from: number, to: number, by: number) => from + (to - from) * by
-
 /** The generated swatch of a color family in a Finish: the family's hex in its Brand's `colors` changed by the Finish.
  * Pure and approximate; undefined for a family with no single color (ticket 0537).
  * @internal Its test checks each Finish's change on its own. */
@@ -34,9 +31,9 @@ export function swatchHex(family: string, finish: Finish, colors: readonly Palet
   const base = familyHex(family, colors)
   if (!base) return undefined
   const { toward, by, grey = 0 } = FINISH_CHANGES[finish]
-  const rgb = channels(base)
-  const average = (rgb[0]! + rgb[1]! + rgb[2]!) / 3
-  return toHex(rgb.map((value) => mix(mix(value, average, grey), toward, by)))
+  const rgb = channelsOf(base)
+  const average = (rgb.r + rgb.g + rgb.b) / 3
+  return toHex(mix(mix(rgb, { r: average, g: average, b: average }, grey), { r: toward, g: toward, b: toward }, by))
 }
 
 /** One code of a Bead's Color catalog as the picker lists it. */

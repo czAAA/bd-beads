@@ -67,6 +67,24 @@ const noSelfRaisedKeyboard = {
   },
 }
 
+// Ticket 0614: a translated string's blanks are filled by fillBlanks alone, so `.replace('{name}', …)` is refused, in a
+// Vue template too.
+const noHandFilledBlank = {
+  meta: { type: 'problem', schema: [], messages: { fill: 'Fill a string\'s blanks with fillBlanks (domain/fillBlanks.ts), not by hand (ticket 0614).' } },
+  create(context) {
+    const blank = (node) => node && node.type === 'Literal' && typeof node.value === 'string' && /^\{\w+\}$/.test(node.value)
+    const visitor = {
+      CallExpression(node) {
+        const callee = node.callee
+        if (callee.type !== 'MemberExpression' || callee.property.type !== 'Identifier') return
+        if (/^replace(All)?$/.test(callee.property.name) && blank(node.arguments[0])) context.report({ node, messageId: 'fill' })
+      },
+    }
+    const services = context.sourceCode.parserServices
+    return services?.defineTemplateBodyVisitor ? services.defineTemplateBodyVisitor(visitor, visitor) : visitor
+  },
+}
+
 export default tseslint.config(
   {
     ignores: ['dist/**', 'test-results/**', 'playwright-report/**'],
@@ -82,9 +100,10 @@ export default tseslint.config(
     },
   },
   {
-    plugins: { local: { rules: { 'max-comment-lines': maxCommentLines } } },
+    plugins: { local: { rules: { 'max-comment-lines': maxCommentLines, 'no-hand-filled-blank': noHandFilledBlank } } },
     rules: {
       'local/max-comment-lines': 'error',
+      'local/no-hand-filled-blank': 'error',
       // This codebase's convention for a deliberately unused destructured
       // binding (e.g. dropping a legacy field via `const { x: _x, ...rest }`).
       '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],
@@ -132,7 +151,7 @@ export default tseslint.config(
       message: 'A press outside an overlay goes through useOverlayLayer (ticket 449, ADR 0061); only canvas gesture code listens to raw presses.',
     };
     // A Technique is named only in its entry (tickets 506, 0611): no other code writes its id as a value or a key, and
-    // the registries that use one (Frame kinds, Starters, the Overview) name it as their entry's `technique`.
+    // the registries that use one (Frame kinds, Starters, the Homepage) name it as their entry's `technique`.
     const ids = 'loom|peyote|brick|rightAngle|netting';
     const message = 'Read the Technique from its entry in domain/weave.ts (TECHNIQUES, DEFAULT_TECHNIQUE, describeWeave) instead of writing its id (tickets 506, 0611).';
     const techniqueValue = { selector: `Literal[value=/^(${ids})$/]`, message };
@@ -148,7 +167,7 @@ export default tseslint.config(
       'src/composables/shell/usePenInputMode.ts',
       'src/composables/tools/useToolPillDrag.ts',
     ];
-    const registries = ['src/domain/frameKind.ts', 'src/domain/starters.ts', 'src/overview/**'];
+    const registries = ['src/domain/frameKind.ts', 'src/domain/starters.ts', 'src/homepage/**'];
     const block = (files, selectors) => ({
       files,
       ignores: ['**/*.test.ts', 'src/testSetup.ts', 'src/testUtils/**'],

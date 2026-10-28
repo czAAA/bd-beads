@@ -271,12 +271,12 @@ export const ru: Translations = {
   },
   header: {
     menuButton: 'Меню',
-    overviewItem: 'Обзор',
+    homepageItem: 'Главная',
     sourceItem: 'Исходный код',
     projectPanelLabel: 'Проект',
   },
-  overview: {
-    pageTitle: 'Обзор',
+  homepage: {
+    pageTitle: 'Главная',
     tagline: 'сохраним. посчитаем. экспортируем',
     makeFirstProject: 'Сделать первый проект',
     openEditor: 'Открыть редактор',
@@ -477,6 +477,7 @@ export const ru: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Линии: части схемы, каждая на своей странице; все ряды и столбцы пронумерованы.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Нужно бисера: {summary} · см. страницу {page}',

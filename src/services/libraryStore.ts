@@ -25,7 +25,7 @@ const STORED_VERSION = 4
 
 interface StoredLibrary {
   version: number
-  // The key stays `patterns` in storage (ADR 0028).
+  // The key stays `patterns` in storage (ADR 0050).
   patterns: EncodedProject[]
 }
 
