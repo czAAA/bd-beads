@@ -1,14 +1,13 @@
 import type { GridPosition, Rotation } from './grid'
-import { beadBounds, colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type Rect } from './canvas'
+import { beadBounds, colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { withEachBead } from './folding'
 import { snapRow } from './frame'
-import { layerView, onLayer, positionOnCanvas } from './layers'
+import { layerSheet, onLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, frameWeave } from './layerWeave'
-import { restoreBeads } from './drawing'
 import { touch, type Project } from './project'
 import { turnedCustomFrame } from './changeFrame'
-import { coveredOnLayout, isCustomView, turnedOnLayout } from './customSelection'
+import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
 import { describeWeave } from './weave'
 
@@ -45,11 +44,11 @@ export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBloc
 }
 
 /** Every position of a rectangle that holds a bead (of a shape, only its own cells: ticket 547). */
-function beadsIn(project: Project, area: Rect, mask?: (row: number, column: number) => boolean): BeadChange[] {
+function beadsIn(beads: BeadMap, area: Rect, mask?: (row: number, column: number) => boolean): BeadChange[] {
   const found: BeadChange[] = []
   for (let row = area.row; row < area.row + area.rows; row++) {
     for (let column = area.column; column < area.column + area.columns; column++) {
-      const color = !mask || mask(row, column) ? colorAt(project.beads, row, column) : null
+      const color = !mask || mask(row, column) ? colorAt(beads, row, column) : null
       if (color) {
         found.push({ row, column, color })
       }
@@ -58,38 +57,58 @@ function beadsIn(project: Project, area: Rect, mask?: (row: number, column: numb
   return found
 }
 
-/** The Project with the Selection turned a quarter clockwise, and the turned rectangle; covered beads are replaced. A
- * shape turns its own beads only, and what it lands on is replaced; the result is the turned shape (ticket 547).
- * @internal Tests turn a Selection without the App. */
-export function rotateSelection(project: Project, selection: Selection, inset = 0): RotatedSelection {
+/** A layer laid on a grid with the Selection turned a quarter clockwise: its beads, covered ones replaced; the turned
+ * rectangle; and where each bead went, for the Piece names (undefined: gone). A shape turns its own beads only, and what
+ * it lands on is replaced; the result is the turned shape (ticket 547). */
+function turnedBeads({ beads, weave }: Pick<LayerSheet, 'beads' | 'weave'>, selection: Selection, inset = 0): {
+  beads: BeadMap
+  selection: Selection
+  moved: (position: GridPosition) => GridPosition | undefined
+} {
   const area = selectionFrame(selection)
-  const turned = rotatedSelection(project, selection, inset)
+  const turned = rotatedSelection(weave, selection, inset)
   const footprint = selectionFrame(turned)
 
-  const weave = describeWeave(project)
+  const description = describeWeave(weave)
   const block = { columns: selection.columns, rows: selection.rows }
   const turn = (row: number, column: number): GridPosition | undefined => {
-    const to = weave.turned({ row: row - selection.top, column: column - selection.left }, block)
+    const to = description.turned({ row: row - selection.top, column: column - selection.left }, block)
     return to && { row: turned.top + to.row, column: turned.left + to.column }
   }
 
   // A bead that belongs to no whole Unit of the Selection (a horizontal bead past its last Unit) stays where it is.
   const mask = selectionMask(selection)
-  const lifted = beadsIn(project, area, mask).filter(({ row, column }) => turn(row, column))
+  const lifted = beadsIn(beads, area, mask).filter(({ row, column }) => turn(row, column))
   const landed = mask && lifted.map(({ row, column }) => turn(row, column)!)
-  const covered = landed ? landed.flatMap((at) => beadsIn(project, { row: at.row, column: at.column, rows: 1, columns: 1 })) : beadsIn(project, footprint)
-  const cleared = withColors(project.beads, [...lifted, ...covered].map(({ row, column }) => ({ row, column, color: null })))
-  const beads = withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column)!, color })))
+  const covered = landed ? landed.flatMap((at) => beadsIn(beads, { row: at.row, column: at.column, rows: 1, columns: 1 })) : beadsIn(beads, footprint)
+  const cleared = withColors(beads, [...lifted, ...covered].map(({ row, column }) => ({ row, column, color: null })))
 
   const landedKeys = landed && new Set(landed.map(({ row, column }) => cellKey(row, column)))
-  const named = carryNames(project, { ...project, beads, updatedAt: Date.now() }, (position) => {
+  const moved = (position: GridPosition): GridPosition | undefined => {
     if (frameContains(area, position) && (!mask || mask(position.row, position.column))) {
       return turn(position.row, position.column)
     }
     if (landedKeys) return landedKeys.has(cellKey(position.row, position.column)) ? undefined : position
     return frameContains(footprint, position) ? undefined : position
-  })
-  return { project: named, selection: landed ? { ...turned, cells: landed } : turned }
+  }
+  return {
+    beads: withColors(cleared, lifted.map(({ row, column, color }) => ({ ...turn(row, column)!, color }))),
+    selection: landed ? { ...turned, cells: landed } : turned,
+    moved,
+  }
+}
+
+/** The Project with the Selection turned a quarter clockwise on its Canvas, and the turned rectangle (see `turnedBeads`);
+ * the Piece names go where their beads went.
+ * @internal Tests turn a Selection without the App. */
+export function rotateSelection(project: Project, selection: Selection, inset = 0): RotatedSelection {
+  const turned = turnedBeads({ beads: project.beads, weave: project }, selection, inset)
+  return { project: carryNames(project, { ...project, beads: turned.beads, updatedAt: Date.now() }, turned.moved), selection: turned.selection }
+}
+
+/** The beads of a layer as a Project holds them. */
+function beadsOf(project: Project, layer: Layer): BeadMap {
+  return layer === 'frame' ? project.frame!.beads : project.beads
 }
 
 /** A Selection turned on its layer (ADR 0066): the Canvas's as `rotateSelection` does it; the Frame's within the Frame,
@@ -97,41 +116,40 @@ export function rotateSelection(project: Project, selection: Selection, inset = 
 export function rotateLayerSelection(project: Project, selection: Selection): RotatedSelection & { covered: number; dropped: number } {
   const layer = selectionLayer(project, selection)
   const local = selectionInLayer(project, layer, selection)
-  const before = layerView(project, layer)
-  if (isCustomView(before)) {
+  const before = layerSheet(project, layer)
+  if (!before.geometry.grid) {
     return rotateCustomSelection(project, local, before)
   }
-  let turned = local
-  const rotated = onLayer(project, layer, (view) => {
-    const result = rotateSelection(view, local)
-    turned = result.selection
-    // A Frame holds only its own cells.
-    return view.frame ? { ...result.project, beads: shiftedBeads(result.project.beads, 0, 0, view.frame) } : result.project
-  })
-  const after = layerView(rotated, layer)
+  const { edge } = before
+  const result = turnedBeads(before, local)
+  const turned = result.selection
+  // A Frame holds only its own cells.
+  const rotated = onLayer(project, layer, () => (edge ? shiftedBeads(result.beads, 0, 0, edge) : result.beads))
   const origin = positionOnCanvas(project, layer, { row: turned.top, column: turned.left })
-  const cells = turned.cells
-    ?.filter((cell) => !before.frame || frameContains(before.frame, cell))
-    .map((cell) => positionOnCanvas(project, layer, cell))
+  const cells = turned.cells?.filter((cell) => !edge || frameContains(edge, cell)).map((cell) => positionOnCanvas(project, layer, cell))
   return {
-    project: rotated,
+    project: rotated === project || layer === 'frame' ? rotated : withCanvasNames(project, rotated, result),
     selection: { ...turned, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) },
-    covered: rotated === project ? 0 : coveredByRotation(before, after, local, turned),
+    covered: rotated === project ? 0 : coveredByRotation(before, { beads: beadsOf(rotated, layer) }, local, turned),
     dropped: 0,
   }
+}
+
+/** The Canvas turned, with its Piece names carried as the turn moved their beads, before what fell under the Frame was
+ * put back. */
+function withCanvasNames(project: Project, rotated: Project, turn: ReturnType<typeof turnedBeads>): Project {
+  const names = carryNames(project, { ...project, beads: turn.beads }, turn.moved).pieceNames
+  const { pieceNames: _names, ...rest } = rotated
+  return { ...rest, ...(names ? { pieceNames: names } : {}) }
 }
 
 /** A Selection over a Custom frame turned (ticket 0594): its beads a quarter turn about its middle on screen, each on the
  * nearest free position of the panel under it, those on a Seam or Off-shape dropped; the rectangle turns as on a Frame
  * of its Weave. */
-function rotateCustomSelection(project: Project, local: Selection, view: Project): RotatedSelection & { covered: number; dropped: number } {
-  const { lifted, landed, dropped } = turnedOnLayout(view, local)
-  const covered = coveredOnLayout(view, landed, lifted)
-  const rotated = onLayer(project, 'frame', (frameView) => {
-    const cleared = withColors(frameView.beads, lifted.map(({ row, column }) => ({ row, column, color: null })))
-    const beads = withColors(cleared, landed)
-    return beads === frameView.beads ? frameView : restoreBeads(frameView, beads)
-  })
+function rotateCustomSelection(project: Project, local: Selection, sheet: LayerSheet): RotatedSelection & { covered: number; dropped: number } {
+  const { lifted, landed, dropped } = turnedOnLayout(sheet, local)
+  const covered = coveredOnLayout(sheet, landed, lifted)
+  const rotated = onLayer(project, 'frame', ({ beads }) => withColors(withColors(beads, lifted.map(({ row, column }) => ({ row, column, color: null }))), landed))
   const turned = rotatedSelection(frameWeave(project), local)
   const origin = positionOnCanvas(project, 'frame', { row: turned.top, column: turned.left })
   return { project: rotated, selection: { ...turned, top: origin.row, left: origin.column, layer: 'frame' }, covered: rotated === project ? 0 : covered, dropped }
@@ -140,7 +158,7 @@ function rotateCustomSelection(project: Project, local: Selection, view: Project
 /** How many beads outside the Selection the turn replaced: under the turned footprint, outside the old rectangle,
  * gone from `after`.
  * @internal Its test checks the count on its own. */
-export function coveredByRotation(before: Project, after: Project, selection: Selection, turned: Selection): number {
+export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick<LayerSheet, 'beads'>, selection: Selection, turned: Selection): number {
   const area = selectionFrame(selection)
   const footprint = selectionFrame(turned)
   const inside = selectionMask(selection)

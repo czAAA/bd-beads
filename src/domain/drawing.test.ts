@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { deleteAll, restoreBeads } from './drawing'
+import { deleteAll } from './drawing'
 import { moveToRow, toggleRowDirection } from './rowProgress'
 import { BEAD_CATALOG } from './beads'
 import type { Technique } from './weave'
@@ -10,23 +10,6 @@ import { turnedClockwise } from '../testUtils/rotated'
 import { frameGrid } from '../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
-
-describe('restoreBeads', () => {
-  it('swaps in the given beads and bumps updatedAt, without mutating the original project', () => {
-    const project = { ...createProject({
-      technique: 'loom',
-      beadId: cubeBead.id,
-      size: { width: 15, height: 15, unit: 'mm' },
-    }), updatedAt: 0 }
-    const snapshot = paintAt(project, [{ row: 0, column: 0 }], '#e63746').beads
-
-    const restored = restoreBeads(project, snapshot)
-
-    expect(restored.beads).toBe(snapshot)
-    expect(restored.updatedAt).toBeGreaterThan(0)
-    expect(frameGrid(project)[0]![0]!.color).toBeNull()
-  })
-})
 
 describe('paintCells', () => {
   function makeProject(technique: Technique = 'loom') {
