@@ -12,6 +12,7 @@ import { drawCoverPage, drawListPage } from './coverPage'
 import { coverLayout, listHeader, TABLE_HEAD } from './coverLayout'
 import { font, loadPrintFonts, MONO, SERIF } from './printPages'
 import { A4_PORTRAIT, displayedGrid, PRINT_MARGIN } from './printPlan'
+import { toHex } from '../domain/color'
 import { PRINT_THEME } from './beadLook'
 import { printText } from './printText'
 import { exportProjectPng, projectPageCount } from './projectExport'
@@ -21,7 +22,7 @@ const wordsOf = (project: ReturnType<typeof fixtureProject>, messages: Translati
 
 const pixel = (canvas: HTMLCanvasElement, x: number, y: number) => {
   const [r, g, b] = canvas.getContext('2d')!.getImageData(Math.round(x), Math.round(y), 1, 1).data
-  return `#${[r, g, b].map((channel) => channel!.toString(16).padStart(2, '0')).join('')}`
+  return toHex({ r: r!, g: g!, b: b! })
 }
 
 // The Cover page drawn for real (ticket 0583): one A4 portrait page for both formats.

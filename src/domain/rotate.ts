@@ -1,5 +1,5 @@
 import type { GridPosition } from './grid'
-import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { snapRow } from './frame'
 import { layerView, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
@@ -42,7 +42,7 @@ export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBloc
 }
 
 /** Every position of a rectangle that holds a bead (of a shape, only its own cells: ticket 547). */
-function beadsIn(project: Project, area: Frame, mask?: (row: number, column: number) => boolean): BeadChange[] {
+function beadsIn(project: Project, area: Rect, mask?: (row: number, column: number) => boolean): BeadChange[] {
   const found: BeadChange[] = []
   for (let row = area.row; row < area.row + area.rows; row++) {
     for (let column = area.column; column < area.column + area.columns; column++) {

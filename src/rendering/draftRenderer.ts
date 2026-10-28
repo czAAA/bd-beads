@@ -1,19 +1,17 @@
 import { channelsOf } from '../domain/color'
-import { isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/weave'
+import { draftCost, isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/weave'
 import type { ProjectTheme } from './beadLook'
 
 // A coarse look for a block of beads being moved (ticket 122, ADR 0018): one flat pixel per bead stretched in a single
 // blit, instead of a blit per rounded bead, which kept the Convert image framing drag under 30 fps (peyote, 250 x 250).
 // Keeps positions and colors, drops rim and rounding; only while moving, at rest the Project renderer draws.
 
-/** How many beads are worth drawing for real on every move: a square bead is one unit of cost, a rounded one three
- * (measured, ticket 122). */
+/** How many square beads are worth drawing for real on every move; a Technique's entry says what its bead costs. */
 const DRAWING_BUDGET = 15_000
-const COST_PER_BEAD: Record<Technique, number> = { loom: 1, brick: 1, peyote: 3, rightAngle: 3, netting: 3 }
 
 /** Whether a block of this many beads is too many to draw as beads on every move of a drag. */
 export function usesDraftLook(technique: Technique, beadCount: number): boolean {
-  return beadCount * COST_PER_BEAD[technique] > DRAWING_BUDGET
+  return beadCount * draftCost(technique) > DRAWING_BUDGET
 }
 
 interface DraftImage {
