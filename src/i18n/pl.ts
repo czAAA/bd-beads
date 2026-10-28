@@ -610,8 +610,6 @@ export const pl: Translations = {
     lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
     qualityHintLabel: 'Do czego służy niska jakość',
     qualityHint: 'Niska jakość oszczędza pamięć: mniejsze pliki i obraz, który telefon zawsze utworzy.',
-    exportCoffee: 'openbeads tworzy, utrzymuje i powoli rozwija jedna rodzina. Jeśli ci się przydaje, kawa pomoże mu przetrwać.',
-    exportCoffeeLink: 'Postaw mi kawę',
     estimateInfo: 'To szacunek. Rozmiar koralika × liczba koralików wszerz i wzdłuż. Nić, naciąg i drobne różnice między koralikami sprawiają, że gotowa praca często wychodzi trochę inna.',
     sizeLockedLine: 'Rzędy są oznaczone jako gotowe. Usuń ramkę, aby zmienić rozmiar.',
     editFrame: 'Edytuj ramkę',

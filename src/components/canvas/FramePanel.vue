@@ -18,7 +18,6 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
-import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameKind'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
@@ -237,11 +236,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </template>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
-      <!-- Buy me a coffee (ticket 560): one plain line, no popup; absent while the Coffee link is empty. -->
-      <p v-if="COFFEE_URL" class="frame-panel__line" data-testid="frame-coffee">
-        {{ t.frame.exportCoffee }}
-        <a class="frame-panel__coffee" :href="COFFEE_URL" target="_blank" rel="noopener" data-testid="frame-coffee-link">{{ t.frame.exportCoffeeLink }}</a>
-      </p>
     </PanelSection>
 
     <template v-if="frame">
@@ -489,11 +483,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   padding: var(--space-4) var(--space-10);
   font: var(--type-meta-small);
   color: var(--muted);
-}
-
-.frame-panel__coffee {
-  color: var(--accent-strong);
-  text-decoration: underline;
 }
 
 .frame-panel__body {
