@@ -21,13 +21,13 @@ import { refoldSheet, withEachBead } from './folding'
 import { canvasLift, grownFrame, namedPieceTaken } from './frameGrowth'
 import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
 import { layoutPosition, type FrameLayout } from './frameLayout'
-import { describeWeave, type Technique, type Weave } from './weave'
+import { describeWeave, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { canvasDistance, canvasWeave, clampBrickBlock, frameWeave, weaveOf, sameWeave } from './layerWeave'
+import { canvasDistance, canvasWeave, frameWeave, weaveOf } from './layerWeave'
 import { firstPasses, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
-import { withBrickBlock, withFrameBrickBlock, withFrameTechnique, withTechnique, switchedWeave } from './weaveSwitch'
+import { withWeave, type WeaveChange } from './weaveSwitch'
 import type { Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -48,12 +48,10 @@ export type FrameChange =
   /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0054); allowed after Row progress has
    * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
-  /** Change the Frame's Technique (tickets 351, 492, 507): the geometry changes, every bead keeps its row and column where
-   * the Technique has a position there and the rest are dropped. Netting takes its Net size here and Brick stitch its Brick
-   * block (ticket 568); the same Technique with another Net size changes just that. */
-  | { technique: Technique; netSize?: number; brickBlock?: number }
-  /** Change the Frame's Brick block (ticket 477): the same, only the shift's rhythm changes. */
-  | { brickBlock: number }
+  /** Change the Frame's Technique or its settings (tickets 351, 477, 492, 507, 568, 0625): the geometry changes, every
+   * bead keeps its row and column where the Weave has a position there and the rest are dropped. A Technique takes its
+   * settings with it (Netting its Net size, Brick stitch its Brick block); the same Technique changes just those. */
+  | WeaveChange
   /** Put a new empty Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
    * the Canvas under the new one is hidden, not changed. */
   | { place: { frame: Rect; weave: Weave } }
@@ -111,7 +109,7 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
   if (frame && kindRefuses(frame, change)) {
     return 'not-offered'
   }
-  if (('technique' in change || 'brickBlock' in change || 'settings' in change) && !frame) {
+  if (('technique' in change || 'techniqueSettings' in change || 'settings' in change) && !frame) {
     return 'no-frame'
   }
   if ('removeLine' in change && !describeWeave(frameWeave(project)).policy.removeLine) {
@@ -195,19 +193,9 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return project.frame ? { kind: 'changed', project: removedFrame(project) } : { kind: 'unchanged', project }
   }
 
-  if ('technique' in change) {
-    const current = frameWeave(project)
-    if (sameWeave(current, switchedWeave(current, change.technique, change.netSize, change.brickBlock))) {
-      return { kind: 'unchanged', project }
-    }
-    return { kind: 'changed', project: withFrameTechnique(project, change.technique, change.netSize, change.brickBlock) }
-  }
-
-  if ('brickBlock' in change) {
-    if (clampBrickBlock(change.brickBlock) === (project.frame?.brickBlock ?? 1)) {
-      return { kind: 'unchanged', project }
-    }
-    return { kind: 'changed', project: withFrameBrickBlock(project, change.brickBlock) }
+  if ('technique' in change || 'techniqueSettings' in change) {
+    const rewoven = withWeave(project, 'frame', change)
+    return rewoven === project ? { kind: 'unchanged', project } : { kind: 'changed', project: rewoven }
   }
 
   if ('make' in change) {
@@ -232,7 +220,7 @@ function kindRefuses(frame: FrameSheet, change: FrameChange): boolean {
     ('set' in change && !frameAllows(frame, 'resize')) ||
     ('removeLine' in change && !frameAllows(frame, 'remove-line')) ||
     ('make' in change && !frameAllows(frame, 'from-selection')) ||
-    (('technique' in change || 'brickBlock' in change) && !frameAllows(frame, 'technique'))
+    (('technique' in change || 'techniqueSettings' in change) && !frameAllows(frame, 'technique'))
   )
 }
 
@@ -378,7 +366,7 @@ function removedFrame(project: Project): Project {
 }
 
 /** A bead of the largest Piece that `among` forms in `beads` (ties to the first read), or undefined when there is none. */
-function largestPieceBead(beads: BeadMap, weave: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, among: BeadMap): GridPosition | undefined {
+function largestPieceBead(beads: BeadMap, weave: Pick<Project, 'technique' | 'techniqueSettings'>, among: BeadMap): GridPosition | undefined {
   const seen = new Set<number>()
   let best: { at: GridPosition; size: number } | undefined
   forEachBead(among, (row, column) => {
@@ -442,16 +430,10 @@ export function beadsWithoutLine(beads: BeadMap, area: Rect, line: AreaLine): Be
   return result
 }
 
-/** The Canvas woven in another Technique or Brick block (tickets 351, 492, 507): its beads keep their row and column
- * where the Technique has a position there, the names of Pieces follow them. Row progress belongs to the Frame, so this
- * is allowed at any time. The same Technique gives the same Project back. */
-export function changeCanvasWeave(project: Project, change: { technique: Technique; netSize?: number; brickBlock?: number } | { brickBlock: number }): Project {
-  if ('technique' in change) {
-    const current = canvasWeave(project)
-    if (sameWeave(current, switchedWeave(current, change.technique, change.netSize, change.brickBlock))) {
-      return project
-    }
-    return carryNames(project, withTechnique(project, change.technique, change.netSize, change.brickBlock))
-  }
-  return clampBrickBlock(change.brickBlock) === (project.brickBlock ?? 1) ? project : carryNames(project, withBrickBlock(project, change.brickBlock))
+/** The Canvas woven in another Technique or with other settings (tickets 351, 477, 492, 507, 0625): its beads keep their
+ * row and column where the Weave has a position there, the names of Pieces follow them. Row progress belongs to the
+ * Frame, so this is allowed at any time. A Weave that lays positions out as before gives the same Project back. */
+export function changeCanvasWeave(project: Project, change: WeaveChange): Project {
+  const rewoven = withWeave(project, 'canvas', change)
+  return rewoven === project ? project : carryNames(project, rewoven)
 }

@@ -1,5 +1,5 @@
 import { channelsOf } from '../domain/color'
-import { draftCost, isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/weave'
+import { draftCost, isOffsetTechnique, isShiftedRow, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import type { ProjectTheme } from './beadLook'
 
 // A coarse look for a block of beads being moved (ticket 122, ADR 0018): one flat pixel per bead stretched in a single
@@ -74,7 +74,7 @@ export function renderDraft(
   context: CanvasRenderingContext2D,
   input: {
     technique: Technique
-    brickBlock?: number
+    techniqueSettings?: TechniqueSettings
     columns: number
     rows: number
     colors: readonly (string | undefined)[]
@@ -83,8 +83,8 @@ export function renderDraft(
     bitmapHeight: number
   },
 ): void {
-  const { technique, brickBlock, columns, rows, colors, theme, bitmapWidth, bitmapHeight } = input
-  const image = draftImage({ technique, brickBlock }, columns, rows, colors, theme)
+  const { technique, techniqueSettings, columns, rows, colors, theme, bitmapWidth, bitmapHeight } = input
+  const image = draftImage({ technique, techniqueSettings }, columns, rows, colors, theme)
 
   scratch ??= document.createElement('canvas')
   scratch.width = image.width

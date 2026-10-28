@@ -169,7 +169,7 @@ describe('ProjectPanel (tickets 443, 554)', () => {
   })
 
   it('shows the Net size of a Netting layer and sends a change to the Frame, or the Canvas with no Frame (ticket 568)', async () => {
-    const netting = { ...project, technique: 'netting' as const, netSize: 3, frame: { ...project.frame!, technique: 'netting' as const, netSize: 3 } }
+    const netting = { ...project, technique: 'netting' as const, techniqueSettings: { netSize: 3 }, frame: { ...project.frame!, technique: 'netting' as const, techniqueSettings: { netSize: 3 } } }
     const wrapper = mountPanel({ project: netting })
     expect(wrapper.get('[data-testid="project-net-size-value"]').text()).toBe('3')
     await wrapper.get('[data-testid="project-net-size-more"]').trigger('pointerdown')

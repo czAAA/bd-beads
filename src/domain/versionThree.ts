@@ -1,5 +1,4 @@
 import { beadsInFrame, beadsOver, beadsWithout, frameContains, shiftedBeads, type BeadMap, type Rect } from './canvas'
-import { weaveOf } from './layerWeave'
 import type { Project } from './project'
 
 // TEMPORARY (ADR 0066, ticket 489; on ticket 391's cleanup list, removed with the public release): a Project as file
@@ -38,7 +37,10 @@ export function liftVersionThree(stored: VersionThreeProject): Project {
     frame: {
       ...frame,
       beads: shiftedBeads(beadsInFrame(stored.beads, frame), -frame.row, -frame.column),
-      ...weaveOf(rest),
+      // The file's flat Weave fields, for normalizeProject to read (file boundary, until ticket 0636).
+      technique: rest.technique,
+      brickBlock: rest.brickBlock,
+      netSize: rest.netSize,
       ...(named ? { name: named.name } : {}),
     },
     ...(kept?.length ? { pieceNames: kept } : {}),

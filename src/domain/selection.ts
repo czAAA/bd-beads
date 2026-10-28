@@ -249,7 +249,7 @@ export function pastedCells(block: CopiedBlock, at: GridPosition): PastedCell[] 
  * a Unit's line and clear of the holes where beads are laid in Units (tickets 483, 486).
  * @internal Tests check where a block is aimed on its own. */
 export function stampedCells(
-  project: Pick<Project, 'frame' | 'technique' | 'brickBlock' | 'netSize'>,
+  project: Pick<Project, 'frame' | 'technique' | 'techniqueSettings'>,
   block: CopiedBlock,
   at: GridPosition,
 ): PastedCell[] {

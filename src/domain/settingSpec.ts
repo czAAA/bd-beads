@@ -19,6 +19,9 @@ export interface SettingSpec<Id extends string = string> {
   lossOnChange?: boolean
   /** Another setting of the same kind it stays below (a Fringe earring's Top rows, under its Top width). */
   below?: Id
+  /** Whether a layer switched to a Technique that does not describe it keeps its value, for a switch back (the Brick
+   * block, ticket 477); otherwise it is dropped (the Net size, ticket 568). */
+  keptOffTechnique?: boolean
 }
 
 /** The setting's value as it is kept: a whole number within its range on one of its steps, a value between two steps

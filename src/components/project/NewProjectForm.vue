@@ -2,7 +2,7 @@
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/createProject'
-import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type BeadShape, type Technique } from '../../domain/weave'
+import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -75,13 +75,19 @@ function pickStarter() {
   panel?.openSub(t.value.starters.title, { opener: 'pick-starter' })
 }
 
+/** The chosen Technique's settings (ticket 0625): its Brick block or its Net size, or none where it describes neither. */
+const techniqueSettings = computed((): TechniqueSettings | undefined => {
+  const { hasBrickBlock, hasNetSize } = describeWeave({ technique: technique.value })
+  if (hasBrickBlock) return { brickBlock: brickBlock.value }
+  return hasNetSize ? { netSize: netSize.value } : undefined
+})
+
 /** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342). */
 function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
     technique: technique.value,
-    ...(describeWeave({ technique: technique.value }).hasBrickBlock && brickBlock.value > 1 ? { brickBlock: brickBlock.value } : {}),
-    ...(describeWeave({ technique: technique.value }).hasNetSize ? { netSize: netSize.value } : {}),
+    ...(techniqueSettings.value ? { techniqueSettings: techniqueSettings.value } : {}),
     beadId: beadId.value,
     ...(beadShape.value !== DEFAULT_BEAD_SHAPE ? { beadShape: beadShape.value } : {}),
     makerName: makerName.value.trim(),
@@ -248,7 +254,7 @@ function onDropImage(file: File) {
       v-if="pendingImage && selectedBead"
       :bead="selectedBead"
       :technique="technique"
-      :net-size="netSize"
+      :technique-settings="techniqueSettings"
       @confirm="onSizeConfirm"
       @cancel="pendingImage = undefined"
     />

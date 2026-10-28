@@ -26,7 +26,7 @@ describe('Right-angle weave has no bead at the end of a horizontal line (ticket 
 })
 
 describe('Netting has no bead in a hole (ticket 485)', () => {
-  const woven = createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } })
+  const woven = createProject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } })
 
   it('takes back a bead an edit put in a hole, on the Frame and on the Canvas', () => {
     const painted = paintAt(woven, [{ row: 0, column: 0 }, { row: 1, column: 1 }], '#ff0000')

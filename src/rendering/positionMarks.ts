@@ -1,4 +1,4 @@
-import { beadRoundness, describeWeave, isShiftedRow, rowCycle, type BeadCell, type Technique } from '../domain/weave'
+import { beadRoundness, describeWeave, isShiftedRow, rowCycle, type BeadCell, type Technique, type TechniqueSettings } from '../domain/weave'
 import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
 import { cellSizePx, CELL_SIZE_PX } from './cellSize'
 import { rowPitchPx, type Region } from './surfaceView'
@@ -13,10 +13,8 @@ const tiles = new Map<string, CanvasImageSource | null>()
 /** What a tile is made from: the Technique's row pitch, how big the grid is on screen, and the mark's color. */
 export interface MarkTileInput {
   technique: Technique
-  /** The Brick block (ticket 477); nothing is 1. */
-  brickBlock?: number
-  /** The Net size (ticket 485); nothing is the default. */
-  netSize?: number
+  /** Its settings (ticket 0625): the Brick block, the Net size; one left out is its default. */
+  techniqueSettings?: TechniqueSettings
   /** How the Bead is drawn when the Bead shape is Real (ADR 0068); nothing is Symmetric. */
   cell?: BeadCell
   /** Device pixels per grid px: the zoom times the screen's pixel ratio. */
@@ -26,7 +24,7 @@ export interface MarkTileInput {
 }
 
 /** How many rows a tile holds: the shift's cycle, and at least two. */
-function tileRows(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize' | 'cell'>): number {
+function tileRows(input: Pick<MarkTileInput, 'technique' | 'techniqueSettings' | 'cell'>): number {
   return Math.max(2, rowCycle(input))
 }
 
@@ -39,7 +37,7 @@ interface Tile {
 
 /** What one tile holds: a bead across and a cycle of rows down, or the two beads of Right-angle weave that a Unit's
  * pitch repeats (ticket 482), or a net's diamond (ticket 485). */
-function tileOf(input: Pick<MarkTileInput, 'technique' | 'brickBlock' | 'netSize' | 'cell'>): Tile {
+function tileOf(input: Pick<MarkTileInput, 'technique' | 'techniqueSettings' | 'cell'>): Tile {
   const description = describeWeave(input)
   if (description.countsUnits) {
     const cell = cellSizePx(input.technique, input.cell)

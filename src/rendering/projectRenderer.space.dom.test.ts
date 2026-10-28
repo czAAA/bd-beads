@@ -263,7 +263,7 @@ describe('Position marks tile', () => {
 describe('renderProject, Netting (ticket 485)', () => {
   // A Frame of one diamond (5 by 5 positions) at row 4, column 4, every position painted; a strand step is 15.
   const woven = (): Project => {
-    const project = createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } })
+    const project = createProject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 1, height: 1, unit: 'beads' } })
     const cells = Array.from({ length: 25 }, (_cell, at) => ({ row: Math.floor(at / 5), column: at % 5, color: '#e63746' }))
     return { ...project, frame: { ...weaveOf(project), row: 4, column: 4, rows: 5, columns: 5, beads: withColors({}, cells) } }
   }

@@ -244,7 +244,7 @@ describe('useFrameFlow', () => {
     })
 
     it('counts several rows added on top', () => {
-      const { deps, setTo } = setup({ ...woven('brick'), brickBlock: 4 })
+      const { deps, setTo } = setup({ ...woven('brick'), techniqueSettings: { brickBlock: 4 } })
       setTo({ row: 11, column: 0, rows: 4, columns: 4 })
       expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added 3 empty rows on top: a Frame must start on an unshifted row.', 'info')
     })
@@ -411,8 +411,8 @@ describe('useFrameFlow', () => {
     it('changes the Brick block of the Canvas alone', () => {
       const { deps, setCanvasBrickBlock } = setup({ ...sized, technique: 'brick' })
       setCanvasBrickBlock(3)
-      expect(deps.harness.project.brickBlock).toBe(3)
-      expect(deps.harness.project.frame?.brickBlock).toBeUndefined()
+      expect(deps.harness.project.techniqueSettings?.brickBlock).toBe(3)
+      expect(deps.harness.project.frame?.techniqueSettings?.brickBlock).toBeUndefined()
     })
   })
 
@@ -426,7 +426,7 @@ describe('useFrameFlow', () => {
       expect(switchQuestion.value).toMatchObject({ technique: 'netting', drawn: true, asksNetSize: true, lost: 2 })
       confirmSwitch()
       expect(switchQuestion.value).toBeUndefined()
-      expect(deps.harness.project).toMatchObject({ technique: 'netting', netSize: 3, beads: {} })
+      expect(deps.harness.project).toMatchObject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beads: {} })
     })
 
     it('recounts the loss as the Net size is chosen, and applies the one chosen as one Undo step', () => {
@@ -435,10 +435,10 @@ describe('useFrameFlow', () => {
       setSwitchNetSize(5)
       expect(switchQuestion.value?.netSize).toBe(5)
       confirmSwitch()
-      expect(deps.harness.project.netSize).toBe(5)
+      expect(deps.harness.project.techniqueSettings?.netSize).toBe(5)
       deps.harness.history.onUndo()
       expect(deps.harness.project).toMatchObject({ technique: 'loom', beads: drawnCanvas.beads })
-      expect(deps.harness.project).not.toHaveProperty('netSize')
+      expect(deps.harness.project).not.toHaveProperty('techniqueSettings')
     })
 
     it('changes nothing when cancelled', () => {
@@ -465,7 +465,7 @@ describe('useFrameFlow', () => {
       setCanvasTechnique('brick')
       setSwitchBrickBlock(3)
       confirmSwitch()
-      expect(deps.harness.project).toMatchObject({ technique: 'brick', brickBlock: 3 })
+      expect(deps.harness.project).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
       deps.harness.history.onUndo()
       expect(deps.harness.project.technique).toBe('loom')
@@ -483,16 +483,16 @@ describe('useFrameFlow', () => {
   })
 
   describe('the Net size (ticket 568)', () => {
-    const net = { ...sized, technique: 'netting' as const, netSize: 3, frame: { ...sized.frame!, technique: 'netting' as const, netSize: 3 } }
+    const net = { ...sized, technique: 'netting' as const, techniqueSettings: { netSize: 3 }, frame: { ...sized.frame!, technique: 'netting' as const, techniqueSettings: { netSize: 3 } } }
 
     it('changes at once while no bead would be lost, as one announced Undo step', () => {
       const { deps, setNetSize, switchQuestion } = setup(net)
       setNetSize(5)
       expect(switchQuestion.value).toBeUndefined()
-      expect(deps.harness.project.frame).toMatchObject({ technique: 'netting', netSize: 5 })
+      expect(deps.harness.project.frame).toMatchObject({ technique: 'netting', techniqueSettings: { netSize: 5 } })
       expect(deps.announce).toHaveBeenCalledWith('Net size changed to 5')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame?.netSize).toBe(3)
+      expect(deps.harness.project.frame?.techniqueSettings?.netSize).toBe(3)
     })
 
     it('asks first when beads would lose their place, counting them as the size is chosen, and keeps the Technique', () => {
@@ -505,7 +505,7 @@ describe('useFrameFlow', () => {
       setSwitchNetSize(7)
       expect(switchQuestion.value!.netSize).toBe(7)
       confirmSwitch()
-      expect(deps.harness.project.netSize).toBe(7)
+      expect(deps.harness.project.techniqueSettings?.netSize).toBe(7)
       expect(lost).toBeGreaterThan(0)
     })
 
@@ -515,9 +515,9 @@ describe('useFrameFlow', () => {
       setCanvasNetSize(5)
       confirmSwitch()
       deps.harness.history.onUndo()
-      expect(deps.harness.project).toMatchObject({ netSize: 3, beads: drawn.beads })
+      expect(deps.harness.project).toMatchObject({ techniqueSettings: { netSize: 3 }, beads: drawn.beads })
       deps.harness.history.onRedo()
-      expect(deps.harness.project.netSize).toBe(5)
+      expect(deps.harness.project.techniqueSettings?.netSize).toBe(5)
       expect(deps.harness.project.beads).toEqual({})
     })
 
@@ -527,9 +527,9 @@ describe('useFrameFlow', () => {
       setNetSize(5)
       confirmSwitch()
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame).toMatchObject({ netSize: 3, beads: drawn.frame.beads })
+      expect(deps.harness.project.frame).toMatchObject({ techniqueSettings: { netSize: 3 }, beads: drawn.frame.beads })
       deps.harness.history.onRedo()
-      expect(deps.harness.project.frame?.netSize).toBe(5)
+      expect(deps.harness.project.frame?.techniqueSettings?.netSize).toBe(5)
       expect(deps.harness.project.frame?.beads).toEqual({})
     })
 
@@ -547,12 +547,12 @@ describe('useFrameFlow', () => {
       const { deps, setBrickBlock } = setup(brick)
       const before = deps.harness.project
       setBrickBlock(3)
-      expect(deps.harness.project).toMatchObject({ frame: { ...before.frame, brickBlock: 3 }, beads: before.beads })
+      expect(deps.harness.project).toMatchObject({ frame: { ...before.frame, techniqueSettings: { brickBlock: 3 } }, beads: before.beads })
       expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame?.brickBlock ?? 1).toBe(1)
+      expect(deps.harness.project.frame?.techniqueSettings?.brickBlock ?? 1).toBe(1)
       deps.harness.history.onRedo()
-      expect(deps.harness.project.frame?.brickBlock).toBe(3)
+      expect(deps.harness.project.frame?.techniqueSettings?.brickBlock).toBe(3)
     })
 
     it('is no step for the number already used', () => {

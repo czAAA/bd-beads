@@ -10,7 +10,7 @@ import { describeWeave } from './weave'
 
 const RED = '#e63746'
 /** Net size 3 (a diamond is 4 positions across and down, 2 rows a Unit): 2 diamonds across, 1 down is 9 columns, 5 rows. */
-const woven: Project = frameLayer(createProject({ technique: 'netting', netSize: 3, beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } }))
+const woven: Project = frameLayer(createProject({ technique: 'netting', techniqueSettings: { netSize: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 2, height: 1, unit: 'beads' } }))
 const weave = describeWeave(woven)
 
 const found = (beads: BeadMap): string[] => {

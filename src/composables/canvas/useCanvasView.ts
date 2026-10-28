@@ -38,8 +38,8 @@ export function useCanvasView(
   const isAtFit = ref(true)
 
   /** The Canvas as the view stands, or at another zoom. */
-  function surfaceOf(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'rotation'> & Partial<Pick<Project, 'frame' | 'beadId' | 'beadShape'>>): SurfaceView {
-    return surfaceView({ space: OPEN_SPACE, technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, cell: projectCell(project), frame: project.frame, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
+  function surfaceOf(project: Pick<Project, 'technique' | 'techniqueSettings' | 'rotation'> & Partial<Pick<Project, 'frame' | 'beadId' | 'beadShape'>>): SurfaceView {
+    return surfaceView({ space: OPEN_SPACE, technique: project.technique, techniqueSettings: project.techniqueSettings, cell: projectCell(project), frame: project.frame, rotation: project.rotation, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
   }
 
   function measured(): boolean {

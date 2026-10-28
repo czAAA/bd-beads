@@ -1,14 +1,14 @@
 import { beadCopy, beadLabel, findBead, type Bead } from './beads'
 import { beadsFromColors } from './canvas'
 import type { GridDimensions } from './grid'
-import { clampBrickBlock, frameWeave, weaveOf } from './layerWeave'
+import { frameWeave, weaveOf } from './layerWeave'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import type { Grid, Project } from './project'
 import { gridFromSize, type StatedSize } from './projectSize'
 import { INITIAL_ROW_PROGRESS } from './rowProgress'
-import { clampNetSize, DEFAULT_BEAD_SHAPE, describeWeave, type BeadShape, type Technique } from './weave'
+import { DEFAULT_BEAD_SHAPE, describeWeave, type BeadShape, type Technique, type TechniqueSettings } from './weave'
 
 // Creating a Project (CONTEXT.md's New Project and Convert image): from a stated size, or from a picture.
 
@@ -16,10 +16,9 @@ export interface CreateProjectInput {
   /** User-chosen name; blank or omitted defaults to the bead's label. */
   name?: string
   technique: Technique
-  /** The Brick block of a new brick stitch Project (ticket 477); left out or 1 shifts every other row. */
-  brickBlock?: number
-  /** The Net size of a new Netting Project (ticket 485); left out is the default. */
-  netSize?: number
+  /** Its Technique's settings (ticket 0625), such as brick stitch's Brick block (ticket 477) or Netting's Net size
+   * (ticket 485); one left out is its default. */
+  techniqueSettings?: TechniqueSettings
   /** The Bead shape of a new Project; left out is Symmetric. */
   beadShape?: BeadShape
   beadId: string
@@ -44,7 +43,7 @@ export function projectGeometry(input: CreateProjectInput & { size: StatedSize }
     return undefined
   }
 
-  return { bead, ...gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock, netSize: input.netSize }) }
+  return { bead, ...gridFromSize(input.size, bead, weaveOf(input)) }
 }
 
 export function createProject(input: CreateProjectInput): Project {
@@ -53,16 +52,11 @@ export function createProject(input: CreateProjectInput): Project {
     throw new Error(`Unknown bead id: ${input.beadId}`)
   }
 
-  const dimensions = input.size ? gridFromSize(input.size, bead, { technique: input.technique, brickBlock: input.brickBlock, netSize: input.netSize }) : undefined
+  const created = weaveOf(input)
+  const dimensions = input.size ? gridFromSize(input.size, bead, created) : undefined
   const now = Date.now()
   const name = input.name?.trim() || beadLabel(bead)
   const makerName = normalizeMakerName(input.makerName ?? '')
-
-  const created = weaveOf({
-    technique: input.technique,
-    ...(input.brickBlock && input.brickBlock > 1 ? { brickBlock: clampBrickBlock(input.brickBlock) } : {}),
-    ...(describeWeave({ technique: input.technique }).hasNetSize ? { netSize: clampNetSize(input.netSize) } : {}),
-  })
 
   const palette = defaultPaletteIds(defaultPalette(bead.id))
   return {

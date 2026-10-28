@@ -4,7 +4,7 @@ import { rowProgressOn } from '../domain/rowProgress'
 import type { VueWrapper } from '@vue/test-utils'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
-import { type Technique } from '../domain/weave'
+import type { Technique, TechniqueSettings } from '../domain/weave'
 import type { Selection } from '../domain/selection'
 import { OPEN_SPACE } from '../rendering/space'
 import type { RulerLabel } from '../rendering/rulers'
@@ -49,15 +49,14 @@ function positionOf(wrapper: Anywhere, at: BeadAt): GridPosition {
 function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: number } {
   const root = surfaceRoot(wrapper)
   const technique = root.attributes('data-technique') as Technique
-  const brickBlock = Number(root.attributes('data-brick-block') ?? 1)
-  const netSize = root.attributes('data-net-size') === undefined ? undefined : Number(root.attributes('data-net-size'))
+  const techniqueSettings = JSON.parse(root.attributes('data-technique-settings') ?? '{}') as TechniqueSettings
   const rotation = Number(root.attributes('data-rotation')) as Rotation
   const zoom = Number(root.attributes('data-zoom'))
   const scrollX = Number(root.attributes('data-scroll-x'))
   const scrollY = Number(root.attributes('data-scroll-y'))
   const { row, column } = positionOf(wrapper, at)
 
-  const point = surfaceView({ space: OPEN_SPACE, technique, brickBlock, netSize, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
+  const point = surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
   return { clientX: point.x, clientY: point.y }
 }
 
