@@ -123,14 +123,14 @@ export interface StarterCategory {
 /** A Custom frame Starter's size in one of its kind's settings: the setting's range, and the design's value and chips,
  * the kind's own default and presets unless given. */
 function setting(kind: FrameKindId, name: FrameSettingName, design?: { size: number; presets: readonly number[] }, caption?: false): StarterSize {
-  const { min, max, default: size, presets } = frameKindOf({ kind }).custom!.settings.find((each) => each.name === name)!
-  return { name, size, min, max, presets, ...design, ...(caption === false ? { caption } : {}) }
+  const { min, max, default: size, presets } = frameKindOf({ kind }).custom!.settings.find((each) => each.id === name)!
+  return { name, size, min, max, presets: presets ?? [], ...design, ...(caption === false ? { caption } : {}) }
 }
 
 /** A Shape: a Custom frame of its kind, sized in its kind's one setting. */
 function shape(kind: ShapeId, size: number, presets: readonly number[], file: unknown): Starter {
   const custom = frameKindOf({ kind }).custom!
-  return { id: kind, category: 'shapes', kind, technique: custom.technique, sizes: [setting(kind, custom.settings[0].name, { size, presets })], picks: [], file }
+  return { id: kind, category: 'shapes', kind, technique: custom.technique, sizes: [setting(kind, custom.settings[0].id, { size, presets })], picks: [], file }
 }
 
 /** A Fringe earring (ticket 0597): its kind's top of 7 and 6 rows, its fringe sized, its Fringe style the design's. */
