@@ -4,7 +4,7 @@ import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 
 // The performance check (ticket 103, ADR 0018), run by hand: `npm run perf`, not in CI (noisy runner timings).
-// Env: PERF_SLOWDOWNS (default 4,6), PERF_SIZES (default 60x90,70x250,250x250), PERF_ONLY, PERF_TECHNIQUES.
+// Env: PERF_SLOWDOWNS (default 4,6), PERF_SIZES (default 60x90,70x250,250x250), PERF_ONLY (framing, crop, …), PERF_TECHNIQUES.
 // Reports fps and busy ms per frame for continuous interactions; 'open' and 'zoom' are one-off, so report duration.
 
 const SLOWDOWNS = (process.env.PERF_SLOWDOWNS ?? '4,6').split(',').map(Number)
@@ -282,10 +282,40 @@ for (const slowdown of SLOWDOWNS) {
       })
     }
   }
+
+  // By Pixel to bead ratio (spec 0645): one pixel one bead, the bottom-right crop handle dragged back and forth.
+  if (wanted('crop')) {
+    for (const [technique, size] of TECHNIQUES.flatMap((technique) => FRAMING_SIZES.map((size) => [technique, size] as const))) {
+      const name = TECHNIQUES.length > 1 ? `${label(size)} ${technique}` : label(size)
+
+      test(`crop ${name} at ${slowdown}× slowdown`, async ({ page }) => {
+        await openApp(page, [])
+        await openNewProjectForm(page)
+        await chooseNewProjectTechnique(page, technique)
+        await convertPicture(page, fixturePicture(size.columns, size.rows))
+        if ((await page.getByTestId('convert-size-mode').locator('[aria-checked="true"]').getAttribute('data-value')) !== 'ratio') {
+          await page.getByTestId('convert-size-mode').locator('[data-value="ratio"]').click()
+        }
+        await page.getByTestId('ratio-1-1').click()
+        const handle = page.getByTestId('convert-crop-bottomRight')
+        const box = (await handle.boundingBox())!
+        const cdp = await throttle(page, slowdown)
+        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+        await page.mouse.down()
+        const { fps, ms } = await burst(page, cdp, async (index) => {
+          const phase = index % 40
+          const t = phase < 20 ? phase / 20 : (40 - phase) / 20
+          await page.mouse.move(box.x + box.width / 2 - 60 * t, box.y + box.height / 2 - 40 * t)
+        })
+        await page.mouse.up()
+        results.push({ slowdown, size: name, what: 'crop drag', fps, ms })
+      })
+    }
+  }
 }
 
 test.afterAll(() => {
-  const order = ['open', 'hover', 'paint', 'select drag', 'paste hover', 'scroll', 'zoom step', 'framing drag']
+  const order = ['open', 'hover', 'paint', 'select drag', 'paste hover', 'scroll', 'zoom step', 'framing drag', 'crop drag']
   const lines = ['', 'Performance check (production build; fps over a 2 s burst, ms = main-thread busy per frame or per action)', '']
   for (const slowdown of SLOWDOWNS) {
     lines.push(`── ${slowdown}× CPU slowdown ${'─'.repeat(60)}`)

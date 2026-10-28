@@ -296,10 +296,12 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     }
   }
 
+  /** Turn 90°: the picture's sides swap, so By size a kept proportion is worked out again. */
   function turn() {
     if (!image.value) return
     image.value = turnPicture(image.value)
     restartFraming()
+    if (mode.value === 'size') proportional('width')
   }
 
   function flip() {
@@ -444,9 +446,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
       : [],
   )
 
-  /** The Project Create Project makes: the popup's own setup, the converted grid and its Palette (spec 0645). */
-  function createProject() {
-    settle()
+  /** The Project the converted grid at rest makes: the popup's own setup, the grid and its Palette (spec 0645). */
+  function projectAtRest() {
     if (!image.value || !rest.value) return undefined
     return createProjectFromImage({
       name: name.value.trim() || fileStem.value,
@@ -461,8 +462,14 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     })
   }
 
+  /** Create Project: whatever was moving settles first, so the Project is what the preview shows. */
+  function createProject() {
+    settle()
+    return projectAtRest()
+  }
+
   /** The Project as it would be created now, for Review's counts; none without a picture. */
-  const draftProject = computed(() => (image.value && rest.value ? createProject() : undefined))
+  const draftProject = computed(() => projectAtRest())
 
   return {
     // Setup
