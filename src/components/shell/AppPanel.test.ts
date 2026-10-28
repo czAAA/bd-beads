@@ -50,7 +50,7 @@ describe('AppSubpanel', () => {
     expect(document.activeElement).toBe(wrapper.get('[data-testid="field"]').element)
   })
 
-  it('goes back with the arrow or Escape, focusing the row it came from, and closes on the next Escape', async () => {
+  it('goes back with the arrow or Escape, focusing the row it came from and dropping the subpanel, and closes on the next Escape', async () => {
     const wrapper = mountShell()
     const row = () => wrapper.get('[data-testid="root-row"]').element
     ;(row() as HTMLElement).focus()
@@ -58,6 +58,7 @@ describe('AppSubpanel', () => {
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     await nextTick()
     expect(document.activeElement).toBe(row())
+    expect(wrapper.find('[data-testid="field"]').exists()).toBe(false) // unmounted, so a draft in it is gone
 
     await wrapper.get('[data-testid="root-row"]').trigger('click')
     await escape()
@@ -79,6 +80,19 @@ describe('AppSubpanel', () => {
 
     await wrapper.get('[data-testid="panel-back"]').trigger('click')
     expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true)
+  })
+
+  it('gives focus back to its strip button when it closes', async () => {
+    const button = document.createElement('button')
+    button.dataset.testid = 'strip-menu'
+    document.body.append(button)
+    const wrapper = mountShell()
+    await nextTick()
+    expect(document.activeElement).not.toBe(button)
+
+    wrapper.unmount()
+    await nextTick()
+    expect(document.activeElement).toBe(button)
   })
 
   it('resets to the root when the panel is swapped to another', async () => {

@@ -119,13 +119,14 @@ describe('ToolPill (ticket 439)', () => {
     expect(wrapper.findAll('[data-testid="pill-recent"]')).toHaveLength(3)
   })
 
+  // Which key names which edge is pillPositionForKey's (toolPill.test).
   it('moves to the edge an arrow key on the "Move tools" grip names', async () => {
     const wrapper = mount(ToolPill, { props: base })
     const grip = wrapper.get('[data-testid="tool-pill-grip"]')
     expect(grip.attributes('aria-label')).toBe('Move tools')
-    for (const key of ['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown']) await grip.trigger('keydown', { key })
+    await grip.trigger('keydown', { key: 'ArrowUp' })
     await grip.trigger('keydown', { key: 'Enter' })
-    expect(wrapper.emitted('update:position')).toEqual([['left'], ['top'], ['right'], ['bottom']])
+    expect(wrapper.emitted('update:position')).toEqual([['top']])
   })
 
   it('has one Tab stop among its tools: the active one', () => {
