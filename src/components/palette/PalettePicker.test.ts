@@ -1,8 +1,11 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import PalettePicker from './PalettePicker.vue'
-import { BUILT_IN_COLORS } from '../../domain/palette'
+import { BUILT_IN_COLORS, addedColorId, defaultPaletteIds } from '../../domain/palette'
 import { ru } from '../../i18n/ru'
+import { mountWithPalette } from '../../testUtils/paletteHost'
+
+const added = addedColorId('#123456')
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
@@ -91,5 +94,36 @@ describe('PalettePicker', () => {
       expect(wrapper.find('[aria-disabled="true"]').exists()).toBe(false)
       expect(wrapper.find('.swatch--locked').exists()).toBe(false)
     })
+
+    it('shows a × on an added swatch only in the mode, named for its hex, and a press asks to remove it (tickets 228, 304)', async () => {
+      const outside = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added])
+      expect(outside.wrapper.find('[data-testid="palette-swatch-remove"]').exists()).toBe(false)
+
+      const { wrapper, requestRemove } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added], { editing: true })
+      expect(wrapper.findAll('[data-testid="palette-swatch-remove"]')).toHaveLength(1)
+      const swatch = wrapper.get(`[data-color-id="${added}"]`)
+      expect(swatch.attributes('aria-label')).toBe(ru.palette.removeSwatch.replace('{hex}', '#123456'))
+      await swatch.trigger('click')
+      expect(requestRemove).toHaveBeenCalledWith(added)
+      expect(wrapper.findComponent(PalettePicker).emitted('select')).toBeUndefined()
+    })
+  })
+
+  it('asks to remove a focused added swatch on Delete or Backspace, and not a built-in one (ticket 228)', async () => {
+    const { wrapper, requestRemove } = mountWithPalette(PalettePicker, [...defaultPaletteIds(), added])
+
+    await wrapper.get(`[data-color-id="${BUILT_IN_COLORS[0]!.id}"]`).trigger('keydown', { key: 'Delete' })
+    expect(requestRemove).not.toHaveBeenCalled()
+    await wrapper.get(`[data-color-id="${added}"]`).trigger('keydown', { key: 'Backspace' })
+    expect(requestRemove).toHaveBeenCalledWith(added)
+  })
+
+  it('moves a swatch one slot with Alt+Right (ticket 398)', async () => {
+    const { wrapper, harness } = mountWithPalette(PalettePicker, defaultPaletteIds(), {}, { attachTo: document.body })
+    const [first, second, ...rest] = defaultPaletteIds()
+
+    await wrapper.get(`[data-color-id="${first}"]`).trigger('keydown', { key: 'ArrowRight', altKey: true })
+    expect(harness.project.palette).toEqual([second, first, ...rest])
+    wrapper.unmount()
   })
 })

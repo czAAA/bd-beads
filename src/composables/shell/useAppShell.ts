@@ -1,7 +1,6 @@
 import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
-import { isAddedColorId } from '../../domain/palette'
 import { changedSetting } from '../../domain/frameKind'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
@@ -45,6 +44,7 @@ import { useProjectLabels } from '../project/useProjectLabels'
 import { useProjectLibrary } from '../project/useProjectLibrary'
 import { useStorageAskFlow } from '../project/useStorageAskFlow'
 import { useSavedProjectConfirms } from '../project/useSavedProjectConfirms'
+import { useRemoveColorFlow } from '../palette/useRemoveColorFlow'
 import { useReplaceBeadFlow } from '../palette/useReplaceBeadFlow'
 import { useRowOps } from '../project/useRowOps'
 import { useSelectionGesture } from '../tools/useSelectionGesture'
@@ -356,45 +356,11 @@ function wireAppShell(services: Services) {
     beginAdjust(target, cell, activeTool.value === 'piece' ? 'piece' : 'select')
   }
 
-  /** An added swatch is removed (ticket 228): painted cells keep their hex. Removing the active one steps back to
-   * the default color; a toast offers Undo. */
-  function onRemoveAddedColor(colorId: string) {
-    const wasSelected = selectedColorId.value === colorId
-    const restore = removeAdded(colorId)
-    if (!restore) return
-    const fallback = palette.value.defaultColorId
-    if (wasSelected && fallback) onSelectColor(fallback)
-    // One toast per swatch, so removing a second doesn't take the first one's Undo away.
-    showToast(`palette-removed-${colorId}`, t.value.palette.removed, 'info', {
-      label: t.value.palette.undoButton,
-      run: () => {
-        // Selected again only if nothing else was chosen since.
-        restore()
-        if (wasSelected && selectedColorId.value === fallback) onSelectColor(colorId)
-      },
-    })
-  }
+  /** Removing added colors from the Palette, one or all, each after a confirmation (tickets 228, 304, 0532). */
+  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale })
+  provideRemoveAddedColor(removeColor.onRequestRemoveAddedColor)
+  provideRemoveAllAddedColors(removeColor.onRequestRemoveAllAddedColors)
 
-  /** The added swatch whose removal awaits confirmation (ticket 304); undefined when no such dialog is open. */
-  const pendingColorRemovalId = ref<string>()
-  const pendingColorRemovalHex = computed(() => palette.value.byId(pendingColorRemovalId.value)?.hex)
-  function onRequestRemoveAddedColor(colorId: string) {
-    pendingColorRemovalId.value = colorId
-  }
-  function onCancelRemoveAddedColor() {
-    pendingColorRemovalId.value = undefined
-  }
-  function onConfirmRemoveAddedColor() {
-    const colorId = pendingColorRemovalId.value
-    pendingColorRemovalId.value = undefined
-    if (colorId) onRemoveAddedColor(colorId)
-  }
-  provideRemoveAddedColor(onRequestRemoveAddedColor)
-
-  /** Remove all custom colors (ticket 0532): the bin in Edit palette asks, the dialog names how many leave. */
-  const addedColorCount = computed(() => palette.value.colors.filter((color) => isAddedColorId(color.id)).length)
-  const removeAllColorsConfirmOpen = ref(false)
-  const removeAllColorsMessage = computed(() => plural(locale.value, addedColorCount.value, t.value.palette.removeAllConfirmMessage))
   /** The question before a Custom frame's setting drops painted beads (tickets 0592, 0593, 0597), in that setting's
    * words: how many the outer rounds, last rows or strands' ends would take with them. */
   const sizeConfirm = computed(() => {
@@ -404,24 +370,7 @@ function wireAppShell(services: Services) {
     const words = setting === 'fringeStyle' ? t.value.frame.fringeStyle : t.value.frame.sizeSettings[setting]
     return { title: words.confirmTitle, message: plural(locale.value, ask.lost, words.confirmMessage), button: words.confirmButton }
   })
-  function onConfirmRemoveAllAddedColors() {
-    removeAllColorsConfirmOpen.value = false
-    const previous = selectedColorId.value
-    const wasSelected = !!previous && isAddedColorId(previous)
-    const restore = removeAllAdded()
-    if (!restore) return
-    const fallback = palette.value.defaultColorId
-    if (wasSelected && fallback) onSelectColor(fallback)
-    showToast('palette-removed-all', t.value.palette.removedAll, 'info', {
-      label: t.value.palette.undoButton,
-      run: () => {
-        restore()
-        // Selected again only if nothing else was chosen since.
-        if (wasSelected && previous && selectedColorId.value === fallback) onSelectColor(previous)
-      },
-    })
-  }
-  provideRemoveAllAddedColors(() => (removeAllColorsConfirmOpen.value = true))
+
   provideMoveColor(moveColor)
 
   /** A Custom color that is about to paint a cell joins the Palette on its first use (ticket 227). */
@@ -652,8 +601,8 @@ function wireAppShell(services: Services) {
       frameFlow.removeConfirmOpen.value ||
       frameFlow.replaceConfirmOpen.value ||
       !!frameFlow.switchQuestion.value ||
-      !!pendingColorRemovalId.value ||
-      removeAllColorsConfirmOpen.value ||
+      !!removeColor.pendingColorRemovalId.value ||
+      removeColor.removeAllColorsConfirmOpen.value ||
       !!replaceBead.replaceBeadPendingBead.value ||
       !!importSwitch.pendingImport.value ||
       !!savedProjectConfirms.pendingRemove.value ||
@@ -812,12 +761,13 @@ function wireAppShell(services: Services) {
     onRotateFrame: rotateFrameFlow.onRotateFrame,
     onRotateCanvas: rotateCanvasFlow.onRotateCanvas,
     ...deleteAll,
-    pendingColorRemovalHex,
-    removeAllColorsConfirmOpen,
-    removeAllColorsMessage,
-    onConfirmRemoveAllAddedColors,
-    onCancelRemoveAddedColor,
-    onConfirmRemoveAddedColor,
+    pendingColorRemovalHex: removeColor.pendingColorRemovalHex,
+    removeAllColorsConfirmOpen: removeColor.removeAllColorsConfirmOpen,
+    removeAllColorsMessage: removeColor.removeAllColorsMessage,
+    onConfirmRemoveAllAddedColors: removeColor.onConfirmRemoveAllAddedColors,
+    onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
+    onCancelRemoveAddedColor: removeColor.onCancelRemoveAddedColor,
+    onConfirmRemoveAddedColor: removeColor.onConfirmRemoveAddedColor,
     ...removeLine,
     settingFrame: frameFlow.settingFrame,
     framePanelShown: frameFlow.barShown,

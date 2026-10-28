@@ -49,7 +49,8 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `chooseLanguage.ts`: `chooseLanguage(wrapper, 'ru')` opens the Language picker's menu and picks that language (ticket 368).
 - `choosePanelOption.ts`: `choosePanelOption(wrapper, testid, value)` picks a value in a Menu PanelPicker; `panelOptionShown` reads the value it shows (ticket 0553).
 - `seedProject.ts`: `seedProject` saves a Project, `mountWithProject` mounts the App on it (no form driving), `createProjectViaForm` for the one test that is about the form.
-- `editHarness.ts`: a real Edit and Undo history over one in-memory Project, for flow tests (ADR 0036).
+- `editHarness.ts`: a real Edit and Undo history over one in-memory Project, for flow tests (ADR 0036). The Project is a ref, so a flow's computeds follow each Edit.
+- `paletteHost.ts`: `mountWithPalette(component, ids, props)` mounts a Palette control under the real Palette and Edit, as the app shell provides them, with spies for asking to remove one color or all (ticket 0601).
 - `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).
 - `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
 - `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.

@@ -67,6 +67,14 @@ describe('useToolAndColor', () => {
       expect(selectedColorHex()).toBe('#123456')
     })
 
+    it('a Custom color the Palette already holds selects its swatch, whatever the hex\'s case (ticket 227)', () => {
+      const { deps, customColor, selectedColorId, onSelectCustomColor } = setup()
+      const blue = deps.palette().byId('blue')!
+      onSelectCustomColor(blue.hex.toUpperCase())
+      expect(selectedColorId.value).toBe('blue')
+      expect(customColor.value).toBe(blue.hex.toUpperCase())
+    })
+
     it('has no paint color when nothing is selected', () => {
       const { selectedColorId, selectedColorHex, previewColor } = setup()
       selectedColorId.value = undefined
