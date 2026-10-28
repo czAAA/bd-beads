@@ -30,7 +30,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - Why sharing: setting up jsdom per file was most of the suite's time. Measured on the Pi with 2 workers (ticket 420), the App files take 217 s wall and 374 s CPU sharing one page per worker and 378 s and 567 s isolated, so they share too.
 - Test at the highest seam that already exists for the behavior, through its public interface, and don't add a seam only to reach an internal. Mount the whole App only when the App's wiring is the subject; otherwise test the domain function, the flow composable or the component on its own (ticket 253 moved logic tests down out of the App tests).
 - An App test proves the wiring (control → flow → storage or screen) with one happy path. Edge cases and every variant (each key, each guard, each label, each tool) live at the lowest level that has them: the shortcut table, the component, the flow. Use one language unless the language switch is the subject; the `Translations` type already makes both languages complete. A mount costs 250–330 ms on the Pi, so every extra App mount is paid by every CI run (ticket 421).
-- Assert each behavior at one level only (ticket 0599). The domain test holds the rule (which beads move, what is refused); the flow test what the flow decides (which layer, whether it asks, one Undo step, what it announces); the component test what it shows and emits; an App test only that a control reaches its flow. A test that repeats what a lower level asserts costs lines and run time and catches nothing more: [Mutation testing](#mutation-testing) shows it.
+- Assert each behavior at one level only (ticket 0599). The domain test holds the rule (which beads move, what is refused); the flow test what the flow decides (which layer, whether it asks, one Undo step, what it announces); the component test what it shows and emits; an App test only that a control reaches its flow. A test that repeats what a lower level asserts costs lines and run time and catches nothing more; how to cut one safely is in [Cutting tests](#cutting-tests).
 - App-level tests are split by area: `src/App.<area>.test.ts`. Add to the file for the area, or start a new one; don't grow `App.test.ts`.
 
 ## Prior art to copy
@@ -58,19 +58,13 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 
 `src/testSetup.ts` runs before every `page` test file: it empties the module cache and the page the last file left (body, styles, storage), and re-arms auto-unmount, which the library only lets be armed once.
 
-## Mutation testing
+## Cutting tests
 
-`npm run mutate -- --mutate <files>` (Stryker, ticket 0599) changes the named code one small edit at a time (a `<` for a `<=`, a branch dropped, a string emptied) and runs the tests that cover each change; a change no test fails on is a gap. Use it to prove that cutting tests lost nothing. It is run by hand, never in CI.
+Deleting a test that repeats a lower level (ticket 0599) loses nothing only when each of these holds; the Frame's pilot found a gap with each.
 
-1. Run it on the code under the tests to cut, before the cut (keep `.stryker/mutation.json`), then after. One run at a time: two side by side hang in their first test run.
-2. Compare the two reports mutant by mutant (by file, mutator, position and replacement): every one caught before must be caught after. The Frame's pilot took 16 minutes a run at `--concurrency 4` (1,686 mutants).
-3. Check each mutant that is no longer caught once more with `BD_ISOLATE_UNIT=1` and its line range, or by hand (make the change, run the tests, `git checkout` the file). What is still not caught is a real loss: add the check at the level that owns the decision, not back in the App.
-
-- Name source files, with line ranges for a big one (`src/composables/shell/useAppShell.ts:255-330`). The reports are `.stryker/mutation.html` and `.stryker/mutation.json` (not `reports/`, which is the docs repo's link).
-- It can't mutate a Vue template, so a binding such as `@step="onStepFrameEdge"` is guarded only by a test that drives it: keep one App test per control → flow path.
-- Stryker records no per-test coverage for `unit` files sharing one module cache, so a plain run never credits the domain's tests: a mutant only they catch shows as surviving in both runs, which step 3 sorts out. `BD_ISOLATE_UNIT=1` gives each `unit` file its own cache (`vite.config.ts`) and credits them, at a price: with App files in scope the pilot's run took nearly four hours. Use it throughout when the tests being cut are `unit` tests (the domain's), on domain code alone. The `page` files need no isolation (`testSetup.ts` empties their cache).
-- Mutants in module-level code are skipped (`ignoreStatic` in `stryker.config.mjs`): each would re-run every related test.
-- Stryker reaches Vitest 5 from 10.1.0; an older one reports every mutant as surviving. Its dashboard client pulls a `qs` with advisories, raised by `overrides` in `package.json`; drop that override once Stryker's own `typed-rest-client` moves past it.
+1. For every test deleted, name the test that still asserts its behavior, at the level that owns it. If there is none, keep the assertion there instead, not back in the App.
+2. Every binding a template makes between a control and its handler (`@cancel="onCancelRemoveFrame"`) stays driven by one test: nothing else notices a control no test presses.
+3. For a flow test that is trimmed, break each decision the flow makes by hand (which change it commits, whether it asks first), run the flow's tests, see one fail, and `git checkout` the file. An assertion that still passes is too weak: a Remove test that reads the last save passes when nothing was saved at all.
 
 ## The Worker's tests
 
