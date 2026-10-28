@@ -1,5 +1,5 @@
 import { type GridPosition } from './grid'
-import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
 import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type Layer, type Placed } from './layers'
@@ -101,19 +101,19 @@ export function hasGuides(box: { rows: number; columns: number }): boolean {
 
 /** The Selection's rectangle as a Frame-shaped box, for what measures a block of beads on screen (its border, its
  * handles). */
-export function selectionFrame(selection: Selection): Frame {
+export function selectionFrame(selection: Selection): Rect {
   return { row: selection.top, column: selection.left, rows: selection.rows, columns: selection.columns }
 }
 
 /** The Selection over a rectangle of beads given as a Frame-shaped box (a Piece's area, the box round every bead). */
-function selectionOfBox(box: Frame): Selection {
+function selectionOfBox(box: Rect): Selection {
   return { top: box.row, left: box.column, rows: box.rows, columns: box.columns }
 }
 
 /** The Selection a Piece tool tap makes (ticket 414): the tapped bead's Piece, its rectangle carrying its exact cells
  * (ticket 547), or none. With a Frame (ticket 433), only its part on the bead's side, trimmed; nothing in the margin.
  * @internal Tests check the Piece tool's Selection on its own. */
-export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Frame): Selection | undefined {
+export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Rect): Selection | undefined {
   const members = pieceBeadsAt(beads, weave, at).filter((member) => {
     if (!frame) return true
     if (frameContains(frame, at)) return frameContains(frame, member)
@@ -133,7 +133,7 @@ export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition,
 
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
  * round every placed bead, or none on an empty canvas. */
-export function selectAllSelection(beads: BeadMap, frame: Frame | undefined): Selection | undefined {
+export function selectAllSelection(beads: BeadMap, frame: Rect | undefined): Selection | undefined {
   if (frame) return { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: 'frame' }
   const all = allBeadsSelection(beads)
   return all && { ...all, layer: 'canvas' }
@@ -183,14 +183,14 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
 }
 
 /** The Selection slid back inside `frame` when it was moved past an edge; as it is when it is larger than the Frame. */
-export function withinFrame(selection: Selection, frame: Frame): Selection {
+export function withinFrame(selection: Selection, frame: Rect): Selection {
   const top = Math.max(frame.row, Math.min(selection.top, frame.row + frame.rows - selection.rows))
   const left = Math.max(frame.column, Math.min(selection.left, frame.column + frame.columns - selection.columns))
   return { ...selection, top, left }
 }
 
 /** The Selection grown to whole Units where the Technique has them (ticket 483), kept inside the Frame it started in. */
-export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Frame): Selection {
+export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Rect): Selection {
   const snapped = describeWeave(weave).snapSelection(selection, frame)
   if (snapped === selection) return selection
   return { ...snapped, ...(selection.layer ? { layer: selection.layer } : {}), ...(selection.cells ? { cells: selection.cells } : {}) }
