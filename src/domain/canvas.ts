@@ -7,9 +7,10 @@ import type { Weave } from './weave'
 // the rest (Undo's snapshots and the renderer rely on it, ADR 0019).
 export type BeadMap = Record<number, Record<number, string>>
 
-/** The rectangle of whole bead positions that marks which beads are the Project (CONTEXT.md's Frame). */
-export interface Frame {
-  /** The top row and left column the Frame covers; the Frame covers `rows` rows and `columns` columns from there. */
+/** A rectangle of whole bead positions (ticket 0617): bead bounds, a Selection's box, Fill's limit, a Piece, and the
+ * rectangle a Frame lies on. Not a Frame itself: that is `FrameSheet`, the glossary's Frame. */
+export interface Rect {
+  /** The top row and left column the rectangle covers; it covers `rows` rows and `columns` columns from there. */
   row: number
   column: number
   columns: number
@@ -19,7 +20,7 @@ export interface Frame {
 /** The Frame as a Project holds it (ADR 0066): a rectangle laid on the Canvas that owns its own beads. The rectangle is
  * in Canvas positions; `beads` are counted from the Frame's own first row and column, so moving the Frame moves them
  * with it and changes nothing else. */
-export interface FrameSheet extends Frame, Weave {
+export interface FrameSheet extends Rect, Weave {
   /** The Frame's own beads, counted from its first row and column. Its Technique, Brick block and Net size (Weave) are
    * its own too (ticket 492): the Canvas is woven in another if the weaver likes. */
   beads: BeadMap
@@ -108,7 +109,7 @@ export function beadCount(beads: BeadMap): number {
 }
 
 /** The smallest rectangle round every painted bead, or undefined for an empty canvas. */
-export function beadBounds(beads: BeadMap): Frame | undefined {
+export function beadBounds(beads: BeadMap): Rect | undefined {
   let top = Infinity
   let bottom = -Infinity
   let left = Infinity
@@ -122,13 +123,13 @@ export function beadBounds(beads: BeadMap): Frame | undefined {
   return top === Infinity ? undefined : { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-/** Whether a position lies inside a Frame. */
-export function frameContains(frame: Frame, { row, column }: GridPosition): boolean {
+/** Whether a position lies inside a rectangle (a Frame's, or any other). */
+export function frameContains(frame: Rect, { row, column }: GridPosition): boolean {
   return row >= frame.row && row < frame.row + frame.rows && column >= frame.column && column < frame.column + frame.columns
 }
 
 /** Something with a size in beads: plain dimensions, or a Project (a canvas with or without a Frame). */
-export type Sized = GridDimensions | { frame?: Frame; beads: BeadMap }
+export type Sized = GridDimensions | { frame?: Rect; beads: BeadMap }
 
 /** A Frame's size, or — with no Frame — the size of the box round the beads, or 0 × 0 for an empty canvas. */
 export function sizeOf(sized: Sized): GridDimensions {
@@ -140,13 +141,13 @@ export function sizeOf(sized: Sized): GridDimensions {
 }
 
 /** A Frame's size, as the dimensions the grid-shaped helpers (adjacency, fit zoom) take. */
-export function frameDimensions(frame: Frame): GridDimensions {
+export function frameDimensions(frame: Rect): GridDimensions {
   return { columns: frame.columns, rows: frame.rows }
 }
 
 /** The painted colors inside a Frame as a dense rows × columns array of hex-or-null, top-left first.
  * @internal The test helpers' frame grid (`src/testUtils/frameGrid.ts`) reads the Frame with it. */
-export function colorsInFrame(beads: BeadMap, frame: Frame): (string | null)[][] {
+export function colorsInFrame(beads: BeadMap, frame: Rect): (string | null)[][] {
   return Array.from({ length: frame.rows }, (_row, rowOffset) =>
     Array.from({ length: frame.columns }, (_column, columnOffset) =>
       colorAt(beads, frame.row + rowOffset, frame.column + columnOffset),
@@ -170,7 +171,7 @@ export function beadsFromColors(colors: readonly (readonly (string | null)[])[],
 }
 
 /** The beads inside a Frame, and only those, as a new map. */
-export function beadsInFrame(beads: BeadMap, frame: Frame): BeadMap {
+export function beadsInFrame(beads: BeadMap, frame: Rect): BeadMap {
   const inside: BeadMap = {}
   forEachBead(beads, (row, column, color) => {
     if (frameContains(frame, { row, column })) {
@@ -207,7 +208,7 @@ export function beadsOver(beads: BeadMap, over: BeadMap): BeadMap {
 }
 
 /** `beads` without the beads that lie inside `area`. */
-export function beadsWithout(beads: BeadMap, area: Frame): BeadMap {
+export function beadsWithout(beads: BeadMap, area: Rect): BeadMap {
   const changes: BeadChange[] = []
   forEachBead(beads, (row, column) => {
     if (frameContains(area, { row, column })) {

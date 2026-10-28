@@ -12,7 +12,6 @@ import {
   ImageConversionError,
   type DecodeImage,
 } from '../../domain/imageConversion'
-import { SLOW_FRAMING_CELLS } from '../../domain/imageFraming'
 import type { StatedSize } from '../../domain/projectSize'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
@@ -30,19 +29,11 @@ import { PANEL_CONTEXT } from '../shell/panelContext'
 
 const { t } = useI18n()
 
-const props = withDefaults(
-  defineProps<{
-    // How a chosen picture is turned into pixels (ticket 58): the app shell hands over the browser's decoding (ADR
-    // 0020); a test hands over synthetic pixel data, since jsdom decodes no image bytes.
-    decodeImage: DecodeImage
-    // Per-Technique cell-count thresholds for the slow-framing hint (ticket 61). Defaults to the real ones; a test
-    // overrides them to exercise the lookup without the real constants having to differ.
-    slowFramingCellThresholds?: Record<Technique, number>
-  }>(),
-  {
-    slowFramingCellThresholds: () => SLOW_FRAMING_CELLS,
-  },
-)
+const props = defineProps<{
+  // How a chosen picture is turned into pixels (ticket 58): the app shell hands over the browser's decoding (ADR
+  // 0020); a test hands over synthetic pixel data, since jsdom decodes no image bytes.
+  decodeImage: DecodeImage
+}>()
 
 const emit = defineEmits<{
   submit: [payload: CreateProjectInput]
@@ -258,7 +249,6 @@ function onDropImage(file: File) {
       :bead="selectedBead"
       :technique="technique"
       :net-size="netSize"
-      :slow-framing-cell-thresholds="slowFramingCellThresholds"
       @confirm="onSizeConfirm"
       @cancel="pendingImage = undefined"
     />
