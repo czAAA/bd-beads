@@ -1,31 +1,8 @@
-import { fromHex, type Rgb } from './color'
+import { channelsOf, colorDistance, toHex, type Rgb } from './color'
 import type { Palette } from './palette'
 
 /** The colors a Convert image (ticket 58) takes from a picture: reduced to a buyable count, then no dithering, each
  * snapped to its nearest Palette color (ticket 177, amending ADR 0011), so Image colors are a Palette subset. */
-
-
-function channelHex(value: number): string {
-  return Math.round(value).toString(16).padStart(2, '0')
-}
-
-/** The `#rrggbb` a grid cell stores, lowercase — the same shape a Palette's own hexes are written in.
- * @internal Its test checks the hex a cell stores. */
-export function toHex({ r, g, b }: Rgb): string {
-  return `#${channelHex(r)}${channelHex(g)}${channelHex(b)}`
-}
-
-/** A hex's channels; every hex a Project stores is well formed, and anything else reads as black. */
-export function channelsOf(hex: string): Rgb {
-  return fromHex(hex) ?? { r: 0, g: 0, b: 0 }
-}
-
-/** Straight-line RGB distance between two colors. Not perceptual (a cell is a plain hex), but enough for
- * "same color as far as an eye can tell".
- * @internal Its test checks the distance on its own. */
-export function colorDistance(a: Rgb, b: Rgb): number {
-  return Math.sqrt((a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2)
-}
 
 /** The closest of `colors` to `hex`, or undefined when there are none to choose from. */
 export function nearestColor(colors: readonly string[], hex: string): string | undefined {

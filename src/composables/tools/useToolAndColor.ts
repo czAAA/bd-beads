@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
-import { normalizeHex, type Palette } from '../../domain/palette'
+import { normalizeHex } from '../../domain/color'
+import type { Palette } from '../../domain/palette'
 import type { Tool } from '../../domain/tool'
 
 /** What choosing a tool needs from the app shell: leaving Select forgets what it was holding. */

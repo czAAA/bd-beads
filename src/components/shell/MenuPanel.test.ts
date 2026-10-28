@@ -111,22 +111,22 @@ describe('MenuPanel (ticket 443)', () => {
   })
 })
 
-describe('MenuPanel on the Overview (ticket 540)', () => {
-  it('shows Overview as the current page and leaves out what belongs to the editor', () => {
-    const wrapper = mountIn({ page: 'overview', projects: undefined, toolsPosition: undefined, inputMode: undefined })
+describe('MenuPanel on the Homepage (ticket 540)', () => {
+  it('shows Homepage as the current page and leaves out what belongs to the editor', () => {
+    const wrapper = mountIn({ page: 'homepage', projects: undefined, toolsPosition: undefined, inputMode: undefined })
     const groups = wrapper.findAll('[role="group"]').filter((group) => group.find('h3').exists())
     expect(groups.map((group) => group.get('h3').text())).toEqual([en.panels.menu.preferences, en.panels.menu.help, en.panels.menu.about])
 
-    expect(wrapper.get('[data-testid="menu-item-overview"]').attributes('aria-current')).toBe('page')
+    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBe('page')
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="menu-tools-position"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="language-switcher"]').exists()).toBe(true)
   })
 
-  it('links to the Overview without marking it current in the editor, and has the shortcuts there', () => {
+  it('links to the Homepage without marking it current in the editor, and has the shortcuts there', () => {
     const wrapper = mountIn()
-    expect(wrapper.get('[data-testid="menu-item-overview"]').attributes('aria-current')).toBeUndefined()
-    expect(wrapper.get('[data-testid="menu-item-overview"]').attributes('href')).toMatch(/overview\/$/)
+    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('aria-current')).toBeUndefined()
+    expect(wrapper.get('[data-testid="menu-item-homepage"]').attributes('href')).toMatch(/homepage\/$/)
     expect(wrapper.find('[data-testid="menu-item-shortcuts"]').exists()).toBe(true)
   })
 })

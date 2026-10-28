@@ -123,7 +123,7 @@
   --ease-standard: cubic-bezier(.2, 0, 0, 1);
   /* ConvertImage card: outside the frame the picture is dimmed, black at 45% */
   --framing-dim: rgba(0, 0, 0, .45);
-  /* Overview card: the rolling slogan holds each word, then rolls to the next */
+  /* Homepage card: the rolling slogan holds each word, then rolls to the next */
   --slogan-hold: 2200ms;
   --slogan-roll: 650ms;
 }

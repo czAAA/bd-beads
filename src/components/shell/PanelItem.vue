@@ -147,7 +147,7 @@ function onClick(event: Event) {
   color: var(--accent-strong);
 }
 
-/* The page the panel is opened on (the Overview's own item on the Overview). */
+/* The page the panel is opened on (the Homepage's own item on the Homepage). */
 .panel-item[aria-current='page'] {
   color: var(--accent-strong);
   cursor: default;
