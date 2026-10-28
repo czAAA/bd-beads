@@ -11,7 +11,7 @@ import type { Grid, Project } from './project'
 import { projectFrame } from './projectExtent'
 import { laidOf, readRowProgress } from './rowProgress'
 import { isVersionThree, liftVersionThree, type VersionThreeProject } from './versionThree'
-import { isTechnique, MAX_BRICK_BLOCK, type Technique, type Weave } from './weave'
+import { BRICK_BLOCK_SETTING, isTechnique, MAX_BRICK_BLOCK, NET_SIZE_SETTING, type Technique, type Weave } from './weave'
 
 // Reading a Project from storage or a file (CONTEXT.md, docs/testing.md's Stored-data compatibility): every shape an
 // older app saved becomes today's Project, so nothing else has to know the old ones.
@@ -135,7 +135,7 @@ function readFrameWeave(stored: Partial<Weave>, fallback: Weave): Weave {
  * size is read within its range, on Netting alone. */
 function readWeave(technique: Technique, stored: Partial<Weave>): Weave {
   const netSize = typeof stored.netSize === 'number' ? stored.netSize : undefined
-  return weaveOf({ technique, techniqueSettings: { ...stored.techniqueSettings, ...flatSetting('brickBlock', readBrickBlock(stored.brickBlock)), ...flatSetting('netSize', netSize) } })
+  return weaveOf({ technique, techniqueSettings: { ...stored.techniqueSettings, ...flatSetting(BRICK_BLOCK_SETTING.id, readBrickBlock(stored.brickBlock)), ...flatSetting(NET_SIZE_SETTING.id, netSize) } })
 }
 
 /** One flat field as a setting, where it holds a value. */

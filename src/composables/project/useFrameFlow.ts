@@ -20,7 +20,7 @@ import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, 
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
-import { canvasWeave, frameWeave, sameWeave } from '../../domain/layerWeave'
+import { canvasWeave, frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave, switchLoss } from '../../domain/weaveSwitch'
 import type { Project } from '../../domain/project'
@@ -189,8 +189,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       settings: settings.map((setting) => ({ setting, value: values[setting.id] ?? setting.default })),
     }
   })
-
-  const layerWeave = (project: Project, layer: Layer) => (layer === 'frame' ? frameWeave(project) : canvasWeave(project))
 
   function applySwitch(layer: Layer, technique: Technique, values: TechniqueSettings): void {
     const project = deps.currentProject()

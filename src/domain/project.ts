@@ -46,8 +46,8 @@ export interface Project {
   /** The Canvas's Technique settings (tickets 0624, 0625): each its Technique describes (brick stitch's Brick block,
    * ticket 477, Netting's Net size, ticket 485), and a Brick block kept off brick stitch for a switch back. */
   techniqueSettings?: TechniqueSettings
-  /** The flat Brick block and Net size, in step with the settings until ticket 0627: read by no domain or drawing
-   * code, and mapped to and from the settings only at the file boundary, whose format keeps them until ticket 0636. */
+  /** The flat Brick block and Net size the file format stores until ticket 0636: mapped to and from the settings at the
+   * file boundary alone, and neither read nor written anywhere else. Ticket 0627 removes them from here. */
   brickBlock?: number
   netSize?: number
   beadId: string
