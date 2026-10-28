@@ -51,7 +51,8 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, { brickBl
     snapRight: (_left, right) => right,
     visible: () => ({ firstRow: 0, lastRow: -1, first: 0, last: -1 }),
     tile: (cellWidth, cellHeight) => ({ size: { width: cellWidth, height: cellHeight }, beads: [{ x: 0, y: 0, width: cellWidth, height: cellHeight }] }),
-    origin: (position, cellWidth, cellHeight) => ({ x: position.column * cellWidth, y: position.row * cellHeight }),
+    // A Frame's first row is never a shifted one, so its corner is the row's own left edge.
+    origin: (position, cellWidth, cellHeight) => ({ x: position.column * cellWidth, y: position.row * (cellHeight * rowPitch) }),
     positionsOf: (units) => units,
     unitsOf: (positions) => positions,
     snapBottom: (_top, bottom) => bottom,

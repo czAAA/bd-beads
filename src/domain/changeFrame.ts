@@ -114,7 +114,7 @@ export function frameChangeRefusal(project: Project, change: FrameChange): Frame
   if (('technique' in change || 'brickBlock' in change || 'settings' in change) && !frame) {
     return 'no-frame'
   }
-  if ('removeLine' in change && describeWeave(frameWeave(project)).countsUnits) {
+  if ('removeLine' in change && !describeWeave(frameWeave(project)).policy.removeLine) {
     return 'fixed-weave'
   }
   if ('removeLine' in change) {

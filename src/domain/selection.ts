@@ -254,12 +254,9 @@ export function stampedCells(
   at: GridPosition,
 ): PastedCell[] {
   const weave = describeWeave(project)
-  const { rowsPerUnit, countsUnits } = weave
+  const { rowsPerUnit } = weave
   const row = at.row - block.anchor.row
   const topLeft = { row: row - (((row % rowsPerUnit) + rowsPerUnit) % rowsPerUnit), column: at.column - block.anchor.column }
-  if (!countsUnits) {
-    return pastedCells(block, topLeft)
-  }
   const placed = weave.fitBlock(topLeft, pastedCells(block, { row: 0, column: 0 }))
   // A position that holds no bead (a hole in a net) takes nothing (ticket 486).
   return pastedCells(block, placed).filter((cell) => weave.hasPosition(cell, project.frame))
