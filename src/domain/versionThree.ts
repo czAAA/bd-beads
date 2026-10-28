@@ -1,4 +1,5 @@
 import { beadsInFrame, beadsOver, beadsWithout, frameContains, shiftedBeads, type BeadMap, type Rect } from './canvas'
+import type { FlatWeave, SavedProject } from './flatWeave'
 import type { Project } from './project'
 
 // TEMPORARY (ADR 0066, ticket 489; on ticket 391's cleanup list, removed with the public release): a Project as file
@@ -6,7 +7,7 @@ import type { Project } from './project'
 // were kept in `coveredBeads`. Read only. `liftVersionThree` makes it the Project of today, looking identical.
 
 /** A Project as version 3 stored it: every bead on the one map, the Frame a bare rectangle. */
-export interface VersionThreeProject extends Omit<Project, 'frame'> {
+export interface VersionThreeProject extends Omit<Project, 'frame'>, FlatWeave {
   frame?: Rect
   /** Beads hidden under the Frame (ticket 476), now ordinary Canvas beads under it (ADR 0066). */
   coveredBeads?: BeadMap
@@ -21,7 +22,7 @@ export function isVersionThree(project: Omit<Project, 'frame'> & { frame?: Rect 
 /** The Project of today from a version 3 one: the beads inside its Frame move into the Frame, which takes the Project's
  * Technique, and its covered beads become ordinary Canvas beads under the Frame. A Piece name anchored on a bead in the
  * Frame becomes the Frame's name. */
-export function liftVersionThree(stored: VersionThreeProject): Project {
+export function liftVersionThree(stored: VersionThreeProject): SavedProject {
   const { coveredBeads, frame, pieceNames, ...rest } = stored
   // A bead covered where another still stands stays hidden: the one in view is kept.
   const outside = frame ? beadsWithout(rest.beads, frame) : rest.beads

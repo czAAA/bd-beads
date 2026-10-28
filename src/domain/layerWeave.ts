@@ -13,9 +13,9 @@ export function weaveOf({ technique, techniqueSettings }: Weave): Weave {
   return Object.keys(settings).length > 0 ? { technique, techniqueSettings: settings } : { technique }
 }
 
-/** A layer's record without its Weave's settings, mapped or flat: what a new Weave is written over. */
-export function unwoven<T extends Partial<Weave>>(record: T): Omit<T, 'techniqueSettings' | 'brickBlock' | 'netSize'> {
-  const { techniqueSettings: _settings, brickBlock: _brickBlock, netSize: _netSize, ...rest } = record
+/** A layer's record without its Weave's settings: what a new Weave is written over. */
+export function unwoven<T extends Partial<Weave>>(record: T): Omit<T, 'techniqueSettings'> {
+  const { techniqueSettings: _settings, ...rest } = record
   return rest
 }
 
