@@ -252,8 +252,8 @@ const MAX_DESCRIPTIONS = 256
 export function describeWeave(weave: Weave): WeaveDescription {
   const rules = RULES[weave.technique]
   const values = weaveSettings(weave)
-  // Everything a geometry reads from the Weave; a Real cell's roundness is read by the drawing, never by a geometry.
-  const key = `${weave.technique} ${Object.values(values).join(' ')} ${weave.cell?.aspect ?? ''}`
+  // Everything a geometry reads from the Weave: a Real cell's roundness decides where a press misses a bead's corner.
+  const key = `${weave.technique} ${Object.values(values).join(' ')} ${weave.cell?.aspect ?? ''} ${weave.cell?.roundness ?? ''}`
   const known = descriptions.get(key)
   if (known) {
     return known
@@ -317,18 +317,6 @@ export function isTechnique(value: unknown): value is Technique {
   return TECHNIQUES.includes(value as Technique)
 }
 
-/** Loom rows stack straight; peyote and brick stitch rows step sideways instead, per ticket 06 — every other row
- * sits half a bead across. */
-export function isOffsetTechnique(technique: Technique): boolean {
-  return describeTechnique(technique).shifted
-}
-
-/** Whether a row's beads sit half a bead across: the second half of each cycle, whichever side of row 0 it is on. */
-export function isShiftedRow(weave: Weave, row: number): boolean {
-  const cycle = rowCycle(weave)
-  return cycle > 1 && Math.abs(Math.floor((row * 2) / cycle)) % 2 === 1
-}
-
 /** How much of a bead's width its corners are rounded by, per Technique. The one place the look is decided: the
  * Surface view's hit test and the overlay read it too. */
 export function beadRoundness(technique: Technique, cell?: BeadCell): number {
@@ -341,7 +329,7 @@ export function beadRoundness(technique: Technique, cell?: BeadCell): number {
  * shift so beads interlock instead of stacking in a straight grid.
  * @internal Tests check a Technique's shift on its own. */
 export function rowOffset(weave: Weave, rowIndex: number, cellSize: number): number {
-  return isShiftedRow(weave, rowIndex) ? cellSize * describeWeave(weave).shift : 0
+  return describeWeave(weave).rowOffset(rowIndex, cellSize)
 }
 
 /** Total grid width, including the extra half-cell an offset technique's shifted rows take up.

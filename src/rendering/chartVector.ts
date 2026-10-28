@@ -9,8 +9,8 @@ import { acrossNumber, downNumber, lineBetween, rulerLevel } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
 import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
-import { CELL_SIZE_PX } from './cellSize'
-import { gridToRegion, inGridPx, regionInGridSpace, rowPitchPx } from './surfaceView'
+import { CELL_SIZE_PX, cellSizePx } from './cellSize'
+import { gridToRegion, inGridPx, regionInGridSpace } from './surfaceView'
 import { customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
 
@@ -80,8 +80,8 @@ interface PlacedBead {
 export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): PlacedBead[] {
   const grid = displayedGrid(project)
   const weave = frameWeave(project)
-  const units = describeWeave(weave).countsUnits
-  const pitch = rowPitchPx(weave.technique, weave.cell)
+  const description = describeWeave(weave)
+  const size = cellSizePx(weave.technique, weave.cell)
   const space = spaceOf(project, false)
   const matrix = gridToRegion(space.extent, part.region, plan.zoom, project.rotation)
   const [a, b, c, d, e, f] = matrix
@@ -100,13 +100,12 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   for (const position of geometry.positionsIn(inView)) {
     const { x, y, width, height } = inGridPx(geometry.place(position)!.box)
     const box = rectOf(x, y, width, height)
-    let cell = box
-    let middle = at(x + width / 2, y + height / 2)
-    if (!units) {
-      cell = rectOf(x, position.row * pitch, CELL_SIZE_PX, pitch)
-      // The unshifted cell's middle names the position, so an offset row stays in its own column.
-      middle = at(position.column * CELL_SIZE_PX + CELL_SIZE_PX / 2, position.row * pitch + pitch / 2)
-    }
+    // A bead's cell ends where the bead below it starts (peyote's rows nest), and the unshifted cell's middle names its
+    // position, so an offset row stays in its own column.
+    const below = { row: position.row + 1, column: position.column }
+    const share = description.hasPosition(below) ? Math.min(height, description.box(below, size.width, size.height).y - y) : height
+    const cell = rectOf(x, y, width, share)
+    const middle = at(x - description.rowOffset(position.row, size.width) + width / 2, y + share / 2)
     const across = Math.floor(middle[0] / stepAcross)
     const down = Math.floor(middle[1] / stepDown)
     // Beads past the part's edge belong to its neighbour.
@@ -202,6 +201,8 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
 
   const beads = placeBeads(project, plan, part)
   const round = beadsAreRound(project)
+  // What is counted decides the chart's look, not where beads are: a cell per bead, or each of a Unit's beads outlined
+  // with the 5th and 10th lines on the Units' edges.
   const units = describeWeave(frameWeave(project)).countsUnits
   const offset = beads.some((bead) => Math.abs(bead.cell.x - bead.across * stepAcross) > 0.5 || Math.abs(bead.cell.y - bead.down * stepDown) > 0.5)
 

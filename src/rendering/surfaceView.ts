@@ -2,14 +2,15 @@ import { frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import { frameFootprint } from '../domain/footprint'
 import { frameGeometry, gridGeometry, type LayerGeometry } from '../domain/layerGeometry'
-import { describeWeave, isShiftedRow, rowPitch, type BeadCell, type Technique, type Weave } from '../domain/weave'
+import { describeWeave, type BeadCell, type Technique, type Weave } from '../domain/weave'
+import { beadsBox } from '../domain/weaveGeometry'
 import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 import { CELL_SIZE_PX, cellSizePx, type Size } from './cellSize'
 
-// The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation, row shift
-// and pitch are private; geometry follows domain/grid.ts (ticket 0448). Grid space is px at zoom 1; displayed space is
+// The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation is private;
+// where a bead is comes from the Weave's description (ticket 0623). Grid space is px at zoom 1; displayed space is
 // zoomed and turned about the beads' box (Canvas: the origin); a point is displayed space less the scroll.
 
 export interface Scroll {
@@ -26,54 +27,29 @@ export interface Region {
   height: number
 }
 
-// Distance between row tops, in grid px: peyote rows nest closer than a bead is tall; brick stitch and loom rows stack
-// a full bead apart.
-export function rowPitchPx(technique: Technique, cell?: BeadCell): number {
-  return rowPitch(technique, cellSizePx(technique, cell).height)
-}
-
-/** Where a row's beads start from the top of the Project, in grid px. */
-export function rowTopPx(technique: Technique, row: number, cell?: BeadCell): number {
-  return row * rowPitchPx(technique, cell)
-}
-
-/** How far a row's beads are shifted sideways, in grid px: by half a bead in every other row of peyote, in every
- * other block of rows of brick stitch (ticket 477). */
-export function rowShiftPx(weave: Weave, row: number): number {
-  return isShiftedRow(weave, row) ? CELL_SIZE_PX / 2 : 0
-}
-
-// How far a row has its beads shifted sideways, in grid px: by its row in its own layer, whose row 0 is unshifted
-// (ticket 492).
-export function shiftOf(weave: Weave, row: number): number {
-  return rowShiftPx(weave, row)
+/** How far one Unit's step across and one step down go in a layer, in grid px: a bead across and a row pitch down where
+ * beads are counted, a whole Unit where Units are. */
+export function unitStepPx(weave: Weave): { across: number; down: number } {
+  const description = describeWeave(weave)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  return {
+    across: description.origin({ row: 0, column: description.columnsPerUnit }, cell.width, cell.height).x,
+    down: description.origin({ row: description.rowsPerUnit, column: 0 }, cell.width, cell.height).y,
+  }
 }
 
 /** Where a position's bead is in a space, in grid px: its rectangle from the top-left. Beads of Right-angle weave
  * are longer one way than the other, so every layer asks for the rectangle, not a square from a top-left corner. */
 export function positionBoxPx(weave: Weave, row: number, column: number): Region {
-  const description = describeWeave(weave)
-  if (description.countsUnits) {
-    const cell = cellSizePx(weave.technique, weave.cell)
-    return description.box({ row, column }, cell.width, cell.height)
-  }
-  const { width, height } = cellSizePx(weave.technique, weave.cell)
-  return { x: shiftOf(weave, row) + column * width, y: rowTopPx(weave.technique, row, weave.cell), width, height }
+  const cell = cellSizePx(weave.technique, weave.cell)
+  return describeWeave(weave).box({ row, column }, cell.width, cell.height)
 }
 
 /** The rectangle round beads from (`row`, `column`) down `rows` and across `columns`, in grid px: the union of the
- * corner beads where beads aren't laid on rows. A line of Right-angle weave's horizontal beads stops a column short of
- * the block, so its far corner is the one before. */
+ * corner beads. */
 export function positionsBoxPx(weave: Weave, row: number, column: number, rows: number, columns: number): Region {
-  const units = describeWeave(weave).countsUnits
-  const corners = [row, Math.min(row + 1, row + rows - 1), Math.max(row, row + rows - 2), row + rows - 1].flatMap((r) =>
-    [column, column + columns - (units && describeWeave(weave).orientationAt({ row: r, column }) === 'sideways' && columns > 1 ? 2 : 1)].map((c) =>
-      positionBoxPx(weave, r, c),
-    ),
-  )
-  const x = Math.min(...corners.map((box) => box.x))
-  const y = Math.min(...corners.map((box) => box.y))
-  return { x, y, width: Math.max(...corners.map((box) => box.x + box.width)) - x, height: Math.max(...corners.map((box) => box.y + box.height)) - y }
+  const cell = cellSizePx(weave.technique, weave.cell)
+  return beadsBox(describeWeave(weave), { row, column, rows, columns }, cell.width, cell.height)
 }
 
 /** The size of the drawn Project in grid px, before zoom and rotation. */
@@ -227,10 +203,10 @@ export interface SurfaceView {
   gridDirection(x: number, y: number): Scroll
 }
 
-/** A box's rectangle in a layer's grid space: its beads, and the half bead an offset technique's shifted rows add on
- * the right. */
+/** A box's rectangle in a layer's grid space: its beads, and on rows the half bead a shifted row adds on the right. */
 export function gridBox(weave: Weave, box: Rect): Region {
-  return inGridPx(gridGeometry(weave, box).extent()!)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  return describeWeave(weave).blockBox(box, cell.width, cell.height)
 }
 
 /** A box of a Layer geometry, in bead widths, in grid px (ticket 0630). */
@@ -240,23 +216,14 @@ export function inGridPx({ x, y, width, height }: Region): Region {
 
 /** The size in grid px of a block of beads from the first position of a layer: what a Frame covers on the Canvas. */
 export function layerExtentPx(weave: Weave, columns: number, rows: number): Extent {
-  const description = describeWeave(weave)
-  if (description.countsUnits) {
-    const { width, height } = positionsBoxPx(weave, 0, 0, rows, columns)
-    return { width, height }
-  }
-  return projectExtentPx(weave.technique, columns, rows, weave.cell)
+  const cell = cellSizePx(weave.technique, weave.cell)
+  return describeWeave(weave).blockExtent(columns, rows, cell.width, cell.height)
 }
 
 /** Where a Frame's first position sits on the Canvas, in grid px: the corner its own layout is drawn from (ticket 492). */
 export function frameOriginPx(canvas: Weave, frame: Pick<Rect, 'row' | 'column'>): Scroll {
-  const description = describeWeave(canvas)
-  if (description.countsUnits) {
-    const cell = cellSizePx(canvas.technique, canvas.cell)
-    return description.origin(frame, cell.width, cell.height)
-  }
-  const { x, y } = positionBoxPx(canvas, frame.row, frame.column)
-  return { x, y }
+  const cell = cellSizePx(canvas.technique, canvas.cell)
+  return describeWeave(canvas).origin(frame, cell.width, cell.height)
 }
 
 /** One layer of a view: its Weave and Layer geometry, where its first position sits in grid space, and the address of
@@ -315,12 +282,7 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
 
   /** The bead of a layer under a point of grid space (relative to the layer's first position), or undefined. */
   const beadIn = (layer: Layer, gridX: number, gridY: number): GridPosition | undefined => layer.geometry.positionAt({ x: gridX / CELL_SIZE_PX, y: gridY / CELL_SIZE_PX })
-  const cellIn = (layer: Layer, gridX: number, gridY: number): GridPosition => {
-    const { description, cell, weave } = layer
-    if (description.countsUnits) return description.nearestPosition(gridX, gridY, cell.width, cell.height)
-    const row = Math.round((gridY - cell.height / 2) / rowPitchPx(weave.technique, weave.cell))
-    return { row: row + 0, column: Math.floor((gridX - shiftOf(weave, row)) / CELL_SIZE_PX) }
-  }
+  const cellIn = ({ description, cell }: Layer, gridX: number, gridY: number): GridPosition => description.nearestPosition(gridX, gridY, cell.width, cell.height)
 
   /** A point of the viewport on the Frame, from its first position's corner, or none off it. */
   const onSheet = (point: Scroll): { x: number; y: number } | undefined => {
@@ -395,12 +357,9 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
       return Math.floor(Math.min(1, across, down) * 100) / 100
     },
     beadStep: (name) => {
-      const { description, cell, weave } = layerNamed(name)
       const origin = displayed(0, 0, zoom)
       // Where Units are counted a step is a whole Unit across and down.
-      const unit = description.origin({ row: description.rowsPerUnit, column: description.columnsPerUnit }, cell.width, cell.height)
-      const across = description.countsUnits ? unit.x : CELL_SIZE_PX
-      const down = description.countsUnits ? unit.y : rowPitchPx(weave.technique, weave.cell)
+      const { across, down } = unitStepPx(layerNamed(name).weave)
       const column = displayed(across, 0, zoom)
       const row = displayed(0, down, zoom)
       return { column: { x: column.x - origin.x, y: column.y - origin.y }, row: { x: row.x - origin.x, y: row.y - origin.y } }
