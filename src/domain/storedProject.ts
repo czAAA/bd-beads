@@ -3,7 +3,7 @@ import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
 import { DEFAULT_FRAME_KIND, isFrameKind, settingsOf, type KindedSheet } from './frameKind'
 import type { Rotation } from './grid'
-import { storedSettings, unflattened, type FlatWeave, type SavedProject } from './flatWeave'
+import { isSettingsMap, unflattened, type FlatWeave, type SavedProject } from './flatWeave'
 import { frameWeave, weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -137,9 +137,10 @@ function readFrameWeave(stored: Partial<Weave> & FlatWeave, fallback: Weave): We
   return isTechnique(stored.technique) ? readWeave(stored.technique, stored) : fallback
 }
 
-/** A layer's Weave from the settings a file stores (flatWeave.ts, ticket 0625), each its Technique holds. */
-function readWeave(technique: Technique, stored: FlatWeave): Weave {
-  return weaveOf({ technique, techniqueSettings: storedSettings(stored) })
+/** A layer's Weave from the settings map a file stores (ticket 0636), each its Technique holds; an earlier version's
+ * reader has already lifted its flat Brick block into the map (flatWeave.ts). */
+function readWeave(technique: Technique, { techniqueSettings }: FlatWeave): Weave {
+  return weaveOf({ technique, ...(isSettingsMap(techniqueSettings) ? { techniqueSettings } : {}) })
 }
 
 /** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left

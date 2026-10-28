@@ -159,6 +159,17 @@ export function weaveSettings(weave: Weave): TechniqueSettings {
 /** Every setting a Technique describes, each once: what a layer's settings map may hold. */
 const EVERY_SETTING: readonly SettingSpec[] = [...new Map(Object.values(RULES).flatMap(({ settings }) => settings.map((setting) => [setting.id, setting] as const))).values()]
 
+/** The settings of a held map moved off their default: what a file stores of a layer's Weave (ticket 0636), as
+ * heldSettings puts the defaults back on reading. */
+export function settingsOffDefault(values: TechniqueSettings = NO_SETTINGS): TechniqueSettings {
+  return Object.fromEntries(
+    EVERY_SETTING.flatMap((setting) => {
+      const value = values[setting.id]
+      return value !== undefined && value !== setting.default ? [[setting.id, value]] : []
+    }),
+  )
+}
+
 /** The settings a layer woven in `technique` holds of `values` (ticket 0625): each the Technique describes, within its
  * range or its default where none is given, and each other one that has a value, kept off it for a switch back (a
  * Brick block, ticket 477); an id no Technique describes is dropped. */

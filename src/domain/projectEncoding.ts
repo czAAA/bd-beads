@@ -1,13 +1,14 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
-import { flattened, type FlatWeave, type SavedProject } from './flatWeave'
+import { liftFlatWeave, type FlatWeave, type SavedProject } from './flatWeave'
 import type { Grid, Project } from './project'
 import type { GridProject } from './storedProject'
 import type { VersionThreeProject } from './versionThree'
+import { settingsOffDefault, type Weave } from './weave'
 
-// The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with a
-// bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex): it
-// describes the beads as they stand now.
-interface EncodedBeads {
+/** The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with
+ * a bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex): it
+ * describes the beads as they stand now. */
+export interface EncodedBeads {
   /** Every distinct hex on the canvas, in the order the beads first use it. */
   colors: string[]
   /** Per row with a bead, keyed by row: `"<first column>:<runs>"`, runs as color-table indexes (`"3"`, `"3x40"`; 0
@@ -19,7 +20,8 @@ interface EncodedBeads {
  * from the Frame's first row and column; its Folded beads beside them, where it has any (file version 10, ticket 0638). */
 type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded'> & FlatWeave & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
-/** A Project as file and library version 4 store it: the Canvas's beads, and the Frame with its own. */
+/** A Project as a file (version 4 on) and the library store it: the Canvas's beads, and the Frame with its own. Each
+ * layer's settings are its map as the app holds it (file version 11, ticket 0636); before, its Brick block was flat. */
 export type EncodedProject = Omit<Project, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
 
 /** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
@@ -131,7 +133,8 @@ function expandRuns(runs: string): number[] {
   return indexes
 }
 
-function decodeBeads({ colors, rows }: EncodedBeads): BeadMap {
+/** The beads a compact encoding holds, by position: a layer's, or a Starter's design (ticket 0636). */
+export function decodeBeads({ colors, rows }: EncodedBeads): BeadMap {
   const beads: BeadMap = {}
   for (const [rowKey, entry] of Object.entries(rows)) {
     const split = entry.indexOf(START_SEPARATOR)
@@ -156,8 +159,15 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
   )
 }
 
+/** A layer as a file stores its Weave (ticket 0636): its settings map as the app holds it, a setting at its default left
+ * out and the map with it when nothing is left. */
+function savedWeave<T extends Weave>({ techniqueSettings, ...layer }: T): Omit<T, 'techniqueSettings'> & Pick<Weave, 'techniqueSettings'> {
+  const changed = settingsOffDefault(techniqueSettings)
+  return { ...layer, ...(Object.keys(changed).length > 0 ? { techniqueSettings: changed } : {}) }
+}
+
 function encodeFrame({ beads, folded, ...place }: FrameSheet): EncodedFrame {
-  return { ...flattened(place), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
+  return { ...savedWeave(place), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
 }
 
 function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): FrameSheet & FlatWeave {
@@ -167,23 +177,29 @@ function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): F
 
 export function encodeProject(project: Project): EncodedProject {
   const { beads, frame, ...rest } = project
-  return { ...flattened(rest), encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
+  return { ...savedWeave(rest), encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
 }
 
-/** The Project a version 4 value holds; it still goes through normalizeProject. */
+/** The Project a file version 11 value holds; it still goes through normalizeProject. */
 export function decodeProject(encoded: EncodedProject): SavedProject {
   const { encodedBeads, frame, ...rest } = encoded
   return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
 }
 
-/** The Project a stored value of version 1 to 3 holds, whichever shape wrote it (temporary, see versionThree.ts); a
- * grid-shaped one and a version 3 one still go through normalizeProject to become the Project of today. */
+/** The Project a value of file version 4 to 10, or of the library, holds: each layer's flat Brick block read into its
+ * settings map (ticket 0636). */
+export function decodeFlatProject(encoded: EncodedProject): SavedProject {
+  return liftFlatWeave(decodeProject(encoded))
+}
+
+/** The Project a stored value of version 1 to 3 holds, whichever shape wrote it (temporary, see versionThree.ts), its
+ * flat Brick block in its settings map; a grid-shaped one and a version 3 one still go through normalizeProject. */
 export function decodeEarlierProject(encoded: EncodedVersionThreeProject | EncodedGridProject): VersionThreeProject | GridProject {
   if ('encodedBeads' in encoded) {
     const { encodedBeads, encodedCoveredBeads, ...rest } = encoded
-    return { ...rest, beads: decodeBeads(encodedBeads), ...(encodedCoveredBeads ? { coveredBeads: decodeBeads(encodedCoveredBeads) } : {}) }
+    return liftFlatWeave({ ...rest, beads: decodeBeads(encodedBeads), ...(encodedCoveredBeads ? { coveredBeads: decodeBeads(encodedCoveredBeads) } : {}) })
   }
   const { cells, ...rest } = encoded
-  return { ...rest, grid: decodeCells(cells, rest.columns, rest.rows) }
+  return liftFlatWeave({ ...rest, grid: decodeCells(cells, rest.columns, rest.rows) })
 }
 
