@@ -14,6 +14,8 @@
   // Until ticket 0078 the Worker's guards, body reader and blob stores have no caller but the fixture Worker
   // (docs/testing.md, the Worker's tests), so the production run takes those and the fixture Worker as entries of
   // their own. 0078 gives them their caller and removes the `!` from the fixture Worker and the three entries after it.
+  // The Layer geometry (ticket 0628) is the expand step of an expand–contract: tickets 0629 and 0630 move its callers
+  // onto it, and the one that gives it its first caller removes its entry.
   "entry": [
     "index.html!",
     "homepage/index.html!",
@@ -23,7 +25,8 @@
     "worker/test/fixtureWorker.ts!",
     "worker/src/guards.ts!",
     "worker/src/body.ts!",
-    "worker/src/blobs.ts!"
+    "worker/src/blobs.ts!",
+    "src/domain/layerGeometry.ts!"
   ],
   // `src/testSetup.ts` is the `page` tests' setup file, which the production run does not know as one.
   "project": ["src/**/*.{ts,vue}!", "!src/testSetup.ts!", "e2e/**/*.ts", "worker/src/**/*.ts!", "worker/**/*.ts", "*.ts"],
