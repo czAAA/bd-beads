@@ -15,6 +15,7 @@ import {
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
+import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
@@ -149,9 +150,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
   }
 
-  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step. */
+  /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step.
+   * A resize stopped at a named Schema's edge says which (ticket 0639). */
   function commit(frame: Rect | undefined, how: 'set' | 'make' = 'set'): boolean {
+    const before = deps.currentProject()
+    const stoppedAt = frame && how === 'set' && before ? grownFrame(before, frame).stoppedAt : undefined
     const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }))
+    if (stoppedAt !== undefined && outcome.kind !== 'refused') deps.showToast('frame-cuts-schema', fillBlanks(deps.messages().frame.refusedCutsSchema, { name: stoppedAt }), 'info')
     if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
       const project = deps.currentProject()
@@ -160,7 +165,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       return false
     }
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
-    deps.announce(frame ? describe(frame) : deps.messages().frame.announceRemoved)
+    const left = deps.currentProject()?.frame
+    deps.announce(frame && left ? describe(left) : deps.messages().frame.announceRemoved)
     return true
   }
 
