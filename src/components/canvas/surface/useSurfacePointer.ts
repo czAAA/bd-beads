@@ -317,7 +317,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
   }
 
   /** A bead's row and column for an event, and its layer only where the position alone would name the other one (ADR
-   * 0070): where the Frame draws shorter than the rows it names. */
+   * 0066): where the Frame draws shorter than the rows it names. */
   function cellArguments(bead: GridPosition): [row: number, column: number, layer?: Layer] {
     const named = bead.layer
     return named && named !== layerAt(props.project, { row: bead.row, column: bead.column }) ? [bead.row, bead.column, named] : [bead.row, bead.column]

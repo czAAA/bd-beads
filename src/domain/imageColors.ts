@@ -2,7 +2,7 @@ import { channelsOf, colorDistance, toHex, type Rgb } from './color'
 import type { Palette } from './palette'
 
 /** The colors a Convert image (ticket 58) takes from a picture: reduced to a buyable count, then no dithering, each
- * snapped to its nearest Palette color (ticket 177, amending ADR 0011), so Image colors are a Palette subset. */
+ * snapped to its nearest Palette color (ticket 177, ADR 0010), so they are a Palette subset. */
 
 /** The closest of `colors` to `hex`, or undefined when there are none to choose from. */
 export function nearestColor(colors: readonly string[], hex: string): string | undefined {
@@ -21,7 +21,7 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
   return best
 }
 
-/** The Palette color nearest `hex` (ticket 177, amending ADR 0011): unconditional, no threshold. The *nearest*, not
+/** The Palette color nearest `hex` (ticket 177, ADR 0010): unconditional, no threshold. The *nearest*, not
  * the first in range, so the answer doesn't depend on Palette order. An empty Palette leaves the color as it is.
  * @internal Its test checks the nearest color on its own. */
 export function snapToPalette(palette: Palette, hex: string): string {
@@ -125,7 +125,7 @@ function boxColor(box: readonly WeightedColor[]): string {
   return box.length === 1 ? box[0]!.hex : toHex(representative(box))
 }
 
-/** The Image colors (CONTEXT.md, ADR 0011 as amended by ticket 177) for sampled cell colors, ordered by coverage. At
+/** The colors a conversion keeps (ticket 177, ADR 0010) for sampled cell colors, ordered by coverage. At
  * most `maxColors` distinct colors skip median cut; each box then snaps to the given Palette, so `colors` can be shorter. */
 export function resolveImageColors(
   palette: Palette,

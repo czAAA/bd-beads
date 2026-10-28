@@ -17,7 +17,7 @@ import { copyLayerSelection, selectionLayer, type Selection } from '../../domain
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
 // clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
-// None in paste mode (ticket 437, ADR 0057) or Edit Frame (ticket 427, ADR 0055); no Select all button (ticket 439).
+// None in paste mode (ticket 437, ADR 0016) or Edit Frame (ticket 427, ADR 0054); no Select all button (ticket 439).
 const props = withDefaults(defineProps<{
   /** The Selection's size, "12×8 ≈ 4.2 × 2.6 cm"; absent when there is no Selection. */
   selectionSummary?: string
@@ -43,7 +43,7 @@ const props = withDefaults(defineProps<{
   /** A color is chosen to paint with: Fill needs one (it is disabled with its reason without). Chosen unless told
    * otherwise. */
   hasPaintColor?: boolean
-  /** Whether the Select tool is active: the bar then offers Select all as its first item (ticket 428, ADR 0055). */
+  /** Whether the Select tool is active: the bar then offers Select all as its first item (ticket 428, ADR 0051). */
   selectActive?: boolean
   /** The Tool pill's rectangle in the same pixels: the bar keeps clear of it (ticket 439). */
   obstacle?: BarBox

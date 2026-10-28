@@ -94,7 +94,7 @@ describe('selectionBetween', () => {
   })
 })
 
-describe('copyLayerSelection (ticket 437, ADR 0057)', () => {
+describe('copyLayerSelection (ticket 437, ADR 0016)', () => {
   it('copies the drawn beads at the block’s own top-left origin', () => {
     const source = painted(['....', '.rb.', '.br.', '....'])
 
@@ -383,7 +383,7 @@ describe('hasGuides', () => {
   })
 })
 
-describe('dragFocusOnLayer for a Frame that draws shorter than the rows it names (ADR 0070)', () => {
+describe('dragFocusOnLayer for a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
   const project: Project = { ...base, frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: {} } }
 

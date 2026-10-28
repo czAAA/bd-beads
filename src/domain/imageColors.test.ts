@@ -21,7 +21,7 @@ describe('nearestColor', () => {
   })
 })
 
-describe('snapToPalette (ticket 177, amending ADR 0011)', () => {
+describe('snapToPalette (ticket 177, ADR 0010)', () => {
   it('leaves a Palette color exactly as it is', () => {
     expect(snapToPalette(palette, '#e63746')).toBe('#e63746')
   })
@@ -51,7 +51,7 @@ describe('snapping to the Project’s own Palette (ticket 0530)', () => {
   })
 })
 
-describe('resolveImageColors (ticket 177, amending ADR 0011)', () => {
+describe('resolveImageColors (ticket 177, ADR 0010)', () => {
   it('quantizes every color onto the Palette, even a picture already inside the limit', () => {
     const resolved = resolveImageColors(palette, counts({ '#ff0000': 4, '#00ff00': 2, '#0000ff': 1 }), 8)
 
@@ -85,7 +85,7 @@ describe('resolveImageColors (ticket 177, amending ADR 0011)', () => {
     }
   })
 
-  it('can collapse two visibly different colors onto the same Palette color (ADR 0011 amendment)', () => {
+  it('can collapse two visibly different colors onto the same Palette color (ADR 0010)', () => {
     // Both nearest the Palette's red, even though they're 7 apart from each other.
     const resolved = resolveImageColors(palette, counts({ '#ffffff': 5, '#fbfbfb': 5 }), 8)
 

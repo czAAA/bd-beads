@@ -922,7 +922,7 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-primary-down']).toEqual([[3, 5]])
     })
 
-    it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0070)', async () => {
+    it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0066)', async () => {
       // 48 peyote rows over a loom Canvas cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
       const project = projectOf(11, 48, { frame: { technique: 'peyote', row: 0, column: 0, rows: 48, columns: 11, beads: {} } })
       const { wrapper } = await mountSurface(project)

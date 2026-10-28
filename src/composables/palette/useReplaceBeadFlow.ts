@@ -14,7 +14,7 @@ export interface ReplaceBeadFlowDeps {
   locale: () => Locale
 }
 
-/** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0023). Deps are read lazily. */
+/** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0020). Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   /** The Bead id picked from the Replace bead menu, awaiting confirmation (ticket 48); undefined when its modal is
    * closed. */
