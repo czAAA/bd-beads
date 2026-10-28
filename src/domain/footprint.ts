@@ -6,12 +6,12 @@ import { describeWeave, positionStep, type Weave } from './weave'
 /** A Weave's cell height over its width: what a Real bead stretches a row by (ADR 0068); 1 where the cell is square. */
 const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
 
-/** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where Canvas and Frame are
- * woven alike, otherwise the rows whose middle lies inside what the Frame draws. A Frame woven otherwise draws shorter
- * or taller than `rows` Canvas rows, so the rectangle it names and the place it covers differ; this is the place. */
+/** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where both layers are woven
+ * alike or either Technique's policy names it (Units), else the rows whose middle lies inside what the Frame draws,
+ * which is shorter or taller than `rows` Canvas rows where it is woven otherwise. */
 export function frameFootprint(canvas: Weave, frame: Rect & Weave): Rect {
   const rectangle = { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }
-  if (sameWeave(canvas, frame) || describeWeave(canvas).countsUnits || describeWeave(frame).countsUnits) {
+  if (sameWeave(canvas, frame) || describeWeave(canvas).policy.footprint === 'named' || describeWeave(frame).policy.footprint === 'named') {
     return rectangle
   }
   const drawn = describeWeave(frame).blockExtent(frame.columns, frame.rows, 1, aspectOf(frame)).height
