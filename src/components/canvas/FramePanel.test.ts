@@ -11,6 +11,7 @@ import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
 import { pngDpiFor } from '../../rendering/exportDpi'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -304,7 +305,7 @@ describe('FramePanel (ticket 473)', () => {
     vi.mocked(pngDpiFor).mockImplementation((quality) => ({ low: 150, medium: 300, high: 300 })[quality])
     try {
       const wrapper = mountBar()
-      expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(en.frame.qualityPdfCapped.replace('{n}', '300'))
+      expect(wrapper.get('[data-testid="quality-pdf-capped"]').text()).toBe(fillBlanks(en.frame.qualityPdfCapped, { n: 300 }))
       expect(wrapper.get('[data-testid="quality-detail-high"]').text()).toBe('300 DPI')
     } finally {
       vi.mocked(pngDpiFor).mockImplementation((quality) => PNG_DPI_BY_QUALITY[quality])

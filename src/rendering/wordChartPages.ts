@@ -3,6 +3,7 @@ import { PRINT_COLORS } from './printColors'
 import { drawMark, font, MONO, SANS, SERIF, text, wrap } from './printPages'
 import { mm, PRINT_MARGIN, type PageSize } from './printPlan'
 import { headerMaker, type PrintedWordRow, type PrintText } from './printText'
+import { fillBlanks } from '../domain/fillBlanks'
 
 // The Word chart as PDF pages (tickets 0574, 0586; PrintWordChart card): a header naming the page's own rows, the color
 // key strip, then one line per row with a tick box, its number and runs, in two columns when the longest row fits half
@@ -203,7 +204,7 @@ function drawFooter(context: CanvasRenderingContext2D, words: PrintText, next: {
   drawMark(context, left, footer - mm(3.4), mm(4), PRINT_COLORS.accent)
   const brand = text(context, 'openbeads', left + mm(5.5), footer, font('700', 7.5, SANS), PRINT_COLORS.ink)
   text(context, words.exportedAt, left + mm(5.5) + brand + mm(4), footer, font('400', 7.5, MONO), PRINT_COLORS.muted)
-  if (next) text(context, words.labels.wordChart.nextRows.replace('{rows}', next.range).replace('{page}', String(next.page)), left + width, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
+  if (next) text(context, fillBlanks(words.labels.wordChart.nextRows, { rows: next.range, page: next.page }), left + width, footer, font('400', 7.5, SANS), PRINT_COLORS.muted, 'right')
 }
 
 /** The Word chart's sheets, drawn one at a time by `makePage` (the PDF's blank page at its dpi); numbered from `first` of

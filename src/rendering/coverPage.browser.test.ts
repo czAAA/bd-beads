@@ -16,6 +16,7 @@ import { PRINT_THEME } from './beadLook'
 import { printText } from './printText'
 import { exportProjectPng, projectPageCount } from './projectExport'
 import { frameGrid } from '../testUtils/frameGrid'
+import { fillBlanks } from '../domain/fillBlanks'
 
 const wordsOf = (project: ReturnType<typeof fixtureProject>, messages: Translations = en, locale: Locale = 'en') => printText(project, messages, locale, new Date())
 
@@ -99,7 +100,7 @@ describe('Cover page', () => {
     const tech = [words.techniqueWord, words.metaLine].join(' · ')
     expect(context.measureText(tech).width, tech).toBeLessThanOrEqual(room)
     context.font = font('italic 400', 13, SERIF)
-    const byMaker = words.labels.byMaker.replace('{maker}', words.maker)
+    const byMaker = fillBlanks(words.labels.byMaker, { maker: words.maker })
     expect(context.measureText(byMaker).width, byMaker).toBeLessThanOrEqual(room)
   })
 })

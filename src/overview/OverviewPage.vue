@@ -15,6 +15,7 @@ import PlanTiles from './PlanTiles.vue'
 import RollingSlogan from './RollingSlogan.vue'
 import { provideI18n } from '../i18n/useI18n'
 import { OVERVIEW_MAX_ZOOM_PERCENT, OVERVIEW_MIN_ZOOM_PERCENT, useOverviewZoom } from './overviewZoom'
+import { fillBlanks } from '../domain/fillBlanks'
 
 // The Overview (ticket 77; Overview card): the page outside the editor that introduces openbeads, a canvas box like the
 // editor's (ticket 540, ADR 0073): the Canvas strip on top, the content scrolling between, an empty Canvas footer below.
@@ -58,7 +59,7 @@ const boxStyle = computed(() => {
 })
 
 const isNew = computed(() => props.projectCount === 0)
-const projectsSaved = computed(() => t.value.overview.projectsSaved.replace('{count}', String(props.projectCount)))
+const projectsSaved = computed(() => fillBlanks(t.value.overview.projectsSaved, { count: props.projectCount }))
 </script>
 
 <template>

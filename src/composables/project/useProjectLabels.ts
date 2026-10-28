@@ -4,6 +4,7 @@ import { rotationSwapsAxes } from '../../domain/grid'
 import { projectColors, resolveProjectBead, rowProgressOn, rowProgressPosition, type Project, countedDimensions } from '../../domain/project'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 /** What naming the open Project needs from the app shell: the Project and the app's language. */
 export interface ProjectLabelsDeps {
@@ -39,15 +40,13 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
     const colorWords = plural(deps.locale(), colors, t.a11y.colorsCount)
     // With no Frame the canvas has no size to say: it is named as a Canvas.
     const parts = [
-      (project.frame ? t.a11y.projectLabel : t.a11y.canvasLabel)
-        .replace('{name}', project.name)
-        .replace('{columns}', String(columns))
-        .replace('{rows}', String(rows))
-        .replace('{colors}', colorWords),
+      project.frame
+        ? fillBlanks(t.a11y.projectLabel, { name: project.name, columns, rows, colors: colorWords })
+        : fillBlanks(t.a11y.canvasLabel, { name: project.name, colors: colorWords }),
     ]
     if (rowProgressOn(project)) {
       const { current: position, total } = rowProgressPosition(project)
-      parts.push(t.a11y.progressDone.replace('{row}', String(position)).replace('{total}', String(total)))
+      parts.push(fillBlanks(t.a11y.progressDone, { row: position, total }))
     }
     return parts.join(', ')
   })

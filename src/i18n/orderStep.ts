@@ -1,3 +1,4 @@
+import { fillBlanks } from '../domain/fillBlanks'
 import type { OrderStep } from '../domain/rowOrder'
 import type { Translations } from './translations'
 
@@ -6,9 +7,9 @@ import type { Translations } from './translations'
 export function orderStepLabel(words: Translations['rowProgress'], step: OrderStep): string {
   if (step.kind === 'join') {
     const template = { zip: words.stepZip, hinge: words.stepHinge, close: words.stepClose }[step.step]
-    return template.replace('{parts}', step.parts.join('–'))
+    return fillBlanks(template, { parts: step.parts.join('–') })
   }
-  if (step.kind === 'strand') return words.stepStrand.replace('{number}', String(step.number))
-  if (step.part !== undefined) return words.stepPartRound.replace('{part}', String(step.part)).replace('{number}', String(step.number))
-  return (step.kind === 'round' ? words.stepRound : words.stepRow).replace('{number}', String(step.number))
+  if (step.kind === 'strand') return fillBlanks(words.stepStrand, { number: step.number })
+  if (step.part !== undefined) return fillBlanks(words.stepPartRound, { part: step.part, number: step.number })
+  return fillBlanks(step.kind === 'round' ? words.stepRound : words.stepRow, { number: step.number })
 }
