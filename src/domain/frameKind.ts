@@ -2,7 +2,7 @@ import type { FrameSheet } from './canvas'
 import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
-import { describeWeave, FRINGE_TOP_TECHNIQUE, ROUNDS_TECHNIQUE, type Technique, type Weave } from './weave'
+import { describeWeave, type Technique, type Weave } from './weave'
 
 /** The Frame kinds (spec 0590, ADR 0077). Rectangular is the Frame as it has always been; the Custom frames are a
  * Triangle and a Warped Square in Rounds (ticket 0592), a Star and a Kaleidocycle of such parts, a Kite in Rows from its
@@ -108,35 +108,35 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(3, rounds!) },
+    custom: { technique: 'peyote', settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(3, rounds!) },
   },
   warpedSquare: {
     id: 'warpedSquare',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(4, rounds!) },
+    custom: { technique: 'peyote', settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(4, rounds!) },
   },
   star: {
     id: 'star',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, settings: [STAR_PART], layout: ({ partSize }) => starLayout(partSize!) },
+    custom: { technique: 'peyote', settings: [STAR_PART], layout: ({ partSize }) => starLayout(partSize!) },
   },
   kaleidocycle: {
     id: 'kaleidocycle',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, settings: [KALEIDOCYCLE_PART], layout: ({ partSize }) => kaleidocycleLayout(partSize!) },
+    custom: { technique: 'peyote', settings: [KALEIDOCYCLE_PART], layout: ({ partSize }) => kaleidocycleLayout(partSize!) },
   },
   kite: {
     id: 'kite',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('row'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) },
+    custom: { technique: 'peyote', settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) },
   },
   fringeEarring: {
     id: 'fringeEarring',
@@ -144,7 +144,7 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
     rowOrder: layoutRowOrder('row'),
     allows: CUSTOM_ALLOWS,
     custom: {
-      technique: FRINGE_TOP_TECHNIQUE,
+      technique: 'brick',
       settings: [TOP_WIDTH, TOP_ROWS, FRINGE_LENGTH],
       styles: FRINGE_STYLES,
       layout: (settings) => fringeLayout(settings as FringeSettings),
