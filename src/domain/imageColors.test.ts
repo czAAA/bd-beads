@@ -35,6 +35,12 @@ describe('snapToPalette (ticket 177, ADR 0010)', () => {
     expect(snapToPalette(palette, '#ff0000')).toBe('#e63746')
   })
 
+  it('picks the Palette color that looks closest, where plain RGB distance misjudged the hue (ticket 0634)', () => {
+    // By RGB distance a leaf green went to brown and a sky blue to grey.
+    expect(snapToPalette(palette, '#70a040')).toBe('#27ae60')
+    expect(snapToPalette(palette, '#87ceeb')).toBe('#2fb6ae')
+  })
+
   it('picks the nearest Palette color rather than the first one in range', () => {
     // Nudged towards the Palette's white from grey; whichever comes first in BUILT_IN_COLORS, the nearer one wins.
     expect(snapToPalette(palette, '#fefefe')).toBe('#ffffff')
@@ -47,16 +53,18 @@ describe('snapping to the Project’s own Palette (ticket 0530)', () => {
     expect(snapToPalette(withAdded, '#10f010')).toBe('#00ff00')
     const small = createPalette(['a', 'b'], [{ id: 'a', hex: '#111111' }, { id: 'b', hex: '#eeeeee' }])
     expect(snapToPalette(small, '#e0e0e0')).toBe('#eeeeee')
-    expect(resolveImageColors(small, counts({ '#ff0000': 4, '#ffff00': 1 }), 8).colors.sort()).toEqual(['#111111', '#eeeeee'])
+    const twoColors = counts({ '#800000': 4, '#ffff00': 1 })
+    expect(resolveImageColors(small, twoColors, 8).colors.sort()).toEqual(['#111111', '#eeeeee'])
   })
 })
 
 describe('resolveImageColors (ticket 177, ADR 0010)', () => {
   it('quantizes every color onto the Palette, even a picture already inside the limit', () => {
-    const resolved = resolveImageColors(palette, counts({ '#ff0000': 4, '#00ff00': 2, '#0000ff': 1 }), 8)
+    // A plain green, not #00ff00: that bright a green looks nearer the Palette's yellow (ticket 0634).
+    const resolved = resolveImageColors(palette, counts({ '#ff0000': 4, '#00a000': 2, '#0000ff': 1 }), 8)
 
     expect(resolved.mapping.get('#ff0000')).toBe('#e63746') // Palette red
-    expect(resolved.mapping.get('#00ff00')).toBe('#27ae60') // Palette green
+    expect(resolved.mapping.get('#00a000')).toBe('#27ae60') // Palette green
     expect(resolved.mapping.get('#0000ff')).toBe('#2f6fed') // Palette blue
     for (const hex of resolved.colors) {
       expect(BUILT_IN_COLORS.map((color) => color.hex)).toContain(hex)
@@ -64,7 +72,7 @@ describe('resolveImageColors (ticket 177, ADR 0010)', () => {
   })
 
   it('orders the colors it found by how much of the picture they cover', () => {
-    const resolved = resolveImageColors(palette, counts({ '#00ff00': 1, '#ff0000': 9, '#0000ff': 5 }), 8)
+    const resolved = resolveImageColors(palette, counts({ '#00a000': 1, '#ff0000': 9, '#0000ff': 5 }), 8)
 
     expect(resolved.colors).toEqual(['#e63746', '#2f6fed', '#27ae60'])
   })
