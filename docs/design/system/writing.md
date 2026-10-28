@@ -301,14 +301,6 @@ The Frame panel, the Move handle and the edit pencil (Frame card). The Russian i
 | Left edge: add one column · Left edge: remove one column | Левый край: добавить столбец · Левый край: убрать столбец |
 | The Frame can’t get any smaller on this side. | Рамку нельзя сделать меньше с этой стороны. |
 
-## Copy added in ticket 0641
-
-Change Technique? and Change Net size? say how many of the beads lost are the Frame's Folded beads, out of sight, so the count doesn't look wrong against what the Frame shows. The sentence comes only when a Folded bead would be lost, between the count and "This can be undone.", in the Result pattern (Label: number). The Russian is proposed and not yet reviewed; the other five languages follow it.
-
-| English | Russian |
-| --- | --- |
-| Of these, Folded beads out of sight: 2. | Из них свёрнутых бисерин, которых не видно: 2. |
-
 ## Copy changed in ticket 0489
 
 Remove Frame? names what goes (Frame card, ConfirmDialogs card). The Russian is the approved confirm pattern (Confirm in Sentence patterns).
