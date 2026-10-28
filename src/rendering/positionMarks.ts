@@ -145,7 +145,7 @@ export function positionMarkPattern(context: DrawingContext, input: MarkTileInpu
 }
 
 /** The same tile as a CSS background: an image URL and the size it repeats at in CSS px, for a page that is not a
- * canvas (the Overview). Undefined without a canvas to draw it on. */
+ * canvas (the Homepage). Undefined without a canvas to draw it on. */
 export function positionMarkBackground(input: MarkTileInput): { url: string; width: number; height: number } | undefined {
   const bitmap = tileBitmap(input)
   const tile = bitmap?.tile

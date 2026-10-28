@@ -35,13 +35,13 @@ export function selectionBarPlacement(
   viewport: { width: number; height: number },
   obstacle?: BarBox,
 ): BarPlacement {
-  const clamp = (value: number, size: number, limit: number) => Math.max(BAR_EDGE_PX, Math.min(value, limit - size - BAR_EDGE_PX))
-  const left = clamp(selection.left + selection.width / 2 - bar.width / 2, bar.width, viewport.width)
+  const onScreen = (value: number, size: number, limit: number) => Math.max(BAR_EDGE_PX, Math.min(value, limit - size - BAR_EDGE_PX))
+  const left = onScreen(selection.left + selection.width / 2 - bar.width / 2, bar.width, viewport.width)
   const above = selection.top - BAR_GAP_PX - bar.height
   const below = above < BAR_EDGE_PX
   const at = (isBelow: boolean): BarPlacement => ({
     left,
-    top: clamp(isBelow ? selection.top + selection.height + BAR_GAP_PX : above, bar.height, viewport.height),
+    top: onScreen(isBelow ? selection.top + selection.height + BAR_GAP_PX : above, bar.height, viewport.height),
     below: isBelow,
   })
   const preferred = at(below)
@@ -52,10 +52,10 @@ export function selectionBarPlacement(
   // Neither side is clear: slide the preferred spot off the pill, the shorter way, and keep it inside the box.
   const pill = obstacle!
   const slides: BarPlacement[] = [
-    { ...preferred, left: clamp(pill.left - BAR_GAP_PX - bar.width, bar.width, viewport.width) },
-    { ...preferred, left: clamp(pill.left + pill.width + BAR_GAP_PX, bar.width, viewport.width) },
-    { ...preferred, top: clamp(pill.top - BAR_GAP_PX - bar.height, bar.height, viewport.height) },
-    { ...preferred, top: clamp(pill.top + pill.height + BAR_GAP_PX, bar.height, viewport.height) },
+    { ...preferred, left: onScreen(pill.left - BAR_GAP_PX - bar.width, bar.width, viewport.width) },
+    { ...preferred, left: onScreen(pill.left + pill.width + BAR_GAP_PX, bar.width, viewport.width) },
+    { ...preferred, top: onScreen(pill.top - BAR_GAP_PX - bar.height, bar.height, viewport.height) },
+    { ...preferred, top: onScreen(pill.top + pill.height + BAR_GAP_PX, bar.height, viewport.height) },
   ]
   const clear = slides.filter((placement) => !hits(placement))
   const distance = (placement: BarPlacement) => Math.abs(placement.left - preferred.left) + Math.abs(placement.top - preferred.top)

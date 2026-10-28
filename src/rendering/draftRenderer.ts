@@ -1,4 +1,4 @@
-import { fromHex } from '../domain/color'
+import { channelsOf } from '../domain/color'
 import { draftCost, isOffsetTechnique, isShiftedRow, type Technique, type Weave } from '../domain/weave'
 import type { ProjectTheme } from './beadLook'
 
@@ -28,7 +28,7 @@ const rgbOf = new Map<string, readonly [number, number, number]>()
 function channels(color: string): readonly [number, number, number] {
   let known = rgbOf.get(color)
   if (!known) {
-    const { r, g, b } = fromHex(color) ?? { r: 0, g: 0, b: 0 }
+    const { r, g, b } = channelsOf(color)
     known = [r, g, b]
     rgbOf.set(color, known)
   }

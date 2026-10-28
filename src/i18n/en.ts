@@ -268,12 +268,12 @@ export const en: Translations = {
   },
   header: {
     menuButton: 'Menu',
-    overviewItem: 'Overview',
+    homepageItem: 'Homepage',
     sourceItem: 'Source code',
     projectPanelLabel: 'Project',
   },
-  overview: {
-    pageTitle: 'Overview',
+  homepage: {
+    pageTitle: 'Homepage',
     tagline: 'save. count. export',
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',

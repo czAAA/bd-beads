@@ -205,7 +205,7 @@ const arrowTurn = computed(() => {
   gap: var(--space-12);
   box-sizing: border-box;
   /* As tall as its tallest item plus 1px above and below (ticket 544); --progress-height is the same rule for the
-   * Overview's empty footer. The bottom corners follow the canvas box's curve. */
+   * Homepage's empty footer. The bottom corners follow the canvas box's curve. */
   min-height: var(--progress-height);
   padding: var(--bar-pad) var(--space-12) var(--bar-pad) var(--space-16);
   border: 1px solid color-mix(in srgb, var(--box-muted) 22%, transparent);

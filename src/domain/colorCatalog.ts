@@ -1,4 +1,4 @@
-import { normalizeHex } from './palette'
+import { normalizeHex } from './color'
 
 /** The Finishes every Brand's wording is mapped onto (ADR 0072, ticket 536), in the order they are listed. */
 const FINISHES = [

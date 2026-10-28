@@ -269,12 +269,12 @@ export const ru: Translations = {
   },
   header: {
     menuButton: 'Меню',
-    overviewItem: 'Обзор',
+    homepageItem: 'Главная',
     sourceItem: 'Исходный код',
     projectPanelLabel: 'Проект',
   },
-  overview: {
-    pageTitle: 'Обзор',
+  homepage: {
+    pageTitle: 'Главная',
     tagline: 'сохраним. посчитаем. экспортируем',
     makeFirstProject: 'Сделать первый проект',
     openEditor: 'Открыть редактор',

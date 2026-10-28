@@ -21,6 +21,7 @@ import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selec
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { PillRect } from '../../domain/toolPill'
 import { hasGuides } from '../../domain/selection'
+import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads, resolveProjectBead } from '../../domain/project'
 import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -158,8 +159,10 @@ const colorPick = useColorPick()
 
 /** The Project as drawn: with the Frame as it looks mid-drag while a gesture is going on, which is committed only on
  * release. */
-/** Whether Select or Piece is in hand: the pointer is the native arrow, not the bead-shaped marker (ticket 414). */
-const selecting = computed(() => activeTool.value === 'select' || activeTool.value === 'piece')
+/** What the tool in hand and the modes on let the Drawing surface do (ticket 0619): one value, worked out once. */
+const surfaceTools = computed(() =>
+  toolCapabilities(activeTool.value, { picking: colorPick?.picking.value, spaceHeld: spaceHeld.value, settingFrame: settingFrame.value, pasteArmed: pasteProjectionActive.value }),
+)
 
 const shownProject = frameDraftProject
 
@@ -299,27 +302,18 @@ const drawingStyle = computed(() => {
               v-else-if="activeProject"
               ref="surfaceRef"
               :project="shownProject!"
-              :setting-frame="settingFrame"
+              :tools="surfaceTools"
               :frame-tooltip="frameTooltip"
               :zoom="zoom"
               :scroll="scroll"
               :show-rulers="showRulers"
               :row-marks="rowHighlight"
-              :tool="activeTool"
-              :moving="activeTool === 'hand'"
-              :nearest-on-press="activeTool === 'fill'"
-              :select-anywhere="activeTool === 'select'"
-              :marker-hidden="spaceHeld"
-              :picking="colorPick?.picking.value"
               :input-mode="surfaceInputMode"
               :handedness="handedness"
-              :blocks-margin="!colorPick?.picking.value && (activeTool === 'paint' || activeTool === 'fill' || pasteProjectionActive)"
               :preview-cells="previewCells"
               :preview-color="previewColor"
               :selection="selection"
-              :selection-blocks-margin="selecting"
               :selection-refusals="selectionRefusals"
-              :selecting="selecting"
               :label="projectLabel"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"

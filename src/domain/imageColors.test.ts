@@ -1,45 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BUILT_IN_COLORS, addedColorId, createPalette, defaultPaletteIds } from './palette'
-import { colorDistance, channelsOf, nearestColor, resolveImageColors, snapToPalette, toHex } from './imageColors'
+import { toHex } from './color'
+import { nearestColor, resolveImageColors, snapToPalette } from './imageColors'
 
 const palette = createPalette(defaultPaletteIds())
 
 function counts(entries: Record<string, number>): Map<string, number> {
   return new Map(Object.entries(entries))
 }
-
-describe('toHex / channelsOf', () => {
-  it('writes a lowercase six-digit hex, padding single digits', () => {
-    expect(toHex({ r: 0, g: 0, b: 0 })).toBe('#000000')
-    expect(toHex({ r: 255, g: 255, b: 255 })).toBe('#ffffff')
-    expect(toHex({ r: 1, g: 2, b: 3 })).toBe('#010203')
-  })
-
-  it('reads a hex back to its channels', () => {
-    expect(channelsOf('#010203')).toEqual({ r: 1, g: 2, b: 3 })
-    expect(channelsOf('#E63746')).toEqual({ r: 230, g: 55, b: 70 })
-  })
-
-  it('round-trips every Palette color', () => {
-    for (const color of BUILT_IN_COLORS) {
-      expect(toHex(channelsOf(color.hex))).toBe(color.hex)
-    }
-  })
-})
-
-describe('colorDistance', () => {
-  it('is zero for the same color and symmetric otherwise', () => {
-    expect(colorDistance(channelsOf('#123456'), channelsOf('#123456'))).toBe(0)
-    expect(colorDistance(channelsOf('#000000'), channelsOf('#010101'))).toBeCloseTo(
-      colorDistance(channelsOf('#010101'), channelsOf('#000000')),
-    )
-  })
-
-  it('is the straight-line distance between the two colors in RGB', () => {
-    expect(colorDistance({ r: 0, g: 0, b: 0 }, { r: 3, g: 4, b: 0 })).toBe(5)
-  })
-})
 
 describe('nearestColor', () => {
   it('finds the closest of the colors offered', () => {

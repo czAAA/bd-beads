@@ -55,7 +55,7 @@ body {
 }
 
 /* The shell scrolls nothing (ticket 141), so the document must not (ticket 320) or a phone drags past the Dock;
-   Overview scrolls; see ticket 316. */
+   Homepage scrolls; see ticket 316. */
 html:has(.app-shell),
 html:has(.app-shell) body {
   height: 100%;
