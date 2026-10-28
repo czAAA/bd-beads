@@ -7,7 +7,7 @@ import { insideBounds, type Box } from './weaveGeometry'
 
 // The Layer geometry (ADR 0078, ticket 0628): one set of questions every Layer answers, the Canvas and each Frame kind
 // alike, in bead widths from the Layer's first position's corner (a cell is 1 wide). A grid answers from its Weave, a
-// Custom frame from its layout. Expand step: callers move to it in tickets 0629 (domain) and 0630 (drawing, exports).
+// Custom frame from its layout. Drawing and exports ask it (ticket 0630); editing moves to it in ticket 0629.
 
 /** Where a bead lies: its rectangle as an upright bead, and the angle it is turned by about the rectangle's centre
  * (radians, clockwise on screen). */
@@ -32,6 +32,14 @@ export interface LayerGeometry {
   positionAt(point: LayoutPoint): GridPosition | undefined
   /** The box round the Layer's edge (a Custom frame's is its rectangle), or none on an open Canvas. */
   extent(): Box | undefined
+  /** The positions whose beads may lie in or touch a box, a row at a time as a drawing lays them down (a later row's
+   * beads over an earlier one's): what a view of part of the Layer draws. */
+  positionsIn(box: Box): GridPosition[]
+  /** Whether its beads stand upright in rows and columns, which rulers number and a chart rules lines between; a
+   * Custom frame's lie at their panels' angles and keep none (ADR 0077). */
+  inRowsAndColumns: boolean
+  /** The lines where its parts are joined (a Custom frame's Seams), from point to point; none on a grid. */
+  seams(): readonly (readonly [LayoutPoint, LayoutPoint])[]
 }
 
 /** A Layer laid out by its Weave: the Canvas (open, with no `bounds`), a Rectangular Frame (its own rows and columns from
@@ -44,8 +52,7 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
   const box = (position: GridPosition): Box => description.box(position, 1, height)
   const extent = bounds && gridExtent(weave, bounds)
   // Beads laid on rows: the row a point falls in by the pitch and, where rows nest, the one above, lowest first as later
-  // rows are drawn over earlier ones; not a rounded corner. The Surface view's beadInGrid, gridBox and inRoundedCorner
-  // are copied here and in gridExtent until ticket 0630 moves their callers onto this.
+  // rows are drawn over earlier ones; not a rounded corner.
   const onRows = ({ x, y }: LayoutPoint): GridPosition | undefined => {
     if (extent && (x < extent.x || y < extent.y || y >= extent.y + extent.height)) return undefined
     const pitch = height * description.rowPitch
@@ -67,6 +74,26 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
     const found = description.positionAt(x, y, 1, height)
     return found && (!bounds || has(found)) ? found : undefined
   }
+  // The rows whose beads reach into a box, and each row's columns by its shift; where Units are counted, the Weave's own
+  // range. Both a little more than needed, cut to the edge.
+  const rangeIn = ({ x, y, width, height: deep }: Box) => {
+    const [top, bottom] = [bounds ? bounds.row : -Infinity, bounds ? bounds.row + bounds.rows - 1 : Infinity]
+    const [left, right] = [bounds ? bounds.column : -Infinity, bounds ? bounds.column + bounds.columns - 1 : Infinity]
+    const area = { left: x, right: x + width, top: y, bottom: y + deep }
+    if (description.countsUnits) {
+      const seen = description.visible(area, 1, height)
+      return { firstRow: Math.max(top, seen.firstRow), lastRow: Math.min(bottom, seen.lastRow), columnsOf: () => ({ first: Math.max(left, seen.first), last: Math.min(right, seen.last) }) }
+    }
+    const pitch = height * description.rowPitch
+    return {
+      firstRow: Math.max(top, Math.ceil((area.top - height) / pitch)),
+      lastRow: Math.min(bottom, Math.floor(area.bottom / pitch)),
+      columnsOf: (row: number) => {
+        const shift = box({ row, column: 0 }).x
+        return { first: Math.max(left, Math.ceil(area.left - shift - 1)), last: Math.min(right, Math.floor(area.right - shift)) }
+      },
+    }
+  }
   return {
     positions: () => {
       if (!bounds) return []
@@ -83,6 +110,17 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
     place: (position) => (has(position) ? { box: box(position), angle: 0 } : undefined),
     positionAt: description.countsUnits ? inUnits : onRows,
     extent: () => extent,
+    positionsIn: (seen) => {
+      const { firstRow, lastRow, columnsOf } = rangeIn(seen)
+      const found: GridPosition[] = []
+      for (let row = firstRow; row <= lastRow; row += 1) {
+        const { first, last } = columnsOf(row)
+        for (let column = first; column <= last; column += 1) if (has({ row, column })) found.push({ row, column })
+      }
+      return found
+    },
+    inRowsAndColumns: true,
+    seams: () => [],
   }
 }
 
@@ -121,14 +159,16 @@ function layoutGeometry({ layout, scale, x, y }: LayoutPlacement, frame: KindedS
   const width = scale
   const height = scale * Math.min(describeWeave(frame).cellAspect, layout.beadDepth)
   const rectangle = gridExtent(frame, { row: 0, column: 0, rows: frame.rows, columns: frame.columns })
+  const at = (point: LayoutPoint): LayoutPoint => ({ x: x + point.x * scale, y: y + point.y * scale })
+  const all = (): GridPosition[] => layout.positions.map(({ row, column }) => ({ row, column }))
   return {
-    positions: () => layout.positions.map(({ row, column }) => ({ row, column })),
+    positions: all,
     hasPosition: (position) => layoutPosition(layout, position) !== undefined,
     neighbors: (position) => layoutNeighbors(layout, position),
     place: (position) => {
       const found = layoutPosition(layout, position)
       if (!found) return undefined
-      const centre = { x: x + found.x * scale, y: y + found.y * scale }
+      const centre = at(found)
       return { box: { x: centre.x - width / 2, y: centre.y - height / 2, width, height }, angle: found.angle }
     },
     positionAt: (point) => {
@@ -136,6 +176,10 @@ function layoutGeometry({ layout, scale, x, y }: LayoutPlacement, frame: KindedS
       return off ? undefined : layoutPositionAt(layout, (point.x - x) / scale, (point.y - y) / scale)
     },
     extent: () => rectangle,
+    // A Custom frame is small: every bead is drawn.
+    positionsIn: all,
+    inRowsAndColumns: false,
+    seams: () => layout.seams.map(([from, to]) => [at(from), at(to)] as const),
   }
 }
 

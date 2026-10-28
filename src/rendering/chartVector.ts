@@ -5,21 +5,18 @@ import type { SwatchLetters } from '../domain/swatchLetters'
 import { beadRoundness, describeWeave } from '../domain/weave'
 import { frameWeave } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
-import type { DrawingContext } from './beadLook'
-import { PRINT_THEME } from './beadLook'
 import { acrossNumber, downNumber, lineBetween, rulerLevel } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
-import { renderProject } from './projectRenderer'
-import { spaceOf } from './space'
+import { beadInSpace, sheetGeometry, spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
-import { gridToRegion, rowPitchPx, rowShiftPx } from './surfaceView'
+import { gridToRegion, inGridPx, regionInGridSpace, rowPitchPx } from './surfaceView'
 import { customChart, type ChartBead } from './customChart'
 import type { LayoutPoint } from '../domain/frameLayout'
 
-// A chart page as PDF operators (ticket 0585, ADR 0043; PrintChartPage card): sharp at any zoom. The Project renderer places
-// every bead of every Technique (given a stand-in canvas that only keeps its transform) and this draws what it is told.
-// Layout is in the plan's px (150 dpi); the operators are in points.
+// A chart page as PDF operators (ticket 0585, ADR 0043; PrintChartPage card): sharp at any zoom. The Layer geometry places
+// every bead of every Technique (ticket 0630) and this draws what it is told. Layout is in the plan's px (150 dpi); the
+// operators are in points.
 
 /** Points per layout px, and per millimetre. */
 export const K = 72 / PRINT_DPI
@@ -77,8 +74,8 @@ interface PlacedBead {
   down: number
 }
 
-/** The positions of a part, bead by bead, for any Technique, rotation or Bead shape: the Project renderer is run with a
- * stand-in context that remembers only the transform, and a bead drawer that records where each bead lands.
+/** The positions of a part, bead by bead, for any Technique, rotation or Bead shape: each bead in view where the Layer
+ * geometry places it, through the page's transform.
  * @internal Its test checks where each bead lands on its own. */
 export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): PlacedBead[] {
   const grid = displayedGrid(project)
@@ -96,36 +93,26 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   }
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
+  const geometry = sheetGeometry(project)
+  const seen = regionInGridSpace(space.extent, part.region, plan.zoom, project.rotation)
+  const inView = { x: seen.left / CELL_SIZE_PX, y: seen.top / CELL_SIZE_PX, width: (seen.right - seen.left) / CELL_SIZE_PX, height: (seen.bottom - seen.top) / CELL_SIZE_PX }
   const placed: PlacedBead[] = []
-  const context = new Proxy({}, { get: () => () => undefined, set: () => true }) as DrawingContext
-  renderProject(context, {
-    project,
-    space,
-    region: part.region,
-    zoom: plan.zoom,
-    theme: PRINT_THEME,
-    rowMarks: false,
-    drawBead: (_context, bead) => {
-      const width = bead.width ?? bead.size
-      const height = bead.height ?? bead.size
-      const box = rectOf(bead.x, bead.y, width, height)
-      let cell = box
-      let middle = at(bead.x + width / 2, bead.y + height / 2)
-      if (!units) {
-        const row = Math.round(bead.y / pitch)
-        const shift = rowShiftPx(weave, row)
-        const column = Math.round((bead.x - shift) / CELL_SIZE_PX)
-        cell = rectOf(column * CELL_SIZE_PX + shift, row * pitch, CELL_SIZE_PX, pitch)
-        // The unshifted cell's middle names the position, so an offset row stays in its own column.
-        middle = at(column * CELL_SIZE_PX + CELL_SIZE_PX / 2, row * pitch + pitch / 2)
-      }
-      const across = Math.floor(middle[0] / stepAcross)
-      const down = Math.floor(middle[1] / stepDown)
-      // Beads the renderer draws past the part's edge belong to its neighbour.
-      if (across < 0 || down < 0 || middle[0] > part.region.width || middle[1] > part.region.height) return
-      placed.push({ box, cell, color: bead.color, across, down })
-    },
-  })
+  for (const position of geometry.positionsIn(inView)) {
+    const { x, y, width, height } = inGridPx(geometry.place(position)!.box)
+    const box = rectOf(x, y, width, height)
+    let cell = box
+    let middle = at(x + width / 2, y + height / 2)
+    if (!units) {
+      cell = rectOf(x, position.row * pitch, CELL_SIZE_PX, pitch)
+      // The unshifted cell's middle names the position, so an offset row stays in its own column.
+      middle = at(position.column * CELL_SIZE_PX + CELL_SIZE_PX / 2, position.row * pitch + pitch / 2)
+    }
+    const across = Math.floor(middle[0] / stepAcross)
+    const down = Math.floor(middle[1] / stepDown)
+    // Beads past the part's edge belong to its neighbour.
+    if (across < 0 || down < 0 || middle[0] > part.region.width || middle[1] > part.region.height) continue
+    placed.push({ box, cell, color: beadInSpace(project, space, position.row, position.column), across, down })
+  }
   return placed
 }
 

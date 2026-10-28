@@ -2,11 +2,11 @@ import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions } from '../domain/projectExtent'
 import { shownLetters } from '../domain/paletteEdits'
 import type { Project } from '../domain/project'
-import { frameLayoutOf } from '../domain/frameKind'
 import { drawBeadLetter, PRINT_THEME } from './beadLook'
 import { TABLE_COLUMN_GAP, TABLE_HEAD, TITLE_MAKER_ROW, TITLE_NAME_ROW, listHeader, titleRows, type ColorsSlice, type CoverLayout } from './coverLayout'
 import { blankPage, drawBoard, drawMark, drawParts, drawRulers, font, MONO, pt, SANS, SERIF, text, wrap } from './printPages'
 import { PRINT_COLORS } from './printColors'
+import { sheetGeometry } from './space'
 import { A4_PORTRAIT, displayedGrid, mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
 import { displayedExtentPx } from './surfaceView'
@@ -117,7 +117,7 @@ export function drawCoverPage(project: Project, words: PrintText, layout: CoverL
   const grid = displayedGrid(project)
   const every = grid.stepAcross * layout.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10
   // A Custom frame's beads keep no rows and columns to number (ticket 0594).
-  if (!project.frame || !frameLayoutOf(project.frame)) drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
+  if (sheetGeometry(project).inRowsAndColumns) drawRulers(context, project, layout.zoom, board, { first: 0, last: grid.across - 1 }, { first: 0, last: grid.down - 1 }, every)
   if (plan && plan.parts.length > 1) drawParts(context, project, plan, words.labels, layout.zoom, board)
 
   drawColors(context, A4_PORTRAIT, words, layout.cover, layout.cover.y)
