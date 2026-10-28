@@ -46,6 +46,21 @@ export interface BeadCell {
   roundness: number
 }
 
+/** What a Technique allows and how its sizes read, beside its layout (ticket 0622): policy, not geometry, so each is a
+ * switch of its own that a Technique on any geometry sets. */
+interface TechniquePolicy {
+  /** Whether Remove row and Remove column work on a Frame woven in it: a line of Units isn't a Unit (ADR 0038). */
+  removeLine: boolean
+  /** What a Frame woven unlike the Canvas hides of it (ADR 0066, ticket 514): the Canvas rows under what it draws,
+   * where both layers' Techniques measure it so, or else the rectangle it names. */
+  footprint: 'covered' | 'named'
+  /** The fewest a side of a typed Frame size counts, in what the size counts (beads or Units; ticket 473). */
+  fewestTypedSide: number
+  /** How a size in mm reads as positions and back (ADR 0026): by a Bead's own width and height per position, how rows
+   * pack left out, or by the steps and extent its geometry draws. */
+  measure: 'bead' | 'drawn'
+}
+
 /** A Technique's own facts: its geometry kind with its values (ADR 0078), and what it offers and costs. */
 interface TechniqueRules {
   /** Its name's key in the `techniques` translations: a plain string, checked in every language by a test (ADR 0078). */
@@ -68,6 +83,8 @@ interface TechniqueRules {
   draftCost: number
   /** From how many cells of a Frame's own grid (not the margin) framing a picture in it may be slow to update (ticket 61). */
   slowFramingCells: number
+  /** What it allows and how its sizes read: switches, never read off its geometry kind. */
+  policy: TechniquePolicy
 }
 
 const ROUNDED_BEAD_CORNER = 0.22
@@ -87,6 +104,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: false },
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
   },
   peyote: {
     nameKey: 'peyote',
@@ -98,6 +116,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: true },
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
   },
   brick: {
     nameKey: 'brick',
@@ -109,6 +128,7 @@ const TECHNIQUE_RULES = {
     wordChart: { marked: true },
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
+    policy: { removeLine: true, footprint: 'covered', fewestTypedSide: 4, measure: 'bead' },
   },
   rightAngle: {
     nameKey: 'rightAngle',
@@ -120,6 +140,7 @@ const TECHNIQUE_RULES = {
     rowDirection: true,
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
+    policy: { removeLine: false, footprint: 'named', fewestTypedSide: 1, measure: 'drawn' },
   },
   netting: {
     nameKey: 'netting',
@@ -131,6 +152,7 @@ const TECHNIQUE_RULES = {
     rowDirection: false,
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
+    policy: { removeLine: false, footprint: 'named', fewestTypedSide: 1, measure: 'drawn' },
   },
 } satisfies Record<string, TechniqueRules>
 
@@ -280,7 +302,8 @@ export function beadRoundness(technique: Technique, cell?: BeadCell): number {
 // Physical and px geometry both come from the grid units of the Weave's geometry, scaled by the cell size asked for.
 
 /** Horizontal offset for a row's cells: loom rows never shift; peyote and brick stitch shift every other row by their
- * shift so beads interlock instead of stacking in a straight grid. */
+ * shift so beads interlock instead of stacking in a straight grid.
+ * @internal Tests check a Technique's shift on its own. */
 export function rowOffset(weave: Weave, rowIndex: number, cellSize: number): number {
   return isShiftedRow(weave, rowIndex) ? cellSize * describeWeave(weave).shift : 0
 }
@@ -312,11 +335,9 @@ export function gridHeight(technique: Technique, rows: number, cellSize: number)
  * Weave's positions into another's (a Frame in a Technique other than the Canvas's, ticket 492). */
 export function positionStep(weave: Weave): { across: number; down: number } {
   const description = describeWeave(weave)
-  if (!description.countsUnits) {
-    return { across: 1, down: rowPitch(weave.technique, weave.cell?.aspect ?? 1) }
-  }
-  const unit = description.origin({ row: description.rowsPerUnit, column: description.columnsPerUnit }, 1, description.cellAspect)
-  return { across: unit.x / description.columnsPerUnit, down: unit.y / description.rowsPerUnit }
+  // A Unit's step for a bead one wide and as tall as the cell, shared out among the positions it takes.
+  const unit = description.stepMm({ widthMm: 1, widthCorrectionMm: 0, heightMm: description.cellAspect })
+  return { across: unit.across / description.columnsPerUnit, down: unit.down / description.rowsPerUnit }
 }
 
 /** Where a cell's centre sits from the grid's top-left, in the unit of the cell size passed (real mm for a Bead's
