@@ -66,12 +66,24 @@ for (const [situation, breakIt] of failures) {
     await expect(page.getByTestId('save-state')).toBeVisible()
   })
 
-  test(`the Overview opens ${situation}`, async ({ page, context }) => {
+  test(`switches to a language it has not shown yet ${situation} (ticket 0616)`, async ({ page, context }) => {
     await openAndInstall(page)
     await breakIt(context, host)
 
-    await page.goto(new URL('overview/', host.url).href)
-    await expect(page.getByTestId('overview')).toBeVisible()
+    await reloadsIntoTheApp(page)
+    await openStripPanel(page, 'strip-menu')
+    await page.locator('[data-testid="language-switcher"] button[aria-haspopup]').click()
+    await page.locator('[data-testid="language-switcher"] [role="menuitemradio"][data-value="ru"]').click()
+    // The language changes only once its strings have arrived, from the offline copy here.
+    await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
+  })
+
+  test(`the Homepage opens ${situation}`, async ({ page, context }) => {
+    await openAndInstall(page)
+    await breakIt(context, host)
+
+    await page.goto(new URL('homepage/', host.url).href)
+    await expect(page.getByTestId('homepage')).toBeVisible()
     await expect(page.getByRole('heading').first()).toBeVisible()
   })
 }

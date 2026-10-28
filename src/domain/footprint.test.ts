@@ -4,7 +4,7 @@ import { frameFootprint } from './footprint'
 
 const frame = { row: 2, column: 3, rows: 48, columns: 11 }
 
-describe('frameFootprint (ADR 0070)', () => {
+describe('frameFootprint (ADR 0066)', () => {
   it('is the Frame\'s own rectangle where Canvas and Frame are woven alike', () => {
     expect(frameFootprint({ technique: 'peyote' }, { ...frame, technique: 'peyote' })).toEqual(frame)
     expect(frameFootprint({ technique: 'loom' }, { ...frame, technique: 'loom' })).toEqual(frame)

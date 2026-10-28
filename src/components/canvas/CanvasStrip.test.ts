@@ -95,21 +95,21 @@ describe('CanvasStrip', () => {
 describe('CanvasStrip Brand and layout (ticket 540)', () => {
   const project = { frame: undefined, beads: { 0: { 0: '#ff0000' } }, technique: 'loom' } as unknown as Project
 
-  it('has Menu first and the Brand, the logo and "openbeads", which opens the Overview from the editor', () => {
+  it('has Menu first and the Brand, the logo and "openbeads", which opens the Homepage from the editor', () => {
     const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
     const first = wrapper.findAll('[data-testid]').find((element) => element.attributes('data-testid')?.startsWith('strip-'))
     expect(first?.attributes('data-testid')).toBe('strip-menu')
 
     const brand = wrapper.get('[data-testid="canvas-brand"]')
     expect(brand.element.tagName).toBe('A')
-    expect(brand.attributes('href')).toContain('overview/')
+    expect(brand.attributes('href')).toContain('homepage/')
     expect(brand.attributes('aria-current')).toBeUndefined()
     expect(brand.text()).toBe('openbeads')
     expect(brand.find('[data-testid="app-logo"]').exists()).toBe(true)
   })
 
-  it('shows the Brand as the current page, with no link, on the Overview', () => {
-    const wrapper = mount(CanvasStrip, { props: { page: 'overview', zoomPercent: 100 } })
+  it('shows the Brand as the current page, with no link, on the Homepage', () => {
+    const wrapper = mount(CanvasStrip, { props: { page: 'homepage', zoomPercent: 100 } })
     const brand = wrapper.get('[data-testid="canvas-brand"]')
 
     expect(brand.element.tagName).toBe('SPAN')

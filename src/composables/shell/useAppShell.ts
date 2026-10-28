@@ -214,7 +214,7 @@ function wireAppShell(services: Services) {
   )
 
   /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
-   * 0057). */
+   * 0016). */
   const touch = useMediaQuery('(pointer: coarse)')
 
   /** Undo, which on touch also leaves paste mode. */
@@ -246,7 +246,7 @@ function wireAppShell(services: Services) {
     onCustomColorAdded,
   } = useToolAndColor({ leaveSelectTool, palette: () => palette.value })
 
-  /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0059). */
+  /** Where the Tool pill is docked, what its colour control shows and the recent colours (ticket 439, ADR 0046). */
   const toolPill = useToolPill({
     preferences: services.devicePreferences,
     selectedColorHex,
@@ -325,7 +325,7 @@ function wireAppShell(services: Services) {
     return backOutOfSelect() || was
   }
 
-  /** Copy (ticket 437, ADR 0057): keeps the drawn beads, clears the Selection and arms paste mode under Select; with
+  /** Copy (ticket 437, ADR 0016): keeps the drawn beads, clears the Selection and arms paste mode under Select; with
    * no drawn bead the bar's button is disabled and the shortcut does nothing (ticket 499). */
   function onCopy() {
     if (copySelected()) selectTool('select')
@@ -341,7 +341,7 @@ function wireAppShell(services: Services) {
     if (armPaste()) selectTool('select')
   }
 
-  /** Ctrl/Cmd+V (ticket 92) pastes at the pointer and, like Copy, leaves paste mode on under Select (ADR 0057). */
+  /** Ctrl/Cmd+V (ticket 92) pastes at the pointer and, like Copy, leaves paste mode on under Select (ADR 0016). */
   function pasteAtCell(cell: GridPosition | undefined): boolean {
     if (!pasteAtGesture(cell)) return false
     selectTool('select')
@@ -484,7 +484,7 @@ function wireAppShell(services: Services) {
     visibleCentre,
     dialogs,
   })
-  /** The edit pencil in the Frame's gutter (ticket 452, ADR 0062). */
+  /** The edit pencil in the Frame's gutter (ticket 452, ADR 0054). */
   const editFrame = frameFlow.toggleHandles
 
   /** Rotate: the Selection a quarter turn, with a Message saying when it covered beads (ticket 416, ADR 0052). */
@@ -499,10 +499,10 @@ function wireAppShell(services: Services) {
     locale: () => locale.value,
   })
 
-  /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0063, 0066). */
+  /** Rotate Frame: the Frame and its own beads a quarter turn, one Undo step (ticket 471, ADR 0052, 0066). */
   const rotateFrameFlow = useRotateFrameFlow({ edit, currentProject, announce, messages })
 
-  /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0063). */
+  /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0052). */
   const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages })
 
   /** Remove line: the selected whole row or column of the Frame, as one undo step (tickets 123, 199, 233). */

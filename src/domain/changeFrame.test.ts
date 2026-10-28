@@ -1,14 +1,14 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { colorAt, withColors, type Frame, type FrameSheet } from './canvas'
+import { colorAt, withColors, type Rect, type FrameSheet } from './canvas'
 import { describeWeave } from './weave'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
 import { createProject, rowProgressOn, switchLoss, withFrame, type Project } from './project'
 
-const frame: Frame = { row: 10, column: 10, rows: 6, columns: 4 }
+const frame: Rect = { row: 10, column: 10, rows: 6, columns: 4 }
 
 /** A Frame holding the beads given, counted from its own first row and column. */
-const sheet = (rectangle: Frame, beads: FrameSheet['beads'] = {}): FrameSheet => ({ row: rectangle.row, column: rectangle.column, rows: rectangle.rows, columns: rectangle.columns, beads, technique: 'loom' })
+const sheet = (rectangle: Rect, beads: FrameSheet['beads'] = {}): FrameSheet => ({ row: rectangle.row, column: rectangle.column, rows: rectangle.rows, columns: rectangle.columns, beads, technique: 'loom' })
 
 function framed(overrides: Partial<Project> = {}): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
@@ -602,7 +602,7 @@ describe('changeFrame placing a Frame (ticket 495)', () => {
   })
 })
 
-describe('changing the Technique of a Frame over a Canvas woven alike (ADR 0070)', () => {
+describe('changing the Technique of a Frame over a Canvas woven alike (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
   const withStrayBead = { ...base, beads: withColors({}, [{ row: 40, column: 3, color: '#e63746' }]), frame: sheet({ row: 0, column: 0, rows: 48, columns: 11 }) }
 

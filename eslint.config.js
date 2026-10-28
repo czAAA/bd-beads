@@ -67,6 +67,24 @@ const noSelfRaisedKeyboard = {
   },
 }
 
+// Ticket 0614: a translated string's blanks are filled by fillBlanks alone, so `.replace('{name}', …)` is refused, in a
+// Vue template too.
+const noHandFilledBlank = {
+  meta: { type: 'problem', schema: [], messages: { fill: 'Fill a string\'s blanks with fillBlanks (domain/fillBlanks.ts), not by hand (ticket 0614).' } },
+  create(context) {
+    const blank = (node) => node && node.type === 'Literal' && typeof node.value === 'string' && /^\{\w+\}$/.test(node.value)
+    const visitor = {
+      CallExpression(node) {
+        const callee = node.callee
+        if (callee.type !== 'MemberExpression' || callee.property.type !== 'Identifier') return
+        if (/^replace(All)?$/.test(callee.property.name) && blank(node.arguments[0])) context.report({ node, messageId: 'fill' })
+      },
+    }
+    const services = context.sourceCode.parserServices
+    return services?.defineTemplateBodyVisitor ? services.defineTemplateBodyVisitor(visitor, visitor) : visitor
+  },
+}
+
 export default tseslint.config(
   {
     ignores: ['dist/**', 'test-results/**', 'playwright-report/**'],
@@ -82,9 +100,10 @@ export default tseslint.config(
     },
   },
   {
-    plugins: { local: { rules: { 'max-comment-lines': maxCommentLines } } },
+    plugins: { local: { rules: { 'max-comment-lines': maxCommentLines, 'no-hand-filled-blank': noHandFilledBlank } } },
     rules: {
       'local/max-comment-lines': 'error',
+      'local/no-hand-filled-blank': 'error',
       // This codebase's convention for a deliberately unused destructured
       // binding (e.g. dropping a legacy field via `const { x: _x, ...rest }`).
       '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^_', argsIgnorePattern: '^_' }],
@@ -121,15 +140,25 @@ export default tseslint.config(
       ...fileInputs.map((f) => ({ files: [f], rules: { 'vue/no-restricted-syntax': ['error', kbd] } })),
     ];
   })(),
-  // One overlay registry (ticket 449, ADR 0061): a press outside an overlay is handled by useOverlayLayer alone, so no
-  // other code listens to raw document/window pointerdown, mousedown or click. The canvas gestures (pan, pinch,
-  // page-zoom lock, pen mode) and the click swallowers are the exceptions.
-  {
-    files: ['src/**/*.{ts,vue}'],
-    ignores: [
-      '**/*.test.ts',
-      'src/testSetup.ts',
-      'src/testUtils/**',
+  // `no-restricted-syntax` is one rule: a later block replaces an earlier one for the files it matches, so each
+  // exemption lists the selectors that still apply to its files.
+  ...(() => {
+    // One overlay registry (ticket 449, ADR 0061): a press outside an overlay is handled by useOverlayLayer alone, so no
+    // other code listens to raw document/window pointerdown, mousedown or click.
+    const press = {
+      selector:
+        "CallExpression[callee.property.name=/^(add|remove)EventListener$/][callee.object.name=/^(document|window)$/][arguments.0.value=/^(pointerdown|mousedown|click)$/]",
+      message: 'A press outside an overlay goes through useOverlayLayer (ticket 449, ADR 0061); only canvas gesture code listens to raw presses.',
+    };
+    // A Technique is named only in its entry (tickets 506, 0611): no other code writes its id as a value or a key, and
+    // the registries that use one (Frame kinds, Starters, the Homepage) name it as their entry's `technique`.
+    const ids = 'loom|peyote|brick|rightAngle|netting';
+    const message = 'Read the Technique from its entry in domain/weave.ts (TECHNIQUES, DEFAULT_TECHNIQUE, describeWeave) instead of writing its id (tickets 506, 0611).';
+    const techniqueValue = { selector: `Literal[value=/^(${ids})$/]`, message };
+    const techniqueKey = { selector: `Property > Identifier.key[name=/^(${ids})$/]`, message };
+    const namedTechnique = { selector: `Literal[value=/^(${ids})$/]:not(Property[key.name='technique'] > Literal.value)`, message };
+    // The canvas gestures (pan, pinch, page-zoom lock, pen mode) and the click swallowers listen to raw presses.
+    const gestures = [
       'src/composables/ui/useOverlayLayer.ts',
       'src/composables/ui/swallowNextClick.ts',
       'src/composables/canvas/useSpaceDragPan.ts',
@@ -137,32 +166,20 @@ export default tseslint.config(
       'src/composables/shell/usePageZoomLock.ts',
       'src/composables/shell/usePenInputMode.ts',
       'src/composables/tools/useToolPillDrag.ts',
-    ],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector:
-            "CallExpression[callee.property.name=/^(add|remove)EventListener$/][callee.object.name=/^(document|window)$/][arguments.0.value=/^(pointerdown|mousedown|click)$/]",
-          message: 'A press outside an overlay goes through useOverlayLayer (ticket 449, ADR 0061); only canvas gesture code listens to raw presses.',
-        },
-      ],
-    },
-  },
-  // A Technique is named only in the weave config (ticket 506); everything else reads it from there.
-  {
-    files: ['src/**/*.{ts,vue}'],
-    ignores: ['**/*.test.ts', 'src/domain/weave.ts', 'src/i18n/**', 'src/testSetup.ts', 'src/testUtils/**'],
-    rules: {
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "Literal[value=/^(loom|peyote|brick|rightAngle|netting)$/]",
-          message: 'Read the Technique from the weave config in domain/weave.ts (TECHNIQUE_IDS, DEFAULT_TECHNIQUE, describeWeave) instead of writing it as a literal (ticket 506).',
-        },
-      ],
-    },
-  },
+    ];
+    const registries = ['src/domain/frameKind.ts', 'src/domain/starters.ts', 'src/homepage/**'];
+    const block = (files, selectors) => ({
+      files,
+      ignores: ['**/*.test.ts', 'src/testSetup.ts', 'src/testUtils/**'],
+      rules: { 'no-restricted-syntax': ['error', ...selectors] },
+    });
+    return [
+      block(['src/**/*.{ts,vue}'], [press, techniqueValue, techniqueKey]),
+      block(gestures, [techniqueValue, techniqueKey]),
+      block(['src/domain/weave.ts', 'src/i18n/**'], [press]),
+      block(registries, [press, namedTechnique, techniqueKey]),
+    ];
+  })(),
   // The backend Worker (ticket 71) is its own module with its own runtime: the app reaches it over /api, never by
   // import. Placed before the folder rules below, which replace it for their files.
   {

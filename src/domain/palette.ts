@@ -1,5 +1,6 @@
-import { BEAD_CATALOG, findBead } from './beads'
+import { BEAD_CATALOG, findBead, findBrand } from './beads'
 import type { ColorCatalog } from './colorCatalog'
+import { normalizeHex } from './color'
 import { nearestColor } from './imageColors'
 
 export interface PaletteColor {
@@ -29,23 +30,10 @@ export const BUILT_IN_COLORS: readonly PaletteColor[] = [
   { id: 'grey', hex: '#9aa0a6' },
 ]
 
-/** Miyuki's 16 color families without "Mix" (research note brand-color-groups-for-default-palettes, ticket 0527): the
- * names are the MIYUKI Beads Directory's, the hexes are our own picks, measured from no photo. A color shared with the
- * twelve keeps its id and hex, so it is one color whichever Bead is open. */
-const MIYUKI_COLORS: readonly PaletteColor[] = [
-  ...BUILT_IN_COLORS.filter((color) => color.id !== 'teal' && color.id !== 'grey'),
-  { id: 'grey', hex: '#9aa0a6' },
-  { id: 'beige', hex: '#e6d5b8' },
-  { id: 'gold', hex: '#d4af37' },
-  { id: 'silver', hex: '#c0c0c0' },
-  { id: 'crystal', hex: '#dcebf2' },
-  { id: 'iridescent', hex: '#8fb8de' },
-]
-
-/** The hex of a maker's color family (`Blue`, `Gray`): the Miyuki set's color of that name, so a "Blue" swatch and the
- * default blue are one color (ticket 0537); undefined for a family with no single color, like `Mix`. */
-export function familyHex(family: string): string | undefined {
-  return MIYUKI_COLORS.find((color) => color.id === familyColorId(family))?.hex
+/** The hex of a maker's color family (`Blue`, `Gray`) in a Brand's colors (`brandColors`): its color of that name, so
+ * a "Blue" swatch and the default blue are one color (ticket 0537); undefined for a family with no single color (`Mix`). */
+export function familyHex(family: string, colors: readonly PaletteColor[]): string | undefined {
+  return colors.find((color) => color.id === familyColorId(family))?.hex
 }
 
 /** The Palette color id a maker's color family is named by: `Gray` is `grey`, the rest are lowercase. */
@@ -53,17 +41,19 @@ export function familyColorId(family: string): string {
   return family.toLowerCase() === 'gray' ? 'grey' : family.toLowerCase()
 }
 
-/** The built-in colors of each Brand (by id) that has a set of its own; a new Brand with a set is one entry here. */
-const BRAND_COLORS: ReadonlyMap<string, readonly PaletteColor[]> = new Map([['miyuki', MIYUKI_COLORS]])
-
-/** The built-in colors a Project on this Bead starts with (ticket 0528): its brand's set, or the twelve for a brand
- * without one and for a Bead the catalog lacks. The same array every time, so two Beads can be compared by identity. */
-export function defaultPalette(beadId: string): readonly PaletteColor[] {
-  const brand = findBead(beadId)?.brand.id
-  return (brand && BRAND_COLORS.get(brand)) || BUILT_IN_COLORS
+/** A Brand's built-in colors (ADR 0078): the color families on its row, or the twelve for a Brand without a set and
+ * one the catalog lacks. */
+export function brandColors(brandId: string | undefined): readonly PaletteColor[] {
+  return (brandId && findBrand(brandId)?.colorFamilies) || BUILT_IN_COLORS
 }
 
-/** A built-in color by id, for the fixed artwork (Starters, the overview) that names the colors it draws with. */
+/** The built-in colors a Project on this Bead starts with (ticket 0528): its Brand's set, or the twelve for a Bead the
+ * catalog lacks. The same array every time, so two Beads can be compared by identity. */
+export function defaultPalette(beadId: string): readonly PaletteColor[] {
+  return brandColors(findBead(beadId)?.brand.id)
+}
+
+/** A built-in color by id, for the fixed artwork (Starters, the homepage) that names the colors it draws with. */
 export function findBuiltInColor(id: string): PaletteColor | undefined {
   return BUILT_IN_COLORS.find((color) => color.id === id)
 }
@@ -90,13 +80,6 @@ export const PALETTE_SHORTCUTS: readonly PaletteShortcut[] = [
 
 /** The first keys, Shift+1…3, pick the recent colors, not Palette slots (ticket 529). */
 export const RECENT_SHORTCUTS = 3
-
-/** A Custom color as the Palette keeps it: lowercase `#rrggbb`, the shape every grid cell stores; undefined for
- * anything else. */
-export function normalizeHex(hex: string): string | undefined {
-  const lower = hex.trim().toLowerCase()
-  return /^#[0-9a-f]{6}$/.test(lower) ? lower : undefined
-}
 
 const ADDED_PREFIX = 'added-'
 

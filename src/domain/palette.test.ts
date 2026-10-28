@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
+import { BEAD_CATALOG, findBead } from './beads'
 import { BUILT_IN_COLORS, addUsedColor, defaultPalette, paletteForBead, removedDefaultsAfter, addedColorId, createPalette, defaultPaletteIds, findBuiltInColor, moveSlot, normalizePaletteIds, paletteColors, paletteFromDevice, removeAddedColor, removeAllAddedColors, restoreAddedColor, PALETTE_SHORTCUTS, type PaletteColor } from './palette'
 
 describe('BUILT_IN_COLORS', () => {
@@ -199,6 +200,10 @@ describe('defaultPalette (ticket 0528)', () => {
     expect(delica.every((color) => /^[a-z]+$/.test(color.id))).toBe(true)
   })
 
+  it('is the color families on the Bead\'s Brand row (ADR 0078)', () => {
+    expect(delica).toBe(findBead('miyuki-delica-11-0')!.brand.colorFamilies)
+  })
+
   it('gives a brand without a set, and a Bead the catalog lacks, the twelve', () => {
     expect(defaultPalette('toho-round-11-0')).toBe(BUILT_IN_COLORS)
     expect(defaultPalette('toho-cube-1.5mm')).toBe(BUILT_IN_COLORS)
@@ -206,7 +211,7 @@ describe('defaultPalette (ticket 0528)', () => {
   })
 
   it('keeps one hex per id across sets, so a shared color is one color', () => {
-    for (const color of delica) {
+    for (const color of BEAD_CATALOG.flatMap((bead) => bead.brand.colorFamilies ?? [])) {
       const twin = BUILT_IN_COLORS.find((other) => other.id === color.id)
       if (twin) expect(twin.hex).toBe(color.hex)
     }

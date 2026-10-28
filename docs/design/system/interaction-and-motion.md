@@ -29,9 +29,9 @@ The motion tokens are CSS custom properties in `components/bundle.css`: the desi
 - Things arrive with `--ease-out` and leave with `--ease-in`, a little faster than they came. Nothing bounces or overshoots.
 - Row done glides the current-row marker to the next row and grows the progress line with it: the one motion on the Pattern, because it confirms the most repeated action.
 - No motion for painting, the theme switch (colours change at once so the canvas redraws once) or zoom steps; pinch follows the fingers directly.
-- The Overview's rolling slogan is the one motion that runs by itself: each accent word holds `--slogan-hold` (2.2s), then rolls down out of view as the next drops in from above over `--slogan-roll` (650ms) with `--ease-standard`, `transform` only. It pauses while the page is hidden (Overview card).
+- The Homepage's rolling slogan is the one motion that runs by itself: each accent word holds `--slogan-hold` (2.2s), then rolls down out of view as the next drops in from above over `--slogan-roll` (650ms) with `--ease-standard`, `transform` only. It pauses while the page is hidden (Homepage card).
 - Toasts leave after 5s unless hovered or focused; errors stay until closed.
-- **Reduced motion** (`prefers-reduced-motion: reduce`): nothing slides or scales. Sheets, menus and modals fade in 120ms, the row marker jumps, the loading beads stand still, the Overview slogan stays on "openbeads". Colour and opacity feedback stay.
+- **Reduced motion** (`prefers-reduced-motion: reduce`): nothing slides or scales. Sheets, menus and modals fade in 120ms, the row marker jumps, the loading beads stand still, the Homepage slogan stays on "openbeads". Colour and opacity feedback stay.
 
 ## Open canvas and Frame (v16)
 

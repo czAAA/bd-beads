@@ -1,4 +1,4 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue'
+import { computed, ref, shallowRef, type ComputedRef, type Ref, type ShallowRef } from 'vue'
 import { inSavedOrder, markSaved, mostRecentlyUpdated, type Project } from '../../domain/project'
 import { browserLibraryStore, type LibraryStore } from '../../services/libraryStore'
 
@@ -11,8 +11,9 @@ export interface ReplaceOptions {
 
 export interface ProjectLibrary {
   /** Every Project on this device (CONTEXT.md's Project library), most recently saved first — the source of truth
-   * persistence follows. */
-  projects: Ref<Project[]>
+   * persistence follows. Shallow (ticket 0616): a Project is only ever replaced whole, so it is held as it is and its
+   * beads are read without a reactive proxy in the way. */
+  projects: ShallowRef<Project[]>
   /** Which Project is open, or none (the New Project form). Writable: opening a Project is just setting this. */
   activeProjectId: Ref<string | undefined>
   activeProject: ComputedRef<Project | undefined>
@@ -41,7 +42,7 @@ export function useProjectLibrary(
    * one asks the browser to keep it). */
   onSaved?: () => void,
 ): ProjectLibrary {
-  const projects = ref<Project[]>(inSavedOrder(store.load()))
+  const projects = shallowRef<Project[]>(inSavedOrder(store.load()))
   const activeProjectId = ref<string | undefined>(mostRecentlyUpdated(projects.value)?.id)
   const activeProject = computed(() =>
     projects.value.find((project) => project.id === activeProjectId.value),

@@ -61,6 +61,13 @@ describe('useImportSwitchFlow', () => {
     expect(pendingImport.value).toBeUndefined()
   })
 
+  it('hands the library the Projects it was given, not reactive copies (ticket 0616)', () => {
+    const { deps, onImportProjects, onKeepCurrentAfterImport } = setup()
+    onImportProjects([older])
+    onKeepCurrentAfterImport()
+    expect(deps.addProjects.mock.calls[0]![0][0]).toBe(older)
+  })
+
   it('answering with nothing pending does nothing', () => {
     const { deps, onKeepCurrentAfterImport, onSwitchToImported } = setup()
     onKeepCurrentAfterImport()

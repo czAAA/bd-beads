@@ -1,12 +1,12 @@
 # Responsive
 
-One layout at every width: the Dock layout (ADR 0046, ticket 412; ADR 0032 and ticket 295 laid it down for phones). The width only decides how much room the canvas has, never which controls there are or where they sit. Every tool and button is reachable at every size.
+One layout at every width: the Tool pill layout (ADR 0046; tickets 295, 412 and 439). The width only decides how much room the canvas has, never which controls there are or where they sit. Every tool and button is reachable at every size.
 
 Devices (CSS px) the layout is checked on: iPhone 16e 390×844, iPhone 17 · 17 Pro 402×874, iPhone Air 420×912, iPhone 17 Pro Max 440×956, the same on their side (844×390, 956×440), iPad mini 744×1133, iPad · iPad Air 11″ 820×1180, iPad Pro 11″ 834×1210, iPad Air 13″ 1024×1366, iPad Pro 13″ 1032×1376, the same on their side, MacBook Air 13″ 1470×956, 24″ Full HD 1920×1080, iMac 24″ 2240×1260, 27″ QHD 2560×1440, 32″ 4K 3840×2160.
 
 The `bp-*` tokens in `tokens.json` stay for the `bead-min-*` and Ruler step rules; no layout rule is written against them any more.
 
-- The screen belongs to the Pattern and the Progress bar. **No header and no left column**: the canvas starts at the top edge, padded by `env(safe-area-inset-top)`. What the header and the column held lives in the Dock's Project and Menu panels (the open Pattern's name, size, bead and save state, Save and Export, Beads needed and Saved Patterns in the Project panel; language, theme, Name on exports, Keyboard shortcuts when a keyboard is attached, Overview and the source link in the Menu). Undo, Redo, Rulers and zoom are in the Canvas strip (ticket 425).
+- The screen belongs to the Pattern and the Progress bar. **No header and no left column**: the canvas starts at the top edge, padded by `env(safe-area-inset-top)`. What the header and the column held lives in the Dock's Project and Menu panels (the open Pattern's name, size, bead and save state, Save and Export, Beads needed and Saved Patterns in the Project panel; language, theme, Name on exports, Keyboard shortcuts when a keyboard is attached, Homepage and the source link in the Menu). Undo, Redo, Rulers and zoom are in the Canvas strip (ticket 425).
 - A slim Canvas strip stays above the canvas at every width: Rulers, Undo, Redo, zoom out, level, zoom in and Fit, the cluster scrolling sideways on a phone (ticket 425).
 - Pinch to zoom and pan; the Canvas strip has the same zoom buttons for a fit or an exact step.
 - The Progress bar is the largest control on the screen: 48px (ticket 411), or 88px at 30rem and under, where Row not done/Row done take a second row -- the switch with Turn row direction beside it, a "1/222" counter, the track, and Row not done/Row done as large text buttons whose label and arrow follow Row direction. It is shown at every width, whether or not Row progress is on, and its switch is the only way to turn Row progress on or off.
@@ -45,10 +45,10 @@ Only the canvas zooms at every size: the browser's Page zoom is locked (ADR 0034
 - The drawing surface resizes once the layout settles (a debounced ResizeObserver), never on every scroll or animation frame. Sheets slide with `transform`, so the canvas does not resize when they open (ADR 0018).
 - Check with ticket 103's performance run at the phone sizes in portrait and landscape, and at 2240px on the Core i3 reference (ticket 83).
 
-## Header menu and Overview (v15)
+## Header menu and Homepage (v15)
 
-- **Menu and Project (spec 0440):** both open as a dropdown under their buttons on every screen size (ADR 0071), with the same rows, sizes and animation; the strip's two buttons stay lit. On a narrow screen the dropdown is held 8px from the screen's edge, and a tall panel scrolls inside the room below its button. Rows grow with their content and never have a fixed height. See the MenuPanel and ProjectPanel cards.
-- **Overview:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Overview card.
+- **Menu and Project (spec 0440):** both open as a dropdown under their buttons on every screen size (ADR 0046), with the same rows, sizes and animation; the strip's two buttons stay lit. On a narrow screen the dropdown is held 8px from the screen's edge, and a tall panel scrolls inside the room below its button. Rows grow with their content and never have a fixed height. See the MenuPanel and ProjectPanel cards.
+- **Homepage:** the one page outside the editor. It scrolls as a page; container 1080px (1200px at 24″), padding 16 / 24 / 32 / 40. The features carousel is a list plus a large example from 1024 and swipe cards below; on a MacBook Air it sits above the fold. See the Homepage card.
 
 ## Open canvas and Frame (v16)
 

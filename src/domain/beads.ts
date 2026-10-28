@@ -1,17 +1,21 @@
+/** A color family of a Brand, as its default Palette holds it: the id names it in every language (`colorNames`). */
+interface ColorFamily {
+  id: string
+  hex: string
+}
+
 /** A maker of Beads (ADR 0072). Its name is a literal, the same in every language. */
 interface Brand {
   id: string
   name: string
+  /** The Brand's color families (ADR 0078): its Beads' default Palette and the base of its catalog's swatches. Absent,
+   * the twelve built-in colors stand in. A Project's Bead copy leaves them out. */
+  colorFamilies?: readonly ColorFamily[]
 }
 
-/** The words a Form factor is named by: a translation key in every language (ticket 533), one per Form factor. */
-export interface FormFactorNames {
-  cube: string
-  round: string
-  delica: string
-}
-
-type FormFactorNameKey = keyof FormFactorNames
+/** The words the Form factors are named by, by name key (ticket 533): open, so a new Form factor is its row and its
+ * strings, and `registryNames.test.ts` checks every key is in every language (ADR 0078). */
+export type FormFactorNames = Readonly<Record<string, string>>
 
 /** Which way a Bead's hole runs: `along` its width (the thread's way on a loom, peyote and brick stitch) or `across`. */
 type HoleDirection = 'along' | 'across'
@@ -20,7 +24,7 @@ type HoleDirection = 'along' | 'across'
  * not a new union member. */
 interface FormFactor {
   id: string
-  nameKey: FormFactorNameKey
+  nameKey: string
   /** How much of a bead's width its corners are rounded by: near sharp for a cylinder, a pill for a round bead,
    * square for a cube. */
   roundness: number
@@ -63,7 +67,31 @@ export function gramsPerBead(bead: Pick<Bead, 'beadsPerKg'> | undefined): number
 }
 
 const TOHO: Brand = { id: 'toho', name: 'TOHO' }
-const MIYUKI: Brand = { id: 'miyuki', name: 'Miyuki' }
+/** Miyuki's 16 color families without "Mix" (research note brand-color-groups-for-default-palettes, ticket 0527): the
+ * names are the MIYUKI Beads Directory's, the hexes our own picks, measured from no photo. A color shared with the
+ * twelve keeps its id and hex, so it is one color whichever Bead is open (a test checks). */
+const MIYUKI: Brand = {
+  id: 'miyuki',
+  name: 'Miyuki',
+  colorFamilies: [
+    { id: 'black', hex: '#1a1a1a' },
+    { id: 'white', hex: '#ffffff' },
+    { id: 'red', hex: '#e63746' },
+    { id: 'orange', hex: '#f2994a' },
+    { id: 'yellow', hex: '#f2c94c' },
+    { id: 'green', hex: '#27ae60' },
+    { id: 'blue', hex: '#2f6fed' },
+    { id: 'purple', hex: '#9b51e0' },
+    { id: 'pink', hex: '#ec5990' },
+    { id: 'brown', hex: '#8a5a3b' },
+    { id: 'grey', hex: '#9aa0a6' },
+    { id: 'beige', hex: '#e6d5b8' },
+    { id: 'gold', hex: '#d4af37' },
+    { id: 'silver', hex: '#c0c0c0' },
+    { id: 'crystal', hex: '#dcebf2' },
+    { id: 'iridescent', hex: '#8fb8de' },
+  ],
+}
 
 const CUBE: FormFactor = { id: 'cube', nameKey: 'cube', roundness: 0, holes: { count: 1, direction: 'along' } }
 const ROUND: FormFactor = { id: 'round', nameKey: 'round', roundness: 0.5, holes: { count: 1, direction: 'along' } }
@@ -141,9 +169,19 @@ const LEGACY_BEAD_IDS: Readonly<Record<string, string>> = {
  * library's) and the English file's own. */
 export const FORM_FACTOR_NAMES_EN: FormFactorNames = { cube: 'Cube', round: 'Round', delica: 'Delica' }
 
+/** A Form factor's name in the language of `names`; its id where a language lacks one (a test keeps that from shipping). */
+export function formFactorName(formFactor: Pick<FormFactor, 'id' | 'nameKey'>, names: FormFactorNames = FORM_FACTOR_NAMES_EN): string {
+  return names[formFactor.nameKey] ?? formFactor.id
+}
+
 /** A human-readable label for a Bead, e.g. "TOHO Cube 1.5mm", with the Form factor named in the app's language. */
 export function beadLabel(bead: Bead, names: FormFactorNames = FORM_FACTOR_NAMES_EN): string {
-  return `${bead.brand.name} ${names[bead.formFactor.nameKey]} ${bead.size}`
+  return `${bead.brand.name} ${formFactorName(bead.formFactor, names)} ${bead.size}`
+}
+
+/** The catalog's Brand with this id, with its color families; undefined for a Brand no catalog Bead is made by. */
+export function findBrand(id: string): Brand | undefined {
+  return BEAD_CATALOG.find((bead) => bead.brand.id === id)?.brand
 }
 
 /** The Beads a person can pick: the catalog without those that left it (ADR 0072). */
@@ -160,10 +198,10 @@ export function findBead(id: string): Bead | undefined {
 }
 
 /** The Bead a Project saves as its own (ADR 0072): the catalog's Bead without the retired flag, which is the catalog's
- * to say and not the Project's. */
+ * to say and not the Project's, nor its Brand's color families, which are read from the catalog (ADR 0078). */
 export function beadCopy(bead: Bead): Bead {
   const { retired: _retired, ...copy } = bead
-  return copy
+  return { ...copy, brand: { id: bead.brand.id, name: bead.brand.name } }
 }
 
 /** Whether two Beads of one id differ in anything that changes how a Project looks or weighs: footprint, correction,

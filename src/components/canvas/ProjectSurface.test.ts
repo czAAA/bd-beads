@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount, type VueWrapper } from '@vue/test-utils'
-import { nextTick } from 'vue'
+import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject, type Project, type RowProgress, type Technique } from '../../domain/project'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
@@ -8,6 +8,7 @@ import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
+import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
@@ -54,6 +55,9 @@ async function mountSurface(project: Project, zoom = 1, scroll = { x: 0, y: 0 },
   await nextTick()
   return { wrapper }
 }
+
+/** What the surface may do with no tool in hand, with the capabilities a test turns on. */
+const can = (on: Partial<ToolCapabilities> = {}): ToolCapabilities => ({ ...toolCapabilities(undefined), ...on })
 
 /** Times the surface has been drawn: each draws the beads and then the overlay, and each starts by clearing. */
 const draws = () => context.named('clearRect').length / 2
@@ -118,7 +122,7 @@ describe('ProjectSurface', () => {
       frames.clear()
       waiting.forEach((frame) => frame())
     }
-    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { settingFrame: true })
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
     flush()
     await wrapper.setProps({ zoom: 2 })
     await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { clientX: 50, clientY: 50, button: 0, buttons: 1 })
@@ -284,6 +288,79 @@ describe('ProjectSurface', () => {
       expect(draws()).toBe(1)
     })
 
+    // A whole stroke, as the app runs it (ticket 0616): the parent paints each bead the surface reports, and the surface
+    // draws once per animation frame, only the rows that frame changed. A draw of more rows, or a second draw in a frame,
+    // fails here.
+    it('draws a stroke once per frame, and only the rows each frame painted', async () => {
+      viewport = { width: 400, height: 600 }
+      const frames: (() => void)[] = []
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+      vi.stubGlobal('cancelAnimationFrame', () => undefined)
+      const cells = recordingContext()
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(function (this: HTMLCanvasElement) {
+        return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
+      } as never)
+      const project = shallowRef(projectOf(20, 30))
+      const paint = (row: number, column: number) => {
+        project.value = painted(project.value, row, column)
+      }
+      const scroll = { x: 0, y: 0 }
+      /** How tall a row of beads is drawn at zoom 1, from the top of the view. */
+      const ROW_PX = 20
+      const wrapper = mount(
+        defineComponent(() => () => h(ProjectSurface, { project: project.value, zoom: 1, scroll, onCellPrimaryDown: paint, onCellPrimaryMove: paint })),
+        { attachTo: document.body },
+      )
+      const surface = wrapper.find('[data-testid="project-surface"]')
+      const view = surfaceView({ space: OPEN_SPACE, technique: project.value.technique, rotation: project.value.rotation, zoom: 1, scroll })
+      const pointAt = (row: number, column: number) => {
+        const point = view.beadToPoint({ row, column })
+        return { clientX: point.x, clientY: point.y }
+      }
+
+      /** Runs the animation frames asked for so far, and says what the bead layer drew since the last time: per draw,
+       * the rows it covered, or `all`. */
+      async function nextFrame(): Promise<({ first: number; last: number } | 'all')[]> {
+        await nextTick()
+        frames.splice(0).forEach((frame) => frame())
+        const drawn: ({ first: number; last: number } | 'all')[] = []
+        let band: { first: number; last: number } | undefined
+        cells.calls.forEach((call, index) => {
+          // A band's draw is cut to it with rect() and clip() before it clears; a draw of everything is not.
+          const before = cells.calls[index - 1]
+          if (call.name === 'clip' && before?.name === 'rect') {
+            const [, top, , height] = before.args as number[]
+            band = { first: top! / ROW_PX, last: (top! + height!) / ROW_PX - 1 }
+          }
+          if (call.name === 'clearRect') {
+            drawn.push(band ?? 'all')
+            band = undefined
+          }
+        })
+        cells.calls.length = 0
+        return drawn
+      }
+
+      await nextTick()
+      expect(await nextFrame()).toEqual(['all'])
+
+      await surface.trigger('pointerdown', { ...pointAt(2, 1), button: 0, buttons: 1 })
+      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
+
+      // Two moves in one frame, seven beads along row 2: still one draw, of that row.
+      await surface.trigger('pointermove', { ...pointAt(2, 4), buttons: 1 })
+      await surface.trigger('pointermove', { ...pointAt(2, 8), buttons: 1 })
+      expect(await nextFrame()).toEqual([{ first: 2, last: 2 }])
+
+      await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
+      expect(await nextFrame()).toEqual([{ first: 3, last: 6 }])
+
+      // Over a bead already painted, and the release: nothing changed, so nothing is drawn.
+      await surface.trigger('pointermove', { ...pointAt(6, 8), buttons: 1 })
+      await surface.trigger('pointerup')
+      expect(await nextFrame()).toEqual([])
+    })
+
     it('draws no beads when Row progress is replaced by an equal one', async () => {
       viewport = { width: 400, height: 600 }
       const project = projectOf(20, 30)
@@ -382,7 +459,7 @@ describe('ProjectSurface', () => {
 
     it('captures the pointer of a press that starts a Selection, so its release is delivered (ticket 503)', async () => {
       const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { selecting: true })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ selects: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
       const capture = vi.fn()
       Object.assign(surface.element, { setPointerCapture: capture })
@@ -394,7 +471,7 @@ describe('ProjectSurface', () => {
 
     it('says the press is over when capture is lost or the window loses focus (ticket 503)', async () => {
       const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { selecting: true })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ selects: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { clientX: 50, clientY: 50, pointerType: 'mouse', pointerId: 4, button: 0, buttons: 1 })
@@ -407,7 +484,7 @@ describe('ProjectSurface', () => {
 
     it('says the press is over when it ends anywhere in the window, even one that started off the beads (ticket 503)', async () => {
       const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { selecting: true })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ selects: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { clientX: -500, clientY: -500, pointerType: 'touch', pointerId: 7, button: 0, buttons: 1 })
@@ -441,7 +518,7 @@ describe('ProjectSurface', () => {
 
     it('drags the canvas, and draws nothing, while moving (the Hand tool or Space)', async () => {
       const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { moving: true })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ moves: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 0, buttons: 1 })
@@ -496,7 +573,7 @@ describe('ProjectSurface', () => {
     })
 
     it('shows an open hand while moving, closed while dragging', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { moving: true })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ moves: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
       expect(surface.classes()).toContain('project-surface--moving')
 
@@ -567,7 +644,7 @@ describe('ProjectSurface', () => {
 
     it('lands a Fill press off a bead on the nearest bead', async () => {
       const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { nearestOnPress: true })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ nearestOnPress: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { clientX: 990, clientY: 790, button: 0, buttons: 1 })
@@ -578,7 +655,7 @@ describe('ProjectSurface', () => {
 
   describe('Select anywhere (ticket 505)', () => {
     it('starts a Selection from empty background and follows the drag to the nearest bead, off a bead or not', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selectAnywhere: true })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true, selectsAnywhere: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { clientX: 990, clientY: 790, button: 0, buttons: 1 })
@@ -589,7 +666,7 @@ describe('ProjectSurface', () => {
     })
 
     it('stops following once the button is released', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selectAnywhere: true })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true, selectsAnywhere: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointerdown', { clientX: 990, clientY: 790, button: 0, buttons: 1 })
@@ -607,7 +684,7 @@ describe('ProjectSurface', () => {
 
     it('shows the eyedropper pointer, and the color under it in a chip over a painted bead only', async () => {
       const project = painted()
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { picking: true })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ picking: true }) })
       const surface = wrapper.find('[data-testid="project-surface"]')
       expect(surface.attributes('style')).toContain('cursor: url(')
       expect(surface.classes()).toContain('project-surface--picking')
@@ -882,7 +959,7 @@ describe('ProjectSurface', () => {
 
       it('shows not-allowed over the margin for a tool that cannot place beads there, and the crosshair elsewhere', async () => {
         const project = framed()
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: true })
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ blocksMargin: true }) })
         const surface = wrapper.find('[data-testid="project-surface"]')
 
         await surface.trigger('pointermove', centreOf(project, 8, 8))
@@ -899,7 +976,7 @@ describe('ProjectSurface', () => {
 
       it('keeps its own cursor for Erase, which still works there', async () => {
         const project = framed()
-        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { blocksMargin: false })
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can() })
         const surface = wrapper.find('[data-testid="project-surface"]')
 
         await surface.trigger('pointermove', centreOf(project, 8, 8))
@@ -918,7 +995,7 @@ describe('ProjectSurface', () => {
       expect(events(wrapper)['cell-primary-down']).toEqual([[3, 5]])
     })
 
-    it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0070)', async () => {
+    it('names the layer of a press where the Frame draws shorter than the rows it names (ADR 0066)', async () => {
       // 48 peyote rows over a loom Canvas cover 36 Canvas rows: Frame row 38 and the Canvas's row 38 share a position.
       const project = projectOf(11, 48, { frame: { technique: 'peyote', row: 0, column: 0, rows: 48, columns: 11, beads: {} } })
       const { wrapper } = await mountSurface(project)
@@ -1068,16 +1145,16 @@ describe('ProjectSurface', () => {
     const decoded = (style: string) => decodeURIComponent(style)
 
     it('is the tool\'s cursor, with the chosen colour in the bead of Paint and Fill', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), previewColor: '#e63746' })
       expect(decoded(styleOf(wrapper))).toContain('fill="#e63746"')
 
-      await wrapper.setProps({ tool: 'select' })
+      await wrapper.setProps({ tools: can({ tool: 'select' }) })
       expect(styleOf(wrapper)).toMatch(/ 4 3, default/)
     })
 
     it('takes the place of the bead-shaped pointer: the OS pointer stays, nothing is drawn for the marker', async () => {
       const project = projectOf(20, 10)
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746' })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), previewColor: '#e63746' })
       const surface = wrapper.find('[data-testid="project-surface"]')
 
       await surface.trigger('pointermove', { clientX: 105, clientY: 47, buttons: 0, pointerType: 'mouse' })
@@ -1087,25 +1164,25 @@ describe('ProjectSurface', () => {
     })
 
     it('gives way to the system\'s grab while Space is held, and to the eyedropper', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), previewColor: '#e63746' })
 
-      await wrapper.setProps({ markerHidden: true })
+      await wrapper.setProps({ tools: can({ tool: 'paint', markerHidden: true }) })
       expect(styleOf(wrapper)).toBe('')
 
-      await wrapper.setProps({ markerHidden: false, picking: true })
+      await wrapper.setProps({ tools: can({ tool: 'paint', picking: true }) })
       expect(decoded(styleOf(wrapper))).not.toContain('fill="#e63746"')
       expect(styleOf(wrapper)).toContain('cursor: url(')
     })
 
     it('closes the Hand while it pans, but a drag by another button keeps the system\'s grabbing', async () => {
       const project = projectOf(20, 10)
-      const hand = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'hand', moving: true })
+      const hand = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'hand', moves: true }) })
       const handSurface = hand.wrapper.find('[data-testid="project-surface"]')
       expect(styleOf(hand.wrapper)).toMatch(/ 11 12, grab/)
       await handSurface.trigger('pointerdown', { clientX: 105, clientY: 47, button: 0, buttons: 1, pointerId: 1 })
       expect(styleOf(hand.wrapper)).toMatch(/ 11 12, grabbing/)
 
-      const paint = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'paint' })
+      const paint = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }) })
       const paintSurface = paint.wrapper.find('[data-testid="project-surface"]')
       await paintSurface.trigger('pointerdown', { clientX: 105, clientY: 47, button: 2, buttons: 2, pointerId: 1 })
       expect(paintSurface.classes()).toContain('project-surface--dragging')
@@ -1121,7 +1198,7 @@ describe('ProjectSurface', () => {
 
     it('draws the tool\'s pointer at the Pencil, in the chosen colour, its hot spot on the tip', async () => {
       // Each tool's hot spot is toolCursors' to say; Paint's is 5, 19.
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746', inputMode: 'pen' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), previewColor: '#e63746', inputMode: 'pen' })
       await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
 
       const pointer = drawn(wrapper)
@@ -1131,7 +1208,7 @@ describe('ProjectSurface', () => {
     })
 
     it('is hidden while the Pencil touches, and back when it hovers again', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', inputMode: 'pen' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), inputMode: 'pen' })
       const surface = surfaceOf(wrapper)
       await surface.trigger('pointermove', { ...hover, pointerType: 'pen' })
       expect(drawn(wrapper).exists()).toBe(true)
@@ -1147,7 +1224,7 @@ describe('ProjectSurface', () => {
     })
 
     it('is dropped when the Pencil lifts away or is cancelled, and when it leaves the board', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', inputMode: 'pen' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), inputMode: 'pen' })
       const surface = surfaceOf(wrapper)
       for (const end of ['pointercancel', 'pointerleave']) {
         await surface.trigger('pointermove', { ...hover, pointerType: 'pen' })
@@ -1158,7 +1235,7 @@ describe('ProjectSurface', () => {
     })
 
     it('shows the Hand\'s open hand for a Pencil that moves the canvas in Mouse mode', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', previewColor: '#e63746', inputMode: 'mouse' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), previewColor: '#e63746', inputMode: 'mouse' })
       await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
 
       const pointer = drawn(wrapper)
@@ -1167,7 +1244,7 @@ describe('ProjectSurface', () => {
     })
 
     it('shows the eyedropper while picking, with its tip as the hot spot', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', picking: true, inputMode: 'pen' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint', picking: true }), inputMode: 'pen' })
       await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType: 'pen' })
 
       expect(drawn(wrapper).attributes('style')).toContain(`left: ${105 - 6 - 2}px`)
@@ -1177,7 +1254,7 @@ describe('ProjectSurface', () => {
     it('shows nothing over the Frame\'s margin, in Set Frame, or while Space holds the pointer back', async () => {
       const project = projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
       const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tool: 'paint', blocksMargin: true, inputMode: 'pen' })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint', blocksMargin: true }), inputMode: 'pen' })
       await surfaceOf(wrapper).trigger('pointermove', { clientX: at.x, clientY: at.y, buttons: 0, pointerType: 'pen' })
       expect(drawn(wrapper).exists()).toBe(true)
 
@@ -1186,14 +1263,14 @@ describe('ProjectSurface', () => {
       await wrapper.setProps({ scroll: { x: 0, y: 0 } })
       expect(drawn(wrapper).exists()).toBe(true)
 
-      await wrapper.setProps({ settingFrame: true })
+      await wrapper.setProps({ tools: can({ tool: 'paint', blocksMargin: true, settingFrame: true }) })
       expect(drawn(wrapper).exists()).toBe(false)
-      await wrapper.setProps({ settingFrame: false, markerHidden: true })
+      await wrapper.setProps({ tools: can({ tool: 'paint', blocksMargin: true, markerHidden: true }) })
       expect(drawn(wrapper).exists()).toBe(false)
     })
 
     it('shows nothing for a mouse, a trackpad or a finger', async () => {
-      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tool: 'paint', inputMode: 'pen' })
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ tool: 'paint' }), inputMode: 'pen' })
       for (const pointerType of ['mouse', 'touch']) {
         await surfaceOf(wrapper).trigger('pointermove', { ...hover, pointerType })
         expect(drawn(wrapper).exists(), pointerType).toBe(false)
@@ -1256,12 +1333,12 @@ describe('ProjectSurface', () => {
       await vi.waitFor(() => expect(marker()).toHaveLength(1))
 
       context.calls.length = 0
-      await wrapper.setProps({ markerHidden: true })
+      await wrapper.setProps({ tools: can({ markerHidden: true }) })
       await vi.waitFor(() => expect(context.named('clearRect')).toHaveLength(1))
       expect(marker()).toHaveLength(0)
 
       context.calls.length = 0
-      await wrapper.setProps({ markerHidden: false })
+      await wrapper.setProps({ tools: can() })
       await vi.waitFor(() => expect(marker()).toHaveLength(1))
     })
 
@@ -1296,7 +1373,7 @@ describe('ProjectSurface', () => {
 
     it('goes when the canvas moves a refused margin under a still pointer', async () => {
       const project = projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
-      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', blocksMargin: true })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { previewColor: '#e63746', tools: can({ blocksMargin: true }) })
       const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom: 1, scroll: { x: 0, y: 0 } }).beadToPoint({ row: 12, column: 12 })
       const point = { clientX: at.x, clientY: at.y }
       await surfaceOf(wrapper).trigger('pointermove', { ...point, pointerType: 'mouse', buttons: 0 })
@@ -1368,7 +1445,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
   const selection = { top: 1, left: 1, rows: 2, columns: 3 }
 
   it('reports a press on a handle or inside as a Selection press, and the drag and release after it, and draws no bead', async () => {
-    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selection })
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true }), selection })
     const surface = wrapper.find('[data-testid="project-surface"]')
 
     // The box is (20, 20) to (80, 60): near its top-left corner, then inside, then well away.
@@ -1388,7 +1465,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
   })
 
   it('leaves the press to the beads when the tool is not Select or Piece, or there is no Selection', async () => {
-    for (const props of [{ selecting: false, selection }, { selecting: true }]) {
+    for (const props of [{ tools: can(), selection }, { tools: can({ selects: true }) }]) {
       const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, props)
       await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { button: 0, clientX: 50, clientY: 40, pointerId: 1 })
       expect(wrapper.emitted('selection-press')).toBeUndefined()
@@ -1397,7 +1474,7 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
   })
 
   it('shows the native arrow instead of the bead-shaped marker, and a resize cursor over a handle', async () => {
-    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { selecting: true, selection })
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true }), selection })
     const surface = wrapper.find('[data-testid="project-surface"]')
 
     await surface.trigger('pointermove', { clientX: 50, clientY: 40, pointerId: 1, pointerType: 'mouse' })
@@ -1432,12 +1509,12 @@ describe('ProjectSurface with a Frame', () => {
   })
 
   it('reports no Frame place once the Frame is scrolled wholly out of view, so no control stays on screen', async () => {
-    const { wrapper } = await mountSurface(framed(), 1, { x: 5000, y: 5000 }, { settingFrame: true })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 5000, y: 5000 }, { tools: can({ settingFrame: true }) })
     expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toBeUndefined()
   })
 
   it('reports a press on a resize handle, the drag and the release, and draws no bead', async () => {
-    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
     // The bottom-right handle stands in the gutter, 7.5px out from the corner of the Frame's line, which is 7px outside its beads (8 × 6 beads of 20px).
     await gesture(wrapper, [175, 135], [185, 145])
 
@@ -1448,7 +1525,7 @@ describe('ProjectSurface with a Frame', () => {
   })
 
   it('leaves a press inside the Frame, or away from it, to the tool', async () => {
-    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
     await gesture(wrapper, [60, 50], [60, 50])
     await gesture(wrapper, [500, 500], [500, 500])
     expect(wrapper.emitted('frame-press')).toBeUndefined()
@@ -1456,7 +1533,7 @@ describe('ProjectSurface with a Frame', () => {
   })
 
   it('has no resize handle to grab when edit is off, but the Move handle always works (tickets 452, 473)', async () => {
-    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can() })
     await gesture(wrapper, [167, 127], [167, 127])
     expect(wrapper.emitted('frame-press')).toBeUndefined()
 
@@ -1471,7 +1548,7 @@ describe('ProjectSurface with a Frame', () => {
     const frames: Array<() => void> = []
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
     vi.stubGlobal('cancelAnimationFrame', () => {})
-    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can() })
     pressMoveHandle(wrapper, [60, 50])
     const surface = wrapper.find('[data-testid="project-surface"]')
     await surface.trigger('pointermove', { buttons: 1, clientX: 999, clientY: 400, pointerId: 1 })
@@ -1490,7 +1567,7 @@ describe('ProjectSurface with a Frame', () => {
     const frames: Array<() => void> = []
     vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
     vi.stubGlobal('cancelAnimationFrame', () => {})
-    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: false })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can() })
     pressMoveHandle(wrapper, [60, 50])
     await wrapper.find('[data-testid="project-surface"]').trigger('pointermove', { buttons: 1, clientX: 500, clientY: 400, pointerId: 1 })
     frames.splice(0).forEach((frame) => frame())
@@ -1507,14 +1584,14 @@ describe('ProjectSurface with a Frame', () => {
   })
 
   it('moves the canvas with the Hand tool inside the Frame, since only the handles take a drag', async () => {
-    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true, moving: true })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true, moves: true }) })
     await gesture(wrapper, [40, 30], [60, 50])
     expect(wrapper.emitted('frame-press')).toBeUndefined()
     expect(wrapper.emitted('pan')).toBeDefined()
   })
 
   it('drops a Frame drag when a second finger lands, and does not start another press with it', async () => {
-    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { settingFrame: true })
+    const { wrapper } = await mountSurface(framed(), 1, { x: 0, y: 0 }, { tools: can({ settingFrame: true }) })
     const surface = wrapper.find('[data-testid="project-surface"]')
 
     pressMoveHandle(wrapper, [60, 50], 'touch')

@@ -7,7 +7,12 @@ import './styles/contrast.css'
 import './style.css'
 
 import { afterEach } from 'vitest'
+import { LOCALES } from './domain/locale'
+import { loadLocale } from './i18n/useI18n'
 import { unmountAll } from './testUtils/browserFit'
+
+// Every language, as a test mounts in any of them at once; the app itself fetches only the one in use (ticket 0616).
+await Promise.all(LOCALES.map(loadLocale))
 
 afterEach(() => {
   unmountAll()

@@ -51,7 +51,7 @@ export function useSelectionGesture(
   const copiedBlock = ref<CopiedBlock | undefined>()
   // Leaves paste mode (live preview plus stamp, Select-only) without touching copiedBlock (ticket 92, ADR 0016): on
   // leaving Select, on Escape (see leaveSelectTool/cancel) and on touch by Undo or a second tap on Select.
-  // A new Copy or Ctrl/Cmd+V re-arms it (ticket 437, ADR 0057); switching back to Select alone does not.
+  // A new Copy or Ctrl/Cmd+V re-arms it (ticket 437, ADR 0016); switching back to Select alone does not.
   const pasteDismissed = ref(false)
   /** Paste mode (ticket 437): Select shows the live paste preview and a click or drag stamps -- copiedBlock present
    * and not dismissed. */
@@ -114,7 +114,7 @@ export function useSelectionGesture(
     }
 
     press.moved = true
-    // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0057).
+    // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0016).
     if (pasteProjectionActive.value) return false
     dropClipboard()
     // The drag stays on the layer it began on (ticket 491), and out of the margin (ticket 433).
@@ -286,7 +286,7 @@ export function useSelectionGesture(
     return true
   }
 
-  // Copy (ticket 437, ADR 0057, reversing 415): keeps only the drawn beads, clears the Selection and arms paste mode,
+  // Copy (ticket 437, ADR 0016): keeps only the drawn beads, clears the Selection and arms paste mode,
   // so one stamp lands the first drawn bead on the clicked cell. Returns false for a Selection with no drawn bead,
   // which the shell turns into a Message.
   function copy(): boolean {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref, toRaw, watch } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import type { Project } from '../../domain/project'
 import { thumbnailPixels } from '../../rendering/projectThumbnail'
 
@@ -17,7 +17,7 @@ function draw() {
   frame = 0
   const context = canvasEl.value?.getContext('2d')
   if (!canvasEl.value || !context) return
-  const image = thumbnailPixels(toRaw(props.project), DRAWN_SIZE)
+  const image = thumbnailPixels(props.project, DRAWN_SIZE)
   canvasEl.value.width = image.width
   canvasEl.value.height = image.height
   context.putImageData(new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height), 0, 0)
