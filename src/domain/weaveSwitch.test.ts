@@ -23,11 +23,11 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
     expect(canvasWeave(peyoteOnLoom())).toEqual({ technique: 'loom' })
   })
 
-  it('reads each layer\'s settings map, and keeps its flat fields in step with it (tickets 0624, 0625)', () => {
+  it('reads each layer\'s settings map, and keeps a Brick block off brick stitch for a switch back (tickets 0624, 0625)', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
     const netFrame = { ...brick, frame: { ...brick.frame!, technique: 'netting' as const, techniqueSettings: { netSize: 5 } } }
-    expect(canvasWeave(netFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, brickBlock: 3 })
-    expect(frameWeave(netFrame)).toEqual({ technique: 'netting', techniqueSettings: { netSize: 5 }, netSize: 5 })
+    expect(canvasWeave(netFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    expect(frameWeave(netFrame)).toEqual({ technique: 'netting', techniqueSettings: { netSize: 5 } })
     // A Brick block kept off brick stitch, for a switch back, lays nothing out in loom.
     const loom = withWeave(brick, 'canvas', { technique: 'loom' })
     expect(canvasWeave(loom).techniqueSettings).toEqual({ brickBlock: 3 })

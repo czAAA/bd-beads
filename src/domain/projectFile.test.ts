@@ -68,16 +68,24 @@ describe('single-Project roundtrip', () => {
     expect(restored!.techniqueSettings).toEqual({ brickBlock: 3 })
     expect(restored).toEqual(project)
 
-    const file = JSON.parse(serializeProject(decoratedProject()))
+    const one = withWeave(decoratedProject(), 'canvas', { technique: 'brick' })
+    const file = JSON.parse(serializeProject(one))
     expect(file.projects[0]).not.toHaveProperty('brickBlock')
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toBeUndefined()
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
+  })
+
+  it('stores the settings as the flat fields the file format keeps until ticket 0636 (ticket 0625)', () => {
+    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    const [stored] = JSON.parse(serializeProject(project)).projects
+    expect(stored).toMatchObject({ technique: 'brick', brickBlock: 3 })
+    expect(stored).not.toHaveProperty('techniqueSettings')
   })
 
   it('reads an unreadable Brick block as the default (ticket 477)', () => {
     for (const bad of [0, 21, 2.5, 'two', null]) {
-      const file = JSON.parse(serializeProject(decoratedProject()))
+      const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'canvas', { technique: 'brick' })))
       file.projects[0].brickBlock = bad
-      expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toBeUndefined()
+      expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
     }
   })
 

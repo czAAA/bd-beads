@@ -25,8 +25,7 @@ const DEFAULT_NET_SIZE = 3
 export const BRICK_BLOCK_SETTING: SettingSpec = { id: 'brickBlock', labelKey: 'brickBlock', min: 1, max: MAX_BRICK_BLOCK, step: 1, default: 1, keptOffTechnique: true }
 
 /** Netting's Net size, as its entry describes it (ticket 0624): odd, from 3 to 9. A change moves the holes, so it asks
- * before beads are lost (ADR 0038).
- * @internal Tests name it; the app reads it from Netting's entry (ticket 0626). */
+ * before beads are lost (ADR 0038). */
 export const NET_SIZE_SETTING: SettingSpec = { id: 'netSize', labelKey: 'netSize', min: MIN_NET_SIZE, max: MAX_NET_SIZE, step: 2, default: DEFAULT_NET_SIZE, lossOnChange: true }
 
 /** A layer's Technique settings by id (ticket 0624): each its Technique describes, and any kept off it (a Brick block). */
@@ -41,8 +40,8 @@ export interface Weave {
   technique: Technique
   /** Its settings (tickets 0624, 0625): the only ones the domain and drawing read; a setting left out is its default. */
   techniqueSettings?: TechniqueSettings
-  /** The flat Brick block and Net size, kept in step with the settings for the callers ticket 0627 moves off them. Read
-   * by no domain or drawing code: only the file boundary maps them, to and from the settings. */
+  /** The flat Brick block and Net size the file format stores until ticket 0636: only the file boundary maps them, to
+   * and from the settings, and nothing else reads or writes them. Ticket 0627 removes them from here. */
   brickBlock?: number
   netSize?: number
   /** How the Bead is drawn when the Project's Bead shape is Real (ADR 0068); absent is Symmetric. Never stored with a
