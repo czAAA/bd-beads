@@ -7,15 +7,15 @@ import { createProject } from './createProject'
 import { resolveProjectBead } from './projectBead'
 import { weaveOf } from './layerWeave'
 import type { Project } from './project'
-import { parseProjectsFile } from './projectFile'
+import { decodeBeads, type EncodedBeads } from './projectEncoding'
 import { estimatedSizeMm } from './projectSize'
 import type { SettingSpec } from './settingSpec'
 import { describeWeave, type Technique } from './weave'
 import categories from '../data/starters/categories.json'
 
 // The Starters (spec 0590, tickets 0596, 0597, 0633; StarterGallery card): each a design for one Frame kind at one best
-// size, kept with the app in `src/data/starters/` as a manifest (`<id>.starter.json`) beside its design, a Project file
-// (the JSON inside an exported `.openbeads`). Of the design only its Frame's beads are used. A new one is data alone.
+// size, kept with the app in `src/data/starters/` as a manifest (`<id>.starter.json`) beside its design, its Frame's
+// size and beads alone (ticket 0636). A new one is data alone.
 
 /** The Starter gallery's categories. */
 export type StarterCategoryId = 'shapes' | 'earrings' | 'rings' | 'bands'
@@ -79,7 +79,7 @@ type ManifestSize = Partial<StarterSize> & Pick<StarterSize, 'id'>
  * @internal The registry test reads every manifest file as one, to find any no category lists. */
 export interface StarterManifest {
   id: StarterId
-  /** Its design's file name, beside it: a Project file whose Frame holds the design. */
+  /** Its design's file name, beside it: the design's Frame size and beads (StoredDesign). */
   design: string
   kind: FrameKindId
   technique: Technique
@@ -89,13 +89,21 @@ export interface StarterManifest {
   picks: readonly StarterPick[]
 }
 
-/** A ready-made design for one Frame kind (ADR 0077): its manifest, its sizes in full, its category and its design's
- * Project file. A Ring or Band is a Rectangular Frame sized for the finger or the wrist. */
+/** A Starter's design as its file stores it (ticket 0636): its Frame's rows and columns, and its beads in the compact
+ * encoding a Project file uses (ADR 0009), by their position in the layout or the rectangle. */
+interface StoredDesign {
+  rows: number
+  columns: number
+  encodedBeads: EncodedBeads
+}
+
+/** A ready-made design for one Frame kind (ADR 0077): its manifest, its sizes in full, its category and its stored
+ * design. A Ring or Band is a Rectangular Frame sized for the finger or the wrist. */
 export interface Starter extends Omit<StarterManifest, 'design' | 'sizes'> {
   category: StarterCategoryId
   sizes: readonly StarterSize[]
-  /** The Project file the design is, as its JSON. */
-  file: unknown
+  /** Its design as its file stores it. */
+  file: StoredDesign
 }
 
 /** A category of the gallery: its Starters in the order its step shows them, and the one whose design is its picture. */
@@ -107,7 +115,7 @@ export interface StarterCategory {
 
 const FOLDER = '../data/starters/'
 const MANIFESTS = import.meta.glob<StarterManifest>('../data/starters/*.starter.json', { eager: true, import: 'default' })
-const DESIGNS = import.meta.glob<unknown>(['../data/starters/*.json', '!**/*.starter.json', '!**/categories.json'], { eager: true, import: 'default' })
+const DESIGNS = import.meta.glob<StoredDesign>(['../data/starters/*.json', '!**/*.starter.json', '!**/categories.json'], { eager: true, import: 'default' })
 
 /** A size in full: a setting of the Starter's kind takes the kind's range, default and presets where it gives none. */
 function sizeOf(kind: FrameKindId, size: ManifestSize): StarterSize {
@@ -134,7 +142,7 @@ export function starterById(id: StarterId): Starter {
   return STARTER_CATEGORIES.flatMap((each) => each.starters).find((starter) => starter.id === id)!
 }
 
-/** A Starter's design: its Project file's Frame, its beads by their position in the layout or the rectangle. */
+/** A Starter's design as read: its Frame's beads and size. */
 interface Design {
   beads: BeadMap
   rows: number
@@ -146,13 +154,13 @@ const designs = new Map<StarterId, Design>()
 function designOf(starter: Starter): Design {
   const known = designs.get(starter.id)
   if (known) return known
-  const frame = parseProjectsFile(JSON.stringify(starter.file)).projects[0]?.frame
-  const design = { beads: frame?.beads ?? {}, rows: frame?.rows ?? 0, columns: frame?.columns ?? 0 }
+  const { rows, columns, encodedBeads } = starter.file
+  const design = { beads: decodeBeads(encodedBeads), rows, columns }
   designs.set(starter.id, design)
   return design
 }
 
-/** A Starter's design: the beads of its Project file's Frame. Read once.
+/** A Starter's design: the beads of its Frame. Read once.
  * @internal Tests compare a new Project with the Starter's own beads. */
 export function starterDesign(starter: Starter): BeadMap {
   return designOf(starter).beads

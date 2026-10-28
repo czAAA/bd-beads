@@ -38,9 +38,8 @@ export function liftVersionThree(stored: VersionThreeProject): SavedProject {
     frame: {
       ...frame,
       beads: shiftedBeads(beadsInFrame(stored.beads, frame), -frame.row, -frame.column),
-      // The file's flat Weave fields, for normalizeProject to read (file boundary, until ticket 0636).
       technique: rest.technique,
-      brickBlock: rest.brickBlock,
+      ...(rest.techniqueSettings ? { techniqueSettings: rest.techniqueSettings } : {}),
       ...(named ? { name: named.name } : {}),
     },
     ...(kept?.length ? { pieceNames: kept } : {}),

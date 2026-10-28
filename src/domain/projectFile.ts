@@ -1,6 +1,6 @@
 import { inKnownTechniques, normalizeProject, type GridProject, type StoredProject } from './storedProject'
 import type { Project } from './project'
-import { decodeEarlierProject, decodeProject, encodeProject, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
+import { decodeEarlierProject, decodeFlatProject, decodeProject, encodeProject, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
 import type { VersionThreeProject } from './versionThree'
 import { isTechnique } from './weave'
 
@@ -9,10 +9,10 @@ import { isTechnique } from './weave'
 // `projectFileCodec`'s.
 const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
-/** Version 3 is the first gzipped one, beads in the compact encoding (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5
- * (0525) the Palette, 6 (0528) removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame,
- * 10 (0638) the Frame's Folded beads; a build that knows only the version before refuses the file rather than drop them. */
-const FILE_VERSION = 10
+/** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5 (0525) the Palette, 6 (0528)
+ * removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame, 10 (0638) Folded beads, 11
+ * (0636) each layer's settings map, no flat Brick block; a build knowing only the one before refuses, not misreads. */
+const FILE_VERSION = 11
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
@@ -20,19 +20,16 @@ interface ProjectFile {
   projects: EncodedProject[]
 }
 
+/** Versions 4 to 10 differ only in fields normalizeProject reads when present; each stores a layer's Brick block flat. */
+const FLAT_WEAVE_VERSIONS = [4, 5, 6, 7, 8, 9, 10]
+
 // Every readable file version: each takes the file's encoded Projects and returns Projects for normalizeProject. The
-// version 3 reader is temporary (versionThree.ts).
+// readers of version 3 (versionThree.ts) and 4 (ticket 0525; it has no Palette, so gets the built-in twelve) are
+// temporary, removed at the public release (ticket 0391).
 const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   3: (projects) => (projects as EncodedVersionThreeProject[]).map(decodeEarlierProject) as (VersionThreeProject | GridProject)[],
-  // TEMPORARY (ticket 0525): removed at the public release (ticket 0391). A version 4 Project carries no Palette, so
-  // normalizeProject gives it the built-in twelve.
-  4: (projects) => (projects as EncodedProject[]).map(decodeProject),
-  5: (projects) => (projects as EncodedProject[]).map(decodeProject),
-  6: (projects) => (projects as EncodedProject[]).map(decodeProject),
-  7: (projects) => (projects as EncodedProject[]).map(decodeProject),
-  8: (projects) => (projects as EncodedProject[]).map(decodeProject),
-  9: (projects) => (projects as EncodedProject[]).map(decodeProject),
-  10: (projects) => (projects as EncodedProject[]).map(decodeProject),
+  ...Object.fromEntries(FLAT_WEAVE_VERSIONS.map((version) => [version, (projects: unknown[]) => (projects as EncodedProject[]).map(decodeFlatProject)])),
+  [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
 /** What an exported file holds once read back. */

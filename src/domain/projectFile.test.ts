@@ -80,19 +80,42 @@ describe('single-Project roundtrip', () => {
     expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
   })
 
-  it('stores the settings as the flat fields the file format keeps until ticket 0636 (ticket 0625)', () => {
-    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+  it('stores each layer\'s settings as the map the app holds, the Brick block in it, with no flat field (ticket 0636)', () => {
+    const canvas = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    const project = withWeave(canvas, 'frame', { technique: 'brick', techniqueSettings: { brickBlock: 4 } })
     const [stored] = JSON.parse(serializeProject(project)).projects
-    expect(stored).toMatchObject({ technique: 'brick', brickBlock: 3 })
-    expect(stored).not.toHaveProperty('techniqueSettings')
+    expect(stored).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { technique: 'brick', techniqueSettings: { brickBlock: 4 } } })
+    expect(stored).not.toHaveProperty('brickBlock')
+    expect(stored.frame).not.toHaveProperty('brickBlock')
   })
 
-  it('reads an unreadable Brick block as the default (ticket 477)', () => {
+  it('reads an unreadable Brick block in an earlier version\'s flat field as the default (ticket 477)', () => {
     for (const bad of [0, 21, 2.5, 'two', null]) {
       const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'canvas', { technique: 'brick' })))
+      file.version = 10
       file.projects[0].brickBlock = bad
       expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
     }
+  })
+
+  it('reads an unreadable settings map, or an unreadable value in it, as the defaults (ticket 0636)', () => {
+    const brick = withWeave(withWeave(decoratedProject(), 'canvas', { technique: 'brick' }), 'frame', { technique: 'brick' })
+    for (const bad of [{ brickBlock: 'two' }, { brickBlock: null }, 'three', null, [3]]) {
+      const file = JSON.parse(serializeProject(brick))
+      file.projects[0].techniqueSettings = bad
+      file.projects[0].frame.techniqueSettings = bad
+      const [read] = parseProjectsFile(JSON.stringify(file)).projects
+      expect(read!.techniqueSettings).toEqual({ brickBlock: 1 })
+      expect(read!.frame!.techniqueSettings).toEqual({ brickBlock: 1 })
+    }
+  })
+
+  it('reads a flat Brick block only from a file of version 10 or earlier (ticket 0636)', () => {
+    const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'canvas', { technique: 'brick' })))
+    file.projects[0].brickBlock = 3
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
+    file.version = 10
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 3 })
   })
 
   it('carries the grid, technique, bead and row progress through the file', () => {
@@ -121,11 +144,11 @@ describe('single-Project roundtrip', () => {
     expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 10 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
+  it('writes version 11 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(10)
+    expect(file.version).toBe(11)
     expect(file.patterns).toBeUndefined()
     expect(file.projects[0].beads).toBeUndefined()
     expect(file.projects[0].encodedBeads).toBeDefined()
@@ -143,8 +166,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 11
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 11')
+    file.version = 12
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 12')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {
