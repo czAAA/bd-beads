@@ -102,7 +102,8 @@ export function hasBeads(beads: BeadMap): boolean {
   return Object.values(beads).some((row) => Object.keys(row).length > 0)
 }
 
-/** How many beads are painted. */
+/** How many beads are painted.
+ * @internal Tests count a map's beads with it; the app has needed no count since the size question went (0640). */
 export function beadCount(beads: BeadMap): number {
   let count = 0
   for (const row of Object.values(beads)) {

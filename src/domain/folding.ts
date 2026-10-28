@@ -33,7 +33,23 @@ export function foldsOver(under: Weave, sheet: Weave): boolean {
  * a Folded bead held again shows, one no longer held folds or goes to the layer under it, and, not folding, the sheet
  * takes in that layer's beads `offered` where it holds a position with none of its own (ticket 0639). */
 export function refitSheet(sheet: SheetBeads & Weave, under: Weave, shift: GridPosition, holds: (position: GridPosition) => boolean, offered: BeadMap = {}): RefitSheet {
-  const folds = foldsOver(under, sheet)
+  return refit(sheet, shift, holds, foldsOver(under, sheet), offered)
+}
+
+/** A sheet's beads once it holds only the positions `holds` names, every bead keeping its name: what it no longer holds
+ * folds, a Folded bead it holds again shows. How a sheet that always folds refits: a Custom frame, its positions named
+ * by its layout, when its settings change (ADR 0066, ticket 0640). */
+export function refoldSheet(sheet: SheetBeads, holds: (position: GridPosition) => boolean): SheetBeads {
+  const { beads, folded } = refit(sheet, IN_PLACE, holds, true)
+  return { beads, ...(folded ? { folded } : {}) }
+}
+
+/** No shift: a sheet whose beads keep their names whatever its size. */
+const IN_PLACE: GridPosition = { row: 0, column: 0 }
+
+/** The one pass behind both refits: each bead, shown or folded, lands where its sheet now holds it, else folds (always,
+ * where `folds`) or is given; not folding, it takes in the `offered` beads where it has none. */
+function refit(sheet: SheetBeads, shift: GridPosition, holds: (position: GridPosition) => boolean, folds: boolean, offered: BeadMap = {}): RefitSheet {
   const beads: BeadMap = {}
   const folded: BeadMap = {}
   const given: BeadMap = {}

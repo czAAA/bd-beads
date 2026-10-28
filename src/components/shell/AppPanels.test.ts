@@ -3,6 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import AppDialogs from './AppDialogs.vue'
 import AppPanels from './AppPanels.vue'
+import { changeFrame } from '../../domain/changeFrame'
 import { createProject } from '../../domain/createProject'
 import { findBead } from '../../domain/beads'
 import { loadProjects, saveProjects } from '../../services/libraryStore'
@@ -239,5 +240,20 @@ describe('The Frame panel', () => {
 
     expect(loadProjects()[0]!.frame).toMatchObject({ kind: 'triangle' })
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
+  })
+
+  it('saves each press of a Custom frame\'s stepper at once, and they are one Undo step once the panel closes (ticket 0640)', async () => {
+    const placed = changeFrame(moth(), { custom: { kind: 'triangle', size: 6, centre: { row: 20, column: 20 } } })
+    if (placed.kind !== 'changed') throw new Error(placed.kind)
+    saveProjects([placed.project])
+    const mounted = mountPanels()
+    await mounted.openPanel('frame')
+    await click(mounted, 'frame-setting-rounds-less')
+    await click(mounted, 'frame-setting-rounds-less')
+    expect(loadProjects()[0]!.frame!.settings).toEqual({ rounds: 4 })
+    mounted.panels.openPanel.value = null
+    await nextTick()
+    mounted.canvas.onUndo()
+    expect(loadProjects()[0]!.frame!.settings).toEqual({ rounds: 6 })
   })
 })
