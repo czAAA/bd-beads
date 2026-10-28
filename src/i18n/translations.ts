@@ -15,14 +15,20 @@ interface FeatureCopy {
   tabLine?: string
 }
 
-/** A Technique setting's words in its stepper (ticket 0624): its name, its two buttons, its number's name for screen
- * readers and, where it has one, its hover text. */
+/** A Technique setting's words (tickets 0624, 0626): its name, its two buttons, its number's name for screen readers,
+ * its hover text where it has one, why it is locked while rows are done, what is read out once it changed, and the
+ * question before a change, for a setting described as able to lose beads. */
 export interface SettingWords {
   label: string
   less: string
   more: string
   value: string
   body?: string
+  locked: string
+  /** `{count}` is the new value. */
+  changed: string
+  /** `{count}` is the beads with no place after the change. */
+  loss?: { title: string; message: string; button: string }
 }
 
 export interface Translations {
@@ -772,14 +778,9 @@ export interface Translations {
     /** Changing a layer's Technique (ticket 507): `{technique}` is the new one, `{count}` the beads with no place in it. */
     switchConfirmTitle: string
     switchConfirmMessage: string
-    /** Asked of a layer with no beads when Netting needs its Net size. */
+    /** Asked of a layer with no beads when the new Technique has settings to choose. */
     switchSettingsMessage: string
-    switchNetSizeTitle: string
-    switchNetSizeMessage: string
-    switchNetSizeButton: string
     switchConfirmButton: string
-    announceBrickBlock: string
-    announceNetSize: string
     /** Announced after Rotate turned the Selection and covered no bead. */
     announceSelectionRotated: string
     rotateFrameLabel: string
@@ -940,7 +941,6 @@ export interface Translations {
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
-    rowProgressLockedBrickBlock: string
     rowProgressLockedRotate: string
     rowProgressLockedRemoveLine: string
     removeLine: string

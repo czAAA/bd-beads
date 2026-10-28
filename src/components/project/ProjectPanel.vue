@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { beadLabel, type Bead } from '../../domain/beads'
 import { resolveProjectBead } from '../../domain/projectBead'
+import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -26,11 +27,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   rename: [name: string]
   'set-technique': [technique: Technique]
-  'set-brick-block': [brickBlock: number]
-  'set-net-size': [netSize: number]
   'set-canvas-technique': [technique: Technique]
-  'set-canvas-brick-block': [brickBlock: number]
-  'set-canvas-net-size': [netSize: number]
+  'set-weave-setting': [layer: Layer, id: string, value: number]
   'set-bead-shape': [shape: BeadShape]
   'replace-bead': [beadId: string]
   save: []
@@ -70,11 +68,8 @@ const canvasName = computed(() => {
       @save-maker-name="emit('save-maker-name', $event)"
       @save="emit('save')"
       @set-technique="emit('set-technique', $event)"
-      @set-brick-block="emit('set-brick-block', $event)"
       @set-canvas-technique="emit('set-canvas-technique', $event)"
-      @set-canvas-brick-block="emit('set-canvas-brick-block', $event)"
-      @set-net-size="emit('set-net-size', $event)"
-      @set-canvas-net-size="emit('set-canvas-net-size', $event)"
+      @set-weave-setting="(layer, id, value) => emit('set-weave-setting', layer, id, value)"
     />
 
     <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">

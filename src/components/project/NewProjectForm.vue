@@ -2,7 +2,7 @@
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/createProject'
-import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
 import {
   formatImageLimits,
   imageInputAccept,
@@ -49,9 +49,11 @@ const beadId = ref(DEFAULT_BEAD.id)
 const technique = ref<Technique>(DEFAULT_TECHNIQUE)
 /** The Bead shape (ADR 0068, ticket 508): how the Canvas draws each cell. */
 const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
-/** The Brick block (ticket 477): kept while another Technique is chosen, used by brick stitch only. */
-const brickBlock = ref(1)
-const netSize = ref(DEFAULT_NET_SIZE)
+/** The Technique settings' values by id (tickets 477, 485, 0626): each kept while another Technique is chosen, used by
+ * the Technique that describes it only; one never changed is its default. */
+const settings = ref<TechniqueSettings>({})
+/** The chosen Technique's settings at their values, each within its range. */
+const techniqueSettings = computed(() => weaveSettings({ technique: technique.value, techniqueSettings: settings.value }))
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
 
@@ -75,19 +77,12 @@ function pickStarter() {
   panel?.openSub(t.value.starters.title, { opener: 'pick-starter' })
 }
 
-/** The chosen Technique's settings (ticket 0625): its Brick block or its Net size, or none where it describes neither. */
-const techniqueSettings = computed((): TechniqueSettings | undefined => {
-  const { hasBrickBlock, hasNetSize } = describeWeave({ technique: technique.value })
-  if (hasBrickBlock) return { brickBlock: brickBlock.value }
-  return hasNetSize ? { netSize: netSize.value } : undefined
-})
-
 /** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342). */
 function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
     technique: technique.value,
-    ...(techniqueSettings.value ? { techniqueSettings: techniqueSettings.value } : {}),
+    ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
     beadId: beadId.value,
     ...(beadShape.value !== DEFAULT_BEAD_SHAPE ? { beadShape: beadShape.value } : {}),
     makerName: makerName.value.trim(),
@@ -103,7 +98,7 @@ function draftInput(): CreateProjectInput {
   return { ...currentInput(), ...(convertSize.value ? { size: convertSize.value } : {}) }
 }
 
-watch([name, beadId, beadShape, technique, brickBlock, netSize, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
+watch([name, beadId, beadShape, technique, settings, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
@@ -200,9 +195,9 @@ function onDropImage(file: File) {
 
     <TechniqueSection
       v-model:technique="technique"
-      v-model:brick-block="brickBlock"
-      v-model:net-size="netSize"
+      :settings="settings"
       testid="new-project"
+      @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
     />
 
     <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus" data-testid="create-project">

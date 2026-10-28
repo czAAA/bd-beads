@@ -22,8 +22,7 @@ const {
   onCancelRemoveFrame,
   onConfirmRemoveFrame,
   switchQuestion,
-  onSetSwitchNetSize,
-  onSetSwitchBrickBlock,
+  onSetSwitchSetting,
   onCancelSwitchTechnique,
   onConfirmSwitchTechnique,
   onCancelReplaceFrame,
@@ -105,8 +104,7 @@ const {
   <SwitchTechniqueModal
     v-if="open === 'switch-technique' && switchQuestion"
     :question="switchQuestion"
-    @update:net-size="onSetSwitchNetSize"
-    @update:brick-block="onSetSwitchBrickBlock"
+    @set-setting="onSetSwitchSetting"
     @confirm="onConfirmSwitchTechnique"
     @cancel="onCancelSwitchTechnique"
   />
