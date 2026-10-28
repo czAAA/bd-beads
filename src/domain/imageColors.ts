@@ -1,17 +1,18 @@
-import { channelsOf, colorDistance, toHex, type Rgb } from './color'
+import { channelsOf, colorDistance, toHex, toOklab, type Rgb } from './color'
 import type { Palette } from './palette'
 
 /** The colors a Convert image (ticket 58) takes from a picture: reduced to a buyable count, then no dithering, each
  * snapped to its nearest Palette color (ticket 177, ADR 0010), so they are a Palette subset. */
 
-/** The closest of `colors` to `hex`, or undefined when there are none to choose from. */
+/** The closest of `colors` to `hex` by how alike they look (colorDistance), or undefined when there are none to
+ * choose from. */
 export function nearestColor(colors: readonly string[], hex: string): string | undefined {
-  const target = channelsOf(hex)
+  const target = toOklab(channelsOf(hex))
   let best: string | undefined
   let bestDistance = Infinity
 
   for (const candidate of colors) {
-    const distance = colorDistance(target, channelsOf(candidate))
+    const distance = colorDistance(target, toOklab(channelsOf(candidate)))
     if (distance < bestDistance) {
       best = candidate
       bestDistance = distance

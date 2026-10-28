@@ -3,7 +3,7 @@
 Convert image, the Project renderer and the Bead pointer. Part of the glossary split out of `CONTEXT.md` (ticket 380); the index is [README.md](README.md).
 
 **Convert image**: Needs a size: the picture lands in a Frame of that size on a new Canvas (ADR 0026).
-Creating a Project from a picture instead of an empty grid: the picture is shown rendered as beads, and a frame — the Schema itself, sized by its physical dimensions, Bead and Technique — is positioned over it to choose which part is kept. What falls inside the frame is resampled onto the Project's grid, each of its colors snapped to the nearest Palette color (ADR 0010); the colors found are shown while framing and not kept afterwards. A way of creating a Project only, never a command that converts into one already open.
+Creating a Project from a picture instead of an empty grid: the picture is shown rendered as beads, and a frame — the Schema itself, sized by its physical dimensions, Bead and Technique — is positioned over it to choose which part is kept. What falls inside the frame is resampled onto the Project's grid, each of its colors snapped to the Palette color that looks nearest, measured in OKLab (ADR 0010, ticket 0634); the colors found are shown while framing and not kept afterwards. A way of creating a Project only, never a command that converts into one already open.
 _Avoid_: import image, trace, pixelate, image import
 
 **Project renderer**:

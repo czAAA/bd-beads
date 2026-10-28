@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BUILT_IN_COLORS } from './palette'
-import { channelsOf, colorDistance, fromHex, luma, mix, normalizeHex, relativeLuminance, toHex } from './color'
+import { channelsOf, colorDistance, fromHex, luma, mix, normalizeHex, relativeLuminance, toHex, toOklab } from './color'
 
 describe('fromHex', () => {
   it('reads #rrggbb in either case', () => {
@@ -82,13 +82,33 @@ describe('luma', () => {
   })
 })
 
-describe('colorDistance', () => {
-  it('is zero for the same color and symmetric otherwise', () => {
-    expect(colorDistance(fromHex('#123456')!, fromHex('#123456')!)).toBe(0)
-    expect(colorDistance(fromHex('#000000')!, fromHex('#010101')!)).toBe(colorDistance(fromHex('#010101')!, fromHex('#000000')!))
+describe('toOklab', () => {
+  it('puts black at lightness 0 and white at 1, both without hue', () => {
+    expect(toOklab({ r: 0, g: 0, b: 0 })).toEqual({ l: 0, a: 0, b: 0 })
+    const white = toOklab({ r: 255, g: 255, b: 255 })
+    expect(white.l).toBeCloseTo(1, 4)
+    expect(white.a).toBeCloseTo(0, 4)
+    expect(white.b).toBeCloseTo(0, 4)
   })
 
-  it('is the straight-line distance between the two colors in RGB', () => {
-    expect(colorDistance({ r: 0, g: 0, b: 0 }, { r: 3, g: 4, b: 0 })).toBe(5)
+  it('places sRGB red where OKLab\'s reference does', () => {
+    // Björn Ottosson's published values for #ff0000.
+    const red = toOklab({ r: 255, g: 0, b: 0 })
+    expect(red.l).toBeCloseTo(0.62796, 4)
+    expect(red.a).toBeCloseTo(0.22486, 4)
+    expect(red.b).toBeCloseTo(0.12585, 4)
+  })
+})
+
+describe('colorDistance (ticket 0634)', () => {
+  it('is zero for the same color and symmetric otherwise', () => {
+    const a = toOklab(fromHex('#123456')!)
+    const b = toOklab(fromHex('#654321')!)
+    expect(colorDistance(a, a)).toBe(0)
+    expect(colorDistance(a, b)).toBe(colorDistance(b, a))
+  })
+
+  it('is the straight-line distance in OKLab, so black to white is 1', () => {
+    expect(colorDistance(toOklab(fromHex('#000000')!), toOklab(fromHex('#ffffff')!))).toBeCloseTo(1, 4)
   })
 })

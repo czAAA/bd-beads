@@ -1,4 +1,4 @@
-import { channelsOf, colorDistance } from './color'
+import { channelsOf, colorDistance, toOklab } from './color'
 import { NO_COLOR, unpacked, type ConvertedImage } from './imageConversion'
 import type { PreviewLattice } from './imageFraming'
 import type { GridDimensions } from './grid'
@@ -12,7 +12,7 @@ export type PreviewColors = (string | undefined)[]
  * tie: a picture has far fewer distinct colors than beads, so it searches once per distinct color, not per bead.
  * @internal Its test checks it matches nearestColor. */
 export function nearestColorLookup(colors: readonly string[]): (packed: number) => string | undefined {
-  const candidates = colors.map((hex) => channelsOf(hex))
+  const candidates = colors.map((hex) => toOklab(channelsOf(hex)))
   const answers = new Map<number, string | undefined>()
 
   return (packed) => {
@@ -23,7 +23,7 @@ export function nearestColorLookup(colors: readonly string[]): (packed: number) 
       return answers.get(packed)
     }
 
-    const color = unpacked(packed)
+    const color = toOklab(unpacked(packed))
     let best: number | undefined
     let bestDistance = Infinity
     candidates.forEach((candidate, index) => {

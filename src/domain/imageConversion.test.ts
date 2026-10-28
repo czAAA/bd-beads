@@ -342,7 +342,7 @@ describe('convertImage', () => {
     // A 2 x 2 picture into a 2 x 2 grid: each cell covers exactly one pixel.
     const image = pixels(2, 2, [
       [255, 0, 0, 255],
-      [0, 255, 0, 255],
+      [0, 160, 0, 255],
       [0, 0, 255, 255],
       [255, 255, 255, 255],
     ])
@@ -366,7 +366,7 @@ describe('convertImage', () => {
   it('keeps a picture already inside the color limit as distinct Palette colors, one per pixel', () => {
     const image = pixels(2, 2, [
       [255, 0, 0, 255],
-      [0, 255, 0, 255],
+      [0, 160, 0, 255],
       [0, 0, 255, 255],
       [17, 17, 17, 255],
     ])
