@@ -1,4 +1,4 @@
-import type { Frame, FrameSheet } from '../domain/canvas'
+import type { Rect, FrameSheet } from '../domain/canvas'
 import { frameLayoutOf } from '../domain/frameKind'
 import { describeWeave, withCell, type Technique, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
@@ -27,7 +27,7 @@ const RULER_NUMBER_GAP_PX = 4
 const LAST_NUMBER_ONLY_BELOW_ZOOM = 0.5
 
 /** Something rulers hang from: a rectangle of beads, the line round it, and which of its sides carry numbers. */
-export interface RuledBox extends Frame {
+export interface RuledBox extends Rect {
   kind: 'frame' | 'piece'
   /** How far outside its beads its line sits. */
   outset: number
@@ -56,7 +56,7 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Frame & Weave & Pick<FrameSheet, 'name' | 'kind' | 'settings'>; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number; netSize?: number }
+export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'kind' | 'settings'>; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; brickBlock?: number; netSize?: number }
 
 // The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
 // near the viewport are chosen by the caller). A Custom frame has none: its beads lie in rounds, not its rectangle's
