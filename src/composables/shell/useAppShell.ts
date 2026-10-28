@@ -1,7 +1,6 @@
-import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
+import { inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/layerBeads'
 import { provideI18n } from '../../i18n/useI18n'
-import { changedSetting } from '../../domain/frameKind'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
@@ -165,6 +164,7 @@ function wireAppShell(services: Services) {
   } = useUndoHistory({
     currentProject,
     restore: (snapshot) => editing.restore(snapshot),
+    settle: () => editing.settle(),
   })
 
   /** Every undoable change to the open Project (ADR 0036), and the session resets it runs. Its deps reach for Selection
@@ -366,16 +366,6 @@ function wireAppShell(services: Services) {
   provideRemoveAddedColor(removeColor.onRequestRemoveAddedColor)
   provideRemoveAllAddedColors(removeColor.onRequestRemoveAllAddedColors)
 
-  /** The question before a Custom frame's setting drops painted beads (tickets 0592, 0593, 0597), in that setting's
-   * words: how many the outer rounds, last rows or strands' ends would take with them. */
-  const sizeConfirm = computed(() => {
-    const ask = frameFlow.sizeAsk.value
-    if (!ask) return undefined
-    const setting = changedSetting(ask.change)
-    const words = setting === 'fringeStyle' ? t.value.frame.fringeStyle : t.value.frame.sizeSettings[setting]
-    return { title: words.confirmTitle, message: plural(locale.value, ask.lost, words.confirmMessage), button: words.confirmButton }
-  })
-
   provideMoveColor(moveColor)
 
   /** A Custom color that is about to paint a cell joins the Palette on its first use (ticket 227). */
@@ -476,6 +466,8 @@ function wireAppShell(services: Services) {
     openPanel,
     currentProject,
     edit,
+    hold: editing.hold,
+    settle: editing.settle,
     announce,
     showToast,
     messages,
@@ -857,9 +849,6 @@ function wireAppShell(services: Services) {
       removeFrameTakesBeads: frameFlow.removeTakesBeads,
       onConfirmRemoveFrame: frameFlow.confirmRemove,
       onCancelRemoveFrame: frameFlow.cancelRemove,
-      sizeConfirm,
-      onConfirmSize: frameFlow.confirmSize,
-      onCancelSize: frameFlow.cancelSize,
       switchQuestion: frameFlow.switchQuestion,
       onSetSwitchNetSize: frameFlow.setSwitchNetSize,
       onSetSwitchBrickBlock: frameFlow.setSwitchBrickBlock,

@@ -636,20 +636,14 @@ export const en: Translations = {
     refusedCutsSchema: 'A Frame can’t cut through the Schema “{name}”. Frame all of it, or none of it.',
     customKinds: { fringeEarring: 'Fringe earring', triangle: 'Triangle', warpedSquare: 'Warped Square', star: 'Star', kaleidocycle: 'Kaleidocycle', kite: 'Kite' },
     sizeSettings: {
-      topWidth: { label: 'Top width', less: 'One bead fewer in the base row', more: 'One bead more in the base row', summary: { one: 'top {count}', other: 'top {count}' }, confirmTitle: 'Narrower top?', confirmMessage: { one: '{count} painted bead at the top\'s edge or on its strands will be removed. This can be undone.', other: '{count} painted beads at the top\'s edge or on its strands will be removed. This can be undone.' }, confirmButton: 'Make narrower', announce: 'Top width: {count}' },
-      topRows: { label: 'Top rows', less: 'One row fewer', more: 'One row more', summary: { one: '{count} top row', other: '{count} top rows' }, confirmTitle: 'Fewer top rows?', confirmMessage: { one: '{count} painted bead on the top\'s upper rows will be removed. This can be undone.', other: '{count} painted beads on the top\'s upper rows will be removed. This can be undone.' }, confirmButton: 'Remove rows', announce: 'Top rows: {count}' },
-      fringeLength: { label: 'Fringe length', less: 'One bead shorter', more: 'One bead longer', summary: { one: 'fringe {count}', other: 'fringe {count}' }, confirmTitle: 'Shorter fringe?', confirmMessage: { one: '{count} painted bead at the strands\' ends will be removed. This can be undone.', other: '{count} painted beads at the strands\' ends will be removed. This can be undone.' }, confirmButton: 'Shorten fringe', announce: 'Fringe length: {count}' },
+      topWidth: { label: 'Top width', less: 'One bead fewer in the base row', more: 'One bead more in the base row', summary: { one: 'top {count}', other: 'top {count}' }, announce: 'Top width: {count}' },
+      topRows: { label: 'Top rows', less: 'One row fewer', more: 'One row more', summary: { one: '{count} top row', other: '{count} top rows' }, announce: 'Top rows: {count}' },
+      fringeLength: { label: 'Fringe length', less: 'One bead shorter', more: 'One bead longer', summary: { one: 'fringe {count}', other: 'fringe {count}' }, announce: 'Fringe length: {count}' },
       rounds: {
         label: 'Rounds',
         less: 'One round fewer',
         more: 'One round more',
         summary: { one: '{count} round', other: '{count} rounds' },
-        confirmTitle: 'Fewer rounds?',
-        confirmMessage: {
-          one: '{count} painted bead on the outer rounds will be removed. This can be undone.',
-          other: '{count} painted beads on the outer rounds will be removed. This can be undone.',
-        },
-        confirmButton: 'Remove rounds',
         announce: 'Rounds: {count}',
       },
       partSize: {
@@ -657,12 +651,6 @@ export const en: Translations = {
         less: 'Smaller parts',
         more: 'Larger parts',
         summary: { one: 'Part size {count}', other: 'Part size {count}' },
-        confirmTitle: 'Smaller parts?',
-        confirmMessage: {
-          one: '{count} painted bead on the parts’ outer rounds will be removed. This can be undone.',
-          other: '{count} painted beads on the parts’ outer rounds will be removed. This can be undone.',
-        },
-        confirmButton: 'Make smaller',
         announce: 'Part size: {count}',
       },
       rows: {
@@ -670,16 +658,10 @@ export const en: Translations = {
         less: 'One row fewer',
         more: 'One row more',
         summary: { one: '{count} row', other: '{count} rows' },
-        confirmTitle: 'Fewer rows?',
-        confirmMessage: {
-          one: '{count} painted bead on the last rows will be removed. This can be undone.',
-          other: '{count} painted beads on the last rows will be removed. This can be undone.',
-        },
-        confirmButton: 'Remove rows',
         announce: 'Rows: {count}',
       },
     },
-    fringeStyle: { label: 'Fringe style', confirmTitle: 'Change the fringe?', confirmMessage: { one: '{count} painted bead at the strands\' ends will be removed. This can be undone.', other: '{count} painted beads at the strands\' ends will be removed. This can be undone.' }, confirmButton: 'Change fringe', announce: 'Fringe style: {style}' },
+    fringeStyle: { label: 'Fringe style', announce: 'Fringe style: {style}' },
     removeConfirmCustom: 'Its beads are removed with it. This can be undone.',
     announceCustom: '{kind} frame set, {size}',
     snapAddedTop: {

@@ -109,6 +109,67 @@ describe('useEdit', () => {
     })
   })
 
+  describe('a held frame change (ticket 0640)', () => {
+    const grow = (by: number) => (project: Project) => changeFrame(project, { set: { ...frame, rows: frame.rows + by } })
+
+    it('lands at once each time, and is one Undo step once settled', () => {
+      const ctx = editHarness(base)
+      expect(ctx.editing.hold(grow(1))).toEqual({ kind: 'applied' })
+      expect(ctx.editing.hold(grow(2))).toEqual({ kind: 'applied' })
+      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 2 })
+      expect(ctx.replaceProject).toHaveBeenCalledTimes(2)
+      expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(2)
+      expect(ctx.history.canUndo.value).toBe(false)
+
+      ctx.editing.settle()
+      ctx.history.onUndo()
+      expect(ctx.project.frame).toEqual(frame)
+      expect(ctx.history.canUndo.value).toBe(false)
+    })
+
+    it('is settled first by another edit, a stroke, Undo and Redo, so the steps stay in order', () => {
+      const ctx = editHarness(base)
+      ctx.editing.hold(grow(1))
+      ctx.edit('drawing', (project) => paint(project, inside(0, 0)))
+      ctx.history.onUndo()
+      expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBeNull()
+      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1 })
+      ctx.history.onUndo()
+      expect(ctx.project.frame).toEqual(frame)
+
+      ctx.editing.hold(grow(1))
+      ctx.editing.beginStroke()
+      ctx.editing.endStroke()
+      ctx.history.onUndo()
+      expect(ctx.project.frame).toEqual(frame)
+
+      ctx.history.onRedo()
+      ctx.editing.hold(grow(2))
+      ctx.history.onUndo()
+      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1 })
+    })
+
+    it('is no Undo step when it came back to where it began, or its Project is no longer open', () => {
+      const ctx = editHarness(base)
+      ctx.editing.hold(grow(1))
+      ctx.editing.hold(grow(0))
+      ctx.editing.settle()
+      expect(ctx.history.canUndo.value).toBe(false)
+
+      ctx.editing.hold(grow(1))
+      ctx.replaceProject(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } }))
+      ctx.editing.settle()
+      expect(ctx.history.canUndo.value).toBe(false)
+    })
+
+    it('hands back a refusal and holds nothing', () => {
+      const ctx = editHarness(moveToRow(base, 1))
+      expect(ctx.editing.hold(grow(1))).toEqual({ kind: 'refused', reason: 'locked' })
+      ctx.editing.settle()
+      expect(ctx.history.canUndo.value).toBe(false)
+    })
+  })
+
   describe('an exempt edit', () => {
     it('Delete all clears finished rows too, as one Undo step', () => {
       const painted = paint(moveToRow(base, 1), inside(1, 0))

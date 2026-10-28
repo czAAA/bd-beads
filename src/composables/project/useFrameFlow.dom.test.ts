@@ -21,6 +21,8 @@ function setup(project: Project | null = sized) {
   const deps = {
     currentProject: harness.currentProject,
     edit: harness.edit,
+    hold: harness.editing.hold,
+    settle: harness.editing.settle,
     announce: vi.fn(),
     showToast: vi.fn(),
     onUndo: vi.fn(),
@@ -672,15 +674,23 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     return result.project
   }
 
-  it('grows its Rounds at once, and asks before fewer Rounds drop painted beads', () => {
-    const { deps, setSettings, sizeAsk, confirmSize } = setup(custom('triangle', 9))
+  it('shows each Rounds press at once, folds what fewer Rounds leave out without asking, and commits once the panel closes (ticket 0640)', () => {
+    const { deps, setSettings, barOpen } = setup(custom('triangle', 9))
+    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 8: { 0: '#ff0000' } } } })
+    const painted = deps.harness.project
+    barOpen.value = true
+    setSettings({ rounds: 8 })
+    expect(deps.harness.project.frame).toMatchObject({ settings: { rounds: 8 }, beads: {} })
+    setSettings({ rounds: 7 })
     setSettings({ rounds: 10 })
-    expect(deps.harness.project.frame!.settings).toEqual({ rounds: 10 })
-    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 9: { 0: '#ff0000' } } } })
-    setSettings({ rounds: 9 })
-    expect(sizeAsk.value).toEqual({ change: { rounds: 9 }, lost: 1 })
-    confirmSize()
-    expect(deps.harness.project.frame).toMatchObject({ settings: { rounds: 9 }, beads: {} })
+    expect(deps.harness.project.frame).toMatchObject({ settings: { rounds: 10 } })
+    expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 10')
+    expect(deps.harness.history.canUndo.value).toBe(false)
+    barOpen.value = false
+    expect(deps.harness.history.canUndo.value).toBe(true)
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.frame).toEqual(painted.frame)
+    expect(deps.harness.history.canUndo.value).toBe(false)
   })
 
   it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {
@@ -696,20 +706,22 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     expect(kite.deps.announce).toHaveBeenLastCalledWith('Rows: 30')
   })
 
-  it('changes a Fringe earring one setting at a time, and asks before a V drops painted strands\' ends (ticket 0597)', () => {
+  it('changes a Fringe earring one setting at a time; its Fringe style is a step of its own, folding without asking (tickets 0597, 0640)', () => {
     const placed = changeFrame(open, { custom: { kind: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
     if (placed.kind !== 'changed') throw new Error(placed.kind)
-    const { deps, setSettings, sizeAsk, confirmSize } = setup(placed.project)
+    const { deps, setSettings } = setup(placed.project)
     setSettings({ fringeLength: 14 })
     expect(deps.harness.project.frame!.settings).toMatchObject({ fringeLength: 14 })
     expect(deps.announce).toHaveBeenLastCalledWith('Fringe length: 14')
     // The first strand's last bead, which a V leaves off.
     deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 1013: { 0: '#ff0000' } } } })
     setSettings({ fringeStyle: 'v' })
-    expect(sizeAsk.value).toEqual({ change: { fringeStyle: 'v' }, lost: 1 })
-    confirmSize()
     expect(deps.harness.project.frame).toMatchObject({ settings: { fringeStyle: 'v' }, beads: {} })
     expect(deps.announce).toHaveBeenLastCalledWith('Fringe style: V fringe')
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.frame).toMatchObject({ settings: { fringeStyle: 'straight', fringeLength: 14 } })
+    deps.harness.history.onUndo()
+    expect(deps.harness.project.frame).toMatchObject({ settings: { fringeLength: 12 } })
   })
 
   it('removes an empty one at once, with nothing to ask, and asks first once it holds beads', () => {
