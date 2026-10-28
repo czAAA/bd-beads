@@ -24,11 +24,6 @@ export const es: Translations = {
     beadShapeSymmetricTip: 'Dibuja cada cuenta como una celda uniforme; solo cambia el aspecto del lienzo.',
     beadShapeRealTip: 'Dibuja cada cuenta con sus proporciones reales; solo cambia el aspecto del lienzo.',
     techniqueLabel: 'Técnica',
-    techniqueLoom: 'Telar',
-    techniquePeyote: 'Peyote',
-    techniqueBrick: 'Punto ladrillo',
-    techniqueRightAngle: 'Ángulo recto',
-    techniqueNetting: 'Red',
     netSizeLabel: 'Tamaño de la red',
     netSizeLess: 'Menos cuentas en el bucle',
     netSizeMore: 'Más cuentas en el bucle',
@@ -179,6 +174,13 @@ export const es: Translations = {
   },
   languageSwitcher: {
     ariaLabel: 'Idioma',
+  },
+  techniques: {
+    loom: 'Telar',
+    peyote: 'Peyote',
+    brick: 'Punto ladrillo',
+    rightAngle: 'Ángulo recto',
+    netting: 'Red',
   },
   formFactors: { cube: 'Cubo', round: 'Redondo', delica: 'Delica' },
   projects: {

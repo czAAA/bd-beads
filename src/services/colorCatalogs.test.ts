@@ -1,3 +1,4 @@
+import { readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { loadColorCatalog } from './colorCatalogs'
 import { BEAD_CATALOG } from '../domain/beads'
@@ -18,6 +19,15 @@ describe('loadColorCatalog', () => {
 
   it('rejects an id with no file', async () => {
     await expect(loadColorCatalog('toho')).rejects.toThrow('No color catalog toho')
+  })
+
+  it('loads every file in the catalogs folder by its name, with no list to edit (ADR 0078)', async () => {
+    const files = readdirSync(new URL('../data/colorCatalogs/', import.meta.url)).filter((name) => name.endsWith('.json'))
+    expect(files.length).toBeGreaterThan(0)
+    for (const file of files) {
+      const id = file.replace(/\.json$/, '')
+      await expect(loadColorCatalog(id)).resolves.toMatchObject({ id })
+    }
   })
 
   it('has a file for every catalog a Form factor names', async () => {
