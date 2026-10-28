@@ -183,8 +183,8 @@ interface SamplingInput {
 }
 
 /** The picture's raw colors at the centre of each bead of a framing preview's lattice (see previewLattice), row by row,
- * packed (see pixelPackedAt); NO_COLOR off the picture, on a too-transparent pixel or where the lattice has no bead (a
- * hole in a net, a line's empty end). The Weave's description places each bead (ticket 0622). */
+ * packed (see pixelPackedAt); NO_COLOR off the picture or on a too-transparent pixel. The Weave's description places
+ * each bead (ticket 0622). */
 export function sampleLatticePacked({
   image,
   view,

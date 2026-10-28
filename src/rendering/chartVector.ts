@@ -215,7 +215,7 @@ function drawPart(content: PdfContent, project: Project, plan: PrintPlan, part: 
     const wide = (width - inset * 2) * K
     const tall = (height - inset * 2) * K
     if (round) {
-      content.roundRect(left, top, wide, tall, round ? Math.min(wide, tall) : 0, { fill, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
+      content.roundRect(left, top, wide, tall, Math.min(wide, tall), { fill, stroke: PRINT_COLORS.lineStrong, lineWidth: LINE_CELL })
     } else {
       content.fillRect(left, top, wide, tall, fill)
     }

@@ -178,10 +178,10 @@ export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
   const frame = project.frame
-  const own = frame && frameWeave(project)
-  if (!frame || !own) {
+  if (!frame) {
     return undefined
   }
+  const own = frameWeave(project)
   // Turned in the Frame's own rows (its first is 0), then placed on the Canvas by as far as its corner moved.
   const turned = rotatedSelection(own, { top: 0, left: 0, rows: frame.rows, columns: frame.columns })
   const weave = describeWeave(own)
