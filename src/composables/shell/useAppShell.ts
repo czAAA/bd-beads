@@ -57,19 +57,24 @@ import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRem
 import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useUndoHistory } from '../project/useUndoHistory'
+import { useDialogs } from './useDialogs'
 
-// The app's composition root (ADR 0020): wires every composable the shell uses into one flat context; nothing here
-// decides anything. Deps are lazy arrows so composables can reference each other. Call once from the root setup (see
-// provideAppShell).
+// The app's composition root (ADR 0020): wires every composable together and hands each part of the shell its own
+// context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.
+// Call once from the root setup (see provideAppShell).
 function wireAppShell(services: Services) {
   const { t, locale } = provideI18n(services.devicePreferences)
   // The theme pick is shared by the header's controls; this is where it is first read, from this device's preferences.
   useThemePick(services.devicePreferences)
 
+  /** Which dialog shows (ticket 0618): every flow that asks a question opens it here, so the root holds one value. */
+  const dialogs = useDialogs()
+
   /** Asking the browser to keep the library, at a device's first save (ticket 399). */
   const storageAsk = useStorageAskFlow({
     persistentStorage: services.persistentStorage,
     devicePreferences: services.devicePreferences,
+    dialogs,
   })
 
   // Temporary (ADR 0060): the device-wide Maker's name moves onto the Projects before they are read; ticket 391 removes
@@ -98,7 +103,7 @@ function wireAppShell(services: Services) {
   const messages = () => t.value
   const currentLocale = () => locale.value
 
-  const { activeBeadLabel, projectLabel } = useProjectLabels({ currentProject, messages, locale: currentLocale })
+  const { projectLabel } = useProjectLabels({ currentProject, messages, locale: currentLocale })
 
   /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
@@ -141,7 +146,7 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, zoomPercent, stripZoomPercent } =
+  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, stripZoomPercent } =
     useCanvasFraming({
       currentProject,
       framing: () => framing.value,
@@ -357,7 +362,7 @@ function wireAppShell(services: Services) {
   }
 
   /** Removing added colors from the Palette, one or all, each after a confirmation (tickets 228, 304, 0532). */
-  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale })
+  const removeColor = useRemoveColorFlow({ palette, removeAdded, removeAllAdded, selectedColorId, onSelectColor, showToast, messages, locale: currentLocale, dialogs })
   provideRemoveAddedColor(removeColor.onRequestRemoveAddedColor)
   provideRemoveAllAddedColors(removeColor.onRequestRemoveAllAddedColors)
 
@@ -461,7 +466,7 @@ function wireAppShell(services: Services) {
   const { announcement, announce } = useA11yAnnouncer()
 
   /** Delete all and its confirmation (tickets 42, 198). */
-  const deleteAll = useDeleteAllFlow({ currentProject, edit })
+  const deleteAll = useDeleteAllFlow({ currentProject, edit, dialogs })
 
   /** Edit Frame: moving and resizing the Frame and stepping its edges, Fit to drawing and Remove Frame (tickets 233,
    * 417). */
@@ -477,6 +482,7 @@ function wireAppShell(services: Services) {
     locale: () => locale.value,
     centreOn,
     visibleCentre,
+    dialogs,
   })
   /** The edit pencil in the Frame's gutter (ticket 452, ADR 0062). */
   const editFrame = frameFlow.toggleHandles
@@ -511,10 +517,11 @@ function wireAppShell(services: Services) {
     currentProject,
     edit,
     selection: () => selection.value,
+    dialogs,
   })
 
   /** Replace Bead, its select and its confirmation (tickets 48, 113, 205). */
-  const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale })
+  const replaceBead = useReplaceBeadFlow({ currentProject, edit, messages, locale: currentLocale, dialogs })
 
   /** Project import and the keep-current / save-and-switch / switch decision (tickets 154, 168, 200). */
   const importSwitch = useImportSwitchFlow({
@@ -524,6 +531,7 @@ function wireAppShell(services: Services) {
       activeProjectId.value = id
     },
     saveNow,
+    dialogs,
   })
 
   /** Exporting as a file, PNG or PDF, and the maker's name they print (tickets 68, 73, 74, 158, 161, 202). */
@@ -540,7 +548,7 @@ function wireAppShell(services: Services) {
   const beadShapeFlow = useBeadShapeFlow({ currentProject, edit })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
-  const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages })
+  const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs })
 
   /** The deferred save's safety net (see useSaveOnPageHide). */
   useSaveOnPageHide(flushPendingSave)
@@ -560,6 +568,7 @@ function wireAppShell(services: Services) {
     openProject: onSelectProject,
     removeProject,
     saveNow,
+    dialogs,
   })
 
   /** Rename, Duplicate and Delete for the open Project, from the Project panel (spec 0440, ticket 443). */
@@ -571,13 +580,16 @@ function wireAppShell(services: Services) {
     removeProject,
     removeAllProjects,
     closeProject: onNewProject,
+    dialogs,
   })
 
   /** The Drawer and the phone tier's sheets (tickets 79, 168, 188, 204). */
   const overlays = useOverlayVisibility({ selectProject: savedProjectConfirms.onRequestSwitch, openPanel })
 
-  /** Whether the `?` shortcuts help overlay (ticket 96) is open: a single boolean with no logic, so it stays here. */
-  const shortcutsHelpOpen = ref(false)
+  /** Whether the `?` shortcuts help overlay (ticket 96) is open: a dialog with no flow of its own, so it is asked here. */
+  const shortcutsHelpOpen = dialogs.flag('shortcuts')
+  const onOpenShortcutsHelp = () => void (shortcutsHelpOpen.value = true)
+  const onCloseShortcutsHelp = () => void (shortcutsHelpOpen.value = false)
 
   usePageZoomLock()
   useViewportGuard()
@@ -596,22 +608,7 @@ function wireAppShell(services: Services) {
       return was
     },
     hasOpenLayer,
-    anyDialogOpen: () =>
-      deleteAll.deleteAllConfirmOpen.value ||
-      frameFlow.removeConfirmOpen.value ||
-      frameFlow.replaceConfirmOpen.value ||
-      !!frameFlow.switchQuestion.value ||
-      !!removeColor.pendingColorRemovalId.value ||
-      removeColor.removeAllColorsConfirmOpen.value ||
-      !!replaceBead.replaceBeadPendingBead.value ||
-      !!importSwitch.pendingImport.value ||
-      !!savedProjectConfirms.pendingRemove.value ||
-      !!savedProjectConfirms.pendingSwitch.value ||
-      manageProject.duplicating.value !== undefined ||
-      manageProject.deleting.value ||
-      manageProject.deletingAll.value ||
-      storageAsk.storageNoteOpen.value ||
-      shortcutsHelpOpen.value,
+    anyDialogOpen: () => dialogs.open.value !== undefined,
     backOutOfSelect: backOutOfSelectOrFraming,
     onUndo,
     onRedo,
@@ -641,9 +638,7 @@ function wireAppShell(services: Services) {
     onZoomIn: () => zoomIn(),
     onZoomOut: () => zoomOut(),
     onFit: resetZoom,
-    openShortcutsHelp: () => {
-      shortcutsHelpOpen.value = true
-    },
+    openShortcutsHelp: onOpenShortcutsHelp,
   })
 
   watch(activeProjectId, () => {
@@ -658,196 +653,303 @@ function wireAppShell(services: Services) {
     pickingColor.value = false
   })
 
+  /** The Frame panel's keys: an arrow steps or moves the Frame, and the page doesn't scroll for it. */
+  const onFrameKey = (event: KeyboardEvent) => {
+    if (frameFlow.onKey(event)) event.preventDefault()
+  }
+
   return {
-    t,
-    locale,
-    // The library
-    projects,
-    activeProjectId,
-    activeProject,
-    saveFailed,
-    unsaved,
-    ...savedProjectConfirms,
-    ...manageProject,
-    onNewProject,
-    activeBeadLabel,
-    projectLabel,
-    settledProject,
-    // Notices
-    toasts,
-    dismissToast,
-    announcement,
-    announce,
-    // Creating a Project, and framing a picture for one
-    framing,
-    onNewProjectDraft,
-    onCreateProject,
-    onCreateFromStarter,
-    onConvertImageCreate,
-    startConvertImage,
-    cancelConvertImage,
-    convertZoom,
-    convertPan,
-    convertMaxColors,
-    setConvertPan,
-    setConvertMaxColors,
-    convertZoomIn,
-    convertZoomOut,
-    convertResetZoom,
-    // The canvas
-    bindCanvasArea,
-    canvasAreaWidth,
-    bindCanvasScroll,
-    zoom,
-    scroll,
-    showRulers,
-    toggleRulers,
-    rowHighlight,
-    toggleRowHighlight,
-    inputMode,
-    setInputMode,
-    inputModeAvailable,
-    surfaceInputMode,
-    handedness,
-    setHandedness,
-    panBy,
-    scrollBy,
-    setZoom,
-    zoomIn,
-    zoomOut,
-    resetZoom,
-    zoomPercent,
-    stripZoomPercent,
-    spaceHeld,
-    spacePanning,
-    // Editing
-    canUndo,
-    canRedo,
-    onUndo,
-    onRedo,
-    activeTool,
-    selectedColorId,
-    customColor,
-    previewColor,
-    onSelectTool,
-    onSelectAll,
-    onSelectColor,
-    onSelectCustomColor,
-    ...toolPill,
-    selectedColorHex,
-    selection,
-    onSelectionPress,
-    onSelectionDrag: dragAdjust,
-    onSelectionRelease: endAdjust,
-    pasteProjectionActive,
-    hasClipboard,
-    onCopy,
-    onCut,
-    onPasteMode,
-    onClearSelection,
-    onFillSelection,
-    hasPaintColor,
-    onFrameFromSelection,
-    selectionRefusals,
-    backOutOfSelect: backOutOfSelectOrFraming,
-    previewCells,
-    endStroke,
-    onCellPrimaryDown,
-    onCellPrimaryMove,
-    onCellHover,
-    onHoverEnd,
-    ...rowOps,
-    onRotate: rotateFlow.onRotate,
-    onRotateFrame: rotateFrameFlow.onRotateFrame,
-    onRotateCanvas: rotateCanvasFlow.onRotateCanvas,
-    ...deleteAll,
-    pendingColorRemovalHex: removeColor.pendingColorRemovalHex,
-    removeAllColorsConfirmOpen: removeColor.removeAllColorsConfirmOpen,
-    removeAllColorsMessage: removeColor.removeAllColorsMessage,
-    onConfirmRemoveAllAddedColors: removeColor.onConfirmRemoveAllAddedColors,
-    onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
-    onCancelRemoveAddedColor: removeColor.onCancelRemoveAddedColor,
-    onConfirmRemoveAddedColor: removeColor.onConfirmRemoveAddedColor,
-    ...removeLine,
-    settingFrame: frameFlow.settingFrame,
-    framePanelShown: frameFlow.barShown,
-    framePanelOpen: frameFlow.barOpen,
-    frameHandlesOn: frameFlow.handlesOn,
-    frameDraftProject: frameFlow.draftProject,
-    frameLocked: frameFlow.frameLocked,
-    onEditFrame: editFrame,
-    onToggleFramePanel: frameFlow.toggleBar,
-    onCloseFramePanel: frameFlow.closeBar,
-    onFrameKey: (event: KeyboardEvent) => {
-      if (frameFlow.onKey(event)) event.preventDefault()
+    /** The shell's own frame (AppShell): the announcer, the save-failed notice, and a stroke ending anywhere on it. */
+    shell: {
+      t,
+      saveFailed,
+      announcement,
+      endStroke,
+      onExportProjectFile: exportFlow.onExportProjectFile,
     },
-    onFramePress: frameFlow.press,
-    onFrameDrag: frameFlow.drag,
-    onFrameRelease: frameFlow.release,
-    onFrameCancel: frameFlow.cancel,
-    onStepFrameEdge: frameFlow.stepEdge,
-    onResizeFrame: frameFlow.resizeTo,
-    onRenameFrame: frameFlow.rename,
-    onSetTechnique: frameFlow.setTechnique,
-    onSetBrickBlock: frameFlow.setBrickBlock,
-    onSetNetSize: frameFlow.setNetSize,
-    onSetCanvasNetSize: frameFlow.setCanvasNetSize,
-    onSetCanvasTechnique: frameFlow.setCanvasTechnique,
-    switchQuestion: frameFlow.switchQuestion,
-    onSetSwitchNetSize: frameFlow.setSwitchNetSize,
-    onSetSwitchBrickBlock: frameFlow.setSwitchBrickBlock,
-    onCancelSwitchTechnique: frameFlow.cancelSwitch,
-    onConfirmSwitchTechnique: frameFlow.confirmSwitch,
-    onSetCanvasBrickBlock: frameFlow.setCanvasBrickBlock,
-    onSetBeadShape: beadShapeFlow.setBeadShape,
-    onFitFrame: frameFlow.fit,
-    onSelectFrame,
-    onRemoveFrame: frameFlow.remove,
-    removeFrameConfirmOpen: frameFlow.removeConfirmOpen,
-    onCancelRemoveFrame: frameFlow.cancelRemove,
-    onConfirmRemoveFrame: frameFlow.confirmRemove,
-    removeFrameTakesBeads: frameFlow.removeTakesBeads,
-    onPlaceFrameFromStarter: frameFlow.placeFromStarter,
-    onSetFrameSettings: frameFlow.setSettings,
-    sizeConfirm,
-    onCancelSize: frameFlow.cancelSize,
-    onConfirmSize: frameFlow.confirmSize,
-    replaceFrameConfirmOpen: frameFlow.replaceConfirmOpen,
-    onCancelReplaceFrame: frameFlow.cancelReplace,
-    onConfirmReplaceFrame: frameFlow.confirmReplace,
-    onBringFrameIntoView: frameFlow.bringIntoView,
-    ...replaceBead,
-    ...importSwitch,
-    ...storageAsk,
-    ...exportFlow,
-    ...namePiece,
-    saveNow,
-    ...overlays,
-    shortcutsHelpOpen,
-    // The decoder Convert image reads a picked picture with, for the components that take a file
-    decodeImage: services.decodeImage,
+    /** The canvas box (CanvasPanel): its strip, the drawing surface, the Tool pill, the Context and Progress bars, the
+     * framing step and the toasts. */
+    canvas: {
+      t,
+      locale,
+      // The library and the panels the strip opens
+      projects,
+      activeProject,
+      projectLabel,
+      openPanel,
+      onSelectPanel: overlays.onSelectPanel,
+      openMenuOnForm: overlays.openMenuOnForm,
+      onImportProjects: importSwitch.onImportProjects,
+      toasts,
+      dismissToast,
+      // Framing a picture for a new Project
+      framing,
+      onConvertImageCreate,
+      cancelConvertImage,
+      convertZoom,
+      convertPan,
+      convertMaxColors,
+      setConvertPan,
+      setConvertMaxColors,
+      convertZoomIn,
+      convertZoomOut,
+      convertResetZoom,
+      // The view
+      bindCanvasArea,
+      canvasAreaWidth,
+      bindCanvasScroll,
+      zoom,
+      scroll,
+      showRulers,
+      toggleRulers,
+      rowHighlight,
+      toggleRowHighlight,
+      panBy,
+      scrollBy,
+      setZoom,
+      zoomIn,
+      zoomOut,
+      resetZoom,
+      stripZoomPercent,
+      spaceHeld,
+      spacePanning,
+      surfaceInputMode,
+      handedness,
+      onRotateCanvas: rotateCanvasFlow.onRotateCanvas,
+      // Drawing and the Selection
+      canUndo,
+      canRedo,
+      onUndo,
+      onRedo,
+      activeTool,
+      selectedColorHex,
+      selectedColorId,
+      customColor,
+      previewColor,
+      onSelectTool,
+      onSelectColor,
+      onSelectCustomColor,
+      toolPillPosition: toolPill.toolPillPosition,
+      toolPillPopoverOpen: toolPill.toolPillPopoverOpen,
+      recentsInPill: toolPill.recentsInPill,
+      pickRecent: toolPill.pickRecent,
+      previewCells,
+      onCellPrimaryDown,
+      onCellPrimaryMove,
+      onCellHover,
+      onHoverEnd,
+      selection,
+      selectionRefusals,
+      onSelectionPress,
+      onSelectionDrag: dragAdjust,
+      onSelectionRelease: endAdjust,
+      pasteProjectionActive,
+      hasClipboard,
+      onCopy,
+      onCut,
+      onPasteMode,
+      onClearSelection,
+      onFillSelection,
+      hasPaintColor,
+      onSelectAll,
+      onRotate: rotateFlow.onRotate,
+      canNamePiece: namePiece.canNamePiece,
+      onNamePiece: namePiece.onNamePiece,
+      canRemoveSelectedLine: removeLine.canRemoveSelectedLine,
+      onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
+      // The Frame and Row progress
+      onFrameFromSelection,
+      settingFrame: frameFlow.settingFrame,
+      framePanelOpen: frameFlow.barOpen,
+      frameHandlesOn: frameFlow.handlesOn,
+      frameDraftProject: frameFlow.draftProject,
+      onToggleFramePanel: frameFlow.toggleBar,
+      onEditFrame: editFrame,
+      onFrameKey,
+      onFitFrame: frameFlow.fit,
+      onRemoveFrame: frameFlow.remove,
+      onFramePress: frameFlow.press,
+      onFrameDrag: frameFlow.drag,
+      onFrameRelease: frameFlow.release,
+      onFrameCancel: frameFlow.cancel,
+      onToggleRowDirection: rowOps.onToggleRowDirection,
+      onMoveRow: rowOps.onMoveRow,
+      onResetProgress: rowOps.onResetProgress,
+    },
+    /** The panels over the canvas box (AppPanels): Menu with New Project and the Projects library, Project, and the
+     * Frame panel. Each control only asks; the flows do the work. */
+    panels: {
+      t,
+      openPanel,
+      menuOpensOnForm: overlays.menuOpensOnForm,
+      phoneSavedProjectsOpen: overlays.phoneSavedProjectsOpen,
+      onSelectProjectFromPhoneDrawer: overlays.onSelectProjectFromPhoneDrawer,
+      onOpenShortcutsHelp,
+      // Menu: the device and the library
+      toolPillPosition: toolPill.toolPillPosition,
+      inputMode,
+      setInputMode,
+      inputModeAvailable,
+      handedness,
+      setHandedness,
+      projects,
+      activeProjectId,
+      onRequestRemove: savedProjectConfirms.onRequestRemove,
+      onImportProjects: importSwitch.onImportProjects,
+      onExportLibraryFile: exportFlow.onExportLibraryFile,
+      onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
+      // New Project
+      framing,
+      decodeImage: services.decodeImage,
+      onNewProjectDraft,
+      onCreateProject,
+      onCreateFromStarter,
+      startConvertImage,
+      // Project
+      activeProject,
+      saveFailed,
+      unsaved,
+      saveNow,
+      onRenameProject: manageProject.onRenameProject,
+      onRequestDuplicate: manageProject.onRequestDuplicate,
+      onRequestDelete: manageProject.onRequestDelete,
+      onRequestDeleteAll: deleteAll.onRequestDeleteAll,
+      onSetTechnique: frameFlow.setTechnique,
+      onSetBrickBlock: frameFlow.setBrickBlock,
+      onSetNetSize: frameFlow.setNetSize,
+      onSetCanvasTechnique: frameFlow.setCanvasTechnique,
+      onSetCanvasBrickBlock: frameFlow.setCanvasBrickBlock,
+      onSetCanvasNetSize: frameFlow.setCanvasNetSize,
+      onSetBeadShape: beadShapeFlow.setBeadShape,
+      replaceBeadCandidates: replaceBead.replaceBeadCandidates,
+      onRequestReplaceBead: replaceBead.onRequestReplaceBead,
+      onExportProjectFile: exportFlow.onExportProjectFile,
+      onSaveMakerName: exportFlow.onSaveMakerName,
+      // The Frame panel
+      settledProject,
+      framePanelShown: frameFlow.barShown,
+      onCloseFramePanel: frameFlow.closeBar,
+      onStepFrameEdge: frameFlow.stepEdge,
+      onResizeFrame: frameFlow.resizeTo,
+      onRotateFrame: rotateFrameFlow.onRotateFrame,
+      onRemoveFrame: frameFlow.remove,
+      onRenameFrame: frameFlow.rename,
+      onFitFrame: frameFlow.fit,
+      onSelectFrame,
+      onSetFrameSettings: frameFlow.setSettings,
+      onPlaceFrameFromStarter: frameFlow.placeFromStarter,
+      onFrameKey,
+      exporting: exportFlow.exporting,
+      onExportPng: exportFlow.onExportPng,
+      onExportPdf: exportFlow.onExportPdf,
+      onSetLetters: exportFlow.onSetLetters,
+    },
+    /** The dialogs (AppDialogs): which one the registry shows, what each asks about, and its answers. */
+    dialogs: {
+      t,
+      open: dialogs.open,
+      activeProject,
+      saveFailed,
+      onConfirmDeleteAll: deleteAll.onConfirmDeleteAll,
+      onCancelDeleteAll: deleteAll.onCancelDeleteAll,
+      onConfirmResetProgress: rowOps.onConfirmResetProgress,
+      onCancelResetProgress: rowOps.onCancelResetProgress,
+      removeFrameTakesBeads: frameFlow.removeTakesBeads,
+      onConfirmRemoveFrame: frameFlow.confirmRemove,
+      onCancelRemoveFrame: frameFlow.cancelRemove,
+      sizeConfirm,
+      onConfirmSize: frameFlow.confirmSize,
+      onCancelSize: frameFlow.cancelSize,
+      switchQuestion: frameFlow.switchQuestion,
+      onSetSwitchNetSize: frameFlow.setSwitchNetSize,
+      onSetSwitchBrickBlock: frameFlow.setSwitchBrickBlock,
+      onConfirmSwitchTechnique: frameFlow.confirmSwitch,
+      onCancelSwitchTechnique: frameFlow.cancelSwitch,
+      onConfirmReplaceFrame: frameFlow.confirmReplace,
+      onCancelReplaceFrame: frameFlow.cancelReplace,
+      pendingColorRemovalHex: removeColor.pendingColorRemovalHex,
+      onConfirmRemoveAddedColor: removeColor.onConfirmRemoveAddedColor,
+      onCancelRemoveAddedColor: removeColor.onCancelRemoveAddedColor,
+      removeAllColorsMessage: removeColor.removeAllColorsMessage,
+      onConfirmRemoveAllAddedColors: removeColor.onConfirmRemoveAllAddedColors,
+      onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
+      replaceBeadPendingBead: replaceBead.replaceBeadPendingBead,
+      replaceBeadConfirmMessage: replaceBead.replaceBeadConfirmMessage,
+      onConfirmReplaceBead: replaceBead.onConfirmReplaceBead,
+      onCancelReplaceBead: replaceBead.onCancelReplaceBead,
+      pendingImport: importSwitch.pendingImport,
+      pendingImportOpens: importSwitch.pendingImportOpens,
+      importSaveRefused: importSwitch.importSaveRefused,
+      onSwitchToImported: importSwitch.onSwitchToImported,
+      onKeepCurrentAfterImport: importSwitch.onKeepCurrentAfterImport,
+      onSaveBeforeImportSwitch: importSwitch.onSaveBeforeImportSwitch,
+      pendingRemove: savedProjectConfirms.pendingRemove,
+      onConfirmRemove: savedProjectConfirms.onConfirmRemove,
+      onCancelRemove: savedProjectConfirms.onCancelRemove,
+      pendingSwitch: savedProjectConfirms.pendingSwitch,
+      switchSaveRefused: savedProjectConfirms.switchSaveRefused,
+      onConfirmSwitch: savedProjectConfirms.onConfirmSwitch,
+      onCancelSwitch: savedProjectConfirms.onCancelSwitch,
+      onSaveBeforeSwitch: savedProjectConfirms.onSaveBeforeSwitch,
+      onConfirmStorageNote: storageAsk.onConfirmStorageNote,
+      onCancelStorageNote: storageAsk.onCancelStorageNote,
+      onCloseShortcutsHelp,
+      duplicating: manageProject.duplicating,
+      onConfirmDuplicate: manageProject.onConfirmDuplicate,
+      onCancelDuplicate: manageProject.onCancelDuplicate,
+      onConfirmDelete: manageProject.onConfirmDelete,
+      onCancelDelete: manageProject.onCancelDelete,
+      onConfirmDeleteAllProjects: manageProject.onConfirmDeleteAllProjects,
+      onCancelDeleteAllProjects: manageProject.onCancelDeleteAllProjects,
+      naming: namePiece.naming,
+      onSavePieceName: namePiece.onSavePieceName,
+      onCancelPieceName: namePiece.onCancelPieceName,
+    },
+    /** The registry itself, for a test that opens a dialog the way its flow would. */
+    dialogRegistry: dialogs,
   }
 }
 
-/** What the shell components draw on: the wiring's own return, so the two can't drift apart. */
-export type AppShellContext = ReturnType<typeof wireAppShell>
+type Wired = ReturnType<typeof wireAppShell>
+/** What AppShell draws on. */
+export type ShellFrameContext = Wired['shell']
+/** What CanvasPanel draws on. */
+export type CanvasContext = Wired['canvas']
+/** What AppPanels draws on. */
+export type PanelsContext = Wired['panels']
+/** What AppDialogs draws on. */
+export type DialogsContext = Wired['dialogs']
 
-const appShellKey: InjectionKey<AppShellContext> = Symbol('appShell')
+// Each part of the shell injects only its own context (ticket 0618), so no component can reach a handler it doesn't
+// draw, and a part can be mounted on its own under the real wiring (testUtils/shellHost).
+const shellKey: InjectionKey<ShellFrameContext> = Symbol('shellFrame')
+const canvasKey: InjectionKey<CanvasContext> = Symbol('canvasContext')
+const panelsKey: InjectionKey<PanelsContext> = Symbol('panelsContext')
+const dialogsKey: InjectionKey<DialogsContext> = Symbol('dialogsContext')
 
-/** Wires the app and shares it with every component below the caller; call once, from the root component's setup. */
-export function provideAppShell(services: Services = browserServices): AppShellContext {
-  const context = wireAppShell(services)
-  provide(appShellKey, context)
+/** Wires the app and shares each part's context with the components below the caller; call once, from the root
+ * component's setup. */
+export function provideAppShell(services: Services = browserServices): Wired {
+  const wired = wireAppShell(services)
+  provide(shellKey, wired.shell)
+  provide(canvasKey, wired.canvas)
+  provide(panelsKey, wired.panels)
+  provide(dialogsKey, wired.dialogs)
   provide(devicePreferencesKey, services.devicePreferences)
+  return wired
+}
+
+function injected<T>(key: InjectionKey<T>, name: string): T {
+  const context = inject(key)
+  if (!context) throw new Error(`${name}() needs provideAppShell() called by an ancestor`)
   return context
 }
 
-/** The wired app, for a shell component: destructure what it draws on, and refs unwrap in its template as they
- * always did in App.vue. */
-export function useAppShell(): AppShellContext {
-  const context = inject(appShellKey)
-  if (!context) {
-    throw new Error('useAppShell() needs provideAppShell() called by an ancestor')
-  }
-  return context
-}
+/** AppShell's context: destructure what it draws on; refs unwrap in its template. */
+export const useShellFrame = () => injected(shellKey, 'useShellFrame')
+/** CanvasPanel's context. */
+export const useCanvasContext = () => injected(canvasKey, 'useCanvasContext')
+/** AppPanels' context. */
+export const usePanelsContext = () => injected(panelsKey, 'usePanelsContext')
+/** AppDialogs' context. */
+export const useDialogsContext = () => injected(dialogsKey, 'useDialogsContext')

@@ -1,4 +1,3 @@
-import { ref } from 'vue'
 import {
   moveToRow,
   resetRowProgress,
@@ -9,6 +8,7 @@ import {
 } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What the row-level operations need from the app shell: the open Project and its write path. */
 export interface RowOpsDeps {
@@ -17,6 +17,8 @@ export interface RowOpsDeps {
   /** The success toast after the direction turns (ticket 411). */
   showToast: (id: string, text: string, tone?: MessageTone, action?: Toast['action']) => void
   messages: () => Translations
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 /** The Row progress controls (tickets 32, 171, 201; ADR 0020): not grid edits, so no undo step and no dependency on
@@ -52,7 +54,7 @@ export function useRowOps(deps: RowOpsDeps) {
 
   /** Whether the Reset progress question is open (ticket 455): clearing every finished row is not an undo step, so
    * it asks first. */
-  const resetProgressConfirmOpen = ref(false)
+  const resetProgressConfirmOpen = (deps.dialogs ?? useDialogs()).flag('reset-progress')
 
   /** Asks whether to reset; nothing to ask about until a row is done. */
   function onResetProgress() {

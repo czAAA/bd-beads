@@ -1,6 +1,7 @@
-import { ref, toRaw } from 'vue'
+import { toRaw } from 'vue'
 import type { Project } from '../../domain/project'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from '../../domain/projectName'
+import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What managing the open Project needs from the app shell: the library and its commit points. */
 export interface ProjectManageDeps {
@@ -14,6 +15,8 @@ export interface ProjectManageDeps {
   removeAllProjects: () => void
   /** Leaves no Project open, so the empty state shows. */
   closeProject: () => void
+  /** The dialog registry its questions open through (ticket 0618); its own when none is given. */
+  dialogs?: Dialogs
 }
 
 // Rename, Duplicate, Delete for the open Project and Delete all Projects (spec 0440, ticket 443): saved with the
@@ -21,9 +24,10 @@ export interface ProjectManageDeps {
 // `duplicating`/`deleting`. Deps are lazy.
 export function useProjectManageFlow(deps: ProjectManageDeps) {
   /** The suggested name while the Duplicate dialog is open. */
-  const duplicating = ref<string | undefined>()
-  const deleting = ref(false)
-  const deletingAll = ref(false)
+  const dialogs = deps.dialogs ?? useDialogs()
+  const duplicating = dialogs.question<string>('duplicate-project')
+  const deleting = dialogs.flag('delete-project')
+  const deletingAll = dialogs.flag('delete-all-projects')
 
   /** Renames the open Project; false (nothing changes) when the name is empty. */
   function onRenameProject(name: string): boolean {
