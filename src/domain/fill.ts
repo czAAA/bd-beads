@@ -17,9 +17,9 @@ function openLimit(beads: BeadMap, start: GridPosition): Rect {
 
 /** Every position reachable from `start` through same-colored neighbours, as the layer's geometry joins them (a
  * Custom frame's beads touch across its panels, ticket 0592): the flood region of a click. Used by Fill (fillArea). */
-function floodRegion({ beads, geometry }: LayerSheet, start: GridPosition): GridPosition[] {
+function floodRegion({ beads, geometry, edge }: LayerSheet, start: GridPosition): GridPosition[] {
   const targetColor = colorAt(beads, start.row, start.column)
-  const limit = geometry.extent() === undefined ? openLimit(beads, start) : undefined
+  const limit = edge ? undefined : openLimit(beads, start)
   const visited = new Set<string>()
   const region: GridPosition[] = []
   const stack = [start]

@@ -103,7 +103,12 @@ function turnedBeads({ beads, weave }: Pick<LayerSheet, 'beads' | 'weave'>, sele
  * @internal Tests turn a Selection without the App. */
 export function rotateSelection(project: Project, selection: Selection, inset = 0): RotatedSelection {
   const turned = turnedBeads({ beads: project.beads, weave: project }, selection, inset)
-  return { project: carryNames(project, { ...project, beads: turned.beads, updatedAt: Date.now() }, turned.moved), selection: turned.selection }
+  return { project: turnedNames(project, turned), selection: turned.selection }
+}
+
+/** The Project with its Canvas beads turned, its Piece names going where their beads went. */
+function turnedNames(project: Project, turn: ReturnType<typeof turnedBeads>): Project {
+  return carryNames(project, { ...project, beads: turn.beads, updatedAt: Date.now() }, turn.moved)
 }
 
 /** The beads of a layer as a Project holds them. */
@@ -138,7 +143,7 @@ export function rotateLayerSelection(project: Project, selection: Selection): Ro
 /** The Canvas turned, with its Piece names carried as the turn moved their beads, before what fell under the Frame was
  * put back. */
 function withCanvasNames(project: Project, rotated: Project, turn: ReturnType<typeof turnedBeads>): Project {
-  const names = carryNames(project, { ...project, beads: turn.beads }, turn.moved).pieceNames
+  const names = turnedNames(project, turn).pieceNames
   const { pieceNames: _names, ...rest } = rotated
   return { ...rest, ...(names ? { pieceNames: names } : {}) }
 }
