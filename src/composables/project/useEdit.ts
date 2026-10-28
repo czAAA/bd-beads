@@ -169,7 +169,7 @@ export function useEdit(deps: EditDeps) {
       return
     }
     deps.replaceProject(restoreSnapshot(project, snapshot))
-    if (!sameFrame(snapshot.frame, project.frame) || snapshot.technique !== project.technique || snapshot.frame?.technique !== project.frame?.technique) {
+    if (!sameFrame(snapshot.frame, project.frame) || snapshot.weave.technique !== project.technique || snapshot.frame?.technique !== project.frame?.technique) {
       deps.resetAfterFrameChange()
     }
   }

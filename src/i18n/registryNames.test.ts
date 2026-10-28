@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from '../domain/beads'
 import { LOCALES, type Locale } from '../domain/locale'
 import { BUILT_IN_COLORS } from '../domain/palette'
-import { TECHNIQUES, techniqueNameKey } from '../domain/weave'
+import { describeWeave, TECHNIQUES, techniqueNameKey } from '../domain/weave'
 import { be } from './be'
 import { en } from './en'
 import { es } from './es'
@@ -30,6 +30,17 @@ describe('registry names (ADR 0078)', () => {
   it('names every Technique, Form factor and Brand color in every language', () => {
     const missing = NAMED.flatMap(({ group, names, keys }) =>
       LOCALES.flatMap((locale) => [...new Set(keys)].filter((key) => !names(ALL[locale])[key]?.trim()).map((key) => `${locale} ${group}.${key}`)),
+    )
+    expect(missing).toEqual([])
+  })
+
+  it('gives every Technique setting its words in every language (ticket 0624)', () => {
+    const keys = [...new Set(TECHNIQUES.flatMap((technique) => describeWeave({ technique }).settings.map((setting) => setting.labelKey)))]
+    const missing = LOCALES.flatMap((locale) =>
+      keys.flatMap((key) => {
+        const words = ALL[locale].weaveSettings[key]
+        return (['label', 'less', 'more', 'value'] as const).filter((word) => !words?.[word].trim()).map((word) => `${locale} weaveSettings.${key}.${word}`)
+      }),
     )
     expect(missing).toEqual([])
   })

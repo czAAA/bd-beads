@@ -19,6 +19,8 @@ export interface RefitSheet extends SheetBeads {
   /** The beads it no longer holds that go to the layer under it, in the sheet's new own rows and columns; empty where
    * it folds them. */
   given: BeadMap
+  /** The layer's beads it took in, in its new own rows and columns; empty where it folds. */
+  taken: BeadMap
 }
 
 /** Whether a sheet over a layer folds what it gives up rather than giving it to the layer: when the two are woven
@@ -27,11 +29,11 @@ export function foldsOver(under: Weave, sheet: Weave): boolean {
   return !sameWeave(under, sheet)
 }
 
-/** A sheet's beads once its first row and column move by `shift` of its own positions and it holds only the positions
- * `holds` names, counted from its new first row and column. A Folded bead it holds again shows; a bead it no longer
- * holds folds, or is given to the layer under it where the sheet does not fold over it. One pass over the beads. */
-export function refitSheet(sheet: SheetBeads & Weave, under: Weave, shift: GridPosition, holds: (position: GridPosition) => boolean): RefitSheet {
-  return refit(sheet, shift, holds, foldsOver(under, sheet))
+/** A sheet's beads once its corner moves by `shift` and it holds only the positions `holds` names (from its new corner):
+ * a Folded bead held again shows, one no longer held folds or goes to the layer under it, and, not folding, the sheet
+ * takes in that layer's beads `offered` where it holds a position with none of its own (ticket 0639). */
+export function refitSheet(sheet: SheetBeads & Weave, under: Weave, shift: GridPosition, holds: (position: GridPosition) => boolean, offered: BeadMap = {}): RefitSheet {
+  return refit(sheet, shift, holds, foldsOver(under, sheet), offered)
 }
 
 /** A sheet's beads once it holds only the positions `holds` names, every bead keeping its name: what it no longer holds
@@ -46,8 +48,8 @@ export function refoldSheet(sheet: SheetBeads, holds: (position: GridPosition) =
 const IN_PLACE: GridPosition = { row: 0, column: 0 }
 
 /** The one pass behind both refits: each bead, shown or folded, lands where its sheet now holds it, else folds (always,
- * where `folds`) or is given. */
-function refit(sheet: SheetBeads, shift: GridPosition, holds: (position: GridPosition) => boolean, folds: boolean): RefitSheet {
+ * where `folds`) or is given; not folding, it takes in the `offered` beads where it has none. */
+function refit(sheet: SheetBeads, shift: GridPosition, holds: (position: GridPosition) => boolean, folds: boolean, offered: BeadMap = {}): RefitSheet {
   const beads: BeadMap = {}
   const folded: BeadMap = {}
   const given: BeadMap = {}
@@ -62,7 +64,15 @@ function refit(sheet: SheetBeads, shift: GridPosition, holds: (position: GridPos
   }
   forEachBead(sheet.folded ?? {}, (row, column, color) => sort(row, column, color, true))
   forEachBead(sheet.beads, (row, column, color) => sort(row, column, color, false))
-  return { beads, ...(hasBeads(folded) ? { folded } : {}), given }
+  const taken: BeadMap = {}
+  if (!folds) {
+    forEachBead(offered, (row, column, color) => {
+      if (!holds({ row, column }) || beads[row]?.[column] !== undefined) return
+      place(beads, row, column, color)
+      place(taken, row, column, color)
+    })
+  }
+  return { beads, ...(hasBeads(folded) ? { folded } : {}), given, taken }
 }
 
 /** A sheet's beads, those it shows and its Folded ones, each sent where `move` says (told which kind it is), or gone
