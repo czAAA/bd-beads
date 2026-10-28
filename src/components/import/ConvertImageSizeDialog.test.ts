@@ -83,10 +83,10 @@ describe('ConvertImageSizeDialog (ticket 342)', () => {
   it('warns that framing may be slow at a big size, naming the Technique', async () => {
     const wrapper = open()
 
-    await fill(wrapper, '120', '99')
+    await fill(wrapper, '20', '20')
     expect(wrapper.find('[data-testid="convert-image-slow-framing-warning"]').exists()).toBe(false)
 
-    await fill(wrapper, '120', '100')
+    await fill(wrapper, '200', '200')
     expect(wrapper.find('[data-testid="convert-image-slow-framing-warning"]').text()).toContain(en.form.techniqueLoom)
   })
 
