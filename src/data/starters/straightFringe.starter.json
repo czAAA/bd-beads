@@ -1,0 +1,16 @@
+{
+  "id": "straightFringe",
+  "design": "straightFringe.json",
+  "kind": "fringeEarring",
+  "technique": "brick",
+  "measure": "frame",
+  "pair": true,
+  "sizes": [
+    {"id": "topWidth"},
+    {"id": "topRows", "caption": false},
+    {"id": "fringeLength", "default": 10, "presets": [8, 10, 12, 16]}
+  ],
+  "picks": [
+    {"id": "fringeStyle", "default": "straight", "values": ["straight", "v"], "before": "fringeLength"}
+  ]
+}

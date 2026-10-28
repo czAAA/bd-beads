@@ -1,0 +1,6 @@
+[
+  {"id": "shapes", "best": "star", "starters": ["triangle", "warpedSquare", "kite", "star", "kaleidocycle"]},
+  {"id": "earrings", "best": "vFringe", "starters": ["straightFringe", "vFringe"]},
+  {"id": "rings", "best": "ringChevrons", "starters": ["ringStripes", "ringChevrons", "ringDiamonds", "ringPlaid"]},
+  {"id": "bands", "best": "bandDiamonds", "starters": ["bandStripes", "bandChevrons", "bandDiamonds", "bandPlaid"]}
+]

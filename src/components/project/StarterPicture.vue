@@ -42,7 +42,7 @@ function draw() {
   const context = canvas?.getContext('2d')
   if (!canvas || !context) return
   const space = spaceOf(project.value, false)
-  const turned = props.upright && props.starter.category === 'bands'
+  const turned = props.upright && props.starter.measure === 'band'
   const copies = props.pair ? 2 : 1
   // The drawing's sides as shown: turned a quarter, and side by side with a gap between a pair.
   const width = turned ? space.extent.height : space.extent.width
