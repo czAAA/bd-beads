@@ -39,8 +39,8 @@ describe('peyote passes', () => {
   })
 })
 
-describe('loom, brick stitch and square stitch passes', () => {
-  it.each(['loom', 'brick', 'square'] as const)('are one whole line on %s', (technique) => {
+describe('loom and brick stitch passes', () => {
+  it.each(['loom', 'brick'] as const)('are one whole line on %s', (technique) => {
     expect(passesOf({ technique }).count(5, 'rows')).toBe(5)
     expect(passesOf({ technique }).of(3, 4, 'rows')).toBe(3)
     expect(passesOf({ technique }).lineOf(3, 'rows')).toBe(3)
@@ -261,7 +261,6 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     ['peyote', { technique: 'peyote' as const }, { frameStep: 2, shifted: true, rowPitch: 0.75, twoPasses: true }],
     ['brick stitch', { technique: 'brick' as const }, { frameStep: 2, shifted: true, rowPitch: 1, twoPasses: false }],
     ['brick stitch, Brick block 3', { technique: 'brick' as const, techniqueSettings: { brickBlock: 3 } }, { frameStep: 6, shifted: true, rowPitch: 1, twoPasses: false }],
-    ['square stitch', { technique: 'square' as const }, { frameStep: 1, shifted: false, rowPitch: 1, twoPasses: false }],
   ])('%s', (_name, weave, expected) => {
     const description = describeWeave(weave)
     expect(description).toMatchObject(expected)
@@ -281,7 +280,6 @@ describe('positionStep (ticket 492)', () => {
     expect(positionStep({ technique: 'loom' })).toEqual({ across: 1, down: 1 })
     expect(positionStep({ technique: 'peyote' })).toEqual({ across: 1, down: 0.75 })
     expect(positionStep({ technique: 'brick' })).toEqual({ across: 1, down: 1 })
-    expect(positionStep({ technique: 'square' })).toEqual({ across: 1, down: 1 })
   })
 
   it('stretches a step down by a Real bead\'s cell', () => {
