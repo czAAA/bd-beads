@@ -53,17 +53,6 @@ export type TechniqueNameKey = 'techniqueLoom' | 'techniquePeyote' | 'techniqueB
 interface TechniqueRules {
   /** Where its name sits in the `form` translations. */
   nameKey: TechniqueNameKey
-  /** The `overview.examples` label it has in the overview's Techniques example; absent when the example leaves it out. */
-  overviewKey?: 'loom' | 'peyote' | 'brick'
-  /** Whether the Overview's background is the empty positions of a Project worked in it. */
-  overviewBackground?: boolean
-  /** Whether geometric shapes are worked in it in rounds from the centre: a Triangle's or Warped Square's panels
-   * (Custom frames, ticket 0592). */
-  worksInRounds?: boolean
-  /** Whether a Ring's or Band's strip is woven in it, rolled out flat (ticket 0597; StarterGallery card). */
-  worksStrips?: boolean
-  /** Whether a Fringe earring's top is worked in it from its base row up (ticket 0597). */
-  worksFringeTops?: boolean
   /** Every other row (or block of rows) sits half a bead across. */
   shifted: boolean
   /** Distance from one row's top to the next, in bead heights: peyote rows nest into each other. */
@@ -87,6 +76,11 @@ interface TechniqueRules {
   wordChart?: { marked: boolean }
   /** A drawn bead's height over its width in px, where the Technique draws beads that aren't square. */
   cellAspect: number
+  /** What one of its beads costs to draw on every move of a drag, in square beads: a rounded bead costs three (measured,
+   * ticket 122). */
+  draftCost: number
+  /** From how many cells of a Frame's own grid (not the margin) framing a picture in it may be slow to update (ticket 61). */
+  slowFramingCells: number
 }
 
 const ROUNDED_BEAD_CORNER = 0.22
@@ -98,12 +92,14 @@ const RIGHT_ANGLE_ASPECT = 0.7
 const NETTING_STEP = 0.75
 /** A bead's face reaches half a cell from its centre: squared, in cells, for a round bead's hit test. */
 const BEAD_FACE_DISTANCE = 0.25
+/** Every Technique's slow-framing limit: as many cells as the framing preview draws (imageFraming's PREVIEW_MAX_CELLS),
+ * since no profiling shows Techniques differ. A Technique found slower lowers its own. */
+const SLOW_FRAMING_CELLS = 12_000
 
 /** The single config map: one entry per Technique. Adding a Technique is adding an entry here. */
 const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'techniqueLoom',
-    overviewKey: 'loom',
     shifted: false,
     rowPitch: 1,
     roundness: 0,
@@ -115,13 +111,11 @@ const TECHNIQUE_RULES = {
     countsUnits: false,
     wordChart: { marked: false },
     cellAspect: 1,
+    draftCost: 1,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   peyote: {
     nameKey: 'techniquePeyote',
-    worksInRounds: true,
-    worksStrips: true,
-    overviewKey: 'peyote',
-    overviewBackground: true,
     shifted: true,
     rowPitch: 0.75,
     roundness: ROUNDED_BEAD_CORNER,
@@ -133,11 +127,11 @@ const TECHNIQUE_RULES = {
     countsUnits: false,
     wordChart: { marked: true },
     cellAspect: 1,
+    draftCost: 3,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   brick: {
     nameKey: 'techniqueBrick',
-    worksFringeTops: true,
-    overviewKey: 'brick',
     shifted: true,
     rowPitch: 1,
     roundness: 0,
@@ -149,6 +143,8 @@ const TECHNIQUE_RULES = {
     countsUnits: false,
     wordChart: { marked: true },
     cellAspect: 1,
+    draftCost: 1,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   rightAngle: {
     nameKey: 'techniqueRightAngle',
@@ -162,6 +158,8 @@ const TECHNIQUE_RULES = {
     twoPasses: false,
     countsUnits: true,
     cellAspect: RIGHT_ANGLE_ASPECT,
+    draftCost: 3,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
   netting: {
     nameKey: 'techniqueNetting',
@@ -175,6 +173,8 @@ const TECHNIQUE_RULES = {
     twoPasses: false,
     countsUnits: true,
     cellAspect: 1,
+    draftCost: 3,
+    slowFramingCells: SLOW_FRAMING_CELLS,
   },
 } satisfies Record<string, TechniqueRules>
 
@@ -602,23 +602,15 @@ export function techniqueNameKey(technique: Technique): TechniqueNameKey {
   return RULES[technique].nameKey
 }
 
-/** The Technique a Custom frame worked in rounds from the centre is woven in (ticket 0592): geometric peyote. */
-export const ROUNDS_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksInRounds) ?? DEFAULT_TECHNIQUE
+/** What one of the Technique's beads costs to draw on every move of a drag, in square beads. */
+export function draftCost(technique: Technique): number {
+  return RULES[technique].draftCost
+}
 
-/** The Technique a Ring's or Band's strip is woven in (ticket 0597). */
-export const STRIP_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksStrips) ?? DEFAULT_TECHNIQUE
-
-/** The Technique a Fringe earring's top is worked in (ticket 0597). */
-export const FRINGE_TOP_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksFringeTops) ?? DEFAULT_TECHNIQUE
-
-/** The Techniques the overview's Techniques example shows, each with its label key. */
-export const OVERVIEW_TECHNIQUES: readonly { technique: Technique; label: 'loom' | 'peyote' | 'brick' }[] = TECHNIQUES.flatMap((technique) => {
-  const label = RULES[technique].overviewKey
-  return label ? [{ technique, label }] : []
-})
-
-/** The Technique whose empty positions are the Overview's background. */
-export const OVERVIEW_BACKGROUND_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].overviewBackground) ?? DEFAULT_TECHNIQUE
+/** From how many cells of a Frame's own grid framing a picture in the Technique may be slow to update. */
+export function slowFramingCells(technique: Technique): number {
+  return RULES[technique].slowFramingCells
+}
 
 /** Whether the Technique is one of these. */
 export function isTechnique(value: unknown): value is Technique {
