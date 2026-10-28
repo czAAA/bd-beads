@@ -19,8 +19,8 @@ import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
 import { refoldSheet, withEachBead } from './folding'
 import { canvasLift, grownFrame, namedPieceTaken } from './frameGrowth'
-import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
-import { layoutPosition, type FrameLayout } from './frameLayout'
+import { customFrameSize, frameAllows, frameKindOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
+import { frameGeometry, type LayerGeometry } from './layerGeometry'
 import { describeWeave, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
 import { numericKey, pieceBeadsAt } from './pieces'
@@ -250,7 +250,7 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
   const { kind, centre, beads = {} } = placement
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ kind })!.id]: placement.size }
   const sheet = customSheet(project, kind, settings, centre)
-  return { ...project, frame: { ...sheet, beads: beadsInLayout(beads, frameLayoutOf(sheet)!) }, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
+  return { ...project, frame: { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)) }, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
 }
 
 /** A Custom frame laid out again from new settings round its own centre: each bead whose position is still in the
@@ -259,8 +259,8 @@ function resettled(project: Project, frame: FrameSheet, settings: FrameSettings,
   const centre = canvasDistance(project, frame, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
   const sheet = customSheet(project, frame.kind!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns)
   const { quarterTurns: _turned, folded: _folded, ...rest } = frame
-  const layout = frameLayoutOf(sheet)!
-  return { ...rest, ...sheet, ...refoldSheet(frame, (position) => !!layoutPosition(layout, position)) }
+  const geometry = frameGeometry(sheet)
+  return { ...rest, ...sheet, ...refoldSheet(frame, (position) => geometry.hasPosition(position)) }
 }
 
 /** Rotate Frame on a Custom frame (ticket 0594): its layout a quarter turn further clockwise round its own centre, its
@@ -272,11 +272,11 @@ export function turnedCustomFrame(project: Project): Project | undefined {
   return { ...project, frame: resettled(project, frame, frame.settings ?? {}, turns === 0 ? undefined : (turns as QuarterTurns)), updatedAt: Date.now() }
 }
 
-/** The beads of a map that have a position in a Custom frame's layout. */
-function beadsInLayout(beads: BeadMap, layout: FrameLayout): BeadMap {
+/** The beads of a map that have a position in a Frame's geometry (a Custom frame's layout). */
+function beadsOn(beads: BeadMap, geometry: LayerGeometry): BeadMap {
   const gone: BeadChange[] = []
   forEachBead(beads, (row, column) => {
-    if (!layoutPosition(layout, { row, column })) gone.push({ row, column, color: null })
+    if (!geometry.hasPosition({ row, column })) gone.push({ row, column, color: null })
   })
   return withColors(beads, gone)
 }

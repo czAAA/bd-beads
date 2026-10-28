@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { withColors } from './canvas'
-import { layerAt, onLayer, positionInLayer, positionOnCanvas, shownBeads } from './layers'
+import { layerAt, onLayer, positionInLayer, positionOnCanvas, shownBeads, type LayerSheet } from './layers'
 import { beadColorAt } from './layerBeads'
 import { createProject } from './createProject'
 import { fillArea } from './fill'
@@ -64,11 +64,11 @@ describe('onLayer', () => {
 
   it('hands back the Project itself when the command changed nothing, or only what is under the Frame', () => {
     const project = layered()
-    expect(onLayer(project, 'frame', (view) => view)).toBe(project)
+    expect(onLayer(project, 'frame', (sheet) => sheet.beads)).toBe(project)
     expect(onLayer(project, 'canvas', (view) => paintCells(view, [{ row: 11, column: 21 }], RED))).toBe(project)
   })
 
-  it('gives the view of the Frame a Frame of its own at the origin, for Mirror and Fill to work on', () => {
+  it('hands a command the Frame counted from its own first bead, with its own edge, for Fill to stop at', () => {
     const project = layered()
     const filled = onLayer(project, 'frame', (view) => fillArea(view, 2, 3, RED))
     // Fill stops at the Frame's edge: its twelve beads but the blue one.
@@ -98,24 +98,25 @@ describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
   it('hands a command the Frame\'s Weave, not the Canvas\'s', () => {
     const base = layered()
     const project: Project = { ...base, technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...base.frame!, technique: 'peyote' } }
-    const seen: Project[] = []
-    onLayer(project, 'frame', (view) => {
-      seen.push(view)
-      return view
+    const seen: LayerSheet[] = []
+    onLayer(project, 'frame', (sheet) => {
+      seen.push(sheet)
+      return sheet.beads
     })
-    expect(seen[0]).toMatchObject({ technique: 'peyote', frame: { technique: 'peyote' } })
-    expect(seen[0]).not.toHaveProperty('techniqueSettings')
+    expect(seen[0]).toMatchObject({ weave: { technique: 'peyote' }, frame: { technique: 'peyote' }, edge: { row: 0, column: 0, rows: 3, columns: 4 } })
+    expect(seen[0]!.weave).not.toHaveProperty('techniqueSettings')
   })
 
   it('hands a command the Canvas\'s Weave for the Canvas', () => {
     const base = layered()
     const project: Project = { ...base, technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...base.frame!, technique: 'peyote' } }
-    const seen: Project[] = []
-    onLayer(project, 'canvas', (view) => {
-      seen.push(view)
-      return view
+    const seen: LayerSheet[] = []
+    onLayer(project, 'canvas', (sheet) => {
+      seen.push(sheet)
+      return sheet.beads
     })
-    expect(seen[0]).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    expect(seen[0]).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 3 } } })
+    expect(seen[0]).not.toHaveProperty('edge')
   })
 })
 

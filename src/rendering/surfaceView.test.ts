@@ -5,7 +5,7 @@ import type { Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { projectExtentPx, surfaceView } from './surfaceView'
-import { layoutBeadPx, placedLayout } from './customFrameView'
+import { frameGeometry } from '../domain/layerGeometry'
 import { customFrameSize } from '../domain/frameKind'
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
@@ -309,7 +309,8 @@ describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
 describe('a Custom frame on the Canvas (ticket 0592)', () => {
   const frame = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 4 } }
   const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame, rotation: 0, zoom: 1 })
-  const bead = layoutBeadPx(placedLayout(frame, frame)!, { row: 3, column: 5 })!
+  const { box } = frameGeometry(frame).place({ row: 3, column: 5 })!
+  const bead = { x: box.x * CELL_SIZE_PX + (box.width * CELL_SIZE_PX) / 2, y: box.y * CELL_SIZE_PX + (box.height * CELL_SIZE_PX) / 2 }
 
   it('hits the bead its layout puts under the point, named by round and place, and puts it back there', () => {
     expect(view.pointToHit(bead)).toEqual({ row: 3, column: 5, layer: 'frame' })

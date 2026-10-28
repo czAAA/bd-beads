@@ -4,7 +4,7 @@ import { beadCount, colorAt, withColors } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
 import { cellOfBead } from './customSelection'
 import { customFrameSize, frameLayoutOf, type CustomFrameKindId } from './frameKind'
-import { frameLayer, onLayer, positionOnCanvas } from './layers'
+import { layerSheet, onLayer, positionOnCanvas } from './layers'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { canvasDistance } from './layerWeave'
 import { createProject } from './createProject'
@@ -44,7 +44,7 @@ const everything = (project: Project): Selection => selectAllSelection(project.b
 const ofFrame = (project: Project, top: number, left: number, rows: number, columns: number): Selection => ({ top: project.frame!.row + top, left: project.frame!.column + left, rows, columns, layer: 'frame' })
 
 /** The Canvas cell a Paste aims at to land its anchor on a bead of the Frame. */
-const aimedAt = (project: Project, bead: { row: number; column: number }) => ({ ...positionOnCanvas(project, 'frame', cellOfBead(frameLayer(project), bead)), layer: 'frame' as const })
+const aimedAt = (project: Project, bead: { row: number; column: number }) => ({ ...positionOnCanvas(project, 'frame', cellOfBead(layerSheet(project, 'frame'), bead)), layer: 'frame' as const })
 
 describe('a Selection over a Custom frame (ticket 0594)', () => {
   it('fills and clears every bead of the shape when it holds the whole Frame, from any panel', () => {

@@ -1,9 +1,8 @@
 import { changedPositions, colorAt, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
-import { frameLayoutOf, rowOrderOf, type KindedSheet } from './frameKind'
-import { layoutPosition } from './frameLayout'
+import { rowOrderOf, type KindedSheet } from './frameKind'
 import type { GridPosition } from './grid'
 import { sameBeads } from './layerBeads'
-import { frameLayer } from './layers'
+import { frameGeometryOf } from './layers'
 import { frameWeave } from './layerWeave'
 import { touch, type Project, type RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
@@ -155,9 +154,9 @@ function framePassAt(project: RowProgressed, position: GridPosition): number | u
     return undefined
   }
   const own = { row: position.row - frame.row, column: position.column - frame.column }
-  // A Custom frame's positions are its layout's, named by round and place, not its rectangle's (ticket 0594).
-  const layout = frameLayoutOf(frame)
-  if (layout ? !layoutPosition(layout, own) : !frameContains(frame, position)) {
+  // Its rectangle, holes included, and its positions: a Custom frame's are named by round and place and reach past it
+  // (ticket 0594); its Row order puts none of the rectangle's others in a pass.
+  if (!frameContains(frame, position) && !frameGeometryOf(project).hasPosition(own)) {
     return undefined
   }
   return frameRowOrder(project).passAt(own)
@@ -186,9 +185,8 @@ export function keepFinishedRows(before: Project, after: Project): Project {
   if (!frame || !after.frame || after.frame.beads === frame.beads) {
     return sameBeads(before, after) ? before : after
   }
-  const own = frameLayer(before)
   const reverts: BeadChange[] = changedPositions(frame.beads, after.frame.beads)
-    .filter((position) => isInFinishedRow(own, position))
+    .filter(({ row, column }) => isInFinishedRow(before, { row: row + frame.row, column: column + frame.column, layer: 'frame' }))
     .map(({ row, column }) => ({ row, column, color: colorAt(frame.beads, row, column) }))
   const kept = reverts.length === 0 ? after : { ...after, frame: { ...after.frame, beads: withColors(after.frame.beads, reverts) } }
   return sameBeads(before, kept) ? before : kept

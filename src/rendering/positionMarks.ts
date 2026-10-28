@@ -1,7 +1,7 @@
-import { beadRoundness, describeWeave, isShiftedRow, rowCycle, type BeadCell, type Technique, type TechniqueSettings } from '../domain/weave'
+import { beadRoundness, describeWeave, type BeadCell, type Technique, type TechniqueSettings } from '../domain/weave'
 import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
 import { cellSizePx, CELL_SIZE_PX } from './cellSize'
-import { rowPitchPx, type Region } from './surfaceView'
+import type { Region } from './surfaceView'
 
 // Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of
 // rows down: two for peyote/brick half-bead shifts, 2N with a Brick block of N) filled over the view, not a shape per position. A screen-size bitmap
@@ -23,11 +23,6 @@ export interface MarkTileInput {
   color: string
 }
 
-/** How many rows a tile holds: the shift's cycle, and at least two. */
-function tileRows(input: Pick<MarkTileInput, 'technique' | 'techniqueSettings' | 'cell'>): number {
-  return Math.max(2, rowCycle(input))
-}
-
 interface Tile {
   /** The tile's size in grid px. */
   size: { width: number; height: number }
@@ -35,25 +30,11 @@ interface Tile {
   beads: Region[]
 }
 
-/** What one tile holds: a bead across and a cycle of rows down, or the two beads of Right-angle weave that a Unit's
- * pitch repeats (ticket 482), or a net's diamond (ticket 485). */
+/** What one tile holds, as the Weave's description gives it: a bead across and a cycle of rows down, or the two beads
+ * of Right-angle weave that a Unit's pitch repeats (ticket 482), or a net's diamond (ticket 485). */
 function tileOf(input: Pick<MarkTileInput, 'technique' | 'techniqueSettings' | 'cell'>): Tile {
-  const description = describeWeave(input)
-  if (description.countsUnits) {
-    const cell = cellSizePx(input.technique, input.cell)
-    return description.tile(cell.width, cell.height)
-  }
-  const { height: cellHeight } = cellSizePx(input.technique, input.cell)
-  const pitch = rowPitchPx(input.technique, input.cell)
-  return {
-    size: { width: CELL_SIZE_PX, height: tileRows(input) * pitch },
-    beads: Array.from({ length: tileRows(input) }, (_row, row) => ({
-      x: isShiftedRow(input, row) ? CELL_SIZE_PX / 2 : 0,
-      y: row * pitch,
-      width: CELL_SIZE_PX,
-      height: cellHeight,
-    })),
-  }
+  const cell = cellSizePx(input.technique, input.cell)
+  return describeWeave(input).tile(cell.width, cell.height)
 }
 
 /** A rounded rectangle as a closed path (the corners cut by `radius`, 0 for square). */

@@ -1,19 +1,37 @@
-import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, shiftedBeads, withColors, type BeadMap, type Rect, type FrameSheet } from './canvas'
+import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, shiftedBeads, withColors, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { GridPosition, Layer } from './grid'
 
 export type { Layer }
 import { footprintOf } from './footprint'
-import { frameLayoutOf } from './frameKind'
-import { unwoven, weaveOf } from './layerWeave'
-import type { Project } from './project'
+import type { KindedSheet } from './frameKind'
+import { frameGeometry, gridGeometry, type LayerGeometry } from './layerGeometry'
+import { canvasWeave, frameWeave } from './layerWeave'
+import { touch, type Project } from './project'
+import { projectCell, type ShapedBead } from './projectBead'
+import type { Weave } from './weave'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
-// Eraser, Paste, Selection fills) works on one Project's beads in one coordinate system; `onLayer` hands it
-// the layer as a Project of its own, so none of them has to know there are two.
+// Eraser, Paste, Selection fills) works on one layer's beads in its own positions; `onLayer` hands it the layer as a
+// `LayerSheet`, so none of them has to know there are two.
 
+/** One layer as a drawing command works on it (ADR 0066, 0078): its own beads by its own positions, the Weave it is
+ * woven in (ticket 492), and the Layer geometry that says where its beads are. */
+export interface LayerSheet {
+  beads: BeadMap
+  /** Its Weave, with the Bead shape's cell the Project draws it in. */
+  weave: Weave
+  geometry: LayerGeometry
+  /** The Frame's rectangle in its own positions, its first row and column 0, 0; none on the Canvas, which has no edge. */
+  edge?: Rect
+  /** The Frame as its kind reads it (its kind, settings, turn, size and Weave); none on the Canvas. */
+  frame?: KindedSheet
+}
 
 /** What `layerAt` needs of a Project (ADR 0066): the Frame, and the Weaves that say how much of the Canvas it covers. */
 export type Placed = Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+
+/** A Project as what reads its Frame's geometry needs it: the Frame, the Weaves and the Bead shape's cell. */
+type Framed = Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & ShapedBead
 
 /** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
  * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its
@@ -35,14 +53,14 @@ export function positionInLayer(project: Pick<Project, 'frame'>, layer: Layer, p
 /** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies (a Custom
  * frame's hide them, having no Canvas positions). For what asks about the picture as a whole (Select all, Fit to
  * drawing); the same map back when there is no Frame. */
-export function shownBeads(project: Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): BeadMap {
+export function shownBeads(project: Framed & Pick<Project, 'beads'>): BeadMap {
   const frame = project.frame
   if (!frame) {
     return project.beads
   }
   const hidden = beadsWithout(project.beads, footprintOf(project)!)
-  // A Custom frame's beads lie at angles, named by round and place, not on the Canvas's positions (ADR 0077).
-  return frameLayoutOf(frame) ? hidden : beadsOver(hidden, shiftedBeads(frame.beads, frame.row, frame.column))
+  // Only a grid's positions are the Canvas's, moved by the Frame's corner; a Custom frame's are named by round and place.
+  return frameGeometryOf(project).grid ? beadsOver(hidden, shiftedBeads(frame.beads, frame.row, frame.column)) : hidden
 }
 
 /** A position of a layer's own, back on the Canvas. */
@@ -51,36 +69,43 @@ export function positionOnCanvas(project: Pick<Project, 'frame'>, layer: Layer, 
   return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
-/** The Frame's own beads as a Project of its own: its beads, a Frame at (0, 0) the size of the real one, the Project's
- * Row progress and the Frame's own Weave (ticket 492), so the commands that know a Frame (Fill's limit, the Row
- * progress lock) work on it as they always did. Piece names are the Canvas's. The Project must have a Frame. */
-export function frameLayer(project: Project): Project {
+/** The Frame as its kind reads it, in its own Weave with the Bead shape's cell. The Project must have a Frame. */
+function kindedFrame(project: Framed): KindedSheet {
+  const { rows, columns, kind, settings, quarterTurns } = project.frame!
+  return { rows, columns, ...(kind ? { kind } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
+}
+
+// A Frame is never changed in place, so its geometry is built once for each Bead shape's cell it is drawn in.
+const geometries = new WeakMap<FrameSheet, Map<string, LayerGeometry>>()
+
+/** The Frame's Layer geometry (ADR 0078), counted from its own first row and column. The Project must have a Frame. */
+export function frameGeometryOf(project: Framed): LayerGeometry {
   const frame = project.frame!
-  const { pieceNames: _canvasNames, ...rest } = unwoven(project)
-  const own: FrameSheet = {
-    row: 0,
-    column: 0,
-    rows: frame.rows,
-    columns: frame.columns,
-    beads: frame.beads,
-    ...weaveOf(frame),
-    // A Custom frame's commands ask its layout (ticket 0592).
-    ...(frame.kind ? { kind: frame.kind } : {}),
-    ...(frame.settings ? { settings: frame.settings } : {}),
-    ...(frame.quarterTurns ? { quarterTurns: frame.quarterTurns } : {}),
+  const cell = projectCell(project)
+  const key = cell ? `${cell.aspect}:${cell.roundness}` : ''
+  let known = geometries.get(frame)
+  if (!known) {
+    known = new Map()
+    geometries.set(frame, known)
   }
-  return { ...rest, ...weaveOf(frame), beads: frame.beads, frame: own }
+  let found = known.get(key)
+  if (!found) {
+    found = frameGeometry(kindedFrame(project))
+    known.set(key, found)
+  }
+  return found
 }
 
-/** The Canvas as a Project of its own: the Frame is not part of it. */
-function canvasLayer(project: Project): Project {
-  const { frame: _frame, ...rest } = project
-  return rest
-}
-
-/** A layer as a Project of its own, for what only reads it (Copy, the paste preview). The Frame's must exist. */
-export function layerView(project: Project, layer: Layer): Project {
-  return layer === 'frame' && project.frame ? frameLayer(project) : canvasLayer(project)
+/** A layer as a command works on it (see `LayerSheet`): the Frame's from its own first row and column, or the Canvas,
+ * open. The Frame's must exist. */
+export function layerSheet(project: Project, layer: Layer): LayerSheet {
+  const frame = layer === 'frame' ? project.frame : undefined
+  if (!frame) {
+    const weave = canvasWeave(project)
+    return { beads: project.beads, weave, geometry: gridGeometry(weave) }
+  }
+  const edge = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
+  return { beads: frame.beads, weave: frameWeave(project), geometry: frameGeometryOf(project), edge, frame: kindedFrame(project) }
 }
 
 /** `after` with every position under the Frame put back as `before` had it: the Canvas beads a Frame covers are neither
@@ -92,29 +117,27 @@ function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect): BeadMap {
   return reverts.length === 0 ? after : withColors(after, reverts)
 }
 
-/** Runs a command on one layer. The command gets the layer as a Project (see `frameLayer`) and `local`, which turns a
- * Canvas position into one of that layer; what it makes is put back. The same Project back when the layer's beads came
+/** Runs a command on one layer. The command gets the layer (see `layerSheet`) and `local`, which turns a Canvas position
+ * into one of that layer, and gives back the layer's beads, which are put back. The same Project back when they came
  * back as they went in, which is a drawing command's "nothing changed". */
-export function onLayer(project: Project, layer: Layer, command: (view: Project, local: (position: GridPosition) => GridPosition) => Project): Project {
+export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet, local: (position: GridPosition) => GridPosition) => BeadMap): Project {
   const frame = project.frame
   if (layer === 'frame') {
     if (!frame) {
       return project
     }
-    const made = command(frameLayer(project), (position) => positionInLayer(project, 'frame', position))
-    return made.beads === frame.beads ? project : { ...project, frame: { ...frame, beads: made.beads }, updatedAt: made.updatedAt }
+    const beads = command(layerSheet(project, 'frame'), (position) => positionInLayer(project, 'frame', position))
+    return beads === frame.beads ? project : touch(project, { frame: { ...frame, beads } })
   }
-  const made = command(canvasLayer(project), (position) => position)
-  if (made.beads === project.beads) {
+  const made = command(layerSheet(project, 'canvas'), (position) => position)
+  if (made === project.beads) {
     return project
   }
   const covered = footprintOf(project)
-  const beads = covered ? keepUnderFrame(project.beads, made.beads, covered) : made.beads
+  const beads = covered ? keepUnderFrame(project.beads, made, covered) : made
   // Everything the command did was under the Frame, so nothing is left of it.
-  if (beads !== made.beads && changedPositions(project.beads, beads).length === 0) {
+  if (beads !== made && changedPositions(project.beads, beads).length === 0) {
     return project
   }
-  // The Canvas's Pieces are the Canvas's: a command that carried their names (Rotate) carries them here.
-  const { pieceNames: _names, ...rest } = project
-  return { ...rest, beads, ...(made.pieceNames ? { pieceNames: made.pieceNames } : {}), updatedAt: made.updatedAt }
+  return touch(project, { beads })
 }
