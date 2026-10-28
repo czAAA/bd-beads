@@ -1,6 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, lineOfPass, neighborsOf, passCount, passLines, passOf, positionStep, rowCycle, rowOffset, rowPitch } from './weave'
+import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, neighborsOf, positionStep, rowCycle, rowOffset, rowPitch, techniqueGeometry, TECHNIQUES, type Weave } from './weave'
+import type { GeometryRef } from './weaveGeometry'
+
+/** A Weave's passes, as Row progress asks for them (ticket 0621). */
+const passesOf = (weave: Weave) => describeWeave(weave).passes
 
 function sorted(positions: { row: number; column: number }[]) {
   return [...positions].sort((a, b) => a.row - b.row || a.column - b.column)
@@ -8,10 +12,10 @@ function sorted(positions: { row: number; column: number }[]) {
 
 /** How many beads each pass weaves on a line of `length` beads, over `lines` lines. */
 function passSizes(lines: number, length: number): number[] {
-  const sizes = Array.from({ length: passCount({ technique: 'peyote' }, lines, 'rows') }, () => 0)
+  const sizes = Array.from({ length: passesOf({ technique: 'peyote' }).count(lines, 'rows') }, () => 0)
   for (let line = 0; line < lines; line += 1) {
     for (let along = 0; along < length; along += 1) {
-      sizes[passOf({ technique: 'peyote' }, line, along, 'rows')] += 1
+      sizes[passesOf({ technique: 'peyote' }).of(line, along, 'rows')] += 1
     }
   }
   return sizes
@@ -27,20 +31,20 @@ describe('peyote passes', () => {
   })
 
   it('counts one pass for one line and two more for each further line', () => {
-    expect([0, 1, 2, 3].map((lines) => passCount({ technique: 'peyote' }, lines, 'rows'))).toEqual([0, 1, 3, 5])
+    expect([0, 1, 2, 3].map((lines) => passesOf({ technique: 'peyote' }).count(lines, 'rows'))).toEqual([0, 1, 3, 5])
   })
 
   it('puts a pass on the line it belongs to', () => {
-    expect([0, 1, 2, 3, 4].map((pass) => lineOfPass({ technique: 'peyote' }, pass, 'rows'))).toEqual([0, 1, 1, 2, 2])
+    expect([0, 1, 2, 3, 4].map((pass) => passesOf({ technique: 'peyote' }).lineOf(pass, 'rows'))).toEqual([0, 1, 1, 2, 2])
   })
 })
 
 describe('loom and brick stitch passes', () => {
   it.each(['loom', 'brick'] as const)('are one whole line on %s', (technique) => {
-    expect(passCount({ technique }, 5, 'rows')).toBe(5)
-    expect(passOf({ technique }, 3, 4, 'rows')).toBe(3)
-    expect(lineOfPass({ technique }, 3, 'rows')).toBe(3)
-    expect(passLines({ technique }, 3, 'rows')).toEqual([3])
+    expect(passesOf({ technique }).count(5, 'rows')).toBe(5)
+    expect(passesOf({ technique }).of(3, 4, 'rows')).toBe(3)
+    expect(passesOf({ technique }).lineOf(3, 'rows')).toBe(3)
+    expect(passesOf({ technique }).lines(3, 'rows')).toEqual([3])
   })
 })
 
@@ -49,53 +53,53 @@ describe('Netting passes (ticket 487)', () => {
 
   it('counts a row of diamonds per pass', () => {
     // A Frame of V rows of diamonds holds (V + 1)p + 1 rows of positions.
-    expect([5, 9, 13].map((rows) => passCount(weave(3), rows, 'rows'))).toEqual([1, 3, 5])
-    expect([7, 10, 13].map((rows) => passCount(weave(5), rows, 'rows'))).toEqual([1, 2, 3])
-    expect([0, 1, 4].map((rows) => passCount(weave(3), rows, 'rows'))).toEqual([0, 0, 0])
+    expect([5, 9, 13].map((rows) => passesOf(weave(3)).count(rows, 'rows'))).toEqual([1, 3, 5])
+    expect([7, 10, 13].map((rows) => passesOf(weave(5)).count(rows, 'rows'))).toEqual([1, 2, 3])
+    expect([0, 1, 4].map((rows) => passesOf(weave(3)).count(rows, 'rows'))).toEqual([0, 0, 0])
   })
 
   it('weaves the first row of diamonds whole and each later one from below the row the one before ended on', () => {
-    expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map((row) => passOf(weave(3), row, 0, 'rows'))).toEqual([0, 0, 0, 0, 0, 1, 1, 2, 2])
-    expect([0, 1, 2].map((pass) => passLines(weave(3), pass, 'rows'))).toEqual([[0, 1, 2, 3, 4], [5, 6], [7, 8]])
-    expect([0, 1].map((pass) => passLines(weave(5), pass, 'rows'))).toEqual([[0, 1, 2, 3, 4, 5, 6], [7, 8, 9]])
+    expect([0, 1, 2, 3, 4, 5, 6, 7, 8].map((row) => passesOf(weave(3)).of(row, 0, 'rows'))).toEqual([0, 0, 0, 0, 0, 1, 1, 2, 2])
+    expect([0, 1, 2].map((pass) => passesOf(weave(3)).lines(pass, 'rows'))).toEqual([[0, 1, 2, 3, 4], [5, 6], [7, 8]])
+    expect([0, 1].map((pass) => passesOf(weave(5)).lines(pass, 'rows'))).toEqual([[0, 1, 2, 3, 4, 5, 6], [7, 8, 9]])
   })
 
   it('puts the ruler marker on the first row of the diamonds a pass weaves', () => {
-    expect([0, 1, 2].map((pass) => lineOfPass(weave(3), pass, 'rows'))).toEqual([0, 2, 4])
-    expect([0, 1, 2].map((pass) => lineOfPass(weave(7), pass, 'rows'))).toEqual([0, 4, 8])
+    expect([0, 1, 2].map((pass) => passesOf(weave(3)).lineOf(pass, 'rows'))).toEqual([0, 2, 4])
+    expect([0, 1, 2].map((pass) => passesOf(weave(7)).lineOf(pass, 'rows'))).toEqual([0, 4, 8])
   })
 
-  it('gives every row of positions to one pass of passLines', () => {
+  it('gives every row of positions to the lines of one pass', () => {
     const rows = 5 * 3 + 1
-    const lines = [0, 1, 2, 3].flatMap((pass) => passLines(weave(5), pass, 'rows').map((line) => ({ line, pass })))
+    const lines = [0, 1, 2, 3].flatMap((pass) => passesOf(weave(5)).lines(pass, 'rows').map((line) => ({ line, pass })))
     expect(lines.map(({ line }) => line)).toEqual(Array.from({ length: rows }, (_row, line) => line))
-    expect(lines.every(({ line, pass }) => passOf(weave(5), line, 0, 'rows') === pass)).toBe(true)
+    expect(lines.every(({ line, pass }) => passesOf(weave(5)).of(line, 0, 'rows') === pass)).toBe(true)
   })
 })
 
 describe('Right-angle weave passes (ticket 484)', () => {
   // A Frame of 3 lines of Units across 2 columns of Units: 7 rows and 3 columns of positions.
   it('counts a line of Units per pass, in rows and in columns', () => {
-    expect([1, 3, 5, 7].map((rows) => passCount({ technique: 'rightAngle' }, rows, 'rows'))).toEqual([0, 1, 2, 3])
-    expect([2, 3, 4].map((columns) => passCount({ technique: 'rightAngle' }, columns, 'columns'))).toEqual([1, 2, 3])
-    expect([0, 1].map((n) => passCount({ technique: 'rightAngle' }, n, 'rows'))).toEqual([0, 0])
+    expect([1, 3, 5, 7].map((rows) => passesOf({ technique: 'rightAngle' }).count(rows, 'rows'))).toEqual([0, 1, 2, 3])
+    expect([2, 3, 4].map((columns) => passesOf({ technique: 'rightAngle' }).count(columns, 'columns'))).toEqual([1, 2, 3])
+    expect([0, 1].map((n) => passesOf({ technique: 'rightAngle' }).count(n, 'rows'))).toEqual([0, 0])
   })
 
   it('weaves the first line of Units in three rows of positions and every later one in the two below', () => {
-    expect([0, 1, 2, 3, 4, 5, 6].map((row) => passOf({ technique: 'rightAngle' }, row, 0, 'rows'))).toEqual([0, 0, 0, 1, 1, 2, 2])
-    expect([0, 1, 2, 3].map((pass) => passLines({ technique: 'rightAngle' }, pass, 'rows'))).toEqual([[0, 1, 2], [3, 4], [5, 6], [7, 8]])
+    expect([0, 1, 2, 3, 4, 5, 6].map((row) => passesOf({ technique: 'rightAngle' }).of(row, 0, 'rows'))).toEqual([0, 0, 0, 1, 1, 2, 2])
+    expect([0, 1, 2, 3].map((pass) => passesOf({ technique: 'rightAngle' }).lines(pass, 'rows'))).toEqual([[0, 1, 2], [3, 4], [5, 6], [7, 8]])
   })
 
   it('weaves a column of Units in its horizontal beads and the vertical beads either side of it', () => {
-    const along = (row: number) => [0, 1, 2, 3].map((column) => passOf({ technique: 'rightAngle' }, column, row, 'columns'))
+    const along = (row: number) => [0, 1, 2, 3].map((column) => passesOf({ technique: 'rightAngle' }).of(column, row, 'columns'))
     expect(along(0)).toEqual([0, 1, 2, 3])
     expect(along(1)).toEqual([0, 0, 1, 2])
-    expect([0, 1, 2].map((pass) => passLines({ technique: 'rightAngle' }, pass, 'columns'))).toEqual([[0, 1], [1, 2], [2, 3]])
+    expect([0, 1, 2].map((pass) => passesOf({ technique: 'rightAngle' }).lines(pass, 'columns'))).toEqual([[0, 1], [1, 2], [2, 3]])
   })
 
   it('puts the ruler marker on the Unit line a pass weaves', () => {
-    expect([0, 1, 2].map((pass) => lineOfPass({ technique: 'rightAngle' }, pass, 'rows'))).toEqual([0, 2, 4])
-    expect([0, 1, 2].map((pass) => lineOfPass({ technique: 'rightAngle' }, pass, 'columns'))).toEqual([0, 1, 2])
+    expect([0, 1, 2].map((pass) => passesOf({ technique: 'rightAngle' }).lineOf(pass, 'rows'))).toEqual([0, 2, 4])
+    expect([0, 1, 2].map((pass) => passesOf({ technique: 'rightAngle' }).lineOf(pass, 'columns'))).toEqual([0, 1, 2])
   })
 })
 
@@ -307,7 +311,6 @@ describe('neighborsOf with a Brick block (ticket 477)', () => {
 describe('describeWeave: every question a Weave answers (ticket 481)', () => {
   const bead = { widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 }
   const here = { row: 4, column: 7 }
-  const dims = { row: 0, column: 0, columns: 10, rows: 10 }
 
   it.each([
     ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, hasBrickBlock: false, twoPasses: false }],
@@ -321,11 +324,8 @@ describe('describeWeave: every question a Weave answers (ticket 481)', () => {
     expect(description.orientationAt(here)).toBe('upright')
     expect(description.box(here, 2, 2)).toMatchObject({ width: 2, height: 2 })
     expect(description.turned({ row: 1, column: 2 }, { rows: 5, columns: 4 })).toEqual({ row: 2, column: 3 })
-    expect(description.center(here, 2, 2)).toEqual(cellCenter(weave, here, 2, 2))
-    expect(description.neighbors(dims, here)).toEqual(neighborsOf(weave, dims, here))
-    expect(description.passes.count(5, 'rows')).toBe(passCount(weave, 5, 'rows'))
-    expect(description.passes.of(3, 1, 'rows')).toBe(passOf(weave, 3, 1, 'rows'))
-    expect(description.passes.lineOf(3, 'rows')).toBe(lineOfPass(weave, 3, 'rows'))
+    expect(description.center(here, 2, 2)).toEqual({ x: 15 + rowOffset(weave, here.row, 2), y: 1 + 8 * description.rowPitch })
+    expect(description.passes.lines(3, 'rows')).toEqual([description.passes.lineOf(3, 'rows')])
     expect(description.stepMm(bead).across).toBeCloseTo(1.7)
     expect(description.stepMm(bead).down).toBe(rowPitch(weave.technique, 1.3))
   })
@@ -567,5 +567,45 @@ describe('positionStep (ticket 492)', () => {
     expect(net.down).toBeGreaterThan(0)
     const right = positionStep({ technique: 'rightAngle' })
     expect(right.down).toBeGreaterThan(0)
+  })
+})
+
+describe('the Technique registry (ADR 0078, ticket 0621)', () => {
+  const fraction = (value: number) => Number.isFinite(value) && value >= 0 && value <= 0.5
+  const step = (value: number) => Number.isFinite(value) && value > 0 && value <= 1
+
+  /** What is wrong with a geometry's values for its kind; a kind no geometry has is wrong in itself. */
+  function problems(geometry: GeometryRef): string[] {
+    const found = fraction(geometry.roundness) ? [] : ['roundness']
+    switch (geometry.kind) {
+      case 'rows':
+        if (!step(geometry.rowPitch)) found.push('rowPitch')
+        if (!(Number.isFinite(geometry.cellAspect) && geometry.cellAspect > 0)) found.push('cellAspect')
+        if (geometry.shifted ? !(geometry.shift > 0 && geometry.shift < 1) : geometry.shift !== 0) found.push('shift')
+        if (!['one', 'twoAfterFirst'].includes(geometry.passes)) found.push('passes')
+        return found
+      case 'rightAngleUnits':
+        return step(geometry.aspect) ? found : [...found, 'aspect']
+      case 'netDiamonds':
+        if (!step(geometry.step)) found.push('step')
+        if (!(Number.isFinite(geometry.cellAspect) && geometry.cellAspect > 0)) found.push('cellAspect')
+        return found
+      default:
+        return [`unknown kind ${(geometry as { kind: string }).kind}`]
+    }
+  }
+
+  it('gives every Technique a known geometry kind with valid values', () => {
+    expect(TECHNIQUES.flatMap((technique) => problems(techniqueGeometry(technique)).map((problem) => `${technique}: ${problem}`))).toEqual([])
+  })
+
+  it('builds a Weave\'s description once, and another for other settings or another Bead', () => {
+    for (const technique of TECHNIQUES) {
+      expect(describeWeave({ technique })).toBe(describeWeave({ technique }))
+    }
+    expect(describeWeave({ technique: 'brick', brickBlock: 2 })).not.toBe(describeWeave({ technique: 'brick' }))
+    expect(describeWeave({ technique: 'netting', netSize: 5 })).not.toBe(describeWeave({ technique: 'netting' }))
+    expect(describeWeave({ technique: 'loom', cell: { aspect: 0.8, roundness: 0.3 } }).cellAspect).toBe(0.8)
+    expect(describeWeave({ technique: 'loom' }).cellAspect).toBe(1)
   })
 })

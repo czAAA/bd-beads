@@ -1,6 +1,7 @@
 import { keyOf, type FrameLayout, type LayoutJoin, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
-import { lineOfPass, passCount, passLines, passOf, turnsRowDirection, type PassDirection, type Weave } from './weave'
+import { describeWeave, type Weave } from './weave'
+import type { PassDirection } from './weaveGeometry'
 
 /** The way the weaver works through a Frame (ticket 0589): along its rows or down its columns, from its far end when
  * reversed. Row progress keeps a pointer for each. */
@@ -51,27 +52,29 @@ export function rowsOrder(weave: Weave & { rows: number; columns: number }, { di
   const columnWise = direction === 'columns'
   const lines = columnWise ? weave.columns : weave.rows
   const length = columnWise ? weave.rows : weave.columns
-  const count = passCount(weave, lines, direction)
+  const description = describeWeave(weave)
+  const passes = description.passes
+  const count = passes.count(lines, direction)
   return {
-    turns: turnsRowDirection(weave.technique),
+    turns: description.rowDirection,
     count,
-    passAt: ({ row, column }) => (columnWise ? passOf(weave, mirrorLine(column, lines, reversed), row, direction) : passOf(weave, mirrorLine(row, lines, reversed), column, direction)),
+    passAt: ({ row, column }) => (columnWise ? passes.of(mirrorLine(column, lines, reversed), row, direction) : passes.of(mirrorLine(row, lines, reversed), column, direction)),
     positionsOf: (pass) => {
       if (pass < 0 || pass >= count) {
         return []
       }
       const positions: GridPosition[] = []
-      for (const line of passLines(weave, pass, direction)) {
+      for (const line of passes.lines(pass, direction)) {
         const at = mirrorLine(line, lines, reversed)
         for (let along = 0; along < length; along += 1) {
-          if (passOf(weave, line, along, direction) === pass) {
+          if (passes.of(line, along, direction) === pass) {
             positions.push(columnWise ? { row: along, column: at } : { row: at, column: along })
           }
         }
       }
       return positions
     },
-    lineOf: (pass) => mirrorLine(lineOfPass(weave, pass, direction), lines, reversed),
+    lineOf: (pass) => mirrorLine(passes.lineOf(pass, direction), lines, reversed),
   }
 }
 
