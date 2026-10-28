@@ -1,28 +1,23 @@
 import { createApp, type Component } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { page } from 'vitest/browser'
-import { LOCALES, type Locale } from '../domain/locale'
+import type { Locale } from '../domain/locale'
 import { browserDevicePreferences } from '../services/devicePreferences'
 import { measureOpenBubble } from './hoverInPage'
 import { unexplainedFit } from './fitPending'
+import { showLongestText, showRussian, type FitLocale } from './longestText'
 import { MEASURE_ARGS, measureTextMisfits, settleForMeasuring, type TextMisfit } from './textFitInPage'
 
 /** Mounting a component in a real browser at a width and in a language, and measuring whether its text fits and its
  * Tooltips stay on screen (tickets 229, 264, 552). Only for `*.browser.test.ts`. */
 
-export type { Locale, TextMisfit }
+export type { FitLocale, Locale, TextMisfit }
 
-/** The languages and the widths a component is tried at: the widths are the layout's breakpoint edges, not every device. */
-export const FIT_LOCALES: readonly Locale[] = LOCALES
+/** The languages and the widths a component is tried at (ticket 0606): English, the shortest text, and "longest", the most
+ * text any language puts in each place, as text runs out where it is longest; the widths are the layout's breakpoint
+ * edges, not every device. */
+export const FIT_LOCALES: readonly FitLocale[] = ['en', 'longest']
 export const FIT_WIDTHS = [1280, 1024, 768, 390, 320] as const
-/** From the iPad mini in portrait up there is room to spare, so only the language with the shortest text (English)
- * and the one with the longest (Russian) are tried; below it every language is, as that is where text runs out. */
-export const WIDE_FROM = 768
-const WIDE_LOCALES: readonly Locale[] = ['en', 'ru']
-/** The languages tried at `width`. */
-export const localesAt = (width: number): readonly Locale[] => (width >= WIDE_FROM ? WIDE_LOCALES : FIT_LOCALES)
-/** The widths `locale` is tried at, widest first. */
-export const widthsFor = (locale: Locale): number[] => FIT_WIDTHS.filter((width) => localesAt(width).includes(locale))
 /** The narrowest screen is where a Tooltip has least room; a wider one adds nothing it can fail on. */
 export const TOOLTIP_WIDTH = 320
 
@@ -43,9 +38,11 @@ export function unmountAll(): void {
 }
 
 /** Mounts `component` into the page at `width` in `locale`. The viewport is the width and a phone-ish height. */
-export async function mountAt(component: Component, props: Record<string, unknown>, { locale, width, text = true }: { locale: Locale; width: number; text?: boolean }): Promise<Mounted> {
+export async function mountAt(component: Component, props: Record<string, unknown>, { locale, width, text = true }: { locale: FitLocale; width: number; text?: boolean }): Promise<Mounted> {
+  if (locale === 'longest') await showLongestText()
+  else showRussian()
   // The language is one shared ref, read from storage once: setting storage again would leave the first test's language.
-  browserDevicePreferences.get('locale').value = locale
+  browserDevicePreferences.get('locale').value = locale === 'longest' ? 'ru' : locale
   await resizeTo(width)
   const root = document.createElement('div')
   document.body.append(root)
@@ -93,7 +90,7 @@ export async function misfitsNow(): Promise<string[]> {
 }
 
 /** What is wrong with the page now for this test case, once the entries of `fitPending.ts` are taken out: [] is a pass. */
-export async function fitProblems(name: string, locale: Locale, width: number): Promise<string[]> {
+export async function fitProblems(name: string, locale: FitLocale, width: number): Promise<string[]> {
   return unexplainedFit(name, locale, width, await misfitsNow())
 }
 
@@ -127,9 +124,9 @@ const WAYS: [name: Way, open: (trigger: HTMLElement) => void, close: (trigger: H
   ],
 ]
 
-/** How a Tooltip is opened in `locale`: all three ways in English, hover alone in the rest, as whether it opens does not
+/** How a Tooltip is opened in `locale`: all three ways in English, hover alone in "longest", as whether it opens does not
  * depend on the language, only how much room its text needs. */
-export const waysIn = (locale: Locale): readonly Way[] => (locale === 'en' ? WAYS.map(([way]) => way) : ['hover'])
+export const waysIn = (locale: FitLocale): readonly Way[] => (locale === 'en' ? WAYS.map(([way]) => way) : ['hover'])
 
 /** Opens every Tooltip on the page by the given ways, and reports those that are cut off, or
  * do not open. Triggers are found by the page (`.app-tooltip`), so a Tooltip a component adds is checked with no list. */
@@ -159,19 +156,18 @@ export async function tooltipProblems(root: HTMLElement, ways: readonly Way[]): 
  * check (expand a panel, open a list). */
 export type FitCase = [name: string, component: Component, props: Record<string, unknown>, act?: (root: HTMLElement) => Promise<void> | void]
 
-/** One test per language for each component: it is mounted once and tried at every width of the language (`widthsFor`),
- * and must fit its box at each, bar what `fitPending.ts` lists. */
+/** One test per language for each component: it is mounted once and tried at every width, and must fit its box at each,
+ * bar what `fitPending.ts` lists. */
 export function describeFits(cases: FitCase[]): void {
   describe.each(cases)('%s text fit', (name, component, props, act) => {
     for (const locale of FIT_LOCALES) {
-      const widths = widthsFor(locale)
-      it(`fits its box in ${locale} at ${widths.join(', ')}px`, async () => {
-        const mounted = await mountAt(component, props, { locale, width: widths[0]! })
+      it(`fits its box in ${locale} at ${FIT_WIDTHS.join(', ')}px`, async () => {
+        const mounted = await mountAt(component, props, { locale, width: FIT_WIDTHS[0] })
         if (act) {
           await act(mounted.root)
           await settleForMeasuring()
         }
-        const found = await problemsAcrossWidths(widths, async (width) => [
+        const found = await problemsAcrossWidths(FIT_WIDTHS, async (width) => [
           // Where a Tooltip has least room; opening each in every language and width would add nothing a Tooltip can fail on.
           ...(width === TOOLTIP_WIDTH ? unexplainedFit(`${name} Tooltips`, locale, width, await tooltipProblems(mounted.root, waysIn(locale))).map((problem) => `hover text: ${problem}`) : []),
           ...(await fitProblems(name, locale, width)),
