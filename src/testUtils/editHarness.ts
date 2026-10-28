@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import { shallowRef } from 'vue'
 import type { Project } from '../domain/project'
 import { useEdit } from '../composables/project/useEdit'
 import { useUndoHistory } from '../composables/project/useUndoHistory'
@@ -6,13 +7,14 @@ import { useUndoHistory } from '../composables/project/useUndoHistory'
 /** A real Edit and Undo history over one in-memory Project, so a flow's test asserts what a person would see.
  * Only the app's own seams are spies. */
 export function editHarness(initial: Project | undefined) {
-  let project = initial
+  // A ref, so the computeds of the flow under test follow each Edit like the app's reactive Project.
+  const project = shallowRef(initial)
   const replaceProject = vi.fn((next: Project) => {
-    project = next
+    project.value = next
   })
   const resetAfterFrameChange = vi.fn()
   const flushPendingSave = vi.fn()
-  const currentProject = () => project
+  const currentProject = () => project.value
 
   const history: ReturnType<typeof useUndoHistory> = useUndoHistory({
     currentProject,
@@ -35,7 +37,7 @@ export function editHarness(initial: Project | undefined) {
     resetAfterFrameChange,
     flushPendingSave,
     get project() {
-      return project!
+      return project.value!
     },
   }
 }

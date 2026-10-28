@@ -35,6 +35,7 @@ const {
   removeAllColorsConfirmOpen,
   removeAllColorsMessage,
   onConfirmRemoveAllAddedColors,
+  onCancelRemoveAllAddedColors,
   onCancelRemoveAddedColor,
   onConfirmRemoveAddedColor,
   replaceBeadPendingBead,
@@ -158,7 +159,7 @@ const {
     :confirm-label="t.palette.removeAllConfirmButton"
     :cancel-label="t.palette.removeCancelButton"
     @confirm="onConfirmRemoveAllAddedColors"
-    @cancel="removeAllColorsConfirmOpen = false"
+    @cancel="onCancelRemoveAllAddedColors"
   />
 
   <ConfirmModal
