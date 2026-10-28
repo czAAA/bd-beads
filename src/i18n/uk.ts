@@ -777,7 +777,7 @@ export const uk: Translations = {
       dropToUse: 'Відпустіть, щоб узяти це зображення',
       dropToConvert: 'Відпустіть, щоб конвертувати зображення',
       dropLimits: '{formats} · до {maxSizeMb} МБ',
-      byRatio: 'За співвідношенням пікселів і бісерин',
+      byRatio: 'За пропорцією пікселів і бісерин',
       bySize: 'За розміром',
       ratioLabel: 'пікселі зображення : бісерини',
       ratioChip: '{ratio}, пікселі зображення : бісерини',

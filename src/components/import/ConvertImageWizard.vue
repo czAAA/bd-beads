@@ -499,6 +499,8 @@ function onCreate() {
     flex-direction: column;
     overflow-y: auto;
     overscroll-behavior: contain;
+    /* As the panels do (AppPanel): the sheet is scrolled by a finger, and a bar would take the sections' room. */
+    scrollbar-width: none;
     --preview-height: var(--convert-preview-phone);
     --preview-shrunk: var(--convert-preview-phone-shrunk);
     /* The shrunk height over the full one (132 / 300): calc cannot divide one length by another. */

@@ -117,17 +117,9 @@ const gramsNote = computed(() => {
   gap: var(--space-12);
 }
 
-/* Name and Maker's name side by side, stacked on a phone (ConvertImage card). */
-.convert-review :deep(.names-section) {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-10);
-}
-
-@media (max-width: 63.99rem), (orientation: portrait) {
-  .convert-review :deep(.names-section) {
-    grid-template-columns: 1fr;
-  }
+/* A narrow sheet puts "optional" under a long field label rather than squeezing the label onto two lines. */
+.convert-review :deep(.form-field__label-row) {
+  flex-wrap: wrap;
 }
 
 .convert-review__summary {

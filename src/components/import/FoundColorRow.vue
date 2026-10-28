@@ -8,7 +8,7 @@ import type { FoundColor, TargetColor } from '../../domain/convertColors'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { familyColorId, isAddedColorId } from '../../domain/palette'
 import { colorName } from '../../i18n/colorName'
-import { plural } from '../../i18n/plural'
+import { pluralForm } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { groupThousands } from '../../domain/formatNumber'
 import AppButton from '../ui/AppButton.vue'
@@ -60,7 +60,7 @@ const lines = computed(() => {
 })
 
 const rowName = computed(() =>
-  fillBlanks(plural(locale.value, props.color.count, words.value.rowName), {}, { hex: props.color.pictureHex, name: lines.value.name }),
+  fillBlanks(pluralForm(locale.value, props.color.count, words.value.rowName), { hex: props.color.pictureHex, name: lines.value.name }, { count: groupThousands(props.color.count, locale.value) }),
 )
 
 const remapOn = computed(() => state.value === 'remap' || state.value === 'exact')
@@ -122,10 +122,11 @@ async function close() {
   rowEl.value?.querySelector<HTMLElement>('[data-testid="found-color-remap"]')?.focus()
 }
 
-// The picker is a layer of its own: Escape closes it first and returns to Remap; a press outside the row closes it too.
+// The picker is a layer of its own, so Escape closes it first and returns to Remap. It opens in the row, not over the
+// page, so a press elsewhere goes through and leaves it open.
 provide(PICK_CLOSE, () => {})
 providePalette(wizard.remapPalette)
-useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () => void close() })
+useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () => void close(), keepsPress: () => true })
 </script>
 
 <template>
@@ -274,9 +275,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
 
 .found-color__name,
 .found-color__source {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .found-color__name {

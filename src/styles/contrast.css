@@ -12,7 +12,7 @@
   border-bottom: 2px solid var(--line);
 }
 
-:root[data-theme='contrast'] :is(.progress-bar, .convert-image-frame__controls) {
+:root[data-theme='contrast'] .progress-bar {
   border-top: 2px solid var(--line);
 }
 
@@ -28,8 +28,12 @@
       .palette-picker__swatch,
       .custom-color-picker__swatch,
       .bead-quantities__swatch,
-      .convert-image-frame__swatch,
-      .convert-image-frame__box,
+      .convert-preview__box,
+      .convert-picture__thumb,
+      .found-color__swatch,
+      .convert-review__swatch,
+      .pixel-ratio__pixel,
+      .pixel-ratio__bead,
       .project-thumbnail,
       .empty-canvas__board,
       .loading__bead
