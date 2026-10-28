@@ -33,7 +33,7 @@ function framed(frame: { row: number; column: number; rows: number; columns: num
 }
 
 /** The Project with its Canvas and its Frame woven in a Technique (ticket 492). */
-function woven(project: Project, technique: Project['technique'], extra: { netSize?: number } = {}): Project {
+function woven(project: Project, technique: Project['technique'], extra: Pick<Project, 'techniqueSettings'> = {}): Project {
   return { ...project, technique, ...extra, frame: project.frame && { ...project.frame, technique, ...extra } }
 }
 
@@ -187,7 +187,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('does not offer Rotate in Netting (ticket 486)', () => {
-    const net = woven(framed({ row: 2, column: 3, rows: 5, columns: 9, beads: {} }), 'netting', { netSize: 3 })
+    const net = woven(framed({ row: 2, column: 3, rows: 5, columns: 9, beads: {} }), 'netting', { techniqueSettings: { netSize: 3 } })
     const wrapper = mountBar(net)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)

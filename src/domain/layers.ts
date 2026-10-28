@@ -4,7 +4,7 @@ import type { GridPosition, Layer } from './grid'
 export type { Layer }
 import { footprintOf } from './footprint'
 import { frameLayoutOf } from './frameKind'
-import { weaveOf } from './layerWeave'
+import { unwoven, weaveOf } from './layerWeave'
 import type { Project } from './project'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
@@ -13,7 +13,7 @@ import type { Project } from './project'
 
 
 /** What `layerAt` needs of a Project (ADR 0066): the Frame, and the Weaves that say how much of the Canvas it covers. */
-export type Placed = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+export type Placed = Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
 
 /** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
  * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its
@@ -35,7 +35,7 @@ export function positionInLayer(project: Pick<Project, 'frame'>, layer: Layer, p
 /** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies (a Custom
  * frame's hide them, having no Canvas positions). For what asks about the picture as a whole (Select all, Fit to
  * drawing); the same map back when there is no Frame. */
-export function shownBeads(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): BeadMap {
+export function shownBeads(project: Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): BeadMap {
   const frame = project.frame
   if (!frame) {
     return project.beads
@@ -56,7 +56,7 @@ export function positionOnCanvas(project: Pick<Project, 'frame'>, layer: Layer, 
  * progress lock) work on it as they always did. Piece names are the Canvas's. The Project must have a Frame. */
 export function frameLayer(project: Project): Project {
   const frame = project.frame!
-  const { pieceNames: _canvasNames, brickBlock: _canvasBlock, netSize: _canvasNet, ...rest } = project
+  const { pieceNames: _canvasNames, ...rest } = unwoven(project)
   const own: FrameSheet = {
     row: 0,
     column: 0,

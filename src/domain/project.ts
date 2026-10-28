@@ -1,7 +1,7 @@
 import type { Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { Rotation } from './grid'
-import type { BeadShape, Technique } from './weave'
+import type { BeadShape, Technique, TechniqueSettings } from './weave'
 import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
@@ -43,12 +43,12 @@ export interface Project {
   id: string
   name: string
   technique: Technique
-  /** The Brick block (ticket 477): how many rows brick stitch weaves straight on top of each other before the next
-   * rows shift half a bead. Absent means 1, every other row. Kept when the Technique is switched away from brick
-   * stitch, and used by no other Technique. */
+  /** The Canvas's Technique settings (tickets 0624, 0625): each its Technique describes (brick stitch's Brick block,
+   * ticket 477, Netting's Net size, ticket 485), and a Brick block kept off brick stitch for a switch back. */
+  techniqueSettings?: TechniqueSettings
+  /** The flat Brick block and Net size, in step with the settings until ticket 0627: read by no domain or drawing
+   * code, and mapped to and from the settings only at the file boundary, whose format keeps them until ticket 0636. */
   brickBlock?: number
-  /** The Net size (ticket 485): the beads in a Netting loop, odd from 3 to 9. Present on a Netting Project and no
-   * other; fixed once it is created (ADR 0038). */
   netSize?: number
   beadId: string
   /** A full copy of the Bead, saved in the file so the Project opens, draws and is sized the same whatever the catalog

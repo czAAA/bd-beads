@@ -1,7 +1,9 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
+import { flatFields, unwoven } from './layerWeave'
 import type { Grid, Project } from './project'
 import type { GridProject } from './storedProject'
 import type { VersionThreeProject } from './versionThree'
+import type { Weave } from './weave'
 
 // The compact form a Project's beads are stored in (ADR 0009, ADR 0026): a per-Project color table plus, per row with a
 // bead, its first column and runs of table indexes. Not indexes into the Palette (a bead may hold any hex): it
@@ -155,8 +157,14 @@ function decodeCells({ colors, runs }: EncodedCells, columns: number, rows: numb
   )
 }
 
+/** A layer as the file stores its Weave until ticket 0636: its settings map as the flat Brick block and Net size. */
+function flatWeave<T extends Weave>(layer: T) {
+  const { techniqueSettings, ...rest } = layer
+  return techniqueSettings ? { ...unwoven(layer), ...flatFields(techniqueSettings) } : rest
+}
+
 function encodeFrame({ beads, folded, ...place }: FrameSheet): EncodedFrame {
-  return { ...place, encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
+  return { ...flatWeave(place), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
 }
 
 function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): FrameSheet {
@@ -166,7 +174,7 @@ function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): F
 
 export function encodeProject(project: Project): EncodedProject {
   const { beads, frame, ...rest } = project
-  return { ...rest, encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
+  return { ...flatWeave(rest), encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
 }
 
 /** The Project a version 4 value holds; it still goes through normalizeProject. */

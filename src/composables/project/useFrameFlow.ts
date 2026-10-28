@@ -13,7 +13,7 @@ import {
   type FrameEdge,
 } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
-import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
+import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
@@ -183,7 +183,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const { hasNetSize, hasBrickBlock } = describeWeave({ technique: ask.technique })
     return {
       technique: ask.technique,
-      lost: switchLoss(project, ask.layer, ask.technique, ask.netSize),
+      lost: switchLoss(project, ask.layer, ask.technique, givenSettings(ask.netSize)),
       drawn: layerHasBeads(project, ask.layer),
       keeps: ask.technique === layerWeave(project, ask.layer).technique,
       asksNetSize: hasNetSize,
@@ -193,6 +193,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     }
   })
 
+  /** The settings a weave change gives (ticket 0625): its Net size and Brick block, where it gives them. */
+  const givenSettings = (netSize?: number, brickBlock?: number): TechniqueSettings => ({ ...(netSize !== undefined ? { netSize } : {}), ...(brickBlock !== undefined ? { brickBlock } : {}) })
+
   const layerWeave = (project: Project, layer: Layer) => (layer === 'frame' ? frameWeave(project) : canvasWeave(project))
 
   function applySwitch(layer: Layer, technique: Technique, netSize?: number, brickBlock?: number): void {
@@ -201,8 +204,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const before = layerWeave(project, layer)
     const outcome =
       layer === 'frame'
-        ? deps.edit('frame', (current) => changeFrame(current, { technique, netSize, brickBlock }))
-        : deps.edit('exempt', (current) => changeCanvasWeave(current, { technique, netSize, brickBlock }))
+        ? deps.edit('frame', (current) => changeFrame(current, { technique, techniqueSettings: givenSettings(netSize, brickBlock) }))
+        : deps.edit('exempt', (current) => changeCanvasWeave(current, { technique, techniqueSettings: givenSettings(netSize, brickBlock) }))
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
     if (technique !== before.technique) deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
@@ -220,10 +223,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const netSize = change.netSize ?? current.netSize ?? DEFAULT_NET_SIZE
     const brickBlock = change.brickBlock ?? current.brickBlock ?? 1
     const { hasNetSize, hasBrickBlock } = describeWeave({ technique })
-    if (sameWeave(current, switchedWeave(current, technique, netSize, hasBrickBlock ? brickBlock : undefined))) return
+    if (sameWeave(current, switchedWeave(current, technique, givenSettings(netSize, hasBrickBlock ? brickBlock : undefined)))) return
     if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
     const switching = technique !== current.technique
-    if ((switching && (layerHasBeads(project, layer) || hasNetSize || hasBrickBlock)) || switchLoss(project, layer, technique, netSize) > 0) {
+    if ((switching && (layerHasBeads(project, layer) || hasNetSize || hasBrickBlock)) || switchLoss(project, layer, technique, givenSettings(netSize)) > 0) {
       switchAsk.value = { layer, technique, netSize, brickBlock }
       return
     }

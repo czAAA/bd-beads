@@ -14,7 +14,7 @@ import {
 import { createProject } from './createProject'
 import { moveToRow } from './rowProgress'
 import { setPalette } from './paletteEdits'
-import { withBrickBlock, withTechnique } from './weaveSwitch'
+import { withWeave } from './weaveSwitch'
 import type { Project } from './project'
 import { paintCells } from './drawing'
 import { changeFrame } from './changeFrame'
@@ -52,7 +52,7 @@ describe('single-Project roundtrip', () => {
   })
 
   it('carries a Technique changed on an open Project through the file (ticket 351)', () => {
-    const project = withTechnique(decoratedProject(), 'brick')
+    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick' })
 
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
@@ -61,23 +61,23 @@ describe('single-Project roundtrip', () => {
   })
 
   it('carries a Brick block through the file, and reads a file without one as 1 (ticket 477)', () => {
-    const project = withBrickBlock(withTechnique(decoratedProject(), 'brick'), 3)
+    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
 
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
-    expect(restored!.brickBlock).toBe(3)
+    expect(restored!.techniqueSettings).toEqual({ brickBlock: 3 })
     expect(restored).toEqual(project)
 
     const file = JSON.parse(serializeProject(decoratedProject()))
     expect(file.projects[0]).not.toHaveProperty('brickBlock')
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.brickBlock).toBeUndefined()
+    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toBeUndefined()
   })
 
   it('reads an unreadable Brick block as the default (ticket 477)', () => {
     for (const bad of [0, 21, 2.5, 'two', null]) {
       const file = JSON.parse(serializeProject(decoratedProject()))
       file.projects[0].brickBlock = bad
-      expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.brickBlock).toBeUndefined()
+      expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toBeUndefined()
     }
   })
 
@@ -357,7 +357,7 @@ describe('importProjects', () => {
 
 describe('Netting in a file (ticket 485)', () => {
   const woven = (netSize: number) =>
-    paintAt(createProject({ technique: 'netting', netSize, beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }), [{ row: 1, column: 1 }], '#e63746')
+    paintAt(createProject({ technique: 'netting', techniqueSettings: { netSize }, beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }), [{ row: 1, column: 1 }], '#e63746')
 
   it('keeps the Technique, the Net size and every bead through the file', () => {
     for (const netSize of [3, 5, 9]) {
@@ -366,14 +366,14 @@ describe('Netting in a file (ticket 485)', () => {
       const [restored] = parseProjectsFile(serializeProject(project)).projects
 
       expect(restored).toEqual(project)
-      expect(restored).toMatchObject({ technique: 'netting', netSize })
+      expect(restored).toMatchObject({ technique: 'netting', techniqueSettings: { netSize } })
     }
   })
 
   it('reads a Net size that is not odd from 3 to 9 as 3', () => {
     const file = serializeProject(woven(5)).replace('"netSize":5', '"netSize":4')
 
-    expect(parseProjectsFile(file).projects[0]!.netSize).toBe(3)
+    expect(parseProjectsFile(file).projects[0]!.techniqueSettings).toEqual({ netSize: 3 })
   })
 })
 

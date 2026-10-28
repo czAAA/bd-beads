@@ -20,10 +20,10 @@ const REAL: BeadCell = { aspect: 1.3, roundness: 0.35 }
 
 /** Every Technique, with its settings at their defaults and moved off them, in each Bead shape. */
 const WEAVES: Weave[] = TECHNIQUES.flatMap((technique) =>
-  [{ technique }, { technique, brickBlock: 2, netSize: 5 }].flatMap((weave) => [weave, { ...weave, cell: REAL }]),
+  [{ technique }, { technique, techniqueSettings: { brickBlock: 2, netSize: 5 } }].flatMap((weave) => [weave, { ...weave, cell: REAL }]),
 )
 
-const named = (weave: Weave) => `${weave.technique} ${weave.brickBlock ?? ''}${weave.netSize ?? ''} ${weave.cell ? 'real' : 'symmetric'}`
+const named = (weave: Weave) => `${weave.technique} ${Object.values(weave.techniqueSettings ?? {}).join('')} ${weave.cell ? 'real' : 'symmetric'}`
 
 /** Each Custom frame kind at two small sizes: a kind left out fails the type check. */
 const CUSTOM: Record<CustomFrameKindId, FrameSettings[]> = {

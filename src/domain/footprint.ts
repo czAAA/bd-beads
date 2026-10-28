@@ -20,6 +20,6 @@ export function frameFootprint(canvas: Weave, frame: Rect & Weave): Rect {
 }
 
 /** The Canvas positions the Project's Frame hides (ADR 0066), or nothing without a Frame. */
-export function footprintOf(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): Rect | undefined {
+export function footprintOf(project: Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>): Rect | undefined {
   return project.frame && frameFootprint(canvasWeave(project), { ...project.frame, ...frameWeave(project) })
 }

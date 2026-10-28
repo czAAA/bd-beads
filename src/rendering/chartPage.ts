@@ -33,7 +33,7 @@ function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: P
 /** The mini map's rectangles in px from its top left corner: every part of the Schema to scale in a 9.4 mm square, 0.4 mm
  * apart, the parts on this sheet marked.
  * @internal Its test checks the mini map on its own. */
-export function miniMapRects(plan: PrintPlan, project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'rotation'>, page: number): { x: number; y: number; width: number; height: number; here: boolean }[] {
+export function miniMapRects(plan: PrintPlan, project: Pick<Project, 'technique' | 'techniqueSettings' | 'frame' | 'beads' | 'rotation'>, page: number): { x: number; y: number; width: number; height: number; here: boolean }[] {
   const grid = displayedGrid(project)
   const side = mm(9.4)
   const gap = mm(0.4)

@@ -2,7 +2,7 @@ import { beadPitchMm, type Bead } from './beads'
 import { toHex, type Rgb } from './color'
 import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
-import { describeWeave, type Technique } from './weave'
+import { describeWeave, type Technique, type TechniqueSettings } from './weave'
 import { resolveImageColors } from './imageColors'
 import type { Palette } from './palette'
 import {
@@ -177,10 +177,8 @@ interface SamplingInput {
   image: PixelData
   view: FramingView
   technique: Technique
-  /** The Brick block of the Project being made (ticket 477); nothing is 1. */
-  brickBlock?: number
-  /** The Net size of the Project being made (ticket 485); nothing is the default. */
-  netSize?: number
+  /** The settings of the Project being made (ticket 0625): its Brick block, its Net size; one left out is its default. */
+  techniqueSettings?: TechniqueSettings
   bead: Pick<Bead, 'widthMm' | 'heightMm' | 'widthCorrectionMm'>
 }
 
@@ -191,14 +189,13 @@ export function sampleLatticePacked({
   image,
   view,
   technique,
-  brickBlock,
-  netSize,
+  techniqueSettings,
   bead,
   lattice,
 }: SamplingInput & { lattice: PreviewLattice }): Int32Array {
   const cellWidth = beadPitchMm(bead)
   const cellHeight = bead.heightMm
-  const description = describeWeave({ technique, brickBlock, netSize })
+  const description = describeWeave({ technique, techniqueSettings })
   // The frame's corner: its first row is never shifted, and where Units are counted it is its first Unit's corner.
   const { x: originX, y: originY } = description.origin({ row: lattice.frameRow, column: lattice.frameColumn }, cellWidth, cellHeight)
   const packed = new Int32Array(lattice.rows * lattice.columns).fill(NO_COLOR)

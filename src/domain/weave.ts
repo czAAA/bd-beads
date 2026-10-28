@@ -22,32 +22,28 @@ export const DEFAULT_NET_SIZE = 3
 
 /** Brick stitch's Brick block, as its entry describes it (ticket 0624): 1, every other row, up to MAX_BRICK_BLOCK; the
  * same cells, so a change loses no bead. */
-export const BRICK_BLOCK_SETTING: SettingSpec = { id: 'brickBlock', labelKey: 'brickBlock', min: 1, max: MAX_BRICK_BLOCK, step: 1, default: 1 }
+export const BRICK_BLOCK_SETTING: SettingSpec = { id: 'brickBlock', labelKey: 'brickBlock', min: 1, max: MAX_BRICK_BLOCK, step: 1, default: 1, keptOffTechnique: true }
 
 /** Netting's Net size, as its entry describes it (ticket 0624): odd, from 3 to 9. A change moves the holes, so it asks
  * before beads are lost (ADR 0038). */
 export const NET_SIZE_SETTING: SettingSpec = { id: 'netSize', labelKey: 'netSize', min: MIN_NET_SIZE, max: MAX_NET_SIZE, step: 2, default: DEFAULT_NET_SIZE, lossOnChange: true }
 
-/** A Net size the Weave can lay out: odd, from 3 to 9; anything else is the default. */
-export function clampNetSize(value: number | undefined): number {
-  return settingValue(NET_SIZE_SETTING, value)
-}
-
-/** A Technique's settings by id (ticket 0624): each its entry describes, at its value. */
-type TechniqueSettings = Readonly<Record<string, number>>
+/** A layer's Technique settings by id (ticket 0624): each its Technique describes, and any kept off it (a Brick block). */
+export type TechniqueSettings = Readonly<Record<string, number>>
 
 /** The settings of a Technique that describes none, shared: a Weave's description is asked for per bead. */
 const NO_SETTINGS: TechniqueSettings = Object.freeze({})
 
-/** What decides how a Project is laid out: the Technique and, on brick stitch, the Brick block (ticket 477); absent
- * means 1, every other row. On Netting, the Net size (ticket 485); absent means the default. A Project is one. */
+/** What decides how a Project is laid out: the Technique and its settings, such as brick stitch's Brick block (ticket
+ * 477) and Netting's Net size (ticket 485). A Project is one, and so is its Frame. */
 export interface Weave {
   technique: Technique
+  /** Its settings (tickets 0624, 0625): the only ones the domain and drawing read; a setting left out is its default. */
+  techniqueSettings?: TechniqueSettings
+  /** The flat Brick block and Net size, kept in step with the settings for the callers ticket 0627 moves off them. Read
+   * by no domain or drawing code: only the file boundary maps them, to and from the settings. */
   brickBlock?: number
   netSize?: number
-  /** Its Technique's settings (ticket 0624), read ahead of the flat fields above, which it replaces in ticket 0627. A
-   * layer's Weave carries it (`withTechniqueSettings`); the Project and its file keep the flat fields for now. */
-  techniqueSettings?: TechniqueSettings
   /** How the Bead is drawn when the Project's Bead shape is Real (ADR 0068); absent is Symmetric. Never stored with a
    * layer: the Project's Bead and Bead shape decide it (`beadCell`). */
   cell?: BeadCell
@@ -201,21 +197,30 @@ export interface WeaveDescription extends Omit<TechniqueRules, 'geometry'>, Weav
   hasNetSize: boolean
 }
 
-/** The Weave's settings, each its Technique describes, read within its range: from the settings map, else from the
- * flat field of the same id, else its default. Another Technique's (a Brick block kept off brick stitch) is left out.
- * @internal Tests check the order it reads them in; elsewhere the app reads the map on a layer's Weave. */
+/** The Weave's settings, each its Technique describes, read within its range from its settings map, or else its
+ * default. Another Technique's (a Brick block kept off brick stitch) is left out. */
 export function weaveSettings(weave: Weave): TechniqueSettings {
   const { settings } = RULES[weave.technique]
   if (settings.length === 0) {
     return NO_SETTINGS
   }
-  const flat: Readonly<Record<string, number | undefined>> = { brickBlock: weave.brickBlock, netSize: weave.netSize }
-  return Object.fromEntries(settings.map((setting) => [setting.id, settingValue(setting, weave.techniqueSettings?.[setting.id] ?? flat[setting.id])]))
+  return Object.fromEntries(settings.map((setting) => [setting.id, settingValue(setting, weave.techniqueSettings?.[setting.id])]))
 }
 
-/** The Weave with its settings map, in step with its flat fields (ticket 0624): what a layer's Weave is read as. */
-export function withTechniqueSettings(weave: Weave): Weave {
-  return { ...weave, techniqueSettings: weaveSettings(weave) }
+/** Every setting a Technique describes, each once: what a layer's settings map may hold. */
+const EVERY_SETTING: readonly SettingSpec[] = [...new Map(Object.values(RULES).flatMap(({ settings }) => settings.map((setting) => [setting.id, setting] as const))).values()]
+
+/** The settings a layer woven in `technique` holds of `values` (ticket 0625): each the Technique describes, within its
+ * range or its default where none is given, and each kept off it that has a value (a Brick block for a switch back,
+ * ticket 477); any other (a Net size off Netting, ticket 568) is dropped. */
+export function heldSettings(technique: Technique, values: Readonly<Record<string, number | undefined>> = {}): TechniqueSettings {
+  const described = RULES[technique].settings
+  return Object.fromEntries(
+    EVERY_SETTING.flatMap((setting) => {
+      const value = values[setting.id]
+      return described.includes(setting) || (setting.keptOffTechnique && value !== undefined) ? [[setting.id, settingValue(setting, value)]] : []
+    }),
+  )
 }
 
 /** A Technique's geometry kind and values, as its entry names them.

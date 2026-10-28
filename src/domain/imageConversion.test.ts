@@ -281,8 +281,8 @@ describe('sampling a Netting lattice (ticket 486)', () => {
     const image = coordinateImage(16, 16)
     const view = { scaleMm: 0.5, offsetXMm: 0, offsetYMm: 0, pictureWidthMm: 8, pictureHeightMm: 8 }
     const lattice: PreviewLattice = { columns: 5, rows: 5, frameColumn: 0, frameRow: 0 }
-    const sampled = sampleLattice({ image, view, technique: 'netting', netSize: 3, bead: cubeBead, lattice })
-    const weave = describeWeave({ technique: 'netting', netSize: 3 })
+    const sampled = sampleLattice({ image, view, technique: 'netting', techniqueSettings: { netSize: 3 }, bead: cubeBead, lattice })
+    const weave = describeWeave({ technique: 'netting', techniqueSettings: { netSize: 3 } })
 
     for (let row = 0; row < 5; row++) {
       for (let column = 0; column < 5; column++) {

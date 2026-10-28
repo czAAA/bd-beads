@@ -116,7 +116,7 @@ function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: n
 }
 
 /** The parts of a Project the renderer reads. */
-export type DrawnProject = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+export type DrawnProject = Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
 
 export interface RenderInput {
   // The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded).
@@ -153,7 +153,7 @@ export interface RenderInput {
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
  * take in its drawn extent where it is woven otherwise and so draws larger or smaller than that. */
-function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beadId' | 'beadShape'>, margin = 0): Region | undefined {
+function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = 0): Region | undefined {
   const frame = project.frame
   if (!frame) {
     return undefined
@@ -186,7 +186,7 @@ function drawPositionMarks(
   context: DrawingContext,
   { project, area, zoom, pixelRatio, theme, margin }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
 ): void {
-  const pattern = positionMarkPattern(context, { technique: project.technique, brickBlock: project.brickBlock, netSize: project.netSize, cell: projectCell(project), deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
+  const pattern = positionMarkPattern(context, { technique: project.technique, techniqueSettings: project.techniqueSettings, cell: projectCell(project), deviceScale: zoom * pixelRatio, pixelRatio, color: theme.positionMark })
   if (!pattern) {
     return
   }
