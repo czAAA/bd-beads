@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { mostRecentlyUpdated, type Project } from '../../domain/project'
 
 /** What importing needs from the app shell: the library's add and open, and its manual save. */
@@ -15,8 +15,8 @@ export interface ImportSwitchFlowDeps {
  * 0020). Touches no history. Deps are lazy. */
 export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
   /** Imported Projects held back until the person says whether to switch (ticket 154); undefined when nothing to
-   * ask. They join the library either way. */
-  const pendingImport = ref<Project[] | undefined>()
+   * ask. They join the library either way, as they are: shallow, like the library (ticket 0616). */
+  const pendingImport = shallowRef<Project[] | undefined>()
 
   /** Whether Save current, offered when the last save failed, was tried and the device refused it too. */
   const importSaveRefused = ref(false)

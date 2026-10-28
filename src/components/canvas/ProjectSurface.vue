@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
 import { projectCell, rowProgressOn, type Project } from '../../domain/project'
@@ -87,7 +87,7 @@ function measure(): void {
 
 /** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a
  * position is. */
-const space = computed(() => spaceOf(toRaw(props.project), true))
+const space = computed(() => spaceOf(props.project, true))
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
@@ -102,7 +102,7 @@ function rulerFontPx(): number {
 
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
-const rulers = computed(() => rulerLayout(toRaw(props.project), surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
+const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
 watch(

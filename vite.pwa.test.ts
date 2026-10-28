@@ -4,6 +4,7 @@ import { join, resolve } from 'node:path'
 import { build } from 'vite'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { filesBelow, renderServiceWorker, SERVICE_WORKER_FILE } from './vite.pwa.ts'
+import { LOCALES } from './src/domain/locale.ts'
 
 const repo = import.meta.dirname
 const template = readFileSync(resolve(repo, 'pwa/serviceWorker.js'), 'utf8')
@@ -67,6 +68,18 @@ describe('the production build (ticket 69)', () => {
     )
     expect(precache.some((path) => path.startsWith('assets/') && path.endsWith('.js'))).toBe(true)
     expect(precache.some((path) => path.startsWith('fonts/') && path.endsWith('.woff2'))).toBe(true)
+  })
+
+  it('puts each language in a file of its own, which no page fetches at start and the offline list keeps (ticket 0616)', () => {
+    const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
+    const pages = ['index.html', 'homepage/index.html'].map((page) => readFileSync(join(outDir, page), 'utf8'))
+    for (const locale of LOCALES) {
+      const file = files.find((path) => new RegExp(`^assets/${locale}-[\\w-]+\\.js$`).test(path))
+      expect(file, locale).toBeDefined()
+      expect(precache).toContain(file)
+      // A file the page itself loads or preloads is named in it; the language's is fetched only when it is chosen.
+      for (const page of pages) expect(page).not.toContain(file!.slice('assets/'.length))
+    }
   })
 
   it('keeps index.html, splash included, under 14 KB so the first round trip carries it', () => {

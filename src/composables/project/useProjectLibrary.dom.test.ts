@@ -102,6 +102,17 @@ describe('useProjectLibrary', () => {
     expect(frameGrid(loadProjects()[0]!)[0]![0]!.color).toBe('#e63746')
   })
 
+  it('holds each Project as it was handed in, not a reactive copy, since an edit replaces it whole (ticket 0616)', () => {
+    const library = useProjectLibrary()
+    library.addProject(makeProject())
+    const changed = withPaintedCell(library.activeProject.value!, 2, 3)
+
+    library.replaceProject(changed, { deferSave: true })
+
+    expect(library.activeProject.value!.frame).toBe(changed.frame)
+    expect(library.projects.value[0]!.frame).toBe(changed.frame)
+  })
+
   it('holds back a deferred replace until the pending save is flushed', () => {
     const library = useProjectLibrary()
     const project = makeProject()
