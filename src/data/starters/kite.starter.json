@@ -1,0 +1,11 @@
+{
+  "id": "kite",
+  "design": "kite.json",
+  "kind": "kite",
+  "technique": "peyote",
+  "measure": "frame",
+  "sizes": [
+    {"id": "rows", "default": 21, "presets": [15, 21, 30]}
+  ],
+  "picks": []
+}

@@ -1,0 +1,11 @@
+{
+  "id": "star",
+  "design": "star.json",
+  "kind": "star",
+  "technique": "peyote",
+  "measure": "frame",
+  "sizes": [
+    {"id": "partSize", "default": 5, "presets": [3, 5, 7, 9]}
+  ],
+  "picks": []
+}
