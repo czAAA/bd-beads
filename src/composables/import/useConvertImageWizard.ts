@@ -80,6 +80,10 @@ export interface ConvertImageWizardDeps {
  * remembers nothing (spec 0645). */
 export type ConvertSizeUnit = 'beads' | 'mm' | 'cm'
 
+/** The layout the wizard is a full-screen sheet in, under 1024 px wide or in portrait (PhoneForms card); the same
+ * edge as the CSS of its components. */
+export const CONVERT_SHEET_QUERY = '(max-width: 63.99rem), (orientation: portrait)'
+
 /** How long a moved picture or crop handle has to stay still before the colors are worked out exactly (ticket 122). */
 const PAUSE_MS = 150
 
@@ -262,10 +266,10 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 
   // --- Picture ------------------------------------------------------------------------------------------------------
 
-  /** The crop or the pan starts over: a new picture, a turn or a flip. */
-  function restartFraming() {
+  /** The crop or the pan starts over (a turn or a flip); a new picture starts its zoom over too. */
+  function restartFraming(newPicture = false) {
     rawCrop.value = undefined
-    zoom.value = 1
+    if (newPicture) zoom.value = 1
     pan.value = { ...CENTERED_PAN }
     settle()
   }
@@ -288,7 +292,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
         setRatio(proposal.ratio)
         showSize(startingSize(decoded, bead.value, technique.value))
       }
-      restartFraming()
+      restartFraming(true)
     } catch (error) {
       rejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
     } finally {
@@ -547,6 +551,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     maxColors,
     setMaxColors: (next: number) => (maxColors.value = clampMaxImageColors(next)),
     found,
+    /** How many colors the beads use: found colors not set to empty. */
+    usedColorCount: computed(() => found.value.filter((color) => color.result).length),
     choices,
     setChoice,
     toggleEmpty,

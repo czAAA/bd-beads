@@ -34,6 +34,7 @@ const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const rowEl = ref<HTMLElement>()
+const remapButton = ref<InstanceType<typeof IconButton>>()
 
 const familyName = (family: string) => colorName(t.value, { id: familyColorId(family), hex: '' })
 
@@ -119,7 +120,7 @@ async function close() {
   catalogOpen.value = false
   emit('toggle-remap')
   await nextTick()
-  rowEl.value?.querySelector<HTMLElement>('[data-testid="found-color-remap"]')?.focus()
+  ;(remapButton.value?.$el as HTMLElement | undefined)?.querySelector('button')?.focus()
 }
 
 // The picker is a layer of its own, so Escape closes it first and returns to Remap. It opens in the row, not over the
@@ -146,6 +147,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
       </span>
       <span class="found-color__count">{{ groupThousands(color.count, locale) }}</span>
       <IconButton
+        ref="remapButton"
         variant="plain"
         icon="paint"
         :label="words.remap"

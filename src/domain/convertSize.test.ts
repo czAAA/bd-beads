@@ -14,6 +14,7 @@ import {
   ratioOfSize,
   snapCrop,
   startingProposal,
+  startingSize,
   turnPicture,
   viewForCrop,
 } from './convertSize'
@@ -101,6 +102,17 @@ describe('startingProposal', () => {
 
   it('falls back to 1:1 when no preset keeps to 150 beads', () => {
     expect(startingProposal({ width: 4000, height: 3000 }).ratio).toEqual({ pixels: 1, beads: 1 })
+  })
+})
+
+describe('startingSize', () => {
+  it('is the starting ratio’s Schema when it keeps to 150 beads', () => {
+    expect(startingSize({ width: 600, height: 400 }, cubeBead, 'loom')).toEqual({ columns: 150, rows: 100 })
+  })
+
+  it('is the picture’s shape at 150 beads on its long side for a larger picture, either way up', () => {
+    expect(startingSize({ width: 3000, height: 1500 }, cubeBead, 'loom')).toEqual({ columns: 150, rows: 75 })
+    expect(startingSize({ width: 1500, height: 3000 }, cubeBead, 'loom')).toEqual({ columns: 75, rows: 150 })
   })
 })
 
@@ -205,5 +217,6 @@ describe('convertResult', () => {
     expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, crop }, labels).ratio).toBe('1 bead ≈ 4.3 × 3.5 px')
     expect(convertResult({ grid: { columns: 40, rows: 37 }, bead: delicaBead, crop }, labels, 'ru').ratio).toBe('1 bead ≈ 4,3 × 3,5 px')
     expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, crop: { x: 0, y: 0, width: 40, height: 20 } }, labels).ratio).toBe('1 bead = 2 × 2 px')
+    expect(convertResult({ grid: { columns: 20, rows: 10 }, bead: cubeBead, crop: { x: 0, y: 0, width: 10, height: 5 } }, labels).ratio).toBe('1 px = 2 × 2 beads')
   })
 })

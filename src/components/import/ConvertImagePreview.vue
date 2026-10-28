@@ -7,6 +7,7 @@ import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { clamp } from '../../domain/clamp'
 import { pixelsPerBead, type PixelCrop } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { coverScaleMm } from '../../domain/imageFraming'
 import { beadCell, describeWeave } from '../../domain/weave'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
@@ -86,7 +87,7 @@ const frameStyle = computed(() => {
   return box ? { left: `${box.x}px`, top: `${box.y}px`, width: `${box.width}px`, height: `${box.height}px` } : undefined
 })
 
-const colorsText = computed(() => plural(locale.value, wizard.found.value.filter((color) => color.result).length, words.value.colorsCount))
+const colorsText = computed(() => plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount))
 const previewName = computed(() => {
   const size = grid.value
   return wizard.hasPicture.value && size
@@ -147,7 +148,7 @@ function panRangeMm() {
   const image = wizard.image.value
   if (!image) return { x: 0, y: 0 }
   const frame = wizard.frameMm.value
-  const coverMm = Math.max(frame.widthMm / image.width, frame.heightMm / image.height) * wizard.zoom.value
+  const coverMm = coverScaleMm(image, frame) * wizard.zoom.value
   return { x: Math.max(0, image.width * coverMm - frame.widthMm), y: Math.max(0, image.height * coverMm - frame.heightMm) }
 }
 

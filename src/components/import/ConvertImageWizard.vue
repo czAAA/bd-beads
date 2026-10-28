@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { ConvertImageStart } from '../../composables/import/useConvertImageFlow'
-import { provideConvertImageWizard, useConvertImageWizard } from '../../composables/import/useConvertImageWizard'
+import { CONVERT_SHEET_QUERY, provideConvertImageWizard, useConvertImageWizard } from '../../composables/import/useConvertImageWizard'
 import { useConvertResult } from '../../composables/import/useConvertResult'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
@@ -45,7 +45,7 @@ const words = computed(() => t.value.convertImage.wizard)
 const wizard = useConvertImageWizard({ start: props.start.draft, decodeImage: props.decodeImage, loadCatalog: props.loadCatalog })
 provideConvertImageWizard(wizard)
 const result = useConvertResult(wizard)
-const sheet = useMediaQuery('(max-width: 63.99rem), (orientation: portrait)')
+const sheet = useMediaQuery(CONVERT_SHEET_QUERY)
 
 onMounted(() => {
   if (props.start.file) void wizard.setFile(props.start.file)
@@ -104,7 +104,7 @@ const STEPS: readonly Step[] = ['picture', 'bead', 'size', 'colors', 'review']
 const summaries = computed<Record<Step, string | undefined>>(() => {
   const bead = wizard.bead.value
   const grid = wizard.dimensions.value
-  const used = wizard.found.value.filter((color) => color.result).length
+  const used = wizard.usedColorCount.value
   const weight = wizard.draftProject.value && estimatedGrams(wizard.found.value.reduce((sum, color) => sum + (color.result ? color.count : 0), 0), bead)
   const source = { 'bead-colors': words.value.beadColors, default: words.value.defaultPalette, exact: words.value.exact }[wizard.source.value]
   return {
@@ -161,8 +161,9 @@ onBeforeUnmount(() => railObserver?.disconnect())
 // --- Footer: Create, Cancel and Cancel's question ------------------------------------------------------------------
 
 const confirming = ref(false)
+const keepButton = ref<InstanceType<typeof AppButton>>()
 const footerLine = computed(() =>
-  result.value ? `${result.value.grid} · ${result.value.measured} · ${plural(locale.value, wizard.found.value.filter((color) => color.result).length, words.value.colorsCount)}` : words.value.noPicture,
+  result.value ? `${result.value.grid} · ${result.value.measured} · ${plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount)}` : words.value.noPicture,
 )
 
 /** Cancel, Close and Escape: with a picture set they ask first, in the footer (one modal at a time). */
@@ -177,7 +178,7 @@ async function onCancelAsked() {
   }
   confirming.value = true
   await nextTick()
-  document.querySelector<HTMLElement>('[data-testid="convert-discard-keep"]')?.focus()
+  ;(keepButton.value?.$el as HTMLElement | undefined)?.focus()
 }
 
 function onCreate() {
@@ -292,7 +293,7 @@ function onCreate() {
           <span>{{ words.discardQuestion }}</span>
         </span>
         <span class="convert-wizard__buttons">
-          <AppButton variant="secondary" data-testid="convert-discard-keep" @click="confirming = false">{{ t.convertImage.cancelButton }}</AppButton>
+          <AppButton ref="keepButton" variant="secondary" data-testid="convert-discard-keep" @click="confirming = false">{{ t.convertImage.cancelButton }}</AppButton>
           <AppButton variant="danger" data-testid="convert-discard-confirm" @click="emit('cancel')">{{ words.discard }}</AppButton>
         </span>
       </div>
