@@ -169,7 +169,7 @@ describe('usePaintStroke', () => {
     })
   })
 
-  it('leaves a stroke on the layer it began on when the pointer crosses to the other (ADR 0070)', () => {
+  it('leaves a stroke on the layer it began on when the pointer crosses to the other (ADR 0066)', () => {
     const { stroke, harness, frame } = setup()
     const { row, column } = frame
 

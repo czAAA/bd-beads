@@ -1,7 +1,7 @@
 # DESIGN.md: bd-beads visual language
 
 The entry point to how bd-beads looks and behaves. The design itself lives in the **bd-beads design system,
-version 18 as its baseline**, owned by this repo in [`docs/design/system/`](docs/design/system/README.md) (ADR 0030). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it (ADR 0021).
+version 19 as its baseline**, owned by this repo in [`docs/design/system/`](docs/design/system/README.md) (ADR 0030). This file doesn't repeat its token values or component specs. It says which source wins, where each topic lives, and the app-specific notes the design system doesn't carry. Every UI change follows it (ADR 0021).
 
 **Before building or changing UI:** read the design system's [README](docs/design/system/README.md), then the card
 for each component you touch (`docs/design/system/components/<Name>/README.md`), then the
@@ -68,7 +68,7 @@ All paths are under [`docs/design/system/`](docs/design/system/README.md).
 | Icons v2 (71 in the repo: the legacy `row-progress` icon is left out, since the app drops the Row progress group) | [`assets/Icons/`](docs/design/system/assets/Icons) |
 | Icons v1, the icons the app shipped before v2 (reference only) | [`assets/Icons v1/`](docs/design/system/assets/Icons%20v1) |
 
-One layout (ticket 412): the app has one layout at every width (ADR 0046; ADR 0059, ticket 439, replaced the Dock with the floating Tool pill). The header, left column and Toolbox that old §4, §4.1, §4.2 and §5.7 describe are gone; `responsive.md` and the `ToolPill`, `ToolSheet` and `CanvasStrip` cards say where their controls live now. The `Dock` card is kept as the record of the bar the Tool pill replaced. The `Toolbox` card is kept as the record of the v18 rail.
+One layout (ticket 412): the app has one layout at every width (ADR 0046; ticket 439 replaced the Dock with the floating Tool pill). The header, left column and Toolbox that old §4, §4.1, §4.2 and §5.7 describe are gone; `responsive.md` and the `ToolPill`, `ToolSheet` and `CanvasStrip` cards say where their controls live now. The `Dock` card is kept as the record of the bar the Tool pill replaced. The `Toolbox` card is kept as the record of the v18 rail.
 
 ### 3.1 Old section numbers
 
@@ -236,7 +236,7 @@ A map for the implementation tickets (136–168, and 75–83).
 ## 6. Changing the design system
 
 The repo owns the design system (ADR 0030). v18, copied from
-claude.ai on 2026-10-04, is the baseline. The repo is the source: nothing is synced from claude.ai into it, and a change is
+claude.ai on 2026-10-04, was the last sync; v19 is the baseline (below). The repo is the source: nothing is synced from claude.ai into it, and a change is
 copied back out to the claude.ai project only when that copy needs it.
 
 When a change touches how something looks, reads or behaves, edit `docs/design/system/` in the same commit as the code:

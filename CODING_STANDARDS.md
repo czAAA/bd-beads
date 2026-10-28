@@ -26,7 +26,7 @@ What a change in this repo must follow, for whoever writes it and whoever review
 
 ## Naming and comments
 
-- Name things with the glossary's terms (`docs/glossary/`): Project, Pattern, Frame, Piece, Bead, Palette, Row progress. Code identifiers use US spelling (`color`); UI copy follows `writing.md`.
+- Name things with the glossary's terms (`docs/glossary/`): Project, Schema, Canvas, Frame, Piece, Layer, Weave, Bead, Palette, Row progress. Code identifiers use US spelling (`color`); UI copy follows `writing.md`.
 - Composables are `use<Name>`; a flow's dependencies come in as one `<Name>Deps` object. Components are PascalCase and multi-word.
 - Every exported function, composable and component gets a short `/** */` comment saying what it is for and why, in domain words, citing the ticket or ADR when the reason lives there (see `useRotateFlow.ts`). Don't comment what the code already says; don't leave commented-out code or TODOs without a ticket number.
 - A comment block (`//` run or `/* */`) is at most 3 lines: the non-obvious why, no restating the code or retelling history. A longer one needs the maintainer's approval and the word `approved-long` in it; lint enforces this (ticket 472).

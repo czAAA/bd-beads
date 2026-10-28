@@ -122,7 +122,7 @@ describe('mayPlace (ticket 501)', () => {
   })
 })
 
-describe('the margin of a Frame that draws shorter than the rows it names (ADR 0070)', () => {
+describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
   const peyote = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
   const woven = { ...peyote, frame: { ...peyote.frame!, technique: 'peyote' as const } }

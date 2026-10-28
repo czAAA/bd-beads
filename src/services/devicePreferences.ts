@@ -42,7 +42,7 @@ const FIRST_LIST_SIZE = 6
 export const PREFERENCES = {
   /** Whether the Rulers toggle is on (Rulers card: on by default). */
   rulers: onUntilOff('openbeads:rulers'),
-  /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0064): on by default; a view setting only. */
+  /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0055): on by default; a view setting only. */
   rowHighlight: onUntilOff('openbeads:row-highlight'),
   /** The Canvas color (tickets 252, 554): a number, 1 to 5, so it survives a change of theme. The first list's number
    * (1 to 6) is read once from its own key and moved by name. */

@@ -20,7 +20,7 @@ export interface ToolCapabilities {
   /** A drag moves the canvas instead of drawing (the Hand tool); Edit Frame takes the drag over it. */
   moves: boolean
   /** Select or Piece (ticket 414): the Selection shows its handles, and a Selection cannot start in the margin
-   * (ticket 428, ADR 0055). */
+   * (ticket 428, ADR 0051). */
   selects: boolean
   /** Select (ticket 505): a press and a drag are read at the nearest bead position wherever the pointer is. */
   selectsAnywhere: boolean
