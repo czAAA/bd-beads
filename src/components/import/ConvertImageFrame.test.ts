@@ -337,7 +337,7 @@ describe('ConvertImageFrame', () => {
       const rgba: number[][] = []
       for (let y = 0; y < 8; y += 1) {
         for (let x = 0; x < 24; x += 1) {
-          rgba.push(x < 8 ? [255, 0, 0, 255] : x < 16 ? [0, 255, 0, 255] : [0, 0, 255, 255])
+          rgba.push(x < 8 ? [255, 0, 0, 255] : x < 16 ? [0, 160, 0, 255] : [0, 0, 255, 255])
         }
       }
       return { width: 24, height: 8, data: new Uint8ClampedArray(rgba.flat()) }
