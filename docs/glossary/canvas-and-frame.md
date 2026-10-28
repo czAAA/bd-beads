@@ -42,7 +42,7 @@ A Frame that is not a rectangle on one Grid: a fixed layout of bead positions gi
 _Avoid_: Shaped Frame, shape, expert mode, mixed technique (for the Frame itself), template
 
 **Frame kind** (ticket 0591, ADR 0077):
-What sort of Frame it is: **Rectangular** (the Frame as it has always been) or one of the Custom frame kinds (Warped Square, Triangle, Kite, Star, Kaleidocycle, Fringe earring; Medallion later). One entry in a typed registry, like the Starters', that holds everything that differs by kind: its settings, how its panels are built, which tools it allows, what Remove Frame does with its beads, its Row order and how it is exported. Code asks the Frame's kind rather than testing for it. Saved with the Project; a Frame with none, as a Rectangular one is saved, reads as Rectangular. Rectangular is the one kind so far.
+What sort of Frame it is: **Rectangular** (the Frame as it has always been) or one of the Custom frame kinds (Warped Square, Triangle, Kite, Star, Kaleidocycle, Fringe earring; Medallion later). One entry in a typed registry, like the Starters', that holds everything that differs by kind: its settings, how its panels are built, which tools it allows, what Remove Frame does with its beads, its Row order and how it is exported. Code asks the Frame's kind rather than testing for it. Saved with the Project; a Frame with none, as a Rectangular one is saved, reads as Rectangular.
 _Avoid_: frame type, shape, template
 
 **Seam** (ticket 0592):

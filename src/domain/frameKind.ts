@@ -1,32 +1,42 @@
 import type { FrameSheet } from './canvas'
-import { kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout } from './frameLayout'
+import { fringeLayout, kaleidocycleLayout, kiteLayout, layoutPosition, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
-import { describeWeave, ROUNDS_TECHNIQUE, type Technique, type Weave } from './weave'
+import { describeWeave, FRINGE_TOP_TECHNIQUE, ROUNDS_TECHNIQUE, type Technique, type Weave } from './weave'
 
-/** The Frame kinds (spec 0590, ADR 0077): what sort of Frame it is. Rectangular is the Frame as it has always been;
- * a Triangle and a Warped Square are Custom frames of peyote panels worked in Rounds from the centre (ticket 0592), a
- * Star and a Kaleidocycle are made of such parts, and a Kite is worked in Rows from its point (ticket 0593). */
-export type FrameKindId = 'rectangular' | 'triangle' | 'warpedSquare' | 'star' | 'kaleidocycle' | 'kite'
+/** The Frame kinds (spec 0590, ADR 0077). Rectangular is the Frame as it has always been; the Custom frames are a
+ * Triangle and a Warped Square in Rounds (ticket 0592), a Star and a Kaleidocycle of such parts, a Kite in Rows from its
+ * point (ticket 0593), and a Fringe earring, a brick-stitch top with strands under it (ticket 0597). */
+export type FrameKindId = 'rectangular' | 'triangle' | 'warpedSquare' | 'star' | 'kaleidocycle' | 'kite' | 'fringeEarring'
 
 /** The kind a Frame with none stored is: every Frame made before kinds, and every Rectangular one, as it is left
  * unsaved. */
 export const DEFAULT_FRAME_KIND: FrameKindId = 'rectangular'
 
-/** What a Custom frame is sized by: Rounds from the centre (Triangle, Warped Square), Part size, the rounds of each
- * part (Star, Kaleidocycle), or Rows from its point (Kite). */
-export type FrameSettingName = 'rounds' | 'partSize' | 'rows'
+/** A Custom frame's settings in numbers: Rounds from the centre (Triangle, Warped Square), Part size, the rounds of
+ * each part (Star, Kaleidocycle), Rows from its point (Kite), or a Fringe earring's Top width, Top rows and Fringe
+ * length. */
+export type FrameSettingName = 'rounds' | 'partSize' | 'rows' | 'topWidth' | 'topRows' | 'fringeLength'
 
-/** A Custom frame's settings as the Frame holds them: what its panel builder lays it out from, its kind's one setting. */
-export type FrameSettings = Partial<Record<FrameSettingName, number>>
+/** How a Fringe earring's strands hang (ticket 0597): all one length, or in a V; looped comes later. */
+export type FringeStyle = FringeSettings['fringeStyle']
 
-/** One setting of a kind: its name, its default, its smallest and largest, and the sizes offered as presets. */
+/** The Fringe styles, in the order they are offered. */
+export const FRINGE_STYLES: readonly FringeStyle[] = ['straight', 'v']
+
+/** A Custom frame's settings as the Frame holds them: what its panel builder lays it out from. */
+export type FrameSettings = Partial<Record<FrameSettingName, number>> & { fringeStyle?: FringeStyle }
+
+/** One setting of a kind: its name, its default, its smallest and largest, and the sizes offered as presets; below
+ * another setting's value where one bounds it (a Fringe earring's top has fewer rows than its base has beads, so it
+ * ends on a pair: StarterGallery card). */
 interface FrameSetting {
   name: FrameSettingName
   default: number
   min: number
   max: number
   presets: readonly number[]
+  below?: FrameSettingName
 }
 
 /** How many quarter turns clockwise a Custom frame's layout lies at (Rotate Frame, ticket 0594). */
@@ -52,11 +62,14 @@ export interface FrameKind {
   rowOrder(sheet: KindedSheet, way: RowWay): RowOrder
   /** A Custom frame's shape comes from its settings, so it is turned and selected on but never reshaped as a rectangle. */
   allows: ReadonlySet<FrameAction>
-  /** A Custom frame's own: the Technique its panels are woven in, the setting it is sized by, and its panel builder. */
+  /** A Custom frame's own: the Technique its panels are woven in, its settings (the first the one it is sized by), a
+   * Fringe earring's styles, and its panel builder. */
   custom?: {
     technique: Technique
-    size: FrameSetting
-    layout(size: number): FrameLayout
+    settings: readonly [FrameSetting, ...FrameSetting[]]
+    styles?: readonly FringeStyle[]
+    /** Built from its settings as `settingsOf` reads them: every one its kind has. */
+    layout(settings: FrameSettings): FrameLayout
   }
 }
 
@@ -68,6 +81,10 @@ const STAR_PART: FrameSetting = { name: 'partSize', default: 10, min: 2, max: 30
 const KALEIDOCYCLE_PART: FrameSetting = { name: 'partSize', default: 9, min: 3, max: 30, presets: [7, 9, 12] }
 /** A Kite's Rows from its point (inferred: the reference gives no size). */
 const KITE_ROWS: FrameSetting = { name: 'rows', default: 21, min: 4, max: 60, presets: [15, 21, 30] }
+/** A Fringe earring's base row, its rows up to a pair at the top, and its longest strand (StarterGallery card). */
+const TOP_WIDTH: FrameSetting = { name: 'topWidth', default: 7, min: 2, max: 30, presets: [5, 7, 9] }
+const TOP_ROWS: FrameSetting = { name: 'topRows', default: 6, min: 1, max: 29, presets: [4, 6, 8], below: 'topWidth' }
+const FRINGE_LENGTH: FrameSetting = { name: 'fringeLength', default: 12, min: 2, max: 80, presets: [8, 12, 16] }
 
 /** A Custom frame's Row order (ticket 0594): its layout's passes, worked in rounds from the centre or rows from a point. */
 function layoutRowOrder(lines: 'round' | 'row'): FrameKind['rowOrder'] {
@@ -91,35 +108,47 @@ const FRAME_KINDS: Readonly<Record<FrameKindId, FrameKind>> = {
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(3, rounds) },
+    custom: { technique: ROUNDS_TECHNIQUE, settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(3, rounds!) },
   },
   warpedSquare: {
     id: 'warpedSquare',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, size: ROUNDS, layout: (rounds) => roundsLayout(4, rounds) },
+    custom: { technique: ROUNDS_TECHNIQUE, settings: [ROUNDS], layout: ({ rounds }) => roundsLayout(4, rounds!) },
   },
   star: {
     id: 'star',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, size: STAR_PART, layout: starLayout },
+    custom: { technique: ROUNDS_TECHNIQUE, settings: [STAR_PART], layout: ({ partSize }) => starLayout(partSize!) },
   },
   kaleidocycle: {
     id: 'kaleidocycle',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('round'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, size: KALEIDOCYCLE_PART, layout: kaleidocycleLayout },
+    custom: { technique: ROUNDS_TECHNIQUE, settings: [KALEIDOCYCLE_PART], layout: ({ partSize }) => kaleidocycleLayout(partSize!) },
   },
   kite: {
     id: 'kite',
     removedBeads: 'removed',
     rowOrder: layoutRowOrder('row'),
     allows: CUSTOM_ALLOWS,
-    custom: { technique: ROUNDS_TECHNIQUE, size: KITE_ROWS, layout: kiteLayout },
+    custom: { technique: ROUNDS_TECHNIQUE, settings: [KITE_ROWS], layout: ({ rows }) => kiteLayout(rows!) },
+  },
+  fringeEarring: {
+    id: 'fringeEarring',
+    removedBeads: 'removed',
+    rowOrder: layoutRowOrder('row'),
+    allows: CUSTOM_ALLOWS,
+    custom: {
+      technique: FRINGE_TOP_TECHNIQUE,
+      settings: [TOP_WIDTH, TOP_ROWS, FRINGE_LENGTH],
+      styles: FRINGE_STYLES,
+      layout: (settings) => fringeLayout(settings as FringeSettings),
+    },
   },
 }
 
@@ -146,31 +175,57 @@ export function rowOrderOf(sheet: KindedSheet, way: RowWay): RowOrder {
   return frameKindOf(sheet).rowOrder(sheet, way)
 }
 
-/** The setting a Custom frame is sized by, its name and range; none for a Rectangular Frame. */
+/** The setting a Custom frame is sized by, its first, its name and range; none for a Rectangular Frame. */
 export function sizeSettingOf(frame: Pick<FrameSheet, 'kind'>): Readonly<FrameSetting> | undefined {
-  return frameKindOf(frame).custom?.size
+  return frameKindOf(frame).custom?.settings[0]
 }
 
-/** A Custom frame's size, its kind's one setting read within its range, its default where missing; none for a
- * Rectangular Frame. */
-export function frameSizeOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): number | undefined {
-  const setting = sizeSettingOf(frame)
-  if (!setting) return undefined
-  const stored = frame.settings?.[setting.name]
-  return typeof stored === 'number' && Number.isFinite(stored) ? Math.min(setting.max, Math.max(setting.min, Math.round(stored))) : setting.default
+/** One of a Custom frame's numbered settings as the Frame panel offers it: its value and the range it may take now. */
+export interface SettingValue {
+  name: FrameSettingName
+  value: number
+  min: number
+  max: number
 }
 
-/** A Custom frame's settings as it keeps them: its size under its setting's name, and nothing else; none for a
+/** A Custom frame's numbered settings, each read within its range (bounded by another where one is), its default where
+ * missing; none for a Rectangular Frame. */
+export function settingValuesOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): SettingValue[] {
+  const read: Partial<Record<FrameSettingName, number>> = {}
+  return (frameKindOf(frame).custom?.settings ?? []).map((setting) => {
+    const max = setting.below ? Math.min(setting.max, (read[setting.below] ?? setting.max + 1) - 1) : setting.max
+    const stored = frame.settings?.[setting.name]
+    const value = typeof stored === 'number' && Number.isFinite(stored) ? Math.min(max, Math.max(setting.min, Math.round(stored))) : Math.min(max, setting.default)
+    read[setting.name] = value
+    return { name: setting.name, value, min: setting.min, max }
+  })
+}
+
+/** The one setting a Frame panel change names (it changes one at a time): a numbered setting or the Fringe style. */
+export function changedSetting(change: FrameSettings): FrameSettingName | 'fringeStyle' {
+  return Object.keys(change)[0] as FrameSettingName | 'fringeStyle'
+}
+
+/** A Fringe earring's Fringe style as it keeps it, straight where none or an unknown one is stored; none for a kind
+ * without styles. */
+export function fringeStyleOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FringeStyle | undefined {
+  const styles = frameKindOf(frame).custom?.styles
+  if (!styles) return undefined
+  return styles.find((style) => style === frame.settings?.fringeStyle) ?? styles[0]
+}
+
+/** A Custom frame's settings as it keeps them: each of its kind's read within its range, and nothing else; none for a
  * Rectangular Frame. */
 export function settingsOf(frame: Pick<FrameSheet, 'kind' | 'settings'>): FrameSettings | undefined {
-  const setting = sizeSettingOf(frame)
-  return setting && { [setting.name]: frameSizeOf(frame) }
+  if (!frameKindOf(frame).custom) return undefined
+  const style = fringeStyleOf(frame)
+  return { ...Object.fromEntries(settingValuesOf(frame).map(({ name, value }) => [name, value])), ...(style ? { fringeStyle: style } : {}) }
 }
 
-/** A Custom frame's layout, built from its size and turned as Rotate Frame left it; none for a Rectangular Frame. */
+/** A Custom frame's layout, built from its settings and turned as Rotate Frame left it; none for a Rectangular Frame. */
 export function frameLayoutOf(frame: Laid): FrameLayout | undefined {
-  const size = frameSizeOf(frame)
-  return size === undefined ? undefined : turnedLayout(frameKindOf(frame).custom!.layout(size), frame.quarterTurns ?? 0)
+  const settings = settingsOf(frame)
+  return settings && turnedLayout(frameKindOf(frame).custom!.layout(settings), frame.quarterTurns ?? 0)
 }
 
 /** Where a Custom frame's layout lies in its rectangle, in cell widths from its first position's corner: a bead width to

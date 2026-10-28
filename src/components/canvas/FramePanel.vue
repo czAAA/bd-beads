@@ -14,12 +14,13 @@ import QualitySlider from '../ui/QualitySlider.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import TextField from '../ui/form/TextField.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
+import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
-import { frameAllows, frameSizeOf, sizeSettingOf } from '../../domain/frameKind'
+import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameKind'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameWeave, resolveProjectBead, rowProgressStarted, type Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -56,7 +57,7 @@ const emit = defineEmits<{
   'export-pdf': []
   'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
-  'set-size': [size: number]
+  'set-settings': [change: FrameSettings]
 }>()
 
 const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
@@ -68,12 +69,13 @@ const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
 const frame = computed(() => props.project.frame)
 
-/** A Custom frame's size, its range and its setting's words (Rounds, Part size or Rows; tickets 0592, 0593), in place
- * of Width and Height; none for a Rectangular Frame. */
-const size = computed(() => {
-  const setting = frame.value && sizeSettingOf(frame.value)
-  return setting && { value: frameSizeOf(frame.value!)!, min: setting.min, max: setting.max, words: t.value.frame.sizeSettings[setting.name] }
-})
+/** A Custom frame's settings in place of Width and Height (tickets 0592, 0593, 0597), each its value, its range now and
+ * its words: Rounds, Part size or Rows, or a Fringe earring's Top width, Top rows and Fringe length; none for a
+ * Rectangular Frame. */
+const settings = computed(() => (frame.value ? settingValuesOf(frame.value).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
+/** A Fringe earring's Fringe style and its options, the setup's names (ticket 0597); none for any other Frame. */
+const fringeStyle = computed(() => frame.value && fringeStyleOf(frame.value))
+const fringeOptions = computed(() => FRINGE_STYLES.map((value) => ({ value, label: t.value.starters.picks.fringeStyle.options[value] })))
 /** Whether the Frame can be turned a quarter: its kind allows it (a Custom frame too, ticket 0594). */
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 
@@ -136,7 +138,7 @@ const estimate = computed(() => {
   return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
-  [size.value ? plural(locale.value, size.value.value, size.value.words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
+  [settings.value[0] ? plural(locale.value, settings.value[0].value, settings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
 )
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
@@ -262,25 +264,36 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </div>
 
       <PanelSection id="frame:size" :label="t.frame.sizeHeading" :summary="sizeSummary">
-        <!-- A Custom frame is sized by its Rounds, Part size or Rows (tickets 0592, 0593): growing adds empty rounds or
-             rows outside, shrinking asks first. -->
-        <div v-if="size" class="frame-panel__body">
-          <div class="frame-panel__setting" data-testid="frame-setting">
-            <span class="frame-panel__setting-label">{{ size.words.label }}</span>
+        <!-- A Custom frame is sized by its settings (tickets 0592, 0593, 0597): growing adds empty rounds, rows or
+             beads outside, shrinking asks first. -->
+        <div v-if="settings.length" class="frame-panel__body">
+          <div v-for="setting in settings" :key="setting.name" class="frame-panel__setting" :data-testid="`frame-setting-${setting.name}`">
+            <span class="frame-panel__setting-label">{{ setting.words.label }}</span>
             <AppStepper
-              :model-value="size.value"
-              :min="size.min"
-              :max="size.max"
-              :decrease-label="size.words.less"
-              :increase-label="size.words.more"
-              :value-label="size.words.label"
+              :model-value="setting.value"
+              :min="setting.min"
+              :max="setting.max"
+              :decrease-label="setting.words.less"
+              :increase-label="setting.words.more"
+              :value-label="setting.words.label"
               :disabled="locked"
               tooltip
               :disabled-body="t.tooltips.frameSizeLocked"
-              decrease-testid="frame-setting-less"
-              increase-testid="frame-setting-more"
-              value-testid="frame-setting-value"
-              @update:model-value="emit('set-size', $event)"
+              :decrease-testid="`frame-setting-${setting.name}-less`"
+              :increase-testid="`frame-setting-${setting.name}-more`"
+              :value-testid="`frame-setting-${setting.name}-value`"
+              @update:model-value="emit('set-settings', { [setting.name]: $event })"
+            />
+          </div>
+          <div v-if="fringeStyle" class="frame-panel__style">
+            <span id="frame-fringe-style-label" class="frame-panel__setting-label">{{ t.frame.fringeStyle.label }}</span>
+            <SegmentedControl
+              :model-value="fringeStyle"
+              :options="fringeOptions"
+              labelledby="frame-fringe-style-label"
+              :disabled="locked"
+              data-testid="frame-fringe-style"
+              @update:model-value="emit('set-settings', { fringeStyle: $event as FringeStyle })"
             />
           </div>
           <p v-if="locked" class="frame-panel__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>
@@ -453,6 +466,12 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
 .frame-panel__setting-label {
   font: var(--type-control);
+}
+
+.frame-panel__style {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
 }
 
 .frame-panel__quality {

@@ -117,6 +117,22 @@ describe('the Row order of a Custom frame (ticket 0594)', () => {
     expect(order.positionsOf(24).length).toBeGreaterThan(0)
   })
 
+  it('steps a Fringe earring through its top from the base row up, then strand by strand from the first (ticket 0597)', () => {
+    const earring = { kind: 'fringeEarring' as const, settings: { topWidth: 4, topRows: 3, fringeStyle: 'straight' as const, fringeLength: 5 }, rows: 1, columns: 1, technique: 'brick' as const }
+    const order = rowOrderOf(earring, { direction: 'rows' })
+    expect(order.count).toBe(3 + 4)
+    expect(order.turns).toBe(false)
+    expect(order.stepOf?.(0)).toEqual({ kind: 'row', number: 1 })
+    expect(order.positionsOf(0)).toEqual([0, 1, 2, 3].map((column) => ({ row: 0, column })))
+    expect(order.positionsOf(2)).toEqual([0, 1].map((column) => ({ row: 2, column })))
+    expect(order.stepOf?.(3)).toEqual({ kind: 'strand', number: 1 })
+    // A strand is strung from the top down.
+    expect(order.positionsOf(4)).toEqual([0, 1, 2, 3, 4].map((bead) => ({ row: 1000 + bead, column: 1 })))
+    expect(order.passAt({ row: 1003, column: 3 })).toBe(6)
+    // Turned upside down by Rotate Frame, a strand is still strung from the top.
+    expect(rowOrderOf({ ...earring, quarterTurns: 2 }, { direction: 'rows' }).positionsOf(4)).toEqual([0, 1, 2, 3, 4].map((bead) => ({ row: 1000 + bead, column: 1 })))
+  })
+
   it('finishes no position it does not have', () => {
     expect(rowOrderOf(custom('triangle', 2), { direction: 'rows' }).passAt({ row: 5, column: 0 })).toBe(Number.POSITIVE_INFINITY)
   })

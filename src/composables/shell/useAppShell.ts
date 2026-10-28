@@ -2,7 +2,7 @@ import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/project'
 import { provideI18n } from '../../i18n/useI18n'
 import { isAddedColorId } from '../../domain/palette'
-import { sizeSettingOf } from '../../domain/frameKind'
+import { changedSetting } from '../../domain/frameKind'
 import { plural } from '../../i18n/plural'
 import { useThemePick } from '../../theme/useThemePick'
 import { browserServices, type Services } from '../../services/index'
@@ -395,13 +395,13 @@ function wireAppShell(services: Services) {
   const addedColorCount = computed(() => palette.value.colors.filter((color) => isAddedColorId(color.id)).length)
   const removeAllColorsConfirmOpen = ref(false)
   const removeAllColorsMessage = computed(() => plural(locale.value, addedColorCount.value, t.value.palette.removeAllConfirmMessage))
-  /** The question before a Custom frame gets smaller (tickets 0592, 0593), in its size setting's words: how many painted
-   * beads the outer rounds or last rows would take with them. */
+  /** The question before a Custom frame's setting drops painted beads (tickets 0592, 0593, 0597), in that setting's
+   * words: how many the outer rounds, last rows or strands' ends would take with them. */
   const sizeConfirm = computed(() => {
     const ask = frameFlow.sizeAsk.value
-    const setting = ask && activeProject.value?.frame && sizeSettingOf(activeProject.value.frame)
-    if (!ask || !setting) return undefined
-    const words = t.value.frame.sizeSettings[setting.name]
+    if (!ask) return undefined
+    const setting = changedSetting(ask.change)
+    const words = setting === 'fringeStyle' ? t.value.frame.fringeStyle : t.value.frame.sizeSettings[setting]
     return { title: words.confirmTitle, message: plural(locale.value, ask.lost, words.confirmMessage), button: words.confirmButton }
   })
   function onConfirmRemoveAllAddedColors() {
@@ -858,7 +858,7 @@ function wireAppShell(services: Services) {
     onConfirmRemoveFrame: frameFlow.confirmRemove,
     removeFrameTakesBeads: frameFlow.removeTakesBeads,
     onPlaceFrameFromStarter: frameFlow.placeFromStarter,
-    onSetFrameSize: frameFlow.setSize,
+    onSetFrameSettings: frameFlow.setSettings,
     sizeConfirm,
     onCancelSize: frameFlow.cancelSize,
     onConfirmSize: frameFlow.confirmSize,

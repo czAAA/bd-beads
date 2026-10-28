@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { computeColorQuantities } from './beadQuantities'
 import { beadCount, colorAt } from './canvas'
 import { changeFrame, customFrameLoss, type FrameChange } from './changeFrame'
-import { frameLayoutOf, type CustomFrameKindId } from './frameKind'
+import { frameLayoutOf, type CustomFrameKindId, type FrameSettings } from './frameKind'
 import { onLayer } from './layers'
 import { projectPalette } from './palette'
 import { parseProjectsFile, serializeProject } from './projectFile'
@@ -189,6 +189,49 @@ describe.each([
   it('counts its painted beads in Beads needed, and comes back from the Project file as it was', () => {
     const project = paintFrame(placed(), [name(inner()), name(outer())], RED)
     expect(computeColorQuantities(project, projectPalette(project))).toMatchObject([{ hex: RED, count: 2 }])
+    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
+  })
+})
+
+describe('a Fringe earring Custom frame (ticket 0597)', () => {
+  const settings = { topWidth: 6, topRows: 4, fringeStyle: 'straight', fringeLength: 9 } as const
+  const earring = (given: FrameSettings = settings) => changed(open(), { custom: { kind: 'fringeEarring', settings: given, centre: { row: 20, column: 30 } } })
+  /** The first bead of the base row, and the last bead of the first strand. */
+  const base = { row: 0, column: 0 }
+  const strandEnd = { row: 1008, column: 0 }
+
+  it('is an empty brick-stitch Frame with its four settings, Row progress on', () => {
+    const project = earring()
+    expect(project.frame).toMatchObject({ kind: 'fringeEarring', settings, technique: 'brick', beads: {} })
+    expect(frameLayoutOf(project.frame!)!.positions).toHaveLength(6 + 5 + 4 + 3 + 6 * 9)
+    expect(rowProgressOn(project)).toBe(true)
+  })
+
+  it('reads settings it was not given as the kind\'s defaults, and fewer Top rows than its Top width, ending on a pair', () => {
+    expect(earring({ topWidth: 5, topRows: 9 }).frame!.settings).toEqual({ topWidth: 5, topRows: 4, fringeStyle: 'straight', fringeLength: 12 })
+  })
+
+  it('paints its top and its strands, and nothing on the Seam between them', () => {
+    const painted = paintFrame(earring(), [base, strandEnd, { row: 1009, column: 0 }, { row: 4, column: 0 }], RED)
+    expect(beadCount(painted.frame!.beads)).toBe(2)
+  })
+
+  it('changes one setting at a time, keeping every bead still in it, and asks before a V drops the outer strands\' ends', () => {
+    const project = paintFrame(earring(), [base, strandEnd], RED)
+    const longer = changed(project, { settings: { fringeLength: 12 } })
+    expect(longer.frame!.settings).toEqual({ ...settings, fringeLength: 12 })
+    expect(longer.frame!.beads).toEqual(project.frame!.beads)
+    expect(customFrameLoss(project, { fringeStyle: 'v' })).toBe(1)
+    expect(colorAt(changed(project, { settings: { fringeStyle: 'v' } }).frame!.beads, 0, 0)).toBe(RED)
+    expect(changeFrame(project, { settings: { fringeStyle: 'straight' } }).kind).toBe('unchanged')
+  })
+
+  it('moves and turns with its beads, takes them with it on Remove Frame, and comes back from the Project file', () => {
+    const project = paintFrame(earring(), [base, strandEnd], RED)
+    expect(changed(project, { move: { rows: 2, columns: 3 } }).frame!.beads).toEqual(project.frame!.beads)
+    const removed = changed(project, { remove: true })
+    expect(removed.frame).toBeUndefined()
+    expect(removed.beads).toEqual(project.beads)
     expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
   })
 })

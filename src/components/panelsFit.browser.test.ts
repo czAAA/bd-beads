@@ -12,6 +12,7 @@ import SwitchTechniqueModal from './project/SwitchTechniqueModal.vue'
 import ConvertImageSizeDialog from './import/ConvertImageSizeDialog.vue'
 import { BEAD_CATALOG, findBead, offeredBeads } from '../domain/beads'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
+import { changeFrame } from '../domain/changeFrame'
 import { createProject } from '../domain/project'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
@@ -21,6 +22,9 @@ const framed = { ...project, frame: { row: 2, column: 3, rows: 6, columns: 5, te
 /** A named Frame with seven colors painted, so Beads needed lists more rows than it shows at first. */
 const colors = createPalette(defaultPaletteIds()).colors.slice(0, 7).map((color) => color.hex)
 const painted = { ...framed, frame: { ...framed.frame, name: 'Moth wing, the long left one', beads: { 0: Object.fromEntries(colors.map((hex, column) => [column, hex])) } } }
+// A Fringe earring's four settings in place of Width and Height (ticket 0597).
+const earringPlaced = changeFrame(project, { custom: { kind: 'fringeEarring', size: 7, centre: { row: 6, column: 6 } } })
+const earring = earringPlaced.kind === 'changed' ? earringPlaced.project : project
 const showAll = (root: HTMLElement): void => {
   const button = root.querySelector<HTMLElement>('[data-testid="quantities-toggle"]')
   if (!button) throw new Error('Beads needed has no Show all button')
@@ -48,6 +52,7 @@ const CASES: FitCase[] = [
   ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}],
   ['FramePanel (rows done)', inPanel(FramePanel, { project: { ...painted, rowProgress: { ...painted.rowProgress, currentRow: 1 } } }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
+  ['FramePanel (Fringe earring)', inPanel(FramePanel, { project: earring }), {}],
   ['ProjectPanel (netting)', ProjectPanel, { project: createProject({ technique: 'netting', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['NewProjectForm', NewProjectForm, {}],
   ['SwitchTechniqueModal (brick stitch)', SwitchTechniqueModal, { question: { technique: 'brick', lost: 12, drawn: true, keeps: false, asksNetSize: false, netSize: 3, asksBrickBlock: true, brickBlock: 2 } }],

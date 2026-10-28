@@ -64,13 +64,17 @@ const notDoneLabel = computed(() => (columnWise.value ? t.value.rowProgress.colu
 /** The row shown as current: the last one once every pass is done. */
 const shownRow = computed(() => Math.min(position.value.current + 1, position.value.total))
 
-/** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): "Round 3 of 9", or for a
- * part or a join "Part 2, round 3 · 8 of 20". None for a Rectangular Frame. */
+/** A Custom frame's pass in words in place of "Row 3 of 20 · Top to bottom" (ticket 0594): "Round 3 of 9", or where
+ * its passes are of several sorts, parts, joins or a Fringe earring's strands, "Part 2, round 3 · 8 of 20". None for a
+ * Rectangular Frame. */
 const customPosition = computed(() => {
-  const step = frameRowOrder(props.project).stepOf?.(shownRow.value - 1)
+  const order = frameRowOrder(props.project)
+  const step = order.stepOf?.(shownRow.value - 1)
   if (!step) return undefined
   const words = t.value.rowProgress
-  const single = step.kind !== 'join' && step.part === undefined
+  // The last pass is a join or a strand wherever the passes are not all rounds or rows of one part.
+  const last = order.stepOf!(order.count - 1)!
+  const single = last.kind !== 'join' && last.kind !== 'strand' && last.part === undefined
   const of = single ? words.ofSteps : words.stepOfSteps
   return { label: orderStepLabel(words, step), of: of.replace('{current}', String(shownRow.value)).replace('{total}', String(position.value.total)) }
 })

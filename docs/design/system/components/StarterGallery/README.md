@@ -2,7 +2,7 @@
 
 The Starter gallery: ready-made designs, each putting one Frame in place, filled or empty. It opens from New Project's **Pick a starter** and from the Frame panel: **Frame from starter** with no Frame, or the **Replace Frame** row under the Frame's size when there is one (held still once a pass is done), in the panel's subpanels: step 1 the categories, step 2 a category's options, then one option's setup. (Spec 0590, ticket 0595; design canvas https://claude.ai/artifact/Lz2xUWXXF6KpFkgxS39WJB.)
 
-Built by ticket 0596 (step 1, the Shapes and the setup) and ticket 0597 (Earrings, Rings and Bands). Until 0597, step 1 shows the Shapes alone.
+Built by ticket 0596 (step 1, the Shapes and the setup) and ticket 0597 (Earrings, Rings and Bands).
 
 ## The levels
 
@@ -65,7 +65,7 @@ Settings and sizes by option (Delica 11/0: 1.6 mm by 1.3 mm; peyote rows 0.8 mm 
 | Kite | Rows, from the point (21) | 15 21 30 | Width × height |
 | Star | Part size, rounds a part (5) | 3 5 7 9 | Width × height |
 | Kaleidocycle | Part size, rounds a triangle (9; 9 to 15) | 9 11 13 | Width × height |
-| Fringe earrings | Top width, Beads in the base row (7); Top rows, one Bead fewer each, at most Top width − 1 (6); Fringe style, Straight fringe or V fringe; Fringe length, the longest strand (12 for V, 10 straight) | 5 7 9; 4 6 8 (those allowed); 8 12 16 | One earring's width × height; the count "87 beads each · 174 for the pair" |
+| Fringe earrings | Top width, Beads in the base row (7); Top rows, one Bead fewer each, at most Top width − 1 (6); Fringe style, Straight fringe or V fringe; Fringe length, the longest strand (12 for V, 10 straight) | 5 7 9; 4 6 8 (those allowed); 8 12 16 for V, 8 10 12 16 straight, so its design's 10 has a chip | One earring's width × height; the count "87 beads each · 174 for the pair" |
 | Ring | Width, Beads (7); Size system, EU or US (a view, not a size); Ring size (EU 54, US 7) | 5 7 9; EU 50 52 54 56 58 or US 5 6 7 8 9 | "ø 17.2 mm inside · 9.1 mm wide"; rows round the middle of the band, 4 mm longer than the finger, because a woven ring runs small: "72 rows round" |
 | Band | Width, Beads (11); Wrist, cm measured snug (16); Fit, Snug, Comfortable or Loose (Comfortable) | 7 9 11 13; 15 16 17 18 | Wrist plus 1, 1.5 or 2 cm of ease, less 1.5 cm for the clasp: "1.4 × 16.0 cm"; "200 rows · 1.5 cm left for the clasp" |
 
