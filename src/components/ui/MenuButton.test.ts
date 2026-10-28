@@ -15,6 +15,7 @@ function mountMenu(props: Record<string, unknown> = {}, onSelect = vi.fn(), with
           {
             default: () => [
               h(AppMenuItem, { 'data-testid': 'png', onSelect: () => onSelect('png') }, () => 'PNG image'),
+              h(AppMenuItem, { disabled: true, 'data-testid': 'svg', onSelect: () => onSelect('svg') }, () => 'SVG image'),
               h(AppMenuItem, { 'data-testid': 'pdf', onSelect: () => onSelect('pdf') }, () => 'PDF'),
             ],
             ...(withSheet ? { sheet: ({ close }: { close: () => void }) => h('div', { 'data-testid': 'sheet', onClick: close }, 'sheet') } : {}),
@@ -44,7 +45,7 @@ describe('MenuButton', () => {
 
     expect(button.attributes('aria-expanded')).toBe('true')
     expect(button.attributes('aria-controls')).toBe(wrapper.find('[role="menu"]').attributes('id'))
-    expect(wrapper.findAll('[role="menuitem"]')).toHaveLength(2)
+    expect(wrapper.findAll('[role="menuitem"]')).toHaveLength(3)
   })
 
   it('wraps an IconButton when icon-only, named by its label', async () => {
@@ -91,6 +92,26 @@ describe('MenuButton', () => {
     expect(document.activeElement).toBe(button.element)
   })
 
+  it('does nothing for a disabled item', async () => {
+    const onSelect = vi.fn()
+    const wrapper = mountMenu({}, onSelect)
+    await wrapper.find('[aria-haspopup]').trigger('click')
+
+    await wrapper.find('[data-testid="svg"]').trigger('click')
+
+    expect(onSelect).not.toHaveBeenCalled()
+    expect(wrapper.find('[role="menu"]').exists()).toBe(true)
+  })
+
+  it('keeps a disabled item with a reason natively disabled, in the shared Tooltip and with no native title (ADR 0035)', () => {
+    const wrapper = mount(AppMenuItem, { props: { disabled: true, name: 'Paste', disabledBody: 'Copy something first.' }, slots: { default: () => 'Paste' } })
+
+    const item = wrapper.get('[role="menuitem"]')
+    expect(item.attributes('disabled')).toBeDefined()
+    expect(item.attributes('title')).toBeUndefined()
+    expect(wrapper.find('.app-menu-item-wrap').exists()).toBe(true)
+  })
+
   it('does not open while disabled', async () => {
     const wrapper = mountMenu({ disabled: true, disabledBody: 'Nothing to export.' })
     await wrapper.find('[aria-haspopup]').trigger('click')
@@ -111,7 +132,7 @@ describe('MenuButton', () => {
     expect(document.activeElement).toBe(button.element)
   })
 
-  it('moves focus with the arrows, Home and End, and closes on Tab', async () => {
+  it('moves focus with the arrows, Home and End, skipping a disabled item, and closes on Tab', async () => {
     const wrapper = mountMenu()
     await wrapper.find('[aria-haspopup]').trigger('keydown', { key: 'ArrowUp' })
     const png = wrapper.find('[data-testid="png"]').element
@@ -123,8 +144,10 @@ describe('MenuButton', () => {
     expect(document.activeElement).toBe(pdf)
     key(pdf, 'ArrowDown')
     expect(document.activeElement).toBe(png)
+    key(png, 'ArrowDown')
+    expect(document.activeElement).toBe(pdf)
 
-    key(png, 'Tab')
+    key(pdf, 'Tab')
     await wrapper.vm.$nextTick()
     expect(wrapper.find('[role="menu"]').exists()).toBe(false)
   })

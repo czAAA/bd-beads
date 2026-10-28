@@ -18,11 +18,11 @@ import {
   withBrickBlock,
   withTechnique,
   type Project,
-  frameGrid,
   paintCells,
 } from './project'
 import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
+import { frameGrid } from '../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 

@@ -3,7 +3,8 @@
  * reordering, a change of Bead and Undo. */
 export type SwatchLetters = Readonly<Record<string, string>>
 
-/** The letter of the nth color: A to Z, then AA, AB… (AZ, then BA…). */
+/** The letter of the nth color: A to Z, then AA, AB… (AZ, then BA…).
+ * @internal Its test checks the lettering past Z. */
 export function letterAt(index: number): string {
   let letter = ''
   for (let rest = index + 1; rest > 0; rest = Math.floor((rest - 1) / 26)) {
@@ -12,7 +13,8 @@ export function letterAt(index: number): string {
   return letter
 }
 
-/** The lowest letter no color in `taken` has. */
+/** The lowest letter no color in `taken` has.
+ * @internal Its test checks which letter a new color takes. */
 export function lowestFreeLetter(taken: ReadonlySet<string>): string {
   let index = 0
   while (taken.has(letterAt(index))) index += 1

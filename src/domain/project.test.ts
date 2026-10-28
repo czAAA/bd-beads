@@ -26,14 +26,12 @@ import {
   type Cell,
   type Project,
   type Technique,
-  frameGrid,
   withFrame,
   beadColorAt,
   hasProjectBeads,
   projectCell,
   projectColors,
   sameBeads,
-  withFrameGrid,
   rowProgressOn,
   rowProgressStarted,
   canvasWeave,
@@ -48,6 +46,7 @@ import { estimatedSizeMm } from './projectSize'
 import { changedPositions } from './canvas'
 import { fillAt, paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
+import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!

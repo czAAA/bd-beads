@@ -8,9 +8,9 @@ import type { GridDimensions } from './grid'
 // nearest color from drag start (approximatePreviewColors); at rest it is exact (exactPreviewColors).
 export type PreviewColors = (string | undefined)[]
 
-// A memoised function from a packed color to the nearest of `colors`, by the same RGB distance and earlier-color tie as
-// imageColors's nearestColor. A picture has far fewer distinct colors than beads, so this searches once per distinct
-// color and reads `colors` once, not per bead.
+/** A memoised nearest of `colors` for a packed color, by imageColors's nearestColor's RGB distance and earlier-color
+ * tie: a picture has far fewer distinct colors than beads, so it searches once per distinct color, not per bead.
+ * @internal Its test checks it matches nearestColor. */
 export function nearestColorLookup(colors: readonly string[]): (packed: number) => string | undefined {
   const candidates = colors.map((hex) => channelsOf(hex))
   const answers = new Map<number, string | undefined>()

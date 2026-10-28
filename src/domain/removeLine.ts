@@ -21,7 +21,8 @@ interface ProjectLine extends AreaLine {
 }
 
 /** Which whole line of an area a Selection covers exactly, or undefined; a one-bead area counts as a row (fixed
- * tiebreak). */
+ * tiebreak).
+ * @internal Its test checks which line a Selection covers on its own. */
 export function selectedAreaLine(frame: Frame | undefined, selection: Selection | undefined): AreaLine | undefined {
   if (!frame || !selection) {
     return undefined

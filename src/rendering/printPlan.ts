@@ -13,7 +13,8 @@ export function mm(value: number): number {
   return (value * PRINT_DPI) / 25.4
 }
 
-/** One bead on every chart page (`print-chart-cell`), a size a weaver can work from (ticket 0584). */
+/** One bead on every chart page (`print-chart-cell`), a size a weaver can work from (ticket 0584).
+ * @internal Tests size a chart page's pads by it. */
 export const PRINT_CHART_CELL_MM = 3
 export const PRINT_MARGIN = mm(10)
 export const PRINT_HEADER = mm(12)
@@ -43,7 +44,8 @@ export interface PageSize {
 /** A4 portrait at 150 dpi: every page of the PDF. */
 export const A4_PORTRAIT: PageSize = { width: 1240, height: 1754 }
 
-/** What a chart page leaves for its pads: inside the margins, header, color key of `keyRows` rows and footer. */
+/** What a chart page leaves for its pads: inside the margins, header, color key of `keyRows` rows and footer.
+ * @internal Its test checks what a chart page leaves on its own. */
 export function chartArea(page: PageSize, keyRows = 1): PageSize {
   return {
     width: page.width - PRINT_MARGIN * 2,
@@ -122,7 +124,8 @@ function blockExtent(weave: Weave, rotation: Rotation, across: number, down: num
 /** Columns or rows of the part before it that a part repeats, shaded, so the sheets line up (`print-part-overlap`). */
 export const PRINT_PART_OVERLAP = 2
 
-/** A, B ... Z, AA, AB ...: a part's name from its place in reading order. */
+/** A, B ... Z, AA, AB ...: a part's name from its place in reading order.
+ * @internal Its test checks the naming past Z. */
 export function partLetter(index: number): string {
   let name = ''
   for (let rest = index; rest >= 0; rest = Math.floor(rest / 26) - 1) name = String.fromCharCode(65 + (rest % 26)) + name

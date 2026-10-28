@@ -28,7 +28,8 @@ const toHex = (values: number[]) => `#${values.map((value) => Math.round(value).
 const mix = (from: number, to: number, by: number) => from + (to - from) * by
 
 /** The generated swatch of a color family in a Finish: the family's hex changed by the Finish. Pure and approximate;
- * undefined for a family with no single color (ticket 0537). */
+ * undefined for a family with no single color (ticket 0537).
+ * @internal Its test checks each Finish's change on its own. */
 export function swatchHex(family: string, finish: Finish): string | undefined {
   const base = familyHex(family)
   if (!base) return undefined

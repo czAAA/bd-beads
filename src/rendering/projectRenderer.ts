@@ -40,8 +40,8 @@ import {
 // is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
 // view. A `Space` (space.ts, ADR 0026) says whether it draws the Frame alone from the origin or on the Canvas.
 
-// The rows and columns of beads touching a stretch of grid space; a layer's row 0 is an unshifted one. Exported for
-// tests.
+/** The rows and columns of beads touching a stretch of grid space; a layer's row 0 is an unshifted one.
+ * @internal Tests check which beads a view draws on its own. */
 export function visibleBeads(
   weave: Weave,
   columns: number,

@@ -4,7 +4,6 @@ import {
   beadsFromColors,
   changedPositions,
   colorAt,
-  colorsInFrame,
   forEachBead,
   frameContains,
   frameDimensions,
@@ -334,14 +333,6 @@ export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'te
   return describeWeave(frameWeave(project)).unitsOf(projectDimensions(project))
 }
 
-/** The Frame's beads as a dense grid of cells: for the parts of the app that still think in rows and columns (a
- * test's expectation). With no Frame, the box round the Canvas's beads; empty with none. */
-export function frameGrid(project: Pick<Project, 'frame' | 'beads'>): Grid {
-  const beads = project.frame ? project.frame.beads : project.beads
-  const area = project.frame ? { row: 0, column: 0, rows: project.frame.rows, columns: project.frame.columns } : projectFrame(project)
-  return colorsInFrame(beads, area).map((row) => row.map((color) => ({ color })))
-}
-
 /** A dense grid of cells as a Frame the size of the grid holding them: what the Convert image preview, the Overview's
  * pictures and a test's hand-made block of beads are drawn from. */
 export function framedGrid(grid: Grid, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Pick<Project, 'beads' | 'frame'> {
@@ -349,13 +340,6 @@ export function framedGrid(grid: Grid, weave: Weave = { technique: DEFAULT_TECHN
     beads: {},
     frame: { row: 0, column: 0, columns: grid[0]?.length ?? 0, rows: grid.length, beads: beadsFromColors(grid.map((row) => row.map((cell) => cell.color))), ...weaveOf(weave) },
   }
-}
-
-/** The Project with its Frame's beads replaced by a dense grid of cells; a Project with no Frame takes them on the
- * Canvas from its origin, as the beads of a Canvas whose box round them is nothing. */
-export function withFrameGrid(project: Project, grid: Grid): Project {
-  const beads = beadsFromColors(grid.map((row) => row.map((cell) => cell.color)))
-  return project.frame ? { ...project, frame: { ...project.frame, beads } } : { ...project, beads }
 }
 
 /** The color of the bead you see at a Canvas position: the Frame's own where the Frame lies over it, else the Canvas's

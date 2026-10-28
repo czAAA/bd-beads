@@ -1,7 +1,11 @@
-/** Wait before a held step button starts repeating, in ms (ticket 355). */
+/** Wait before a held step button starts repeating, in ms (ticket 355).
+ * @internal Tests advance the clock by it. */
 export const HOLD_DELAY_MS = 400
-/** The gap between the first repeats, and the fastest it gets as the hold goes on, in ms. */
+/** The gap between the first repeats, in ms.
+ * @internal Its test advances the clock by it. */
 export const HOLD_START_INTERVAL_MS = 160
+/** The fastest the gap gets as the hold goes on, in ms.
+ * @internal Its test advances the clock by it. */
 export const HOLD_MIN_INTERVAL_MS = 30
 /** Each repeat waits this fraction of the one before, until it reaches the fastest gap. */
 const HOLD_SPEED_UP = 0.85

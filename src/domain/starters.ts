@@ -227,7 +227,8 @@ function designOf(starter: Starter): Design {
   return design
 }
 
-/** A Starter's design: the beads of its Project file's Frame. Read once. */
+/** A Starter's design: the beads of its Project file's Frame. Read once.
+ * @internal Tests compare a new Project with the Starter's own beads. */
 export function starterDesign(starter: Starter): BeadMap {
   return designOf(starter).beads
 }
@@ -300,9 +301,9 @@ function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 
   return { ...numbers, ...Object.fromEntries(starter.picks.map(({ name }) => [name, pickIn(starter, picks, name)])) }
 }
 
-/** The rows and columns of a Starter's Frame for a choice on a Bead: a Custom frame's bounding rectangle; for a Ring or
- * Band lying across, its Width in rows and its length in columns of the Bead's pitch (two peyote rows a column), the
- * design's own rectangle when it is put in place. */
+/** A Starter's Frame rows and columns for a choice on a Bead: a Custom frame's rectangle; a Ring or Band lying across
+ * takes its Width in rows and its length in columns of the Bead's pitch (two peyote rows a column), as put in place.
+ * @internal Its test checks each Starter's size on its own. */
 export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: Bead): GridDimensions {
   if (frameKindOf(starter).custom) return customFrameSize(starter.kind, customSettings(starter, choice))
   if (choice.useDesign && designFits(starter, choice)) return { rows: designOf(starter).rows, columns: designOf(starter).columns }
