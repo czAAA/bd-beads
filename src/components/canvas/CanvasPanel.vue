@@ -13,7 +13,7 @@ import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
 import ProgressBar from './ProgressBar.vue'
 import ToastRegion from '../ui/ToastRegion.vue'
-import { useAppShell } from '../../composables/shell/useAppShell'
+import { useCanvasContext } from '../../composables/shell/useAppShell'
 import { useColorPick, usePalette } from '../../composables/tools/usePalette'
 import { colorName } from '../../i18n/colorName'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -127,7 +127,7 @@ const {
   onSelectionPress,
   onSelectionDrag,
   onSelectionRelease,
-} = useAppShell()
+} = useCanvasContext()
 
 const newProjectAction = controlAction('new-project')
 

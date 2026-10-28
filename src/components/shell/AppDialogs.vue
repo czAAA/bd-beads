@@ -1,22 +1,22 @@
 <script setup lang="ts">
-import { useAppShell } from '../../composables/shell/useAppShell'
+import { useDialogsContext } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
 import SwitchTechniqueModal from '../project/SwitchTechniqueModal.vue'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 
+// The app's dialogs (ticket 0618): the registry shows one at a time, named by `open`; each flow holds what its dialog
+// asks about and answers it.
 const {
   t,
+  open,
   activeProject,
   saveFailed,
-  deleteAllConfirmOpen,
   onCancelDeleteAll,
   onConfirmDeleteAll,
-  resetProgressConfirmOpen,
   onCancelResetProgress,
   onConfirmResetProgress,
-  removeFrameConfirmOpen,
   removeFrameTakesBeads,
   sizeConfirm,
   onCancelSize,
@@ -28,11 +28,9 @@ const {
   onSetSwitchBrickBlock,
   onCancelSwitchTechnique,
   onConfirmSwitchTechnique,
-  replaceFrameConfirmOpen,
   onCancelReplaceFrame,
   onConfirmReplaceFrame,
   pendingColorRemovalHex,
-  removeAllColorsConfirmOpen,
   removeAllColorsMessage,
   onConfirmRemoveAllAddedColors,
   onCancelRemoveAllAddedColors,
@@ -57,27 +55,24 @@ const {
   onSwitchToImported,
   onSaveBeforeImportSwitch,
   duplicating,
-  deleting,
   onConfirmDuplicate,
   onCancelDuplicate,
   onConfirmDelete,
   onCancelDelete,
-  deletingAll,
   onConfirmDeleteAllProjects,
   onCancelDeleteAllProjects,
   naming,
   onSavePieceName,
   onCancelPieceName,
-  shortcutsHelpOpen,
-  storageNoteOpen,
+  onCloseShortcutsHelp,
   onConfirmStorageNote,
   onCancelStorageNote,
-} = useAppShell()
+} = useDialogsContext()
 </script>
 
 <template>
   <ConfirmModal
-    v-if="deleteAllConfirmOpen"
+    v-if="open === 'delete-all'"
     data-testid="delete-all-modal"
     :title="t.deleteAll.confirmTitle"
     :message="t.deleteAll.confirmMessage"
@@ -88,7 +83,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="resetProgressConfirmOpen"
+    v-if="open === 'reset-progress'"
     data-testid="reset-progress-modal"
     :title="t.rowProgress.resetConfirmTitle"
     :message="t.rowProgress.resetConfirmMessage"
@@ -99,7 +94,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="removeFrameConfirmOpen"
+    v-if="open === 'remove-frame'"
     data-testid="remove-frame-modal"
     :title="t.frame.removeConfirmTitle"
     :message="removeFrameTakesBeads ? t.frame.removeConfirmCustom : t.frame.removeConfirmMessage"
@@ -110,7 +105,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="sizeConfirm"
+    v-if="open === 'frame-size' && sizeConfirm"
     data-testid="size-modal"
     :title="sizeConfirm.title"
     :message="sizeConfirm.message"
@@ -121,7 +116,7 @@ const {
   />
 
   <SwitchTechniqueModal
-    v-if="switchQuestion"
+    v-if="open === 'switch-technique' && switchQuestion"
     :question="switchQuestion"
     @update:net-size="onSetSwitchNetSize"
     @update:brick-block="onSetSwitchBrickBlock"
@@ -130,7 +125,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="replaceFrameConfirmOpen"
+    v-if="open === 'replace-frame'"
     data-testid="replace-frame-modal"
     :title="t.frame.replaceConfirmTitle"
     :message="t.frame.replaceConfirmMessage"
@@ -141,7 +136,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="pendingColorRemovalHex"
+    v-if="open === 'remove-color' && pendingColorRemovalHex"
     data-testid="remove-color-modal"
     :title="t.palette.removeConfirmTitle"
     :message="t.palette.removeConfirmMessage.replace('{hex}', pendingColorRemovalHex)"
@@ -152,7 +147,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="removeAllColorsConfirmOpen"
+    v-if="open === 'remove-all-colors'"
     data-testid="remove-all-colors-modal"
     :title="t.palette.removeAllConfirmTitle"
     :message="removeAllColorsMessage"
@@ -163,7 +158,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="replaceBeadPendingBead"
+    v-if="open === 'replace-bead' && replaceBeadPendingBead"
     data-testid="replace-bead-modal"
     :title="t.replaceBead.confirmTitle"
     :message="replaceBeadConfirmMessage"
@@ -175,7 +170,7 @@ const {
 
   <!-- Import asks before switching (ticket 154). With a failed save the question is about saving first. -->
   <ConfirmModal
-    v-if="pendingImport && pendingImportOpens && activeProject"
+    v-if="open === 'import-switch' && pendingImport && pendingImportOpens && activeProject"
     data-testid="import-switch-modal"
     :title="t.importSwitch.title"
     :message="
@@ -201,7 +196,7 @@ const {
 
   <!-- Saved Projects asks before removing a Project or switching to another (ticket 232). -->
   <ConfirmModal
-    v-if="pendingRemove"
+    v-if="open === 'remove-project' && pendingRemove"
     data-testid="remove-project-modal"
     :title="t.removeProject.title"
     :message="t.removeProject.message.replaceAll('{name}', () => pendingRemove!.name)"
@@ -212,7 +207,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="pendingSwitch && activeProject"
+    v-if="open === 'switch-project' && pendingSwitch && activeProject"
     data-testid="switch-project-modal"
     :title="t.switchProject.title"
     :message="
@@ -235,7 +230,7 @@ const {
 
   <!-- The note before the browser's storage prompt, once per device at its first save (ticket 399). -->
   <ConfirmModal
-    v-if="storageNoteOpen"
+    v-if="open === 'keep-note'"
     data-testid="keep-note-modal"
     :title="t.storage.keepNote.title"
     :message="t.storage.keepNote.message"
@@ -246,13 +241,13 @@ const {
     @cancel="onCancelStorageNote"
   />
 
-  <ShortcutsHelp v-if="shortcutsHelpOpen" @close="shortcutsHelpOpen = false" />
+  <ShortcutsHelp v-if="open === 'shortcuts'" @close="onCloseShortcutsHelp" />
 
   <!-- Duplicate and Delete this Project (ProjectPanel and ConfirmDialogs cards, ticket 443): opened from the Project panel, which has closed. -->
-  <DuplicateProjectModal v-if="duplicating !== undefined" :suggested="duplicating" @confirm="onConfirmDuplicate" @cancel="onCancelDuplicate" />
+  <DuplicateProjectModal v-if="open === 'duplicate-project' && duplicating !== undefined" :suggested="duplicating" @confirm="onConfirmDuplicate" @cancel="onCancelDuplicate" />
 
   <ConfirmModal
-    v-if="deleting && activeProject"
+    v-if="open === 'delete-project' && activeProject"
     data-testid="delete-project-modal"
     :title="t.panels.project.deleteTitle.replace('{name}', () => activeProject!.name)"
     :message="t.panels.project.deleteMessage.replaceAll('{name}', () => activeProject!.name)"
@@ -263,7 +258,7 @@ const {
   />
 
   <ConfirmModal
-    v-if="deletingAll"
+    v-if="open === 'delete-all-projects'"
     data-testid="delete-all-projects-modal"
     :title="t.panels.menu.deleteAllTitle"
     :message="t.panels.menu.deleteAllMessage"
@@ -273,7 +268,7 @@ const {
     @cancel="onCancelDeleteAllProjects"
   />
 
-  <NamePieceModal v-if="naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />
+  <NamePieceModal v-if="open === 'name-piece' && naming" :name="naming.name" @save="onSavePieceName" @cancel="onCancelPieceName" />
 
 </template>
 
