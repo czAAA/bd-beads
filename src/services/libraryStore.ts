@@ -1,5 +1,6 @@
 import { beadLabel, findBead } from '../domain/beads'
-import { normalizeProject, type Project, type StoredProject } from '../domain/project'
+import { normalizeProject, type StoredProject } from '../domain/storedProject'
+import type { Project } from '../domain/project'
 import {
   decodeEarlierProject,
   decodeProject,

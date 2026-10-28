@@ -1,10 +1,12 @@
-import type { GridPosition } from './grid'
+import type { GridPosition, Rotation } from './grid'
 import { beadBounds, colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type Rect } from './canvas'
 import { withEachBead } from './folding'
 import { snapRow } from './frame'
 import { layerView, onLayer, positionOnCanvas } from './layers'
 import { carryNames } from './pieceNames'
-import { canvasDistance, frameWeave, restoreBeads, type Project } from './project'
+import { canvasDistance, frameWeave } from './layerWeave'
+import { restoreBeads } from './drawing'
+import { touch, type Project } from './project'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, isCustomView, turnedOnLayout } from './customSelection'
 import { cellKey, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
@@ -178,4 +180,12 @@ export function rotateFrame(project: Project): Project | undefined {
     frame: { ...rest, row: frame.row + moved.row, column: frame.column + moved.column, rows: turned.rows, columns: turned.columns, ...carried },
     updatedAt: Date.now(),
   }
+}
+
+/** The next quarter turn clockwise: 0, 90, 180, 270 and round again. */
+const NEXT_ROTATION: Readonly<Record<Rotation, Rotation>> = { 0: 90, 90: 180, 180: 270, 270: 0 }
+
+/** Rotate canvas (ticket 471): the picture a quarter turn clockwise further; only the view turns, no data changes. */
+export function rotateCanvas(project: Project): Project {
+  return touch(project, { rotation: NEXT_ROTATION[project.rotation] })
 }

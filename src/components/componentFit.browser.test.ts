@@ -4,7 +4,8 @@ import MenuPanel from './shell/MenuPanel.vue'
 import ProgressBar from './canvas/ProgressBar.vue'
 import ToolPill from './tools/ToolPill.vue'
 import { BEAD_CATALOG } from '../domain/beads'
-import { createProject, toggleRowDirection } from '../domain/project'
+import { createProject } from '../domain/createProject'
+import { toggleRowDirection } from '../domain/rowProgress'
 
 // Components with a fixed-size box, mounted in a real browser in every language at the layout's width edges, must keep
 // their text inside the box (ticket 552).

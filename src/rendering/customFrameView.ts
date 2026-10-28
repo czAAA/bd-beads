@@ -3,7 +3,8 @@ import { layoutPlacement } from '../domain/frameKind'
 import { layoutPosition, layoutPositionAt, type FrameLayout, type LayoutPoint } from '../domain/frameLayout'
 import type { GridPosition } from '../domain/grid'
 import type { Weave } from '../domain/weave'
-import { CELL_SIZE_PX, cellSizePx, type Region } from './surfaceView'
+import { CELL_SIZE_PX, cellSizePx } from './cellSize'
+import type { Region } from './surfaceView'
 
 // Where a Custom frame's layout (ADR 0077) is drawn inside its bounding rectangle, in grid px from the Frame's first
 // position: a bead width to a cell's width, smaller only where the Bead shape draws the rectangle shorter than the layout,

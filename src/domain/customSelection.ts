@@ -2,7 +2,8 @@ import { colorAt, type BeadChange } from './canvas'
 import { layoutPlacement, type LayoutPlacement } from './frameKind'
 import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
-import { frameWeave, type Project } from './project'
+import { frameWeave } from './layerWeave'
+import type { Project } from './project'
 import { describeWeave, rowPitch, type Weave } from './weave'
 
 // A Selection over a Custom frame (spec 0590, ADR 0077, ticket 0594): a rectangle of the Frame's cells on screen holding

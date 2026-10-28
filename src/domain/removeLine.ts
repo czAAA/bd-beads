@@ -2,7 +2,8 @@ import type { Rect } from './canvas'
 import { pieceAreasOf } from './pieces'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
 import { carryNames } from './pieceNames'
-import { rowProgressStarted, type Project } from './project'
+import { rowProgressStarted } from './rowProgress'
+import type { Project } from './project'
 import type { Selection } from './selection'
 
 /** Remove line (CONTEXT.md, ADR 0026, ticket 313): takes one row or column out of the Frame (or Piece area), closing

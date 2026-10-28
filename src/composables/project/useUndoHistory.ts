@@ -9,7 +9,8 @@ import {
   type History,
   type HistoryStep,
 } from '../../domain/history'
-import { snapshotOf, type Project, type UndoEntry } from '../../domain/project'
+import { snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
+import type { Project } from '../../domain/project'
 
 /** What the history needs from the app shell: the open Project and Edit's way of putting a snapshot back. */
 export interface UndoHistoryDeps {

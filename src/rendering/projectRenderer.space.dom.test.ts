@@ -2,12 +2,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { type Rotation } from '../domain/grid'
 import { type Technique } from '../domain/weave'
-import { createProject, weaveOf, type Project } from '../domain/project'
+import { createProject } from '../domain/createProject'
+import { weaveOf } from '../domain/layerWeave'
+import type { Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
 import { BEAD_GAP_PX, DEFAULT_THEME, type BeadShape } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
-import { CELL_SIZE_PX, gridToRegion, rowShiftPx, rowTopPx, type Region } from './surfaceView'
+import { CELL_SIZE_PX } from './cellSize'
+import { gridToRegion, rowShiftPx, rowTopPx, type Region } from './surfaceView'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {

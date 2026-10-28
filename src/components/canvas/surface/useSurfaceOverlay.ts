@@ -1,13 +1,15 @@
 import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import type { PreviewCell } from '../../../domain/grid'
-import { shownLetters, type Project } from '../../../domain/project'
+import { shownLetters } from '../../../domain/paletteEdits'
+import type { Project } from '../../../domain/project'
 import type { Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { renderOverlay } from '../../../rendering/overlayRenderer'
 import type { RulerLayout } from '../../../rendering/rulers'
 import type { Space } from '../../../rendering/space'
-import type { Scroll, Size, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
+import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
+import type { Size } from '../../../rendering/cellSize'
 import { sizeCanvas } from './useSurfaceDrawing'
 
 // The Frame margin's outline (ticket 276, Frame card): always shown with a Frame (ticket 452) and 1s after a refused

@@ -1,6 +1,8 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { createProject, keepFinishedRows, type Project } from './project'
+import { createProject } from './createProject'
+import { keepFinishedRows } from './rowProgress'
+import type { Project } from './project'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
 

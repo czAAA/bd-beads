@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createProject } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
 import { projectPalette } from '../../domain/palette'
 import { listedColorName } from '../../i18n/colorName'
 import { en } from '../../i18n/en'

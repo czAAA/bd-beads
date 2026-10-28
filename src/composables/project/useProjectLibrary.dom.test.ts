@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { loadProjects } from '../../services/libraryStore'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'

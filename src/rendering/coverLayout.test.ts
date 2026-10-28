@@ -3,7 +3,7 @@ import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { COVER_BEAD_MAX, coverLayout } from './coverLayout'
 import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER } from './printPlan'
-import { CELL_SIZE_PX } from './surfaceView'
+import { CELL_SIZE_PX } from './cellSize'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
 const colorsOf = (count: number, letter?: string) => Array.from({ length: count }, (_, index) => ({ hex: '#000000', name: `Color ${index}`, beads: '10', ...(letter ? { letter } : {}) }))

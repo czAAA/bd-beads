@@ -5,7 +5,8 @@ import { listedColorName } from '../i18n/colorName'
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { computeColorQuantities, estimatedGrams, formatGrams } from './beadQuantities'
-import { createProject, type Project } from './project'
+import { createProject } from './createProject'
+import type { Project } from './project'
 import { paintAt } from '../testUtils/layers'
 
 const palette = createPalette(defaultPaletteIds())

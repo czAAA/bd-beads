@@ -1,7 +1,9 @@
 import type { FrameChangeRefusal, FrameChangeResult } from '../../domain/changeFrame'
 import { keepAllowedEdits } from '../../domain/allowedEdits'
-import { sameFrame } from '../../domain/frame'
-import { restoreSnapshot, sameBeads, snapshotOf, type Project, type UndoEntry } from '../../domain/project'
+import { sameFrame } from '../../domain/canvas'
+import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
+import { sameBeads } from '../../domain/layerBeads'
+import type { Project } from '../../domain/project'
 import type { ReplaceOptions } from './useProjectLibrary'
 
 // The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Rotate, Rotate Frame: lock

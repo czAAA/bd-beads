@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
-import { mostRecentlyUpdated, type Project } from '../../domain/project'
+import { mostRecentlyUpdated } from '../../domain/projectLibrary'
+import type { Project } from '../../domain/project'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 
 /** What importing needs from the app shell: the library's add and open, and its manual save. */

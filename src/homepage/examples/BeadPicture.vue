@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
-import { DEFAULT_TECHNIQUE } from '../../domain/weave'
-import { framedGrid, type Grid, type RowProgress, type Technique } from '../../domain/project'
+import { DEFAULT_TECHNIQUE, type Technique } from '../../domain/weave'
+import { framedGrid } from '../../domain/layerBeads'
+import type { Grid, RowProgress } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import type { HoverPreview } from '../../rendering/overlayRenderer'
 import { renderOverlay } from '../../rendering/overlayRenderer'

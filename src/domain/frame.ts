@@ -1,9 +1,12 @@
 import { footprintOf } from './footprint'
-import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Rect } from './canvas'
+import { beadBounds, beadsOver, beadsWithout, sameFrame, shiftedBeads, type BeadMap, type FrameSheet, type Rect } from './canvas'
+import { refitSheet } from './folding'
 import type { GridPosition } from './grid'
 import { DEFAULT_TECHNIQUE, describeWeave, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
+import { canvasDistance, canvasWeave, weaveOf } from './layerWeave'
 import type { Project } from './project'
+import { clampPointer, firstPasses } from './rowProgress'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
 // drawn, on whole beads. Made from the Canvas it starts on a cycle of the Canvas's rows so lifted beads keep their stagger;
@@ -129,6 +132,49 @@ export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' |
   return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-export function sameFrame(a: Rect | undefined, b: Rect | undefined): boolean {
-  return a === b || (!!a && !!b && a.row === b.row && a.column === b.column && a.rows === b.rows && a.columns === b.columns)
+/** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
+ * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas. */
+function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
+  const moved = canvasDistance(project, current, rectangle.row - current.row, rectangle.column - current.column)
+  return { row: current.row + moved.row, column: current.column + moved.column }
+}
+
+/** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
+ * place, those outside a smaller Frame are dropped or, woven unlike the Canvas, folded (ticket 0638), the Canvas is
+ * never touched, a Frame set anew is empty, Row progress stays inside it; an unchanged Frame is the same Project. */
+export function withFrame(project: Project, rectangle: Rect | undefined): Project {
+  return withFrameGiving(project, rectangle).project
+}
+
+/** `withFrame`, and the beads the resized Frame gives up to the Canvas, by Canvas position: those it no longer holds
+ * where it is woven like the Canvas, none where it folds them (ticket 0638). The resize lays them there. */
+export function withFrameGiving(project: Project, rectangle: Rect | undefined): { project: Project; given: BeadMap } {
+  if (sameFrame(project.frame, rectangle)) {
+    return { project, given: {} }
+  }
+  const { frame: current, ...rest } = project
+  // With the Frame gone the passes are gone too (ticket 426).
+  if (!rectangle) {
+    return { project: { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }, given: {} }
+  }
+  const { rows, columns } = rectangle
+  const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
+  const holds = (at: GridPosition) => at.row >= 0 && at.row < rows && at.column >= 0 && at.column < columns
+  // A resized Frame keeps what it holds, folds or gives up the rest (ticket 0638); one made anew is empty.
+  const refit = current ? refitSheet(current, canvasWeave(project), { row: rectangle.row - current.row, column: rectangle.column - current.column }, holds) : { beads: {}, given: {} }
+  const frame: FrameSheet = {
+    row,
+    column,
+    rows,
+    columns,
+    beads: refit.beads,
+    ...(refit.folded ? { folded: refit.folded } : {}),
+    // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
+    ...weaveOf(current ?? project),
+    ...(current?.name ? { name: current.name } : {}),
+    ...(current?.kind ? { kind: current.kind } : {}),
+    ...(current?.settings ? { settings: current.settings } : {}),
+    ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
+  }
+  return { project: { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }, given: shiftedBeads(refit.given, row, column) }
 }

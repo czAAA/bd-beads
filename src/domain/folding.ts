@@ -1,6 +1,6 @@
 import { forEachBead, hasBeads, type BeadMap } from './canvas'
 import type { GridPosition } from './grid'
-import { sameWeave } from './project'
+import { sameWeave } from './layerWeave'
 import type { Weave } from './weave'
 
 // Folded beads (ADR 0066, ticket 0638): a sheet laid over a layer (the Frame over the Canvas) keeps the beads it gives

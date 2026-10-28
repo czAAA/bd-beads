@@ -1,6 +1,6 @@
 import { frameContains, type Rect } from '../domain/canvas'
 import { namedPieces } from '../domain/pieceNames'
-import { currentPass, frameRowOrder, rowProgressOn } from '../domain/project'
+import { currentPass, frameRowOrder, rowProgressOn } from '../domain/rowProgress'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'

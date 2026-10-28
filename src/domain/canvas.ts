@@ -131,6 +131,11 @@ export function frameContains(frame: Rect, { row, column }: GridPosition): boole
   return row >= frame.row && row < frame.row + frame.rows && column >= frame.column && column < frame.column + frame.columns
 }
 
+/** Whether two rectangles are the same place and size (either may be absent): an unchanged Frame is no change. */
+export function sameFrame(a: Rect | undefined, b: Rect | undefined): boolean {
+  return a === b || (!!a && !!b && a.row === b.row && a.column === b.column && a.rows === b.rows && a.columns === b.columns)
+}
+
 /** Something with a size in beads: plain dimensions, or a Project (a canvas with or without a Frame). */
 export type Sized = GridDimensions | { frame?: Rect; beads: BeadMap }
 

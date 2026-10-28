@@ -1,6 +1,17 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { hasBeads, type Rect } from '../../domain/canvas'
-import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
+import { hasBeads, type Rect, sameFrame } from '../../domain/canvas'
+import {
+  fitToDrawing,
+  frameResizedAround,
+  frameWithEdges,
+  frameWithEdgeStep,
+  frameWithSize,
+  movedFrame,
+  snapColumn,
+  snappedMove,
+  snapRow,
+  type FrameEdge,
+} from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, customFrameLoss, frameChangeRefusal } from '../../domain/changeFrame'
@@ -8,7 +19,10 @@ import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, 
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
-import { canvasWeave, frameWeave, rowProgressStarted, sameWeave, switchedWeave, switchLoss, type Project } from '../../domain/project'
+import { canvasWeave, frameWeave, sameWeave } from '../../domain/layerWeave'
+import { rowProgressStarted } from '../../domain/rowProgress'
+import { switchedWeave, switchLoss } from '../../domain/weaveSwitch'
+import type { Project } from '../../domain/project'
 import { techniqueName } from '../../i18n/techniqueName'
 import { plural } from '../../i18n/plural'
 import type { Locale, Translations } from '../../i18n/translations'

@@ -1,6 +1,7 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteCodes, type PaletteIds } from '../../domain/palette'
-import { setPalette as withPalette, type Project } from '../../domain/project'
+import { setPalette as withPalette } from '../../domain/paletteEdits'
+import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
 /** The catalog codes of the added swatches `colorIds` stand for, so putting a removed swatch back brings its code too (ticket 0538). */
