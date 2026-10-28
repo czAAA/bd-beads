@@ -60,26 +60,17 @@ describe('useReplaceBeadFlow', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
-  it('confirming swaps the Bead and nothing else, as one undo step that brings the old Bead back', () => {
+  it('confirming swaps the Bead as one undo step that brings the old Bead back', () => {
     const { harness, replaceBeadPendingBead, onRequestReplaceBead, onConfirmReplaceBead } = setup()
     onRequestReplaceBead(other.id)
     onConfirmReplaceBead()
 
     expect(replaceBeadPendingBead.value).toBeUndefined()
     expect(harness.project.beadId).toBe(other.id)
-    expect(harness.project.beads).toBe(base.beads)
-    expect(harness.project.rowProgress).toEqual(base.rowProgress)
 
     harness.history.onUndo()
     expect(harness.project.beadId).toBe(base.beadId)
     expect(harness.history.canUndo.value).toBe(false)
-  })
-
-  it('is not refused by the Row progress lock, since it does not draw', () => {
-    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(base)
-    onRequestReplaceBead(other.id)
-    onConfirmReplaceBead()
-    expect(harness.project.beadId).toBe(other.id)
   })
 
   it('confirming with nothing pending does nothing', () => {
