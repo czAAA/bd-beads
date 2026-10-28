@@ -20,7 +20,7 @@ bd-beads lets a single user design beadwork Projects for hand weaving (peyote, b
 - **Project**: everything saved under one name — one Canvas holding 0–1 Frame, Pieces and unframed Schemas (see [Language](#language) below)
 - **Piece** and **Schema**: a Piece is a small independent set of touching beads on the Canvas; a Piece that has a Frame or a name is a Schema. The framed Schema, the beads inside the Project's Frame, is what Export, Beads needed, Row progress and Rotate act on — see ADR 0050
 - **Palette** and **Bead catalog**: kept as separate concepts — a cell's color is not required to match a real Bead, and a Project has exactly one Bead, with no color-to-Bead mapping — see ADR 0002 and ADR 0007
-- **Technique** and **Weave**: the weaving method (loom, peyote, brick stitch, Right-angle weave, Netting) determines a layer's grid geometry; a Weave is a Technique with its settings (Brick block, Net size), and the Canvas and the Frame each have their own — see ADR 0038 and ADR 0066
+- **Technique** and **Weave**: the weaving method (loom, peyote, brick stitch) determines a layer's grid geometry; a Weave is a Technique with its settings (Brick block), and the Canvas and the Frame each have their own — see ADR 0038 and ADR 0066
 - **Row progress**: an in-editor overlay for tracking which rows are already woven, running along the grid's rows or down its columns (Row direction), with finished rows locked against drawing
 - **Schema size**: the Frame's columns × rows in beads; the mm shown is only an estimate, and Replace Bead keeps every bead — see ADR 0026 and ADR 0007. There is no limit on size beyond what the device can hold (ADR 0019, which removed the cell cap)
 - **Bead quantities**: the per-color bead counts a Schema needs, counted straight from its painted colors (with an Estimated weight beside them) — see ADR 0007
@@ -37,7 +37,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | Area | Terms |
 |---|---|
 | [Canvas and Frame](docs/glossary/canvas-and-frame.md) | Project, Schema, Canvas, Layer, Grid, Position marks, Piece, Piece area, Frame, Custom frame, Frame kind, Seam, Off-shape, Folded beads, Keep-out margin, Edit Frame, Move handle, Hand tool, Pen mode, Rulers toggle, Canvas zoom, Page zoom, Zoom floor, Ruler step, Ruler dot, Ruler layout, Canvas color |
-| [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Edit palette, Bead, Bead color, Color catalog, Finish, Brand, Form factor, Bead size, Bead shape, Technique, Weave, Right-angle weave, Netting, Net size, Unit, Swatch letter |
+| [Library, Palette and Beads](docs/glossary/library-palette-beads.md) | Project library, Maker's name, Palette, Edit palette, Bead, Bead color, Color catalog, Finish, Brand, Form factor, Bead size, Bead shape, Technique, Weave, Swatch letter |
 | [Row progress](docs/glossary/row-progress.md) | Row progress, Pass, Row direction, Progress bar |
 | [Tool pill and controls](docs/glossary/toolbox.md) | Tool group, Tool pill layout, Tool pill, Panel, Menu, Subpanel, Canvas strip, Wordmark, Canvas footer, Tool button, Tooltip, Note, Tab stop |
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Undo, Redo |
