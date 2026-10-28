@@ -3,7 +3,7 @@ import { changeFrame } from '../domain/changeFrame'
 import { frameLayoutOf } from '../domain/frameKind'
 import { onLayer } from '../domain/layers'
 import { createProject, paintCells, type Project } from '../domain/project'
-import { drawChartParts, letterColor, luminance, placeBeads } from './chartVector'
+import { drawChartParts, letterColor, placeBeads } from './chartVector'
 import { planPrint, mm } from './printPlan'
 
 // The PrintChartPage card's Acceptance list, on a 100 × 100 loom Schema with an empty background, White beads and dark
@@ -83,10 +83,12 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
   })
 
   it('draws a white letter on a dark bead and an ink letter on a light one and on White', () => {
-    expect(luminance('#ffffff')).toBe(1)
     expect([letterColor(DARK), letterColor('#ffffff'), letterColor('#f2c94c'), letterColor('#000000')]).toEqual(['#ffffff', '#1f1f1f', '#1f1f1f', '#ffffff'])
-    // The balance point: 0.1791 is where black and white contrast equally.
-    expect(luminance('#767676')).toBeLessThan(0.1791 + 0.01)
+  })
+
+  it('switches a letter from white to ink where a Swatch mark switches, and writes ink on a color it cannot read', () => {
+    expect([letterColor('#757575'), letterColor('#767676')]).toEqual(['#ffffff', '#1f1f1f'])
+    expect(letterColor('red')).toBe('#1f1f1f')
   })
 
   it('fills only the painted positions: an empty position is plain paper', () => {

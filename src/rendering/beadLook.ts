@@ -1,4 +1,4 @@
-import { fromHex } from '../domain/color'
+import { fromHex, luma, mix, toHex, WHITE, type Rgb } from '../domain/color'
 import { cachedSprite, type Sprite } from './sprites'
 
 // How a single bead looks (ADR 0018): the one part of the Project renderer that knows. The renderer decides where a
@@ -190,12 +190,8 @@ const RIM_PX = 0.75
 /** Below this luma (0-255) a bead is near-black. */
 const NEAR_BLACK_LUMA = 45
 
-function luma(rgb: [number, number, number]): number {
-  return 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]
-}
-
 function isNearBlack(color: string): boolean {
-  const rgb = parseHex(color)
+  const rgb = parseColor(color)
   return !!rgb && luma(rgb) < NEAR_BLACK_LUMA
 }
 
@@ -203,7 +199,7 @@ function isNearBlack(color: string): boolean {
  * weights are CSS grayscale()'s, so the result is the grey the DOM grid showed.
  * @internal Tests check a dimmed bead's grey. */
 export function greyscale(color: string): string {
-  const rgb = parseHex(color)
+  const rgb = parseColor(color)
   if (!rgb) {
     return color
   }
@@ -217,22 +213,19 @@ export const CURRENT_ROW_BRIGHTNESS = 0.1
 /** The color lifted toward white by `amount` (0 to 1): the current row's 10% brighter beads (ticket 352). A color it
  * cannot read comes back as it was. */
 export function brighten(color: string, amount: number): string {
-  const rgb = parseHex(color)
-  if (!rgb) {
-    return color
-  }
-  const [r, g, b] = rgb.map((channel) => Math.round(channel + (255 - channel) * amount))
-  return `rgb(${r}, ${g}, ${b})`
+  const rgb = parseColor(color)
+  return rgb ? rgbText(mix(rgb, WHITE, amount)) : color
 }
 
 /** Reads #rgb and #rrggbb, the forms a Project's colors are stored in, and the rgb(r, g, b) that greyscale makes. */
-function parseHex(color: string): [number, number, number] | undefined {
+function parseColor(color: string): Rgb | undefined {
   const rgb = /^rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)$/.exec(color.trim())
-  if (rgb) {
-    return [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])]
-  }
-  const channels = fromHex(color.trim())
-  return channels && [channels.r, channels.g, channels.b]
+  return rgb ? { r: Number(rgb[1]), g: Number(rgb[2]), b: Number(rgb[3]) } : fromHex(color.trim())
+}
+
+/** A color as the canvas `rgb(r, g, b)` this file writes, each channel rounded. */
+function rgbText({ r, g, b }: Rgb): string {
+  return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`
 }
 
 // A rounded rectangle as a path, corners cut by `radius` (0 for square). Left open on purpose: a fill closes every
@@ -271,13 +264,9 @@ function fillShape(context: DrawingContext, x: number, y: number, width: number,
 /** A color faded to a fraction of itself over another: what a translucent bead over a known backdrop comes to.
  * @internal Tests check a faded bead's color. */
 export function fadeOver(color: string, backdrop: string, opacity: number): string {
-  const top = parseHex(color)
-  const under = parseHex(backdrop)
-  if (!top || !under) {
-    return color
-  }
-  const [r, g, b] = top.map((channel, index) => Math.round(channel * opacity + under[index]! * (1 - opacity)))
-  return `rgb(${r}, ${g}, ${b})`
+  const top = parseColor(color)
+  const under = parseColor(backdrop)
+  return top && under ? rgbText(mix(under, top, opacity)) : color
 }
 
 // Blends worked out so far: a Project has few colors but thousands of beads, and re-parsing per bead is what a scroll
@@ -302,8 +291,7 @@ function blendUncached(color: string, backdrop: string): string {
   if (!rgba) {
     return color
   }
-  const hex = `#${[rgba[1], rgba[2], rgba[3]].map((channel) => Number(channel).toString(16).padStart(2, '0')).join('')}`
-  return fadeOver(hex, backdrop, Number(rgba[4]))
+  return fadeOver(toHex({ r: Number(rgba[1]), g: Number(rgba[2]), b: Number(rgba[3]) }), backdrop, Number(rgba[4]))
 }
 
 /** A finished row's bead: its color, or its grey, faded toward the board (or the backdrop it is drawn over). */
@@ -385,7 +373,7 @@ export interface BeadLetter {
  * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. */
 export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme }: BeadLetter): void {
   const shown = dimmed ? finishedColor(color, theme) : color
-  const rgb = parseHex(shown)
+  const rgb = parseColor(shown)
   const dark = rgb ? luma(rgb) < DARK_BEAD_LUMA : false
   const side = Math.min(width, height)
   const fontSize = (side * LETTER_HEIGHT_SHARE) / Math.max(1, letter.length * LETTER_WIDTH_EM + LETTER_BASE_EM)

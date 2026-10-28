@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useId } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { clamp } from '../../domain/clamp'
 import { hexToHsv, hsToWheelPoint, hsvToHex, parseHexInput, wheelPointToHs, wrapHue, type Hsv } from '../../domain/hsv'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
@@ -41,7 +42,7 @@ let touched = false
 
 /** Every change a person makes goes through here, so a picker they never touched can be told from one they did. */
 function setHsv(next: Hsv) {
-  hsv.value = { h: wrapHue(next.h), s: Math.min(1, Math.max(0, next.s)), v: Math.min(1, Math.max(0, next.v)) }
+  hsv.value = { h: wrapHue(next.h), s: clamp(next.s, 0, 1), v: clamp(next.v, 0, 1) }
   hexText.value = hex.value
   invalid.value = false
   touched = true
