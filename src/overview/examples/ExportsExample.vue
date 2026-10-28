@@ -3,6 +3,8 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import AppIcon from '../../components/ui/AppIcon.vue'
 import AppLogo from '../../components/ui/AppLogo.vue'
 import type { IconName } from '../../components/ui/icons'
+import { DEFAULT_TECHNIQUE } from '../../domain/weave'
+import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { PRINT_COLORS } from '../../rendering/printColors'
 import BeadPicture from './BeadPicture.vue'
@@ -37,7 +39,7 @@ const paperStyle = {
  * their own proportions. */
 const wordEl = ref<SVGTextElement>()
 const wordBox = ref<{ x: number; y: number; width: number; height: number }>()
-const word = computed(() => t.value.form.techniqueLoom)
+const word = computed(() => techniqueName(t.value, DEFAULT_TECHNIQUE))
 
 async function measure() {
   await nextTick()

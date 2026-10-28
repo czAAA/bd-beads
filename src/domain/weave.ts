@@ -46,13 +46,10 @@ export interface BeadCell {
 /** Which way a bead lies in its position. */
 type Orientation = 'upright' | 'sideways'
 
-/** The `form` translation holding a Technique's name. */
-export type TechniqueNameKey = 'techniqueLoom' | 'techniquePeyote' | 'techniqueBrick' | 'techniqueRightAngle' | 'techniqueNetting'
-
 /** A Technique's own facts. Geometry is in grid units: a bead is 1 wide and 1 tall, a shifted row sits `shift` across. */
 interface TechniqueRules {
-  /** Where its name sits in the `form` translations. */
-  nameKey: TechniqueNameKey
+  /** Its name's key in the `techniques` translations: a plain string, checked in every language by a test (ADR 0078). */
+  nameKey: string
   /** The `overview.examples` label it has in the overview's Techniques example; absent when the example leaves it out. */
   overviewKey?: 'loom' | 'peyote' | 'brick'
   /** Whether the Overview's background is the empty positions of a Project worked in it. */
@@ -102,7 +99,7 @@ const BEAD_FACE_DISTANCE = 0.25
 /** The single config map: one entry per Technique. Adding a Technique is adding an entry here. */
 const TECHNIQUE_RULES = {
   loom: {
-    nameKey: 'techniqueLoom',
+    nameKey: 'loom',
     overviewKey: 'loom',
     shifted: false,
     rowPitch: 1,
@@ -117,7 +114,7 @@ const TECHNIQUE_RULES = {
     cellAspect: 1,
   },
   peyote: {
-    nameKey: 'techniquePeyote',
+    nameKey: 'peyote',
     worksInRounds: true,
     worksStrips: true,
     overviewKey: 'peyote',
@@ -135,7 +132,7 @@ const TECHNIQUE_RULES = {
     cellAspect: 1,
   },
   brick: {
-    nameKey: 'techniqueBrick',
+    nameKey: 'brick',
     worksFringeTops: true,
     overviewKey: 'brick',
     shifted: true,
@@ -151,7 +148,7 @@ const TECHNIQUE_RULES = {
     cellAspect: 1,
   },
   rightAngle: {
-    nameKey: 'techniqueRightAngle',
+    nameKey: 'rightAngle',
     shifted: false,
     rowPitch: 1,
     roundness: ROUNDED_BEAD_CORNER,
@@ -164,7 +161,7 @@ const TECHNIQUE_RULES = {
     cellAspect: RIGHT_ANGLE_ASPECT,
   },
   netting: {
-    nameKey: 'techniqueNetting',
+    nameKey: 'netting',
     shifted: false,
     rowPitch: NETTING_STEP,
     roundness: 0.5,
@@ -597,8 +594,8 @@ export function rowCycle(weave: Weave): number {
   return describeWeave(weave).frameStep
 }
 
-/** A Technique's name key in the `form` translations. */
-export function techniqueNameKey(technique: Technique): TechniqueNameKey {
+/** A Technique's name key in the `techniques` translations. */
+export function techniqueNameKey(technique: Technique): string {
   return RULES[technique].nameKey
 }
 

@@ -72,7 +72,7 @@ describe('printText (tickets 162, 164)', () => {
     expect(text.exportedAt).toBe('26 сент. 2026 г. · 14:32')
     expect(text.totalBeads).toBe('761 бисеринка')
     expect(text.totalGrams).toBe('3,9 г')
-    expect(text.techniqueWord).toBe(ru.form.techniqueLoom)
+    expect(text.techniqueWord).toBe(ru.techniques.loom)
   })
 
   it('cuts a long maker name in the header, never a short one', () => {
