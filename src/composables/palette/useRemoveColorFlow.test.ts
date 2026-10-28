@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
 import { addedColorId, defaultPaletteIds } from '../../domain/palette'
-import { createProject } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useProjectPalette } from '../tools/usePalette'

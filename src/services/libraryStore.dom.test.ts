@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProject, type Grid, type Project, type Technique } from '../domain/project'
+import { createProject } from '../domain/createProject'
+import type { Grid, Project } from '../domain/project'
+import type { Technique } from '../domain/weave'
 import { loadProjects, saveProjects } from './libraryStore'
 import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'

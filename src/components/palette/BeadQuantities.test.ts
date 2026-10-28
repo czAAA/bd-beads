@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BeadQuantities from './BeadQuantities.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))

@@ -1,6 +1,8 @@
 import { layerAt, onLayer } from '../domain/layers'
 import type { GridPosition } from '../domain/grid'
-import { fillArea, paintCells, type Project } from '../domain/project'
+import { fillArea } from '../domain/fill'
+import { paintCells } from '../domain/drawing'
+import type { Project } from '../domain/project'
 
 /** Paints Canvas positions the way a press does: on the layer the first position is on (the Frame's inside the Frame, the
  * Canvas's elsewhere). */

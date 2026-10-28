@@ -1,4 +1,4 @@
-import { CELL_SIZE_PX } from './surfaceView'
+import { CELL_SIZE_PX } from './cellSize'
 
 /** A view of the Canvas: how much it is enlarged by, and how far it has been moved, in displayed px. */
 export interface View {

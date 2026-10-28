@@ -6,7 +6,8 @@ import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type La
 import { footprintOf } from './footprint'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
-import { paintCells, restoreBeads, type Project } from './project'
+import { paintCells, restoreBeads } from './drawing'
+import type { Project } from './project'
 import { aimOf, cellOfBead, copiedFromCustom, isCustomView, landOnLayout, pointsOfCells, positionsInRectangle, type PlacedColor } from './customSelection'
 
 /** A rectangular area of a Project's grid, marked out with the Select tool (CONTEXT.md's Selection): top-left corner

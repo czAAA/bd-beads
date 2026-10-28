@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { fixtureProject } from '../../e2e/support/projects'
-import { withLetters } from '../domain/project'
+import { withLetters } from '../domain/paletteEdits'
 import { be } from '../i18n/be'
 import { en } from '../i18n/en'
 import { es } from '../i18n/es'

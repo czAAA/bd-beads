@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { thumbnailPixels } from './projectThumbnail'
 import type { Rotation } from '../domain/grid'
 import { defaultPaletteIds } from '../domain/palette'
-import { framedGrid, type Project } from '../domain/project'
+import { framedGrid } from '../domain/layerBeads'
+import type { Project } from '../domain/project'
 
 function project(grid: (string | null)[][], rotation: Rotation = 0): Project {
   return {

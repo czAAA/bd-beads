@@ -1,4 +1,5 @@
-import { normalizeProject, type GridProject, type Project, type StoredProject } from './project'
+import { normalizeProject, type GridProject, type StoredProject } from './storedProject'
+import type { Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
 import type { VersionThreeProject } from './versionThree'
 import { isTechnique } from './weave'

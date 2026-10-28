@@ -1,7 +1,8 @@
 import { colorAt } from '../domain/canvas'
 import { fromHex } from '../domain/color'
 import { rotationSwapsAxes } from '../domain/grid'
-import { projectDimensions, projectFrame, type Project } from '../domain/project'
+import { projectDimensions, projectFrame } from '../domain/projectExtent'
+import type { Project } from '../domain/project'
 
 export interface ThumbnailImage {
   width: number

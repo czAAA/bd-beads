@@ -2,13 +2,8 @@ import { computed, ref } from 'vue'
 import type { ConvertedImage, PixelData } from '../../domain/imageConversion'
 import type { StatedSize } from '../../domain/projectSize'
 import { starterProject, type Starter, type StarterChoice } from '../../domain/starters'
-import {
-  createProject,
-  createProjectFromImage,
-  projectGeometry,
-  type CreateProjectInput,
-  type Project,
-} from '../../domain/project'
+import { createProject, createProjectFromImage, projectGeometry, type CreateProjectInput } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 
 /** What creating a Project needs from the app shell: the library's add, and the picture Convert image is framing. */
 export interface NewProjectFlowDeps {

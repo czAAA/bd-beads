@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { frameWeave, type Project } from '../../domain/project'
+import { frameWeave } from '../../domain/layerWeave'
+import type { Project } from '../../domain/project'
 import { DEFAULT_NET_SIZE, type Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import AppIcon from '../ui/AppIcon.vue'

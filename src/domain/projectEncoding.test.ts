@@ -2,7 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG } from './beads'
 import { BUILT_IN_COLORS } from './palette'
-import { createProject, normalizeProject, type Grid, type Project } from './project'
+import { createProject } from './createProject'
+import { normalizeProject } from './storedProject'
+import type { Grid, Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 

@@ -4,7 +4,10 @@ import { frameContains } from '../domain/canvas'
 import { footprintOf } from '../domain/footprint'
 import { frameLayoutOf } from '../domain/frameKind'
 import { MARGIN, withMargin } from '../domain/margin'
-import { canvasWeave, frameWeave, isInCurrentRow, isInFinishedRow, projectCell, rowProgressOn, sameWeave, type Project } from '../domain/project'
+import { canvasWeave, frameWeave, sameWeave } from '../domain/layerWeave'
+import { isInCurrentRow, isInFinishedRow, rowProgressOn } from '../domain/rowProgress'
+import { projectCell } from '../domain/projectBead'
+import type { Project } from '../domain/project'
 import {
   BEAD_GAP_PX,
   brighten,
@@ -19,9 +22,8 @@ import {
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, spaceOf, type Space } from './space'
 import { centredBead, layoutPointPx, placedLayout, type PlacedLayout } from './customFrameView'
+import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
-  CELL_SIZE_PX,
-  cellSizePx,
   frameOriginPx,
   gridToRegion,
   layerExtentPx,

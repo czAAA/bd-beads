@@ -1,9 +1,11 @@
 import { footprintOf } from './footprint'
-import { beadBounds, beadsOver, beadsWithout, shiftedBeads, type Rect } from './canvas'
+import { beadBounds, beadsOver, beadsWithout, sameFrame, shiftedBeads, type FrameSheet, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { DEFAULT_TECHNIQUE, describeWeave, rowCycle, type Weave } from './weave'
 import { withMargin } from './margin'
+import { canvasDistance, weaveOf } from './layerWeave'
 import type { Project } from './project'
+import { clampPointer, firstPasses } from './rowProgress'
 
 // The geometry of the Frame (CONTEXT.md, ADR 0026): drawing, moving, resizing from its edges and fitting to what is
 // drawn, on whole beads. Made from the Canvas it starts on a cycle of the Canvas's rows so lifted beads keep their stagger;
@@ -129,6 +131,39 @@ export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' |
   return { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 }
 }
 
-export function sameFrame(a: Rect | undefined, b: Rect | undefined): boolean {
-  return a === b || (!!a && !!b && a.row === b.row && a.column === b.column && a.rows === b.rows && a.columns === b.columns)
+/** Where a resized Frame's first row and column go, as Canvas positions. The rectangle is in the Frame's own rows and
+ * columns, so an edge moved by some of them moves the Frame's corner by as far on the Canvas. */
+function resizedOrigin(project: Project, current: FrameSheet, rectangle: Rect): GridPosition {
+  const moved = canvasDistance(project, current, rectangle.row - current.row, rectangle.column - current.column)
+  return { row: current.row + moved.row, column: current.column + moved.column }
+}
+
+/** The Project with its Frame set to a rectangle of the Canvas, or removed (ADR 0026, 0066): its beads keep their
+ * place on the Canvas, those outside a smaller Frame are dropped, the Canvas is never touched, and a Frame set anew is
+ * empty. Row progress's pointers stay inside it; an unchanged Frame is the same Project (no change). */
+export function withFrame(project: Project, rectangle: Rect | undefined): Project {
+  if (sameFrame(project.frame, rectangle)) {
+    return project
+  }
+  const { frame: current, ...rest } = project
+  // With the Frame gone the passes are gone too (ticket 426).
+  if (!rectangle) {
+    return { ...rest, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
+  }
+  const { rows, columns } = rectangle
+  const { row, column } = current ? resizedOrigin(project, current, rectangle) : rectangle
+  const frame: FrameSheet = {
+    row,
+    column,
+    rows,
+    columns,
+    beads: current ? shiftedBeads(current.beads, current.row - rectangle.row, current.column - rectangle.column, { rows, columns }) : {},
+    // A Frame made anew is woven as the Canvas is (ticket 492); one resized keeps its own.
+    ...weaveOf(current ?? project),
+    ...(current?.name ? { name: current.name } : {}),
+    ...(current?.kind ? { kind: current.kind } : {}),
+    ...(current?.settings ? { settings: current.settings } : {}),
+    ...(current?.quarterTurns ? { quarterTurns: current.quarterTurns } : {}),
+  }
+  return { ...rest, frame, rowProgress: clampPointer(project.rowProgress, frame), updatedAt: Date.now() }
 }

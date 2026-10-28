@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
-import type { CreateProjectInput, Project } from '../../domain/project'
+import type { CreateProjectInput } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import type { ConvertedImage, PixelData } from '../../domain/imageConversion'
 import { starterById, starterDesign } from '../../domain/starters'
 import { useNewProjectFlow } from './useNewProjectFlow'

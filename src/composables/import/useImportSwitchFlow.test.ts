@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { useImportSwitchFlow } from './useImportSwitchFlow'
 
 function make(id: string, updatedAt: number): Project {

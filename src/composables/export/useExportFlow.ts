@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { withMakerName } from '../../domain/makerName'
-import { withLetters, type Project } from '../../domain/project'
+import { withLetters } from '../../domain/paletteEdits'
+import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
 import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'

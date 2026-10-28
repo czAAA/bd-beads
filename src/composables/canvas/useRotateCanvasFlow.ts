@@ -1,4 +1,5 @@
-import { rotateCanvas, type Project } from '../../domain/project'
+import { rotateCanvas } from '../../domain/rotate'
+import type { Project } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
 
 /** What Rotate canvas needs from the app shell: the open Project, its write path and the announcer. */

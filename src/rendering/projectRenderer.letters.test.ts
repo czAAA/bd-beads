@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { createProject, type Project } from '../domain/project'
+import { createProject } from '../domain/createProject'
+import type { Project } from '../domain/project'
 import { drawBeadLetter, LETTER_ON_DARK, LETTER_ON_LIGHT, LIGHT_THEME, type DrawingContext } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'

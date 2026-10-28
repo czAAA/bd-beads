@@ -1,4 +1,5 @@
-import { deleteAll, type Project } from '../../domain/project'
+import { deleteAll } from '../../domain/drawing'
+import type { Project } from '../../domain/project'
 import type { EditFn } from './useEdit'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
 

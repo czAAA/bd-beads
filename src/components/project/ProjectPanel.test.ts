@@ -4,7 +4,8 @@ import { mount } from '@vue/test-utils'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import ProjectPanel from './ProjectPanel.vue'
 import { findBead, offeredBeads } from '../../domain/beads'
-import { createProject, replaceBead } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import { replaceBead } from '../../domain/projectBead'
 import { en } from '../../i18n/en'
 
 afterEach(() => vi.unstubAllGlobals())
