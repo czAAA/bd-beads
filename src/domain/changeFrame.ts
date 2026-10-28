@@ -52,9 +52,9 @@ export type FrameChange =
    * bead keeps its row and column. A Technique takes its settings with it (brick stitch its Brick block); the same
    * Technique changes just those. */
   | WeaveChange
-  /** Put a new empty Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
-   * the Canvas under the new one is hidden, not changed. */
-  | { place: { frame: Rect; weave: Weave } }
+  /** Put a new Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,
+   * the Canvas under the new one is hidden, not changed. Empty, or holding a Starter's design (ticket 0633). */
+  | { place: { frame: Rect; weave: Weave; beads?: BeadMap } }
   /** Name the Frame (ticket 555), or clear its name with an empty one; allowed after Row progress has started, as it
    * touches no bead and no pass. */
   | { name: string }
@@ -266,7 +266,7 @@ export function turnedCustomFrame(project: Project): Project | undefined {
   return { ...project, frame: resettled(project, frame, frame.settings ?? {}, turns === 0 ? undefined : (turns as QuarterTurns)), updatedAt: Date.now() }
 }
 
-/** The beads of a map that have a position in a Frame's geometry (a Custom frame's layout). */
+/** The beads of a map that have a position in a Frame's geometry (a Custom frame's layout, or its rectangle). */
 function beadsOn(beads: BeadMap, geometry: LayerGeometry): BeadMap {
   const gone: BeadChange[] = []
   forEachBead(beads, (row, column) => {
@@ -325,10 +325,11 @@ function withFoldedLaid(project: Project): Project {
 
 /** The Project with a new empty Frame at `place.frame`, woven as `place.weave`, instead of the one it had (ticket 495):
  * Row progress starts at the first pass, and the Canvas keeps every bead. */
-function placedFrame(project: Project, place: { frame: Rect; weave: Weave }): Project {
+function placedFrame(project: Project, place: { frame: Rect; weave: Weave; beads?: BeadMap }): Project {
   const { frame: _previous, ...rest } = project
   const { row, column, rows, columns } = place.frame
-  const frame = { row, column, rows, columns, beads: {}, ...weaveOf(place.weave) }
+  const sheet = { row, column, rows, columns, ...weaveOf(place.weave) }
+  const frame = { ...sheet, beads: place.beads ? beadsOn(place.beads, frameGeometry(sheet)) : {} }
   return { ...rest, frame, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
 }
 

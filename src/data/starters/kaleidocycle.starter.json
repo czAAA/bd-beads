@@ -1,0 +1,11 @@
+{
+  "id": "kaleidocycle",
+  "design": "kaleidocycle.json",
+  "kind": "kaleidocycle",
+  "technique": "peyote",
+  "measure": "frame",
+  "sizes": [
+    {"id": "partSize", "default": 9, "presets": [9, 11, 13]}
+  ],
+  "picks": []
+}
