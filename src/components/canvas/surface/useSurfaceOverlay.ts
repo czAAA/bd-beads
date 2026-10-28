@@ -8,7 +8,8 @@ import type { ProjectTheme } from '../../../rendering/beadLook'
 import { renderOverlay } from '../../../rendering/overlayRenderer'
 import type { RulerLayout } from '../../../rendering/rulers'
 import type { Space } from '../../../rendering/space'
-import type { Scroll, Size, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
+import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
+import type { Size } from '../../../rendering/cellSize'
 import { sizeCanvas } from './useSurfaceDrawing'
 
 // The Frame margin's outline (ticket 276, Frame card): always shown with a Frame (ticket 452) and 1s after a refused
