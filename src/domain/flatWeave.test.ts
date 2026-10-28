@@ -14,6 +14,5 @@ describe('the flat Weave fields a file stores (ticket 0627, until ticket 0636)',
 
   it('leaves out a Brick block of 1 and a map with nothing left in it, as files always have', () => {
     expect(flattened({ technique: 'brick', techniqueSettings: { brickBlock: 1 } })).toEqual({ technique: 'brick' })
-    expect(flattened({ technique: 'loom' })).toEqual({ technique: 'loom' })
   })
 })

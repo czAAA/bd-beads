@@ -10,6 +10,8 @@ import type { CellCenter, GeometryNumber, GeometryRef, WeaveGeometry } from './w
 /** The weaving method, which determines a Project's grid geometry: a key of the config map below. */
 export type Technique = keyof typeof TECHNIQUE_RULES
 
+/** One row to a block of rows: every other row shifts, as peyote's and an unblocked brick stitch's do. */
+const ONE_ROW_BLOCK = 1
 /** The most rows a Brick block may hold straight on top of each other (ticket 477). */
 const MAX_BRICK_BLOCK = 20
 
@@ -28,7 +30,7 @@ interface TechniqueSetting<Sets extends string = GeometryNumber> extends Setting
 
 /** Brick stitch's Brick block, as its entry describes it (ticket 0624): the rows' block, 1, every other row, up to
  * MAX_BRICK_BLOCK; the same cells, so a change loses no bead. */
-export const BRICK_BLOCK_SETTING: TechniqueSetting<'block'> = { id: 'brickBlock', labelKey: 'brickBlock', min: 1, max: MAX_BRICK_BLOCK, step: 1, default: 1, keptOffTechnique: true, sets: 'block' }
+export const BRICK_BLOCK_SETTING: TechniqueSetting<'block'> = { id: 'brickBlock', labelKey: 'brickBlock', min: ONE_ROW_BLOCK, max: MAX_BRICK_BLOCK, step: 1, default: ONE_ROW_BLOCK, keptOffTechnique: true, sets: 'block' }
 
 /** Netting's Net size, as its entry describes it (ticket 0624): the beads in a loop of its mesh, odd, from 3 to 9. A
  * change moves the holes, so it asks before beads are lost (ADR 0038). */
@@ -110,7 +112,7 @@ const SLOW_FRAMING_CELLS = 12_000
 const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'loom',
-    geometry: { kind: 'rows', shifted: false, shift: 0, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: 1 },
+    geometry: { kind: 'rows', shifted: false, shift: 0, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_ROW_BLOCK },
     settings: [],
     quarterTurn: true,
     rowDirection: true,
@@ -121,7 +123,7 @@ const TECHNIQUE_RULES = {
   },
   peyote: {
     nameKey: 'peyote',
-    geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 0.75, cellAspect: 1, roundness: ROUNDED_BEAD_CORNER, passes: 'twoAfterFirst', block: 1 },
+    geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 0.75, cellAspect: 1, roundness: ROUNDED_BEAD_CORNER, passes: 'twoAfterFirst', block: ONE_ROW_BLOCK },
     settings: [],
     quarterTurn: true,
     rowDirection: true,
@@ -132,7 +134,7 @@ const TECHNIQUE_RULES = {
   },
   brick: {
     nameKey: 'brick',
-    geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: 1 },
+    geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_ROW_BLOCK },
     settings: [BRICK_BLOCK_SETTING],
     quarterTurn: true,
     rowDirection: true,

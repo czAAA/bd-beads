@@ -18,7 +18,7 @@ export type SavedProject = Omit<Project, 'frame'> & FlatWeave & { frame?: FrameS
 /** A stored layer's settings map: any map it holds, with its flat fields read into it. An unreadable Brick block is
  * none (the default) and a valid one is kept even off brick stitch; a Net size is any number, read within its range by
  * the Weave. */
-export function storedSettings({ brickBlock, netSize, techniqueSettings }: FlatWeave): Record<string, number> {
+export function storedSettings({ brickBlock, netSize, techniqueSettings }: FlatWeave): TechniqueSettings {
   return {
     ...techniqueSettings,
     ...(isBrickBlock(brickBlock) ? { [BRICK_BLOCK_SETTING.id]: brickBlock } : {}),
