@@ -5,7 +5,7 @@ import { type DrawnProject } from './projectRenderer'
 import { OPEN_EXTENT, projectExtentPx, type Extent } from './surfaceView'
 
 // Where a Project's positions live (ADR 0018, ADR 0026), shared by the renderer and overlay: on the Canvas from row 0,
-// column 0; drawn on its own (export, picture, Overview) the Project is the Frame with its first bead at (0, 0). A
+// column 0; drawn on its own (export, picture, Homepage) the Project is the Frame with its first bead at (0, 0). A
 // surface builds it once.
 export interface Space {
   open: boolean

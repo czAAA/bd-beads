@@ -209,7 +209,7 @@ function wireAppShell(services: Services) {
   )
 
   /** Touch has no Escape, so Undo and a second tap on Select leave paste mode there (ticket 437, ADR
-   * 0057). */
+   * 0016). */
   const touch = useMediaQuery('(pointer: coarse)')
 
   /** Undo, which on touch also leaves paste mode. */

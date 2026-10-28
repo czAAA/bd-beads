@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue'
 import { provideRecentColors } from './usePalette'
-import { RECENT_SHORTCUTS, normalizeHex, type Palette } from '../../domain/palette'
+import { normalizeHex } from '../../domain/color'
+import { RECENT_SHORTCUTS, type Palette } from '../../domain/palette'
 import { RECENTS_IN_PILL, pushRecentColor, recentsBeside } from '../../domain/toolPill'
 import type { DevicePreferences } from '../../services/devicePreferences'
 

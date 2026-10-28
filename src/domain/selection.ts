@@ -30,7 +30,7 @@ export interface CopiedBlock {
   /** Row-major cell colors relative to the block's top-left. `null` is a hole that Paste skips (see pastedCells). */
   colors: (string | null)[][]
   /** First drawn bead in reading order, relative to the top-left: where the pointer's bead lands (ticket 437, ADR
-   * 0057). */
+   * 0016). */
   anchor: { row: number; column: number }
   /** Copied from a Custom frame (ticket 0594): each bead's centre on screen from the anchor bead's, which a Paste onto a
    * Custom frame lands as they lay; `colors` holds the same beads in the Frame's cells, for a Paste onto a rectangle. */

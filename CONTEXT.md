@@ -43,7 +43,7 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | [Editing a Schema](docs/glossary/editing.md) | Eraser, Clear, Schema size, Rotate, Beads needed, Estimated size, Estimated weight, Remove row/column, Replace Bead, Custom color, Selection, Piece tool, Select all, Copy, Paste, Undo, Redo |
 | [Import and rendering](docs/glossary/import-and-rendering.md) | Convert image, Project renderer, Drawing surface, Bead pointer, Letters, Word chart, File size estimate |
 | [Accounts and sharing](docs/glossary/accounts-and-sharing.md) | View link, Guest, Free account, Pro, Sign-in method, Edit link, Locked Project, Sync pending, Surface view |
-| [Overview](docs/glossary/overview.md) | Overview, Overview zoom |
+| [Homepage](docs/glossary/homepage.md) | Homepage, Homepage zoom |
 
 ## How to run it
 
@@ -64,8 +64,8 @@ The full glossary, with the words to avoid for each term, lives in [docs/glossar
 | `i18n/` | One typed dictionary per language (English, Russian, Ukrainian, Belarusian, Chinese, Spanish, Polish), plurals, the language switch | `translations.ts`, `en.ts`, `ru.ts`, `uk.ts`, `be.ts`, `zh.ts`, `es.ts`, `pl.ts` |
 | `theme/` | Light, dark and high contrast, following the device | `theme.ts` |
 | `styles/` | Tokens and shared CSS, from the design system | `tokens.css`, `design-values.css` |
-| `overview/` | The Overview page a new visitor lands on (its own entry, `overview/index.html`) | `OverviewPage.vue`, `overviewRoute.ts` |
+| `homepage/` | The Homepage a new visitor lands on (its own entry, `homepage/index.html`) | `HomePage.vue`, `homepageRoute.ts` |
 | `pwa/` | The offline shell's service worker, which `vite.pwa.ts` writes into the build as `sw.js` with the list of built files (ADR 0045); its page-side half is `services/offlineShell.ts` | `serviceWorker.js` |
 | `testUtils/` | Shared test helpers ([docs/testing.md](docs/testing.md)) | `seedProject.ts`, `editHarness.ts` |
 
-Entry files: `src/main.ts` (picks the Overview or the editor, mounts `App.vue`), `src/App.vue` (pure composition, ADR 0020). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).
+Entry files: `src/main.ts` (picks the Homepage or the editor, mounts `App.vue`), `src/App.vue` (pure composition, ADR 0020). Browser checks live in `e2e/`. Where things sit on screen: [docs/layout.md](docs/layout.md).
