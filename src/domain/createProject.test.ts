@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject, createProjectFromImage } from './createProject'
 import { BEAD_CATALOG } from './beads'
+import { addedColorId, defaultPalette } from './palette'
 import { frameGrid } from '../testUtils/frameGrid'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -183,7 +184,7 @@ describe('createProjectFromImage', () => {
     ],
   }
 
-  function fromImage(overrides: Partial<typeof converted> = {}) {
+  function fromImage(overrides: Partial<Parameters<typeof createProjectFromImage>[0]> = {}) {
     return createProjectFromImage({
       name: 'Fox',
       technique: 'loom',
@@ -214,5 +215,15 @@ describe('createProjectFromImage', () => {
       [{ color: '#ff0000' }, { color: '#ff0000' }],
       [{ color: null }, { color: null }],
     ])
+  })
+
+  it('takes the Palette the conversion made, with its codes and a Swatch letter for every swatch (spec 0645)', () => {
+    const builtIns = defaultPalette(cubeBead.id).map((color) => color.id)
+    const project = fromImage({ palette: { ids: [...builtIns, addedColorId('#00ff00')], codes: { '#00ff00': '55' } } })
+
+    expect(project.palette).toEqual([...builtIns, addedColorId('#00ff00')])
+    expect(project.paletteCodes).toEqual({ '#00ff00': '55' })
+    expect(Object.keys(project.paletteLetters ?? {})).toHaveLength(builtIns.length + 1)
+    expect(project).not.toHaveProperty('imageColors')
   })
 })

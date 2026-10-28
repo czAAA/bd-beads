@@ -1,19 +1,14 @@
-import { createPalette, defaultPaletteIds } from './palette'
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
 import { computeGridDimensions } from './grid'
 import { type Technique } from './weave'
-import { nearestColor } from './imageColors'
-import {
-  NO_COLOR,
-  convertPackedFrame,
-  packedToHex,
-  sampleLatticePacked,
-  type PixelData,
-} from './imageConversion'
+import { nearestColor, reducePictureColors } from './imageColors'
+import { NO_COLOR, frameColors, sampleLatticePacked, type PixelData } from './imageConversion'
+import { convertFrame, matchFoundColors, sourceTargets } from './convertColors'
+import { BUILT_IN_COLORS } from './palette'
 import { CENTERED_PAN, frameSizeMm, framingView, previewLattice } from './imageFraming'
-import { approximatePreviewColors, exactPreviewColors, nearestColorLookup } from './framingPreview'
+import { approximatePreviewColors, exactPreviewColors, heldColorLookup, nearestColorLookup } from './framingPreview'
 
 const bead: Bead = {
   id: 'test-cube',
@@ -64,9 +59,22 @@ describe('nearestColorLookup', () => {
   })
 })
 
+describe('heldColorLookup', () => {
+  it('shows the result of the nearest found color, and nothing for an emptied one', () => {
+    const held = heldColorLookup([
+      { pictureHex: '#ff0000', result: { hex: '#e63746' } },
+      { pictureHex: '#ffffff' },
+    ])
+
+    expect(held(pack('#ee1111'))).toBe('#e63746')
+    expect(held(pack('#f0f0f0'))).toBeUndefined()
+    expect(held(NO_COLOR)).toBeUndefined()
+  })
+})
+
 describe('exactPreviewColors', () => {
   it.each(['loom', 'peyote', 'brick'] as const)(
-    'shows the Project inside the frame and the nearest Image color around it (%s)',
+    'shows the Project inside the frame and the held color around it (%s)',
     (technique: Technique) => {
       const image = busyImage(60, 45)
       const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)
@@ -77,27 +85,31 @@ describe('exactPreviewColors', () => {
         const lattice = previewLattice({ view, frame, dimensions, bead, technique })
 
         const packed = sampleLatticePacked({ image, view, technique, bead, lattice })
-        const converted = convertPackedFrame(createPalette(defaultPaletteIds()), packed, lattice, dimensions, maxColors)
+        const { raw, counts } = frameColors(packed, lattice, dimensions)
+        const reduced = reducePictureColors(counts, maxColors)
+        const found = matchFoundColors(reduced, sourceTargets('default', BUILT_IN_COLORS, []), new Map())
+        const grid = convertFrame(raw, reduced, found)
+        const held = heldColorLookup(found)
         const expected = Array.from({ length: lattice.rows }, (_row, row) =>
           Array.from({ length: lattice.columns }, (_cell, column) => {
-            const inFrame = converted.grid[row - lattice.frameRow]?.[column - lattice.frameColumn]
-            const raw = packed[row * lattice.columns + column]!
-            if (inFrame) {
-              return inFrame.color ?? undefined
-            }
-            return raw === NO_COLOR ? undefined : nearestColor(converted.imageColors, packedToHex(raw))
+            const inFrame = grid[row - lattice.frameRow]?.[column - lattice.frameColumn]
+            return inFrame ? (inFrame.color ?? undefined) : held(packed[row * lattice.columns + column]!)
           }),
         ).flat()
 
-        expect(exactPreviewColors(packed, lattice, dimensions, converted)).toEqual(expected)
+        expect(exactPreviewColors(packed, lattice, dimensions, grid, held)).toEqual(expected)
+        expect(lattice.frameColumn).toBeGreaterThan(0)
       }
     },
   )
 })
 
 describe('approximatePreviewColors', () => {
-  it('puts every bead to the nearest of the held colors, the frame\'s included', () => {
-    const held = ['#ff0000', '#0000ff']
+  it('puts every bead to its held color, the frame\'s included', () => {
+    const held = heldColorLookup([
+      { pictureHex: '#ff0000', result: { hex: '#ff0000' } },
+      { pictureHex: '#0000ff', result: { hex: '#0000ff' } },
+    ])
     const sampled = Int32Array.from([pack('#ee1111'), pack('#2222dd'), NO_COLOR, pack('#ffffff')])
 
     expect(approximatePreviewColors(sampled, held)).toEqual(['#ff0000', '#0000ff', undefined, '#ff0000'])
@@ -107,21 +119,22 @@ describe('approximatePreviewColors', () => {
     const image = busyImage(60, 45)
     const dimensions = computeGridDimensions({ widthMm: 30, heightMm: 24 }, bead)
     const frame = frameSizeMm('loom', dimensions, bead)
-    const held = ['#1a1a1a', '#e63746', '#2f6fed']
+    const colors = ['#1a1a1a', '#e63746', '#2f6fed']
+    const held = heldColorLookup(colors.map((hex) => ({ pictureHex: hex, result: { hex } })))
 
     for (const pan of [{ x: 0, y: 0 }, CENTERED_PAN, { x: 1, y: 1 }]) {
       const view = framingView(image, frame, 3, pan)
       const lattice = previewLattice({ view, frame, dimensions, bead, technique: 'loom' })
       const packed = sampleLatticePacked({ image, view, technique: 'loom', bead, lattice })
 
-      const colors = approximatePreviewColors(packed, held)
+      const shown = approximatePreviewColors(packed, held)
 
-      expect(colors).toHaveLength(lattice.rows * lattice.columns)
-      expect(colors.every((color) => color === undefined || held.includes(color))).toBe(true)
+      expect(shown).toHaveLength(lattice.rows * lattice.columns)
+      expect(shown.every((color) => color === undefined || colors.includes(color))).toBe(true)
     }
   })
 
-  it('leaves a bead empty where the picture is, and where the held colors are none', () => {
-    expect(approximatePreviewColors(Int32Array.from([pack('#123456')]), [])).toEqual([undefined])
+  it('leaves a bead empty where there are no held colors', () => {
+    expect(approximatePreviewColors(Int32Array.from([pack('#123456')]), heldColorLookup([]))).toEqual([undefined])
   })
 })

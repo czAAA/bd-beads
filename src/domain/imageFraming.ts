@@ -179,3 +179,37 @@ export function previewLattice({
     frameRow,
   }
 }
+
+/** What the preview's lattice By Pixel to bead ratio is worked out from (spec 0645). */
+export interface RatioLatticeInput {
+  image: ImageSize
+  /** The crop, snapped to whole blocks (convertSize's snapCrop). */
+  crop: { x: number; y: number; width: number; height: number }
+  /** Picture pixels along one side of a bead (convertSize's pixelsPerBead). */
+  pixelsPerBead: number
+  dimensions: GridDimensions
+  technique: Technique
+  techniqueSettings?: TechniqueSettings
+}
+
+/** The preview's lattice By Pixel to bead ratio: the frame (the crop's beads) and the rest of the picture round it, in
+ * whole beads each side, capped at PREVIEW_MAX_CELLS. The rows above are whole cycles of the shift (see
+ * PreviewLattice.frameRow), so the top may reach a row past the picture. */
+export function ratioLattice({ image, crop, pixelsPerBead, dimensions, technique, techniqueSettings }: RatioLatticeInput): PreviewLattice {
+  const left = Math.round(crop.x / pixelsPerBead)
+  const top = Math.round(crop.y / pixelsPerBead)
+  const right = Math.max(0, Math.ceil((image.width - crop.x - crop.width) / pixelsPerBead - 1e-9))
+  const bottom = Math.max(0, Math.ceil((image.height - crop.y - crop.height) / pixelsPerBead - 1e-9))
+
+  const fit = marginFit(dimensions, (left + right) / 2, (top + bottom) / 2)
+  const cycle = Math.max(2, rowCycle({ technique, techniqueSettings }))
+  const frameColumn = Math.floor(left * fit)
+  const frameRow = cycle * Math.ceil(Math.floor(top * fit) / cycle)
+
+  return {
+    columns: frameColumn + dimensions.columns + Math.floor(right * fit),
+    rows: frameRow + dimensions.rows + Math.floor(bottom * fit),
+    frameColumn,
+    frameRow,
+  }
+}
