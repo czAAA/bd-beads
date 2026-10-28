@@ -21,8 +21,8 @@ export interface Rect {
  * in Canvas positions; `beads` are counted from the Frame's own first row and column, so moving the Frame moves them
  * with it and changes nothing else. */
 export interface FrameSheet extends Rect, Weave {
-  /** The Frame's own beads, counted from its first row and column. Its Technique, Brick block and Net size (Weave) are
-   * its own too (ticket 492): the Canvas is woven in another if the weaver likes. */
+  /** The Frame's own beads, counted from its first row and column. Its Weave, a Technique and its settings, is its own
+   * too (ticket 492): the Canvas is woven in another if the weaver likes. */
   beads: BeadMap
   /** Its Folded beads (ticket 0638): those it gave up when made smaller over a Canvas woven unlike it, beyond its edge
    * in the same own rows and columns, out of sight until it grows back over them. Absent when there are none. */
