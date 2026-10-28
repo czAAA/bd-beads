@@ -1,5 +1,5 @@
 import type { Rect, FrameSheet } from '../domain/canvas'
-import { frameGeometry } from '../domain/layerGeometry'
+import { frameGeometry } from '../domain/frameKind'
 import { describeWeave, withCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
