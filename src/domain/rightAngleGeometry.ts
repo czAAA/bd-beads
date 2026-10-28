@@ -1,6 +1,7 @@
 import { beadPitchMm } from './beads'
+import type { Rect } from './canvas'
 import type { GridDimensions, GridPosition } from './grid'
-import { insideBounds, keptWithin, type Box, type GeometryStrategy, type RightAngleGeometry } from './weaveGeometry'
+import { beadsBox, insideBounds, keptWithin, type Box, type GeometryStrategy, type RightAngleGeometry } from './weaveGeometry'
 
 const isHorizontalLine = (row: number): boolean => ((row % 2) + 2) % 2 === 0
 
@@ -13,6 +14,7 @@ const unitsOf = ({ columns, rows }: GridDimensions): GridDimensions => ({
  * upright vertical ones (one more). A Unit's side is a bead's length plus its width: `cellWidth` the length, `cellHeight`
  * the width. Beads touch at their corners, round a hole one length square. A pass weaves a line of Units (ticket 484). */
 export const rightAngleGeometry: GeometryStrategy<RightAngleGeometry> = (geometry, _settings, cell) => {
+  const orientationAt = ({ row }: GridPosition): 'sideways' | 'upright' => (isHorizontalLine(row) ? 'sideways' : 'upright')
   const box = (position: GridPosition, length: number, width: number): Box => {
     const side = length + width
     const line = Math.floor(position.row / 2)
@@ -20,6 +22,7 @@ export const rightAngleGeometry: GeometryStrategy<RightAngleGeometry> = (geometr
       ? { x: position.column * side + width, y: line * side, width: length, height: width }
       : { x: position.column * side, y: line * side + width, width, height: length }
   }
+  const beadsBoxOf = (block: Rect, length: number, width: number): Box => beadsBox({ box, orientationAt }, block, length, width)
   return {
     shifted: false,
     shift: 0,
@@ -36,8 +39,13 @@ export const rightAngleGeometry: GeometryStrategy<RightAngleGeometry> = (geometr
         position.row < frame.row + frame.rows &&
         position.column === frame.column + frame.columns - 1
       ),
-    orientationAt: ({ row }) => (isHorizontalLine(row) ? 'sideways' : 'upright'),
+    orientationAt,
     box,
+    rowOffset: () => 0,
+    blockBox: beadsBoxOf,
+    boundary: beadsBoxOf,
+    unitSize: (length, width) => ({ width: length + width, height: length + width }),
+    unitMiddle: (length, width) => ({ x: (length + width) / 2, y: (length + width) / 2 }),
     blockExtent: (columns, rows, length, width) => {
       const side = length + width
       const units = unitsOf({ columns, rows })
@@ -76,12 +84,8 @@ export const rightAngleGeometry: GeometryStrategy<RightAngleGeometry> = (geometr
     // A Unit's pitch down is two rows, so the lines either side of the ones in view are asked for as well.
     visible: (area, length, width) => {
       const side = length + width
-      return {
-        firstRow: Math.floor(area.top / side) * 2 - 1,
-        lastRow: Math.floor(area.bottom / side) * 2 + 2,
-        first: Math.floor(area.left / side) - 1,
-        last: Math.floor(area.right / side) + 1,
-      }
+      const columns = { first: Math.floor(area.left / side) - 1, last: Math.floor(area.right / side) + 1 }
+      return { firstRow: Math.floor(area.top / side) * 2 - 1, lastRow: Math.floor(area.bottom / side) * 2 + 2, columnsOf: () => columns }
     },
     origin: ({ row, column }, length, width) => ({ x: column * (length + width), y: (row / 2) * (length + width) }),
     positionsOf: ({ columns, rows }) => ({ columns: columns + 1, rows: rows * 2 + 1 }),
