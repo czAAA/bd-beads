@@ -18,8 +18,8 @@ const { t, locale } = useI18n()
 const panel = inject(PANEL_CONTEXT, undefined)
 const id = useId()
 
-/** What a card shows: its name, its caption lines and the Starter whose design is its picture, drawn as a pair for the
- * Earrings' category card. */
+/** What a card shows: its name, its caption lines and the Starter whose design is its picture, drawn as a pair on a
+ * category card when that Starter is made as one (the Earrings'). */
 interface Card {
   testid: string
   name: string
@@ -44,7 +44,7 @@ const cards = computed<Card[]>(() => {
         name,
         lines: [plural(locale.value, each.starters.length, t.value.starters.categories[each.id].count)],
         starter: each.best,
-        pair: each.id === 'earrings',
+        pair: each.best.pair,
         open: () => {
           emit('choose-category', each.id)
           panel?.openSub(name, { meta: starterCrumb(t.value, locale.value), opener: `starter-category-${each.id}` })
