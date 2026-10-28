@@ -82,6 +82,15 @@ describe('AppSubpanel', () => {
     expect(wrapper.find('[data-testid="root-row"]').exists()).toBe(true)
   })
 
+  it('is a menu when asked to be one, and a dialog in a subpanel or otherwise', async () => {
+    const role = (wrapper: ReturnType<typeof mountShell>) => wrapper.get('[data-testid="panel-dropdown"]').attributes('role')
+    expect(role(mountShell())).toBe('dialog')
+    const menu = mountShell({ menu: true })
+    expect(role(menu)).toBe('menu')
+    await menu.get('[data-testid="root-row"]').trigger('click')
+    expect(role(menu)).toBe('dialog')
+  })
+
   it('gives focus back to its strip button when it closes', async () => {
     const button = document.createElement('button')
     button.dataset.testid = 'strip-menu'
