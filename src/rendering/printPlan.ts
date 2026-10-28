@@ -1,8 +1,10 @@
-import { countedDimensions, frameWeave } from '../domain/project'
+import { countedDimensions } from '../domain/projectExtent'
+import { frameWeave } from '../domain/layerWeave'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import { describeWeave, type Weave } from '../domain/weave'
 import type { Project } from '../domain/project'
-import { CELL_SIZE_PX, cellSizePx, displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
+import { CELL_SIZE_PX, cellSizePx } from './cellSize'
+import { displayedExtentPx, rowPitchPx, type Region } from './surfaceView'
 
 // PDF page layout (ticket 162, 185, 578, 0584): the Cover page whole, then parts of as many beads as fill a chart page at
 // one bead size, small parts sharing a sheet; page px at 150 dpi.

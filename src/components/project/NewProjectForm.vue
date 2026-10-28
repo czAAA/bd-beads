@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
-import type { CreateProjectInput } from '../../domain/project'
+import type { CreateProjectInput } from '../../domain/createProject'
 import { DEFAULT_BEAD_SHAPE, DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type BeadShape, type Technique } from '../../domain/weave'
 import {
   formatImageLimits,

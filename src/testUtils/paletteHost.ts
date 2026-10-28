@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 import { defineComponent, h, ref, type Component } from 'vue'
 import { mount } from '@vue/test-utils'
-import { createProject } from '../domain/project'
+import { createProject } from '../domain/createProject'
 import { provideColorPick, provideMoveColor, provideRemoveAddedColor, provideRemoveAllAddedColors, useProjectPalette } from '../composables/tools/usePalette'
 import { editHarness } from './editHarness'
 

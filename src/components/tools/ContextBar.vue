@@ -9,10 +9,11 @@ import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
-import { rowProgressStarted, type Project } from '../../domain/project'
+import { rowProgressStarted } from '../../domain/rowProgress'
 import { frameAllows } from '../../domain/frameKind'
 import { DEFAULT_TECHNIQUE, describeWeave } from '../../domain/weave'
-import { canvasWeave, frameWeave } from '../../domain/project'
+import { canvasWeave, frameWeave } from '../../domain/layerWeave'
+import type { Project } from '../../domain/project'
 import { copyLayerSelection, selectionLayer, type Selection } from '../../domain/selection'
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,

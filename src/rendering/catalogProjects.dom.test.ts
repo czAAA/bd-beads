@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadCopy, gramsPerBead } from '../domain/beads'
-import { createProject, replaceBead } from '../domain/project'
+import { createProject } from '../domain/createProject'
+import { replaceBead } from '../domain/projectBead'
 import { parseProjectsFile, serializeProject } from '../domain/projectFile'
 import { recordingContext } from '../testUtils/recordingContext'
 import { renderProject } from './projectRenderer'

@@ -2,11 +2,12 @@ import type { Rect, FrameSheet } from '../domain/canvas'
 import { frameLayoutOf } from '../domain/frameKind'
 import { describeWeave, withCell, type Technique, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
-import { canvasWeave } from '../domain/project'
+import { canvasWeave } from '../domain/layerWeave'
 import { pieceAreasOf } from '../domain/pieces'
 import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
-import { cellSizePx, CELL_SIZE_PX, frameOriginPx, positionsBoxPx, rowShiftPx, rowTopPx, type SurfaceView, type ViewLayer } from './surfaceView'
+import { cellSizePx, CELL_SIZE_PX } from './cellSize'
+import { frameOriginPx, positionsBoxPx, rowShiftPx, rowTopPx, type SurfaceView, type ViewLayer } from './surfaceView'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
 // Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).

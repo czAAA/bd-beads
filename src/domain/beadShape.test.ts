@@ -1,7 +1,10 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, beadPitchMm, findBead } from './beads'
-import { canvasWeave, createProject, frameWeave, normalizeProject, projectCell, withBeadShape } from './project'
+import { canvasWeave, frameWeave } from './layerWeave'
+import { createProject } from './createProject'
+import { normalizeProject } from './storedProject'
+import { projectCell, withBeadShape } from './projectBead'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { beadCell, describeWeave, positionStep, TECHNIQUES } from './weave'
 

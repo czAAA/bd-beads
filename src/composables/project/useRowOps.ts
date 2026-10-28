@@ -1,11 +1,5 @@
-import {
-  moveToRow,
-  resetRowProgress,
-  rowProgressPosition,
-  rowProgressStarted,
-  toggleRowDirection,
-  type Project,
-} from '../../domain/project'
+import { moveToRow, resetRowProgress, rowProgressPosition, rowProgressStarted, toggleRowDirection } from '../../domain/rowProgress'
+import type { Project } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'

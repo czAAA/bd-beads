@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { beadBounds, beadCount, beadsFromColors, beadsInFrame, colorAt, colorsInFrame, forEachBead, hasBeads, withColors } from './canvas'
+import { beadBounds, beadCount, beadsFromColors, beadsInFrame, changedPositions, colorAt, colorsInFrame, forEachBead, hasBeads, withColors } from './canvas'
+import { BEAD_CATALOG } from './beads'
+import { createProject } from './createProject'
+import { paintAt } from '../testUtils/layers'
+
+const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 describe('beads by position', () => {
   it('reads null where nothing is painted, far or negative included', () => {
@@ -49,5 +54,31 @@ describe('hasBeads', () => {
     expect(hasBeads({})).toBe(false)
     expect(hasBeads({ 0: {} })).toBe(false)
     expect(hasBeads({ 2: { 3: '#fff' } })).toBe(true)
+  })
+})
+
+describe('changedPositions', () => {
+  it('is empty for two identical grids', () => {
+    const project = createProject({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+
+    expect(changedPositions(project.frame!.beads, project.frame!.beads)).toEqual([])
+  })
+
+  it('lists exactly the cells whose color differs, and nothing else', () => {
+    const project = createProject({
+      technique: 'loom',
+      beadId: cubeBead.id,
+      size: { width: 6, height: 6, unit: 'mm' },
+    })
+    const after = paintAt(paintAt(project, [{ row: 0, column: 0 }], '#e63746'), [{ row: 2, column: 1 }], '#2f6fed')
+
+    expect(changedPositions(project.frame!.beads, after.frame!.beads)).toEqual([
+      { row: 0, column: 0 },
+      { row: 2, column: 1 },
+    ])
   })
 })

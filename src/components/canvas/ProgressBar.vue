@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { frameRowOrder, rowProgressPosition, type Project } from '../../domain/project'
+import { frameRowOrder, rowProgressPosition } from '../../domain/rowProgress'
+import type { Project } from '../../domain/project'
 import { orderStepLabel } from '../../i18n/orderStep'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'

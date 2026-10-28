@@ -23,7 +23,8 @@ import {
   type CopiedBlock,
 } from './selection'
 import { withColors } from './canvas'
-import { createProject, type Project } from './project'
+import { createProject } from './createProject'
+import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 

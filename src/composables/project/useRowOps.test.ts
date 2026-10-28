@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createProject, moveToRow, resetRowProgress, toggleRowDirection, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import { moveToRow, resetRowProgress, toggleRowDirection } from '../../domain/rowProgress'
+import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
 

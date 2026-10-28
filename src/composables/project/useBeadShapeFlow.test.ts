@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, restoreSnapshot, snapshotOf, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import { restoreSnapshot, snapshotOf } from '../../domain/undoSnapshot'
+import type { Project } from '../../domain/project'
 import type { EditFn } from './useEdit'
 import { useBeadShapeFlow } from './useBeadShapeFlow'
 

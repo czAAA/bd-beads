@@ -1,6 +1,7 @@
 import { beadRoundness, describeWeave, isShiftedRow, rowCycle, type BeadCell, type Technique } from '../domain/weave'
 import { BEAD_GAP_PX, type DrawingContext } from './beadLook'
-import { cellSizePx, CELL_SIZE_PX, rowPitchPx, type Region } from './surfaceView'
+import { cellSizePx, CELL_SIZE_PX } from './cellSize'
+import { rowPitchPx, type Region } from './surfaceView'
 
 // Position marks (CONTEXT.md): the Canvas's empty positions outside the Frame, as one repeating tile (a bead across, a cycle of
 // rows down: two for peyote/brick half-bead shifts, 2N with a Brick block of N) filled over the view, not a shape per position. A screen-size bitmap

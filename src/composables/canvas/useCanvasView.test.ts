@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { effectScope, nextTick, ref } from 'vue'
-import { createProject, type Project } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
 

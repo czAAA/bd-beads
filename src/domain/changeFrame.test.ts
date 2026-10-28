@@ -3,7 +3,11 @@ import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Rect, type FrameSheet } from './canvas'
 import { describeWeave } from './weave'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
-import { createProject, rowProgressOn, switchLoss, withFrame, type Project } from './project'
+import { createProject } from './createProject'
+import { rowProgressOn } from './rowProgress'
+import { switchLoss } from './weaveSwitch'
+import { withFrame } from './frame'
+import type { Project } from './project'
 
 const frame: Rect = { row: 10, column: 10, rows: 6, columns: 4 }
 

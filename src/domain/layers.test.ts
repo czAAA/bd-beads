@@ -2,7 +2,11 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from './canvas'
 import { layerAt, onLayer, positionInLayer, positionOnCanvas, shownBeads } from './layers'
-import { beadColorAt, createProject, fillArea, paintCells, type Project } from './project'
+import { beadColorAt } from './layerBeads'
+import { createProject } from './createProject'
+import { fillArea } from './fill'
+import { paintCells } from './drawing'
+import type { Project } from './project'
 
 const RED = '#e63746'
 const BLUE = '#2f6fed'

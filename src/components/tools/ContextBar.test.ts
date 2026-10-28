@@ -2,7 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import ContextBar from './ContextBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
-import { createProject, moveToRow, paintCells, withFrame } from '../../domain/project'
+import { createProject } from '../../domain/createProject'
+import { moveToRow } from '../../domain/rowProgress'
+import { paintCells } from '../../domain/drawing'
+import { withFrame } from '../../domain/frame'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
