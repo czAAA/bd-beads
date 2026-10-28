@@ -50,7 +50,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Project | проект | Saved Projects / Сохранённые проекты; New Project / Новый проект |
 | Schema | схема | The beads inside the Frame; Schema rotated / Схема повёрнута (ADR 0050) |
 | Bead / beads | бисеринка / бисер | One bead is бисеринка; the material and amounts are бисер |
-| Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение |
+| Technique | техника плетения | Loom / ткачество, Peyote / мозаичное плетение, Brick stitch / кирпичное плетение, Square stitch / квадратное плетение |
 | Palette | палитра |  |
 | Row progress | прогресс по рядам | Row done / Ряд готов; Row not done / Ряд не готов |
 | Beads needed | Нужно бисера | Its count column: Beads / Бисеринок |
@@ -75,7 +75,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | Schema | схема | схема |
 | Bead / beads | бісерина / бісер | бісерына / бісер |
 | Technique | техніка плетіння | тэхніка пляцення |
-| Loom · Peyote · Brick stitch | Ткацтво · Мозаїчне плетіння · Цегляне плетіння | Ткацтва · Мазаічнае пляценне · Цаглянае пляценне |
+| Loom · Peyote · Brick stitch · Square stitch | Ткацтво · Мозаїчне плетіння · Цегляне плетіння · Квадратне плетіння | Ткацтва · Мазаічнае пляценне · Цаглянае пляценне · Квадратнае пляценне |
 | Palette | палітра | палітра |
 | Row progress | прогрес за рядами | прагрэс па радках |
 | Beads needed | Потрібно бісеру | Патрэбна бісеру |
@@ -91,7 +91,7 @@ The same voice and sentence patterns in each language; domain words are never re
 | Schema | 图样 | esquema | schemat |
 | Bead / beads | 珠子 | cuenta / cuentas | koralik / koraliki |
 | Technique | 编织技法 | técnica | technika |
-| Loom · Peyote · Brick stitch | 织机 · 佩奥 · 砖形 | Telar · Peyote · Punto ladrillo | Krosno · Peyote · Ścieg ceglasty |
+| Loom · Peyote · Brick stitch · Square stitch | 织机 · 佩奥 · 砖形 · 方形针 | Telar · Peyote · Punto ladrillo · Punto cuadrado | Krosno · Peyote · Ścieg ceglasty · Ścieg kwadratowy |
 | Palette | 调色板 | paleta | paleta |
 | Row progress | 行进度 | progreso por filas | postęp rzędów |
 | Beads needed | 所需珠子 | Cuentas necesarias | Potrzebne koraliki |
