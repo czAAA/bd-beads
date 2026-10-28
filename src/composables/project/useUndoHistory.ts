@@ -1,4 +1,4 @@
-import { computed, ref } from 'vue'
+import { computed, shallowRef } from 'vue'
 import {
   canRedo as historyCanRedo,
   canUndo as historyCanUndo,
@@ -22,7 +22,8 @@ export interface UndoHistoryDeps {
 // record(); not saved with the Project, so the shell reset()s on a change. Deps are read lazily, so the shell can pass
 // this and Edit to each other.
 export function useUndoHistory(deps: UndoHistoryDeps) {
-  const history = ref<History<UndoEntry>>(emptyHistory())
+  // Shallow (ticket 0616): a step is replaced whole, and what Undo puts back must be the Project's own data, not a proxy.
+  const history = shallowRef<History<UndoEntry>>(emptyHistory())
 
   const canUndo = computed(() => historyCanUndo(history.value))
   const canRedo = computed(() => historyCanRedo(history.value))

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, toRaw, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { changedPositions } from '../../domain/canvas'
 import { layerAt } from '../../domain/layers'
 import { footprintOf } from '../../domain/footprint'
@@ -323,7 +323,7 @@ function currentRegion() {
 
 /** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a
  * position is. */
-const space = computed(() => spaceOf(toRaw(props.project), true))
+const space = computed(() => spaceOf(props.project, true))
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
@@ -338,7 +338,7 @@ function rulerFontPx(): number {
 
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
-const rulers = computed(() => rulerLayout(toRaw(props.project), surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
+const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
 watch(
@@ -427,7 +427,7 @@ function drawCells(): void {
 
   const pixelRatio = globalThis.devicePixelRatio || 1
   const region = currentRegion()
-  const project = toRaw(props.project)
+  const project = props.project
   const letters = shownLetters(project)
   const resized = sizeCanvas(canvas, region.width, region.height, pixelRatio)
   const context = canvas.getContext('2d')
@@ -492,7 +492,7 @@ function clearMove(): void {
 function drawCellsOrMove(): void {
   const before = drawn
   const canvas = baseEl.value
-  const project = toRaw(props.project)
+  const project = props.project
   const pixelRatio = globalThis.devicePixelRatio || 1
   const onlyViewMoved =
     before &&
@@ -592,14 +592,14 @@ function drawOverlay(): void {
   const context = canvas.getContext('2d')
   if (context) {
     renderOverlay(context, {
-      project: toRaw(props.project),
+      project: props.project,
       space: space.value,
       region,
       zoom: props.zoom,
       pixelRatio,
       theme: theme.value,
       rowMarks: marksShown.value,
-      letters: shownLetters(toRaw(props.project)),
+      letters: shownLetters(props.project),
       pointer: markerAt.value && !props.tool && !handMoves.value && !props.markerHidden && !props.picking && !props.selecting ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
       preview: !props.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
       selection: props.selection,
