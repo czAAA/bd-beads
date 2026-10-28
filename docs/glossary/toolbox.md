@@ -19,7 +19,7 @@ A dropdown that hangs from a Canvas strip button, built on one parent component,
 _Avoid_: sheet (for these three), dropdown, Frame bar (retired name), PanelShell (retired name)
 
 **Menu**:
-The Menu panel: the modal dropdown of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Overview, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project panel instead.
+The Menu panel: the modal dropdown of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Homepage, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project panel instead.
 _Avoid_: More, header menu
 
 **Subpanel** (was Panel sub-view):
@@ -47,17 +47,17 @@ The Project panel: the modal dropdown the Canvas strip's Project button opens (t
 _Avoid_: Project sheet, Pattern sheet, Tool sheet (gone)
 
 **Canvas strip**:
-The slim row along the top of the canvas box, on the editor and on the Overview, at every width (tickets 425, 431, ADR 0055, ADR 0073). One component in both places, in three parts. Left: the panels, Menu (an icon and its word) then, in the editor, Project and Frame. Centre: the **Wordmark**, centred on the strip itself. Right: the tools, Rotate canvas (spec 0470), the Rulers toggle (`R`), Undo and Redo, then zoom out, zoom in and Fit, right-aligned (ticket 543). There is no zoom level in percent. Apart from the Wordmark it names nothing: no title, size line, printed-size estimate or keyboard hint. Under 1024px the words of Menu and Project and the Wordmark's lettering go and only icons stay. On a phone the editor keeps its present strip, the middle scrolling sideways with touch-sized buttons, and no Wordmark; the Overview's phone strip keeps the Wordmark's logo. While a picture is being framed (Convert image) it holds Menu, the Wordmark and the framing step's own zoom. On the Overview the zoom scales the page's content (**Overview zoom**). It replaced the draggable Zoom pill.
-_Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (the Menu button + 2px with a mouse, 46px on touch), one derived rule (`--strip-height`) shared with the Overview. Its top corners follow the canvas box's rounded corners; its left, right and bottom edges are drawn.
+The slim row along the top of the canvas box, on the editor and on the Homepage, at every width (tickets 425, 431, ADR 0055, ADR 0073). One component in both places, in three parts. Left: the panels, Menu (an icon and its word) then, in the editor, Project and Frame. Centre: the **Wordmark**, centred on the strip itself. Right: the tools, Rotate canvas (spec 0470), the Rulers toggle (`R`), Undo and Redo, then zoom out, zoom in and Fit, right-aligned (ticket 543). There is no zoom level in percent. Apart from the Wordmark it names nothing: no title, size line, printed-size estimate or keyboard hint. Under 1024px the words of Menu and Project and the Wordmark's lettering go and only icons stay. On a phone the editor keeps its present strip, the middle scrolling sideways with touch-sized buttons, and no Wordmark; the Homepage's phone strip keeps the Wordmark's logo. While a picture is being framed (Convert image) it holds Menu, the Wordmark and the framing step's own zoom. On the Homepage the zoom scales the page's content (**Homepage zoom**). It replaced the draggable Zoom pill.
+_Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (the Menu button + 2px with a mouse, 46px on touch), one derived rule (`--strip-height`) shared with the Homepage. Its top corners follow the canvas box's rounded corners; its left, right and bottom edges are drawn.
 _Avoid_: Zoom pill, Canvas header
 
 **Wordmark**:
-The logo and the "openbeads" wordmark (in the display serif) as one unit, centred in the Canvas strip on every page. In the editor it opens the Overview; on the Overview it is the current page, so it is not a link. The wordmark hides first when the strip narrows, then the logo.
+The logo and the "openbeads" wordmark (in the display serif) as one unit, centred in the Canvas strip on every page. In the editor it opens the Homepage; on the Homepage it is the current page, so it is not a link. The wordmark hides first when the strip narrows, then the logo.
 _Avoid_: header logo, title, app name
 
 **Canvas footer**:
-The slot along the bottom edge of the canvas box, the same height at every width (ADR 0073). In the editor it holds the Progress bar while a Project is open; on the Overview it is there and empty, so the box looks the same on both pages and nothing jumps.
-_Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (a large Row done button + 2px, the phone's two rows + 2px), one derived rule (`--progress-height`) so the Overview's empty footer matches the editor's. Its bottom corners follow the canvas box's rounded corners; its left, right and top edges are drawn.
+The slot along the bottom edge of the canvas box, the same height at every width (ADR 0073). In the editor it holds the Progress bar while a Project is open; on the Homepage it is there and empty, so the box looks the same on both pages and nothing jumps.
+_Height (ticket 0544):_ as tall as its tallest item plus 1px above and below (a large Row done button + 2px, the phone's two rows + 2px), one derived rule (`--progress-height`) so the Homepage's empty footer matches the editor's. Its bottom corners follow the canvas box's rounded corners; its left, right and top edges are drawn.
 _Avoid_: footer bar, bottom bar
 
 **Canvas hint**:

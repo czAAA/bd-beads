@@ -333,7 +333,7 @@ export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'te
   return describeWeave(frameWeave(project)).unitsOf(projectDimensions(project))
 }
 
-/** A dense grid of cells as a Frame the size of the grid holding them: what the Convert image preview, the Overview's
+/** A dense grid of cells as a Frame the size of the grid holding them: what the Convert image preview, the Homepage's
  * pictures and a test's hand-made block of beads are drawn from. */
 export function framedGrid(grid: Grid, weave: Weave = { technique: DEFAULT_TECHNIQUE }): Pick<Project, 'beads' | 'frame'> {
   return {

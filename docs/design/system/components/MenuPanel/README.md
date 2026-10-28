@@ -23,10 +23,10 @@ About half the air of v18: every row is `panel-row` (28px; `panel-row-touch`, 36
 
 1. **Projects:** New Project (`accent`, `plus`, ›) and **Projects library** (`library`, the count as its value, ›). Both push a subpanel. Import, Export all and Delete all moved into the library.
 2. **Preferences:** Language (the code, "EN"), Theme (its icon and word: System, Light, Dark, High contrast), Tools position (its icon and word: Left, Top, Right, Bottom), Input (Pen, Mouse) and Writing hand (Right, Left), all PanelPickers. Input and Writing hand show only once a pen has been seen (ticket 326), absent otherwise, not disabled.
-3. **Help:** Keyboard shortcuts (the key `?` as its value; only when a keyboard is attached), Overview.
+3. **Help:** Keyboard shortcuts (the key `?` as its value; only when a keyboard is attached), Homepage.
 4. **About:** Source code (`external`; opens the repository in a new tab; the AGPL-3.0 network clause needs a hosted copy to link to its source, ticket 269), **Buy me a coffee** (the `coffee` icon in `accent-strong`, `external`; a deliberate second accent mark in the panel; the row is absent while the app has no link for it), and Version (a non-interactive row, indented to the label column, the number in `meta`).
 
-On the Overview (ticket 540) the panel leaves out Projects and the editor-only pickers, and shows its Overview item as the current page.
+On the Homepage (ticket 540) the panel leaves out Projects and the editor-only pickers, and shows its Homepage item as the current page.
 
 ## Projects library (subpanel)
 
@@ -52,6 +52,6 @@ Nothing repeats a tool: Rulers, Undo, Redo and zoom live on the Canvas strip, Mi
 
 ## Copy
 
-English: Projects, New Project, Projects library, Import a project, Export all projects, Delete all projects, No projects yet, Preferences, Language, Theme, Tools position, Input, Pen, Mouse, Writing hand, Help, Keyboard shortcuts, Overview, About, Source code, Buy me a coffee, Version. Russian is in `writing.md` (Panels redesign).
+English: Projects, New Project, Projects library, Import a project, Export all projects, Delete all projects, No projects yet, Preferences, Language, Theme, Tools position, Input, Pen, Mouse, Writing hand, Help, Keyboard shortcuts, Homepage, About, Source code, Buy me a coffee, Version. Russian is in `writing.md` (Panels redesign).
 
 Hand-written from spec 0440, the Menu and Project mockups and the ticket 0553 canvas; static rendition.

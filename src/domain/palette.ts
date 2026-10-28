@@ -63,7 +63,7 @@ export function defaultPalette(beadId: string): readonly PaletteColor[] {
   return (brand && BRAND_COLORS.get(brand)) || BUILT_IN_COLORS
 }
 
-/** A built-in color by id, for the fixed artwork (Starters, the overview) that names the colors it draws with. */
+/** A built-in color by id, for the fixed artwork (Starters, the homepage) that names the colors it draws with. */
 export function findBuiltInColor(id: string): PaletteColor | undefined {
   return BUILT_IN_COLORS.find((color) => color.id === id)
 }
