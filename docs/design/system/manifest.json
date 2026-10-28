@@ -177,7 +177,7 @@
     {
       "name": "FoundColorRow",
       "group": "Screens",
-      "summary": "One color Convert image found in the picture: picture color, matched color, bead count, and Keep exact, Remap or Empty."
+      "summary": "One color Convert image found in the picture: picture color, matched color, bead count, Remap (Keep exact is its first choice) and Empty."
     },
     {
       "name": "FrameControls",

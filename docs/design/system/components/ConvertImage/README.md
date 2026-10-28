@@ -37,7 +37,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 
 - **No picture:** Choose file (primary, `import` icon, the FileButton's `accept`), Paste (`paste` icon; the async Clipboard API, and Ctrl/Cmd+V works anywhere in the popup), and Take photo on a touch device (a file input with `capture`; the icon set has no camera, so it has no icon), all `field-height`, wrapping.
 - **With a picture:** a 64 × 48 thumbnail of the pixels (1px `line` edge), the file name in `control` and "256×192 px · png" in `meta`; then small (28) in-box buttons: Turn 90° (`rotate` icon) and Flip (left to right; no icon in the set), and at the right `replace` with Choose file and Paste (wrapping to a second row when they do not fit). Turn and Flip change the pixels before sampling and start the crop or pan over.
-- **Note**, always: "Drop a picture anywhere on the app, choose a file or paste one with Ctrl+V. PNG, JPEG, GIF or WebP, up to 10 MB and 16 megapixels." On touch: "Choose a file, paste a picture or take a photo. …"
+- **Note**, only until the first picture is set: "Drop a picture anywhere on the app, choose a file or paste one with Ctrl+V. PNG, JPEG, GIF or WebP, up to 10 MB and 16 megapixels." On touch: "Choose a file, paste a picture or take a photo. …"
 - **Errors** (HEIC, SVG, too big, too many pixels, unreadable, wrong format) keep the app's sentences, in an inline Message under the buttons (`danger` edge, the warning icon, `role="alert"`). A picture already set stays set.
 
 ## 2 Bead & Technique
