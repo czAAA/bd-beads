@@ -2,10 +2,9 @@
 import { describe, expect, it } from 'vitest'
 import { beadsFromColors, colorAt, withColors } from './canvas'
 import { createProject } from './createProject'
-import { moveToRow } from './rowProgress'
 import type { Project } from './project'
 import type { Technique } from './weave'
-import { removeLineRefusal, removeSelectedLine as removeLineChange, selectedAreaLine } from './removeLine'
+import { removeLineQuestion, removeLineRefusal, removeSelectedLine as removeLineChange, selectedAreaLine } from './removeLine'
 import type { Selection } from './selection'
 
 /** A Project whose Frame sits at (10, 20) and whose own beads are numbered #00 0N0 by position, so a shift shows. */
@@ -94,12 +93,6 @@ describe('removeSelectedLine', () => {
     expect(removeSelectedLine(project, { top: 10, left: 20, rows: 2, columns: 2 })).toBe(project)
   })
 
-  it('is refused once Row progress is on and a pass is done (ticket 411)', () => {
-    const woven = moveToRow(numbered(3, 4), 1)
-    expect(removeLineRefusal(woven, rowOf(woven, 0))).toBe('locked')
-    expect(removeSelectedLine(woven, rowOf(woven, 0))).toBe(woven)
-  })
-
   it('is refused for the Frame\'s only row or column', () => {
     const oneRow = numbered(3, 1)
     expect(removeLineRefusal(oneRow, rowOf(oneRow, 0))).toBe('only-line')
@@ -119,6 +112,8 @@ describe('removeSelectedLine with no Frame (ticket 313)', () => {
 
   it('cuts the Piece area\'s line, closes the gap and leaves other areas alone', () => {
     const before = unframed()
+    // No Frame, no passes: nothing to ask about.
+    expect(removeLineQuestion(before, { top: 1, left: 0, rows: 1, columns: 3 })).toBeUndefined()
     const removed = removeSelectedLine(before, { top: 1, left: 0, rows: 1, columns: 3 })
     expect(colorAt(removed.beads, 0, 0)).toBe('#000000')
     expect(colorAt(removed.beads, 1, 0)).toBe('#020000')
@@ -138,5 +133,64 @@ describe('removeSelectedLine with no Frame (ticket 313)', () => {
     expect(removeLineRefusal(before, { top: 1, left: 0, rows: 1, columns: 2 })).toBe('no-line')
     expect(removeLineRefusal(before, { top: 1, left: 0, rows: 1, columns: 3 })).toBeUndefined()
     expect(removeLineRefusal(before, { top: 50, left: 0, rows: 1, columns: 3 })).toBe('no-line')
+  })
+})
+
+describe('Remove row/column once rows are marked done (ticket 0647, ADR 0055)', () => {
+  /** A Frame of 3 columns and 6 rows in a Technique, its rows running `rowProgress`'s way with its pointers. */
+  const woven = (rowProgress: Project['rowProgress'], technique: Technique = 'loom'): Project => {
+    const project = numbered(3, 6)
+    return { ...project, technique, frame: { ...project.frame!, technique }, rowProgress }
+  }
+  const down = (currentRow: number) => ({ direction: 'rows' as const, currentRow, currentColumn: 0 })
+
+  it('takes a row not yet woven without asking, and leaves the pointer', () => {
+    const project = woven(down(4))
+    expect(removeLineRefusal(project, rowOf(project, 4))).toBeUndefined()
+    expect(removeLineQuestion(project, rowOf(project, 4))).toBeUndefined()
+    expect(removeSelectedLine(project, rowOf(project, 4)).rowProgress).toMatchObject({ currentRow: 4 })
+  })
+
+  it('asks before a finished row, and moves the pointer back by its one pass on loom', () => {
+    const project = woven(down(4))
+    expect(removeLineQuestion(project, rowOf(project, 1))).toEqual({ kind: 'finished-row', row: 2, backTo: 4, shifts: false, direction: 'rows' })
+    const removed = removeSelectedLine(project, rowOf(project, 1))
+    expect(removed.frame).toMatchObject({ rows: 5 })
+    expect(removed.rowProgress).toMatchObject({ currentRow: 3 })
+  })
+
+  it('moves the pointer back two passes for a later peyote row, one for its first, and says the rows after it shift', () => {
+    // Peyote's rows 0 to 3 are done: passes 0, 1 and 2, 3 and 4, 5 and 6.
+    const project = woven(down(7), 'peyote')
+    expect(removeLineQuestion(project, rowOf(project, 2))).toEqual({ kind: 'finished-row', row: 3, backTo: 6, shifts: true, direction: 'rows' })
+    expect(removeSelectedLine(project, rowOf(project, 2)).rowProgress).toMatchObject({ currentRow: 5 })
+    expect(removeSelectedLine(project, rowOf(project, 0)).rowProgress).toMatchObject({ currentRow: 6 })
+    expect(removeLineQuestion(woven(down(2), 'brick'), rowOf(project, 0))).toMatchObject({ kind: 'finished-row', shifts: true })
+  })
+
+  it('asks before a column across finished rows, which stay finished', () => {
+    const project = woven(down(4))
+    expect(removeLineQuestion(project, columnOf(project, 1))).toEqual({ kind: 'across-rows', rows: 4, direction: 'rows' })
+    const removed = removeSelectedLine(project, columnOf(project, 1))
+    expect(removed.frame).toMatchObject({ columns: 2 })
+    expect(removed.rowProgress).toMatchObject({ currentRow: 4 })
+  })
+
+  it('reads rows and columns the way the rows run, from either end', () => {
+    // Left to right, column 0 done: it is the finished row; a row of the grid runs across it.
+    const across = woven({ direction: 'columns', currentRow: 0, currentColumn: 1 })
+    expect(removeLineQuestion(across, columnOf(across, 0))).toEqual({ kind: 'finished-row', row: 1, backTo: 1, shifts: false, direction: 'columns' })
+    expect(removeLineQuestion(across, rowOf(across, 0))).toEqual({ kind: 'across-rows', rows: 1, direction: 'columns' })
+    // Bottom to top, the last two rows done: the bottom row is row 1, as the Progress bar counts.
+    const up = woven({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0, currentRowBack: 2 })
+    expect(removeLineQuestion(up, rowOf(up, 0))).toBeUndefined()
+    expect(removeLineQuestion(up, rowOf(up, 5))).toMatchObject({ kind: 'finished-row', row: 1, backTo: 2 })
+    expect(removeSelectedLine(up, rowOf(up, 5)).rowProgress).toMatchObject({ currentRowBack: 1 })
+  })
+
+  it('moves back the pointer of every way whose rows run along the line, so the same beads stay finished', () => {
+    const project = woven({ direction: 'columns', currentRow: 3, currentColumn: 1, currentRowBack: 2 })
+    expect(removeSelectedLine(project, rowOf(project, 0)).rowProgress).toMatchObject({ currentRow: 2, currentColumn: 1, currentRowBack: 2 })
+    expect(removeSelectedLine(project, rowOf(project, 5)).rowProgress).toMatchObject({ currentRow: 3, currentRowBack: 1 })
   })
 })

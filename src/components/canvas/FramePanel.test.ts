@@ -150,11 +150,11 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.emitted('step')).toHaveLength(count)
   })
 
-  it('turns the fields off, hides the edges and says why, and drops Rotate once a pass is done', () => {
+  it('turns the fields off, hides the edges and says why once a pass is done, and keeps Rotate Frame (ticket 0647)', () => {
     const wrapper = mountBar(moveToRow(framed(), 1))
     expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
   })

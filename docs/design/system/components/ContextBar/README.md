@@ -29,7 +29,7 @@ The Frame panel of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove
 
 ## What the app does differently
 
-- **Rotate** (Shift+R) turns the Selection a quarter turn clockwise about its centre; the turned rectangle becomes the Selection, the Frame is untouched, and beads under the new footprint are replaced (ticket 416, ADR 0052). It is not rendered once a Row progress pass is done (the Frame lock of ticket 411). Until ticket 417 moves them, **Remove line** and **Name Piece** stay on the bar, after Fill, Frame and Rotate and before the divider; they are rendered only when they apply (a line of the Frame is selected; the Selection holds beads of one Piece).
+- **Rotate** (Shift+R) turns the Selection a quarter turn clockwise about its centre; the turned rectangle becomes the Selection, the Frame is untouched, and beads under the new footprint are replaced (ticket 416, ADR 0052). Once a Row progress pass is done it is still rendered: disabled, with "This Selection reaches into finished rows.", where the Selection holds a bead of a finished pass, and enabled elsewhere, the Canvas included (ticket 0647). Until ticket 417 moves them, **Remove line** and **Name Piece** stay on the bar, after Fill, Frame and Rotate and before the divider; they are rendered only when they apply (a line of the Frame is selected; the Selection holds beads of one Piece). Remove line asks first where the line touches finished rows (ticket 0647).
 - The "…" menu folds the last items first, Clear selection among them when it comes to that.
 
 Hand-written from the responsive sign-off, then redrawn for tickets 414 and 415 from the design canvas; static rendition.

@@ -8,6 +8,7 @@ import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells } from './drawing'
 import type { Project } from './project'
+import { isInFinishedRow } from './rowProgress'
 import { aimOf, cellOfBead, copiedFromCustom, landOnLayout, pointsOfCells, positionsInRectangle, type PlacedColor } from './customSelection'
 
 /** A rectangular area of a Project's grid, marked out with the Select tool (CONTEXT.md's Selection): top-left corner
@@ -304,6 +305,15 @@ function selectionCells(sheet: LayerSheet, selection: Selection): GridPosition[]
     }
   }
   return cells
+}
+
+/** Whether a Selection holds a position of a finished pass (ticket 0647, ADR 0052): Rotate is then held back, as the
+ * turn would leave those locked beads in place and draw their turned copies too. Never on the Canvas, which Row
+ * progress does not cover. */
+export function selectionInFinishedRows(project: Project, selection: Selection): boolean {
+  if (selectionLayer(project, selection) !== 'frame') return false
+  const cells = selectionCells(layerSheet(project, 'frame'), selectionInLayer(project, 'frame', selection))
+  return cells.some((cell) => isInFinishedRow(project, { ...positionOnCanvas(project, 'frame', cell), layer: 'frame' }))
 }
 
 /** Every position of a Selection takes `color` (empty ones too; null clears them), on the

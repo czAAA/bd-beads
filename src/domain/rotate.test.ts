@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { beadsFromColors, forEachBead, withColors, type BeadMap } from './canvas'
 import { namedPieces, withPieceName } from './pieceNames'
 import { createProject } from './createProject'
+import { isInFinishedRow } from './rowProgress'
 import type { Project } from './project'
 import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, rotatedSelection } from './rotate'
 import type { Selection } from './selection'
@@ -245,5 +246,52 @@ describe('rotating a Piece-tool shape (ticket 547)', () => {
   it('reports as covered only the beads the shape landed on', () => {
     const turned = rotateSelection(withBeads(beads), shape)
     expect(coveredByRotation(withBeads(beads), turned.project, shape, turned.selection)).toBe(0)
+  })
+})
+
+describe('rotateFrame with Row progress (ticket 0647, ADR 0052)', () => {
+  type Way = { direction: 'rows' | 'columns'; reversed?: boolean }
+  const WAYS: Way[] = [{ direction: 'rows' }, { direction: 'columns' }, { direction: 'rows', reversed: true }, { direction: 'columns', reversed: true }]
+  const pointers = { currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5 }
+
+  /** A Frame of 5 rows and 6 columns at (20, 20) in a Technique, its four pointers set and its rows running `way`. */
+  function woven(technique: 'loom' | 'peyote' | 'brick', way: Way, rows = 5): Project {
+    return { ...base, technique, beads: {}, frame: { technique, row: 20, column: 20, rows, columns: 6, beads: {} }, rowProgress: { ...pointers, ...way } }
+  }
+
+  /** Every finished position of the Frame, counted from its first row and column, as `place` sends it. */
+  function finished(project: Project, place: (row: number, column: number) => [number, number] = (row, column) => [row, column]): string[] {
+    const { row: top, column: left, rows, columns } = project.frame!
+    const found: string[] = []
+    for (let row = 0; row < rows; row++) {
+      for (let column = 0; column < columns; column++) {
+        if (isInFinishedRow(project, { row: top + row, column: left + column, layer: 'frame' })) found.push(place(row, column).join(','))
+      }
+    }
+    return found.sort()
+  }
+
+  it('moves each way\'s pointer a quarter turn on: five rows done from the top are five columns done from the right', () => {
+    const turned = rotateFrame({ ...woven('loom', { direction: 'rows' }), rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } })!
+    expect(turned.rowProgress).toEqual({ direction: 'columns', reversed: true, currentRow: 0, currentColumn: 0, currentColumnBack: 5 })
+    expect(rotateFrame(woven('loom', { direction: 'columns' }))!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 2, currentRowBack: 5, currentColumnBack: 3 })
+  })
+
+  it('keeps the same beads finished every way, on loom, peyote and brick stitch', () => {
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      for (const way of WAYS) {
+        const project = woven(technique, way)
+        // A quarter turn clockwise sends row r, column c of the 5-row Frame to row c, column 4 - r.
+        expect(finished(rotateFrame(project)!), `${technique} ${JSON.stringify(way)}`).toEqual(finished(project, (row, column) => [column, 4 - row]))
+      }
+    }
+  })
+
+  it('takes a peyote column half woven back to its start where the turn swaps its halves', () => {
+    // Columns of 6 beads: turned, a column's even and odd beads swap passes, so its first half can't stay the done one.
+    const project = { ...woven('peyote', { direction: 'columns' }, 6), rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 4 } }
+    const turned = rotateFrame(project)!
+    expect(turned.rowProgress.currentRow).toBe(3)
+    expect(finished(project, (row, column) => [column, 5 - row])).toEqual(expect.arrayContaining(finished(turned)))
   })
 })

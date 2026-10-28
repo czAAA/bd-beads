@@ -9,10 +9,9 @@ import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
-import { rowProgressStarted } from '../../domain/rowProgress'
 import { frameAllows } from '../../domain/frameKind'
 import type { Project } from '../../domain/project'
-import { copyLayerSelection, type Selection } from '../../domain/selection'
+import { copyLayerSelection, selectionInFinishedRows, type Selection } from '../../domain/selection'
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
 // clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
@@ -81,6 +80,7 @@ const deps = computed(() =>
     activeProject: () => props.project,
     hasSelection: () => props.selectionSummary !== undefined,
     selectionHasBeads: () => !!props.selection && copyLayerSelection(props.project, props.selection) !== undefined,
+    selectionInFinishedRows: () => !!props.selection && selectionInFinishedRows(props.project, props.selection),
     hasClipboard: () => !!props.hasClipboard,
     canRemoveSelectedLine: () => props.canRemoveLine,
     canNamePiece: () => !!props.canNamePiece,
@@ -130,8 +130,8 @@ const items = computed<BarItem[]>(() => {
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407); not over
   // a Frame whose kind keeps its own shape (a Custom frame, ticket 0592).
   if (frameAllows(props.project?.frame, 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
-  // Not offered once a Row progress pass is done (the Frame lock of ticket 411, ticket 416).
-  if (!props.project || !rowProgressStarted(props.project)) list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
+  // Disabled, saying why, where the Selection reaches into finished rows (ticket 0647).
+  list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })
   if (props.canNamePiece) list.push({ id: 'name-piece', action: actions.namePiece, group: 2, run: () => emit('name-piece') })
   list.push({ id: 'clear', action: actions.clear, group: 3, run: () => emit('clear-selection'), danger: true })
