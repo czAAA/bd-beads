@@ -169,6 +169,7 @@ export const uk: Translations = {
     loom: 'Ткацтво',
     peyote: 'Мозаїчне плетіння',
     brick: 'Цегляне плетіння',
+    square: 'Квадратне плетіння',
   },
   weaveSettings: {
     brickBlock: {

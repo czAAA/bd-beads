@@ -169,6 +169,7 @@ export const pl: Translations = {
     loom: 'Krosno',
     peyote: 'Peyote',
     brick: 'Ścieg ceglasty',
+    square: 'Ścieg kwadratowy',
   },
   weaveSettings: {
     brickBlock: {
