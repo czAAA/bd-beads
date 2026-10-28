@@ -1,6 +1,6 @@
 import { footprintOf } from './footprint'
 import type { Layer, Placed } from './layers'
-import { forEachBead, frameContains, withColors, type BeadChange, type Rect, sameFrame } from './canvas'
+import { forEachBead, frameContains, withColors, type BeadChange, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
@@ -126,8 +126,7 @@ export function clampOutOfMargin(frame: Rect | undefined, anchor: GridPosition, 
  * to change returns `before` itself, the drawing commands' "unchanged" signal. */
 export function keepMarginClear(before: Project, after: Project): Project {
   const frame = footprintOf(before)
-  // A command that turned the Frame (Rotate Frame, ticket 471) brings its margin with it: beads in the old one are its own.
-  if (!frame || !sameFrame(before.frame, after.frame)) {
+  if (!frame) {
     return after
   }
   const reverts: BeadChange[] = []

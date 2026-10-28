@@ -497,11 +497,15 @@ function wireAppShell(services: Services) {
   /** Rotate canvas: the picture a quarter turn, saved but no Undo step (ticket 471, ADR 0052). */
   const rotateCanvasFlow = useRotateCanvasFlow({ currentProject, replaceProject, announce, messages })
 
-  /** Remove line: the selected whole row or column of the Frame, as one undo step (tickets 123, 199, 233). */
+  /** Remove line: the selected whole row or column of the Frame, as one undo step, asking first where it touches
+   * finished rows (tickets 123, 199, 233, 0647). */
   const removeLine = useRemoveLineFlow({
     currentProject,
     edit,
     selection: () => selection.value,
+    dialogs,
+    messages,
+    locale: () => locale.value,
   })
 
   /** Name Piece: the dialog that gives the selected Piece a name, which makes it a Schema (ticket 406). */
@@ -619,6 +623,7 @@ function wireAppShell(services: Services) {
     onCopy,
     pasteAtPointer,
     onRotate: rotateFlow.onRotate,
+    selectionInFinishedRows: () => rotateFlow.heldBack.value,
     canRemoveSelectedLine: () => removeLine.canRemoveSelectedLine.value,
     onRemoveSelectedLine: removeLine.onRemoveSelectedLine,
     canNamePiece: () => namePiece.canNamePiece.value,
@@ -846,6 +851,9 @@ function wireAppShell(services: Services) {
       removeFrameTakesBeads: frameFlow.removeTakesBeads,
       onConfirmRemoveFrame: frameFlow.confirmRemove,
       onCancelRemoveFrame: frameFlow.cancelRemove,
+      removeLinePrompt: removeLine.removeLinePrompt,
+      onConfirmRemoveLine: removeLine.confirmRemoveLine,
+      onCancelRemoveLine: removeLine.cancelRemoveLine,
       onConfirmReplaceFrame: frameFlow.confirmReplace,
       onCancelReplaceFrame: frameFlow.cancelReplace,
       pendingColorRemovalHex: removeColor.pendingColorRemovalHex,

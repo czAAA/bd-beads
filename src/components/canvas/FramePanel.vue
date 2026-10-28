@@ -193,7 +193,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       <span class="frame-panel__label">{{ t.frame.titleLabel }}</span>
       <span v-if="frame" class="frame-panel__tools">
         <IconButton
-          v-if="!locked && rotatable"
+          v-if="rotatable"
           variant="plain"
           :icon-size="16"
           :action="rotateAction"

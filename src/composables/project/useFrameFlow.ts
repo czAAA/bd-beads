@@ -104,8 +104,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   })
 
   /** Whether the Frame panel shows: a Project and the panel opened, with or without a Frame (ticket 555). Once a pass
-   * is done it holds the size and Remove Frame alone (ticket 475: a panel that closes on a press outside cannot stay up
-   * for good). */
+   * is done it holds the size, Rotate Frame and Remove Frame (tickets 475, 0647: a panel that closes on a press outside
+   * cannot stay up for good). */
   const barShown = computed(() => !!deps.currentProject() && barOpen.value)
 
   // The panel is closed whenever a Project opens (ticket 473), and the handles go off with it or when the Frame goes; a

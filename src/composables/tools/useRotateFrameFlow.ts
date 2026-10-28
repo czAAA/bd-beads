@@ -1,5 +1,4 @@
 import { rotateFrame } from '../../domain/rotate'
-import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Translations } from '../../i18n/translations'
 import type { EditFn } from '../project/useEdit'
@@ -12,15 +11,15 @@ export interface RotateFrameFlowDeps {
   messages: () => Translations
 }
 
-/** Rotate Frame (ticket 471, ADR 0052, 0066): the Frame and its own beads a quarter turn, as one drawing Edit so Undo
- * restores all. The Canvas under it is not touched, so there is nothing to say was covered. */
+/** Rotate Frame (tickets 471, 0647, ADR 0052, 0066): the Frame, its own beads and Row progress a quarter turn, as one
+ * Edit so Undo restores all. An exempt one: every bead keeps its pass, so the finished-row lock has nothing to trim. The
+ * Canvas under it is not touched, so there is nothing to say was covered. */
 export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   function onRotateFrame(): void {
-    const before = deps.currentProject()
-    if (!before?.frame || rowProgressStarted(before)) {
+    if (!deps.currentProject()?.frame) {
       return
     }
-    deps.edit('drawing', (project) => rotateFrame(project) ?? project)
+    deps.edit('exempt', (project) => rotateFrame(project) ?? project)
     deps.announce(deps.messages().frame.announceFrameRotated)
   }
 

@@ -2,8 +2,11 @@ import type { Rect } from './canvas'
 import { pieceAreasOf } from './pieces'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
 import { carryNames } from './pieceNames'
-import { rowProgressStarted } from './rowProgress'
+import { finishedOnLine, lineRunsAlong, rowProgressPosition } from './rowProgress'
+import { frameWeave } from './layerWeave'
+import { describeWeave } from './weave'
 import type { Project } from './project'
+import type { PassDirection } from './weaveGeometry'
 import type { Selection } from './selection'
 
 /** Remove line (CONTEXT.md, ADR 0026, ticket 313): takes one row or column out of the Frame (or Piece area), closing
@@ -54,8 +57,6 @@ export type RemoveLineRefusal =
   /** The Selection isn't exactly one whole row or column of the Frame, or with no Frame of a Piece area: nothing for
    * it to act on. */
   | 'no-line'
-  /** Row progress is on: the Frame's rows are held still while it is (ADR 0026). */
-  | 'locked'
   /** The Frame has only the one row or column the Selection names, and a Frame is never empty. */
   | 'only-line'
 
@@ -66,17 +67,41 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
     return 'no-line'
   }
   if (!project.frame) {
-    // No Frame, so not a Frame change; Row progress still holds the area still.
-    return rowProgressStarted(project) ? 'locked' : undefined
+    return undefined
   }
-  switch (frameChangeRefusal(project, { removeLine: line })) {
-    case 'locked':
-      return 'locked'
-    case 'only-line':
-      return 'only-line'
-    default:
-      return undefined
+  return frameChangeRefusal(project, { removeLine: line }) === 'only-line' ? 'only-line' : undefined
+}
+
+/** What Remove line asks before it goes (ticket 0647, ADR 0055), its rows and columns the way the rows run. */
+export type RemoveLineQuestion =
+  /** A finished row: its number counted the way the rows run (from the far edge on a reversed way), and the row Row
+   * progress shows once it has gone back by that row's passes; `shifts` where rows alternate (peyote, brick stitch). */
+  | { kind: 'finished-row'; row: number; backTo: number; shifts: boolean; direction: PassDirection }
+  /** A line across finished rows, which each lose a bead and stay finished: how many. */
+  | { kind: 'across-rows'; rows: number; direction: PassDirection }
+
+/** The question Remove line asks first, or undefined where it goes without asking: a Piece area's line, or a Frame
+ * line that touches no finished pass. The one place the rule lives; the flow knows only the prompt. */
+export function removeLineQuestion(project: Project, selection: Selection | undefined): RemoveLineQuestion | undefined {
+  const line = selectedProjectLine(project, selection)
+  if (!line || !project.frame || removeLineRefusal(project, selection)) {
+    return undefined
   }
+  const { direction } = project.rowProgress
+  const { beads } = finishedOnLine(project, line)
+  if (beads === 0) {
+    return undefined
+  }
+  if (!lineRunsAlong(line, project.rowProgress)) {
+    return { kind: 'across-rows', rows: beads, direction }
+  }
+  const removed = changeFrame(project, { removeLine: line })
+  const after = rowProgressPosition(removed.kind === 'changed' ? removed.project : project)
+  // As the Progress bar shows it: the row being woven, the last once every pass is done.
+  const backTo = Math.min(after.current + 1, after.total)
+  const lines = line.axis === 'row' ? line.area.rows : line.area.columns
+  const row = (project.rowProgress.reversed ? lines - 1 - line.index : line.index) + 1
+  return { kind: 'finished-row', row, backTo, shifts: describeWeave(frameWeave(project)).shifted, direction }
 }
 
 /** Taking out the Selection's line: changeFrame's result with a Frame, else an edit of a Piece area's beads only. */
@@ -87,9 +112,6 @@ export function removeSelectedLine(project: Project, selection: Selection | unde
   }
   if (project.frame) {
     return changeFrame(project, { removeLine: line })
-  }
-  if (rowProgressStarted(project)) {
-    return { kind: 'refused', reason: 'locked' }
   }
   const shifted = { ...project, beads: beadsWithoutLine(project.beads, line.area, line) }
   return { kind: 'changed', project: carryNames(project, shifted, (at) => shiftedByLine(line.area, line, at)) }
