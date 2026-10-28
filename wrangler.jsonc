@@ -1,4 +1,4 @@
-// The backend Worker (ticket 71, spec 385): serves the app and the Overview as static assets and the API under /api/*.
+// The backend Worker (ticket 71, spec 385): serves the app and the Homepage as static assets and the API under /api/*.
 // Two environments, each with its own `core` and `blobs` D1 databases (ADR 0049) and its own R2 bucket. Deploy with
 // `--env dev` or `--env production` (docs/deploy.md). Bindings and variables are NOT inherited between environments,
 // so each lists its own.

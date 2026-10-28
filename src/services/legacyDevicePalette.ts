@@ -1,4 +1,4 @@
-import { normalizeHex } from '../domain/palette'
+import { normalizeHex } from '../domain/color'
 import { readKey } from './storageKeys'
 
 // TEMPORARY (ticket 0525): removed at the public release (ticket 0391). Before the Palette belonged to a Project the

@@ -1,4 +1,5 @@
-import { fromHex } from './color'
+import { clamp } from './clamp'
+import { fromHex, toHex } from './color'
 
 /** A color as hue in degrees (0 up to 360), saturation and brightness (value) from 0 to 1: what the Custom color picker's wheel and slider edit (ticket 449). */
 export interface Hsv {
@@ -6,8 +7,6 @@ export interface Hsv {
   s: number
   v: number
 }
-
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 
 /** A hue taken into 0 up to 360, wrapping round the wheel. */
 export function wrapHue(hue: number): number {
@@ -21,8 +20,7 @@ export function hsvToHex({ h, s, v }: Hsv): string {
     const k = (n + hue) % 6
     return v - v * s * Math.max(0, Math.min(k, 4 - k, 1))
   }
-  const byte = (value: number) => Math.round(clamp(value, 0, 1) * 255).toString(16).padStart(2, '0')
-  return `#${byte(channel(5))}${byte(channel(3))}${byte(channel(1))}`
+  return toHex({ r: channel(5) * 255, g: channel(3) * 255, b: channel(1) * 255 })
 }
 
 /** A hex as hue, saturation and brightness, or undefined when it is not `#rgb` or `#rrggbb`. A grey has hue 0. */
@@ -45,9 +43,7 @@ export function hexToHsv(hex: string): Hsv | undefined {
 export function parseHexInput(text: string): string | undefined {
   const trimmed = text.trim()
   const rgb = fromHex(trimmed.startsWith('#') ? trimmed : `#${trimmed}`)
-  if (!rgb) return undefined
-  const byte = (value: number) => value.toString(16).padStart(2, '0')
-  return `#${byte(rgb.r)}${byte(rgb.g)}${byte(rgb.b)}`
+  return rgb && toHex(rgb)
 }
 
 /** The hue and saturation under a point of the wheel, `dx` and `dy` from its centre (y down) and `radius` its edge: hue is the angle from the top, clockwise; saturation the distance, held at the edge beyond it. */

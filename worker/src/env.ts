@@ -8,7 +8,7 @@ export interface Env {
   BLOBS_DB: D1Database
   /** Pro's synced Projects only (spec 385), so the one storage that bills grows only with paying customers. */
   BLOBS: R2Bucket
-  /** The built app and Overview; the platform serves them itself and calls the Worker only for /api/*. */
+  /** The built app and Homepage; the platform serves them itself and calls the Worker only for /api/*. */
   ASSETS: Fetcher
 
   /** Which Worker this is, so every health answer and alert names it. */
