@@ -46,8 +46,9 @@ export interface WordChart {
   /** Whether any cell is empty, so the legend explains `*`. */
   hasEmpty: boolean
   /** A Custom frame's start in place of the edge Row 1 is at (ticket 0594): rounds from the centre, rows from a Kite's
-   * point, or parts in making order and then their joins. */
-  start?: 'centre' | 'point' | 'parts'
+   * point, a Fringe earring's top from its base and then its strands (ticket 0597), or parts in making order and then
+   * their joins. */
+  start?: 'centre' | 'point' | 'base' | 'parts'
 }
 
 // Where grid line 0 lies on the displayed picture: the grid never turns, only its presentation does (rotation), so a
@@ -125,10 +126,12 @@ function customWordChart(project: Project, order: RowOrder): WordChart {
   const frame = project.frame!
   let hasEmpty = false
   let parts = false
+  let strands = false
   const rows: WordRow[] = []
   for (let pass = 0; pass < order.count; pass += 1) {
     const step = order.stepOf!(pass)!
-    parts ||= step.kind === 'join' || step.part !== undefined
+    parts ||= step.kind === 'join' || (step.kind !== 'strand' && step.part !== undefined)
+    strands ||= step.kind === 'strand'
     const letters = step.kind === 'join'
       ? []
       : order.positionsOf(pass).map(({ row, column }) => {
@@ -145,6 +148,6 @@ function customWordChart(project: Project, order: RowOrder): WordChart {
     rows,
     lastNumber: rows.length,
     hasEmpty,
-    start: parts ? 'parts' : first?.kind === 'row' ? 'point' : 'centre',
+    start: parts ? 'parts' : strands ? 'base' : first?.kind === 'row' ? 'point' : 'centre',
   }
 }

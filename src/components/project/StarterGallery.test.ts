@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import StarterGallery from './StarterGallery.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
+import type { StarterCategoryId } from '../../domain/starters'
 import { en } from '../../i18n/en'
 
 beforeEach(() => {
@@ -10,7 +11,7 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-function mountGallery(props: { category?: 'shapes' } = {}) {
+function mountGallery(props: { category?: StarterCategoryId } = {}) {
   const openSub = vi.fn()
   const wrapper = mount(StarterGallery, {
     props,
@@ -36,6 +37,23 @@ describe('the Starter gallery, step 1', () => {
     await wrapper.get('[data-testid="starter-category-shapes"]').trigger('click')
     expect(wrapper.emitted('choose-category')).toEqual([['shapes']])
     expect(openSub).toHaveBeenCalledWith('Shapes', { meta: 'starter', opener: 'starter-category-shapes' })
+  })
+})
+
+describe('the Starter gallery\'s four categories (ticket 0597)', () => {
+  it('shows Shapes, Earrings, Rings and Bands, each with its count of options', () => {
+    const { wrapper } = mountGallery()
+    expect(wrapper.findAll('.starter-card').map((card) => card.text())).toEqual(['Shapes5 shapes', 'Earrings2 fringe styles', 'Rings4 motifs', 'Bands4 motifs'])
+  })
+
+  it('names each Earring, Ring and Band, the sizes its design is made for and its bead count', () => {
+    const earrings = mountGallery({ category: 'earrings' }).wrapper
+    expect(earrings.get('[data-testid="starter-lead"]').text()).toBe(en.starters.categories.earrings.lead)
+    expect(earrings.get('[data-testid="starter-card-vFringe"]').text()).toBe('V fringetop 7 · fringe 1287 beads each')
+    const rings = mountGallery({ category: 'rings' }).wrapper
+    expect(rings.findAll('.starter-card').map((card) => card.attributes('data-testid'))).toEqual(['starter-card-ringStripes', 'starter-card-ringChevrons', 'starter-card-ringDiamonds', 'starter-card-ringPlaid'])
+    expect(rings.get('[data-testid="starter-card-ringPlaid"]').text()).toBe('Plaid7 wide · eu 54≈ 252 beads')
+    expect(mountGallery({ category: 'bands' }).wrapper.get('[data-testid="starter-card-bandStripes"]').text()).toMatch(/^Stripes11 wide · wrist 16 cm≈ .+ beads$/)
   })
 })
 

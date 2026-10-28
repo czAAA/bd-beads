@@ -60,6 +60,10 @@ interface TechniqueRules {
   /** Whether geometric shapes are worked in it in rounds from the centre: a Triangle's or Warped Square's panels
    * (Custom frames, ticket 0592). */
   worksInRounds?: boolean
+  /** Whether a Ring's or Band's strip is woven in it, rolled out flat (ticket 0597; StarterGallery card). */
+  worksStrips?: boolean
+  /** Whether a Fringe earring's top is worked in it from its base row up (ticket 0597). */
+  worksFringeTops?: boolean
   /** Every other row (or block of rows) sits half a bead across. */
   shifted: boolean
   /** Distance from one row's top to the next, in bead heights: peyote rows nest into each other. */
@@ -115,6 +119,7 @@ const TECHNIQUE_RULES = {
   peyote: {
     nameKey: 'techniquePeyote',
     worksInRounds: true,
+    worksStrips: true,
     overviewKey: 'peyote',
     overviewBackground: true,
     shifted: true,
@@ -131,6 +136,7 @@ const TECHNIQUE_RULES = {
   },
   brick: {
     nameKey: 'techniqueBrick',
+    worksFringeTops: true,
     overviewKey: 'brick',
     shifted: true,
     rowPitch: 1,
@@ -598,6 +604,12 @@ export function techniqueNameKey(technique: Technique): TechniqueNameKey {
 
 /** The Technique a Custom frame worked in rounds from the centre is woven in (ticket 0592): geometric peyote. */
 export const ROUNDS_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksInRounds) ?? DEFAULT_TECHNIQUE
+
+/** The Technique a Ring's or Band's strip is woven in (ticket 0597). */
+export const STRIP_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksStrips) ?? DEFAULT_TECHNIQUE
+
+/** The Technique a Fringe earring's top is worked in (ticket 0597). */
+export const FRINGE_TOP_TECHNIQUE: Technique = TECHNIQUES.find((technique) => RULES[technique].worksFringeTops) ?? DEFAULT_TECHNIQUE
 
 /** The Techniques the overview's Techniques example shows, each with its label key. */
 export const OVERVIEW_TECHNIQUES: readonly { technique: Technique; label: 'loom' | 'peyote' | 'brick' }[] = TECHNIQUES.flatMap((technique) => {

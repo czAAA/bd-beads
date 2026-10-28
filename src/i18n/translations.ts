@@ -1,7 +1,7 @@
 import type { FormFactorNames } from '../domain/beads'
-import type { CustomFrameKindId, FrameSettingName } from '../domain/frameKind'
+import type { CustomFrameKindId, FrameSettingName, FringeStyle } from '../domain/frameKind'
 import type { Locale } from '../domain/locale'
-import type { StarterCategoryId } from '../domain/starters'
+import type { BandFit, OptionId, StarterCategoryId, StarterSizeName } from '../domain/starters'
 import type { PluralForms } from './plural'
 
 export type { Locale }
@@ -219,7 +219,7 @@ export interface Translations {
     /** "Frame 24 × 30 beads", with {width} and {height}. */
     frameSize: string
   }
-  /** The Starter gallery and its setup (ticket 0596; StarterGallery card). */
+  /** The Starter gallery and its setup (tickets 0596, 0597; StarterGallery card). */
   starters: {
     /** Step 1's title, "Starter"; lowercased, the crumb of the levels under it. */
     title: string
@@ -244,10 +244,32 @@ export interface Translations {
     /** The setup picture's name, with {option} the Starter's ("Star, with design"). */
     pictureWithDesign: string
     pictureEmpty: string
-    /** A size as a caption or the note names it, by the setting it is in ("10 rounds", "part size 5"). */
-    sizes: Record<FrameSettingName, PluralForms>
-    /** Beside a Shape's size label: what it counts ("from the centre", "rounds a triangle"). */
+    /** A size as a caption or the note names it, by the setting it is in ("10 rounds", "part size 5", "EU 54"). */
+    sizes: Record<StarterSizeName, PluralForms>
+    /** Beside a Custom frame's first size label: what it counts ("from the centre", "rounds a triangle"). */
     hints: Record<CustomFrameKindId, string>
+    /** Beside the other size labels (ticket 0597): what each counts ("one bead fewer each", "cm, measured snug"), a
+     * Ring size's in each Size system. */
+    sizeHints: Record<'topRows' | 'fringeLength' | 'width' | 'ringSize' | 'ringSizeUs' | 'wrist', string>
+    /** A Ring's or Band's sizes in the setup (ticket 0597): each stepper's label and its buttons' names. */
+    setupSizes: Record<'width' | 'ringSize' | 'wrist', { label: string; less: string; more: string }>
+    /** The setup's choices (ticket 0597): a Fringe earring's style and a Band's Fit, each a label and its options. */
+    picks: { fringeStyle: { label: string; options: Record<FringeStyle, string> }; fit: { label: string; options: Record<BandFit, string> } }
+    /** The Earrings', Rings' and Bands' options by name (ticket 0597); a Shape is named by its kind. */
+    options: Record<OptionId, string>
+    /** A Ring size's Size system, a view of the one size: EU (the inside round in mm) or US. */
+    sizeSystem: { label: string; eu: string; us: string }
+    /** Under Design once a choice has turned the design off ("The design is made for V fringe."). */
+    designOffChoiceNote: string
+    /** A Fringe earring's counts: one earring's beads and the pair's. */
+    beadsEach: PluralForms
+    forPair: PluralForms
+    /** A Ring's Estimated size, with {inside} and {width} in mm, and its rows round the band. */
+    ringEstimate: string
+    rowsRound: PluralForms
+    /** A Band's rows, and the room left for its clasp, with {clasp} as "1.5 cm". */
+    bandRows: PluralForms
+    claspLeft: string
   }
   canvas: {
     zoomInLabel: string
@@ -493,8 +515,10 @@ export interface Translations {
     rightToLeft: string
     /** The progress track's accessible name. */
     finishedLabel: string
-    /** A Custom frame's pass (ticket 0594): a round, a row, a part's round or a join, `{parts}` as `1–2`. */
+    /** A Custom frame's pass (ticket 0594): a round, a row, a part's round, a strand (ticket 0597) or a join, `{parts}`
+     * as `1–2`. */
     stepRound: string
+    stepStrand: string
     stepRow: string
     stepPartRound: string
     stepZip: string
@@ -597,6 +621,7 @@ export interface Translations {
       /** Where a Custom frame's Word chart starts, by its Row order (ticket 0594). */
       firstCentre: string
       firstPoint: string
+      firstBase: string
       partsThenJoins: string
     }
   }
@@ -737,6 +762,15 @@ export interface Translations {
         announce: string
       }
     >
+    /** A Fringe earring's Fringe style in the Frame panel (ticket 0597), its options the setup's: its label, the question
+     * before a change drops painted beads at the strands' ends, and what is announced. */
+    fringeStyle: {
+      label: string
+      confirmTitle: string
+      confirmMessage: PluralForms
+      confirmButton: string
+      announce: string
+    }
     /** Remove Frame's question for a Frame that takes its beads with it (ADR 0077). */
     removeConfirmCustom: string
     /** `{kind}` is the kind's name, `{size}` its size setting's summary. */

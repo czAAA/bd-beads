@@ -3,7 +3,7 @@ import { movedFrame, sameFrame, snapColumn, snappedMove, snapRow } from './frame
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
-import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, frameSizeOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
+import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
 import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
@@ -40,8 +40,9 @@ export type FrameChange =
    * touches no bead and no pass. */
   | { name: string }
   /** Put a new Custom frame of a kind and size (its Rounds, Part size or Rows) round a Canvas position (tickets 0592,
-   * 0593), in place of any Frame there, as `place` does: empty, or holding a Starter's design (ticket 0596). */
-  | { custom: { kind: FrameKindId; size: number; centre: GridPosition; beads?: BeadMap } }
+   * 0593), in place of any Frame there, as `place` does: empty, or holding a Starter's design (ticket 0596). A kind of
+   * several settings takes them all (ticket 0597); those not given are its defaults. */
+  | { custom: CustomPlacement }
   /** Change a Custom frame's settings (ticket 0592): its layout is built again round the same centre, and every bead
    * whose position is still in it stays; growing adds empty rounds or rows outside. */
   | { settings: FrameSettings }
@@ -160,7 +161,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   if ('settings' in change) {
     const frame = project.frame!
     const settings = settingsOf({ kind: frame.kind, settings: { ...frame.settings, ...change.settings } })!
-    if (frameSizeOf({ kind: frame.kind, settings }) === frameSizeOf(frame)) {
+    if (sameSettings(settings, settingsOf(frame)!)) {
       return { kind: 'unchanged', project }
     }
     return { kind: 'changed', project: { ...project, frame: resettled(project, frame, settings, frame.quarterTurns), updatedAt: Date.now() } }
@@ -222,10 +223,21 @@ function customSheet(project: Project, kind: FrameKindId, settings: FrameSetting
   return { row: snapRow(canvas, centre.row - half.row), column: snapColumn(canvas, centre.column - half.column), rows, columns, beads: {}, ...weave, kind, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
 }
 
+/** A new Custom frame: its kind, its size or all its settings, the Canvas position it goes round, and any beads. */
+type CustomPlacement = { kind: FrameKindId; centre: GridPosition; beads?: BeadMap } & ({ size: number } | { settings: FrameSettings })
+
+/** Whether two Custom frames' settings, as `settingsOf` reads them, are the same. */
+function sameSettings(a: FrameSettings, b: FrameSettings): boolean {
+  const names = new Set([...Object.keys(a), ...Object.keys(b)]) as Set<keyof FrameSettings>
+  return [...names].every((name) => a[name] === b[name])
+}
+
 /** The Project with a new Custom frame in place of any Frame there (ticket 0592), holding the beads given that its
  * layout has a position for: Row progress starts at the first pass, and the Canvas keeps every bead. */
-function placedCustomFrame(project: Project, { kind, size, centre, beads = {} }: { kind: FrameKindId; size: number; centre: GridPosition; beads?: BeadMap }): Project {
-  const sheet = customSheet(project, kind, { [sizeSettingOf({ kind })!.name]: size }, centre)
+function placedCustomFrame(project: Project, placement: CustomPlacement): Project {
+  const { kind, centre, beads = {} } = placement
+  const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ kind })!.name]: placement.size }
+  const sheet = customSheet(project, kind, settings, centre)
   return { ...project, frame: { ...sheet, beads: beadsInLayout(beads, frameLayoutOf(sheet)!) }, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
 }
 

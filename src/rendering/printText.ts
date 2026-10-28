@@ -86,7 +86,7 @@ export function headerMaker(maker: string): string {
 const FIRST_ROW_KEY = { top: 'firstTop', right: 'firstRight', bottom: 'firstBottom', left: 'firstLeft' } as const
 
 /** Where a Custom frame's Word chart starts, as its note (ticket 0594). */
-const START_KEY = { centre: 'firstCentre', point: 'firstPoint', parts: 'partsThenJoins' } as const
+const START_KEY = { centre: 'firstCentre', point: 'firstPoint', base: 'firstBase', parts: 'partsThenJoins' } as const
 
 /** The Word chart's words in the app's language; letters and numbers stay as they are. A Custom frame's line names its
  * round, row, part or join before its runs (ticket 0594). */
