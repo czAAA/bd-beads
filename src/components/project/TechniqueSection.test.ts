@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import TechniqueSection from './TechniqueSection.vue'
 import type { Technique } from '../../domain/weave'
+import { en } from '../../i18n/en'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
 
 beforeEach(() => {
@@ -9,38 +10,48 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-/** Controlled, as the parents are: a handler per model, so the section shows only what it is given. */
+/** Controlled, as the parents are: a handler for the Technique, so the section shows only what it is given. */
 const mountSection = (technique: Technique, props: Record<string, unknown> = {}) =>
-  mount(TechniqueSection, {
-    props: { technique, brickBlock: 1, netSize: 3, testid: 'x', 'onUpdate:technique': () => {}, 'onUpdate:brickBlock': () => {}, 'onUpdate:netSize': () => {}, ...props },
-  })
+  mount(TechniqueSection, { props: { technique, settings: {}, testid: 'x', 'onUpdate:technique': () => {}, ...props } })
 
-describe('TechniqueSection (ticket 568)', () => {
-  it('shows the Brick block only for brick stitch and the Net size only for Netting', async () => {
+describe('TechniqueSection (tickets 568, 0626)', () => {
+  it('shows a stepper for each setting the Technique describes: the Brick block for brick stitch, the Net size for Netting', async () => {
     const wrapper = mountSection('loom')
     expect(wrapper.find('[data-testid="x-brick-block"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="x-net-size"]').exists()).toBe(false)
 
     await wrapper.setProps({ technique: 'brick' })
     expect(wrapper.find('[data-testid="x-brick-block"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="x-net-size"]').exists()).toBe(false)
     await wrapper.setProps({ technique: 'netting' })
     expect(wrapper.find('[data-testid="x-net-size"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="x-brick-block"]').exists()).toBe(false)
   })
 
-  it('reports each change and leaves what is shown to its parent', async () => {
+  it('shows each setting at its value, or its default where it has none', () => {
+    expect(mountSection('netting', { settings: { netSize: 7 } }).get('[data-testid="x-net-size-value"]').text()).toBe('7')
+    expect(mountSection('netting').get('[data-testid="x-net-size-value"]').text()).toBe('3')
+  })
+
+  it('reports each change, a setting by its id, and leaves what is shown to its parent', async () => {
     const wrapper = mountSection('brick')
     await choosePanelOption(wrapper, 'x-technique', 'peyote')
     expect(wrapper.emitted('update:technique')).toEqual([['peyote']])
     expect(wrapper.find('[data-testid="x-brick-block"]').exists()).toBe(true)
     await wrapper.get('[data-testid="x-brick-block-more"]').trigger('pointerdown')
     await wrapper.get('[data-testid="x-brick-block-more"]').trigger('pointerup')
-    expect(wrapper.emitted('update:brickBlock')).toEqual([[2]])
+    expect(wrapper.emitted('set-setting')).toEqual([['brickBlock', 2]])
     expect(wrapper.get('[data-testid="x-brick-block-value"]').text()).toBe('1')
   })
 
-  it('turns every control off with its reason when disabled', () => {
-    const wrapper = mountSection('brick', { disabled: true, techniqueDisabledBody: 'Rows are done.', brickBlockDisabledBody: 'Rows are done.' })
+  it('turns every control off when disabled, a setting with the reason its words give', async () => {
+    const wrapper = mountSection('brick', { disabled: true, techniqueDisabledBody: 'Rows are done.' })
     expect(wrapper.get('[data-testid="x-technique"] button').attributes('aria-disabled')).toBe('true')
-    expect(wrapper.get('[data-testid="x-brick-block-less"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.get('[data-testid="x-brick-block-more"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.text()).toContain(en.weaveSettings.brickBlock!.locked)
+
+    await wrapper.setProps({ technique: 'netting' })
+    expect(wrapper.get('[data-testid="x-net-size-more"]').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.text()).toContain(en.weaveSettings.netSize!.locked)
   })
 })
