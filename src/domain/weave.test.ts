@@ -185,7 +185,7 @@ describe('gridHeight', () => {
 })
 
 describe('neighborsOf', () => {
-  const dims = { columns: 5, rows: 5 }
+  const dims = { row: 0, column: 0, columns: 5, rows: 5 }
 
   it('gives loom cells their four straight neighbors', () => {
     expect(sorted(neighborsOf({ technique: 'loom' }, dims, { row: 2, column: 2 }))).toEqual(
@@ -307,7 +307,7 @@ describe('neighborsOf with a Brick block (ticket 477)', () => {
 describe('describeWeave: every question a Weave answers (ticket 481)', () => {
   const bead = { widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 }
   const here = { row: 4, column: 7 }
-  const dims = { columns: 10, rows: 10 }
+  const dims = { row: 0, column: 0, columns: 10, rows: 10 }
 
   it.each([
     ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, hasBrickBlock: false, twoPasses: false }],

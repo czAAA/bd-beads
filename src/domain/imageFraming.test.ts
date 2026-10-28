@@ -1,15 +1,12 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import type { Bead } from './beads'
-import { gridHeight, gridWidth } from './weave'
+import { gridHeight, gridWidth, slowFramingCells, TECHNIQUES } from './weave'
 import {
-  BRICK_SLOW_FRAMING_CELLS,
   CENTERED_PAN,
   CONVERT_MAX_ZOOM,
   CONVERT_MIN_ZOOM,
   CONVERT_ZOOM_STEP,
-  LOOM_SLOW_FRAMING_CELLS,
-  PEYOTE_SLOW_FRAMING_CELLS,
   PREVIEW_MAX_CELLS,
   clampConvertZoom,
   coverScaleMm,
@@ -228,10 +225,8 @@ describe('previewLattice', () => {
 })
 
 describe('isSlowFramingSize', () => {
-  it('all three catalog thresholds start at PREVIEW_MAX_CELLS', () => {
-    expect(LOOM_SLOW_FRAMING_CELLS).toBe(PREVIEW_MAX_CELLS)
-    expect(PEYOTE_SLOW_FRAMING_CELLS).toBe(PREVIEW_MAX_CELLS)
-    expect(BRICK_SLOW_FRAMING_CELLS).toBe(PREVIEW_MAX_CELLS)
+  it.each(TECHNIQUES)('starts %s at as many cells as the framing preview draws', (technique) => {
+    expect(slowFramingCells(technique)).toBe(PREVIEW_MAX_CELLS)
   })
 
   it('is false just under the threshold', () => {
@@ -244,14 +239,5 @@ describe('isSlowFramingSize', () => {
 
   it('is true just over the threshold', () => {
     expect(isSlowFramingSize('loom', { columns: 120, rows: 101 })).toBe(true) // 12,120 cells
-  })
-
-  it('looks up the threshold per Technique, independently of the other two', () => {
-    const thresholds = { loom: 100, peyote: 100000, brick: 100000, rightAngle: 100000, netting: 100000 }
-    const dimensions = { columns: 20, rows: 6 } // 120 cells
-
-    expect(isSlowFramingSize('loom', dimensions, thresholds)).toBe(true)
-    expect(isSlowFramingSize('peyote', dimensions, thresholds)).toBe(false)
-    expect(isSlowFramingSize('brick', dimensions, thresholds)).toBe(false)
   })
 })

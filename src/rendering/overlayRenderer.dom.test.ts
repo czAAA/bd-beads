@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Rotation } from '../domain/grid'
-import type { Frame } from '../domain/canvas'
+import type { Rect } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
 import { createProject, moveToRow, type Project, type RowProgress, type Technique } from '../domain/project'
 import { changeFrame } from '../domain/changeFrame'
@@ -470,7 +470,7 @@ describe('renderOverlay', () => {
     })
 
     // The margin's cells come from `withMargin`; the sizes are worked out here from the bead geometry (CELL_SIZE_PX 20), not from `projectExtentPx`.
-    const outline = (technique: Technique, frame: Frame) => {
+    const outline = (technique: Technique, frame: Rect) => {
       const project = { ...projectOf(technique, 4, 4, { marks: false }), frame: { technique, ...frame, beads: {} } }
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
