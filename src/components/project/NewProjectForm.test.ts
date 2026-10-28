@@ -224,6 +224,7 @@ describe('NewProjectForm draft (ticket 58)', () => {
     expect(wrapper.emitted('draft')!.at(-1)![0]).toEqual({
       name: '',
       technique: 'brick',
+      brickBlock: 1,
       beadId: BEAD_CATALOG[2]!.id,
       makerName: '',
     })
