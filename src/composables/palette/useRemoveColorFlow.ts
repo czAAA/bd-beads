@@ -22,8 +22,11 @@ export interface RemoveColorFlowDeps {
  * cells keep their hex. Removing the active color steps back to the default one; the toast's Undo puts the colors
  * back and selects the active one again, unless another was chosen since. */
 export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
-  /** Takes the colors out with `remove` and offers their Undo in a toast. */
-  function removeWithUndo(previous: string | undefined, wasSelected: boolean, remove: () => (() => void) | undefined, toastId: string, text: string) {
+  /** Takes the colors out with `remove` and offers their Undo in a toast; `removesChosen` says whether the chosen
+   * color is among them. */
+  function removeWithUndo(removesChosen: (colorId: string) => boolean, remove: () => (() => void) | undefined, toastId: string, text: string) {
+    const previous = deps.selectedColorId.value
+    const wasSelected = !!previous && removesChosen(previous)
     const restore = remove()
     if (!restore) return
     const fallback = deps.palette.value.defaultColorId
@@ -32,7 +35,7 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
       label: deps.messages().palette.undoButton,
       run: () => {
         restore()
-        if (wasSelected && previous && deps.selectedColorId.value === fallback) deps.onSelectColor(previous)
+        if (wasSelected && deps.selectedColorId.value === fallback) deps.onSelectColor(previous)
       },
     })
   }
@@ -50,9 +53,8 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
     const colorId = pendingColorRemovalId.value
     pendingColorRemovalId.value = undefined
     if (!colorId) return
-    const previous = deps.selectedColorId.value
     // One toast per swatch, so removing a second doesn't take the first one's Undo away.
-    removeWithUndo(previous, previous === colorId, () => deps.removeAdded(colorId), `palette-removed-${colorId}`, deps.messages().palette.removed)
+    removeWithUndo((chosen) => chosen === colorId, () => deps.removeAdded(colorId), `palette-removed-${colorId}`, deps.messages().palette.removed)
   }
 
   /** The bin in Edit palette asks first, and the dialog names how many leave. */
@@ -67,8 +69,7 @@ export function useRemoveColorFlow(deps: RemoveColorFlowDeps) {
   }
   function onConfirmRemoveAllAddedColors() {
     removeAllColorsConfirmOpen.value = false
-    const previous = deps.selectedColorId.value
-    removeWithUndo(previous, !!previous && isAddedColorId(previous), deps.removeAllAdded, 'palette-removed-all', deps.messages().palette.removedAll)
+    removeWithUndo(isAddedColorId, deps.removeAllAdded, 'palette-removed-all', deps.messages().palette.removedAll)
   }
 
   return {

@@ -118,7 +118,7 @@ describe('PalettePicker', () => {
     expect(requestRemove).toHaveBeenCalledWith(added)
   })
 
-  it('moves a swatch one slot with Alt+Left/Right (ticket 398)', async () => {
+  it('moves a swatch one slot with Alt+Right (ticket 398)', async () => {
     const { wrapper, harness } = mountWithPalette(PalettePicker, defaultPaletteIds(), {}, { attachTo: document.body })
     const [first, second, ...rest] = defaultPaletteIds()
 
