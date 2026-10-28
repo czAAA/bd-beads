@@ -269,12 +269,12 @@ export const pl: Translations = {
   },
   header: {
     menuButton: 'Menu',
-    overviewItem: 'Przegląd',
+    homepageItem: 'Strona główna',
     sourceItem: 'Kod źródłowy',
     projectPanelLabel: 'Projekt',
   },
-  overview: {
-    pageTitle: 'Przegląd',
+  homepage: {
+    pageTitle: 'Strona główna',
     tagline: 'zapisz. policz. wyeksportuj',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',

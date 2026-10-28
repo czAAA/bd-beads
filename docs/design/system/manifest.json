@@ -44,7 +44,7 @@
     "components/NumberField/README.md",
     "components/NumbersAndUnits/README.md",
     "components/OverflowMenu/README.md",
-    "components/Overview/README.md",
+    "components/Homepage/README.md",
     "components/PaletteSwatches/README.md",
     "components/PhoneForms/README.md",
     "components/PngExport/README.md",
@@ -190,7 +190,7 @@
     {
       "name": "HeaderMenu",
       "group": "Header",
-      "summary": "Replaced by MenuPanel; do not use for the editor. Still the Overview page's header menu."
+      "summary": "Replaced by MenuPanel; do not use for the editor. Still the Homepage's header menu."
     },
     {
       "name": "HighContrastTheme",
@@ -278,9 +278,9 @@
       "summary": "Replaced in v15 by HeaderMenu and archived under archived/components/OverflowMenu; do not use."
     },
     {
-      "name": "Overview",
+      "name": "Homepage",
       "group": "Onboarding",
-      "summary": "The one page outside the editor, at /overview: the front door for a new visitor (empty Pattern library), reachable from the header menu, drawn lighter and more…"
+      "summary": "The one page outside the editor, at /homepage: the front door for a new visitor (empty Pattern library), reachable from the header menu, drawn lighter and more…"
     },
     {
       "name": "PaletteSwatches",
