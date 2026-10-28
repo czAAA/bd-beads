@@ -23,6 +23,7 @@
     "components/Dock/README.md",
     "components/EmptyCanvas/README.md",
     "components/EmptyPanels/README.md",
+    "components/FoundColorRow/README.md",
     "components/FrameControls/README.md",
     "components/Glossary/README.md",
     "components/Header/README.md",
@@ -47,6 +48,7 @@
     "components/Homepage/README.md",
     "components/PaletteSwatches/README.md",
     "components/PhoneForms/README.md",
+    "components/PixelToBeadRatio/README.md",
     "components/PngExport/README.md",
     "components/PrintChartPage/README.md",
     "components/PrintPage1/README.md",
@@ -150,7 +152,7 @@
     {
       "name": "ConvertImage",
       "group": "Screens",
-      "summary": "The framing step of Convert image, inside the canvas box."
+      "summary": "The Convert image wizard: one large popup with a live bead preview beside five numbered sections, Picture, Bead & Technique, Size, Colors and Review."
     },
     {
       "name": "DisclosureRow",
@@ -171,6 +173,11 @@
       "name": "EmptyPanels",
       "group": "States",
       "summary": "Beads needed and Saved Patterns with nothing in them."
+    },
+    {
+      "name": "FoundColorRow",
+      "group": "Screens",
+      "summary": "One color Convert image found in the picture: picture color, matched color, bead count, Remap (the colour popover's Palette, Custom color and Bead colors, with Keep exact) and Empty."
     },
     {
       "name": "FrameControls",
@@ -240,7 +247,7 @@
     {
       "name": "Modal",
       "group": "Overlays",
-      "summary": "A centered dialog for confirmations (Delete all?, Replace bead?), and the keyboard shortcuts."
+      "summary": "A centered dialog for confirmations (Delete all?, Replace bead?) and the keyboard shortcuts, and the large size that holds the Convert image wizard."
     },
     {
       "name": "Motion",
@@ -290,7 +297,12 @@
     {
       "name": "PhoneForms",
       "group": "Screens",
-      "summary": "New Pattern and Convert image framing on a phone."
+      "summary": "New Project and the Convert image wizard on a phone: the full-screen sheet with a sticky, shrinking preview."
+    },
+    {
+      "name": "PixelToBeadRatio",
+      "group": "Forms",
+      "summary": "The Pixel to bead ratio presets, Custom and the drawn explainer, and the result line both Size modes share."
     },
     {
       "name": "PngExport",
