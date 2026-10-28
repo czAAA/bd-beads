@@ -1,4 +1,5 @@
 import { beadColorAt } from '../domain/layerBeads'
+import { projectCell } from '../domain/projectBead'
 import { projectDimensions } from '../domain/projectExtent'
 import { rowProgressOn } from '../domain/rowProgress'
 import type { VueWrapper } from '@vue/test-utils'
@@ -13,7 +14,7 @@ import { frameGrid } from './frameGrid'
 
 // Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109, 110). jsdom does no layout, so
 // a bead is found by its coordinates and hit-tested as for a real pointer (Surface view's pointToBead); results are
-// read from the props the surface is handed. A bead is named by row and column, or by row-major index.
+// read from the props the surface is handed. A bead is named by row and column (`layer: 'frame'`: a Frame's), or index.
 export type BeadAt = number | GridPosition
 
 type Anywhere = VueWrapper<never> | VueWrapper
@@ -54,9 +55,13 @@ function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: n
   const zoom = Number(root.attributes('data-zoom'))
   const scrollX = Number(root.attributes('data-scroll-x'))
   const scrollY = Number(root.attributes('data-scroll-y'))
-  const { row, column } = positionOf(wrapper, at)
+  const { row, column, layer } = positionOf(wrapper, at)
+  // A Frame bead is aimed at where the Frame lays it: a Custom frame's round and place are no Canvas position.
+  const project = drawnProject(wrapper)
+  const onFrame = layer === 'frame' && project.frame ? { cell: projectCell(project), frame: project.frame } : {}
 
-  const point = surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, rotation, zoom, scroll: { x: scrollX, y: scrollY } }).beadToPoint({ row, column })
+  const view = surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, ...onFrame, rotation, zoom, scroll: { x: scrollX, y: scrollY } })
+  const point = view.beadToPoint({ row, column }, onFrame.frame ? 'frame' : undefined)
   return { clientX: point.x, clientY: point.y }
 }
 

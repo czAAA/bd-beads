@@ -5,9 +5,10 @@ import { withColors, type Rect } from './domain/canvas'
 import { changeFrame } from './domain/changeFrame'
 import { createProject } from './domain/createProject'
 import type { Project } from './domain/project'
+import { designSizes, STARTER_BEAD_ID, starterById, starterProject } from './domain/starters'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { hoverBead, pressBead } from './testUtils/beads'
-import { pressBar, selectAll } from './testUtils/pill'
+import { pickColor, pressBar, selectAll } from './testUtils/pill'
 
 /** Edit Frame's wiring (tickets 233, 417, ADRs 0026, 0046, 0054): each control reaches the flow once. Its rules live in
  * `useFrameFlow`, `FramePanel` and `changeFrame`'s tests, one level each (ticket 0599, docs/testing.md). */
@@ -211,6 +212,23 @@ describe('A Frame from the panel with no Frame', () => {
     expect(savedFrame()).toMatchObject({ rows: 1, columns: 2 })
   })
 
+})
+
+describe('Painting a Custom frame', () => {
+  it('paints a bead whose place lies past the Frame\'s columns: the press stays on the Frame (ADR 0077)', async () => {
+    const triangle = starterById('triangle')
+    const wrapper = await mountOpen(starterProject(triangle, { name: 'Triangle', beadId: STARTER_BEAD_ID, sizes: designSizes(triangle), useDesign: false }))
+    await pickColor(wrapper, 'red')
+    const { row, column, columns } = loadProjects()[0]!.frame!
+    // Round 7 of a 10-round Triangle runs one place past the Frame's last column.
+    const own = { row: 7, column: columns }
+
+    await pressBead(wrapper, { row: row + own.row, column: column + own.column, layer: 'frame' })
+    await wrapper.find('.app-shell').trigger('mouseup')
+    await flushPromises()
+
+    expect(loadProjects()[0]!.frame!.beads[own.row]?.[own.column]).toBe(RED)
+  })
 })
 
 describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
