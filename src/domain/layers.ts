@@ -3,8 +3,8 @@ import type { GridPosition, Layer } from './grid'
 
 export type { Layer }
 import { footprintOf } from './footprint'
-import type { KindedSheet } from './frameKind'
-import { frameGeometry, gridGeometry, type LayerGeometry } from './layerGeometry'
+import { frameGeometry, type KindedSheet } from './frameKind'
+import { gridGeometry, type LayerGeometry } from './layerGeometry'
 import { canvasWeave, frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
 import { projectCell, type ShapedBead } from './projectBead'

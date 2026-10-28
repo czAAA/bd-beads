@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { CELL_SIZE_PX } from '../rendering/cellSize'
 import { layerExtentPx, positionBoxPx, positionsBoxPx, type Region } from '../rendering/surfaceView'
 import type { Rect } from './canvas'
-import { customFrameSize, frameHasPosition, frameKindOf, frameLayoutOf, layoutPlacement, type CustomFrameKindId, type FrameSettings, type KindedSheet, type QuarterTurns } from './frameKind'
+import { customFrameSize, frameGeometry, frameKindOf, frameLayoutOf, type CustomFrameKindId, type FrameSettings, type KindedSheet, type QuarterTurns } from './frameKind'
 import { layoutNeighbors, layoutPosition, layoutPositionAt } from './frameLayout'
 import type { GridPosition } from './grid'
-import { frameGeometry, gridGeometry, type LayerGeometry } from './layerGeometry'
+import { gridGeometry, layoutPlacement, type LayerGeometry } from './layerGeometry'
 import { describeWeave, neighborsOf, TECHNIQUES, type BeadCell, type Weave } from './weave'
 import type { Box } from './weaveGeometry'
 
@@ -122,10 +122,10 @@ describe('a Rectangular Frame answers as its Weave does', () => {
     const everywhere = around(bounds)
     const inside = (position: GridPosition) => position.row >= 0 && position.row < frame.rows && position.column >= 0 && position.column < frame.columns
 
-    for (const position of everywhere) expect(geometry.hasPosition(position)).toBe(inside(position) && frameHasPosition(frame, position))
-    expect(geometry.positions()).toEqual(everywhere.filter((position) => inside(position) && frameHasPosition(frame, position)))
+    for (const position of everywhere) expect(geometry.hasPosition(position)).toBe(inside(position))
+    expect(geometry.positions()).toEqual(everywhere.filter(inside))
     for (const position of geometry.positions()) {
-      expect(sorted(geometry.neighbors(position))).toEqual(sorted(neighborsOf(frame, bounds, position).filter((next) => frameHasPosition(frame, next))))
+      expect(sorted(geometry.neighbors(position))).toEqual(sorted(neighborsOf(frame, bounds, position).filter(inside)))
       const place = geometry.place(position)!
       expect(place.angle).toBe(0)
       expectSameBox(inPx(place.box), positionBoxPx(frame, position.row, position.column))
@@ -186,12 +186,12 @@ describe('a Custom frame answers as its layout does', () => {
     const layout = frameLayoutOf(frame)!
     // The layout laid in the Frame's rectangle: a bead a cell wide (or as the rectangle allows), as deep as the Bead
     // shape's cell where the rounds leave it room.
-    const placement = layoutPlacement(frame, frame)!
+    const placement = layoutPlacement(layout, frame, frame)
     const deep = placement.scale * Math.min(describeWeave(frame).cellAspect, layout.beadDepth)
 
     expect(geometry.positions()).toEqual(layout.positions.map(({ row, column }) => ({ row, column })))
     for (const position of around({ row: 0, column: 0, rows: Math.max(...layout.positions.map(({ row }) => row)) + 1, columns: frame.columns * 6 })) {
-      expect(geometry.hasPosition(position)).toBe(frameHasPosition(frame, position))
+      expect(geometry.hasPosition(position)).toBe(layoutPosition(layout, position) !== undefined)
     }
     for (const position of geometry.positions()) {
       expect(geometry.neighbors(position)).toEqual(layoutNeighbors(layout, position))
