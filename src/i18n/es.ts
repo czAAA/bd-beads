@@ -640,21 +640,14 @@ export const es: Translations = {
     refusedCutsSchema: 'Un marco no puede cortar el esquema «{name}». Enmárcalo entero o déjalo fuera.',
     customKinds: { fringeEarring: 'Pendiente de flecos', triangle: 'Triángulo', warpedSquare: 'Cuadrado curvado', star: 'Estrella', kaleidocycle: 'Caleidociclo', kite: 'Cometa' },
     sizeSettings: {
-      topWidth: { label: 'Ancho superior', less: 'Una cuenta menos en la fila base', more: 'Una cuenta más en la fila base', summary: { one: 'parte superior {count}', many: 'parte superior {count}', other: 'parte superior {count}' }, confirmTitle: '¿Parte superior más estrecha?', confirmMessage: { one: 'Se quitará {count} cuenta pintada del borde superior o de los flecos. Se puede deshacer.', many: 'Se quitarán {count} de cuentas pintadas del borde superior o de los flecos. Se puede deshacer.', other: 'Se quitarán {count} cuentas pintadas del borde superior o de los flecos. Se puede deshacer.' }, confirmButton: 'Estrechar', announce: 'Ancho superior: {count}' },
-      topRows: { label: 'Filas superiores', less: 'Una fila menos', more: 'Una fila más', summary: { one: '{count} fila superior', many: '{count} de filas superiores', other: '{count} filas superiores' }, confirmTitle: '¿Menos filas superiores?', confirmMessage: { one: 'Se quitará {count} cuenta pintada de las filas de arriba. Se puede deshacer.', many: 'Se quitarán {count} de cuentas pintadas de las filas de arriba. Se puede deshacer.', other: 'Se quitarán {count} cuentas pintadas de las filas de arriba. Se puede deshacer.' }, confirmButton: 'Quitar filas', announce: 'Filas superiores: {count}' },
-      fringeLength: { label: 'Largo del fleco', less: 'Una cuenta más corto', more: 'Una cuenta más largo', summary: { one: 'fleco {count}', many: 'fleco {count}', other: 'fleco {count}' }, confirmTitle: '¿Fleco más corto?', confirmMessage: { one: 'Se quitará {count} cuenta pintada de las puntas de los flecos. Se puede deshacer.', many: 'Se quitarán {count} de cuentas pintadas de las puntas de los flecos. Se puede deshacer.', other: 'Se quitarán {count} cuentas pintadas de las puntas de los flecos. Se puede deshacer.' }, confirmButton: 'Acortar fleco', announce: 'Largo del fleco: {count}' },
+      topWidth: { label: 'Ancho superior', less: 'Una cuenta menos en la fila base', more: 'Una cuenta más en la fila base', summary: { one: 'parte superior {count}', many: 'parte superior {count}', other: 'parte superior {count}' }, announce: 'Ancho superior: {count}' },
+      topRows: { label: 'Filas superiores', less: 'Una fila menos', more: 'Una fila más', summary: { one: '{count} fila superior', many: '{count} de filas superiores', other: '{count} filas superiores' }, announce: 'Filas superiores: {count}' },
+      fringeLength: { label: 'Largo del fleco', less: 'Una cuenta más corto', more: 'Una cuenta más largo', summary: { one: 'fleco {count}', many: 'fleco {count}', other: 'fleco {count}' }, announce: 'Largo del fleco: {count}' },
       rounds: {
         label: 'Vueltas',
         less: 'Una vuelta menos',
         more: 'Una vuelta más',
         summary: { one: '{count} vuelta', many: '{count} de vueltas', other: '{count} vueltas' },
-        confirmTitle: '¿Quitar vueltas?',
-        confirmMessage: {
-          one: 'Se quitará {count} cuenta pintada de las vueltas exteriores. Se puede deshacer.',
-          many: 'Se quitarán {count} de cuentas pintadas de las vueltas exteriores. Se puede deshacer.',
-          other: 'Se quitarán {count} cuentas pintadas de las vueltas exteriores. Se puede deshacer.',
-        },
-        confirmButton: 'Quitar vueltas',
         announce: 'Vueltas: {count}',
       },
       partSize: {
@@ -662,13 +655,6 @@ export const es: Translations = {
         less: 'Partes más pequeñas',
         more: 'Partes más grandes',
         summary: { one: 'Tamaño de parte {count}', many: 'Tamaño de parte {count}', other: 'Tamaño de parte {count}' },
-        confirmTitle: '¿Partes más pequeñas?',
-        confirmMessage: {
-          one: 'Se quitará {count} cuenta pintada de las vueltas exteriores de las partes. Se puede deshacer.',
-          many: 'Se quitarán {count} de cuentas pintadas de las vueltas exteriores de las partes. Se puede deshacer.',
-          other: 'Se quitarán {count} cuentas pintadas de las vueltas exteriores de las partes. Se puede deshacer.',
-        },
-        confirmButton: 'Reducir',
         announce: 'Tamaño de parte: {count}',
       },
       rows: {
@@ -676,17 +662,10 @@ export const es: Translations = {
         less: 'Una fila menos',
         more: 'Una fila más',
         summary: { one: '{count} fila', many: '{count} de filas', other: '{count} filas' },
-        confirmTitle: '¿Quitar filas?',
-        confirmMessage: {
-          one: 'Se quitará {count} cuenta pintada de las últimas filas. Se puede deshacer.',
-          many: 'Se quitarán {count} de cuentas pintadas de las últimas filas. Se puede deshacer.',
-          other: 'Se quitarán {count} cuentas pintadas de las últimas filas. Se puede deshacer.',
-        },
-        confirmButton: 'Quitar filas',
         announce: 'Filas: {count}',
       },
     },
-    fringeStyle: { label: 'Estilo de fleco', confirmTitle: '¿Cambiar el fleco?', confirmMessage: { one: 'Se quitará {count} cuenta pintada de las puntas de los flecos. Se puede deshacer.', many: 'Se quitarán {count} de cuentas pintadas de las puntas de los flecos. Se puede deshacer.', other: 'Se quitarán {count} cuentas pintadas de las puntas de los flecos. Se puede deshacer.' }, confirmButton: 'Cambiar fleco', announce: 'Estilo de fleco: {style}' },
+    fringeStyle: { label: 'Estilo de fleco', announce: 'Estilo de fleco: {style}' },
     removeConfirmCustom: 'Sus cuentas se quitan con él. Se puede deshacer.',
     announceCustom: 'Marco «{kind}», {size}',
     snapAddedTop: {

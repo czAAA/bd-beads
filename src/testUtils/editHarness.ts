@@ -19,6 +19,7 @@ export function editHarness(initial: Project | undefined) {
   const history: ReturnType<typeof useUndoHistory> = useUndoHistory({
     currentProject,
     restore: (snapshot) => editing.restore(snapshot),
+    settle: () => editing.settle(),
   })
   const editing = useEdit({
     currentProject,

@@ -269,7 +269,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
       <PanelSection id="frame:size" :label="t.frame.sizeHeading" :summary="sizeSummary">
         <!-- A Custom frame is sized by its settings (tickets 0592, 0593, 0597): growing adds empty rounds, rows or
-             beads outside, shrinking asks first. -->
+             beads outside, shrinking folds what it leaves out (ticket 0640). -->
         <div v-if="settings.length" class="frame-panel__body">
           <div v-for="setting in settings" :key="setting.name" class="frame-panel__setting" :data-testid="`frame-setting-${setting.name}`">
             <span class="frame-panel__setting-label">{{ setting.words.label }}</span>

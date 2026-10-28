@@ -1,5 +1,4 @@
 import {
-  beadCount,
   beadsInFrame,
   beadsOver,
   beadsWithout,
@@ -18,7 +17,7 @@ import { movedFrame, snapColumn, snappedMove, snapRow, withFrame, withFrameGivin
 import { shownBeads } from './layers'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
-import { foldsOver, withEachBead } from './folding'
+import { foldsOver, refoldSheet, withEachBead } from './folding'
 import { customFrameSize, frameAllows, frameKindOf, frameLayoutOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
 import { layoutPosition, type FrameLayout } from './frameLayout'
 import { describeWeave, type Technique, type Weave } from './weave'
@@ -265,13 +264,14 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
   return { ...project, frame: { ...sheet, beads: beadsInLayout(beads, frameLayoutOf(sheet)!) }, rowProgress: firstPasses(project.rowProgress), updatedAt: Date.now() }
 }
 
-/** A Custom frame laid out again from new settings round its own centre, keeping each bead whose position is still in
- * the layout. */
+/** A Custom frame laid out again from new settings round its own centre: each bead whose position is still in the
+ * layout shows, the rest fold, kept by their position's name, until a layout has it again (ticket 0640). */
 function resettled(project: Project, frame: FrameSheet, settings: FrameSettings, quarterTurns: QuarterTurns | undefined): FrameSheet {
   const centre = canvasDistance(project, frame, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
   const sheet = customSheet(project, frame.kind!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns)
-  const { quarterTurns: _turned, ...rest } = frame
-  return { ...rest, ...sheet, beads: beadsInLayout(frame.beads, frameLayoutOf(sheet)!) }
+  const { quarterTurns: _turned, folded: _folded, ...rest } = frame
+  const layout = frameLayoutOf(sheet)!
+  return { ...rest, ...sheet, ...refoldSheet(frame, (position) => !!layoutPosition(layout, position)) }
 }
 
 /** Rotate Frame on a Custom frame (ticket 0594): its layout a quarter turn further clockwise round its own centre, its
@@ -290,15 +290,6 @@ function beadsInLayout(beads: BeadMap, layout: FrameLayout): BeadMap {
     if (!layoutPosition(layout, { row, column })) gone.push({ row, column, color: null })
   })
   return withColors(beads, gone)
-}
-
-/** How many painted beads a change of a Custom frame's settings would drop (ticket 0592): those whose position the new
- * layout does not have. The Frame panel asks before such a change. */
-export function customFrameLoss(project: Project, settings: FrameSettings): number {
-  const frame = project.frame
-  if (!frame || !frameKindOf(frame).custom) return 0
-  const layout = frameLayoutOf({ kind: frame.kind, settings: { ...frame.settings, ...settings } })!
-  return beadCount(frame.beads) - beadCount(beadsInLayout(frame.beads, layout))
 }
 
 /** The Project with its Frame set to `rectangle` (ticket 513): woven like the Canvas, the strip the Frame gives up is
