@@ -27,8 +27,9 @@ export interface SettingWords {
   locked: string
   /** `{count}` is the new value. */
   changed: string
-  /** `{count}` is the beads with no place after the change. */
-  loss?: { title: string; message: string; button: string }
+  /** `{count}` is the beads with no place after the change; `foldedMessage` says too how many of them are the Frame's
+   * Folded beads, `{folded}` (ticket 0641). */
+  loss?: { title: string; message: string; foldedMessage: string; button: string }
 }
 
 export interface Translations {
@@ -778,6 +779,8 @@ export interface Translations {
     /** Changing a layer's Technique (ticket 507): `{technique}` is the new one, `{count}` the beads with no place in it. */
     switchConfirmTitle: string
     switchConfirmMessage: string
+    /** The same where some of the beads lost are the Frame's Folded beads (ticket 0641): `{folded}` how many. */
+    switchConfirmFoldedMessage: string
     /** Asked of a layer with no beads when the new Technique has settings to choose. */
     switchSettingsMessage: string
     switchConfirmButton: string

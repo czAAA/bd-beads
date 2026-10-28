@@ -195,6 +195,7 @@ export const be: Translations = {
       loss: {
         title: 'Змяніць памер сеткі?',
         message: 'Бісерыны без месца ў новай сетцы будуць выдалены: {count}. Гэта можна адмяніць.',
+        foldedMessage: 'Бісерыны без месца ў новай сетцы будуць выдалены: {count}. З іх згорнутых бісерын, якіх не відаць: {folded}. Гэта можна адмяніць.',
         button: 'Змяніць памер сеткі',
       },
     },
@@ -715,6 +716,7 @@ export const be: Translations = {
     announceTechnique: 'Тэхніка зменена: {technique}',
     switchConfirmTitle: 'Змяніць тэхніку?',
     switchConfirmMessage: 'Малюнак можа выглядаць інакш у тэхніцы «{technique}». Пацеркі, якім там няма месца, будуць выдалены: {count}. Гэта можна адмяніць.',
+    switchConfirmFoldedMessage: 'Малюнак можа выглядаць інакш у тэхніцы «{technique}». Пацеркі, якім там няма месца, будуць выдалены: {count}. З іх згорнутых бісерын, якіх не відаць: {folded}. Гэта можна адмяніць.',
     switchSettingsMessage: 'Абярыце налады новай тэхнікі.',
     switchConfirmButton: 'Змяніць тэхніку',
     announceSelectionRotated: 'Вылучэнне павернута',

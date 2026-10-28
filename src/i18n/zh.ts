@@ -194,6 +194,7 @@ export const zh: Translations = {
       loss: {
         title: '更改网眼大小？',
         message: '新网中没有位置的珠子将被移除：{count}。可以撤销。',
+        foldedMessage: '新网中没有位置的珠子将被移除：{count}。其中看不见的折叠珠子：{folded}。可以撤销。',
         button: '更改网眼大小',
       },
     },
@@ -689,6 +690,7 @@ export const zh: Translations = {
     announceTechnique: '编织技法已改为{technique}',
     switchConfirmTitle: '更改编织技法？',
     switchConfirmMessage: '图案在{technique}中可能看起来不同。在其中没有位置的珠子将被移除：{count}。可以撤销。',
+    switchConfirmFoldedMessage: '图案在{technique}中可能看起来不同。在其中没有位置的珠子将被移除：{count}。其中看不见的折叠珠子：{folded}。可以撤销。',
     switchSettingsMessage: '请选择新技法的设置。',
     switchConfirmButton: '更改编织技法',
     announceSelectionRotated: '选区已旋转',
