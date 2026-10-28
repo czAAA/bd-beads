@@ -10,7 +10,7 @@ import { canvasWeave, frameWeave } from '../domain/layerWeave'
 import { currentPass, rowProgressOn } from '../domain/rowProgress'
 import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
-import { beadInSpace, inSpace, sheetGeometry, spaceOf, type Space } from './space'
+import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
 import type { DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
@@ -442,7 +442,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const covered = footprintOf(project)
   const canvasWeaveOf = canvasWeave(project)
   const frameSpace = frame ? spaceOf(project, false) : undefined
-  const geometry = frame || !space.open ? sheetGeometry(project) : undefined
+  const geometry = frame || !space.open ? geometryDrawnAlone(project) : undefined
 
   // The Canvas's items: all of them when it is the only layer, else those not on the Frame.
   const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, geometry, covered, cell))

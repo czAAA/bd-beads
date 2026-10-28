@@ -20,7 +20,7 @@ import {
   type ProjectTheme,
 } from './beadLook'
 import { positionMarkPattern } from './positionMarks'
-import { beadInSpace, sheetGeometry, spaceOf, type Space } from './space'
+import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import {
   frameOriginPx,
@@ -228,7 +228,7 @@ function drawPositionMarks(
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
   }
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
-  if (footprint && sheetGeometry(project).inRowsAndColumns) {
+  if (footprint && geometryDrawnAlone(project).inRowsAndColumns) {
     // The marks are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
     // between its beads.
     const edge = BEAD_GAP_PX / 2
@@ -305,7 +305,7 @@ interface LayerDraw {
  * and `toAbsolute` the address of its first. */
 function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, origin: { x: number; y: number }): void {
   const { project, area, rows: band } = draw
-  const geometry = sheetGeometry(project)
+  const geometry = geometryDrawnAlone(project)
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, whose beads nest into it; beads that keep no rows are all drawn.
   const inBand = ({ row }: GridPosition) => !band || !geometry.inRowsAndColumns || (row >= band.first - 1 && row <= band.last + 1)

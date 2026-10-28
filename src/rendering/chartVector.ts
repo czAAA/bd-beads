@@ -8,7 +8,7 @@ import type { Project } from '../domain/project'
 import { acrossNumber, downNumber, lineBetween, rulerLevel } from './printPages'
 import { PRINT_COLORS } from './printColors'
 import { displayedGrid, mm, PRINT_DPI, PRINT_MARGIN, PRINT_HEADER, PRINT_HEADER_GAP, PRINT_PART_LABEL, PRINT_RULER, type PrintPart, type PrintPlan } from './printPlan'
-import { beadInSpace, sheetGeometry, spaceOf } from './space'
+import { beadInSpace, geometryDrawnAlone, spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { gridToRegion, inGridPx, regionInGridSpace, rowPitchPx } from './surfaceView'
 import { customChart, type ChartBead } from './customChart'
@@ -93,7 +93,7 @@ export function placeBeads(project: Project, plan: PrintPlan, part: PrintPart): 
   }
   const stepAcross = grid.stepAcross * plan.zoom
   const stepDown = grid.stepDown * plan.zoom
-  const geometry = sheetGeometry(project)
+  const geometry = geometryDrawnAlone(project)
   const seen = regionInGridSpace(space.extent, part.region, plan.zoom, project.rotation)
   const inView = { x: seen.left / CELL_SIZE_PX, y: seen.top / CELL_SIZE_PX, width: (seen.right - seen.left) / CELL_SIZE_PX, height: (seen.bottom - seen.top) / CELL_SIZE_PX }
   const placed: PlacedBead[] = []
