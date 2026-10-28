@@ -3,13 +3,19 @@ import { colorAt, withColors, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
 import { clampOutOfMargin, inMargin, MARGIN, marginBoxFor, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject } from './createProject'
-import { paintCells } from './drawing'
 import { withFrame } from './frame'
+import type { GridPosition } from './grid'
 import type { Project } from './project'
 
 const frame: Rect = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const framed = withFrame(open, frame)
+
+/** The Project with its Canvas beads painted as a drawing command would hand them over, before what may stay is kept. */
+const rawPaint = (project: Project, positions: GridPosition[], color: string | null): Project => ({
+  ...project,
+  beads: withColors(project.beads, positions.map((position) => ({ ...position, color }))),
+})
 
 describe('the keep-out margin', () => {
   it('is the 6 positions all round the Frame, outside its line', () => {
@@ -25,7 +31,7 @@ describe('the keep-out margin', () => {
   it('stops Paint writing into it, and a stroke across it paints only the allowed beads', () => {
     const positions = [3, 4, 5, 6, 7, 8].map((column) => ({ row: 8, column }))
     const stroke = [{ row: 12, column: 3 }, { row: 12, column: 4 }, { row: 12, column: 9 }, { row: 12, column: 10 }, ...positions]
-    const painted = keepAllowedEdits(framed, paintCells(framed, stroke, '#ff0000'))
+    const painted = keepAllowedEdits(framed, rawPaint(framed, stroke, '#ff0000'))
     expect(colorAt(painted.beads, 12, 10)).toBe('#ff0000')
     expect(colorAt(painted.beads, 12, 3)).toBe('#ff0000')
     expect(colorAt(painted.beads, 12, 4)).toBeNull()
@@ -35,18 +41,18 @@ describe('the keep-out margin', () => {
   })
 
   it('hands back the same Project when everything an edit did was in the margin', () => {
-    const painted = paintCells(framed, [{ row: 8, column: 10 }], '#ff0000')
+    const painted = rawPaint(framed, [{ row: 8, column: 10 }], '#ff0000')
     expect(keepAllowedEdits(framed, painted)).toBe(framed)
   })
 
   it('still lets Erase remove a bead in the margin', () => {
     const legacy: Project = { ...framed, beads: withColors(framed.beads, [{ row: 8, column: 10, color: '#ff0000' }]) }
-    const erased = keepAllowedEdits(legacy, paintCells(legacy, [{ row: 8, column: 10 }], null))
+    const erased = keepAllowedEdits(legacy, rawPaint(legacy, [{ row: 8, column: 10 }], null))
     expect(colorAt(erased.beads, 8, 10)).toBeNull()
   })
 
   it('does nothing with no Frame', () => {
-    const painted = paintCells(open, [{ row: 1, column: 1 }], '#ff0000')
+    const painted = rawPaint(open, [{ row: 1, column: 1 }], '#ff0000')
     expect(keepAllowedEdits(open, painted).beads).toEqual(painted.beads)
   })
 })
