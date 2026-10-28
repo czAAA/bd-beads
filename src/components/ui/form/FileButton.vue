@@ -3,10 +3,11 @@ import { ref } from 'vue'
 import AppIcon from '../AppIcon.vue'
 import type { IconName } from '../icons'
 
-/** A button that opens the system file picker (ticket 149; `accent` fills it like a primary button, ticket 568): desktop can also drop a file on it (`drop-file`); the
- * <input> keeps the attributes and change listener. */
+/** A button that opens the system file picker (ticket 149; `accent` fills it like a primary button, ticket 568; `small`
+ * is the in-box button's 28px, ticket 0649): desktop can also drop a file on it (`drop-file`); the <input> keeps the
+ * attributes and change listener. */
 defineOptions({ inheritAttrs: false })
-defineProps<{ label: string; icon?: IconName; disabled?: boolean; disabledReason?: string; limits?: string; accent?: boolean }>()
+defineProps<{ label: string; icon?: IconName; disabled?: boolean; disabledReason?: string; limits?: string; accent?: boolean; small?: boolean }>()
 const emit = defineEmits<{ 'drop-file': [file: File] }>()
 
 const dragging = ref(false)
@@ -22,13 +23,13 @@ function onDrop(event: DragEvent, disabled: boolean | undefined) {
   <div class="file-button">
     <label
       class="file-button__target"
-      :class="{ 'file-button__target--disabled': disabled, 'file-button__target--over': dragging, 'file-button__target--accent': accent }"
+      :class="{ 'file-button__target--disabled': disabled, 'file-button__target--over': dragging, 'file-button__target--accent': accent, 'file-button__target--small': small }"
       @dragover.prevent="dragging = !disabled"
       @dragleave="dragging = false"
       @drop.prevent="onDrop($event, disabled)"
     >
       <input class="file-button__input" type="file" :disabled="disabled" v-bind="$attrs" />
-      <AppIcon v-if="icon" :name="icon" :size="16" />
+      <AppIcon v-if="icon" :name="icon" :size="small ? 14 : 16" />
       <span>{{ label }}</span>
     </label>
     <p v-if="disabled && disabledReason" class="file-button__note">{{ disabledReason }}</p>
@@ -78,6 +79,14 @@ function onDrop(event: DragEvent, disabled: boolean | undefined) {
 .file-button__target:has(:focus-visible) {
   outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
+}
+
+.file-button__target--small {
+  height: var(--control-height-sm);
+  padding: 0 var(--space-10);
+  font: var(--type-tab);
+  border-style: solid;
+  border-color: var(--in-box-line);
 }
 
 .file-button__target--disabled {

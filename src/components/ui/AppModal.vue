@@ -2,14 +2,14 @@
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 
-// The design system's Modal (ticket 76; Modal and ConfirmDialogs cards): a centered dialog over a scrim, 420 or 560px.
-// The parent mounts it with `v-if` and decides what cancelling means; Escape and (unless `backdrop` is `swallow`) a
-// scrim press cancel. Focus stays inside (starts on `data-autofocus`, Tab wraps) and returns to what opened it.
+// The design system's Modal (tickets 76, 0646; Modal card): a centered dialog over a scrim, 420 or 560px, or `large`.
+// The parent mounts it with `v-if` and decides what cancelling means; Escape and (unless `backdrop` is `swallow`) a scrim
+// press cancel. Focus stays inside (starts on `data-autofocus`, Tab wraps) and returns to what opened it.
 defineOptions({ inheritAttrs: false })
 const props = withDefaults(
   defineProps<{
     title: string
-    size?: 'confirm' | 'panel' | 'narrow'
+    size?: 'confirm' | 'panel' | 'narrow' | 'large'
     role?: 'dialog' | 'alertdialog'
     /** The id of the text that describes the dialog, for an alert dialog's message. */
     describedby?: string
@@ -218,6 +218,62 @@ onBeforeUnmount(() => {
   justify-content: flex-end;
   gap: var(--space-8);
   margin-top: var(--space-16);
+}
+
+/* Large (Modal card): 1200 × 820 at most, the viewport less 24 a side; the header, body and pinned footer hold their own
+ * edges, so no padding, and the body lays out its own panes and scrolls. */
+.app-modal--large {
+  width: var(--modal-large-width);
+  height: var(--modal-large-height);
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.app-modal--large > .app-modal__header {
+  flex: none;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--modal-large-header);
+  padding: var(--space-8) var(--space-12) var(--space-8) var(--space-20);
+  border-bottom: 1px solid var(--panel-rule);
+}
+
+.app-modal--large > .app-modal__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.app-modal--large > .app-modal__actions {
+  flex: none;
+  flex-wrap: nowrap;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: var(--modal-large-footer);
+  margin: 0;
+  padding: var(--space-12) var(--space-20);
+  border-top: 1px solid var(--panel-rule);
+}
+
+/* Under 1024px wide or in portrait (PhoneForms card): the same content as a full-screen sheet, inside the safe area. */
+@media (max-width: 63.99rem), (orientation: portrait) {
+  .app-modal-scrim:has(> .app-modal--large) {
+    padding: 0;
+  }
+
+  .app-modal--large {
+    width: 100%;
+    height: 100%;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    border-radius: 0;
+  }
+
+  .app-modal--large > .app-modal__header {
+    min-height: var(--modal-large-header-phone);
+    padding: var(--space-6) var(--space-8) var(--space-6) var(--space-16);
+  }
 }
 
 @keyframes app-modal-fade {

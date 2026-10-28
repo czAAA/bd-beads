@@ -2,8 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
-import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
-import { findBead } from '../../domain/beads'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 beforeEach(() => localStorage.setItem('openbeads:locale', 'en'))
@@ -15,11 +13,6 @@ afterEach(() => {
 const dialogs = {
   'Duplicate project': () => mount(DuplicateProjectModal, { props: { suggested: 'Copy' }, attachTo: document.body }),
   'Name piece': () => mount(NamePieceModal, { props: { name: 'Leaf' }, attachTo: document.body }),
-  'Convert image size': () =>
-    mount(ConvertImageSizeDialog, {
-      props: { bead: findBead('toho-cube-1.5mm')!, technique: 'loom' },
-      attachTo: document.body,
-    }),
 }
 
 describe.each(Object.entries(dialogs))('%s dialog focus (ticket 516)', (_name, open) => {

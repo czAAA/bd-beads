@@ -172,7 +172,7 @@ export function viewForCrop(image: ImageSize, frame: FrameSizeMm, crop: PixelCro
 
 /** Beads on a side beyond which converting and drawing take longer: the Large Schema note (spec 0645). The preview
  * draws at most PREVIEW_MAX_CELLS around the Frame, so the Frame itself is what grows. */
-const LARGE_SCHEMA_BEADS = 300
+export const LARGE_SCHEMA_BEADS = 300
 
 export function isLargeSchema({ columns, rows }: GridDimensions): boolean {
   return columns > LARGE_SCHEMA_BEADS || rows > LARGE_SCHEMA_BEADS

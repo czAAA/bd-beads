@@ -1,4 +1,5 @@
-import { computed, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, provide, ref, shallowRef, watch, type InjectionKey } from 'vue'
+import { catalogSwatches } from '../../domain/beadSwatch'
 import { DEFAULT_BEAD, findBead } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import {
@@ -205,12 +206,12 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     else widthText.value = other
   }
 
-  function setWidth(value: string | number) {
-    widthText.value = value
+  function setWidth(value: string | number | undefined) {
+    widthText.value = value ?? ''
     proportional('width')
   }
-  function setHeight(value: string | number) {
-    heightText.value = value
+  function setHeight(value: string | number | undefined) {
+    heightText.value = value ?? ''
     proportional('height')
   }
   function setKeepProportions(on: boolean) {
@@ -431,12 +432,24 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     if (pictureHex) setChoice(pictureHex, { kind: 'empty' })
   }
 
+  /** The picture's file name without its extension: Name's placeholder, and the Name when it is left blank. */
+  const fileStem = computed(() => fileName.value.replace(/\.[^.]*$/, ''))
+
+  /** The Palette the remap picker shows (FoundColorRow card): the new Project's, as a Palette. */
+  const remapPalette = computed(() => createPalette(palette.value.ids, builtIns.value, palette.value.codes))
+  /** The Bead colors the remap picker lists, those the new Palette holds marked taken. */
+  const remapSwatches = computed(() =>
+    catalog.value && catalog.value.id === catalogId.value
+      ? catalogSwatches(catalog.value, bead.value.size, remapPalette.value.colors.map((color) => color.hex), brandColors(bead.value.brand.id))
+      : [],
+  )
+
   /** The Project Create Project makes: the popup's own setup, the converted grid and its Palette (spec 0645). */
   function createProject() {
     settle()
     if (!image.value || !rest.value) return undefined
     return createProjectFromImage({
-      name: name.value.trim(),
+      name: name.value.trim() || fileStem.value,
       technique: technique.value,
       ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
       beadId: bead.value.id,
@@ -466,6 +479,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     image,
     hasPicture: computed(() => !!image.value),
     fileName,
+    fileStem,
     fileFormat,
     rejection,
     reading,
@@ -514,6 +528,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     },
     approximate,
     lattice: computed(() => live.value?.lattice),
+    beadColors,
     previewGrid: computed(() => live.value?.grid),
     drawnProject,
     // Colors
@@ -530,8 +545,8 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     toggleEmpty,
     emptyAtBead,
     palette,
-    /** The Palette the remap picker shows (FoundColorRow card): the new Project's, as a Palette. */
-    remapPalette: computed(() => createPalette(palette.value.ids, builtIns.value, palette.value.codes)),
+    remapPalette,
+    remapSwatches,
     // Review and Create
     draftProject,
     createProject,
@@ -539,3 +554,17 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
 }
 
 export type ConvertImageWizard = ReturnType<typeof useConvertImageWizard>
+
+const wizardKey: InjectionKey<ConvertImageWizard> = Symbol('convertImageWizard')
+
+/** The wizard hands its state to its sections and preview, so none has it passed down. */
+export function provideConvertImageWizard(wizard: ConvertImageWizard) {
+  provide(wizardKey, wizard)
+}
+
+/** The wizard's state, for a part mounted inside it. */
+export function useConvertImageWizardState(): ConvertImageWizard {
+  const wizard = inject(wizardKey)
+  if (!wizard) throw new Error('useConvertImageWizardState() needs provideConvertImageWizard() called by an ancestor')
+  return wizard
+}

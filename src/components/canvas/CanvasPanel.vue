@@ -7,7 +7,6 @@ import ContextBar from '../tools/ContextBar.vue'
 import AppButton from '../ui/AppButton.vue'
 import ProjectImport from '../import/ProjectImport.vue'
 import ToolPill from '../tools/ToolPill.vue'
-import ConvertImageFrame from '../import/ConvertImageFrame.vue'
 import FrameChrome from './FrameChrome.vue'
 import EmptyCanvas from './EmptyCanvas.vue'
 import ProjectSurface from './ProjectSurface.vue'
@@ -24,7 +23,6 @@ import { hasGuides } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
 import { resolveProjectBead } from '../../domain/projectBead'
-import { CONVERT_MAX_ZOOM, CONVERT_MIN_ZOOM } from '../../domain/imageFraming'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 
@@ -39,19 +37,7 @@ const {
   projectLabel,
   toasts,
   dismissToast,
-  framing,
-  onConvertImageCreate,
-  cancelConvertImage,
-  convertZoom,
-  convertPan,
-  convertMaxColors,
-  setConvertPan,
-  setConvertMaxColors,
-  convertZoomIn,
-  convertZoomOut,
-  convertResetZoom,
   bindCanvasArea,
-  canvasAreaWidth,
   bindCanvasScroll,
   zoom,
   scroll,
@@ -133,9 +119,9 @@ const {
 
 const newProjectAction = controlAction('new-project')
 
-/** Whenever the empty canvas appears (nothing open, no picture being framed), Menu opens on its New Project form. */
+/** Whenever the empty canvas appears (nothing open), Menu opens on its New Project form. */
 watch(
-  () => !framing.value && !activeProject.value,
+  () => !activeProject.value,
   (empty) => {
     if (empty) openMenuOnForm()
   },
@@ -201,9 +187,6 @@ const frameAnchor = ref<FrameAnchor>()
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
 
-/** Where the framing step puts its controls: the canvas box's bottom, in the Progress bar's place (ticket 150). */
-const framingControlsEl = ref<HTMLElement>()
-
 /** The Canvas color (ticket 252) as the drawing area's fill, and the technique word's own color where the background
  * needs one. */
 const canvasBackground = useCanvasBackground()
@@ -235,35 +218,31 @@ const drawingStyle = computed(() => {
   <main class="app-shell__canvas-column">
     <div
       class="app-shell__canvas"
-      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning, 'app-shell__canvas--no-progress': framing }"
+      :class="{ 'app-shell__canvas--pan': spaceHeld, 'app-shell__canvas--panning': spacePanning}"
       data-testid="app-canvas"
     >
       <!--
         The canvas box's header strip (ticket 143, ADR 0046, 0073): Menu, the Brand and the canvas controls (Rulers, Undo,
-        Redo, zoom, Fit). While a picture is being framed (ticket 58) its zoom is the framing step's own, over its own
-        100–800% range (domain/imageFraming), since that zoom moves the picture under a fixed frame rather than
-        scaling the Project on screen. The strip never scrolls, zooms or rotates with the Project below it.
+        Redo, zoom, Fit). The strip never scrolls, zooms or rotates with the Project below it.
       -->
       <CanvasStrip
         class="app-shell__canvas-strip"
-        :project="framing ? undefined : activeProject"
+        :project="activeProject"
         :rulers="showRulers"
         :frame-open="framePanelOpen"
         :can-undo="canUndo"
         :can-redo="canRedo"
         :open-panel="openPanel"
         :zoom-percent="stripZoomPercent"
-        :zoom-min-percent="framing ? CONVERT_MIN_ZOOM * 100 : undefined"
-        :zoom-max-percent="framing ? CONVERT_MAX_ZOOM * 100 : undefined"
         @select-panel="onSelectPanel"
         @toggle-frame="onToggleFramePanel"
         @rotate-canvas="onRotateCanvas"
         @toggle-rulers="toggleRulers"
         @undo="onUndo"
         @redo="onRedo"
-        @zoom-in="framing ? convertZoomIn() : zoomIn()"
-        @zoom-out="framing ? convertZoomOut() : zoomOut()"
-        @reset="framing ? convertResetZoom() : resetZoom()"
+        @zoom-in="zoomIn"
+        @zoom-out="zoomOut"
+        @reset="resetZoom"
       />
 
       <!-- The drawing area: the rest of the box, measured for the fit zoom (it doesn't grow with the Project). -->
@@ -271,34 +250,12 @@ const drawingStyle = computed(() => {
 
         <!-- How to move the canvas and its shortcuts: top-centre, only while the Project has no beads,
           not on a phone (CanvasHint card). -->
-        <CanvasHint v-if="activeProject && !framing && !hasProjectBeads(activeProject)" class="app-shell__canvas-hint" />
+        <CanvasHint v-if="activeProject && !hasProjectBeads(activeProject)" class="app-shell__canvas-hint" />
 
         <div class="app-shell__canvas-row">
-          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject && !framing }">
-            <!--
-              Convert image's framing step takes this panel over (ticket 58, ADR 0010), in the slot the "No Project
-              open yet" placeholder otherwise occupies — and ahead of the open Project too, since framing can be
-              entered with one open. Cancel hands the panel straight back.
-            -->
-            <ConvertImageFrame
-              v-if="framing"
-              :image="framing.image"
-              :technique="framing.technique"
-              :technique-settings="framing.techniqueSettings"
-              :bead="framing.bead"
-              :dimensions="framing.dimensions"
-              :zoom="convertZoom"
-              :pan="convertPan"
-              :max-colors="convertMaxColors"
-              :available-width="canvasAreaWidth"
-              :controls-to="framingControlsEl"
-              @pan="setConvertPan"
-              @set-max-colors="setConvertMaxColors"
-              @create="onConvertImageCreate"
-              @cancel="cancelConvertImage"
-            />
+          <div :ref="bindCanvasScroll" class="app-shell__canvas-scroll" :class="{ 'app-shell__canvas-scroll--empty': !activeProject }">
             <ProjectSurface
-              v-else-if="activeProject"
+              v-if="activeProject"
               ref="surfaceRef"
               :project="shownProject!"
               :tools="surfaceTools"
@@ -344,7 +301,7 @@ const drawingStyle = computed(() => {
 
         <!-- The Tool pill (ticket 439, ADR 0046): floats over the drawing, outside the zoom transform. -->
         <ToolPill
-          v-if="activeProject && !framing"
+          v-if="activeProject"
           v-model:position="toolPillPosition"
           v-model:popover-open="toolPillPopoverOpen"
           :active-tool="activeTool"
@@ -370,15 +327,12 @@ const drawingStyle = computed(() => {
         @dismiss="dismissToast"
       />
 
-      <!-- The framing step's controls, in the Progress bar's place (ticket 150; ConvertImage card). -->
-      <div v-if="framing" ref="framingControlsEl" data-testid="framing-controls" />
-
       <!--
-        Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open (not
-        while a picture is being framed), since its first control is Remove frame (ticket 426).
+        Progress bar (ticket 144): along the canvas box's bottom edge, always there while a Project is open, since its
+        first control is Remove frame (ticket 426).
       -->
       <ProgressBar
-        v-if="activeProject && !framing"
+        v-if="activeProject"
         :project="activeProject"
         :row-highlight="rowHighlight"
         @move-row="onMoveRow"
@@ -393,7 +347,7 @@ const drawingStyle = computed(() => {
         layer laid over the drawing area, which keeps the bar's coordinates the drawing area's own. The Frame's controls
         ride in it after the bar: the order of ADR 0075 has no place for them.
       -->
-      <div v-if="activeProject && !framing" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
+      <div v-if="activeProject" class="app-shell__selection-layer" :style="selectionLayerStyle" data-testid="selection-layer">
         <!--
           The Selection bar (tickets 168, 415; ContextBar card): anchored above the Selection's top edge and clamped
           inside the canvas box, clear of the Tool pill; Select all is its first item.
@@ -458,11 +412,6 @@ const drawingStyle = computed(() => {
 /* New Project grows to take the remaining width; the import icons sit at a fixed square size beside it. */
 .app-shell__empty-actions :deep(.app-button) {
   flex: 1 1 0;
-}
-
-/* With the bar gone (while a picture is framed), the toasts and the Selection bar sit where it was. */
-.app-shell__canvas--no-progress {
-  --progress-height: 0px;
 }
 
 /* The canvas box's cell: the rest of the width, the full height. */
@@ -540,7 +489,7 @@ const drawingStyle = computed(() => {
   min-height: 0;
 }
 
-/* Fills the drawing area: the Canvas's surface (and Convert image's framing step) is laid over all of it. */
+/* Fills the drawing area: the Canvas's surface is laid over all of it. */
 .app-shell__canvas-scroll {
   position: absolute;
   inset: 0;
