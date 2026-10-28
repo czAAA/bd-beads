@@ -14,6 +14,9 @@ const PAGE_TESTS = ['src/components/**/*.test.ts', 'src/overview/**/*.test.ts', 
  * installed and skip themselves where it is not (the Pi); `BD_BROWSER_TESTS=1` makes a missing Chromium an error, `=0`
  * skips them. */
 const BROWSER_TESTS = '**/*.browser.test.ts'
+/** `BD_ISOLATE_UNIT=1` for `npm run mutate` (ticket 0599, docs/testing.md): `unit` files sharing one module cache get no
+ * per-test coverage from Stryker (`page` files empty theirs in `testSetup.ts`). Everyday runs keep sharing (ticket 420). */
+const ISOLATE_UNIT = process.env.BD_ISOLATE_UNIT === '1'
 const browserTestsOn = (): boolean => {
   const mode = process.env.BD_BROWSER_TESTS
   if (mode === '0') return false
@@ -60,9 +63,9 @@ export default defineConfig(({ mode }) => ({
           name: 'unit',
           environment: 'node',
           globals: false,
-          isolate: false,
+          isolate: ISOLATE_UNIT,
           include: ['**/*.test.ts'],
-          exclude: [...configDefaults.exclude, ...PAGE_TESTS, BROWSER_TESTS, 'e2e/**', 'worker/**'],
+          exclude: [...configDefaults.exclude, '.stryker/**', ...PAGE_TESTS, BROWSER_TESTS, 'e2e/**', 'worker/**'],
         },
       },
       {
@@ -77,7 +80,7 @@ export default defineConfig(({ mode }) => ({
           include: PAGE_TESTS,
           // `npm run test:related` sets SKIP_APP_TESTS: the App imports everything, so `vitest related` would pull in
           // every App.*.test.ts (ticket 418, docs/testing.md).
-          exclude: [...configDefaults.exclude, BROWSER_TESTS, ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
+          exclude: [...configDefaults.exclude, '.stryker/**', BROWSER_TESTS, ...(process.env.SKIP_APP_TESTS ? ['src/App.test.ts', 'src/App.*.test.ts'] : [])],
           setupFiles: ['./src/testSetup.ts'],
         },
       },

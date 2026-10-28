@@ -69,7 +69,7 @@ const noSelfRaisedKeyboard = {
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'test-results/**', 'playwright-report/**'],
+    ignores: ['dist/**', 'test-results/**', 'playwright-report/**', '.stryker/**'],
   },
   ...tseslint.configs.recommended,
   ...pluginVue.configs['flat/essential'],
