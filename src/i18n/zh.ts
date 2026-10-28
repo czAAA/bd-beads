@@ -462,6 +462,7 @@ export const zh: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: '线条：图表各部分，每部分占一页，所有行和列均已编号。',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: '所需珠子：{summary} · 见第 {page} 页',

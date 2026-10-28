@@ -1,7 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { fillBlanks } from './fillBlanks'
 
 describe('fillBlanks', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
   it('fills every blank of a string with its value, numbers as written', () => {
     expect(fillBlanks('{columns} × {rows} beads', { columns: 40, rows: '12' })).toBe('40 × 12 beads')
   })
@@ -26,5 +28,10 @@ describe('fillBlanks', () => {
   it('fills an optional value only where the string has its blank', () => {
     expect(fillBlanks('One row added', {}, { count: 1 })).toBe('One row added')
     expect(fillBlanks('{count} rows of {color}', { color: 'red' }, { count: 2 })).toBe('2 rows of red')
+  })
+
+  it('in the built app keeps a blank with no value and leaves out a value with no blank', () => {
+    vi.stubEnv('DEV', false)
+    expect(fillBlanks('{count} beads of {color}', { count: 3, size: 11 })).toBe('3 beads of {color}')
   })
 })
