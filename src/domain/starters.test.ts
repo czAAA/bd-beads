@@ -2,9 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { beadCount } from './canvas'
 import { changeFrame, type FrameChangeResult } from './changeFrame'
-import { frameLayoutOf, settingsOf, type FrameSettings } from './frameKind'
+import { FRAME_KIND_IDS, frameKindOf, frameLayoutOf, settingsOf, type FrameSettings } from './frameKind'
 import { createProject } from './createProject'
+import { weaveOf } from './layerWeave'
+import { TECHNIQUES } from './weave'
 import {
+  BAND_EASE_MM,
   designDifferences,
   designFits,
   designPicks,
@@ -20,6 +23,7 @@ import {
   starterProject,
   starterSizeRanges,
   usRingSize,
+  type StarterManifest,
 } from './starters'
 
 const beadId = 'miyuki/delica/11-0'
@@ -58,9 +62,49 @@ describe('the Starter registry', () => {
     })
 
     it(`offers the ${starter.id} design's sizes among its chips, every chip within its range`, () => {
-      for (const { size, presets, min, max } of starter.sizes) {
+      for (const { default: size, presets, min, max } of starter.sizes) {
         expect(presets).toContain(size)
         for (const preset of presets) expect(preset >= min && preset <= max).toBe(true)
+      }
+    })
+  }
+})
+
+describe('the Starter manifests (ticket 0633)', () => {
+  const files = import.meta.glob<StarterManifest>('../data/starters/*.starter.json', { eager: true, import: 'default' })
+  const manifests = Object.entries(files).map(([path, manifest]) => ({ file: path.split('/').pop()!, manifest }))
+
+  it('lists every manifest in one category, once, each under its own file name and with a design beside it', () => {
+    for (const { file, manifest } of manifests) expect(file, 'its file name').toBe(`${manifest.id}.starter.json`)
+    expect(allStarters.map((starter) => starter.id).sort(), 'listed once each').toEqual(manifests.map(({ manifest }) => manifest.id).sort())
+    for (const starter of allStarters) expect(starterDesign(starter), `${starter.id}'s design`).not.toEqual({})
+    for (const category of STARTER_CATEGORIES) expect(category.starters, `${category.id}'s best`).toContain(category.best)
+  })
+
+  for (const starter of allStarters) {
+    it(`gives the ${starter.id} Starter a known kind and Technique and the sizes and choices its measuring rule reads`, () => {
+      const custom = frameKindOf(starter).custom
+      expect(FRAME_KIND_IDS).toContain(starter.kind)
+      expect(TECHNIQUES).toContain(starter.technique)
+      const ids = starter.sizes.map((size) => size.id)
+      expect(new Set(ids).size).toBe(ids.length)
+      if (starter.measure === 'frame') {
+        expect(custom?.technique).toBe(starter.technique)
+        expect(ids).toEqual(expect.arrayContaining(custom!.settings.map((setting) => setting.id)))
+      } else {
+        expect(custom).toBeUndefined()
+        expect(ids).toEqual(starter.measure === 'ring' ? ['width', 'ringSize'] : ['width', 'wrist'])
+      }
+      if (starter.measure === 'band') expect(Object.keys(BAND_EASE_MM)).toEqual(expect.arrayContaining([...starter.picks.find((pick) => pick.id === 'fit')!.values]))
+      for (const size of starter.sizes) {
+        expect(size.labelKey, `${size.id}'s words`).toEqual(expect.any(String))
+        expect(size.step, `${size.id}'s step`).toBeGreaterThan(0)
+        expect(size.default, `${size.id}'s default`).toBeGreaterThanOrEqual(size.min)
+        expect(size.default, `${size.id}'s default`).toBeLessThanOrEqual(size.max)
+      }
+      for (const pick of starter.picks) {
+        expect(pick.values).toContain(pick.default)
+        if (pick.before) expect(ids).toContain(pick.before)
       }
     })
   }
@@ -164,6 +208,15 @@ describe('a Starter put on an open Project', () => {
     const empty = frameOf(placedStarter(open, starterById('kaleidocycle'), { sizes: { partSize: 9 }, useDesign: false }, { row: 0, column: 0 }))
     expect(empty).toMatchObject({ kind: 'kaleidocycle', beads: {} })
     expect(empty).toEqual(frameOf(changeFrame(open, { custom: { kind: 'kaleidocycle', size: 9, centre: { row: 0, column: 0 } } })))
+  })
+
+  it('puts a Ring in place through the Frame change that places any Frame, holding its design', () => {
+    const ring = starterById('ringDiamonds')
+    const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? result.project.frame : undefined)
+    const frame = { row: 47, column: 32, rows: 7, columns: 36 }
+    const placed = frameOf(changeFrame(open, { place: { frame, weave: weaveOf({ technique: 'peyote' }), beads: starterDesign(ring) } }))
+    expect(placed?.beads).toEqual(starterDesign(ring))
+    expect(frameOf(placedStarter(open, ring, asDesigned('ringDiamonds'), { row: 50, column: 50 }))).toEqual(placed)
   })
 
   it('puts a Ring in its own Technique round the centre, its length from the Project\'s Bead', () => {

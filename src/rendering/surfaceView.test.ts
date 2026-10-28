@@ -5,8 +5,7 @@ import type { Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { projectExtentPx, surfaceView } from './surfaceView'
-import { frameGeometry } from '../domain/layerGeometry'
-import { customFrameSize } from '../domain/frameKind'
+import { customFrameSize, frameGeometry } from '../domain/frameKind'
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
 const ROTATIONS: Rotation[] = [0, 90, 180, 270]

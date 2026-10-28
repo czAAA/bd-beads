@@ -1,0 +1,16 @@
+{
+  "id": "vFringe",
+  "design": "vFringe.json",
+  "kind": "fringeEarring",
+  "technique": "brick",
+  "measure": "frame",
+  "pair": true,
+  "sizes": [
+    {"id": "topWidth"},
+    {"id": "topRows", "caption": false},
+    {"id": "fringeLength", "default": 12, "presets": [8, 12, 16]}
+  ],
+  "picks": [
+    {"id": "fringeStyle", "default": "v", "values": ["straight", "v"], "before": "fringeLength"}
+  ]
+}

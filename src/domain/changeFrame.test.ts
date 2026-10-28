@@ -517,6 +517,13 @@ describe('changeFrame placing a Frame (ticket 495)', () => {
     expect(next.technique).toBe('loom')
   })
 
+  it('holds the beads it is given that are inside it, as a Starter\'s design (ticket 0633)', () => {
+    const beads = withColors({}, [{ row: 0, column: 0, color: '#111111' }, { row: 7, column: 4, color: '#222222' }, { row: 8, column: 0, color: '#333333' }])
+    const next = (changeFrame(framed({ beads: canvas }), { place: { ...place, beads } }) as { project: Project }).project
+    expect(next.frame!.beads).toEqual(withColors({}, [{ row: 0, column: 0, color: '#111111' }, { row: 7, column: 4, color: '#222222' }]))
+    expect(next.beads).toBe(canvas)
+  })
+
   it('restarts Row progress at the first pass', () => {
     const next = (changeFrame(framed({ rowProgress: woven('rows', 0, 0) }), { place }) as { project: Project }).project
     expect(next.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })

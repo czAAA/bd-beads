@@ -1,0 +1,11 @@
+{
+  "id": "warpedSquare",
+  "design": "warpedSquare.json",
+  "kind": "warpedSquare",
+  "technique": "peyote",
+  "measure": "frame",
+  "sizes": [
+    {"id": "rounds", "default": 8, "presets": [6, 8, 10]}
+  ],
+  "picks": []
+}

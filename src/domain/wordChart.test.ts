@@ -50,6 +50,10 @@ describe('Word chart (ticket 0574)', () => {
     expect(lines(framed('brick', ['AAB', 'ABB', 'CCC']))).toEqual(['1(L): 2A,1B', '2(R): 2B,1A', '3(L): 3C'])
   })
 
+  it('alternates (L) and (R) on square stitch, worked back and forth a row at a time (ticket 0635)', () => {
+    expect(lines(framed('square', ['AAB', 'ABB', 'CCC']))).toEqual(['1(L): 2A,1B', '2(R): 2B,1A', '3(L): 3C'])
+  })
+
   it('starts peyote with Rows 1&2 and one line per pass, an odd count 7, 4, 3 beads', () => {
     const project = framed('peyote', ['AAAAAAA', 'BBBBBBB'])
     const chart = wordChartOf(project)!
