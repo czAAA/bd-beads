@@ -4,6 +4,7 @@ import type { GridPosition } from './grid'
 import { netGeometry } from './netGeometry'
 import { rightAngleGeometry } from './rightAngleGeometry'
 import { rowsGeometry } from './rowsGeometry'
+import { settingValue, type SettingSpec } from './settingSpec'
 import type { CellCenter, GeometryRef, GeometrySettings, WeaveGeometry } from './weaveGeometry'
 
 /** The weaving method, which determines a Project's grid geometry: a key of the config map below. */
@@ -13,20 +14,30 @@ export type Technique = keyof typeof TECHNIQUE_RULES
 export const MAX_BRICK_BLOCK = 20
 
 /** The beads in one Netting loop, odd (ticket 485): the middle one is shared with the next row. */
-export const MIN_NET_SIZE = 3
+const MIN_NET_SIZE = 3
 /** The most beads in a Netting loop. */
-export const MAX_NET_SIZE = 9
+const MAX_NET_SIZE = 9
 /** The Net size a new Netting Project starts with. */
 export const DEFAULT_NET_SIZE = 3
 
+/** Brick stitch's Brick block, as its entry describes it (ticket 0624): 1, every other row, up to MAX_BRICK_BLOCK; the
+ * same cells, so a change loses no bead. */
+export const BRICK_BLOCK_SETTING: SettingSpec = { id: 'brickBlock', labelKey: 'brickBlock', min: 1, max: MAX_BRICK_BLOCK, step: 1, default: 1 }
+
+/** Netting's Net size, as its entry describes it (ticket 0624): odd, from 3 to 9. A change moves the holes, so it asks
+ * before beads are lost (ADR 0038). */
+export const NET_SIZE_SETTING: SettingSpec = { id: 'netSize', labelKey: 'netSize', min: MIN_NET_SIZE, max: MAX_NET_SIZE, step: 2, default: DEFAULT_NET_SIZE, lossOnChange: true }
+
 /** A Net size the Weave can lay out: odd, from 3 to 9; anything else is the default. */
 export function clampNetSize(value: number | undefined): number {
-  if (value === undefined || !Number.isFinite(value)) {
-    return DEFAULT_NET_SIZE
-  }
-  const size = Math.min(MAX_NET_SIZE, Math.max(MIN_NET_SIZE, Math.round(value)))
-  return size % 2 === 1 ? size : size - 1
+  return settingValue(NET_SIZE_SETTING, value)
 }
+
+/** A Technique's settings by id (ticket 0624): each its entry describes, at its value. */
+type TechniqueSettings = Readonly<Record<string, number>>
+
+/** The settings of a Technique that describes none, shared: a Weave's description is asked for per bead. */
+const NO_SETTINGS: TechniqueSettings = Object.freeze({})
 
 /** What decides how a Project is laid out: the Technique and, on brick stitch, the Brick block (ticket 477); absent
  * means 1, every other row. On Netting, the Net size (ticket 485); absent means the default. A Project is one. */
@@ -34,6 +45,9 @@ export interface Weave {
   technique: Technique
   brickBlock?: number
   netSize?: number
+  /** Its Technique's settings (ticket 0624), read ahead of the flat fields above, which it replaces in ticket 0627. A
+   * layer's Weave carries it (`withTechniqueSettings`); the Project and its file keep the flat fields for now. */
+  techniqueSettings?: TechniqueSettings
   /** How the Bead is drawn when the Project's Bead shape is Real (ADR 0068); absent is Symmetric. Never stored with a
    * layer: the Project's Bead and Bead shape decide it (`beadCell`). */
   cell?: BeadCell
@@ -52,10 +66,8 @@ interface TechniqueRules {
   nameKey: string
   /** How its beads are laid out: a kind of geometry and the values that kind reads. */
   geometry: GeometryRef
-  /** Whether the Brick block setting applies. */
-  hasBrickBlock: boolean
-  /** Whether the Net size setting applies. */
-  hasNetSize: boolean
+  /** Its settings (ticket 0624), in the order they are offered: the Weave holds their values in `techniqueSettings`. */
+  settings: readonly SettingSpec[]
   /** Whether Rotate and Rotate Frame are offered. */
   quarterTurn: boolean
   /** Whether Turn row direction is offered. */
@@ -80,8 +92,7 @@ const TECHNIQUE_RULES = {
   loom: {
     nameKey: 'loom',
     geometry: { kind: 'rows', shifted: false, shift: 0, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one' },
-    hasBrickBlock: false,
-    hasNetSize: false,
+    settings: [],
     quarterTurn: true,
     rowDirection: true,
     wordChart: { marked: false },
@@ -91,8 +102,7 @@ const TECHNIQUE_RULES = {
   peyote: {
     nameKey: 'peyote',
     geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 0.75, cellAspect: 1, roundness: ROUNDED_BEAD_CORNER, passes: 'twoAfterFirst' },
-    hasBrickBlock: false,
-    hasNetSize: false,
+    settings: [],
     quarterTurn: true,
     rowDirection: true,
     wordChart: { marked: true },
@@ -102,8 +112,7 @@ const TECHNIQUE_RULES = {
   brick: {
     nameKey: 'brick',
     geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one' },
-    hasBrickBlock: true,
-    hasNetSize: false,
+    settings: [BRICK_BLOCK_SETTING],
     quarterTurn: true,
     rowDirection: true,
     wordChart: { marked: true },
@@ -114,8 +123,7 @@ const TECHNIQUE_RULES = {
     nameKey: 'rightAngle',
     // A bead's diameter over its length as drawn (the Bead's real ratio is in mm).
     geometry: { kind: 'rightAngleUnits', aspect: 0.7, roundness: ROUNDED_BEAD_CORNER },
-    hasBrickBlock: false,
-    hasNetSize: false,
+    settings: [],
     quarterTurn: true,
     rowDirection: true,
     draftCost: 3,
@@ -125,8 +133,7 @@ const TECHNIQUE_RULES = {
     nameKey: 'netting',
     // A strand steps three quarters of a bead across and down, so a bead on a diagonal sits a little over a bead from the next.
     geometry: { kind: 'netDiamonds', step: 0.75, cellAspect: 1, roundness: 0.5 },
-    hasBrickBlock: false,
-    hasNetSize: true,
+    settings: [NET_SIZE_SETTING],
     quarterTurn: false,
     rowDirection: false,
     draftCost: 3,
@@ -166,7 +173,28 @@ export const TECHNIQUES = Object.keys(TECHNIQUE_RULES) as readonly Technique[]
 export const DEFAULT_TECHNIQUE: Technique = TECHNIQUES[0]
 
 /** Everything the app asks about how a Weave is laid out: its Technique's facts and its geometry's answers. */
-export interface WeaveDescription extends Omit<TechniqueRules, 'geometry'>, WeaveGeometry {}
+export interface WeaveDescription extends Omit<TechniqueRules, 'geometry'>, WeaveGeometry {
+  /** Whether its Technique describes a Brick block, or a Net size: read from its settings until ticket 0627. */
+  hasBrickBlock: boolean
+  hasNetSize: boolean
+}
+
+/** The Weave's settings, each its Technique describes, read within its range: from the settings map, else from the
+ * flat field of the same id, else its default. Another Technique's (a Brick block kept off brick stitch) is left out.
+ * @internal Tests check the order it reads them in; elsewhere the app reads the map on a layer's Weave. */
+export function weaveSettings(weave: Weave): TechniqueSettings {
+  const { settings } = RULES[weave.technique]
+  if (settings.length === 0) {
+    return NO_SETTINGS
+  }
+  const flat: Readonly<Record<string, number | undefined>> = { brickBlock: weave.brickBlock, netSize: weave.netSize }
+  return Object.fromEntries(settings.map((setting) => [setting.id, settingValue(setting, weave.techniqueSettings?.[setting.id] ?? flat[setting.id])]))
+}
+
+/** The Weave with its settings map, in step with its flat fields (ticket 0624): what a layer's Weave is read as. */
+export function withTechniqueSettings(weave: Weave): Weave {
+  return { ...weave, techniqueSettings: weaveSettings(weave) }
+}
 
 /** A Technique's geometry kind and values, as its entry names them.
  * @internal The registry test checks every entry's values. */
@@ -201,19 +229,27 @@ const MAX_DESCRIPTIONS = 256
 /** The Weave's description (ticket 481): its Technique's facts, and its geometry's answers built once for its settings. */
 export function describeWeave(weave: Weave): WeaveDescription {
   const rules = RULES[weave.technique]
-  const settings: GeometrySettings = {
-    brickBlock: rules.hasBrickBlock ? (weave.brickBlock ?? 1) : 1,
-    netSize: rules.hasNetSize ? clampNetSize(weave.netSize) : DEFAULT_NET_SIZE,
-  }
+  const values = weaveSettings(weave)
   // Everything a geometry reads from the Weave; a Real cell's roundness is read by the drawing, never by a geometry.
-  const key = `${weave.technique} ${settings.brickBlock} ${settings.netSize} ${weave.cell?.aspect ?? ''}`
+  const key = `${weave.technique} ${Object.values(values).join(' ')} ${weave.cell?.aspect ?? ''}`
   const known = descriptions.get(key)
   if (known) {
     return known
   }
+  const settings: GeometrySettings = {
+    brickBlock: values[BRICK_BLOCK_SETTING.id] ?? BRICK_BLOCK_SETTING.default,
+    netSize: values[NET_SIZE_SETTING.id] ?? NET_SIZE_SETTING.default,
+  }
   const { geometry, ...facts } = rules
   const built = geometryOf(geometry, settings, weave.cell)
-  const description: WeaveDescription = { ...facts, ...built, turned: rules.quarterTurn ? built.turned : () => undefined }
+  const describes = (setting: SettingSpec) => rules.settings.includes(setting)
+  const description: WeaveDescription = {
+    ...facts,
+    ...built,
+    hasBrickBlock: describes(BRICK_BLOCK_SETTING),
+    hasNetSize: describes(NET_SIZE_SETTING),
+    turned: rules.quarterTurn ? built.turned : () => undefined,
+  }
   if (descriptions.size >= MAX_DESCRIPTIONS) {
     descriptions.clear()
   }

@@ -7,6 +7,8 @@ import { rowProgressOn, rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Translations } from '../../i18n/translations'
+import { weaveSettingWords } from '../../i18n/settingWords'
+import { BRICK_BLOCK_SETTING } from '../../domain/weave'
 
 /** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
 export interface ControlDeps {
@@ -501,8 +503,7 @@ export const CONTROLS: readonly ControlAction[] = [
     enabled: (deps: ControlDeps) => !frameLocked(deps),
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedTechnique,
   }),
-  unkeyed('change-brick-block', (t) => t.form.brickBlockLabel, 'canvas', {
-    body: (t) => t.tooltips.brickBlock,
+  unkeyed('change-brick-block', (t) => weaveSettingWords(t, BRICK_BLOCK_SETTING).label, 'canvas', {
     enabled: (deps: ControlDeps) => !frameLocked(deps),
     disabledBody: (t: Translations) => t.tooltips.rowProgressLockedBrickBlock,
   }),

@@ -15,6 +15,16 @@ interface FeatureCopy {
   tabLine?: string
 }
 
+/** A Technique setting's words in its stepper (ticket 0624): its name, its two buttons, its number's name for screen
+ * readers and, where it has one, its hover text. */
+export interface SettingWords {
+  label: string
+  less: string
+  more: string
+  value: string
+  body?: string
+}
+
 export interface Translations {
   app: {
     title: string
@@ -38,14 +48,6 @@ export interface Translations {
     beadShapeSymmetricTip: string
     beadShapeRealTip: string
     techniqueLabel: string
-    netSizeLabel: string
-    netSizeLess: string
-    netSizeMore: string
-    netSizeValue: string
-    brickBlockLabel: string
-    brickBlockLess: string
-    brickBlockMore: string
-    brickBlockValue: string
     widthLabel: string
     heightLabel: string
     /** Stepper buttons beside Width and Height (ticket 181), each named for screen readers like Stepper's own. */
@@ -200,6 +202,9 @@ export interface Translations {
   /** The Techniques' names, by each Technique's name key (ADR 0078): open, so a new Technique is its entry and its strings;
    * `registryNames.test.ts` checks every key is in every language. */
   techniques: Readonly<Record<string, string>>
+  /** A Technique setting's words, by its label key (ADR 0078, ticket 0624): open like `techniques`, so a new setting is
+   * its entry and its strings; `registryNames.test.ts` checks every key is in every language. */
+  weaveSettings: Readonly<Record<string, SettingWords>>
   /** The Form factors' names, the middle word of a Bead's label (ticket 533); a maker's product name stays as it is. */
   formFactors: FormFactorNames
   projects: {
@@ -935,7 +940,6 @@ export interface Translations {
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string
-    brickBlock: string
     rowProgressLockedBrickBlock: string
     rowProgressLockedRotate: string
     rowProgressLockedRemoveLine: string
