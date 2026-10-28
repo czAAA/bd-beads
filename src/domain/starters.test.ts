@@ -75,10 +75,10 @@ describe('the Starter manifests (ticket 0633)', () => {
   const manifests = Object.entries(files).map(([path, manifest]) => ({ file: path.split('/').pop()!, manifest }))
 
   it('lists every manifest in one category, once, each under its own file name and with a design beside it', () => {
-    expect(manifests.map(({ file, manifest }) => file === `${manifest.id}.starter.json`)).not.toContain(false)
-    expect(allStarters.map((starter) => starter.id).sort()).toEqual(manifests.map(({ manifest }) => manifest.id).sort())
-    for (const starter of allStarters) expect(starterDesign(starter), starter.id).not.toEqual({})
-    for (const category of STARTER_CATEGORIES) expect(category.starters).toContain(category.best)
+    for (const { file, manifest } of manifests) expect(file, 'its file name').toBe(`${manifest.id}.starter.json`)
+    expect(allStarters.map((starter) => starter.id).sort(), 'listed once each').toEqual(manifests.map(({ manifest }) => manifest.id).sort())
+    for (const starter of allStarters) expect(starterDesign(starter), `${starter.id}'s design`).not.toEqual({})
+    for (const category of STARTER_CATEGORIES) expect(category.starters, `${category.id}'s best`).toContain(category.best)
   })
 
   for (const starter of allStarters) {
@@ -97,7 +97,10 @@ describe('the Starter manifests (ticket 0633)', () => {
       }
       if (starter.measure === 'band') expect(Object.keys(BAND_EASE_MM)).toEqual(expect.arrayContaining([...starter.picks.find((pick) => pick.id === 'fit')!.values]))
       for (const size of starter.sizes) {
-        expect([size.labelKey, size.step > 0, size.min <= size.default && size.default <= size.max]).toEqual([expect.any(String), true, true])
+        expect(size.labelKey, `${size.id}'s words`).toEqual(expect.any(String))
+        expect(size.step, `${size.id}'s step`).toBeGreaterThan(0)
+        expect(size.default, `${size.id}'s default`).toBeGreaterThanOrEqual(size.min)
+        expect(size.default, `${size.id}'s default`).toBeLessThanOrEqual(size.max)
       }
       for (const pick of starter.picks) {
         expect(pick.values).toContain(pick.default)
