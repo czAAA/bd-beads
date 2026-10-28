@@ -133,7 +133,7 @@ describe('useCanvasPointer', () => {
   })
 
   describe('layer of a press', () => {
-    it('hands the layer the pointer hit to the tool, which a position alone cannot say (ADR 0070)', () => {
+    it('hands the layer the pointer hit to the tool, which a position alone cannot say (ADR 0066)', () => {
       const { deps, onCellPrimaryDown, onCellPrimaryMove } = setup({ strokeMode: 'paint' })
       onCellPrimaryDown(4, 1, 'frame')
       expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 4, 1, 'frame')

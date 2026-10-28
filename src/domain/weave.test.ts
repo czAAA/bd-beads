@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, lineOfPass, neighborsOf, passCount, passLines, passOf, positionStep, rowCycle, rowOffset, rowPitch, TECHNIQUES, techniqueNameKey } from './weave'
+import { cellCenter, clampNetSize, describeWeave, gridHeight, gridWidth, lineOfPass, neighborsOf, passCount, passLines, passOf, positionStep, rowCycle, rowOffset, rowPitch } from './weave'
 
 function sorted(positions: { row: number; column: number }[]) {
   return [...positions].sort((a, b) => a.row - b.row || a.column - b.column)
@@ -185,7 +185,7 @@ describe('gridHeight', () => {
 })
 
 describe('neighborsOf', () => {
-  const dims = { columns: 5, rows: 5 }
+  const dims = { row: 0, column: 0, columns: 5, rows: 5 }
 
   it('gives loom cells their four straight neighbors', () => {
     expect(sorted(neighborsOf({ technique: 'loom' }, dims, { row: 2, column: 2 }))).toEqual(
@@ -307,7 +307,7 @@ describe('neighborsOf with a Brick block (ticket 477)', () => {
 describe('describeWeave: every question a Weave answers (ticket 481)', () => {
   const bead = { widthMm: 1.6, widthCorrectionMm: 0.1, heightMm: 1.3 }
   const here = { row: 4, column: 7 }
-  const dims = { columns: 10, rows: 10 }
+  const dims = { row: 0, column: 0, columns: 10, rows: 10 }
 
   it.each([
     ['loom', { technique: 'loom' as const }, { frameStep: 1, shifted: false, rowPitch: 1, hasBrickBlock: false, twoPasses: false }],
@@ -567,14 +567,5 @@ describe('positionStep (ticket 492)', () => {
     expect(net.down).toBeGreaterThan(0)
     const right = positionStep({ technique: 'rightAngle' })
     expect(right.down).toBeGreaterThan(0)
-  })
-})
-
-describe('the Technique config', () => {
-  it('has an entry for every Technique, each with a name key', () => {
-    expect(TECHNIQUES.length).toBeGreaterThan(0)
-    for (const technique of TECHNIQUES) {
-      expect(techniqueNameKey(technique)).toMatch(/^technique/)
-    }
   })
 })

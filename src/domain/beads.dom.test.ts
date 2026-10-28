@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadLabel, beadPitchMm, findBead, gramsPerBead, offeredBeads } from './beads'
+import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, findBead, gramsPerBead, offeredBeads } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
@@ -80,6 +80,12 @@ describe('the catalog (ADR 0072)', () => {
 
   it('starts a new Project on the named default', () => {
     expect(BEAD_CATALOG).toContain(DEFAULT_BEAD)
+  })
+
+  it('keeps a Brand\'s color families on its row, out of the Bead a Project saves (ADR 0078)', () => {
+    const delica = findBead('miyuki/delica/11-0')!
+    expect(delica.brand.colorFamilies?.length).toBeGreaterThan(0)
+    expect(beadCopy(delica).brand).toEqual({ id: 'miyuki', name: 'Miyuki' })
   })
 })
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { beadLabel, uniqueBy, type Bead } from '../../domain/beads'
+import { beadLabel, formFactorName, uniqueBy, type Bead } from '../../domain/beads'
 import { useI18n } from '../../i18n/useI18n'
 import AppButton from '../ui/AppButton.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
@@ -60,11 +60,11 @@ const summary = computed(() => {
   return props.outdated ? `${label} ${t.value.replaceBead.outdatedPostfix}` : label
 })
 
-const formFactorName = (bead: Bead) => t.value.formFactors[bead.formFactor.nameKey]
+const formFactorLabel = (bead: Bead) => formFactorName(bead.formFactor, t.value.formFactors)
 const brandTriggerLabel = computed(() => brands.value.find((bead) => bead.brand.id === brandId.value)?.brand.name ?? t.value.form.beadPicker.choose)
 const formFactorTriggerLabel = computed(() => {
   const bead = formFactors.value.find((candidate) => candidate.formFactor.id === formFactorId.value)
-  return bead ? formFactorName(bead) : t.value.form.beadPicker.choose
+  return bead ? formFactorLabel(bead) : t.value.form.beadPicker.choose
 })
 const sizeTriggerLabel = computed(() => sizes.value.find((bead) => bead.id === sizeId.value)?.size ?? t.value.form.beadPicker.choose)
 
@@ -144,7 +144,7 @@ function pickSize(id: string) {
             :data-testid="`${testid}-form-factor-${bead.formFactor.id}`"
             @select="pickFormFactor(bead.formFactor.id)"
           >
-            {{ formFactorName(bead) }}
+            {{ formFactorLabel(bead) }}
           </AppMenuItem>
         </MenuButton>
       </div>

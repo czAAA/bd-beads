@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
-import { BEAD_CATALOG, beadAfterPick, uniqueBy, type Bead } from '../../domain/beads'
+import { BEAD_CATALOG, beadAfterPick, formFactorName, uniqueBy, type Bead } from '../../domain/beads'
 import type { BeadShape } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import PanelPicker from '../shell/PanelPicker.vue'
@@ -33,7 +33,7 @@ const types = computed(() =>
   uniqueBy(
     entries.value.filter((bead) => bead.brand.id === own.value?.brand.id),
     (bead) => bead.formFactor.id,
-  ).map((bead) => ({ value: bead.formFactor.id, label: t.value.formFactors[bead.formFactor.nameKey] })),
+  ).map((bead) => ({ value: bead.formFactor.id, label: formFactorName(bead.formFactor, t.value.formFactors) })),
 )
 const sizes = computed(() =>
   entries.value.filter((bead) => bead.brand.id === own.value?.brand.id && bead.formFactor.id === own.value?.formFactor.id).map((bead) => ({ value: bead.id, label: bead.size })),

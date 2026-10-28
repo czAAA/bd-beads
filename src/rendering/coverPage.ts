@@ -8,6 +8,7 @@ import { PRINT_COLORS } from './printColors'
 import { A4_PORTRAIT, displayedGrid, mm, PRINT_MARGIN, type PageSize, type PrintPlan } from './printPlan'
 import type { PrintText } from './printText'
 import { displayedExtentPx } from './surfaceView'
+import { fillBlanks } from '../domain/fillBlanks'
 
 // The Cover page (ticket 0583; printed-output.md, PrintPage1 and PngExport cards): the one A4 portrait page that opens the
 // PDF and is the PNG, and the list pages Beads needed continues on. Drawn here once for both formats.
@@ -34,7 +35,7 @@ function drawTitleBlock(context: CanvasRenderingContext2D, page: PageSize, words
     y += TITLE_NAME_ROW
   }
   if (rows.maker) {
-    text(context, words.labels.byMaker.replace('{maker}', words.maker), PRINT_MARGIN, y + pt(11), font('italic 400', 13, SERIF), PRINT_COLORS.muted, 'left', width)
+    text(context, fillBlanks(words.labels.byMaker, { maker: words.maker }), PRINT_MARGIN, y + pt(11), font('italic 400', 13, SERIF), PRINT_COLORS.muted, 'left', width)
     y += TITLE_MAKER_ROW
   }
   text(context, [words.techniqueWord, words.metaLine].join(' · '), PRINT_MARGIN, y + pt(6), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', width)

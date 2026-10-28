@@ -5,7 +5,7 @@ import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, describeWeave, type BeadCell } from '../domain/weave'
 import { frameLayoutOf, rowOrderOf } from '../domain/frameKind'
 import { centredBead, layoutBeadPx, placedLayout, type PlacedLayout } from './customFrameView'
-import { frameContains, type Frame, type FrameSheet } from '../domain/canvas'
+import { frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, currentPass, frameWeave, rowProgressOn } from '../domain/project'
 import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type Selection } from '../domain/selection'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
@@ -212,7 +212,7 @@ function roundedRect(context: DrawingContext, x: number, y: number, width: numbe
 // The hover preview on each bead it names, inside the rim: its color at a faint opacity over what the bead holds (a
 // pasted block in each bead's own colors), or with no color a 2px dark-ink outline. A color fills the bead's own shape,
 // less what the next row's beads lie over.
-function drawPreview(context: DrawingContext, weave: Weave, bounds: Frame | undefined, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
+function drawPreview(context: DrawingContext, weave: Weave, bounds: Rect | undefined, space: Space, cells: readonly PreviewCell[], preview: HoverPreview, theme: ProjectTheme): void {
   const { technique } = weave
   const inset = BEAD_GAP_PX / 2
   const roundness = beadRoundness(technique, weave.cell) * CELL_SIZE_PX - inset
@@ -390,7 +390,7 @@ const MARGIN_OUTLINE_RADIUS_PX = 12
 
 /** Strokes the box round the margin's drawn extent on the Canvas (ticket 372): peyote rows nest closer than a bead is
  * tall, and offset techniques add half a bead across, so it is not `rows * CELL_SIZE_PX`. */
-function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Frame, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
+function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Rect, zoom: number, opacity: number, theme: ProjectTheme, margin: number): void {
   const { x, y, width, height } = gridBox(weave, withMargin(frame, margin))
   context.save()
   context.globalAlpha = opacity
@@ -404,8 +404,8 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Frame, 
 }
 
 /** Whether a position of the Canvas is on the Frame (ticket 492): the layer it names, or else whether it lies under what
- * the Frame draws (ADR 0070). */
-function onFrame(frame: FrameSheet | undefined, covered: Frame | undefined, position: GridPosition): boolean {
+ * the Frame draws (ADR 0066). */
+function onFrame(frame: FrameSheet | undefined, covered: Rect | undefined, position: GridPosition): boolean {
   if (frame === undefined) return false
   // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).
   return position.layer ? position.layer === 'frame' && (frameLayoutOf(frame) !== undefined || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)

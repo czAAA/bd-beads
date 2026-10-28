@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useHoldRepeat } from '../../../composables/ui/useHoldRepeat'
+import { clamp } from '../../../domain/clamp'
 import AppTooltip from '../AppTooltip.vue'
 import TextField from './TextField.vue'
 
@@ -48,17 +49,13 @@ const draft = ref('')
 const input = useTemplateRef<InstanceType<typeof TextField>>('input')
 const valueButton = useTemplateRef<HTMLButtonElement>('valueButton')
 
-function clamp(n: number) {
-  return Math.min(props.max, Math.max(props.min, n))
-}
-
 /** Steps by one, clamped to min/max; says whether the value moved, so a held press knows when it has reached a
  * limit. */
 function step(delta: number): boolean {
   if (props.disabled) return false
   // The model updates after the parent re-renders, so a typed number committed just now is the base, not `value`.
   const base = (editing.value ? closeEditor(true, false) : undefined) ?? value.value
-  const next = clamp(base + delta)
+  const next = clamp(base + delta, props.min, props.max)
   if (next === base && base === value.value) return false
   value.value = next
   return true
@@ -94,7 +91,7 @@ function closeEditor(commit: boolean, refocus: boolean): number | undefined {
   if (!editing.value) return undefined
   editing.value = false
   const number = typedNumber(draft.value)
-  const committed = commit && Number.isFinite(number) ? clamp(Math.round(number)) : undefined
+  const committed = commit && Number.isFinite(number) ? clamp(Math.round(number), props.min, props.max) : undefined
   if (committed !== undefined) value.value = committed
   if (refocus) void nextTick(() => valueButton.value?.focus())
   return committed

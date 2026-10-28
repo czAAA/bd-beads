@@ -2,7 +2,7 @@ import { computed, inject, provide, ref, shallowRef, type InjectionKey, type Ref
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { findBead } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
-import type { AddUsedColorOutcome, Palette } from '../../domain/palette'
+import { brandColors, type AddUsedColorOutcome, type Palette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 
@@ -20,14 +20,12 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
   const catalog = shallowRef<ColorCatalog>()
   const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
 
-  const catalogId = computed(() => {
+  const bead = computed(() => {
     const project = currentProject()
-    return project && (project.bead ?? findBead(project.beadId))?.formFactor.colorCatalog
+    return project && (project.bead ?? findBead(project.beadId))
   })
-  const size = computed(() => {
-    const project = currentProject()
-    return project && (project.bead ?? findBead(project.beadId))?.size
-  })
+  const catalogId = computed(() => bead.value?.formFactor.colorCatalog)
+  const size = computed(() => bead.value?.size)
 
   async function load() {
     const id = catalogId.value
@@ -46,7 +44,7 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
   const swatches = computed(() => {
     const own = catalog.value
     return own && own.id === catalogId.value && size.value
-      ? catalogSwatches(own, size.value, palette.value.colors.map((color) => color.hex))
+      ? catalogSwatches(own, size.value, palette.value.colors.map((color) => color.hex), brandColors(bead.value?.brand.id))
       : []
   })
 

@@ -1,4 +1,4 @@
-import { computed, ref, toRaw } from 'vue'
+import { computed, ref } from 'vue'
 import { withMakerName } from '../../domain/makerName'
 import { withLetters, type Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
@@ -77,16 +77,15 @@ export function useExportFlow(deps: ExportFlowDeps) {
     }
     exporting.value = extension
     try {
-      // Read as the Project itself: drawing reads every bead.
       const { saveBox } = deps.messages()
       const handed = await makeAndHandOver(
         projectExportFileName(project, extension),
-        () => make(toRaw(project)),
+        () => make(project),
         type,
         `export-${extension}`,
         extension === 'png' ? saveBox.readyPng : saveBox.readyPdf,
       )
-      for (const next of handed ? (more?.(toRaw(project)) ?? []) : []) {
+      for (const next of handed ? (more?.(project) ?? []) : []) {
         if (!(await makeAndHandOver(next.fileName, next.make, type, `export-${extension}-instructions`, saveBox.readyPng))) break
       }
     } finally {

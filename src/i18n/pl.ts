@@ -24,11 +24,6 @@ export const pl: Translations = {
     beadShapeSymmetricTip: 'Rysuje każdy koralik jako równą komórkę; zmienia tylko wygląd płótna.',
     beadShapeRealTip: 'Rysuje każdy koralik w prawdziwych proporcjach; zmienia tylko wygląd płótna.',
     techniqueLabel: 'Technika',
-    techniqueLoom: 'Krosno',
-    techniquePeyote: 'Peyote',
-    techniqueBrick: 'Ścieg ceglasty',
-    techniqueRightAngle: 'Splot kątowy',
-    techniqueNetting: 'Siatka',
     netSizeLabel: 'Rozmiar siatki',
     netSizeLess: 'Mniej koralików w oczku',
     netSizeMore: 'Więcej koralików w oczku',
@@ -180,6 +175,13 @@ export const pl: Translations = {
   languageSwitcher: {
     ariaLabel: 'Język interfejsu',
   },
+  techniques: {
+    loom: 'Krosno',
+    peyote: 'Peyote',
+    brick: 'Ścieg ceglasty',
+    rightAngle: 'Splot kątowy',
+    netting: 'Siatka',
+  },
   formFactors: { cube: 'Kostka', round: 'Okrągły', delica: 'Delica' },
   projects: {
     heading: 'Biblioteka projektów',
@@ -269,12 +271,12 @@ export const pl: Translations = {
   },
   header: {
     menuButton: 'Menu',
-    overviewItem: 'Przegląd',
+    homepageItem: 'Strona główna',
     sourceItem: 'Kod źródłowy',
     projectPanelLabel: 'Projekt',
   },
-  overview: {
-    pageTitle: 'Przegląd',
+  homepage: {
+    pageTitle: 'Strona główna',
     tagline: 'zapisz. policz. wyeksportuj',
     makeFirstProject: 'Utwórz swój pierwszy projekt',
     openEditor: 'Otwórz edytor',
@@ -475,6 +477,7 @@ export const pl: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Linie: części wykresu, każda na własnej stronie, z ponumerowanymi wszystkimi rzędami i kolumnami.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Potrzebne koraliki: {summary} · zob. stronę {page}',

@@ -18,7 +18,8 @@ export interface ImportSwitchFlowDeps {
  * 0020). Touches no history. Deps are lazy. */
 export function useImportSwitchFlow(deps: ImportSwitchFlowDeps) {
   /** Imported Projects held back until the person says whether to switch (ticket 154); undefined when nothing to
-   * ask. They join the library either way. */
+   * ask. They join the library either way, as they are: the registry holds them shallowly, like the library (ticket
+   * 0616). */
   const pendingImport = (deps.dialogs ?? useDialogs()).question<Project[]>('import-switch')
 
   /** Whether Save current, offered when the last save failed, was tried and the device refused it too. */

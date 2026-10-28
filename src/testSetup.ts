@@ -7,6 +7,11 @@ const { disableAutoUnmount, enableAutoUnmount } = await import('@vue/test-utils'
 const { browserDevicePreferences } = await import('./services/devicePreferences')
 const { installSurfaceLayout } = await import('./testUtils/surfaceLayout')
 const { installStrictClock, resetSharedPage } = await import('./testUtils/sharedPage')
+const { loadLocale } = await import('./i18n/useI18n')
+const { LOCALES } = await import('./domain/locale')
+
+// Every language, as a test mounts in any of them at once; the app itself fetches only the one in use (ticket 0616).
+await Promise.all(LOCALES.map(loadLocale))
 
 // jsdom's PointerEvent inherits getter-only `button`/`buttons` (ticket 60); @vue/test-utils' trigger() only skips read-
 // only keys found on the event's own prototype and so throws. Copy the descriptors down onto PointerEvent so it skips

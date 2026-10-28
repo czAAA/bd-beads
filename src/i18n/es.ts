@@ -24,11 +24,6 @@ export const es: Translations = {
     beadShapeSymmetricTip: 'Dibuja cada cuenta como una celda uniforme; solo cambia el aspecto del lienzo.',
     beadShapeRealTip: 'Dibuja cada cuenta con sus proporciones reales; solo cambia el aspecto del lienzo.',
     techniqueLabel: 'Técnica',
-    techniqueLoom: 'Telar',
-    techniquePeyote: 'Peyote',
-    techniqueBrick: 'Punto ladrillo',
-    techniqueRightAngle: 'Ángulo recto',
-    techniqueNetting: 'Red',
     netSizeLabel: 'Tamaño de la red',
     netSizeLess: 'Menos cuentas en el bucle',
     netSizeMore: 'Más cuentas en el bucle',
@@ -180,6 +175,13 @@ export const es: Translations = {
   languageSwitcher: {
     ariaLabel: 'Idioma',
   },
+  techniques: {
+    loom: 'Telar',
+    peyote: 'Peyote',
+    brick: 'Punto ladrillo',
+    rightAngle: 'Ángulo recto',
+    netting: 'Red',
+  },
   formFactors: { cube: 'Cubo', round: 'Redondo', delica: 'Delica' },
   projects: {
     heading: 'Biblioteca de proyectos',
@@ -269,12 +271,12 @@ export const es: Translations = {
   },
   header: {
     menuButton: 'Menú',
-    overviewItem: 'Resumen',
+    homepageItem: 'Inicio',
     sourceItem: 'Código fuente',
     projectPanelLabel: 'Proyecto',
   },
-  overview: {
-    pageTitle: 'Resumen',
+  homepage: {
+    pageTitle: 'Inicio',
     tagline: 'guarda. cuenta. exporta',
     makeFirstProject: 'Crea tu primer proyecto',
     openEditor: 'Abrir el editor',
@@ -472,6 +474,7 @@ export const es: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Líneas: las partes del gráfico, cada una en su página, con todas las filas y columnas numeradas.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Cuentas necesarias: {summary} · ver página {page}',

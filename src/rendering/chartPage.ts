@@ -5,6 +5,7 @@ import { PRINT_COLORS } from './printColors'
 import { continuation, displayedGrid, mm, PRINT_MARGIN, type PrintPart, type PrintPlan } from './printPlan'
 import { headerMaker, type PrintText } from './printText'
 import type { Project } from '../domain/project'
+import { fillBlanks } from '../domain/fillBlanks'
 
 // A chart page for the PDF (ticket 0585; PrintChartPage card): the translated text as one picture and everything else as
 // PDF drawing laid over it (ADR 0043). The picture is the paper, so empty positions are plain paper.
@@ -23,10 +24,10 @@ function continuationText(labels: PrintText['labels'], plan: PrintPlan, parts: P
     parts.map((part) => pick(continuation(plan, part))).filter((page): page is number => page !== undefined && page !== here)
   const right = Math.min(...pages((next) => next.right))
   const below = Math.min(...pages((next) => next.below))
-  if (Number.isFinite(right) && Number.isFinite(below)) return labels.continuesBoth.replace('{right}', String(right)).replace('{below}', String(below))
-  if (Number.isFinite(right)) return labels.continuesRight.replace('{right}', String(right))
-  if (Number.isFinite(below)) return labels.continuesBelow.replace('{below}', String(below))
-  return here < plan.specificationPage - 1 ? labels.continuesOn.replace('{next}', String(here + 1)) : labels.lastPart
+  if (Number.isFinite(right) && Number.isFinite(below)) return fillBlanks(labels.continuesBoth, { right, below })
+  if (Number.isFinite(right)) return fillBlanks(labels.continuesRight, { right })
+  if (Number.isFinite(below)) return fillBlanks(labels.continuesBelow, { below })
+  return here < plan.specificationPage - 1 ? fillBlanks(labels.continuesOn, { next: here + 1 }) : labels.lastPart
 }
 
 /** The mini map's rectangles in px from its top left corner: every part of the Schema to scale in a 9.4 mm square, 0.4 mm
@@ -75,7 +76,7 @@ export function drawChartPage(project: Project, words: PrintText, plan: PrintPla
   const room = mapLeft - mm(3) - PRINT_MARGIN
   const word = text(context, words.techniqueWord, PRINT_MARGIN, mm(16.4), font('italic 400', 14, SERIF), PRINT_COLORS.accent)
   text(context, words.name, PRINT_MARGIN + word + mm(1.6), mm(16.4), font('600', 13, SANS), PRINT_COLORS.ink, 'left', Math.max(mm(20), room - word - mm(1.6)))
-  const by = words.maker ? labels.byMaker.replace('{maker}', headerMaker(words.maker)) : ''
+  const by = words.maker ? fillBlanks(labels.byMaker, { maker: headerMaker(words.maker) }) : ''
   const line = parts.length === 1 ? [partLabel(project, labels, here), by].filter(Boolean).join(' · ') : by
   if (line) text(context, line, PRINT_MARGIN, mm(21.4), font('400', 7.5, MONO), PRINT_COLORS.muted, 'left', room)
 

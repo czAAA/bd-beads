@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, useId } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { clamp } from '../../domain/clamp'
 import { hexToHsv, hsToWheelPoint, hsvToHex, parseHexInput, wheelPointToHs, wrapHue, type Hsv } from '../../domain/hsv'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import TextField from '../ui/form/TextField.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Custom color picker (ticket 449; ColorPickers card): wheel (hue = angle, saturation = distance), brightness
 // slider, hex field and preview swatch; it only previews. A layer of the overlay registry (ADR 0061): a press outside,
@@ -41,7 +43,7 @@ let touched = false
 
 /** Every change a person makes goes through here, so a picker they never touched can be told from one they did. */
 function setHsv(next: Hsv) {
-  hsv.value = { h: wrapHue(next.h), s: Math.min(1, Math.max(0, next.s)), v: Math.min(1, Math.max(0, next.v)) }
+  hsv.value = { h: wrapHue(next.h), s: clamp(next.s, 0, 1), v: clamp(next.v, 0, 1) }
   hexText.value = hex.value
   invalid.value = false
   touched = true
@@ -157,7 +159,7 @@ const sliderStyle = computed(() => ({
 }))
 const sliderThumb = computed(() => ({ left: `${hsv.value.v * 100}%`, background: hex.value }))
 const wheelValue = computed(() =>
-  t.value.palette.wheelValue.replace('{hue}', String(Math.round(hsv.value.h))).replace('{saturation}', String(Math.round(hsv.value.s * 100))),
+  fillBlanks(t.value.palette.wheelValue, { hue: Math.round(hsv.value.h), saturation: Math.round(hsv.value.s * 100) }),
 )
 
 onMounted(async () => {

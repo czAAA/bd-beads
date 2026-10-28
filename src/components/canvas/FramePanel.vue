@@ -33,6 +33,7 @@ import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
 import { plural } from '../../i18n/plural'
 import { printText } from '../../rendering/printText'
 import { useI18n } from '../../i18n/useI18n'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
 // name, size and Beads needed; with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
@@ -151,13 +152,13 @@ function sizeText(bytes: number): string {
   const megabytes = shownMegabytes(bytes)
   if (megabytes === undefined) return t.value.frame.qualitySizeUnder
   const figure = (megabytes < 10 ? megabytes.toFixed(1) : String(megabytes)).replace('.', decimalSign(locale.value))
-  return t.value.frame.qualitySizeAbout.replace('{size}', t.value.frame.qualitySizeMb.replace('{n}', figure))
+  return fillBlanks(t.value.frame.qualitySizeAbout, { size: fillBlanks(t.value.frame.qualitySizeMb, { n: figure }) })
 }
 /** The button's value: its format, size and how many files or pages ("PNG ≈ 1.4 MB · 2 files"), or the extension with no Frame. */
 function exportValue(format: 'PNG' | 'PDF', estimate: SizeEstimate | undefined): string {
   if (!estimate) return `.${format.toLowerCase()}`
   const count = plural(locale.value, estimate.count, format === 'PNG' ? t.value.frame.exportFiles : t.value.frame.exportPages)
-  return t.value.frame.exportSizeValue.replace('{format}', format).replace('{size}', sizeText(estimate.bytes)).replace('{count}', count)
+  return fillBlanks(t.value.frame.exportSizeValue, { format, size: sizeText(estimate.bytes), count })
 }
 const pngValue = computed(() => exportValue('PNG', exportFactsNow.value && estimatePng(exportFactsNow.value, pngDpiFor(quality.value))))
 const pdfValue = computed(() => exportValue('PDF', exportFactsNow.value && estimatePdf(exportFactsNow.value, pdfPageDpi())))
@@ -169,7 +170,7 @@ const qualityStops = computed(() => {
     if (!facts) return { id, word }
     const dpi = pngDpiFor(id)
     const size = sizeText(estimatePng(facts, dpi).bytes)
-    const detail = t.value.frame.qualityDpi.replace('{n}', String(dpi))
+    const detail = fillBlanks(t.value.frame.qualityDpi, { n: dpi })
     return { id, word, detail, lines: [size], spoken: `${word}, ${detail}, ${size}` }
   })
 })
@@ -180,7 +181,7 @@ const highPngDpi = computed(() => {
 })
 const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
 const exportBusy = computed(() => !!props.exporting)
-const exportingText = computed(() => (props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng).replace('{name}', props.project.name))
+const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng, { name: props.project.name }))
 
 /** The Tooltip over the off size fields. */
 const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: t.value.tooltips.frameSizeLocked, announce: false }))
@@ -228,7 +229,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         :disabled="exportBusy"
         @update:model-value="quality = $event as ExportQuality"
       />
-      <p v-if="highPngDpi" class="frame-panel__line" data-testid="quality-pdf-capped">{{ t.frame.qualityPdfCapped.replace('{n}', String(highPngDpi)) }}</p>
+      <p v-if="highPngDpi" class="frame-panel__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
       <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
       <template v-if="frame">
         <div class="frame-panel__letters">

@@ -25,11 +25,6 @@ export const be: Translations = {
     beadShapeSymmetricTip: 'Маляваць кожную бісерыну роўнай клеткай; змяняецца толькі выгляд палатна.',
     beadShapeRealTip: 'Маляваць кожную бісерыну ў яе сапраўдных прапорцыях; змяняецца толькі выгляд палатна.',
     techniqueLabel: 'Тэхніка пляцення',
-    techniqueLoom: 'Ткацтва',
-    techniquePeyote: 'Мазаічнае пляценне',
-    techniqueBrick: 'Цаглянае пляценне',
-    techniqueRightAngle: 'Крэсьчык',
-    techniqueNetting: 'Сетка',
     netSizeLabel: 'Памер сеткі',
     netSizeLess: 'Менш пацерак у пятлі',
     netSizeMore: 'Больш пацерак у пятлі',
@@ -181,6 +176,13 @@ export const be: Translations = {
   languageSwitcher: {
     ariaLabel: 'Мова інтэрфейсу',
   },
+  techniques: {
+    loom: 'Ткацтва',
+    peyote: 'Мазаічнае пляценне',
+    brick: 'Цаглянае пляценне',
+    rightAngle: 'Крэсьчык',
+    netting: 'Сетка',
+  },
   formFactors: { cube: 'Куб', round: 'Круглы', delica: 'Delica' },
   projects: {
     heading: 'Бібліятэка праектаў',
@@ -270,12 +272,12 @@ export const be: Translations = {
   },
   header: {
     menuButton: 'Меню',
-    overviewItem: 'Агляд',
+    homepageItem: 'Галоўная',
     sourceItem: 'Зыходны код',
     projectPanelLabel: 'Праект',
   },
-  overview: {
-    pageTitle: 'Агляд',
+  homepage: {
+    pageTitle: 'Галоўная',
     tagline: 'захаваем. палічым. экспартуем',
     makeFirstProject: 'Стварыць першы праект',
     openEditor: 'Адкрыць рэдактар',
@@ -476,6 +478,7 @@ export const be: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Лініі: часткі схемы, кожная на сваёй старонцы; усе рады і слупкі пранумараваны.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Патрэбна бісеру: {summary} · гл. старонку {page}',
