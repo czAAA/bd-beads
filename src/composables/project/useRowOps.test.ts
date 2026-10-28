@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createProject, moveToRow, toggleRowDirection, type Project } from '../../domain/project'
+import { createProject, moveToRow, resetRowProgress, toggleRowDirection, type Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
 
@@ -19,11 +19,18 @@ function setup(project: Project | null = base) {
 const replaced = (deps: { replaceProject: ReturnType<typeof vi.fn> }) => deps.replaceProject.mock.calls[0]![0] as Project
 
 describe('useRowOps', () => {
-  it('flips the Row progress direction without touching the rotation', () => {
+  it('commits the turned Row direction', () => {
     const { deps, onToggleRowDirection } = setup(tracking)
     onToggleRowDirection()
-    expect(replaced(deps).rowProgress.direction).toBe('columns')
-    expect(replaced(deps).rotation).toBe(base.rotation)
+    expect(replaced(deps)).toEqual(toggleRowDirection(tracking))
+  })
+
+  it('changes and says nothing for a Technique woven in rows only, which has nothing to turn (ticket 487)', () => {
+    const netting = createProject({ technique: 'netting', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 3, unit: 'beads' } })
+    const { deps, onToggleRowDirection } = setup(netting)
+    onToggleRowDirection()
+    expect(deps.replaceProject).not.toHaveBeenCalled()
+    expect(deps.showToast).not.toHaveBeenCalled()
   })
 
   it('says the new direction in a success toast, once per change, whoever turned it (ticket 411)', () => {
@@ -75,12 +82,12 @@ describe('useRowOps', () => {
     expect(started.resetProgressConfirmOpen.value).toBe(false)
   })
 
-  it('takes both pointers back to the first row on confirm, keeping the direction (ticket 455)', () => {
-    const columns = toggleRowDirection({ ...base, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } })
-    const { deps, onResetProgress, onConfirmResetProgress, resetProgressConfirmOpen } = setup(moveToRow(columns, 2))
+  it('commits Reset progress on confirm and closes the question (ticket 455)', () => {
+    const started = moveToRow(tracking, 2)
+    const { deps, onResetProgress, onConfirmResetProgress, resetProgressConfirmOpen } = setup(started)
     onResetProgress()
     onConfirmResetProgress()
     expect(resetProgressConfirmOpen.value).toBe(false)
-    expect(replaced(deps).rowProgress).toEqual({ direction: 'columns', currentRow: 0, currentColumn: 0 })
+    expect(replaced(deps)).toEqual(resetRowProgress(started))
   })
 })
