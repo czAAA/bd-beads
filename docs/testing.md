@@ -55,9 +55,12 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
 - `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.
 - `storageWrites.ts`: count localStorage writes, or make one fail.
+- `sharedPage.ts`: what the setup resets before each `page` file, and its never-repeating clock.
 - `rotated.ts`: a ready-made rotated Project.
 
-`src/testSetup.ts` runs before every `page` test file: it empties the module cache and the page the last file left (body, styles, storage), and re-arms auto-unmount, which the library only lets be armed once.
+`src/testSetup.ts` runs before every `page` test file: it empties the module cache and re-arms auto-unmount, which the library only lets be armed once. `testUtils/sharedPage.ts`'s `resetSharedPage` empties what the last file left on the page: the body, styles, `<html>`'s `class`, `style` and `lang`, the title, both storages, and puts back the default `matchMedia` (a desk with a mouse, so key chips show) over any a file assigned. So each file starts in English and with the default key-hint state, as if it ran first (ticket 0608).
+
+The setup also makes `Date.now` never read the same twice: Vue drops an event stamped no later than its listener was attached, so in a warm worker a click made in the same millisecond as the mount was lost whenever a capture listener saw it first.
 
 ## Cutting tests
 
