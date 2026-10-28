@@ -6,18 +6,18 @@ import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import { COFFEE_URL } from '../../data/coffeeLink'
-import { overviewUrl } from '../../overview/overviewRoute'
+import { homepageUrl } from '../../homepage/homepageRoute'
 import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
 import IconButton from '../ui/IconButton.vue'
 import type { OpenPanel } from '../../composables/shell/openPanel'
 
-// The canvas box's header strip on the editor and the Overview (tickets 143, 540, ADR 0055, ADR 0073; CanvasStrip card):
+// The canvas box's header strip on the editor and the Homepage (tickets 143, 540, ADR 0046, ADR 0073; CanvasStrip card):
 // three slots: Menu · Project · Frame on the left, the Brand in the middle, Rotate · Rulers · Undo · Redo and the zoom
 // on the right (ticket 543). Under 1024px the words and the wordmark hide; on an editor phone there is no Brand.
 const props = defineProps<{
-  /** Which page the strip is on: the editor's Brand opens the Overview, the Overview's is the current page. */
-  page?: 'editor' | 'overview'
+  /** Which page the strip is on: the editor's Brand opens the Homepage, the Homepage's is the current page. */
+  page?: 'editor' | 'homepage'
   project?: Project
   /** The open sheet, so Menu and Project show lit while theirs is open. */
   openPanel?: OpenPanel | null
@@ -62,8 +62,8 @@ const actions = {
 const deps = computed(() => controlDeps({ activeProject: () => props.project, canUndo: () => !!props.canUndo, canRedo: () => !!props.canRedo }))
 const min = computed(() => props.zoomMinPercent ?? MIN_ZOOM_PERCENT)
 const max = computed(() => props.zoomMaxPercent ?? MAX_ZOOM_PERCENT)
-const onOverview = computed(() => props.page === 'overview')
-const overviewHref = overviewUrl(import.meta.env.BASE_URL)
+const onHomepage = computed(() => props.page === 'homepage')
+const homepageHref = homepageUrl(import.meta.env.BASE_URL)
 
 // One Tab stop per section (ADR 0075): the panels, the Brand with the coffee link and the right-hand tools. ←/→ step inside
 // a section and stop at its ends; ↓ on a panel button opens its panel, like Enter.
@@ -87,7 +87,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div class="canvas-strip no-page-pan" :class="{ 'canvas-strip--overview': onOverview }" data-testid="canvas-strip">
+  <div class="canvas-strip no-page-pan" :class="{ 'canvas-strip--homepage': onHomepage }" data-testid="canvas-strip">
     <div ref="panelsEl" class="canvas-strip__panels" @keydown="onPanelsKeydown" @focusin="panelsRoving.onFocusin">
       <AppButton
         variant="text"
@@ -120,13 +120,13 @@ function onPanelsKeydown(event: KeyboardEvent) {
         <span class="canvas-strip__label">{{ actions.frame.name(t) }}</span>
       </AppButton>
     </div>
-    <!-- The Brand (tickets 540, 543): the strip's middle slot; the editor's opens the Overview, the Overview's is the page itself. -->
+    <!-- The Brand (tickets 540, 543): the strip's middle slot; the editor's opens the Homepage, the Homepage's is the page itself. -->
     <div ref="centerEl" class="canvas-strip__center" @keydown="centerRoving.onKeydown" @focusin="centerRoving.onFocusin">
       <component
-        :is="onOverview ? 'span' : 'a'"
+        :is="onHomepage ? 'span' : 'a'"
         class="canvas-strip__brand"
-        :href="onOverview ? undefined : overviewHref"
-        :aria-current="onOverview ? 'page' : undefined"
+        :href="onHomepage ? undefined : homepageHref"
+        :aria-current="onHomepage ? 'page' : undefined"
         data-testid="canvas-brand"
       >
         <AppLogo class="canvas-strip__mark" :size="22" />
@@ -164,7 +164,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
   gap: var(--space-8);
   box-sizing: border-box;
   /* As tall as its tallest item plus 1px above and below (ticket 544); --strip-height is the same rule for the
-   * Overview, which has the same strip. The top corners follow the canvas box's curve. */
+   * Homepage, which has the same strip. The top corners follow the canvas box's curve. */
   min-height: var(--strip-height);
   padding: var(--bar-pad) var(--space-10) var(--bar-pad) var(--space-16);
   color: var(--ink);
@@ -266,13 +266,13 @@ a.canvas-strip__brand:focus-visible {
   border-radius: var(--radius-xs);
 }
 
-/* The editor's phone strip has no Brand and gives the room to the controls; the Overview's keeps the logo. */
+/* The editor's phone strip has no Brand and gives the room to the controls; the Homepage's keeps the logo. */
 @media (max-width: 743px) {
-  .canvas-strip:not(.canvas-strip--overview) {
+  .canvas-strip:not(.canvas-strip--homepage) {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
-  .canvas-strip:not(.canvas-strip--overview) .canvas-strip__center {
+  .canvas-strip:not(.canvas-strip--homepage) .canvas-strip__center {
     display: none;
   }
 }

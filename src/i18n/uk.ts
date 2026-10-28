@@ -269,12 +269,12 @@ export const uk: Translations = {
   },
   header: {
     menuButton: 'Меню',
-    overviewItem: 'Огляд',
+    homepageItem: 'Головна',
     sourceItem: 'Вихідний код',
     projectPanelLabel: 'Проєкт',
   },
-  overview: {
-    pageTitle: 'Огляд',
+  homepage: {
+    pageTitle: 'Головна',
     tagline: 'збережемо. порахуємо. експортуємо',
     makeFirstProject: 'Створити перший проєкт',
     openEditor: 'Відкрити редактор',

@@ -268,12 +268,12 @@ export const zh: Translations = {
   },
   header: {
     menuButton: '菜单',
-    overviewItem: '概览',
+    homepageItem: '首页',
     sourceItem: '源代码',
     projectPanelLabel: '项目',
   },
-  overview: {
-    pageTitle: '概览',
+  homepage: {
+    pageTitle: '首页',
     tagline: '保存。计数。导出',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',

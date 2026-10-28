@@ -7,7 +7,7 @@
 //    test drives on its own) is tagged `@internal` in its doc comment, with the reason; this run leaves those out.
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  // The Vite config's two pages (the editor and the Overview, ADR 0040) are the app's entries; Vitest and Playwright
+  // The Vite config's two pages (the editor and the Homepage, ADR 0040) are the app's entries; Vitest and Playwright
   // entries come from their plugins. These are the helpers those find no importer for, and the
   // test-only Worker its harness bundles (knip finds the Worker itself through wrangler.jsonc). browserSetup.ts is the
   // browser project's setup file, which a machine without Chromium (CI's check job) leaves out of the Vitest config.
@@ -16,7 +16,7 @@
   // their own. 0078 gives them their caller and removes the `!` from the fixture Worker and the three entries after it.
   "entry": [
     "index.html!",
-    "overview/index.html!",
+    "homepage/index.html!",
     "src/browserSetup.ts",
     "src/testUtils/*.ts",
     "e2e/support/*.ts",

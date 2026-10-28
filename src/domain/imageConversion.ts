@@ -1,4 +1,5 @@
 import { beadPitchMm, type Bead } from './beads'
+import { toHex, type Rgb } from './color'
 import { fillBlanks } from './fillBlanks'
 import { type GridDimensions } from './grid'
 import { describeWeave, rowPitch, rowOffset, type Technique } from './weave'
@@ -48,7 +49,12 @@ export function pixelPackedAt(image: PixelData, x: number, y: number): number {
 /** A packed color (see pixelPackedAt) as the `#rrggbb` a grid cell stores.
  * @internal Tests write an expected color the way the preview reads it. */
 export function packedToHex(packed: number): string {
-  return `#${packed.toString(16).padStart(6, '0')}`
+  return toHex(unpacked(packed))
+}
+
+/** A packed color (see pixelPackedAt) as its channels. */
+export function unpacked(packed: number): Rgb {
+  return { r: (packed >> 16) & 0xff, g: (packed >> 8) & 0xff, b: packed & 0xff }
 }
 
 /** A picture format Convert image accepts, named the way the file input, the validation and the helper text each
@@ -156,7 +162,7 @@ export function validateImagePixelCount({ width, height }: ImageSize): ImageReje
   return width * height > IMAGE_MAX_PIXELS ? 'tooManyPixels' : undefined
 }
 
-/** How many colors a conversion may keep. Ceiling 14. Floor 1, down from 2 (ticket 177, amending ADR 0011):
+/** How many colors a conversion may keep. Ceiling 14. Floor 1, down from 2 (ticket 177, ADR 0010):
  * quantization is unconditional. */
 export const MIN_IMAGE_COLORS = 1
 export const MAX_IMAGE_COLORS = 14
@@ -225,7 +231,7 @@ export function sampleLatticePacked({
   return packed
 }
 
-/** The Project a conversion produced: its grid, and the colors it found (frozen onto the Project — ADR 0011). */
+/** The Project a conversion produced: its grid, and the colors it found, shown while framing (ADR 0010). */
 export interface ConvertedImage {
   grid: Grid
   imageColors: string[]

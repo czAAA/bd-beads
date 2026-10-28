@@ -16,7 +16,7 @@ One Cloudflare account, on Workers Free, runs two Workers from one `wrangler.jso
 | R2 (binding `BLOBS`) | `bd-beads-dev` | `bd-beads` |
 | Access | always | until the public release (ticket 391) |
 
-Each Worker serves the built app and the Overview as static assets at its root, and runs its code only for `/api/*` (`run_worker_first`), so loading the app never counts as a Worker request and keeps working when `/api` is over its daily cap or switched off. The code is `worker/` (`CODING_STANDARDS.md`). The two databases are apart so a full `blobs` can't stop sign-in ([ADR 0049](adr/0049-core-and-blobs-are-separate-d1-databases.md)).
+Each Worker serves the built app and the Homepage as static assets at its root, and runs its code only for `/api/*` (`run_worker_first`), so loading the app never counts as a Worker request and keeps working when `/api` is over its daily cap or switched off. The code is `worker/` (`CODING_STANDARDS.md`). The two databases are apart so a full `blobs` can't stop sign-in ([ADR 0049](adr/0049-core-and-blobs-are-separate-d1-databases.md)).
 
 ## Deploying by hand
 

@@ -270,12 +270,12 @@ export const be: Translations = {
   },
   header: {
     menuButton: 'Меню',
-    overviewItem: 'Агляд',
+    homepageItem: 'Галоўная',
     sourceItem: 'Зыходны код',
     projectPanelLabel: 'Праект',
   },
-  overview: {
-    pageTitle: 'Агляд',
+  homepage: {
+    pageTitle: 'Галоўная',
     tagline: 'захаваем. палічым. экспартуем',
     makeFirstProject: 'Стварыць першы праект',
     openEditor: 'Адкрыць рэдактар',

@@ -24,7 +24,7 @@ export type FrameChange =
   | { remove: true }
   /** One whole row or column of the Frame, counted from its first. */
   | { removeLine: AreaLine }
-  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0062); allowed after Row progress has
+  /** Move the Frame with its beads by whole rows and columns (ticket 452, ADR 0054); allowed after Row progress has
    * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
   /** Change the Frame's Technique (tickets 351, 492, 507): the geometry changes, every bead keeps its row and column where
