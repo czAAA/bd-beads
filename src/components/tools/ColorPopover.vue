@@ -10,7 +10,7 @@ import IconButton from '../ui/IconButton.vue'
 import { PICK_CLOSE } from '../shell/pickContext'
 import ToolColorControls from './ToolColorControls.vue'
 
-// The colour popover (ticket 439, ADR 0059; ToolPill card): the Colour sheet's replacement on every device. Head with
+// The colour popover (ticket 439, ADR 0046; ToolPill card): the Colour sheet's replacement on every device. Head with
 // the chosen colour, then the Palette with Pick color and Custom color.
 // Beside the pill, clamped to the screen. Choosing, Close, Escape or a press outside closes it.
 const props = defineProps<{

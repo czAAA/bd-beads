@@ -11,7 +11,7 @@ export interface RotateFrameFlowDeps {
   messages: () => Translations
 }
 
-/** Rotate Frame (ticket 471, ADR 0063, 0066): the Frame and its own beads a quarter turn, as one drawing Edit so Undo
+/** Rotate Frame (ticket 471, ADR 0052, 0066): the Frame and its own beads a quarter turn, as one drawing Edit so Undo
  * restores all. The Canvas under it is not touched, so there is nothing to say was covered. */
 export function useRotateFrameFlow(deps: RotateFrameFlowDeps) {
   function onRotateFrame(): void {

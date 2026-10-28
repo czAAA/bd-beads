@@ -151,7 +151,7 @@ export function coveredByRotation(before: Project, after: Project, selection: Se
   return covered
 }
 
-/** Rotate Frame (ticket 471, ADR 0063, 0066): the Frame and its own beads turned a quarter clockwise about their centre,
+/** Rotate Frame (ticket 471, ADR 0052, 0066): the Frame and its own beads turned a quarter clockwise about their centre,
  * as Rotate does a Selection; Width and Height swap. The Canvas under it is not touched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)

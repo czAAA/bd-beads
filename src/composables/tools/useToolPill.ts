@@ -14,7 +14,7 @@ export interface ToolPillDeps {
   onSelectCustomColor: (hex: string) => void
 }
 
-// The Tool pill's own state (ticket 439, ADR 0059): docked edge, the eight recents, and whether the colour popover
+// The Tool pill's own state (ticket 439, ADR 0046): docked edge, the eight recents, and whether the colour popover
 // is open. The first two are kept on this device like the theme (ADR 0020). A colour joins the recents at the front
 // when the paint colour changes, with the one it replaced.
 export function useToolPill(deps: ToolPillDeps) {

@@ -1,6 +1,6 @@
 # ContextBar
 
-The thin bar anchored to a Selection that offers what it can do. It has no Frame mode: Edit Frame has no bar (ticket 427, ADR 0055). The Selection bar below is the design for tickets 414 and 415, and the app draws it since ticket 415.
+The thin bar anchored to a Selection that offers what it can do. It has no Frame mode: Edit Frame has no bar (ticket 427, ADR 0054). The Selection bar below is the design for tickets 414 and 415, and the app draws it since ticket 415.
 
 ## Selection bar (tickets 414, 415)
 
@@ -18,14 +18,14 @@ A Selection is **one rectangle, or one Piece's exact shape** (tickets 414, 547, 
 - **No Add or Subtract toggle:** nothing combines rectangles.
 - **Names:** icon-only. Each button has an accessible name and a Tooltip with its key (Ctrl+X, Del...). The bar is `role="toolbar"` named "Selection". When it cannot fit the canvas box, the last actions fold into a "…" menu.
 - **Select all with no Selection (ticket 428):** with the Select tool active and no Selection, the bar is Select all alone (icon-only, the `select-all` icon), floating at the canvas box's top-centre. With a Frame it selects the Frame's inside, without one the bounding rectangle of all beads.
-- **Paste mode (ticket 437, ADR 0057):** there is no bar. Copy clears the Selection and arms paste mode, and the "Tap to paste" and Cancel bar is gone (Cut arms it the same way, ticket 447; the Paste icon above and the Tool pill's Paste tile re-enter it); Select all is hidden while paste mode is on. Escape, right-click or another tool leaves it (on touch also Undo or a second tap on Select).
+- **Paste mode (ticket 437, ADR 0016):** there is no bar. Copy clears the Selection and arms paste mode, and the "Tap to paste" and Cancel bar is gone (Cut arms it the same way, ticket 447; the Paste icon above and the Tool pill's Paste tile re-enter it); Select all is hidden while paste mode is on. Escape, right-click or another tool leaves it (on touch also Undo or a second tap on Select).
 - **Select all, then Clear selection** asks for confirmation, because it would wipe the drawing (ticket 415).
 
 Design reference: the "Selection bar on the canvas" board of the design canvas (rectangle, a piece, select all, touch).
 
 ## Frame panel (retired)
 
-The Frame panel of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove Frame and Done) is gone (ticket 427, ADR 0055). Fit to drawing and Remove frame live in the Progress bar; Edit Frame ends with Esc, Enter or a tap outside the Frame, and the Frame's size shows in its tooltip.
+The Frame panel of tickets 295 and 417 (the Frame's size, Fit to drawing, Remove Frame and Done) is gone (ticket 427, ADR 0054). Fit to drawing and Remove frame live in the Progress bar; Edit Frame ends with Esc, Enter or a tap outside the Frame, and the Frame's size shows in its tooltip.
 
 ## What the app does differently
 

@@ -18,7 +18,7 @@ export interface UndoHistoryDeps {
   restore: (snapshot: UndoEntry) => void
 }
 
-// Undo/redo (tickets 34, 48; ADRs 0023, 0036): stacks of full snapshots (domain/history.ts) pushed by Edit through
+// Undo/redo (tickets 34, 48; ADRs 0020, 0036): stacks of full snapshots (domain/history.ts) pushed by Edit through
 // record(); not saved with the Project, so the shell reset()s on a change. Deps are read lazily, so the shell can pass
 // this and Edit to each other.
 export function useUndoHistory(deps: UndoHistoryDeps) {

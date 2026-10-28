@@ -1073,7 +1073,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
     expect(isInCurrentRow(columnWise, { row: 15, column: 12 })).toBe(false)
   })
 
-  it('does not lock a position that names the Canvas, whatever row of the Frame its number is (ADR 0070)', () => {
+  it('does not lock a position that names the Canvas, whatever row of the Frame its number is (ADR 0066)', () => {
     expect(isInFinishedRow(framed, { row: 10, column: 10, layer: 'canvas' })).toBe(false)
     expect(isInCurrentRow(framed, { row: 10, column: 10, layer: 'canvas' })).toBe(false)
   })

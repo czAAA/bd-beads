@@ -1,11 +1,11 @@
 import { normalizeHex } from './palette'
 
-/** The four edges of the drawing area the Tool pill can dock to (ticket 439, ADR 0059). */
+/** The four edges of the drawing area the Tool pill can dock to (ticket 439, ADR 0046). */
 export const PILL_POSITIONS = ['left', 'top', 'right', 'bottom'] as const
 /** One of the four edges the pill docks to. */
 export type PillPosition = (typeof PILL_POSITIONS)[number]
 
-/** Where the pill is until it is moved (ADR 0059). */
+/** Where the pill is until it is moved (ADR 0046). */
 export const DEFAULT_PILL_POSITION: PillPosition = 'bottom'
 
 /** Whether the pill runs top to bottom: docked left or right. */
