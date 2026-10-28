@@ -72,7 +72,7 @@ _Avoid_: Frame toolbar, Frame sheet
 _Avoid_: Set Frame (the old mode, which also drew a Frame by dragging), crop, resize, set size, Edit Frame mode
 
 **Rotate Frame**:
-A button in the Frame panel, before Remove Frame (spec 0470). Turns the Frame and its own beads a quarter turn clockwise about the Frame's centre, within the Frame's own geometry (ADR 0066); its Width and Height swap. The Canvas under it is not touched, so nothing is covered and no Message is shown; the top row snaps to the start of a cycle of rows on peyote and brick stitch, one Undo step, and not offered once a Row progress pass is done (ticket 411). The bar stays as it was. It shares its icon with Rotate and has no key.
+A button in the Frame panel, before Remove Frame (spec 0470). Turns the Frame and its own beads a quarter turn clockwise about the Frame's centre, within the Frame's own geometry (ADR 0066); its Width and Height swap. The Canvas under it is not touched, so nothing is covered and no Message is shown; the top row snaps to the start of a cycle of rows on peyote and brick stitch, one Undo step. Row progress turns with it (ticket 0647, ADR 0052): each Row direction's pointer and the current direction move a quarter turn clockwise, so five rows done from the top become five columns done from the right and the same beads stay finished; a Custom frame's order turns with its layout, so its pointer stays. Nothing is lost, so it never asks, and one Undo brings back the Frame and its pointers. The bar stays as it was. It shares its icon with Rotate and has no key.
 _Avoid_: Frame turn (the ADR 0026 Frame turn that moved Pieces)
 
 **Rotate canvas**:

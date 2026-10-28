@@ -63,9 +63,23 @@ describe('useRotateFrameFlow (ticket 471, ADR 0066)', () => {
     expect(harness.project.frame).toMatchObject({ rows: 9, columns: 4 })
   })
 
-  it('does nothing without a Frame, without a Project, or once a Row progress pass is done (ticket 411)', () => {
-    const locked = moveToRow(framed, 1)
-    for (const project of [{ ...framed, frame: undefined }, null, locked]) {
+  it('turns a Frame whose rows are marked done, its finished beads and pointers with it, and one Undo brings both back (ticket 0647)', () => {
+    const woven = moveToRow(framed, 1)
+    const { deps, harness, onRotateFrame } = setup(woven)
+    onRotateFrame()
+
+    // Row 1 is done from the top: turned, it is column 1 done from the right, the red bead in it kept, not trimmed.
+    expect(harness.project.rowProgress).toMatchObject({ direction: 'columns', reversed: true, currentColumnBack: 1 })
+    expect(colorAt(harness.project.frame!.beads, 0, 3)).toBe(RED)
+    expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
+
+    harness.history.onUndo()
+    expect(harness.project.frame).toEqual(woven.frame)
+    expect(harness.project.rowProgress).toEqual(woven.rowProgress)
+  })
+
+  it('does nothing without a Frame or without a Project', () => {
+    for (const project of [{ ...framed, frame: undefined }, null]) {
       const { harness, onRotateFrame } = setup(project)
       onRotateFrame()
       expect(harness.replaceProject).not.toHaveBeenCalled()

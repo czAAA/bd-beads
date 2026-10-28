@@ -24,6 +24,8 @@ const WITH_PROJECT: [DialogId, unknown][] = [
   ['remove-project', fox],
   ['switch-project', fox],
   ['import-switch', [fox]],
+  // Its longest question: a finished row on peyote or brick stitch, whose rows after it shift.
+  ['remove-line', { kind: 'finished-row', row: 12, backTo: 24, shifts: true, direction: 'columns' }],
 ]
 
 let dialogs: Dialogs

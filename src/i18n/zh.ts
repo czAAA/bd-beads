@@ -704,6 +704,22 @@ export const zh: Translations = {
     confirmButton: '清空',
     cancelButton: '取消',
   },
+  removeLine: {
+    rowTitle: '删除这一行？',
+    columnTitle: '删除这一列？',
+    finishedRow: '第 {number} 行已经编好。删除后，行进度会回到第 {backTo} 行。',
+    finishedColumn: '第 {number} 列已经编好。删除后，行进度会回到第 {backTo} 列。',
+    rowsShift: '后面的行会错开。',
+    columnsShift: '后面的列会错开。',
+    acrossRows: {
+      other: '{count} 个已编好的行各少一颗珠子。',
+    },
+    acrossColumns: {
+      other: '{count} 个已编好的列各少一颗珠子。',
+    },
+    confirmButton: '删除',
+    cancelButton: '取消',
+  },
   convertImage: {
     sizeTitle: '图样有多大？',
     sizeMessage: '图片会适应这个尺寸。之后你可以更改边框。',
@@ -773,8 +789,7 @@ export const zh: Translations = {
     fillNeedsColor: '请先选择颜色，再填充所选区域。',
     rowProgressLockedTechnique: '已有标记完成的行。请先移除边框，再更改工艺。',
     changeTechnique: '用另一种编织技法编织图样。每颗珠子保持原来的行和列。',
-    rowProgressLockedRotate: '已有标记完成的行。请先移除边框，再旋转。',
-    rowProgressLockedRemoveLine: '已有标记完成的行。请先移除边框，再删除行或列。',
+    rotateInFinishedRows: '选中的区域包含已完成的行。',
     removeLine: '删除所选的行或列并合拢空隙。',
     removeLineDisabled: '请先选择完整的一行或一列。',
     namePiece: '给所选小块起个名字，它就成为图样。',

@@ -1,4 +1,4 @@
-import { forEachBead, withColors, type BeadChange, sameFrame } from './canvas'
+import { forEachBead, withColors, type BeadChange } from './canvas'
 import { keepFinishedRows } from './rowProgress'
 import type { Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
@@ -10,8 +10,7 @@ import { keepMarginClear } from './margin'
 export function keepAllowedEdits(before: Project, after: Project): Project {
   const allowed = keepNamesApart(before, keepMarginClear(before, keepFinishedRows(before, keepWhereBeadsAre(before, after))))
   if (allowed === before) {
-    // No bead is left to change, but a command that turned the Frame (Rotate Frame, ticket 471) still did: an empty Frame turns too.
-    return sameFrame(before.frame, after.frame) ? before : { ...before, frame: after.frame, updatedAt: after.updatedAt }
+    return before
   }
   return carryNames(before, allowed)
 }

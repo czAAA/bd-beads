@@ -54,7 +54,9 @@ export interface ControlDeps {
   onCopy: () => void
   pasteAtPointer: (event: KeyboardEvent) => void
   onRotate: () => void
-  /** Whether Remove row/column applies right now: a whole row or column is selected and Row progress is off. */
+  /** The Selection reaches into finished rows, so Rotate is held back (ticket 0647). */
+  selectionInFinishedRows: () => boolean
+  /** Whether Remove row/column applies right now: a whole row or column of the Frame or a Piece area is selected. */
   canRemoveSelectedLine: () => boolean
   onRemoveSelectedLine: () => void
   /** Whether Name Piece applies right now: the Selection holds beads of exactly one Piece (ticket 406). */
@@ -376,8 +378,8 @@ export const CONTROLS: readonly ControlAction[] = [
     icon: 'rotate',
     name: (t) => t.palette.rotateButton,
     body: (t) => t.tooltips.rotate,
-    enabled: (deps) => deps.hasSelection() && !frameLocked(deps),
-    disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedRotate : t.tooltips.copyDisabled),
+    enabled: (deps) => deps.hasSelection() && !deps.selectionInFinishedRows(),
+    disabledBody: (t, deps) => (deps.hasSelection() ? t.tooltips.rotateInFinishedRows : t.tooltips.copyDisabled),
     group: 'edit',
     chords: [{ key: 'r', shift: true, label: 'R' }],
     run: (deps) => deps.onRotate(),
@@ -388,7 +390,7 @@ export const CONTROLS: readonly ControlAction[] = [
     name: (t) => t.tools.removeLineButton,
     body: (t) => t.tooltips.removeLine,
     enabled: (deps) => deps.canRemoveSelectedLine(),
-    disabledBody: (t, deps) => (frameLocked(deps) ? t.tooltips.rowProgressLockedRemoveLine : t.tooltips.removeLineDisabled),
+    disabledBody: (t) => t.tooltips.removeLineDisabled,
     group: 'edit',
     chords: [{ key: 'Delete', shift: true, label: 'Del' }],
     run: (deps) => {
@@ -475,9 +477,8 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('rotate-frame', (t) => t.frame.rotateFrameLabel, 'canvas', {
     icon: 'rotate',
     body: (t) => t.tooltips.rotateFrame,
-    enabled: (deps: ControlDeps) => hasFrame(deps) && !frameLocked(deps),
-    disabledBody: (t: Translations, deps: ControlDeps) =>
-      hasFrame(deps) ? t.tooltips.rowProgressLockedRotate : t.tooltips.setFrameFirst,
+    enabled: hasFrame,
+    disabledBody: (t: Translations) => t.tooltips.setFrameFirst,
   }),
   // A view setting like Row direction: allowed after a Row progress pass is done, so only an empty Canvas disables it (ticket 471).
   unkeyed('rotate-canvas', (t) => t.canvas.rotateCanvasLabel, 'canvas', {
@@ -564,7 +565,7 @@ export function chordMatches(chord: Chord, event: KeyboardEvent): boolean {
 
 /** What a control reads to know if its action is enabled and why not (ADR 0035); a surface that only shows controls
  * passes this, not the handlers. */
-export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
+export type ControlState = Partial<Pick<ControlDeps, 'canUndo' | 'canRedo' | 'hasClipboard' | 'hasSelection' | 'selectionHasBeads' | 'selectionInFinishedRows' | 'canRemoveSelectedLine' | 'canNamePiece' | 'hasPaintColor'>> & Pick<ControlDeps, 'activeProject'>
 
 /** The state a surface knows, as the `deps` a shared control hands its action's `enabled` and `disabledBody`. */
 export function controlDeps(state: ControlState): ControlDeps {

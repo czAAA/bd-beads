@@ -1,11 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import ContextBar from './ContextBar.vue'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import { paintAt } from '../../testUtils/layers'
 import { withFrame } from '../../domain/frame'
+import type { Selection } from '../../domain/selection'
+import { en } from '../../i18n/en'
+import AppMenuItem from '../ui/AppMenuItem.vue'
+import { FakeResizeObserver } from '../../testUtils/fakeResizeObserver'
 
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 const noFrame = withFrame(project, undefined)
@@ -177,16 +182,49 @@ describe('ContextBar', () => {
     expect(wrapper.find('[data-testid="context-bar"]').exists()).toBe(false)
   })
 
-  it('offers Rotate with a Selection, and not once a Row progress pass is done (tickets 411, 416)', async () => {
+  it('offers Rotate with a Selection, and not without one (ticket 416)', async () => {
     const props = { selectionSummary: '3×5', pasteArmed: false, canRemoveLine: true }
     const wrapper = mount(ContextBar, { props: { ...props, project } })
     await arm()
     await wrapper.get('[data-testid="context-bar-rotate"]').trigger('click')
     expect(wrapper.emitted('rotate')).toHaveLength(1)
 
-    const woven = moveToRow(project, 1)
-    expect(mount(ContextBar, { props: { ...props, project: woven } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
     expect(mount(ContextBar, { props: { pasteArmed: false, canRemoveLine: false, project } }).find('[data-testid="context-bar-rotate"]').exists()).toBe(false)
+  })
+
+  it('offers Rotate once a pass is done on the Canvas and clear of finished rows, and disables it saying why where the Selection reaches into them (ticket 0647)', async () => {
+    const woven = moveToRow(project, 1)
+    const rotateOver = async (over: Selection) => {
+      const wrapper = mount(ContextBar, { props: { project: woven, selection: over, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false } })
+      await arm()
+      return wrapper.get('[data-testid="context-bar-rotate"]')
+    }
+    expect((await rotateOver({ ...selection, layer: 'canvas' })).attributes('aria-disabled')).toBeUndefined()
+    expect((await rotateOver({ ...selection, top: 4 })).attributes('aria-disabled')).toBeUndefined()
+
+    const reached = await rotateOver(selection)
+    expect(reached.attributes('aria-disabled')).toBe('true')
+    expect(reached.element.closest('.app-tooltip')!.querySelector('.app-tooltip__body--disabled')!.textContent).toBe(en.tooltips.rotateInFinishedRows)
+  })
+
+  it('folds Rotate into "…" disabled with the same reason when the bar has no room for it (ticket 0647)', async () => {
+    vi.stubGlobal('ResizeObserver', FakeResizeObserver)
+    try {
+      // 200px of canvas: the bar's 28px buttons leave room beside the readout for two and "…".
+      const anchor = { box: { left: 0, top: 100, width: 40, height: 40 }, viewport: { width: 200, height: 400 } }
+      const wrapper = mount(ContextBar, { props: { project: moveToRow(project, 1), selection, anchor, selectionSummary: '2×2', pasteArmed: false, canRemoveLine: false }, attachTo: document.body })
+      await nextTick()
+      const [bar, readout] = FakeResizeObserver.instances
+      bar!.trigger(240, 28)
+      readout!.trigger(40, 28)
+      await arm()
+      await wrapper.get('[data-testid="context-bar-more"]').trigger('click')
+      expect(wrapper.findAllComponents(AppMenuItem).find((item) => item.attributes('data-testid') === 'context-bar-more-rotate')!.props()).toMatchObject({ disabled: true, disabledBody: en.tooltips.rotateInFinishedRows })
+      wrapper.unmount()
+    } finally {
+      FakeResizeObserver.reset()
+      vi.unstubAllGlobals()
+    }
   })
 
   it('carries no native title: the Tooltip names a control whose label has hidden', () => {
