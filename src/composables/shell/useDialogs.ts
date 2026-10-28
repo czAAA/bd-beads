@@ -1,7 +1,7 @@
 import { computed, shallowRef, type Ref, type WritableComputedRef } from 'vue'
 
 /** Every dialog the shell can show over the app, one per question a flow asks (AppDialogs draws them). */
-export type DialogId =
+type DialogId =
   | 'delete-all'
   | 'reset-progress'
   | 'remove-frame'

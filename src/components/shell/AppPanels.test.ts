@@ -10,10 +10,9 @@ import { en } from '../../i18n/en'
 import { mountShellParts } from '../../testUtils/shellHost'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
 
-/** Menu, Project and the Frame panel reach their flows, and the dialogs they ask through (spec 0440, tickets 232, 443,
- * 0618): one test per control → flow, mounted without the canvas. What the panels hold is in MenuPanel and
- * ProjectPanel, opening, Back, Escape and focus in AppPanel and useOverlayLayer, the rules in the flows, and that a
- * strip button opens its panel in the App tests. */
+/** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
+ * test per control → flow. What the panels hold is in MenuPanel and ProjectPanel, Back, Escape and focus in AppPanel
+ * and useOverlayLayer, the rules in the flows, and a strip button opening its panel in the App tests. */
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 10, height: 10, unit: 'beads' } })
 const other = () => ({ ...moth(), id: 'other', name: 'Other' })
