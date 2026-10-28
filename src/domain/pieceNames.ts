@@ -44,7 +44,7 @@ export interface NamedPiece extends Rect {
 const namedCache = new WeakMap<BeadMap, { names: PieceName[]; cycle: number; found: NamedPiece[] }>()
 
 /** The Piece names that still have a Piece under them, and which Piece each is on. Unresolved names are skipped. */
-export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize' | 'pieceNames'>): NamedPiece[] {
+export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'techniqueSettings' | 'pieceNames'>): NamedPiece[] {
   const names = project.pieceNames
   if (!names?.length) {
     return []
@@ -71,7 +71,7 @@ export function namedPieces(project: Pick<Project, 'beads' | 'technique' | 'bric
 
 /** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
  * A Frame frames a Schema whole or not at all. */
-export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize' | 'pieceNames'>, frame: Rect): string | undefined {
+export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | 'techniqueSettings' | 'pieceNames'>, frame: Rect): string | undefined {
   for (const { name, row, column } of project.pieceNames ?? []) {
     const members = pieceBeadsAt(project.beads, project, { row, column })
     const inside = members.filter((at) => frameContains(frame, at)).length
@@ -83,7 +83,7 @@ export function namedPieceCutBy(project: Pick<Project, 'beads' | 'technique' | '
 }
 
 /** The name of the Piece that holds the bead at `position`, if it has one. */
-export function pieceNameAt(project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize' | 'pieceNames'>, position: GridPosition): string | undefined {
+export function pieceNameAt(project: Pick<Project, 'beads' | 'technique' | 'techniqueSettings' | 'pieceNames'>, position: GridPosition): string | undefined {
   const names = project.pieceNames
   if (!names?.length) {
     return undefined
@@ -146,7 +146,7 @@ interface Landing {
  * (ties to the part that holds its anchor). Names with no bead left have none. */
 function landNames(
   before: Project,
-  after: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize'>,
+  after: Pick<Project, 'beads' | 'technique' | 'techniqueSettings'>,
   labeller: ReturnType<typeof pieceLabeller>,
   moved?: (position: GridPosition) => GridPosition | undefined,
 ): Landing[] {
@@ -225,7 +225,7 @@ export function keepNamesApart(before: Project, after: Project): Project {
 /** The bead standing for the one Piece a Selection covers (ticket 406): a Piece may be named only when the Selection
  * holds beads of exactly one. Undefined for no bead, or beads of two or more Pieces. */
 export function pieceInSelection(
-  project: Pick<Project, 'beads' | 'technique' | 'brickBlock' | 'netSize'>,
+  project: Pick<Project, 'beads' | 'technique' | 'techniqueSettings'>,
   selection: Selection,
 ): GridPosition | undefined {
   const labeller = pieceLabeller(project.beads, project)

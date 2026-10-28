@@ -1,6 +1,6 @@
 import type { Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
-import { weaveOf } from './layerWeave'
+import { unwoven, weaveOf } from './layerWeave'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import type { PieceName } from './pieceNames'
@@ -44,7 +44,7 @@ export function snapshotOf(project: Project): UndoEntry {
 
 /** The Project with everything an undo entry holds put back (see UndoEntry). */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
-  const { pieceNames: _current, brickBlock: _block, netSize: _net, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, bead: _bead, ...rest } = project
+  const { pieceNames: _current, beadShape: _shape, removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, bead: _bead, ...rest } = unwoven(project)
   return touch(rest, {
     beads: entry.beads,
     rowProgress: entry.rowProgress,

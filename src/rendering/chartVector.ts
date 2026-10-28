@@ -50,7 +50,7 @@ export function letterColor(hex: string): string {
 }
 
 /** Whether the Project's beads are drawn round (a circle in the cell) rather than as squares. */
-export function beadsAreRound(project: Pick<Project, 'technique' | 'frame' | 'beadId' | 'beadShape' | 'brickBlock' | 'netSize'>): boolean {
+export function beadsAreRound(project: Pick<Project, 'technique' | 'frame' | 'beadId' | 'beadShape' | 'techniqueSettings'>): boolean {
   const weave = frameWeave(project)
   return beadRoundness(weave.technique, weave.cell) * CELL_SIZE_PX >= CELL_SIZE_PX * 0.4
 }

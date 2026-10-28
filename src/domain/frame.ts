@@ -117,7 +117,7 @@ export function frameResizedAround(weave: Weave, frame: Rect, columns: number, r
 
 /** The Frame that wraps every bead drawn (Fit to drawing), or undefined when there is none: the Frame's own beads and
  * the Canvas's that show. Canvas beads under the Frame or in its margin are not drawn, so they are not wrapped. */
-export function fitToDrawing(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'beads' | 'frame'>): Rect | undefined {
+export function fitToDrawing(project: Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame'>): Rect | undefined {
   const frame = project.frame
   const covered = footprintOf(project)
   const shown = frame && covered ? beadsOver(beadsWithout(project.beads, withMargin(covered)), shiftedBeads(frame.beads, frame.row, frame.column)) : project.beads

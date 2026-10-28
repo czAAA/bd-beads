@@ -10,11 +10,11 @@ const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
 describe('createProject Brick block (ticket 477)', () => {
   const input = { technique: 'brick' as const, beadId: 'toho-cube-1.5mm' }
 
-  it('stores a Brick block above 1, clamped to 20, and nothing for 1', () => {
-    expect(createProject({ ...input, brickBlock: 3 }).brickBlock).toBe(3)
-    expect(createProject({ ...input, brickBlock: 99 }).brickBlock).toBe(20)
-    expect(createProject({ ...input, brickBlock: 1 })).not.toHaveProperty('brickBlock')
-    expect(createProject(input)).not.toHaveProperty('brickBlock')
+  it('stores the Brick block given, clamped to 20, and 1 where none is given (ticket 0625)', () => {
+    expect(createProject({ ...input, techniqueSettings: { brickBlock: 3 } }).techniqueSettings).toEqual({ brickBlock: 3 })
+    expect(createProject({ ...input, techniqueSettings: { brickBlock: 99 } }).techniqueSettings).toEqual({ brickBlock: 20 })
+    expect(createProject(input).techniqueSettings).toEqual({ brickBlock: 1 })
+    expect(createProject({ ...input, technique: 'loom' })).not.toHaveProperty('techniqueSettings')
   })
 })
 

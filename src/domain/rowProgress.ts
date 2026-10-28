@@ -137,7 +137,7 @@ export function rowProgressPosition(project: RowProgressed): { current: number; 
 }
 
 /** What a Project's Row progress is read from: its pointers, its Frame and the Weave a Canvas with none counts in. */
-type RowProgressed = Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'brickBlock' | 'netSize'>
+type RowProgressed = Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'techniqueSettings'>
 
 /** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
  * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */

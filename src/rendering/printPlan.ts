@@ -93,7 +93,7 @@ export interface PrintPlan {
   keyRows: number
 }
 
-type Shape = Pick<Project, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape' | 'letters'>>
+type Shape = Pick<Project, 'technique' | 'techniqueSettings' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape' | 'letters'>>
 
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.

@@ -52,7 +52,7 @@ describe('the Row order of a Rectangular Frame', () => {
   })
 
   it('weaves Netting a row of diamonds a pass, each later one the rows below the last', () => {
-    const order = rowOrderOf(sheet(9, 5, { technique: 'netting', netSize: 3 }), { direction: 'rows' })
+    const order = rowOrderOf(sheet(9, 5, { technique: 'netting', techniqueSettings: { netSize: 3 } }), { direction: 'rows' })
     expect(order.count).toBe(3)
     expect([...new Set(order.positionsOf(0).map(({ row }) => row))]).toEqual([0, 1, 2, 3, 4])
     expect([...new Set(order.positionsOf(1).map(({ row }) => row))]).toEqual([5, 6])
@@ -61,7 +61,7 @@ describe('the Row order of a Rectangular Frame', () => {
 
   it('lets the weaver turn the way rows run, except on Netting, woven in rows only', () => {
     expect(rowOrderOf(sheet(3, 3), { direction: 'rows' }).turns).toBe(true)
-    expect(rowOrderOf(sheet(9, 9, { technique: 'netting', netSize: 3 }), { direction: 'rows' }).turns).toBe(false)
+    expect(rowOrderOf(sheet(9, 9, { technique: 'netting', techniqueSettings: { netSize: 3 } }), { direction: 'rows' }).turns).toBe(false)
   })
 })
 

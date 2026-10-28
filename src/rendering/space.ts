@@ -41,7 +41,7 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
 
 /** The Layer geometry of the Project drawn on its own (ADR 0078, ticket 0630): the Frame's, as its Bead shape draws it,
  * or for a Canvas without one its Weave's over the box round its beads, from the box's first position. */
-export function geometryDrawnAlone(project: Pick<DrawnProject, 'technique' | 'brickBlock' | 'netSize' | 'frame' | 'beads' | 'beadId' | 'beadShape'>): LayerGeometry {
+export function geometryDrawnAlone(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beads' | 'beadId' | 'beadShape'>): LayerGeometry {
   if (project.frame) return frameGeometryOf(project)
   const { rows, columns } = projectDimensions(project)
   return gridGeometry(frameWeave(project), { row: 0, column: 0, rows, columns })

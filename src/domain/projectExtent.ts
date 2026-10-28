@@ -20,6 +20,6 @@ export function projectDimensions(project: Pick<Project, 'frame' | 'beads'>): Gr
 
 /** What the Frame measures in what the Technique counts (ticket 482): beads, or Units where it counts them. What the
  * person is told the size is, and what the rulers and the printed pages number. */
-export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'technique' | 'brickBlock' | 'netSize'>): GridDimensions {
+export function countedDimensions(project: Pick<Project, 'frame' | 'beads' | 'technique' | 'techniqueSettings'>): GridDimensions {
   return describeWeave(frameWeave(project)).unitsOf(projectDimensions(project))
 }

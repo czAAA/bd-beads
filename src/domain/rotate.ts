@@ -24,7 +24,7 @@ export interface RotatedSelection {
 /** The Selection turned a quarter about its centre: rows and columns swap, and where rows alternate it starts on a
  * multiple of the shift's cycle, `inset` being how far inside it the row that must land on one begins (ticket 477).
  * @internal Its test checks the turned rectangle on its own. */
-export function rotatedSelection(project: Pick<Project, 'technique' | 'brickBlock' | 'netSize'>, selection: Selection, inset = 0): Selection {
+export function rotatedSelection(project: Pick<Project, 'technique' | 'techniqueSettings'>, selection: Selection, inset = 0): Selection {
   const frame = selectionFrame(selection)
   const weave = describeWeave(project)
   // Whole Units turn: a Technique with none counts beads as its Units.
