@@ -6,7 +6,7 @@ import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 import { layoutBeadPx, layoutPositionAtPx, placedLayout } from './customFrameView'
-import { CELL_SIZE_PX, cellSizePx } from './cellSize'
+import { CELL_SIZE_PX, cellSizePx, type Size } from './cellSize'
 
 // The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation, row shift
 // and pitch are private; geometry follows domain/grid.ts (ticket 0448). Grid space is px at zoom 1; displayed space is
@@ -15,11 +15,6 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 export interface Scroll {
   x: number
   y: number
-}
-
-export interface Size {
-  width: number
-  height: number
 }
 
 export type Extent = Size

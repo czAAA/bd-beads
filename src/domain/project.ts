@@ -6,9 +6,9 @@ import type { PaletteIds, PaletteCodes } from './palette'
 import type { SwatchLetters } from './swatchLetters'
 import type { PieceName } from './pieceNames'
 
-// The Project record and nothing that works on it (ticket 0620), so it imports types alone. Its operations: createProject,
-// storedProject (old files), layerWeave, weaveSwitch, rowProgress, layerBeads, drawing, fill, paletteEdits, projectBead,
-// undoSnapshot, projectExtent, projectLibrary, and frame.ts's withFrame.
+// The Project record and `touch`, which stamps a change (ticket 0620); it imports types alone. The operations live by
+// concern: createProject, storedProject (old files), layerWeave, weaveSwitch, rowProgress, layerBeads, drawing, fill,
+// paletteEdits, projectBead, undoSnapshot, projectExtent, projectLibrary, and frame.ts's withFrame.
 
 export interface Cell {
   color: string | null

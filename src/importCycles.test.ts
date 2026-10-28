@@ -3,8 +3,8 @@ import { dirname, join, relative, resolve } from 'node:path'
 import ts from 'typescript'
 import { expect, it } from 'vitest'
 
-/** The import cycle guard (ticket 0620): no module of the app reaches itself through runtime imports, so a split
- * module stays split and none is half-initialised when the app loads. Type-only imports are erased and don't count. */
+/** The import cycle guard (ticket 0620): no `.ts` module of the app reaches itself through static runtime imports, so a
+ * split module stays split and none is half-initialised when the app loads. Type-only imports are erased and don't count. */
 
 const SRC = import.meta.dirname
 
@@ -21,24 +21,32 @@ function appModules(dir: string): string[] {
 function isRuntime(statement: ts.ImportDeclaration | ts.ExportDeclaration): boolean {
   if (ts.isExportDeclaration(statement)) {
     const names = statement.exportClause
-    return !statement.isTypeOnly && !(names && ts.isNamedExports(names) && names.elements.length > 0 && names.elements.every((name) => name.isTypeOnly))
+    const onlyTypes = !!names && ts.isNamedExports(names) && names.elements.length > 0 && names.elements.every((name) => name.isTypeOnly)
+    return !statement.isTypeOnly && !onlyTypes
   }
   const clause = statement.importClause
   if (!clause) return true
   if (clause.isTypeOnly) return false
   const names = clause.namedBindings
-  return !!clause.name || !names || ts.isNamespaceImport(names) || names.elements.length === 0 || names.elements.some((name) => !name.isTypeOnly)
+  if (clause.name || !names || ts.isNamespaceImport(names) || names.elements.length === 0) return true
+  return names.elements.some((name) => !name.isTypeOnly)
+}
+
+/** The relative paths a module's source imports from at run time. */
+function runtimeSpecifiers(file: string, text: string): string[] {
+  return ts.createSourceFile(file, text, ts.ScriptTarget.Latest).statements.flatMap((statement) => {
+    const linked = ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)
+    if (!linked || !statement.moduleSpecifier || !isRuntime(statement)) return []
+    const specifier = (statement.moduleSpecifier as ts.StringLiteral).text
+    return specifier.startsWith('.') ? [specifier] : []
+  })
 }
 
 /** The app modules a module imports at run time. */
 function runtimeImports(file: string, modules: Set<string>): string[] {
-  const source = ts.createSourceFile(file, readFileSync(file, 'utf8'), ts.ScriptTarget.Latest)
-  return source.statements.flatMap((statement) => {
-    if (!(ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) || !statement.moduleSpecifier || !isRuntime(statement)) return []
-    const specifier = (statement.moduleSpecifier as ts.StringLiteral).text
-    const target = `${resolve(dirname(file), specifier)}.ts`
-    return specifier.startsWith('.') && modules.has(target) ? [target] : []
-  })
+  return runtimeSpecifiers(file, readFileSync(file, 'utf8'))
+    .map((specifier) => `${resolve(dirname(file), specifier)}.ts`)
+    .filter((target) => modules.has(target))
 }
 
 /** The groups of modules that import each other round in a circle (Tarjan's strongly connected components). */
@@ -74,10 +82,29 @@ it('no app module imports itself back through others at run time', () => {
   const files = appModules(SRC)
   const modules = new Set(files)
   const graph = new Map(files.map((file) => [file, runtimeImports(file, modules)]))
-  expect(cycles(graph), 'these modules import each other round in a circle: move what both need into a module of its own, or import a type with `import type`').toEqual([])
+  const advice = 'these modules import each other round in a circle: move what both need into a module of its own, or import a type with `import type`'
+  expect(cycles(graph), advice).toEqual([])
 })
 
 it('sees a cycle when there is one', () => {
-  const graph = new Map([[`${SRC}/a.ts`, [`${SRC}/b.ts`]], [`${SRC}/b.ts`, [`${SRC}/c.ts`]], [`${SRC}/c.ts`, [`${SRC}/a.ts`]], [`${SRC}/d.ts`, [`${SRC}/a.ts`]]])
+  const [a, b, c, d] = ['a', 'b', 'c', 'd'].map((name) => `${SRC}/${name}.ts`) as [string, string, string, string]
+  const graph = new Map([[a, [b]], [b, [c]], [c, [a]], [d, [a]]])
   expect(cycles(graph)).toEqual([['a.ts', 'b.ts', 'c.ts']])
+})
+
+it('counts only the imports that bring something in at run time', () => {
+  const source = [
+    "import { a } from './value'",
+    "import { type b, c } from './mixed'",
+    "import d from './default'",
+    "import * as e from './namespace'",
+    "import './effect'",
+    "export { f } from './reexport'",
+    "import type { G } from './typeOnly'",
+    "import { type H } from './typeNames'",
+    "export type { I } from './typeExport'",
+    "export { type J } from './typeExportNames'",
+    "import { k } from 'package'",
+  ].join('\n')
+  expect(runtimeSpecifiers('x.ts', source)).toEqual(['./value', './mixed', './default', './namespace', './effect', './reexport'])
 })

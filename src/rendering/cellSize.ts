@@ -1,7 +1,12 @@
 import { describeWeave, type BeadCell, type Technique } from '../domain/weave'
-import type { Size } from './surfaceView'
 
 // Apart from the Surface view so the Custom frame's view can size its beads without importing it back (ticket 0620).
+
+/** A width and height in px. */
+export interface Size {
+  width: number
+  height: number
+}
 
 // The pixel size a bead is drawn at, at zoom 1 (the Project renderer's own size), so every layer lines up with what is
 // drawn.
