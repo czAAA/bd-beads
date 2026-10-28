@@ -3,7 +3,8 @@ import type { Rotation } from './grid'
 import { frameRowOrder } from './rowProgress'
 import { frameWeave } from './layerWeave'
 import type { Project } from './project'
-import { describeWeave, type PassDirection, type Technique } from './weave'
+import { describeWeave, type Technique } from './weave'
+import type { PassDirection } from './weaveGeometry'
 import type { OrderStep, RowOrder } from './rowOrder'
 
 /** The Word chart (ticket 0574; CONTEXT.md's Word chart): the written pattern a weaver follows beside the picture, one
