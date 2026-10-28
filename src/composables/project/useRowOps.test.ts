@@ -25,7 +25,7 @@ describe('useRowOps', () => {
     expect(replaced(deps)).toEqual(toggleRowDirection(tracking))
   })
 
-  it('commits and says nothing for a Technique woven in rows only, which has nothing to turn (ticket 487)', () => {
+  it('changes and says nothing for a Technique woven in rows only, which has nothing to turn (ticket 487)', () => {
     const netting = createProject({ technique: 'netting', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 3, unit: 'beads' } })
     const { deps, onToggleRowDirection } = setup(netting)
     onToggleRowDirection()
