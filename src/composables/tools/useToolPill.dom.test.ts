@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import { mount } from '@vue/test-utils'
-import { BUILT_IN_COLORS, createPalette, defaultPaletteIds } from '../../domain/palette'
+import { BUILT_IN_COLORS, RECENT_SHORTCUTS, createPalette, defaultPaletteIds } from '../../domain/palette'
 import { createDevicePreferences, type PreferenceStorage } from '../../services/devicePreferences'
 import { useToolPill } from './useToolPill'
 
@@ -57,11 +57,11 @@ describe('useToolPill color keys (ticket 529)', () => {
     await paint(hexOf('blue'))
     await paint(hexOf('green')) // chips: blue, then red
 
-    pill.pickByKey(2) // there is no third chip
-    pill.pickByKey(palette.colors.length + 3)
+    pill.pickByKey(RECENT_SHORTCUTS - 1) // there is no third chip
+    pill.pickByKey(RECENT_SHORTCUTS + palette.colors.length) // nor a swatch that far on
     expect(selected.value).toBe(hexOf('green'))
 
-    pill.pickByKey(3)
+    pill.pickByKey(RECENT_SHORTCUTS)
     expect(selected.value).toBe(palette.colors.find((color) => ![hexOf('blue'), hexOf('red')].includes(color.hex))!.hex)
   })
 
