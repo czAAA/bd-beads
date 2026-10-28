@@ -101,6 +101,15 @@ const TECHNIQUE_RULES = {
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
   },
+  // Loom's layout, each bead sewn to the one above it (ticket 0635): worked back and forth, so its rows alternate ends.
+  square: {
+    nameKey: 'square',
+    geometry: { kind: 'rows', shifted: false, shift: 0, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_ROW_BLOCK },
+    settings: [],
+    wordChart: { marked: true },
+    draftCost: 1,
+    slowFramingCells: SLOW_FRAMING_CELLS,
+  },
 } satisfies Record<string, CheckedRules>
 
 const RULES: Record<Technique, TechniqueRules> = TECHNIQUE_RULES
