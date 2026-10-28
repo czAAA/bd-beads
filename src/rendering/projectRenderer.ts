@@ -169,7 +169,7 @@ function drawPositionMarks(
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
   }
   // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
-  if (footprint && geometryDrawnAlone(project).inRowsAndColumns) {
+  if (footprint && geometryDrawnAlone(project).grid) {
     // The marks are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
     // between its beads.
     const edge = BEAD_GAP_PX / 2
@@ -249,11 +249,11 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const geometry = geometryDrawnAlone(project)
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, whose beads nest into it; beads that keep no rows are all drawn.
-  const inBand = ({ row }: GridPosition) => !band || !geometry.inRowsAndColumns || (row >= band.first - 1 && row <= band.last + 1)
+  const inBand = ({ row }: GridPosition) => !band || !geometry.grid || (row >= band.first - 1 && row <= band.last + 1)
   const beads = geometry.positionsIn(seen).filter(inBand).map((position) => ({ position, place: geometry.place(position)! }))
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
   const colorOf = ({ row, column }: GridPosition) => (project.frame ? colorAt(project.frame.beads, row, column) : beadInSpace(project, space, row, column))
-  if (geometry.inRowsAndColumns) drawUprightBeads(context, draw, space, origin, beads, colorOf)
+  if (geometry.grid) drawUprightBeads(context, draw, space, origin, beads, colorOf)
   else drawTurnedBeads(context, draw, space, origin, beads, colorOf, geometry)
 }
 

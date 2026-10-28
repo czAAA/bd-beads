@@ -134,7 +134,7 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   const frame = project.frame
   // The Frame's Row order, or one over the Project drawn alone, measured as its space is.
   const order = rowOrderOf({ ...weave, kind: frame?.kind, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
-  if (frame && !geometry.inRowsAndColumns) {
+  if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
     return order.positionsOf(currentPass(project.rowProgress)).flatMap((position) => {
       const color = colorAt(frame.beads, position.row, position.column)
@@ -406,7 +406,7 @@ function drawMarginOutline(context: DrawingContext, weave: Weave, frame: Rect, z
 function onFrame(frame: FrameSheet | undefined, geometry: LayerGeometry | undefined, covered: Rect | undefined, position: GridPosition): boolean {
   if (frame === undefined) return false
   // A Custom frame's positions are named by round and place, which its rectangle does not bound (ticket 0592).
-  return position.layer ? position.layer === 'frame' && (!geometry?.inRowsAndColumns || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
+  return position.layer ? position.layer === 'frame' && (!geometry?.grid || frameContains(frame, position)) : covered !== undefined && frameContains(covered, position)
 }
 
 /** The Frame's positions counted from its own first (ticket 492): a position of the Canvas that lies on it, or the cell
@@ -475,7 +475,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     if (sheetSelection) drawSelection(context, sheetWeave, sheetSpace, sheetSelection, theme)
     const sheetCells = preview && onSheet(preview.cells)
     if (preview && sheetCells?.length) {
-      if (!geometry!.inRowsAndColumns) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), sheetCells, preview, theme)
+      if (!geometry!.grid) drawTurnedPreview(context, geometry!, beadRoundness(sheetWeave.technique, sheetWeave.cell), sheetCells, preview, theme)
       else drawPreview(context, sheetWeave, sheetBounds, sheetSpace, sheetCells, preview, theme)
     }
     if (inPass.length > 0) {

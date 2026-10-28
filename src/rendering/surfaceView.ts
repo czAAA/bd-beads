@@ -251,7 +251,7 @@ export function surfaceView({ space, technique, brickBlock, netSize, cell: beadS
   const layerNamed = (name: ViewLayer | undefined): Layer => (name === 'frame' && sheet ? sheet : canvas)
   // A Custom frame's beads lie where its layout puts them (ADR 0077), not on rows and columns: a point between them is
   // off its shape.
-  const laidOut = sheet && !sheet.geometry.inRowsAndColumns ? sheet : undefined
+  const laidOut = sheet && !sheet.geometry.grid ? sheet : undefined
   // The Canvas positions the Frame hides (ADR 0066): what it draws, which is not always the rows it names.
   const footprint = frame && sheet ? frameFootprint(canvasWeave, frame) : undefined
   const layerAtAddress = (position: GridPosition): Layer => (footprint && sheet && frameContains(footprint, position) ? sheet : canvas)

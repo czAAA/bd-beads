@@ -7,7 +7,7 @@ import { insideBounds, type Box } from './weaveGeometry'
 
 // The Layer geometry (ADR 0078, ticket 0628): one set of questions every Layer answers, the Canvas and each Frame kind
 // alike, in bead widths from the Layer's first position's corner (a cell is 1 wide). A grid answers from its Weave, a
-// Custom frame from its layout. Drawing and exports ask it (ticket 0630); editing moves to it in ticket 0629.
+// Custom frame from its layout. Editing (ticket 0629), drawing and exports (ticket 0630) ask it.
 
 /** Where a bead lies: its rectangle as an upright bead, and the angle it is turned by about the rectangle's centre
  * (radians, clockwise on screen). */
@@ -20,6 +20,10 @@ export interface BeadPlace {
  * frame's layout (ADR 0077). Positions are the Layer's own (a Frame's from its first row and column, a Custom frame's
  * by round and place); points are in bead widths from the Layer's first position's corner. */
 export interface LayerGeometry {
+  /** Whether its positions are a grid's rows and columns (the Canvas, a Rectangular Frame), which a Frame's first row and
+   * column put on the Canvas's and Pieces are found on, and its beads stand upright in them, which rulers number and a
+   * chart rules lines between; a Custom frame's are named by round and place, its beads turned to their panels (ADR 0077). */
+  readonly grid: boolean
   /** Every position that holds a bead, within the Layer's edge; none on an open Canvas, which has no edge. */
   positions(): readonly GridPosition[]
   /** Whether a position holds a bead: inside the edge, and where the Weave or the layout has one. */
@@ -35,9 +39,6 @@ export interface LayerGeometry {
   /** The positions whose beads may lie in or touch a box, a row at a time as a drawing lays them down (a later row's
    * beads over an earlier one's): what a view of part of the Layer draws. */
   positionsIn(box: Box): GridPosition[]
-  /** Whether its beads stand upright in rows and columns, which rulers number and a chart rules lines between; a
-   * Custom frame's lie at their panels' angles and keep none (ADR 0077). */
-  inRowsAndColumns: boolean
   /** The lines where its parts are joined (a Custom frame's Seams), from point to point; none on a grid. */
   seams(): readonly (readonly [LayoutPoint, LayoutPoint])[]
 }
@@ -55,6 +56,7 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
   // position. A rectangle elsewhere is hit as the open Weave is, then cut to its edge.
   const within = bounds && bounds.row === 0 && bounds.column === 0 ? bounds : undefined
   return {
+    grid: true,
     positions: () => {
       if (!bounds) return []
       const all: GridPosition[] = []
@@ -84,7 +86,6 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
       }
       return found
     },
-    inRowsAndColumns: true,
     seams: () => [],
   }
 }
@@ -99,6 +100,7 @@ function layoutGeometry({ layout, scale, x, y }: LayoutPlacement, frame: KindedS
   const at = (point: LayoutPoint): LayoutPoint => ({ x: x + point.x * scale, y: y + point.y * scale })
   const all = (): GridPosition[] => layout.positions.map(({ row, column }) => ({ row, column }))
   return {
+    grid: false,
     positions: all,
     hasPosition: (position) => layoutPosition(layout, position) !== undefined,
     neighbors: (position) => layoutNeighbors(layout, position),
@@ -115,7 +117,6 @@ function layoutGeometry({ layout, scale, x, y }: LayoutPlacement, frame: KindedS
     extent: () => rectangle,
     // A Custom frame is small: every bead is drawn.
     positionsIn: all,
-    inRowsAndColumns: false,
     seams: () => layout.seams.map(([from, to]) => [at(from), at(to)] as const),
   }
 }
