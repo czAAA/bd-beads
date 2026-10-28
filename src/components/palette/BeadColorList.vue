@@ -6,6 +6,7 @@ import { colorName } from '../../i18n/colorName'
 import { useI18n } from '../../i18n/useI18n'
 import AppNote from '../ui/AppNote.vue'
 import TextField from '../ui/form/TextField.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Bead's Color catalog (ticket 0537, ADR 0072; BeadColors card): every code the Project's Bead size has, each with a
 // generated swatch that says it is approximate. A code whose color the Palette already holds is shown as taken and
@@ -49,7 +50,7 @@ function add(hex: string, code: string) {
             class="bead-color-list__row"
             :class="{ 'bead-color-list__row--taken': entry.taken }"
             :aria-disabled="entry.taken ? 'true' : undefined"
-            :aria-label="entry.taken ? t.palette.beadColors.takenLabel.replace('{code}', entry.code) : t.palette.beadColors.add.replace('{code}', entry.code)"
+            :aria-label="fillBlanks(entry.taken ? t.palette.beadColors.takenLabel : t.palette.beadColors.add, { code: entry.code })"
             data-testid="bead-color"
             :data-code="entry.code"
             :data-taken="entry.taken || undefined"
@@ -68,7 +69,7 @@ function add(hex: string, code: string) {
         </li>
       </ul>
       <AppNote v-if="matches.length === 0" data-testid="bead-colors-empty">{{ t.palette.beadColors.noMatch }}</AppNote>
-      <AppNote v-else-if="matches.length > SHOWN">{{ t.palette.beadColors.showingFirst.replace('{count}', String(SHOWN)) }}</AppNote>
+      <AppNote v-else-if="matches.length > SHOWN">{{ fillBlanks(t.palette.beadColors.showingFirst, { count: SHOWN }) }}</AppNote>
     </template>
   </div>
 </template>

@@ -13,6 +13,7 @@ import PanelListRow from '../shell/PanelListRow.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import ProjectThumbnail from './ProjectThumbnail.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Projects library, a subpanel of the Menu (ticket 0553; MenuPanel card): Import and Export all, then every
 // saved Project as a two-line row, newest first (`projects` arrives in that order, ticket 145). A press opens the
@@ -40,7 +41,7 @@ const facts = computed(() =>
       const total = piecesOf(project.beads, project).length
       const named = namedPieces(project).map((piece) => piece.name)
       const unnamed = total - named.length
-      const lines = [...named, ...(unnamed > 0 && named.length > 0 ? [t.value.projects.unnamedPieces.replace('{count}', String(unnamed))] : [])]
+      const lines = [...named, ...(unnamed > 0 && named.length > 0 ? [fillBlanks(t.value.projects.unnamedPieces, { count: unnamed })] : [])]
       const body = [lines.join(' · '), project.frame ? frameSize(project) : ''].filter(Boolean).join('\n')
       return [project.id, { total, title: plural(locale.value, total, t.value.projects.pieces), body: body || undefined }]
     }),
@@ -49,7 +50,7 @@ const facts = computed(() =>
 
 function frameSize(project: Project): string {
   const { columns, rows } = countedDimensions(project)
-  return t.value.projects.frameSize.replace('{width}', String(columns)).replace('{height}', String(rows))
+  return fillBlanks(t.value.projects.frameSize, { width: columns, height: rows })
 }
 </script>
 

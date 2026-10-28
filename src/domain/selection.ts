@@ -1,5 +1,5 @@
 import { type GridPosition } from './grid'
-import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Frame } from './canvas'
+import { beadBounds, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import { DEFAULT_TECHNIQUE, describeWeave, type Weave } from './weave'
 import { layerAt, layerView, onLayer, positionInLayer, positionOnCanvas, type Layer, type Placed } from './layers'
@@ -30,7 +30,7 @@ export interface CopiedBlock {
   /** Row-major cell colors relative to the block's top-left. `null` is a hole that Paste skips (see pastedCells). */
   colors: (string | null)[][]
   /** First drawn bead in reading order, relative to the top-left: where the pointer's bead lands (ticket 437, ADR
-   * 0057). */
+   * 0016). */
   anchor: { row: number; column: number }
   /** Copied from a Custom frame (ticket 0594): each bead's centre on screen from the anchor bead's, which a Paste onto a
    * Custom frame lands as they lay; `colors` holds the same beads in the Frame's cells, for a Paste onto a rectangle. */
@@ -101,19 +101,19 @@ export function hasGuides(box: { rows: number; columns: number }): boolean {
 
 /** The Selection's rectangle as a Frame-shaped box, for what measures a block of beads on screen (its border, its
  * handles). */
-export function selectionFrame(selection: Selection): Frame {
+export function selectionFrame(selection: Selection): Rect {
   return { row: selection.top, column: selection.left, rows: selection.rows, columns: selection.columns }
 }
 
 /** The Selection over a rectangle of beads given as a Frame-shaped box (a Piece's area, the box round every bead). */
-function selectionOfBox(box: Frame): Selection {
+function selectionOfBox(box: Rect): Selection {
   return { top: box.row, left: box.column, rows: box.rows, columns: box.columns }
 }
 
 /** The Selection a Piece tool tap makes (ticket 414): the tapped bead's Piece, its rectangle carrying its exact cells
  * (ticket 547), or none. With a Frame (ticket 433), only its part on the bead's side, trimmed; nothing in the margin.
  * @internal Tests check the Piece tool's Selection on its own. */
-export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Frame): Selection | undefined {
+export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition, frame?: Rect): Selection | undefined {
   const members = pieceBeadsAt(beads, weave, at).filter((member) => {
     if (!frame) return true
     if (frameContains(frame, at)) return frameContains(frame, member)
@@ -133,7 +133,7 @@ export function pieceSelectionAt(beads: BeadMap, weave: Weave, at: GridPosition,
 
 /** The Selection Select all makes (tickets 414, 428): the Frame's inside when there is a Frame, else the rectangle
  * round every placed bead, or none on an empty canvas. */
-export function selectAllSelection(beads: BeadMap, frame: Frame | undefined): Selection | undefined {
+export function selectAllSelection(beads: BeadMap, frame: Rect | undefined): Selection | undefined {
   if (frame) return { top: frame.row, left: frame.column, rows: frame.rows, columns: frame.columns, layer: 'frame' }
   const all = allBeadsSelection(beads)
   return all && { ...all, layer: 'canvas' }
@@ -183,20 +183,20 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
 }
 
 /** The Selection slid back inside `frame` when it was moved past an edge; as it is when it is larger than the Frame. */
-export function withinFrame(selection: Selection, frame: Frame): Selection {
+export function withinFrame(selection: Selection, frame: Rect): Selection {
   const top = Math.max(frame.row, Math.min(selection.top, frame.row + frame.rows - selection.rows))
   const left = Math.max(frame.column, Math.min(selection.left, frame.column + frame.columns - selection.columns))
   return { ...selection, top, left }
 }
 
 /** The Selection grown to whole Units where the Technique has them (ticket 483), kept inside the Frame it started in. */
-export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Frame): Selection {
+export function snapSelectionToUnits(weave: Weave, selection: Selection, frame?: Rect): Selection {
   const snapped = describeWeave(weave).snapSelection(selection, frame)
   if (snapped === selection) return selection
   return { ...snapped, ...(selection.layer ? { layer: selection.layer } : {}), ...(selection.cells ? { cells: selection.cells } : {}) }
 }
 
-/** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0057): trimmed to the bounding box, anchored on
+/** Snapshots a Selection's drawn beads into a block (ticket 437, ADR 0016): trimmed to the bounding box, anchored on
  * the first bead.
  * @internal Tests copy a block to paste it. */
 export function copySelection(project: Project, selection: Selection): CopiedBlock | undefined {

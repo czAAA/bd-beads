@@ -24,11 +24,6 @@ export const zh: Translations = {
     beadShapeSymmetricTip: '把每颗珠子画成相同的方格，只改变画布的外观。',
     beadShapeRealTip: '按真实比例绘制每颗珠子，只改变画布的外观。',
     techniqueLabel: '编织技法',
-    techniqueLoom: '织机',
-    techniquePeyote: '佩奥',
-    techniqueBrick: '砖形',
-    techniqueRightAngle: '直角',
-    techniqueNetting: '网状',
     netSizeLabel: '网眼大小',
     netSizeLess: '减少每圈珠数',
     netSizeMore: '增加每圈珠数',
@@ -180,6 +175,13 @@ export const zh: Translations = {
   languageSwitcher: {
     ariaLabel: '界面语言',
   },
+  techniques: {
+    loom: '织机',
+    peyote: '佩奥',
+    brick: '砖形',
+    rightAngle: '直角',
+    netting: '网状',
+  },
   formFactors: { cube: '方形', round: '圆形', delica: 'Delica' },
   projects: {
     heading: '项目库',
@@ -268,12 +270,12 @@ export const zh: Translations = {
   },
   header: {
     menuButton: '菜单',
-    overviewItem: '概览',
+    homepageItem: '首页',
     sourceItem: '源代码',
     projectPanelLabel: '项目',
   },
-  overview: {
-    pageTitle: '概览',
+  homepage: {
+    pageTitle: '首页',
     tagline: '保存。计数。导出',
     makeFirstProject: '创建你的第一个项目',
     openEditor: '打开编辑器',
@@ -462,6 +464,7 @@ export const zh: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: '线条：图表各部分，每部分占一页，所有行和列均已编号。',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: '所需珠子：{summary} · 见第 {page} 页',

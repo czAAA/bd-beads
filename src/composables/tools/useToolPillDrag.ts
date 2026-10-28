@@ -4,7 +4,7 @@ import { nearestPillEdge, type PillPosition } from '../../domain/toolPill'
 /** A press that moves this far (px) before it lifts is a drag; less is still a tap (ToolPill card). */
 const PILL_DRAG_THRESHOLD_PX = 8
 
-// Dragging the Tool pill to another edge (ticket 439, ADR 0059): after 8px the pill lifts and follows the pointer,
+// Dragging the Tool pill to another edge (ticket 439, ADR 0046): after 8px the pill lifts and follows the pointer,
 // snaps to the nearest edge on release, and the click ending the drag is swallowed so no tile is pressed. `layer` is
 // the drawing area the pill floats over.
 export function useToolPillDrag(pill: Ref<HTMLElement | undefined>, layer: Ref<HTMLElement | undefined>, deps: { onStart: () => void; onDrop: (position: PillPosition) => void }) {

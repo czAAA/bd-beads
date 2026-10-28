@@ -18,6 +18,7 @@ import {
 } from './printPlan'
 import { COVER_CUT_LABEL } from './coverLayout'
 import type { PrintText } from './printText'
+import { fillBlanks } from '../domain/fillBlanks'
 
 // Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; the Cover page is coverPage.ts). The chart first,
 // the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
@@ -298,7 +299,7 @@ export function drawParts(context: CanvasRenderingContext2D, project: Project, p
     const x = xOf(part.firstAcross)
     const y = yOf(part.firstDown)
     const room = (part.lastAcross - part.firstAcross + 1) * grid.stepAcross * zoom - mm(3)
-    const label = (key: 'partPage' | 'partPageShort') => labels[key].replace('{part}', part.letter).replace('{page}', String(part.page))
+    const label = (key: 'partPage' | 'partPageShort') => fillBlanks(labels[key], { part: part.letter, page: part.page })
     context.font = font('700', 6.5, MONO)
     const long = label('partPage')
     pill(context, context.measureText(long).width + mm(2.4) <= room ? long : label('partPageShort'), x + mm(1.5), y + mm(1.5), PRINT_COLORS.ink)
@@ -312,8 +313,5 @@ export function partLabel(project: Project, labels: PrintText['labels'], part: P
   const across = range(acrossNumber(project, part.firstAcross), acrossNumber(project, part.lastAcross))
   const down = range(downNumber(project, part.firstDown), downNumber(project, part.lastDown))
   const turned = rotationSwapsAxes(project.rotation)
-  return labels.partArea
-    .replace('{part}', part.letter)
-    .replace('{columns}', turned ? down : across)
-    .replace('{rows}', turned ? across : down)
+  return fillBlanks(labels.partArea, { part: part.letter, columns: turned ? down : across, rows: turned ? across : down })
 }

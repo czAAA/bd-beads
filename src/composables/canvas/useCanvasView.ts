@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { beadBounds, type Frame } from '../../domain/canvas'
+import { beadBounds, type Rect } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { sameFrame } from '../../domain/frame'
 import { projectCell, type Project } from '../../domain/project'
@@ -15,12 +15,12 @@ export const FIT_MARGIN_PX: Size = { width: 64, height: 46 }
 /** The block of beads a view fits to and centres on: the Frame when there is one, otherwise the box round every
  * bead, otherwise nothing.
  * @internal Its test checks what a view fits to on its own. */
-export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Frame | undefined {
+export function fitBox(project: Pick<Project, 'frame' | 'beads'>): Rect | undefined {
   return project.frame ?? beadBounds(project.beads)
 }
 
 /** The layer a block is measured in: the Frame's own for the Frame itself (ticket 492), the Canvas's for anything else. */
-function layerOfBox(project: Pick<Project, 'frame'>, box: Frame): ViewLayer {
+function layerOfBox(project: Pick<Project, 'frame'>, box: Rect): ViewLayer {
   return project.frame && sameFrame(box, project.frame) ? 'frame' : 'canvas'
 }
 
@@ -80,7 +80,7 @@ export function useCanvasView(
   }
 
   /** Brings a block of beads into the middle of the view without changing the zoom. */
-  function centreOn(box: Frame): void {
+  function centreOn(box: Rect): void {
     const project = currentProject()
     if (!project) {
       return

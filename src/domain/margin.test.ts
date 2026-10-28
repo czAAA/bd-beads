@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { colorAt, withColors, type Frame } from './canvas'
+import { colorAt, withColors, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
 import { clampOutOfMargin, inMargin, MARGIN, marginBoxFor, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject, paintCells, withFrame, type Project } from './project'
 
-const frame: Frame = { row: 10, column: 10, rows: 4, columns: 6 }
+const frame: Rect = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const framed = withFrame(open, frame)
 
@@ -122,7 +122,7 @@ describe('mayPlace (ticket 501)', () => {
   })
 })
 
-describe('the margin of a Frame that draws shorter than the rows it names (ADR 0070)', () => {
+describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
   const peyote = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
   const woven = { ...peyote, frame: { ...peyote.frame!, technique: 'peyote' as const } }

@@ -9,6 +9,7 @@ import { useI18n } from '../../i18n/useI18n'
 import AppSwatch from '../ui/AppSwatch.vue'
 import PickColorButton from './PickColorButton.vue'
 import { useClosePopoverOnPick } from '../shell/pickContext'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 const props = defineProps<{
   selectedColorId?: string
@@ -78,7 +79,7 @@ function pick(colorId: string) {
 /** A swatch's name; in Edit palette an added one's is the removal it would ask for. */
 function swatchLabel(color: PaletteColor, slot: number): string {
   if (!isAddedColorId(color.id)) return `${t.value.palette.colorLabel} ${slot + 1}, ${colorName(t.value, color)}`
-  return props.editing && removeAdded ? t.value.palette.removeSwatch.replace('{hex}', color.hex) : color.hex
+  return props.editing && removeAdded ? fillBlanks(t.value.palette.removeSwatch, { hex: color.hex }) : color.hex
 }
 
 function onSwatchKeydown(event: KeyboardEvent, colorId: string, position: number) {

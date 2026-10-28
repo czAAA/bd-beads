@@ -25,7 +25,7 @@ const loaders: Record<Locale, () => Promise<Translations>> = {
 const loaded = shallowReactive<Partial<Record<Locale, Translations>>>({})
 const arriving = new Map<Locale, Promise<Translations>>()
 
-/** Fetches a language's strings, once. The app awaits the one in use before it mounts (main.ts, overview.ts), as every
+/** Fetches a language's strings, once. The app awaits the one in use before it mounts (main.ts, homepage.ts), as every
  * component reads its strings when it first renders. */
 export function loadLocale(locale: Locale): Promise<Translations> {
   const ready = loaded[locale]

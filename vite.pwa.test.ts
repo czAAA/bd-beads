@@ -33,9 +33,9 @@ describe('renderServiceWorker', () => {
   }
 
   it('lists every file but the worker itself, in folders too', () => {
-    const dir = folder({ 'index.html': 'a', 'assets/app.js': 'b', 'overview/index.html': 'c', [SERVICE_WORKER_FILE]: 'old' })
-    expect(filesBelow(dir)).toEqual(['assets/app.js', 'index.html', 'overview/index.html', SERVICE_WORKER_FILE])
-    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['assets/app.js', 'index.html', 'overview/index.html'])
+    const dir = folder({ 'index.html': 'a', 'assets/app.js': 'b', 'homepage/index.html': 'c', [SERVICE_WORKER_FILE]: 'old' })
+    expect(filesBelow(dir)).toEqual(['assets/app.js', 'homepage/index.html', 'index.html', SERVICE_WORKER_FILE])
+    expect(precacheOf(renderServiceWorker(template, dir).source)).toEqual(['assets/app.js', 'homepage/index.html', 'index.html'])
   })
 
   it('names the cache after the content, so a changed file is a new cache', () => {
@@ -64,7 +64,7 @@ describe('the production build (ticket 69)', () => {
     expect(precache).toEqual(files.filter((path) => path !== SERVICE_WORKER_FILE))
     // The pieces the offline use needs, by name, so an empty list can't pass.
     expect(precache).toEqual(
-      expect.arrayContaining(['index.html', 'overview/index.html', 'manifest.webmanifest', 'icons/bd-beads-app-icon.svg']),
+      expect.arrayContaining(['index.html', 'homepage/index.html', 'manifest.webmanifest', 'icons/bd-beads-app-icon.svg']),
     )
     expect(precache.some((path) => path.startsWith('assets/') && path.endsWith('.js'))).toBe(true)
     expect(precache.some((path) => path.startsWith('fonts/') && path.endsWith('.woff2'))).toBe(true)
@@ -72,7 +72,7 @@ describe('the production build (ticket 69)', () => {
 
   it('puts each language in a file of its own, which no page fetches at start and the offline list keeps (ticket 0616)', () => {
     const precache = precacheOf(readFileSync(join(outDir, SERVICE_WORKER_FILE), 'utf8'))
-    const pages = ['index.html', 'overview/index.html'].map((page) => readFileSync(join(outDir, page), 'utf8'))
+    const pages = ['index.html', 'homepage/index.html'].map((page) => readFileSync(join(outDir, page), 'utf8'))
     for (const locale of LOCALES) {
       const file = files.find((path) => new RegExp(`^assets/${locale}-[\\w-]+\\.js$`).test(path))
       expect(file, locale).toBeDefined()

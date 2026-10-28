@@ -13,6 +13,7 @@ import AppModal from '../ui/AppModal.vue'
 import FormField from '../ui/form/FormField.vue'
 import NumberField from '../ui/form/NumberField.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The size step Convert image keeps (ticket 342, ADR 0026): a picture needs a Schema size before there is a Frame.
 // Width and Height in beads or mm (the device's unit) with the other unit beside them, and the slow-framing heads-up
@@ -22,7 +23,6 @@ const props = defineProps<{
   technique: Technique
   /** The Net size of the Project being made (ticket 485); nothing is the default. */
   netSize?: number
-  slowFramingCellThresholds: Record<Technique, number>
 }>()
 
 const emit = defineEmits<{
@@ -63,8 +63,8 @@ const estimate = computed(() =>
 )
 
 const slowFramingWarning = computed(() =>
-  dimensions.value && isSlowFramingSize(props.technique, dimensions.value, props.slowFramingCellThresholds)
-    ? t.value.convertImage.slowFramingWarning.replace('{technique}', techniqueName(t.value, props.technique))
+  dimensions.value && isSlowFramingSize(props.technique, dimensions.value)
+    ? fillBlanks(t.value.convertImage.slowFramingWarning, { technique: techniqueName(t.value, props.technique) })
     : undefined,
 )
 

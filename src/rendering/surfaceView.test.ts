@@ -254,7 +254,7 @@ describe('the Surface view with a Frame woven in its own Technique (ticket 492)'
     expect(view().pointToBead({ x: 170, y: 150 })).toEqual({ row: 7, column: 8 })
   })
 
-  it('answers the Canvas in the rows the Frame claims but does not reach (ADR 0070)', () => {
+  it('answers the Canvas in the rows the Frame claims but does not reach (ADR 0066)', () => {
     // Four peyote rows are 65 px tall; the rectangle they name is 80 px: the strip below the Frame is Canvas, the same
     // position as the Frame's own last row.
     expect(view().pointToBead({ x: 70, y: 40 + 70 })).toEqual({ row: 5, column: 3 })

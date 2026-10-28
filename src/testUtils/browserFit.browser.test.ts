@@ -41,26 +41,26 @@ it('renders in the language it is asked for, every time', async () => {
 })
 
 it('shows, in the longest text, each string as its widest translation and each count in its widest words', async () => {
-  const russian = { makerName: ru.form.makerNameLabel, rightAngle: ru.form.techniqueRightAngle, pieces: ru.projects.pieces.few }
+  const russian = { makerName: ru.form.makerNameLabel, rightAngle: ru.techniques.rightAngle, pieces: ru.projects.pieces.few }
   const languages = [en, ru, uk, be, zh, es, pl]
   const piecesWords = languages.map(({ projects: { pieces } }) => pieces.few ?? pieces.other)
-  const tabLines = languages.map(({ overview: { features: { projectEditing } } }) => projectEditing.tabLine ?? projectEditing.text)
+  const tabLines = languages.map(({ homepage: { features: { projectEditing } } }) => projectEditing.tabLine ?? projectEditing.text)
   const names = ['Moth', 'Fern', 'Sky']
   const lists = languages.map((language) => language.tooltips.list(names))
   await showLongestText()
   try {
     // Spanish and English are the widest here, by 70 and 63 px at the UI's size.
     expect(ru.form.makerNameLabel).toBe(es.form.makerNameLabel)
-    expect(ru.form.techniqueRightAngle).toBe(en.form.techniqueRightAngle)
+    expect(ru.techniques.rightAngle).toBe(en.techniques.rightAngle)
     // A language with no "few" lends its "other": a Russian "few" count takes whichever language's words are widest.
     expect(piecesWords).toContain(ru.projects.pieces.few)
     // A tab shows a feature's shorter wording where its language has one, and its full one where not (Russian).
-    expect(tabLines).toContain(ru.overview.features.projectEditing.tabLine)
+    expect(tabLines).toContain(ru.homepage.features.projectEditing.tabLine)
     expect(lists).toContain(ru.tooltips.list(names))
   } finally {
     showRussian()
   }
-  expect({ makerName: ru.form.makerNameLabel, rightAngle: ru.form.techniqueRightAngle, pieces: ru.projects.pieces.few }).toEqual(russian)
+  expect({ makerName: ru.form.makerNameLabel, rightAngle: ru.techniques.rightAngle, pieces: ru.projects.pieces.few }).toEqual(russian)
 })
 
 it('opens a Tooltip all three ways in English and by hover alone in the longest text', () => {

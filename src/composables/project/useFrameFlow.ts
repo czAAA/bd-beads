@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { hasBeads, type Frame } from '../../domain/canvas'
+import { hasBeads, type Rect } from '../../domain/canvas'
 import { fitToDrawing, frameResizedAround, frameWithEdges, frameWithEdgeStep, frameWithSize, movedFrame, sameFrame, snapColumn, snappedMove, snapRow, type FrameEdge } from '../../domain/frame'
 import type { GridPosition } from '../../domain/grid'
 import { DEFAULT_NET_SIZE, DEFAULT_TECHNIQUE, describeWeave, type Technique } from '../../domain/weave'
@@ -16,6 +16,7 @@ import type { FramePress } from '../../rendering/frameHandles'
 import type { MessageTone, Toast } from '../ui/useToasts'
 import type { EditFn } from './useEdit'
 import type { OpenPanel } from '../shell/openPanel'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 export interface FrameFlowDeps {
   currentProject: () => Project | undefined
@@ -25,7 +26,7 @@ export interface FrameFlowDeps {
   messages: () => Translations
   locale: () => Locale
   /** Brings a block of beads into the middle of the view. */
-  centreOn: (frame: Frame) => void
+  centreOn: (frame: Rect) => void
   /** The Canvas position under the middle of the view, or nothing until the area is measured. */
   visibleCentre: () => GridPosition | undefined
   /** The app's one open panel (ticket 510): the Frame panel is open while it is 'frame'. Its own when none is given. */
@@ -37,10 +38,10 @@ type Layer = 'canvas' | 'frame'
 const layerHasBeads = (project: Project, layer: Layer): boolean => hasBeads(layer === 'frame' ? (project.frame?.beads ?? {}) : project.beads)
 
 type Gesture =
-  | { kind: 'move'; origin: GridPosition; start: Frame }
-  | { kind: 'resize'; edges: FrameEdge[]; start: Frame }
+  | { kind: 'move'; origin: GridPosition; start: Rect }
+  | { kind: 'resize'; edges: FrameEdge[]; start: Rect }
 
-// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054, 0062): the edit pencil shows the handles and the strip's Frame
+// Editing the Frame (CONTEXT.md, ADRs 0026, 0046, 0054): the edit pencil shows the handles and the strip's Frame
 // button opens the Frame panel; closed whenever a Project opens (ticket 473), off once Row progress has started (ticket 411), though the
 // Move handle still carries the Frame with its beads. Each resize is one announced Undo step that touches no bead.
 export function useFrameFlow(deps: FrameFlowDeps) {
@@ -57,7 +58,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   const handlesOn = ref(false)
   /** The Frame as it looks mid-drag, before it is committed; `move` is how far a Move drag has carried it with its
    * beads. */
-  const draft = ref<{ frame: Frame; move?: { rows: number; columns: number } } | undefined>()
+  const draft = ref<{ frame: Rect; move?: { rows: number; columns: number } } | undefined>()
   let gesture: Gesture | undefined
   /** How far the Move handle has been dragged, in whole beads. */
   let moved = { rows: 0, columns: 0 }
@@ -117,21 +118,21 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     barOpen.value = false
   }
 
-  function describe(frame: Frame): string {
+  function describe(frame: Rect): string {
     const t = deps.messages()
     const project = deps.currentProject()
     const { columns, rows } = describeWeave(project ? frameWeave(project) : { technique: DEFAULT_TECHNIQUE }).unitsOf(frame)
-    return t.frame.announceSet.replace('{width}', String(columns)).replace('{height}', String(rows))
+    return fillBlanks(t.frame.announceSet, { width: columns, height: rows })
   }
 
   /** Commits a Frame resized (`set`), made around beads (`make`) or removed as one undo step; a no-change is no step. */
-  function commit(frame: Frame | undefined, how: 'set' | 'make' = 'set'): boolean {
+  function commit(frame: Rect | undefined, how: 'set' | 'make' = 'set'): boolean {
     const outcome = deps.edit('frame', (project) => changeFrame(project, frame ? (how === 'make' ? { make: frame } : { set: frame }) : { remove: true }))
     if (outcome.kind === 'refused' && outcome.reason === 'cuts-schema' && frame) {
       // Ticket 407: a Frame takes a named Schema whole or leaves it, so say which one it would have cut.
       const project = deps.currentProject()
       const name = project && namedPieceCutBy(project, frame)
-      if (name !== undefined) deps.showToast('frame-cuts-schema', deps.messages().frame.refusedCutsSchema.replace('{name}', name), 'info')
+      if (name !== undefined) deps.showToast('frame-cuts-schema', fillBlanks(deps.messages().frame.refusedCutsSchema, { name }), 'info')
       return false
     }
     if (outcome.kind !== 'applied') return outcome.kind === 'unchanged'
@@ -174,9 +175,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
         : deps.edit('exempt', (current) => changeCanvasWeave(current, { technique, netSize, brickBlock }))
     if (outcome.kind !== 'applied') return
     const t = deps.messages()
-    if (technique !== before.technique) deps.announce(t.frame.announceTechnique.replace('{technique}', techniqueName(t, technique)))
-    else if (brickBlock !== undefined && brickBlock !== (before.brickBlock ?? 1)) deps.announce(t.frame.announceBrickBlock.replace('{count}', String(brickBlock)))
-    else if (netSize !== undefined) deps.announce(t.frame.announceNetSize.replace('{count}', String(netSize)))
+    if (technique !== before.technique) deps.announce(fillBlanks(t.frame.announceTechnique, { technique: techniqueName(t, technique) }))
+    else if (brickBlock !== undefined && brickBlock !== (before.brickBlock ?? 1)) deps.announce(fillBlanks(t.frame.announceBrickBlock, { count: brickBlock }))
+    else if (netSize !== undefined) deps.announce(fillBlanks(t.frame.announceNetSize, { count: netSize }))
   }
 
   /** Changes a layer's Technique, Net size or Brick block (tickets 507, 568). Asks first when a Technique switch has
@@ -327,7 +328,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   // Frame from a Selection (tickets 415, 452): the Frame becomes its rectangle, one Undo step. A named Piece's
   // Selection snaps to that Schema, starting on an even row where rows alternate (ticket 407); with a Frame already
   // set, it moves it there.
-  function setTo(frame: Frame): void {
+  function setTo(frame: Rect): void {
     const project = deps.currentProject()
     const top = project ? snapRow(project, frame.row) : frame.row
     const bottom = project ? describeWeave(project).snapBottom(top, frame.row + frame.rows - 1) : frame.row + frame.rows - 1
@@ -338,7 +339,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /** Ticket 570: one toast saying how much each edge grew when the snap pushed the Frame past what was picked. */
-  function explainSnap(picked: Frame, snapped: Record<FrameEdge, number>): void {
+  function explainSnap(picked: Rect, snapped: Record<FrameEdge, number>): void {
     const grown: ['snapAddedTop' | 'snapAddedBottom' | 'snapAddedLeft' | 'snapAddedRight', number][] = [
       ['snapAddedTop', picked.row - snapped.top],
       ['snapAddedBottom', snapped.bottom - (picked.row + picked.rows - 1)],
@@ -416,7 +417,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
       const t = deps.messages()
       const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
-      if (outcome.kind === 'applied') deps.announce(t.frame.announceCustom.replace('{kind}', starterName(t, starter)).replace('{size}', size))
+      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { kind: starterName(t, starter), size }))
     })
   }
 
@@ -444,11 +445,11 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const t = deps.messages()
     const name = changedSetting(change)
     if (name === 'fringeStyle') {
-      deps.announce(t.frame.fringeStyle.announce.replace('{style}', t.starters.picks.fringeStyle.options[change.fringeStyle!]))
+      deps.announce(fillBlanks(t.frame.fringeStyle.announce, { style: t.starters.picks.fringeStyle.options[change.fringeStyle!] }))
       return
     }
     const value = settingValuesOf(settled).find((each) => each.name === name)?.value
-    deps.announce(t.frame.sizeSettings[name].announce.replace('{count}', String(value)))
+    deps.announce(fillBlanks(t.frame.sizeSettings[name].announce, { count: String(value) }))
   }
 
   /** The size question answered No: nothing changes. */

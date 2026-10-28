@@ -1,6 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
+import { clamp } from './clamp'
 import { type GridDimensions } from './grid'
-import { describeWeave, rowCycle, type Technique } from './weave'
+import { describeWeave, rowCycle, slowFramingCells, type Technique } from './weave'
 
 /** The framing step of Convert image (ticket 58, ADR 0010): the frame is the Project at its real-world size, the
  * picture scaled and panned beneath it. All in frame millimetres, where a cell's true centre maps to a picture
@@ -69,10 +70,6 @@ export interface FramingView {
   pictureHeightMm: number
 }
 
-function clampFraction(value: number): number {
-  return Math.min(1, Math.max(0, value))
-}
-
 /** The picture's position and scale under the frame, for a zoom (multiple of the cover scale) and a pan fraction.
  * Always covers the frame: scale starts at cover and the offset ranges only over the overhang. */
 export function framingView(
@@ -91,8 +88,8 @@ export function framingView(
 
   return {
     scaleMm,
-    offsetXMm: -clampFraction(pan.x) * rangeXMm,
-    offsetYMm: -clampFraction(pan.y) * rangeYMm,
+    offsetXMm: -clamp(pan.x, 0, 1) * rangeXMm,
+    offsetYMm: -clamp(pan.y, 0, 1) * rangeYMm,
     pictureWidthMm,
     pictureHeightMm,
   }
@@ -103,32 +100,10 @@ export function framingView(
  * @internal Its test checks the preview stays under it. */
 export const PREVIEW_MAX_CELLS = 12000
 
-/** Per-Technique slow-framing warning thresholds for the New Project form (ticket 61): the frame's own grid size
- * (not the margin). Three constants though equal, since no profiling shows techniques differ, so one can move alone.
- * @internal Its test checks the warning starts there. */
-export const LOOM_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
-/** @internal Its test checks the warning starts there. */
-export const PEYOTE_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
-/** @internal Its test checks the warning starts there. */
-export const BRICK_SLOW_FRAMING_CELLS = PREVIEW_MAX_CELLS
-
-/** The three per-Technique thresholds above, keyed by Technique — isSlowFramingSize's default, overridable in tests. */
-export const SLOW_FRAMING_CELLS: Record<Technique, number> = {
-  loom: LOOM_SLOW_FRAMING_CELLS,
-  peyote: PEYOTE_SLOW_FRAMING_CELLS,
-  brick: BRICK_SLOW_FRAMING_CELLS,
-  rightAngle: PREVIEW_MAX_CELLS,
-  netting: PREVIEW_MAX_CELLS,
-}
-
-/** Whether a grid this size in this Technique risks slow framing (see SLOW_FRAMING_CELLS). `thresholds` defaults to
- * the real constants; a test overrides it to exercise the lookup without differing thresholds. */
-export function isSlowFramingSize(
-  technique: Technique,
-  dimensions: GridDimensions,
-  thresholds: Record<Technique, number> = SLOW_FRAMING_CELLS,
-): boolean {
-  return dimensions.columns * dimensions.rows >= thresholds[technique]
+/** Whether a grid this size in this Technique risks slow framing: the Frame's own grid (not the margin) reaches its
+ * Technique's slow-framing limit (ticket 61). */
+export function isSlowFramingSize(technique: Technique, dimensions: GridDimensions): boolean {
+  return dimensions.columns * dimensions.rows >= slowFramingCells(technique)
 }
 
 /** The block of bead cells the framing preview draws: the frame's grid extended by a margin of cells on each side,

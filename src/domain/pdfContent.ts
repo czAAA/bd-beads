@@ -1,3 +1,4 @@
+import { channelsOf } from './color'
 import { helveticaWidth, type HelveticaFace } from './helvetica'
 
 /** The drawing operators of one PDF page (ticket 0585, ADR 0043): fills, strokes and Helvetica text, written in points
@@ -7,8 +8,8 @@ const number = (value: number) => (Math.round(value * 1000) / 1000).toString()
 
 /** `#rrggbb` as the three 0–1 channels of a PDF color. */
 function channels(hex: string): string {
-  const value = Number.parseInt(hex.slice(1, 7), 16)
-  return [(value >> 16) & 255, (value >> 8) & 255, value & 255].map((channel) => number(channel / 255)).join(' ')
+  const { r, g, b } = channelsOf(hex)
+  return [r, g, b].map((channel) => number(channel / 255)).join(' ')
 }
 
 /** The share of a bezier arc that approximates a quarter circle. */

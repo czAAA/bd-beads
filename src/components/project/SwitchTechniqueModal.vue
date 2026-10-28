@@ -6,6 +6,7 @@ import NetSizeField from './NetSizeField.vue'
 import type { Technique } from '../../domain/weave'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // The question before a layer's Technique, Net size or Brick block changes (tickets 507, 568, ADR 0038): the beads that
 // would be lost, and the Technique's settings. `keeps` is a Net size change inside the same Technique. The parent owns
@@ -28,9 +29,9 @@ const { t } = useI18n()
 
 const message = computed(() => {
   const { question } = props
-  if (question.keeps) return t.value.frame.switchNetSizeMessage.replace('{count}', String(question.lost))
+  if (question.keeps) return fillBlanks(t.value.frame.switchNetSizeMessage, { count: question.lost })
   if (!question.drawn) return t.value.frame.switchSettingsMessage
-  return t.value.frame.switchConfirmMessage.replace('{technique}', techniqueName(t.value, question.technique)).replace('{count}', String(question.lost))
+  return fillBlanks(t.value.frame.switchConfirmMessage, { technique: techniqueName(t.value, question.technique), count: question.lost })
 })
 </script>
 

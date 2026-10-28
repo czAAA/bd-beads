@@ -33,6 +33,7 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import TextField from '../ui/form/TextField.vue'
 import BeadPicker from './BeadPicker.vue'
 import StarterPicture from './StarterPicture.vue'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 // A Starter's setup (tickets 0596, 0597; StarterGallery card, Setup): the live picture, Name and Bead on New Project only,
 // Use design or Start empty, its sizes with chips and its choices, a Ring's Size system, and the Estimated size. The
@@ -118,7 +119,7 @@ const note = computed(() => {
   if (!offByChange.value) return t.value.starters.emptyNote
   const differences = designDifferences(props.starter, choice.value)
   const template = differences.every((each) => 'pick' in each) ? t.value.starters.designOffChoiceNote : t.value.starters.designOffNote
-  return template.replace('{size}', designWords(t.value, locale.value, props.starter, differences))
+  return fillBlanks(template, { size: designWords(t.value, locale.value, props.starter, differences) })
 })
 
 /** What one row of settings is: a size's stepper and chips, a choice, or the Ring size's Size system. */
@@ -175,20 +176,20 @@ const estimate = computed(() => {
   const measure = starterMeasure(props.starter, choice.value, bead.value)
   const count = starterCountWords(t.value, locale.value, props.starter, choice.value, bead.value)
   if (measure.shape === 'ring') {
-    const value = words.ringEstimate.replace('{inside}', formatMm(measure.insideMm, locale.value)).replace('{width}', formatMm(measure.widthMm, locale.value))
+    const value = fillBlanks(words.ringEstimate, { inside: formatMm(measure.insideMm, locale.value), width: formatMm(measure.widthMm, locale.value) })
     return { value, lines: [count, plural(locale.value, measure.rows, words.rowsRound)] }
   }
   if (measure.shape === 'band') {
     const clasp = `${formatMm(BAND_CLASP_MM / 10, locale.value)} ${t.value.form.unitCm}`
     const value = formatSizeMm({ widthMm: measure.widthMm, heightMm: measure.lengthMm }, units, locale.value)
-    return { value, lines: [count, plural(locale.value, measure.rows, words.bandRows), words.claspLeft.replace('{clasp}', clasp)] }
+    return { value, lines: [count, plural(locale.value, measure.rows, words.bandRows), fillBlanks(words.claspLeft, { clasp })] }
   }
   const value = formatSizeMm(measure, units, locale.value)
   if (props.starter.category !== 'earrings') return { value, lines: [count] }
   return { value, lines: [count, plural(locale.value, 2 * starterBeadCount(props.starter, choice.value, bead.value), words.forPair)] }
 })
 
-const pictureName = computed(() => (useDesign.value ? t.value.starters.pictureWithDesign : t.value.starters.pictureEmpty).replace('{option}', optionName.value))
+const pictureName = computed(() => fillBlanks(useDesign.value ? t.value.starters.pictureWithDesign : t.value.starters.pictureEmpty, { option: optionName.value }))
 
 function onSubmit() {
   emit('submit', { ...choice.value, name: name.value.trim() || optionName.value, beadId: props.project?.beadId ?? beadId.value })

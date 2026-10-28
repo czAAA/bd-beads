@@ -5,6 +5,7 @@ import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { EditFn } from '../project/useEdit'
+import { fillBlanks } from '../../domain/fillBlanks'
 
 /** What Replace Bead needs from the app shell: the open Project, Edit, and the app's language. */
 export interface ReplaceBeadFlowDeps {
@@ -14,7 +15,7 @@ export interface ReplaceBeadFlowDeps {
   locale: () => Locale
 }
 
-/** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0023). Deps are read lazily. */
+/** Replace Bead and its confirmation modal (tickets 48, 113, 205; ADR 0007, 0020). Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   /** The Bead id picked from the Replace bead menu, awaiting confirmation (ticket 48); undefined when its modal is
    * closed. */
@@ -60,10 +61,11 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     const estimateWith = (candidate: Bead | undefined) =>
       candidate ? formatSizeMm(estimatedSizeMm(project, candidate), unitLabels, deps.locale()) : '—'
 
-    return t.replaceBead.confirmMessage
-      .replace('{bead}', () => beadLabel(bead, t.formFactors))
-      .replace('{new}', () => estimateWith(bead))
-      .replace('{old}', () => estimateWith(resolveProjectBead(project)))
+    return fillBlanks(t.replaceBead.confirmMessage, {
+      bead: beadLabel(bead, t.formFactors),
+      new: estimateWith(bead),
+      old: estimateWith(resolveProjectBead(project)),
+    })
   })
 
   /** Opens the confirmation modal (ticket 48) for the picked Bead id; does nothing with no Project open. */

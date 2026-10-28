@@ -78,12 +78,12 @@ for (const [situation, breakIt] of failures) {
     await expect(page.locator('html')).toHaveAttribute('lang', 'ru')
   })
 
-  test(`the Overview opens ${situation}`, async ({ page, context }) => {
+  test(`the Homepage opens ${situation}`, async ({ page, context }) => {
     await openAndInstall(page)
     await breakIt(context, host)
 
-    await page.goto(new URL('overview/', host.url).href)
-    await expect(page.getByTestId('overview')).toBeVisible()
+    await page.goto(new URL('homepage/', host.url).href)
+    await expect(page.getByTestId('homepage')).toBeVisible()
     await expect(page.getByRole('heading').first()).toBeVisible()
   })
 }

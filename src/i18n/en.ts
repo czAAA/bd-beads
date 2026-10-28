@@ -23,11 +23,6 @@ export const en: Translations = {
     beadShapeSymmetricTip: 'Draw every bead as an even cell; this changes only how the Canvas looks.',
     beadShapeRealTip: 'Draw each bead in its real proportions; this changes only how the Canvas looks.',
     techniqueLabel: 'Technique',
-    techniqueLoom: 'Loom',
-    techniquePeyote: 'Peyote',
-    techniqueBrick: 'Brick stitch',
-    techniqueRightAngle: 'Right‑angle weave',
-    techniqueNetting: 'Netting',
     netSizeLabel: 'Net size',
     netSizeLess: 'Fewer beads in a loop',
     netSizeMore: 'More beads in a loop',
@@ -179,6 +174,13 @@ export const en: Translations = {
   languageSwitcher: {
     ariaLabel: 'Language',
   },
+  techniques: {
+    loom: 'Loom',
+    peyote: 'Peyote',
+    brick: 'Brick stitch',
+    rightAngle: 'Right‑angle weave',
+    netting: 'Netting',
+  },
   formFactors: FORM_FACTOR_NAMES_EN,
   projects: {
     heading: 'Projects library',
@@ -268,12 +270,12 @@ export const en: Translations = {
   },
   header: {
     menuButton: 'Menu',
-    overviewItem: 'Overview',
+    homepageItem: 'Homepage',
     sourceItem: 'Source code',
     projectPanelLabel: 'Project',
   },
-  overview: {
-    pageTitle: 'Overview',
+  homepage: {
+    pageTitle: 'Homepage',
     tagline: 'save. count. export',
     makeFirstProject: 'Make your first Project',
     openEditor: 'Open the editor',
@@ -468,6 +470,7 @@ export const en: Translations = {
   },
   print: {
     metaLine: '{size} · {bead} · ≈ {estimate}',
+    metaLineNoEstimate: '{size} · {bead}',
     readParts: 'Lines: the chart parts, each on its own page with every row and column numbered.',
     /** The Beads needed line that stands in for the table when it does not fit (ticket 0580). */
     beadsNeededSee: 'Beads needed: {summary} · see page {page}',
