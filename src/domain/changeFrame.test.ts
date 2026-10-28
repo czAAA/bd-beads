@@ -303,8 +303,8 @@ describe('changeFrame', () => {
     it('counts the beads a switch would drop', () => {
       const project = framed({ beads: { 0: { 0: '#111111', 1: '#222222' } } })
       // Netting of size 3 has no position at (0, 0) or (0, 1): both are holes.
-      expect(switchLoss(project, 'canvas', 'netting', { netSize: 3 })).toBe(2)
-      expect(switchLoss(project, 'canvas', 'peyote')).toBe(0)
+      expect(switchLoss(project, 'canvas', 'netting', { netSize: 3 })).toEqual({ lost: 2, folded: 0 })
+      expect(switchLoss(project, 'canvas', 'peyote')).toEqual({ lost: 0, folded: 0 })
     })
 
     it('changes the Brick block of a brick stitch Canvas', () => {
@@ -685,6 +685,30 @@ describe('Folded beads: a Frame woven unlike the Canvas keeps what it gives up (
     // In a net of 3 the Folded bead at row 2, column 3 falls in a hole, as a bead the Frame shows would.
     const holed = narrower(peyote(withColors(own, [{ row: 2, column: 3, color: RED }])))
     expect(changed(holed, { technique: 'netting', techniqueSettings: { netSize: 3 } }).frame!.folded).toEqual(folded.frame!.folded)
+  })
+
+  describe('counting what a switch of the Frame\'s Technique would drop (ticket 0641)', () => {
+    // In a net of 3, row 2 column 0 and row 1 column 3 have a position; row 0 column 0 and row 2 column 3 are holes.
+    it('counts a Folded bead that would be dropped though no bead the Frame shows would', () => {
+      const folded = narrower(peyote(withColors({}, [{ row: 2, column: 0, color: RED }, { row: 1, column: 3, color: BLUE }, { row: 2, column: 3, color: GREEN }])))
+      expect(switchLoss(folded, 'frame', 'netting', { netSize: 3 })).toEqual({ lost: 1, folded: 1 })
+    })
+
+    it('tells the Folded beads apart among the beads it would drop', () => {
+      const holed = narrower(peyote(withColors(own, [{ row: 2, column: 3, color: RED }])))
+      expect(switchLoss(holed, 'frame', 'netting', { netSize: 3 })).toEqual({ lost: 2, folded: 1 })
+    })
+
+    it('counts nothing where every bead keeps a place', () => {
+      expect(switchLoss(narrower(peyote(own)), 'frame', 'loom')).toEqual({ lost: 0, folded: 0 })
+    })
+
+    it('counts from the Frame\'s own corner, as the switch drops', () => {
+      // In Right-angle weave the last column of a horizontal line (row 0 here) has no position.
+      const project = peyote(withColors({}, [{ row: 0, column: 3, color: RED }]))
+      expect(switchLoss(project, 'frame', 'rightAngle')).toEqual({ lost: 1, folded: 0 })
+      expect(changed(project, { technique: 'rightAngle' }).frame!.beads).toEqual({})
+    })
   })
 
   it('shifts them with Remove row/column, the removed line\'s Folded beads going with it', () => {

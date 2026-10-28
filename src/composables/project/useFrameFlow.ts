@@ -173,8 +173,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * where the Technique stays, the setting whose change asks. */
   const switchAsk = dialogs.question<{ layer: Layer; technique: Technique; settings: TechniqueSettings; changing?: string }>('switch-technique')
 
-  /** The open question as the dialog shows it: the Technique, the beads that would be lost, whether the layer has beads
-   * at all, each setting the Technique describes at the value asked for, and the setting whose change asks. */
+  /** The open question as the dialog shows it: the Technique, the beads that would be lost and how many of them are
+   * Folded beads (ticket 0641), whether the layer shows beads at all, each setting the Technique describes at the value
+   * asked for, and the setting whose change asks. */
   const switchQuestion = computed(() => {
     const ask = switchAsk.value
     const project = deps.currentProject()
@@ -183,7 +184,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const values = weaveSettings({ technique: ask.technique, techniqueSettings: ask.settings })
     return {
       technique: ask.technique,
-      lost: switchLoss(project, ask.layer, ask.technique, values),
+      ...switchLoss(project, ask.layer, ask.technique, values),
       drawn: layerHasBeads(project, ask.layer),
       changing: settings.find((setting) => setting.id === ask.changing),
       settings: settings.map((setting) => ({ setting, value: values[setting.id] ?? setting.default })),
@@ -210,8 +211,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   /** Changes a layer's Technique or one of its settings (tickets 507, 568, 0626). Asks first when a Technique switch has
-   * drawn beads or settings to choose, or when a setting described as able to lose beads would drop some; otherwise
-   * changes at once. */
+   * drawn beads or settings to choose, or when a switch or a setting described as able to lose beads would drop some,
+   * shown or Folded (ticket 0641); otherwise changes at once. */
   function askWeave(layer: Layer, change: { technique: Technique } | { setting: string; value: number }): void {
     const project = deps.currentProject()
     if (!project || (layer === 'frame' && !project.frame)) return
@@ -224,12 +225,13 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     if (layer === 'frame' && frameChangeRefusal(project, { technique })) return
     const { settings } = describeWeave({ technique })
     if (technique !== current.technique) {
-      if (layerHasBeads(project, layer) || settings.length > 0) switchAsk.value = { layer, technique, settings: values }
+      const asks = layerHasBeads(project, layer) || settings.length > 0 || switchLoss(project, layer, technique, values).lost > 0
+      if (asks) switchAsk.value = { layer, technique, settings: values }
       else applySwitch(layer, technique, values)
       return
     }
     const changing = settings.find((setting) => setting.lossOnChange && values[setting.id] !== current.techniqueSettings?.[setting.id])
-    if (changing && switchLoss(project, layer, technique, values) > 0) {
+    if (changing && switchLoss(project, layer, technique, values).lost > 0) {
       switchAsk.value = { layer, technique, settings: values, changing: changing.id }
       return
     }
