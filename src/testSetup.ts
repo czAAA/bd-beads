@@ -6,6 +6,7 @@ vi.resetModules()
 const { disableAutoUnmount, enableAutoUnmount } = await import('@vue/test-utils')
 const { browserDevicePreferences } = await import('./services/devicePreferences')
 const { installSurfaceLayout } = await import('./testUtils/surfaceLayout')
+const { installStrictClock, resetSharedPage } = await import('./testUtils/sharedPage')
 
 // jsdom's PointerEvent inherits getter-only `button`/`buttons` (ticket 60); @vue/test-utils' trigger() only skips read-
 // only keys found on the event's own prototype and so throws. Copy the descriptors down onto PointerEvent so it skips
@@ -31,16 +32,10 @@ afterEach(() => {
 disableAutoUnmount()
 enableAutoUnmount(afterEach)
 
-/** What the file before left on the shared page: its mounted elements, its storage, its title and its classes. */
-if (typeof document !== 'undefined') {
-  document.body.replaceChildren()
-  document.head.querySelectorAll('style').forEach((node) => node.remove())
-  document.documentElement.removeAttribute('class')
-  document.documentElement.removeAttribute('style')
-  document.title = ''
-  window.localStorage.clear()
-  window.sessionStorage.clear()
-}
+// What the file before left on the shared page, its language and its device among it, and a clock fast enough that a
+// click made right after mounting is not dropped (ticket 0608).
+resetSharedPage()
+installStrictClock()
 
 // jsdom has no canvas: getContext logs "not implemented"; silenced here. A test that checks drawing installs
 // testUtils/fakeCanvas.ts.
@@ -54,21 +49,6 @@ beforeEach(() => {
     installSurfaceLayout()
   }
 })
-
-// jsdom has no matchMedia (ticket 168's useMediaQuery): every query answers false so components carry on. A test that
-// cares installs testUtils/fakeMatchMedia.ts with vi.stubGlobal('matchMedia', ...) and vi.unstubAllGlobals() in
-// afterEach.
-if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
-  window.matchMedia = ((query: string) =>
-    ({
-      // A desk with a mouse, so hotkey chips show unless a test says otherwise (ticket 438).
-      matches: query.includes('any-pointer: fine'),
-      media: query,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    }) as unknown as MediaQueryList) as typeof window.matchMedia
-}
 
 // Device preferences are read once and shared; a test seeds localStorage and then mounts, so each starts from what
 // storage holds.
