@@ -36,14 +36,15 @@ describe('useProjectManageFlow', () => {
     expect(deps.addProject).not.toHaveBeenCalled()
   })
 
-  it('duplicates under the chosen name, keeping Row progress', () => {
-    const moth = { ...make('Moth'), rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
+  // What a copy keeps (Row progress included) is duplicateProject's (projectName.test).
+  it('duplicates under the chosen name, and refuses an empty one', () => {
+    const moth = make('Moth')
     const { flow, deps } = setup([moth])
     flow.onRequestDuplicate()
     expect(flow.onConfirmDuplicate('')).toBe(false)
     expect(flow.onConfirmDuplicate('Copy')).toBe(true)
     const copy = deps.addProject.mock.calls[0]![0]
-    expect(copy).toMatchObject({ name: 'Copy', rowProgress: moth.rowProgress })
+    expect(copy.name).toBe('Copy')
     expect(copy.id).not.toBe(moth.id)
   })
 
