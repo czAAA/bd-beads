@@ -8,6 +8,7 @@ import { paintAt } from '../../testUtils/layers'
 import { editHarness } from '../../testUtils/editHarness'
 import { withLayers } from '../../testUtils/layerFields'
 import { useProjectPalette } from '../tools/usePalette'
+import { loadColorCatalog } from '../../services/colorCatalogs'
 import { useBeadColors } from './useBeadColors'
 
 const delica = createProject({ technique: 'loom', beadId: 'miyuki/delica/11-0', size: { width: 3, height: 3, unit: 'beads' } })
@@ -41,12 +42,12 @@ describe('useBeadColors', () => {
     expect(swatches.value.every((entry) => entry.approximate)).toBe(true)
   })
 
-  it('shows TOHO Cube 1.5mm an empty list without error, its size being in no code yet (ticket 0695 fills it)', async () => {
+  it('lists TOHO Cube 1.5mm real codes, from TOHO\'s international cube card (ticket 0695)', async () => {
     const { available, load, swatches, state } = setup(toho)
     expect(available.value).toBe(true)
     await load()
     expect(state.value).toBe('ready')
-    expect(swatches.value).toEqual([])
+    expect(swatches.value.length).toBeGreaterThan(0)
   })
 
   it('lists the Delica codes of the Project’s size once loaded', async () => {
@@ -98,5 +99,18 @@ describe('a swatch added from the catalog keeps its code (ticket 0538)', () => {
     expect(listedColorName(en, projectPalette(painted).byHex(entry.hex), entry.hex)).toContain(entry.code)
     harness.history.onUndo()
     expect(harness.project.paletteCodes).toBeUndefined()
+  })
+})
+
+describe('a code sold only in Japan (ticket 0695)', () => {
+  it('is left out of the swatches by default, while the international codes of the size stay', async () => {
+    const catalog = await loadColorCatalog('toho')
+    const japanOnly = catalog.codes.find((code) => code.japanOnly && code.sizes.includes('11/0'))!
+    expect(japanOnly, 'the toho catalog flags a Japan-only 11/0 code').toBeDefined()
+    const { load, swatches } = setup(tohoRound)
+    await load()
+    const codes = swatches.value.map((entry) => entry.code)
+    expect(codes).not.toContain(japanOnly.code)
+    expect(codes).toContain('1')
   })
 })

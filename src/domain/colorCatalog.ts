@@ -29,6 +29,8 @@ interface ColorCode {
   /** A hex measured for this code (ticket 0537): replaces the generated swatch. Never derived from the code's number. */
   hex?: string
   discontinued?: boolean
+  /** Sold in Japan only (ticket 0695): on none of the maker's international sample cards. Hidden from the picker. */
+  japanOnly?: boolean
 }
 
 /** A Brand's table of maker codes (ADR 0072). Every Form factor of the Brand that has one names its `id`. */
@@ -53,6 +55,7 @@ function parseCode(raw: unknown, catalogId: string): ColorCode {
   if (typeof row.wording !== 'string') return fail(`${where} has no finish wording`)
   if (!isStringList(row.sizes)) return fail(`${where} has no sizes`)
   if (row.discontinued !== undefined && row.discontinued !== true) return fail(`${where} has a bad discontinued flag`)
+  if (row.japanOnly !== undefined && row.japanOnly !== true) return fail(`${where} has a bad Japan-only flag`)
   const hex = typeof row.hex === 'string' ? normalizeHex(row.hex) : undefined
   return {
     code: row.code,
@@ -62,6 +65,7 @@ function parseCode(raw: unknown, catalogId: string): ColorCode {
     sizes: row.sizes,
     ...(hex ? { hex } : {}),
     ...(row.discontinued ? { discontinued: true } : {}),
+    ...(row.japanOnly ? { japanOnly: true } : {}),
   }
 }
 
