@@ -651,6 +651,29 @@ describe('ProjectSurface', () => {
 
       expect(wrapper.emitted('cell-primary-move')).toBeUndefined()
     })
+
+    it('scrolls the view toward the edge the drag touches and keeps growing the Selection with it (ticket 0660)', async () => {
+      const frames: Array<() => void> = []
+      vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+      vi.stubGlobal('cancelAnimationFrame', () => {})
+      const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true, selectsAnywhere: true }) })
+      const surface = wrapper.find('[data-testid="project-surface"]')
+
+      await surface.trigger('pointerdown', { clientX: 50, clientY: 50, button: 0, buttons: 1 })
+      await surface.trigger('pointermove', { clientX: 999, clientY: 400, buttons: 1 })
+      const moves = wrapper.emitted('cell-primary-move')!.length
+      frames.splice(0).forEach((frame) => frame())
+      await nextTick()
+
+      const [dx, dy] = wrapper.emitted('pan')!.at(-1) as number[]
+      expect(dx).toBeLessThan(0)
+      expect(Math.abs(dy)).toBe(0)
+      expect(wrapper.emitted('cell-primary-move')!.length).toBe(moves + 1)
+
+      await surface.trigger('pointerup')
+      frames.splice(0).forEach((frame) => frame())
+      expect(wrapper.emitted('pan')).toHaveLength(1)
+    })
   })
 
   describe('picking a color (ticket 403)', () => {
@@ -1465,6 +1488,23 @@ describe('ProjectSurface with a Selection (ticket 414)', () => {
 
     await surface.trigger('pointermove', { clientX: 22, clientY: 22, pointerId: 1, pointerType: 'mouse' })
     expect(surface.attributes('style')).toContain('nwse-resize')
+  })
+
+  it('scrolls the view toward the edge a resized or moved Selection is dragged to, and follows it (ticket 0660)', async () => {
+    const frames: Array<() => void> = []
+    vi.stubGlobal('requestAnimationFrame', (callback: () => void) => frames.push(callback))
+    vi.stubGlobal('cancelAnimationFrame', () => {})
+    const { wrapper } = await mountSurface(projectOf(20, 10), 1, { x: 0, y: 0 }, { tools: can({ selects: true }), selection })
+    const surface = wrapper.find('[data-testid="project-surface"]')
+
+    await surface.trigger('pointerdown', { button: 0, clientX: 50, clientY: 40, pointerId: 1 })
+    await surface.trigger('pointermove', { buttons: 1, clientX: 999, clientY: 400, pointerId: 1 })
+    const drags = wrapper.emitted('selection-drag')!.length
+    frames.splice(0).forEach((frame) => frame())
+    await nextTick()
+
+    expect((wrapper.emitted('pan')!.at(-1) as number[])[0]).toBeLessThan(0)
+    expect(wrapper.emitted('selection-drag')!.length).toBe(drags + 1)
   })
 })
 
