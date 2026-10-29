@@ -134,6 +134,9 @@ describe('a Frame without a shape answers as its Weave does', () => {
     expectSameBox(inPx(geometry.extent()!), { x: 0, y: 0, width, height })
     expectMiddlesHit(geometry, geometry.positions(), width / CELL_SIZE_PX, height / CELL_SIZE_PX)
     expectPositionsIn(geometry, everywhere, { x: 1.3, y: 0.6, width: 2.2, height: 3.1 })
+    // A band of rows redrawn (ticket 0674): those rows of the box alone.
+    const whole = { x: 0, y: 0, width, height }
+    expect(geometry.positionsIn(whole, { first: 1, last: 2 })).toEqual(geometry.positionsIn(whole).filter(({ row }) => row >= 1 && row <= 2))
     expect(geometry.grid).toBe(true)
     expect(geometry.seams()).toEqual([])
   })

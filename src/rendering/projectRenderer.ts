@@ -251,8 +251,9 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const geometry = geometryDrawnAlone(project)
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, whose beads nest into it; beads that keep no rows are all drawn.
-  const inBand = ({ row }: GridPosition) => !band || !geometry.grid || (row >= band.first - 1 && row <= band.last + 1)
-  const beads = geometry.positionsIn(seen).filter(inBand).map((position) => ({ position, place: geometry.place(position)! }))
+  const beads = geometry
+    .positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
+    .map((position) => ({ position, place: geometry.place(position)! }))
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
   const framed = beadsOfLayer(project, 'frame')
   const colorOf = ({ row, column }: GridPosition) => (framed ? colorAt(framed, row, column) : beadInSpace(project, space, row, column))

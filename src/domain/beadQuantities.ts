@@ -2,7 +2,6 @@ import { gramsPerBead, type Bead } from './beads'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
 import type { Palette } from './palette'
-import { forEachBead } from './canvas'
 import type { Project } from './project'
 import { frameGeometryOf } from './layers'
 import { beadsOfLayer } from './layerRecord'
@@ -25,13 +24,20 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
     return []
   }
 
-  // Every real bead counts once: a Custom frame's are its layout's (ticket 0592).
+  // Every real bead counts once: a Custom frame's are its layout's (ticket 0592). In no order, as a count needs none:
+  // it is redone a few times a second while a stroke goes on (ticket 0674).
   const geometry = frameGeometryOf(project)
-  forEachBead(beads, (row, column, color) => {
-    if (geometry.hasPosition({ row, column })) {
-      counts.set(color, (counts.get(color) ?? 0) + 1)
+  for (const rowKey of Object.keys(beads)) {
+    const row = Number(rowKey)
+    const cells = beads[row]!
+    for (const columnKey of Object.keys(cells)) {
+      const column = Number(columnKey)
+      if (geometry.hasPosition({ row, column })) {
+        const color = cells[column]!
+        counts.set(color, (counts.get(color) ?? 0) + 1)
+      }
     }
-  })
+  }
 
   return [...counts.entries()]
     .map(([hex, count]) => ({ colorId: palette.byHex(hex)?.id ?? null, hex, count }))
