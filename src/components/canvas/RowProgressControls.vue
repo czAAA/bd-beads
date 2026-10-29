@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { frameRowOrder, rowProgressPosition, shownWay } from '../../domain/rowProgress'
+import { frameRowOrder, rowProgressOf, rowProgressPosition, shownWay } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { orderStepLabel } from '../../i18n/orderStep'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
@@ -9,6 +9,7 @@ import AppButton from '../ui/AppButton.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { frameOf } from '../../domain/layerRecord'
 
 // Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657, 0658): one component in the
 // Progress bar and the margin sheet's top band, so a press in either moves the one pointer the Project carries. `bar`
@@ -48,7 +49,7 @@ const position = computed(() => rowProgressPosition(props.project))
 /** Rows before the current one are finished. */
 const finishedShare = computed(() => (position.value.total > 0 ? position.value.current / position.value.total : 0))
 
-const columnWise = computed(() => props.project.rowProgress.direction === 'columns')
+const columnWise = computed(() => rowProgressOf(props.project).direction === 'columns')
 
 /** Row done and Row not done name what is woven in the direction the rows run: a row, or a column (ticket 411). */
 const doneLabel = computed(() => (columnWise.value ? t.value.rowProgress.columnNextButton : t.value.rowProgress.nextButton))
@@ -75,7 +76,7 @@ const customPosition = computed(() => {
 
 /** The turn that points the down arrow along the rows: the arrows are drawn for top to bottom (ticket 0589). A turned
  * Frame's rows run turned with it (ticket 0667). */
-const arrowTurn = computed(() => shownWay(props.project.rowProgress, props.project.frame?.quarterTurns))
+const arrowTurn = computed(() => shownWay(rowProgressOf(props.project), frameOf(props.project)?.quarterTurns))
 
 const directionLabel = computed(() => {
   const words = t.value.rowProgress

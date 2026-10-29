@@ -7,6 +7,8 @@ import { normalizeProject } from './storedProject'
 import type { Grid, Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
+import { beadsOfLayer, frameOf } from './layerRecord'
+import { flatOf, sheetOf, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -26,12 +28,12 @@ function paint(project: Project, color: (row: number, column: number) => string 
 
 /** What the Canvas's beads look like stored: the color table plus each painted row's runs (see ADR 0009, ADR 0026). */
 function encodedCells(project: Project) {
-  return encodeProject(project).encodedBeads
+  return encodeProject(project).layers[0]!.encodedBeads
 }
 
 /** The same for the Frame's own beads (ADR 0066), which `paint` draws. */
 function encodedFrameCells(project: Project) {
-  return encodeProject(project).frame!.encodedBeads
+  return encodeProject(project).layers[1]!.encodedBeads
 }
 
 function roundTrip(project: Project): Project {
@@ -83,10 +85,7 @@ describe('the encoded beads', () => {
   })
 
   it('cost one row for a bead far from the others, however far, negative positions included', () => {
-    const project = {
-      ...makeProject(2, 2),
-      beads: { [-40000]: { [-90000]: '#ff0000' }, 0: { 0: '#00ff00' } },
-    }
+    const project = withFields(makeProject(2, 2), { beads: { [-40000]: { [-90000]: '#ff0000' }, 0: { 0: '#00ff00' } } })
 
     expect(encodedCells(project).rows).toEqual({ '-40000': '-90000:1', 0: '0:2' })
     expect(roundTrip(project)).toEqual(project)
@@ -126,7 +125,7 @@ describe('encodeProject / decodeProject', () => {
 
   it('round-trips a single-cell grid', () => {
     const empty = makeProject(1, 1)
-    expect({ columns: empty.frame!.columns, rows: empty.frame!.rows }).toEqual({ columns: 1, rows: 1 })
+    expect({ columns: frameOf(empty)!.columns, rows: frameOf(empty)!.rows }).toEqual({ columns: 1, rows: 1 })
 
     expect(roundTrip(empty)).toEqual(empty)
     const painted = paint(empty, () => '#ff00ff')
@@ -165,45 +164,46 @@ describe('encodeProject / decodeProject', () => {
     // The table belongs to the encoded cells, not to the Project: nothing above the storage boundary should be able to
     // mistake it for a Project field (see ADR 0009).
     expect(Object.keys(encoded)).not.toContain('colors')
-    expect(encoded.frame!.encodedBeads.colors).toEqual(['#ff0000'])
+    expect(encoded.layers[1]!.encodedBeads.colors).toEqual(['#ff0000'])
   })
 
   it('replaces the beads rather than storing them twice', () => {
     const encoded = encodeProject(paint(makeProject(3, 3), () => '#ff0000'))
 
     expect(Object.keys(encoded)).not.toContain('beads')
+    expect(encoded.layers.every((layer) => !('beads' in layer))).toBe(true)
   })
 
   it('keeps the Frame, with its own beads and name, and the Canvas beads beside it, through the round trip', () => {
     const base = paint(makeProject(3, 3), () => '#ff0000')
-    const project = {
-      ...base,
+    const project = withFields(base, {
       beads: { 9: { 9: '#00ff00' } },
-      frame: { ...base.frame!, row: 1, column: 1, name: 'Cherry' },
-    }
+      frame: { ...frameOf(base)!, row: 1, column: 1, name: 'Cherry' },
+    })
 
     expect(roundTrip(project)).toEqual(project)
   })
 
   it('writes the Frame\'s beads inside the Frame, and the Canvas\'s beside it', () => {
-    const encoded = encodeProject({ ...paint(makeProject(2, 1), () => '#ff0000'), beads: { 5: { 5: '#00ff00' } } })
+    const encoded = encodeProject(withFields(paint(makeProject(2, 1), () => '#ff0000'), { beads: { 5: { 5: '#00ff00' } } }))
 
-    expect(encoded.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
-    expect(encoded.frame).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
+    expect(encoded.layers[0]!.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
+    expect(encoded.layers[1]).toMatchObject({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
+    expect(encoded.layers[1]).not.toHaveProperty('beads')
   })
 
   it('still reads the grid-shaped cells an earlier build stored, as beads in a Frame the size of the grid', () => {
-    const { beads: _beads, frame: _frame, ...base } = makeProject(3, 2)
+    const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject(3, 2))
     const stored = { ...base, columns: 3, rows: 2, cells: { colors: ['#ff0000', '#00ff00'], runs: '1,0x3,2,0' } }
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(read.frame).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
-    expect(read.beads).toEqual({})
+    expect(sheetOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(beadsOfLayer(read, 'canvas')).toEqual({})
   })
 
   it('still reads what version 3 stored: the beads inside the Frame move into it, the covered ones become Canvas beads', () => {
-    const { beads: _beads, frame: _frame, ...base } = makeProject(2, 2)
+    const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject(2, 2))
     const stored = {
       ...base,
       frame: { row: 10, column: 10, rows: 2, columns: 2 },
@@ -213,8 +213,8 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(read.frame).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
-    expect(read.beads).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
+    expect(sheetOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
+    expect(beadsOfLayer(read, 'canvas')).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
     expect(read).not.toHaveProperty('coveredBeads')
   })
 })

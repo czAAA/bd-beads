@@ -23,6 +23,7 @@ import MarginColorPopover from './MarginColorPopover.vue'
 import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import RowProgressControls from './RowProgressControls.vue'
+import { frameOf } from '../../domain/layerRecord'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658): Row progress, the Move bar and the tools
 // in its top band, the title block in its bottom-right corner, laid over the sheet the canvas draws. The controls keep
@@ -72,7 +73,7 @@ const actions = {
   show: controlAction('show-title-block'),
 }
 
-const frame = computed(() => props.project.frame)
+const frame = computed(() => frameOf(props.project))
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 /** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
 const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgressStarted(props.project))

@@ -18,6 +18,7 @@ import EditableLine from '../project/EditableLine.vue'
 import PanelPicker from '../shell/PanelPicker.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
+import { frameOf, lettersOn } from '../../domain/layerRecord'
 
 // The margin sheet's title block (MarginSheet card, tickets 0657, 0658), in its bottom-right corner like a drawing's:
 // the name, Technique and maker edited in place, the sizes, the lettered legend, Letters and fold; compact, one row of
@@ -36,7 +37,7 @@ const { t, locale } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const techniqueAction = controlAction('change-technique')
 const foldAction = controlAction('fold-title-block')
-const frame = computed(() => props.project.frame!)
+const frame = computed(() => frameOf(props.project)!)
 
 /** The Frame's Technique, the one its rows are woven in; locked with its reason once a pass is done. */
 const technique = computed(() => frameWeave(props.project).technique)
@@ -140,7 +141,7 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
     </div>
     <div class="margin-title__cell margin-title__letters">
       <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-      <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+      <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
     </div>
     <div class="margin-title__cell margin-title__fold">
       <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />

@@ -12,6 +12,7 @@ import { controlAction, controlDeps, type ControlAction } from '../../composable
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
 import { selectionHasBeads, selectionInFinishedRows, type Selection } from '../../domain/selection'
+import { frameOf } from '../../domain/layerRecord'
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
 // clamped in the canvas box, flipped below when no room. Only applicable actions render; the rest fold into "...".
@@ -129,7 +130,7 @@ const items = computed<BarItem[]>(() => {
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407); not over
   // a Custom frame, whose Frame shape sets its outline (ticket 0592).
-  if (frameAllows(props.project?.frame, 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
+  if (frameAllows(frameOf(props.project), 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Disabled, saying why, where the Selection reaches into finished rows (ticket 0647).
   list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })
   if (props.canRemoveLine) list.push({ id: 'remove-line', action: actions.removeLine, group: 2, run: () => emit('remove-line') })

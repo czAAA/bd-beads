@@ -6,16 +6,15 @@ import { createProject } from './createProject'
 import { withFrame } from './frame'
 import type { GridPosition } from './grid'
 import type { Project } from './project'
+import { beadsOfLayer, frameOf } from './layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 const frame: Rect = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const framed = withFrame(open, frame)
 
 /** The Project with its Canvas beads painted as a drawing command would hand them over, before what may stay is kept. */
-const rawPaint = (project: Project, positions: GridPosition[], color: string | null): Project => ({
-  ...project,
-  beads: withColors(project.beads, positions.map((position) => ({ ...position, color }))),
-})
+const rawPaint = (project: Project, positions: GridPosition[], color: string | null): Project => (withFields(project, { beads: withColors(beadsOfLayer(project, 'canvas'), positions.map((position) => ({ ...position, color }))) }))
 
 describe('the keep-out margin', () => {
   it('is the 4 positions all round the Frame, outside its line (ticket 0656)', () => {
@@ -33,13 +32,13 @@ describe('the keep-out margin', () => {
     const positions = [3, 4, 5, 6, 7, 8].map((column) => ({ row: 8, column }))
     const stroke = [{ row: 12, column: 4 }, { row: 12, column: 5 }, { row: 12, column: 6 }, { row: 12, column: 9 }, { row: 12, column: 10 }, ...positions]
     const painted = keepAllowedEdits(framed, rawPaint(framed, stroke, '#ff0000'))
-    expect(colorAt(painted.beads, 12, 10)).toBe('#ff0000')
-    expect(colorAt(painted.beads, 12, 4)).toBe('#ff0000')
-    expect(colorAt(painted.beads, 12, 5)).toBe('#ff0000')
-    expect(colorAt(painted.beads, 12, 6)).toBeNull()
-    expect(colorAt(painted.beads, 12, 9)).toBeNull()
-    expect(colorAt(painted.beads, 8, 5)).toBe('#ff0000')
-    expect(colorAt(painted.beads, 8, 6)).toBeNull()
+    expect(colorAt(beadsOfLayer(painted, 'canvas'), 12, 10)).toBe('#ff0000')
+    expect(colorAt(beadsOfLayer(painted, 'canvas'), 12, 4)).toBe('#ff0000')
+    expect(colorAt(beadsOfLayer(painted, 'canvas'), 12, 5)).toBe('#ff0000')
+    expect(colorAt(beadsOfLayer(painted, 'canvas'), 12, 6)).toBeNull()
+    expect(colorAt(beadsOfLayer(painted, 'canvas'), 12, 9)).toBeNull()
+    expect(colorAt(beadsOfLayer(painted, 'canvas'), 8, 5)).toBe('#ff0000')
+    expect(colorAt(beadsOfLayer(painted, 'canvas'), 8, 6)).toBeNull()
   })
 
   it('hands back the same Project when everything an edit did was in the margin', () => {
@@ -48,14 +47,14 @@ describe('the keep-out margin', () => {
   })
 
   it('still lets Erase remove a bead in the margin', () => {
-    const legacy: Project = { ...framed, beads: withColors(framed.beads, [{ row: 8, column: 10, color: '#ff0000' }]) }
+    const legacy: Project = withFields(framed, { beads: withColors(beadsOfLayer(framed, 'canvas'), [{ row: 8, column: 10, color: '#ff0000' }]) })
     const erased = keepAllowedEdits(legacy, rawPaint(legacy, [{ row: 8, column: 10 }], null))
-    expect(colorAt(erased.beads, 8, 10)).toBeNull()
+    expect(colorAt(beadsOfLayer(erased, 'canvas'), 8, 10)).toBeNull()
   })
 
   it('does nothing with no Frame', () => {
     const painted = rawPaint(open, [{ row: 1, column: 1 }], '#ff0000')
-    expect(keepAllowedEdits(open, painted).beads).toEqual(painted.beads)
+    expect(beadsOfLayer(keepAllowedEdits(open, painted), 'canvas')).toEqual(beadsOfLayer(painted, 'canvas'))
   })
 })
 
@@ -97,7 +96,7 @@ describe('mayPlace (ticket 501)', () => {
 describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
   const peyote = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-  const woven = { ...peyote, frame: { ...peyote.frame!, technique: 'peyote' as const } }
+  const woven = withFields(peyote, { frame: { ...frameOf(peyote)!, technique: 'peyote' as const } })
 
   it('hangs off what the Frame draws, so it is joined to it', () => {
     // The Frame covers 36 loom rows: the 4 below are the margin, the rows after those are free Canvas.

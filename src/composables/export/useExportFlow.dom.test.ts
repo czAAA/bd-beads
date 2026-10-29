@@ -13,6 +13,8 @@ vi.mock('../../rendering/projectExport', () => ({
   projectPageCount: vi.fn(() => 1),
 }))
 import { exportProjectPdf, exportProjectPng, projectPageCount } from '../../rendering/projectExport'
+import { canvasOf, withFrameSheet } from '../../domain/layerRecord'
+import { withFields } from '../../testUtils/flatFields'
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'My scarf', size: { width: 3, height: 3, unit: 'beads' } })
 
@@ -44,7 +46,7 @@ function setup(options: { open?: boolean; project?: Project } = {}) {
 
 describe('useExportFlow with no Frame (ticket 233)', () => {
   it('exports no PNG or PDF, since they hold the Frame\'s beads', async () => {
-    const { frame: _frame, ...open } = project
+    const open = withFrameSheet(project, undefined)
     const flow = useExportFlow({
       currentProject: () => open,
       projects: () => [open],
@@ -67,9 +69,9 @@ describe('useExportFlow Letters (ticket 0573)', () => {
     const replaced: Project[] = []
     const flow = useExportFlow({ currentProject: () => replaced.at(-1) ?? project, projects: () => [project], messages: () => en, locale: () => 'en' as const, replaceProject: (next) => replaced.push(next), downloadFile })
     flow.onSetLetters(true)
-    expect(replaced.at(-1)?.letters).toBe(true)
+    expect(canvasOf(replaced.at(-1)!).letters).toBe(true)
     flow.onSetLetters(false)
-    expect(replaced.at(-1)?.letters).toBeUndefined()
+    expect(canvasOf(replaced.at(-1)!).letters).toBeUndefined()
     flow.onSetLetters(false)
     expect(replaced).toHaveLength(2)
   })
@@ -77,7 +79,7 @@ describe('useExportFlow Letters (ticket 0573)', () => {
 
 describe('useExportFlow Word chart (ticket 0586)', () => {
   it('makes only the pattern PNG with Letters on: the Word chart is PDF pages, not a picture', async () => {
-    await setup({ project: { ...project, letters: true } }).onExportPng()
+    await setup({ project: withFields(project, { letters: true }) }).onExportPng()
 
     expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png')])
   })
@@ -122,7 +124,7 @@ describe('useExportFlow', () => {
 
     it('hands over the list pages Beads needed runs over onto as _2 and _3, in order (ticket 0583)', async () => {
       vi.mocked(projectPageCount).mockReturnValue(3)
-      await setup({ project: { ...project, letters: true } }).onExportPng()
+      await setup({ project: withFields(project, { letters: true }) }).onExportPng()
 
       expect(downloadFile.mock.calls.map((call) => call[0])).toEqual([projectExportFileName(project, 'png'), projectListFileName(project, 2), projectListFileName(project, 3)])
       expect(projectListFileName(project, 2)).toBe('openbeads-my-scarf_2.png')

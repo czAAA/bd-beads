@@ -10,7 +10,7 @@ import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 import { CELL_SIZE_PX, cellSizePx, type Size } from './cellSize'
-import { heldWeave, unwoven } from '../domain/layerRecord'
+import { unwoven, weaveOf } from '../domain/layerRecord'
 
 // The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation is private;
 // where a bead is comes from the Weave's description (ticket 0623). Grid space is px at zoom 1; displayed space is
@@ -246,7 +246,7 @@ export function surfaceView({ space, technique, techniqueSettings, cell: beadSha
   // The Canvas has no edge; a Project drawn on its own is its rows and columns from its first.
   const edge = space.open ? undefined : { row: 0, column: 0, rows: space.rows, columns: space.columns }
   const canvas = layerOf(canvasWeave, gridGeometry(canvasWeave, edge), { x: 0, y: 0 }, { row: 0, column: 0 })
-  const held = heldWeave({ frame }, 'frame')
+  const held = frame && weaveOf(frame)
   const sheetWeave: Weave | undefined = held && { ...held, cell: beadShapeCell }
   const sheet = frame && sheetWeave && space.open ? layerOf(sheetWeave, frameGeometry({ ...unwoven(frame), ...sheetWeave }), frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }) : undefined
   // The rectangle the Frame lies in, turned with it (ticket 0667).

@@ -4,10 +4,11 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
+import { type FlatChange, withFields } from '../../testUtils/flatFields'
 
 
-function projectOf(columns: number, rows: number, extra: Partial<Project> = {}): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...extra }
+function projectOf(columns: number, rows: number, extra: FlatChange = {}): Project {
+  return withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), extra)
 }
 
 function setup(project: Project | undefined, size = { width: 1000, height: 800 }) {
@@ -48,11 +49,11 @@ describe('useCanvasView', () => {
   })
 
   it('fits what is drawn when there is no Frame, and puts the origin in the middle of an empty canvas', () => {
-    const painted = paintAt({ ...projectOf(2, 2), frame: undefined }, [{ row: 50, column: 80 }], '#e63746')
+    const painted = paintAt(withFields(projectOf(2, 2), { frame: undefined }), [{ row: 50, column: 80 }], '#e63746')
     expect(fitBox(painted)).toEqual({ row: 50, column: 80, rows: 1, columns: 1 })
-    expect(fitBox({ ...projectOf(2, 2), frame: undefined })).toBeUndefined()
+    expect(fitBox(withFields(projectOf(2, 2), { frame: undefined }))).toBeUndefined()
 
-    const { view } = setup({ ...projectOf(2, 2), frame: undefined })
+    const { view } = setup(withFields(projectOf(2, 2), { frame: undefined }))
     view.fit()
     expect(view.zoom.value).toBe(1)
     expect(view.scroll.value).toEqual({ x: -500, y: -400 })
@@ -140,7 +141,7 @@ describe('useCanvasView', () => {
   })
 
   it('stays where it is when the same Project is edited, even while it still follows the fit', async () => {
-    const empty = { ...projectOf(2, 2), frame: undefined }
+    const empty = withFields(projectOf(2, 2), { frame: undefined })
     const { current, view } = setup(empty)
     view.fit()
     const before = { ...view.scroll.value }

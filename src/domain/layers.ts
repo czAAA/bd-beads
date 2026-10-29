@@ -5,10 +5,10 @@ export type { Layer }
 import { footprintOf } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
-import { beadsOfLayer, layerOf, withLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
 import { frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
-import { projectCell, type ShapedBead } from './projectBead'
+import { projectCell } from './projectBead'
 import type { Weave } from './weave'
 
 // The two layers of a Project (ADR 0066): the Canvas, and the Frame laid over it. Every drawing command (Paint, Fill,
@@ -28,34 +28,30 @@ export interface LayerSheet {
   frame?: ShapedSheet
 }
 
-/** What `layerAt` needs of a Project (ADR 0066): the Frame, and the Weaves that say how much of the Canvas it covers. */
-export type Placed = Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
 
-/** A Project as what reads its Frame's geometry needs it: the Frame, the Weaves and the Bead shape's cell. */
-type Framed = Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & ShapedBead
 
 /** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
  * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its
  * press, and keeps the answer. */
-export function layerAt(project: Placed, position: GridPosition): Layer {
+export function layerAt(project: Layered, position: GridPosition): Layer {
   if (position.layer) {
-    return position.layer === 'frame' && project.frame ? 'frame' : 'canvas'
+    return position.layer === 'frame' && frameOf(project) ? 'frame' : 'canvas'
   }
   const covered = footprintOf(project)
   return covered && frameContains(covered, position) ? 'frame' : 'canvas'
 }
 
 /** A Canvas position in a layer's own coordinates: the Frame's are counted from its first row and column. */
-export function positionInLayer(project: Pick<Project, 'frame'>, layer: Layer, position: GridPosition): GridPosition {
-  const frame = layer === 'frame' ? project.frame : undefined
+export function positionInLayer(project: Layered, layer: Layer, position: GridPosition): GridPosition {
+  const frame = layer === 'frame' ? frameOf(project) : undefined
   return frame ? { row: position.row - frame.row, column: position.column - frame.column } : position
 }
 
 /** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies (a Custom
  * frame's hide them, having no Canvas positions). For what asks about the picture as a whole (Select all, Fit to
  * drawing); the same map back when there is no Frame. */
-export function shownBeads(project: Framed & Pick<Project, 'beads'>): BeadMap {
-  const frame = project.frame
+export function shownBeads(project: Layered): BeadMap {
+  const frame = frameOf(project)
   if (!frame) {
     return beadsOfLayer(project, 'canvas')
   }
@@ -65,14 +61,14 @@ export function shownBeads(project: Framed & Pick<Project, 'beads'>): BeadMap {
 }
 
 /** A position of a layer's own, back on the Canvas. */
-export function positionOnCanvas(project: Pick<Project, 'frame'>, layer: Layer, position: GridPosition): GridPosition {
-  const frame = layer === 'frame' ? project.frame : undefined
+export function positionOnCanvas(project: Layered, layer: Layer, position: GridPosition): GridPosition {
+  const frame = layer === 'frame' ? frameOf(project) : undefined
   return frame ? { row: position.row + frame.row, column: position.column + frame.column } : position
 }
 
 /** The Frame as its Frame shape reads it, in its own Weave with the Bead shape's cell. The Project must have a Frame. */
-function shapedFrame(project: Framed): ShapedSheet {
-  const { rows, columns, shape, settings, quarterTurns } = project.frame!
+function shapedFrame(project: Layered): ShapedSheet {
+  const { rows, columns, shape, settings, quarterTurns } = frameOf(project)!
   return { rows, columns, ...(shape ? { shape } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
 }
 
@@ -80,8 +76,8 @@ function shapedFrame(project: Framed): ShapedSheet {
 const geometries = new WeakMap<FrameSheet, Map<string, LayerGeometry>>()
 
 /** The Frame's Layer geometry (ADR 0078), counted from its own first row and column. The Project must have a Frame. */
-export function frameGeometryOf(project: Framed): LayerGeometry {
-  const frame = project.frame!
+export function frameGeometryOf(project: Layered): LayerGeometry {
+  const frame = frameOf(project)!
   const cell = projectCell(project)
   const key = cell ? `${cell.aspect}:${cell.roundness}` : ''
   let known = geometries.get(frame)
@@ -100,7 +96,7 @@ export function frameGeometryOf(project: Framed): LayerGeometry {
 /** A layer as a command works on it (see `LayerSheet`): the Frame's from its own first row and column, or the Canvas,
  * open. The Frame's must exist. */
 export function layerSheet(project: Project, layer: Layer): LayerSheet {
-  const frame = layer === 'frame' ? project.frame : undefined
+  const frame = layer === 'frame' ? frameOf(project) : undefined
   if (!frame) {
     const { beads, weave } = layerOf(project, 'canvas')
     return { beads, weave, geometry: gridGeometry(weave) }
@@ -123,7 +119,7 @@ function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect): BeadMap {
  * into one of that layer, and gives back the layer's beads, which are put back. The same Project back when they came
  * back as they went in, which is a drawing command's "nothing changed". */
 export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSheet, local: (position: GridPosition) => GridPosition) => BeadMap): Project {
-  const frame = project.frame
+  const frame = frameOf(project)
   if (layer === 'frame') {
     if (!frame) {
       return project

@@ -4,15 +4,17 @@ import { colorAt } from '../../domain/canvas'
 import { beadColorAt } from '../../domain/layerBeads'
 import { deleteAll } from '../../domain/drawing'
 import { createProject } from '../../domain/createProject'
-import { moveToRow, rowProgressOn } from '../../domain/rowProgress'
+import { moveToRow, rowProgressOf, rowProgressOn } from '../../domain/rowProgress'
 import { replaceBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
 import { BEAD_CATALOG } from '../../domain/beads'
 import { editHarness } from '../../testUtils/editHarness'
 import { paintAt } from '../../testUtils/layers'
+import { beadsOfLayer, canvasOf, frameOf } from '../../domain/layerRecord'
+import { sheetOf, withFields } from '../../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-const frame = base.frame!
+const frame = frameOf(base)!
 const inside = (row: number, column: number) => ({ row: frame.row + row, column: frame.column + column })
 const marginCell = { row: frame.row - 1, column: frame.column }
 
@@ -30,7 +32,7 @@ describe('useEdit', () => {
       expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBe('#ff0000')
 
       ctx.history.onUndo()
-      expect(ctx.project.frame!.beads).toEqual(base.frame!.beads)
+      expect(frameOf(ctx.project)!.beads).toEqual(frameOf(base)!.beads)
       ctx.history.onRedo()
       expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBe('#ff0000')
     })
@@ -61,10 +63,10 @@ describe('useEdit', () => {
       const ctx = editHarness(base)
       expect(ctx.edit('drawing', (project) => paint(project, marginCell))).toEqual({ kind: 'unchanged' })
 
-      const withMarginBead: Project = { ...base, beads: paint(base, marginCell).beads }
+      const withMarginBead: Project = withFields(base, { beads: beadsOfLayer(paint(base, marginCell), 'canvas') })
       const erasing = editHarness(withMarginBead)
       expect(erasing.edit('drawing', (project) => paint(project, marginCell, null))).toEqual({ kind: 'applied' })
-      expect(colorAt(erasing.project.beads, marginCell.row, marginCell.column)).toBeNull()
+      expect(colorAt(beadsOfLayer(erasing.project, 'canvas'), marginCell.row, marginCell.column)).toBeNull()
     })
   })
 
@@ -74,11 +76,11 @@ describe('useEdit', () => {
       const outcome = ctx.edit('frame', (project) => changeFrame(project, { set: { ...frame, rows: frame.rows + 1 } }))
 
       expect(outcome).toEqual({ kind: 'applied' })
-      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1, columns: frame.columns })
+      expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 1, columns: frame.columns })
       expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(1)
 
       ctx.history.onUndo()
-      expect(ctx.project.frame).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
     })
 
     it('hands back the refusal and records nothing', () => {
@@ -92,13 +94,13 @@ describe('useEdit', () => {
       const woven = moveToRow(base, 2)
       const ctx = editHarness(woven)
       expect(ctx.edit('frame', (project) => changeFrame(project, { remove: true }))).toEqual({ kind: 'applied' })
-      expect(ctx.project.frame).toBeUndefined()
+      expect(frameOf(ctx.project)).toBeUndefined()
       expect(rowProgressOn(ctx.project)).toBe(false)
-      expect(ctx.project.rowProgress).toMatchObject({ currentRow: 0 })
+      expect(rowProgressOf(ctx.project)).toMatchObject({ currentRow: 0 })
 
       ctx.history.onUndo()
-      expect(ctx.project.frame).toEqual(woven.frame)
-      expect(ctx.project.rowProgress).toEqual(woven.rowProgress)
+      expect(sheetOf(ctx.project)).toEqual(sheetOf(woven))
+      expect(rowProgressOf(ctx.project)).toEqual(rowProgressOf(woven))
       expect(ctx.history.canUndo.value).toBe(false)
     })
 
@@ -116,14 +118,14 @@ describe('useEdit', () => {
       const ctx = editHarness(base)
       expect(ctx.editing.hold(grow(1))).toEqual({ kind: 'applied' })
       expect(ctx.editing.hold(grow(2))).toEqual({ kind: 'applied' })
-      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 2 })
+      expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 2 })
       expect(ctx.replaceProject).toHaveBeenCalledTimes(2)
       expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(2)
       expect(ctx.history.canUndo.value).toBe(false)
 
       ctx.editing.settle()
       ctx.history.onUndo()
-      expect(ctx.project.frame).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
       expect(ctx.history.canUndo.value).toBe(false)
     })
 
@@ -133,20 +135,20 @@ describe('useEdit', () => {
       ctx.edit('drawing', (project) => paint(project, inside(0, 0)))
       ctx.history.onUndo()
       expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBeNull()
-      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1 })
+      expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 1 })
       ctx.history.onUndo()
-      expect(ctx.project.frame).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
 
       ctx.editing.hold(grow(1))
       ctx.editing.beginStroke()
       ctx.editing.endStroke()
       ctx.history.onUndo()
-      expect(ctx.project.frame).toEqual(frame)
+      expect(frameOf(ctx.project)).toEqual(frame)
 
       ctx.history.onRedo()
       ctx.editing.hold(grow(2))
       ctx.history.onUndo()
-      expect(ctx.project.frame).toMatchObject({ rows: frame.rows + 1 })
+      expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 1 })
     })
 
     it('is no Undo step when it came back to where it began, or its Project is no longer open', () => {
@@ -173,25 +175,25 @@ describe('useEdit', () => {
   describe('an exempt edit', () => {
     it('Delete all clears finished rows too, as one Undo step', () => {
       const painted = paint(moveToRow(base, 1), inside(1, 0))
-      const woven: Project = { ...painted, frame: { ...painted.frame!, beads: { ...painted.frame!.beads, ...paint(base, inside(0, 0)).frame!.beads } } }
+      const woven: Project = withFields(painted, { frame: { ...frameOf(painted)!, beads: { ...frameOf(painted)!.beads, ...frameOf(paint(base, inside(0, 0)))!.beads } } })
       const ctx = editHarness(woven)
       expect(ctx.edit('exempt', deleteAll)).toEqual({ kind: 'applied' })
-      expect(ctx.project.frame!.beads).toEqual({})
-      expect(ctx.project.rowProgress).toMatchObject({ currentRow: 0 })
+      expect(frameOf(ctx.project)!.beads).toEqual({})
+      expect(rowProgressOf(ctx.project)).toMatchObject({ currentRow: 0 })
 
       ctx.history.onUndo()
-      expect(ctx.project.frame!.beads).toEqual(woven.frame!.beads)
-      expect(ctx.project.rowProgress).toEqual(woven.rowProgress)
+      expect(frameOf(ctx.project)!.beads).toEqual(frameOf(woven)!.beads)
+      expect(rowProgressOf(ctx.project)).toEqual(rowProgressOf(woven))
     })
 
     it('Replace Bead swaps only the Bead, and Undo swaps it back', () => {
-      const other = BEAD_CATALOG.find((bead) => bead.id !== base.beadId)!
+      const other = BEAD_CATALOG.find((bead) => bead.id !== canvasOf(base).beadId)!
       const ctx = editHarness(base)
       ctx.edit('exempt', (project) => replaceBead(project, other))
-      expect(ctx.project.beadId).toBe(other.id)
+      expect(canvasOf(ctx.project).beadId).toBe(other.id)
 
       ctx.history.onUndo()
-      expect(ctx.project.beadId).toBe(base.beadId)
+      expect(canvasOf(ctx.project).beadId).toBe(canvasOf(base).beadId)
     })
   })
 
@@ -208,7 +210,7 @@ describe('useEdit', () => {
       }
       ctx.editing.cancelStroke()
 
-      expect(ctx.project.frame!.beads).toEqual(base.frame!.beads)
+      expect(frameOf(ctx.project)!.beads).toEqual(frameOf(base)!.beads)
       expect(ctx.history.canUndo.value).toBe(false)
       expect(ctx.history.canRedo.value).toBe(true)
       expect(ctx.flushPendingSave).toHaveBeenCalled()
@@ -250,7 +252,7 @@ describe('useEdit', () => {
       ctx.editing.endStroke()
       expect(ctx.flushPendingSave).toHaveBeenCalledTimes(1)
       ctx.history.onUndo()
-      expect(ctx.project.frame!.beads).toEqual(base.frame!.beads)
+      expect(frameOf(ctx.project)!.beads).toEqual(frameOf(base)!.beads)
       expect(ctx.history.canUndo.value).toBe(false)
     })
 
@@ -298,6 +300,6 @@ describe('useEdit', () => {
     ctx.replaceProject(moveToRow(ctx.project, 2))
 
     ctx.history.onUndo()
-    expect(ctx.project.frame!.beads).toEqual(base.frame!.beads)
+    expect(frameOf(ctx.project)!.beads).toEqual(frameOf(base)!.beads)
   })
 })

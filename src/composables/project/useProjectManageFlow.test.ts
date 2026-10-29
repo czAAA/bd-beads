@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { useProjectManageFlow } from './useProjectManageFlow'
+import { canvasOf } from '../../domain/layerRecord'
 
 const make = (name: string) => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name, size: { width: 3, height: 3, unit: 'beads' } })
 
@@ -25,7 +26,7 @@ describe('useProjectManageFlow', () => {
     expect(flow.onRenameProject('   ')).toBe(false)
     expect(deps.replaceProject).not.toHaveBeenCalled()
     expect(flow.onRenameProject(' Owl ')).toBe(true)
-    expect(deps.replaceProject.mock.calls[0]![0].name).toBe('Owl')
+    expect(canvasOf(deps.replaceProject.mock.calls[0]![0]).name).toBe('Owl')
   })
 
   it('suggests the next free number and Cancel changes nothing', () => {
@@ -45,7 +46,7 @@ describe('useProjectManageFlow', () => {
     expect(flow.onConfirmDuplicate('')).toBe(false)
     expect(flow.onConfirmDuplicate('Copy')).toBe(true)
     const copy = deps.addProject.mock.calls[0]![0]
-    expect(copy.name).toBe('Copy')
+    expect(canvasOf(copy).name).toBe('Copy')
     expect(copy.id).not.toBe(moth.id)
   })
 
@@ -55,7 +56,7 @@ describe('useProjectManageFlow', () => {
     expect(flow.deleting.value).toBe(true)
     flow.onConfirmDelete()
     expect(deps.removeProject).toHaveBeenCalledOnce()
-    expect(library.projects.map((p) => p.name)).toEqual(['Owl'])
+    expect(library.projects.map((p) => canvasOf(p).name)).toEqual(['Owl'])
     expect(library.open).toBeUndefined()
     expect(flow.deleting.value).toBe(false)
   })

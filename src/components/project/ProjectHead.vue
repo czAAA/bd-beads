@@ -13,6 +13,7 @@ import IconButton from '../ui/IconButton.vue'
 import NamesSection from './NamesSection.vue'
 import TechniqueSection from './TechniqueSection.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { frameOf, projectNameOf } from '../../domain/layerRecord'
 
 // The head of the Project panel, always shown (ProjectPanel card, ticket 554): the `project:` title with the local save
 // state, the Project's name and maker, and the one Technique control with its settings. It only asks; the shell works.
@@ -47,7 +48,7 @@ const stateText = computed(() =>
 const weave = computed(() => frameWeave(props.project))
 const locked = computed(() => !techniqueAction.enabled?.(deps.value))
 /** A Project with a Frame weaves it (Row progress belongs to the Frame); one without weaves the Canvas. */
-const hasFrame = computed(() => props.project.frame !== undefined)
+const hasFrame = computed(() => frameOf(props.project) !== undefined)
 
 function setTechnique(technique: Technique) {
   if (hasFrame.value) emit('set-technique', technique)
@@ -60,7 +61,7 @@ function setSetting(id: string, value: number) {
 </script>
 
 <template>
-  <section class="project-head" role="group" :aria-label="project.name" data-testid="project-head">
+  <section class="project-head" role="group" :aria-label="projectNameOf(project)" data-testid="project-head">
     <div class="project-head__title">
       <span class="project-head__label">{{ t.panels.project.titleLabel }}</span>
       <!-- The save state (SaveStates card): the words are a polite live region so "Not saved" is announced; the icon and its Tooltip say the same. -->
@@ -79,7 +80,7 @@ function setSetting(id: string, value: number) {
     <NamesSection
       class="project-head__lines"
       inline
-      :name="project.name"
+      :name="projectNameOf(project)"
       :maker-name="project.makerName ?? ''"
       @update:name="emit('rename', $event)"
       @update:maker-name="emit('save-maker-name', $event)"
@@ -90,7 +91,7 @@ function setSetting(id: string, value: number) {
       testid="project"
       :technique="weave.technique"
       :settings="weave.techniqueSettings ?? {}"
-      :techniques="techniquesOf(project.frame)"
+      :techniques="techniquesOf(frameOf(project))"
       :disabled="locked"
       :technique-disabled-body="techniqueAction.disabledBody?.(t, deps)"
       @update:technique="setTechnique"

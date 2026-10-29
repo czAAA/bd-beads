@@ -1,7 +1,7 @@
 import { beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
-import { beadIdOfLayer, withLayer } from './layerRecord'
+import { beadIdOfLayer, frameOf, newLayerId, withLayer } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -42,19 +42,22 @@ export function createProject(input: CreateProjectInput): Project {
   const makerName = normalizeMakerName(input.makerName ?? '')
 
   const palette = defaultPaletteIds(defaultPalette(bead.id))
-  return {
-    id: crypto.randomUUID(),
-    name,
+  const layer = {
     ...created,
     beadId: bead.id,
     bead: beadCopy(bead),
     ...(input.beadShape && input.beadShape !== DEFAULT_BEAD_SHAPE ? { beadShape: input.beadShape } : {}),
     beads: {},
-    ...(dimensions ? { frame: { row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, beads: {}, ...weaveOf(created) } } : {}),
-    rowProgress: { ...INITIAL_ROW_PROGRESS },
+  }
+  return {
+    id: crypto.randomUUID(),
+    // Both layers take the form's settings (ADR 0079).
+    layers: [
+      { id: newLayerId(), name, ...layer, orientation: 0 },
+      ...(dimensions ? [{ id: newLayerId(), ...layer, row: 0, column: 0, columns: dimensions.columns, rows: dimensions.rows, rowProgress: { ...INITIAL_ROW_PROGRESS } }] : []),
+    ],
     palette,
     paletteLetters: lettersOfPalette(palette, bead.id, undefined),
-    rotation: 0,
     ...(makerName ? { makerName } : {}),
     createdAt: now,
     updatedAt: now,
@@ -78,7 +81,7 @@ export interface CreateProjectFromImageInput extends CreateProjectInput {
  * surplus dropped), so they never disagree. */
 export function createProjectFromImage(input: CreateProjectFromImageInput): Project {
   const project = createProject(input)
-  const frame = project.frame!
+  const frame = frameOf(project)!
   const palette = input.palette
   const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>
     Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),

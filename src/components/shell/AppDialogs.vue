@@ -6,6 +6,7 @@ import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
+import { projectNameOf } from '../../domain/layerRecord'
 
 // The app's dialogs (ticket 0618): the registry shows one at a time, named by `open`; each flow holds what its dialog
 // asks about and answers it.
@@ -177,10 +178,10 @@ const {
     :title="t.importSwitch.title"
     :message="
       saveFailed
-        ? fillBlanks(t.importSwitch.unsavedMessage, { current: activeProject.name })
+        ? fillBlanks(t.importSwitch.unsavedMessage, { current: projectNameOf(activeProject) })
         : pendingImport.length === 1
-          ? fillBlanks(t.importSwitch.messageOne, { imported: pendingImportOpens.name, current: activeProject.name })
-          : fillBlanks(t.importSwitch.messageMany, { count: pendingImport.length, imported: pendingImportOpens.name, current: activeProject.name })
+          ? fillBlanks(t.importSwitch.messageOne, { imported: projectNameOf(pendingImportOpens), current: projectNameOf(activeProject) })
+          : fillBlanks(t.importSwitch.messageMany, { count: pendingImport.length, imported: projectNameOf(pendingImportOpens), current: projectNameOf(activeProject) })
     "
     :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.importSwitch.switchButton"
     :cancel-label="t.importSwitch.keepButton"
@@ -200,7 +201,7 @@ const {
     v-if="open === 'remove-project' && pendingRemove"
     data-testid="remove-project-modal"
     :title="t.removeProject.title"
-    :message="fillBlanks(t.removeProject.message, { name: pendingRemove.name })"
+    :message="fillBlanks(t.removeProject.message, { name: projectNameOf(pendingRemove) })"
     :confirm-label="t.removeProject.confirmButton"
     :cancel-label="t.removeProject.cancelButton"
     @confirm="onConfirmRemove"
@@ -213,8 +214,8 @@ const {
     :title="t.switchProject.title"
     :message="
       saveFailed
-        ? fillBlanks(t.importSwitch.unsavedMessage, { current: activeProject.name })
-        : fillBlanks(t.switchProject.message, { current: activeProject.name, picked: pendingSwitch.name })
+        ? fillBlanks(t.importSwitch.unsavedMessage, { current: projectNameOf(activeProject) })
+        : fillBlanks(t.switchProject.message, { current: projectNameOf(activeProject), picked: projectNameOf(pendingSwitch) })
     "
     :confirm-label="saveFailed ? t.importSwitch.switchAnywayButton : t.switchProject.confirmButton"
     :cancel-label="t.switchProject.cancelButton"
@@ -250,8 +251,8 @@ const {
   <ConfirmModal
     v-if="open === 'delete-project' && activeProject"
     data-testid="delete-project-modal"
-    :title="fillBlanks(t.panels.project.deleteTitle, { name: activeProject.name })"
-    :message="fillBlanks(t.panels.project.deleteMessage, { name: activeProject.name })"
+    :title="fillBlanks(t.panels.project.deleteTitle, { name: projectNameOf(activeProject) })"
+    :message="fillBlanks(t.panels.project.deleteMessage, { name: projectNameOf(activeProject) })"
     :confirm-label="t.panels.project.deleteConfirm"
     :cancel-label="t.panels.project.cancel"
     @confirm="onConfirmDelete"

@@ -13,6 +13,7 @@ import ProjectPanel from '../project/ProjectPanel.vue'
 import { ref } from 'vue'
 import { starterById, type StarterCategoryId, type StarterId } from '../../domain/starters'
 import { usePanelsContext } from '../../composables/shell/useAppShell'
+import { frameOf } from '../../domain/layerRecord'
 
 // The sheets over the canvas box (tickets 79, 295, 443): Menu and Project in one PanelHost, New Project as the Menu's subpanel, and the Projects library as another. Each panel only asks; the app shell does the work.
 const {
@@ -113,7 +114,7 @@ const chosenStarter = ref<StarterId>()
     </template>
     <template #footer="{ depth }">
       <AppButton v-if="depth === 3" class="app-panels__create" type="submit" form="starter-setup-form" variant="primary" icon="plus" data-testid="create-starter-project">
-        {{ activeProject.frame ? t.frame.replaceFrame : t.frame.addFrameButton }}
+        {{ frameOf(activeProject) ? t.frame.replaceFrame : t.frame.addFrameButton }}
       </AppButton>
     </template>
   </PanelHost>

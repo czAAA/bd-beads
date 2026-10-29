@@ -54,6 +54,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `editHarness.ts`: a real Edit and Undo history over one in-memory Project, for flow tests (ADR 0036). The Project is a ref, so a flow's computeds follow each Edit.
 - `shellHost.ts`: `mountShellParts(...parts)` mounts parts of the shell (AppPanels, AppDialogs) under the app's real wiring and nothing else, and hands back its contexts, `openPanel(panel)` and the dialog registry (ticket 0618).
 - `paletteHost.ts`: `mountWithPalette(component, ids, props)` mounts a Palette control under the real Palette and Edit, as the app shell provides them, with spies for asking to remove one color or all (ticket 0601).
+- `marginSheetHost.ts`: `marginSheetHost(zoom)`, the margin sheet round a 30-column Frame at a zoom, for browser tests (the fit cases, a picker opening in its title block; ticket 0681).
 - `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).
 - `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
 - `countingBeads.ts`: a set of beads behind a counter of the rows and beads read, so a test counts the work an edit does instead of timing it (ticket 0674).
@@ -63,6 +64,8 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `rotated.ts`: a ready-made rotated Project.
 - `convertPicture.ts`: `flatColorsPicture` for the Convert image wizard to read, and `pictureSet` to wait until it has (ticket 0654).
 - `frameGrid.ts`: `frameGrid` reads a Project's beads as a dense grid of rows and columns, the shape an expectation is written in, and `withFrameGrid` puts one back (ticket 0609).
+- `flatFields.ts`: a Project in the words it had before it held its layers (ticket 0664): `withFields` sets `technique`, `beads`, `frame`, `rowProgress`, `rotation` and the rest on the right layer, `flatProject` makes a bare one from them, `flatView` reads one back flat for a `toMatchObject`, `sheetOf` is the Frame's sheet without the layer's id, Bead and Row progress, and `flatOf` is the flat record an older store or file held.
+- `legacyFile.ts`: `legacyFile(projects, version)` writes Projects as a file of version 4 to 11 did, for a test of reading one (ticket 0664).
 
 App code holds only what the app uses (ticket 0609): `npm run knip`'s second run, `knip --production`, leaves the tests and these helpers out and fails on a file or export only a test reaches. A fixture builder belongs here, not in `src/`. An export the app keeps that a test also names on purpose (a limit it counts with, a step it drives on its own, a reset hook) is tagged `@internal` in its doc comment with the reason, and that run leaves it out.
 
