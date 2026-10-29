@@ -17,6 +17,7 @@ import MarginSheet from './MarginSheet.vue'
 
 const zoom = ref(1)
 const columns = ref(40)
+const movePresses = ref(0)
 
 /** Where a loom Frame of `columns` × 11 and its sheet are at a zoom, as the surface reports them: beads of 20px at
  * 100%, its line out from them, its sheet 4 beads round them. */
@@ -44,7 +45,11 @@ function projectOf(across: number): Project {
 
 const Host = defineComponent({
   setup() {
-    return () => h('div', { style: { position: 'relative', margin: '16px' } }, [h(MarginSheet, { project: projectOf(columns.value), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false })])
+    // Bare, the Move bar stands above the sheet's top edge (ticket 0682): the host leaves it room.
+    return () =>
+      h('div', { style: { position: 'relative', margin: '48px 16px 16px', height: `${anchorAt(zoom.value, columns.value).sheet.height}px` }, 'data-testid': 'under-sheet' }, [
+        h(MarginSheet, { project: projectOf(columns.value), anchor: anchorAt(zoom.value, columns.value), editing: false, pressing: false, onMovePress: () => movePresses.value++ }),
+      ])
   },
 })
 
@@ -72,6 +77,9 @@ function problems(root: HTMLElement): string[] {
   const title = root.querySelector<HTMLElement>('[data-testid="margin-title"] > *')
   const parts = [...band, ...(title ? [title] : [])].map((element) => ({ name: element.getAttribute('aria-label') || element.dataset.testid || element.className, rect: element.getBoundingClientRect() }))
   const found: string[] = []
+  // Bare, the Move bar alone may stand outside where the sheet would be, but never over the Frame's line or beads.
+  const handle = root.querySelector<HTMLElement>('[data-testid="margin-handle"] button')
+  if (handle && overlap(handle.getBoundingClientRect(), line)) found.push('the bare Move bar lies over the Frame\'s line or beads')
   for (const [index, part] of parts.entries()) {
     if (!inside(part.rect, sheet)) found.push(`${part.name} stands outside the sheet`)
     if (overlap(part.rect, line)) found.push(`${part.name} lies over the Frame's line or beads`)
@@ -114,4 +122,45 @@ describe('the margin sheet at each zoom (ticket 0658)', () => {
       expect(found).toEqual({})
     })
   }
+})
+
+describe('the bare margin sheet, under a 31px band (ticket 0682)', () => {
+  it('keeps only the Move bar, on the middle of the Frame\'s top edge: it takes the press that drags, and a press on the first row reaches the bead', async () => {
+    zoom.value = 1
+    columns.value = 40
+    const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
+    for (const across of [40, 3]) {
+      columns.value = across
+      for (const at of [0.1, 0.25, 0.38]) {
+        zoom.value = at
+        movePresses.value = 0
+        await settled(root)
+        const name = `${across} columns at ${at * 100}%`
+        expect(formOf(root), name).toBe('bare')
+        const sheet = root.querySelector<HTMLElement>('[data-testid="margin-sheet"]')!
+        expect([...sheet.querySelectorAll('button')].map((button) => button.getAttribute('aria-label')), name).toEqual(['Move Frame'])
+
+        const { box } = anchorAt(at, across)
+        const origin = sheet.getBoundingClientRect()
+        const line = new DOMRect(origin.left + box.left, origin.top + box.top, box.width, box.height)
+        const bar = root.querySelector<HTMLElement>('[data-testid="frame-move-handle"]')!.getBoundingClientRect()
+        expect([bar.width, bar.height], name).toEqual([56, 24])
+        expect(bar.left + bar.width / 2, name).toBeCloseTo(line.left + line.width / 2, 1)
+        expect(bar.bottom, name).toBeCloseTo(line.top, 1)
+
+        // What a press lands on: the Move bar at its middle, the canvas under the sheet at the first row's first bead.
+        const pressAt = (x: number, y: number) => {
+          const target = document.elementFromPoint(x, y)!
+          target.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, clientX: x, clientY: y }))
+          return target
+        }
+        expect(pressAt(bar.left + bar.width / 2, bar.top + bar.height / 2).closest('[data-testid="frame-move-handle"]'), name).not.toBeNull()
+        expect(movePresses.value, name).toBe(1)
+        const bead = 20 * at
+        const outset = frameOutsetPx(at)
+        expect(pressAt(line.left + outset + bead / 2, line.top + outset + bead / 2).getAttribute('data-testid'), name).toBe('under-sheet')
+        expect(movePresses.value, name).toBe(1)
+      }
+    }
+  })
 })
