@@ -67,4 +67,10 @@ describe('LayerSettings (ADR 0079, ticket 0670)', () => {
     expect(mountSettings({ frame: { settings: {} } }).find('[data-testid^="frame-setting-"]').exists()).toBe(false)
     expect(mountSettings().find('[data-testid="frame-size-locked"]').exists()).toBe(false)
   })
+
+  it('shows a layer\'s out-of-date Bead "(as saved)" and offers the catalog\'s of its id (tickets 534, 0687)', () => {
+    const shown = (wrapper: ReturnType<typeof mountSettings>) => wrapper.get('[data-testid="bead-size"] button').attributes('aria-label')
+    expect(shown(mountSettings())).toBe('Size: 11/0')
+    expect(shown(mountSettings({ bead: { ...delica, widthMm: delica.widthMm + 0.2 } }))).toBe('Size: 11/0 (as saved)')
+  })
 })
