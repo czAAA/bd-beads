@@ -61,7 +61,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
 | Folded beads | свёрнутые бисерины | The Frame's own beads beyond its edge, out of sight (ADR 0066); proposed, ticket 0641 |
-| Canvas · Hand · Rulers | Полотно · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
+| Canvas · Hand · Rulers | Холст · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | A Project made from a picture |
 | Pixel to bead ratio | соотношение пикселей и бисерин | Picture pixels : beads, one side always 1 ("2:1"); the label reads «пиксели изображения : бисерины» (ticket 0646) |
@@ -122,7 +122,7 @@ The same voice and sentence patterns in each language; domain words are never re
 
 ## Canvas color names
 
-The Canvas color control (Russian "Цвет полотна") offers five backgrounds in light and five in dark (ticket 0554). The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
+The Canvas color control (Russian "Цвет холста") offers five backgrounds in light and five in dark (ticket 0554). The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
 
 | Choice | Light (EN / RU) | Dark (EN / RU) |
 | --- | --- | --- |

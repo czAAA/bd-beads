@@ -133,4 +133,22 @@ describe('BackgroundColorPicker (ticket 0653)', () => {
     expect(chosen.find('[data-testid="background-color-dot"]').exists()).toBe(false)
     expect(chosen.get('[data-testid="background-color-name"]').text()).toBe('Studio #fafafa')
   })
+
+  it('names the dotted swatch\'s Tooltip "Canvas color", chosen or not, and every other one "Color" (ticket 0684)', async () => {
+    const swatches = [
+      { id: 'studio', color: '#fafafa', dot: true, name: 'Studio', label: 'Studio, the Canvas color' },
+      { id: 'linen', color: '#f7f3ec', name: 'Linen', label: 'Linen, 2 of 5' },
+    ]
+    const tooltipOf = async (wrapper: ReturnType<typeof render>, id: string) => {
+      const swatch = wrapper.get(`[data-testid="background-color-${id}"]`).element.closest('.swatch')!
+      const tooltip = wrapper.findAll('.app-tooltip').find((each) => swatch.contains(each.element))!
+      await tooltip.trigger('pointerenter', { pointerType: 'mouse' })
+      return { name: tooltip.get('.app-tooltip__name').text(), body: tooltip.get('.app-tooltip__body').text() }
+    }
+
+    const wrapper = render({ swatches, selectedId: 'linen' })
+    expect(await tooltipOf(wrapper, 'studio')).toEqual({ name: 'Canvas color', body: '#fafafa' })
+    expect(await tooltipOf(wrapper, 'linen')).toEqual({ name: 'Color', body: '#f7f3ec' })
+    expect(await tooltipOf(render({ swatches, selectedId: 'studio' }), 'studio')).toEqual({ name: 'Canvas color', body: '#fafafa' })
+  })
 })
