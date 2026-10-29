@@ -116,7 +116,7 @@ export default tseslint.config(
   // (AppModal, AppPanel, menus, roving focus) focus buttons and containers, which the rule does not match by name.
   {
     files: ['src/**/*.{ts,vue}'],
-    ignores: ['**/*.test.ts', 'src/testSetup.ts', 'src/testUtils/**', 'src/components/ui/form/TextField.vue', 'src/services/touchFocusGuard.ts'],
+    ignores: ['**/*.test.ts', 'src/testSetup.ts', 'src/testUtils/**', 'src/components/ui/form/TextField.vue', 'src/services/touchFocusGuard.ts', 'src/composables/ui/touchKeyboard.ts'],
     plugins: { keyboard: { rules: { 'no-self-raised-keyboard': noSelfRaisedKeyboard } } },
     rules: { 'keyboard/no-self-raised-keyboard': 'error' },
   },
