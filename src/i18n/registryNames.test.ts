@@ -26,10 +26,10 @@ const NAMED: { group: string; names: (t: Translations) => Readonly<Record<string
     keys: [...BUILT_IN_COLORS, ...BEAD_CATALOG.flatMap((bead) => bead.brand.colorFamilies ?? [])].map((color) => color.id),
   },
   {
-    // A Starter whose id is its kind's (a Shape) is named by the kind (ticket 0633).
+    // A Starter whose id is its Frame shape's (a Shape) is named by the shape (ticket 0633).
     group: 'starters.options',
     names: (t) => t.starters.options,
-    keys: STARTER_CATEGORIES.flatMap((category) => category.starters).flatMap((starter) => (starter.id === starter.kind ? [] : [starter.id])),
+    keys: STARTER_CATEGORIES.flatMap((category) => category.starters).flatMap((starter) => (starter.id === starter.shape ? [] : [starter.id])),
   },
 ]
 

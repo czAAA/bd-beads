@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { withColors, type Rect } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
-import type { FrameKindId } from '../../domain/frameKind'
+import type { FrameShapeId } from '../../domain/frameShape'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import { withFrame } from '../../domain/frame'
@@ -543,7 +543,7 @@ describe('useFrameFlow', () => {
       const { deps, placeFromStarter } = setup(painted)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       const frame = deps.harness.project.frame!
-      expect(frame).toMatchObject({ kind: 'star', settings: { partSize: 5 } })
+      expect(frame).toMatchObject({ shape: 'star', settings: { partSize: 5 } })
       // Round the middle of the view, (20, 30).
       expect([frame.row < 20, frame.row + frame.rows > 20, frame.column < 30, frame.column + frame.columns > 30]).toEqual([true, true, true, true])
       expect(frame.beads).toEqual(starterDesign(star))
@@ -556,14 +556,14 @@ describe('useFrameFlow', () => {
     it('puts the same Frame in place empty on Start empty', () => {
       const { deps, placeFromStarter } = setup(open)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: false })
-      expect(deps.harness.project.frame).toMatchObject({ kind: 'star', beads: {} })
+      expect(deps.harness.project.frame).toMatchObject({ shape: 'star', beads: {} })
     })
 
     it('replaces an empty Frame at once, starting Row progress at the first pass', () => {
       const { deps, placeFromStarter, replaceConfirmOpen } = setup(sized)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(false)
-      expect(deps.harness.project.frame!.kind).toBe('star')
+      expect(deps.harness.project.frame!.shape).toBe('star')
       expect(deps.harness.project.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
     })
 
@@ -584,7 +584,7 @@ describe('useFrameFlow', () => {
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       confirmReplace()
       expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-      expect(deps.harness.project.frame!.kind).toBe('star')
+      expect(deps.harness.project.frame!.shape).toBe('star')
       deps.harness.history.onUndo()
       expect(deps.harness.project.frame).toEqual(drawn.frame)
     })
@@ -598,9 +598,9 @@ describe('useFrameFlow', () => {
 })
 
 describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
-  /** The open Project with an empty Custom frame of a kind and size. */
-  function custom(kind: FrameKindId, size: number): Project {
-    const result = changeFrame(open, { custom: { kind, size, centre: { row: 20, column: 30 } } })
+  /** The open Project with an empty Custom frame of a Frame shape and size. */
+  function custom(shape: FrameShapeId, size: number): Project {
+    const result = changeFrame(open, { custom: { shape, size, centre: { row: 20, column: 30 } } })
     if (result.kind !== 'changed') throw new Error(result.kind)
     return result.project
   }
@@ -638,7 +638,7 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
   })
 
   it('changes a Fringe earring one setting at a time; its Fringe style is a step of its own, folding without asking (tickets 0597, 0640)', () => {
-    const placed = changeFrame(open, { custom: { kind: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'straight', fringeLength: 12 }, centre: { row: 20, column: 30 } } })
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     const { deps, setSettings } = setup(placed.project)
     setSettings({ fringeLength: 14 })

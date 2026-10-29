@@ -4,7 +4,7 @@ import IconButton from '../ui/IconButton.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { editPencilCentre, moveHandleCentre, overlapsSelectionHandles, removeFrameCentre, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import type { Project } from '../../domain/project'
-import { frameAllows } from '../../domain/frameKind'
+import { frameAllows } from '../../domain/frameShape'
 
 // What a Frame always carries on the canvas (tickets 452, 473, ADR 0054): the Move handle and the edit pencil, in the
 // gutter just outside its edge. They never scale with the zoom; only their centres follow the Frame, kept in the canvas

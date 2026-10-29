@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { beadCount, colorAt, withColors } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
 import { cellOfBead } from './customSelection'
-import { customFrameSize, frameLayoutOf, type CustomFrameKindId } from './frameKind'
+import { customFrameSize, frameLayoutOf, type FrameShapeId } from './frameShape'
 import { layerSheet, onLayer, positionOnCanvas } from './layers'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { canvasDistance } from './layerWeave'
@@ -28,7 +28,7 @@ function changed(project: Project, change: FrameChange): Project {
   return result.project
 }
 
-const custom = (kind: CustomFrameKindId, size: number) => changed(open(), { custom: { kind, size, centre: { row: 20, column: 30 } } })
+const custom = (shape: FrameShapeId, size: number) => changed(open(), { custom: { shape, size, centre: { row: 20, column: 30 } } })
 
 /** Paints Frame positions (round, place in round) as a press on the Frame does. */
 const paintFrame = (project: Project, positions: { row: number; column: number }[], color: string | null) =>
@@ -152,7 +152,7 @@ describe('Rotate Frame on a Custom frame (ticket 0594)', () => {
     const turned = rotateFrame(project)!
     const before = project.frame!
     const after = turned.frame!
-    expect(after).toMatchObject({ kind: 'kite', quarterTurns: 1, beads: before.beads })
+    expect(after).toMatchObject({ shape: 'kite', quarterTurns: 1, beads: before.beads })
     expect({ rows: after.rows, columns: after.columns }).toEqual(customFrameSize('kite', { rows: 12 }, 1))
     const turnedLayout = frameLayoutOf(after)!
     const layout = frameLayoutOf(before)!

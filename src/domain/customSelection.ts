@@ -1,5 +1,5 @@
 import { colorAt, type BeadChange } from './canvas'
-import { frameLayoutOf } from './frameKind'
+import { frameLayoutOf } from './frameShape'
 import { keyOf, landingAt, layoutPosition, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridPosition } from './grid'
 import { layoutPlacement, type LayoutPlacement } from './layerGeometry'

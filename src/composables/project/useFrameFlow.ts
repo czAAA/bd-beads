@@ -14,10 +14,11 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
-import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
+import { changedSetting, frameAllows, removedBeadsOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
+import { layerOf } from '../../domain/layerRecord'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
@@ -312,15 +313,16 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * question says so. */
   const removeTakesBeads = computed(() => {
     const frame = deps.currentProject()?.frame
-    return !!frame && frameKindOf(frame).removedBeads === 'removed'
+    return !!frame && removedBeadsOf(frame) === 'removed'
   })
 
   /** Remove Frame: asks first, except for an empty Frame that takes its beads with it, as there is nothing to lose
    * (ticket 0592). */
   function remove(): void {
     const project = deps.currentProject()
-    if (!project?.frame) return
-    if (removeTakesBeads.value && !hasBeads(project.frame.beads) && !locked.value) {
+    const frame = project && layerOf(project, 'frame')
+    if (!frame) return
+    if (removeTakesBeads.value && !hasBeads(frame.beads) && !locked.value) {
       commit(undefined)
       return
     }
@@ -346,7 +348,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function replaceAsking(place: () => void): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
-    if (project.frame && hasBeads(project.frame.beads)) {
+    const frame = layerOf(project, 'frame')
+    if (frame && hasBeads(frame.beads)) {
       pendingPlace = place
       replaceConfirmOpen.value = true
       return
@@ -363,7 +366,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
       const t = deps.messages()
       const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
-      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { kind: starterName(t, starter), size }))
+      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { shape: starterName(t, starter), size }))
     })
   }
 
