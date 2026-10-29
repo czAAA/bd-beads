@@ -141,8 +141,15 @@
   --margin-tool: 28px; /* MarginSheet card: a tool button in the margin's top band (24px compact; 44px hit on a coarse pointer). */
   --margin-tool-compact: 24px; /* MarginSheet card: a tool button in the compact form. */
   --margin-title-row: 23px; /* MarginSheet card: one row of the title block (one 22px row in the compact form). */
-  --margin-band-full: 64px; /* MarginSheet card: the band height, in screen pixels, from which the margin shows its full form. */
-  --margin-band-compact: 34px; /* MarginSheet card: the band height under which the margin folds. */
+  --margin-band-full: 68px; /* MarginSheet card: the band height, in screen pixels, from which the margin shows its full form. */
+  --margin-band-compact: 40px; /* MarginSheet card: the band height under which the margin folds. */
+  --margin-band-folded: 31px; /* MarginSheet card: the band height under which even the folded row has no room: the paper alone. */
+  --margin-band-inset-compact: 10px; /* MarginSheet card: the compact and folded rows in from the sheet's sides. */
+  --margin-band-top-compact: 8px; /* MarginSheet card: the compact row down from the sheet's top, 2px inside its 6px border. */
+  --margin-done-compact: 22px; /* MarginSheet card: Row done in the compact and folded forms. */
+  --margin-track-compact: 40px; /* MarginSheet card: the Row progress track in the compact form. */
+  --margin-tab: 24px; /* MarginSheet card: the folded title block's name tab, and the folded row's height. */
+  --margin-tab-name: 600 0.6875rem/0.875rem var(--font-sans); /* MarginSheet card: the Frame's name on its tab and in the compact title block (Inter 600 11). */
   --margin-band-inset: 14px; /* MarginSheet card: the top band's tools in from the sheet's top-left corner (10px compact). */
   --margin-move-height: 28px; /* MarginSheet card: the Move bar's hit area on the paper (56 wide, like the gutter handle's). */
   --margin-done: 26px; /* MarginSheet card: Row done on the paper, the bar's primary button at 26px. */

@@ -493,6 +493,9 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { body: (t) => t.tooltips.moveFrame }),
   // The margin sheet's Margin color button (ticket 0657, MarginSheet card): opens the margin color's picker under it.
   unkeyed('margin-color', (t) => t.frame.margin.colorLabel, 'canvas', { icon: 'palette' }),
+  unkeyed('fold-title-block', (t) => t.frame.margin.foldTitleBlock, 'canvas', { icon: 'chevron-down' }),
+  // The name tab's own text leads; its chevron-up trails it (MarginSheet card).
+  unkeyed('show-title-block', (t) => t.frame.margin.showTitleBlock, 'canvas'),
   unkeyed('reset-progress', (t) => t.rowProgress.resetButton, 'rowProgress', {
     icon: 'reset',
     body: (t) => t.tooltips.resetProgress,

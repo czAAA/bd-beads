@@ -447,6 +447,16 @@ Built by ticket 0657 (the title block), in Belarusian, Spanish and Chinese:
 | Name and size on the margin | Імя і памер на палях | Nombre y tamaño en el margen | 在边距上显示名称和尺寸 |
 | Change Technique | Змяніць тэхніку | Cambiar técnica | 更换编织技法 |
 
+Built by ticket 0658 (the zoom forms and folding), in Belarusian, Spanish and Chinese:
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Fold the title block · Show the title block | Згарнуць штамп · Паказаць штамп | Plegar el cajetín · Mostrar el cajetín | 收起标题栏 · 显示标题栏 |
+| Frame tools | Інструменты рамкі | Herramientas del marco | 边框工具 |
+| Show the title block: {name} (the tab's accessible name) | Паказаць штамп: {name} | Mostrar el cajetín: {name} | 显示标题栏：{name} |
+
+The tab's accessible name in Russian, Ukrainian and Polish follows the rows above: "Показать штамп: {name}", "Показати штамп: {name}", "Pokaż tabliczkę: {name}".
+
 The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
 
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.

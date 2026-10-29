@@ -7,6 +7,7 @@ import { canvasWeave } from '../domain/layerWeave'
 import type { NamedPiece, PieceName } from '../domain/pieceNames'
 import type { BeadMap } from '../domain/canvas'
 import { hasGuides, type Selection } from '../domain/selection'
+import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
@@ -142,6 +143,9 @@ export interface RulerLayoutOptions {
   fontPx: number
   /** Whether the numbers and dots are drawn (the Rulers toggle). The Frame's line and picking do not depend on it. */
   numbers: boolean
+  /** The form of the Frame's margin sheet, which its numbers hang on: only the full form has room for them and their
+   * dots (MarginSheet card, ticket 0658). Full when left out. */
+  sheet?: MarginForm
   /** The Pieces to rule, when the caller holds them through a stroke (`ruledPieces`, ticket 0674); counted from the
    * beads otherwise. */
   pieces?: RuledPieces
@@ -292,7 +296,7 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
   const scale = rulerScale(surface.zoom, fontPx)
@@ -301,13 +305,15 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
-  const laid = boxes.map((box) =>
-    box.kind === 'frame' && project.frame
+  const laid = boxes.map((box) => ({
+    kind: box.kind,
+    ...(box.kind === 'frame' && project.frame
       ? layBox(box, withCell(heldWeave(project, 'frame')!, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
-      : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale),
-  )
-  const everyLabel = laid.flatMap((box) => box.labels)
-  const everyBead = laid.flatMap((box) => box.beads)
+      : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
+  }))
+  const numbered = laid.filter((box) => box.kind !== 'frame' || sheet === 'full')
+  const everyLabel = numbered.flatMap((box) => box.labels)
+  const everyBead = numbered.flatMap((box) => box.beads)
 
   return {
     scale,
