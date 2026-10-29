@@ -99,7 +99,7 @@ const tooltip = computed(() => ({ name: action.name(t.value), body: action.body?
 
 .custom-color-picker--selected {
   box-shadow:
-    0 0 0 2px var(--panel),
+    0 0 0 2px var(--swatch-gap, var(--panel)),
     0 0 0 4px var(--ring);
 }
 
