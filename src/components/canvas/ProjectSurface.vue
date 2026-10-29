@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
-import { projectCell } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
@@ -93,8 +93,11 @@ const space = computed(() => spaceOf(props.project, true))
 
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
+/** The Canvas's Weave (ADR 0079), with the cell its Bead and Bead shape draw it in. */
+const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
+
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: props.project.technique, techniqueSettings: props.project.techniqueSettings, cell: projectCell(props.project), frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
@@ -176,8 +179,8 @@ onBeforeUnmount(() => {
     ref="rootEl"
     class="project-surface"
     data-testid="project-surface"
-    :data-technique="project.technique"
-    :data-technique-settings="JSON.stringify(project.techniqueSettings ?? {})"
+    :data-technique="canvasWeave.technique"
+    :data-technique-settings="JSON.stringify(canvasWeave.techniqueSettings ?? {})"
     :data-rotation="project.rotation"
     :data-zoom="zoom"
     :data-scroll-x="scroll.x"

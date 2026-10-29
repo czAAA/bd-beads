@@ -18,6 +18,7 @@ import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, 
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
+import { layerOf } from '../../domain/layerRecord'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
@@ -319,8 +320,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * (ticket 0592). */
   function remove(): void {
     const project = deps.currentProject()
-    if (!project?.frame) return
-    if (removeTakesBeads.value && !hasBeads(project.frame.beads) && !locked.value) {
+    const frame = project && layerOf(project, 'frame')
+    if (!frame) return
+    if (removeTakesBeads.value && !hasBeads(frame.beads) && !locked.value) {
       commit(undefined)
       return
     }
@@ -346,7 +348,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function replaceAsking(place: () => void): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
-    if (project.frame && hasBeads(project.frame.beads)) {
+    const frame = layerOf(project, 'frame')
+    if (frame && hasBeads(frame.beads)) {
       pendingPlace = place
       replaceConfirmOpen.value = true
       return
