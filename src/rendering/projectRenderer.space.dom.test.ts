@@ -11,13 +11,15 @@ import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
+import { beadsOfLayer, canvasOf, frameOf } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: 3, height: 4, unit: 'beads' } })
   const cells = Array.from({ length: 12 }, (_, index) => ({ row: Math.floor(index / 3), column: index % 3, color: '#e63746' }))
-  const frame = { ...weaveOf(project), technique, row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
-  return { ...project, technique, rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } }
+  const frame = { ...weaveOf(canvasOf(project)), technique, row: 6, column: 5, rows: 4, columns: 3, beads: withColors({}, cells) }
+  return withFields(project, { technique, rotation, frame, rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
 }
 
 const view: Region = { x: 0, y: 0, width: 400, height: 400 }
@@ -141,7 +143,7 @@ describe('brick stitch inside a Frame', () => {
 describe('the Frame margin on the Canvas (ticket 276)', () => {
   it('fills no marks in the margin outside the Frame, leaving a flat gap, and runs them right up to the margin', () => {
     const project = framedProject('loom')
-    const { named } = render({ ...project, frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} } }, true, { region: { x: 0, y: 0, width: 500, height: 500 } })
+    const { named } = render(withFields(project, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} } }), true, { region: { x: 0, y: 0, width: 500, height: 500 } })
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)
@@ -158,7 +160,7 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
     const frame = { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} }
     const drawn = (open: boolean, zoom = 1, withFrame = true) => {
       const project = framedProject('loom')
-      return render({ ...project, frame: withFrame ? frame : undefined }, open, { region: { x: 0, y: 0, width: 800, height: 800 }, zoom, theme })
+      return render(withFields(project, { frame: withFrame ? frame : undefined }), open, { region: { x: 0, y: 0, width: 800, height: 800 }, zoom, theme })
     }
     const strokedIn = (calls: ReturnType<typeof drawn>['calls'], color: string) => calls.filter((call) => call.name === 'stroke' && call.strokeStyle === color)
     const roundRects = (calls: ReturnType<typeof drawn>['calls']) => calls.filter((call) => call.name === 'roundRect').map(({ args }) => args)
@@ -201,7 +203,7 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
 
     it('is white with a black edge in high contrast', () => {
       const project = framedProject('loom')
-      const { calls } = render({ ...project, frame }, true, { region: { x: 0, y: 0, width: 800, height: 800 }, theme: PROJECT_THEMES.contrast })
+      const { calls } = render(withFields(project, { frame }), true, { region: { x: 0, y: 0, width: 800, height: 800 }, theme: PROJECT_THEMES.contrast })
       expect(calls.some((call) => call.name === 'fill' && call.fillStyle === '#ffffff')).toBe(true)
       expect(strokedIn(calls, '#000000').length).toBeGreaterThan(0)
     })
@@ -210,7 +212,7 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
 
 describe('Position marks cost one pattern fill, however far out', () => {
   it.each<Technique>(['loom', 'peyote', 'brick'])('is the same number of fills at the Zoom floor and at 100% (%s)', (technique) => {
-    const project = { ...framedProject(technique), frame: undefined }
+    const project = withFields(framedProject(technique), { frame: undefined })
     const wide: Region = { x: 0, y: 0, width: 1600, height: 1000 }
 
     const floor = render(project, true, { region: wide, zoom: 0.1 })
@@ -222,7 +224,7 @@ describe('Position marks cost one pattern fill, however far out', () => {
   })
 
   it('draws only the Frame\'s cells and the painted beads in view, whatever the zoom', () => {
-    const project: Project = { ...framedProject('loom'), beads: withColors(framedProject('loom').beads, [{ row: 40, column: 40, color: '#00f' }, { row: 5000, column: 5000, color: '#00f' }]) }
+    const project: Project = withFields(framedProject('loom'), { beads: withColors(beadsOfLayer(framedProject('loom'), 'canvas'), [{ row: 40, column: 40, color: '#00f' }, { row: 5000, column: 5000, color: '#00f' }]) })
     const wide: Region = { x: 0, y: 0, width: 1600, height: 1000 }
 
     const { beads } = render(project, true, { region: wide, zoom: 0.1 })
@@ -235,7 +237,7 @@ describe('Position marks cost one pattern fill, however far out', () => {
     (['loom', 'peyote', 'brick'] as const).flatMap((technique) => ([0, 90, 180, 270] as const).map((rotation) => ({ technique, rotation }))),
   )('draws the Frame\'s cells and the beads outside it once each: $technique at $rotation°', ({ technique, rotation }) => {
     const base = framedProject(technique, rotation)
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 30, column: 30, color: '#00f' }, { row: 20, column: 2, color: '#00f' }]) }
+    const project: Project = withFields(base, { beads: withColors(beadsOfLayer(base, 'canvas'), [{ row: 30, column: 30, color: '#00f' }, { row: 20, column: 2, color: '#00f' }]) })
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
@@ -249,7 +251,7 @@ describe('Position marks tile', () => {
     const tile = recordingContext()
     // A tile is made on a canvas of its own (one per Technique): hand it the one that records.
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(tile.context as unknown as CanvasRenderingContext2D)
-    const project = { ...framedProject(technique), frame: undefined }
+    const project = withFields(framedProject(technique), { frame: undefined })
     const { context } = recordingContext()
     renderProject(context, { project, space: spaceOf(project, true), region: view, zoom: 1.51 })
     return tile
@@ -284,19 +286,19 @@ describe('Position marks tile', () => {
 
   it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {
     const base = framedProject('loom')
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 2, column: 1, color: '#00f' }, { row: 13, column: 11, color: '#00f' }]) }
+    const project: Project = withFields(base, { beads: withColors(beadsOfLayer(base, 'canvas'), [{ row: 2, column: 1, color: '#00f' }, { row: 13, column: 11, color: '#00f' }]) })
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
     expect(beads).toHaveLength(12)
-    expect(project.beads[2]?.[1]).toBe('#00f')
+    expect(beadsOfLayer(project, 'canvas')[2]?.[1]).toBe('#00f')
   })
 })
 
 /** The Frame woven in `frame` over a Canvas woven in `canvas`: 3 across, 4 down, at row 6, column 5, every position painted. */
 function mixedProject(canvas: Technique, frame: Technique): Project {
   const base = framedProject(canvas)
-  return { ...base, technique: canvas, frame: { ...base.frame!, technique: frame } }
+  return withFields(base, { technique: canvas, frame: { ...frameOf(base)!, technique: frame } })
 }
 
 describe.each<{ canvas: Technique; frame: Technique }>([
@@ -334,7 +336,7 @@ describe.each<{ canvas: Technique; frame: Technique }>([
 
   it('hides the Canvas bead lying under the Frame, and draws the one beside it', () => {
     const base = mixedProject(canvas, frame)
-    const project = { ...base, beads: withColors({}, [{ row: 6, column: 5, color: '#111111' }, { row: 6, column: 20, color: '#222222' }]) }
+    const project = withFields(base, { beads: withColors({}, [{ row: 6, column: 5, color: '#111111' }, { row: 6, column: 20, color: '#222222' }]) })
 
     const colors = render(project, true).beads.map(({ color }) => color)
 

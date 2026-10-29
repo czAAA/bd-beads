@@ -64,6 +64,8 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `rotated.ts`: a ready-made rotated Project.
 - `convertPicture.ts`: `flatColorsPicture` for the Convert image wizard to read, and `pictureSet` to wait until it has (ticket 0654).
 - `frameGrid.ts`: `frameGrid` reads a Project's beads as a dense grid of rows and columns, the shape an expectation is written in, and `withFrameGrid` puts one back (ticket 0609).
+- `flatFields.ts`: a Project in the words it had before it held its layers (ticket 0664): `withFields` sets `technique`, `beads`, `frame`, `rowProgress`, `rotation` and the rest on the right layer, `flatProject` makes a bare one from them, `flatView` reads one back flat for a `toMatchObject`, `sheetOf` is the Frame's sheet without the layer's id, Bead and Row progress, and `flatOf` is the flat record an older store or file held.
+- `legacyFile.ts`: `legacyFile(projects, version)` writes Projects as a file of version 4 to 11 did, for a test of reading one (ticket 0664).
 
 App code holds only what the app uses (ticket 0609): `npm run knip`'s second run, `knip --production`, leaves the tests and these helpers out and fails on a file or export only a test reaches. A fixture builder belongs here, not in `src/`. An export the app keeps that a test also names on purpose (a limit it counts with, a step it drives on its own, a reset hook) is tagged `@internal` in its doc comment with the reason, and that run leaves it out.
 

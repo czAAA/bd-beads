@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { framedGrid } from '../../domain/layerBeads'
 import type { Grid } from '../../domain/project'
-import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { thumbnailPixels } from '../../rendering/projectThumbnail'
 import ExampleFrame from './ExampleFrame.vue'
@@ -19,7 +18,7 @@ function draw(canvas: unknown, grid: Grid) {
   if (!(canvas instanceof HTMLCanvasElement)) return
   const context = canvas.getContext('2d')
   if (!context) return
-  const image = thumbnailPixels({ technique: DEFAULT_TECHNIQUE, ...framedGrid(grid), rotation: 0 }, SIZE)
+  const image = thumbnailPixels(framedGrid(grid), SIZE)
   canvas.width = image.width
   canvas.height = image.height
   context.putImageData(new ImageData(image.data as Uint8ClampedArray<ArrayBuffer>, image.width, image.height), 0, 0)

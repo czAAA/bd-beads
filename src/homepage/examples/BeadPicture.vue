@@ -11,6 +11,7 @@ import { spaceOf } from '../../rendering/space'
 import { PROJECT_THEMES, PRINT_THEME } from '../../rendering/beadLook'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import { displayedExtentPx } from '../../rendering/surfaceView'
+import { type Layered } from '../../domain/layerRecord'
 
 // Beads on their board for the Homepage carousel's examples (ticket 218; Homepage card): a grid drawn by the real
 // Project renderer plus the overlay renderer's marks (current row, Selection, Paint preview), taking only those and the
@@ -35,12 +36,10 @@ const theme = useResolvedTheme()
 const pictureEl = ref<HTMLCanvasElement>()
 const marksEl = ref<HTMLCanvasElement>()
 
-const project = computed(() => ({
-  technique: props.technique,
-  ...framedGrid(props.grid, { technique: props.technique }),
-  rowProgress: props.rowProgress ?? { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
-  rotation: 0 as const,
-}))
+const project = computed((): Layered => {
+  const [canvas, frame] = framedGrid(props.grid, { technique: props.technique }).layers
+  return { layers: [canvas, { ...frame!, ...(props.rowProgress ? { rowProgress: props.rowProgress } : {}) }] }
+})
 const extent = computed(() => displayedExtentPx(props.technique, props.grid[0]?.length ?? 0, props.grid.length, props.zoom, 0))
 const space = computed(() => spaceOf(project.value, false))
 const hasMarks = computed(() => props.rowProgress !== undefined || !!props.selection || !!props.preview)

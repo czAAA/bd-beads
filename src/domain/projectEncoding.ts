@@ -1,8 +1,8 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
-import { isFrameShape } from './frameShape'
-import { liftFlatWeave, type FlatWeave, type SavedProject } from './flatWeave'
-import type { Grid, Project } from './project'
-import type { GridProject } from './storedProject'
+import { isFrameShape, type QuarterTurns } from './frameShape'
+import { liftFlatWeave, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
+import type { FrameLayer, Grid, Project } from './project'
+import type { GridProject, LayeredProject, StoredLayer } from './storedProject'
 import type { VersionThreeProject } from './versionThree'
 import { settingsOffDefault, type Weave } from './weave'
 
@@ -22,9 +22,19 @@ export interface EncodedBeads {
  * Its Frame shape is stored as `kind`, the name it had before ADR 0079, so every build reads it alike. */
 type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded' | 'shape'> & FlatWeave & { kind?: unknown; encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
-/** A Project as a file (version 4 on) and the library store it: the Canvas's beads, and the Frame with its own. Each
- * layer's settings are its map as the app holds it (file version 11, ticket 0636); before, its Brick block was flat. */
-export type EncodedProject = Omit<Project, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
+/** A Project as a file (versions 4 to 11) and the library (version 4) stored it before its layers: the Canvas's beads,
+ * and the Frame with its own. Each layer's settings are its map as the app holds it (file version 11, ticket 0636);
+ * before, its Brick block was flat. Read only. */
+export type EncodedFlatProject = Omit<FlatProject, 'beads' | 'frame'> & FlatWeave & { encodedBeads: EncodedBeads; frame?: EncodedFrame }
+
+/** A layer as a file (version 12) and the library (version 5) store it (ADR 0079, ticket 0664): everything it holds,
+ * its beads (and a Frame's Folded beads) in the compact form, and its orientation in degrees; a Frame's place, Frame
+ * shape and settings, and Row progress beside them. */
+export type EncodedLayer = Omit<StoredLayer, 'beads' | 'folded' | 'quarterTurns'> & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
+
+/** A Project as a file (version 12) and the library (version 5) store it (ticket 0664): what is one per file, and its
+ * layers in order, the Canvas first. */
+export type EncodedProject = Omit<Project, 'layers'> & { layers: EncodedLayer[] }
 
 /** A Project as version 3 stored it (temporary, see versionThree.ts): all the beads together, the Frame a bare
  * rectangle, the beads it covered beside them. */
@@ -168,10 +178,6 @@ function savedWeave<T extends Weave>({ techniqueSettings, ...layer }: T): Omit<T
   return { ...layer, ...(Object.keys(changed).length > 0 ? { techniqueSettings: changed } : {}) }
 }
 
-function encodeFrame({ beads, folded, shape, ...place }: FrameSheet): EncodedFrame {
-  return { ...savedWeave(place), ...(shape ? { kind: shape } : {}), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
-}
-
 /** A stored Frame as the app holds it: a `kind` naming a Frame shape this build knows is its shape; any other (an
  * older file's "rectangular", or a shape added since) is a Frame without one. */
 function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFrame): FrameSheet & FlatWeave {
@@ -179,21 +185,44 @@ function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFra
   return { ...place, ...(isFrameShape(kind) ? { shape: kind } : {}), beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
+/** A Project as a file and the library store it (ticket 0664): each layer with its settings at their defaults left out
+ * and its beads compact, a Frame's quarter turns as its orientation in degrees. */
 export function encodeProject(project: Project): EncodedProject {
-  const { beads, frame, ...rest } = project
-  return { ...savedWeave(rest), encodedBeads: encodeBeads(beads), ...(frame ? { frame: encodeFrame(frame) } : {}) }
+  return { ...project, layers: project.layers.map(encodeLayer) }
+}
+
+function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
+  const { beads, folded, quarterTurns, ...rest } = layer as Partial<FrameLayer> & Project['layers'][number]
+  return {
+    ...savedWeave(rest),
+    ...(quarterTurns ? { orientation: quarterTurns * 90 } : {}),
+    encodedBeads: encodeBeads(beads),
+    ...(folded ? { encodedFolded: encodeBeads(folded) } : {}),
+  }
+}
+
+/** The Project a file version 12 or library version 5 value holds (ticket 0664); it still goes through normalizeProject.
+ * A Frame's orientation is read back as its quarter turns. */
+export function decodeProject(encoded: EncodedProject): LayeredProject {
+  const [canvas, ...frames] = encoded.layers.map(decodeLayer)
+  return { ...encoded, layers: [canvas!, ...frames.map(({ orientation, ...frame }): StoredLayer => ({ ...frame, ...(typeof orientation === 'number' ? { quarterTurns: (orientation / 90) as QuarterTurns } : {}) }))] }
+}
+
+function decodeLayer({ encodedBeads, encodedFolded, ...layer }: EncodedLayer): StoredLayer {
+  const folded = encodedFolded && decodeBeads(encodedFolded)
+  return { ...layer, beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
 /** The Project a file version 11 value holds; it still goes through normalizeProject. */
-export function decodeProject(encoded: EncodedProject): SavedProject {
+export function decodeSettingsMapProject(encoded: EncodedFlatProject): SavedProject {
   const { encodedBeads, frame, ...rest } = encoded
   return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
 }
 
 /** The Project a value of file version 4 to 10, or of the library, holds: each layer's flat Brick block read into its
  * settings map (ticket 0636). */
-export function decodeFlatProject(encoded: EncodedProject): SavedProject {
-  return liftFlatWeave(decodeProject(encoded))
+export function decodeFlatProject(encoded: EncodedFlatProject): SavedProject {
+  return liftFlatWeave(decodeSettingsMapProject(encoded))
 }
 
 /** The Project a stored value of version 1 to 3 holds, whichever shape wrote it (temporary, see versionThree.ts), its

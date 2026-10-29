@@ -9,6 +9,7 @@ import { currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projec
 import { beadCentre } from '../support/projects'
 import { fixturePicture } from '../support/picture'
 import { frameGrid } from '../../src/testUtils/frameGrid'
+import { frameOf } from '../../src/domain/layerRecord'
 
 // Ticket 108: with the size limit gone (ADR 0019), 70 × 250 and 250 × 250 Projects can be created, edited, saved,
 // reloaded, exported and undone, and a full device says so and keeps the edit on screen. Real browser, default
@@ -55,7 +56,7 @@ for (const { columns, rows } of SIZES) {
       await openSized(page, columns, rows)
 
       const saved = await savedProject(page)
-      expect([saved.frame!.columns, saved.frame!.rows]).toEqual([columns, rows])
+      expect([frameOf(saved)!.columns, frameOf(saved)!.rows]).toEqual([columns, rows])
       expect(frameGrid(saved)).toHaveLength(rows)
       expect(frameGrid(saved).every((cells) => cells.length === columns)).toBe(true)
       await expect(page.getByTestId('size-cap-message')).toHaveCount(0)
@@ -72,7 +73,7 @@ for (const { columns, rows } of SIZES) {
       await page.reload()
       await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
       const reloaded = await savedProject(page)
-      expect([reloaded.frame!.columns, reloaded.frame!.rows]).toEqual([columns, rows])
+      expect([frameOf(reloaded)!.columns, frameOf(reloaded)!.rows]).toEqual([columns, rows])
       expect(frameGrid(reloaded)[2]![3]!.color).toBe(RED)
 
       // The whole Project goes out in a Project file, and reads back the same. Export all projects is in the Projects
@@ -85,7 +86,7 @@ for (const { columns, rows } of SIZES) {
       // A .openbeads file is gzip around the JSON (ADR 0048).
       const file = gunzipSync(readFileSync((await (await download).path())!)).toString('utf8')
       const exported = parseProjectsFile(file).projects[0]!
-      expect([exported.frame!.columns, exported.frame!.rows]).toEqual([columns, rows])
+      expect([frameOf(exported)!.columns, frameOf(exported)!.rows]).toEqual([columns, rows])
       expect(frameGrid(exported)[2]![3]!.color).toBe(RED)
       expect(frameGrid(exported).flat().filter((cell) => cell.color !== null)).toHaveLength(1)
     })
@@ -148,6 +149,6 @@ test('Convert image can frame a picture at 250 × 250, where it was once refused
 
   await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
   const saved = await savedProject(page)
-  expect([saved.frame!.columns, saved.frame!.rows]).toEqual([250, 250])
+  expect([frameOf(saved)!.columns, frameOf(saved)!.rows]).toEqual([250, 250])
   expect(frameGrid(saved).flat().some((cell) => cell.color !== null)).toBe(true)
 })

@@ -4,8 +4,9 @@ import type { Technique } from '../domain/weave'
 import { COVER_BEAD_MAX, coverLayout } from './coverLayout'
 import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER } from './printPlan'
 import { CELL_SIZE_PX } from './cellSize'
+import { flatProject } from '../testUtils/flatFields'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => flatProject({ technique, rotation, beads: {}, frame: { technique, row: 0, column: 0, columns, rows, beads: {} } })
 const colorsOf = (count: number, letter?: string) => Array.from({ length: count }, (_, index) => ({ hex: '#000000', name: `Color ${index}`, beads: '10', ...(letter ? { letter } : {}) }))
 const words = (colors: number, name = 'Scarf', maker = '') => ({ name, maker, colors: colorsOf(colors) })
 

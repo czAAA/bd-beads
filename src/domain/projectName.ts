@@ -1,4 +1,5 @@
 import { MAX_MAKER_NAME } from './makerName'
+import { withLayer } from './layerRecord'
 import type { Project } from './project'
 
 /** A Project's own name (spec 0440, ticket 443), for Rename and Duplicate: up to 40 characters, never empty. */
@@ -11,7 +12,7 @@ export function normalizeProjectName(name: string): string {
 
 /** The Project under a new name; the caller has checked it is not empty. */
 export function withProjectName(project: Project, name: string): Project {
-  return { ...project, name: normalizeProjectName(name) }
+  return withLayer(project, 'canvas', { name: normalizeProjectName(name) })
 }
 
 /** What Duplicate suggests (ticket 443): the name plus the first unused number from 2 ("Moth 2", "Moth 3"), trimmed
@@ -32,5 +33,5 @@ export function suggestCopyName(name: string, existingNames: readonly string[]):
 /** A copy of the Project under a new id and name, everything else kept, Row progress included, so it works as a
  * snapshot. */
 export function duplicateProject(project: Project, name: string, id: string = crypto.randomUUID(), now = Date.now()): Project {
-  return { ...structuredClone(project), id, name: normalizeProjectName(name), createdAt: now, updatedAt: now }
+  return { ...withProjectName(structuredClone(project), name), id, createdAt: now, updatedAt: now }
 }

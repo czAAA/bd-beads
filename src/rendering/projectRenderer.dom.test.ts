@@ -1,9 +1,8 @@
 import { findBead } from '../domain/beads'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
-import { withColors } from '../domain/canvas'
+import { type BeadMap, withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
-import { weaveOf } from '../domain/layerWeave'
 import type { Grid, Project } from '../domain/project'
 import type { Technique, Weave } from '../domain/weave'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
@@ -11,6 +10,8 @@ import { renderProject as renderInSpace, visibleBeads, type RenderInput } from '
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
+import { canvasOf, frameOf, heldWeave, orientationOf, withLayer } from '../domain/layerRecord'
+import { type FlatChange, withFields } from '../testUtils/flatFields'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {
@@ -28,17 +29,17 @@ function beadsDrawn(project: Project, region: Region, zoom = 1, showFinished = f
   return beads
 }
 
-function projectOf(technique: Technique, columns: number, rows: number, extra: Partial<Project> & { grid?: Grid } = {}): Project {
+function projectOf(technique: Technique, columns: number, rows: number, extra: FlatChange & { grid?: Grid } = {}): Project {
   const { grid, ...rest } = extra
   // Row marks are off here unless a test asks for them with `rowMarks` (a Frame turns Row progress on in the app).
-  const made = { ...createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...rest }
+  const made = withFields(createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), rest)
   // The Frame is woven as the Project is made, whatever the test overrides (ticket 492).
-  const project = made.frame && !rest.frame ? { ...made, frame: { ...made.frame, ...weaveOf(made) } } : made
+  const project = frameOf(made) && !rest.frame ? withLayer(made, 'frame', { weave: heldWeave(made, 'canvas') }) : made
   return grid ? withFrameGrid(project, grid) : project
 }
 
 const whole = (project: Project, zoom = 1): Region => {
-  const { width, height } = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
+  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, orientationOf(project))
   return { x: 0, y: 0, width, height }
 }
 
@@ -248,7 +249,7 @@ describe('renderProject', () => {
     })
 
     it('draws all the same beads as the unrotated Project', () => {
-      const upright = { ...project, rotation: 0 as const }
+      const upright = withFields(project, { rotation: 0 as const })
 
       expect(beadsDrawn(project, whole(project))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
     })
@@ -280,7 +281,7 @@ describe('renderProject', () => {
     })
 
     it('draws all the same beads as the unrotated Project', () => {
-      const upright = { ...project, rotation: 0 as const }
+      const upright = withFields(project, { rotation: 0 as const })
 
       expect(beadsDrawn(project, whole(project))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
     })
@@ -312,7 +313,7 @@ describe('renderProject', () => {
     })
 
     it('draws all the same beads as the unrotated Project', () => {
-      const upright = { ...project, rotation: 0 as const }
+      const upright = withFields(project, { rotation: 0 as const })
 
       expect(beadsDrawn(project, whole(project))).toHaveLength(beadsDrawn(upright, whole(upright)).length)
     })
@@ -360,12 +361,12 @@ describe('renderProject', () => {
 
     /** Every cell of a Frame at the origin holds a red bead. */
     const filled = (project: Project): Project => {
-      const frame = project.frame!
-      const beads: Project['beads'] = {}
+      const frame = frameOf(project)!
+      const beads: BeadMap = {}
       for (let row = 0; row < frame.rows; row += 1) {
         beads[row] = Object.fromEntries(Array.from({ length: frame.columns }, (_, column) => [column, '#e63746']))
       }
-      return { ...project, frame: { ...frame, beads } }
+      return withFields(project, { frame: { ...frame, beads } })
     }
 
     it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
@@ -804,7 +805,7 @@ describe('the keep-out margin on the Canvas', () => {
   it('hides the overhang of the beads just outside it, which nest into its edge rows in peyote', () => {
     const frame = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
     // A bead in the row just above the margin (row 15, the margin being rows 16 to 27): its bottom 5px lies inside the margin's outline.
-    const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 15: { 22: '#ff0000' } } }
+    const project = withFields(projectOf('peyote', 4, 4), { frame: { ...frame, beads: {} }, beads: { 15: { 22: '#ff0000' } } })
 
     const cutOut = drawnWithMarginCutOut(project, [16 * 20, 16 * 15, 12 * 20 + 10, 11 * 15 + 20])
 
@@ -816,11 +817,10 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
   /** A 3 x 2 Frame at row 20, column 20 holding red in its first bead, over a Canvas with blue under the Frame and green beyond it. */
   function layered(): Project {
     const base = projectOf('loom', 3, 2)
-    return {
-      ...base,
-      frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
+    return withFields(base, {
+frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
       beads: { 20: { 21: '#0000ff' }, 40: { 40: '#00ff00' } },
-    }
+})
   }
   const drawnOnCanvas = (project: Project): BeadShape[] => {
     const beads: BeadShape[] = []
@@ -856,18 +856,15 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
 describe('Bead shape (ADR 0068)', () => {
   const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
-  const painted = (project: Project): Project => ({
-    ...project,
-    frame: { ...project.frame!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) },
-  })
+  const painted = (project: Project): Project => (withFields(project, { frame: { ...frameOf(project)!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) } }))
 
   it('draws the Symmetric cell exactly as the Technique had it', () => {
     const project = painted(projectOf('peyote', 3, 3))
-    expect(drawnBeads({ ...project, beadShape: 'symmetric' })).toEqual(drawnBeads(project))
+    expect(drawnBeads(withFields(project, { beadShape: 'symmetric' }))).toEqual(drawnBeads(project))
   })
 
   it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {
-    const real = { ...painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), beadShape: 'real' as const }
+    const real = withFields(painted(projectOf('peyote', 3, 3, { bead: findBead('miyuki-delica-11-0') })), { beadShape: 'real' })
     const beads = drawnBeads(real)
     expect(beads).toHaveLength(9)
     for (const bead of beads) {

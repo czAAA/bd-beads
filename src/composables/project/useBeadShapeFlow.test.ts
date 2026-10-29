@@ -4,6 +4,7 @@ import { restoreSnapshot, snapshotOf } from '../../domain/undoSnapshot'
 import type { Project } from '../../domain/project'
 import type { EditFn } from './useEdit'
 import { useBeadShapeFlow } from './useBeadShapeFlow'
+import { canvasOf } from '../../domain/layerRecord'
 
 function setup(beadShape?: 'real') {
   let current: Project = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', ...(beadShape ? { beadShape } : {}) })
@@ -19,9 +20,9 @@ describe('useBeadShapeFlow (ticket 508)', () => {
     const { flow, edit, project } = setup()
     flow.setBeadShape('real')
     expect(edit).toHaveBeenCalledOnce()
-    expect(project().beadShape).toBe('real')
+    expect(canvasOf(project()).beadShape).toBe('real')
     flow.setBeadShape('symmetric')
-    expect(project().beadShape).toBeUndefined()
+    expect(canvasOf(project()).beadShape).toBeUndefined()
   })
 
   it('does nothing for the shape the Project already has', () => {
@@ -35,7 +36,7 @@ describe('useBeadShapeFlow (ticket 508)', () => {
     const before = snapshotOf(project())
     flow.setBeadShape('real')
     const after = snapshotOf(project())
-    expect(restoreSnapshot(project(), before).beadShape).toBeUndefined()
-    expect(restoreSnapshot(project(), after).beadShape).toBe('real')
+    expect(canvasOf(restoreSnapshot(project(), before)).beadShape).toBeUndefined()
+    expect(canvasOf(restoreSnapshot(project(), after)).beadShape).toBe('real')
   })
 })

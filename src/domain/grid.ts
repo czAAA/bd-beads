@@ -8,7 +8,7 @@ export type PhysicalUnit = 'mm' | 'cm'
 export type SizeUnit = 'beads' | PhysicalUnit
 
 // A view-only quarter-turn (ticket 171, extending ticket 28): clockwise degrees. Purely cosmetic, like
-// Project.rotation: the grid never turns, only its on-screen (and printed/exported) presentation.
+// The Canvas's orientation (ADR 0079): the grid never turns, only its on-screen (and printed/exported) presentation.
 export type Rotation = 0 | 90 | 180 | 270
 
 // Whether this rotation swaps which grid axis runs across the screen: true for a quarter turn either way (90°/270°),

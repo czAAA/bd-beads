@@ -8,7 +8,6 @@ import { MARGIN, withMargin } from '../domain/margin'
 import { laidFrame } from '../domain/frameOrientation'
 import { canvasWeave, frameWeave, sameWeave } from '../domain/layerWeave'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn } from '../domain/rowProgress'
-import type { Project } from '../domain/project'
 import {
   BEAD_GAP_PX,
   brighten,
@@ -37,7 +36,7 @@ import {
   setGridTransform,
   type Region,
 } from './surfaceView'
-import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, heldWeave, type Layered, orientationOf } from '../domain/layerRecord'
 
 // The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
 // is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
@@ -79,7 +78,7 @@ export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, 
 }
 
 /** The parts of a Project the renderer reads. */
-export type DrawnProject = Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+export type DrawnProject = Layered
 
 export interface RenderInput {
   // The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded).
@@ -116,8 +115,8 @@ export interface RenderInput {
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
  * take in its drawn extent where it is woven otherwise and so draws larger or smaller than that. */
-function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = 0): Region | undefined {
-  const frame = project.frame
+function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined {
+  const frame = frameOf(project)
   if (!frame) {
     return undefined
   }
@@ -149,11 +148,11 @@ function drawPositionMarks(
     return
   }
   const cell = cellSizePx(canvas.technique, canvas.cell)
-  const box = project.frame && withMargin(footprintOf(project)!, margin)
+  const box = frameOf(project) && withMargin(footprintOf(project)!, margin)
   // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
   const footprint = frameFootprintPx(project)
   const held = frameFootprintPx(project, margin)
-  const alike = project.frame !== undefined && sameWeave(canvas, heldWeave(project, 'frame')!)
+  const alike = frameOf(project) !== undefined && sameWeave(canvas, heldWeave(project, 'frame')!)
   const cut = box && held && (alike ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
   const hole = cut && { left: cut.x, right: cut.x + cut.width, top: cut.y, bottom: cut.y + cut.height }
   context.fillStyle = pattern
@@ -342,7 +341,7 @@ const SEAM_WIDTH_PX = 1
 /** The Canvas's beads, bead by bead, with the Frame's footprint cut out so none shows over it. */
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin } = draw
-  const { rotation } = project
+  const rotation = orientationOf(project)
   const beads = beadsOfLayer(project, 'canvas')
   const covered = footprintOf(project)
   const weave = canvasWeave(project)
@@ -395,7 +394,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
 
 /** The margin's sheet in grid px (MarginSheet card, tickets 0656, 0657): its box, the Frame's footprint it holds, and
  * its band, the narrowest of its four sides. What the sheet is drawn from and what its tools on the page are placed by. */
-export function marginSheetPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
+export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
   const sheet = frameFootprintPx(project, margin)
   const footprint = frameFootprintPx(project)
   if (!sheet || !footprint) return undefined
@@ -448,7 +447,8 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters } = input
-  const { frame, rotation } = project
+  const frame = frameOf(project)
+  const rotation = orientationOf(project)
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme

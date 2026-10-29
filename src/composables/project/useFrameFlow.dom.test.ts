@@ -3,13 +3,15 @@ import { withColors, type Rect } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
 import type { FrameShapeId } from '../../domain/frameShape'
 import { createProject } from '../../domain/createProject'
-import { moveToRow } from '../../domain/rowProgress'
+import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import { withFrame } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { starterById, starterDesign } from '../../domain/starters'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
+import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../../domain/layerRecord'
+import { flatView, sheetOf, withFields } from '../../testUtils/flatFields'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const open = withFrame(sized, undefined)
@@ -46,7 +48,8 @@ const rect = ({ technique: _technique, ...rectangle }: Rect & { technique: strin
 
 /** The rectangle of the Frame the last change left (its beads and name aside). */
 function lastFrame(deps: ReturnType<typeof setup>['deps']) {
-  const frame = deps.replaceProject.mock.calls.at(-1)?.[0].frame
+  const last = deps.replaceProject.mock.calls.at(-1)?.[0]
+  const frame = last && sheetOf(last)
   if (!frame) return undefined
   const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
   return rectangle
@@ -54,7 +57,7 @@ function lastFrame(deps: ReturnType<typeof setup>['deps']) {
 
 describe('useFrameFlow', () => {
   it('moves the Frame with its own beads by dragging the Move handle, and leaves the Canvas as it is (ticket 452, ADR 0066)', () => {
-    const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) }, beads: { 5: { 5: '#00ff00' } } }
+    const drawn = withFields(sized, { frame: { ...frameOf(sized)!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) }, beads: { 5: { 5: '#00ff00' } } })
     const { deps, press, drag, release } = setup(drawn)
     press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
@@ -67,7 +70,7 @@ describe('useFrameFlow', () => {
     const { deps, draftProject, press, drag, release } = setup(sized)
     press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
-    expect(draftProject.value?.frame).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {} })
+    expect(sheetOf(draftProject.value!)).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {} })
     release()
     expect(draftProject.value).toBe(deps.harness.project)
   })
@@ -86,7 +89,7 @@ describe('useFrameFlow', () => {
     drag({ row: 0, column: 2 })
     release()
     expect(lastFrame(deps)).toEqual({ ...sizedRect, column: 2 })
-    expect(deps.harness.project.rowProgress.currentRow).toBe(1)
+    expect(rowProgressOf(deps.harness.project).currentRow).toBe(1)
   })
 
   it('resizes the Frame by the edges of the handle it grabbed, only while the bar is open', () => {
@@ -105,45 +108,46 @@ describe('useFrameFlow', () => {
 
   it('drops what a shrinking handle drag gives up once, on release, as one Undo step (ticket 513)', () => {
     const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 2, column: 3, color: '#2a9d8f' }])
-    const start = { ...sized, frame: { ...sized.frame!, beads: own } }
+    const start = withLayer(sized, 'frame', { beads: own })
     const { deps, draftProject, press, drag, release } = setupEditing(start)
     press({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 2, column: 3 })
     drag({ row: 2, column: 2 })
     expect(deps.replaceProject).not.toHaveBeenCalled()
-    expect(draftProject.value?.beads).toEqual(withColors({}, [{ row: 2, column: 3, color: '#2a9d8f' }]))
+    expect(beadsOfLayer(draftProject.value!, 'canvas')).toEqual(withColors({}, [{ row: 2, column: 3, color: '#2a9d8f' }]))
     release()
     expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-    expect(deps.harness.project.beads).toEqual(withColors({}, [{ row: 2, column: 3, color: '#2a9d8f' }]))
+    expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual(withColors({}, [{ row: 2, column: 3, color: '#2a9d8f' }]))
     deps.harness.history.onUndo()
-    expect(deps.harness.project).toMatchObject({ beads: {}, frame: start.frame })
+    expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual({})
+    expect(sheetOf(deps.harness.project)).toEqual(sheetOf(start))
   })
 
   it('folds what a shrinking handle drag gives up on a Frame woven unlike the Canvas, and one Undo unfolds it (ticket 0638)', () => {
     const own = withColors({}, [{ row: 0, column: 0, color: '#e63746' }, { row: 2, column: 3, color: '#2a9d8f' }])
-    const start = { ...sized, beads: { 1: { 3: '#999999' } }, frame: { ...sized.frame!, technique: 'peyote' as const, beads: own } }
+    const start = withFields(sized, { beads: { 1: { 3: '#999999' } }, frame: { ...frameOf(sized)!, technique: 'peyote' as const, beads: own } })
     const { deps, press, drag, release } = setupEditing(start)
     press({ kind: 'handle', edges: ['right'] }, { row: 1, column: 3 })
     drag({ row: 1, column: 2 })
     release()
     expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-    expect(deps.harness.project.frame!.folded).toBeDefined()
+    expect(frameOf(deps.harness.project)!.folded).toBeDefined()
     deps.harness.history.onUndo()
-    expect(deps.harness.project).toMatchObject({ beads: start.beads, frame: start.frame })
-    expect(deps.harness.project.frame!.folded).toBeUndefined()
+    expect(deps.harness.project.layers).toEqual(start.layers)
+    expect(frameOf(deps.harness.project)!.folded).toBeUndefined()
   })
 
   it('lifts the Canvas beads a growing handle drag covers once, on release, previewed while dragging, and one Undo puts them back (ticket 0639)', () => {
-    const start = { ...sized, beads: withColors({}, [{ row: 3, column: 1, color: '#e63746' }]) }
+    const start = withFields(sized, { beads: withColors({}, [{ row: 3, column: 1, color: '#e63746' }]) })
     const { deps, draftProject, press, drag, release } = setupEditing(start)
     press({ kind: 'handle', edges: ['bottom'] }, { row: 2, column: 1 })
     drag({ row: 4, column: 1 })
-    expect(draftProject.value?.frame!.beads).toEqual(withColors({}, [{ row: 3, column: 1, color: '#e63746' }]))
+    expect(frameOf(draftProject.value)!.beads).toEqual(withColors({}, [{ row: 3, column: 1, color: '#e63746' }]))
     expect(deps.replaceProject).not.toHaveBeenCalled()
     release()
     expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-    expect(deps.harness.project.beads).toEqual({})
+    expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual({})
     deps.harness.history.onUndo()
-    expect(deps.harness.project).toMatchObject({ beads: start.beads, frame: start.frame })
+    expect(deps.harness.project.layers).toEqual(start.layers)
   })
 
   it('changes no bead and is no step when the Frame did not change', () => {
@@ -182,7 +186,7 @@ describe('useFrameFlow', () => {
     remove()
     confirmRemove()
     expect(removeConfirmOpen.value).toBe(false)
-    expect(deps.harness.project.frame).toBeUndefined()
+    expect(frameOf(deps.harness.project)).toBeUndefined()
   })
 
   it('asks before removing the Frame even while no pass is done, and says so once confirmed', () => {
@@ -191,7 +195,7 @@ describe('useFrameFlow', () => {
     expect(removeConfirmOpen.value).toBe(true)
     expect(deps.replaceProject).not.toHaveBeenCalled()
     confirmRemove()
-    expect(deps.harness.project.frame).toBeUndefined()
+    expect(frameOf(deps.harness.project)).toBeUndefined()
     expect(deps.announce).toHaveBeenCalledWith('Frame removed')
   })
 
@@ -201,12 +205,12 @@ describe('useFrameFlow', () => {
     expect(empty.deps.replaceProject).not.toHaveBeenCalled()
     expect(empty.deps.announce).toHaveBeenCalledWith('Nothing drawn yet to fit the Frame to')
 
-    const drawn: Project = { ...open, beads: { 4: { 6: '#ff0000', 8: '#00ff00' }, 7: { 5: '#0000ff' } } }
+    const drawn: Project = withFields(open, { beads: { 4: { 6: '#ff0000', 8: '#00ff00' }, 7: { 5: '#0000ff' } } })
     const { deps, fit } = setup(drawn)
     fit()
     expect(lastFrame(deps)).toEqual({ row: 4, column: 5, rows: 4, columns: 4 })
     // Fit makes the Frame round the beads, so they leave the Canvas for it; setting a Frame would leave them there.
-    expect(deps.harness.project.beads).toEqual({})
+    expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual({})
   })
 
   it('sets the Frame to a Selection\'s rectangle as one undo step, and leaves the bar closed (tickets 415, 473)', () => {
@@ -233,14 +237,14 @@ describe('useFrameFlow', () => {
     })
 
     it('counts several rows added on top', () => {
-      const { deps, setTo } = setup({ ...woven('brick'), techniqueSettings: { brickBlock: 4 } })
+      const { deps, setTo } = setup(withFields(woven('brick'), { techniqueSettings: { brickBlock: 4 } }))
       setTo({ row: 11, column: 0, rows: 4, columns: 4 })
       expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added 3 empty rows on top: a Frame must start on an unshifted row.', 'info')
     })
 
     it('says nothing when the Frame is refused', () => {
       const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 4, column, color: '#e63746' })))
-      const { deps, setTo } = setup({ ...woven('brick'), beads, pieceNames: [{ row: 4, column: 0, name: 'Fox' }] })
+      const { deps, setTo } = setup(withFields(woven('brick'), { beads, pieceNames: [{ row: 4, column: 0, name: 'Fox' }] }))
       setTo({ row: 4, column: 2, rows: 1, columns: 4 })
       expect(deps.showToast).toHaveBeenCalledTimes(1)
       expect(deps.showToast).toHaveBeenCalledWith('frame-cuts-schema', expect.any(String), 'info')
@@ -249,7 +253,7 @@ describe('useFrameFlow', () => {
 
   it('refuses a Frame that would cut a named Schema, with a Message naming it (ticket 407)', () => {
     const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
-    const named = { ...open, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+    const named = withFields(open, { beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] })
     const { deps, settingFrame, setTo } = setup(named)
     setTo({ row: 0, column: 2, rows: 1, columns: 4 })
     expect(deps.replaceProject).not.toHaveBeenCalled()
@@ -300,20 +304,20 @@ describe('useFrameFlow', () => {
   it('names the Frame as one Undo step, and an empty name clears it, even once a pass is done (ticket 555)', () => {
     const { deps, rename } = setup(moveToRow(sized, 1))
     rename('Moth wing')
-    expect(deps.harness.project.frame!.name).toBe('Moth wing')
+    expect(frameOf(deps.harness.project)!.name).toBe('Moth wing')
     rename('')
-    expect(deps.harness.project.frame!.name).toBeUndefined()
+    expect(frameOf(deps.harness.project)!.name).toBeUndefined()
     expect(deps.replaceProject).toHaveBeenCalledTimes(2)
   })
 
   it('resizes to a typed size, both sides evenly, as one Undo step, and not once a pass is done (ticket 473)', () => {
-    const big = { ...sized, frame: { technique: 'loom' as const, row: 4, column: 4, rows: 6, columns: 6, beads: {} } }
+    const big = withFields(sized, { frame: { technique: 'loom' as const, row: 4, column: 4, rows: 6, columns: 6, beads: {} } })
     const { deps, resizeTo } = setup(big)
     resizeTo(10, 8)
     expect(lastFrame(deps)).toEqual({ row: 3, column: 2, rows: 8, columns: 10 })
     expect(deps.announce).toHaveBeenCalledTimes(1)
     deps.harness.history.onUndo()
-    expect(deps.harness.project.frame).toEqual(big.frame)
+    expect(sheetOf(deps.harness.project)).toEqual(sheetOf(big))
 
     const same = setup(big)
     same.resizeTo(6, 6)
@@ -363,13 +367,13 @@ describe('useFrameFlow', () => {
       const { deps, setTechnique } = setup()
       const before = deps.harness.project
       setTechnique('peyote')
-      expect(deps.harness.project).toMatchObject({ technique: 'loom', frame: { ...before.frame, technique: 'peyote' }, beads: before.beads })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'loom', frame: { ...sheetOf(before), technique: 'peyote' }, beads: beadsOfLayer(before, 'canvas') })
       expect(deps.harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame?.technique).toBe('loom')
+      expect(frameOf(deps.harness.project)?.technique).toBe('loom')
       deps.harness.history.onRedo()
-      expect(deps.harness.project.frame?.technique).toBe('peyote')
+      expect(frameOf(deps.harness.project)?.technique).toBe('peyote')
     })
 
     it('is no step when the Technique is the one already used', () => {
@@ -384,73 +388,73 @@ describe('useFrameFlow', () => {
     it('is changed as one announced Undo step, the Frame keeping its own', () => {
       const { deps, setCanvasTechnique } = setup()
       setCanvasTechnique('peyote')
-      expect(deps.harness.project).toMatchObject({ technique: 'peyote', frame: { technique: 'loom' } })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'peyote', frame: { technique: 'loom' } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.technique).toBe('loom')
+      expect(canvasOf(deps.harness.project).technique).toBe('loom')
     })
 
     it('is allowed once Row progress has a pass done', () => {
       const { deps, setCanvasTechnique } = setup(moveToRow(sized, 1))
       setCanvasTechnique('brick')
-      expect(deps.harness.project.technique).toBe('brick')
+      expect(canvasOf(deps.harness.project).technique).toBe('brick')
     })
 
     it('changes the Brick block of the Canvas alone', () => {
-      const { deps, setWeaveSetting } = setup({ ...sized, technique: 'brick' })
+      const { deps, setWeaveSetting } = setup(withFields(sized, { technique: 'brick' }))
       setWeaveSetting('canvas', 'brickBlock', 3)
-      expect(deps.harness.project.techniqueSettings?.brickBlock).toBe(3)
-      expect(deps.harness.project.frame?.techniqueSettings?.brickBlock).toBeUndefined()
+      expect(canvasOf(deps.harness.project).techniqueSettings?.brickBlock).toBe(3)
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock).toBeUndefined()
     })
   })
 
   describe('a Technique switch asks nothing (tickets 507, 0644)', () => {
-    const drawnCanvas = { ...sized, beads: { 0: { 0: '#111111', 1: '#222222' } } }
+    const drawnCanvas = withFields(sized, { beads: { 0: { 0: '#111111', 1: '#222222' } } })
 
     it('switches a layer with drawn beads at once, every bead keeping its place, as one Undo step', () => {
       const { deps, setCanvasTechnique } = setup(drawnCanvas)
       setCanvasTechnique('peyote')
-      expect(deps.harness.project).toMatchObject({ technique: 'peyote', beads: drawnCanvas.beads })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'peyote', beads: beadsOfLayer(drawnCanvas, 'canvas') })
       deps.harness.history.onUndo()
-      expect(deps.harness.project.technique).toBe('loom')
+      expect(canvasOf(deps.harness.project).technique).toBe('loom')
     })
 
     it('keeps the Frame\'s Folded beads (ticket 0638)', () => {
       const folded = withColors({}, [{ row: 5, column: 0, color: '#111111' }])
-      const { deps, setTechnique } = setup({ ...sized, frame: { ...sized.frame!, folded } })
+      const { deps, setTechnique } = setup(withFields(sized, { frame: { ...frameOf(sized)!, folded } }))
       setTechnique('brick')
-      expect(deps.harness.project.frame).toMatchObject({ technique: 'brick', folded })
+      expect(frameOf(deps.harness.project)).toMatchObject({ technique: 'brick', folded })
     })
 
     it('takes a Brick block kept from before back to brick stitch (ticket 477)', () => {
-      const { deps, setCanvasTechnique, setWeaveSetting } = setup({ ...drawnCanvas, technique: 'brick' })
+      const { deps, setCanvasTechnique, setWeaveSetting } = setup(withFields(drawnCanvas, { technique: 'brick' }))
       setWeaveSetting('canvas', 'brickBlock', 3)
       setCanvasTechnique('loom')
       setCanvasTechnique('brick')
-      expect(deps.harness.project).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
     })
 
     it('leaves the Frame\'s Technique alone while Row progress is on', () => {
       const { deps, setTechnique } = setup(moveToRow(sized, 1))
       setTechnique('peyote')
-      expect(deps.harness.project.frame?.technique).toBe('loom')
+      expect(frameOf(deps.harness.project)?.technique).toBe('loom')
     })
   })
 
   describe('the Brick block (ticket 477)', () => {
-    const brick = { ...sized, frame: { ...sized.frame!, technique: 'brick' as const } }
+    const brick = withFields(sized, { frame: { ...frameOf(sized)!, technique: 'brick' as const } })
 
     it('changes the Brick block as one announced undo step, keeping every bead and the Frame row', () => {
       const { deps, setWeaveSetting } = setup(brick)
       const before = deps.harness.project
       setWeaveSetting('frame', 'brickBlock', 3)
-      expect(deps.harness.project).toMatchObject({ frame: { ...before.frame, techniqueSettings: { brickBlock: 3 } }, beads: before.beads })
+      expect(flatView(deps.harness.project)).toMatchObject({ frame: { ...sheetOf(before), techniqueSettings: { brickBlock: 3 } }, beads: beadsOfLayer(before, 'canvas') })
       expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame?.techniqueSettings?.brickBlock ?? 1).toBe(1)
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock ?? 1).toBe(1)
       deps.harness.history.onRedo()
-      expect(deps.harness.project.frame?.techniqueSettings?.brickBlock).toBe(3)
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock).toBe(3)
     })
 
     it('is no step for the number already used', () => {
@@ -460,22 +464,22 @@ describe('useFrameFlow', () => {
     })
 
     it('changes it over drawn beads, keeping every one (ticket 0626)', () => {
-      const drawn = { ...brick, frame: { ...brick.frame, beads: { 0: { 0: '#111111', 1: '#222222' } } } }
+      const drawn = withFields(brick, { frame: { ...frameOf(brick)!, beads: { 0: { 0: '#111111', 1: '#222222' } } } })
       const { deps, setWeaveSetting } = setup(drawn)
       setWeaveSetting('frame', 'brickBlock', 2)
-      expect(deps.harness.project.frame).toMatchObject({ techniqueSettings: { brickBlock: 2 }, beads: drawn.frame.beads })
+      expect(frameOf(deps.harness.project)).toMatchObject({ techniqueSettings: { brickBlock: 2 }, beads: frameOf(drawn)!.beads })
     })
   })
 
   it('brings the Frame into view', () => {
     const { deps, bringIntoView } = setup()
     bringIntoView()
-    expect(deps.centreOn).toHaveBeenCalledWith(sized.frame)
+    expect(deps.centreOn).toHaveBeenCalledWith(frameOf(sized))
   })
 
   describe('the edge steppers (ticket 417)', () => {
     it('moves one edge a bead at a time, each press one Undo step, the other edges staying', () => {
-      const big = { ...sized, frame: { technique: 'loom' as const, row: 2, column: 2, rows: 6, columns: 6, beads: {} } }
+      const big = withFields(sized, { frame: { technique: 'loom' as const, row: 2, column: 2, rows: 6, columns: 6, beads: {} } })
       const { deps, stepEdge } = setup(big)
       const frame = { technique: 'loom' as const, row: 2, column: 2, rows: 6, columns: 6 }
       stepEdge('right', 1)
@@ -486,21 +490,21 @@ describe('useFrameFlow', () => {
       expect(lastFrame(deps)).toEqual({ ...rect(frame), column: frame.column - 1, columns: frame.columns + 2, row: frame.row + 1, rows: frame.rows - 1 })
       expect(deps.announce).toHaveBeenCalledTimes(3)
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2, beads: {} })
+      expect(sheetOf(deps.harness.project)).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2, beads: {} })
       deps.harness.history.onUndo()
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame).toEqual({ ...frame, beads: {} })
+      expect(sheetOf(deps.harness.project)).toEqual({ ...frame, beads: {} })
       expect(deps.harness.history.canUndo.value).toBe(false)
     })
 
     it('is no step at four beads, and never shrinks the Frame past them (ticket 473)', () => {
-      const { deps, stepEdge } = setup({ ...sized, frame: { technique: 'loom' as const, row: 2, column: 2, rows: 4, columns: 4, beads: {} } })
+      const { deps, stepEdge } = setup(withFields(sized, { frame: { technique: 'loom' as const, row: 2, column: 2, rows: 4, columns: 4, beads: {} } }))
       for (const edge of ['top', 'bottom', 'left', 'right'] as const) stepEdge(edge, -1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
 
     it('steps the top edge by a pair of rows where rows alternate', () => {
-      const { deps, stepEdge } = setup({ ...sized, technique: 'peyote', frame: { technique: 'peyote' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } })
+      const { deps, stepEdge } = setup(withFields(sized, { technique: 'peyote', frame: { technique: 'peyote' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
       stepEdge('top', 1)
       expect(lastFrame(deps)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
     })
@@ -515,19 +519,19 @@ describe('useFrameFlow', () => {
 
     it('gives up a strip over a hidden named Schema, which shows again, and hides it again growing back (ticket 0639)', () => {
       const beads = withColors({}, [0, 1, 2, 3].map((column) => ({ row: 0, column, color: '#e63746' })))
-      const named = { ...open, frame: { technique: 'loom' as const, row: 0, column: 2, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+      const named = withFields(open, { frame: { technique: 'loom' as const, row: 0, column: 2, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] })
       const { deps, stepEdge } = setup(named)
       stepEdge('left', -1)
       expect(lastFrame(deps)).toMatchObject({ column: 3, columns: 5 })
-      expect(deps.harness.project.beads).toEqual(beads)
+      expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual(beads)
       stepEdge('left', 1)
-      expect(deps.harness.project).toMatchObject({ frame: named.frame, beads, pieceNames: named.pieceNames })
+      expect(flatView(deps.harness.project)).toMatchObject({ frame: sheetOf(named), beads, pieceNames: canvasOf(named).pieceNames })
       expect(deps.showToast).not.toHaveBeenCalled()
     })
 
     it('stops an edge growing into a named Schema at its edge, saying why, and is no step (ticket 0639)', () => {
       const beads = withColors({}, [0, 1].map((column) => ({ row: 0, column, color: '#e63746' })))
-      const named = { ...open, frame: { technique: 'loom' as const, row: 0, column: 2, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] }
+      const named = withFields(open, { frame: { technique: 'loom' as const, row: 0, column: 2, rows: 4, columns: 6, beads: {} }, beads, pieceNames: [{ row: 0, column: 0, name: 'Fox' }] })
       const { deps, stepEdge } = setup(named)
       stepEdge('left', 1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
@@ -539,36 +543,36 @@ describe('useFrameFlow', () => {
     const star = starterById('star')
 
     it('puts the Starter\'s design in the middle of the view in an open Project, over the Canvas, as one announced Undo step', () => {
-      const painted = { ...open, beads: { 22: { 33: '#00ff00' } } }
+      const painted = withFields(open, { beads: { 22: { 33: '#00ff00' } } })
       const { deps, placeFromStarter } = setup(painted)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
-      const frame = deps.harness.project.frame!
+      const frame = frameOf(deps.harness.project)!
       expect(frame).toMatchObject({ shape: 'star', settings: { partSize: 5 } })
       // Round the middle of the view, (20, 30).
       expect([frame.row < 20, frame.row + frame.rows > 20, frame.column < 30, frame.column + frame.columns > 30]).toEqual([true, true, true, true])
       expect(frame.beads).toEqual(starterDesign(star))
-      expect(deps.harness.project.beads).toBe(painted.beads)
+      expect(beadsOfLayer(deps.harness.project, 'canvas')).toBe(beadsOfLayer(painted, 'canvas'))
       expect(deps.announce).toHaveBeenCalledWith('Star frame set, part size 5')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame).toBeUndefined()
+      expect(frameOf(deps.harness.project)).toBeUndefined()
     })
 
     it('puts the same Frame in place empty on Start empty', () => {
       const { deps, placeFromStarter } = setup(open)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: false })
-      expect(deps.harness.project.frame).toMatchObject({ shape: 'star', beads: {} })
+      expect(frameOf(deps.harness.project)).toMatchObject({ shape: 'star', beads: {} })
     })
 
     it('replaces an empty Frame at once, starting Row progress at the first pass', () => {
       const { deps, placeFromStarter, replaceConfirmOpen } = setup(sized)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(false)
-      expect(deps.harness.project.frame!.shape).toBe('star')
-      expect(deps.harness.project.rowProgress).toMatchObject({ currentRow: 0, currentColumn: 0 })
+      expect(frameOf(deps.harness.project)!.shape).toBe('star')
+      expect(rowProgressOf(deps.harness.project)).toMatchObject({ currentRow: 0, currentColumn: 0 })
     })
 
     it('asks before replacing a Frame that holds beads, and replaces nothing on No', () => {
-      const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
+      const drawn = withFields(sized, { frame: { ...frameOf(sized)!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } })
       const { deps, placeFromStarter, replaceConfirmOpen, cancelReplace } = setup(drawn)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       expect(replaceConfirmOpen.value).toBe(true)
@@ -579,14 +583,14 @@ describe('useFrameFlow', () => {
     })
 
     it('drops the old Frame with its beads on Yes, as one Undo step', () => {
-      const drawn = { ...sized, frame: { ...sized.frame!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } }
+      const drawn = withFields(sized, { frame: { ...frameOf(sized)!, beads: withColors({}, [{ row: 0, column: 0, color: '#ff0000' }]) } })
       const { deps, placeFromStarter, confirmReplace } = setup(drawn)
       placeFromStarter(star, { sizes: { partSize: 5 }, useDesign: true })
       confirmReplace()
       expect(deps.replaceProject).toHaveBeenCalledTimes(1)
-      expect(deps.harness.project.frame!.shape).toBe('star')
+      expect(frameOf(deps.harness.project)!.shape).toBe('star')
       deps.harness.history.onUndo()
-      expect(deps.harness.project.frame).toEqual(drawn.frame)
+      expect(sheetOf(deps.harness.project)).toEqual(sheetOf(drawn))
     })
 
     it('does nothing once a pass is done', () => {
@@ -607,31 +611,31 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
 
   it('shows each Rounds press at once, folds what fewer Rounds leave out without asking, and commits once the panel closes (ticket 0640)', () => {
     const { deps, setSettings, barOpen } = setup(custom('triangle', 9))
-    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 8: { 0: '#ff0000' } } } })
+    deps.harness.replaceProject(withFields(deps.harness.project, { frame: { ...frameOf(deps.harness.project)!, beads: { 8: { 0: '#ff0000' } } } }))
     const painted = deps.harness.project
     barOpen.value = true
     setSettings({ rounds: 8 })
-    expect(deps.harness.project.frame).toMatchObject({ settings: { rounds: 8 }, beads: {} })
+    expect(frameOf(deps.harness.project)).toMatchObject({ settings: { rounds: 8 }, beads: {} })
     setSettings({ rounds: 7 })
     setSettings({ rounds: 10 })
-    expect(deps.harness.project.frame).toMatchObject({ settings: { rounds: 10 } })
+    expect(frameOf(deps.harness.project)).toMatchObject({ settings: { rounds: 10 } })
     expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 10')
     expect(deps.harness.history.canUndo.value).toBe(false)
     barOpen.value = false
     expect(deps.harness.history.canUndo.value).toBe(true)
     deps.harness.history.onUndo()
-    expect(deps.harness.project.frame).toEqual(painted.frame)
+    expect(sheetOf(deps.harness.project)).toEqual(sheetOf(painted))
     expect(deps.harness.history.canUndo.value).toBe(false)
   })
 
   it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {
     const star = setup(custom('star', 10))
     star.setSettings({ partSize: 8 })
-    expect(star.deps.harness.project.frame!.settings).toEqual({ partSize: 8 })
+    expect(frameOf(star.deps.harness.project)!.settings).toEqual({ partSize: 8 })
     expect(star.deps.announce).toHaveBeenLastCalledWith('Part size: 8')
     const kaleidocycle = setup(custom('kaleidocycle', 9))
     kaleidocycle.setSettings({ partSize: 11 })
-    expect(kaleidocycle.deps.harness.project.frame!.settings).toEqual({ partSize: 11 })
+    expect(frameOf(kaleidocycle.deps.harness.project)!.settings).toEqual({ partSize: 11 })
     const kite = setup(custom('kite', 21))
     kite.setSettings({ rows: 30 })
     expect(kite.deps.announce).toHaveBeenLastCalledWith('Rows: 30')
@@ -642,39 +646,39 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     const { deps, setSettings } = setup(placed.project)
     setSettings({ fringeLength: 14 })
-    expect(deps.harness.project.frame!.settings).toMatchObject({ fringeLength: 14 })
+    expect(frameOf(deps.harness.project)!.settings).toMatchObject({ fringeLength: 14 })
     expect(deps.announce).toHaveBeenLastCalledWith('Fringe length: 14')
     // The first strand's last bead, which a V leaves off.
-    deps.harness.replaceProject({ ...deps.harness.project, frame: { ...deps.harness.project.frame!, beads: { 1013: { 0: '#ff0000' } } } })
+    deps.harness.replaceProject(withFields(deps.harness.project, { frame: { ...frameOf(deps.harness.project)!, beads: { 1013: { 0: '#ff0000' } } } }))
     setSettings({ fringeStyle: 'v' })
-    expect(deps.harness.project.frame).toMatchObject({ settings: { fringeStyle: 'v' }, beads: {} })
+    expect(frameOf(deps.harness.project)).toMatchObject({ settings: { fringeStyle: 'v' }, beads: {} })
     expect(deps.announce).toHaveBeenLastCalledWith('Fringe style: V fringe')
     deps.harness.history.onUndo()
-    expect(deps.harness.project.frame).toMatchObject({ settings: { fringeStyle: 'straight', fringeLength: 14 } })
+    expect(frameOf(deps.harness.project)).toMatchObject({ settings: { fringeStyle: 'straight', fringeLength: 14 } })
     deps.harness.history.onUndo()
-    expect(deps.harness.project.frame).toMatchObject({ settings: { fringeLength: 12 } })
+    expect(frameOf(deps.harness.project)).toMatchObject({ settings: { fringeLength: 12 } })
   })
 
   it('steps its size setting by a resize handle drag, one announced Undo step, as for any Frame (ticket 0669)', () => {
     const triangle = custom('triangle', 4)
     const { deps, settingFrame, press, drag, release } = setupEditing(triangle)
     expect(settingFrame.value).toBe(true)
-    const frame = triangle.frame!
+    const frame = frameOf(triangle)!
     const right = frame.column + frame.columns - 1
     press({ kind: 'handle', edges: ['right'] }, { row: frame.row, column: right })
-    drag({ row: frame.row, column: right + custom('triangle', 6).frame!.columns - frame.columns })
+    drag({ row: frame.row, column: right + frameOf(custom('triangle', 6))!.columns - frame.columns })
     release()
     expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 6')
     deps.harness.history.onUndo()
-    expect(deps.harness.project.frame).toEqual(frame)
+    expect(frameOf(deps.harness.project)).toEqual(frame)
   })
 
   it('asks before removing it, as for any Frame, and removes it on Yes (ticket 0669)', () => {
     const triangle = custom('triangle', 9)
-    const { deps, remove, removeConfirmOpen, confirmRemove } = setup({ ...triangle, frame: { ...triangle.frame!, beads: { 0: { 0: '#ff0000' } } } })
+    const { deps, remove, removeConfirmOpen, confirmRemove } = setup(withFields(triangle, { frame: { ...frameOf(triangle)!, beads: { 0: { 0: '#ff0000' } } } }))
     remove()
     expect(removeConfirmOpen.value).toBe(true)
     confirmRemove()
-    expect(deps.harness.project.frame).toBeUndefined()
+    expect(frameOf(deps.harness.project)).toBeUndefined()
   })
 })

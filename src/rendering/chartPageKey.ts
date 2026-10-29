@@ -1,15 +1,14 @@
 import { forEachBead } from '../domain/canvas'
 import type { Rotation } from '../domain/grid'
 import { projectDimensions } from '../domain/projectExtent'
-import type { Project } from '../domain/project'
 import { displayedGrid, planPrint, type PrintPart, type PrintPlan } from './printPlan'
 import { chartCellOf, customChart } from './customChart'
-import { beadsOfLayer } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, type Layered, orientationOf } from '../domain/layerRecord'
 
 // A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
 // no counts (the Specification has the totals). Its height is set once for the PDF, from the page with the most colors.
 
-type Counted = Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'techniqueSettings'>
+type Counted = Layered
 
 /** Where a bead lands in the displayed chart, across and down from 0. */
 function displayedAt(rotation: Rotation, columns: number, rows: number, column: number, row: number): [number, number] {
@@ -27,7 +26,7 @@ function displayedAt(rotation: Rotation, columns: number, rows: number, column: 
 
 /** The colors in the parts' beads, overlap included. */
 export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): string[] {
-  const { frame } = project
+  const frame = frameOf(project)
   if (!frame) return []
   const onPart = (across: number, down: number) => parts.some((part) => across >= part.firstAcross - part.overlapAcross && across <= part.lastAcross && down >= part.firstDown - part.overlapDown && down <= part.lastDown)
   // A Custom frame's beads lie at angles: each counts in the cell its centre falls in (ticket 0594).
@@ -42,7 +41,7 @@ export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): str
   const { columns, rows } = projectDimensions(project)
   const found = new Set<string>()
   forEachBead(beadsOfLayer(project, 'frame')!, (row, column, hex) => {
-    const [across, down] = displayedAt(project.rotation, columns, rows, column, row)
+    const [across, down] = displayedAt(orientationOf(project), columns, rows, column, row)
     if (onPart(across, down)) {
       found.add(hex)
     }

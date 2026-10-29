@@ -9,23 +9,15 @@ import { changeFrame } from '../domain/changeFrame'
 import { rotateFrame } from '../domain/rotate'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
+import { withFrameSheet } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 function project(grid: (string | null)[][], rotation: Rotation = 0, technique: Technique = 'loom'): Project {
-  return {
-    id: 'p',
-    name: 'P',
-    technique,
-    beadId: 'toho-cube-1.5mm',
-    ...framedGrid(
-      grid.map((row) => row.map((color) => ({ color }))),
-      { technique },
-    ),
-    rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 },
-    palette: defaultPaletteIds(),
-    rotation,
-    createdAt: 0,
-    updatedAt: 0,
-  }
+  const { layers } = framedGrid(
+    grid.map((row) => row.map((color) => ({ color }))),
+    { technique, beadId: 'toho-cube-1.5mm' },
+  )
+  return withFields({ id: 'p', layers, palette: defaultPaletteIds(), createdAt: 0, updatedAt: 0 }, { name: 'P', rotation })
 }
 
 const RED = [255, 0, 0, 255]
@@ -132,7 +124,7 @@ describe('thumbnailPixels', () => {
 
   /** A small Custom frame Triangle, every bead red, and its Layer geometry. */
   function redTriangle(rotation: Rotation = 0) {
-    const { frame: _frame, ...open } = project([[null]], rotation)
+    const open = withFrameSheet(project([[null]], rotation), undefined)
     const placed = changeFrame(open, { custom: { shape: 'triangle', size: 3, centre: { row: 8, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     const geometry = frameGeometryOf(placed.project)

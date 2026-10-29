@@ -9,6 +9,7 @@ import {
   formatSizeMm,
   gridFromSize,
 } from './projectSize'
+import { flatProject } from '../testUtils/flatFields'
 
 const cube = findBead('toho-cube-1.5mm')!
 const round = findBead('toho-round-11-0')!
@@ -50,12 +51,12 @@ describe('estimatedSizeMm', () => {
   })
 
   it('swaps width and height for a Project rotated a quarter turn either way, like the grid summary does', () => {
-    expect(estimatedSizeMm({ columns: 10, rows: 20, rotation: 90 }, cube)).toEqual({ widthMm: 30, heightMm: 15 })
-    expect(estimatedSizeMm({ columns: 10, rows: 20, rotation: 270 }, cube)).toEqual({ widthMm: 30, heightMm: 15 })
+    expect(estimatedSizeMm(flatProject({ rotation: 90, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube)).toEqual({ widthMm: 30, heightMm: 15 })
+    expect(estimatedSizeMm(flatProject({ rotation: 270, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube)).toEqual({ widthMm: 30, heightMm: 15 })
   })
 
   it('leaves width and height as they are for a Project upside down (180°, ticket 171)', () => {
-    expect(estimatedSizeMm({ columns: 10, rows: 20, rotation: 180 }, cube)).toEqual({ widthMm: 15, heightMm: 30 })
+    expect(estimatedSizeMm(flatProject({ rotation: 180, frame: { technique: 'loom', row: 0, column: 0, columns: 10, rows: 20, beads: {} } }), cube)).toEqual({ widthMm: 15, heightMm: 30 })
   })
 
   it('is the inverse of the mm conversion, so a stated size estimates back to about itself', () => {

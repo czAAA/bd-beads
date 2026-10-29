@@ -5,18 +5,20 @@ import { pieceAreasOf } from '../domain/pieces'
 import type { Project } from '../domain/project'
 import { countingBeads } from '../testUtils/countingBeads'
 import { ruledPieces } from './ruledPieces'
+import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 const R = '#e63746'
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const square = (row: number, column: number, size: number): BeadChange[] =>
   Array.from({ length: size * size }, (_, i) => ({ row: row + Math.floor(i / size), column: column + (i % size), color: R }))
-const paint = (project: Project, changes: BeadChange[]): Project => ({ ...project, beads: withColors(project.beads, changes) })
+const paint = (project: Project, changes: BeadChange[]): Project => (withFields(project, { beads: withColors(beadsOfLayer(project, 'canvas'), changes) }))
 
 // Counted, not timed (ticket 0674): a recount of the Pieces reads every row of the Canvas.
 describe('the Pieces the rulers hang from', () => {
   function start() {
     const counting = countingBeads(withColors({}, [...square(0, 0, 5), ...square(0, 20, 5)]))
-    const project: Project = { ...open, beads: counting.beads, pieceNames: [{ name: 'Fox', row: 0, column: 0 }] }
+    const project: Project = withFields(open, { beads: counting.beads, pieceNames: [{ name: 'Fox', row: 0, column: 0 }] })
     return { project, ...counting }
   }
 
@@ -48,13 +50,13 @@ describe('the Pieces the rulers hang from', () => {
 
     const ended = ruledPieces(pieces, project, { numbers: true, stroking: false })
     expect(counting.reads.rows.size).toBe(5)
-    expect(ended.areas).toEqual(pieceAreasOf(project.beads, project))
+    expect(ended.areas).toEqual(pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas')))
   })
 
   it('are not counted at all while the rulers are hidden, nor while a Frame carries them; the names still are', () => {
     const { project, reads } = start()
-    const hidden = ruledPieces(undefined, { ...project, pieceNames: undefined }, { numbers: false, stroking: false })
-    const framed = ruledPieces(undefined, { ...project, pieceNames: undefined, frame: { row: 50, column: 50, rows: 4, columns: 4, technique: 'loom' } }, { numbers: true, stroking: false })
+    const hidden = ruledPieces(undefined, withFields(project, { pieceNames: undefined }), { numbers: false, stroking: false })
+    const framed = ruledPieces(undefined, withFields(project, { pieceNames: undefined, frame: { row: 50, column: 50, rows: 4, columns: 4, technique: 'loom', beads: {} } }), { numbers: true, stroking: false })
 
     expect(reads.beads).toBe(0)
     expect(hidden.areas).toBeUndefined()

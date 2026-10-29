@@ -1,6 +1,9 @@
-import type { FrameSheet } from './canvas'
-import type { Project } from './project'
-import { BRICK_BLOCK_SETTING, type TechniqueSettings } from './weave'
+import type { Bead } from './beads'
+import type { BeadMap, FrameSheet } from './canvas'
+import type { Rotation } from './grid'
+import type { PieceName } from './pieceNames'
+import type { Project, RowProgress } from './project'
+import { BRICK_BLOCK_SETTING, type BeadShape, type Technique, type TechniqueSettings } from './weave'
 
 // The flat Brick block of earlier stored versions (file v4–v10, library v1–v4; ticket 0636): a layer's Brick block was a
 // field beside its Technique. Read only: their readers lift it into the settings map the app holds, and v11 writes that.
@@ -11,8 +14,27 @@ export interface FlatWeave {
   techniqueSettings?: TechniqueSettings
 }
 
-/** A Project as a store or file has saved it since the Frame had its own beads, before normalizeProject reads it. */
-export type SavedProject = Omit<Project, 'frame'> & FlatWeave & { frame?: FrameSheet & FlatWeave }
+/** A Project as stores and files held it before it held its layers (file versions 3 to 11, library 1 to 4; ticket
+ * 0664): the Canvas's Weave, Bead, Bead shape, beads, Letters, Piece names and name were the Project's own fields, its
+ * rotation the view's turn, and the Frame a sheet beside them with the Project's Row progress. Read only. */
+export interface FlatProject extends Omit<Project, 'layers'> {
+  name: string
+  technique: Technique
+  techniqueSettings?: TechniqueSettings
+  beadId: string
+  bead?: Bead
+  beadShape?: BeadShape
+  beads: BeadMap
+  frame?: FrameSheet
+  rowProgress: RowProgress
+  letters?: boolean
+  pieceNames?: PieceName[]
+  rotation: Rotation
+}
+
+/** A Project as a store or file has saved it since the Frame had its own beads and before its layers, before
+ * normalizeProject reads it. */
+export type SavedProject = Omit<FlatProject, 'frame'> & FlatWeave & { frame?: FrameSheet & FlatWeave }
 
 /** A stored Project of an earlier version with each layer's flat Brick block moved into its settings map, where it wins
  * over the map as it did when both were read. An unreadable one is dropped, so the layer reads as the default. */
@@ -36,11 +58,4 @@ function isBrickBlock(value: unknown): value is number {
 /** Whether a stored settings map is one: an object of named values, not a list or anything else. */
 export function isSettingsMap(value: unknown): value is TechniqueSettings {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/** A stored record without its Weave's settings, mapped or flat (a stray flat Brick block in a v11 file is dropped):
- * what a reader builds a layer over. */
-export function unflattened<T extends FlatWeave>(record: T): Omit<T, keyof FlatWeave> {
-  const { brickBlock: _brickBlock, techniqueSettings: _settings, ...rest } = record
-  return rest
 }
