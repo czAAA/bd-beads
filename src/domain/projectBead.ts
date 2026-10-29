@@ -1,5 +1,6 @@
-import { beadCopy, type Bead } from './beads'
+import type { Bead } from './beads'
 import type { ColorCatalog } from './colorCatalog'
+import { withLayer } from './layerRecord'
 import { codesForBead, defaultPalette, paletteForBead } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
@@ -15,10 +16,10 @@ export function projectCell(project: ShapedBead): BeadCell | undefined {
   return beadCell(project.bead, project.beadShape ?? DEFAULT_BEAD_SHAPE)
 }
 
-/** The Project with another Bead shape (ADR 0068): Symmetric is the default and is left unsaved. */
+/** The Project with another Bead shape (ADR 0068), for both layers until ticket 0665: Symmetric is the default and is
+ * left unsaved. */
 export function withBeadShape(project: Project, shape: BeadShape): Project {
-  const { beadShape: _old, ...rest } = project
-  return shape === DEFAULT_BEAD_SHAPE ? rest : { ...rest, beadShape: shape }
+  return withLayer(project, 'canvas', { beadShape: shape })
 }
 
 /** The Bead a Project was woven from (ticket 37): its own copy (ticket 534), so a catalog change or a retired Bead
@@ -35,5 +36,5 @@ export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog
   const codes = codesForBead(project.paletteCodes ?? {}, catalog, bead.size)
   const { paletteCodes: _codes, ...rest } = project
   const paletteLetters = lettersOfPalette(palette, bead.id, project.paletteLetters)
-  return touch(rest, { beadId: bead.id, bead: beadCopy(bead), palette, paletteLetters, ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}) })
+  return touch(withLayer(rest, 'canvas', { bead }), { palette, paletteLetters, ...(Object.keys(codes).length > 0 ? { paletteCodes: codes } : {}) })
 }
