@@ -54,6 +54,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `editHarness.ts`: a real Edit and Undo history over one in-memory Project, for flow tests (ADR 0036). The Project is a ref, so a flow's computeds follow each Edit.
 - `shellHost.ts`: `mountShellParts(...parts)` mounts parts of the shell (AppPanels, AppDialogs) under the app's real wiring and nothing else, and hands back its contexts, `openPanel(panel)` and the dialog registry (ticket 0618).
 - `paletteHost.ts`: `mountWithPalette(component, ids, props)` mounts a Palette control under the real Palette and Edit, as the app shell provides them, with spies for asking to remove one color or all (ticket 0601).
+- `marginSheetHost.ts`: `marginSheetHost(zoom)`, the margin sheet round a 30-column Frame at a zoom, for browser tests (the fit cases, a picker opening in its title block; ticket 0681).
 - `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).
 - `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
 - `countingBeads.ts`: a set of beads behind a counter of the rows and beads read, so a test counts the work an edit does instead of timing it (ticket 0674).
