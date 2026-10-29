@@ -310,7 +310,12 @@ export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[
   return changed.sort((a, b) => a.row - b.row || a.column - b.column)
 }
 
-function changedInRow(row: number, was: Record<number, string> | undefined, now: Record<number, string> | undefined, changed: GridPosition[]): void {
+function changedInRow(
+  row: number,
+  was: Record<number, string> | undefined,
+  now: Record<number, string> | undefined,
+  changed: GridPosition[],
+): void {
   for (const key of Object.keys(now ?? {})) {
     const column = Number(key)
     if (was?.[column] !== now![column]) changed.push({ row, column })

@@ -108,7 +108,7 @@ describe('the work a stroke step does', () => {
 
     expect(painted.beads[frame.row + 5]?.[right]).toBe(R)
     expect(refused).toBe(painted)
-    expect([...onCanvas.rows].every((row) => row === frame.row + 5 || row === frame.row + 6)).toBe(true)
+    expect([...onCanvas.rows].sort((a, b) => a - b)).toEqual([frame.row + 5, frame.row + 6])
     expect(inFrame.rows.size).toBe(0)
   })
 })

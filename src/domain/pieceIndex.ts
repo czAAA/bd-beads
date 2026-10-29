@@ -93,6 +93,13 @@ function labelled(index: PieceIndex, beads: BeadMap, weave: Weave, start: GridPo
   return piece
 }
 
+/** Which Piece the bead at `position` is on, as a label every bead of it shares; undefined where there is none. A Piece
+ * is flooded the first time one of its beads is asked about and then known for that set of beads, so asking again
+ * and again (the Name Piece control through a Select drag) floods it once (ticket 0674). */
+export function pieceLabelAt(beads: BeadMap, weave: Weave, position: GridPosition): number | undefined {
+  return labelled(indexOf(beads, weave), beads, weave, position)
+}
+
 /** Whether beads an edit only added join two Pieces that hold a name each, or the same named Piece twice over: each
  * new bead is put with the Pieces of `before` it touches, and with the new beads it touches. `anchors` are the names'
  * positions, every one on a bead of `before`. */
@@ -145,6 +152,11 @@ export function joinsNamedPieces(before: BeadMap, weave: Weave, anchors: GridPos
   return [...namesPerGroup.values()].some((count) => count > 1)
 }
 
+/** How many beads the search that a Piece stays whole looks at before it gives up: a few, and more for each bead
+ * left round the emptied ones, so a stroke step's run of them is still followed round. */
+const SEARCH_BEADS = 256
+const SEARCH_BEADS_PER_NEIGHBOUR = 64
+
 /** Whether emptying `removed` leaves every Piece it touched in one piece: the beads round each run of emptied beads
  * still reach each other in `after`, found by a search that gives up (and says no) past a few beads per neighbour. */
 export function piecesStayWhole(after: BeadMap, weave: Weave, removed: GridPosition[]): boolean {
@@ -167,7 +179,7 @@ export function piecesStayWhole(after: BeadMap, weave: Weave, removed: GridPosit
         }
       }
     }
-    if (!reachEachOther(after, weave, [...seeds.values()], 256 + 64 * seeds.size)) return false
+    if (!reachEachOther(after, weave, [...seeds.values()], SEARCH_BEADS + SEARCH_BEADS_PER_NEIGHBOUR * seeds.size)) return false
   }
   return true
 }
@@ -206,7 +218,7 @@ export function carryPieceIndex(before: BeadMap, after: BeadMap, weave: Weave, c
     let piece: number | undefined
     for (const next of touching(weave, at)) {
       // A Piece of `before` the bead joins is labelled whole first, so a label always stands for a whole Piece.
-      const other = change.removed.length === 0 && before[next.row]?.[next.column] !== undefined ? labelled(index, before, weave, next) : pieceOf(index, numericKey(next))
+      const other = before[next.row]?.[next.column] !== undefined ? labelled(index, before, weave, next) : pieceOf(index, numericKey(next))
       if (other === undefined || other === piece) continue
       if (piece === undefined) {
         piece = other

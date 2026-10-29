@@ -58,8 +58,8 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     paintStrokeCells([layer ? { row, column, layer } : { row, column }], color)
   }
 
-  /** Paints the beads a stroke crossed in one pointer move as one stroke step (ticket 0674), each bead kept or refused
-   * by the rules as if it came alone, so the per-edit work is paid once a move, not once a bead. */
+  /** Paints the beads a stroke crossed in one pointer move as one stroke step (ticket 0674): each bead is kept or
+   * refused by the rules as if it came alone, and the lot lands in the library, and on screen, once. */
   function paintStrokeCells(cells: GridPosition[], color: string | null) {
     // The pointer is over the other layer, where this one's positions are not (ADR 0066): nothing lands.
     const landing = cells.filter((cell) => !cell.layer || cell.layer === strokeLayer)

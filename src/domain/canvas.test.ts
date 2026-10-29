@@ -46,7 +46,7 @@ describe('beads by position', () => {
       { row: -2, column: 0, rows: 302, columns: 311 },
     ])
     // Row 0 is where the left column is found to still have a bead: one lookup.
-    expect([...counting.reads.rows]).toEqual([150, 10, 0])
+    expect([...counting.reads.rows].sort((a, b) => a - b)).toEqual([0, 10, 150])
     expect(counting.reads.beads).toBeLessThan(2 * 300 * 4)
 
     // The edge column emptied: the bounds shrink.

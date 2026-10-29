@@ -63,10 +63,9 @@ export interface RulerLabel {
 /** What decides which boxes carry rulers. */
 export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'shape' | 'settings' | 'quarterTurns'>; beads: BeadMap; technique: Technique; techniqueSettings?: TechniqueSettings; pieceNames?: PieceName[] }
 
-// The boxes that carry rulers: the Frame alone once it is set, as it lies (turned, the cells it covers: ticket 0667),
-// otherwise every Piece area of more than 4 beads (those near the viewport are chosen by the caller), and only with the
-// Rulers on, as a Piece's line goes with its numbers. A Custom frame has none: its beads lie in rounds, not its
-// rectangle's rows and columns (ticket 0592).
+// The boxes that carry rulers: the Frame alone once set, as it lies (ticket 0667), else every Piece area of more than 4
+// beads (the caller picks those near the viewport), with the Rulers on only, as a Piece's line goes with its numbers.
+// A Custom frame has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces): RuledBox[] {
   const frame = project.frame
   if (frame) {
