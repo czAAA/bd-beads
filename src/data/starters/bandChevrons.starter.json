@@ -1,7 +1,7 @@
 {
   "id": "bandChevrons",
   "design": "bandChevrons.json",
-  "technique": "peyote",
+  "weave": {"technique": "peyote"},
   "measure": "band",
   "sizes": [
     {"id": "width", "labelKey": "width", "min": 3, "max": 40, "step": 1, "default": 11, "presets": [7, 9, 11, 13]},
