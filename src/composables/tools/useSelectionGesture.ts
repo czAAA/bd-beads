@@ -6,24 +6,19 @@ import type { Project } from '../../domain/project'
 import {
   selectAllSelection,
   copyLayerSelection,
-  dragFocusOnLayer,
-  withinFrame,
   movedSelection,
   paintLayerSelection,
   pasteLostCount,
   pasteOnLayer,
   pastedCellsOnLayer,
   pieceSelectionOnLayer,
-  selectionLayer,
   selectionBetween,
   selectionWithEdges,
   type CopiedBlock,
   type PasteLoss,
   type Selection,
 } from '../../domain/selection'
-import { footprintOf } from '../../domain/footprint'
 import { frameAllows } from '../../domain/frameKind'
-import { clampOutOfMargin, inMargin, marginBoxFor, selectionAllowed } from '../../domain/margin'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -60,7 +55,7 @@ export function useSelectionGesture(
   // A press on the Selection's handles or inside it (ticket 414): a handle resizes, the inside moves the outline,
   // neither touches a bead. A press inside that never moves is a tap, so it does what the tool taps do.
   let adjust:
-    | { kind: 'resize'; edges: FrameEdge[]; start: Selection; held: GridPosition }
+    | { kind: 'resize'; edges: FrameEdge[]; start: Selection }
     | { kind: 'move'; origin: GridPosition; start: Selection; moved: boolean; tool: 'select' | 'piece' }
     | undefined
 
@@ -68,10 +63,10 @@ export function useSelectionGesture(
   // stamps the copy, so the press only records its anchor here and endPress decides which it was.
   const selectPress = ref<{ anchor: GridPosition; focus: GridPosition; layer: Layer; moved: boolean } | null>(null)
 
-  /** Whether a Selection may not start here: in the keep-out margin (ticket 433), or on a Frame whose kind offers none
-   * (a Custom frame, ticket 0592). */
+  /** Whether a Selection may not start here: on a Frame whose kind offers none (a Custom frame, ticket 0592). The
+   * margin is the Canvas's, where a drag may start (ticket 0659). */
   function refusesSelection(project: Project, at: GridPosition): boolean {
-    return inMargin(footprintOf(project), at) || (layerAt(project, at) === 'frame' && !frameAllows(project.frame, 'select'))
+    return layerAt(project, at) === 'frame' && !frameAllows(project.frame, 'select')
   }
 
   function beginPress(row: number, column: number, named?: Layer) {
@@ -81,8 +76,8 @@ export function useSelectionGesture(
     }
     const at = { row, column, ...(named ? { layer: named } : {}) }
 
-    // A Selection cannot start in the keep-out margin (ticket 433), nor on a Frame whose kind offers none (ticket 0592):
-    // nothing begins (the pointer shows the cue itself, a key asks extendPress's caller to).
+    // A Selection cannot start on a Frame whose kind offers none (ticket 0592): nothing begins (the pointer shows the
+    // cue itself, a key asks extendPress's caller to).
     if (refusesSelection(project, at)) {
       return
     }
@@ -98,9 +93,8 @@ export function useSelectionGesture(
   }
 
   // Grows the in-progress Selection to the cell the drag reached. A drag replaces the previous Selection and the copy
-  // with it (ticket 92). Returns false when the margin held the cell back (ticket 433), which a key step takes as a
-  // refusal.
-  function extendPress(row: number, column: number, named?: Layer): boolean {
+  // with it (ticket 92). Returns false when no Selection grew, which a key step takes as a refusal.
+  function extendPress(row: number, column: number): boolean {
     const project = currentProject()
     const press = selectPress.value
     if (!project || !press) {
@@ -111,11 +105,11 @@ export function useSelectionGesture(
     // In paste mode a drag is still one stamp at the press point and never selects (ticket 437, ADR 0016).
     if (pasteProjectionActive.value) return false
     dropClipboard()
-    // The drag stays on the layer it began on (ticket 491), and out of the margin (ticket 433).
-    const focus = dragFocusOnLayer(project, press.layer, { row, column, ...(named ? { layer: named } : {}) }, press.focus)
-    press.focus = clampOutOfMargin(marginBoxFor(project, press.layer), press.anchor, focus)
+    // The rectangle follows the pointer anywhere, across the Frame and its margin; the Selection stays on the layer the
+    // drag began on (ticket 491), and selects only what that layer shows (ticket 0659).
+    press.focus = { row, column }
     selection.value = selectionBetween(press.anchor, press.focus, press.layer)
-    return press.focus.row === row && press.focus.column === column
+    return true
   }
 
   /** Ends a Select press: in paste mode, click or drag, one stamp at the press point (ticket 437); otherwise a drag
@@ -183,7 +177,7 @@ export function useSelectionGesture(
       return
     }
     if (target.kind === 'handle') {
-      adjust = { kind: 'resize', edges: target.edges, start, held: cell }
+      adjust = { kind: 'resize', edges: target.edges, start }
     } else if (target.kind === 'inside') {
       adjust = { kind: 'move', origin: cell, start, moved: false, tool }
     }
@@ -194,28 +188,15 @@ export function useSelectionGesture(
     if (!adjust) {
       return
     }
+    // Neither stops at the Frame or its margin (ticket 0659): the Selection keeps its layer wherever it goes.
     if (adjust.kind === 'resize') {
-      const project = currentProject()
-      const layer = project ? selectionLayer(project, adjust.start) : 'canvas'
-      const reached = project ? dragFocusOnLayer(project, layer, cell, adjust.held) : cell
-      adjust.held = reached
-      keepOutOfMargin(selectionWithEdges(adjust.start, adjust.edges, reached))
+      selection.value = selectionWithEdges(adjust.start, adjust.edges, cell)
       return
     }
     const rows = cell.row - adjust.origin.row
     const columns = cell.column - adjust.origin.column
     adjust.moved ||= rows !== 0 || columns !== 0
-    const project = currentProject()
-    const moved = movedSelection(adjust.start, rows, columns)
-    // A Frame's Selection is moved within the Frame (ticket 491).
-    keepOutOfMargin(project?.frame && selectionLayer(project, moved) === 'frame' ? withinFrame(moved, project.frame) : moved)
-  }
-
-  /** Takes a resized or moved Selection only if it covers none of the Frame's margin (ticket 428); otherwise the
-   * Selection stays as it was. */
-  function keepOutOfMargin(next: Selection) {
-    const project = currentProject()
-    if (selectionAllowed(project && marginBoxFor(project, selectionLayer(project, next)), next)) selection.value = next
+    selection.value = movedSelection(adjust.start, rows, columns)
   }
 
   /** Ends the adjust; a press inside that never moved was a tap on a bead, so the tool's own tap happens. */
