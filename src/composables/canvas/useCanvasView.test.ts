@@ -141,7 +141,7 @@ describe('useCanvasView', () => {
   })
 
   it('stays where it is when the same Project is edited, even while it still follows the fit', async () => {
-    const empty = { ...projectOf(2, 2), frame: undefined }
+    const empty = withFields(projectOf(2, 2), { frame: undefined })
     const { current, view } = setup(empty)
     view.fit()
     const before = { ...view.scroll.value }

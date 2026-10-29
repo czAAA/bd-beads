@@ -5,10 +5,12 @@ import type { Handedness, InputMode } from '../../domain/inputMode'
 import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
 import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
+import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from '../../domain/selection'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
+import { marginForm } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
+import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
@@ -33,6 +35,9 @@ const props = withDefaults(defineProps<{
   /** Beads to show a hover preview on (ticket 23): the hovered bead, or a whole
    * copied block under the cursor (ticket 31). */
   previewCells?: PreviewCell[]
+  /** A copied block under the cursor on a grid, aimed where Paste would land it (ticket 0675): drawn only where it
+   * shows. */
+  previewStamp?: PasteStamp
   /** The color to preview, faintly, on beads that carry none of their own; null for a neutral outline when no
    * Palette color is selected. */
   previewColor?: string | null
@@ -44,8 +49,11 @@ const props = withDefaults(defineProps<{
   inputMode?: InputMode
   /** Which hand holds the pen: its marker stands off the tip away from that hand. Right when not given. */
   handedness?: Handedness
-  /** Whether ruler numbers are drawn (the Rulers toggle); the lines they hang from are drawn either way. */
+  /** Whether ruler numbers are drawn (the Rulers toggle), and the Pieces' lines with them; the Frame's line is drawn
+   * either way. */
   showRulers?: boolean
+  /** Whether a Paint or Eraser stroke is going on: the rulers then keep their Pieces until it ends (ticket 0674). */
+  stroking?: boolean
   /** Whether the Row progress look is drawn (ticket 474): finished rows dimmed, the current row ringed and lifted. */
   rowMarks?: boolean
   /** The size tooltip's text at the Frame's corner while it is being set ("13×13 ≈ 2.1 × 2.1 cm"). */
@@ -101,14 +109,24 @@ const surface = computed(() =>
   surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: frameOf(props.project), rotation: orientationOf(props.project), zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
+/** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
+ * until it ends (ticket 0674). */
+const pieces = computed<RuledPieces>((previous) => ruledPieces(previous, props.project, { numbers: props.showRulers ?? true, stroking: props.stroking ?? false }))
+
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
 function rulerFontPx(): number {
   return window.innerWidth <= 743 ? 12 : 11
 }
 
+/** The form the Frame's margin sheet takes at this zoom (ticket 0658): the Frame's numbers hang on it. */
+const sheetForm = computed(() => {
+  const grid = marginSheetPx(props.project)
+  return grid ? marginForm(grid.band * props.zoom) : 'full'
+})
+
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
-const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true }))
+const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, sheet: sheetForm.value, pieces: pieces.value }))
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
 watch(

@@ -113,8 +113,76 @@ export function beadCount(beads: BeadMap): number {
   return count
 }
 
-/** The smallest rectangle round every painted bead, or undefined for an empty canvas. */
+/** The box of each set of beads asked about, and the last one worked out: an edit's next set shares every row it did
+ * not touch, so its box is grown from that one's by the changed rows alone (ticket 0674). */
+const boundsCache = new WeakMap<BeadMap, { box: Rect | undefined }>()
+let lastBounds: { beads: BeadMap; box: Rect | undefined } | undefined
+
+/** Past this many changed rows a set of beads is measured afresh rather than grown from the last. */
+const MOST_ROWS_TO_GROW_BOUNDS = 64
+
+/** The smallest rectangle round every painted bead, or undefined for an empty canvas. Worked out once per set of
+ * beads. */
 export function beadBounds(beads: BeadMap): Rect | undefined {
+  const known = boundsCache.get(beads)
+  if (known) {
+    return known.box
+  }
+  const grown = lastBounds && grownBounds(lastBounds.beads, lastBounds.box, beads)
+  const box = grown === undefined ? measuredBounds(beads) : grown.box
+  boundsCache.set(beads, { box })
+  lastBounds = { beads, box }
+  return box
+}
+
+/** The box of `now` from that of `was`, reading only the rows the two do not share: a column at an edge that lost a
+ * bead is looked up in every row. Undefined when that would not be cheaper than measuring afresh. */
+function grownBounds(was: BeadMap, box: Rect | undefined, now: BeadMap): { box: Rect | undefined } | undefined {
+  const rows = Object.keys(now)
+  if (rows.length === 0) {
+    return { box: undefined }
+  }
+  let changed = 0
+  const changedRows = new Set<string>()
+  for (const key of new Set([...Object.keys(was), ...rows])) {
+    if (was[Number(key)] !== now[Number(key)]) {
+      changed += 1
+      changedRows.add(key)
+    }
+  }
+  if (changed > MOST_ROWS_TO_GROW_BOUNDS) {
+    return undefined
+  }
+  const oldLeft = box ? box.column : Infinity
+  const oldRight = box ? box.column + box.columns - 1 : -Infinity
+  let left = oldLeft
+  let right = oldRight
+  let leftLost = false
+  let rightLost = false
+  for (const key of changedRows) {
+    const before = was[Number(key)]
+    const after = now[Number(key)]
+    for (const columnKey of Object.keys(after ?? {})) {
+      left = Math.min(left, Number(columnKey))
+      right = Math.max(right, Number(columnKey))
+    }
+    leftLost ||= before?.[oldLeft] !== undefined && after?.[oldLeft] === undefined
+    rightLost ||= before?.[oldRight] !== undefined && after?.[oldRight] === undefined
+  }
+  const stillAt = (column: number) => rows.some((key) => now[Number(key)]![column] !== undefined)
+  if ((leftLost && left === oldLeft && !stillAt(oldLeft)) || (rightLost && right === oldRight && !stillAt(oldRight))) {
+    return undefined
+  }
+  let top = Infinity
+  let bottom = -Infinity
+  for (const key of rows) {
+    top = Math.min(top, Number(key))
+    bottom = Math.max(bottom, Number(key))
+  }
+  return { box: { row: top, column: left, rows: bottom - top + 1, columns: right - left + 1 } }
+}
+
+function measuredBounds(beads: BeadMap): Rect | undefined {
   let top = Infinity
   let bottom = -Infinity
   let left = Infinity
@@ -231,21 +299,29 @@ export function beadsWithout(beads: BeadMap, area: Rect): BeadMap {
 /** Every position whose color differs between two bead maps; a row both share is passed over unread. */
 export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[] {
   const changed: GridPosition[] = []
-  const rows = new Set([...Object.keys(before), ...Object.keys(after)])
-  for (const key of rows) {
+  for (const key of Object.keys(after)) {
     const row = Number(key)
-    const was = before[row]
-    const now = after[row]
-    if (was === now) {
-      continue
-    }
-    const columns = new Set([...Object.keys(was ?? {}), ...Object.keys(now ?? {})])
-    for (const columnKey of columns) {
-      const column = Number(columnKey)
-      if (was?.[column] !== now?.[column]) {
-        changed.push({ row, column })
-      }
-    }
+    if (before[row] !== after[row]) changedInRow(row, before[row], after[row], changed)
+  }
+  for (const key of Object.keys(before)) {
+    const row = Number(key)
+    if (after[row] === undefined) changedInRow(row, before[row], undefined, changed)
   }
   return changed.sort((a, b) => a.row - b.row || a.column - b.column)
+}
+
+function changedInRow(
+  row: number,
+  was: Record<number, string> | undefined,
+  now: Record<number, string> | undefined,
+  changed: GridPosition[],
+): void {
+  for (const key of Object.keys(now ?? {})) {
+    const column = Number(key)
+    if (was?.[column] !== now![column]) changed.push({ row, column })
+  }
+  for (const key of Object.keys(was ?? {})) {
+    const column = Number(key)
+    if (now?.[column] === undefined) changed.push({ row, column })
+  }
 }

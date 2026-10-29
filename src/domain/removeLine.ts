@@ -43,6 +43,10 @@ export function selectedAreaLine(frame: Rect | undefined, selection: Selection |
 
 /** The line the Selection covers, in the Frame or, with no Frame, in whichever Piece area it is a whole line of. */
 function selectedProjectLine(project: Project, selection: Selection | undefined): ProjectLine | undefined {
+  // Only a Selection one bead thin is a line: the Piece areas go uncounted otherwise, as after every stroke step (0674).
+  if (!selection || (selection.rows !== 1 && selection.columns !== 1)) {
+    return undefined
+  }
   const frame = frameOf(project)
   const areas = frame ? [frame] : pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'))
   for (const area of areas) {

@@ -78,6 +78,22 @@ describe('usePaintStroke', () => {
     expect(harness.history.canUndo.value).toBe(false)
   })
 
+  it('paints every bead one pointer move crossed as one stroke step, skipping none, and Undo takes the whole stroke (ticket 0674)', () => {
+    const { stroke, harness, frame, at } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1))
+    const { row, column } = frame
+
+    stroke.beginOrCommitPress('paint', '#ff0000', row + 1, column)
+    // The move crosses a woven row on its way: that bead alone is refused, as if it came by itself.
+    stroke.paintStrokeCells([{ row: row + 1, column: column + 1 }, { row, column: column + 1 }, { row: row + 1, column: column + 2 }, { row: row + 2, column: column + 2 }], '#ff0000')
+    expect(harness.replaceProject).toHaveBeenCalledTimes(2)
+    expect([at(1, 1), at(0, 1), at(1, 2), at(2, 2)]).toEqual(['#ff0000', null, '#ff0000', '#ff0000'])
+
+    stroke.endStroke()
+    harness.history.onUndo()
+    expect(Object.keys(frameOf(harness.project)!.beads)).toHaveLength(0)
+    expect(harness.history.canUndo.value).toBe(false)
+  })
+
   it('leaves finished rows alone', () => {
     const { stroke, at, frame } = setup('paint', moveToRow(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } }), 1))
     stroke.beginOrCommitPress('paint', '#ff0000', frame.row, frame.column)

@@ -20,6 +20,7 @@ import {
   type ProjectTheme,
 } from './beadLook'
 import type { MarginLook } from './marginLook'
+import { marginForm } from './marginForm'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -68,8 +69,9 @@ function visibleBeadsOpen(weave: Weave, area: { left: number; right: number; top
 }
 
 /** The beads in view of a space: with no edge on the Canvas, and within the Project otherwise. `origin` is where the
- * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492). */
-function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }): VisiblePositions {
+ * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492). The overlay culls by it
+ * too (ticket 0675). */
+export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }): VisiblePositions {
   const seen = regionInGridSpace(space.extent, region, zoom, rotation)
   const area = { left: seen.left - origin.x, right: seen.right - origin.x, top: seen.top - origin.y, bottom: seen.bottom - origin.y }
   return space.open ? visibleBeadsOpen(weave, area) : visibleBeads(weave, space.columns, space.rows, area)
@@ -252,8 +254,9 @@ function drawFrameLayer(context: DrawingContext, draw: LayerDraw, space: Space, 
   const geometry = geometryDrawnAlone(project)
   const seen = { x: (area.left - origin.x) / CELL_SIZE_PX, y: (area.top - origin.y) / CELL_SIZE_PX, width: (area.right - area.left) / CELL_SIZE_PX, height: (area.bottom - area.top) / CELL_SIZE_PX }
   // A band of rows is redrawn with the rows either side, whose beads nest into it; beads that keep no rows are all drawn.
-  const inBand = ({ row }: GridPosition) => !band || !geometry.grid || (row >= band.first - 1 && row <= band.last + 1)
-  const beads = geometry.positionsIn(seen).filter(inBand).map((position) => ({ position, place: geometry.place(position)! }))
+  const beads = geometry
+    .positionsIn(seen, band && { first: band.first - 1, last: band.last + 1 })
+    .map((position) => ({ position, place: geometry.place(position)! }))
   // The color at a position: the Frame's own beads, which a Custom frame names by round and place, beyond its rectangle.
   const framed = beadsOfLayer(project, 'frame')
   const colorOf = ({ row, column }: GridPosition) => (framed ? colorAt(framed, row, column) : beadInSpace(project, space, row, column))
@@ -399,12 +402,10 @@ export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: 
   return { sheet, footprint, band }
 }
 
-// The margin's sheet (MarginSheet card, ticket 0656), in screen px: its corners, its inner border's inset (6px once the
-// band is under 64px) and that border's corners.
-const SHEET_RADIUS_PX = 12
-const BORDER_INSET_PX = 10
-const BORDER_INSET_COMPACT_PX = 6
-const FULL_BAND_PX = 64
+// The margin's sheet (MarginSheet card, tickets 0656, 0658), in screen px: its corners (10px compact), its inner
+// border's inset (6px compact) and that border's corners. A folded sheet keeps its color and edge, no inner border.
+const SHEET_RADIUS_PX = { full: 12, compact: 10 }
+const BORDER_INSET_PX = { full: 10, compact: 6 }
 const BORDER_RADIUS_PX = 6
 
 /** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band filled in the margin color
@@ -413,8 +414,10 @@ const BORDER_RADIUS_PX = 6
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
+  const form = marginForm(band)
+  const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(SHEET_RADIUS_PX, band) / zoom
+  const radius = Math.min(SHEET_RADIUS_PX[drawn], band) / zoom
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
@@ -428,9 +431,8 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   context.beginPath()
   context.roundRect(sheet.x + half, sheet.y + half, sheet.width - 2 * half, sheet.height - 2 * half, Math.max(0, radius - half))
   context.stroke()
-  const inset = band >= FULL_BAND_PX ? BORDER_INSET_PX : BORDER_INSET_COMPACT_PX
-  if (band >= 2 * inset) {
-    const at = inset / zoom
+  if (form === 'full' || form === 'compact') {
+    const at = BORDER_INSET_PX[form] / zoom
     context.lineWidth = 1 / zoom
     context.strokeStyle = look.line
     context.beginPath()

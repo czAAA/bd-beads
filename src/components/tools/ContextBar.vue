@@ -11,7 +11,7 @@ import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
 import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
-import { copyLayerSelection, selectionInFinishedRows, type Selection } from '../../domain/selection'
+import { selectionHasBeads, selectionInFinishedRows, type Selection } from '../../domain/selection'
 import { frameOf } from '../../domain/layerRecord'
 
 // The design system's ContextBar (tickets 168, 415; ContextBar card): an icon-only bar above the Selection's top edge,
@@ -80,7 +80,7 @@ const deps = computed(() =>
   controlDeps({
     activeProject: () => props.project,
     hasSelection: () => props.selectionSummary !== undefined,
-    selectionHasBeads: () => !!props.selection && copyLayerSelection(props.project, props.selection) !== undefined,
+    selectionHasBeads: () => !!props.selection && selectionHasBeads(props.project, props.selection),
     selectionInFinishedRows: () => !!props.selection && selectionInFinishedRows(props.project, props.selection),
     hasClipboard: () => !!props.hasClipboard,
     canRemoveSelectedLine: () => props.canRemoveLine,

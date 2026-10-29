@@ -207,8 +207,9 @@ export function frameRowOrder(project: RowProgressed): RowOrder {
   return rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, rowProgressOf(project))
 }
 
-/** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. */
-function framePassAt(project: RowProgressed, position: GridPosition): number | undefined {
+/** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. `order` is the
+ * Frame's Row order, for a caller that has it already. */
+function framePassAt(project: RowProgressed, position: GridPosition, order: () => RowOrder = () => frameRowOrder(project)): number | undefined {
   const frame = frameOf(project)
   // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on.
   if (!frame || position.layer === 'canvas') {
@@ -220,7 +221,7 @@ function framePassAt(project: RowProgressed, position: GridPosition): number | u
   if (!frameContains(frame, position) && !frameGeometryOf(project).hasPosition(own)) {
     return undefined
   }
-  return frameRowOrder(project).passAt(own)
+  return order().passAt(own)
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
@@ -229,6 +230,18 @@ function framePassAt(project: RowProgressed, position: GridPosition): number | u
 export function isInFinishedRow(project: RowProgressed, position: GridPosition): boolean {
   const pass = framePassAt(project, position)
   return pass !== undefined && pass < currentPass(rowProgressOf(project))
+}
+
+/** `isInFinishedRow` for many positions at once (ticket 0675): the Frame's Row order worked out once, not for each, for
+ * a paste preview that asks of every bead it shows. */
+export function finishedRowsOf(project: RowProgressed): (position: GridPosition) => boolean {
+  const current = currentPass(rowProgressOf(project))
+  if (!frameOf(project) || current === 0) return () => false
+  let order: RowOrder | undefined
+  return (position) => {
+    const pass = framePassAt(project, position, () => (order ??= frameRowOrder(project)))
+    return pass !== undefined && pass < current
+  }
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the

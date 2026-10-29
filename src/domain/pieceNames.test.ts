@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, type BeadChange } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { carryNames, namedPieceCutBy, namedPieces, pieceNameAt, withPieceName } from './pieceNames'
+import { carryNames, namedPieceCutBy, namedPieces, pieceInSelection, pieceNameAt, withPieceName } from './pieceNames'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
@@ -10,6 +10,7 @@ import { removeSelectedLine } from './removeLine'
 import { rotateSelection } from './rotate'
 import { changeFrame } from './changeFrame'
 import { frameGrid } from '../testUtils/frameGrid'
+import { countingBeads } from '../testUtils/countingBeads'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
 import { sheetOf, withFields } from '../testUtils/flatFields'
 
@@ -188,5 +189,19 @@ describe('piece names', () => {
       expect(removed.kind === 'changed' && frameOf(removed.project)).toBeUndefined()
       expect(removed.kind === 'changed' && canvasOf(removed.project).pieceNames?.map((entry) => entry.name)).toEqual(['Fox', 'Owl'])
     })
+  })
+})
+
+describe('which Piece a Selection holds', () => {
+  it('floods a big Piece once for a set of beads, however often a Select drag asks (ticket 0674)', () => {
+    const counting = countingBeads(withColors({}, Array.from({ length: 300 }, (_, r) => row(r, 0, 299)).flat()))
+    const project = withFields(projectWith(), { beads: counting.beads })
+
+    expect(pieceInSelection(project, { top: 10, left: 10, rows: 2, columns: 2 })).toEqual({ row: 11, column: 11 })
+    counting.reset()
+    for (const size of [3, 4, 5]) pieceInSelection(project, { top: 10, left: 10, rows: size, columns: size })
+
+    expect([...counting.reads.rows].every((read) => read >= 10 && read < 15)).toBe(true)
+    expect(counting.reads.rows.size).toBe(5)
   })
 })

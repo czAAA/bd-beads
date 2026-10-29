@@ -66,11 +66,12 @@ export interface BeadLayerDeps {
   oncePerFrame: (draw: () => void) => () => void
 }
 
-/** Whether two Projects differ only in the colors of their beads (`updatedAt` is not drawn). Any other difference, even
- * one added later, can change how a bead is drawn (shape, size, Technique, weave), so it repaints it all. */
+/** Whether two Projects differ only in the colors of their beads (`updatedAt` and `savedAt`, which every stroke step
+ * stamps, are not drawn, ticket 0674). Any other difference, even one added later, can change how a bead is drawn
+ * (shape, size, Technique, weave), so it repaints it all. */
 function sameDrawing(a: Project, b: Project): boolean {
-  const { layers: layersA, updatedAt: _u, ...restA } = a
-  const { layers: layersB, updatedAt: _v, ...restB } = b
+  const { layers: layersA, updatedAt: _u, savedAt: _s, ...restA } = a
+  const { layers: layersB, updatedAt: _v, savedAt: _t, ...restB } = b
   return sameFields(restA, restB) && layersA.length === layersB.length && layersA.every((layer, index) => sameFields(unpainted(layer), unpainted(layersB[index]!)))
 }
 

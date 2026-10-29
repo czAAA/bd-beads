@@ -4,12 +4,14 @@ import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import type { Project, RowProgress } from '../../domain/project'
+import type { GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
 import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
+import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { canvasOf, frameOf, orientationOf, withFrameSheet } from '../../domain/layerRecord'
@@ -216,6 +218,21 @@ describe('ProjectSurface', () => {
   })
 
   describe('when the Project is edited', () => {
+    it('keeps the rulers\' Pieces through a stroke and counts them again when it ends (ticket 0674)', async () => {
+      const square = (columns: number) => Object.fromEntries([0, 1, 2, 3, 4].map((row) => [row, Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#ff0000']))]))
+      const project = projectOf(5, 5, { frame: undefined, beads: square(5) })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { stroking: true, showRulers: true })
+      const ruled = () => (wrapper.vm as unknown as { rulerLayout: { boxes: { columns: number }[] } }).rulerLayout.boxes.map((box) => box.columns)
+      expect(ruled()).toEqual([5])
+
+      // The stroke erases the right column: the box it rules is kept as it was until the stroke ends.
+      await wrapper.setProps({ project: withFields(project, { beads: square(4) }) })
+      expect(ruled()).toEqual([5])
+
+      await wrapper.setProps({ stroking: false })
+      expect(ruled()).toEqual([4])
+    })
+
     /** The Project with one bead of one row painted. */
     function painted(project: Project, row: number, column: number): Project {
       return withFrameGrid(
@@ -306,14 +323,16 @@ describe('ProjectSurface', () => {
         return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
       } as never)
       const project = shallowRef(projectOf(20, 30))
+      let saved = 0
+      // Each step lands in the library as it does in the app, stamped saved (ticket 0674): that draws no bead.
       const paint = (row: number, column: number) => {
-        project.value = painted(project.value, row, column)
+        project.value = { ...painted(project.value, row, column), savedAt: (saved += 1) }
       }
       const scroll = { x: 0, y: 0 }
       /** How tall a row of beads is drawn at zoom 1, from the top of the view. */
       const ROW_PX = 20
       const wrapper = mount(
-        defineComponent(() => () => h(ProjectSurface, { project: project.value, zoom: 1, scroll, onCellPrimaryDown: paint, onCellPrimaryMove: paint })),
+        defineComponent(() => () => h(ProjectSurface, { project: project.value, zoom: 1, scroll, onCellPrimaryDown: paint, onCellsPrimaryMove: (crossed: GridPosition[]) => crossed.forEach(({ row, column }) => paint(row, column)) })),
         { attachTo: document.body },
       )
       const surface = wrapper.find('[data-testid="project-surface"]')
@@ -604,8 +623,10 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointerdown', { clientX: from.x, clientY: from.y, button: 0, buttons: 1 })
       await surface.trigger('pointermove', { clientX: to.x, clientY: to.y, buttons: 1 })
 
-      const moves = wrapper.emitted('cell-primary-move') as [number, number][]
-      expect(moves.map(([, column]) => column)).toEqual([2, 3, 4, 5, 6, 7, 8])
+      // One move is one report of every bead it crossed (ticket 0674).
+      const moves = wrapper.emitted('cells-primary-move') as [GridPosition[]][]
+      expect(moves).toHaveLength(1)
+      expect(moves[0][0].map(({ column }) => column)).toEqual([2, 3, 4, 5, 6, 7, 8])
     })
 
     it('ends at release', async () => {
@@ -956,6 +977,9 @@ describe('ProjectSurface', () => {
 
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
       wrapper.emitted() as Record<string, unknown[][]>
+    /** Every bead the strokes crossed, as row and column, over all the moves reported. */
+    const crossed = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
+      ((wrapper.emitted('cells-primary-move') ?? []) as [GridPosition[]][]).flatMap(([cells]) => cells.map(({ row, column }) => [row, column]))
 
     describe('over the Frame margin (ticket 276)', () => {
       const framed = () => projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
@@ -980,6 +1004,16 @@ describe('ProjectSurface', () => {
         expect(dashed()).toBe(false)
 
         await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 8, 8), button: 0, buttons: 1 })
+        await vi.waitFor(() => expect(dashed()).toBe(true))
+      })
+
+      it('refuses a press whose pasted block would land a bead in the margin, though the press itself is clear of it (ticket 0675)', async () => {
+        const project = framed()
+        const previewStamp = { colors: [['#e63746', '#e63746', '#e63746']], top: 8, left: 6, rows: 1, columns: 3, lands: () => true }
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ blocksMargin: true }), previewStamp })
+        const dashed = () => context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)
+
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 2), button: 0, buttons: 1 })
         await vi.waitFor(() => expect(dashed()).toBe(true))
       })
 
@@ -1065,7 +1099,7 @@ describe('ProjectSurface', () => {
       }
 
       expect(events(wrapper)['cell-primary-down']).toEqual([[0, 0], [0, 0]])
-      expect(events(wrapper)['cell-primary-move']).toEqual([[0, 1], [0, 2], [0, 1], [0, 2]])
+      expect(crossed(wrapper)).toEqual([[0, 1], [0, 2], [0, 1], [0, 2]])
     })
 
     it('never hovers for a finger touch (ticket 166: no hover paint preview on a coarse pointer), but still hovers for a Pencil', async () => {
@@ -1090,7 +1124,7 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { ...centreOf(project, 400, 9000, 1, { x: -2000, y: -2000 }), buttons: 1 })
 
       expect(events(wrapper)['cell-primary-down']).toEqual([[-40, -25]])
-      expect(events(wrapper)['cell-primary-move']!.at(-1)).toEqual([400, 9000])
+      expect(crossed(wrapper).at(-1)).toEqual([400, 9000])
     })
 
     it('says the hover is over when the pointer leaves', async () => {
@@ -1537,6 +1571,14 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.band).toBe(80)
     expect(anchor.sheet.left).toBeCloseTo(anchor.box.left + 7 - 80)
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
+  })
+
+  it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {
+    const full = await mountSurface(framed(), 1, { x: 0, y: 0 }, { showRulers: true })
+    expect(rulerNumbers(full.wrapper).length).toBeGreaterThan(0)
+    // At 60% the band is 48px: the compact form.
+    const compact = await mountSurface(framed(), 0.6, { x: 0, y: 0 }, { showRulers: true })
+    expect(rulerNumbers(compact.wrapper)).toEqual([])
   })
 
   it('reports no Frame place once the Frame is scrolled wholly out of view, so no control stays on screen', async () => {

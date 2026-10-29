@@ -1,9 +1,9 @@
 import { computed, ref, type Ref } from 'vue'
 import type { GridPosition, PreviewCell } from '../../domain/grid'
 import type { Layer } from '../../domain/layers'
-import { isInFinishedRow } from '../../domain/rowProgress'
+import { finishedRowsOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import { pasteAimAtBead } from '../../domain/selection'
+import { pasteAimAtBead, type PasteStamp } from '../../domain/selection'
 import type { Tool } from '../../domain/tool'
 
 /** What pointer input on the canvas needs from the app shell: the open Project and tool, the paint color, and the
@@ -16,13 +16,16 @@ export interface CanvasPointerDeps {
   strokeMode: () => 'paint' | 'erase' | null
   selectedColorHex: () => string | null
   pastePreviewCells: (project: Project, hovered: GridPosition) => PreviewCell[]
+  /** The block Paste would stamp on a grid, aimed at the hovered cell (ticket 0675). */
+  pastePreviewStamp: (project: Project, hovered: GridPosition) => PasteStamp | undefined
   beginSelectPress: (row: number, column: number, layer?: Layer) => void
   extendSelection: (row: number, column: number, layer?: Layer) => void
   /** The Piece tool's tap on a bead (ticket 414): selects its Piece's rectangle, or clears the Selection on empty
    * space. */
   tapPiece: (row: number, column: number, layer?: Layer) => void
   beginOrCommitPress: (mode: 'paint' | 'erase', color: string | null, row: number, column: number, layer?: Layer) => void
-  paintStrokeCell: (row: number, column: number, color: string | null, layer?: Layer) => void
+  /** Paints (or with a null color erases) the beads a stroke crossed, as one stroke step (ticket 0674). */
+  paintStrokeCells: (cells: GridPosition[], color: string | null) => void
   /** Pastes at a cell; true when something was pasted. */
   pasteAt: (cell: GridPosition | undefined) => boolean
   /** Pick color from canvas (ticket 398): true when it is on and took this press. */
@@ -56,7 +59,23 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     if (!project || !hoveredCell.value) {
       return []
     }
-    return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !isInFinishedRow(project, cell))
+    const finished = finishedRowsOf(project)
+    return cellsUnderCursor(project, hoveredCell.value).filter((cell) => !finished(cell))
+  })
+
+  // A block pasted on a grid, as its stamp (ticket 0675): it moves with the pointer without listing its beads, and leaves
+  // out those in rows already woven as the cells above do.
+  const previewStamp = computed<PasteStamp | undefined>(() => {
+    const project = deps.currentProject()
+    if (!project || !hoveredCell.value || deps.activeTool() !== 'select') {
+      return undefined
+    }
+    const stamp = deps.pastePreviewStamp(project, hoveredCell.value)
+    if (!stamp) {
+      return undefined
+    }
+    const finished = finishedRowsOf(project)
+    return { ...stamp, lands: (row, column) => stamp.lands(row, column) && !finished({ row, column }) }
   })
 
   function onCellHover(row: number, column: number, layer?: Layer) {
@@ -123,18 +142,25 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   }
 
   function onCellPrimaryMove(row: number, column: number, layer?: Layer) {
-    if (deps.spaceHeld()) {
+    onCellsPrimaryMove([layer ? { row, column, layer } : { row, column }])
+  }
+
+  /** The beads a drag crossed since the last move, in order (ticket 0674): Select follows the last, a stroke paints
+   * them all in one step. */
+  function onCellsPrimaryMove(cells: GridPosition[]) {
+    const last = cells.at(-1)
+    if (deps.spaceHeld() || !last) {
       return
     }
 
     if (deps.activeTool() === 'select') {
-      deps.extendSelection(row, column, layer)
+      deps.extendSelection(last.row, last.column, last.layer)
       return
     }
 
     const mode = deps.strokeMode()
     if (mode === 'erase') {
-      deps.paintStrokeCell(row, column, null, layer)
+      deps.paintStrokeCells(cells, null)
       return
     }
 
@@ -147,16 +173,18 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    deps.paintStrokeCell(row, column, color, layer)
+    deps.paintStrokeCells(cells, color)
   }
 
   return {
     hoveredCell,
     previewCells,
+    previewStamp,
     onCellHover,
     onHoverEnd,
     pasteAtPointer,
     onCellPrimaryDown,
     onCellPrimaryMove,
+    onCellsPrimaryMove,
   }
 }

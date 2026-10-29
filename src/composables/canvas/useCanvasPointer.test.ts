@@ -3,6 +3,7 @@ import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
+import { stampCells } from '../../domain/selection'
 import { useCanvasPointer } from './useCanvasPointer'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
@@ -23,11 +24,20 @@ function setup(options: Options = {}) {
     strokeMode: () => options.strokeMode ?? null,
     selectedColorHex: () => (options.color === undefined ? '#ff0000' : options.color),
     pastePreviewCells: vi.fn(() => [{ row: 9, column: 9 }]),
+    // A 4 × 4 red block whose top-left lands on the hovered cell.
+    pastePreviewStamp: vi.fn((_project: Project, at: { row: number; column: number }) => ({
+      colors: Array.from({ length: 4 }, () => Array<string | null>(4).fill('#e63746')),
+      top: at.row,
+      left: at.column,
+      rows: 4,
+      columns: 4,
+      lands: () => true,
+    })),
     beginSelectPress: vi.fn(),
     extendSelection: vi.fn(),
     tapPiece: vi.fn(),
     beginOrCommitPress: vi.fn(),
-    paintStrokeCell: vi.fn(),
+    paintStrokeCells: vi.fn(),
     pasteAt: vi.fn(() => true),
     pickColorAt: vi.fn(() => false),
   }
@@ -63,6 +73,21 @@ describe('useCanvasPointer', () => {
       const { previewCells, onCellHover } = setup({ project: woven })
       onCellHover(0, 0)
       expect(previewCells.value).toEqual([])
+    })
+
+    it('shows a block pasted on a grid as its stamp, leaving out the beads in rows already woven (ticket 0675)', () => {
+      const { previewStamp, onCellHover, onHoverEnd } = setup({ tool: 'select', project: moveToRow(base, 3) })
+      expect(previewStamp.value).toBeUndefined()
+      onCellHover(0, 0)
+      expect(stampCells(previewStamp.value!).map(({ row }) => row)).toEqual([3, 3, 3, 3])
+      onHoverEnd()
+      expect(previewStamp.value).toBeUndefined()
+    })
+
+    it('has no stamp under a tool that paints', () => {
+      const { previewStamp, onCellHover } = setup({ tool: 'paint' })
+      onCellHover(0, 0)
+      expect(previewStamp.value).toBeUndefined()
     })
   })
 
@@ -110,13 +135,26 @@ describe('useCanvasPointer', () => {
     it('paints along a paint stroke', () => {
       const { deps, onCellPrimaryMove } = setup({ strokeMode: 'paint' })
       onCellPrimaryMove(1, 1)
-      expect(deps.paintStrokeCell).toHaveBeenCalledWith(1, 1, '#ff0000', undefined)
+      expect(deps.paintStrokeCells).toHaveBeenCalledWith([{ row: 1, column: 1 }], '#ff0000')
     })
 
     it('erases along an erase stroke', () => {
       const { deps, onCellPrimaryMove } = setup({ strokeMode: 'erase' })
       onCellPrimaryMove(1, 1)
-      expect(deps.paintStrokeCell).toHaveBeenCalledWith(1, 1, null, undefined)
+      expect(deps.paintStrokeCells).toHaveBeenCalledWith([{ row: 1, column: 1 }], null)
+    })
+
+    it('paints every bead one move crossed in one stroke step (ticket 0674), and Select follows the last', () => {
+      const crossed = [{ row: 1, column: 1 }, { row: 1, column: 2 }, { row: 2, column: 3, layer: 'canvas' as const }]
+      const paint = setup({ strokeMode: 'paint' })
+      paint.onCellsPrimaryMove(crossed)
+      expect(paint.deps.paintStrokeCells).toHaveBeenCalledTimes(1)
+      expect(paint.deps.paintStrokeCells).toHaveBeenCalledWith(crossed, '#ff0000')
+
+      const select = setup({ tool: 'select' })
+      select.onCellsPrimaryMove(crossed)
+      expect(select.deps.extendSelection).toHaveBeenCalledTimes(1)
+      expect(select.deps.extendSelection).toHaveBeenCalledWith(2, 3, 'canvas')
     })
 
     it('extends the selection under Select', () => {
@@ -129,7 +167,7 @@ describe('useCanvasPointer', () => {
       for (const options of [{}, { strokeMode: 'paint' as const, color: null }, { strokeMode: 'paint' as const, spaceHeld: true }]) {
         const { deps, onCellPrimaryMove } = setup(options)
         onCellPrimaryMove(1, 1)
-        expect(deps.paintStrokeCell).not.toHaveBeenCalled()
+        expect(deps.paintStrokeCells).not.toHaveBeenCalled()
       }
     })
   })
@@ -140,7 +178,7 @@ describe('useCanvasPointer', () => {
       onCellPrimaryDown(4, 1, 'frame')
       expect(deps.beginOrCommitPress).toHaveBeenCalledWith('paint', '#ff0000', 4, 1, 'frame')
       onCellPrimaryMove(4, 2, 'canvas')
-      expect(deps.paintStrokeCell).toHaveBeenCalledWith(4, 2, '#ff0000', 'canvas')
+      expect(deps.paintStrokeCells).toHaveBeenCalledWith([{ row: 4, column: 2, layer: 'canvas' }], '#ff0000')
     })
   })
 

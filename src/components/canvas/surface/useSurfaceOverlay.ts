@@ -2,7 +2,7 @@ import { computed, onBeforeUnmount, ref, watch, type Ref } from 'vue'
 import type { PreviewCell } from '../../../domain/grid'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
-import type { Selection } from '../../../domain/selection'
+import type { PasteStamp, Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { renderOverlay } from '../../../rendering/overlayRenderer'
@@ -80,6 +80,7 @@ export interface SurfaceOverlayDeps {
     zoom: number
     scroll: Scroll
     previewCells?: PreviewCell[]
+    previewStamp?: PasteStamp
     previewColor?: string | null
     selection?: Selection
     showRulers?: boolean
@@ -151,7 +152,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         rowMarks: marksShown.value,
         letters: shownLetters(props.project),
         pointer: markerAt.value && !tools.tool && !tools.moves && !tools.markerHidden && !tools.picking && !tools.selects ? { ...markerAt.value, color: props.previewColor ?? null } : undefined,
-        preview: !tools.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
+        preview: !tools.picking && (props.previewStamp || (props.previewCells?.length ?? 0) > 0) ? { cells: props.previewCells ?? [], stamp: props.previewStamp, color: props.previewColor ?? null } : undefined,
         selection: props.selection,
         marginOutline: marginOpacity.value,
         frameEditing: tools.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '', hot: hotHandle.value } : undefined,
@@ -168,6 +169,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.zoom,
       () => props.scroll,
       () => props.previewCells,
+      () => props.previewStamp,
       () => props.previewColor,
       markerAt,
       () => props.selection,

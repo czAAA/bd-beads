@@ -12,7 +12,7 @@ The Convert image wizard: one large popup where a picture becomes a new Project,
 
 - Cancel (secondary), the result line in `meta` (`body`), centred, and Create Project (primary), both `field-height`: "32×24 beads · 5.1 × 3.1 cm · 8 colors". With no picture the line reads "No picture yet" in `muted` and Create Project is disabled (the disabled sections say why).
 - Create Project makes the Project from the popup's own copy of the setup and closes it. Its Palette is its built-in colors plus every color its beads use (spec 0645).
-- **Cancel asks in place.** One modal at a time (accessibility.md), so with a picture set, Cancel, Close and Escape turn the footer into the question: the warning icon and "Discard conversion?" in `control`, then Cancel (first, focused) and Discard (`danger` fill). No explanation under it: the title says it. With no picture they close at once.
+- **Cancel closes at once.** Cancel, Close and Escape close the popup with no question, a picture set or not, and leave the New Project form as it was (ticket 0679).
 
 ## Sections as steps
 

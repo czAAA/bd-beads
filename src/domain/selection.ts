@@ -255,6 +255,27 @@ export function copyLayerSelection(project: Project, selection: Selection): Copi
   return sheet.geometry.grid ? copySelection(sheet, local, selectableOn(project, sheet)) : copyCustomSelection(sheet, local)
 }
 
+/** Whether Copy would take any bead from a Selection (ticket 0675): `copyLayerSelection`'s answer, found by stopping at
+ * the first bead, so the Copy and Cut controls never copy a big Selection just to ask. */
+export function selectionHasBeads(project: Project, selection: Selection): boolean {
+  const layer = selectionLayer(project, selection)
+  const sheet = layerSheet(project, layer)
+  if (!sheet.geometry.grid) return copyCustomSelection(sheet, selectionInLayer(project, layer, selection)) !== undefined
+  const selectable = selectableOn(project, sheet)
+  const holds = ({ row, column }: GridPosition) => selectable(row, column) && !!colorAt(sheet.beads, row, column)
+  if (selection.cells) return selection.cells.some((cell) => holds(positionInLayer(project, layer, cell)))
+  // Only the stored beads are read, so an empty stretch costs nothing however big the rectangle is.
+  const { row: top, column: left } = positionInLayer(project, layer, { row: selection.top, column: selection.left })
+  return Object.keys(sheet.beads).some((key) => {
+    const row = Number(key)
+    if (row < top || row >= top + selection.rows) return false
+    return Object.keys(sheet.beads[row]!).some((at) => {
+      const column = Number(at)
+      return column >= left && column < left + selection.columns && holds({ row, column })
+    })
+  })
+}
+
 /** Snapshots a Custom frame's Selection (ticket 0594): its beads' places on screen, and the same beads in its cells. */
 function copyCustomSelection(sheet: LayerSheet, selection: Selection): CopiedBlock | undefined {
   const copied = copiedFromCustom(sheet, selection)
@@ -335,18 +356,54 @@ export function pieceSelectionOnLayer(project: Project, at: GridPosition): Selec
   return picked && { ...picked, top: origin.row, left: origin.column, layer, ...(cells ? { cells } : {}) }
 }
 
-/** The cells a Paste at `at` would fill, as Canvas positions (the paste preview). */
-export function pastedCellsOnLayer(project: Project, block: CopiedBlock, at: GridPosition): PastedCell[] {
+/** A Paste's preview on a layer laid on a grid (ticket 0675): the copied block aimed at a Canvas position. Its cells are
+ * read only where they are drawn, so a hover costs what is on screen, not the whole block. */
+export interface PasteStamp {
+  /** The block's colors, row-major from its top-left: the copied block's own array, never copied again. */
+  colors: CopiedBlock['colors']
+  /** The Canvas position the block's top-left lands on. */
+  top: number
+  left: number
+  rows: number
+  columns: number
+  /** Whether a cell of the block lands at this Canvas position: one past the Frame's edge is clipped (ADR 0066). */
+  lands: (row: number, column: number) => boolean
+}
+
+/** Where a Paste at `at` would put the block, as a stamp; none on a Custom frame, whose beads are listed instead (see
+ * pastedCellsOnLayer). */
+export function pasteStampOnLayer(project: Project, block: CopiedBlock, at: GridPosition): PasteStamp | undefined {
   const layer = layerAt(project, at)
   const sheet = layerSheet(project, layer)
-  if (!sheet.geometry.grid) {
-    // A Custom frame's positions are named by round and place, which only the Frame's layer reads (ticket 0594).
-    return landedOnCustom(sheet, block, positionInLayer(project, layer, at)).landed.map(({ row, column, color }) => ({ ...positionOnCanvas(project, layer, { row, column }), color: color!, layer }))
+  if (!sheet.geometry.grid) return undefined
+  const aimed = positionInLayer(project, layer, at)
+  const corner = positionOnCanvas(project, layer, { row: aimed.row - block.anchor.row, column: aimed.column - block.anchor.column })
+  const edge = sheet.edge && { ...sheet.edge, ...positionOnCanvas(project, layer, sheet.edge) }
+  const lands = edge ? (row: number, column: number) => frameContains(edge, { row, column }) : () => true
+  return { colors: block.colors, top: corner.row, left: corner.column, rows: block.rows, columns: block.columns, lands }
+}
+
+/** Every cell a stamp lands, in reading order: for a press that asks about all of them, never for each hover. */
+export function stampCells(stamp: PasteStamp): PastedCell[] {
+  const cells: PastedCell[] = []
+  for (let rowOffset = 0; rowOffset < stamp.rows; rowOffset++) {
+    for (let columnOffset = 0; columnOffset < stamp.columns; columnOffset++) {
+      const color = stamp.colors[rowOffset]?.[columnOffset]
+      const row = stamp.top + rowOffset
+      const column = stamp.left + columnOffset
+      if (color && stamp.lands(row, column)) cells.push({ row, column, color })
+    }
   }
-  const { edge } = sheet
-  return stampedCells(block, positionInLayer(project, layer, at))
-    .filter((cell) => !edge || frameContains(edge, cell))
-    .map((cell) => ({ ...cell, ...positionOnCanvas(project, layer, cell) }))
+  return cells
+}
+
+/** The cells a Paste at `at` would fill, as Canvas positions (the paste preview). */
+export function pastedCellsOnLayer(project: Project, block: CopiedBlock, at: GridPosition): PastedCell[] {
+  const stamp = pasteStampOnLayer(project, block, at)
+  if (stamp) return stampCells(stamp)
+  // A Custom frame's positions are named by round and place, which only the Frame's layer reads (ticket 0594).
+  const layer = layerAt(project, at)
+  return landedOnCustom(layerSheet(project, layer), block, positionInLayer(project, layer, at)).landed.map(({ row, column, color }) => ({ ...positionOnCanvas(project, layer, { row, column }), color: color!, layer }))
 }
 
 /** Where a Paste loses beads: past the Frame's edge (ticket 491), or on a Custom frame's Seams and Off-shape (ticket

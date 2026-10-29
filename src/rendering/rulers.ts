@@ -4,12 +4,14 @@ import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, withCell, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
-import { pieceAreasOf } from '../domain/pieces'
+import type { NamedPiece } from '../domain/pieceNames'
 import { hasGuides, type Selection } from '../domain/selection'
+import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
+import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
-import { beadsOfLayer, frameOf, heldWeave, type Layered } from '../domain/layerRecord'
+import { frameOf, heldWeave, type Layered } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
 // (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -61,17 +63,17 @@ export interface RulerLabel {
 /** What decides which boxes carry rulers. */
 export type RuledProject = Layered
 
-// The boxes that carry rulers: the Frame alone once it is set, as it lies (turned, the cells it covers: ticket 0667),
-// otherwise every Piece area of more than 4 beads (those near the viewport are chosen by the caller). A Custom frame
-// has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
-function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
+// The boxes that carry rulers: the Frame alone once set, as it lies (ticket 0667), else every Piece area of more than 4
+// beads (the caller picks those near the viewport), with the Rulers on only, as a Piece's line goes with its numbers.
+// A Custom frame has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
+function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces): RuledBox[] {
   const frame = frameOf(project)
   if (frame) {
     if (frameShapeOf(frame)) return []
     const { row, column, rows, columns } = laidRect({ ...frame, cell: canvasWeave(project).cell })
     return [{ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
   }
-  return pieceAreasOf(beadsOfLayer(project, 'canvas'), canvasWeave(project))
+  return (pieces.areas ?? [])
     .filter(hasGuides)
     .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
@@ -139,8 +141,14 @@ export interface RulerDot {
 export interface RulerLayoutOptions {
   /** The numbers' size in px at zoom 1: 11, or 12 on a phone. It grows or shrinks with the zoom (`RulerScale`). */
   fontPx: number
-  /** Whether the numbers and dots are drawn (the Rulers toggle). Lines and picking do not depend on it. */
+  /** Whether the numbers and dots are drawn (the Rulers toggle). The Frame's line and picking do not depend on it. */
   numbers: boolean
+  /** The form of the Frame's margin sheet, which its numbers hang on: only the full form has room for them and their
+   * dots (MarginSheet card, ticket 0658). Full when left out. */
+  sheet?: MarginForm
+  /** The Pieces to rule, when the caller holds them through a stroke (`ruledPieces`, ticket 0674); counted from the
+   * beads otherwise. */
+  pieces?: RuledPieces
 }
 
 /** What the rulers of one view are: what to draw, and what a point of the viewport selects. */
@@ -152,6 +160,8 @@ export interface RulerLayout {
   numbers: boolean
   /** The boxes near the viewport that carry rulers, for their lines. */
   boxes: RuledBox[]
+  /** The named Pieces, whose names are drawn under them whether the Rulers are on or not (ADR 0050). */
+  named: NamedPiece[]
   /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none. */
   step: number
   /** The numbers to draw: none while `numbers` is off. */
@@ -286,27 +296,30 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers }: RulerLayoutOptions): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
   const scale = rulerScale(surface.zoom, fontPx)
   const reach = scale.fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
-  const boxes = ruledBoxes(project, scale).filter((box) => {
+  const boxes = ruledBoxes(project, scale, pieces).filter((box) => {
     const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
-  const laid = boxes.map((box) =>
-    box.kind === 'frame' && frameOf(project)
+  const laid = boxes.map((box) => ({
+    kind: box.kind,
+    ...(box.kind === 'frame' && frameOf(project)
       ? layBox(box, withCell(heldWeave(project, 'frame')!, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame' }, surface, viewport, scale)
-      : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale),
-  )
-  const everyLabel = laid.flatMap((box) => box.labels)
-  const everyBead = laid.flatMap((box) => box.beads)
+      : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
+  }))
+  const numbered = laid.filter((box) => box.kind !== 'frame' || sheet === 'full')
+  const everyLabel = numbered.flatMap((box) => box.labels)
+  const everyBead = numbered.flatMap((box) => box.beads)
 
   return {
     scale,
     numbers,
     boxes,
+    named: pieces.named,
     step: Math.max(1, ...laid.map((box) => box.step)),
     labels: numbers ? everyLabel : [],
     dots: numbers ? everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)) : [],

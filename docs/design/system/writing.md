@@ -411,7 +411,6 @@ The popup of spec 0645 (ConvertImage, PixelToBeadRatio and FoundColorRow cards).
 | ≈ 200 Delica 11/0 a gram, rounded up. Buy about 10% more for spares. | ≈ 200 Delica 11/0 в грамме, с округлением вверх. Купите примерно на 10 % больше про запас. | ≈ 200 Delica 11/0 у грамі, з округленням угору. Купіть приблизно на 10 % більше про запас. | ≈ 200 Delica 11/0 na gram, w górę. Kup około 10% więcej na zapas. |
 | There is no picture to paste. Copy one first. · Steps (the step rail's name) | В буфере обмена нет изображения. Сначала скопируйте его. · Шаги | У буфері обміну немає зображення. Спочатку скопіюйте його. · Кроки | W schowku nie ma obrazu. Najpierw go skopiuj. · Kroki |
 | No picture yet · Create Project | Изображения пока нет · Создать проект | Зображення ще немає · Створити проєкт | Brak obrazu · Utwórz projekt |
-| Discard conversion? · Cancel · Discard | Сбросить конвертацию? · Отмена · Сбросить | Скинути конвертацію? · Скасувати · Скинути | Odrzucić konwersję? · Anuluj · Odrzuć |
 | Preview: {size}, {colors} · Preview: no picture yet | Превью: {size}, {colors} · Превью: изображения пока нет | Прев’ю: {size}, {colors} · Прев’ю: зображення ще немає | Podgląd: {size}, {colors} · Podgląd: brak obrazu |
 
 Russian, Ukrainian and Polish here are proposals for review with the build.
@@ -447,6 +446,16 @@ Built by ticket 0657 (the title block), in Belarusian, Spanish and Chinese:
 |---|---|---|---|
 | Name and size on the margin | Імя і памер на палях | Nombre y tamaño en el margen | 在边距上显示名称和尺寸 |
 | Change Technique | Змяніць тэхніку | Cambiar técnica | 更换编织技法 |
+
+Built by ticket 0658 (the zoom forms and folding), in Belarusian, Spanish and Chinese:
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Fold the title block · Show the title block | Згарнуць штамп · Паказаць штамп | Plegar el cajetín · Mostrar el cajetín | 收起标题栏 · 显示标题栏 |
+| Frame tools | Інструменты рамкі | Herramientas del marco | 边框工具 |
+| Show the title block: {name} (the tab's accessible name) | Паказаць штамп: {name} | Mostrar el cajetín: {name} | 显示标题栏：{name} |
+
+The tab's accessible name in Russian, Ukrainian and Polish follows the rows above: "Показать штамп: {name}", "Показати штамп: {name}", "Pokaż tabliczkę: {name}".
 
 The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
 

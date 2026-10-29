@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
+import { finishedRowsOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
@@ -75,6 +75,20 @@ describe('row progress', () => {
     const done = moveToRow(woven, frameOf(woven)!.rows)
     expect(isInCurrentRow(done, { row: 0, column: 0 })).toBe(false)
     expect(isInFinishedRow(done, { row: frameOf(woven)!.rows - 1, column: 0 })).toBe(true)
+  })
+
+  it('answers for many positions at once as it does for each, a pass at a time on peyote too (ticket 0675)', () => {
+    for (const technique of ['loom', 'peyote'] as const) {
+      const placed = createProject({ technique, beadId: cubeBead.id, size: { width: 4, height: 6, unit: 'beads' } })
+      const woven = moveToRow(withFields(placed, { frame: { ...frameOf(placed)!, row: 2, column: 3 } }), 3)
+      const finished = finishedRowsOf(woven)
+      const positions = Array.from({ length: 10 * 9 }, (_, index) => ({ row: Math.floor(index / 9), column: index % 9 }))
+      const expected = positions.filter((position) => isInFinishedRow(woven, position))
+      expect(expected.length).toBeGreaterThan(0)
+      expect(positions.filter(finished)).toEqual(expected)
+      expect(finished({ row: 2, column: 3, layer: 'canvas' })).toBe(false)
+      expect(finishedRowsOf(moveToRow(woven, 0))({ row: 2, column: 3 })).toBe(false)
+    }
   })
 
   it('is started only while on with a pass done (ticket 411)', () => {

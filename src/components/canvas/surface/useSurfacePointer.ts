@@ -8,7 +8,7 @@ import { pointerDraws, type Handedness, type InputMode } from '../../../domain/i
 import { beadColorAt } from '../../../domain/layerBeads'
 import { isInFinishedRow } from '../../../domain/rowProgress'
 import type { Project } from '../../../domain/project'
-import { selectionFrame, selectionHasHandles, selectionLayer, type Selection } from '../../../domain/selection'
+import { selectionFrame, selectionHasHandles, selectionLayer, stampCells, type PasteStamp, type Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
@@ -22,6 +22,9 @@ import { frameOf, orientationOf } from '../../../domain/layerRecord'
 export interface SurfacePointerEvents {
   'cell-primary-down': [row: number, column: number, layer?: Layer]
   'cell-primary-move': [row: number, column: number, layer?: Layer]
+  /** The beads a stroke crossed since the last pointer move, in order, every one on the line (ticket 0674): one move
+   * of the pointer, which the browser sends once a frame, is one stroke step. */
+  'cells-primary-move': [cells: GridPosition[]]
   'cell-hover': [row: number, column: number, layer?: Layer]
   'hover-end': []
   /** The canvas was dragged by this many px (the Hand tool, the middle button). */
@@ -57,6 +60,7 @@ export interface SurfacePointerDeps {
     scroll: Scroll
     tools: ToolCapabilities
     previewCells?: PreviewCell[]
+    previewStamp?: PasteStamp
     previewColor?: string | null
     selection?: Selection
     inputMode?: InputMode
@@ -521,7 +525,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       stroke = { from: pointInSurface(event), last: bead }
     }
     // A press also lands where the pasted block under the pointer goes (the preview cells).
-    if (event.button === 0 && (refusesMargin(bead) || (props.previewCells ?? []).some((cell) => refusesMargin(cell)))) {
+    const pasted = [...(props.previewCells ?? []), ...(props.previewStamp ? stampCells(props.previewStamp) : [])]
+    if (event.button === 0 && (refusesMargin(bead) || pasted.some((cell) => refusesMargin(cell)))) {
       refusePress()
       if (refusesSelectionStart(bead)) return
     }
@@ -610,7 +615,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     if (hoversFor(event)) emit('cell-hover', ...cellArguments(bead))
   }
 
-  /** Reports every bead on the straight line from the stroke's last sample to the pointer, found in position space. */
+  /** Reports every bead on the straight line from the stroke's last sample to the pointer, found in position space,
+   * all in one report (ticket 0674). */
   function continueStroke(event: PointerEvent): void {
     if (!stroke) return
     if (!(event.buttons & 1)) {
@@ -620,15 +626,20 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     const to = pointInSurface(event)
     const { x, y } = stroke.from
     const steps = Math.max(1, Math.ceil(Math.hypot(to.x - x, to.y - y) / STROKE_SAMPLE_PX))
+    const crossed: GridPosition[] = []
     for (let step = 1; step <= steps; step++) {
       const bead = surface.value.pointToHit({ x: x + ((to.x - x) * step) / steps, y: y + ((to.y - y) * step) / steps })
       if (!bead || isSameBead(bead, stroke.last)) continue
       const first = stroke.last === undefined
       stroke.last = bead
       if (first) emit('cell-primary-down', ...cellArguments(bead))
-      else emit('cell-primary-move', ...cellArguments(bead))
+      else {
+        const [row, column, layer] = cellArguments(bead)
+        crossed.push(layer ? { row, column, layer } : { row, column })
+      }
     }
     stroke.from = to
+    if (crossed.length > 0) emit('cells-primary-move', crossed)
   }
 
   function onPointerEnd(event?: PointerEvent): void {

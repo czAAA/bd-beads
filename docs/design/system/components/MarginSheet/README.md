@@ -60,11 +60,12 @@ Anchored to the inner border's bottom-right corner, two rows of `--margin-title-
 
 ## Zoom forms
 
-The tools keep their pixel size while the band grows and shrinks with the beads, so the sheet changes form by the band's height in screen pixels:
+The tools keep their pixel size while the band grows and shrinks with the beads, so the sheet changes form by the band's height in screen pixels (the breakpoints as built, ticket 0658; a loom bead is 20px at 100%, so the band is 80px there):
 
-- **Full** (band 64px and up, 100% and closer): as above.
-- **Compact** (34 to 64px, about 50% to 90%): tools 24px with 14px icons; Row progress shows only the counter, the track and Row done; the title block is one 22px row (name, Technique, size in beads, size in cm, Letters); no ruler numbers, only the Frame line; the inner border inset 6px.
-- **Folded** (under 34px): the Move bar, the counter with Row done, the Margin color button and a **···** button ("Frame tools") whose menu holds Rotate Frame, Edit Frame, Export and Remove Frame; the title block is the name tab. The paper keeps its color. Folding by hand (the title block's fold button) folds the title block alone; the tools stay.
+- **Full** (band 68px and up, about 85% and closer): as above.
+- **Compact** (40 to 68px, about 50% to 85%): tools 24px with 14px icons, 2px apart; Row progress shows only the counter, a 40px track and Row done (22px); the title block is one 22px row (name, Technique, size in beads, size in cm, Letters, fold); no ruler numbers, only the Frame line; the inner border inset 6px, the corners 10px; the row 8px down and 10px in.
+- **Folded** (31 to 40px, about 39% to 50%): the Move bar, the counter with Row done, the Margin color button and a **···** button ("Frame tools") whose menu holds Rotate Frame, Edit Frame, Export and Remove Frame; the title block is the name tab. The paper keeps its color and edge, with no inner border; the row and the tab stand in the middle of the room between the sheet's edge and the Frame's line. Folding by hand (the title block's fold button) folds the title block alone; the tools stay.
+- **Bare** (under 31px, under about 39%): the paper alone. Not even the folded row fits between the sheet's edge and the Frame's line, so the sheet holds no tools; the Frame panel, the Progress bar and the Canvas strip still have them.
 
 ## Touch
 
@@ -77,8 +78,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 ## As built (ticket 0657)
 
 - **Values:** the top band's inset `--margin-band-inset` (14px), the Move bar's hit height `--margin-move-height` (28px; 56 wide, as `--frame-handle-hit-width`), Row done `--margin-done` (26px), the track `--margin-track` (64px), a title block pencil `--margin-pencil` (18px), a legend disc `--margin-legend-disc` (14px), the name `--margin-title-name` (Inter 600 12), a disc's letter `--margin-legend-letter` (Inter 600 8) and the name editor `--margin-edit-width` (260px), in `bundle.css` and `src/styles/design-values.css`.
-- **The band's row** is three columns: Row progress at the start, the Move bar centred, the tools at the end; a sheet narrower than its content lets it run past the right edge until the zoom forms (ticket 0658). On a phone the full form only shows zoomed in, where the canvas is panned to reach the rest.
-- **A band too thin** for the row or the title block (zoomed out, until ticket 0658's compact and folded forms) has them stand past the sheet's edge, 7px clear of the Frame's line, never over its beads.
+- **The band's row** is three columns: Row progress at the start, the Move bar centred, the tools at the end. A sheet too narrow for it steps down a form (ticket 0658, As built below). On a phone the full form only shows zoomed in, where the canvas is panned to reach the rest.
 - **Editing in place:** the name and the maker's name open their field (Save, Cancel, "n/40") floated above their cell in the shared popover look, since a 23px cell cannot hold it; Escape or Cancel closes it. The Technique pencil opens the PanelPicker's menu under it.
 - **The legend** follows the Palette's order (A, B, C…), not the bead count; a color with no letter shows "?", as the Word chart does. The name's cell stops at `--margin-edit-width` and ellipsizes.
 - **Hot corners** are drawn just outside the Frame line, as in the design canvas: a bracket's stroke 3px clear of it, an edge's bar against it; their hit points are on the line.
@@ -86,6 +86,16 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **Gives way:** the band's row and the title block take no press where a Selection's handles reach under them or the Tool pill covers them (ticket 498).
 - **The row pointer** stands 4px outside the leftmost row number (or the Frame's line with Rulers off); in the top band, the topmost column number.
 - **Edit Frame's outline** is the sheet element's own outline (DOM), the hot corners and size Tooltip are drawn on the canvas; the Tooltip sits out from the hot corner, beyond its disc.
+
+## As built (ticket 0658)
+
+- **Breakpoints** (Zoom forms above), checked in the browser at every 5% from 30% to 150% on Frames 40, 16, 8 and 3 beads wide, in English and the longest text of every language (`MarginSheet.browser.test.ts`): nothing of the Frame stands outside its sheet, over its line or beads, or over another control. They are the band's height, `--margin-band-full` (68px), `--margin-band-compact` (40px) and `--margin-band-folded` (31px); the canvas draws the sheet and the rulers by the same rule (`src/rendering/marginForm.ts`).
+- **Why 68 and 40, not 64 and 34:** the Frame's line stands 5 to 7px out from the beads, inside the band. The full title block (10px in, 48px) needs 68px to stay clear of it; the compact row 40px.
+- **Too narrow:** where the sheet's width cannot hold a form's row, the row steps down: full, compact, folded, then folded with Margin color in the Frame tools menu and no Row progress, then none. The title block steps down full, compact, the tab. Each form's width is measured as it is shown.
+- **The fold** is kept for the session (not saved) and applies to every Frame. The fold button is in the compact title block too, its last cell. The tab is a button (chevron-up, "Show the title block: {name}") only where the sheet has room to unfold the block; folded by the zoom or the width, it is the name alone.
+- **The Frame tools menu** opens Export hung from the ··· button. Its items are the band's buttons' own actions, names and disabled reasons.
+- **Compact title block:** the name and the Technique are read only there (no pencils); the full form and the Frame panel edit them.
+- **Left out:** the coarse-pointer rule (Touch above: the compact form one step earlier where 44px hit areas would overlap) is not built; a pointer with Turn row direction set to columns can sit under a tool of the top band.
 
 ## Acceptance
 

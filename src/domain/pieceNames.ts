@@ -3,6 +3,7 @@ import { type GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt } from './pieces'
+import { carryPieceIndex, joinsNamedPieces, pieceLabelAt, piecesStayWhole, presenceChanges, type BeadPresence } from './pieceIndex'
 import type { Project } from './project'
 import type { Selection } from './selection'
 import { beadsOfLayer, heldWeave, type Layered, pieceNamesOf, withLayer, withPieceNames } from './layerRecord'
@@ -174,7 +175,9 @@ function landNames(
     const groups = new Map<number, GridPosition[]>()
     for (const at of survivors) {
       const id = labeller.idOf(at)!
-      groups.set(id, [...(groups.get(id) ?? []), at])
+      const group = groups.get(id)
+      if (group) group.push(at)
+      else groups.set(id, [at])
     }
     const anchorId = target ? labeller.idOf(target) : undefined
     const [id, members] = [...groups].sort(
@@ -185,12 +188,45 @@ function landNames(
   return landings
 }
 
+/** Whether two states of a Project join their Canvas beads into Pieces alike: the same Technique and settings. */
+function sameWeave(before: Project, after: Project): boolean {
+  const [was, now] = [heldWeave(before, 'canvas'), heldWeave(after, 'canvas')]
+  return was.technique === now.technique && JSON.stringify(was.techniqueSettings ?? {}) === JSON.stringify(now.techniqueSettings ?? {})
+}
+
+/** Whether every name of the Project stands on a bead (one that does not is dropped by the next edit). */
+function anchored(project: Project): boolean {
+  const beads = beadsOfLayer(project, 'canvas')
+  return (pieceNamesOf(project) ?? []).every((entry) => beads[entry.row]?.[entry.column] !== undefined)
+}
+
+/** What a drawing edit did to where beads are, when it is plain from the beads it changed that every Piece name stays
+ * on its bead (ticket 0674): only colors changed, beads were added that join no two named Pieces, or beads other than
+ * a name's were emptied and split no Piece. Undefined when only following every named Piece can tell. */
+function namesStay(before: Project, after: Project): BeadPresence | undefined {
+  if (!sameWeave(before, after) || !anchored(before)) return undefined
+  const [was, now, weave] = [beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas'), heldWeave(after, 'canvas')]
+  const change = presenceChanges(was, now)
+  const { added, removed } = change
+  if (added.length > 0 && removed.length > 0) return undefined
+  if (removed.length > 0) {
+    const anchors = new Set(pieceNamesOf(before)!.map(numericKey))
+    return removed.some((at) => anchors.has(numericKey(at))) || !piecesStayWhole(now, weave, removed) ? undefined : change
+  }
+  return added.length > 0 && pieceNamesOf(before)!.length > 1 && joinsNamedPieces(was, weave, pieceNamesOf(before)!, added) ? undefined : change
+}
+
 /** The Project `after` with Piece names carried over from `before`; `moved` says where a `before` bead went
  * (undefined if gone). If two names land on one Piece (only a move or Technique change; painting is refused first),
  * the one with more old beads keeps its name. */
 export function carryNames(before: Project, after: Project, moved?: (position: GridPosition) => GridPosition | undefined): Project {
   if (!pieceNamesOf(before)?.length) {
     return after
+  }
+  const change = moved ? undefined : namesStay(before, after)
+  if (change) {
+    carryPieceIndex(beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas'), heldWeave(after, 'canvas'), change)
+    return pieceNamesOf(after) === pieceNamesOf(before) ? after : withPieceNames(after, pieceNamesOf(before))
   }
   const kept: Landing[] = []
   const { beads, weave } = canvasOf(after)
@@ -213,6 +249,11 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
 export function keepNamesApart(before: Project, after: Project): Project {
   const [beads, was] = [beadsOfLayer(after, 'canvas'), beadsOfLayer(before, 'canvas')]
   if ((pieceNamesOf(before)?.length ?? 0) < 2 || beads === was) {
+    return after
+  }
+  // Only a new bead joins Pieces; whether it joins named ones is read from the beads the edit changed (ticket 0674).
+  const { added, removed } = presenceChanges(was, beads)
+  if (added.length === 0 || (removed.length === 0 && sameWeave(before, after) && anchored(before) && !joinsNamedPieces(was, heldWeave(after, 'canvas'), pieceNamesOf(before)!, added))) {
     return after
   }
   const labeller = pieceLabeller(beads, heldWeave(after, 'canvas'))
@@ -241,7 +282,6 @@ export function pieceInSelection(
   selection: Selection,
 ): GridPosition | undefined {
   const { beads, weave } = canvasOf(project)
-  const labeller = pieceLabeller(beads, weave)
   const shape = selection.cells && new Set(selection.cells.map((cell) => `${cell.row},${cell.column}`))
   let found: { id: number; at: GridPosition } | undefined
   for (const [rowKey, columns] of Object.entries(beads)) {
@@ -257,7 +297,7 @@ export function pieceInSelection(
       if (shape && !shape.has(`${row},${column}`)) {
         continue
       }
-      const id = labeller.idOf({ row, column })!
+      const id = pieceLabelAt(beads, weave, { row, column })!
       if (found && found.id !== id) {
         return undefined
       }
