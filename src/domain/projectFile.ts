@@ -4,7 +4,7 @@ import { decodeEarlierProject, decodeFlatProject, decodeProject, decodeVersionEl
 import type { VersionThreeProject } from './versionThree'
 import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
-import { projectNameOf } from './layerRecord'
+import { frameOf, projectNameOf } from './layerRecord'
 
 // The export file format (ADR 0048). With no backend to migrate for us (ADR 0001), a file carries its kind and format
 // version and the reader refuses what it doesn't understand. This is the JSON inside `.openbeads`; the gzip is
@@ -70,9 +70,11 @@ export function projectFileName(project: Project): string {
   return `${fileNameSlug(projectNameOf(project)) || 'openbeads'}_pr.openbeads`
 }
 
-/** The name a picture or document of the Project is saved under (ticket 73, 74), e.g. `openbeads-my-scarf.png`. */
+/** The name a picture or document of the Project is saved under (tickets 73, 74), e.g. `openbeads-my-scarf.png`: the
+ * Frame's name, as they hold its beads, else the Project's (ticket 0708). */
 export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
-  return `openbeads-${fileNameSlug(projectNameOf(project)) || 'project'}.${extension}`
+  const slug = fileNameSlug(frameOf(project)?.name ?? '') || fileNameSlug(projectNameOf(project))
+  return `openbeads-${slug || 'project'}.${extension}`
 }
 
 /** A further page of the cover PNG (Beads needed running over, ticket 0583), e.g. `openbeads-my-scarf_2.png` for the second. */

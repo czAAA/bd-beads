@@ -7,7 +7,9 @@ import {
   importProjects,
   libraryFileName,
   parseProjectsFile,
+  projectExportFileName,
   projectFileName,
+  projectListFileName,
   serializeLibrary,
   serializeProject,
 } from './projectFile'
@@ -257,6 +259,28 @@ describe('single-Project roundtrip', () => {
 
   it('falls back to a generic name for a Project whose name has nothing filename-safe in it', () => {
     expect(projectFileName(makeProject('???'))).toBe('openbeads_pr.openbeads')
+  })
+})
+
+describe('the export file names (tickets 73, 74, 0708)', () => {
+  const rose = withLayer(makeProject('Summer'), 'frame', { name: 'Rose' })
+
+  it('names the PNG, its further pages and the PDF after the Frame', () => {
+    expect(projectExportFileName(rose, 'png')).toBe('openbeads-rose.png')
+    expect(projectListFileName(rose, 2)).toBe('openbeads-rose_2.png')
+    expect(projectExportFileName(rose, 'pdf')).toBe('openbeads-rose.pdf')
+  })
+
+  it('names an unnamed Frame’s exports after the Project', () => {
+    expect(projectExportFileName(makeProject('Summer'), 'pdf')).toBe('openbeads-summer.pdf')
+  })
+
+  it('falls back to a generic name when neither name has anything filename-safe in it', () => {
+    expect(projectExportFileName(makeProject('???'), 'png')).toBe('openbeads-project.png')
+  })
+
+  it('keeps the Project’s name on the project file', () => {
+    expect(projectFileName(rose)).toBe('summer_pr.openbeads')
   })
 })
 
