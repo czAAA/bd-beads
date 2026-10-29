@@ -67,7 +67,7 @@ export type FrameChange =
    * started, which then travels with the Frame. */
   | { move: { rows: number; columns: number } }
   /** Change the Frame's Technique or its settings (tickets 351, 477, 492, 507, 0625): the geometry changes and every
-   * bead keeps its row and column. A Technique takes its settings with it (brick stitch its Brick block); the same
+   * bead keeps its row and column. A Technique takes its settings with it (peyote and brick stitch their Drop); the same
    * Technique changes just those. */
   | WeaveChange
   /** Put a new Frame in its own weave in place of any Frame there (ticket 495): the old Frame's beads and passes go,

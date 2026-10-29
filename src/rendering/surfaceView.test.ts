@@ -35,9 +35,9 @@ const BEADS = [
   { row: 3, column: 0 },
 ]
 
-describe('a Brick block shifts rows in blocks (ticket 477)', () => {
+describe('a Drop shifts rows in blocks (ticket 477)', () => {
   it('draws N rows straight, then N shifted half a bead, and finds each bead under its centre', () => {
-    const view = surfaceView({ space: OPEN_SPACE, technique: 'brick', techniqueSettings: { brickBlock: 2 }, rotation: 0, zoom: 1 })
+    const view = surfaceView({ space: OPEN_SPACE, technique: 'brick', techniqueSettings: { brickDrop: 2 }, rotation: 0, zoom: 1 })
     const xs = [0, 1, 2, 3, 4].map((row) => view.beadToPoint({ row, column: 0 }).x)
     expect(xs).toEqual([10, 10, 20, 20, 10])
     for (const row of [0, 1, 2, 3, 4, -1, -3]) {

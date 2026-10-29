@@ -133,9 +133,9 @@ describe('frameResizedAround (ticket 473)', () => {
   })
 })
 
-describe('a Brick block (ticket 477)', () => {
-  const block2 = { technique: 'brick' as const, techniqueSettings: { brickBlock: 2 } }
-  const block3 = { technique: 'brick' as const, techniqueSettings: { brickBlock: 3 } }
+describe('a Drop (tickets 477, 0691)', () => {
+  const block2 = { technique: 'brick' as const, techniqueSettings: { brickDrop: 2 } }
+  const block3 = { technique: 'brick' as const, techniqueSettings: { brickDrop: 3 } }
 
   it('starts a Frame on a multiple of 2N rows, reaching up rather than losing a row', () => {
     expect(snapRow(block2, 7)).toBe(4)
@@ -144,10 +144,17 @@ describe('a Brick block (ticket 477)', () => {
     expect(snapRow(block3, 11)).toBe(6)
   })
 
-  it('leaves a Brick block of 1 going by pairs, and peyote and loom as they were', () => {
+  it('leaves a Drop of 1 going by pairs, each Technique reading only its own, and loom as it was', () => {
     expect(snapRow({ technique: 'brick' }, 3)).toBe(2)
-    expect(snapRow({ technique: 'peyote', techniqueSettings: { brickBlock: 5 } }, 7)).toBe(6)
-    expect(snapRow({ technique: 'loom', techniqueSettings: { brickBlock: 5 } }, 7)).toBe(7)
+    expect(snapRow({ technique: 'peyote', techniqueSettings: { brickDrop: 5 } }, 7)).toBe(6)
+    expect(snapRow({ technique: 'loom', techniqueSettings: { brickDrop: 5, peyoteDrop: 5 } }, 7)).toBe(7)
+  })
+
+  it('starts and edges a peyote Frame on a multiple of 2N rows with a Drop of N, as on brick stitch', () => {
+    const peyote2 = { technique: 'peyote' as const, techniqueSettings: { peyoteDrop: 2 } }
+    expect(snapRow(peyote2, 7)).toBe(4)
+    expect(snapRow(peyote2, -1)).toBe(-4)
+    expect(frameWithEdges(peyote2, { row: 8, column: 0, rows: 12, columns: 4 }, ['top'], { row: 3, column: 0 })).toEqual({ row: 0, column: 0, rows: 20, columns: 4 })
   })
 
   it('drags the top edge by a whole cycle of the Frame\'s own rows', () => {

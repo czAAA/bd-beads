@@ -1,6 +1,6 @@
 import { clamp } from './clamp'
 
-// The one shape of a setting a registry entry describes (ADR 0078, ticket 0624): a Technique's (Brick block) and a
+// The one shape of a setting a registry entry describes (ADR 0078, ticket 0624): a Technique's (Drop) and a
 // Frame shape's (Rounds, Part size, ...) alike, so one generic control edits any of them and a new one is an entry, not wiring.
 
 /** One numbered setting of a Technique or a Frame shape: values only, never an expression (ADR 0078). */

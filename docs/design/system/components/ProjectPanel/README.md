@@ -11,7 +11,7 @@ The panel shell (width, edge, radius, motion, closing, focus), the density and t
    - **Cloud:** `cloud` in `accent-strong`, "Saved in openbeads cloud"; not signed in, `cloud-off` in `faint`, "Not in openbeads cloud: sign in to sync". The cloud icon is shown only once the app has cloud sync; until then the title line holds the local icon alone.
 2. **`name:`** (`label` style, a 46px column) and the Project's name (Inter 600 16/24, one line, ellipsis) with a 24px **pencil**. The pencil turns the name into a TextField in place, with Save (check) and Cancel (×) beside it and a counter "n/40" in `meta` under it. Enter saves, Escape cancels, Save is disabled and the field gets the `danger` edge with "A Project needs a name." while empty. Rename is saved at once and is not part of Undo.
 3. **`maker:`** and the maker's name (`control` 13/18, `body`), smaller than the project's name, with its own pencil, edited the same way (placeholder "Your name", counter "n/40", empty clears it). With no name the row reads "+ Add your name for exports" in `muted`. It is the old Name on exports row: per Project (ADR 0060), printed in Instrument Serif italic on PDF and PNG exports (printed-output.md).
-4. **Technique:** a PanelPicker (Loom, Peyote, Brick stitch, Square stitch), the `pattern` icon. With brick stitch, **Brick block** follows as a row with a small Stepper (`picker-height`). The Canvas Technique row of ticket 0492 is gone: the Project has one Technique control. Locked once a Row progress pass is done (ticket 0492), with the reason in its Tooltip. Name, maker, Technique and the Bead section are the sections New Project shares (NewPatternForm card).
+4. **Technique:** a PanelPicker (Loom, Peyote, Brick stitch, Square stitch), the `pattern` icon. With peyote or brick stitch, **Drop** follows as a row with a small Stepper (`picker-height`), each Technique's its own (ticket 0691). The Canvas Technique row of ticket 0492 is gone: the Project has one Technique control. Locked once a Row progress pass is done (ticket 0492), with the reason in its Tooltip. Name, maker, Technique and the Bead section are the sections New Project shares (NewPatternForm card).
 
 ## Sections (PanelSection, in this order)
 
@@ -35,6 +35,6 @@ Not here any more: the size estimate, Frame from starter and Beads needed (all i
 
 ## Copy
 
-English: project:, name:, maker:, Saved in local browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Brick block, Bead shape, Symmetric, Real, Bead, Project file, Duplicate, Clear all beads, Delete project. Russian: `writing.md` (Panels redesign).
+English: project:, name:, maker:, Saved in local browser, Not saved yet, Saved in openbeads cloud, Not in openbeads cloud: sign in to sync, Add your name for exports, Technique, Drop, Bead shape, Symmetric, Real, Bead, Project file, Duplicate, Clear all beads, Delete project. Russian: `writing.md` (Panels redesign).
 
 Hand-written from spec 0440, the Menu and Project mockups and the ticket 0553 canvas; static rendition.

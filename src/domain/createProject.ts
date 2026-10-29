@@ -16,7 +16,7 @@ export interface CreateProjectInput {
   /** User-chosen name; blank or omitted defaults to the bead's label. */
   name?: string
   technique: Technique
-  /** Its Technique's settings (ticket 0625), such as brick stitch's Brick block (ticket 477); one left out is its
+  /** Its Technique's settings (ticket 0625), such as peyote's or brick stitch's Drop (tickets 477, 0691); one left out is its
    * default. */
   techniqueSettings?: TechniqueSettings
   /** The Bead shape of a new Project; left out is Symmetric. */
