@@ -30,6 +30,8 @@ for (const technique of ['loom', 'peyote', 'brick'] as const) {
     await openApp(page, [project])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await setZoom(page, ZOOM)
+    // A zoom moves the drawn beads until it settles, then draws them sharp (ticket 0689).
+    await expect(page.getByTestId('project-surface-cells')).toHaveCSS('transform', 'none')
     await page.mouse.move(5, 5)
 
     const corner = await projectBox(page, (await page.getByTestId('project-surface').boundingBox())!)
