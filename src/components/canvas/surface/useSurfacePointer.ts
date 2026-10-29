@@ -21,6 +21,9 @@ import { toolPointer, toolPointerImage } from '../toolCursors'
 export interface SurfacePointerEvents {
   'cell-primary-down': [row: number, column: number, layer?: Layer]
   'cell-primary-move': [row: number, column: number, layer?: Layer]
+  /** The beads a stroke crossed since the last pointer move, in order, every one on the line (ticket 0674): one move
+   * of the pointer, which the browser sends once a frame, is one stroke step. */
+  'cells-primary-move': [cells: GridPosition[]]
   'cell-hover': [row: number, column: number, layer?: Layer]
   'hover-end': []
   /** The canvas was dragged by this many px (the Hand tool, the middle button). */
@@ -605,7 +608,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     if (hoversFor(event)) emit('cell-hover', ...cellArguments(bead))
   }
 
-  /** Reports every bead on the straight line from the stroke's last sample to the pointer, found in position space. */
+  /** Reports every bead on the straight line from the stroke's last sample to the pointer, found in position space,
+   * all in one report (ticket 0674). */
   function continueStroke(event: PointerEvent): void {
     if (!stroke) return
     if (!(event.buttons & 1)) {
@@ -615,15 +619,20 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     const to = pointInSurface(event)
     const { x, y } = stroke.from
     const steps = Math.max(1, Math.ceil(Math.hypot(to.x - x, to.y - y) / STROKE_SAMPLE_PX))
+    const crossed: GridPosition[] = []
     for (let step = 1; step <= steps; step++) {
       const bead = surface.value.pointToHit({ x: x + ((to.x - x) * step) / steps, y: y + ((to.y - y) * step) / steps })
       if (!bead || isSameBead(bead, stroke.last)) continue
       const first = stroke.last === undefined
       stroke.last = bead
       if (first) emit('cell-primary-down', ...cellArguments(bead))
-      else emit('cell-primary-move', ...cellArguments(bead))
+      else {
+        const [row, column, layer] = cellArguments(bead)
+        crossed.push(layer ? { row, column, layer } : { row, column })
+      }
     }
     stroke.from = to
+    if (crossed.length > 0) emit('cells-primary-move', crossed)
   }
 
   function onPointerEnd(event?: PointerEvent): void {

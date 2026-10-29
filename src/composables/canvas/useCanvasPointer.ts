@@ -22,7 +22,8 @@ export interface CanvasPointerDeps {
    * space. */
   tapPiece: (row: number, column: number, layer?: Layer) => void
   beginOrCommitPress: (mode: 'paint' | 'erase', color: string | null, row: number, column: number, layer?: Layer) => void
-  paintStrokeCell: (row: number, column: number, color: string | null, layer?: Layer) => void
+  /** Paints (or with a null color erases) the beads a stroke crossed, as one stroke step (ticket 0674). */
+  paintStrokeCells: (cells: GridPosition[], color: string | null) => void
   /** Pastes at a cell; true when something was pasted. */
   pasteAt: (cell: GridPosition | undefined) => boolean
   /** Pick color from canvas (ticket 398): true when it is on and took this press. */
@@ -123,18 +124,25 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   }
 
   function onCellPrimaryMove(row: number, column: number, layer?: Layer) {
-    if (deps.spaceHeld()) {
+    onCellsPrimaryMove([layer ? { row, column, layer } : { row, column }])
+  }
+
+  /** The beads a drag crossed since the last move, in order (ticket 0674): Select follows the last, a stroke paints
+   * them all in one step. */
+  function onCellsPrimaryMove(cells: GridPosition[]) {
+    const last = cells.at(-1)
+    if (deps.spaceHeld() || !last) {
       return
     }
 
     if (deps.activeTool() === 'select') {
-      deps.extendSelection(row, column, layer)
+      deps.extendSelection(last.row, last.column, last.layer)
       return
     }
 
     const mode = deps.strokeMode()
     if (mode === 'erase') {
-      deps.paintStrokeCell(row, column, null, layer)
+      deps.paintStrokeCells(cells, null)
       return
     }
 
@@ -147,7 +155,7 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
       return
     }
 
-    deps.paintStrokeCell(row, column, color, layer)
+    deps.paintStrokeCells(cells, color)
   }
 
   return {
@@ -158,5 +166,6 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
     pasteAtPointer,
     onCellPrimaryDown,
     onCellPrimaryMove,
+    onCellsPrimaryMove,
   }
 }

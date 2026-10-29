@@ -3,6 +3,7 @@ import { type GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt } from './pieces'
+import { carryPieceIndex, joinsNamedPieces, piecesStayWhole, presenceChanges, type BeadPresence } from './pieceIndex'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
@@ -163,7 +164,9 @@ function landNames(
     const groups = new Map<number, GridPosition[]>()
     for (const at of survivors) {
       const id = labeller.idOf(at)!
-      groups.set(id, [...(groups.get(id) ?? []), at])
+      const group = groups.get(id)
+      if (group) group.push(at)
+      else groups.set(id, [at])
     }
     const anchorId = target ? labeller.idOf(target) : undefined
     const [id, members] = [...groups].sort(
@@ -174,12 +177,42 @@ function landNames(
   return landings
 }
 
+/** Whether two states of a Project join their beads into Pieces alike: the same Technique and settings. */
+function sameWeave(before: Project, after: Project): boolean {
+  return before.technique === after.technique && before.techniqueSettings === after.techniqueSettings
+}
+
+/** Whether every name of the Project stands on a bead (one that does not is dropped by the next edit). */
+function anchored(project: Project): boolean {
+  return (project.pieceNames ?? []).every((entry) => project.beads[entry.row]?.[entry.column] !== undefined)
+}
+
+/** What a drawing edit did to where beads are, when it is plain from the beads it changed that every Piece name stays
+ * on its bead (ticket 0674): only colors changed, beads were added that join no two named Pieces, or beads other than
+ * a name's were emptied and split no Piece. Undefined when only following every named Piece can tell. */
+function namesStay(before: Project, after: Project): BeadPresence | undefined {
+  if (!sameWeave(before, after) || !anchored(before)) return undefined
+  const change = presenceChanges(before.beads, after.beads)
+  const { added, removed } = change
+  if (added.length > 0 && removed.length > 0) return undefined
+  if (removed.length > 0) {
+    const anchors = new Set(before.pieceNames!.map(numericKey))
+    return removed.some((at) => anchors.has(numericKey(at))) || !piecesStayWhole(after.beads, after, removed) ? undefined : change
+  }
+  return added.length > 0 && before.pieceNames!.length > 1 && joinsNamedPieces(before.beads, after, before.pieceNames!, added) ? undefined : change
+}
+
 /** The Project `after` with Piece names carried over from `before`; `moved` says where a `before` bead went
  * (undefined if gone). If two names land on one Piece (only a move or Technique change; painting is refused first),
  * the one with more old beads keeps its name. */
 export function carryNames(before: Project, after: Project, moved?: (position: GridPosition) => GridPosition | undefined): Project {
   if (!before.pieceNames?.length) {
     return after
+  }
+  const change = moved ? undefined : namesStay(before, after)
+  if (change) {
+    carryPieceIndex(before.beads, after.beads, after, change)
+    return after.pieceNames === before.pieceNames ? after : { ...after, pieceNames: before.pieceNames }
   }
   const kept: Landing[] = []
   for (const landing of landNames(before, after, pieceLabeller(after.beads, after), moved)) {
@@ -201,6 +234,11 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
 /** What a drawing edit did, with every bead that would join two named Pieces taken back (so a name is never dropped). `after` itself when it joins none. */
 export function keepNamesApart(before: Project, after: Project): Project {
   if ((before.pieceNames?.length ?? 0) < 2 || after.beads === before.beads) {
+    return after
+  }
+  // Only a new bead joins Pieces; whether it joins named ones is read from the beads the edit changed (ticket 0674).
+  const { added, removed } = presenceChanges(before.beads, after.beads)
+  if (added.length === 0 || (removed.length === 0 && sameWeave(before, after) && anchored(before) && !joinsNamedPieces(before.beads, after, before.pieceNames!, added))) {
     return after
   }
   const labeller = pieceLabeller(after.beads, after)
