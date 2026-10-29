@@ -7,7 +7,8 @@ import { rotateCanvas } from './rotate'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, frameOf, orientationOf } from './layerRecord'
-import { flatOf, sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../testUtils/layerFields'
+import { legacyRecordOf } from '../testUtils/legacyFile'
 import { type RowProgress } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -23,7 +24,7 @@ describe('normalizeProject', () => {
   })
 
   it('gives a Project saved as a fixed grid beads by position and a Frame the size of that grid (ADR 0026)', () => {
-    const { beads: _beads, frame: _frame, ...base } = flatOf(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }))
+    const { beads: _beads, frame: _frame, ...base } = legacyRecordOf(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 2, unit: 'beads' } }))
     const legacy = {
       ...base,
       columns: 3,
@@ -36,7 +37,7 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject(legacy)
 
-    expect(sheetOf(normalized)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
+    expect(frameSheetOf(normalized)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
     expect(beadsOfLayer(normalized, 'canvas')).toEqual({})
     expect(normalized).not.toHaveProperty('grid')
     expect(normalized).not.toHaveProperty('columns')
@@ -51,7 +52,7 @@ describe('normalizeProject', () => {
   })
 
   it('backfills row progress and the rotation on a Project saved before they existed', () => {
-    const { rowProgress: _rowProgress, rotation: _rotation, ...legacy } = flatOf(
+    const { rowProgress: _rowProgress, rotation: _rotation, ...legacy } = legacyRecordOf(
       createProject({
         technique: 'loom',
         beadId: cubeBead.id,
@@ -70,7 +71,7 @@ describe('normalizeProject', () => {
   })
 
   it('reads ticket 28\'s two-position `rotated` boolean as its nearest quarter turn (ticket 171)', () => {
-    const { rotation: _rotation, ...legacy } = flatOf(
+    const { rotation: _rotation, ...legacy } = legacyRecordOf(
       createProject({
         technique: 'loom',
         beadId: cubeBead.id,
@@ -84,7 +85,7 @@ describe('normalizeProject', () => {
 
   it('drops the color-to-bead override field a Project saved before ticket 36 may still carry (ADR 0007)', () => {
     const legacy = {
-      ...flatOf(
+      ...legacyRecordOf(
         createProject({
           technique: 'loom',
           beadId: cubeBead.id,
@@ -106,7 +107,7 @@ describe('normalizeProject', () => {
       size: { width: 15, height: 30, unit: 'mm' },
     })
 
-    const normalized = normalizeProject({ ...flatOf(base), rowProgress: { currentRow: 5 } as RowProgress })
+    const normalized = normalizeProject({ ...legacyRecordOf(base), rowProgress: { currentRow: 5 } as RowProgress })
 
     expect(rowProgressOf(normalized)).toEqual({
       direction: 'rows',
@@ -117,7 +118,7 @@ describe('normalizeProject', () => {
 
   it('drops the stored real-world size a Project saved before ADR 0026 still carries, and keeps its grid', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
-    const legacy = { ...flatOf(base), widthMm: 15, heightMm: 30 }
+    const legacy = { ...legacyRecordOf(base), widthMm: 15, heightMm: 30 }
 
     const normalized = normalizeProject(legacy)
 
@@ -135,7 +136,7 @@ describe('normalizeProject', () => {
       size: { width: 15, height: 30, unit: 'mm' }, // 10 columns x 20 rows
     })
 
-    const normalized = normalizeProject(withFields(base, { rowProgress: { direction: 'columns', currentRow: 999, currentColumn: 999 } }))
+    const normalized = normalizeProject(withLayers(base, { rowProgress: { direction: 'columns', currentRow: 999, currentColumn: 999 } }))
 
     expect(rowProgressOf(normalized).currentRow).toBe(20)
     expect(rowProgressOf(normalized).currentColumn).toBe(10)

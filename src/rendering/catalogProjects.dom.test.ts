@@ -7,7 +7,7 @@ import { recordingContext } from '../testUtils/recordingContext'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { canvasOf, frameOf } from '../domain/layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 // Ticket 539: the catalog is data, so one pass over all of it stands in for a test per Bead.
 describe('every Bead in the catalog', () => {
@@ -15,7 +15,7 @@ describe('every Bead in the catalog', () => {
     for (const bead of BEAD_CATALOG) {
       const project = createProject({ technique: 'loom', beadId: bead.id, size: { width: 6, height: 4, unit: 'beads' } })
       expect(frameOf(project)!.columns).toBeGreaterThan(0)
-      const painted = withFields(project, { frame: { ...frameOf(project)!, beads: { 0: { 0: '#ff0000' } } } })
+      const painted = withLayers(project, { frame: { ...frameOf(project)!, beads: { 0: { 0: '#ff0000' } } } })
 
       const { context, calls } = recordingContext()
       const region = { x: 0, y: 0, width: 200, height: 200 }

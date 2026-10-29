@@ -8,7 +8,7 @@ import { useDialogs } from '../shell/useDialogs'
 import { en } from '../../i18n/en'
 import { useRemoveLineFlow } from './useRemoveLineFlow'
 import { frameOf } from '../../domain/layerRecord'
-import { sheetOf, withFields } from '../../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const secondRow: Selection = { top: 1, left: 0, rows: 1, columns: 4 }
@@ -52,7 +52,7 @@ describe('useRemoveLineFlow', () => {
     expect(rowProgressOf(harness.project).currentRow).toBe(1)
 
     harness.history.onUndo()
-    expect(sheetOf(harness.project)).toEqual(sheetOf(woven))
+    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(woven))
     expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
   })
 
@@ -61,7 +61,7 @@ describe('useRemoveLineFlow', () => {
     onRemoveSelectedLine()
     expect(removeLinePrompt.value).toEqual({ title: 'Remove row?', message: 'Row 2 is already woven. Removing it moves Row progress back to row 2.' })
 
-    const peyote: Project = withFields(base, { technique: 'peyote', frame: { ...frameOf(base)!, technique: 'peyote' }, rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 3 } })
+    const peyote: Project = withLayers(base, { technique: 'peyote', frame: { ...frameOf(base)!, technique: 'peyote' }, rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 3 } })
     const firstColumn: Selection = { top: 0, left: 1, rows: 3, columns: 1 }
     const columns = setup({ project: peyote, selection: firstColumn })
     columns.onRemoveSelectedLine()
@@ -88,7 +88,7 @@ describe('useRemoveLineFlow', () => {
     expect(harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
 
     harness.history.onUndo()
-    expect(sheetOf(harness.project)).toEqual(sheetOf(base))
+    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(base))
   })
 
   it('does nothing without a line selected', () => {

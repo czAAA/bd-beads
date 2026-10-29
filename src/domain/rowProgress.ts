@@ -2,10 +2,10 @@ import { changedPositions, colorAt, frameContains, withColors, type BeadChange, 
 import { rowOrderOf, type ShapedSheet } from './frameShape'
 import type { GridPosition } from './grid'
 import { sameBeads } from './layerBeads'
-import { beadsOfLayer, frameOf, type Layered, withFrameSheet, withLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, type Layered, touchFrameSheet, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
 import { frameWeave } from './layerWeave'
-import { touch, type Project, type RowProgress } from './project'
+import type { Project, RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
 import type { AreaLine } from './removeLine'
 
@@ -24,7 +24,7 @@ export function rowProgressOf(project: Layered): RowProgress {
 /** The Project with its Frame's Row progress set, stamped as a change; the same Project without a Frame. */
 function withRowProgress(project: Project, rowProgress: RowProgress): Project {
   const frame = frameOf(project)
-  return frame ? touch(withFrameSheet(project, { ...frame, rowProgress }), {}) : project
+  return frame ? touchFrameSheet(project, { ...frame, rowProgress }) : project
 }
 
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has

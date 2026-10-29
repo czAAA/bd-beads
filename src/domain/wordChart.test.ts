@@ -9,12 +9,12 @@ import type { Project } from './project'
 import type { Technique } from './weave'
 import { wordChartOf } from './wordChart'
 import { frameOf, withFrameSheet } from './layerRecord'
-import { type FlatChange, withFields } from '../testUtils/flatFields'
+import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 const HEX: Record<string, string> = { A: '#111111', B: '#222222', C: '#333333' }
 
 /** A Frame of `rows` (a letter per bead, `.` for an empty cell), Letters on, each letter's hex kept as its own. */
-function framed(technique: Technique, rows: string[], changes: FlatChange = {}): Project {
+function framed(technique: Technique, rows: string[], changes: LayersChange = {}): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: rows[0].length, height: rows.length, unit: 'beads' } })
   const beads: Record<number, Record<number, string>> = {}
   rows.forEach((row, r) => {
@@ -23,7 +23,7 @@ function framed(technique: Technique, rows: string[], changes: FlatChange = {}):
       if (letter !== '.') beads[r][c] = HEX[letter]
     })
   })
-  return withFields(base, { frame: { ...frameOf(base)!, beads }, letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B', [HEX.C]: 'C' }, ...changes })
+  return withLayers(base, { frame: { ...frameOf(base)!, beads }, letters: true, paletteLetters: { [HEX.A]: 'A', [HEX.B]: 'B', [HEX.C]: 'C' }, ...changes })
 }
 
 const lines = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.both ? '1&2' : row.number}${row.marker ? `(${row.marker})` : ''}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)
@@ -31,7 +31,7 @@ const lines = (project: Project) => wordChartOf(project)!.rows.map((row) => `${r
 describe('Word chart (ticket 0574)', () => {
   it('has none with Letters off or no Frame', () => {
     expect(wordChartOf(framed('loom', ['AB'], { letters: false }))).toBeUndefined()
-    expect(wordChartOf(withFields(framed('loom', ['AB']), { frame: undefined }))).toBeUndefined()
+    expect(wordChartOf(withLayers(framed('loom', ['AB']), { frame: undefined }))).toBeUndefined()
   })
 
   it('writes a loom row per line, left to right, without a marker', () => {
@@ -79,7 +79,7 @@ describe('Word chart (ticket 0574)', () => {
   })
 
   it('moves the first row round the picture with the rotation and reads on screen left to right', () => {
-    const turned = framed('loom', ['AAB'], { rotation: 180 })
+    const turned = framed('loom', ['AAB'], { orientation: 180 })
     expect(wordChartOf(turned)!.firstEdge).toBe('bottom')
     expect(lines(turned)).toEqual(['1: 1B,2A'])
   })
@@ -95,7 +95,7 @@ describe('Word chart (ticket 0574)', () => {
     [270, 'columns', 'bottom', '1A,1C'],
   ])('at %s° with rows run %s puts Row 1 at the %s and reads %s', (rotation, direction, edge, runs) => {
     // The first line is A then B along the rows, and A then C down the columns.
-    const project = framed('loom', ['AB', 'CC'], { rotation, rowProgress: { direction, currentRow: 0, currentColumn: 0 } })
+    const project = framed('loom', ['AB', 'CC'], { orientation: rotation, rowProgress: { direction, currentRow: 0, currentColumn: 0 } })
     const chart = wordChartOf(project)!
     expect(chart.firstEdge).toBe(edge)
     expect(chart.rows[0]!.runs.map((run) => `${run.count}${run.letter}`).join(',')).toBe(runs)
@@ -109,7 +109,7 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
     const placed = changeFrame(open, { custom: { shape, size, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, frameLayoutOf(frameOf(placed.project)!)!.positions.filter(paint), HEX.A))
-    return withFields(painted, { letters: true, paletteLetters: { [HEX.A]: 'A' } })
+    return withLayers(painted, { letters: true, paletteLetters: { [HEX.A]: 'A' } })
   }
   const words = (project: Project) => wordChartOf(project)!.rows.map((row) => `${row.number} ${JSON.stringify(row.step)}: ${row.runs.map((run) => `${run.count}${run.letter ?? '*'}`).join(',')}`)
 
@@ -137,7 +137,7 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     // The strands' last beads painted, a drop at each tip.
     const tips = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row, column }) => row === 1000 + (column === 1 ? 2 : 0))
-    const project = withFields(onLayer(placed.project, 'frame', (view) => paintCells(view, tips, HEX.A)), { letters: true, paletteLetters: { [HEX.A]: 'A' } })
+    const project = withLayers(onLayer(placed.project, 'frame', (view) => paintCells(view, tips, HEX.A)), { letters: true, paletteLetters: { [HEX.A]: 'A' } })
     expect(wordChartOf(project)!.start).toBe('base')
     expect(words(project)).toEqual([
       '1 {"kind":"row","number":1}: 3*',

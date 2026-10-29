@@ -12,7 +12,7 @@ import type { Chord } from '../../domain/chord'
 import type { Locale } from '../../domain/locale'
 import { CONVERT_STEPS, CROP_HANDLES, RATIO_PRESETS, ratioId } from '../../domain/convertSize'
 import { CONTROLS, chordMatches, controlAction } from './controlRegistry'
-import { flatProject } from '../../testUtils/flatFields'
+import { bareProject } from '../../testUtils/layerFields'
 
 const LANGUAGES: Record<Locale, Translations> = { en, ru, uk, be, zh, es, pl }
 
@@ -109,7 +109,7 @@ describe('the control registry', () => {
 
     const remove = CONTROLS.find((control) => control.id === 'remove-frame')!
     const project = (framed: boolean, currentRow: number) =>
-      flatProject({ ...(framed ? { frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } } : {}), rowProgress: { direction: 'rows', currentRow, currentColumn: 0 } })
+      bareProject({ ...(framed ? { frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } } : {}), rowProgress: { direction: 'rows', currentRow, currentColumn: 0 } })
     const deps = (activeProject: unknown) => ({ activeProject: () => activeProject }) as never
     expect(remove.enabled?.(deps(project(true, 0)))).toBe(true)
     expect(remove.enabled?.(deps(project(true, 2)))).toBe(true)
@@ -121,7 +121,7 @@ describe('the control registry', () => {
 
   it('gives every action that can be disabled a reason, in every language', () => {
     for (const control of CONTROLS.filter((c) => c.enabled)) {
-      const project = flatProject({})
+      const project = bareProject({})
       const deps = { activeProject: () => project, hasSelection: () => true } as never
       for (const t of Object.values(LANGUAGES)) expect(control.disabledBody?.(t, deps).trim(), control.id).toBeTruthy()
     }

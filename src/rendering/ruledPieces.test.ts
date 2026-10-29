@@ -6,19 +6,19 @@ import type { Project } from '../domain/project'
 import { countingBeads } from '../testUtils/countingBeads'
 import { ruledPieces } from './ruledPieces'
 import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const R = '#e63746'
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const square = (row: number, column: number, size: number): BeadChange[] =>
   Array.from({ length: size * size }, (_, i) => ({ row: row + Math.floor(i / size), column: column + (i % size), color: R }))
-const paint = (project: Project, changes: BeadChange[]): Project => (withFields(project, { beads: withColors(beadsOfLayer(project, 'canvas'), changes) }))
+const paint = (project: Project, changes: BeadChange[]): Project => (withLayers(project, { beads: withColors(beadsOfLayer(project, 'canvas'), changes) }))
 
 // Counted, not timed (ticket 0674): a recount of the Pieces reads every row of the Canvas.
 describe('the Pieces the rulers hang from', () => {
   function start() {
     const counting = countingBeads(withColors({}, [...square(0, 0, 5), ...square(0, 20, 5)]))
-    const project: Project = withFields(open, { beads: counting.beads, pieceNames: [{ name: 'Fox', row: 0, column: 0 }] })
+    const project: Project = withLayers(open, { beads: counting.beads, pieceNames: [{ name: 'Fox', row: 0, column: 0 }] })
     return { project, ...counting }
   }
 
@@ -55,8 +55,8 @@ describe('the Pieces the rulers hang from', () => {
 
   it('are not counted at all while the rulers are hidden, nor while a Frame carries them; the names still are', () => {
     const { project, reads } = start()
-    const hidden = ruledPieces(undefined, withFields(project, { pieceNames: undefined }), { numbers: false, stroking: false })
-    const framed = ruledPieces(undefined, withFields(project, { pieceNames: undefined, frame: { row: 50, column: 50, rows: 4, columns: 4, technique: 'loom', beads: {} } }), { numbers: true, stroking: false })
+    const hidden = ruledPieces(undefined, withLayers(project, { pieceNames: undefined }), { numbers: false, stroking: false })
+    const framed = ruledPieces(undefined, withLayers(project, { pieceNames: undefined, frame: { row: 50, column: 50, rows: 4, columns: 4, technique: 'loom', beads: {} } }), { numbers: true, stroking: false })
 
     expect(reads.beads).toBe(0)
     expect(hidden.areas).toBeUndefined()

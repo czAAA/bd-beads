@@ -7,14 +7,14 @@ import { withFrame } from './frame'
 import type { GridPosition } from './grid'
 import type { Project } from './project'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const frame: Rect = { row: 10, column: 10, rows: 4, columns: 6 }
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const framed = withFrame(open, frame)
 
 /** The Project with its Canvas beads painted as a drawing command would hand them over, before what may stay is kept. */
-const rawPaint = (project: Project, positions: GridPosition[], color: string | null): Project => (withFields(project, { beads: withColors(beadsOfLayer(project, 'canvas'), positions.map((position) => ({ ...position, color }))) }))
+const rawPaint = (project: Project, positions: GridPosition[], color: string | null): Project => (withLayers(project, { beads: withColors(beadsOfLayer(project, 'canvas'), positions.map((position) => ({ ...position, color }))) }))
 
 describe('the keep-out margin', () => {
   it('is the 4 positions all round the Frame, outside its line (ticket 0656)', () => {
@@ -47,7 +47,7 @@ describe('the keep-out margin', () => {
   })
 
   it('still lets Erase remove a bead in the margin', () => {
-    const legacy: Project = withFields(framed, { beads: withColors(beadsOfLayer(framed, 'canvas'), [{ row: 8, column: 10, color: '#ff0000' }]) })
+    const legacy: Project = withLayers(framed, { beads: withColors(beadsOfLayer(framed, 'canvas'), [{ row: 8, column: 10, color: '#ff0000' }]) })
     const erased = keepAllowedEdits(legacy, rawPaint(legacy, [{ row: 8, column: 10 }], null))
     expect(colorAt(beadsOfLayer(erased, 'canvas'), 8, 10)).toBeNull()
   })
@@ -96,7 +96,7 @@ describe('mayPlace (ticket 501)', () => {
 describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
   const peyote = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-  const woven = withFields(peyote, { frame: { ...frameOf(peyote)!, technique: 'peyote' as const } })
+  const woven = withLayers(peyote, { frame: { ...frameOf(peyote)!, technique: 'peyote' as const } })
 
   it('hangs off what the Frame draws, so it is joined to it', () => {
     // The Frame covers 36 loom rows: the 4 below are the margin, the rows after those are free Canvas.

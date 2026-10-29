@@ -10,7 +10,7 @@ import { BEAD_CATALOG } from './beads'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 import { type RowProgress } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -80,7 +80,7 @@ describe('row progress', () => {
   it('answers for many positions at once as it does for each, a pass at a time on peyote too (ticket 0675)', () => {
     for (const technique of ['loom', 'peyote'] as const) {
       const placed = createProject({ technique, beadId: cubeBead.id, size: { width: 4, height: 6, unit: 'beads' } })
-      const woven = moveToRow(withFields(placed, { frame: { ...frameOf(placed)!, row: 2, column: 3 } }), 3)
+      const woven = moveToRow(withLayers(placed, { frame: { ...frameOf(placed)!, row: 2, column: 3 } }), 3)
       const finished = finishedRowsOf(woven)
       const positions = Array.from({ length: 10 * 9 }, (_, index) => ({ row: Math.floor(index / 9), column: index % 9 }))
       const expected = positions.filter((position) => isInFinishedRow(woven, position))
@@ -238,7 +238,7 @@ describe('keepFinishedRows', () => {
 
 describe('Row progress on the Frame (ticket 233)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-  const framed: Project = withFields(base, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 6, columns: 4, beads: {} }, rowProgress: { ...rowProgressOf(base), currentRow: 2 } })
+  const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 6, columns: 4, beads: {} }, rowProgress: { ...rowProgressOf(base), currentRow: 2 } })
 
   it('names the current row of the Frame, and nothing outside it (ticket 352)', () => {
     expect(isInCurrentRow(framed, { row: 12, column: 10 })).toBe(true)
@@ -248,7 +248,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
     expect(isInCurrentRow(framed, { row: 12, column: 20 })).toBe(false)
     const unframed = withFrameSheet(framed, undefined)
     expect(isInCurrentRow(unframed, { row: 12, column: 10 })).toBe(false)
-    const columnWise: Project = withFields(framed, { rowProgress: { ...rowProgressOf(framed), direction: 'columns', currentColumn: 1 } })
+    const columnWise: Project = withLayers(framed, { rowProgress: { ...rowProgressOf(framed), direction: 'columns', currentColumn: 1 } })
     expect(isInCurrentRow(columnWise, { row: 15, column: 11 })).toBe(true)
     expect(isInCurrentRow(columnWise, { row: 15, column: 12 })).toBe(false)
   })
@@ -277,7 +277,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
 
   it('opens with Row progress on for a Frame whatever an old file stored, and never carries the flag on (tickets 426, 434)', () => {
     const open = withFrameSheet(base, undefined)
-    const stored = (project: Project, enabled: boolean) => (withFields(project, { rowProgress: { ...rowProgressOf(project), enabled, decided: true } as RowProgress }))
+    const stored = (project: Project, enabled: boolean) => (withLayers(project, { rowProgress: { ...rowProgressOf(project), enabled, decided: true } as RowProgress }))
     const fromOffFile = normalizeProject(stored(base, false) as Project)
     expect(rowProgressOn(fromOffFile)).toBe(true)
     expect(rowProgressOf(fromOffFile)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
@@ -336,7 +336,7 @@ describe('peyote passes (ticket 347)', () => {
 
 describe('resetRowProgress (ticket 455)', () => {
   it('takes both pointers back to the first row, keeping the direction and the beads', () => {
-    const project = toggleRowDirection(withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } }), { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } }))
+    const project = toggleRowDirection(withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 5, unit: 'beads' } }), { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: {} } }))
     const woven = moveToRow(project, 2)
     expect(rowProgressStarted(woven)).toBe(true)
     const reset = resetRowProgress(woven)

@@ -3,7 +3,8 @@
 // `--margin-band-full`, `--margin-band-compact` and `--margin-band-folded`.
 
 /** The full form, as built at 100%; compact, one row of smaller tools; folded, the Move bar, Row done and a menu;
- * bare, the paper alone, where not even the folded row fits between its edge and the Frame's line. */
+ * bare, where not even the folded row fits between its edge and the Frame's line: nothing of the sheet is drawn but the
+ * Move bar (ticket 0682). */
 export type MarginForm = 'full' | 'compact' | 'folded' | 'bare'
 
 /** From this band the full form fits: its two-row title block, 10px in, clear of the Frame's line (about 85%). */

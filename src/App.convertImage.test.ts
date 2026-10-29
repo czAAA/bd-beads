@@ -8,7 +8,7 @@ import { loadProjects } from './services/libraryStore'
 import { ru } from './i18n/ru'
 import { openNewProject } from './testUtils/pill'
 import { chooseBeadInSection } from './testUtils/beadPicker'
-import { flatView } from './testUtils/flatFields'
+import { layersView } from './testUtils/layerFields'
 
 // Convert image end to end through the app shell (spec 0645): New Project's button or a picture dropped on the app opens
 // the wizard, and Create adds the Project it shows. Only the decode is stubbed (jsdom decodes no image bytes, see
@@ -79,7 +79,7 @@ describe('App Convert image (spec 0645)', () => {
 
     expect(wrapper.find('[data-testid="convert-image-wizard"]').exists()).toBe(false)
     // 8 px on its long side starts at 1:4: 32 × 32 beads of 1.5 mm cubes, the left half red, the right half blue.
-    expect(flatView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 32, columns: 32 } })
+    expect(layersView(drawnProject(wrapper))).toMatchObject({ beadId: cubeBead.id, frame: { technique: 'loom' as const, rows: 32, columns: 32 } })
     expect(beadColor(wrapper, 0)).toBe('#e63746')
     expect(beadColor(wrapper, 31)).toBe('#2f6fed')
     wrapper.unmount()
