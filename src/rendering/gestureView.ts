@@ -6,9 +6,9 @@ export interface View {
   scroll: { x: number; y: number }
 }
 
-// Past this many square beads' worth in view, a redraw can't keep up with a pan or pinch (tickets 349, 0676), so the
-// drawn bitmap is moved and scaled and redrawn sharp when the gesture settles. A loom Canvas at 100% on a 1900 × 1200
-// screen (about 5,000 beads) is drawn live; at 60%, or peyote's rounded beads at 100%, it is moved. Not in the draft look.
+// Past this many square beads' worth in view, a redraw can't keep up with a pan or pinch (tickets 349, 0676, 0689),
+// so the drawn bitmap is moved and scaled, in the draft look too, and redrawn sharp when the gesture settles. A loom
+// Canvas at 100% on a 1900 × 1200 screen (about 5,000 beads) is drawn live; at 60%, or rounded beads at 100%, moved.
 export const GESTURE_BEAD_LIMIT = 8_000
 
 /** How long after the last pan or zoom step the sharp redraw comes, in ms. */
