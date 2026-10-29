@@ -3,6 +3,7 @@ import { computed, inject, ref } from 'vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import EditableLine from '../project/EditableLine.vue'
 import ExportSection from './ExportSection.vue'
+import MarginSection from './MarginSection.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
@@ -28,7 +29,7 @@ import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
-// name, size and Beads needed; with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
+// name, size, Beads needed and the margin (ticket 0656); with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
 // (AppPanels, PanelHost), opened from the strip's Frame button only; a press outside or Escape closes it.
 const props = defineProps<{
   project: Project
@@ -345,6 +346,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
     </template>
 
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />
+    <MarginSection v-if="frame" />
   </div>
 </template>
 

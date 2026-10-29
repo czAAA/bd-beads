@@ -432,4 +432,15 @@ The Frame's margin as a drafting sheet (MarginSheet card). The tools on the shee
 | Change Technique (the title block's pencil) | Сменить технику | Змінити техніку | Zmień technikę |
 | Frame tools (the folded form's ··· menu) | Инструменты рамки | Інструменти рамки | Narzędzia ramki |
 
+Built by ticket 0656 (the Frame panel's margin section), in Belarusian, Spanish and Chinese:
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Margin · Margin color | Палі · Колер палёў | Margen · Color del margen | 边距 · 边距颜色 |
+| Auto · Auto, one step off the Canvas color | Аўта · Аўта, на крок ад колеру палатна | Auto · Auto, un paso por encima o por debajo del color del lienzo | 自动 · 自动，比画布颜色深浅差一级 |
+| {color}, the Canvas color | {color}, колер палатна | {color}, el color del lienzo | {color}，画布颜色 |
+| The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it. | Палі шырынёй 4 бісерыны з кожнага боку. На іх нічога нельга паставіць, і ў экспарт яны не трапляюць. | El margen mide 4 cuentas por cada lado. No se puede poner nada en él y las exportaciones nunca lo muestran. | 边距每边宽 4 颗珠子。其中不能放置任何东西，导出时也不会显示。 |
+
+The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
+
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.

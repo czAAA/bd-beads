@@ -803,12 +803,12 @@ describe('the keep-out margin on the Canvas', () => {
 
   it('hides the overhang of the beads just outside it, which nest into its edge rows in peyote', () => {
     const frame = { technique: 'peyote' as const, row: 20, column: 20, rows: 4, columns: 4 }
-    // A bead in the row just above the margin (row 13, the margin being rows 14 to 29): its bottom 5px lies inside the margin's outline.
-    const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 13: { 22: '#ff0000' } } }
+    // A bead in the row just above the margin (row 15, the margin being rows 16 to 27): its bottom 5px lies inside the margin's outline.
+    const project = { ...projectOf('peyote', 4, 4), frame: { ...frame, beads: {} }, beads: { 15: { 22: '#ff0000' } } }
 
-    const cutOut = drawnWithMarginCutOut(project, [14 * 20, 14 * 15, 16 * 20 + 10, 15 * 15 + 20])
+    const cutOut = drawnWithMarginCutOut(project, [16 * 20, 16 * 15, 12 * 20 + 10, 11 * 15 + 20])
 
-    expect(cutOut.get(`${22 * 20 + 10},${13 * 15}`)).toBe(true)
+    expect(cutOut.get(`${22 * 20 + 10},${15 * 15}`)).toBe(true)
   })
 })
 

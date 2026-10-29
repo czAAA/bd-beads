@@ -945,9 +945,15 @@ describe('ProjectSurface', () => {
         expect(surface.classes()).not.toContain('project-surface--refused')
       })
 
-      it('always draws the margin outline with a Frame (ticket 452)', async () => {
-        await mountSurface(framed(), 1, { x: 0, y: 0 })
-        await vi.waitFor(() => expect(context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)).toBe(true))
+      it('draws no dashed outline at rest, where the sheet\'s own edge marks the margin, and flashes it on a refused press (ticket 0656)', async () => {
+        const project = framed()
+        const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { tools: can({ blocksMargin: true }) })
+        const dashed = () => context.named('setLineDash').some(({ args }) => (args[0] as number[]).length > 0)
+        await nextTick()
+        expect(dashed()).toBe(false)
+
+        await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 8, 8), button: 0, buttons: 1 })
+        await vi.waitFor(() => expect(dashed()).toBe(true))
       })
 
       it('keeps its own cursor for Erase, which still works there', async () => {

@@ -6,12 +6,13 @@ import { sameBeads } from './layerBeads'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
-/** The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0066): 6 bead positions (3 until ticket 427,
- * ADR 0066) outside its line where nothing can be drawn. Erase still works there; a Frame change leaves beads
+/** The keep-out margin round the Frame (CONTEXT.md, ticket 261, ADR 0066): 4 bead positions (3 until ticket 427, 6
+ * until ticket 0656) outside its line where nothing can be drawn. Erase still works there; a Frame change leaves beads
  * already there in place. */
 
-/** How many bead positions the margin is wide: the room kept for the Frame's line and rulers. */
-export const MARGIN = 6
+/** How many bead positions the margin is wide (MarginSheet card, ticket 0656): at 100% the room its sheet's top band
+ * and title block need, fixed, not a setting. */
+export const MARGIN = 4
 
 /** The Frame grown by the margin on every side: the Frame and its margin together. */
 export function withMargin(frame: Rect, margin: number = MARGIN): Rect {

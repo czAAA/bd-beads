@@ -6,7 +6,7 @@ import { createProject } from '../domain/createProject'
 import { weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
-import { BEAD_GAP_PX, DEFAULT_THEME, type BeadShape } from './beadLook'
+import { BEAD_GAP_PX, DEFAULT_THEME, PROJECT_THEMES, type BeadShape, type ProjectTheme } from './beadLook'
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
@@ -36,7 +36,7 @@ const markFills = (named: (name: string) => { args: unknown[]; fillStyle: unknow
     .filter((call) => typeof call.fillStyle === 'object')
     .map(({ args: [x, y, width, height] }) => ({ left: x as number, top: y as number, right: (x as number) + (width as number), bottom: (y as number) + (height as number) }))
 
-function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number } = {}) {
+function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme } = {}) {
   const beads: BeadShape[] = []
   const { context, calls, named } = recordingContext()
   renderProject(context, {
@@ -45,6 +45,7 @@ function render(project: Project, open: boolean, extra: { region?: Region; rows?
     region: extra.region ?? view,
     zoom: extra.zoom ?? 1,
     rows: extra.rows,
+    theme: extra.theme,
     drawBead: (_c, bead) => beads.push(bead),
   })
   return { beads, calls, named, context }
@@ -144,11 +145,63 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
 
     const fills = markFills(named)
     expect(fills.length).toBeGreaterThan(0)
-    // The Frame is rows 10 to 13 and columns 10 to 12; its margin is 6 round it, rows 4 to 19 and columns 4 to 18: x 80 to 380, y 80 to 400 (the marks' own edge sits 5 in from it).
+    // The Frame is rows 10 to 13 and columns 10 to 12; its margin is 4 round it, rows 6 to 17 and columns 6 to 16: x 120 to 340, y 120 to 360 (the marks' own edge sits 5 in from it).
     // The one fill over the Frame itself (its cells' outlines, ticket 458) is the Frame's own columns, 200 to 260, half a gap out.
-    const touchesMargin = fills.filter(({ left, right, top, bottom }) => left < 385 && right > 85 && top < 400 && bottom > 80 && !(left === 199.5 && right === 260.5))
+    const touchesMargin = fills.filter(({ left, right, top, bottom }) => left < 345 && right > 125 && top < 360 && bottom > 120 && !(left === 199.5 && right === 260.5))
     expect(touchesMargin).toEqual([])
-    expect(fills.some(({ right, top, bottom }) => right === 85 && top < 400 && bottom > 80)).toBe(true)
+    expect(fills.some(({ right, top, bottom }) => right === 125 && top < 360 && bottom > 120)).toBe(true)
+  })
+
+  describe('as a sheet of drafting paper (ticket 0656, MarginSheet card)', () => {
+    const theme: ProjectTheme = { ...DEFAULT_THEME, margin: { fill: '#123456', line: '#abcdef', edge: '#fedcba', edgeWidth: 2, ruler: '#000000', rulerStrong: '#000000' } }
+    // The Frame is rows 10 to 13 and columns 10 to 12, its margin rows 6 to 17 and columns 6 to 16: x 120 to 340, y 120 to 360.
+    const frame = { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 3, beads: {} }
+    const drawn = (open: boolean, zoom = 1, withFrame = true) => {
+      const project = framedProject('loom')
+      return render({ ...project, frame: withFrame ? frame : undefined }, open, { region: { x: 0, y: 0, width: 800, height: 800 }, zoom, theme })
+    }
+    const strokedIn = (calls: ReturnType<typeof drawn>['calls'], color: string) => calls.filter((call) => call.name === 'stroke' && call.strokeStyle === color)
+    const roundRects = (calls: ReturnType<typeof drawn>['calls']) => calls.filter((call) => call.name === 'roundRect').map(({ args }) => args)
+
+    it('fills the band in the margin color, its corners rounded 12px, leaving the Frame\'s footprint out', () => {
+      const { calls } = drawn(true)
+      const fill = calls.find((call) => call.name === 'fill' && call.fillStyle === '#123456')
+      expect(fill?.args).toEqual(['evenodd'])
+      expect(roundRects(calls)).toContainEqual([120, 120, 220, 240, 12])
+    })
+
+    it('draws its edge and its inner border 10px in, radius 6, in the margin line', () => {
+      const { calls } = drawn(true)
+      expect(strokedIn(calls, '#fedcba')).toHaveLength(1)
+      expect(strokedIn(calls, '#abcdef')).toHaveLength(1)
+      expect(roundRects(calls)).toContainEqual([130, 130, 200, 220, 6])
+    })
+
+    it('keeps its edge, inset and corners in screen px at every zoom', () => {
+      const { calls } = drawn(true, 2)
+      expect(roundRects(calls)).toContainEqual([120, 120, 220, 240, 6])
+      expect(roundRects(calls)).toContainEqual([125, 125, 210, 230, 3])
+    })
+
+    it('draws the inner border 6px in where the band is under 64px, and none where it cannot fit', () => {
+      // At 50% the band is 4 beads of 10px: 40px, so 6px in, 12 grid px.
+      expect(roundRects(drawn(true, 0.5).calls)).toContainEqual([132, 132, 196, 216, 12])
+      // At 10% the band is 8px, under twice the inset.
+      expect(strokedIn(drawn(true, 0.1).calls, '#abcdef')).toHaveLength(0)
+      expect(drawn(true, 0.1).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
+    })
+
+    it('is never drawn in an export, which draws the Frame on its own, nor with no Frame', () => {
+      expect(drawn(false).calls.some((call) => call.fillStyle === '#123456' || call.strokeStyle === '#abcdef')).toBe(false)
+      expect(drawn(true, 1, false).calls.some((call) => call.fillStyle === '#123456' || call.strokeStyle === '#abcdef')).toBe(false)
+    })
+
+    it('is white with a black edge in high contrast', () => {
+      const project = framedProject('loom')
+      const { calls } = render({ ...project, frame }, true, { region: { x: 0, y: 0, width: 800, height: 800 }, theme: PROJECT_THEMES.contrast })
+      expect(calls.some((call) => call.name === 'fill' && call.fillStyle === '#ffffff')).toBe(true)
+      expect(strokedIn(calls, '#000000').length).toBeGreaterThan(0)
+    })
   })
 })
 
@@ -228,12 +281,12 @@ describe('Position marks tile', () => {
 
   it('leaves a bead in the keep-out margin undrawn, still held by the Project', () => {
     const base = framedProject('loom')
-    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 0, column: 0, color: '#00f' }, { row: 14, column: 12, color: '#00f' }]) }
+    const project: Project = { ...base, beads: withColors(base.beads, [{ row: 2, column: 1, color: '#00f' }, { row: 13, column: 11, color: '#00f' }]) }
 
     const { beads } = render(project, true, { region: { x: -1000, y: -1000, width: 2000, height: 2000 } })
 
     expect(beads).toHaveLength(12)
-    expect(project.beads[0]?.[0]).toBe('#00f')
+    expect(project.beads[2]?.[1]).toBe('#00f')
   })
 })
 
