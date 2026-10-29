@@ -23,8 +23,10 @@ const props = withDefaults(
     removable?: boolean
     /** Edit palette, a built-in swatch: why it cannot be removed. It fades, is `aria-disabled` and says this. */
     lockedBody?: string
+    /** The Tooltip's name in place of "Color", e.g. the margin picker's Canvas color swatch (ticket 0684). */
+    tooltipName?: string
   }>(),
-  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined },
+  { selected: false, hotkey: undefined, role: 'button', removable: false, lockedBody: undefined, tooltipName: undefined },
 )
 const emit = defineEmits<{
   select: []
@@ -34,11 +36,12 @@ const { t } = useI18n()
 
 /** The × is black or white by the swatch's own hex, whatever the theme. */
 const mark = computed(() => markOn(props.color))
-const tooltip = computed(() =>
-  props.lockedBody === undefined
-    ? { name: t.value.palette.colorLabel, body: props.color, hotkey: props.hotkey, announce: !props.label.includes(props.color) }
-    : { name: t.value.palette.colorLabel, disabled: true as const, disabledBody: props.lockedBody, announce: true },
-)
+const tooltip = computed(() => {
+  const name = props.tooltipName ?? t.value.palette.colorLabel
+  return props.lockedBody === undefined
+    ? { name, body: props.color, hotkey: props.hotkey, announce: !props.label.includes(props.color) }
+    : { name, disabled: true as const, disabledBody: props.lockedBody, announce: true }
+})
 </script>
 
 <template>

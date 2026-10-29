@@ -1,10 +1,10 @@
 import { computed } from 'vue'
-import { beadLabel, findBead, type Bead } from '../../domain/beads'
+import { beadPitchMm, findBead, type Bead } from '../../domain/beads'
 import type { Layer } from '../../domain/grid'
 import { beadOfLayer, frameOf } from '../../domain/layerRecord'
 import { replaceBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { EditFn } from '../project/useEdit'
@@ -21,8 +21,8 @@ export interface ReplaceBeadFlowDeps {
   dialogs?: Dialogs
 }
 
-/** Replace Bead and its confirmation modal (tickets 48, 113, 205, 0665, 0670; ADR 0007, 0020, 0079): a layer's Bead,
- * picked in that layer's Layer settings, so it never asks which layer. Deps are read lazily. */
+/** Replace Bead and its confirmation modal (tickets 48, 113, 205, 0665, 0670, 0687; ADR 0007, 0020, 0079): a layer's
+ * Bead, picked in that layer's Layer settings, so it never asks which layer. Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   /** The layer and the Bead id picked in its Layer settings, awaiting confirmation (ticket 48); undefined when its modal
    * is closed. */
@@ -35,27 +35,30 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     return id ? findBead(id) : undefined
   })
 
-  /** The modal's message (ticket 48, ADR 0007): for the woven layer's Bead the Estimated size with the new Bead beside
-   * the old, and reassurance the design stays put; for the Canvas's under a Frame, that the Frame keeps its own. */
+  /** The modal's message (tickets 48, 0687; ADR 0007): the layer, its Bead's size in mm before and after, that it looks
+   * different but the design and bead count stay, and for the Frame its Estimated size with the new Bead and the old. */
   const confirmMessage = computed(() => {
     const project = deps.currentProject()
     const bead = pendingBead.value
-    if (!project || !bead) {
+    const layer = pending.value?.layer
+    const frame = project && frameOf(project)
+    const own = project && layer && (layer === 'canvas' || frame) ? beadOfLayer(project, layer).bead : undefined
+    if (!bead || !layer || !own) {
       return ''
     }
 
     const t = deps.messages()
-    if (pending.value?.layer === 'canvas' && frameOf(project)) {
-      return fillBlanks(t.replaceBead.canvasMessage, { bead: beadLabel(bead) })
+    const mm = (size: { widthMm: number; heightMm: number }) => formatSizeInMm(size, t.form.unitMm, deps.locale())
+    // A Bead's size as it lies in the work, its width with the correction the Estimated size counts too.
+    const beadSize = (of: Bead) => mm({ widthMm: beadPitchMm(of), heightMm: of.heightMm })
+    const sizes = { old: beadSize(own), new: beadSize(bead) }
+    if (layer === 'canvas' || !frame) {
+      return fillBlanks(t.replaceBead.canvasMessage, sizes)
     }
-    const unitLabels = { mm: t.form.unitMm, cm: t.form.unitCm }
-    const estimateWith = (candidate: Bead | undefined) =>
-      candidate ? formatSizeMm(estimatedSizeMm(project, candidate), unitLabels, deps.locale()) : '—'
-
-    return fillBlanks(t.replaceBead.confirmMessage, {
-      bead: beadLabel(bead),
-      new: estimateWith(bead),
-      old: estimateWith(beadOfLayer(project, 'frame').bead),
+    return fillBlanks(t.replaceBead.frameMessage, {
+      ...sizes,
+      newSize: mm(estimatedSizeMm(frame, bead)),
+      oldSize: mm(estimatedSizeMm(frame, own)),
     })
   })
 

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
-import { replaceCandidates, type Bead } from '../../domain/beads'
+import { beadsDiffer, replaceCandidates, type Bead } from '../../domain/beads'
 import type { FrameSheet } from '../../domain/canvas'
 import { FRINGE_STYLES, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import type { Layer } from '../../domain/grid'
@@ -55,6 +55,8 @@ const shapeSettings = computed(() => (props.frame ? settingValuesOf(props.frame)
 const fringeStyle = computed(() => props.frame && fringeStyleOf(props.frame))
 const fringeOptions = computed(() => FRINGE_STYLES.map((value) => ({ value, label: t.value.starters.picks.fringeStyle.options[value] })))
 const candidates = computed(() => replaceCandidates(props.bead))
+/** The layer's own copy has gone out of date (ticket 534): the catalog's Bead of its id is a candidate, and the copy shows "(as saved)". */
+const outdated = computed(() => candidates.value.some((bead) => bead.id === props.bead?.id && beadsDiffer(bead, props.bead)))
 </script>
 
 <template>
@@ -111,6 +113,7 @@ const candidates = computed(() => replaceCandidates(props.bead))
         :bead="bead"
         :bead-shape="beadShape"
         :candidates="candidates"
+        :outdated="outdated"
         @update:bead-shape="emit('set-bead-shape', $event)"
         @pick="emit('pick-bead', $event)"
       />
