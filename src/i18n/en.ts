@@ -603,7 +603,7 @@ export const en: Translations = {
     lettersLabel: 'Letters',
     lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
     lettersInfoLabel: 'What Letters does',
-    background: { heading: 'Background', label: 'Frame background' },
+    background: { label: 'Frame background' },
     margin: {
       heading: 'Margin',
       colorLabel: 'Margin color',
@@ -855,9 +855,6 @@ export const en: Translations = {
       'With {bead}, this Project will be about {new} instead of {old}. Your design and its bead count stay exactly the same. You can undo this.',
     canvasMessage:
       'With {bead}, the Canvas is drawn at that bead\'s size. The Frame keeps its own bead, so its size and bead count stay exactly the same. You can undo this.',
-    layerLabel: 'Where to replace the bead',
-    layerFrame: 'Frame',
-    layerCanvas: 'Canvas',
     confirmButton: 'Replace bead',
     outdatedPostfix: '(as saved)',
     cancelButton: 'Cancel',
@@ -936,5 +933,8 @@ export const en: Translations = {
     emptyColor: 'Leave this color out, so its beads stay empty.',
     list: (names) => `${names.join(', ')}.`,
   },
-
+  layerSettings: {
+    frameHeading: 'Settings',
+    background: 'Background',
+  },
 }

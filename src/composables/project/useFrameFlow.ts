@@ -207,10 +207,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     changeWeave('frame', { technique })
   }
 
-  /** Weaves the Canvas in another Technique (tickets 492, 507): any time, since Row progress belongs to the Frame; one
-   * Undo step. */
-  function setCanvasTechnique(technique: Technique): void {
-    changeWeave('canvas', { technique })
+  /** Weaves a layer in another Technique from its Layer settings (tickets 492, 507, 0670): the Canvas's any time, since
+   * Row progress belongs to the Frame, the Frame's not once a pass is done; one Undo step. */
+  function setLayerTechnique(layer: Layer, technique: Technique): void {
+    changeWeave(layer, { technique })
   }
 
   /** Sets any setting of a layer's Technique (ticket 0626, ADR 0078), the Brick block today: one Undo step. */
@@ -438,7 +438,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     resizeTo,
     rename,
     setTechnique,
-    setCanvasTechnique,
+    setLayerTechnique,
     setWeaveSetting,
     fit,
     setTo,

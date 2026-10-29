@@ -11,7 +11,7 @@ import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
 import { mountShellParts } from '../../testUtils/shellHost'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
-import { backgroundOf, canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
+import { backgroundOf, canvasOf, frameOf, layerOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
 /** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
@@ -34,6 +34,13 @@ const names = () => loadProjects().map((project) => canvasOf(project).name).sort
 const text = ({ wrapper }: Mounted, testId: string) => wrapper.get(`[data-testid="${testId}"]`).text()
 const click = async ({ wrapper }: Mounted, testId: string) => {
   await wrapper.get(`[data-testid="${testId}"]`).trigger('click')
+  await flushPromises()
+}
+/** Picks a value in a PanelPicker's menu or a SegmentedControl. */
+const choose = async ({ wrapper }: Mounted, testId: string, value: string) => {
+  const opener = wrapper.find(`[data-testid="${testId}"] button[aria-haspopup]`)
+  if (opener.exists()) await opener.trigger('click')
+  await wrapper.get(`[data-testid="${testId}"] [data-value="${value}"]`).trigger('click')
   await flushPromises()
 }
 
@@ -149,15 +156,19 @@ describe('Menu', () => {
 })
 
 describe('Project', () => {
-  it('changes the Technique from its picker as one Undo step (tickets 351, 492, 554)', async () => {
+  it('sets the Canvas from its Layer settings: Technique and its settings as Undo steps, the Bead shape with none (ticket 0670)', async () => {
     const mounted = mountPanels()
     await mounted.openPanel('project')
-    await mounted.wrapper.get('[data-testid="project-technique"] button').trigger('click')
-    await mounted.wrapper.get('[data-testid="project-technique"] [data-value="peyote"]').trigger('click')
-    expect(frameOf(loadProjects()[0])!.technique).toBe('peyote')
+    await choose(mounted, 'canvas-technique', 'brick')
+    await click(mounted, 'canvas-brick-block-more')
+    await choose(mounted, 'bead-shape', 'real')
+    const saved = () => loadProjects()[0]
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beadShape: 'real' })
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric' })
 
     mounted.canvas.onUndo()
-    expect(frameOf(loadProjects()[0])!.technique).toBe('loom')
+    mounted.canvas.onUndo()
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'real' })
   })
 
   it('renames from the pencil, and Try again saves what a full storage refused', async () => {
@@ -211,21 +222,19 @@ describe('Project', () => {
     expect(mounted.panels.activeProject.value).toBeUndefined()
   })
 
-  it('replaces the Bead after a confirmation: Cancel keeps it, confirming switches the layer chosen in it (tickets 48, 0665)', async () => {
+  it('replaces the Canvas\'s Bead after a confirmation, the Frame keeping its own; Cancel keeps it (tickets 48, 0665, 0670)', async () => {
     const mounted = mountPanels()
     const pickReplacement = async () => {
       await mounted.openPanel('project')
-      await mounted.wrapper.get('[data-testid="bead-type"] button').trigger('click')
-      await mounted.wrapper.get(`[data-testid="bead-type"] [data-value="${findBead('toho/round/11-0')!.formFactor.id}"]`).trigger('click')
+      await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
     }
     await pickReplacement()
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
     await click(mounted, 'confirm-modal-cancel')
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
-    expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/cube/1.5mm')
+    expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/cube/1.5mm')
 
     await pickReplacement()
-    await mounted.wrapper.get('[data-testid="replace-bead-layer"] [data-value="canvas"]').trigger('click')
     await click(mounted, 'confirm-modal-confirm')
     expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/round/11-0')
     expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/cube/1.5mm')
@@ -233,6 +242,22 @@ describe('Project', () => {
 })
 
 describe('The Frame panel', () => {
+  it('sets the Frame from its Layer settings: Technique, its settings and Bead as Undo steps, the Bead shape with none (ticket 0670)', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('frame')
+    await choose(mounted, 'frame-technique', 'brick')
+    await click(mounted, 'frame-brick-block-more')
+    await choose(mounted, 'bead-shape', 'real')
+    await choose(mounted, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
+    await click(mounted, 'confirm-modal-confirm')
+    const saved = () => loadProjects()[0]
+    expect(layerOf(saved(), 'frame')).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 2 } }, beadShape: 'real', beadId: 'toho/round/11-0' })
+    expect(layerOf(saved(), 'canvas')).toMatchObject({ weave: { technique: 'loom' }, beadShape: 'symmetric', beadId: 'toho/cube/1.5mm' })
+
+    mounted.canvas.onUndo()
+    expect(layerOf(saved(), 'frame')).toMatchObject({ beadShape: 'real', beadId: 'toho/cube/1.5mm' })
+  })
+
   it('puts a Starter on the open Project, and closes the panel (tickets 555, 0596)', async () => {
     const open = withFrameSheet(moth(), undefined)
     saveProjects([open])

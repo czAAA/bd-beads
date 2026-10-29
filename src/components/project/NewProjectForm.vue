@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import { computed, inject, onMounted, ref, watch } from 'vue'
-import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
+import { DEFAULT_BEAD, beadLabel, findBead } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/createProject'
 import { DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { formatImageLimits } from '../../domain/imageConversion'
+import type { Background } from '../../domain/project'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
-import BeadSection from './BeadSection.vue'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
+import LayerSettings from './LayerSettings.vue'
 import NamesSection from './NamesSection.vue'
-import TechniqueSection from './TechniqueSection.vue'
 import AppButton from '../ui/AppButton.vue'
-import FormField from '../ui/form/FormField.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 
 const { t } = useI18n()
@@ -34,6 +34,9 @@ const beadShape = ref<BeadShape>(DEFAULT_BEAD_SHAPE)
 const settings = ref<TechniqueSettings>({})
 /** The chosen Technique's settings at their values, each within its range. */
 const techniqueSettings = computed(() => weaveSettings({ technique: technique.value, techniqueSettings: settings.value }))
+/** The Background picked (ticket 0670), which both layers start on; none until one is, so the device's last pick shows. */
+const background = ref<Background>()
+const deviceBackground = useCanvasBackground().start
 /** This Project's own maker's name (ticket 182): blank by default regardless of the device-wide value it overrides. */
 const makerName = ref('')
 
@@ -57,7 +60,8 @@ function pickStarter() {
   panel?.openSub(t.value.starters.title, { opener: 'pick-starter' })
 }
 
-/** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342). */
+/** What Create Project makes: a Canvas, its size set later in the Frame section (ticket 342), both layers from the
+ * form's Layer settings (ADR 0079). */
 function currentInput(): CreateProjectInput {
   return {
     name: name.value.trim(),
@@ -65,11 +69,12 @@ function currentInput(): CreateProjectInput {
     ...(Object.keys(techniqueSettings.value).length > 0 ? { techniqueSettings: techniqueSettings.value } : {}),
     beadId: beadId.value,
     ...(beadShape.value !== DEFAULT_BEAD_SHAPE ? { beadShape: beadShape.value } : {}),
+    ...(background.value !== undefined ? { background: background.value } : {}),
     makerName: makerName.value.trim(),
   }
 }
 
-watch([name, beadId, beadShape, technique, settings, makerName], () => emit('draft', currentInput()), { immediate: true })
+watch([name, beadId, beadShape, technique, settings, background, makerName], () => emit('draft', currentInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
@@ -84,8 +89,8 @@ const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsH
 <template>
   <!--
     The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: the Open canvas title and what
-    it is for, Name (optional), Maker's name (ticket 182, also optional), Bead and Technique (the sections the Project
-    panel shares, ticket 568), then three accent buttons: Create Project, Convert image and Pick a starter. It states no
+    it is for, Name (optional), Maker's name (ticket 182, also optional), the Layer settings both layers start from (the
+    section the Project and Frame panels share, ticket 0670), then three accent buttons: Create Project, Convert image and Pick a starter. It states no
     size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image opens its own
     popup on a copy of these values (spec 0645).
   -->
@@ -97,15 +102,19 @@ const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsH
 
     <NamesSection ref="names" v-model:name="name" v-model:maker-name="makerName" :name-placeholder="namePlaceholder" />
 
-    <FormField :label="t.form.beadLabel" label-id="bead-label">
-      <BeadSection v-model:bead-shape="beadShape" :bead="selectedBead" :candidates="offeredBeads()" @pick="beadId = $event" />
-    </FormField>
-
-    <TechniqueSection
-      v-model:technique="technique"
-      :settings="settings"
+    <LayerSettings
+      layer="canvas"
+      :technique="technique"
+      :technique-settings="settings"
+      :bead="selectedBead"
+      :bead-shape="beadShape"
+      :background="background ?? deviceBackground"
       testid="new-project"
+      @set-technique="technique = $event"
       @set-setting="(id, value) => (settings = { ...settings, [id]: value })"
+      @pick-bead="beadId = $event"
+      @set-bead-shape="beadShape = $event"
+      @set-background="background = $event"
     />
 
     <AppButton class="new-project-form__submit" type="submit" variant="primary" icon="plus" data-testid="create-project">
