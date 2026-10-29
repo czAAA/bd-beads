@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, findBead, gramsPerBead, offeredBeads } from './beads'
+import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, findBead, gramsPerBead, offeredBeads, replaceCandidates } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
@@ -132,5 +132,24 @@ describe('beadAfterPick (ticket 554)', () => {
 
   it('is undefined for a Brand with no Beads', () => {
     expect(beadAfterPick(beads, delica11, { brandId: 'nobody' })).toBeUndefined()
+  })
+})
+
+describe('replaceCandidates (tickets 48, 534, 0670)', () => {
+  const current = findBead('toho/cube/1.5mm')!
+
+  it('offers every catalog Bead but the layer\'s own, all of them for none', () => {
+    expect(replaceCandidates(current).map((bead) => bead.id)).not.toContain(current.id)
+    expect(replaceCandidates(current)).toHaveLength(offeredBeads().length - 1)
+    expect(replaceCandidates(undefined)).toHaveLength(offeredBeads().length)
+  })
+
+  it('offers the catalog\'s current Bead of the same id when the copy differs, not when only a name does', () => {
+    expect(replaceCandidates({ ...current, widthMm: current.widthMm + 0.2 }).map((bead) => bead.id)).toContain(current.id)
+    expect(replaceCandidates({ ...current, brand: { ...current.brand, name: 'Other name' } }).map((bead) => bead.id)).not.toContain(current.id)
+  })
+
+  it('offers everything for a Bead the catalog does not offer', () => {
+    expect(replaceCandidates({ ...current, id: 'brand/gone/1' })).toHaveLength(offeredBeads().length)
   })
 })

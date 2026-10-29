@@ -715,8 +715,8 @@ export interface Translations {
     /** The Frame panel's margin section and the margin color picker (ticket 0656, MarginSheet card): its heading, the
      * picker's name, the Auto swatch's name and accessible name, the name of the swatch that is the Canvas color, and the
      * line under the picker. */
-    /** The Frame panel's background section (ticket 0666): its heading and the radio group's name. */
-    background: { heading: string; label: string }
+    /** The Frame's Background picker's radio group name (tickets 0666, 0670). */
+    background: { label: string }
     /** The margin sheet (tickets 0656, 0657; MarginSheet card): the Frame panel's section, its color, the title block's
      * Switch and the title block's Technique pencil. */
     margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
@@ -988,10 +988,6 @@ export interface Translations {
     // With a Frame, when the Canvas's Bead is replaced (ticket 0665): `{bead}` is the new Bead. Says the Canvas is drawn
     // at its size and the Frame keeps its own, so its size and bead count stay.
     canvasMessage: string
-    /** With a Frame, the label of the choice of which layer's Bead is replaced (ticket 0665), and its two options. */
-    layerLabel: string
-    layerFrame: string
-    layerCanvas: string
     confirmButton: string
     /** After the Project's own Bead when the catalog's Bead of the same id has changed (ticket 534). */
     outdatedPostfix: string
@@ -1085,5 +1081,11 @@ export interface Translations {
     emptyColor: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
+  }
+  /** A layer's Layer settings (ADR 0079, ticket 0670): the Frame panel's section heading, and the Background row's label
+   * in every layer's. */
+  layerSettings: {
+    frameHeading: string
+    background: string
   }
 }

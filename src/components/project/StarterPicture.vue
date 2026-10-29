@@ -31,7 +31,7 @@ const theme = useResolvedTheme()
 const canvasEl = ref<HTMLCanvasElement>()
 
 const project = computed(() =>
-  withBeadShape(starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }), 'real'),
+  withBeadShape(starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }), 'frame', 'real'),
 )
 
 /** The gap between a pair, as a share of one picture's width. */
