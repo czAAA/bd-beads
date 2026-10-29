@@ -27,7 +27,7 @@ describe('every Bead in the catalog', () => {
       expect(canvasOf(reopened).bead).toEqual(beadCopy(bead))
       expect(gramsPerBead(bead) !== undefined).toBe(bead.beadsPerKg !== undefined)
 
-      for (const other of BEAD_CATALOG) expect(canvasOf(replaceBead(painted, other)).beadId).toBe(other.id)
+      for (const other of BEAD_CATALOG) expect(frameOf(replaceBead(painted, other))!.beadId).toBe(other.id)
     }
   })
 })

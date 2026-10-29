@@ -1,7 +1,7 @@
 import { computed, inject, provide, ref, type ComputedRef, type InjectionKey, type Ref } from 'vue'
 import { addUsedColor, createPalette, defaultPalette, defaultPaletteIds, moveSlot, projectPalette, removeAddedColor, removeAllAddedColors, restoreAddedColor, type AddUsedColorOutcome, type Palette, type PaletteCodes, type PaletteColor, type PaletteIds } from '../../domain/palette'
 import { setPalette as withPalette } from '../../domain/paletteEdits'
-import { layerOf } from '../../domain/layerRecord'
+import { beadIdOfLayer } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import type { EditFn } from '../project/useEdit'
 
@@ -11,9 +11,9 @@ function codesOf(project: Project, colorIds: readonly string[]): PaletteCodes {
   return Object.fromEntries(hexes.flatMap((hex) => (project.paletteCodes?.[hex] ? [[hex, project.paletteCodes[hex]!]] : [])))
 }
 
-/** The Palette's built-in colors: the Canvas's Bead's (ADR 0079), which the Frame shares until ticket 0665. */
+/** The Palette's built-in colors: the woven layer's Bead's, the Frame's when there is one (ADR 0079, ticket 0665). */
 function builtInsOf(project: Project): readonly PaletteColor[] {
-  return defaultPalette(layerOf(project, 'canvas').beadId)
+  return defaultPalette(beadIdOfLayer(project, 'frame'))
 }
 
 const paletteKey: InjectionKey<ComputedRef<Palette>> = Symbol('palette')

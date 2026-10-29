@@ -92,10 +92,12 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
     expect(frameOf(after)).not.toHaveProperty('name')
   })
 
-  it('writes a layer\'s Bead and Bead shape into every layer, which share them until ticket 0665', () => {
+  it('writes a layer\'s Bead into that layer alone (ticket 0665), and a Bead shape into every layer, which share it until ticket 0670', () => {
     const after = withLayer(framed(), 'frame', { bead: cube, beadShape: 'real' })
     expect(frameOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real' })
-    expect(canvasOf(after)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real' })
+    expect(canvasOf(after)).toMatchObject({ beadId: delica.id, bead: beadCopy(delica), beadShape: 'real' })
+    expect(canvasOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: cube.id, bead: beadCopy(cube) })
+    expect(frameOf(withLayer(framed(), 'canvas', { bead: cube }))).toMatchObject({ beadId: delica.id })
     const symmetric = withLayer(after, 'canvas', { beadShape: 'symmetric' })
     expect(symmetric.layers.some((layer) => 'beadShape' in layer)).toBe(false)
   })
@@ -126,11 +128,13 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
     expect(beadsOfLayer(open(), 'frame')).toBeUndefined()
   })
 
-  it('reads the Bead, its id and Bead shape both layers share, Symmetric where none is saved', () => {
-    const project = withLayers(framed(), { beadShape: 'real' })
-    expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(delica), beadShape: 'real' })
+  it('reads each layer\'s own Bead, its id and Bead shape, Symmetric where none is saved; a Frame the Project lacks reads the Canvas\'s', () => {
+    const project = withLayer(withLayers(framed(), { beadShape: 'real' }), 'frame', { bead: cube })
+    expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(cube), beadShape: 'real' })
     expect(beadIdOfLayer(project, 'canvas')).toBe(delica.id)
+    expect(beadIdOfLayer(project, 'frame')).toBe(cube.id)
     expect(beadOfLayer(open(), 'canvas')).toEqual({ bead: beadCopy(delica), beadShape: 'symmetric' })
+    expect(beadIdOfLayer(withLayer(open(), 'canvas', { bead: cube }), 'frame')).toBe(cube.id)
   })
 
   it('reads a layer\'s Weave as held, without the cell its Bead draws it in', () => {

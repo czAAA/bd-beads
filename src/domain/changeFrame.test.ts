@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { type BeadMap, colorAt, type FrameSheet, type Rect, withColors } from './canvas'
 import { TECHNIQUES } from './weave'
+import { findBead } from './beads'
+import { replaceBead } from './projectBead'
 import { changeCanvasWeave, changeFrame, frameChangeDiscardsProgress, type FrameChange } from './changeFrame'
 import { shownBeads } from './layers'
 import { createProject } from './createProject'
@@ -770,5 +772,45 @@ describe('a Frame woven like the Canvas trades beads with it on a resize (ticket
       expect(beadsOfLayer(back, 'canvas')).toEqual(beadsOfLayer(under, 'canvas'))
       expect(canvasOf(back).pieceNames).toEqual(canvasOf(under).pieceNames)
     })
+  })
+})
+
+describe('a Frame in a Bead of its own is read on the Canvas through millimetres (ticket 0665, ADR 0079)', () => {
+  const RED = '#e63746'
+  const BLUE = '#2f6fed'
+  /** An 8/0 loom Canvas whose 4 by 4 Frame at row 2, column 3 is in 15/0 (half as wide) or in a Miyuki Delica 11/0. */
+  function inOtherBead(beadId = 'toho/round/15-0', beads: BeadMap = {}): Project {
+    const made = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 4, height: 4, unit: 'beads' } })
+    const framedIn = withLayers(made, { frame: { ...sheet({ row: 2, column: 3, rows: 4, columns: 4 }, beads) } })
+    return replaceBead(framedIn, findBead(beadId)!)
+  }
+  const halves = { 0: { 0: RED, 1: RED, 2: RED, 3: RED }, 1: { 0: RED, 1: RED, 2: RED, 3: RED }, 2: { 0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE }, 3: { 0: BLUE, 1: BLUE, 2: BLUE, 3: BLUE } }
+
+  it('lays its beads on the Canvas positions under them on Remove Frame, clearing only the Canvas positions it covered', () => {
+    const before = withLayers(inOtherBead(undefined, halves), { beads: { 2: { 3: '#000000', 5: '#000000' } } })
+    const removed = changeFrame(before, { remove: true })
+    expect(removed.kind === 'changed' && beadsOfLayer(removed.project, 'canvas')).toEqual({ 2: { 3: RED, 4: RED, 5: '#000000' }, 3: { 3: BLUE, 4: BLUE } })
+  })
+
+  it("moves the Palette to the Canvas's Bead on Remove Frame, in the same step, when the woven Bead changes", () => {
+    const before = inOtherBead('miyuki/delica/11-0')
+    expect(before.palette).toContain('beige')
+    const removed = changeFrame(before, { remove: true })
+    expect(removed.kind === 'changed' && removed.project.palette).not.toContain('beige')
+  })
+
+  it('folds what a resize gives up rather than giving it to the Canvas, whose positions are not its own', () => {
+    const resized = changeFrame(inOtherBead(undefined, halves), { set: { row: 2, column: 3, rows: 2, columns: 4 } })
+    if (resized.kind !== 'changed') throw new Error('expected a change')
+    expect(frameOf(resized.project)!.folded).toEqual({ 2: halves[2], 3: halves[3] })
+    expect(beadsOfLayer(resized.project, 'canvas')).toEqual({})
+  })
+
+  it("makes a Frame from a Selection in the Canvas's Bead, the Frame there first laid on the Canvas as Remove Frame lays it", () => {
+    const before = inOtherBead(undefined, halves)
+    const made = changeFrame(before, { make: { row: 2, column: 3, rows: 2, columns: 2 } })
+    if (made.kind !== 'changed') throw new Error('expected a change')
+    expect(frameOf(made.project)).toMatchObject({ beadId: 'toho/round/8-0', id: frameOf(before)!.id })
+    expect(beadsOfLayer(made.project, 'frame')).toEqual({ 0: { 0: RED, 1: RED }, 1: { 0: BLUE, 1: BLUE } })
   })
 })

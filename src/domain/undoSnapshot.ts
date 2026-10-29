@@ -1,6 +1,6 @@
 import type { BeadMap } from './canvas'
 import type { HistoryCap } from './history'
-import { canvasOf, lettersOn, withCanvas, withLetters } from './layerRecord'
+import { beadIdOfLayer, canvasOf, lettersOn, withCanvas, withLetters } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
@@ -45,7 +45,7 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
     palette: entry.palette,
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),
     ...(entry.paletteCodes ? { paletteCodes: entry.paletteCodes } : {}),
-    paletteLetters: lettersOfPalette(entry.palette, canvasOf(entry).beadId, entry.paletteLetters),
+    paletteLetters: lettersOfPalette(entry.palette, beadIdOfLayer(entry, 'frame'), entry.paletteLetters),
   })
 }
 
