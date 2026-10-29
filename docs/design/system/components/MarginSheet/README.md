@@ -85,7 +85,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **The legend** follows the Palette's order (A, B, C…), not the bead count; a color with no letter shows "?", as the Word chart does. The name's cell stops at `--margin-edit-width` and ellipsizes.
 - **Hot corners** are drawn just outside the Frame line, as in the design canvas: a bracket's stroke 3px clear of it, an edge's bar against it; their hit points are on the line.
 - **Touch:** every control on the sheet is a `ui-control`, whose coarse-pointer hit area is 44px (controls.css). Edit Frame keeps the Frame card's four corner handles on touch.
-- **Gives way:** the band's row and the title block take no press where a Selection's handles reach under them or the Tool pill covers them (ticket 498).
+- **Gives way:** the band's row and the title block take no press where a Selection's handles reach under them (ticket 498). The Tool pill, its color popover and the Selection bar are drawn over the sheet and take their own presses (ticket 0698).
 - **Edit Frame's outline** is the sheet element's own outline (DOM), the hot corners and size Tooltip are drawn on the canvas; the Tooltip sits out from the hot corner, beyond its disc.
 
 ## As built (ticket 0658)
@@ -107,12 +107,13 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **A setting's cell** comes from the Technique's description (`describeWeave(...).settings`), never from its name: its value through the setting's `short` words ("{count}-drop"), its pencil named "Change {setting}" with the setting's Tooltip, and the panels' stepper in its popover, each step applied at once. Locked with the Technique once a pass is done, with the setting's own reason. Read only in the compact row.
 - **Checked against the drafting sheet artboard** at 200%, 100%, 60%, 40% and 20% (loom, peyote, and brick stitch with Drop 2): the band's order, the tools, the Move bar, the title block's cells and rules, the fold button, the legend and the insets match it at scale 1. What differed was the proportion (controls of a fixed size in a band of 80 to 160px, and on a narrow sheet the tools and title block spilling past its edge, the fold button off it) and the Technique pencil standing about 2px above the others (its picker's wrap sat on a text baseline); both are gone.
 - **Touch:** the 44px hit areas scale with the sheet too (26px at 0.6); the coarse-pointer rule (compact one step earlier) is still not built.
+- **Stacking:** the sheet is part of the drawing and takes no z-index (StackingOrder card: nothing in the canvas box goes above `z-canvas-overlay`). At its scale the title block reached under the Tool pill and was drawn over the pill and its color popover, while taking no press there itself; now they float over it, and the parts of the band and title block the pill does not cover keep taking their presses.
 
 ## As built (ticket 0682)
 
 - **Bare** is the fourth form of `src/rendering/marginForm.ts`; the canvas leaves the sheet out, the rulers leave out the current pass's mark (and, as in the compact and folded forms, the numbers), and the sheet's controls are the Move bar alone (`MarginMoveBar.vue`, the same control as in the band). The Frame's line, its hot corners while Edit Frame is on, and the size Tooltip are the Frame's own and stay; the sheet's Edit Frame outline goes with the sheet.
 - **Touch:** a browser moves a finger's press to a control up to about 16px away from it (touch adjustment), and a canvas is not such a control, so on a coarse pointer the bar stands its 44px hit area and 16px more above the Frame's line: about 29px from the line to its drawn bottom.
-- **Gives way** to a Selection's handles and the Tool pill, as the band's row does.
+- **Gives way** to a Selection's handles, as the band's row does, and lies under the Tool pill.
 - **Checked** in the browser (`MarginSheet.browser.test.ts`: at 10%, 25% and 38% on Frames 40 and 3 beads wide, the bar takes its press and a press on the first row lands on the canvas) and in the app (`e2e/visual/frameControls.spec.ts`: at 10%, 20% and 30%, by mouse and by touch, the bar drags the Frame and the first row paints).
 
 ## Acceptance

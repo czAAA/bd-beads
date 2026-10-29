@@ -4,7 +4,7 @@ import { useFittingForm } from '../../composables/canvas/useFittingForm'
 import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import type { ExportOpener } from '../../composables/shell/openPanel'
-import { boxesOverlap, overlapsSelectionHandles, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
+import { overlapsSelectionHandles, type BarBox, type FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useRovingFocus } from '../../composables/ui/useRovingFocus'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -41,8 +41,6 @@ const props = defineProps<{
   exportOpen?: boolean
   /** Where the Selection is, if there is one: its handles win a press where the sheet's controls lie over them. */
   selection?: BarBox
-  /** Where the Tool pill is: it wins a press over the sheet's controls under it. */
-  pill?: BarBox
 }>()
 
 const emit = defineEmits<{
@@ -169,8 +167,8 @@ const titleInset = computed(() =>
 )
 const titleStyle = computed(() => ({ right: `${titleInset.value.right}px`, bottom: `${titleInset.value.bottom}px`, maxWidth: `${titleRoom.value / scale.value}px`, ...scaledFrom('100% 100%') }))
 
-// The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498)
-// and the Tool pill.
+// The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498).
+// The Tool pill needs no such rule: it is drawn over the sheet, so it takes its own presses.
 const bandBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
   return { left: sheet.left + place.value.side, top: sheet.top + rowTop.value, width: bandRoom.value, height: rowHeight.value * scale.value }
@@ -182,7 +180,7 @@ const titleBox = computed<BarBox>(() => {
   const { right, bottom } = titleInset.value
   return { left: sheet.left + sheet.width - right - width, top: sheet.top + sheet.height - bottom - height, width, height }
 })
-const yields = (box: BarBox) => (!!props.selection && overlapsSelectionHandles(box, props.selection)) || (!!props.pill && boxesOverlap(box, props.pill))
+const yields = (box: BarBox) => !!props.selection && overlapsSelectionHandles(box, props.selection)
 const bandYields = computed(() => yields(bandBox.value))
 
 // Bare, the Move bar stands alone over the middle of the Frame's top edge, above its line, so it takes no press meant
@@ -356,11 +354,11 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 </template>
 
 <style scoped>
-/* Over the sheet the canvas draws, letting every press but the controls' through to the canvas. While Edit Frame is on
- * its edge is outlined 1px dashed in the accent at 55%, 3px outside it (MarginSheet card). */
+/* Over the sheet the canvas draws, letting every press but the controls' through to the canvas. It is part of the
+ * drawing, so it takes no z-index: the Tool pill, its color popover and the Selection bar float over it (StackingOrder
+ * card). While Edit Frame is on its edge is outlined 1px dashed in the accent at 55%, 3px outside it (MarginSheet card). */
 .margin-sheet {
   position: absolute;
-  z-index: var(--z-context-bar);
   box-sizing: border-box;
   color: var(--ink);
   border-radius: var(--radius-lg);
@@ -388,7 +386,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   pointer-events: auto;
 }
 
-/* Over a Selection's handles or under the Tool pill the controls give way (ticket 498). */
+/* Over a Selection's handles the controls give way (ticket 498). */
 .margin-sheet__yielding,
 .margin-sheet__band.margin-sheet__yielding > * {
   pointer-events: none;

@@ -244,12 +244,12 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(wrapper.emitted('key')).toHaveLength(1)
   })
 
-  it('lets the bare Move bar give way to a Selection\'s handles and the Tool pill (ticket 0682)', async () => {
+  it('lets the bare Move bar give way to a Selection\'s handles (ticket 0682)', async () => {
     const at = anchorAt(0.2)
     const wrapper = mountSheet({ anchor: at })
     const handle = () => control(wrapper, 'margin-handle')
     expect(handle().classes()).not.toContain('margin-sheet__yielding')
-    await wrapper.setProps({ pill: { left: at.box.left + at.box.width / 2 - 10, top: at.box.top - 20, width: 20, height: 20 } })
+    await wrapper.setProps({ selection: { left: at.box.left + at.box.width / 2 - 10, top: at.box.top + 4, width: 20, height: 20 } })
     expect(handle().classes()).toContain('margin-sheet__yielding')
   })
 
