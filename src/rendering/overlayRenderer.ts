@@ -134,8 +134,10 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   }
   const weave = frameWeave(project)
   const frame = project.frame
-  // The Frame's Row order, or one over the Project drawn alone, measured as its space is.
-  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
+  // The Frame's Row order in its own rows (turned, it lies in others: ticket 0667), or one over the Project drawn alone,
+  // measured as its space is.
+  const { rows, columns } = frame ?? space
+  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows, columns }, project.rowProgress)
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
     const beads = beadsOfLayer(project, 'frame')!

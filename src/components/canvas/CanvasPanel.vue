@@ -24,6 +24,7 @@ import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
 import { layerOf } from '../../domain/layerRecord'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
 
 const {
@@ -166,7 +167,7 @@ const frameTooltip = computed(() => {
   if (!project || !frame) return ''
   const bead = layerOf(project, 'frame')?.bead
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
-  return fillBlanks(t.value.frame.sizeTooltip, { columns: frame.columns, rows: frame.rows, estimate })
+  return fillBlanks(t.value.frame.sizeTooltip, { ...seenSize(frame), estimate })
 })
 
 /** Whether the Selection carries handles and ruler numbers (ticket 435): while it is dragged or resized, its bar

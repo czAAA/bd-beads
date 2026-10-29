@@ -256,3 +256,28 @@ describe('a Custom frame on the Canvas (ticket 0592)', () => {
     expect(view.frameCellAt({ x: -40, y: -40 })).toBeUndefined()
   })
 })
+
+describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
+  // A loom Frame of 4 rows and 6 columns, turned once: it lies 6 rows by 4 columns from its corner at (0, 0).
+  const frame = { row: 0, column: 0, rows: 4, columns: 6, technique: 'loom' as const, quarterTurns: 1 as const }
+  const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
+  const at = (x: number, y: number) => ({ x: x * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
+
+  it('hits each bead where it lies turned, by its own row and column', () => {
+    // Its first bead lies at the top right, its last at the bottom left.
+    expect(view.pointToHit(at(3.5, 0.5))).toEqual({ row: 0, column: 0, layer: 'frame' })
+    expect(view.pointToHit(at(0.5, 5.5))).toEqual({ row: 3, column: 5, layer: 'frame' })
+    expect(view.beadToPoint({ row: 0, column: 0 }, 'frame')).toEqual(at(3.5, 0.5))
+  })
+
+  it('hides the Canvas under what it covers, and only there', () => {
+    expect(view.pointToHit(at(3.5, 5.5))!.layer).toBe('frame')
+    expect(view.pointToHit(at(4.5, 0.5))).toEqual({ row: 0, column: 4, layer: 'canvas' })
+  })
+
+  it('draws its line round what it covers, and gives the Select tool the cells under a point', () => {
+    const line = view.frameBox(frame)
+    expect(line.width).toBeLessThan(line.height)
+    expect(view.frameCellAt(at(3.5, 5.5))).toEqual({ row: 5, column: 3, layer: 'frame' })
+  })
+})

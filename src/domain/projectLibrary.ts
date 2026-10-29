@@ -1,6 +1,6 @@
 import { rotationSwapsAxes } from './grid'
 import type { Project } from './project'
-import { projectDimensions } from './projectExtent'
+import { shownDimensions } from './projectExtent'
 
 // The Project library's lists (ticket 145): a Project's line in them and their order.
 
@@ -12,7 +12,7 @@ export function summarizeProject(project: Project): string {
   if (!project.frame) {
     return project.name
   }
-  const { columns, rows } = projectDimensions(project)
+  const { columns, rows } = shownDimensions(project)
   const [width, height] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   return `${project.name} · ${width}×${height}`
 }
