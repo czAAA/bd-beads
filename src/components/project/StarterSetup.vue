@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from 'vue'
 import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
-import { frameKindOf, type FrameSettingName } from '../../domain/frameKind'
+import { frameShapeOf, type FrameSettingName } from '../../domain/frameShape'
 import { layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
@@ -139,13 +139,13 @@ const rows = computed<Row[]>(() => {
   return [...ordered, ...chosen.filter((pick) => !pick.before).map((pick) => ({ pick }))]
 })
 
-/** A size's words: a setting of the Starter's kind its words from the Frame panel, a Ring's or Band's its own; its hint
+/** A size's words: a setting of the Starter's Frame shape its words from the Frame panel, a Ring's or Band's its own; its hint
  * beside it. */
 function sizeWords(size: StarterSize): { label: string; less: string; more: string; hint: string } {
-  const custom = frameKindOf(props.starter).custom?.settings.some((setting) => setting.id === size.id) ?? false
+  const custom = frameShapeOf(props.starter)?.settings.some((setting) => setting.id === size.id) ?? false
   const words = custom ? t.value.frame.sizeSettings[size.labelKey as FrameSettingName] : t.value.starters.setupSizes[size.labelKey as 'width' | 'ringSize' | 'wrist']
   const hints = t.value.starters.sizeHints as Partial<Record<StarterSizeName | 'ringSizeUs', string>>
-  const hint = size === props.starter.sizes[0] && custom ? t.value.starters.hints[props.starter.kind as keyof typeof t.value.starters.hints] : hints[inUs(size) ? 'ringSizeUs' : size.id]
+  const hint = size === props.starter.sizes[0] && custom ? t.value.starters.hints[props.starter.shape!] : hints[inUs(size) ? 'ringSizeUs' : size.id]
   return { label: words.label, less: words.less, more: words.more, hint: hint ?? '' }
 }
 

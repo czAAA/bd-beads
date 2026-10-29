@@ -7,7 +7,7 @@ import { withFrame } from '../../domain/frame'
 import { paintAt } from '../../testUtils/layers'
 import { beadCount } from '../../domain/canvas'
 import { changeFrame } from '../../domain/changeFrame'
-import { frameLayoutOf } from '../../domain/frameKind'
+import { frameLayoutOf } from '../../domain/frameShape'
 import { onLayer } from '../../domain/layers'
 import { paintCells } from '../../domain/drawing'
 import type { Project } from '../../domain/project'
@@ -742,7 +742,7 @@ describe('useSelectionGesture on a Custom frame (ticket 0594)', () => {
   /** A peyote Star on a loom Canvas, its first arm's last round painted. */
   function star(): Project {
     const { frame: _frame, ...open } = makeProject()
-    const placed = changeFrame(open, { custom: { kind: 'star', size: 4, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape: 'star', size: 4, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     const arm = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row, column }) => row === 3 && column < 16)
     return onLayer(placed.project, 'frame', (view) => paintCells(view, arm, RED))

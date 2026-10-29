@@ -18,7 +18,7 @@ import {
   type PasteLoss,
   type Selection,
 } from '../../domain/selection'
-import { frameAllows } from '../../domain/frameKind'
+import { frameAllows } from '../../domain/frameShape'
 import { layerOf } from '../../domain/layerRecord'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
