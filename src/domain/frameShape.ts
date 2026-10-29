@@ -2,7 +2,7 @@ import { beadPitchMm, type Bead } from './beads'
 import type { FrameSheet } from './canvas'
 import { fringeLayout, kaleidocycleLayout, kiteLayout, roundsLayout, starLayout, turnedLayout, type FrameLayout, type FringeSettings } from './frameLayout'
 import type { GridDimensions } from './grid'
-import { gridGeometry, layoutGeometry, type LayerGeometry } from './layerGeometry'
+import { gridGeometry, layoutGeometry, turnedGridGeometry, turnedGridLayout, type LayerGeometry } from './layerGeometry'
 import { layoutOrder, rowsOrder, type RowOrder, type RowWay } from './rowOrder'
 import type { SettingSpec } from './settingSpec'
 import { describeWeave, type Technique, type Weave } from './weave'
@@ -31,7 +31,8 @@ export type FrameSettings = Partial<Record<FrameSettingName, number>> & { fringe
  * earring's top has fewer rows than its base has beads, so it ends on a pair: StarterGallery card). */
 type FrameSetting = SettingSpec<FrameSettingName>
 
-/** How many quarter turns clockwise a Custom frame's layout lies at (Rotate Frame, ticket 0594). */
+/** How many quarter turns clockwise a Frame lies at on the Canvas (Rotate Frame, tickets 0594, 0667, ADR 0079): a Custom
+ * frame's layout, or a Frame's own grid, turned. One setting for both. */
 export type QuarterTurns = 1 | 2 | 3
 
 /** What a Custom frame's layout is built from: its Frame shape, its settings and how far it is turned. */
@@ -76,8 +77,12 @@ export interface FrameShape extends FrameRules {
 
 /** A Frame without a Frame shape: its beads in its Weave's rows over its own rectangle, every action open to it. */
 const FRAME: FrameRules = {
-  geometry: (sheet) => gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns }),
-  sizeMm: ({ columns, rows }, bead) => ({ widthMm: columns * beadPitchMm(bead), heightMm: rows * bead.heightMm }),
+  // Turned (ticket 0667), its own grid is drawn turned in the rectangle it covers.
+  geometry: (sheet) => (sheet.quarterTurns ? turnedGridGeometry(sheet) : gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns })),
+  sizeMm: ({ columns, rows, quarterTurns }, bead) => {
+    const upright = { widthMm: columns * beadPitchMm(bead), heightMm: rows * bead.heightMm }
+    return (quarterTurns ?? 0) % 2 === 1 ? { widthMm: upright.heightMm, heightMm: upright.widthMm } : upright
+  },
   removedBeads: 'dropped',
   // Chosen by the Frame's Technique, through its Weave's passes.
   rowOrder: rowsOrder,
@@ -158,14 +163,25 @@ function rulesOf(frame: Pick<FrameSheet, 'shape'>): FrameRules {
   return frameShapeOf(frame) ?? FRAME
 }
 
-/** Whether a Frame lets the weaver do this to it; with no Frame, what a Frame without a shape would. */
-export function frameAllows(frame: Pick<FrameSheet, 'shape'> | undefined, action: FrameAction): boolean {
-  return rulesOf(frame ?? {}).allows.has(action)
+/** What a Frame without a shape lying turned does not offer (ticket 0667): what reshapes it as a rectangle of the
+ * Canvas's positions, which its own rows and columns no longer are. Turned upright again, it offers them again. */
+const UPRIGHT_ONLY: ReadonlySet<FrameAction> = new Set(['resize', 'remove-line', 'from-selection'])
+
+/** Whether a Frame without a shape lies turned (ticket 0667): its own grid, not a layout, drawn a quarter turn or more
+ * round. */
+function turnedGrid(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): boolean {
+  return !!frame.quarterTurns && !frameShapeOf(frame)
 }
 
-/** What Remove Frame does with a Frame's beads: drops them onto the Canvas, or removes them with it. */
-export function removedBeadsOf(frame: Pick<FrameSheet, 'shape'>): FrameRules['removedBeads'] {
-  return rulesOf(frame).removedBeads
+/** Whether a Frame lets the weaver do this to it; with no Frame, what a Frame without a shape would. */
+export function frameAllows(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'> | undefined, action: FrameAction): boolean {
+  return rulesOf(frame ?? {}).allows.has(action) && !(frame && turnedGrid(frame) && UPRIGHT_ONLY.has(action))
+}
+
+/** What Remove Frame does with a Frame's beads: drops them onto the Canvas, or removes them with it. A turned Frame's
+ * beads no longer stand on Canvas positions, so they go with it (ticket 0667), as a Custom frame's do. */
+export function removedBeadsOf(frame: Pick<FrameSheet, 'shape' | 'quarterTurns'>): FrameRules['removedBeads'] {
+  return turnedGrid(frame) ? 'removed' : rulesOf(frame).removedBeads
 }
 
 /** The Frame's Row order worked one way: what Row progress's first row, current row, next row and pass count ask. */
@@ -220,11 +236,17 @@ export function settingsOf(frame: Pick<FrameSheet, 'shape' | 'settings'>): Frame
   return { ...Object.fromEntries(settingValuesOf(frame).map(({ name, value }) => [name, value])), ...(style ? { fringeStyle: style } : {}) }
 }
 
-/** A Custom frame's layout, built from its settings and turned as Rotate Frame left it; none for a Frame without a
- * shape. What a Selection over a Custom frame lands beads by (ticket 0594); finding, drawing or hitting a bead asks the
- * Frame's geometry. */
-export function frameLayoutOf(frame: Laid): FrameLayout | undefined {
+/** A Custom frame's layout, built from its settings and turned as Rotate Frame left it, or a turned Frame's own grid
+ * as one (ticket 0667); none for an upright Frame without a shape. What a Selection over it lands beads by (ticket
+ * 0594); finding, drawing or hitting a bead asks the Frame's geometry. */
+export function frameLayoutOf(frame: Laid & Partial<ShapedSheet>): FrameLayout | undefined {
+  if (turnedGrid(frame) && isSheet(frame)) return turnedGridLayout(frame)
   return frameShapeOf(frame) && laidLayout(frame)
+}
+
+/** Whether a Frame comes with its size and Weave, which a turned grid is laid out from. */
+function isSheet(frame: Laid & Partial<ShapedSheet>): frame is ShapedSheet {
+  return frame.technique !== undefined && frame.rows !== undefined && frame.columns !== undefined
 }
 
 /** The layout a Custom frame's Frame shape lays it out by: called only on a Frame that has one. */

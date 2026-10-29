@@ -147,30 +147,23 @@ export function progressWithoutLine(project: RowProgressed, line: AreaLine): Row
   return rowProgress
 }
 
-/** Row progress turned with its Frame a quarter clockwise (Rotate Frame, ticket 0647, ADR 0052): each way's pointer
- * and the current way move a quarter turn on (top to bottom to right to left, left to right to top to bottom, and so
- * on), so the same beads stay finished. `twoPasses` and `rows` are the Frame's before the turn. */
-export function turnedRowProgress(rowProgress: RowProgress, { twoPasses, rows }: { twoPasses: boolean; rows: number }): RowProgress {
-  // A column's beads run the other way once turned: on peyote with even columns its two passes swap, so a column half
-  // woven can't keep its done half and goes back to its start.
-  const alongTurned = (pointer: number) => (twoPasses && rows % 2 === 0 && pointer >= 2 && pointer % 2 === 0 ? pointer - 1 : pointer)
-  const { direction, reversed, currentRow, currentColumn, currentRowBack = 0, currentColumnBack = 0 } = rowProgress
-  const way = direction === 'rows' ? { direction: 'columns' as const, reversed: !reversed } : { direction: 'rows' as const, reversed: !!reversed }
-  const rowBack = alongTurned(currentColumnBack)
-  return {
-    direction: way.direction,
-    ...(way.reversed ? { reversed: true } : {}),
-    currentRow: alongTurned(currentColumn),
-    currentColumn: currentRowBack,
-    ...(rowBack ? { currentRowBack: rowBack } : {}),
-    ...(currentRow ? { currentColumnBack: currentRow } : {}),
-  }
-}
-
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
  * untouched. */
 export function resetRowProgress(project: Project): Project {
   return touch(project, { rowProgress: firstPasses(project.rowProgress) })
+}
+
+/** Which way the rows run on the Canvas, as an arrow points: down is top to bottom. */
+export type ShownWay = 'down' | 'left' | 'up' | 'right'
+
+/** The ways in the order a quarter turn clockwise takes each to the next. */
+const CLOCKWISE: readonly ShownWay[] = ['down', 'left', 'up', 'right']
+
+/** Which way the rows run as the Frame lies (ticket 0667, ADR 0079): its own way (top to bottom, left to right and back),
+ * turned with the Frame on the Canvas, whose own rows and pointers do not change. */
+export function shownWay({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>, quarterTurns = 0): ShownWay {
+  const own: ShownWay = direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
+  return CLOCKWISE[(CLOCKWISE.indexOf(own) + quarterTurns) % 4]!
 }
 
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view

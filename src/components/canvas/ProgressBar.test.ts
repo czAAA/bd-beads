@@ -6,6 +6,7 @@ import { createProject } from '../../domain/createProject'
 import { moveToRow, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { changeFrame } from '../../domain/changeFrame'
+import { rotateFrame } from '../../domain/rotate'
 import { ru } from '../../i18n/ru'
 
 beforeEach(() => {
@@ -109,6 +110,14 @@ describe('ProgressBar', () => {
     const left = mount(ProgressBar, { props: { project: toggleRowDirection(up) } })
     expect(left.find('.row-progress__steps--left').exists()).toBe(true)
     expect(left.text()).toContain(ru.rowProgress.rightToLeft)
+  })
+
+  it('shows the rows running as the Frame lies, turned with it, still counting its own rows (ticket 0667)', () => {
+    const turned = rotateFrame(moveToRow(makeProject(), 4))!
+    const wrapper = mount(ProgressBar, { props: { project: turned } })
+    expect(wrapper.find('.row-progress__steps--left').exists()).toBe(true)
+    expect(wrapper.text()).toContain(ru.rowProgress.rightToLeft)
+    expect(wrapper.find('[data-testid="progress-bar-next"]').text()).toBe(ru.rowProgress.nextButton)
   })
 
   it('shows the last row as the current one once every pass is done (ticket 411)', () => {

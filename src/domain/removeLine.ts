@@ -70,7 +70,10 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
   if (!project.frame) {
     return undefined
   }
-  return frameChangeRefusal(project, { removeLine: line }) === 'only-line' ? 'only-line' : undefined
+  const refusal = frameChangeRefusal(project, { removeLine: line })
+  // A Frame that does not offer it (a Custom frame, or one lying turned: ticket 0667) has no line to remove.
+  if (refusal === 'not-offered') return 'no-line'
+  return refusal === 'only-line' ? 'only-line' : undefined
 }
 
 /** What Remove line asks before it goes (ticket 0647, ADR 0055), its rows and columns the way the rows run. */
