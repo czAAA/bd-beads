@@ -19,4 +19,10 @@ The one background of the drawing area: the rulers and the beads sit on it, and 
 - The stored choice moves to the new list by name, not position: a dropped choice falls back to the theme's default, Mist becomes Fog, and Ash (dark 6) becomes dark 4. `canvas-bg-6` is gone. Pebble's strong ruler (every 5th number) is `#262626`.
 - In Project the swatches are 26px `radius-sm`, 6px apart, ringed `ink` (ProjectPanel card).
 
+**Custom color (ticket 0653; wins over the above where they differ):** the swatches are the standalone background color picker (`BackgroundColorPicker`), which Project's Canvas section uses and other places may later. After the five swatches comes the Palette's own Custom color tile (ColorPickers card), the same 26px size, 6px on; it is a button of its own after the radio group, ringed (`ring`) while the Custom color is the background. It expands the Palette's Custom color picker under the row, opening on the remembered Custom color, else on the background shown. Taking a color (a press outside, Enter, Escape after a change, or a second press on the tile) makes it the background at once; a press on one of the five swatches picks that one and takes nothing.
+- One Custom color, remembered on the device, serves light and dark alike; picking a swatch keeps it on the tile. High contrast stays white: no swatches, no tile.
+- The name line reads "Custom color" and its hex; the Canvas section's folded summary shows its chip and "Custom color".
+- On a Custom color the Project is drawn in the light look on a light color and the dark look on a dark one (white or black reading better on it, `--print-letter-balance`), whatever the theme. Its empty bead is the color 12.5% toward black (light) or white (dark), Night's own step; its rulers are the nearest grey to the look's own at 4.5:1 or more, the strong ones at 7:1 (or black or white where none reaches it). The row marker keeps the look's color where it reads at 3:1 or more, and takes the look's ink (`bead-outline`) where it does not.
+- With no radio checked, Tab lands on the first swatch.
+
 Hand-written; static rendition of the open picker.

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { BUILT_IN_COLORS } from './palette'
-import { channelsOf, colorDistance, fromHex, luma, mix, normalizeHex, relativeLuminance, toHex, toOklab } from './color'
+import { channelsOf, colorDistance, contrastRatio, fromHex, luma, mix, normalizeHex, relativeLuminance, toHex, toOklab } from './color'
 
 describe('fromHex', () => {
   it('reads #rrggbb in either case', () => {
@@ -71,6 +71,14 @@ describe('relativeLuminance', () => {
     expect(relativeLuminance({ r: 255, g: 0, b: 0 })).toBeCloseTo(0.2126, 6)
     expect(relativeLuminance({ r: 0, g: 255, b: 0 })).toBeCloseTo(0.7152, 6)
     expect(relativeLuminance({ r: 128, g: 128, b: 128 })).toBeCloseTo(0.21586, 5)
+  })
+})
+
+describe('contrastRatio', () => {
+  it('is WCAG 2’s contrast ratio, whichever color comes first', () => {
+    expect(contrastRatio({ r: 0, g: 0, b: 0 }, { r: 255, g: 255, b: 255 })).toBe(21)
+    expect(contrastRatio({ r: 255, g: 255, b: 255 }, { r: 0, g: 0, b: 0 })).toBe(21)
+    expect(contrastRatio({ r: 0x76, g: 0x76, b: 0x76 }, { r: 255, g: 255, b: 255 })).toBeCloseTo(4.54, 2)
   })
 })
 
