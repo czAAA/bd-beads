@@ -16,7 +16,7 @@ import { renderOverlay as renderOverlayWith } from './overlayRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx, surfaceView } from './surfaceView'
-import { canvasOf, frameOf, orientationOf, withFrameSheet } from '../domain/layerRecord'
+import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { type BeadMap } from '../domain/canvas'
 
@@ -45,7 +45,7 @@ function projectOf(technique: Technique, columns: number, rows: number, rowProgr
 }
 
 function whole(project: Project, zoom = 1) {
-  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, orientationOf(project))
+  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, quarterTurnOf(project))
   return { x: 0, y: 0, width, height }
 }
 

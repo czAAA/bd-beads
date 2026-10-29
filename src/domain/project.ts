@@ -1,6 +1,5 @@
 import type { Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
-import type { Rotation } from './grid'
 import type { BeadShape, Weave } from './weave'
 import type { PassDirection } from './weaveGeometry'
 import type { PaletteIds, PaletteCodes } from './palette'
@@ -71,8 +70,8 @@ export interface CanvasLayer extends LayerFields {
   /** The Project's name, and the file's: one value. */
   name: string
   /** View-only turn (tickets 28, 171, ADR 0079): the Canvas, and every layer on it, shown turned this many degrees
-   * clockwise. Never a data transform; quarter turns until ticket 0672. */
-  orientation: Rotation
+   * clockwise, from 0 up to a whole turn; any angle by a twist on touch (ticket 0672). Never a data transform. */
+  orientation: number
 }
 
 /** A Frame as a layer (ADR 0066, 0079): its sheet (place, Weave, beads, Folded beads, name, Frame shape and settings,

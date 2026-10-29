@@ -36,6 +36,7 @@ import projectFileV11 from './fixtures/project-file-v11-weave-settings.json?raw'
 import projectFileV11Turned from './fixtures/project-file-v11-frame-turned.json?raw'
 import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
 import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.json?raw'
+import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
@@ -457,6 +458,12 @@ describe('stored-data compatibility', () => {
     it('opens a version 12 file from before Backgrounds with none, so each layer shows the device\'s last pick (ticket 0666)', () => {
       const [opened] = parseProjectsFile(projectFileV12).projects
       expect([backgroundOf(opened!, 'canvas'), backgroundOf(opened!, 'frame')]).toEqual([undefined, undefined])
+    })
+
+    it('opens a version 12 file whose Canvas a twist left at any angle, and writes it back the same (ticket 0672)', () => {
+      const [opened] = parseProjectsFile(projectFileV12Twisted).projects
+      expect(canvasOf(opened!)).toMatchObject({ name: 'Twisted fox', orientation: 37.5 })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV12Twisted))
     })
 
     it('keeps every Frame a version 12 file holds, and a Frame\'s own Piece names, though the app shows one (ticket 0664)', () => {

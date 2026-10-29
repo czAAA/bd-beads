@@ -42,6 +42,7 @@ const {
   bindCanvasScroll,
   zoom,
   scroll,
+  canvasOrientation,
   selectionRefusals,
   activeTool,
   showRulers,
@@ -271,6 +272,7 @@ const drawingStyle = computed(() => {
               :frame-tooltip="frameTooltip"
               :zoom="zoom"
               :scroll="scroll"
+              :orientation="canvasOrientation"
               :show-rulers="showRulers"
               :stroking="stroking"
               :row-marks="rowHighlight"
