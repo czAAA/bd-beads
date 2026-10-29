@@ -8,9 +8,9 @@ import { loadPrintFonts, lineBetween, partLabel, rulerLevel } from './printPages
 import { en } from '../i18n/en'
 import { PRINT_COLORS } from './printColors'
 import { mm, planPrint, PRINT_CHART_CELL_MM, PRINT_HEADER, PRINT_MARGIN } from './printPlan'
-import { flatProject } from '../testUtils/flatFields'
+import { bareProject } from '../testUtils/layerFields'
 
-const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => flatProject({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
+const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => bareProject({ technique, orientation: rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 
 const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as {
   color: { tokens: { name: string; value: { light: string } }[] }

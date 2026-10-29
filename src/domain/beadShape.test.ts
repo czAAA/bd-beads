@@ -8,7 +8,7 @@ import { projectCell, withBeadShape } from './projectBead'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { beadCell, describeWeave, positionStep, TECHNIQUES } from './weave'
 import { canvasOf } from './layerRecord'
-import { flatProject, withFields } from '../testUtils/flatFields'
+import { bareProject, withLayers } from '../testUtils/layerFields'
 
 const delica = findBead('miyuki-delica-11-0')!
 const round = findBead('toho-round-11-0')!
@@ -63,14 +63,14 @@ describe('the Bead shape in a Project', () => {
 
   it('applies the Bead to both layers when Real', () => {
     const real = withBeadShape(made(), 'real')
-    const withFrame = withFields(real, { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
+    const withFrame = withLayers(real, { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
     expect(canvasWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
     expect(frameWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
     expect(frameWeave(withFrame).technique).toBe('loom')
   })
 
   it('draws a Bead this device does not know as Symmetric', () => {
-    expect(projectCell(flatProject({ beadShape: 'real' }))).toBeUndefined()
+    expect(projectCell(bareProject({ beadShape: 'real' }))).toBeUndefined()
   })
 
   it('goes back to Symmetric without a leftover field', () => {

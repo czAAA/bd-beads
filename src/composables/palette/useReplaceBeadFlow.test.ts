@@ -8,7 +8,7 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
 import { canvasOf, frameOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
 const other = BEAD_CATALOG.find((bead) => bead.id !== canvasOf(base).beadId)!
@@ -56,7 +56,7 @@ describe('useReplaceBeadFlow', () => {
     // The same 10x20 grid at Round (1.65 x 2.2mm): 16.5 x 44mm.
     expect(replaceBeadConfirmMessage.value).toContain('With TOHO Round 11/0, this Project will be about 1.7 × 4.4 cm instead of 1.5 × 3.0 cm.')
 
-    const turned = setup(withFields(tall, { rotation: 90 }))
+    const turned = setup(withLayers(tall, { orientation: 90 }))
     turned.onRequestReplaceBead('toho/round/11-0')
     expect(turned.replaceBeadConfirmMessage.value).toContain('about 4.4 × 1.7 cm instead of 3.0 × 1.5 cm')
   })
@@ -93,10 +93,10 @@ describe('useReplaceBeadFlow', () => {
 
 describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', () => {
   const current = findBead(canvasOf(base).beadId)!
-  const older = withFields(base, { bead: { ...current, widthMm: current.widthMm + 0.2 } })
+  const older = withLayers(base, { bead: { ...current, widthMm: current.widthMm + 0.2 } })
 
   it('shows no postfix entry when its copy equals the catalog’s, even if only a name differs', () => {
-    const renamed = withFields(base, { bead: { ...current, brand: { ...current.brand, name: 'Other name' } } })
+    const renamed = withLayers(base, { bead: { ...current, brand: { ...current.brand, name: 'Other name' } } })
     expect(setup(base).replaceBeadOutdated.value).toBeUndefined()
     expect(setup(renamed).replaceBeadOutdated.value).toBeUndefined()
   })
@@ -108,7 +108,7 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
   })
 
   it('shows no copy for a Bead the catalog does not offer', () => {
-    const gone = withFields(base, { beadId: 'brand/gone/1', bead: { ...current, id: 'brand/gone/1' } })
+    const gone = withLayers(base, { beadId: 'brand/gone/1', bead: { ...current, id: 'brand/gone/1' } })
     const { replaceBeadOutdated, replaceBeadCandidates } = setup(gone)
     expect(replaceBeadOutdated.value).toBeUndefined()
     expect(replaceBeadCandidates.value).toHaveLength(BEAD_CATALOG.length)
@@ -151,7 +151,7 @@ describe('Replace Bead asks which layer with a Frame (ticket 0665, ADR 0079)', (
     replaceBeadLayer.value = 'canvas'
     onRequestReplaceBead(other.id)
     expect(replaceBeadLayer.value).toBe('frame')
-    expect(setup(withFields(base, { frame: undefined })).replaceBeadAsksLayer.value).toBe(false)
+    expect(setup(withLayers(base, { frame: undefined })).replaceBeadAsksLayer.value).toBe(false)
   })
 
   it("replaces the Canvas's Bead when the person picks it, the Frame's and the Palette staying, in one Undo step", async () => {
@@ -168,7 +168,7 @@ describe('Replace Bead asks which layer with a Frame (ticket 0665, ADR 0079)', (
   })
 
   it("replaces the Canvas's Bead on a Project with no Frame, as before", async () => {
-    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(withFields(base, { frame: undefined }))
+    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(withLayers(base, { frame: undefined }))
     onRequestReplaceBead(other.id)
     await onConfirmReplaceBead()
     expect(canvasOf(harness.project).beadId).toBe(other.id)

@@ -16,7 +16,7 @@ import { isInFinishedRow, rowProgressOf, rowProgressOn } from './rowProgress'
 import { rotateFrame } from './rotate'
 import type { Project } from './project'
 import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'
@@ -120,7 +120,7 @@ describe('changing a Custom frame\'s Rounds', () => {
   })
 
   it('keeps its pointer and the same beads finished on Rotate Frame, as its order turns with its layout (ticket 0647)', () => {
-    const project = withFields(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
+    const project = withLayers(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
     const turned = rotateFrame(project)!
     const finished = (woven: Project) =>
       frameLayoutOf(frameOf(woven)!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row: row + frameOf(woven)!.row, column: column + frameOf(woven)!.column, layer: 'frame' })).map(({ row, column }) => `${row},${column}`)
@@ -144,7 +144,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   }
 
   it('drops its beads onto the Canvas on Remove Frame, each on the Canvas position nearest its centre, clearing its footprint', () => {
-    const covered = withFields(triangle(4), { beads: { 20: { 30: BLUE } } })
+    const covered = withLayers(triangle(4), { beads: { 20: { 30: BLUE } } })
     const project = paintFrame(covered, [{ row: 3, column: 5 }], RED)
     const removed = changed(project, { remove: true })
     expect(frameOf(removed)).toBeUndefined()
@@ -178,7 +178,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   })
 
   it('holds its size still once a Row progress pass is done', () => {
-    const project = withFields(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
+    const project = withLayers(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
     expect(changeFrame(project, { set: { ...frameOf(project)!, columns: frameOf(project)!.columns + 6 } })).toEqual({ kind: 'refused', reason: 'locked' })
   })
 
@@ -186,7 +186,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
     // On a Canvas woven like it, the rectangle a 4-round Triangle round row 20, column 30 has, and Canvas beads over four
     // of its beads.
     const selection = { row: 16, column: 26, rows: 11, columns: 9 }
-    const drawn = withFields(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 28: BLUE }, 24: { 29: BLUE } } })
+    const drawn = withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 28: BLUE }, 24: { 29: BLUE } } })
     const made = changed(drawn, { make: selection })
     expect(frameOf(made)).toMatchObject({ ...selection, shape: 'triangle', settings: { rounds: 4 } })
     expect(beadsOfLayer(made, 'canvas')).toEqual({})
@@ -194,7 +194,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   })
 
   it('leaves a Canvas bead it cannot lift, on a Seam or Off-shape, hidden on the Canvas under it', () => {
-    const made = changed(withFields(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 26: RED } } }), { make: { row: 16, column: 26, rows: 11, columns: 9 } })
+    const made = changed(withLayers(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 26: RED } } }), { make: { row: 16, column: 26, rows: 11, columns: 9 } })
     expect(beadsOfLayer(made, 'canvas')).toEqual({ 16: { 26: RED } })
     expect(frameOf(made)!.beads).toEqual({})
   })

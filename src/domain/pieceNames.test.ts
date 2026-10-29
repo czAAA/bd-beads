@@ -12,7 +12,7 @@ import { changeFrame } from './changeFrame'
 import { frameGrid } from '../testUtils/frameGrid'
 import { countingBeads } from '../testUtils/countingBeads'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
-import { sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 
 const R = '#e63746'
 const row = (r: number, from: number, to: number): BeadChange[] =>
@@ -20,12 +20,12 @@ const row = (r: number, from: number, to: number): BeadChange[] =>
 
 function projectWith(...rows: BeadChange[][]): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-  return withFields(base, { beads: withColors({}, rows.flat()) })
+  return withLayers(base, { beads: withColors({}, rows.flat()) })
 }
 
 /** What a drawing edit that sets `changes` does to the Project, through the rules every drawing edit keeps. */
 const draw = (project: Project, changes: BeadChange[]) =>
-  keepAllowedEdits(project, withFields(project, { beads: withColors(beadsOfLayer(project, 'canvas'), changes) }))
+  keepAllowedEdits(project, withLayers(project, { beads: withColors(beadsOfLayer(project, 'canvas'), changes) }))
 
 describe('piece names', () => {
   it('names the Piece that holds a bead, and an empty name removes it', () => {
@@ -135,7 +135,7 @@ describe('piece names', () => {
 
   it('carries nothing when no Piece is named', () => {
     const project = projectWith(row(0, 0, 1))
-    const after = withFields(project, { beads: {} })
+    const after = withLayers(project, { beads: {} })
 
     expect(carryNames(project, after)).toBe(after)
   })
@@ -147,7 +147,7 @@ describe('piece names', () => {
       const project = fox()
       const result = changeFrame(project, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
 
-      expect(result.kind === 'changed' && sheetOf(result.project)).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
+      expect(result.kind === 'changed' && frameSheetOf(result.project)).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
       expect(result.kind === 'changed' && namedPieces(result.project)).toEqual([])
     })
 
@@ -195,7 +195,7 @@ describe('piece names', () => {
 describe('which Piece a Selection holds', () => {
   it('floods a big Piece once for a set of beads, however often a Select drag asks (ticket 0674)', () => {
     const counting = countingBeads(withColors({}, Array.from({ length: 300 }, (_, r) => row(r, 0, 299)).flat()))
-    const project = withFields(projectWith(), { beads: counting.beads })
+    const project = withLayers(projectWith(), { beads: counting.beads })
 
     expect(pieceInSelection(project, { top: 10, left: 10, rows: 2, columns: 2 })).toEqual({ row: 11, column: 11 })
     counting.reset()

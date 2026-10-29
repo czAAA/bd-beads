@@ -164,6 +164,8 @@ export interface RulerLayout {
   named: NamedPiece[]
   /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none. */
   step: number
+  /** Whether the Frame's row pointer has its margin sheet to stand on: not in the bare form (ticket 0682). */
+  rowPointer: boolean
   /** The numbers to draw: none while `numbers` is off. */
   labels: RulerLabel[]
   // The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch;
@@ -323,6 +325,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     boxes,
     named: pieces.named,
     step: Math.max(1, ...laid.map((box) => box.step)),
+    rowPointer: sheet !== 'bare',
     labels: numbers ? everyLabel : [],
     dots: numbers ? everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)) : [],
   }

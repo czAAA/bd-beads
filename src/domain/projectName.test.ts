@@ -3,7 +3,7 @@ import { createProject } from './createProject'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from './projectName'
 import { canvasOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
 
@@ -34,9 +34,9 @@ describe('naming a Project', () => {
   })
 
   it('duplicates under a new id and name and keeps everything else, Row progress included', () => {
-    const original = withFields(moth(), { rowProgress: { direction: 'rows' as const, currentRow: 3, currentColumn: 0 }, makerName: 'Maria' })
+    const original = withLayers(moth(), { rowProgress: { direction: 'rows' as const, currentRow: 3, currentColumn: 0 }, makerName: 'Maria' })
     const copy = duplicateProject(original, 'Moth 2', 'copy-id', 5)
-    expect(copy).toEqual(withFields(original, { id: 'copy-id', name: 'Moth 2', createdAt: 5, updatedAt: 5 }))
+    expect(copy).toEqual(withLayers(original, { id: 'copy-id', name: 'Moth 2', createdAt: 5, updatedAt: 5 }))
     expect(rowProgressOf(copy)).not.toBe(rowProgressOf(original))
   })
 })

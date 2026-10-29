@@ -7,13 +7,13 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateFrameFlow } from './useRotateFrameFlow'
 import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
-import { sheetOf, withFields } from '../../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
 
 const GREEN = '#00aa00'
 const RED = '#e63746'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 /** A 4 x 6 Frame at (20, 20) with a red bead in its first row, over a Canvas holding a green one under it. */
-const framed: Project = withFields(base, {
+const framed: Project = withLayers(base, {
 frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) },
   beads: withColors({}, [{ row: 21, column: 21, color: GREEN }]),
 })
@@ -38,7 +38,7 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
-    expect(sheetOf(harness.project)).toEqual(sheetOf(framed))
+    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(framed))
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -66,12 +66,12 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
-    expect(sheetOf(harness.project)).toEqual(sheetOf(woven))
+    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(woven))
     expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
   })
 
   it('does nothing without a Frame or without a Project', () => {
-    for (const project of [withFields(framed, { frame: undefined }), null]) {
+    for (const project of [withLayers(framed, { frame: undefined }), null]) {
       const { harness, onRotateFrame } = setup(project)
       onRotateFrame()
       expect(harness.replaceProject).not.toHaveBeenCalled()
@@ -82,7 +82,7 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
 
 describe('useRotateFrameFlow on an empty Frame (ticket 471)', () => {
   it('still turns the Frame when it holds no bead', () => {
-    const { harness, onRotateFrame } = setup(withFields(framed, { frame: { ...frameOf(framed)!, beads: {} } }))
+    const { harness, onRotateFrame } = setup(withLayers(framed, { frame: { ...frameOf(framed)!, beads: {} } }))
     onRotateFrame()
     expect(frameOf(harness.project)).toMatchObject({ quarterTurns: 1 })
     expect(harness.history.canUndo.value).toBe(true)
