@@ -375,6 +375,15 @@ Russian here is a proposal for review, like the section below.
 
 Russian here is a proposal for review; the other five languages follow it in the app change.
 
+## Replace bead? per layer (ticket 0687)
+
+The confirmation asked from a layer's panel (ConfirmDialogs card): the layer, its Bead's size in mm before and after, then for the Frame its Estimated size, always in mm. Following the Confirm pattern: what changes, then that it can be undone. The other five languages say the same in the app.
+
+| English | Русский |
+|---|---|
+| The Canvas's Bead changes from {old} to {new}. The Canvas will look different in proportion, but your design and its bead count stay exactly the same. You can undo this. | Бисер холста меняется с {old} на {new}. Пропорции холста будут выглядеть иначе, но рисунок и число бисерин останутся точно такими же. Это действие можно отменить. |
+| The Frame's Bead changes from {old} to {new}, so the Frame will be about {newSize} instead of {oldSize}. It will look different in proportion, but your design and its bead count stay exactly the same. You can undo this. | Бисер рамки меняется с {old} на {new}, поэтому рамка будет примерно {newSize} вместо {oldSize}. Её пропорции будут выглядеть иначе, но рисунок и число бисерин останутся точно такими же. Это действие можно отменить. |
+
 ## Convert image wizard copy (ticket 0646)
 
 The popup of spec 0645 (ConvertImage, PixelToBeadRatio and FoundColorRow cards). Errors, the slow-framing warning, Colors at most, the drag hint and the Finish names on Bead colors keep the app's existing strings. Grid sizes follow Numbers and units ("32×24 beads"); a count with a noun in Russian, Ukrainian and Polish takes the "Label: number" form ("цветов: 8"); after a grid size the noun is the genitive plural, as with "1920×1080 пикселей". Belarusian, Spanish and Chinese were written with the build (ticket 0649) and live in `src/i18n/`.

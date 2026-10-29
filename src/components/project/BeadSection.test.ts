@@ -40,4 +40,15 @@ describe('BeadSection (ticket 568)', () => {
 
     expect(wrapper.emitted('update:beadShape')).toEqual([['real']])
   })
+
+  it('shows an out-of-date copy "(as saved)" beside the catalog’s Bead of its id, and asks for that one (ticket 534)', async () => {
+    const current = offeredBeads()[0]!
+    const copy = { ...current, widthMm: current.widthMm + 0.2 }
+    const wrapper = mountSection({ bead: copy, candidates: offeredBeads(), outdated: true })
+
+    expect(panelOptionShown(wrapper, 'bead-size')).toBe(`${copy.size} (as saved)`)
+    await choosePanelOption(wrapper, 'bead-size', current.id)
+
+    expect(wrapper.emitted('pick')).toEqual([[current.id]])
+  })
 })

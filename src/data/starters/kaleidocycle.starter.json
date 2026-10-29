@@ -2,7 +2,7 @@
   "id": "kaleidocycle",
   "design": "kaleidocycle.json",
   "shape": "kaleidocycle",
-  "technique": "peyote",
+  "weave": {"technique": "peyote"},
   "measure": "frame",
   "sizes": [
     {"id": "partSize", "default": 9, "presets": [9, 11, 13]}

@@ -61,7 +61,7 @@ export interface SizeUnitLabels {
 /** At most one decimal, with a whole number shown without a trailing ".0", in the language's own decimal sign
  * (writing.md). */
 function trimmedOneDecimal(value: number, decimal: string): string {
-  return String(Number(value.toFixed(1))).replace('.', decimal)
+  return String(Math.round(value * 10) / 10).replace('.', decimal)
 }
 
 /** A tenth of a centimetre is a whole millimetre, so rounding the mm first rounds half up, where dividing first
@@ -76,9 +76,15 @@ export function formatSizeMm({ widthMm, heightMm }: EstimatedSizeMm, labels: Siz
   const decimal = decimalSign(locale)
   const smallest = Math.round(Math.min(widthMm, heightMm) * 10) / 10
   if (smallest < 10) {
-    return `${trimmedOneDecimal(widthMm, decimal)} × ${trimmedOneDecimal(heightMm, decimal)} ${labels.mm}`
+    return formatSizeInMm({ widthMm, heightMm }, labels.mm, locale)
   }
   return `${inCentimetres(widthMm, decimal)} × ${inCentimetres(heightMm, decimal)} ${labels.cm}`
+}
+
+/** "120 × 80 mm" / "16,5 × 44 мм": always mm, never switching to cm, where sizes are set side by side (the Frame panel
+ * and Replace Bead, ticket 0687); at most one decimal, in the language's decimal sign. */
+export function formatSizeInMm({ widthMm, heightMm }: EstimatedSizeMm, mm: string, locale: Locale = 'en'): string {
+  return `${formatMm(widthMm, locale)} × ${formatMm(heightMm, locale)} ${mm}`
 }
 
 /** The unit a Schema size is stated in (ticket 342): a count of beads, or mm. */
