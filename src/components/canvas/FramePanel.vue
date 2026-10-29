@@ -2,6 +2,7 @@
 import { computed, inject, ref } from 'vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import EditableLine from '../project/EditableLine.vue'
+import ExportSection from './ExportSection.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
@@ -11,13 +12,10 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import InfoButton from '../ui/InfoButton.vue'
-import QualitySlider from '../ui/QualitySlider.vue'
-import LoadingState from '../ui/LoadingState.vue'
 import TextField from '../ui/form/TextField.vue'
 import AppStepper from '../ui/form/AppStepper.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
-import { useExportQuality } from '../../composables/export/useExportQuality'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameKind'
@@ -26,14 +24,8 @@ import { resolveProjectBead } from '../../domain/projectBead'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
-import { EXPORT_QUALITIES, PNG_DPI_BY_QUALITY, parseExportQuality, shownMegabytes } from '../../domain/exportQuality'
-import { decimalSign } from '../../domain/formatNumber'
-import { estimatePdf, estimatePng, exportFacts, type SizeEstimate } from '../../rendering/exportEstimate'
-import { pdfPageDpi, pngDpiFor } from '../../rendering/exportDpi'
 import { plural } from '../../i18n/plural'
-import { printText } from '../../rendering/printText'
 import { useI18n } from '../../i18n/useI18n'
-import { fillBlanks } from '../../domain/fillBlanks'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
 // name, size and Beads needed; with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
@@ -61,7 +53,6 @@ const emit = defineEmits<{
   'set-settings': [change: FrameSettings]
 }>()
 
-const QUALITY_WORDS = { low: 'qualityLow', medium: 'qualityMedium', high: 'qualityHigh' } as const
 const { t, locale } = useI18n()
 const context = inject(PANEL_CONTEXT, undefined)
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
@@ -140,46 +131,6 @@ const sizeSummary = computed(() =>
 )
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
-/** The Export quality on this device (ticket 576): one choice for the picture and the chart. */
-const quality = useExportQuality()
-/** What an export is made of, for its File size estimate (ticket 0588): read once for the buttons and every stop. */
-const exportFactsNow = computed(() => exportFacts(props.project, printText(props.project, t.value, locale.value, new Date())))
-/** A size as the buttons and stops show it: "≈ 1.4 MB" (up to 0.1 MB, whole MB from 10 MB) or "< 0.1 MB". */
-function sizeText(bytes: number): string {
-  const megabytes = shownMegabytes(bytes)
-  if (megabytes === undefined) return t.value.frame.qualitySizeUnder
-  const figure = (megabytes < 10 ? megabytes.toFixed(1) : String(megabytes)).replace('.', decimalSign(locale.value))
-  return fillBlanks(t.value.frame.qualitySizeAbout, { size: fillBlanks(t.value.frame.qualitySizeMb, { n: figure }) })
-}
-/** The button's value: its format, size and how many files or pages ("PNG ≈ 1.4 MB · 2 files"), or the extension with no Frame. */
-function exportValue(format: 'PNG' | 'PDF', estimate: SizeEstimate | undefined): string {
-  if (!estimate) return `.${format.toLowerCase()}`
-  const count = plural(locale.value, estimate.count, format === 'PNG' ? t.value.frame.exportFiles : t.value.frame.exportPages)
-  return fillBlanks(t.value.frame.exportSizeValue, { format, size: sizeText(estimate.bytes), count })
-}
-const pngValue = computed(() => exportValue('PNG', exportFactsNow.value && estimatePng(exportFactsNow.value, pngDpiFor(quality.value))))
-const pdfValue = computed(() => exportValue('PDF', exportFactsNow.value && estimatePdf(exportFactsNow.value, pdfPageDpi())))
-/** Each stop's words, its dpi and the PNG size it would make for the open Frame (tickets 571, 572, 0583, 0588). */
-const qualityStops = computed(() => {
-  const facts = exportFactsNow.value
-  return EXPORT_QUALITIES.map((id) => {
-    const word = t.value.frame[QUALITY_WORDS[id]]
-    if (!facts) return { id, word }
-    const dpi = pngDpiFor(id)
-    const size = sizeText(estimatePng(facts, dpi).bytes)
-    const detail = fillBlanks(t.value.frame.qualityDpi, { n: dpi })
-    return { id, word, detail, lines: [size], spoken: `${word}, ${detail}, ${size}` }
-  })
-})
-/** The dpi High draws the PNG at when the device cannot allocate a page that large, else nothing. */
-const highPngDpi = computed(() => {
-  const dpi = pngDpiFor('high')
-  return dpi < PNG_DPI_BY_QUALITY.high ? dpi : undefined
-})
-const qualityHint = computed(() => ({ label: t.value.frame.qualityHintLabel, body: t.value.frame.qualityHint }))
-const exportBusy = computed(() => !!props.exporting)
-const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.value.saveBox.makingPdf : t.value.saveBox.makingPng, { name: props.project.name }))
-
 /** The Tooltip over the off size fields. */
 const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: t.value.tooltips.frameSizeLocked, announce: false }))
 
@@ -215,30 +166,18 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 
     <!-- Export first and always shown (ticket 568): off with no Frame, with the way to get one written under it. -->
     <PanelSection id="frame:export" :label="t.panels.project.exportHeading">
-      <PanelItem icon="image" :value="pngValue" stays :disabled="!frame || exportBusy" data-testid="export-png" @select="emit('export-png')">{{ t.frame.exportPicture }}</PanelItem>
-      <PanelItem icon="pdf" :value="pdfValue" stays :disabled="!frame || exportBusy" data-testid="export-pdf" @select="emit('export-pdf')">{{ t.frame.exportChart }}</PanelItem>
-      <QualitySlider
-        class="frame-panel__quality"
-        :label="t.frame.exportQuality"
-        :stops="qualityStops"
-        :hint="qualityHint"
-        :model-value="quality"
-        :disabled="exportBusy"
-        @update:model-value="quality = parseExportQuality($event) ?? quality"
-      />
-      <p v-if="highPngDpi" class="frame-panel__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
-      <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
-      <template v-if="frame">
-        <div class="frame-panel__letters">
-          <span class="frame-panel__letters-label">
-            {{ t.frame.lettersLabel }}
-            <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
-          </span>
-          <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
-        </div>
-      </template>
-      <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
-      <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
+      <ExportSection :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')">
+        <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
+        <template v-if="frame">
+          <div class="frame-panel__letters">
+            <span class="frame-panel__letters-label">
+              {{ t.frame.lettersLabel }}
+              <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
+            </span>
+            <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
+          </div>
+        </template>
+      </ExportSection>
     </PanelSection>
 
     <template v-if="frame">
@@ -467,9 +406,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   gap: var(--space-6);
 }
 
-.frame-panel__quality {
-  padding: 0 var(--space-10);
-}
 .frame-panel__letters {
   display: flex;
   align-items: center;
@@ -643,9 +579,5 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   flex: none;
   font: var(--type-meta);
   white-space: nowrap;
-}
-
-.frame-panel__loading {
-  margin: var(--space-4) var(--space-10);
 }
 </style>

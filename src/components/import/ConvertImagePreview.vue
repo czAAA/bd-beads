@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch, watchPostEffect } from 'vue'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
+import { controlAction } from '../../composables/shell/controlRegistry'
+import { useActionKeys } from '../../composables/shell/useActionKeys'
 import { useElementSize } from '../../composables/ui/useElementSize'
 import { useMediaQuery } from '../../composables/ui/useMediaQuery'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { clamp } from '../../domain/clamp'
-import { pixelsPerBead, type PixelCrop } from '../../domain/convertSize'
+import { CROP_HANDLES, pixelsPerBead, type CropHandle, type PixelCrop } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { coverScaleMm } from '../../domain/imageFraming'
 import { beadCell, describeWeave } from '../../domain/weave'
@@ -16,13 +18,14 @@ import { renderDraft, usesDraftLook } from '../../rendering/draftRenderer'
 import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
 import { surfaceView } from '../../rendering/surfaceView'
+import AppButton from '../ui/AppButton.vue'
 import AppIcon from '../ui/AppIcon.vue'
 import IconButton from '../ui/IconButton.vue'
 import KeyChip from '../ui/KeyChip.vue'
 
 // The Convert image wizard's preview (ConvertImage card, Preview pane): the picture as beads in the Frame's space, the
 // Frame over it, the rest dimmed; crop handles By Pixel to bead ratio, a drag under the Frame By size; its own zoom (the
-// view only), and Treat as empty's eyedropper. Empty, it is the drop zone.
+// view only, on the Canvas's zoom keys while it is open), and Treat as empty's eyedropper. Empty, it is the drop zone.
 defineProps<{
   /** The phone preview scrolled small (PhoneForms card): no size tag, crop handles or zoom cluster. */
   shrunk?: boolean
@@ -32,6 +35,13 @@ const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
 const touch = useMediaQuery('(pointer: coarse)')
+const actions = {
+  treatAsEmpty: controlAction('treat-as-empty'),
+  zoomOut: controlAction('zoom-out'),
+  zoomIn: controlAction('zoom-in'),
+  zoomFit: controlAction('zoom-fit'),
+}
+const cropName = (handle: CropHandle) => controlAction(`crop-${handle}`).name(t.value)
 
 const paneEl = ref<HTMLElement>()
 const viewportEl = ref<HTMLElement>()
@@ -161,9 +171,7 @@ function panBy(start: { x: number; y: number }, movedXMm: number, movedYMm: numb
   })
 }
 
-type Handle = 'top' | 'right' | 'bottom' | 'left' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight'
-const HANDLES: readonly Handle[] = ['topLeft', 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left']
-const moves = (handle: Handle) => ({
+const moves = (handle: CropHandle) => ({
   left: handle === 'left' || handle === 'topLeft' || handle === 'bottomLeft',
   right: handle === 'right' || handle === 'topRight' || handle === 'bottomRight',
   top: handle === 'top' || handle === 'topLeft' || handle === 'topRight',
@@ -171,7 +179,7 @@ const moves = (handle: Handle) => ({
 })
 
 /** The crop with a handle's edges moved by picture pixels, never past each other. */
-function cropMoved(start: PixelCrop, handle: Handle, dx: number, dy: number): PixelCrop {
+function cropMoved(start: PixelCrop, handle: CropHandle, dx: number, dy: number): PixelCrop {
   const edges = moves(handle)
   let left = start.x
   let right = start.x + start.width
@@ -184,7 +192,7 @@ function cropMoved(start: PixelCrop, handle: Handle, dx: number, dy: number): Pi
   return { x: left, y: top, width: right - left, height: bottom - top }
 }
 
-function handleStyle(handle: Handle) {
+function handleStyle(handle: CropHandle) {
   const box = frameBox.value
   if (!box) return undefined
   const x = handle.toLowerCase().includes('left') ? box.x : handle.toLowerCase().includes('right') ? box.x + box.width : box.x + box.width / 2
@@ -192,7 +200,7 @@ function handleStyle(handle: Handle) {
   return { left: `${x}px`, top: `${y}px` }
 }
 
-type Drag = { pointerId: number; x: number; y: number; handle?: Handle; crop: PixelCrop; pan: { x: number; y: number } }
+type Drag = { pointerId: number; x: number; y: number; handle?: CropHandle; crop: PixelCrop; pan: { x: number; y: number } }
 const drag = ref<Drag | null>(null)
 const dragged = ref(false)
 
@@ -218,7 +226,7 @@ function endDrag(event?: PointerEvent) {
   if (wizard.moving.value) wizard.endMove()
 }
 
-function startDrag(event: PointerEvent, handle?: Handle) {
+function startDrag(event: PointerEvent, handle?: CropHandle) {
   if (drag.value) return endDrag()
   if (event.pointerType === 'mouse' && event.button !== 0) return
   event.preventDefault()
@@ -244,7 +252,7 @@ function onBoxDown(event: PointerEvent) {
 }
 
 /** A focused handle moves one block per arrow (ConvertImage card). */
-function onHandleKey(event: KeyboardEvent, handle: Handle) {
+function onHandleKey(event: KeyboardEvent, handle: CropHandle) {
   const block = Math.max(1, pixelsPerBead(wizard.ratio.value))
   const edges = moves(handle)
   const dx = event.key === 'ArrowLeft' ? -block : event.key === 'ArrowRight' ? block : 0
@@ -282,6 +290,7 @@ function fit() {
   viewportEl.value?.scrollTo?.({ left: 0, top: 0 })
 }
 const zoomLevel = computed(() => fillBlanks(words.value.zoomLevel, { percent: Math.round(viewZoom.value * 100) }))
+useActionKeys({ 'zoom-in': zoomIn, 'zoom-out': zoomOut, 'zoom-fit': fit }, () => wizard.hasPicture.value)
 
 function onWheel(event: WheelEvent) {
   if (!event.ctrlKey && !event.metaKey) return
@@ -361,24 +370,21 @@ onBeforeUnmount(() => endDrag())
         <IconButton
           v-if="touch || shrunk"
           variant="box"
-          icon="eyedropper"
-          :label="words.treatAsEmpty"
+          :action="actions.treatAsEmpty"
           :pressed="eyedropper"
           class="convert-preview__eyedropper"
           data-testid="convert-treat-as-empty"
           @click="eyedropper = !eyedropper"
         />
-        <button
+        <AppButton
           v-else
-          type="button"
-          class="convert-preview__eyedropper convert-preview__eyedropper--labelled"
+          variant="box"
+          :action="actions.treatAsEmpty"
           :aria-pressed="eyedropper"
+          class="convert-preview__eyedropper"
           data-testid="convert-treat-as-empty"
           @click="eyedropper = !eyedropper"
-        >
-          <AppIcon name="eyedropper" :size="16" />
-          <span>{{ words.treatAsEmpty }}</span>
-        </button>
+        />
       </div>
 
       <div
@@ -423,13 +429,13 @@ onBeforeUnmount(() => endDrag())
             </span>
             <template v-if="wizard.mode.value === 'ratio' && !shrunk && !eyedropper">
               <button
-                v-for="handle in HANDLES"
+                v-for="handle in CROP_HANDLES"
                 :key="handle"
                 type="button"
                 class="convert-preview__handle"
                 :class="`convert-preview__handle--${handle.length > 6 ? 'corner' : handle === 'left' || handle === 'right' ? 'side' : 'edge'}`"
                 :style="handleStyle(handle)"
-                :aria-label="words.crop[handle]"
+                :aria-label="cropName(handle)"
                 :data-testid="`convert-crop-${handle}`"
                 @pointerdown="startDrag($event, handle)"
                 @keydown="onHandleKey($event, handle)"
@@ -450,10 +456,26 @@ onBeforeUnmount(() => endDrag())
       </p>
 
       <div v-if="!shrunk" class="convert-preview__zoom" data-testid="convert-preview-zoom">
-        <IconButton variant="plain" icon="zoom-out" :icon-size="16" :label="t.canvas.zoomOutLabel" :disabled="viewZoom <= VIEW_ZOOMS[0]!" data-testid="convert-zoom-out" @click="zoomOut" />
+        <IconButton
+          variant="plain"
+          :icon-size="16"
+          :action="actions.zoomOut"
+          :disabled="viewZoom <= VIEW_ZOOMS[0]!"
+          :disabled-body="t.tooltips.zoomOutLimit"
+          data-testid="convert-zoom-out"
+          @click="zoomOut"
+        />
         <span class="convert-preview__level" data-testid="convert-zoom-level">{{ zoomLevel }}</span>
-        <IconButton variant="plain" icon="zoom-in" :icon-size="16" :label="t.canvas.zoomInLabel" :disabled="viewZoom >= VIEW_ZOOMS.at(-1)!" data-testid="convert-zoom-in" @click="zoomIn" />
-        <IconButton variant="plain" icon="fit" :icon-size="16" :label="t.canvas.zoomResetLabel" data-testid="convert-zoom-fit" @click="fit" />
+        <IconButton
+          variant="plain"
+          :icon-size="16"
+          :action="actions.zoomIn"
+          :disabled="viewZoom >= VIEW_ZOOMS.at(-1)!"
+          :disabled-body="t.tooltips.zoomInLimit"
+          data-testid="convert-zoom-in"
+          @click="zoomIn"
+        />
+        <IconButton variant="plain" :icon-size="16" :action="actions.zoomFit" data-testid="convert-zoom-fit" @click="fit" />
       </div>
     </template>
   </div>
@@ -502,29 +524,9 @@ onBeforeUnmount(() => endDrag())
   z-index: 3;
 }
 
-.convert-preview__eyedropper--labelled {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-6);
-  height: var(--item-height);
-  padding: 0 var(--space-10);
-  font: var(--type-control);
-  color: var(--ink);
-  background: var(--overlay-fill);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.convert-preview__eyedropper--labelled[aria-pressed='true'],
 .convert-preview :deep(.convert-preview__eyedropper[aria-pressed='true']) {
   color: var(--accent-strong);
   box-shadow: inset 0 0 0 2px var(--accent-strong);
-}
-
-.convert-preview__eyedropper--labelled:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
 }
 
 .convert-preview__viewport {

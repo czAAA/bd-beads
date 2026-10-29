@@ -1,9 +1,19 @@
 import { describe, expect, it } from 'vitest'
+import { be } from '../../i18n/be'
 import { en } from '../../i18n/en'
+import { es } from '../../i18n/es'
+import { pl } from '../../i18n/pl'
 import { ru } from '../../i18n/ru'
+import { uk } from '../../i18n/uk'
+import { zh } from '../../i18n/zh'
+import type { Translations } from '../../i18n/translations'
 import { actionKey } from '../../components/ui/controlAction'
 import type { Chord } from '../../domain/chord'
+import type { Locale } from '../../domain/locale'
+import { CONVERT_STEPS, CROP_HANDLES, RATIO_PRESETS, ratioId } from '../../domain/convertSize'
 import { CONTROLS, chordMatches, controlAction } from './controlRegistry'
+
+const LANGUAGES: Record<Locale, Translations> = { en, ru, uk, be, zh, es, pl }
 
 interface Press {
   key?: string
@@ -57,12 +67,30 @@ describe('the control registry', () => {
     expect(answering(press({ key: '=', metaKey: true }))).toEqual(['zoom-in'])
   })
 
-  it('defines each action once, with a name in English and Russian', () => {
+  it('defines each action once, with a name in every language', () => {
     expect(new Set(CONTROLS.map((control) => control.id)).size).toBe(CONTROLS.length)
     for (const control of CONTROLS) {
-      expect(control.name(en).trim(), control.id).not.toBe('')
-      expect(control.name(ru).trim(), control.id).not.toBe('')
+      for (const [locale, t] of Object.entries(LANGUAGES)) expect(control.name(t).trim(), `${control.id} in ${locale}`).not.toBe('')
     }
+  })
+
+  it('has the Convert image wizard\'s controls, none with a key of its own (ticket 0650)', () => {
+    const ids = [
+      'treat-as-empty',
+      'remap-color',
+      'empty-color',
+      ...RATIO_PRESETS.map((ratio) => `pixel-ratio-${ratioId(ratio)}`),
+      'pixel-ratio-custom',
+      ...CONVERT_STEPS.map((step) => `convert-step-${step}`),
+      ...CROP_HANDLES.map((handle) => `crop-${handle}`),
+    ]
+    for (const id of ids) expect(controlAction(id).chords, id).toEqual([])
+    expect(controlAction('pixel-ratio-2-1').name(en)).toBe('2:1, picture pixels : beads')
+    expect(controlAction('pixel-ratio-2-1').body?.(en)).toBe('Every 2 × 2 pixel block is one bead.')
+    expect(controlAction('pixel-ratio-1-4').body?.(en)).toBe('Every pixel is 4 × 4 beads.')
+    expect(controlAction('pixel-ratio-1-1').body?.(en)).toBe('Every pixel is one bead.')
+    expect(controlAction('convert-step-size').name(en)).toBe('size')
+    expect(controlAction('crop-topLeft').name(en)).toBe('Crop: top-left corner')
   })
 
   it('gives Clear no key, and Del, Shift+Del and Shift+R each their own action', () => {
@@ -90,20 +118,20 @@ describe('the control registry', () => {
     expect(remove.icon).toBe('delete')
   })
 
-  it('gives every action that can be disabled a reason, in both languages', () => {
+  it('gives every action that can be disabled a reason, in every language', () => {
     for (const control of CONTROLS.filter((c) => c.enabled)) {
       const project = { beads: {}, rowProgress: { currentRow: 0, currentColumn: 0 } } as never
       const deps = { activeProject: () => project, hasSelection: () => true } as never
-      for (const t of [en, ru]) expect(control.disabledBody?.(t, deps).trim(), control.id).toBeTruthy()
+      for (const t of Object.values(LANGUAGES)) expect(control.disabledBody?.(t, deps).trim(), control.id).toBeTruthy()
     }
   })
 
   it('writes every body as one sentence ending in a full stop, without "Click to"', () => {
     for (const control of CONTROLS) {
-      for (const t of [en, ru]) {
+      for (const [locale, t] of Object.entries(LANGUAGES)) {
         const bodies = [control.body?.(t)].filter((body): body is string => body !== undefined)
         for (const body of bodies) {
-          expect(body, control.id).toMatch(/[.]$/)
+          expect(body, `${control.id} in ${locale}`).toMatch(/[.。]$/)
           expect(body, control.id).not.toMatch(/click to/i)
         }
       }
