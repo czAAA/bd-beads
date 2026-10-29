@@ -74,6 +74,8 @@ const BEAD = 'toho-cube-1.5mm'
 const CUBE_COPY = beadCopy(findBead(BEAD)!)
 const noProgress: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
+/** The Palette a Project saved before it held one opens with (ticket 0528): its Bead's built-in colors, TOHO's set. */
+const defaultIds = defaultPaletteIds(defaultPalette(CUBE_COPY.id))
 /** The Swatch letters a Project saved before letters opens with (ticket 0573): A, B, C… in Palette order. */
 const defaultLetters = lettersFor(defaultPalette(CUBE_COPY.id).map((color) => color.hex), undefined)
 
@@ -105,7 +107,7 @@ function expectedProject(fields: Partial<Omit<FlatProject, 'beads' | 'frame'>> &
     frame: sheet,
     ...weaveOf(fields),
     rowProgress: noProgress,
-    palette: defaultPaletteIds(),
+    palette: defaultIds,
     paletteLetters: defaultLetters,
     rotation: 0,
     createdAt: 0,
@@ -224,7 +226,7 @@ const framedOverSketch: Project = layered({
     beads: { 0: { 0: COLORS.R!, 1: COLORS.B!, 3: COLORS.K! }, 1: { 1: COLORS.K!, 2: COLORS.K! } },
   },
   rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 },
-  palette: defaultPaletteIds(),
+  palette: defaultIds,
   paletteLetters: defaultLetters,
   rotation: 0,
   pieceNames: [{ name: 'Sketch', row: 20, column: 2 }],
@@ -239,7 +241,7 @@ const unframedSketch: Project = layered({
   bead: CUBE_COPY,
   beads: { [-3]: { [-2]: COLORS.B!, [-1]: COLORS.B! }, 4: { 0: COLORS.B! } },
   rowProgress: noProgress,
-  palette: defaultPaletteIds(),
+  palette: defaultIds,
   paletteLetters: defaultLetters,
   rotation: 0,
   createdAt: 1740000002000,
@@ -284,7 +286,7 @@ describe('stored-data compatibility', () => {
       expect(opened).toEqual([framedOverSketch, unframedSketch])
       saveProjects(opened)
 
-      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns.map((stored: { palette: string[] }) => stored.palette)).toEqual([defaultPaletteIds(), defaultPaletteIds()])
+      expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).patterns.map((stored: { palette: string[] }) => stored.palette)).toEqual([defaultIds, defaultIds])
       expect(loadProjects()).toEqual(opened)
     })
 
@@ -408,7 +410,7 @@ describe('stored-data compatibility', () => {
 
     it('reads a version 4 file and writes it back as version 13 with the built-in Palette (tickets 0525, 0664)', () => {
       const [framed] = parseProjectsFile(projectFileV4Weave).projects
-      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 13, projects: [{ palette: defaultPaletteIds() }] })
+      expect(JSON.parse(serializeProject(framed!))).toMatchObject({ version: 13, projects: [{ palette: defaultIds }] })
       const library = parseProjectsFile(libraryFileV4Weave).projects
       expect(parseProjectsFile(serializeLibrary(library)).projects).toEqual(library)
     })

@@ -795,9 +795,9 @@ describe('a Frame in a Bead of its own is read on the Canvas through millimetres
 
   it("moves the Palette to the Canvas's Bead on Remove Frame, in the same step, when the woven Bead changes", () => {
     const before = inOtherBead('miyuki/delica/11-0')
-    expect(before.palette).toContain('beige')
+    expect(before.palette).not.toContain('lime')
     const removed = changeFrame(before, { remove: true })
-    expect(removed.kind === 'changed' && removed.project.palette).not.toContain('beige')
+    expect(removed.kind === 'changed' && removed.project.palette).toContain('lime')
   })
 
   it('folds what a resize gives up rather than giving it to the Canvas, whose positions are not its own', () => {

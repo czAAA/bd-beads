@@ -89,6 +89,10 @@ export const uk: Translations = {
     silver: 'Срібний',
     crystal: 'Прозорий',
     iridescent: 'Переливчастий',
+    lime: 'Салатовий',
+    aqua: 'Блакитний',
+    navy: 'Темно-синій',
+    copper: 'Мідний',
   },
   panels: {
     back: 'Назад',

@@ -1,7 +1,7 @@
 // @vitest-environment node
-import { addedColorId, defaultPaletteIds } from './palette'
+import { addedColorId, defaultPalette, defaultPaletteIds } from './palette'
 import { describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, findBead } from './beads'
+import { BEAD_CATALOG, beadCopy, findBead } from './beads'
 import { paintAt } from '../testUtils/layers'
 import {
   importProjects,
@@ -219,7 +219,7 @@ describe('single-Project roundtrip', () => {
     expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 14')
   })
 
-  it('carries the Palette through a file (ticket 0525), and reads a version 4 file as the built-in twelve', () => {
+  it('carries the Palette through a file (ticket 0525), and reads a version 4 file as its Bead\'s built-in colors', () => {
     const custom = setPalette(decoratedProject(), ['red', addedColorId('#123456'), ...defaultPaletteIds().filter((id) => id !== 'red')])
     const file = JSON.parse(serializeProject(custom))
     expect(file.projects[0].palette).toEqual(custom.palette)
@@ -227,7 +227,7 @@ describe('single-Project roundtrip', () => {
 
     const four = legacyFile([custom], 4)
     delete four.projects[0]!.palette
-    expect(parseProjectsFile(JSON.stringify(four)).projects[0]!.palette).toEqual(defaultPaletteIds())
+    expect(parseProjectsFile(JSON.stringify(four)).projects[0]!.palette).toEqual(defaultPaletteIds(defaultPalette(cubeBead.id)))
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
@@ -463,7 +463,7 @@ describe('importProjects', () => {
 
 describe('the Bead copy in a file (ticket 534)', () => {
   it('round-trips the copy of a Bead the catalog does not have', () => {
-    const retired = { ...findBead('toho/cube/1.5mm')!, id: 'old-maker/cube/2mm', widthMm: 2 }
+    const retired = { ...beadCopy(findBead('toho/cube/1.5mm')!), id: 'old-maker/cube/2mm', widthMm: 2 }
     const project = withLayers(decoratedProject(), { beadId: retired.id, bead: retired })
     expect(canvasOf(parseProjectsFile(serializeProject(project)).projects[0]).bead).toEqual(retired)
   })
@@ -472,6 +472,6 @@ describe('the Bead copy in a file (ticket 534)', () => {
     const file = legacyFile([decoratedProject()], 6)
     delete file.projects[0]!.bead
 
-    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).bead).toEqual(findBead(canvasOf(decoratedProject()).beadId))
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).bead).toEqual(beadCopy(findBead(canvasOf(decoratedProject()).beadId)!))
   })
 })

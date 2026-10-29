@@ -22,13 +22,14 @@ describe('a Project\'s default colors follow its Bead (ticket 0528)', () => {
 
   it('starts a new Project on its Bead\'s built-in colors', () => {
     expect(createProject({ ...input, beadId: delica.id }).palette).toHaveLength(16)
-    expect(createProject({ ...input, beadId: roundBead.id }).palette).toHaveLength(12)
+    expect(createProject({ ...input, beadId: roundBead.id }).palette).toHaveLength(21)
   })
 
   it('moves the Palette with the Bead and leaves every painted cell as it was', () => {
     const before = paintAt(createProject({ ...input, beadId: roundBead.id }), [{ row: 0, column: 0 }], '#2fb6ae')
     const after = replaceBead(before, delica)
-    expect(after.palette).toHaveLength(16 + 1)
+    // Delica's 16, then the five TOHO colors Delica lacks as added colors, the painted teal among them.
+    expect(after.palette).toHaveLength(16 + 5)
     expect(after.palette).toContain(tealId)
     expect(beadsOfLayer(after, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
   })
@@ -44,7 +45,7 @@ describe('a Project\'s default colors follow its Bead (ticket 0528)', () => {
   it('goes A to B to A with no duplicates and the same built-in colors', () => {
     const start = createProject({ ...input, beadId: roundBead.id })
     const back = replaceBead(replaceBead(start, delica), roundBead)
-    expect(back.palette.slice(0, 12)).toEqual(start.palette)
+    expect(back.palette.slice(0, start.palette.length)).toEqual(start.palette)
     expect(new Set(back.palette).size).toBe(back.palette.length)
   })
 
@@ -108,15 +109,18 @@ describe('a swatch keeps its catalog code (ticket 0538)', () => {
     expect(restoreSnapshot(toho, snapshotOf(project)).paletteCodes).toEqual(project.paletteCodes)
   })
 
-  it('does not bring back a default removed on the way, and a coded swatch that becomes a default keeps its code', () => {
+  it('a coded swatch that becomes a default keeps its code, and loses it for good once removed', () => {
     const start = createProject({ ...input, beadId: roundBead.id })
-    const teal = setPalette(start, [...start.palette, addedColorId('#e6d5b8')], { '#e6d5b8': 'DB1' })
-    const away = replaceBead(teal, delica, catalog)
+    const coded = setPalette(start, [...start.palette, addedColorId('#e6d5b8')], { '#e6d5b8': 'DB1' })
+    const away = replaceBead(coded, delica, catalog)
     expect(away.palette).toContain('beige')
     expect(away.paletteCodes).toEqual({ '#e6d5b8': 'DB1' })
     const removed = setPalette(away, away.palette.filter((id) => id !== 'beige'))
     expect(removed.paletteCodes).toBeUndefined()
-    expect(replaceBead(removed, roundBead).palette).not.toContain('beige')
+    // Beige is a TOHO built-in too (ticket 0694), so it is back on TOHO, as a plain color.
+    const back = replaceBead(removed, roundBead)
+    expect(back.palette).toContain('beige')
+    expect(back.paletteCodes).toBeUndefined()
   })
 
   it('reads a Project saved without codes unchanged, and ignores unreadable ones', () => {

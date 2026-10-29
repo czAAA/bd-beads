@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, findBead, formFactorName, gramsPerBead, offeredBeads, replaceCandidates } from './beads'
+import { BEAD_CATALOG, DEFAULT_BEAD, beadAfterPick, beadCopy, beadLabel, beadPitchMm, colorCatalogOf, findBead, formFactorName, gramsPerBead, offeredBeads, replaceCandidates } from './beads'
 
 beforeEach(() => {
   localStorage.clear()
@@ -154,5 +154,15 @@ describe('replaceCandidates (tickets 48, 534, 0670)', () => {
 
   it('offers everything for a Bead the catalog does not offer', () => {
     expect(replaceCandidates({ ...current, id: 'brand/gone/1' })).toHaveLength(offeredBeads().length)
+  })
+})
+
+describe('a Bead\'s Color catalog is the registry\'s (ticket 0694)', () => {
+  it('reads the catalog id from the registry by Bead id, an old id too, never from a copy', () => {
+    const round = findBead('toho/round/11-0')!
+    expect(colorCatalogOf(round.id)).toBe('toho')
+    expect(colorCatalogOf('toho-cube-1.5mm')).toBe('toho')
+    expect(colorCatalogOf('brand/gone/1')).toBeUndefined()
+    expect(colorCatalogOf(undefined)).toBeUndefined()
   })
 })

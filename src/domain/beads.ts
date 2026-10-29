@@ -62,7 +62,36 @@ export function gramsPerBead(bead: Pick<Bead, 'beadsPerKg'> | undefined): number
   return bead?.beadsPerKg ? Number((1000 / bead.beadsPerKg).toPrecision(3)) : undefined
 }
 
-const TOHO: Brand = { id: 'toho', name: 'TOHO' }
+/** TOHO's color families (ticket 0694): our words and hexes for the hue tags of TOHO's Japanese search data (research
+ * note brand-color-groups-for-default-palettes), every tag that is some code's only hue, so each code has a swatch
+ * (Cream and Amber never stand alone). The twelve first, then TOHO's own; a color shared with Miyuki keeps id and hex. */
+const TOHO: Brand = {
+  id: 'toho',
+  name: 'TOHO',
+  colorFamilies: [
+    { id: 'black', hex: '#1a1a1a' },
+    { id: 'white', hex: '#ffffff' },
+    { id: 'red', hex: '#e63746' },
+    { id: 'orange', hex: '#f2994a' },
+    { id: 'yellow', hex: '#f2c94c' },
+    { id: 'green', hex: '#27ae60' },
+    { id: 'teal', hex: '#2fb6ae' },
+    { id: 'blue', hex: '#2f6fed' },
+    { id: 'purple', hex: '#9b51e0' },
+    { id: 'pink', hex: '#ec5990' },
+    { id: 'brown', hex: '#8a5a3b' },
+    { id: 'grey', hex: '#9aa0a6' },
+    { id: 'lime', hex: '#a6d140' },
+    { id: 'aqua', hex: '#5ec8e5' },
+    { id: 'navy', hex: '#1f3a7a' },
+    { id: 'beige', hex: '#e6d5b8' },
+    { id: 'gold', hex: '#d4af37' },
+    { id: 'silver', hex: '#c0c0c0' },
+    { id: 'copper', hex: '#b87333' },
+    { id: 'crystal', hex: '#dcebf2' },
+    { id: 'iridescent', hex: '#8fb8de' },
+  ],
+}
 /** Miyuki's 16 color families without "Mix" (research note brand-color-groups-for-default-palettes, ticket 0527): the
  * names are the MIYUKI Beads Directory's, the hexes our own picks, measured from no photo. A color shared with the
  * twelve keeps its id and hex, so it is one color whichever Bead is open (a test checks). */
@@ -89,8 +118,10 @@ const MIYUKI: Brand = {
   ],
 }
 
-const CUBE: FormFactor = { id: 'cube', nameKey: 'cube', roundness: 0, holes: { count: 1, direction: 'along' } }
-const ROUND: FormFactor = { id: 'round', nameKey: 'round', roundness: 0.5, holes: { count: 1, direction: 'along' } }
+// TOHO numbers its colors in one series shared by every shape, so its Form factors share the one `toho` catalog and a
+// code lists the sizes of each shape it exists in (ticket 0694).
+const CUBE: FormFactor = { id: 'cube', nameKey: 'cube', roundness: 0, holes: { count: 1, direction: 'along' }, colorCatalog: 'toho' }
+const ROUND: FormFactor = { id: 'round', nameKey: 'round', roundness: 0.5, holes: { count: 1, direction: 'along' }, colorCatalog: 'toho' }
 const DELICA: FormFactor = {
   id: 'delica',
   nameKey: 'delica',
@@ -194,10 +225,18 @@ export function findBead(id: string): Bead | undefined {
 }
 
 /** The Bead a Project saves as its own (ADR 0072): the catalog's Bead without the retired flag, which is the catalog's
- * to say and not the Project's, nor its Brand's color families, which are read from the catalog (ADR 0078). */
+ * to say and not the Project's, nor its Brand's color families, which are read from the catalog (ADR 0078). The Form
+ * factor is kept whole, as files hold it since ticket 536; its `colorCatalog` is read from the catalog too (`colorCatalogOf`). */
 export function beadCopy(bead: Bead): Bead {
   const { retired: _retired, ...copy } = bead
   return { ...copy, brand: { id: bead.brand.id, name: bead.brand.name } }
+}
+
+/** The Color catalog a Bead's codes come from (ticket 0694): the registry's Form factor names it, never a Project's
+ * copy, as the catalog is the app's and a Bead saved before it had one gains it. Undefined for a Bead nobody knows or
+ * one without. */
+export function colorCatalogOf(beadId: string | undefined): string | undefined {
+  return beadId === undefined ? undefined : findBead(beadId)?.formFactor.colorCatalog
 }
 
 /** What a layer's Bead could switch to (tickets 48, 534, 0670): everything offered but its own, and the catalog's current
