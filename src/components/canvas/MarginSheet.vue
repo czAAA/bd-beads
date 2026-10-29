@@ -101,10 +101,11 @@ type TitleForm = 'full' | 'compact' | 'tab'
 const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['full', 'compact', 'tab'], compact: ['compact', 'tab'], folded: ['tab'], bare: [] }
 
 // The px mirror `--margin-band-inset`, `--margin-band-inset-compact`, `--margin-band-top-compact`, `--margin-tool`,
-// `--margin-tab`, `--margin-border-inset`, `--margin-border-inset-compact` and `--space-4`.
+// `--margin-tab`, `--frame-handle-hit-width`, `--margin-border-inset`, `--margin-border-inset-compact` and `--space-4`.
 const PLACES = { full: { top: 14, side: 14, border: 10 }, compact: { top: 8, side: 10, border: 6 } }
 const TOOL_PX = 28
 const TAB_PX = 24
+const MOVE_WIDTH_PX = 56
 const GAP_PX = 4
 const place = computed(() => (form.value === 'full' ? PLACES.full : PLACES.compact))
 /** The room between the sheet's top or bottom edge and the Frame's line: the folded row and tab sit in its middle. */
@@ -163,14 +164,13 @@ const titleBox = computed<BarBox>(() => {
 const yields = (box: BarBox) => (!!props.selection && overlapsSelectionHandles(box, props.selection)) || (!!props.pill && boxesOverlap(box, props.pill))
 const bandYields = computed(() => yields(bandBox.value))
 
-// Bare, the Move bar stands alone on the middle of the Frame's top edge, above its line, so it takes no press meant for
-// the beads (ticket 0682); the px mirror `--frame-handle-hit-width` and `--margin-tab`.
-const HANDLE_PX = { width: 56, height: 24 }
+// Bare, the Move bar stands alone over the middle of the Frame's top edge, above its line, so it takes no press meant
+// for the beads (ticket 0682).
 const handleAt = computed(() => ({ left: props.anchor.box.left - props.anchor.sheet.left + props.anchor.box.width / 2, top: props.anchor.box.top - props.anchor.sheet.top }))
 const handleStyle = computed(() => ({ left: `${handleAt.value.left}px`, top: `${handleAt.value.top}px` }))
 const handleYields = computed(() => {
   const { sheet } = props.anchor
-  return yields({ left: sheet.left + handleAt.value.left - HANDLE_PX.width / 2, top: sheet.top + handleAt.value.top - HANDLE_PX.height, ...HANDLE_PX })
+  return yields({ left: sheet.left + handleAt.value.left - MOVE_WIDTH_PX / 2, top: sheet.top + handleAt.value.top - TAB_PX, width: MOVE_WIDTH_PX, height: TAB_PX })
 })
 const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.value))
 
@@ -418,7 +418,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   height: var(--margin-tab);
 }
 
-/* Bare, the Move bar's bottom stands on the Frame's line, its middle on the edge's (ticket 0682). On a coarse pointer
+/* Bare, the Move bar is centred along the Frame's top edge, its bottom on the Frame's line (ticket 0682). On a coarse pointer
  * it rises by the part of its 44px hit area below it and 16px more, the reach of a browser's touch adjustment, so a
  * finger on the first row reaches the bead. */
 .margin-sheet__handle {
