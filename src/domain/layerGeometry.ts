@@ -186,6 +186,14 @@ function turnedGridPlacement(sheet: TurnedGrid) {
   return { description, aspect, turns, own, laid, scale, x: (extent.width - lying.width * scale) / 2, y: (extent.height - lying.height * scale) / 2 }
 }
 
+/** Where a position of a Frame's own grid lies once turned, in the rectangle it covers (ticket 0669): any of its rows and
+ * columns, a Folded bead's beyond its edge too, where Remove Frame drops it. */
+export function turnedGridCentre(sheet: TurnedGrid, position: GridPosition): LayoutPoint {
+  const { description, aspect, turns, own, scale, x, y } = turnedGridPlacement(sheet)
+  const turned = turnPoint(description.center(position, 1, aspect), own.width, own.height, turns)
+  return { x: x + turned.x * scale, y: y + turned.y * scale }
+}
+
 /** The rows and columns of its own Weave's cells a Frame without a shape covers on the Canvas as it lies (ticket 0667): its own
  * where it is upright, else those of its turned grid. Width and Height swap as seen. */
 export function turnedGridSize(sheet: TurnedGrid): GridDimensions {

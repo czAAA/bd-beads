@@ -765,8 +765,6 @@ export interface Translations {
     /** A Fringe earring's Fringe style in the Frame panel (ticket 0597), its options the setup's: its label and what is
      * announced. */
     fringeStyle: { label: string; announce: string }
-    /** Remove Frame's question for a Frame that takes its beads with it (ADR 0077). */
-    removeConfirmCustom: string
     /** `{shape}` is the Frame shape's name, `{size}` its size setting's summary. */
     announceCustom: string
     /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows added on top, and why. */

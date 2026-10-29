@@ -670,7 +670,6 @@ export const en: Translations = {
       },
     },
     fringeStyle: { label: 'Fringe style', announce: 'Fringe style: {style}' },
-    removeConfirmCustom: 'Its beads are removed with it. This can be undone.',
     announceCustom: '{shape} frame set, {size}',
     snapAddedTop: {
       one: 'Added an empty row on top: a Frame must start on an unshifted row.',
