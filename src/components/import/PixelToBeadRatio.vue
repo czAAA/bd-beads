@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, useId } from 'vue'
 import { controlAction } from '../../composables/shell/controlRegistry'
-import { CUSTOM_RATIO_MAX, CUSTOM_RATIO_MIN, RATIO_PRESETS, sameRatio, type PixelToBeadRatio } from '../../domain/convertSize'
+import { CUSTOM_RATIO_MAX, CUSTOM_RATIO_MIN, RATIO_PRESETS, ratioId, sameRatio, type PixelToBeadRatio } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { ratioSentence, ratioText } from '../../i18n/ratioWords'
 import { useI18n } from '../../i18n/useI18n'
@@ -25,23 +25,23 @@ const emit = defineEmits<{ choose: [ratio: PixelToBeadRatio, custom: boolean] }>
 const { t } = useI18n()
 const labelId = useId()
 
+/** The Custom chip's value, beside the presets' ratio ids. */
+const CUSTOM = 'custom'
+
 /** The chips, each a registry action (ticket 0650): the presets by their ratio, then Custom. */
 const chips = computed(() => [
-  ...RATIO_PRESETS.map((preset) => {
-    const id = `${preset.pixels}-${preset.beads}`
-    return { value: id, label: ratioText(preset), action: controlAction(`pixel-ratio-${id}`), testid: `ratio-${id}` }
-  }),
-  { value: 'custom', label: t.value.convertImage.wizard.custom, action: controlAction('pixel-ratio-custom'), testid: 'ratio-custom' },
+  ...RATIO_PRESETS.map((preset) => ({ value: ratioId(preset), label: ratioText(preset), action: controlAction(`pixel-ratio-${ratioId(preset)}`), testid: `ratio-${ratioId(preset)}` })),
+  { value: CUSTOM, label: t.value.convertImage.wizard.custom, action: controlAction(`pixel-ratio-${CUSTOM}`), testid: `ratio-${CUSTOM}` },
 ])
 const chosen = computed(() => {
-  if (props.custom) return 'custom'
+  if (props.custom) return CUSTOM
   const preset = RATIO_PRESETS.find((ratio) => sameRatio(ratio, props.ratio))
-  return preset && `${preset.pixels}-${preset.beads}`
+  return preset && ratioId(preset)
 })
 
 function choose(value: string | undefined) {
-  if (value === 'custom') return chooseCustom()
-  const preset = RATIO_PRESETS.find((ratio) => `${ratio.pixels}-${ratio.beads}` === value)
+  if (value === CUSTOM) return chooseCustom()
+  const preset = RATIO_PRESETS.find((ratio) => ratioId(ratio) === value)
   if (preset) emit('choose', preset, false)
 }
 

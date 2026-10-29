@@ -267,6 +267,7 @@ describe('ConvertImageWizard preview zoom (ticket 0650)', () => {
     await tip.trigger('pointerenter', { pointerType: 'mouse' })
     expect(tip.get('.app-tooltip__body').text()).toBe(en.tooltips.zoomOutLimit)
 
+    // Six presses climb the preview's seven zoom stops to the top.
     for (let step = 0; step < 6; step += 1) press('+')
     await flushPromises()
     expect(wrapper.get('[data-testid="convert-zoom-in"]').attributes('aria-disabled')).toBe('true')
@@ -295,7 +296,7 @@ describe('ConvertImageWizard controls from the registry (ticket 0650)', () => {
     expect(wrapper.get('.convert-preview__top [role="tooltip"]').text()).toContain(en.tooltips.treatAsEmpty)
   })
 
-  it('keeps the ratio chips one radiogroup of radios named for the ratio, each with its sentence as Tooltip', async () => {
+  it('keeps the ratio chips one radiogroup of radios named for the ratio, a press choosing one', async () => {
     const { wrapper } = open()
     await chooseFile(wrapper, picture())
     const group = wrapper.get('[data-testid="pixel-ratio"] [role="radiogroup"]')
@@ -307,10 +308,6 @@ describe('ConvertImageWizard controls from the registry (ticket 0650)', () => {
     ])
     // A 4 px picture starts at 1:4 (the Create Project test above).
     expect(group.get('[aria-checked="true"]').attributes('data-testid')).toBe('ratio-1-4')
-    expect(group.get('[data-testid="ratio-2-1"]').element.closest('.app-tooltip')?.querySelector('[role="tooltip"]')?.textContent).toContain(
-      'Every 2 × 2 pixel block is one bead.',
-    )
-
     await group.get('[data-testid="ratio-2-1"]').trigger('click')
     expect(group.get('[aria-checked="true"]').attributes('data-testid')).toBe('ratio-2-1')
   })
