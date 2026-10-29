@@ -3,7 +3,7 @@ import { colorAt, withColors } from './canvas'
 import { changeFrame } from './changeFrame'
 import { createProject } from './createProject'
 import { footprintOf } from './footprint'
-import { frameAllows, removedBeadsOf } from './frameShape'
+import { frameAllows } from './frameShape'
 import { laidFrame, laidSize, seenSize } from './frameOrientation'
 import { layerAt } from './layers'
 import { mayPlace } from './margin'
@@ -58,11 +58,11 @@ describe('what a turned Frame offers', () => {
     expect(removeLineRefusal(turned, { top: 19, left: 21, rows: 1, columns: 6, layer: 'frame' })).toBe('no-line')
   })
 
-  it('takes its beads with it on Remove Frame, as they no longer stand on Canvas positions', () => {
-    expect(removedBeadsOf(turned.frame!)).toBe('removed')
-    expect(removedBeadsOf(upright.frame!)).toBe('dropped')
-    const removed = changeFrame(turned, { remove: true })
-    expect(removed.kind === 'changed' && removed.project.beads).toEqual({})
+  it('drops its beads onto the Canvas on Remove Frame where they lie turned, its Folded beads too (ticket 0669)', () => {
+    // Its first bead lies in the top-right corner of what it covers; a Folded bead past its last column, below that.
+    const folded = { ...turned, frame: { ...turned.frame!, folded: withColors({}, [{ row: 0, column: 6, color: GREEN }]) } }
+    const removed = changeFrame(folded, { remove: true })
+    expect(removed.kind === 'changed' && removed.project.beads).toEqual({ 19: { 24: RED }, 25: { 24: GREEN } })
   })
 })
 

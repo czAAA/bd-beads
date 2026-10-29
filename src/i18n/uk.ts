@@ -677,7 +677,6 @@ export const uk: Translations = {
       },
     },
     fringeStyle: { label: 'Вид бахроми', announce: 'Вид бахроми: {style}' },
-    removeConfirmCustom: 'Її бісеринки зникнуть разом із нею. Цю дію можна скасувати.',
     announceCustom: 'Рамка «{shape}», {size}',
     snapAddedTop: {
       one: 'Додано порожній рядок згори: рамка має починатися з незсунутого рядка.',

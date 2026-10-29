@@ -98,6 +98,13 @@ describe('removeSelectedLine', () => {
     expect(removeLineRefusal(oneRow, rowOf(oneRow, 0))).toBe('only-line')
     expect(removeSelectedLine(oneRow, rowOf(oneRow, 0))).toBe(oneRow)
   })
+
+  it('is not offered on a Custom frame, which has no plain rows (ADR 0079, ticket 0669)', () => {
+    const plain = numbered(3, 4)
+    const custom = { ...plain, frame: { ...plain.frame!, shape: 'triangle' as const, settings: { rounds: 2 } } }
+    expect(removeLineRefusal(custom, rowOf(custom, 0))).toBe('no-line')
+    expect(removeLineQuestion(custom, rowOf(custom, 0))).toBeUndefined()
+  })
 })
 
 describe('removeSelectedLine with no Frame (ticket 313)', () => {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { techniquesOf } from '../../domain/frameShape'
 import { frameWeave } from '../../domain/layerWeave'
 import type { Project } from '../../domain/project'
 import type { Layer } from '../../domain/grid'
@@ -90,6 +91,7 @@ function setSetting(id: string, value: number) {
       testid="project"
       :technique="weave.technique"
       :settings="weave.techniqueSettings ?? {}"
+      :techniques="techniquesOf(project.frame)"
       :disabled="locked"
       :technique-disabled-body="techniqueAction.disabledBody?.(t, deps)"
       @update:technique="setTechnique"

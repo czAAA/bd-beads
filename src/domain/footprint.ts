@@ -24,5 +24,5 @@ export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick
 
 /** The Canvas positions the Project's Frame hides (ADR 0066), or nothing without a Frame. */
 export function footprintOf(project: Layered): Rect | undefined {
-  return frameOf(project) && frameFootprint(canvasWeave(project), { ...frameOf(project)!, ...frameWeave(project) })
+  return frameOf(project) && frameFootprint(canvasWeave(project), { ...project.frame!, ...frameWeave(project) })
 }

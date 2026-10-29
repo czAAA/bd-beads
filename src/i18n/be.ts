@@ -678,7 +678,6 @@ export const be: Translations = {
       },
     },
     fringeStyle: { label: 'Від махраў', announce: 'Від махраў: {style}' },
-    removeConfirmCustom: 'Яе бісерыны знікнуць разам з ёй. Гэта дзеянне можна адмяніць.',
     announceCustom: 'Рамка «{shape}», {size}',
     snapAddedTop: {
       one: 'Дададзены пусты радок зверху: рамка павінна пачынацца з незрушанага радка.',

@@ -14,12 +14,26 @@ import {
   sameFrame,
 } from './canvas'
 import { movedFrame, snapRow, withFrame, withFrameGiving } from './frame'
-import { shownBeads } from './layers'
+import { frameGeometryOf, layerSheet, shownBeads } from './layers'
+import { droppedFromLayout, droppedFromTurnedGrid, liftedOntoLayout } from './customSelection'
 import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
 import { refoldSheet, withEachBead } from './folding'
 import { canvasLift, grownFrame, namedPieceTaken } from './frameGrowth'
-import { customFrameSize, frameAllows, frameGeometry, frameShapeOf, removedBeadsOf, settingsOf, sizeSettingOf, type FrameShapeId, type FrameSettings, type QuarterTurns } from './frameShape'
+import {
+  customFrameSize,
+  frameAllows,
+  frameGeometry,
+  frameShapeOf,
+  settingsHolding,
+  settingsOf,
+  sizedSettings,
+  sizeSettingOf,
+  techniquesOf,
+  type FrameShapeId,
+  type FrameSettings,
+  type QuarterTurns,
+} from './frameShape'
 import type { LayerGeometry } from './layerGeometry'
 import type { Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
@@ -36,12 +50,13 @@ import type { AreaLine } from './removeLine'
 // Frame and Remove row/column. It owns the rules: Row progress's lock (Remove Frame passes it, clearing the passes;
 // moving, naming and Remove row/column keep them), Row progress following the Frame.
 export type FrameChange =
-  /** Resize the Frame (handles, steppers, typed size), its beads keeping their place. Woven like the Canvas it lays what
-   * it gives up there (ticket 513) and lifts what it grows over, a named Piece whole or not at all (ticket 0639); woven
-   * unlike it, it folds them (ticket 0638). Growing shows Folded beads again, over the Canvas's. */
+  /** Resize the Frame (handles, steppers, typed size), its beads keeping their place: woven like the Canvas it lays what
+   * it gives up there and lifts what it grows over (tickets 513, 0639), woven unlike it it folds them (ticket 0638). A
+   * Custom frame steps its size setting to the step nearest the rectangle instead (ticket 0669). */
   | { set: Rect }
   /** Frame from Selection and Fit to drawing (ADR 0066): the Frame becomes this rectangle and the Canvas's beads inside
-   * it move into it. A Frame already there lays its beads back on the Canvas first. */
+   * it move into it. A Frame already there lays its beads back on the Canvas first. A Custom frame there becomes its
+   * shape round the rectangle instead, the smallest that covers it (ticket 0669). */
   | { make: Rect }
   | { remove: true }
   /** One whole row or column of the Frame, counted from its first; allowed after Row progress has started, a finished
@@ -82,8 +97,8 @@ export type FrameChangeRefusal =
   /** The new Frame would cut through a named Piece (an unframed Schema) on the Canvas, which it must take whole or
    * leave whole (ticket 407). */
   | 'cuts-schema'
-  /** The Frame does not offer it (ADR 0077): a Custom frame's shape comes from its settings, not a rectangle, and a
-   * Frame without a Frame shape has no settings. */
+  /** The Frame does not offer it (ADR 0079): a Custom frame has no plain rows to remove and is woven only in its shape's
+   * Techniques, and a Frame without a Frame shape has no settings. */
   | 'not-offered'
 
 export type FrameChangeResult =
@@ -177,9 +192,12 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
     return { kind: 'changed', project: placedCustomFrame(project, change.custom) }
   }
 
-  if ('settings' in change) {
+  // A Custom frame's resize handles step its size setting (ADR 0079).
+  const sized = 'set' in change && frameOf(project) ? sizedSettings(frameOf(project)!, change.set, 'nearest') : undefined
+  if ('settings' in change || sized) {
     const frame = frameOf(project)!
-    const settings = settingsOf({ shape: frame.shape, settings: { ...frame.settings, ...change.settings } })!
+    const asked = 'settings' in change ? change.settings : sized
+    const settings = settingsOf({ shape: frame.shape, settings: { ...frame.settings, ...asked } })!
     if (sameSettings(settings, settingsOf(frame)!)) {
       return { kind: 'unchanged', project }
     }
@@ -196,7 +214,7 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   }
 
   if ('make' in change) {
-    const made = madeFrame(project, change.make)
+    const made = frameOf(project) && sizeSettingOf(frameOf(project)!) ? madeCustomFrame(project, change.make) : madeFrame(project, change.make)
     return sameFrame(frameOf(project), frameOf(made)) && sameBeads(project, made) && frameOf(project)?.name === frameOf(made)?.name
       ? { kind: 'unchanged', project }
       : { kind: 'changed', project: made }
@@ -209,24 +227,25 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   return { kind: 'changed', project: resizedFrame(project, rectangle) }
 }
 
-/** Whether the Frame refuses this change: what reshapes a rectangle for a Custom frame, settings for a Frame without a
- * Frame shape. */
+/** Whether the Frame refuses this change: what it does not offer (Remove row/column on a Custom frame), a Technique
+ * its shape does not support, settings for a Frame without a Frame shape. */
 function frameRefuses(frame: FrameSheet, change: FrameChange): boolean {
   if ('settings' in change) return !frameShapeOf(frame)
   return (
     ('set' in change && !frameAllows(frame, 'resize')) ||
     ('removeLine' in change && !frameAllows(frame, 'remove-line')) ||
     ('make' in change && !frameAllows(frame, 'from-selection')) ||
-    (('technique' in change || 'techniqueSettings' in change) && !frameAllows(frame, 'technique'))
+    (('technique' in change || 'techniqueSettings' in change) && !frameAllows(frame, 'technique')) ||
+    ('technique' in change && !techniquesOf(frame).includes(change.technique))
   )
 }
 
 /** A Custom frame built from its Frame shape and settings round a Canvas position: its bounding rectangle in its own
  * Technique, its first row and column the Canvas positions half that rectangle up and left, snapped as a Frame starts. */
-function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns?: QuarterTurns): FrameSheet {
+function customSheet(project: Project, shape: FrameShapeId, settings: FrameSettings, centre: GridPosition, quarterTurns?: QuarterTurns, woven?: Weave): FrameSheet {
   const read = settingsOf({ shape, settings })!
-  const { rows, columns } = customFrameSize(shape, read, quarterTurns)
-  const weave = weaveOf({ technique: frameShapeOf({ shape })!.techniques[0] })
+  const weave = weaveOf(woven ?? { technique: frameShapeOf({ shape })!.techniques[0] })
+  const { rows, columns } = customFrameSize(shape, read, quarterTurns, weave.technique)
   const half = canvasDistance(project, weave, Math.floor(rows / 2), Math.floor(columns / 2))
   const canvas = canvasWeave(project)
   return { row: snapRow(canvas, centre.row - half.row), column: centre.column - half.column, rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
@@ -254,7 +273,7 @@ function placedCustomFrame(project: Project, placement: CustomPlacement): Projec
  * layout shows, the rest fold, kept by their position's name, until a layout has it again (ticket 0640). */
 function resettled<T extends FrameSheet>(project: Project, frame: T, settings: FrameSettings, quarterTurns: QuarterTurns | undefined): Omit<T, 'quarterTurns' | 'folded'> & FrameSheet {
   const centre = canvasDistance(project, heldWeave(project, 'frame')!, Math.floor(frame.rows / 2), Math.floor(frame.columns / 2))
-  const sheet = customSheet(project, frame.shape!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns)
+  const sheet = customSheet(project, frame.shape!, settings, { row: frame.row + centre.row, column: frame.column + centre.column }, quarterTurns, heldWeave(project, 'frame'))
   const { quarterTurns: _turned, folded: _folded, ...rest } = frame
   const geometry = frameGeometry(sheet)
   return { ...rest, ...sheet, ...refoldSheet(frame, (position) => geometry.hasPosition(position)) }
@@ -291,7 +310,7 @@ function resizedFrame(project: Project, rectangle: Rect): Project {
   const carried = carryNames(project, withLayer(resized, 'canvas', { beads: beadsOver(withColors(beadsOfLayer(project, 'canvas'), lifted), given) }))
   // A named Piece taken whole gives the Frame its name, as Frame from Selection does.
   const name = namedPieceTaken(project, taken) ?? frameOf(resized)!.name
-  return name === undefined ? carried : withFrameSheet(carried, { ...frameOf(carried)!, name })
+  return name === undefined ? carried : withFrameSheet(carried, { ...carried.frame!, name })
 }
 
 /** The Project with a Frame at `rectangle` holding the Canvas's beads inside it (ADR 0066). A Frame there before lays
@@ -343,17 +362,68 @@ function placedFrame(project: Project, place: { frame: Rect; weave: Weave; beads
   return touch(withFrameSheet(project, { ...frame, rowProgress: firstPasses(rowProgressOf(project)) }), {})
 }
 
+/** The Project with its Custom frame become its shape round `rectangle` (ADR 0079, ticket 0669), the smallest that
+ * covers it, turned and woven as it was: the Frame there lays its beads on the Canvas first, as Remove Frame does, then
+ * the Canvas beads the new one hides are lifted in, each as a Paste lands it; one on a Seam or Off-shape stays, hidden. */
+function madeCustomFrame(project: Project, rectangle: Rect): Project {
+  const frame = frameOf(project)!
+  const settings = sizedSettings(frame, coveringSize(project, frame, rectangle), 'cover')!
+  const centre = { row: rectangle.row + Math.floor(rectangle.rows / 2), column: rectangle.column + Math.floor(rectangle.columns / 2) }
+  const laid = removedFrame(project)
+  const sheet = customSheet(laid, frame.shape!, settings, centre, frame.quarterTurns, heldWeave(project, 'frame'))
+  // It stays the same layer: its id, Bead, Letters switch and Row progress.
+  const { id, beadId, bead, beadShape, letters, rowProgress } = frame
+  const framed = withFrameSheet(laid, { ...sheet, id, beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters } : {}), rowProgress })
+  const under = beadsOfLayer(laid, 'canvas')
+  const hidden: (GridPosition & { color: string })[] = []
+  forEachBead(beadsInFrame(under, footprintOf(framed)!), (row, column, color) => hidden.push({ row: row - sheet.row, column: column - sheet.column, color }))
+  const { landed, lifted } = liftedOntoLayout(layerSheet(framed, 'frame'), hidden)
+  const canvas = withColors(under, lifted.map(({ row, column }) => ({ row: row + sheet.row, column: column + sheet.column, color: null })))
+  const made = carryNames(laid, withLayer(withLayer(framed, 'canvas', { beads: canvas }), 'frame', { beads: withColors({}, landed) }))
+  // The name stays with the Frame unless Remove Frame left it on a Piece on the Canvas.
+  const keepsName = frame.name !== undefined && !pieceNamesOf(made)?.some((entry) => entry.name === frame.name)
+  return keepsName ? withFrameSheet(made, { ...made.frame!, name: frame.name }) : made
+}
+
+/** The fewest rows and columns of a Weave that reach as far on the Canvas as a rectangle of its positions. */
+function coveringSize(project: Project, weave: Weave, rectangle: Rect): { rows: number; columns: number } {
+  let rows = 1
+  while (canvasDistance(project, weave, rows, 0).row < rectangle.rows) rows += 1
+  let columns = 1
+  while (canvasDistance(project, weave, 0, columns).column < rectangle.columns) columns += 1
+  return { rows, columns }
+}
+
+/** The Frame's beads laid on the Canvas, by Canvas position: those it shows, and its Folded ones (ticket 0638). A
+ * grid's keep their row and column; a Custom frame's or a turned Frame's land each on the Canvas position nearest its
+ * centre (ADR 0077, ticket 0669), a Custom frame's Folded ones where growing it back would show them. */
+function droppedBeads(project: Project): { shown: BeadMap; folded: BeadMap } {
+  const frame = frameOf(project)!
+  const beads = beadsOfLayer(project, 'frame')!
+  const folded = frame.folded ?? {}
+  if (frameGeometryOf(project).grid) {
+    return { shown: shiftedBeads(beads, frame.row, frame.column), folded: shiftedBeads(folded, frame.row, frame.column) }
+  }
+  const onCanvas = (sheet: Rect, dropped: BeadChange[]) => withColors({}, dropped.map(({ row, column, color }) => ({ row: row + sheet.row, column: column + sheet.column, color })))
+  const sheet = layerSheet(project, 'frame')
+  const shown = onCanvas(frame, droppedFromLayout(sheet))
+  if (!hasBeads(folded)) return { shown, folded: {} }
+  if (!frameShapeOf(frame)) return { shown, folded: onCanvas(frame, droppedFromTurnedGrid(sheet, folded)) }
+  const positions: GridPosition[] = []
+  forEachBead(folded, (row, column) => positions.push({ row, column }))
+  // The Folded beads as the beads it shows, on the Frame grown to hold them.
+  const grown = resettled(project, { ...frame, beads: folded, folded: undefined }, settingsHolding(frame, positions), frame.quarterTurns)
+  return { shown, folded: onCanvas(grown, droppedFromLayout(layerSheet(withFrameSheet(project, grown), 'frame'))) }
+}
+
 /** The Project without its Frame (ticket 497): the Frame's footprint on the Canvas is cleared and its beads dropped in,
- * so the picture looks as the Frame did. The Frame's name stays on the Piece its beads form (the larger one if several);
- * the passes go with the Frame. A Frame whose shape removes its beads with it leaves the Canvas as it is (ADR 0077). */
+ * so the picture looks as the Frame did, a Custom frame's too (ADR 0079). The Frame's name stays on the Piece its beads
+ * form (the larger one if several); the passes go with the Frame. */
 function removedFrame(project: Project): Project {
   const frame = frameOf(project)!
-  if (removedBeadsOf(frame) === 'removed') {
-    return withFrame(project, undefined)
-  }
-  const dropped = shiftedBeads(beadsOfLayer(project, 'frame')!, frame.row, frame.column)
+  const { shown: dropped, folded } = droppedBeads(project)
   // Its Folded beads land where they stand too, over the Canvas, under the beads it shows (ticket 0638).
-  const unfolded = beadsOver(beadsWithout(beadsOfLayer(project, 'canvas'), footprintOf(project)!), shiftedBeads(frame.folded ?? {}, frame.row, frame.column))
+  const unfolded = beadsOver(beadsWithout(beadsOfLayer(project, 'canvas'), footprintOf(project)!), folded)
   const beads = beadsOver(unfolded, dropped)
   const canvas = carryNames(project, withLayer(withFrame(project, undefined), 'canvas', { beads }))
   const name = frame.name
