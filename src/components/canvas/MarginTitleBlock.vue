@@ -9,8 +9,9 @@ import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import type { Project } from '../../domain/project'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
-import { TECHNIQUES, type Technique } from '../../domain/weave'
+import { describeWeave, TECHNIQUES, weaveSettings, type Technique } from '../../domain/weave'
 import { listedColorName } from '../../i18n/colorName'
+import { weaveSettingWords } from '../../i18n/settingWords'
 import { techniqueName } from '../../i18n/techniqueName'
 import { useI18n } from '../../i18n/useI18n'
 import { letterInk } from '../../rendering/beadLook'
@@ -18,16 +19,19 @@ import EditableLine from '../project/EditableLine.vue'
 import PanelPicker from '../shell/PanelPicker.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
+import MarginSettingCell from './MarginSettingCell.vue'
 import { frameOf, lettersOn } from '../../domain/layerRecord'
 
-// The margin sheet's title block (MarginSheet card, tickets 0657, 0658), in its bottom-right corner like a drawing's:
-// the name, Technique and maker edited in place, the sizes, the lettered legend, Letters and fold; compact, one row of
-// them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
-const props = withDefaults(defineProps<{ project: Project; form?: 'full' | 'compact' }>(), { form: 'full' })
+// The margin sheet's title block (MarginSheet card, tickets 0657, 0658, 0698), in its bottom-right corner like a
+// drawing's: the name, Technique, its settings and maker edited in place, the sizes, the lettered legend, Letters and
+// fold; compact, one row of them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
+/** `brief` is the compact row without its legend, where the sheet is too narrow for that (ticket 0698). */
+const props = withDefaults(defineProps<{ project: Project; form?: 'full' | 'compact' | 'brief' }>(), { form: 'full' })
 
 const emit = defineEmits<{
   rename: [name: string]
   'set-technique': [technique: Technique]
+  'set-setting': [id: string, value: number]
   'save-maker-name': [name: string]
   'set-letters': [on: boolean]
   fold: []
@@ -43,6 +47,30 @@ const frame = computed(() => frameOf(props.project)!)
 const technique = computed(() => frameWeave(props.project).technique)
 const options = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
 const techniqueLocked = computed(() => !techniqueAction.enabled?.(deps.value))
+
+/** A cell per setting the Frame's Technique describes (ticket 0698), its value and, locked with the Technique, its
+ * reason: none named here, so a Technique given a setting shows it. */
+const settings = computed(() => {
+  const weave = frameWeave(props.project)
+  const values = weaveSettings(weave)
+  return describeWeave(weave).settings.map((setting) => ({
+    setting,
+    value: values[setting.id]!,
+    disabledBody: techniqueLocked.value ? weaveSettingWords(t.value, setting).locked : undefined,
+  }))
+})
+/** The full form's grid: the setting cells sit after the Technique in row 1, the legend widens under them in row 2. */
+const grid = computed(() => {
+  const count = settings.value.length
+  const maker = 3 + count
+  return {
+    block: { gridTemplateColumns: `repeat(${5 + count}, max-content)` },
+    maker: { gridColumn: `${maker} / ${maker + 2}` },
+    legend: { gridColumn: `3 / ${maker + 1}` },
+    letters: { gridColumn: `${maker + 1}` },
+    fold: { gridColumn: `${maker + 2}` },
+  }
+})
 
 /** "by" and what follows the maker, as the language orders them round the name ("by {maker}", "автор: {maker}"). */
 const by = computed(() => {
@@ -79,9 +107,9 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 </script>
 
 <template>
-  <div class="margin-title" :class="`margin-title--${form}`" data-testid="margin-title-block">
+  <div class="margin-title" :class="form === 'full' ? 'margin-title--full' : 'margin-title--compact'" :data-form="form" :style="form === 'full' ? grid.block : undefined" data-testid="margin-title-block">
     <template v-if="form === 'full'">
-      <div class="margin-title__cell margin-title__name">
+      <div class="margin-title__cell margin-title__top margin-title__name">
         <EditableLine
           bare
           :label="t.panels.project.nameLabel"
@@ -95,7 +123,7 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
           @save="emit('rename', $event)"
         />
       </div>
-      <div class="margin-title__cell margin-title__value">
+      <div class="margin-title__cell margin-title__top margin-title__value">
         <span class="margin-title__text" data-testid="margin-technique">{{ techniqueName(t, technique) }}</span>
         <PanelPicker
           bare
@@ -109,7 +137,10 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
           @update:model-value="emit('set-technique', $event)"
         />
       </div>
-      <div class="margin-title__cell margin-title__value margin-title__maker">
+      <div v-for="{ setting, value, disabledBody } in settings" :key="setting.id" class="margin-title__cell margin-title__top margin-title__value">
+        <MarginSettingCell :setting="setting" :value="value" editable :disabled-body="disabledBody" @set="emit('set-setting', setting.id, $event)" />
+      </div>
+      <div class="margin-title__cell margin-title__top margin-title__value margin-title__maker" :style="grid.maker">
         <span v-if="by.before" class="margin-title__meta">{{ by.before }}</span>
         <EditableLine
           bare
@@ -132,18 +163,21 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
         <span class="margin-title__ellipsis" :class="{ 'margin-title__empty': !frame.name }">{{ frame.name || t.frame.nameEmpty }}</span>
       </div>
       <div class="margin-title__cell margin-title__value" data-testid="margin-technique">{{ techniqueName(t, technique) }}</div>
+      <div v-for="{ setting, value } in settings" :key="setting.id" class="margin-title__cell margin-title__value">
+        <MarginSettingCell :setting="setting" :value="value" :editable="false" />
+      </div>
     </template>
     <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
     <div class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
-    <div v-if="form === 'full'" class="margin-title__cell margin-title__legend" role="img" :aria-label="legendLabel" data-testid="margin-legend">
+    <div v-if="form !== 'brief'" class="margin-title__cell margin-title__legend" :style="form === 'full' ? grid.legend : undefined" role="img" :aria-label="legendLabel" data-testid="margin-legend">
       <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
       <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
     </div>
-    <div class="margin-title__cell margin-title__letters">
+    <div class="margin-title__cell margin-title__letters" :style="form === 'full' ? grid.letters : undefined">
       <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
       <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
     </div>
-    <div class="margin-title__cell margin-title__fold">
+    <div class="margin-title__cell margin-title__fold" :style="form === 'full' ? grid.fold : undefined">
       <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />
     </div>
   </div>
@@ -155,7 +189,6 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
  * legend, Letters; the fold button over both. Compact: one 22px row (ticket 0658). */
 .margin-title {
   display: grid;
-  grid-template-columns: repeat(5, max-content);
   grid-template-rows: repeat(2, var(--margin-title-row));
   box-sizing: border-box;
   color: var(--ink);
@@ -165,7 +198,8 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 }
 
 .margin-title--compact {
-  grid-template-columns: repeat(6, max-content);
+  grid-auto-columns: max-content;
+  grid-auto-flow: column;
   grid-template-rows: var(--margin-done-compact);
 }
 
@@ -183,7 +217,6 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 /* The fold button has the block's own edge; the second row, and the compact one, have no rule below. */
 .margin-title__fold {
   grid-row: 1 / 3;
-  grid-column: 5;
   justify-content: center;
   padding: 0 var(--space-2);
   border-right: 0;
@@ -191,16 +224,10 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 
 .margin-title--compact .margin-title__fold {
   grid-row: 1;
-  grid-column: 6;
 }
 
-.margin-title__cell:nth-child(n + 4),
-.margin-title--compact .margin-title__cell {
+.margin-title__cell:not(.margin-title__top) {
   border-bottom: 0;
-}
-
-.margin-title__maker {
-  grid-column: 3 / 5;
 }
 
 .margin-title__cell:not(.margin-title__name) {

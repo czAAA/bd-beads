@@ -221,43 +221,49 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
     const strokedIn = (calls: ReturnType<typeof drawn>['calls'], color: string) => calls.filter((call) => call.name === 'stroke' && call.strokeStyle === color)
     const roundRects = (calls: ReturnType<typeof drawn>['calls']) => calls.filter((call) => call.name === 'roundRect').map(({ args }) => args)
 
-    it('fills the band in the margin color, its corners rounded 12px, leaving the Frame\'s footprint out', () => {
+    /** Whether a drawn rectangle is at these grid px, within a rounding. */
+    const near = (rects: unknown[][], wanted: number[]) => rects.some((rect) => wanted.every((value, index) => Math.abs(Number(rect[index]) - value) < 1e-6))
+
+    // At 100% the band is 4 beads of 20px: 80px, the drafting sheet's 72px at a scale of 80 / 72 (ticket 0698).
+    it('fills the band in the margin color, its corners rounded 12px at the sheet\'s scale, leaving the Frame\'s footprint out', () => {
       const { calls } = drawn(true)
       const fill = calls.find((call) => call.name === 'fill' && call.fillStyle === '#123456')
       expect(fill?.args).toEqual(['evenodd'])
-      expect(roundRects(calls)).toContainEqual([120, 120, 220, 240, 12])
+      expect(near(roundRects(calls), [120, 120, 220, 240, 12 * (80 / 72)])).toBe(true)
     })
 
-    it('draws its edge and its inner border 10px in, radius 6, in the margin line', () => {
+    it('draws its edge and its inner border 10px in, radius 6, at the sheet\'s scale, in the margin line', () => {
       const { calls } = drawn(true)
+      const inset = 10 * (80 / 72)
       expect(strokedIn(calls, '#fedcba')).toHaveLength(1)
       expect(strokedIn(calls, '#abcdef')).toHaveLength(1)
-      expect(roundRects(calls)).toContainEqual([130, 130, 200, 220, 6])
+      expect(near(roundRects(calls), [120 + inset, 120 + inset, 220 - 2 * inset, 240 - 2 * inset, 6 * (80 / 72)])).toBe(true)
     })
 
-    it('keeps its edge, inset and corners in screen px at every zoom', () => {
+    it('scales its inset and corners with the band up to 1.5 (ticket 0698)', () => {
+      // At 200% the band is 160px: the scale is held at 1.5, so 15 screen px in, 7.5 grid px.
       const { calls } = drawn(true, 2)
-      expect(roundRects(calls)).toContainEqual([120, 120, 220, 240, 6])
-      expect(roundRects(calls)).toContainEqual([125, 125, 210, 230, 3])
+      expect(near(roundRects(calls), [120, 120, 220, 240, 9])).toBe(true)
+      expect(near(roundRects(calls), [127.5, 127.5, 205, 225, 4.5])).toBe(true)
     })
 
-    it('draws the compact form\'s inner border 6px in and corners of 10px, and none once the sheet folds (ticket 0658)', () => {
-      // At 60% the band is 4 beads of 12px: 48px, compact: 6px in, 10 grid px; its corners 10px, 16.67 grid px.
-      const compact = roundRects(drawn(true, 0.6).calls)
-      expect(compact).toContainEqual([130, 130, 200, 220, 10])
-      expect(compact.some(([x, , , , radius]) => x === 120 && Math.abs(Number(radius) - 10 / 0.6) < 1e-9)).toBe(true)
-      // At 40% the band is 32px, folded: the paper keeps its color and its edge, with no inner border.
-      expect(strokedIn(drawn(true, 0.4).calls, '#abcdef')).toHaveLength(0)
-      expect(strokedIn(drawn(true, 0.4).calls, '#fedcba')).toHaveLength(1)
+    it('draws the compact form\'s inner border 6px in and corners of 10px at the smallest scale, and none once the sheet folds (tickets 0658, 0698)', () => {
+      // At 40% the band is 32px: under 0.6 of the full form's 68px, so compact at 0.6: 3.6px in, 9 grid px; corners 6px, 15 grid px.
+      const compact = roundRects(drawn(true, 0.4).calls)
+      expect(near(compact, [129, 129, 202, 222, 6 * 0.6 / 0.4])).toBe(true)
+      expect(near(compact, [120, 120, 220, 240, 15])).toBe(true)
+      // At 25% the band is 20px, folded: the paper keeps its color and its edge, with no inner border.
+      expect(strokedIn(drawn(true, 0.25).calls, '#abcdef')).toHaveLength(0)
+      expect(strokedIn(drawn(true, 0.25).calls, '#fedcba')).toHaveLength(1)
     })
 
-    it('is not drawn at all under a 31px band, where only its Move bar is left (ticket 0682)', () => {
-      // At 38% the band is 30.4px: no paper, no edge, no inner border.
-      for (const zoom of [0.38, 0.25, 0.1]) {
+    it('is not drawn at all under 0.6 of the folded row\'s 31px, where only its Move bar is left (tickets 0682, 0698)', () => {
+      // At 23% the band is 18.4px: no paper, no edge, no inner border.
+      for (const zoom of [0.23, 0.2, 0.1]) {
         const { calls } = drawn(true, zoom)
         expect(calls.some((call) => call.fillStyle === '#123456' || call.strokeStyle === '#fedcba' || call.strokeStyle === '#abcdef'), `${zoom}`).toBe(false)
       }
-      expect(drawn(true, 0.39).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
+      expect(drawn(true, 0.24).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
     })
 
     it('is never drawn in an export, which draws the Frame on its own, nor with no Frame', () => {

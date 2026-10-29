@@ -181,6 +181,7 @@ export const en: Translations = {
       body: 'Beads picked up in each stitch: they sit straight beside each other before the next ones shift by half a bead. 1 is ordinary peyote.',
       locked: 'Rows are marked done. Remove the Frame to change the Drop.',
       changed: 'Drop changed to {count}',
+      short: '{count}-drop',
     },
     brickDrop: {
       label: 'Drop',
@@ -190,6 +191,7 @@ export const en: Translations = {
       body: 'Beads picked up in each stitch: they sit straight beside each other before the next ones shift by half a bead. 1 is ordinary brick stitch.',
       locked: 'Rows are marked done. Remove the Frame to change the Drop.',
       changed: 'Drop changed to {count}',
+      short: '{count}-drop',
     },
   },
   projects: {
@@ -623,6 +625,7 @@ export const en: Translations = {
       line: 'The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it.',
       titleBlock: 'Name and size on the margin',
       changeTechnique: 'Change Technique',
+      changeSetting: 'Change {setting}',
       foldTitleBlock: 'Fold the title block',
       showTitleBlock: 'Show the title block',
       showTitleBlockOf: 'Show the title block: {name}',

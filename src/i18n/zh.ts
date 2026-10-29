@@ -183,6 +183,7 @@ export const zh: Translations = {
       body: '每一针穿入的珠子数：它们并排对齐，下一组再错开半颗珠子。设为 1 即普通佩奥。',
       locked: '已有标记完成的行。移除边框后才能更改每针珠数。',
       changed: '每针珠数已改为{count}',
+      short: '每针{count}珠',
     },
     brickDrop: {
       label: '每针珠数',
@@ -192,6 +193,7 @@ export const zh: Translations = {
       body: '每一针穿入的珠子数：它们并排对齐，下一组再错开半颗珠子。设为 1 即普通砖形。',
       locked: '已有标记完成的行。移除边框后才能更改每针珠数。',
       changed: '每针珠数已改为{count}',
+      short: '每针{count}珠',
     },
   },
   projects: {
@@ -618,6 +620,7 @@ export const zh: Translations = {
       line: '边距每边宽 4 颗珠子。其中不能放置任何东西，导出时也不会显示。',
       titleBlock: '在边距上显示名称和尺寸',
       changeTechnique: '更换编织技法',
+      changeSetting: '更改{setting}',
       foldTitleBlock: '收起标题栏',
       showTitleBlock: '显示标题栏',
       showTitleBlockOf: '显示标题栏：{name}',

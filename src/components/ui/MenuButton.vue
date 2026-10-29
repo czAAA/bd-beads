@@ -198,8 +198,9 @@ function onListKeydown(event: KeyboardEvent) {
         v-else
         :id="listId"
         ref="listEl"
-        class="menu-button__list"
+        class="menu-button__list anchored-popup"
         :class="[`menu-button__list--${align}`, { 'menu-button__list--popover': popover }]"
+        popover="manual"
         :style="anchored.style.value"
         :role="popup"
         :aria-label="label"

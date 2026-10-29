@@ -763,6 +763,7 @@ function wireAppShell(services: Services) {
       onRotateFrame: rotateFrameFlow.onRotateFrame,
       onRenameFrame: frameFlow.rename,
       onSetFrameTechnique: frameFlow.setTechnique,
+      onSetFrameSetting: (id: string, value: number) => frameFlow.setWeaveSetting('frame', id, value),
       onSaveMakerName: exportFlow.onSaveMakerName,
       onSetLetters: exportFlow.onSetLetters,
       exportOpener: overlays.exportOpener,
