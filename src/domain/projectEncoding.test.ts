@@ -176,11 +176,10 @@ describe('encodeProject / decodeProject', () => {
 
   it('keeps the Frame, with its own beads and name, and the Canvas beads beside it, through the round trip', () => {
     const base = paint(makeProject(3, 3), () => '#ff0000')
-    const project = {
-      ...base,
+    const project = withFields(base, {
       beads: { 9: { 9: '#00ff00' } },
       frame: { ...frameOf(base)!, row: 1, column: 1, name: 'Cherry' },
-    }
+    })
 
     expect(roundTrip(project)).toEqual(project)
   })

@@ -1,10 +1,13 @@
 import { nextTick, onBeforeUnmount, ref, type Ref } from 'vue'
 
+/** `fixed` at a place; `right: auto` so a popup's own CSS `right` (an end-aligned Menu) doesn't stretch it. */
+const fixedAt = (top: number, left: number) => ({ position: 'fixed', top: `${top}px`, left: `${left}px`, right: 'auto' })
+
 // Places a popup 4px under its button (Menu card), `fixed` from its first render so it never pushes the button aside in
 // its row (ticket 0681), since the left column scrolls and would clip it. Opens above when no room below, stays inside
 // the window, follows the button. A `transform` ancestor (open Drawer) shifts `fixed`: measured and corrected (246).
 export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup: Ref<HTMLElement | undefined>, align: () => 'start' | 'end') {
-  const style = ref<Record<string, string>>({ position: 'fixed', top: '0px', left: '0px', right: 'auto' })
+  const style = ref<Record<string, string>>(fixedAt(0, 0))
   const GAP = 4
   const EDGE = 8
   let offsetX = 0
@@ -23,7 +26,7 @@ export function useAnchoredPosition(anchor: Ref<HTMLElement | undefined>, popup:
     const wanted = align() === 'end' ? button.right - width : button.left
     const left = Math.max(EDGE, Math.min(wanted, window.innerWidth - width - EDGE))
     const apply = () => {
-      style.value = { position: 'fixed', top: `${top - offsetY}px`, left: `${left - offsetX}px`, right: 'auto', minWidth }
+      style.value = { ...fixedAt(top - offsetY, left - offsetX), minWidth }
     }
     apply()
     void nextTick(() => {
