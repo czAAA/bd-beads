@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
+import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
 import TextField from '../ui/form/TextField.vue'
@@ -35,6 +36,7 @@ const editing = ref(false)
 const draft = ref('')
 const refused = ref(false)
 const field = ref<InstanceType<typeof TextField>>()
+const form = ref<HTMLFormElement>()
 const fieldId = useId()
 const errorId = useId()
 const canSave = computed(() => !props.requiredMessage || props.normalize(draft.value) !== '')
@@ -62,12 +64,9 @@ function cancel() {
   refused.value = false
 }
 
-/** Outside a panel nothing turns Escape into `panel-escape`: the bare line's form cancels on it itself. */
-function cancelByKey(event: KeyboardEvent) {
-  event.preventDefault()
-  event.stopPropagation()
-  cancel()
-}
+// The bare line's field floats over the margin sheet, outside any panel, so it is a layer of its own (ticket 0685):
+// Escape cancels, a press outside keeps what was typed, as Save does.
+useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.value, close: cancel, onOutsidePress: commit })
 </script>
 
 <template>
@@ -84,12 +83,12 @@ function cancelByKey(event: KeyboardEvent) {
     </div>
     <form
       v-else
+      ref="form"
       class="editable-line__form"
       :data-testid="`${testid}-form`"
       data-handles-escape
       @submit.prevent="commit"
       @panel-escape="cancel"
-      @keydown.esc="bare && cancelByKey($event)"
     >
       <div class="editable-line__field">
         <TextField

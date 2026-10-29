@@ -33,6 +33,8 @@ const MIRROR: Record<string, { token: string } | { css: string } | { none: strin
   gap: { token: 'space-4' },
   'icon.full': { none: 'an IconButton’s icon size is a prop, not CSS' },
   'icon.compact': { none: 'an IconButton’s icon size is a prop, not CSS' },
+  'pass.pillPad': { none: 'only the canvas draws the current pass’s pill' },
+  'pass.tick': { none: 'only the canvas draws the current pass’s tick' },
 }
 
 /** Every number in a nested record, by its dotted path. */

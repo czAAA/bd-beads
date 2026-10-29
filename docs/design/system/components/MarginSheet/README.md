@@ -5,7 +5,7 @@ The Frame's keep-out margin drawn as a sheet of drafting paper: its own backgrou
 ## Width
 
 - **4 bead positions on every side**, fixed, not a setting (was 6). The keep-out rules of the Frame card are unchanged; only the width is.
-- 4 is what the content needs at 100% zoom, where a bead pitch is 18px and the band 72px. The top band holds the 10px border inset, the 28px tool row, the column numbers (12px) and 7px to the Frame line: about 64px. The bottom band holds 7px from the Frame line, the 48px title block and the 10px inset: about 65px. The side bands hold the row numbers and the row pointer (about 40px). Three beads (54px) cannot hold the title block; five or more is empty paper.
+- 4 is what the content needs at 100% zoom, where a bead pitch is 18px and the band 72px. The top band holds the 10px border inset, the 28px tool row, the column numbers (12px) and 7px to the Frame line: about 64px. The bottom band holds 7px from the Frame line, the 48px title block and the 10px inset: about 65px. The side bands hold the row numbers (about 40px). Three beads (54px) cannot hold the title block; five or more is empty paper.
 
 ## The sheet
 
@@ -53,10 +53,12 @@ Anchored to the inner border's bottom-right corner, two rows of `--margin-title-
 - **Name and size on the margin**, a Switch in the Frame panel's margin section (on by default, remembered on the device), hides the title block; the fold tab then is not shown either.
 - **Fold** (`chevron-down`) folds the title block to a tab in the same corner: the name (Inter 600 11) and `chevron-up`, 24px tall, `margin-title` fill. The tab unfolds it. Kept for the session.
 
-## Rulers and the row pointer
+## Rulers and the current pass
 
 - With a Frame, its rulers are drawn top, left and right, none below (the title block's band). Placement, sizes and the 5th-number rule are the Rulers card's; their color follows Margin color above.
-- The current row's **pointer**: a 9 × 12 `marker` triangle in the left band, 4px outside the row numbers, pointing at the row; the row itself keeps its ring and the finished rows their dimming (BeadBoard card). It follows Turn row direction (above the columns in the top band when columns run).
+- The **current pass** is marked on its own ruler number: a `marker` pill behind it, 2px round the number and fully rounded, the number weight 700 in `canvas` (Rulers card), in both bands that number it (left and right for a row; the top for a column once Turn row direction sets columns). The numbers sit below the tool row in every form, so the mark never meets a tool. The pass itself keeps its ring and the finished passes their dimming (BeadBoard card).
+- Where the pass has no number drawn (the compact and folded forms, Rulers off, a Frame turned a quarter, whose numbers count the cells it covers, or a Ruler step that skips it), the mark is a **tick**: 3px thick in `marker`, rounded, from the middle of the Frame's line in to the beads, at the pass; on the left and right sides for a pass across the screen, on the top for one down it. Inside the line, it never stands under a tool.
+- None for a Custom frame, whose passes are no line, nor once every pass is done, nor in the bare form (ticket 0685; it replaced a 9 × 12 `marker` triangle 4px outside the numbers, which with columns could sit under a tool).
 
 ## Zoom forms
 
@@ -65,7 +67,7 @@ The tools keep their pixel size while the band grows and shrinks with the beads,
 - **Full** (band 68px and up, about 85% and closer): as above.
 - **Compact** (40 to 68px, about 50% to 85%): tools 24px with 14px icons, 2px apart; Row progress shows only the counter, a 40px track and Row done (22px); the title block is one 22px row (name, Technique, size in beads, size in cm, Letters, fold); no ruler numbers, only the Frame line; the inner border inset 6px, the corners 10px; the row 8px down and 10px in.
 - **Folded** (31 to 40px, about 39% to 50%): the Move bar, the counter with Row done, the Margin color button and a **···** button ("Frame tools") whose menu holds Rotate Frame, Edit Frame, Export and Remove Frame; the title block is the name tab. The paper keeps its color and edge, with no inner border; the row and the tab stand in the middle of the room between the sheet's edge and the Frame's line. Folding by hand (the title block's fold button) folds the title block alone; the tools stay.
-- **Bare** (under 31px, under about 39%): only the **Move bar**. Not even the folded row fits between the sheet's edge and the Frame's line, so nothing of the sheet is drawn: no paper, edge or inner border, no title block, tab or legend, no buttons, no ruler numbers and no row pointer. The Move bar (56 × 24) stands alone above the middle of the Frame's top edge, its bottom on the Frame's line, so the Frame can be dragged at any zoom; it may stand outside where the sheet would be, and never over the Frame's line or beads. The 4 positions are still kept clear for drawing and Selection, and a refused press still flashes the dashed outline. The Frame panel, the Progress bar and the Canvas strip still have the other tools.
+- **Bare** (under 31px, under about 39%): only the **Move bar**. Not even the folded row fits between the sheet's edge and the Frame's line, so nothing of the sheet is drawn: no paper, edge or inner border, no title block, tab or legend, no buttons, no ruler numbers and no mark of the current pass. The Move bar (56 × 24) stands alone above the middle of the Frame's top edge, its bottom on the Frame's line, so the Frame can be dragged at any zoom; it may stand outside where the sheet would be, and never over the Frame's line or beads. The 4 positions are still kept clear for drawing and Selection, and a refused press still flashes the dashed outline. The Frame panel, the Progress bar and the Canvas strip still have the other tools.
 
 ## Touch
 
@@ -79,12 +81,11 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 
 - **Values:** the top band's inset `--margin-band-inset` (14px), the Move bar's hit height `--margin-move-height` (28px; 56 wide, as `--frame-handle-hit-width`), Row done `--margin-done` (26px), the track `--margin-track` (64px), a title block pencil `--margin-pencil` (18px), a legend disc `--margin-legend-disc` (14px), the name `--margin-title-name` (Inter 600 12), a disc's letter `--margin-legend-letter` (Inter 600 8) and the name editor `--margin-edit-width` (260px), in `bundle.css` and `src/styles/design-values.css`.
 - **The band's row** is three columns: Row progress at the start, the Move bar centred, the tools at the end. A sheet too narrow for it steps down a form (ticket 0658, As built below). On a phone the full form only shows zoomed in, where the canvas is panned to reach the rest.
-- **Editing in place:** the name and the maker's name open their field (Save, Cancel, "n/40") floated above their cell in the shared popover look, since a 23px cell cannot hold it; Escape or Cancel closes it. The Technique pencil opens the PanelPicker's menu under it.
+- **Editing in place:** the name and the maker's name open their field (Save, Cancel, "n/40") floated above their cell in the shared popover look, since a 23px cell cannot hold it; Escape or Cancel closes it; a press outside closes it too and keeps what was typed, as Save does (ticket 0685), and Undo takes it back. The Technique pencil opens the PanelPicker's menu under it.
 - **The legend** follows the Palette's order (A, B, C…), not the bead count; a color with no letter shows "?", as the Word chart does. The name's cell stops at `--margin-edit-width` and ellipsizes.
 - **Hot corners** are drawn just outside the Frame line, as in the design canvas: a bracket's stroke 3px clear of it, an edge's bar against it; their hit points are on the line.
 - **Touch:** every control on the sheet is a `ui-control`, whose coarse-pointer hit area is 44px (controls.css). Edit Frame keeps the Frame card's four corner handles on touch.
 - **Gives way:** the band's row and the title block take no press where a Selection's handles reach under them or the Tool pill covers them (ticket 498).
-- **The row pointer** stands 4px outside the leftmost row number (or the Frame's line with Rulers off); in the top band, the topmost column number.
 - **Edit Frame's outline** is the sheet element's own outline (DOM), the hot corners and size Tooltip are drawn on the canvas; the Tooltip sits out from the hot corner, beyond its disc.
 
 ## As built (ticket 0658)
@@ -95,11 +96,11 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - **The fold** is kept for the session (not saved) and applies to every Frame. The fold button is in the compact title block too, its last cell. The tab is a button (chevron-up, "Show the title block: {name}") only where the sheet has room to unfold the block; folded by the zoom or the width, it is the name alone.
 - **The Frame tools menu** opens Export hung from the ··· button. Its items are the band's buttons' own actions, names and disabled reasons.
 - **Compact title block:** the name and the Technique are read only there (no pencils); the full form and the Frame panel edit them.
-- **Left out:** the coarse-pointer rule (Touch above: the compact form one step earlier where 44px hit areas would overlap) is not built; a pointer with Turn row direction set to columns can sit under a tool of the top band.
+- **Left out:** the coarse-pointer rule (Touch above: the compact form one step earlier where 44px hit areas would overlap) is not built. (A row pointer that could sit under a tool with columns running was replaced by the mark on the number, ticket 0685.)
 
 ## As built (ticket 0682)
 
-- **Bare** is the fourth form of `src/rendering/marginForm.ts`; the canvas leaves the sheet out, the rulers leave out the row pointer (and, as in the compact and folded forms, the numbers), and the sheet's controls are the Move bar alone (`MarginMoveBar.vue`, the same control as in the band). The Frame's line, its hot corners while Edit Frame is on, and the size Tooltip are the Frame's own and stay; the sheet's Edit Frame outline goes with the sheet.
+- **Bare** is the fourth form of `src/rendering/marginForm.ts`; the canvas leaves the sheet out, the rulers leave out the current pass's mark (and, as in the compact and folded forms, the numbers), and the sheet's controls are the Move bar alone (`MarginMoveBar.vue`, the same control as in the band). The Frame's line, its hot corners while Edit Frame is on, and the size Tooltip are the Frame's own and stay; the sheet's Edit Frame outline goes with the sheet.
 - **Touch:** a browser moves a finger's press to a control up to about 16px away from it (touch adjustment), and a canvas is not such a control, so on a coarse pointer the bar stands its 44px hit area and 16px more above the Frame's line: about 29px from the line to its drawn bottom.
 - **Gives way** to a Selection's handles and the Tool pill, as the band's row does.
 - **Checked** in the browser (`MarginSheet.browser.test.ts`: at 10%, 25% and 38% on Frames 40 and 3 beads wide, the bar takes its press and a press on the first row lands on the canvas) and in the app (`e2e/visual/frameControls.spec.ts`: at 10%, 20% and 30%, by mouse and by touch, the bar drags the Frame and the first row paints).
@@ -110,7 +111,7 @@ Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin,
 - [ ] Auto follows the Canvas color; the picker in the Frame panel and on the sheet offers Auto, the five Canvas colors and Custom color, remembered on the device.
 - [ ] The top band holds Row progress, the Move bar and the tools; Row done there and in the Progress bar move the same pointer.
 - [ ] The title block edits the name, the Technique and the maker's name, shows the sizes and the lettered legend, and toggles Letters.
-- [ ] Rulers top, left and right; the row pointer in the left band.
+- [ ] Rulers top, left and right; the current pass marked on its number, or by a tick on the Frame's line where it has none.
 - [ ] The full, compact and folded forms follow the band's height, with nothing clipped or overlapping; the fold button and tab work.
 - [ ] No gutter controls remain; exports never show the sheet.
 
