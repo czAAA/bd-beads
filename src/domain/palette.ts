@@ -83,8 +83,7 @@ export const RECENT_SHORTCUTS = 3
 
 const ADDED_PREFIX = 'added-'
 
-/** The id an added swatch is known by: its hex, so the same color is the same swatch on every device.
- * @internal Tests name an added swatch by its id. */
+/** The id an added swatch is known by: its hex, so the same color is the same swatch on every device. */
 export function addedColorId(hex: string): string {
   return `${ADDED_PREFIX}${hex.slice(1)}`
 }

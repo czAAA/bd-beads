@@ -10,19 +10,15 @@ const project = createProject({
   size: { width: 4, height: 6, unit: 'beads' },
 })
 
-function setup(options: { open?: boolean; framing?: { columns: number; rows: number } } = {}) {
+function setup(options: { open?: boolean } = {}) {
   const open = ref(options.open ?? true)
-  const framing = ref(options.framing)
-  const convertZoomPercent = ref(60)
   const scope = effectScope()
   const result = scope.run(() =>
     useCanvasFraming({
       currentProject: (): Project | undefined => (open.value ? project : undefined),
-      framing: () => (framing.value ? { dimensions: framing.value } : undefined),
-      convertZoomPercent: () => convertZoomPercent.value,
     }),
   )!
-  return { open, framing, result, stop: () => scope.stop() }
+  return { open, result, stop: () => scope.stop() }
 }
 
 describe('useCanvasFraming', () => {
@@ -35,12 +31,6 @@ describe('useCanvasFraming', () => {
   it('shows the open Project’s zoom', () => {
     const { result, stop } = setup()
     expect(result.stripZoomPercent.value).toBe(result.zoomPercent.value)
-    stop()
-  })
-
-  it('shows the framing zoom while framing, even with a Project open', () => {
-    const { result, stop } = setup({ framing: { columns: 10, rows: 12 } })
-    expect(result.stripZoomPercent.value).toBe(60)
     stop()
   })
 

@@ -9,7 +9,7 @@ How Convert image's Size section sets a Pixel to bead ratio (glossary): picture 
 
 ## Result line
 
-- One formatter for By Pixel to bead ratio and By size: a box on `surface` (`elevated` in dark, a 2px `line` edge in high contrast), `radius-lg`, padding 10 12, the `label` "result" over one `meta` line in `body`: the grid size in `ink` at 500 ("32×24 beads": writing.md's Grid size, no spaces), the measured size through the Bead ("5.1 × 3.1 cm"), and the ratio ("1 bead = 8 × 8 px"; By size, with ≈, "1 bead ≈ 4.3 × 3.5 px").
+- One formatter for By Pixel to bead ratio and By size: a box on `surface` (`elevated` in dark, a 2px `line` edge in high contrast), `radius-lg`, padding 10 12, the `label` "result" over one `meta` line in `body`: the grid size in `ink` at 500 ("32×24 beads": writing.md's Grid size, no spaces), the measured size through the Bead ("5.1 × 3.1 cm"), and the ratio ("1 bead = 8 × 8 px"; 1:n, "1 px = 2 × 2 beads"; By size, with ≈, "1 bead ≈ 4.3 × 3.5 px", or "=" where the size is a whole ratio).
 - A non-square Bead shows in the cm: 1:1 on Delica 11/0 (1.6 × 1.3 mm) is wider than the picture.
 - `role="status"`, read once after a change settles. The footer repeats it with the color count in place of the ratio ("32×24 beads · 5.1 × 3.1 cm · 8 colors").
 

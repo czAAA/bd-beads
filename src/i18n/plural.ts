@@ -7,14 +7,18 @@ export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other
 
 const rules = new Map<Locale, Intl.PluralRules>()
 
-/** The form of `forms` that `count` takes in `locale`, with "{count}" filled in (thousands grouped by a no-break space). */
-export function plural(locale: Locale, count: number, forms: PluralForms): string {
+/** The form of `forms` that `count` takes in `locale`, its blanks left in: for a form with more blanks than `{count}`. */
+export function pluralForm(locale: Locale, count: number, forms: PluralForms): string {
   let rule = rules.get(locale)
   if (!rule) {
     rule = new Intl.PluralRules(locale)
     rules.set(locale, rule)
   }
-  const form = forms[rule.select(count)] ?? forms.other
+  return forms[rule.select(count)] ?? forms.other
+}
+
+/** The form of `forms` that `count` takes in `locale`, with "{count}" filled in (thousands grouped by a no-break space). */
+export function plural(locale: Locale, count: number, forms: PluralForms): string {
   // A form may spell its count out ("Added an empty row"), so the count is optional.
-  return fillBlanks(form, {}, { count: groupThousands(count, locale) })
+  return fillBlanks(pluralForm(locale, count, forms), {}, { count: groupThousands(count, locale) })
 }

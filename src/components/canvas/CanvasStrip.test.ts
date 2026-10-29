@@ -63,16 +63,6 @@ describe('CanvasStrip', () => {
     expect(wrapper.find('svg[data-icon="grid"]').exists()).toBe(false)
   })
 
-  it('shows Menu and the zoom alone while a picture is framed, over the framing step\'s own range', async () => {
-    const wrapper = mount(CanvasStrip, { props: { rulers: true, zoomPercent: 800, zoomMinPercent: 100, zoomMaxPercent: 800 } })
-
-    expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="strip-project"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="strip-undo"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="zoom-in"]').attributes('aria-disabled')).toBeDefined()
-    expect(wrapper.get('[data-testid="zoom-out"]').attributes('aria-disabled')).toBeUndefined()
-  })
-
   it('has three slots: panels, the Brand, then the tools and zoom together (ticket 543)', () => {
     const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
 
@@ -123,14 +113,6 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
     expect(wrapper.get('[data-testid="strip-menu"] .canvas-strip__label').text()).toBe('Menu')
     expect(wrapper.get('[data-testid="strip-project"] .canvas-strip__label').text()).toBe('Project')
     expect(wrapper.find('[data-testid="canvas-color"]').exists()).toBe(false)
-  })
-
-  it('holds Menu, the Brand and the framing zoom while a picture is framed', () => {
-    const wrapper = mount(CanvasStrip, { props: { zoomPercent: 200, zoomMinPercent: 100, zoomMaxPercent: 800 } })
-
-    expect(wrapper.find('[data-testid="strip-menu"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="canvas-brand"]').exists()).toBe(true)
-    expect(wrapper.find('[data-testid="zoom-out"]').exists()).toBe(true)
   })
 })
 

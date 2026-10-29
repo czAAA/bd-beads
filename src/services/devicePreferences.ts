@@ -4,7 +4,6 @@ import { LOCALES } from '../domain/locale'
 import { type Handedness, type InputMode } from '../domain/inputMode'
 import { CANVAS_BACKGROUND_MAX, migratedChoice } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
-import type { SchemaSizeUnit } from '../domain/projectSize'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
 import { normalizeHex } from '../domain/color'
 import { DEFAULT_EXPORT_QUALITY, parseExportQuality, type ExportQuality } from '../domain/exportQuality'
@@ -98,14 +97,6 @@ export const PREFERENCES = {
     fallback: 'device',
     parse: (raw) => (raw === 'light' || raw === 'dark' || raw === 'contrast' ? raw : undefined),
     write: (pick) => (pick === 'device' ? null : pick),
-  }),
-  // The unit the Frame section states the Schema size in (ticket 342): beads until mm is chosen. Never saved with a
-  // Project.
-  sizeUnit: preference<SchemaSizeUnit>({
-    key: 'openbeads:size-unit',
-    fallback: 'beads',
-    parse: (raw) => (raw === 'beads' || raw === 'mm' ? raw : undefined),
-    write: (unit) => (unit === 'beads' ? null : unit),
   }),
   /** Whether hotkey chips show (ticket 438): unset (auto, by the device) until the Keyboard shortcuts switch is
    * flipped. */

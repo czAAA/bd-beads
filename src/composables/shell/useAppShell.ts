@@ -19,7 +19,8 @@ import { useProjectManageFlow } from '../project/useProjectManageFlow'
 import { useA11yAnnouncer } from '../ui/useA11yAnnouncer'
 import { useCanvasFraming } from '../canvas/useCanvasFraming'
 import { useCanvasPointer } from '../canvas/useCanvasPointer'
-import { useConvertImage } from '../import/useConvertImage'
+import { useConvertImageFlow } from '../import/useConvertImageFlow'
+import { loadColorCatalog } from '../../services/colorCatalogs'
 import { useEdit } from '../project/useEdit'
 import { useDeleteAllFlow } from '../project/useDeleteAllFlow'
 import { useFrameFlow } from '../project/useFrameFlow'
@@ -110,30 +111,12 @@ function wireAppShell(services: Services) {
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
   useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
 
-  // Convert image's framing step (ticket 58, ADR 0010): independent of the open Project, so nothing here touches
-  // replaceProject, undo or the Row lock; framing over an open Project takes the canvas panel over until
-  // Cancel.
-  const {
-    image: convertImageSource,
-    zoom: convertZoom,
-    pan: convertPan,
-    maxColors: convertMaxColors,
-    zoomPercent: convertZoomPercent,
-    start: startConvertImage,
-    cancel: cancelConvertImage,
-    zoomIn: convertZoomIn,
-    zoomOut: convertZoomOut,
-    resetZoom: convertResetZoom,
-    setPan: setConvertPan,
-    setMaxColors: setConvertMaxColors,
-  } = useConvertImage()
+  // Convert image (spec 0645, ADR 0010): a dialog creating a new Project, independent of the open one, so nothing here
+  // touches replaceProject, undo or the Row lock.
+  const convertImage = useConvertImageFlow({ dialogs, addProject })
 
-  /** New-Project creation, blank or from Convert image, and the framing step's gate (tickets 58, 196). */
-  const { framing, onNewProjectDraft, onCreateProject, onCreateFromStarter, onConvertImageCreate } = useNewProjectFlow({
-    addProject,
-    convertImage: () => convertImageSource.value,
-    cancelConvertImage,
-  })
+  /** New-Project creation, blank or from a Starter (tickets 196, 0596). */
+  const { onCreateProject, onCreateFromStarter } = useNewProjectFlow({ addProject })
 
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const showRulers = services.devicePreferences.get('rulers')
@@ -145,12 +128,8 @@ function wireAppShell(services: Services) {
   const { inputMode, inputModeAvailable, setInputMode, surfaceInputMode, handedness, setHandedness } = usePenInputMode(services.devicePreferences)
 
   /** Canvas sizing, zoom and the strip's size/zoom meta (tickets 27, 57, 197). */
-  const { bindCanvasArea, canvasAreaWidth, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, stripZoomPercent } =
-    useCanvasFraming({
-      currentProject,
-      framing: () => framing.value,
-      convertZoomPercent: () => convertZoomPercent.value,
-    })
+  const { bindCanvasArea, zoom, scroll, zoomIn, zoomOut, setZoom, resetZoom, panBy, scrollBy, centreOn, visibleCentre, stripZoomPercent } =
+    useCanvasFraming({ currentProject })
 
   /** Undo/redo history and the commit/step logic around it (ticket 189). Its deps reach for Selection
    * state declared below, through lazy arrows only called at runtime. */
@@ -663,9 +642,12 @@ function wireAppShell(services: Services) {
       announcement,
       endStroke,
       onExportProjectFile: exportFlow.onExportProjectFile,
+      /** A picture dropped or pasted on the app opens Convert image with it set (spec 0645). */
+      onPictureForConvert: convertImage.onPicture,
+      dialogOpen: dialogs.open,
     },
     /** The canvas box (CanvasPanel): its strip, the drawing surface, the Tool pill, the Context and Progress bars, the
-     * framing step and the toasts. */
+     * toasts. */
     canvas: {
       t,
       locale,
@@ -679,21 +661,8 @@ function wireAppShell(services: Services) {
       onImportProjects: importSwitch.onImportProjects,
       toasts,
       dismissToast,
-      // Framing a picture for a new Project
-      framing,
-      onConvertImageCreate,
-      cancelConvertImage,
-      convertZoom,
-      convertPan,
-      convertMaxColors,
-      setConvertPan,
-      setConvertMaxColors,
-      convertZoomIn,
-      convertZoomOut,
-      convertResetZoom,
       // The view
       bindCanvasArea,
-      canvasAreaWidth,
       bindCanvasScroll,
       zoom,
       scroll,
@@ -796,12 +765,10 @@ function wireAppShell(services: Services) {
       onExportLibraryFile: exportFlow.onExportLibraryFile,
       onRequestDeleteAllProjects: manageProject.onRequestDeleteAllProjects,
       // New Project
-      framing,
-      decodeImage: services.decodeImage,
-      onNewProjectDraft,
+      onNewProjectDraft: convertImage.onNewProjectDraft,
       onCreateProject,
       onCreateFromStarter,
-      startConvertImage,
+      onOpenConvertImage: convertImage.open,
       // Project
       activeProject,
       saveFailed,
@@ -893,6 +860,12 @@ function wireAppShell(services: Services) {
       naming: namePiece.naming,
       onSavePieceName: namePiece.onSavePieceName,
       onCancelPieceName: namePiece.onCancelPieceName,
+      convertImageStart: convertImage.start,
+      decodeImage: services.decodeImage,
+      readClipboardImage: services.readClipboardImage,
+      loadColorCatalog,
+      onConvertImageCreate: convertImage.onCreate,
+      onConvertImageCancel: convertImage.onCancel,
     },
     /** The registry itself, for a test that opens a dialog the way its flow would. */
     dialogRegistry: dialogs,

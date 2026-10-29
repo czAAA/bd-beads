@@ -1,8 +1,7 @@
 import { channelsOf, colorDistance, toHex, toOklab, type Rgb } from './color'
-import type { Palette } from './palette'
 
-/** The colors a Convert image (ticket 58) takes from a picture: reduced to a buyable count, then no dithering, each
- * snapped to its nearest Palette color (ticket 177, ADR 0010), so they are a Palette subset. */
+/** The colors a Convert image (ticket 58) takes from a picture: reduced to a buyable count with no dithering (ticket
+ * 177, ADR 0010); convertColors.ts then matches each to the chosen source. */
 
 /** The closest of `colors` to `hex` by how alike they look (colorDistance), or undefined when there are none to
  * choose from. */
@@ -20,13 +19,6 @@ export function nearestColor(colors: readonly string[], hex: string): string | u
   }
 
   return best
-}
-
-/** The Palette color nearest `hex` (ticket 177, ADR 0010): unconditional, no threshold. The *nearest*, not
- * the first in range, so the answer doesn't depend on Palette order. An empty Palette leaves the color as it is.
- * @internal Its test checks the nearest color on its own. */
-export function snapToPalette(palette: Palette, hex: string): string {
-  return palette.nearest(hex)?.hex ?? hex
 }
 
 /** One color of a picture and how many cells sampled it, the unit median cut works in. */
@@ -112,49 +104,39 @@ function medianCut(colors: WeightedColor[], maxColors: number): WeightedColor[][
   return boxes
 }
 
-export interface ResolvedImageColors {
-  /** Every sampled hex mapped to the Image color it became — the same hex when nothing was reduced or snapped. */
-  mapping: Map<string, string>
-  /** The distinct Image colors, most of the picture first. */
-  colors: string[]
+/** A picture's colors reduced to a buyable count (ticket 177, ADR 0010), before any snap: the Convert image wizard
+ * matches each to its source afterwards, so a remap or an empty survives a change of source (spec 0645). */
+export interface ReducedColors {
+  /** The colors the reduction kept, each a box's cell-weighted average, most of the picture first. */
+  colors: { hex: string; count: number }[]
+  /** Every sampled hex to the kept color it became: itself when nothing was reduced. */
+  byHex: Map<string, string>
 }
 
-/** The color a box of the reduction stands for, before it is quantized onto the Palette. */
+/** The color a box of the reduction stands for. */
 function boxColor(box: readonly WeightedColor[]): string {
-  // A box of one is that color itself, untouched — this only matters up to floating-point precision, since
-  // snapToPalette quantizes it away regardless.
+  // A box of one is that color itself, untouched.
   return box.length === 1 ? box[0]!.hex : toHex(representative(box))
 }
 
-/** The colors a conversion keeps (ticket 177, ADR 0010) for sampled cell colors, ordered by coverage. At
- * most `maxColors` distinct colors skip median cut; each box then snaps to the given Palette, so `colors` can be shorter. */
-export function resolveImageColors(
-  palette: Palette,
-  counts: ReadonlyMap<string, number>,
-  maxColors: number,
-): ResolvedImageColors {
+/** At most `maxColors` colors for sampled cell colors, ordered by coverage. Up to `maxColors` distinct colors skip median
+ * cut; two boxes that average to one hex count as one color. */
+export function reducePictureColors(counts: ReadonlyMap<string, number>, maxColors: number): ReducedColors {
   const sampled: WeightedColor[] = [...counts].map(([hex, count]) => ({ hex, rgb: channelsOf(hex), count }))
-  if (sampled.length === 0) {
-    return { mapping: new Map(), colors: [] }
-  }
+  const boxes = sampled.length === 0 ? [] : sampled.length <= maxColors ? sampled.map((color) => [color]) : medianCut(sampled, maxColors)
 
-  const boxes =
-    sampled.length <= maxColors ? sampled.map((color) => [color]) : medianCut(sampled, maxColors)
-
-  const mapping = new Map<string, string>()
+  const byHex = new Map<string, string>()
   const coverage = new Map<string, number>()
-
   for (const box of boxes) {
-    const resolved = snapToPalette(palette, boxColor(box))
+    const kept = boxColor(box)
     for (const color of box) {
-      mapping.set(color.hex, resolved)
-      coverage.set(resolved, (coverage.get(resolved) ?? 0) + color.count)
+      byHex.set(color.hex, kept)
+      coverage.set(kept, (coverage.get(kept) ?? 0) + color.count)
     }
   }
 
-  const colors = [...coverage].sort(([aHex, aCount], [bHex, bCount]) =>
-    bCount === aCount ? aHex.localeCompare(bHex) : bCount - aCount,
-  )
-
-  return { mapping, colors: colors.map(([hex]) => hex) }
+  const colors = [...coverage]
+    .map(([hex, count]) => ({ hex, count }))
+    .sort((a, b) => (b.count === a.count ? a.hex.localeCompare(b.hex) : b.count - a.count))
+  return { colors, byHex }
 }

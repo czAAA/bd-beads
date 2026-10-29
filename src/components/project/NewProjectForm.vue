@@ -3,45 +3,25 @@ import { computed, inject, onMounted, ref, watch } from 'vue'
 import { DEFAULT_BEAD, beadLabel, findBead, offeredBeads } from '../../domain/beads'
 import type { CreateProjectInput } from '../../domain/createProject'
 import { DEFAULT_BEAD_SHAPE, DEFAULT_TECHNIQUE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
-import {
-  formatImageLimits,
-  imageInputAccept,
-  validateImageFile,
-  type ImageRejection,
-  type PixelData,
-  ImageConversionError,
-  type DecodeImage,
-} from '../../domain/imageConversion'
-import type { StatedSize } from '../../domain/projectSize'
+import { formatImageLimits } from '../../domain/imageConversion'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import BeadSection from './BeadSection.vue'
 import NamesSection from './NamesSection.vue'
 import TechniqueSection from './TechniqueSection.vue'
-import ConvertImageSizeDialog from '../import/ConvertImageSizeDialog.vue'
 import AppButton from '../ui/AppButton.vue'
-import AppIcon from '../ui/AppIcon.vue'
-import AppTooltip from '../ui/AppTooltip.vue'
-import FileButton from '../ui/form/FileButton.vue'
 import FormField from '../ui/form/FormField.vue'
-import LoadingState from '../ui/LoadingState.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
 
 const { t } = useI18n()
 
-const props = defineProps<{
-  // How a chosen picture is turned into pixels (ticket 58): the app shell hands over the browser's decoding (ADR
-  // 0020); a test hands over synthetic pixel data, since jsdom decodes no image bytes.
-  decodeImage: DecodeImage
-}>()
-
 const emit = defineEmits<{
   submit: [payload: CreateProjectInput]
-  // The form's current values, emitted on any change (and once on mount). Convert image's frame is sized from these and
-  // follows them as they are edited during framing (ticket 58).
+  // The form's current values, emitted on any change (and once on mount): what a picture dropped on the app later
+  // opens Convert image on (spec 0645).
   draft: [payload: CreateProjectInput]
-  /** A picture that passed validation and decoded — the framing step's starting point. */
-  'convert-image': [image: PixelData]
+  /** Convert image (spec 0645): the wizard opens on a copy of the form's values. */
+  'convert-image': [payload: CreateProjectInput]
 }>()
 
 const name = ref('')
@@ -89,88 +69,16 @@ function currentInput(): CreateProjectInput {
   }
 }
 
-/** The size Convert image's size step was given; only the framing step reads it, so Create never carries it. */
-const convertSize = ref<StatedSize>()
-
-/** The draft Convert image's frame follows: the form's values plus the size stated in the size step, once there is
- * one. */
-function draftInput(): CreateProjectInput {
-  return { ...currentInput(), ...(convertSize.value ? { size: convertSize.value } : {}) }
-}
-
-watch([name, beadId, beadShape, technique, settings, makerName, convertSize], () => emit('draft', draftInput()), { immediate: true })
+watch([name, beadId, beadShape, technique, settings, makerName], () => emit('draft', currentInput()), { immediate: true })
 
 function onSubmit() {
   emit('submit', currentInput())
 }
 
-/** A decoded picture waiting for its Schema size (ticket 342, ADR 0026); the size step is open while there is one. */
-const pendingImage = ref<PixelData>()
-
-/** The size is stated: the draft carries it first, so the frame the shell builds has a size to follow, then framing
- * starts. */
-function onSizeConfirm(size: StatedSize) {
-  const image = pendingImage.value
-  if (!image) return
-  convertSize.value = size
-  pendingImage.value = undefined
-  emit('draft', draftInput())
-  emit('convert-image', image)
-}
-
-/** Why the last chosen picture was turned away, if it was — one of domain/imageConversion's ImageRejection reasons. */
-const convertRejection = ref<ImageRejection | undefined>()
-
 const convertAction = controlAction('convert-image')
 
-// The advertised limits and every rejection message, filled in from the constants the validation enforces (see
-// formatImageLimits), so what is promised and what is refused cannot drift apart.
+/** The limits, filled in from the constants the validation enforces (see formatImageLimits), always under the button. */
 const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsHint))
-const convertError = computed(() =>
-  convertRejection.value ? formatImageLimits(t.value.convertImage.errors[convertRejection.value]) : undefined,
-)
-
-// Validates and decodes a chosen picture, then hands it over for framing. Format and size are judged from the file; the
-// resolution limit needs the decoded dimensions, so it comes back from the decode step as its own rejection
-// (imageDecode.ts).
-async function onConvertImage(event: Event): Promise<void> {
-  const input = event.target as HTMLInputElement
-  const file = input.files?.[0]
-  if (!file) {
-    return
-  }
-
-  try {
-    await convertFile(file)
-  } finally {
-    // Clear the input so re-picking the same file still counts as a change (the same reason ProjectImport does).
-    input.value = ''
-  }
-}
-
-/** A picked or dropped picture: validated, decoded, and handed over for framing, or turned away with the reason. */
-async function convertFile(file: File): Promise<void> {
-  convertRejection.value = validateImageFile(file)
-
-  try {
-    if (!convertRejection.value) {
-      reading.value = true
-      pendingImage.value = await props.decodeImage(file)
-    }
-  } catch (error) {
-    convertRejection.value = error instanceof ImageConversionError ? error.reason : 'decodeFailed'
-  } finally {
-    reading.value = false
-  }
-}
-
-/** Whether a chosen picture is being read: a big one takes a moment, and says so once it does (ticket 158). */
-const reading = ref(false)
-
-/** A picture dropped on Convert image: the same as picking one. */
-function onDropImage(file: File) {
-  void convertFile(file)
-}
 </script>
 
 <template>
@@ -178,8 +86,8 @@ function onDropImage(file: File) {
     The New Project form (ticket 149; NewProjectForm card), in the Menu panel's subpanel: the Open canvas title and what
     it is for, Name (optional), Maker's name (ticket 182, also optional), Bead and Technique (the sections the Project
     panel shares, ticket 568), then three accent buttons: Create Project, Convert image and Pick a starter. It states no
-    size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image still needs
-    one, so choosing a picture opens its own size step before framing.
+    size (ticket 342): a Project starts as a Canvas and its size is set in the Frame sheet. Convert image opens its own
+    popup on a copy of these values (spec 0645).
   -->
   <form id="new-project-form" class="new-project-form" novalidate @submit.prevent="onSubmit">
     <header class="new-project-form__head">
@@ -205,37 +113,22 @@ function onDropImage(file: File) {
     </AppButton>
 
     <!--
-      Convert image (CONTEXT.md, ADR 0010) as the form's second way out: a picture instead of an empty canvas. It needs
-      a size before there is a frame to fit the picture into, so a chosen picture opens the size step (ticket 342). The
-      limits are always written under it.
+      Convert image (CONTEXT.md, ADR 0010) as the form's second way out: a picture instead of an empty canvas, in the
+      Convert image wizard (spec 0645). The limits are always written under it.
     -->
     <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
     <div class="new-project-form__convert" data-testid="convert-image-field">
-      <AppTooltip
-        class="new-project-form__convert-tip"
-        :name="convertAction.name(t)"
-        :body="convertAction.body?.(t)"
-        placement="top"
-        :announce="false"
+      <AppButton
+        class="new-project-form__convert-button"
+        variant="primary"
+        icon="image"
+        :action="convertAction"
+        data-testid="convert-image"
+        @click="emit('convert-image', currentInput())"
       >
-        <FileButton
-          id="convert-image-input"
-          :label="t.convertImage.fileLabel"
-          :aria-label="t.convertImage.fileName"
-          icon="image"
-          accent
-          data-testid="convert-image-input"
-          :accept="imageInputAccept()"
-          @change="onConvertImage"
-          @drop-file="onDropImage"
-        />
-      </AppTooltip>
+        {{ t.convertImage.fileLabel }}
+      </AppButton>
       <p class="new-project-form__hint" data-testid="convert-image-limits">{{ limitsHint }}</p>
-      <LoadingState v-if="reading" compact :text="t.convertImage.readingPicture" />
-      <p v-if="convertError" class="new-project-form__error" role="alert" data-testid="convert-image-error">
-        <AppIcon name="warning" :size="14" />
-        <span>{{ convertError }}</span>
-      </p>
     </div>
 
     <p class="new-project-form__or" aria-hidden="true">{{ t.form.or }}</p>
@@ -244,20 +137,13 @@ function onDropImage(file: File) {
         {{ t.form.pickStarter }}
       </AppButton>
     </div>
-
-    <ConvertImageSizeDialog
-      v-if="pendingImage && selectedBead"
-      :bead="selectedBead"
-      :technique="technique"
-      @confirm="onSizeConfirm"
-      @cancel="pendingImage = undefined"
-    />
   </form>
 </template>
 
 <style scoped>
-.new-project-form__convert-tip {
-  flex-direction: column;
+.new-project-form__convert-button {
+  width: 100%;
+  height: var(--field-height);
 }
 
 .new-project-form__head {
@@ -325,23 +211,11 @@ function onDropImage(file: File) {
   gap: var(--space-6);
 }
 
-.new-project-form__hint,
-.new-project-form__error {
-  display: flex;
-  gap: var(--space-6);
-  align-items: flex-start;
+.new-project-form__hint {
   margin: 0;
   font: var(--type-meta);
   font-family: var(--font-sans);
   color: var(--muted);
-}
-
-.new-project-form__error {
-  color: var(--danger);
-}
-
-.new-project-form__error > .icon {
-  margin-top: var(--space-2);
 }
 
 </style>
