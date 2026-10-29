@@ -28,6 +28,7 @@ export function installFakeCanvas(): {
     arc: () => undefined,
     fillText: () => undefined,
     translate: () => undefined,
+    scale: () => undefined,
     rotate: () => undefined,
     font: '',
     textAlign: 'start',

@@ -1,5 +1,4 @@
 import { beadColorAt } from '../domain/layerBeads'
-import { projectCell } from '../domain/projectBead'
 import { projectDimensions } from '../domain/projectExtent'
 import { rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import type { VueWrapper } from '@vue/test-utils'
@@ -12,6 +11,7 @@ import type { RulerLabel } from '../rendering/rulers'
 import { surfaceView } from '../rendering/surfaceView'
 import { frameGrid } from './frameGrid'
 import { frameOf } from '../domain/layerRecord'
+import { canvasWeave, placedFrame } from '../domain/layerWeave'
 
 // Pressing, hovering and reading beads on the Drawing surface from a test (tickets 109, 110). jsdom does no layout, so
 // a bead is found by its coordinates and hit-tested as for a real pointer (Surface view's pointToBead); results are
@@ -59,7 +59,7 @@ function beadPoint(wrapper: Anywhere, at: BeadAt): { clientX: number; clientY: n
   const { row, column, layer } = positionOf(wrapper, at)
   // A Frame bead is aimed at where the Frame lays it: a Custom frame's round and place are no Canvas position.
   const project = drawnProject(wrapper)
-  const onFrame = layer === 'frame' && frameOf(project) ? { cell: projectCell(project), frame: frameOf(project) } : {}
+  const onFrame = layer === 'frame' && frameOf(project) ? { cell: canvasWeave(project).cell, frame: placedFrame(project) } : {}
 
   const view = surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, ...onFrame, rotation, zoom, scroll: { x: scrollX, y: scrollY } })
   const point = view.beadToPoint({ row, column }, onFrame.frame ? 'frame' : undefined)

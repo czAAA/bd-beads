@@ -43,6 +43,7 @@ export type DrawingContext = Pick<
   | 'textBaseline'
   | 'translate'
   | 'rotate'
+  | 'scale'
 >
 
 /** The white tint of dark's rim (`bead-rim`, dark). */

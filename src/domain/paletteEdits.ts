@@ -15,7 +15,7 @@ export function lettersOfPalette(palette: PaletteIds, beadId: string, kept: unkn
  * remembered as removed (ticket 0528). `codes` join it by hex and a swatch's code leaves with it (ticket 0538). */
 export function setPalette(project: Project, palette: PaletteIds, codes: PaletteCodes = {}): Project {
   const removed = removedDefaultsAfter(project.palette, palette, project.removedDefaults ?? [])
-  const beadId = beadIdOfLayer(project, 'canvas')
+  const beadId = beadIdOfLayer(project, 'frame')
   const kept = codesInPalette({ ...project.paletteCodes, ...codes }, palette, defaultPalette(beadId))
   const { removedDefaults: _removed, paletteCodes: _codes, ...rest } = project
   const paletteLetters = lettersOfPalette(palette, beadId, project.paletteLetters)

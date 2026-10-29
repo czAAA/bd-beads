@@ -6,7 +6,7 @@ import { normalizeProject } from './storedProject'
 import { replaceBead, resolveProjectBead, projectCell } from './projectBead'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import type { Project } from './project'
-import { BEAD_CATALOG } from './beads'
+import { BEAD_CATALOG, beadCopy } from './beads'
 import { estimatedSizeMm } from './projectSize'
 import { paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
@@ -57,10 +57,11 @@ describe('replaceBead', () => {
     return project
   }
 
-  it('switches the Bead id', () => {
+  it("switches the woven layer's Bead id: the Frame's, the Canvas keeping its own (ticket 0665)", () => {
     const replaced = replaceBead(distinctlyPainted(), cubeBead)
 
-    expect(canvasOf(replaced).beadId).toBe(cubeBead.id)
+    expect(frameOf(replaced)!.beadId).toBe(cubeBead.id)
+    expect(canvasOf(replaced).beadId).toBe(roundBead.id)
   })
 
   it.each(BEAD_CATALOG.flatMap((from) => BEAD_CATALOG.filter((to) => to !== from).map((to) => [from, to] as const)))(
@@ -115,7 +116,7 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
 
   it('saves the copy without the retired flag', () => {
     expect(canvasOf(made()).bead).toEqual(cubeBead)
-    expect(canvasOf(replaceBead(made(), retired)).bead).not.toHaveProperty('retired')
+    expect(frameOf(replaceBead(made(), retired))!.bead).not.toHaveProperty('retired')
   })
 
   it('draws and sizes a Bead the catalog has dropped from the Project’s own copy', () => {
@@ -149,6 +150,42 @@ describe('a Project carries a copy of its Bead (ticket 534, ADR 0072)', () => {
   it('puts the copy back with Undo of a Replace Bead', () => {
     const before = made()
     const replaced = replaceBead(before, retired)
-    expect(canvasOf(restoreSnapshot(replaced, snapshotOf(before))).bead).toEqual(cubeBead)
+    expect(frameOf(restoreSnapshot(replaced, snapshotOf(before)))!.bead).toEqual(cubeBead)
+  })
+})
+
+describe('each layer has its own Bead (ticket 0665, ADR 0079)', () => {
+  const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
+  const made = () => createProject({ technique: 'loom', beadId: roundBead.id, size: { width: 4, height: 2, unit: 'beads' } })
+
+  it("replaces the Canvas's Bead when asked, leaving the Frame's, the woven one, and the Palette as they were", () => {
+    const before = made()
+    const replaced = replaceBead(before, delica, undefined, 'canvas')
+    expect(canvasOf(replaced).beadId).toBe(delica.id)
+    expect(frameOf(replaced)!.beadId).toBe(roundBead.id)
+    expect(replaced.palette).toBe(before.palette)
+    expect(resolveProjectBead(replaced)).toEqual(roundBead)
+  })
+
+  it("replaces the Canvas's Bead on a Project with no Frame, whichever layer is asked, and the Palette follows it", () => {
+    const open = withFields(made(), { frame: undefined })
+    const replaced = replaceBead(open, delica, undefined, 'frame')
+    expect(canvasOf(replaced).beadId).toBe(delica.id)
+    expect(replaced.palette).toContain('beige')
+  })
+
+  it("moves the Palette with the Frame's Bead, and one Undo puts both back", () => {
+    const before = made()
+    const replaced = replaceBead(before, delica)
+    expect(replaced.palette).toContain('beige')
+    const undone = restoreSnapshot(replaced, snapshotOf(before))
+    expect(frameOf(undone)!.beadId).toBe(roundBead.id)
+    expect(undone.palette).toEqual(before.palette)
+  })
+
+  it('reads the Project\'s Bead and how it is drawn from the woven layer, the Frame', () => {
+    const project = withFields(replaceBead(made(), delica), { beadShape: 'real' })
+    expect(resolveProjectBead(project)).toEqual(beadCopy(delica))
+    expect(projectCell(project)!.aspect).toBeCloseTo(delica.heightMm / delica.widthMm)
   })
 })
