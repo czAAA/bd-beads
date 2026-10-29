@@ -144,7 +144,7 @@ function onListKeydown(event: KeyboardEvent) {
         </template>
       </button>
     </component>
-    <div v-if="open" :id="listId" ref="listEl" class="panel-picker__list" :style="anchored.style.value" role="menu" :aria-label="label" @keydown="onListKeydown">
+    <div v-if="open" :id="listId" ref="listEl" class="panel-picker__list anchored-popup" popover="manual" :style="anchored.style.value" role="menu" :aria-label="label" @keydown="onListKeydown">
       <button
         v-for="option in options"
         :key="option.value"
@@ -233,7 +233,13 @@ function onListKeydown(event: KeyboardEvent) {
   border-color: var(--ink);
 }
 
-/* The title block's pencil (ticket 0657): an 18px plain button holding a 12px icon (MarginSheet card). */
+/* The title block's pencil (ticket 0657): an 18px plain button holding a 12px icon (MarginSheet card), centred in its
+ * row like the other pencils, not sat on the wrap's text baseline (ticket 0698). */
+.panel-picker__wrap:has(> .panel-picker__button--icon) {
+  display: flex;
+  align-items: center;
+}
+
 .panel-picker__button--icon {
   justify-content: center;
   width: var(--margin-pencil);

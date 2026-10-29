@@ -1614,8 +1614,8 @@ describe('ProjectSurface with a Frame', () => {
   it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {
     const full = await mountSurface(framed(), 1, { x: 0, y: 0 }, { showRulers: true })
     expect(rulerNumbers(full.wrapper).length).toBeGreaterThan(0)
-    // At 60% the band is 48px: the compact form.
-    const compact = await mountSurface(framed(), 0.6, { x: 0, y: 0 }, { showRulers: true })
+    // At 40% the band is 32px: under the smallest scale, the compact form (ticket 0698).
+    const compact = await mountSurface(framed(), 0.4, { x: 0, y: 0 }, { showRulers: true })
     expect(rulerNumbers(compact.wrapper)).toEqual([])
   })
 

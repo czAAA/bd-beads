@@ -180,6 +180,7 @@ export const es: Translations = {
       body: 'Cuentas que se toman en cada puntada: quedan rectas una junto a otra antes de que las siguientes se desplacen media cuenta. 1 es el peyote de siempre.',
       locked: 'Hay filas marcadas como hechas. Quita el marco para cambiar el drop.',
       changed: 'Drop cambiado a {count}',
+      short: '{count}-drop',
     },
     brickDrop: {
       label: 'Drop',
@@ -189,6 +190,7 @@ export const es: Translations = {
       body: 'Cuentas que se toman en cada puntada: quedan rectas una junto a otra antes de que las siguientes se desplacen media cuenta. 1 es el punto ladrillo de siempre.',
       locked: 'Hay filas marcadas como hechas. Quita el marco para cambiar el drop.',
       changed: 'Drop cambiado a {count}',
+      short: '{count}-drop',
     },
   },
   projects: {
@@ -625,6 +627,7 @@ export const es: Translations = {
       line: 'El margen mide 4 cuentas por cada lado. No se puede poner nada en él y las exportaciones nunca lo muestran.',
       titleBlock: 'Nombre y tamaño en el margen',
       changeTechnique: 'Cambiar técnica',
+      changeSetting: 'Cambiar {setting}',
       foldTitleBlock: 'Plegar el cajetín',
       showTitleBlock: 'Mostrar el cajetín',
       showTitleBlockOf: 'Mostrar el cajetín: {name}',

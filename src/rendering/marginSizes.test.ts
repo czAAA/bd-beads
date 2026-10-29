@@ -15,6 +15,9 @@ const tokenPx = new Map([...tokens.spacing.tokens, ...tokens.radius.tokens].map(
 /** Each value of `MARGIN_PX` by its path, and what mirrors it: a design-system token, a CSS custom property of the
  * MarginSheet card, or nothing, with the reason. */
 const MIRROR: Record<string, { token: string } | { css: string } | { none: string }> = {
+  'scale.band': { none: 'the sheet’s script scales by it; CSS never reads the rule' },
+  'scale.min': { none: 'the sheet’s script scales by it; CSS never reads the rule' },
+  'scale.max': { none: 'the sheet’s script scales by it; CSS never reads the rule' },
   'band.full': { css: '--margin-band-full' },
   'band.compact': { css: '--margin-band-compact' },
   'band.folded': { css: '--margin-band-folded' },

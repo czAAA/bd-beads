@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, onTestFinished } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { createProject } from '../../domain/createProject'
@@ -12,12 +12,14 @@ import { settleForMeasuring } from '../../testUtils/textFitInPage'
 import MarginSheet from './MarginSheet.vue'
 import { withLayers } from '../../testUtils/layerFields'
 
-// The margin sheet keeps its controls' size as the zoom grows and shrinks its band, so it changes form (ticket 0658):
-// at each zoom, and on a narrow Frame, nothing of the Frame stands outside its sheet, over its beads, or over another
-// control. Measured in the page, in English and in the longest text of every language.
+// The margin sheet scales with its band, and under its smallest scale changes form (tickets 0658, 0698): at each zoom,
+// and on a narrow Frame, nothing of the Frame stands outside its sheet, over its beads, or over another control.
+// Measured in the page, in English and in the longest text of every language.
 
 const zoom = ref(1)
 const columns = ref(40)
+/** Brick stitch gives the title block a Drop cell (ticket 0698). */
+const technique = ref<'loom' | 'brick'>('loom')
 const movePresses = ref(0)
 
 /** Where a loom Frame of `columns` × 11 and its sheet are at a zoom, as the surface reports them: beads of 20px at
@@ -37,7 +39,7 @@ function anchorAt(at: number, across: number): FrameAnchor {
 function projectOf(across: number): Project {
   const bare: Project = withLayers(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 12, height: 12, unit: 'beads' } }), {
 makerName: 'Ada',
-    frame: { row: 0, column: 0, rows: 11, columns: across, technique: 'loom', beads: {}, name: 'Sun band' },
+    frame: { row: 0, column: 0, rows: 11, columns: across, technique: technique.value, techniqueSettings: { brickDrop: 2 }, beads: {}, name: 'Sun band' },
 })
   const painted = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).slice(0, across).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
   return moveToRow(painted, 0)
@@ -90,13 +92,13 @@ function problems(root: HTMLElement): string[] {
 
 const formOf = (root: HTMLElement) => root.querySelector('[data-testid="margin-sheet"]')!.className.match(/margin-sheet--(full|compact|folded|bare)/)?.[1]
 
-describe('the margin sheet at each zoom (ticket 0658)', () => {
+describe('the margin sheet at each zoom (tickets 0658, 0698)', () => {
   for (const locale of FIT_LOCALES) {
-    it(`is full at 100%, compact at 66% and folded at 40%, nothing clipped or overlapping, in ${locale}`, async () => {
+    it(`is full at 100% and 60%, compact at 40% and folded at 25%, nothing clipped or overlapping, in ${locale}`, async () => {
       zoom.value = 1
       columns.value = 40
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
-      for (const [at, form] of [[1, 'full'], [0.66, 'compact'], [0.4, 'folded']] as const) {
+      for (const [at, form] of [[1, 'full'], [0.6, 'full'], [0.4, 'compact'], [0.25, 'folded']] as const) {
         zoom.value = at
         await settled(root)
         expect(formOf(root), `${at}`).toBe(form)
@@ -105,14 +107,37 @@ describe('the margin sheet at each zoom (ticket 0658)', () => {
       }
     })
 
-    it(`fits at every zoom from 30% to 150%, and on a narrow Frame, stepping down a form where the sheet is too narrow, in ${locale}`, async () => {
+    it(`fits brick stitch's Drop cell in the title block at 150%, 100%, 60% and 40%, in ${locale}`, async () => {
+      zoom.value = 1
+      columns.value = 40
+      technique.value = 'brick'
+      onTestFinished(() => {
+        technique.value = 'loom'
+      })
+      const { root } = await mountAt(Host, {}, { locale, width: 1280 })
+      for (const at of [1.5, 1, 0.6, 0.4]) {
+        zoom.value = at
+        await settled(root)
+        expect(problems(root), `${at}`).toEqual([])
+        // At 40% the longest text's title block is the tab: the sheet is too narrow for even its brief row.
+        if (at < 0.6) continue
+        expect(root.querySelector('[data-testid="margin-brick-drop-short"]'), `${at}`).not.toBeNull()
+        // The full block's pencils stand on one line, the Technique's picker too.
+        const pencils = ['margin-frame-name-edit', 'margin-technique-picker', 'margin-brick-drop-edit', 'margin-maker-edit']
+          .map((id) => root.querySelector(`[data-testid="${id}"] svg`)!.getBoundingClientRect())
+          .map((icon) => icon.top + icon.height / 2)
+        expect(Math.max(...pencils) - Math.min(...pencils), `${at}`).toBeLessThan(0.5)
+      }
+    })
+
+    it(`fits at every zoom from 25% to 150%, and on a narrow Frame, stepping down a form where the sheet is too narrow, in ${locale}`, async () => {
       zoom.value = 1
       columns.value = 40
       const { root } = await mountAt(Host, {}, { locale, width: 1280 })
       const found: Record<string, string[]> = {}
       for (const across of [40, 16, 8, 3]) {
         columns.value = across
-        for (let percent = 30; percent <= 150; percent += 5) {
+        for (let percent = 25; percent <= 150; percent += 5) {
           zoom.value = percent / 100
           await settled(root)
           const wrong = problems(root)
@@ -124,14 +149,14 @@ describe('the margin sheet at each zoom (ticket 0658)', () => {
   }
 })
 
-describe('the bare margin sheet, under a 31px band (ticket 0682)', () => {
+describe('the bare margin sheet, under 0.6 of a 31px band (tickets 0682, 0698)', () => {
   it('stands the Move bar over the middle of the Frame\'s top edge: it takes the press that drags, and a press on the first row reaches the bead', async () => {
     zoom.value = 1
     columns.value = 40
     const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
     for (const across of [40, 3]) {
       columns.value = across
-      for (const at of [0.1, 0.25, 0.38]) {
+      for (const at of [0.1, 0.15, 0.22]) {
         zoom.value = at
         movePresses.value = 0
         await settled(root)

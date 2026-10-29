@@ -128,3 +128,12 @@
   border-bottom-width: 2px;
   border-radius: var(--radius-xs);
 }
+
+/* A popup placed by useAnchoredPosition in the top layer (a manual popover, ticket 0698): the script places it in
+   screen coordinates, so this undoes the popover's own box (centered, scrolling, in the system's colors). */
+:where(.anchored-popup[popover]) {
+  inset: auto;
+  margin: 0;
+  overflow: visible;
+  color: var(--ink);
+}
