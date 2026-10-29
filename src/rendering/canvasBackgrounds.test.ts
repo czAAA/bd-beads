@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { channelsOf, contrastRatio } from '../domain/color'
 import { PROJECT_THEMES, PRINT_THEME } from './beadLook'
-import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, migratedChoice, shownChoice } from './canvasBackgrounds'
+import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, marginColorOf, migratedChoice, shownChoice } from './canvasBackgrounds'
 
 const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/system/tokens.json'), 'utf8')) as {
   color: { tokens: { name: string; value: Record<'light' | 'dark', string> }[] }
@@ -121,5 +121,52 @@ describe('Canvas color backgrounds', () => {
     ['dark', 6, 4],
   ] as const)('moves a first-list %s choice %i to %i by name', (theme, stored, moved) => {
     expect(migratedChoice(theme, stored)).toBe(moved)
+  })
+})
+
+describe('the margin color (ticket 0656, MarginSheet card)', () => {
+  it.each([
+    ['dark', 5, '#45484c'],
+    ['dark', 1, '#2b2b2b'],
+    ['light', 2, '#ebe7e0'],
+    ['light', 1, '#eeeeee'],
+  ] as const)('is Auto by default: %s background %i one step off, %s', (theme, choice, margin) => {
+    expect(marginColorOf(theme, choice)).toBe(margin)
+    expect(canvasTheme(theme, choice).margin.fill).toBe(margin)
+  })
+
+  it('steps a Custom Canvas color toward white in the dark look and toward black in the light look', () => {
+    // #14213d is drawn in the dark look, #fde68a in the light one, whatever the theme.
+    expect(marginColorOf('light', 'custom', '#14213d')).toBe('#202c47')
+    expect(marginColorOf('dark', 'custom', '#fde68a')).toBe('#f0db83')
+  })
+
+  it('takes a picked one of the theme\'s five, by position, or the person\'s Custom color', () => {
+    expect(marginColorOf('light', 1, undefined, { choice: 3 })).toBe('#e6e3de')
+    expect(marginColorOf('dark', 1, undefined, { choice: 3 })).toBe('#12161c')
+    expect(marginColorOf('dark', 1, undefined, { choice: 'custom', customColor: '#7a2e8c' })).toBe('#7a2e8c')
+    expect(marginColorOf('dark', 1, undefined, { choice: 'custom' })).toBe('#2b2b2b')
+  })
+
+  it('is white with a 2px black edge in high contrast, whatever is picked', () => {
+    expect(marginColorOf('contrast', 1, undefined, { choice: 'custom', customColor: '#7a2e8c' })).toBe('#ffffff')
+    expect(PROJECT_THEMES.contrast.margin).toMatchObject({ fill: '#ffffff', line: '#595959', edge: '#000000', edgeWidth: 2 })
+  })
+
+  it.each(['light', 'dark'] as const)('draws its lines in the %s margin-line token, its edge 1px', (theme) => {
+    const line = tokens.color.tokens.find((entry) => entry.name === 'margin-line')!.value[theme]
+    expect(canvasTheme(theme, 1).margin).toMatchObject({ line, edge: line, edgeWidth: 1 })
+  })
+
+  it.each(['#ffffff', '#fde68a', '#14213d', '#000000'])('keeps the rulers on it at 4.5:1 and the 5th numbers at 7:1, on the margin color %s', (color) => {
+    const { margin } = canvasTheme('light', 1, undefined, { choice: 'custom', customColor: color })
+    expect(contrast(margin.ruler, color)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(margin.rulerStrong, color)).toBeGreaterThanOrEqual(7)
+  })
+
+  it.each(['#777777', '#e03c3c'])('keeps the rulers at 4.5:1 on the mid-grey margin color %s, where no grey reaches 7:1', (color) => {
+    const { margin } = canvasTheme('dark', 1, undefined, { choice: 'custom', customColor: color })
+    expect(contrast(margin.ruler, color)).toBeGreaterThanOrEqual(4.5)
+    expect(contrast(margin.rulerStrong, color)).toBeGreaterThanOrEqual(contrast(margin.ruler, color))
   })
 })

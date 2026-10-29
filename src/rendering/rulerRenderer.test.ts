@@ -13,6 +13,7 @@ function fakeContext() {
   const strokes: { style: unknown; rect: number[] }[] = []
   const fills: { style: unknown; rect: number[] }[] = []
   const texts: string[] = []
+  const textStyles: unknown[] = []
   let current: number[] = []
   const state = { strokeStyle: '', fillStyle: '' }
   const context = {
@@ -32,7 +33,10 @@ function fakeContext() {
     },
     stroke: () => strokes.push({ style: state.strokeStyle, rect: current }),
     fill: () => fills.push({ style: state.fillStyle, rect: current }),
-    fillText: (text: string) => texts.push(text),
+    fillText: (text: string) => {
+      texts.push(text)
+      textStyles.push(state.fillStyle)
+    },
     set strokeStyle(value: string) {
       state.strokeStyle = value
     },
@@ -44,7 +48,7 @@ function fakeContext() {
     textAlign: '',
     textBaseline: '',
   } as unknown as DrawingContext
-  return { context, strokes, fills, texts }
+  return { context, strokes, fills, texts, textStyles }
 }
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
@@ -85,6 +89,17 @@ describe('drawRulers', () => {
 
     expect(strokes.map((stroke) => stroke.style)).toEqual([LIGHT_THEME.frameLine])
     expect(texts).toHaveLength(0)
+  })
+
+  it('sets the Frame\'s numbers in the greys that read on its margin, and a Piece\'s in the Canvas\'s (ticket 0656)', () => {
+    const theme = { ...LIGHT_THEME, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
+    const framed = fakeContext()
+    drawRulers(framed.context, { ...drawn({ ...base, frame: { ...base.frame!, rows: 12, columns: 12 } }, { zoom: 1, numbers: true }), theme })
+    expect(new Set(framed.textStyles)).toEqual(new Set(['#111111', '#222222']))
+
+    const pieces = fakeContext()
+    drawRulers(pieces.context, { ...drawn(twoPieces as typeof base, { zoom: 1, numbers: true }), theme })
+    expect(pieces.textStyles.every((style) => style === LIGHT_THEME.ruler || style === LIGHT_THEME.rulerStrong)).toBe(true)
   })
 
   it('draws the Frame\'s line in `ink` and no Piece rectangles once there is a Frame', () => {

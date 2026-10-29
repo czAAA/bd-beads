@@ -20,6 +20,7 @@ import {
   type DrawingContext,
   type ProjectTheme,
 } from './beadLook'
+import type { MarginLook } from './marginLook'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -384,6 +385,48 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
   }
 }
 
+// The margin's sheet (MarginSheet card, ticket 0656), in screen px: its corners, its inner border's inset (6px once the
+// band is under 64px) and that border's corners.
+const SHEET_RADIUS_PX = 12
+const BORDER_INSET_PX = 10
+const BORDER_INSET_COMPACT_PX = 6
+const FULL_BAND_PX = 64
+const BORDER_RADIUS_PX = 6
+
+/** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band filled in the margin color
+ * over the Canvas, the Frame's footprint left out, with a hairline round its edge and an inner border where it fits.
+ * Drawn in grid space, so its px are divided by the zoom to stay screen px. */
+function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
+  const sheet = frameFootprintPx(project, margin)!
+  const footprint = frameFootprintPx(project)!
+  const band = Math.min(footprint.x - sheet.x, footprint.y - sheet.y, sheet.x + sheet.width - footprint.x - footprint.width, sheet.y + sheet.height - footprint.y - footprint.height) * zoom
+  const edge = BEAD_GAP_PX / 2
+  const radius = Math.min(SHEET_RADIUS_PX, band) / zoom
+  context.save()
+  context.beginPath()
+  context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
+  boxPath(context, footprint.x - edge, footprint.y - edge, footprint.width + 2 * edge, footprint.height + 2 * edge)
+  context.fillStyle = look.fill
+  context.fill('evenodd')
+  const half = look.edgeWidth / zoom / 2
+  context.setLineDash([])
+  context.lineWidth = look.edgeWidth / zoom
+  context.strokeStyle = look.edge
+  context.beginPath()
+  context.roundRect(sheet.x + half, sheet.y + half, sheet.width - 2 * half, sheet.height - 2 * half, Math.max(0, radius - half))
+  context.stroke()
+  const inset = band >= FULL_BAND_PX ? BORDER_INSET_PX : BORDER_INSET_COMPACT_PX
+  if (band >= 2 * inset) {
+    const at = inset / zoom
+    context.lineWidth = 1 / zoom
+    context.strokeStyle = look.line
+    context.beginPath()
+    context.roundRect(sheet.x + at, sheet.y + at, sheet.width - 2 * at, sheet.height - 2 * at, BORDER_RADIUS_PX / zoom)
+    context.stroke()
+  }
+  context.restore()
+}
+
 // Draws the part of the Project in the region, clearing it first. Differs by space only in the background (Frame-only
 // fills it, the Canvas stays transparent and fades finished rows) and in what is drawn: the Canvas's beads with the
 // Frame laid over them in its own Weave, or the Frame alone.
@@ -428,6 +471,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     drawPositionMarks(context, { project, space, area, zoom, pixelRatio, theme, margin })
     drawCanvasLayer(context, draw, space)
     if (frame) {
+      drawMarginSheet(context, project, margin, zoom, theme.margin)
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
       // The band's rows are the Canvas's; the Frame's own are counted from its first (alike weaves only).

@@ -116,4 +116,21 @@ describe('BackgroundColorPicker (ticket 0653)', () => {
     expect(wrapper.emitted()).not.toHaveProperty('select-custom')
     expect(wrapper.find('[data-testid="custom-color-panel"]').exists()).toBe(false)
   })
+
+  it('draws a split swatch corner to corner in its two colors, and dots the swatch marked as the Canvas color unless it is chosen (ticket 0656)', () => {
+    const swatches = [
+      { id: 'auto', color: '#eeeeee', split: '#fafafa', name: 'Auto', label: 'Auto, one step off the Canvas color' },
+      { id: 'studio', color: '#fafafa', dot: true, name: 'Studio', label: 'Studio, the Canvas color' },
+      { id: 'linen', color: '#f7f3ec', name: 'Linen', label: 'Linen, 2 of 5' },
+    ]
+    const wrapper = render({ swatches, selectedId: 'auto' })
+    expect(wrapper.get('[data-testid="background-color-auto"]').attributes('style')).toContain('linear-gradient(135deg, rgb(250, 250, 250) 50%, rgb(238, 238, 238) 50%)')
+    expect(wrapper.get('[data-testid="background-color-linen"]').attributes('style')).not.toContain('gradient')
+    expect(wrapper.get('[data-testid="background-color-studio"]').find('[data-testid="background-color-dot"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="background-color-dot"]')).toHaveLength(1)
+
+    const chosen = render({ swatches, selectedId: 'studio' })
+    expect(chosen.find('[data-testid="background-color-dot"]').exists()).toBe(false)
+    expect(chosen.get('[data-testid="background-color-name"]').text()).toBe('Studio #fafafa')
+  })
 })
