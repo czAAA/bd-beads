@@ -616,6 +616,8 @@ export const pl: Translations = {
       autoLabel: 'Auto, o krok od koloru płótna',
       canvasColorLabel: '{color}, kolor płótna',
       line: 'Margines ma 4 koraliki z każdej strony. Nie można na nim nic umieścić i nie trafia do eksportu.',
+      titleBlock: 'Nazwa i rozmiar na marginesie',
+      changeTechnique: 'Zmień technikę',
     },
     qualityHintLabel: 'Do czego służy niska jakość',
     qualityHint: 'Niska jakość oszczędza pamięć: mniejsze pliki i obraz, który telefon zawsze utworzy.',

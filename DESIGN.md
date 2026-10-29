@@ -139,6 +139,7 @@ canvas, an export and a test, none of which can read CSS. So it takes its colors
 | `emptyBead` | `bead-empty` |
 | `seam` | `bead-seam` |
 | `marker` | `marker` |
+| `accent` | `accent` (Edit Frame's hot corners, ticket 0657) |
 | `outline` | `bead-outline` |
 
 Ticket 140 adds a test that keeps each theme's `ProjectTheme` equal to `tokens.json`, so a token refresh can't leave

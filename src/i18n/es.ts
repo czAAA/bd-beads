@@ -613,6 +613,8 @@ export const es: Translations = {
       autoLabel: 'Auto, un paso por encima o por debajo del color del lienzo',
       canvasColorLabel: '{color}, el color del lienzo',
       line: 'El margen mide 4 cuentas por cada lado. No se puede poner nada en él y las exportaciones nunca lo muestran.',
+      titleBlock: 'Nombre y tamaño en el margen',
+      changeTechnique: 'Cambiar técnica',
     },
     qualityHintLabel: 'Para qué sirve la calidad baja',
     qualityHint: 'La calidad baja ahorra memoria: archivos más pequeños y una imagen que un móvil siempre puede crear.',

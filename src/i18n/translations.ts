@@ -715,7 +715,9 @@ export interface Translations {
     /** The Frame panel's margin section and the margin color picker (ticket 0656, MarginSheet card): its heading, the
      * picker's name, the Auto swatch's name and accessible name, the name of the swatch that is the Canvas color, and the
      * line under the picker. */
-    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string }
+    /** The margin sheet (tickets 0656, 0657; MarginSheet card): the Frame panel's section, its color, the title block's
+     * Switch and the title block's Technique pencil. */
+    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string }
     qualityHintLabel: string
     qualityHint: string
     estimateInfo: string

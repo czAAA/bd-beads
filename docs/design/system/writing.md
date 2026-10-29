@@ -441,6 +441,13 @@ Built by ticket 0656 (the Frame panel's margin section), in Belarusian, Spanish 
 | {color}, the Canvas color | {color}, колер палатна | {color}, el color del lienzo | {color}，画布颜色 |
 | The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it. | Палі шырынёй 4 бісерыны з кожнага боку. На іх нічога нельга паставіць, і ў экспарт яны не трапляюць. | El margen mide 4 cuentas por cada lado. No se puede poner nada en él y las exportaciones nunca lo muestran. | 边距每边宽 4 颗珠子。其中不能放置任何东西，导出时也不会显示。 |
 
+Built by ticket 0657 (the title block), in Belarusian, Spanish and Chinese:
+
+| English | Беларуская | Español | 中文 |
+|---|---|---|---|
+| Name and size on the margin | Імя і памер на палях | Nombre y tamaño en el margen | 在边距上显示名称和尺寸 |
+| Change Technique | Змяніць тэхніку | Cambiar técnica | 更换编织技法 |
+
 The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
 
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.

@@ -11,10 +11,12 @@ import ConvertImageWizard from './import/ConvertImageWizard.vue'
 import PictureDropOverlay from './import/PictureDropOverlay.vue'
 import EmptyCanvas from './canvas/EmptyCanvas.vue'
 import CanvasHint from './canvas/CanvasHint.vue'
-import FrameChrome from './canvas/FrameChrome.vue'
+import MarginSheet from './canvas/MarginSheet.vue'
+import MarginColorPopover from './canvas/MarginColorPopover.vue'
 import ContextBar from './tools/ContextBar.vue'
 import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
+import type { Project } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
 import { armSelectionBar } from '../testUtils/pill'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
@@ -103,6 +105,31 @@ const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElem
 
 const framed = { ...empty, frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } }
 
+/** The Margin color popover, hung from a button at the screen's right edge as the sheet's tools are. */
+const MarginColorPopoverHost = defineComponent({
+  setup() {
+    const button = ref<HTMLElement>()
+    const shown = ref(false)
+    onMounted(() => (shown.value = true))
+    return () =>
+      h('div', { style: { position: 'fixed', right: '8px', top: '8px' } }, [
+        h('button', { ref: button, type: 'button' }, 'Margin'),
+        shown.value ? h(MarginColorPopover, { anchor: button.value }) : null,
+      ])
+  },
+})
+
+/** The margin sheet at 100% round a 30-column Frame, in a box that scrolls sideways as the drawing area pans: on a
+ * phone the sheet is wider than the screen, and the canvas is moved to reach the rest (ticket 0657). */
+const MarginSheetHost = defineComponent({
+  setup() {
+    const bare: Project = { ...empty, makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } }
+    const project = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
+    const anchor = { box: { left: 65, top: 65, width: 554, height: 158 }, sheet: { left: 0, top: 0, width: 684, height: 288 }, band: 72, viewport: { width: 684, height: 288 } }
+    return () => h('div', { style: { position: 'relative', overflowX: 'auto', width: '100%', height: '320px' } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])
+  },
+})
+
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
@@ -110,7 +137,8 @@ const CASES: FitCase[] = [
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, { ...empty, id: 'b', name: 'Fox' }, { ...empty, id: 'c', name: 'Owl' }, { ...empty, id: 'd', name: 'Hare' }], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
-  ['FrameChrome', FrameChrome, { project: framed, anchor: { box: { left: 40, top: 120, width: 100, height: 60 }, viewport: { width: 360, height: 640 } }, editing: false, pressing: false }],
+  ['MarginSheet', MarginSheetHost, {}],
+  ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
   [
     'ContextBar',
     ContextBar,

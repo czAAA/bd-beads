@@ -23,6 +23,19 @@ describe('useOverlayVisibility', () => {
     expect(openPanel.value).toBeNull()
   })
 
+  it('hangs the Export panel from the button that opened it, the strip\'s or the margin sheet\'s (ticket 0657)', () => {
+    const { openPanel, exportOpener, onSelectPanel, onOpenExport } = setup()
+    onOpenExport('margin-export')
+    expect([openPanel.value, exportOpener.value]).toEqual(['export', 'margin-export'])
+    onSelectPanel('export')
+    expect([openPanel.value, exportOpener.value]).toEqual(['export', 'strip-export'])
+    onSelectPanel('export')
+    expect(openPanel.value).toBeNull()
+    onOpenExport('margin-export')
+    onOpenExport('margin-export')
+    expect(openPanel.value).toBeNull()
+  })
+
   it('switches straight to another panel from a different strip button', () => {
     const { openPanel, onSelectPanel } = setup()
     onSelectPanel('project')
