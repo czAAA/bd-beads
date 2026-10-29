@@ -10,7 +10,7 @@ import { rulerLayout } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
-import { type FlatChange, withFields } from '../testUtils/flatFields'
+import { type LayersChange, withLayers } from '../testUtils/layerFields'
 
 /** A context that writes down each rectangle drawn with `roundRect`, the style it was stroked or filled in and its text. */
 function fakeContext() {
@@ -79,7 +79,7 @@ function drawn(project: RulerDrawInput['project'], { zoom, numbers }: { zoom: nu
 
 describe('drawRulers', () => {
   const open = withFrameSheet(base, undefined)
-  const twoPieces = withFields(open, { beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) })
+  const twoPieces = withLayers(open, { beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].flatMap((column) => [{ row, column, color: '#ff0000' }, { row: row + 10, column: column + 10, color: '#00ff00' }]))) })
 
   it('draws every Piece rectangle `line-strong`, whichever Piece is being drawn', () => {
     const { context, strokes } = fakeContext()
@@ -111,7 +111,7 @@ describe('drawRulers', () => {
   it('sets the Frame\'s numbers in the greys that read on its margin, and a Piece\'s in the Canvas\'s (ticket 0656)', () => {
     const theme = { ...LIGHT_THEME, margin: { ...LIGHT_THEME.margin, ruler: '#111111', rulerStrong: '#222222' } }
     const framed = fakeContext()
-    drawRulers(framed.context, { ...drawn(withFields(base, { frame: { ...frameOf(base)!, rows: 12, columns: 12 } }), { zoom: 1, numbers: true }), theme })
+    drawRulers(framed.context, { ...drawn(withLayers(base, { frame: { ...frameOf(base)!, rows: 12, columns: 12 } }), { zoom: 1, numbers: true }), theme })
     expect(new Set(framed.textStyles)).toEqual(new Set(['#111111', '#222222']))
 
     const pieces = fakeContext()
@@ -129,8 +129,8 @@ describe('drawRulers', () => {
 
 describe('the names under the Frame and the Pieces (ADR 0066)', () => {
   const piece = (row: number, column: number) => [0, 1, 2].map((offset) => ({ row, column: column + offset, color: '#ff0000' }))
-  const named = (framed: FlatChange) =>
-    withFields(base, {
+  const named = (framed: LayersChange) =>
+    withLayers(base, {
       beads: withColors({}, [...piece(10, 10), ...piece(1, 0)]),
       pieceNames: [{ name: 'Sketch', row: 10, column: 10 }, { name: 'Hidden', row: 1, column: 0 }],
       ...framed,
@@ -154,7 +154,7 @@ describe('the names under the Frame and the Pieces (ADR 0066)', () => {
 })
 
 describe('the Ruler dots', () => {
-  const framed = withFields(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 120, beads: {} } })
+  const framed = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 120, beads: {} } })
   const radii = (fills: { rect: number[] }[]) => fills.filter((fill) => fill.rect.length === 5).map((fill) => fill.rect[2])
 
   it('draw a small dot for every bead without a number, in the number colours', () => {

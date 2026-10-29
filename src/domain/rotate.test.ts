@@ -9,12 +9,12 @@ import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, 
 import { laidFrame } from './frameOrientation'
 import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { type FlatChange, sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, type LayersChange, withLayers } from '../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
-function withBeads(beads: BeadMap, extra: FlatChange = {}): Project {
-  return withFields(base, { beads, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 40, columns: 40, beads: {} }, ...extra })
+function withBeads(beads: BeadMap, extra: LayersChange = {}): Project {
+  return withLayers(base, { beads, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 40, columns: 40, beads: {} }, ...extra })
 }
 
 /** A 2 x 3 Selection at (10, 10) holding:  A B C / D . F  */
@@ -40,7 +40,7 @@ describe('rotateSelection', () => {
 
     // 2 rows x 3 columns becomes 3 rows x 2 columns about the same middle.
     expect(result.selection).toMatchObject({ top: 10, left: 11, rows: 3, columns: 2 })
-    expect(sheetOf(result.project)).toEqual(sheetOf(project))
+    expect(frameSheetOf(result.project)).toEqual(frameSheetOf(project))
     expect(rowProgressOf(result.project)).toEqual(rowProgressOf(project))
     // Clockwise: the old left column (A, D) is now the top row, read right to left... D A / . B / F C
     expect(positionsOf(beadsOfLayer(result.project, 'canvas'))).toEqual(
@@ -123,7 +123,7 @@ describe('coveredByRotation', () => {
 
 describe('rotateLayerSelection (ADR 0066)', () => {
   const frame = { technique: 'loom' as const, row: 10, column: 10, rows: 3, columns: 3 }
-  const inFrame = (beads: BeadMap, extra: FlatChange = {}): Project => (withFields(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
+  const inFrame = (beads: BeadMap, extra: LayersChange = {}): Project => (withLayers(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
 
   it('turns the Canvas\'s beads for a Selection on the Canvas, in Canvas positions', () => {
     const project = withBeads(SELECTION_BEADS, { frame: undefined })
@@ -167,7 +167,7 @@ describe('rotateLayerSelection (ADR 0066)', () => {
 
 describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
   const frame = { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6 }
-  const framed = (beads: BeadMap, extra: FlatChange = {}): Project => (withFields(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
+  const framed = (beads: BeadMap, extra: LayersChange = {}): Project => (withLayers(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
 
   it('steps the Frame\'s orientation about its centre: its beads keep their own rows and columns, what it covers turns', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 3, column: 5, color: '#bb0000' }]))
@@ -183,13 +183,13 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
     const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]))
     let turned = project
     for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
-    expect(sheetOf(turned)).toEqual(sheetOf(project))
+    expect(frameSheetOf(turned)).toEqual(frameSheetOf(project))
   })
 
   it('leaves the Canvas where it is, and keeps the Frame\'s name', () => {
     const canvas = withColors({}, [{ row: 21, column: 22, color: '#999999' }])
     const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]), { beads: canvas })
-    const named = withFields(project, { frame: { ...frameOf(project)!, name: 'Leaf' } })
+    const named = withLayers(project, { frame: { ...frameOf(project)!, name: 'Leaf' } })
     const turned = rotateFrame(named)!
     expect(beadsOfLayer(turned, 'canvas')).toBe(canvas)
     expect(frameOf(turned)!.name).toBe('Leaf')
@@ -198,24 +198,24 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
   it('rewrites nothing on peyote and brick stitch, so no row snaps (ADR 0079)', () => {
     const beads = withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 1, column: 3, color: '#bb0000' }])
     for (const [technique, techniqueSettings] of [['peyote', undefined], ['brick', { brickBlock: 3 }]] as const) {
-      const project = withFields(base, { technique, beads: {}, frame: { technique, ...(techniqueSettings ? { techniqueSettings } : {}), row: 20, column: 20, rows: 5, columns: 4, beads } })
+      const project = withLayers(base, { technique, beads: {}, frame: { technique, ...(techniqueSettings ? { techniqueSettings } : {}), row: 20, column: 20, rows: 5, columns: 4, beads } })
       let turned: Project = project
       for (let turn = 1; turn <= 4; turn++) {
         turned = rotateFrame(turned)!
         expect(frameOf(turned)!.beads, `${technique} turn ${turn}`).toBe(beads)
         expect(frameOf(turned)).toMatchObject({ rows: 5, columns: 4 })
       }
-      expect(sheetOf(turned)).toEqual(sheetOf(project))
+      expect(frameSheetOf(turned)).toEqual(frameSheetOf(project))
     }
   })
 
   it('does nothing without a Frame', () => {
-    expect(rotateFrame(withFields(base, { beads: {}, frame: undefined }))).toBeUndefined()
+    expect(rotateFrame(withLayers(base, { beads: {}, frame: undefined }))).toBeUndefined()
   })
 
   it('keeps its Folded beads as they are, in its own rows and columns (ticket 0638)', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]))
-    const folded = withFields(project, { frame: { ...frameOf(project)!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }]) } })
+    const folded = withLayers(project, { frame: { ...frameOf(project)!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }]) } })
     expect(frameOf(rotateFrame(folded))!.folded).toBe(frameOf(folded)!.folded)
   })
 })
@@ -255,7 +255,7 @@ describe('rotating a Piece-tool shape (ticket 547)', () => {
 describe('rotateFrame with Row progress (tickets 0647, 0667, ADR 0052)', () => {
   /** A Frame of 5 rows and 6 columns at (20, 20) in a Technique, its four pointers set and its rows running `way`. */
   function woven(technique: 'loom' | 'peyote' | 'brick', way: { direction: 'rows' | 'columns'; reversed?: boolean }): Project {
-    return withFields(base, { technique, beads: {}, frame: { technique, row: 20, column: 20, rows: 5, columns: 6, beads: {} }, rowProgress: { currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5, ...way } })
+    return withLayers(base, { technique, beads: {}, frame: { technique, row: 20, column: 20, rows: 5, columns: 6, beads: {} }, rowProgress: { currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5, ...way } })
   }
 
   it('keeps every pointer, so the same beads stay finished, on loom, peyote and brick stitch', () => {

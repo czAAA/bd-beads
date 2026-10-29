@@ -9,7 +9,7 @@ import { changeFrame } from '../../domain/changeFrame'
 import { rotateFrame } from '../../domain/rotate'
 import { ru } from '../../i18n/ru'
 import { frameOf, withFrameSheet } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'ru') // these tests read the Russian dictionary
@@ -189,7 +189,7 @@ describe('ProgressBar', () => {
   })
 
   it('has no Row highlight while there is no Frame (ticket 474)', () => {
-    const wrapper = mount(ProgressBar, { props: { project: withFields(makeProject(), { frame: undefined }) } })
+    const wrapper = mount(ProgressBar, { props: { project: withLayers(makeProject(), { frame: undefined }) } })
     expect(wrapper.find('[data-testid="progress-bar-highlight"]').exists()).toBe(false)
   })
 
@@ -222,7 +222,7 @@ describe('ProgressBar with no Frame (ticket 233)', () => {
     // Fit to drawing needs something drawn; with a bead it asks the app to frame it.
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(wrapper.emitted('fit-frame')).toBeUndefined()
-    await wrapper.setProps({ project: withFields(unframedProject(), { beads: { 0: { 0: '#e63746' } } }) })
+    await wrapper.setProps({ project: withLayers(unframedProject(), { beads: { 0: { 0: '#e63746' } } }) })
     await wrapper.find('[data-testid="progress-bar-fit-frame"]').trigger('click')
     expect(wrapper.emitted('fit-frame')).toHaveLength(1)
   })

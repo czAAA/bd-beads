@@ -10,7 +10,7 @@ import { useTitleBlockFold } from '../../composables/canvas/useTitleBlockFold'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { frameOutsetPx } from '../../rendering/rulerScale'
 import { frameOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
   localStorage.clear()
@@ -40,7 +40,7 @@ function anchorAt(zoom: number): FrameAnchor {
 const anchor = anchorAt(1)
 
 function framed(): Project {
-  return withFields(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} } })
+  return withLayers(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} } })
 }
 
 function mountSheet(props: Partial<InstanceType<typeof MarginSheet>['$props']> = {}) {
@@ -235,7 +235,7 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
 
 describe('folding the title block by hand (MarginSheet card, Title block, ticket 0658)', () => {
   it('folds to the name tab from its fold button, and the tab unfolds it', async () => {
-    const wrapper = mountSheet({ project: withFields(framed(), { frame: { ...frameOf(framed())!, name: 'Sun band' } }) })
+    const wrapper = mountSheet({ project: withLayers(framed(), { frame: { ...frameOf(framed())!, name: 'Sun band' } }) })
     await control(wrapper, 'margin-title-fold').trigger('click')
     expect(control(wrapper, 'margin-title').attributes('data-form')).toBe('tab')
     const tab = control(wrapper, 'margin-title-tab')

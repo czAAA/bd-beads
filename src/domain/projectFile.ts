@@ -1,6 +1,6 @@
 import { inKnownTechniques, normalizeProject, type GridProject, type StoredProject } from './storedProject'
 import type { Project } from './project'
-import { decodeEarlierProject, decodeFlatProject, decodeProject, decodeSettingsMapProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
+import { decodeEarlierProject, decodeFlatProject, decodeProject, decodeVersionElevenProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
 import type { VersionThreeProject } from './versionThree'
 import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
@@ -31,7 +31,7 @@ const FLAT_WEAVE_VERSIONS = [4, 5, 6, 7, 8, 9, 10]
 const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   3: (projects) => (projects as EncodedVersionThreeProject[]).map(decodeEarlierProject) as (VersionThreeProject | GridProject)[],
   ...Object.fromEntries(FLAT_WEAVE_VERSIONS.map((version) => [version, (projects: unknown[]) => (projects as EncodedFlatProject[]).map(decodeFlatProject)])),
-  11: (projects) => (projects as EncodedFlatProject[]).map(decodeSettingsMapProject),
+  11: (projects) => (projects as EncodedFlatProject[]).map(decodeVersionElevenProject),
   [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
