@@ -1,7 +1,8 @@
 import { changedPositions, colorAt, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
-import { rowOrderOf, type KindedSheet } from './frameKind'
+import { rowOrderOf, type ShapedSheet } from './frameShape'
 import type { GridPosition } from './grid'
 import { sameBeads } from './layerBeads'
+import { beadsOfLayer, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
 import { frameWeave } from './layerWeave'
 import { touch, type Project, type RowProgress } from './project'
@@ -59,12 +60,12 @@ function clampRow(row: number, passes: number): number {
 }
 
 /** How many passes the Frame's Row order takes, worked one way (spec 0590). */
-function passesOf(sheet: KindedSheet, way: RowWay): number {
+function passesOf(sheet: ShapedSheet, way: RowWay): number {
   return rowOrderOf(sheet, way).count
 }
 
 /** The bottom to top and right to left pointers inside the Frame; absent while neither has moved. */
-function clampedBack(rowProgress: Partial<RowProgress>, sheet: KindedSheet): Partial<RowProgress> {
+function clampedBack(rowProgress: Partial<RowProgress>, sheet: ShapedSheet): Partial<RowProgress> {
   const { currentRowBack, currentColumnBack } = rowProgress
   return {
     ...(currentRowBack ? { currentRowBack: clampRow(currentRowBack, passesOf(sheet, { direction: 'rows', reversed: true })) } : {}),
@@ -74,7 +75,7 @@ function clampedBack(rowProgress: Partial<RowProgress>, sheet: KindedSheet): Par
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame
  * change uses. */
-export function clampPointer(rowProgress: Project['rowProgress'], sheet: KindedSheet): Project['rowProgress'] {
+export function clampPointer(rowProgress: Project['rowProgress'], sheet: ShapedSheet): Project['rowProgress'] {
   return {
     ...rowProgress,
     currentRow: clampRow(rowProgress.currentRow, passesOf(sheet, { direction: 'rows' })),
@@ -83,15 +84,15 @@ export function clampPointer(rowProgress: Project['rowProgress'], sheet: KindedS
   }
 }
 
-/** What a Frame's Row order is built from beside its rectangle and Weave: its kind, a Custom frame's settings and turn. */
-export function laidOf(frame: FrameSheet | undefined): Pick<KindedSheet, 'kind' | 'settings' | 'quarterTurns'> {
-  return { kind: frame?.kind, settings: frame?.settings, quarterTurns: frame?.quarterTurns }
+/** What a Frame's Row order is built from beside its rectangle and Weave: its Frame shape, a Custom frame's settings and turn. */
+export function laidOf(frame: FrameSheet | undefined): Pick<ShapedSheet, 'shape' | 'settings' | 'quarterTurns'> {
+  return { shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns }
 }
 
 /** Row progress as a stored Project holds it, read inside its Frame (or the box round its beads): an old file's
  * `enabled` and `decided` are dropped, as Row progress follows the Frame (ticket 426, 434), and every pointer is
  * clamped to the passes. */
-export function readRowProgress(stored: (Partial<RowProgress> & { currentRow: number }) | undefined, sheet: KindedSheet): RowProgress {
+export function readRowProgress(stored: (Partial<RowProgress> & { currentRow: number }) | undefined, sheet: ShapedSheet): RowProgress {
   const rowProgress: Partial<RowProgress> & { currentRow: number } = stored ?? { currentRow: 0 }
   const turns = rowOrderOf(sheet, { direction: 'rows' }).turns
   return {
@@ -238,13 +239,14 @@ export function isInCurrentRow(project: RowProgressed, position: GridPosition): 
  * drawing commands' "unchanged" signal, so no undo step is recorded. */
 export function keepFinishedRows(before: Project, after: Project): Project {
   const frame = before.frame
-  if (!frame || !after.frame || after.frame.beads === frame.beads) {
+  const [was, now] = [beadsOfLayer(before, 'frame'), beadsOfLayer(after, 'frame')]
+  if (!frame || !was || !now || now === was) {
     return sameBeads(before, after) ? before : after
   }
-  const reverts: BeadChange[] = changedPositions(frame.beads, after.frame.beads)
+  const reverts: BeadChange[] = changedPositions(was, now)
     .filter(({ row, column }) => isInFinishedRow(before, { row: row + frame.row, column: column + frame.column, layer: 'frame' }))
-    .map(({ row, column }) => ({ row, column, color: colorAt(frame.beads, row, column) }))
-  const kept = reverts.length === 0 ? after : { ...after, frame: { ...after.frame, beads: withColors(after.frame.beads, reverts) } }
+    .map(({ row, column }) => ({ row, column, color: colorAt(was, row, column) }))
+  const kept = reverts.length === 0 ? after : withLayer(after, 'frame', { beads: withColors(now, reverts) })
   return sameBeads(before, kept) ? before : kept
 }
 

@@ -1,5 +1,5 @@
 import type { FormFactorNames } from '../domain/beads'
-import type { CustomFrameKindId, FrameSettingName, FringeStyle } from '../domain/frameKind'
+import type { FrameShapeId, FrameSettingName, FringeStyle } from '../domain/frameShape'
 import type { Locale } from '../domain/locale'
 import type { BandFit, StarterCategoryId, StarterSizeName } from '../domain/starters'
 import type { ConvertStep, CropHandle } from '../domain/convertSize'
@@ -252,7 +252,7 @@ export interface Translations {
     /** A size as a caption or the note names it, by the setting it is in ("10 rounds", "part size 5", "EU 54"). */
     sizes: Record<StarterSizeName, PluralForms>
     /** Beside a Custom frame's first size label: what it counts ("from the centre", "rounds a triangle"). */
-    hints: Record<CustomFrameKindId, string>
+    hints: Record<FrameShapeId, string>
     /** Beside the other size labels (ticket 0597): what each counts ("one bead fewer each", "cm, measured snug"), a
      * Ring size's in each Size system. */
     sizeHints: Record<'topRows' | 'fringeLength' | 'width' | 'ringSize' | 'ringSizeUs' | 'wrist', string>
@@ -261,7 +261,7 @@ export interface Translations {
     /** The setup's choices (ticket 0597): a Fringe earring's style and a Band's Fit, each a label and its options. */
     picks: { fringeStyle: { label: string; options: Record<FringeStyle, string> }; fit: { label: string; options: Record<BandFit, string> } }
     /** The Earrings', Rings' and Bands' names by Starter id (tickets 0597, 0633): a plain key per Starter, checked in
-     * every language by a test (ADR 0078); a Shape is named by its kind. */
+     * every language by a test (ADR 0078); a Shape is named by its Frame shape. */
     options: Record<string, string>
     /** A Ring size's Size system, a view of the one size: EU (the inside round in mm) or US. */
     sizeSystem: { label: string; eu: string; us: string }
@@ -715,7 +715,9 @@ export interface Translations {
     /** The Frame panel's margin section and the margin color picker (ticket 0656, MarginSheet card): its heading, the
      * picker's name, the Auto swatch's name and accessible name, the name of the swatch that is the Canvas color, and the
      * line under the picker. */
-    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string }
+    /** The margin sheet (tickets 0656, 0657; MarginSheet card): the Frame panel's section, its color, the title block's
+     * Switch and the title block's Technique pencil. */
+    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string }
     qualityHintLabel: string
     qualityHint: string
     estimateInfo: string
@@ -753,8 +755,8 @@ export interface Translations {
     announceNothingToFit: string
     /** A Frame that would cut through a named Piece is refused (ticket 407); `{name}` is the Schema's name. */
     refusedCutsSchema: string
-    /** The Custom frame kinds' names (tickets 0592, 0596): the Shapes' names in the Starter gallery and what is announced. */
-    customKinds: Record<CustomFrameKindId, string>
+    /** The Frame shapes' names (tickets 0592, 0596): the Shapes' names in the Starter gallery and what is announced. */
+    shapes: Record<FrameShapeId, string>
     /** A Custom frame's size setting in the Frame panel, one entry per setting (tickets 0592, 0593): its stepper, the
      * Size line's summary and what is announced. A smaller size folds what it leaves out, so nothing is asked (0640). */
     sizeSettings: Record<FrameSettingName, { label: string; less: string; more: string; summary: PluralForms; announce: string }>
@@ -763,7 +765,7 @@ export interface Translations {
     fringeStyle: { label: string; announce: string }
     /** Remove Frame's question for a Frame that takes its beads with it (ADR 0077). */
     removeConfirmCustom: string
-    /** `{kind}` is the kind's name, `{size}` its size setting's summary. */
+    /** `{shape}` is the Frame shape's name, `{size}` its size setting's summary. */
     announceCustom: string
     /** Frame from a Selection or a Piece grew past what was picked (ticket 570): rows added on top, and why. */
     snapAddedTop: PluralForms
@@ -780,7 +782,6 @@ export interface Translations {
      * accusative where the language has one). */
     progressSelectToSet: string
     progressFrameWord: string
-    /** The Progress bar on a Frame whose kind has no Row order yet (a Custom frame, ticket 0592). */
     /** The Message after Rotate turned the Selection onto beads (ADR 0052). */
     rotateCoveredMessage: string
   }

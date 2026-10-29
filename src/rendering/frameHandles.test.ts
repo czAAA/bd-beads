@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { boxPressAt, frameHandles, framePressAt, gutterHandles, handleAt, handleEdges, hitRadius, HANDLE_PX, TOUCH_HANDLE_PX } from './frameHandles'
+import { boxPressAt, frameHandles, framePressAt, handleAt, handleEdges, hitRadius, HANDLE_PX, TOUCH_HANDLE_PX } from './frameHandles'
 
 const box = { x: 100, y: 50, width: 200, height: 100 }
 
@@ -74,42 +74,15 @@ describe('frame handles', () => {
   })
 })
 
-describe('the Frame\'s handles in its gutter (ADR 0066)', () => {
-  const viewport = { width: 600, height: 400 }
-
-  it('stand just outside the edge, each moved out by half its square and a gap', () => {
-    const handles = gutterHandles(box, false, viewport)
-
-    expect(handles.find((h) => h.id === 'top')).toMatchObject({ x: 200, y: 50 - 7.5 })
-    expect(handles.find((h) => h.id === 'left')).toMatchObject({ x: 100 - 7.5, y: 100 })
-    expect(handles.find((h) => h.id === 'bottom-right')).toMatchObject({ x: 307.5, y: 157.5 })
-    expect(gutterHandles(box, true, viewport).find((h) => h.id === 'top-left')).toMatchObject({ x: 100 - 11, y: 50 - 11 })
-  })
-
-  it('keep their size and distance from the edge at every zoom: only the box moves them', () => {
-    const big = { x: 100, y: 50, width: 2000, height: 1000 }
-    const handles = gutterHandles(big, false, { width: 4000, height: 2000 })
-
-    expect(handles.find((h) => h.id === 'top-left')).toMatchObject({ x: 92.5, y: 42.5, size: HANDLE_PX })
-  })
-
-  it('flip to the inside of an edge that has no room outside it in the canvas box', () => {
-    const atEdge = { x: 2, y: 3, width: 200, height: 100 }
-    const handles = gutterHandles(atEdge, false, viewport)
-
-    expect(handles.find((h) => h.id === 'top-left')).toMatchObject({ x: 9.5, y: 10.5 })
-    expect(handles.find((h) => h.id === 'bottom-right')).toMatchObject({ x: 209.5, y: 110.5 })
-    const flush = gutterHandles({ x: 400, y: 300, width: 200, height: 100 }, false, viewport)
-    expect(flush.find((h) => h.id === 'bottom-right')).toMatchObject({ x: 592.5, y: 392.5 })
-  })
-
-  it('are grabbed from the gutter, and a press on one wins over the Frame\'s inside', () => {
+describe('the Frame\'s handles on its line (MarginSheet card, ticket 0657)', () => {
+  it('are grabbed on the line\'s corners and edges, and a press on one wins over the Frame\'s inside', () => {
     const frame = { row: 0, column: 0, rows: 1, columns: 1 }
-    const surface = { frameBox: () => box, viewport }
+    const surface = { frameBox: () => box }
 
-    expect(framePressAt(frame, surface, 0, { x: 307, y: 157 }, false)).toEqual({ kind: 'handle', edges: ['bottom', 'right'] })
-    expect(framePressAt(frame, surface, 0, { x: 299, y: 149 }, false)).toEqual({ kind: 'handle', edges: ['bottom', 'right'] })
+    expect(framePressAt(frame, surface, 0, { x: 300, y: 150 }, false)).toEqual({ kind: 'handle', edges: ['bottom', 'right'] })
+    expect(framePressAt(frame, surface, 0, { x: 309, y: 159 }, false)).toEqual({ kind: 'handle', edges: ['bottom', 'right'] })
+    expect(framePressAt(frame, surface, 0, { x: 200, y: 52 }, false)).toEqual({ kind: 'handle', edges: ['top'] })
     expect(framePressAt(frame, surface, 0, { x: 200, y: 100 }, false)).toEqual({ kind: 'inside' })
-    expect(framePressAt(undefined, surface, 0, { x: 307, y: 157 }, false)).toEqual({ kind: 'outside' })
+    expect(framePressAt(undefined, surface, 0, { x: 300, y: 150 }, false)).toEqual({ kind: 'outside' })
   })
 })

@@ -1,5 +1,6 @@
 import type { Layer } from './grid'
-import { layerWeave, sameWeave, unwoven, weaveOf } from './layerWeave'
+import { withLayer } from './layerRecord'
+import { layerWeave, sameWeave, weaveOf } from './layerWeave'
 import { touch, type Project } from './project'
 import type { Technique, TechniqueSettings, Weave } from './weave'
 
@@ -26,8 +27,5 @@ export function withWeave(project: Project, layer: Layer, change: WeaveChange): 
   if ((layer === 'frame' && !project.frame) || sameWeave(current, weave)) {
     return project
   }
-  if (layer === 'canvas') {
-    return touch({ ...unwoven(project), ...weave }, {})
-  }
-  return touch(project, { frame: { ...unwoven(project.frame!), ...weave } })
+  return touch(withLayer(project, layer, { weave }), {})
 }

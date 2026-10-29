@@ -2,6 +2,7 @@ import { colorAt } from './canvas'
 import type { Rotation } from './grid'
 import { frameRowOrder } from './rowProgress'
 import { frameWeave } from './layerWeave'
+import { beadsOfLayer } from './layerRecord'
 import type { Project } from './project'
 import { describeWeave } from './weave'
 import type { PassDirection } from './weaveGeometry'
@@ -78,12 +79,13 @@ export function wordChartOf(project: Project): WordChart | undefined {
   const { direction, reversed } = project.rowProgress
   const along = direction === 'rows' ? frame.columns : frame.rows
   const ascends = ASCENDS[direction][project.rotation]
+  const beads = beadsOfLayer(project, 'frame')!
   let hasEmpty = false
 
   const rows: WordRow[] = []
   for (let pass = 0; pass < order.count; pass += 1) {
     const colors = order.positionsOf(pass).map(({ row, column }) => {
-      const hex = colorAt(frame.beads, row, column)
+      const hex = colorAt(beads, row, column)
       return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
     })
     const marker = wordChart.marked ? (pass % 2 === 0 ? 'L' : 'R') : undefined
@@ -119,7 +121,7 @@ function runsOf(letters: readonly (string | undefined)[]): WordRun[] {
 /** A Custom frame's Word chart (ticket 0594): one line per pass of its Row order, numbered from 1, each round read round
  * the shape and each Kite row left to right; a join is a line of its own with no runs. */
 function customWordChart(project: Project, order: RowOrder): WordChart {
-  const frame = project.frame!
+  const beads = beadsOfLayer(project, 'frame')!
   let hasEmpty = false
   let parts = false
   let strands = false
@@ -131,7 +133,7 @@ function customWordChart(project: Project, order: RowOrder): WordChart {
     const letters = step.kind === 'join'
       ? []
       : order.positionsOf(pass).map(({ row, column }) => {
-          const hex = colorAt(frame.beads, row, column)
+          const hex = colorAt(beads, row, column)
           return hex === null ? undefined : (project.paletteLetters?.[hex] ?? '?')
         })
     hasEmpty ||= letters.includes(undefined)

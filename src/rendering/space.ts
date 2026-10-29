@@ -6,6 +6,7 @@ import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions, projectFrame } from '../domain/projectExtent'
 import { type DrawnProject } from './projectRenderer'
 import { OPEN_EXTENT, projectExtentPx, type Extent } from './surfaceView'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 // Where a Project's positions live (ADR 0018, ADR 0026), shared by the renderer and overlay: on the Canvas from row 0,
 // column 0; drawn on its own (export, picture, Homepage) the Project is the Frame with its first bead at (0, 0). A
@@ -54,8 +55,8 @@ export function beadInSpace(project: Pick<DrawnProject, 'beads' | 'frame'>, spac
   const frame = project.frame
   const inside = row >= space.origin.row && row < space.origin.row + space.rows && column >= space.origin.column && column < space.origin.column + space.columns
   return frame && inside
-    ? colorAt(frame.beads, row - space.origin.row, column - space.origin.column)
-    : colorAt(project.beads, space.toAbsolute.row + row, space.toAbsolute.column + column)
+    ? colorAt(beadsOfLayer(project, 'frame')!, row - space.origin.row, column - space.origin.column)
+    : colorAt(beadsOfLayer(project, 'canvas'), space.toAbsolute.row + row, space.toAbsolute.column + column)
 }
 
 /** Whether a position can be drawn on: anywhere on the Canvas, inside the Project otherwise. */

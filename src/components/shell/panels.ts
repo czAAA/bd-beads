@@ -35,7 +35,8 @@ export const PANELS: Record<PanelId, PanelDescriptor> = {
     skipsFields: true,
     width: 'var(--panel-width-small)',
     align: 'end',
-    openers: ['strip-export'],
+    // The margin sheet's Export button opens it too, hung from that button (ticket 0657).
+    openers: ['strip-export', 'margin-export'],
   },
 }
 

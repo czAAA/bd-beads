@@ -6,6 +6,7 @@ import { projectFrame } from '../domain/projectExtent'
 import type { DrawnProject } from './projectRenderer'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion } from './surfaceView'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 export interface ThumbnailImage {
   width: number
@@ -42,7 +43,8 @@ export function thumbnailPixels(project: Thumbnailed, size: number): ThumbnailIm
   const data = new Uint8ClampedArray(width * height * 4)
   const colors = new Map<string, [number, number, number] | undefined>()
   const drawnBox = projectFrame(project)
-  const colorOf = ({ row, column }: GridPosition) => (project.frame ? colorAt(project.frame.beads, row, column) : colorAt(project.beads, drawnBox.row + row, drawnBox.column + column))
+  const [canvas, framed] = [beadsOfLayer(project, 'canvas'), beadsOfLayer(project, 'frame')]
+  const colorOf = ({ row, column }: GridPosition) => (framed ? colorAt(framed, row, column) : colorAt(canvas, drawnBox.row + row, drawnBox.column + column))
 
   // The editor's own turn (gridToRegion), from the Layer to the picture's pixels, and its inverse.
   const [a, b, c, d, e, f] = gridToRegion(extent, { x: 0, y: 0, width: 0, height: 0 }, scale, project.rotation)

@@ -616,6 +616,8 @@ export const uk: Translations = {
       autoLabel: 'Авто, на крок від кольору полотна',
       canvasColorLabel: '{color}, колір полотна',
       line: 'Поля завширшки 4 бісеринки з кожного боку. На них нічого не можна поставити, і в експорт вони не потрапляють.',
+      titleBlock: 'Назва й розмір на полях',
+      changeTechnique: 'Змінити техніку',
     },
     qualityHintLabel: 'Для чого низька якість',
     qualityHint: 'Низька якість заощаджує пам’ять: файли менші, і телефон завжди впорається з картинкою.',
@@ -646,7 +648,7 @@ export const uk: Translations = {
     announceMoved: 'Рамку переміщено разом з бісеринками',
     announceNothingToFit: 'Поки нічого обводити рамкою: нічого не намальовано',
     refusedCutsSchema: 'Рамка не може розрізати схему «{name}». Обведіть її цілком або не чіпайте.',
-    customKinds: { fringeEarring: 'Сережка з бахромою', triangle: 'Трикутник', warpedSquare: 'Вигнутий квадрат', star: 'Зірка', kaleidocycle: 'Калейдоцикл', kite: 'Повітряний змій' },
+    shapes: { fringeEarring: 'Сережка з бахромою', triangle: 'Трикутник', warpedSquare: 'Вигнутий квадрат', star: 'Зірка', kaleidocycle: 'Калейдоцикл', kite: 'Повітряний змій' },
     sizeSettings: {
       topWidth: { label: 'Ширина верху', less: 'На бісеринку менше в нижньому ряду', more: 'На бісеринку більше в нижньому ряду', summary: { one: 'верх {count}', few: 'верх {count}', many: 'верх {count}', other: 'верх {count}' }, announce: 'Ширина верху: {count}' },
       topRows: { label: 'Ряди верху', less: 'На один ряд менше', more: 'На один ряд більше', summary: { one: '{count} ряд верху', few: '{count} ряди верху', many: '{count} рядів верху', other: '{count} ряду верху' }, announce: 'Рядів верху: {count}' },
@@ -675,7 +677,7 @@ export const uk: Translations = {
     },
     fringeStyle: { label: 'Вид бахроми', announce: 'Вид бахроми: {style}' },
     removeConfirmCustom: 'Її бісеринки зникнуть разом із нею. Цю дію можна скасувати.',
-    announceCustom: 'Рамка «{kind}», {size}',
+    announceCustom: 'Рамка «{shape}», {size}',
     snapAddedTop: {
       one: 'Додано порожній рядок згори: рамка має починатися з незсунутого рядка.',
       few: 'Додано {count} порожні рядки згори: рамка має починатися з незсунутого рядка.',

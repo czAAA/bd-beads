@@ -3,7 +3,10 @@ import { keepAllowedEdits } from '../../domain/allowedEdits'
 import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
+import { layerOf } from '../../domain/layerRecord'
+import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
+import type { Technique } from '../../domain/weave'
 import type { ReplaceOptions } from './useProjectLibrary'
 
 // The three kinds of undoable change (ADR 0036): drawing (Paint, Fill, Paste, Eraser, Rotate: lock applied silently,
@@ -23,6 +26,12 @@ export type EditOutcome =
   | { kind: 'unchanged' }
   | { kind: 'refused'; reason: FrameChangeRefusal }
   | { kind: 'applied' }
+
+/** A layer's Technique (ADR 0079), none for a Frame the Project lacks: an edit that changes it resets the session built
+ * on the old one. */
+function techniqueOf(project: Project, layer: Layer): Technique | undefined {
+  return layerOf(project, layer)?.weave.technique
+}
 
 /** `edit(kind, project => result)`: the one way an undoable change reaches the open Project. */
 export type EditFn = <K extends EditKind>(kind: K, command: EditCommands[K]) => EditOutcome
@@ -72,7 +81,7 @@ export function useEdit(deps: EditDeps) {
     record(project)
     deps.replaceProject(updated)
     // A command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
-    if (!sameFrame(project.frame, updated.frame) || project.technique !== updated.technique) {
+    if (!sameFrame(project.frame, updated.frame) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
       deps.resetAfterFrameChange()
     }
     return { kind: 'applied' }
@@ -169,8 +178,9 @@ export function useEdit(deps: EditDeps) {
     if (!project) {
       return
     }
-    deps.replaceProject(restoreSnapshot(project, snapshot))
-    if (!sameFrame(snapshot.frame, project.frame) || snapshot.weave.technique !== project.technique || snapshot.frame?.technique !== project.frame?.technique) {
+    const restored = restoreSnapshot(project, snapshot)
+    deps.replaceProject(restored)
+    if (!sameFrame(restored.frame, project.frame) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, 'frame') !== techniqueOf(project, 'frame')) {
       deps.resetAfterFrameChange()
     }
   }

@@ -616,6 +616,8 @@ export const ru: Translations = {
       autoLabel: 'Авто, на шаг от цвета холста',
       canvasColorLabel: '{color}, цвет холста',
       line: 'Поля шириной 4 бусины с каждой стороны. На них ничего нельзя поставить, и в экспорт они не попадают.',
+      titleBlock: 'Имя и размер на полях',
+      changeTechnique: 'Сменить технику',
     },
     qualityHintLabel: 'Для чего низкое качество',
     qualityHint: 'Низкое качество экономит память: файлы меньше, и телефон всегда справится с картинкой.',
@@ -646,7 +648,7 @@ export const ru: Translations = {
     announceMoved: 'Рамка перемещена вместе с бусинами',
     announceNothingToFit: 'Пока нечего обводить рамкой: ничего не нарисовано',
     refusedCutsSchema: 'Рамка не может разрезать схему «{name}». Обведите её целиком или не трогайте.',
-    customKinds: { fringeEarring: 'Серьга с бахромой', triangle: 'Треугольник', warpedSquare: 'Изогнутый квадрат', star: 'Звезда', kaleidocycle: 'Калейдоцикл', kite: 'Воздушный змей' },
+    shapes: { fringeEarring: 'Серьга с бахромой', triangle: 'Треугольник', warpedSquare: 'Изогнутый квадрат', star: 'Звезда', kaleidocycle: 'Калейдоцикл', kite: 'Воздушный змей' },
     sizeSettings: {
       topWidth: { label: 'Ширина верха', less: 'На бисеринку меньше в нижнем ряду', more: 'На бисеринку больше в нижнем ряду', summary: { one: 'верх {count}', few: 'верх {count}', many: 'верх {count}', other: 'верх {count}' }, announce: 'Ширина верха: {count}' },
       topRows: { label: 'Ряды верха', less: 'На один ряд меньше', more: 'На один ряд больше', summary: { one: '{count} ряд верха', few: '{count} ряда верха', many: '{count} рядов верха', other: '{count} ряда верха' }, announce: 'Рядов верха: {count}' },
@@ -675,7 +677,7 @@ export const ru: Translations = {
     },
     fringeStyle: { label: 'Вид бахромы', announce: 'Вид бахромы: {style}' },
     removeConfirmCustom: 'Её бусины удалятся вместе с ней. Это действие можно отменить.',
-    announceCustom: 'Рамка «{kind}», {size}',
+    announceCustom: 'Рамка «{shape}», {size}',
     snapAddedTop: {
       one: 'Добавлен пустой ряд сверху: рамка должна начинаться с несмещённого ряда.',
       few: 'Добавлено {count} пустых ряда сверху: рамка должна начинаться с несмещённого ряда.',

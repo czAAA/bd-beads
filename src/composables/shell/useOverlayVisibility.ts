@@ -1,5 +1,5 @@
 import { ref, watch, type Ref } from 'vue'
-import type { OpenPanel } from './openPanel'
+import type { ExportOpener, OpenPanel } from './openPanel'
 
 // The UI-shell overlays' open/close state (tickets 79, 188, 204, 295; ADR 0020): the Canvas strip's Menu and Project panels. The Shortcuts-help boolean stays in the app shell: one boolean with no logic isn't
 // worth extracting.
@@ -8,8 +8,20 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
    * it, same as pressing it again. */
   const openPanel = deps.openPanel ?? ref<OpenPanel | null>(null)
 
+  /** The button the Export panel hangs from (ticket 0657): the Canvas strip's or the margin sheet's own. */
+  const exportOpener = ref<ExportOpener>('strip-export')
+
   function onSelectPanel(sheet: OpenPanel) {
+    if (sheet === 'export') return onOpenExport('strip-export')
     openPanel.value = openPanel.value === sheet ? null : sheet
+  }
+
+  /** Export from the strip or from the margin sheet: the same panel, hung from the button pressed. Pressing the
+   * button it hangs from again closes it; the other one moves it there. */
+  function onOpenExport(from: ExportOpener) {
+    const shown = openPanel.value === 'export' && exportOpener.value === from
+    exportOpener.value = from
+    openPanel.value = shown ? null : 'export'
   }
 
   /** Whether Menu opens on its New Project subpanel (the empty-canvas bar's button, spec 0478); Menu also does when
@@ -41,6 +53,8 @@ export function useOverlayVisibility(deps: { selectProject: (id: string, opened?
   return {
     openPanel,
     onSelectPanel,
+    exportOpener,
+    onOpenExport,
     menuOpensOnForm,
     openMenuOnForm,
     phoneSavedProjectsOpen,

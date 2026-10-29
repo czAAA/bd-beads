@@ -132,7 +132,7 @@ describe('printText Word chart (ticket 0574)', () => {
 
   it('names a Custom frame\'s round or join before its runs, and says where it starts (ticket 0594)', () => {
     const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })
-    const placed = changeFrame(open, { custom: { kind: 'star', size: 2, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape: 'star', size: 2, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Star')
     const { row, column } = placed.project.frame!
     const painted = paintAt(placed.project, [{ row, column, layer: 'frame' }], '#e63746')
@@ -146,7 +146,7 @@ describe('printText Word chart (ticket 0574)', () => {
   it('starts a Fringe earring\'s Word chart at its top\'s base row and names each strand (ticket 0597)', () => {
     const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'miyuki-delica-11-0', size: { width: 4, height: 4, unit: 'beads' } })
     const settings = { topWidth: 3, topRows: 2, fringeStyle: 'straight', fringeLength: 2 } as const
-    const placed = changeFrame(open, { custom: { kind: 'fringeEarring', settings, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape: 'fringeEarring', settings, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Fringe earring')
     const chart = printText(letters(placed.project), en, 'en', at).wordChart!
 

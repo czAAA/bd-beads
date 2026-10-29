@@ -1,7 +1,6 @@
 {
   "id": "ringStripes",
   "design": "ringStripes.json",
-  "kind": "rectangular",
   "technique": "peyote",
   "measure": "ring",
   "sizes": [

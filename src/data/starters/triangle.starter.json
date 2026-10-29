@@ -1,7 +1,7 @@
 {
   "id": "triangle",
   "design": "triangle.json",
-  "kind": "triangle",
+  "shape": "triangle",
   "technique": "peyote",
   "measure": "frame",
   "sizes": [

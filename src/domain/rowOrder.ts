@@ -27,7 +27,7 @@ export interface RowOrder {
    * not on one line. */
   lineOf(pass: number): number | undefined
   /** What a pass of a Custom frame is, for the Word chart: a round or row (of a part, where there are several), or a
-   * join; none for a Rectangular Frame, whose passes are its lines. */
+   * join; none for a Frame without a shape, whose passes are its lines. */
   stepOf?(pass: number): OrderStep | undefined
 }
 
@@ -45,7 +45,7 @@ function mirrorLine(line: number, lines: number, reversed: boolean | undefined):
   return reversed ? lines - 1 - line : line
 }
 
-/** The rows Row order (ticket 347): a Rectangular Frame woven line by line in its Weave's passes, loom and brick stitch
+/** The rows Row order (ticket 347): a Frame without a shape woven line by line in its Weave's passes, loom and brick stitch
  * one pass a line, peyote two after the first. */
 export function rowsOrder(weave: Weave & { rows: number; columns: number }, { direction, reversed }: RowWay): RowOrder {
   const columnWise = direction === 'columns'

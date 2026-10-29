@@ -26,7 +26,7 @@ const framed = { ...project, frame: { row: 2, column: 3, rows: 6, columns: 5, te
 const colors = createPalette(defaultPaletteIds()).colors.slice(0, 7).map((color) => color.hex)
 const painted = { ...framed, frame: { ...framed.frame, name: 'Moth wing, the long left one', beads: withColors({}, colors.map((hex, at) => ({ row: Math.floor(at / 5), column: at % 5, color: hex }))) } }
 // A Fringe earring's four settings in place of Width and Height (ticket 0597).
-const earringPlaced = changeFrame(project, { custom: { kind: 'fringeEarring', size: 7, centre: { row: 6, column: 6 } } })
+const earringPlaced = changeFrame(project, { custom: { shape: 'fringeEarring', size: 7, centre: { row: 6, column: 6 } } })
 const earring = earringPlaced.kind === 'changed' ? earringPlaced.project : project
 const showAll = (root: HTMLElement): void => {
   const button = root.querySelector<HTMLElement>('[data-testid="quantities-toggle"]')

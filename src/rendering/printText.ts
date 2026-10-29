@@ -16,6 +16,7 @@ import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
+import { beadOfLayer } from '../domain/layerRecord'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -154,7 +155,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       ? fillBlanks(t.print.metaLine, { size, bead: beadName, estimate })
       : fillBlanks(t.print.metaLineNoEstimate, { size, bead: beadName }),
     bead: beadName,
-    shape: project.beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
+    shape: beadOfLayer(project, 'frame').beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
     size,
     estimatedSize: estimate ? `≈ ${estimate}` : '',
     colors: quantities.map((quantity, index) => ({

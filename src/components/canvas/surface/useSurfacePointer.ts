@@ -1,7 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn, type Ref, type ShortEmitsToObject } from 'vue'
 import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
-import { frameAllows } from '../../../domain/frameKind'
+import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import type { GridPosition, Layer, PreviewCell } from '../../../domain/grid'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
@@ -10,7 +10,7 @@ import { isInFinishedRow } from '../../../domain/rowProgress'
 import type { Project } from '../../../domain/project'
 import { selectionFrame, selectionHasHandles, selectionLayer, type Selection } from '../../../domain/selection'
 import type { ToolCapabilities } from '../../../domain/tool'
-import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress } from '../../../rendering/frameHandles'
+import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
 import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
@@ -121,6 +121,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
   const framing = ref(false)
   /** The resize cursor over one of the Selection's handles, while the pointer hovers one. */
   const handleCursor = ref<string>()
+  /** The Frame's handle under the pointer, or the one a drag holds: Edit Frame grows it (MarginSheet card, ticket 0657). */
+  const hotHandle = ref<HandleId>()
   /** Whether the last pointer was a finger: its Frame handles are the four larger corner ones. */
   const touchInput = ref(typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches)
   let lastBead: GridPosition | undefined
@@ -447,6 +449,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       const target = framePress(event)
       if (target) {
         framing.value = true
+        hotHandle.value = frameHandleIdAt(props.project.frame, surface.value, pointInSurface(event), touchInput.value)
         hideMarker()
         rootEl.value?.setPointerCapture?.(event.pointerId)
         gestureLayer = target.kind === 'handle' ? 'frame' : 'canvas'
@@ -558,7 +561,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       handleCursor.value = id ? HANDLE_CURSORS[id] : undefined
     } else if (props.project.frame && event.pointerType !== 'touch' && !framing.value) {
       const target = framePress(event)
-      handleCursor.value = target?.kind === 'move' ? 'grab' : target?.kind === 'handle' ? HANDLE_CURSORS[frameHandleIdAt(props.project.frame, surface.value, pointInSurface(event), false)!] : undefined
+      hotHandle.value = target?.kind === 'handle' ? frameHandleIdAt(props.project.frame, surface.value, pointInSurface(event), false) : undefined
+      handleCursor.value = target?.kind === 'move' ? 'grab' : hotHandle.value ? HANDLE_CURSORS[hotHandle.value] : undefined
     } else {
       handleCursor.value = undefined
     }
@@ -646,6 +650,8 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     }
     if (framing.value) {
       framing.value = false
+      // A finger has no hover to keep a handle hot once it lifts.
+      if (event?.pointerType === 'touch') hotHandle.value = undefined
       emit('frame-release')
     }
   }
@@ -659,6 +665,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
 
   function onPointerLeave(): void {
     penAt.value = undefined
+    if (!framing.value) hotHandle.value = undefined
     hovered.value = false
     hoverPoint = undefined
     lastBead = undefined
@@ -715,6 +722,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     markerAt,
     framing,
     touchInput,
+    hotHandle,
     showFinished,
     pressMoveHandle,
   }

@@ -4,6 +4,7 @@ import type { Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
 import { frameGeometryOf } from './layers'
 import { keepMarginClear } from './margin'
+import { beadsOfLayer, withLayer } from './layerRecord'
 
 /** What a drawing command did, minus finished rows (ticket 33), margin paint, beads outside a Custom frame's layout and joins of named Pieces (ticket 406),
  * with Piece names carried over; `before` itself when nothing is left. */
@@ -18,12 +19,12 @@ export function keepAllowedEdits(before: Project, after: Project): Project {
 /** What an edit did, with every bead it newly painted where the Frame has no position taken back (outside a Custom
  * frame's layout, ticket 0592). Only the positions the edit changed are looked at (ticket 0674). */
 function keepWhereBeadsAre(before: Project, after: Project): Project {
-  const frame = after.frame
-  if (!frame) {
+  const beads = beadsOfLayer(after, 'frame')
+  if (!beads) {
     return after
   }
-  const was = before.frame?.beads ?? {}
-  const painted = changedPositions(was, frame.beads).filter(({ row, column }) => frame.beads[row]?.[column] !== undefined)
+  const held = beadsOfLayer(before, 'frame') ?? {}
+  const painted = changedPositions(held, beads).filter(({ row, column }) => beads[row]?.[column] !== undefined)
   if (painted.length === 0) {
     return after
   }
@@ -31,6 +32,6 @@ function keepWhereBeadsAre(before: Project, after: Project): Project {
   const own = frameGeometryOf(after)
   const framed: BeadChange[] = painted
     .filter((position) => !own.hasPosition(position))
-    .map(({ row, column }) => ({ row, column, color: was[row]?.[column] ?? null }))
-  return framed.length === 0 ? after : { ...after, frame: { ...frame, beads: withColors(frame.beads, framed) } }
+    .map(({ row, column }) => ({ row, column, color: held[row]?.[column] ?? null }))
+  return framed.length === 0 ? after : withLayer(after, 'frame', { beads: withColors(beads, framed) })
 }

@@ -3,7 +3,7 @@ import { type Technique, type Weave } from '../domain/weave'
 import { footprintOf } from '../domain/footprint'
 import { MARGIN, withMargin } from '../domain/margin'
 import { beadRoundness, type BeadCell } from '../domain/weave'
-import { rowOrderOf } from '../domain/frameKind'
+import { rowOrderOf } from '../domain/frameShape'
 import type { LayerGeometry } from '../domain/layerGeometry'
 import { colorAt, frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave } from '../domain/layerWeave'
@@ -12,11 +12,13 @@ import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selecti
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
+import type { HandleId } from './frameHandles'
 import type { DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX } from './cellSize'
 import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
 // tool, drawn over the cells so it changes without redrawing them. Coordinates are the base layer's (see
@@ -87,8 +89,8 @@ export interface OverlayInput {
    * layout was made for. */
   rulers?: { layout: RulerLayout; surface: SurfaceView }
   /** While the Frame is being set (Canvas only): its handles and the size tooltip's text. `touch` gives four larger
-   * corner handles. */
-  frameEditing?: { touch: boolean; tooltip: string }
+   * corner handles; `hot` is the one under the pointer or being dragged, drawn grown (ticket 0657). */
+  frameEditing?: { touch: boolean; tooltip: string; hot?: HandleId }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or
    * resized, and after a refused press. */
   marginOutline?: number
@@ -133,11 +135,12 @@ function beadsInPass(project: DrawnProject, space: Space, geometry: LayerGeometr
   const weave = frameWeave(project)
   const frame = project.frame
   // The Frame's Row order, or one over the Project drawn alone, measured as its space is.
-  const order = rowOrderOf({ ...weave, kind: frame?.kind, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
+  const order = rowOrderOf({ ...weave, shape: frame?.shape, settings: frame?.settings, quarterTurns: frame?.quarterTurns, rows: space.rows, columns: space.columns }, project.rowProgress)
   if (frame && !geometry.grid) {
     // A Custom frame's pass is its layout's beads, named by round and place, each at its panel's angle (ticket 0594).
+    const beads = beadsOfLayer(project, 'frame')!
     return order.positionsOf(currentPass(project.rowProgress)).flatMap((position) => {
-      const color = colorAt(frame.beads, position.row, position.column)
+      const color = colorAt(beads, position.row, position.column)
       const place = geometry.place(position)
       if (color === null || !place) return []
       const { x, y, width, height } = inGridPx(place.box)
@@ -424,7 +427,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   context.clearRect(0, 0, region.width * pixelRatio, region.height * pixelRatio)
 
   const showRows = rowMarks ?? rowProgressOn(project)
-  const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(project.beads).length > 0)
+  const ruled = space.open && rulers !== undefined && (project.frame !== undefined || Object.keys(beadsOfLayer(project, 'canvas')).length > 0)
   if (!showRows && !preview && !selection && !ruled && !frameEditing && !pointer && !(marginOutline > 0)) {
     return
   }
@@ -500,6 +503,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       pixelRatio,
       theme,
       touch: frameEditing.touch,
+      hot: frameEditing.hot,
       // A size is a number too: the Rulers toggle hides it with the rest.
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })

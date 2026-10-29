@@ -1,4 +1,5 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
+import { isFrameShape } from './frameShape'
 import { liftFlatWeave, type FlatWeave, type SavedProject } from './flatWeave'
 import type { Grid, Project } from './project'
 import type { GridProject } from './storedProject'
@@ -17,8 +18,9 @@ export interface EncodedBeads {
 }
 
 /** The Frame as stored (ADR 0066): its place and size, its name, and its own beads in the same compact form, counted
- * from the Frame's first row and column; its Folded beads beside them, where it has any (file version 10, ticket 0638). */
-type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded'> & FlatWeave & { encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
+ * from the Frame's first row and column; its Folded beads beside them, where it has any (file version 10, ticket 0638).
+ * Its Frame shape is stored as `kind`, the name it had before ADR 0079, so every build reads it alike. */
+type EncodedFrame = Omit<FrameSheet, 'beads' | 'folded' | 'shape'> & FlatWeave & { kind?: unknown; encodedBeads: EncodedBeads; encodedFolded?: EncodedBeads }
 
 /** A Project as a file (version 4 on) and the library store it: the Canvas's beads, and the Frame with its own. Each
  * layer's settings are its map as the app holds it (file version 11, ticket 0636); before, its Brick block was flat. */
@@ -166,13 +168,15 @@ function savedWeave<T extends Weave>({ techniqueSettings, ...layer }: T): Omit<T
   return { ...layer, ...(Object.keys(changed).length > 0 ? { techniqueSettings: changed } : {}) }
 }
 
-function encodeFrame({ beads, folded, ...place }: FrameSheet): EncodedFrame {
-  return { ...savedWeave(place), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
+function encodeFrame({ beads, folded, shape, ...place }: FrameSheet): EncodedFrame {
+  return { ...savedWeave(place), ...(shape ? { kind: shape } : {}), encodedBeads: encodeBeads(beads), ...(folded ? { encodedFolded: encodeBeads(folded) } : {}) }
 }
 
-function decodeFrame({ encodedBeads, encodedFolded, ...place }: EncodedFrame): FrameSheet & FlatWeave {
+/** A stored Frame as the app holds it: a `kind` naming a Frame shape this build knows is its shape; any other (an
+ * older file's "rectangular", or a shape added since) is a Frame without one. */
+function decodeFrame({ encodedBeads, encodedFolded, kind, ...place }: EncodedFrame): FrameSheet & FlatWeave {
   const folded = encodedFolded && decodeBeads(encodedFolded)
-  return { ...place, beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
+  return { ...place, ...(isFrameShape(kind) ? { shape: kind } : {}), beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
 export function encodeProject(project: Project): EncodedProject {
