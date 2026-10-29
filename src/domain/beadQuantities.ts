@@ -24,8 +24,8 @@ export function computeColorQuantities(project: Project, palette: Palette): Colo
     return []
   }
 
-  // Every real bead counts once: a Custom frame's are its layout's (ticket 0592). In no order, as a count needs none:
-  // it is redone a few times a second while a stroke goes on (ticket 0674).
+  // Every real bead counts once: a Custom frame's are its layout's (ticket 0592). In no order, as a count needs none
+  // and it is redone after every edit (ticket 0674).
   const geometry = frameGeometryOf(project)
   for (const rowKey of Object.keys(beads)) {
     const row = Number(rowKey)

@@ -3,9 +3,9 @@ import type { GridPosition } from './grid'
 import { numericKey, touching } from './pieces'
 import { rowCycle, type Weave } from './weave'
 
-// Which Piece the beads of a set of beads are on (ticket 0674), so the Piece-name checks of an edit look only at the
-// beads it changed: a Piece is labelled the first time an edit touches it, and the labels are handed on to the next
-// set of beads an edit makes; a set they were not handed to starts again with none.
+// Which Piece the beads of a set of beads are on (ADR 0080), so the Piece-name checks of an edit look only at the beads
+// it changed: a Piece is labelled the first time an edit touches it, and the labels are handed on to the next set of
+// beads an edit makes; a set they were not handed to starts again with none.
 
 /** What an edit did to where beads are: the positions it filled and the ones it emptied. A new color on a bead is in
  * neither, as it moves no Piece. */
