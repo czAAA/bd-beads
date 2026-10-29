@@ -7,6 +7,8 @@ import { normalizeProject } from './storedProject'
 import type { Grid, Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
+import { beadsOfLayer, frameOf } from './layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -126,7 +128,7 @@ describe('encodeProject / decodeProject', () => {
 
   it('round-trips a single-cell grid', () => {
     const empty = makeProject(1, 1)
-    expect({ columns: empty.frame!.columns, rows: empty.frame!.rows }).toEqual({ columns: 1, rows: 1 })
+    expect({ columns: frameOf(empty)!.columns, rows: frameOf(empty)!.rows }).toEqual({ columns: 1, rows: 1 })
 
     expect(roundTrip(empty)).toEqual(empty)
     const painted = paint(empty, () => '#ff00ff')
@@ -179,14 +181,14 @@ describe('encodeProject / decodeProject', () => {
     const project = {
       ...base,
       beads: { 9: { 9: '#00ff00' } },
-      frame: { ...base.frame!, row: 1, column: 1, name: 'Cherry' },
+      frame: { ...frameOf(base)!, row: 1, column: 1, name: 'Cherry' },
     }
 
     expect(roundTrip(project)).toEqual(project)
   })
 
   it('writes the Frame\'s beads inside the Frame, and the Canvas\'s beside it', () => {
-    const encoded = encodeProject({ ...paint(makeProject(2, 1), () => '#ff0000'), beads: { 5: { 5: '#00ff00' } } })
+    const encoded = encodeProject(withFields(paint(makeProject(2, 1), () => '#ff0000'), { beads: { 5: { 5: '#00ff00' } } }))
 
     expect(encoded.encodedBeads).toEqual({ colors: ['#00ff00'], rows: { 5: '5:1' } })
     expect(encoded.frame).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 2, encodedBeads: { colors: ['#ff0000'], rows: { 0: '0:1x2' } } })
@@ -198,8 +200,8 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(read.frame).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
-    expect(read.beads).toEqual({})
+    expect(frameOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(beadsOfLayer(read, 'canvas')).toEqual({})
   })
 
   it('still reads what version 3 stored: the beads inside the Frame move into it, the covered ones become Canvas beads', () => {
@@ -213,8 +215,8 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(read.frame).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
-    expect(read.beads).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
+    expect(frameOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
+    expect(beadsOfLayer(read, 'canvas')).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
     expect(read).not.toHaveProperty('coveredBeads')
   })
 })

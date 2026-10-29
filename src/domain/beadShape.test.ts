@@ -7,6 +7,7 @@ import { normalizeProject } from './storedProject'
 import { projectCell, withBeadShape } from './projectBead'
 import { parseProjectsFile, serializeProject } from './projectFile'
 import { beadCell, describeWeave, positionStep, TECHNIQUES } from './weave'
+import { canvasOf } from './layerRecord'
 
 const delica = findBead('miyuki-delica-11-0')!
 const round = findBead('toho-round-11-0')!
@@ -54,8 +55,8 @@ describe('the Bead shape in a Project', () => {
   const made = (beadShape?: 'symmetric' | 'real') => createProject({ technique: 'peyote', beadId: delica.id, ...(beadShape ? { beadShape } : {}) })
 
   it('starts Symmetric and saves nothing for it', () => {
-    expect(made().beadShape).toBeUndefined()
-    expect(made('symmetric').beadShape).toBeUndefined()
+    expect(canvasOf(made()).beadShape).toBeUndefined()
+    expect(canvasOf(made('symmetric')).beadShape).toBeUndefined()
     expect(canvasWeave(made()).cell).toBeUndefined()
   })
 
@@ -78,9 +79,9 @@ describe('the Bead shape in a Project', () => {
   it('travels with the Project file, and an older file reads as Symmetric', () => {
     const real = made('real')
     const [read] = parseProjectsFile(serializeProject(real)).projects
-    expect(read!.beadShape).toBe('real')
+    expect(canvasOf(read).beadShape).toBe('real')
     const { beadShape: _unset, ...older } = real
-    expect(normalizeProject(older).beadShape).toBeUndefined()
-    expect(normalizeProject({ ...real, beadShape: 'sideways' as never }).beadShape).toBeUndefined()
+    expect(canvasOf(normalizeProject(older)).beadShape).toBeUndefined()
+    expect(canvasOf(normalizeProject({ ...real, beadShape: 'sideways' as never })).beadShape).toBeUndefined()
   })
 })

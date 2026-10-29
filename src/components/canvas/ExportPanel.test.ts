@@ -6,6 +6,8 @@ import { withColors } from '../../domain/canvas'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
+import { withFrameSheet } from '../../domain/layerRecord'
+import { withFields } from '../../testUtils/flatFields'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -20,11 +22,11 @@ afterEach(() => {
 
 /** A Project made with a size has a Frame; these start with none. */
 function empty(): Project {
-  const { frame: _frame, ...unframed } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } })
+  const unframed = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), undefined)
   return unframed
 }
-const drawn = (): Project => ({ ...empty(), beads: withColors({}, [{ row: 1, column: 1, color: '#ff0000' }]) })
-const framed = (): Project => ({ ...empty(), frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', beads: {} } })
+const drawn = (): Project => (withFields(empty(), { beads: withColors({}, [{ row: 1, column: 1, color: '#ff0000' }]) }))
+const framed = (): Project => (withFields(empty(), { frame: { row: 2, column: 3, rows: 6, columns: 5, technique: 'loom', beads: {} } }))
 
 const mountPanel = (project: Project) => mount(ExportPanel, { props: { project }, attachTo: document.body })
 const has = (wrapper: ReturnType<typeof mountPanel>, testId: string) => wrapper.find(`[data-testid="${testId}"]`).exists()

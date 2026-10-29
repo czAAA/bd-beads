@@ -5,6 +5,7 @@ import { mostRecentlyUpdated, summarizeProject } from './projectLibrary'
 import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { turnedClockwise } from '../testUtils/rotated'
+import { withFrameSheet } from './layerRecord'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -21,7 +22,7 @@ describe('summarizeProject', () => {
   })
 
   it('states no size for a canvas with no Frame: just the name', () => {
-    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' }, name: 'Sketch' }), undefined)
     expect(summarizeProject(open as Project)).toBe('Sketch')
   })
 

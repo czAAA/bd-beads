@@ -23,6 +23,7 @@ import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
 import type { ColorCatalog } from '../domain/colorCatalog'
+import { withFields } from '../testUtils/flatFields'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
 // notice, the notes, panels expanded, the Convert image wizard, the empty library (ticket 552).
@@ -123,7 +124,7 @@ const MarginColorPopoverHost = defineComponent({
  * phone the sheet is wider than the screen, and the canvas is moved to reach the rest (ticket 0657). */
 const MarginSheetHost = defineComponent({
   setup() {
-    const bare: Project = { ...empty, makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } }
+    const bare: Project = withFields(empty, { makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } })
     const project = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
     const anchor = { box: { left: 65, top: 65, width: 554, height: 158 }, sheet: { left: 0, top: 0, width: 684, height: 288 }, band: 72, viewport: { width: 684, height: 288 } }
     return () => h('div', { style: { position: 'relative', overflowX: 'auto', width: '100%', height: '320px' } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])

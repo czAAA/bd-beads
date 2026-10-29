@@ -7,6 +7,7 @@ import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
+import { canvasOf, frameOf } from '../domain/layerRecord'
 
 const STORAGE_KEY = 'openbeads:patterns'
 
@@ -117,7 +118,7 @@ describe('projectStorage', () => {
     const { name: _name, ...legacyProject } = makeProject()
     localStorage.setItem('openbeads:patterns', JSON.stringify([legacyProject]))
 
-    expect(loadProjects()[0]!.name).toBe('TOHO Cube 1.5mm')
+    expect(canvasOf(loadProjects()[0]).name).toBe('TOHO Cube 1.5mm')
   })
 
   it('loads a Project saved before ADR 0026 that still carries its millimetre size, ignoring it', () => {
@@ -126,8 +127,8 @@ describe('projectStorage', () => {
 
     const [loaded] = loadProjects()
 
-    expect(loaded!.frame!.columns).toBe(project.frame!.columns)
-    expect(loaded!.frame!.rows).toBe(project.frame!.rows)
+    expect(frameOf(loaded)!.columns).toBe(frameOf(project)!.columns)
+    expect(frameOf(loaded)!.rows).toBe(frameOf(project)!.rows)
     expect(loaded).not.toHaveProperty('widthMm')
     expect(loaded).not.toHaveProperty('heightMm')
   })

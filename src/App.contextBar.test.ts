@@ -6,6 +6,7 @@ import { hoverBead, pressBead, selectedBeadCount } from './testUtils/beads'
 import { armSelectionBar, pressBar, pickColor, pickTool, rotate } from './testUtils/pill'
 import { loadProjects } from './services/libraryStore'
 import { frameGrid } from './testUtils/frameGrid'
+import { frameOf } from './domain/layerRecord'
 
 beforeEach(() => {
   localStorage.clear()
@@ -64,11 +65,11 @@ describe('the Selection bar (tickets 168, 295, 415)', () => {
     await pickTool(wrapper, 'select')
     await drag(wrapper, [0, 1])
 
-    const rows = loadProjects()[0]!.frame!.rows
+    const rows = frameOf(loadProjects()[0])!.rows
     await pressBar(wrapper, 'remove-line')
-    expect(loadProjects()[0]!.frame!.rows).toBe(rows)
+    expect(frameOf(loadProjects()[0])!.rows).toBe(rows)
     await wrapper.get('[data-testid="remove-line-modal"] [data-testid="confirm-modal-confirm"]').trigger('click')
-    expect(loadProjects()[0]!.frame!.rows).toBe(rows - 1)
+    expect(frameOf(loadProjects()[0])!.rows).toBe(rows - 1)
   })
 
   it('turns the Selection a quarter through Rotate (ticket 416)', async () => {

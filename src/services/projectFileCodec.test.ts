@@ -8,6 +8,7 @@ import type { Project } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
 import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
+import { canvasOf, frameOf } from '../domain/layerRecord'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -72,9 +73,9 @@ describe('a .openbeads file', () => {
       ),
       futureField: { a: 1 },
     } as Project
-    const restored = await roundTrip(withFrame(project, project.frame))
+    const restored = await roundTrip(withFrame(project, frameOf(project)))
     expect(restored).toEqual(project)
-    expect(restored.name).toBe('Лиса')
+    expect(canvasOf(restored).name).toBe('Лиса')
   })
 
   it('round-trips a library of several Projects', async () => {

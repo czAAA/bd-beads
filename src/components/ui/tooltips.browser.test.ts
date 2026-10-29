@@ -10,13 +10,14 @@ import { measureOpenBubble } from '../../testUtils/hoverInPage'
 import { measureInUiFont, textIn } from '../../testUtils/longestText'
 import { actionKey } from './controlAction'
 import IconButton from './IconButton.vue'
+import { rowProgressOf } from '../../domain/rowProgress'
 
 // The registry actions' Tooltips stay on screen at its left and right edges, in English and "longest" (tickets 552, 0607):
 // one capped-width component, so each shape of bubble is tried on the action whose text is widest, and each way of
 // opening once (docs/testing.md, Tooltips).
 const project = createProject({ technique: 'loom', beadId: BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!.id, size: { width: 15, height: 30, unit: 'mm' } })
 /** Row progress begun on a Frame, which holds the Frame still: the reason many actions give for being off. */
-const locked = { ...project, frame: { row: 0, column: 0, rows: 6, columns: 5, technique: 'loom' as const, beads: {} }, rowProgress: { ...project.rowProgress, currentRow: 1 } }
+const locked = { ...project, frame: { row: 0, column: 0, rows: 6, columns: 5, technique: 'loom' as const, beads: {} }, rowProgress: { ...rowProgressOf(project), currentRow: 1 } }
 // The narrowest screen is where a bubble has least room; the wide one adds nothing a Tooltip can fail on.
 const WIDTH = TOOLTIP_WIDTH
 /** Clear of the screen's top and bottom, so a bubble's side (above or below) is the Tooltip's choice. */

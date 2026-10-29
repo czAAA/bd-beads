@@ -3,7 +3,7 @@ import type { Rotation } from '../domain/grid'
 import type { Rect } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
 import { createProject } from '../domain/createProject'
-import { moveToRow } from '../domain/rowProgress'
+import { moveToRow, rowProgressOf } from '../domain/rowProgress'
 import { changeFrame } from '../domain/changeFrame'
 import { frameLayoutOf } from '../domain/frameShape'
 import { onLayer } from '../domain/layers'
@@ -16,6 +16,8 @@ import { renderOverlay as renderOverlayWith } from './overlayRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx, surfaceView } from './surfaceView'
+import { canvasOf, frameOf, orientationOf, withFrameSheet } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -28,7 +30,7 @@ function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnT
 type TestRowProgress = RowProgress & { marks?: boolean }
 
 function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: Parameters<typeof renderOverlayWith>[1]): void {
-  renderOverlayWith(context, { rowMarks: (input.project.rowProgress as TestRowProgress).marks !== false, ...input })
+  renderOverlayWith(context, { rowMarks: (rowProgressOf(input.project) as TestRowProgress).marks !== false, ...input })
 }
 
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
@@ -38,11 +40,11 @@ function projectOf(technique: Technique, columns: number, rows: number, rowProgr
   for (let row = 0; filled && row < rows; row += 1) {
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
-  return { ...project, frame: { ...project.frame!, beads }, rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
+  return withFields(project, { frame: { ...frameOf(project)!, beads }, rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } })
 }
 
 function whole(project: Project, zoom = 1) {
-  const { width, height } = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
+  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, orientationOf(project))
   return { x: 0, y: 0, width, height }
 }
 
@@ -128,7 +130,7 @@ describe('renderOverlay', () => {
 
     it('marks only the cells that hold a bead: an empty cell gets no ring and no lift (ticket 411)', () => {
       const base = projectOf('loom', 3, 3, { currentRow: 1 })
-      const project = { ...base, frame: { ...base.frame!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } }
+      const project = { ...base, frame: { ...frameOf(base)!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } }
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -180,10 +182,10 @@ describe('renderOverlay', () => {
 
   describe('the pass being woven on a Custom frame (ticket 0594)', () => {
     it('rings each bead of the current round turned to its panel\'s angle, and only the beads that hold a colour', () => {
-      const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
       const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
-      const round = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row }) => row === 1)
+      const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
       const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746'))
       const project = moveToRow(painted, 1)
       const { context, named } = recordingContext()
@@ -491,7 +493,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
   /** A peyote Frame of 3 × 3 at row 2, column 3 of a loom Canvas, every bead painted, the first pass the current one. */
   function mixed(): Project {
     const base = projectOf('loom', 3, 3, { currentRow: 1 })
-    return { ...base, frame: { ...base.frame!, technique: 'peyote', row: 2, column: 3 } }
+    return withFields(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
   }
 
   it('rings the current pass in the Frame\'s Weave, drawn from the corner of the Canvas position the Frame lies on', () => {

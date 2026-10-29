@@ -7,6 +7,8 @@ import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
+import { frameOf } from '../../domain/layerRecord'
+import { withFields } from '../../testUtils/flatFields'
 
 beforeEach(() => {
   localStorage.clear()
@@ -15,7 +17,7 @@ beforeEach(() => {
 
 function framed(extra: Partial<Project> = {}): Project {
   const project = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } })
-  return { ...project, frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} }, ...extra }
+  return withFields(project, { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} }, ...extra })
 }
 
 /** The Frame with its first `count` beads painted each in the next Palette color. */
@@ -29,7 +31,7 @@ const text = (wrapper: ReturnType<typeof mountBlock>, testid: string) => wrapper
 
 describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
   it('shows the Frame\'s name, its Technique and "by" the maker, then its size in beads and in cm', () => {
-    const wrapper = mountBlock(framed({ makerName: 'Ada', frame: { ...framed().frame!, name: 'Sun band' } }))
+    const wrapper = mountBlock(framed({ makerName: 'Ada', frame: { ...frameOf(framed())!, name: 'Sun band' } }))
     expect(text(wrapper, 'margin-frame-name')).toBe('Sun band')
     expect(text(wrapper, 'margin-technique')).toBe('Loom')
     expect(wrapper.get('.margin-title__maker .margin-title__meta').text()).toBe('by')

@@ -1,6 +1,8 @@
 import { beadsFromColors, colorsInFrame } from '../domain/canvas'
 import { projectFrame } from '../domain/projectExtent'
 import type { Grid, Project } from '../domain/project'
+import { frameOf } from '../domain/layerRecord'
+import { withFields } from './flatFields'
 
 // A Project's beads as a dense grid of rows and columns, the shape a test writes its expectation in, and back (ticket
 // 0609: the app itself no longer thinks in a grid).
@@ -16,5 +18,5 @@ export function frameGrid(project: Pick<Project, 'frame' | 'beads'>): Grid {
  * Canvas from its origin, as the beads of a Canvas whose box round them is nothing. */
 export function withFrameGrid(project: Project, grid: Grid): Project {
   const beads = beadsFromColors(grid.map((row) => row.map((cell) => cell.color)))
-  return project.frame ? { ...project, frame: { ...project.frame, beads } } : { ...project, beads }
+  return frameOf(project) ? withFields(project, { frame: { ...frameOf(project), beads } }) : withFields(project, { beads })
 }

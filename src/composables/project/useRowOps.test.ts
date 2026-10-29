@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../../domain/createProject'
-import { moveToRow, resetRowProgress, toggleRowDirection } from '../../domain/rowProgress'
+import { moveToRow, resetRowProgress, rowProgressOf, toggleRowDirection } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useRowOps } from './useRowOps'
@@ -60,7 +60,7 @@ describe('useRowOps', () => {
   it('moves the Row progress pointer by the given step', () => {
     const { deps, onMoveRow } = setup(tracking)
     onMoveRow(1)
-    expect(replaced(deps).rowProgress.currentRow).toBe(tracking.rowProgress.currentRow + 1)
+    expect(rowProgressOf(replaced(deps)).currentRow).toBe(rowProgressOf(tracking).currentRow + 1)
   })
 
   it('does nothing with no Project open', () => {

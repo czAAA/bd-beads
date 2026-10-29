@@ -9,6 +9,7 @@ import { changeFrame } from '../domain/changeFrame'
 import { rotateFrame } from '../domain/rotate'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
+import { withFrameSheet } from '../domain/layerRecord'
 
 function project(grid: (string | null)[][], rotation: Rotation = 0, technique: Technique = 'loom'): Project {
   return {
@@ -132,7 +133,7 @@ describe('thumbnailPixels', () => {
 
   /** A small Custom frame Triangle, every bead red, and its Layer geometry. */
   function redTriangle(rotation: Rotation = 0) {
-    const { frame: _frame, ...open } = project([[null]], rotation)
+    const open = withFrameSheet(project([[null]], rotation), undefined)
     const placed = changeFrame(open, { custom: { shape: 'triangle', size: 3, centre: { row: 8, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     const geometry = frameGeometryOf(placed.project)

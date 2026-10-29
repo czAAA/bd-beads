@@ -9,6 +9,8 @@ import type { Project } from '../domain/project'
 import { TECHNIQUES, type Technique } from '../domain/weave'
 import { drawChartParts, letterColor, placeBeads } from './chartVector'
 import { planPrint, mm } from './printPlan'
+import { frameOf, withFrameSheet } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 // The PrintChartPage card's Acceptance list, on a 100 × 100 loom Schema with an empty background, White beads and dark
 // beads, Letters off.
@@ -25,7 +27,7 @@ function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra:
     for (let column = 10; column < 15; column += 1) beads[row]![column] = '#ffffff'
     beads[row]![15] = '#f2c94c'
   }
-  return { ...base, frame: { ...base.frame!, beads }, paletteLetters: LETTERS, letters: false, ...extra }
+  return withFields(base, { frame: { ...frameOf(base)!, beads }, paletteLetters: LETTERS, letters: false, ...extra })
 }
 
 const texts = (content: string) => [...content.matchAll(/BT \/(F[12]) ([\d.]+) Tf ([\d.]+) Tz ([\d.-]+) ([\d.-]+) Td \(([^)]*)\) Tj ET/g)].map((match) => ({ font: match[1]!, size: Number(match[2]), scale: Number(match[3]), x: Number(match[4]), y: Number(match[5]), value: match[6]! }))
@@ -63,7 +65,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     expect(part.firstAcross).toBe(0)
     expect(letters).toHaveLength(painted)
     expect(new Set(letters.map((text) => text.value))).toEqual(new Set(['A', 'B', 'AA']))
-    expect(texts(drawChartParts({ ...project, letters: true }, planPrint(project, undefined, 0, 2), [part], 1754, LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
+    expect(texts(drawChartParts(withFields(project, { letters: true }), planPrint(project, undefined, 0, 2), [part], 1754, LETTERS).content.toString()).filter((text) => /^[A-Z]+$/.test(text.value))).toHaveLength(painted)
   })
 
   it('sets a letter in 6.5 pt, centred across its bead, with its baseline 2.32 mm below the top of the cell', () => {
@@ -146,7 +148,7 @@ describe('a chart page is drawn as lines and letters (ticket 0585, ADR 0043)', (
     const project = schema('loom', 100, 100, { frame: undefined })
     const painted = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 100, height: 100, unit: 'beads' } })
     const full: Record<number, Record<number, string>> = { 0: Object.fromEntries(Array.from({ length: 100 }, (_, column) => [column, DARK])) }
-    const wide: Project = { ...project, frame: { ...painted.frame!, beads: full } }
+    const wide: Project = withFields(project, { frame: { ...frameOf(painted)!, beads: full } })
     const { content } = chartOf(wide, 1)
     const pdf = content.toString()
 
@@ -191,13 +193,13 @@ function plan842(): number {
 describe('a Custom frame\'s chart page (ticket 0594)', () => {
   /** A peyote Triangle of 9 rounds on a loom Canvas, its inner rounds painted dark and its 4th round White. */
   function triangle(): Project {
-    const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+    const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
     const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
-    const positions = frameLayoutOf(placed.project.frame!)!.positions
+    const positions = frameLayoutOf(frameOf(placed.project)!)!.positions
     const dark = onLayer(placed.project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row < 3), DARK))
     const white = onLayer(dark, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row === 3), '#ffffff'))
-    return { ...white, paletteLetters: LETTERS, letters: false }
+    return withFields(white, { paletteLetters: LETTERS, letters: false })
   }
 
   it('tiles the bounding rectangle and letters every painted bead once, across the parts', () => {
@@ -214,8 +216,8 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
     const { content } = chartOf(project)
     const pdf = content.toString()
     const turned = pdf.split('\n').filter((line) => / l .* h [BfS]$/.test(line) && !line.includes(' c '))
-    expect(turned.length).toBe(frameLayoutOf(project.frame!)!.positions.length)
-    expect(turned.filter((line) => line.endsWith(' S')).length).toBe(frameLayoutOf(project.frame!)!.positions.length - 30)
+    expect(turned.length).toBe(frameLayoutOf(frameOf(project)!)!.positions.length)
+    expect(turned.filter((line) => line.endsWith(' S')).length).toBe(frameLayoutOf(frameOf(project)!)!.positions.length - 30)
     // No ruler numbers: the only text is the beads' letters.
     expect(texts(pdf).every((text) => /^[A-Z]+$/.test(text.value))).toBe(true)
   })

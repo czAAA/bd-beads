@@ -11,6 +11,7 @@ import { mountWithProject } from './testUtils/seedProject'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 import { chooseAppLanguage, pickColor } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
+import { withFields } from './testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -38,7 +39,7 @@ describe('App', () => {
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
-    saveProjects([{ ...project, beadId: 'acme-fancy-8-0' }])
+    saveProjects([withFields(project, { beadId: 'acme-fancy-8-0' })])
 
     const wrapper = mount(App)
 

@@ -11,6 +11,8 @@ import { renderProject as renderInSpace, visibleBeads, type RenderInput } from '
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
+import { canvasOf, frameOf, orientationOf } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
 function renderProject(context: Parameters<typeof renderInSpace>[0], input: Omit<RenderInput, 'space'> & { space?: Space }): void {
@@ -38,7 +40,7 @@ function projectOf(technique: Technique, columns: number, rows: number, extra: P
 }
 
 const whole = (project: Project, zoom = 1): Region => {
-  const { width, height } = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
+  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, orientationOf(project))
   return { x: 0, y: 0, width, height }
 }
 
@@ -360,12 +362,12 @@ describe('renderProject', () => {
 
     /** Every cell of a Frame at the origin holds a red bead. */
     const filled = (project: Project): Project => {
-      const frame = project.frame!
+      const frame = frameOf(project)!
       const beads: Project['beads'] = {}
       for (let row = 0; row < frame.rows; row += 1) {
         beads[row] = Object.fromEntries(Array.from({ length: frame.columns }, (_, column) => [column, '#e63746']))
       }
-      return { ...project, frame: { ...frame, beads } }
+      return withFields(project, { frame: { ...frame, beads } })
     }
 
     it('draws the current row 10% brighter than the todo rows, shown or dimmed, in either direction (ticket 352)', () => {
@@ -816,11 +818,10 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
   /** A 3 x 2 Frame at row 20, column 20 holding red in its first bead, over a Canvas with blue under the Frame and green beyond it. */
   function layered(): Project {
     const base = projectOf('loom', 3, 2)
-    return {
-      ...base,
-      frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
+    return withFields(base, {
+frame: { technique: 'loom' as const, row: 20, column: 20, rows: 2, columns: 3, beads: { 0: { 0: '#ff0000' } } },
       beads: { 20: { 21: '#0000ff' }, 40: { 40: '#00ff00' } },
-    }
+})
   }
   const drawnOnCanvas = (project: Project): BeadShape[] => {
     const beads: BeadShape[] = []
@@ -856,14 +857,11 @@ describe('the Frame over the Canvas (ADR 0066)', () => {
 describe('Bead shape (ADR 0068)', () => {
   const delicaCell = { aspect: 1.3 / 1.6, roundness: 0.1 }
   const drawnBeads = (project: Project) => beadsDrawn(project, whole(project))
-  const painted = (project: Project): Project => ({
-    ...project,
-    frame: { ...project.frame!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) },
-  })
+  const painted = (project: Project): Project => (withFields(project, { frame: { ...frameOf(project)!, beads: withColors({}, [0, 1, 2].flatMap((row) => [0, 1, 2].map((column) => ({ row, column, color: '#111111' })))) } }))
 
   it('draws the Symmetric cell exactly as the Technique had it', () => {
     const project = painted(projectOf('peyote', 3, 3))
-    expect(drawnBeads({ ...project, beadShape: 'symmetric' })).toEqual(drawnBeads(project))
+    expect(drawnBeads(withFields(project, { beadShape: 'symmetric' }))).toEqual(drawnBeads(project))
   })
 
   it('draws each cell with the Bead height and its outline, and rows at its pitch, when Real', () => {

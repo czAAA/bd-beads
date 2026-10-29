@@ -8,6 +8,7 @@ import { en } from '../i18n/en'
 import { estimatePdf, estimatePng, exportFacts } from './exportEstimate'
 import { printText } from './printText'
 import { exportProjectPdf, exportProjectPng, projectPageCount } from './projectExport'
+import { withFields } from '../testUtils/flatFields'
 
 // The size each export shows against the real files (ticket 0588, ADR 0076): never less than the file and under about twice
 // it, for a small drawing, a long narrow one, a big symmetric one, a photograph, a conversion in many colors and a Schema
@@ -22,7 +23,7 @@ function drawn(name: string, columns: number, rows: number, color: (row: number,
       return { color: index === null ? null : palette[index % palette.length]! }
     }),
   )
-  return { ...fixtureProject({ technique: 'loom', columns, rows }), name, ...framedGrid(grid, { technique: 'loom' }) }
+  return withFields(fixtureProject({ technique: 'loom', columns, rows }), { name, ...framedGrid(grid, { technique: 'loom' }) })
 }
 
 /** The same noise every run. */

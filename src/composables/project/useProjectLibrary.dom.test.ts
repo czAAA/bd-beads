@@ -7,6 +7,7 @@ import { loadProjects } from '../../services/libraryStore'
 import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storageWrites'
 import { useProjectLibrary } from './useProjectLibrary'
 import { frameGrid } from '../../testUtils/frameGrid'
+import { frameOf } from '../../domain/layerRecord'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -110,8 +111,8 @@ describe('useProjectLibrary', () => {
 
     library.replaceProject(changed, { deferSave: true })
 
-    expect(library.activeProject.value!.frame).toBe(changed.frame)
-    expect(library.projects.value[0]!.frame).toBe(changed.frame)
+    expect(frameOf(library.activeProject.value)).toBe(frameOf(changed))
+    expect(frameOf(library.projects.value[0])).toBe(frameOf(changed))
   })
 
   it('holds back a deferred replace until the pending save is flushed', () => {

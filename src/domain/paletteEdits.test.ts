@@ -9,6 +9,7 @@ import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { BUILT_IN_COLORS, addedColorId, addUsedColor, projectPalette } from './palette'
 import { paintAt } from '../testUtils/layers'
+import { beadsOfLayer, canvasOf } from './layerRecord'
 
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
 
@@ -27,14 +28,14 @@ describe('a Project\'s default colors follow its Bead (ticket 0528)', () => {
     const after = replaceBead(before, delica)
     expect(after.palette).toHaveLength(16 + 1)
     expect(after.palette).toContain(tealId)
-    expect(after.beads).toBe(before.beads)
+    expect(beadsOfLayer(after, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
   })
 
   it('undoes the Bead and the Palette together', () => {
     const before = createProject({ ...input, beadId: roundBead.id })
     const after = replaceBead(before, delica)
     const undone = restoreSnapshot(after, snapshotOf(before))
-    expect(undone.beadId).toBe(roundBead.id)
+    expect(canvasOf(undone).beadId).toBe(roundBead.id)
     expect(undone.palette).toEqual(before.palette)
   })
 
@@ -154,7 +155,7 @@ describe('Swatch letters (ticket 0573)', () => {
     const { paletteLetters: _letters, ...old } = createProject(input)
     const opened = normalizeProject(old)
     expect(opened.paletteLetters![hexOf(opened, opened.palette[0]!)]).toBe('A')
-    expect(opened.letters).toBeUndefined()
+    expect(canvasOf(opened).letters).toBeUndefined()
   })
 
   it('keeps stored letters and the Letters choice through opening and through Undo', () => {

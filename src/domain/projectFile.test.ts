@@ -12,7 +12,7 @@ import {
   serializeProject,
 } from './projectFile'
 import { createProject } from './createProject'
-import { moveToRow } from './rowProgress'
+import { moveToRow, rowProgressOf } from './rowProgress'
 import { setPalette } from './paletteEdits'
 import { withWeave } from './weaveSwitch'
 import type { Project } from './project'
@@ -20,6 +20,7 @@ import { paintCells } from './drawing'
 import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
+import { canvasOf, frameOf } from './layerRecord'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -56,7 +57,7 @@ describe('single-Project roundtrip', () => {
 
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
-    expect(restored!.technique).toBe('brick')
+    expect(canvasOf(restored).technique).toBe('brick')
     expect(restored).toEqual(project)
   })
 
@@ -71,13 +72,13 @@ describe('single-Project roundtrip', () => {
 
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
-    expect(restored!.techniqueSettings).toEqual({ brickBlock: 3 })
+    expect(canvasOf(restored).techniqueSettings).toEqual({ brickBlock: 3 })
     expect(restored).toEqual(project)
 
     const one = withWeave(decoratedProject(), 'canvas', { technique: 'brick' })
     const file = JSON.parse(serializeProject(one))
     expect(file.projects[0]).not.toHaveProperty('brickBlock')
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
   })
 
   it('stores each layer\'s settings as the map the app holds, the Brick block in it, with no flat field (ticket 0636)', () => {
@@ -94,7 +95,7 @@ describe('single-Project roundtrip', () => {
       const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'canvas', { technique: 'brick' })))
       file.version = 10
       file.projects[0].brickBlock = bad
-      expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
+      expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
     }
   })
 
@@ -105,17 +106,17 @@ describe('single-Project roundtrip', () => {
       file.projects[0].techniqueSettings = bad
       file.projects[0].frame.techniqueSettings = bad
       const [read] = parseProjectsFile(JSON.stringify(file)).projects
-      expect(read!.techniqueSettings).toEqual({ brickBlock: 1 })
-      expect(read!.frame!.techniqueSettings).toEqual({ brickBlock: 1 })
+      expect(canvasOf(read).techniqueSettings).toEqual({ brickBlock: 1 })
+      expect(frameOf(read)!.techniqueSettings).toEqual({ brickBlock: 1 })
     }
   })
 
   it('reads a flat Brick block only from a file of version 10 or earlier (ticket 0636)', () => {
     const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'canvas', { technique: 'brick' })))
     file.projects[0].brickBlock = 3
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 1 })
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
     file.version = 10
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.techniqueSettings).toEqual({ brickBlock: 3 })
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 3 })
   })
 
   it('carries the grid, technique, bead and row progress through the file', () => {
@@ -123,10 +124,10 @@ describe('single-Project roundtrip', () => {
 
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
-    expect(restored!.technique).toBe('peyote')
-    expect(restored!.beadId).toBe(cubeBead.id)
+    expect(canvasOf(restored).technique).toBe('peyote')
+    expect(canvasOf(restored).beadId).toBe(cubeBead.id)
     expect(frameGrid(restored!)[2]![3]!.color).toBe('#e63746')
-    expect(restored!.rowProgress).toEqual({
+    expect(rowProgressOf(restored)).toEqual({
       direction: 'rows',
       currentRow: 4,
       currentColumn: 0,
@@ -141,7 +142,7 @@ describe('single-Project roundtrip', () => {
     file.projects[0].rowProgress.enabled = false
     file.projects[0].rowProgress.decided = true
     const [restored] = parseProjectsFile(JSON.stringify(file)).projects
-    expect(restored!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
+    expect(rowProgressOf(restored)).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
   it('writes version 11 with the compact encoding, the Frame\'s beads in the Frame, and the openbeads kind (ADR 0048, 0066)', () => {
@@ -185,17 +186,17 @@ describe('single-Project roundtrip', () => {
     const named = { ...decoratedProject(), pieceNames: [{ row: 2, column: 3, name: 'Fox' }] }
     const file = JSON.parse(serializeProject(named))
 
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toEqual([{ row: 2, column: 3, name: 'Fox' }])
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toEqual([{ row: 2, column: 3, name: 'Fox' }])
 
     delete file.projects[0].pieceNames
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toBeUndefined()
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toBeUndefined()
   })
 
   it('drops Piece names that are not well formed', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
     file.projects[0].pieceNames = [{ row: 1, column: 1, name: '  ' }, { row: 'x', column: 1, name: 'Bad' }, { row: 0, column: 0, name: 'Ok' }]
 
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0].pieceNames).toEqual([{ row: 0, column: 0, name: 'Ok' }])
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toEqual([{ row: 0, column: 0, name: 'Ok' }])
   })
 
   it('does not write a color-to-bead mapping into the file (ADR 0007)', () => {
@@ -238,7 +239,7 @@ describe('a Technique this build does not know in a file (ticket 0644)', () => {
     const file = JSON.parse(serializeProject(project))
     file.projects[0].frame.technique = 'herringbone'
 
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.frame).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    expect(frameOf(parseProjectsFile(JSON.stringify(file)).projects[0])).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
   })
 })
 
@@ -252,8 +253,8 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
     for (const file of [serializeProject(project), stated, unknown]) {
       const [restored] = parseProjectsFile(file).projects
       expect(restored).toEqual(project)
-      expect(restored!.frame).not.toHaveProperty('shape')
-      expect(restored!.frame).not.toHaveProperty('kind')
+      expect(frameOf(restored)).not.toHaveProperty('shape')
+      expect(frameOf(restored)).not.toHaveProperty('kind')
     }
   })
 
@@ -269,9 +270,9 @@ describe('the Frame shape in a file (tickets 0591, 0668)', () => {
 
   it('reads a Custom frame\'s Rounds within its range, and a Frame without a shape without settings', () => {
     const wide = serializeProject(customFramed()).replace('"rounds":5', '"rounds":400')
-    expect(parseProjectsFile(wide).projects[0]!.frame!.settings).toEqual({ rounds: 40 })
+    expect(frameOf(parseProjectsFile(wide).projects[0])!.settings).toEqual({ rounds: 40 })
     const stray = serializeProject(decoratedProject()).replace('"frame":{', '"frame":{"settings":{"rounds":5},')
-    expect(parseProjectsFile(stray).projects[0]!.frame).not.toHaveProperty('settings')
+    expect(frameOf(parseProjectsFile(stray).projects[0])).not.toHaveProperty('settings')
   })
 })
 
@@ -322,7 +323,7 @@ describe('parseProjectsFile', () => {
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
-    expect(projects[0]!.rowProgress).toEqual({
+    expect(rowProgressOf(projects[0])).toEqual({
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,
@@ -337,8 +338,8 @@ describe('parseProjectsFile', () => {
 
     const { projects } = parseProjectsFile(JSON.stringify(file))
 
-    expect(projects[0]!.frame!.columns).toBe(original.frame!.columns)
-    expect(projects[0]!.frame!.rows).toBe(original.frame!.rows)
+    expect(frameOf(projects[0])!.columns).toBe(frameOf(original)!.columns)
+    expect(frameOf(projects[0])!.rows).toBe(frameOf(original)!.rows)
     expect(frameGrid(projects[0]!)).toEqual(frameGrid(original))
     expect(projects[0]).not.toHaveProperty('widthMm')
     expect(projects[0]).not.toHaveProperty('heightMm')
@@ -404,7 +405,7 @@ describe('the Bead copy in a file (ticket 534)', () => {
   it('round-trips the copy of a Bead the catalog does not have', () => {
     const retired = { ...findBead('toho/cube/1.5mm')!, id: 'old-maker/cube/2mm', widthMm: 2 }
     const project = { ...decoratedProject(), beadId: retired.id, bead: retired }
-    expect(parseProjectsFile(serializeProject(project)).projects[0]!.bead).toEqual(retired)
+    expect(canvasOf(parseProjectsFile(serializeProject(project)).projects[0]).bead).toEqual(retired)
   })
 
   it('opens a version 6 file, which has no copy, with the catalog’s Bead', () => {
@@ -412,6 +413,6 @@ describe('the Bead copy in a file (ticket 534)', () => {
     file.version = 6
     delete file.projects[0].bead
 
-    expect(parseProjectsFile(JSON.stringify(file)).projects[0]!.bead).toEqual(findBead(decoratedProject().beadId))
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).bead).toEqual(findBead(canvasOf(decoratedProject()).beadId))
   })
 })

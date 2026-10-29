@@ -1,12 +1,13 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
-import { moveToRow, toggleRowDirection } from './rowProgress'
+import { moveToRow, rowProgressOf, toggleRowDirection } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import { rotateCanvas } from './rotate'
 import type { Project } from './project'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
+import { beadsOfLayer, frameOf, orientationOf } from './layerRecord'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -16,8 +17,8 @@ describe('normalizeProject', () => {
     const upward = moveToRow(toggleRowDirection(toggleRowDirection(framed)), 3)
     const reopened = normalizeProject(JSON.parse(JSON.stringify(upward)))
 
-    expect(reopened.rowProgress).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0, currentRowBack: 3 })
-    expect(normalizeProject(JSON.parse(JSON.stringify(framed))).rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(reopened)).toEqual({ direction: 'rows', reversed: true, currentRow: 0, currentColumn: 0, currentRowBack: 3 })
+    expect(rowProgressOf(normalizeProject(JSON.parse(JSON.stringify(framed))))).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
   it('gives a Project saved as a fixed grid beads by position and a Frame the size of that grid (ADR 0026)', () => {
@@ -34,8 +35,8 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject(legacy)
 
-    expect(normalized.frame).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
-    expect(normalized.beads).toEqual({})
+    expect(frameOf(normalized)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#f00' }, 1: { 2: '#0f0' } } })
+    expect(beadsOfLayer(normalized, 'canvas')).toEqual({})
     expect(normalized).not.toHaveProperty('grid')
     expect(normalized).not.toHaveProperty('columns')
     expect(normalized).not.toHaveProperty('rows')
@@ -44,8 +45,8 @@ describe('normalizeProject', () => {
   it('keeps a turned canvas through a save and load, and turns on from there (ticket 471)', () => {
     const turned = rotateCanvas(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } }))
     const loaded = normalizeProject(JSON.parse(JSON.stringify(turned)))
-    expect(loaded.rotation).toBe(90)
-    expect(rotateCanvas(rotateCanvas(rotateCanvas(loaded))).rotation).toBe(0)
+    expect(orientationOf(loaded)).toBe(90)
+    expect(orientationOf(rotateCanvas(rotateCanvas(rotateCanvas(loaded))))).toBe(0)
   })
 
   it('backfills row progress and the rotation on a Project saved before they existed', () => {
@@ -57,12 +58,12 @@ describe('normalizeProject', () => {
 
     const normalized = normalizeProject(legacy as Project)
 
-    expect(normalized.rowProgress).toEqual({
+    expect(rowProgressOf(normalized)).toEqual({
       direction: 'rows',
       currentRow: 0,
       currentColumn: 0,
     })
-    expect(normalized.rotation).toBe(0)
+    expect(orientationOf(normalized)).toBe(0)
   })
 
   it('reads ticket 28\'s two-position `rotated` boolean as its nearest quarter turn (ticket 171)', () => {
@@ -72,8 +73,8 @@ describe('normalizeProject', () => {
       size: { width: 15, height: 15, unit: 'mm' },
     })
 
-    expect(normalizeProject({ ...legacy, rotated: false } as unknown as Project).rotation).toBe(0)
-    expect(normalizeProject({ ...legacy, rotated: true } as unknown as Project).rotation).toBe(90)
+    expect(orientationOf(normalizeProject({ ...legacy, rotated: false } as unknown as Project))).toBe(0)
+    expect(orientationOf(normalizeProject({ ...legacy, rotated: true } as unknown as Project))).toBe(90)
   })
 
   it('drops the color-to-bead override field a Project saved before ticket 36 may still carry (ADR 0007)', () => {
@@ -103,7 +104,7 @@ describe('normalizeProject', () => {
       rowProgress: { currentRow: 5 } as Project['rowProgress'],
     })
 
-    expect(normalized.rowProgress).toEqual({
+    expect(rowProgressOf(normalized)).toEqual({
       direction: 'rows',
       currentRow: 5,
       currentColumn: 0,
@@ -118,9 +119,9 @@ describe('normalizeProject', () => {
 
     expect(normalized).not.toHaveProperty('widthMm')
     expect(normalized).not.toHaveProperty('heightMm')
-    expect(normalized.frame!.columns).toBe(10)
-    expect(normalized.frame!.rows).toBe(20)
-    expect(normalized.beads).toBe(base.beads)
+    expect(frameOf(normalized)!.columns).toBe(10)
+    expect(frameOf(normalized)!.rows).toBe(20)
+    expect(beadsOfLayer(normalized, 'canvas')).toBe(beadsOfLayer(base, 'canvas'))
   })
 
   it('clamps row and column pointers that no longer fit the Project', () => {
@@ -135,7 +136,7 @@ describe('normalizeProject', () => {
       rowProgress: { direction: 'columns', currentRow: 999, currentColumn: 999 },
     })
 
-    expect(normalized.rowProgress.currentRow).toBe(20)
-    expect(normalized.rowProgress.currentColumn).toBe(10)
+    expect(rowProgressOf(normalized).currentRow).toBe(20)
+    expect(rowProgressOf(normalized).currentColumn).toBe(10)
   })
 })

@@ -5,6 +5,7 @@ import type { Rotation } from '../domain/grid'
 import type { Technique } from '../domain/weave'
 import { A4_PORTRAIT, type PrintPart, PRINT_PART_OVERLAP, chartArea, continuation, mm, partLetter, planPrint, PRINT_CHART_CELL_MM } from './printPlan'
 import { CELL_SIZE_PX } from './cellSize'
+import { withFields } from '../testUtils/flatFields'
 
 const shape = (technique: Technique, columns: number, rows: number, rotation: Rotation = 0) => ({ technique, rotation, beads: {}, frame: { technique: technique, row: 0, column: 0, columns, rows, beads: {} } })
 const beadMm = (zoom: number) => (CELL_SIZE_PX * zoom) / mm(1)
@@ -32,7 +33,7 @@ describe('planPrint (ticket 162; printed-output.md, Chart pages)', () => {
   it('draws every part at one bead size, 3 mm, with Letters or not', () => {
     expect(beadMm(planPrint(shape('loom', 150, 220)).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
     expect(beadMm(planPrint(shape('loom', 20, 20)).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
-    expect(beadMm(planPrint({ ...shape('loom', 150, 220), letters: true }).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
+    expect(beadMm(planPrint(withFields(shape('loom', 150, 220), { letters: true })).zoom)).toBeCloseTo(PRINT_CHART_CELL_MM, 6)
     expect(PRINT_CHART_CELL_MM).toBe(3)
   })
 
@@ -229,7 +230,7 @@ describe('planPrint: Bead shape (ticket 509)', () => {
 
 describe('planPrint with Letters (ticket 0573, 0584)', () => {
   it('cuts the same parts as with Letters off, at the same 3 mm bead', () => {
-    const lettered = planPrint({ ...shape('loom', 130, 130), letters: true })
+    const lettered = planPrint(withFields(shape('loom', 130, 130), { letters: true }))
     const plain = planPrint(shape('loom', 130, 130))
 
     expect(lettered.parts.map((part) => [part.firstAcross, part.lastAcross, part.firstDown, part.lastDown])).toEqual(plain.parts.map((part) => [part.firstAcross, part.lastAcross, part.firstDown, part.lastDown]))

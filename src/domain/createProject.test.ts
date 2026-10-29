@@ -4,6 +4,8 @@ import { createProject, createProjectFromImage } from './createProject'
 import { BEAD_CATALOG } from './beads'
 import { addedColorId, defaultPalette } from './palette'
 import { frameGrid } from '../testUtils/frameGrid'
+import { canvasOf, frameOf } from './layerRecord'
+import { rowProgressOf } from './rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -12,9 +14,9 @@ describe('createProject Brick block (ticket 477)', () => {
   const input = { technique: 'brick' as const, beadId: 'toho-cube-1.5mm' }
 
   it('stores the Brick block given, clamped to 20, and 1 where none is given (ticket 0625)', () => {
-    expect(createProject({ ...input, techniqueSettings: { brickBlock: 3 } }).techniqueSettings).toEqual({ brickBlock: 3 })
-    expect(createProject({ ...input, techniqueSettings: { brickBlock: 99 } }).techniqueSettings).toEqual({ brickBlock: 20 })
-    expect(createProject(input).techniqueSettings).toEqual({ brickBlock: 1 })
+    expect(canvasOf(createProject({ ...input, techniqueSettings: { brickBlock: 3 } })).techniqueSettings).toEqual({ brickBlock: 3 })
+    expect(canvasOf(createProject({ ...input, techniqueSettings: { brickBlock: 99 } })).techniqueSettings).toEqual({ brickBlock: 20 })
+    expect(canvasOf(createProject(input)).techniqueSettings).toEqual({ brickBlock: 1 })
     expect(createProject({ ...input, technique: 'loom' })).not.toHaveProperty('techniqueSettings')
   })
 })
@@ -27,10 +29,10 @@ describe('createProject', () => {
       size: { width: 15, height: 30, unit: 'mm' },
     })
 
-    expect(project.technique).toBe('loom')
-    expect(project.beadId).toBe(cubeBead.id)
-    expect(project.frame!.columns).toBe(10)
-    expect(project.frame!.rows).toBe(20)
+    expect(canvasOf(project).technique).toBe('loom')
+    expect(canvasOf(project).beadId).toBe(cubeBead.id)
+    expect(frameOf(project)!.columns).toBe(10)
+    expect(frameOf(project)!.rows).toBe(20)
     expect(frameGrid(project)).toHaveLength(20)
     expect(frameGrid(project)[0]).toHaveLength(10)
   })
@@ -42,8 +44,8 @@ describe('createProject', () => {
       size: { width: 12, height: 7, unit: 'beads' },
     })
 
-    expect(project.frame!.columns).toBe(12)
-    expect(project.frame!.rows).toBe(7)
+    expect(frameOf(project)!.columns).toBe(12)
+    expect(frameOf(project)!.rows).toBe(7)
     expect(frameGrid(project)).toHaveLength(7)
     expect(frameGrid(project)[0]).toHaveLength(12)
   })
@@ -52,8 +54,8 @@ describe('createProject', () => {
     const fromMm = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 15, height: 30, unit: 'mm' } })
     const fromCm = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 1.5, height: 3, unit: 'cm' } })
 
-    expect(fromCm.frame!.columns).toBe(fromMm.frame!.columns)
-    expect(fromCm.frame!.rows).toBe(fromMm.frame!.rows)
+    expect(frameOf(fromCm)!.columns).toBe(frameOf(fromMm)!.columns)
+    expect(frameOf(fromCm)!.rows).toBe(frameOf(fromMm)!.rows)
     expect(fromMm).not.toHaveProperty('widthMm')
     expect(fromMm).not.toHaveProperty('heightMm')
   })
@@ -95,9 +97,9 @@ describe('createProject', () => {
       size: { width: 15, height: 30, unit: 'mm' },
     })
 
-    expect(project.technique).toBe(technique)
-    expect(project.frame!.columns).toBe(10)
-    expect(project.frame!.rows).toBe(20)
+    expect(canvasOf(project).technique).toBe(technique)
+    expect(frameOf(project)!.columns).toBe(10)
+    expect(frameOf(project)!.rows).toBe(20)
     expect(frameGrid(project)).toHaveLength(20)
   })
 
@@ -118,7 +120,7 @@ describe('createProject', () => {
       size: { width: 3, height: 3, unit: 'mm' },
     })
 
-    expect(project.name).toBe('TOHO Cube 1.5mm')
+    expect(canvasOf(project).name).toBe('TOHO Cube 1.5mm')
   })
 
   it('defaults the name to the bead label when given a blank name', () => {
@@ -129,7 +131,7 @@ describe('createProject', () => {
       name: '   ',
     })
 
-    expect(project.name).toBe('TOHO Cube 1.5mm')
+    expect(canvasOf(project).name).toBe('TOHO Cube 1.5mm')
   })
 
   it('uses the given name when one is provided', () => {
@@ -140,7 +142,7 @@ describe('createProject', () => {
       name: '  My Bracelet  ',
     })
 
-    expect(project.name).toBe('My Bracelet')
+    expect(canvasOf(project).name).toBe('My Bracelet')
   })
 
   it('has no maker name override when none is given (ticket 182)', () => {
@@ -198,14 +200,14 @@ describe('createProjectFromImage', () => {
   it('creates an ordinary Project that arrives already painted', () => {
     const project = fromImage()
 
-    expect(project.frame!.columns).toBe(2)
-    expect(project.frame!.rows).toBe(2)
+    expect(frameOf(project)!.columns).toBe(2)
+    expect(frameOf(project)!.rows).toBe(2)
     expect(frameGrid(project).map((row) => row.map((cell) => cell.color))).toEqual([
       ['#ff0000', null],
       ['#00ff00', '#0000ff'],
     ])
-    expect(project.name).toBe('Fox')
-    expect(project.rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(canvasOf(project).name).toBe('Fox')
+    expect(rowProgressOf(project)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
   it('fits a grid that does not match the stated size rather than contradicting its own dimensions', () => {

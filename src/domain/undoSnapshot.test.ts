@@ -2,11 +2,12 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { moveToRow } from './rowProgress'
+import { moveToRow, rowProgressOf } from './rowProgress'
 import { replaceBead } from './projectBead'
 import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
+import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -19,10 +20,10 @@ describe('snapshotOf and restoreSnapshot', () => {
 
     const restored = restoreSnapshot(changed, snapshot)
 
-    expect(restored.beads).toBe(before.beads)
-    expect(restored.rowProgress).toEqual(before.rowProgress)
-    expect(restored.beadId).toBe(before.beadId)
-    expect(restored.frame).toEqual(before.frame)
+    expect(beadsOfLayer(restored, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
+    expect(rowProgressOf(restored)).toEqual(rowProgressOf(before))
+    expect(canvasOf(restored).beadId).toBe(canvasOf(before).beadId)
+    expect(frameOf(restored)).toEqual(frameOf(before))
   })
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
@@ -30,38 +31,38 @@ describe('snapshotOf and restoreSnapshot', () => {
     const brick = { ...peyote, technique: 'brick' as const, techniqueSettings: { brickBlock: 4 } }
 
     const undone = restoreSnapshot(brick, snapshotOf(peyote))
-    expect(undone.technique).toBe('peyote')
-    expect(undone.techniqueSettings).toBeUndefined()
+    expect(canvasOf(undone).technique).toBe('peyote')
+    expect(canvasOf(undone).techniqueSettings).toBeUndefined()
     const redone = restoreSnapshot(peyote, snapshotOf(brick))
     expect(redone).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
-    expect(redone.techniqueSettings).toEqual({ brickBlock: 4 })
+    expect(canvasOf(redone).techniqueSettings).toEqual({ brickBlock: 4 })
   })
 
   it('restore a Project that had no Frame', () => {
     const before = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } }), undefined)
     const framed = withFrame(before, { row: 0, column: 0, columns: 2, rows: 5 })
 
-    expect(restoreSnapshot(framed, snapshotOf(before)).frame).toBeUndefined()
+    expect(frameOf(restoreSnapshot(framed, snapshotOf(before)))).toBeUndefined()
   })
 })
 
 describe('the Frame in an undo entry (ADR 0066)', () => {
   it('is put back with its own beads by Undo, and gone again when the entry had none', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const drawn = { ...base, frame: { ...base.frame!, beads: { 1: { 1: '#abcdef' } } } }
+    const drawn = { ...base, frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } }
     const none = { ...base, frame: undefined }
 
-    expect(restoreSnapshot(base, snapshotOf(drawn)).frame?.beads).toEqual({ 1: { 1: '#abcdef' } })
-    expect(restoreSnapshot(drawn, snapshotOf(none)).frame).toBeUndefined()
+    expect(frameOf(restoreSnapshot(base, snapshotOf(drawn)))?.beads).toEqual({ 1: { 1: '#abcdef' } })
+    expect(frameOf(restoreSnapshot(drawn, snapshotOf(none)))).toBeUndefined()
   })
 
   it('goes empty with Delete all, the Canvas with it', () => {
     const base = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 3, unit: 'beads' } })
-    const drawn = { ...base, beads: { 9: { 9: '#111111' } }, frame: { ...base.frame!, beads: { 1: { 1: '#abcdef' } } } }
+    const drawn = { ...base, beads: { 9: { 9: '#111111' } }, frame: { ...frameOf(base)!, beads: { 1: { 1: '#abcdef' } } } }
 
     const cleared = deleteAll(drawn)
 
-    expect(cleared.beads).toEqual({})
-    expect(cleared.frame).toMatchObject({ rows: 3, columns: 4, beads: {} })
+    expect(beadsOfLayer(cleared, 'canvas')).toEqual({})
+    expect(frameOf(cleared)).toMatchObject({ rows: 3, columns: 4, beads: {} })
   })
 })

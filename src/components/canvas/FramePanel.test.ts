@@ -14,6 +14,8 @@ import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
 import { pngDpiFor } from '../../rendering/exportDpi'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { frameOf, withFrameSheet } from '../../domain/layerRecord'
+import { withFields } from '../../testUtils/flatFields'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -29,7 +31,7 @@ afterEach(() => {
 })
 
 function framed(frame: { row: number; column: number; rows: number; columns: number; beads: Record<number, Record<number, string>> } = { row: 2, column: 3, rows: 6, columns: 5, beads: {} }): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame: { ...frame, technique: 'loom' } }
+  return withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), { frame: { ...frame, technique: 'loom' } })
 }
 
 function mountBar(project = framed()) {
@@ -201,7 +203,7 @@ describe('FramePanel (ticket 473)', () => {
     await wrapper.get('[data-testid="frame-name-input"]').setValue('  Moth wing ')
     await wrapper.get('[data-testid="frame-name-save"]').trigger('click')
     expect(wrapper.emitted('rename')).toEqual([['Moth wing']])
-    const named = mountBar({ ...framed(), frame: { ...framed().frame!, name: 'Moth wing' } })
+    const named = mountBar(withFields(framed(), { frame: { ...frameOf(framed())!, name: 'Moth wing' } }))
     expect(named.get('[data-testid="frame-name"]').text()).toBe('Moth wing')
     await named.get('[data-testid="frame-name-edit"]').trigger('click')
     await named.get('[data-testid="frame-name-input"]').setValue('')
@@ -240,7 +242,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(lines()[0]).not.toBe(medium)
     expect(lines()[1]).toBe(pdf)
 
-    const empty = mountBar({ ...framed(), frame: undefined })
+    const empty = mountBar(withFields(framed(), { frame: undefined }))
     expect(empty.get('[data-testid="export-png"]').text()).toContain('.png')
     expect(empty.get('[data-testid="export-pdf"]').text()).toContain('.pdf')
   })
@@ -273,7 +275,7 @@ describe('FramePanel (ticket 473)', () => {
     expect(small.get('[data-testid="quality-range"]').attributes('aria-valuetext')).toMatch(/^Medium, 300 DPI, (≈ \d+\.\d MB|< 0\.1 MB)$/)
 
     // A Frame too large for any bead size to be reduced: the page is the same size, so there is no reduced stop.
-    const large = mountBar({ ...framed(), frame: { ...framed().frame!, columns: 200, rows: 200 } })
+    const large = mountBar(withFields(framed(), { frame: { ...frameOf(framed())!, columns: 200, rows: 200 } }))
     expect(large.get('[data-testid="quality-detail-high"]').text()).toBe('450 DPI')
     expect(large.find('[data-testid="quality-reduced-info"]').exists()).toBe(false)
   })
@@ -321,7 +323,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('with no Frame offers Frame from starter, Select a frame and Fit, and only Export besides, off (tickets 555, 568)', async () => {
-    const { frame: _frame, ...bare } = framed()
+    const bare = withFrameSheet(framed(), undefined)
     const wrapper = mountBar(bare)
     expect(wrapper.find('[data-testid="frame-rotate"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="frame-chrome-remove"]').exists()).toBe(false)
@@ -337,7 +339,7 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('with no Frame puts the ways to get one first, above Export, headed by the line saying why (ticket 0650)', () => {
-    const { frame: _frame, ...bare } = framed()
+    const bare = withFrameSheet(framed(), undefined)
     const wrapper = mountBar(bare)
     const order = ['export-needs-frame', 'frame-from-starter', 'frame-select', 'frame-fit', 'frame-none-line', 'export-png']
     const inDomOrder = wrapper.findAll('[data-testid]').map((node) => node.attributes('data-testid')).filter((id) => order.includes(id!))
@@ -345,14 +347,14 @@ describe('FramePanel (ticket 473)', () => {
   })
 
   it('with no Frame, Fit is on once something is drawn and asks the shell to fit (ticket 555)', async () => {
-    const { frame: _frame, ...bare } = framed()
-    const wrapper = mountBar({ ...bare, beads: { 1: { 1: '#ff0000' } } })
+    const bare = withFrameSheet(framed(), undefined)
+    const wrapper = mountBar(withFields(bare, { beads: { 1: { 1: '#ff0000' } } }))
     await wrapper.get('[data-testid="frame-fit"]').trigger('click')
     expect(wrapper.emitted('fit')).toHaveLength(1)
   })
 
   it('asks the shell to select a frame, with or without a Frame, and not once a pass is done (ticket 568)', async () => {
-    const { frame: _frame, ...bare } = framed()
+    const bare = withFrameSheet(framed(), undefined)
     const without = mountBar(bare)
     await without.get('[data-testid="frame-select"]').trigger('click')
     expect(without.emitted('select-frame')).toHaveLength(1)
@@ -378,8 +380,8 @@ describe('FramePanel Letters (ticket 0573)', () => {
   })
 
   it('shows it on when the Project has Letters on, and has no switch without a Frame', async () => {
-    expect(mountBar({ ...framed(), letters: true }).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
-    const { frame: _frame, ...bare } = framed()
+    expect(mountBar(withFields(framed(), { letters: true })).get('[data-testid="frame-letters"]').attributes('aria-checked')).toBe('true')
+    const bare = withFrameSheet(framed(), undefined)
     expect(mountBar(bare).find('[data-testid="frame-letters"]').exists()).toBe(false)
   })
 })

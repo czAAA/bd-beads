@@ -3,6 +3,7 @@ import type { CreateProjectInput } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { starterById, starterDesign } from '../../domain/starters'
 import { useNewProjectFlow } from './useNewProjectFlow'
+import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
 
 const draft: CreateProjectInput = {
   technique: 'loom',
@@ -28,14 +29,14 @@ describe('useNewProjectFlow', () => {
     flow.onCreateFromStarter(starterById('triangle'), { name: 'Sun', beadId: 'miyuki/delica/11-0', sizes: { rounds: 10 }, useDesign: true })
     const created = deps.addProject.mock.calls[0][0]
     expect(created).toMatchObject({ name: 'Sun', frame: { shape: 'triangle', settings: { rounds: 10 } } })
-    expect(created.frame!.beads).toEqual(starterDesign(starterById('triangle')))
+    expect(frameOf(created)!.beads).toEqual(starterDesign(starterById('triangle')))
   })
 
   it('creates a Canvas, with no Frame, when the form states no size', () => {
     const { deps, flow } = setup()
     flow.onCreateProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
     const created = deps.addProject.mock.calls[0][0]
-    expect(created.frame).toBeUndefined()
-    expect(created.beads).toEqual({})
+    expect(frameOf(created)).toBeUndefined()
+    expect(beadsOfLayer(created, 'canvas')).toEqual({})
   })
 })

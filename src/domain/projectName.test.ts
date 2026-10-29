@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from './projectName'
+import { canvasOf } from './layerRecord'
+import { rowProgressOf } from './rowProgress'
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
 
@@ -27,13 +29,13 @@ describe('naming a Project', () => {
     expect(normalizeProjectName('  Fox  ')).toBe('Fox')
     expect(normalizeProjectName('y'.repeat(50))).toHaveLength(40)
     expect(normalizeProjectName('   ')).toBe('')
-    expect(withProjectName(moth(), ' Owl ').name).toBe('Owl')
+    expect(canvasOf(withProjectName(moth(), ' Owl ')).name).toBe('Owl')
   })
 
   it('duplicates under a new id and name and keeps everything else, Row progress included', () => {
     const original = { ...moth(), rowProgress: { direction: 'rows' as const, currentRow: 3, currentColumn: 0 }, makerName: 'Maria' }
     const copy = duplicateProject(original, 'Moth 2', 'copy-id', 5)
     expect(copy).toEqual({ ...original, id: 'copy-id', name: 'Moth 2', createdAt: 5, updatedAt: 5 })
-    expect(copy.rowProgress).not.toBe(original.rowProgress)
+    expect(rowProgressOf(copy)).not.toBe(original.rowProgress)
   })
 })

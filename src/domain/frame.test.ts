@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, sameFrame } from './canvas'
 import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapRow } from './frame'
+import { withFields } from '../testUtils/flatFields'
 
 describe('snapRow', () => {
   it('starts on an even row where rows alternate, reaching one row up rather than losing a row', () => {
@@ -170,6 +171,6 @@ describe('a Brick block (ticket 477)', () => {
 
   it('fits to the drawing from a legal row', () => {
     const beads = withColors({}, [{ row: 9, column: 1, color: '#111111' }, { row: 13, column: 4, color: '#111111' }])
-    expect(fitToDrawing({ ...block2, beads })).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
+    expect(fitToDrawing(withFields(block2, { beads }))).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
   })
 })

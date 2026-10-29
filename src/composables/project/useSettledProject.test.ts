@@ -3,9 +3,10 @@ import { nextTick, shallowRef } from 'vue'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { SUMMARY_INTERVAL_MS, useSettledProject } from './useSettledProject'
+import { withFields } from '../../testUtils/flatFields'
 
 function projectNamed(name: string): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } }), name }
+  return withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 2, height: 2, unit: 'beads' } }), { name })
 }
 
 beforeEach(() => {

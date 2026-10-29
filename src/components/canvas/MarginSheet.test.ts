@@ -6,6 +6,7 @@ import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
+import { withFields } from '../../testUtils/flatFields'
 
 beforeEach(() => {
   localStorage.clear()
@@ -27,7 +28,7 @@ const anchor = {
 }
 
 function framed(): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} } }
+  return withFields(createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } }), { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} } })
 }
 
 function mountSheet(props: Partial<InstanceType<typeof MarginSheet>['$props']> = {}) {

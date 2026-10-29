@@ -7,6 +7,7 @@ import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { useProjectLabels } from './useProjectLabels'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
+import { withFrameSheet } from '../../domain/layerRecord'
 
 const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho/cube/1.5mm')!
 const base = createProject({ technique: 'loom', beadId: bead.id, name: 'Logo panel', size: { width: 4, height: 3, unit: 'beads' } })
@@ -56,7 +57,7 @@ describe('useProjectLabels', () => {
     })
 
     it('names a canvas with no Frame as a Canvas, with no size to state', () => {
-      const { frame: _frame, ...open } = base
+      const open = withFrameSheet(base, undefined)
       expect(setup({ ...open, beads: { 0: { 0: '#ff0000' } } } as Project).projectLabel.value).toBe('Logo panel, Canvas with no Frame, 1 color')
     })
 

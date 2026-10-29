@@ -1,21 +1,22 @@
 import { describe, expect, it, vi } from 'vitest'
 import { colorAt, withColors } from '../../domain/canvas'
 import { createProject } from '../../domain/createProject'
-import { moveToRow } from '../../domain/rowProgress'
+import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateFrameFlow } from './useRotateFrameFlow'
+import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
+import { withFields } from '../../testUtils/flatFields'
 
 const GREEN = '#00aa00'
 const RED = '#e63746'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 /** A 4 x 6 Frame at (20, 20) with a red bead in its first row, over a Canvas holding a green one under it. */
-const framed: Project = {
-  ...base,
-  frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) },
+const framed: Project = withFields(base, {
+frame: { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) },
   beads: withColors({}, [{ row: 21, column: 21, color: GREEN }]),
-}
+})
 
 function setup(project: Project | null = framed) {
   const harness = editHarness(project ?? undefined)
@@ -33,11 +34,11 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     const { deps, harness, onRotateFrame } = setup()
     onRotateFrame()
 
-    expect(harness.project.frame).toMatchObject({ quarterTurns: 1 })
+    expect(frameOf(harness.project)).toMatchObject({ quarterTurns: 1 })
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
-    expect(harness.project.frame).toEqual(framed.frame)
+    expect(frameOf(harness.project)).toEqual(frameOf(framed))
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -50,7 +51,7 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
   it('leaves the Canvas where it is: nothing is covered or turned', () => {
     const { harness, onRotateFrame } = setup()
     onRotateFrame()
-    expect(harness.project.beads).toBe(framed.beads)
+    expect(beadsOfLayer(harness.project, 'canvas')).toBe(beadsOfLayer(framed, 'canvas'))
   })
 
   it('turns a Frame whose rows are marked done without asking, its pointers kept, and one Undo brings it back (ticket 0647)', () => {
@@ -59,14 +60,14 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     onRotateFrame()
 
     // Row 1 is done: the same beads stay finished, the red bead in it kept, not trimmed.
-    expect(harness.project.frame).toMatchObject({ quarterTurns: 1 })
-    expect(harness.project.rowProgress).toEqual(woven.rowProgress)
-    expect(colorAt(harness.project.frame!.beads, 0, 0)).toBe(RED)
+    expect(frameOf(harness.project)).toMatchObject({ quarterTurns: 1 })
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
+    expect(colorAt(frameOf(harness.project)!.beads, 0, 0)).toBe(RED)
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
-    expect(harness.project.frame).toEqual(woven.frame)
-    expect(harness.project.rowProgress).toEqual(woven.rowProgress)
+    expect(frameOf(harness.project)).toEqual(frameOf(woven))
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
   })
 
   it('does nothing without a Frame or without a Project', () => {
@@ -81,9 +82,9 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
 
 describe('useRotateFrameFlow on an empty Frame (ticket 471)', () => {
   it('still turns the Frame when it holds no bead', () => {
-    const { harness, onRotateFrame } = setup({ ...framed, frame: { ...framed.frame!, beads: {} } })
+    const { harness, onRotateFrame } = setup(withFields(framed, { frame: { ...frameOf(framed)!, beads: {} } }))
     onRotateFrame()
-    expect(harness.project.frame).toMatchObject({ quarterTurns: 1 })
+    expect(frameOf(harness.project)).toMatchObject({ quarterTurns: 1 })
     expect(harness.history.canUndo.value).toBe(true)
   })
 })
