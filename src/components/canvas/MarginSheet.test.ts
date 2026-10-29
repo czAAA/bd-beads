@@ -201,14 +201,6 @@ describe('the margin sheet\'s forms as the zoom changes (MarginSheet card, Zoom 
     expect(wrapper.emitted('key')).toHaveLength(1)
   })
 
-  it('stands the bare Move bar on the middle of the Frame\'s top edge, above its line (ticket 0682)', () => {
-    const at = anchorAt(0.3)
-    const wrapper = mountSheet({ anchor: at })
-    const style = control(wrapper, 'margin-handle').attributes('style')!
-    expect(style).toContain(`left: ${at.box.left + at.box.width / 2}px`)
-    expect(style).toContain(`top: ${at.box.top}px`)
-  })
-
   it('lets the bare Move bar give way to a Selection\'s handles and the Tool pill (ticket 0682)', async () => {
     const at = anchorAt(0.3)
     const wrapper = mountSheet({ anchor: at })

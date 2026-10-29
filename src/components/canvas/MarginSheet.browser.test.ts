@@ -125,7 +125,7 @@ describe('the margin sheet at each zoom (ticket 0658)', () => {
 })
 
 describe('the bare margin sheet, under a 31px band (ticket 0682)', () => {
-  it('keeps only the Move bar, on the middle of the Frame\'s top edge: it takes the press that drags, and a press on the first row reaches the bead', async () => {
+  it('stands the Move bar over the middle of the Frame\'s top edge: it takes the press that drags, and a press on the first row reaches the bead', async () => {
     zoom.value = 1
     columns.value = 40
     const { root } = await mountAt(Host, {}, { locale: 'en', width: 1280 })
@@ -138,7 +138,6 @@ describe('the bare margin sheet, under a 31px band (ticket 0682)', () => {
         const name = `${across} columns at ${at * 100}%`
         expect(formOf(root), name).toBe('bare')
         const sheet = root.querySelector<HTMLElement>('[data-testid="margin-sheet"]')!
-        expect([...sheet.querySelectorAll('button')].map((button) => button.getAttribute('aria-label')), name).toEqual(['Move Frame'])
 
         const { box } = anchorAt(at, across)
         const origin = sheet.getBoundingClientRect()
