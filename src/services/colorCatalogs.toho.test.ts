@@ -3,22 +3,23 @@ import { loadColorCatalog } from './colorCatalogs'
 import { BEAD_CATALOG } from '../domain/beads'
 import { brandColors, familyHex } from '../domain/palette'
 
-// The toho catalog (ticket 0694): built by the docs repo's build-toho-catalog.mjs from TOHO's Japanese search data,
-// today its `--sample` subset until a human says the full table may be committed. Every TOHO Form factor reads it.
+// The toho catalog (tickets 0694, 0695): built by the docs repo's build-toho-catalog.mjs from TOHO's Japanese search
+// data (the full facts-only table, committed since 2026-10-29) merged with the text tables of TOHO's international
+// sample cards 111, 110, 13 and PF, which a human has still to check against the card images. Every TOHO Form factor reads it.
 
-/** TOHO's Cube sizes (its Shape Chart No.200): the file has 3mm and 4mm, the app a Bead for 1.5mm only. */
+/** TOHO's Cube sizes (its Shape Chart No.200 and cube card 13). */
 const CUBE_SIZES = ['1.5mm', '2mm', '3mm', '4mm']
 const ROUND_SIZES = BEAD_CATALOG.filter((bead) => bead.id.startsWith('toho/round/')).map((bead) => bead.size)
-/** TOHO Round sizes the Japanese file has no category for (ticket 0695 adds the international cards). */
-const ROUND_SIZES_NOT_IN_FILE = ['10/0', '7/0']
+/** TOHO Round sizes neither the Japanese file nor a card here covers. */
+const ROUND_SIZES_WITHOUT_SOURCE = ['10/0', '7/0']
 
 describe('the toho catalog', () => {
-  it('lists real codes for every TOHO Round size the file has and for Cube 3mm and 4mm, none yet for Cube 1.5mm', async () => {
+  it('lists real codes for every TOHO Round size a source covers and for every Cube size, none for 10/0 and 7/0', async () => {
     const catalog = await loadColorCatalog('toho')
     const inSize = (size: string) => catalog.codes.filter((code) => code.sizes.includes(size))
-    for (const size of [...ROUND_SIZES.filter((size) => !ROUND_SIZES_NOT_IN_FILE.includes(size)), '3mm', '4mm']) expect(inSize(size).length, size).toBeGreaterThan(0)
-    for (const size of [...ROUND_SIZES_NOT_IN_FILE, '1.5mm']) expect(inSize(size), size).toEqual([])
-    expect(catalog.codes.find((code) => code.code === '1')).toMatchObject({ family: ['Crystal'], finish: 'transparent', sizes: expect.arrayContaining(['11/0', '8/0']) })
+    for (const size of [...ROUND_SIZES.filter((size) => !ROUND_SIZES_WITHOUT_SOURCE.includes(size)), ...CUBE_SIZES]) expect(inSize(size).length, size).toBeGreaterThan(0)
+    for (const size of ROUND_SIZES_WITHOUT_SOURCE) expect(inSize(size), size).toEqual([])
+    expect(catalog.codes.find((code) => code.code === '1')).toMatchObject({ family: ['Crystal'], finish: 'transparent', sizes: expect.arrayContaining(['15/0', '11/0', '8/0', '1.5mm']) })
   })
 
   it('names only TOHO Round and Cube sizes, so a Bead sees its own subset', async () => {
@@ -34,8 +35,22 @@ describe('the toho catalog', () => {
     expect(orphans.map((code) => code.code)).toEqual([])
   })
 
-  it('keeps TOHO\'s Japanese finish tag beside our English wording', async () => {
+  it('takes a card code\'s finish and wording from the card\'s heading, a Japan-only code\'s from the Japanese tag', async () => {
     const catalog = await loadColorCatalog('toho')
-    expect(catalog.codes.find((code) => code.code === '1F')?.wording).toBe('Transparent (スキ) · Frosted (ツヤケシ)')
+    const byCode = (code: string) => catalog.codes.find((row) => row.code === code)
+    expect(byCode('1F')).toMatchObject({ finish: 'matte', wording: 'Transparent · Matte' })
+    expect(byCode('1F')?.japanOnly).toBeUndefined()
+    expect(byCode('21')).toMatchObject({ finish: 'silver-lined', wording: 'Transparent Silver Lined' })
+    const japanOnly = catalog.codes.filter((row) => row.japanOnly)
+    expect(japanOnly.length).toBeGreaterThan(0)
+    for (const row of japanOnly) expect(row.wording, row.code).toMatch(/\(.+\)/)
+  })
+
+  it('holds the PermaFinish codes, plated, in the three sizes of the PF card, none of them Japan-only', async () => {
+    const catalog = await loadColorCatalog('toho')
+    const pf = catalog.codes.filter((row) => row.code.startsWith('PF'))
+    for (const row of pf) expect(row.finish, row.code).toBe('plated')
+    for (const row of pf) expect(row.japanOnly, row.code).toBeUndefined()
+    expect(catalog.codes.find((row) => row.code === 'PF581')?.sizes).toEqual(['15/0', '11/0', '8/0'])
   })
 })
