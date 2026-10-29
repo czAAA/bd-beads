@@ -1,4 +1,4 @@
-import { inject, provide, ref, watch, type InjectionKey } from 'vue'
+import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/layerBeads'
 import { provideI18n } from '../../i18n/useI18n'
 import { plural } from '../../i18n/plural'
@@ -377,7 +377,7 @@ function wireAppShell(services: Services) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
@@ -412,6 +412,7 @@ function wireAppShell(services: Services) {
     pasteAtPointer,
     onCellPrimaryDown,
     onCellPrimaryMove,
+    onCellsPrimaryMove,
   } = useCanvasPointer({
     currentProject,
     activeTool: () => activeTool.value,
@@ -427,7 +428,7 @@ function wireAppShell(services: Services) {
       if (mode === 'paint' && color) onPaintColorUsed(color)
       beginOrCommitPress(mode, color, row, column, layer)
     },
-    paintStrokeCell,
+    paintStrokeCells,
     pasteAt: pasteAtCell,
     pickColorAt,
   })
@@ -667,6 +668,8 @@ function wireAppShell(services: Services) {
       zoom,
       scroll,
       showRulers,
+      /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
+      stroking: computed(() => strokeMode.value !== null),
       toggleRulers,
       rowHighlight,
       toggleRowHighlight,
@@ -702,6 +705,7 @@ function wireAppShell(services: Services) {
       previewCells,
       onCellPrimaryDown,
       onCellPrimaryMove,
+      onCellsPrimaryMove,
       onCellHover,
       onHoverEnd,
       selection,

@@ -4,6 +4,7 @@ import { defineComponent, h, nextTick, shallowRef } from 'vue'
 import ProjectSurface from './ProjectSurface.vue'
 import { createProject } from '../../domain/createProject'
 import type { Project, RowProgress } from '../../domain/project'
+import type { GridPosition } from '../../domain/grid'
 import type { Technique } from '../../domain/weave'
 import { DARK_THEME, DEFAULT_THEME, fadeOver } from '../../rendering/beadLook'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -212,6 +213,21 @@ describe('ProjectSurface', () => {
   })
 
   describe('when the Project is edited', () => {
+    it('keeps the rulers\' Pieces through a stroke and counts them again when it ends (ticket 0674)', async () => {
+      const square = (columns: number) => Object.fromEntries([0, 1, 2, 3, 4].map((row) => [row, Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#ff0000']))]))
+      const project = projectOf(5, 5, { frame: undefined, beads: square(5) })
+      const { wrapper } = await mountSurface(project, 1, { x: 0, y: 0 }, { stroking: true, showRulers: true })
+      const ruled = () => (wrapper.vm as unknown as { rulerLayout: { boxes: { columns: number }[] } }).rulerLayout.boxes.map((box) => box.columns)
+      expect(ruled()).toEqual([5])
+
+      // The stroke erases the right column: the box it rules is kept as it was until the stroke ends.
+      await wrapper.setProps({ project: { ...project, beads: square(4) } })
+      expect(ruled()).toEqual([5])
+
+      await wrapper.setProps({ stroking: false })
+      expect(ruled()).toEqual([4])
+    })
+
     /** The Project with one bead of one row painted. */
     function painted(project: Project, row: number, column: number): Project {
       return withFrameGrid(
@@ -309,7 +325,7 @@ describe('ProjectSurface', () => {
       /** How tall a row of beads is drawn at zoom 1, from the top of the view. */
       const ROW_PX = 20
       const wrapper = mount(
-        defineComponent(() => () => h(ProjectSurface, { project: project.value, zoom: 1, scroll, onCellPrimaryDown: paint, onCellPrimaryMove: paint })),
+        defineComponent(() => () => h(ProjectSurface, { project: project.value, zoom: 1, scroll, onCellPrimaryDown: paint, onCellsPrimaryMove: (crossed: GridPosition[]) => crossed.forEach(({ row, column }) => paint(row, column)) })),
         { attachTo: document.body },
       )
       const surface = wrapper.find('[data-testid="project-surface"]')
@@ -600,8 +616,10 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointerdown', { clientX: from.x, clientY: from.y, button: 0, buttons: 1 })
       await surface.trigger('pointermove', { clientX: to.x, clientY: to.y, buttons: 1 })
 
-      const moves = wrapper.emitted('cell-primary-move') as [number, number][]
-      expect(moves.map(([, column]) => column)).toEqual([2, 3, 4, 5, 6, 7, 8])
+      // One move is one report of every bead it crossed (ticket 0674).
+      const moves = wrapper.emitted('cells-primary-move') as [GridPosition[]][]
+      expect(moves).toHaveLength(1)
+      expect(moves[0][0].map(({ column }) => column)).toEqual([2, 3, 4, 5, 6, 7, 8])
     })
 
     it('ends at release', async () => {
@@ -952,6 +970,9 @@ describe('ProjectSurface', () => {
 
     const events = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
       wrapper.emitted() as Record<string, unknown[][]>
+    /** Every bead the strokes crossed, as row and column, over all the moves reported. */
+    const crossed = (wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper']) =>
+      ((wrapper.emitted('cells-primary-move') ?? []) as [GridPosition[]][]).flatMap(([cells]) => cells.map(({ row, column }) => [row, column]))
 
     describe('over the Frame margin (ticket 276)', () => {
       const framed = () => projectOf(4, 4, { frame: { technique: 'loom' as const, row: 10, column: 10, rows: 4, columns: 4, beads: {} } })
@@ -1061,7 +1082,7 @@ describe('ProjectSurface', () => {
       }
 
       expect(events(wrapper)['cell-primary-down']).toEqual([[0, 0], [0, 0]])
-      expect(events(wrapper)['cell-primary-move']).toEqual([[0, 1], [0, 2], [0, 1], [0, 2]])
+      expect(crossed(wrapper)).toEqual([[0, 1], [0, 2], [0, 1], [0, 2]])
     })
 
     it('never hovers for a finger touch (ticket 166: no hover paint preview on a coarse pointer), but still hovers for a Pencil', async () => {
@@ -1086,7 +1107,7 @@ describe('ProjectSurface', () => {
       await surface.trigger('pointermove', { ...centreOf(project, 400, 9000, 1, { x: -2000, y: -2000 }), buttons: 1 })
 
       expect(events(wrapper)['cell-primary-down']).toEqual([[-40, -25]])
-      expect(events(wrapper)['cell-primary-move']!.at(-1)).toEqual([400, 9000])
+      expect(crossed(wrapper).at(-1)).toEqual([400, 9000])
     })
 
     it('says the hover is over when the pointer leaves', async () => {

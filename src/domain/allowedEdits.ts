@@ -1,4 +1,4 @@
-import { forEachBead, withColors, type BeadChange } from './canvas'
+import { changedPositions, withColors, type BeadChange } from './canvas'
 import { keepFinishedRows } from './rowProgress'
 import type { Project } from './project'
 import { carryNames, keepNamesApart } from './pieceNames'
@@ -16,19 +16,21 @@ export function keepAllowedEdits(before: Project, after: Project): Project {
 }
 
 /** What an edit did, with every bead it newly painted where the Frame has no position taken back (outside a Custom
- * frame's layout, ticket 0592). */
+ * frame's layout, ticket 0592). Only the positions the edit changed are looked at (ticket 0674). */
 function keepWhereBeadsAre(before: Project, after: Project): Project {
   const frame = after.frame
   if (!frame) {
     return after
   }
+  const was = before.frame?.beads ?? {}
+  const painted = changedPositions(was, frame.beads).filter(({ row, column }) => frame.beads[row]?.[column] !== undefined)
+  if (painted.length === 0) {
+    return after
+  }
   // The Frame's own beads sit at positions of the Frame itself, its top left being 0, 0; a Custom frame's at its layout's.
   const own = frameGeometryOf(after)
-  const framed: BeadChange[] = []
-  forEachBead(frame.beads, (row, column, color) => {
-    if (!own.hasPosition({ row, column }) && before.frame?.beads[row]?.[column] !== color) {
-      framed.push({ row, column, color: before.frame?.beads[row]?.[column] ?? null })
-    }
-  })
+  const framed: BeadChange[] = painted
+    .filter((position) => !own.hasPosition(position))
+    .map(({ row, column }) => ({ row, column, color: was[row]?.[column] ?? null }))
   return framed.length === 0 ? after : { ...after, frame: { ...frame, beads: withColors(frame.beads, framed) } }
 }

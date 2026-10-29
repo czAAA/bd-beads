@@ -1,5 +1,5 @@
 import { footprintOf } from './footprint'
-import { forEachBead, frameContains, withColors, type BeadChange, type Rect } from './canvas'
+import { changedPositions, frameContains, withColors, type BeadChange, type Rect } from './canvas'
 import type { GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
@@ -83,18 +83,16 @@ export function trimToAllowed(frame: Rect | undefined, selection: Selection, anc
 }
 
 /** What an edit did, with every bead it newly painted in the margin taken back (erasing there stays); nothing left
- * to change returns `before` itself, the drawing commands' "unchanged" signal. */
+ * to change returns `before` itself, the drawing commands' "unchanged" signal. Only the positions the edit changed are
+ * looked at (ticket 0674). */
 export function keepMarginClear(before: Project, after: Project): Project {
   const frame = footprintOf(before)
   if (!frame) {
     return after
   }
-  const reverts: BeadChange[] = []
-  forEachBead(after.beads, (row, column, color) => {
-    if (inMargin(frame, { row, column }) && before.beads[row]?.[column] !== color) {
-      reverts.push({ row, column, color: before.beads[row]?.[column] ?? null })
-    }
-  })
+  const reverts: BeadChange[] = changedPositions(before.beads, after.beads)
+    .filter((position) => after.beads[position.row]?.[position.column] !== undefined && inMargin(frame, position))
+    .map(({ row, column }) => ({ row, column, color: before.beads[row]?.[column] ?? null }))
   if (reverts.length === 0) {
     return after
   }

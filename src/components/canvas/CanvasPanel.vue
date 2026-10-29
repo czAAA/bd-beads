@@ -44,6 +44,7 @@ const {
   selectionRefusals,
   activeTool,
   showRulers,
+  stroking,
   toggleRulers,
   rowHighlight,
   toggleRowHighlight,
@@ -76,6 +77,7 @@ const {
   previewCells,
   onCellPrimaryDown,
   onCellPrimaryMove,
+  onCellsPrimaryMove,
   onCellHover,
   onHoverEnd,
   onRotate,
@@ -263,6 +265,7 @@ const drawingStyle = computed(() => {
               :zoom="zoom"
               :scroll="scroll"
               :show-rulers="showRulers"
+              :stroking="stroking"
               :row-marks="rowHighlight"
               :input-mode="surfaceInputMode"
               :handedness="handedness"
@@ -273,6 +276,7 @@ const drawingStyle = computed(() => {
               :label="projectLabel"
               @cell-primary-down="onCellPrimaryDown"
               @cell-primary-move="onCellPrimaryMove"
+              @cells-primary-move="onCellsPrimaryMove"
               @cell-hover="onCellHover"
               @hover-end="onHoverEnd"
               @pan="panBy"
