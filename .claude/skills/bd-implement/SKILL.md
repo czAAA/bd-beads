@@ -6,6 +6,8 @@ disable-model-invocation: true
 
 Implement the work described by the user in the spec or tickets.
 
+If the arguments start with `-bulk` (`/bd-implement -bulk 0692-0695`), this is a batch: follow `.claude/skills/bd-implement-bulk/SKILL.md` with the rest of the arguments, and nothing below applies to you directly (it is what each ticket's sub-agent follows).
+
 Use /bd-tdd where possible, at pre-agreed seams.
 
 Run typechecking regularly and single test files regularly. At the end run `npm run check` and `npm run test:related -- <changed files>`; then `npm run test:full` before opening the PR (it skips itself on a slow machine, where the full suite is CI's).
