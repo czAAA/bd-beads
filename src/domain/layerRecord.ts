@@ -105,3 +105,36 @@ export function withLayer(project: Project, layer: Layer, change: LayerChange): 
   }
   return next
 }
+
+/** What a layer's beads are read from: the Canvas's, and the Frame's when the Project has one. */
+export type Beaded = Pick<Project, 'beads'> & Partial<Pick<Project, 'frame'>>
+
+/** A layer's own beads (ADR 0079), the Frame's counted from its first row and column; none for a Frame the Project
+ * lacks. The beads of `layerOf`, for a reader given less than a whole Project (ticket 0662). */
+export function beadsOfLayer(project: Beaded, layer: 'canvas'): BeadMap
+export function beadsOfLayer(project: Beaded, layer: Layer): BeadMap | undefined
+export function beadsOfLayer(project: Beaded, layer: Layer): BeadMap | undefined {
+  return layer === 'frame' ? project.frame?.beads : project.beads
+}
+
+/** A layer's Bead copy and Bead shape (ADR 0068, 0072), the Project's for both layers until ticket 0665. Those of
+ * `layerOf`, for a reader given less than a whole Project (ticket 0662). */
+export function beadOfLayer(project: ShapedBead, _layer: Layer): Pick<LayerRecord, 'bead' | 'beadShape'> {
+  return { ...(project.bead ? { bead: project.bead } : {}), beadShape: project.beadShape ?? DEFAULT_BEAD_SHAPE }
+}
+
+/** The id of a layer's Bead (ADR 0072), the Project's for both layers until ticket 0665: what its built-in colors and
+ * Swatch letters are read from. That of `layerOf`, for a reader given less than a whole Project (ticket 0662). */
+export function beadIdOfLayer(project: Pick<Project, 'beadId'>, _layer: Layer): string {
+  return project.beadId
+}
+
+/** A layer's Weave as held (ticket 0625): its Technique and settings, without the cell its Bead draws it in, for a
+ * reader that counts positions as the bare Weave does (ticket 0662). None for a Frame the Project lacks. */
+export function heldWeave(project: Pick<Project, 'technique' | 'techniqueSettings'>, layer: 'canvas'): Weave
+export function heldWeave(project: Partial<Pick<Project, 'frame'>>, layer: 'frame'): Weave | undefined
+export function heldWeave(project: Pick<Project, 'technique' | 'techniqueSettings'> & Partial<Pick<Project, 'frame'>>, layer: Layer): Weave | undefined
+export function heldWeave(project: Partial<Pick<Project, 'technique' | 'techniqueSettings' | 'frame'>>, layer: Layer): Weave | undefined {
+  const held = layer === 'frame' ? project.frame : (project as Weave)
+  return held && weaveOf(held)
+}
