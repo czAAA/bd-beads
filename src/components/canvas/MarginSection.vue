@@ -14,7 +14,7 @@ const margin = useCanvasBackground().margin
 </script>
 
 <template>
-  <PanelSection id="frame:margin" :label="t.frame.margin.heading" :summary="picker.offered.value ? picker.summary.value : undefined" data-testid="margin-section">
+  <PanelSection id="frame:margin" :label="t.frame.margin.heading" :summary="picker.summary.value" data-testid="margin-section">
     <div class="margin-section">
       <MarginColorPicker />
       <div class="margin-section__switch">
