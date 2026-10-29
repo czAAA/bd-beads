@@ -61,6 +61,14 @@ describe('the Frame\'s tools on its margin sheet (MarginSheet card, ticket 0657)
     expect(sheet.classes()).toContain('margin-sheet--editing')
   })
 
+  it('leans with a Canvas twisted off a quarter turn, about the middle the canvas turns on (ticket 0672)', async () => {
+    const wrapper = mountSheet({ anchor: { ...anchor, sheet: { ...anchor.sheet, left: 100, top: 50 }, tilt: 25 } })
+    const { transform, transformOrigin } = (control(wrapper, 'margin-sheet').element as HTMLElement).style
+    expect({ transform, transformOrigin }).toEqual({ transform: 'rotate(25deg)', transformOrigin: '400px 250px' })
+    await wrapper.setProps({ anchor })
+    expect((control(wrapper, 'margin-sheet').element as HTMLElement).style.transform).toBe('')
+  })
+
   it('holds Row progress, the Move bar and the tools in its top band, in that order and with their names', () => {
     const wrapper = mountSheet()
     const names = control(wrapper, 'margin-band').findAll('button').map((button) => button.attributes('aria-label') ?? button.text())

@@ -3,6 +3,8 @@ import { effectScope, nextTick, ref } from 'vue'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
+import { orientationOf } from '../../domain/layerRecord'
+import { rotateCanvas, turnCanvasTo } from '../../domain/rotate'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
 import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
@@ -14,8 +16,14 @@ function projectOf(columns: number, rows: number, extra: LayersChange = {}): Pro
 function setup(project: Project | undefined, size = { width: 1000, height: 800 }) {
   const current = ref(project)
   const viewport = ref(size)
-  const view = effectScope().run(() => useCanvasView(() => current.value, viewport))!
-  return { current, viewport, view }
+  // The Project keeps the angle a twist settles on, as the Rotate canvas flow does.
+  const kept: number[] = []
+  const keepTwist = (orientation: number) => {
+    kept.push(orientation)
+    current.value = turnCanvasTo(current.value!, orientation)
+  }
+  const view = effectScope().run(() => useCanvasView(() => current.value, viewport, { keepTwist }))!
+  return { current, viewport, view, kept }
 }
 
 describe('useCanvasView', () => {
@@ -160,5 +168,76 @@ describe('useCanvasView', () => {
 
     expect(view.zoom.value).toBe(1)
     expect(view.scroll.value).toEqual({ x: 2020 - 500, y: 2020 - 400 })
+  })
+
+  describe('a two-finger twist (ticket 0672)', () => {
+    it('turns the view live about the fingers, keeping the bead under them, and leaves the Project as it is until they lift', () => {
+      const { current, view } = setup(projectOf(20, 10))
+      view.fit()
+      const under = { x: 700, y: 300 }
+      const before = view.cellAt(under)
+
+      view.twistBy(25, under)
+      view.twistBy(12, under)
+
+      expect(view.orientation.value).toBe(37)
+      expect(view.cellAt(under)).toEqual(before)
+      expect(orientationOf(current.value!)).toBe(0)
+    })
+
+    it('snaps to the quarter turn within 10° as the fingers lift, about the middle, and the Project keeps it with no refit', async () => {
+      const { current, kept, view } = setup(projectOf(20, 10))
+      view.fit()
+      const middle = view.visibleCentre()
+      view.twistBy(83, { x: 900, y: 100 })
+      view.panBy(40, 0)
+      const centre = view.visibleCentre()
+
+      view.endTwist()
+      await nextTick()
+
+      expect(kept).toEqual([90])
+      expect(orientationOf(current.value!)).toBe(90)
+      expect(view.orientation.value).toBe(90)
+      expect(view.visibleCentre()).toEqual(centre)
+      expect(view.visibleCentre()).not.toEqual(middle)
+    })
+
+    it('zooms about the point under the fingers on screen while the view leans', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      view.twistBy(30, { x: 500, y: 400 })
+      const under = { x: 800, y: 200 }
+      const before = view.cellAt(under)
+      view.setZoom(0.5, under)
+      expect(view.cellAt(under)).toEqual(before)
+    })
+
+    it('stays at an angle further than 10° off a quarter turn', () => {
+      const { kept, view } = setup(projectOf(20, 10))
+      view.twistBy(-30, { x: 500, y: 400 })
+      view.endTwist()
+      expect(kept).toEqual([330])
+    })
+
+    it('moves the canvas with a drag along the screen, not along the leaning drawing', () => {
+      const { view } = setup(projectOf(20, 10))
+      view.fit()
+      view.twistBy(30, { x: 500, y: 400 })
+      const before = view.cellAt({ x: 600, y: 400 })
+      view.panBy(100, 0)
+      expect(view.cellAt({ x: 700, y: 400 })).toEqual(before)
+    })
+
+    it('still fits again when the Rotate canvas button turns a quarter from the angle', async () => {
+      const { current, view } = setup(projectOf(20, 10))
+      view.twistBy(30, { x: 500, y: 400 })
+      view.endTwist()
+      view.panBy(300, 300)
+      current.value = rotateCanvas(current.value!)
+      await nextTick()
+      expect(orientationOf(current.value)).toBe(120)
+      expect(view.isAtFit.value).toBe(true)
+    })
   })
 })

@@ -6,7 +6,7 @@ import { projectFrame } from '../domain/projectExtent'
 import type { DrawnProject } from './projectRenderer'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion } from './surfaceView'
-import { beadsOfLayer, orientationOf } from '../domain/layerRecord'
+import { beadsOfLayer, quarterTurnOf } from '../domain/layerRecord'
 
 export interface ThumbnailImage {
   width: number
@@ -36,7 +36,7 @@ export function thumbnailPixels(project: Thumbnailed, size: number): ThumbnailIm
   if (!extent || extent.width <= 0 || extent.height <= 0) {
     return { width: 1, height: 1, data: new Uint8ClampedArray(4) }
   }
-  const [across, down] = rotationSwapsAxes(orientationOf(project)) ? [extent.height, extent.width] : [extent.width, extent.height]
+  const [across, down] = rotationSwapsAxes(quarterTurnOf(project)) ? [extent.height, extent.width] : [extent.width, extent.height]
   const scale = size / Math.max(across, down)
   const width = Math.max(1, Math.round(across * scale))
   const height = Math.max(1, Math.round(down * scale))
@@ -47,7 +47,7 @@ export function thumbnailPixels(project: Thumbnailed, size: number): ThumbnailIm
   const colorOf = ({ row, column }: GridPosition) => (framed ? colorAt(framed, row, column) : colorAt(canvas, drawnBox.row + row, drawnBox.column + column))
 
   // The editor's own turn (gridToRegion), from the Layer to the picture's pixels, and its inverse.
-  const [a, b, c, d, e, f] = gridToRegion(extent, { x: 0, y: 0, width: 0, height: 0 }, scale, orientationOf(project))
+  const [a, b, c, d, e, f] = gridToRegion(extent, { x: 0, y: 0, width: 0, height: 0 }, scale, quarterTurnOf(project))
   const det = a * d - b * c
   const toPixel = ({ x, y }: LayoutPoint): [number, number] => [a * (x - extent.x) + c * (y - extent.y) + e, b * (x - extent.x) + d * (y - extent.y) + f]
   const pixelOnLayer = (px: number, py: number): LayoutPoint => {

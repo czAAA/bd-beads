@@ -3,6 +3,7 @@ import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
 import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
 import type { Rotation } from './grid'
+import { normalizedOrientation } from './canvasOrientation'
 import { isSettingsMap, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import { weaveOf } from './layerWeave'
 import { codesInPalette, defaultPalette, normalizePaletteCodes, normalizePaletteIds } from './palette'
@@ -187,9 +188,9 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
   }
 }
 
-/** The Canvas's stored orientation in degrees (ticket 0664): a quarter turn, or upright for anything else. */
-function readOrientation(stored: unknown): Rotation {
-  return (ROTATIONS as readonly unknown[]).includes(stored) ? (stored as Rotation) : 0
+/** The Canvas's stored orientation in degrees (ticket 0664): any angle (ticket 0672), or upright for what is no number. */
+function readOrientation(stored: unknown): number {
+  return typeof stored === 'number' && Number.isFinite(stored) ? normalizedOrientation(stored) : 0
 }
 
 /** The stored Projects this build can read (ticket 0644): one whose Canvas is woven in a Technique it doesn't know,

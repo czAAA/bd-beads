@@ -50,6 +50,24 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
     expect(orientationOf(harness.project)).toBe(90)
   })
 
+  it('turns a quarter clockwise from the angle a twist left it at (ticket 0672)', () => {
+    const { harness, onRotateCanvas, onTwistCanvas } = setup()
+    onTwistCanvas(30)
+    onRotateCanvas()
+    expect(orientationOf(harness.project)).toBe(120)
+  })
+
+  it('keeps the angle a twist settled on, changing no bead, Frame or Row progress, as no Undo step and with no announcement (ticket 0672)', () => {
+    const { deps, harness, onTwistCanvas } = setup(moveToRow(framed, 1))
+    onTwistCanvas(212.5)
+    expect(orientationOf(harness.project)).toBe(212.5)
+    expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
+    expect(frameSheetOf(harness.project)).toEqual(frameSheetOf(framed))
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(moveToRow(framed, 1)))
+    expect(harness.history.canUndo.value).toBe(false)
+    expect(deps.announce).not.toHaveBeenCalled()
+  })
+
   it('announces the turn', () => {
     const { deps, onRotateCanvas } = setup()
     onRotateCanvas()
