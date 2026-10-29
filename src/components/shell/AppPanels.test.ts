@@ -12,14 +12,14 @@ import { en } from '../../i18n/en'
 import { mountShellParts } from '../../testUtils/shellHost'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
 import { backgroundOf, canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 /** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
  * test per control → flow. What the panels hold is in MenuPanel and ProjectPanel, Back, Escape and focus in AppPanel
  * and useOverlayLayer, the rules in the flows, and a strip button opening its panel in the App tests. */
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 10, height: 10, unit: 'beads' } })
-const other = () => (withFields(moth(), { id: 'other', name: 'Other' }))
+const other = () => (withLayers(moth(), { id: 'other', name: 'Other' }))
 
 beforeEach(() => {
   saveProjects([moth()])
@@ -293,7 +293,7 @@ describe('Backgrounds (ticket 0666)', () => {
 describe('The Export panel', () => {
   it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {
     const open = withFrameSheet(moth(), undefined)
-    saveProjects([withFields(open, { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) })])
+    saveProjects([withLayers(open, { beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) })])
     const mounted = mountPanels()
     await mounted.openPanel('export')
     expect(mounted.wrapper.find('[data-testid="export-png"]').exists()).toBe(false)

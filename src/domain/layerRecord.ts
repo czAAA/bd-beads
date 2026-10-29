@@ -2,7 +2,7 @@ import { beadCopy, type Bead } from './beads'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
-import type { Background, CanvasLayer, FrameLayer, LayerFields, Project, RowProgress } from './project'
+import { touch, type Background, type CanvasLayer, type FrameLayer, type LayerFields, type Project, type RowProgress } from './project'
 import { beadCell, DEFAULT_BEAD_SHAPE, heldSettings, withCell, type BeadShape, type Weave } from './weave'
 
 // The one way to read and write a layer, the Canvas or the Frame (ADR 0079, tickets 0661, 0664): a Project holds its
@@ -152,6 +152,12 @@ export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<Fr
   const kept = frameOf(project) ? frameIdentity(frameOf(project)!) : { ...frameIdentity({ ...canvas, rowProgress: { ...FIRST_ROW } }), id: newLayerId() }
   const { cell: _cell, ...laid } = sheet
   return { ...project, layers: [canvas, { ...kept, ...laid }, ...framesOf(project).slice(1)] }
+}
+
+/** The Project with its Frame laid as a sheet, or removed with none, as `withFrameSheet` does, stamped as just-edited:
+ * what a Frame edit commits. */
+export function touchFrameSheet(project: Project, sheet: (FrameSheet & Partial<FrameLayer>) | undefined): Project {
+  return touch(withFrameSheet(project, sheet), {})
 }
 
 /** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Bead shape, Background, Letters
