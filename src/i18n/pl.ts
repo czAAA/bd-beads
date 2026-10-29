@@ -608,6 +608,7 @@ export const pl: Translations = {
     qualityPdfCapped: 'Na tym urządzeniu „Wysoka” w PNG to {n} DPI.',
     lettersLabel: 'Litery',
     lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
+    lettersInfoLabel: 'Do czego służą Litery',
     qualityHintLabel: 'Do czego służy niska jakość',
     qualityHint: 'Niska jakość oszczędza pamięć: mniejsze pliki i obraz, który telefon zawsze utworzy.',
     estimateInfo: 'To szacunek. Rozmiar koralika × liczba koralików wszerz i wzdłuż. Nić, naciąg i drobne różnice między koralikami sprawiają, że gotowa praca często wychodzi trochę inna.',

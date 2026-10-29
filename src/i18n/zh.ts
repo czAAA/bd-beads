@@ -595,6 +595,7 @@ export const zh: Translations = {
     qualityPdfCapped: '在此设备上，PNG 的“高”为 {n} DPI。',
     lettersLabel: '字母',
     lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
+    lettersInfoLabel: '字母的作用',
     qualityHintLabel: '低质量的用途',
     qualityHint: '低质量节省内存：文件更小，手机始终能生成图片。',
     estimateInfo: '这只是估算：珠子大小 × 横向和纵向的珠子数。线、松紧度以及珠子之间的细微差异，常会让成品略有出入。',

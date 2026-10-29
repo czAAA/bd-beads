@@ -10,6 +10,7 @@ import AppIcon from '../ui/AppIcon.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
 import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
+import InfoButton from '../ui/InfoButton.vue'
 import QualitySlider from '../ui/QualitySlider.vue'
 import LoadingState from '../ui/LoadingState.vue'
 import TextField from '../ui/form/TextField.vue'
@@ -229,10 +230,12 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       <!-- Letters (ticket 0573): the Swatch letter on the Frame's beads, the PNG and the PDF; saved with the Project. -->
       <template v-if="frame">
         <div class="frame-panel__letters">
-          <span class="frame-panel__letters-label">{{ t.frame.lettersLabel }}</span>
+          <span class="frame-panel__letters-label">
+            {{ t.frame.lettersLabel }}
+            <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
+          </span>
           <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
         </div>
-        <p class="frame-panel__line" data-testid="frame-letters-line">{{ t.frame.lettersLine }}</p>
       </template>
       <p v-if="!frame" class="frame-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <LoadingState v-if="exporting" class="frame-panel__loading" compact :text="exportingText" />
@@ -291,7 +294,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             <AppIcon name="ruler" :size="16" />
             <span class="frame-panel__estimate-label">{{ t.size.estimateLabel }}</span>
             <span class="frame-panel__estimate-value">{{ estimate }}</span>
-            <IconButton variant="plain" icon="info" :icon-size="16" :label="t.size.estimateLabel" :tooltip="{ body: t.frame.estimateInfo }" data-testid="frame-estimate-info" />
+            <InfoButton :label="t.size.estimateLabel" :body="t.frame.estimateInfo" data-testid="frame-estimate-info" />
           </div>
         </div>
         <div v-else class="frame-panel__body">
@@ -376,7 +379,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
             <AppIcon name="ruler" :size="16" />
             <span class="frame-panel__estimate-label">{{ t.size.estimateLabel }}</span>
             <span class="frame-panel__estimate-value">{{ estimate }}</span>
-            <IconButton variant="plain" icon="info" :icon-size="16" :label="t.size.estimateLabel" :tooltip="{ body: t.frame.estimateInfo }" data-testid="frame-estimate-info" />
+            <InfoButton :label="t.size.estimateLabel" :body="t.frame.estimateInfo" data-testid="frame-estimate-info" />
           </div>
           <PanelItem icon="select" :disabled="locked" :disabled-body="t.tooltips.frameSizeLocked" data-testid="frame-select" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>
           <!-- Replace Frame (ticket 0596): the Starter gallery, its Frame put in place of this one. -->
@@ -476,6 +479,9 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
   padding: 0 var(--space-10);
 }
 .frame-panel__letters-label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-4);
   font: var(--type-control);
 }
 .frame-panel__line {
