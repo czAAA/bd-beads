@@ -16,4 +16,6 @@ The row and column numbers around the Pattern (approved variant A). Every number
 
 The BeadBoard and Frame cards show the piece and Frame rulers in place.
 
+**On the margin sheet (ticket 0655; MarginSheet card):** with a Frame its rulers are drawn on the top, left and right only; the bottom band holds the title block. They sit on the margin's color, so they take the nearest grey to the look's `ruler` at 4.5:1 or more against it (the 5th numbers at 7:1), the rule a Custom Canvas color uses. The current row's pointer stands in the left band. In the margin's compact and folded forms no numbers are drawn.
+
 Hand-written from the approved Rulers design (claude.ai, variant A). Replace this card with the claude.ai one when the design system is next synced (DESIGN.md §6).
