@@ -62,18 +62,6 @@ export function selectionBetween(anchor: GridPosition, focus: GridPosition, laye
   }
 }
 
-/** Where a drag that began on `layer` may reach (ticket 491): on the Frame, the nearest cell inside it; on the Canvas, a
- * cell under the Frame is not reached, so the drag stays at `held`. */
-export function dragFocusOnLayer(project: Placed, layer: Layer, cell: GridPosition, held: GridPosition): GridPosition {
-  const frame = project.frame
-  if (!frame) return cell
-  if (layer === 'canvas') return cell.layer === 'frame' || frameContains(footprintOf(project)!, cell) ? held : cell
-  return {
-    row: Math.min(Math.max(cell.row, frame.row), frame.row + frame.rows - 1),
-    column: Math.min(Math.max(cell.column, frame.column), frame.column + frame.columns - 1),
-  }
-}
-
 /** A position as a set key. */
 export const cellKey = (row: number, column: number): string => `${row},${column}`
 
@@ -182,18 +170,21 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
   return { ...selection, top: selection.top + rows, left: selection.left + columns }
 }
 
-/** The Selection slid back inside `frame` when it was moved past an edge; as it is when it is larger than the Frame. */
-export function withinFrame(selection: Selection, frame: Rect): Selection {
-  const top = Math.max(frame.row, Math.min(selection.top, frame.row + frame.rows - selection.rows))
-  const left = Math.max(frame.column, Math.min(selection.left, frame.column + frame.columns - selection.columns))
-  return { ...selection, top, left }
+/** Whether a Selection on a layer acts on a position of that layer (ticket 0659): on the Frame, a cell inside it; on the
+ * Canvas, one clear of the Frame and its margin, as the Canvas beads there are not drawn. A Selection's rectangle may
+ * lie anywhere; only these positions of it are selected. */
+function selectableOn(project: Placed, sheet: LayerSheet): (row: number, column: number) => boolean {
+  const { edge } = sheet
+  if (edge) return (row, column) => frameContains(edge, { row, column })
+  const covered = footprintOf(project)
+  return covered ? (row, column) => !frameContains(withMargin(covered), { row, column }) : () => true
 }
 
 /** Snapshots a Selection's drawn beads on a layer laid on a grid into a block (ticket 437, ADR 0016): trimmed to the
  * bounding box, anchored on the first bead. */
-function copySelection({ beads }: Pick<LayerSheet, 'beads'>, selection: Selection): CopiedBlock | undefined {
+function copySelection({ beads }: Pick<LayerSheet, 'beads'>, selection: Selection, selectable: (row: number, column: number) => boolean): CopiedBlock | undefined {
   const mask = selectionMask(selection)
-  const colorIn = (row: number, column: number) => (!mask || mask(row, column) ? colorAt(beads, row, column) : null)
+  const colorIn = (row: number, column: number) => ((!mask || mask(row, column)) && selectable(row, column) ? colorAt(beads, row, column) : null)
   const drawn: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
     for (let column = selection.left; column < selection.left + selection.columns; column++) {
@@ -266,7 +257,7 @@ export function copyLayerSelection(project: Project, selection: Selection): Copi
   const layer = selectionLayer(project, selection)
   const sheet = layerSheet(project, layer)
   const local = selectionInLayer(project, layer, selection)
-  return sheet.geometry.grid ? copySelection(sheet, local) : copyCustomSelection(sheet, local)
+  return sheet.geometry.grid ? copySelection(sheet, local, selectableOn(project, sheet)) : copyCustomSelection(sheet, local)
 }
 
 /** Snapshots a Custom frame's Selection (ticket 0594): its beads' places on screen, and the same beads in its cells. */
@@ -291,15 +282,15 @@ function landedOnCustom(sheet: LayerSheet, block: CopiedBlock, at: GridPosition)
   return landOnLayout(sheet, points.map(({ x, y, color }) => ({ x: aim.x + x, y: aim.y + y, color })))
 }
 
-/** Every position in a Selection on its layer: the Selection's rectangle (a shape's own cells), cut to the Frame when it
- * is the Frame's; on a Custom frame every bead whose centre lies in it (ticket 0594). */
-function selectionCells(sheet: LayerSheet, selection: Selection): GridPosition[] {
+/** Every position in a Selection on its layer: the Selection's rectangle (a shape's own cells), cut to what the layer
+ * shows (`selectableOn`); on a Custom frame every bead whose centre lies in it (ticket 0594). */
+function selectionCells(sheet: LayerSheet, selection: Selection, selectable: (row: number, column: number) => boolean): GridPosition[] {
   if (!sheet.geometry.grid) return positionsInRectangle(sheet, selection).map(({ row, column }) => ({ row, column }))
   const mask = selectionMask(selection)
   const cells: GridPosition[] = []
   for (let row = selection.top; row < selection.top + selection.rows; row++) {
     for (let column = selection.left; column < selection.left + selection.columns; column++) {
-      if ((!mask || mask(row, column)) && (!sheet.edge || frameContains(sheet.edge, { row, column }))) {
+      if ((!mask || mask(row, column)) && selectable(row, column)) {
         cells.push({ row, column })
       }
     }
@@ -312,7 +303,8 @@ function selectionCells(sheet: LayerSheet, selection: Selection): GridPosition[]
  * progress does not cover. */
 export function selectionInFinishedRows(project: Project, selection: Selection): boolean {
   if (selectionLayer(project, selection) !== 'frame') return false
-  const cells = selectionCells(layerSheet(project, 'frame'), selectionInLayer(project, 'frame', selection))
+  const sheet = layerSheet(project, 'frame')
+  const cells = selectionCells(sheet, selectionInLayer(project, 'frame', selection), selectableOn(project, sheet))
   return cells.some((cell) => isInFinishedRow(project, { ...positionOnCanvas(project, 'frame', cell), layer: 'frame' }))
 }
 
@@ -321,7 +313,7 @@ export function selectionInFinishedRows(project: Project, selection: Selection):
 export function paintLayerSelection(project: Project, selection: Selection, color: string | null): Project {
   const layer = selectionLayer(project, selection)
   const local = selectionInLayer(project, layer, selection)
-  return onLayer(project, layer, (sheet) => paintCells(sheet, selectionCells(sheet, local), color))
+  return onLayer(project, layer, (sheet) => paintCells(sheet, selectionCells(sheet, local, selectableOn(project, sheet)), color))
 }
 
 /** Paste on the layer the pointer is at: the block at `at`, cut to the Frame when it lands in it; on a Custom frame each
