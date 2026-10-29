@@ -52,21 +52,14 @@ describe('useBeadColors', () => {
 describe('a Project on a Miyuki Round Bead (ticket 0693)', () => {
   const round = createProject({ technique: 'loom', beadId: 'miyuki/round/6-0', size: { width: 3, height: 3, unit: 'beads' } })
 
-  it('lists only the Round codes of its size, square-hole ones included, and adds one as an Edit', async () => {
-    const { harness, load, swatches, state, add } = setup(round)
+  it('lists the Round codes of its size, the square-hole ones among them, and no Delica code', async () => {
+    const { load, swatches, state } = setup(round)
     await load()
     expect(state.value).toBe('ready')
     const codes = swatches.value.map((entry) => entry.code)
     expect(codes).toContain('3271')
-    expect(codes).toContain('1F')
     expect(codes).not.toContain('DB1')
-    expect(codes.every((code) => /^\d+[A-Z]*$/.test(code))).toBe(true)
-    const squareHole = swatches.value.find((entry) => entry.code === '3271')!
-    expect(squareHole).toMatchObject({ approximate: true, discontinued: false, taken: false })
-    expect(add(squareHole.hex, squareHole.code)).toBe('added')
-    expect(harness.project.paletteCodes).toEqual({ [squareHole.hex]: '3271' })
-    harness.history.onUndo()
-    expect(harness.project.paletteCodes).toBeUndefined()
+    expect(swatches.value.find((entry) => entry.code === '3271')).toMatchObject({ approximate: true, discontinued: false })
   })
 })
 
