@@ -7,7 +7,7 @@ import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
 import type { SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
-import { frameHandles, gutterHandles, type Handle } from './frameHandles'
+import { frameHandles, type Handle, type HandleId } from './frameHandles'
 
 /** The mono stack every number and label on the canvas is set in. */
 const MONO_FONT = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
@@ -96,7 +96,49 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   for (const label of layout.labels) {
     drawLabel(context, label, fontPx, project, theme, rowMarks)
   }
+  if (rowMarks) drawRowPointer(context, input, theme)
   drawPieceNames(context, input)
+}
+
+/** The row pointer's size and its gap to the row numbers (MarginSheet card). */
+const POINTER_LENGTH_PX = 9
+const POINTER_WIDTH_PX = 12
+const POINTER_GAP_PX = 4
+
+// The current pass's pointer (MarginSheet card, ticket 0657): a `marker` triangle on the margin sheet, 4px outside the
+// numbers, pointing at the pass: in the left band for a pass running across the screen, in the top band for one
+// running down it. None for a Custom frame, whose passes are no line, nor once every pass is done.
+function drawRowPointer(context: DrawingContext, { project, surface, layout }: RulerDrawInput, theme: ProjectTheme): void {
+  const frame = project.frame
+  const box = layout.boxes.find((ruled) => ruled.kind === 'frame')
+  const order = frameRowOrder(project)
+  const pass = currentPass(project.rowProgress)
+  const line = pass < order.count ? order.lineOf(pass) : undefined
+  if (!frame || !box || line === undefined) return
+  const columns = project.rowProgress.direction === 'columns'
+  const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, 'frame')
+  const along = surface.beadStep('frame')[columns ? 'row' : 'column']
+  const across = Math.abs(along.x) >= Math.abs(along.y)
+  const shown = surface.beadBox(box, 'frame')
+  context.fillStyle = theme.marker
+  context.beginPath()
+  if (across) {
+    const lineLeft = shown.x - box.outset
+    const edges = layout.labels.filter((label) => label.x < lineLeft).map((label) => label.x - label.width / 2)
+    const tip = Math.min(lineLeft, ...edges) - POINTER_GAP_PX
+    context.moveTo(tip, first.y)
+    context.lineTo(tip - POINTER_LENGTH_PX, first.y - POINTER_WIDTH_PX / 2)
+    context.lineTo(tip - POINTER_LENGTH_PX, first.y + POINTER_WIDTH_PX / 2)
+  } else {
+    const lineTop = shown.y - box.outset
+    const edges = layout.labels.filter((label) => label.y < lineTop).map((label) => label.y - label.height / 2)
+    const tip = Math.min(lineTop, ...edges) - POINTER_GAP_PX
+    context.moveTo(first.x, tip)
+    context.lineTo(first.x - POINTER_WIDTH_PX / 2, tip - POINTER_LENGTH_PX)
+    context.lineTo(first.x + POINTER_WIDTH_PX / 2, tip - POINTER_LENGTH_PX)
+  }
+  context.closePath()
+  context.fill()
 }
 
 /** The gap between a named Piece's rectangle and its name below it. */
@@ -158,29 +200,95 @@ export function drawBoxHandles(context: DrawingContext, box: { x: number; y: num
   drawHandles(context, frameHandles(box, touch), theme)
 }
 
-// What the Frame carries while being set (Frame card): its handles, the size tooltip at the bottom-right, in viewport
-// px over all else.
-export function drawFrameEditing(context: DrawingContext, input: { frame: Rect; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string }): void {
-  const { frame, surface, pixelRatio, theme, touch, tooltip } = input
+// Edit Frame's hot corners (MarginSheet card, ticket 0657), in screen px: an `accent` bracket at each corner of the
+// Frame's line, a bar at each edge's middle, and the corner under the pointer grown on a faint disc.
+const BRACKET_ARM_PX = 14
+const BRACKET_LINE_PX = 3
+const HOT_ARM_PX = 18
+const HOT_LINE_PX = 4
+const HOT_DISC_RADIUS_PX = 16
+const HOT_DISC_ALPHA = 0.18
+const BRACKET_RADIUS_PX = 4
+/** How far outside the line a bracket's stroke starts. */
+const BRACKET_OFFSET_PX = 3
+const EDGE_BAR_LENGTH_PX = 12
+const EDGE_BAR_THICKNESS_PX = 4
+
+/** Which way a handle's corner opens, toward the Frame's inside: +1 or -1 on each axis, 0 along an edge. */
+function inward(id: HandleId): { x: number; y: number } {
+  return { x: id.includes('left') ? 1 : id.includes('right') ? -1 : 0, y: id.startsWith('top') ? 1 : id.startsWith('bottom') ? -1 : 0 }
+}
+
+/** One handle: a bracket round a corner, a bar along an edge's middle; `hot`, grown on its disc. */
+function drawHotHandle(context: DrawingContext, handle: Handle, hot: boolean, theme: ProjectTheme): void {
+  const into = inward(handle.id)
+  context.fillStyle = theme.accent
+  context.strokeStyle = theme.accent
+  if (into.x === 0 || into.y === 0) {
+    // An edge's bar, just outside the line, along it.
+    const along = into.x === 0
+    const width = along ? EDGE_BAR_LENGTH_PX : EDGE_BAR_THICKNESS_PX
+    const height = along ? EDGE_BAR_THICKNESS_PX : EDGE_BAR_LENGTH_PX
+    const x = handle.x - width / 2 - into.x * EDGE_BAR_THICKNESS_PX / 2
+    const y = handle.y - height / 2 - into.y * EDGE_BAR_THICKNESS_PX / 2
+    context.beginPath()
+    context.roundRect(x, y, width, height, EDGE_BAR_THICKNESS_PX / 2)
+    context.fill()
+    return
+  }
+  if (hot) {
+    context.save()
+    context.globalAlpha = HOT_DISC_ALPHA
+    context.beginPath()
+    context.arc(handle.x, handle.y, HOT_DISC_RADIUS_PX, 0, Math.PI * 2)
+    context.fill()
+    context.restore()
+  }
+  const line = hot ? HOT_LINE_PX : BRACKET_LINE_PX
+  const arm = hot ? HOT_ARM_PX : BRACKET_ARM_PX
+  const off = BRACKET_OFFSET_PX + line / 2
+  const corner = { x: handle.x - into.x * off, y: handle.y - into.y * off }
+  context.setLineDash([])
+  context.lineWidth = line
+  context.lineCap = 'butt'
+  context.beginPath()
+  context.moveTo(corner.x + into.x * arm, corner.y)
+  context.arcTo(corner.x, corner.y, corner.x, corner.y + into.y * arm, BRACKET_RADIUS_PX)
+  context.lineTo(corner.x, corner.y + into.y * arm)
+  context.stroke()
+}
+
+// What the Frame carries while being set (Frame and MarginSheet cards): its hot corners on its line, and the size
+// Tooltip beside the corner under the pointer, else at the bottom-right, in viewport px over all else.
+export function drawFrameEditing(context: DrawingContext, input: { frame: Rect; surface: SurfaceView; pixelRatio: number; theme: ProjectTheme; touch: boolean; tooltip: string; hot?: HandleId }): void {
+  const { frame, surface, pixelRatio, theme, touch, tooltip, hot } = input
   const { viewport } = surface
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   const box = surface.frameBox(frame)
-
-  drawHandles(context, gutterHandles(box, touch, viewport), theme)
+  const handles = frameHandles(box, touch)
+  for (const handle of handles) {
+    drawHotHandle(context, handle, handle.id === hot, theme)
+  }
 
   if (tooltip === '') {
     return
   }
   context.font = `500 12px ${MONO_FONT}`
   const width = tooltip.length * 12 * 0.6 + TOOLTIP_PAD_X * 2
-  const x = Math.min(box.x + box.width - width, viewport.width - width - 4)
-  const y = Math.min(box.y + box.height + TOOLTIP_GAP, viewport.height - TOOLTIP_HEIGHT - 4)
+  const corner = handles.find((handle) => handle.id === hot && inward(handle.id).x !== 0 && inward(handle.id).y !== 0)
+  // Beside the hot corner, out from the Frame; with none, under its bottom-right corner.
+  const into = corner ? inward(corner.id) : { x: -1, y: -1 }
+  const at = corner ?? { x: box.x + box.width, y: box.y + box.height }
+  const wantedX = corner ? (into.x > 0 ? at.x - HOT_DISC_RADIUS_PX - width : at.x + HOT_DISC_RADIUS_PX) : at.x - width
+  const wantedY = corner ? (into.y > 0 ? at.y - HOT_DISC_RADIUS_PX - TOOLTIP_HEIGHT : at.y + HOT_DISC_RADIUS_PX) : at.y + TOOLTIP_GAP
+  const x = Math.max(4, Math.min(wantedX, viewport.width - width - 4))
+  const y = Math.max(4, Math.min(wantedY, viewport.height - TOOLTIP_HEIGHT - 4))
   context.fillStyle = theme.frameLine
   context.beginPath()
-  context.roundRect(Math.max(4, x), Math.max(4, y), width, TOOLTIP_HEIGHT, 6)
+  context.roundRect(x, y, width, TOOLTIP_HEIGHT, 6)
   context.fill()
   context.fillStyle = theme.canvas
   context.textAlign = 'left'
   context.textBaseline = 'middle'
-  context.fillText(tooltip, Math.max(4, x) + TOOLTIP_PAD_X, Math.max(4, y) + TOOLTIP_HEIGHT / 2)
+  context.fillText(tooltip, x + TOOLTIP_PAD_X, y + TOOLTIP_HEIGHT / 2)
 }
