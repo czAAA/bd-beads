@@ -271,8 +271,9 @@ describe('the export file names (tickets 73, 74, 0708)', () => {
     expect(projectExportFileName(rose, 'pdf')).toBe('openbeads-rose.pdf')
   })
 
-  it('names an unnamed Frame’s exports after the Project', () => {
+  it('names an unnamed Frame’s exports after the Project, and a Frame’s whose name leaves nothing to write', () => {
     expect(projectExportFileName(makeProject('Summer'), 'pdf')).toBe('openbeads-summer.pdf')
+    expect(projectExportFileName(withLayer(makeProject('Summer'), 'frame', { name: '???' }), 'pdf')).toBe('openbeads-summer.pdf')
   })
 
   it('falls back to a generic name when neither name has anything filename-safe in it', () => {

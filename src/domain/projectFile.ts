@@ -71,7 +71,7 @@ export function projectFileName(project: Project): string {
 }
 
 /** The name a picture or document of the Project is saved under (tickets 73, 74), e.g. `openbeads-my-scarf.png`: the
- * Frame's name, as they hold its beads, else the Project's (ticket 0708). */
+ * name of the Frame they hold, else the Project's (ticket 0708). */
 export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
   const slug = fileNameSlug(frameOf(project)?.name ?? '') || fileNameSlug(projectNameOf(project))
   return `openbeads-${slug || 'project'}.${extension}`
