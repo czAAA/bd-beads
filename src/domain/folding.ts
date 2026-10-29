@@ -1,11 +1,9 @@
 import { forEachBead, hasBeads, type BeadMap } from './canvas'
 import type { GridPosition } from './grid'
-import { sameWeave } from './layerWeave'
-import type { Weave } from './weave'
 
 // Folded beads (ADR 0066, ticket 0638): a sheet laid over a layer (the Frame over the Canvas) keeps the beads it gives
-// up when it is made smaller and shows them again when it grows back, where the two are woven unlike. The rule asks
-// each side for its Weave only, so it holds for any sheet over any layer.
+// up when it is made smaller and shows them again when it grows back, where their positions do not match one to one
+// (woven unlike, or in Beads of other sizes, ticket 0665). The caller says which, so it holds for any sheet over any layer.
 
 /** A sheet's beads in its own rows and columns: those it shows, and its Folded beads beyond its edge. */
 export interface SheetBeads {
@@ -23,17 +21,11 @@ export interface RefitSheet extends SheetBeads {
   taken: BeadMap
 }
 
-/** Whether a sheet over a layer folds what it gives up rather than giving it to the layer: when the two are woven
- * unlike (Technique or Brick block), as their positions then do not match one to one. */
-export function foldsOver(under: Weave, sheet: Weave): boolean {
-  return !sameWeave(under, sheet)
-}
-
 /** A sheet's beads once its corner moves by `shift` and it holds only the positions `holds` names (from its new corner):
- * a Folded bead held again shows, one no longer held folds or goes to the layer under it, and, not folding, the sheet
- * takes in that layer's beads `offered` where it holds a position with none of its own (ticket 0639). */
-export function refitSheet(sheet: SheetBeads & Weave, under: Weave, shift: GridPosition, holds: (position: GridPosition) => boolean, offered: BeadMap = {}): RefitSheet {
-  return refit(sheet, shift, holds, foldsOver(under, sheet), offered)
+ * a Folded bead held again shows, one no longer held folds (where `folds`) or goes to the layer under it, and, not
+ * folding, the sheet takes in that layer's beads `offered` where it has none of its own (ticket 0639). */
+export function refitSheet(sheet: SheetBeads, folds: boolean, shift: GridPosition, holds: (position: GridPosition) => boolean, offered: BeadMap = {}): RefitSheet {
+  return refit(sheet, shift, holds, folds, offered)
 }
 
 /** A sheet's beads once it holds only the positions `holds` names, every bead keeping its name: what it no longer holds

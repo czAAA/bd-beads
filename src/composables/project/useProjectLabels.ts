@@ -2,7 +2,8 @@ import { computed } from 'vue'
 import { beadLabel } from '../../domain/beads'
 import { rotationSwapsAxes } from '../../domain/grid'
 import { projectColors } from '../../domain/layerBeads'
-import { frameOf, layerOf, quarterTurnOf, projectNameOf } from '../../domain/layerRecord'
+import { frameOf, quarterTurnOf, projectNameOf } from '../../domain/layerRecord'
+import { resolveProjectBead } from '../../domain/projectBead'
 import { rowProgressOn, rowProgressPosition } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { shownDimensions } from '../../domain/projectExtent'
@@ -20,14 +21,14 @@ export interface ProjectLabelsDeps {
 /** The words that name the open Project (tickets 37, 159, 206; ADR 0020): its Bead for the header, and its
  * accessible name. Deps are read lazily. */
 export function useProjectLabels(deps: ProjectLabelsDeps) {
-  /** The open Project's Bead for the header (ticket 37): its label, or an "unknown bead" placeholder when removed
+  /** The open Project's Bead for the header (ticket 37), the woven layer's (ticket 0665): its label, or an "unknown bead" placeholder when removed
    * (ticket 38) or never on this device. */
   const activeBeadLabel = computed(() => {
     const project = deps.currentProject()
     if (!project) {
       return undefined
     }
-    const bead = layerOf(project, 'canvas').bead
+    const bead = resolveProjectBead(project)
     return bead ? beadLabel(bead, deps.messages().formFactors) : deps.messages().projects.unknownBeadLabel
   })
 

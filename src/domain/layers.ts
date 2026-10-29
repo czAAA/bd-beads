@@ -1,4 +1,4 @@
-import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, shiftedBeads, withColors, type BeadMap, type FrameSheet, type Rect } from './canvas'
+import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, withColors, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { GridPosition, Layer } from './grid'
 
 export type { Layer }
@@ -6,7 +6,7 @@ import { footprintOf } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
 import { beadsOfLayer, frameOf, type Layered, layerOf, withLayer } from './layerRecord'
-import { frameWeave } from './layerWeave'
+import { frameWeave, laidOnCanvas } from './layerWeave'
 import { touch, type Project } from './project'
 import { projectCell } from './projectBead'
 import type { Weave } from './weave'
@@ -56,8 +56,9 @@ export function shownBeads(project: Layered): BeadMap {
     return beadsOfLayer(project, 'canvas')
   }
   const hidden = beadsWithout(beadsOfLayer(project, 'canvas'), footprintOf(project)!)
-  // Only a grid's positions are the Canvas's, moved by the Frame's corner; a Custom frame's are named by round and place.
-  return frameGeometryOf(project).grid ? beadsOver(hidden, shiftedBeads(beadsOfLayer(project, 'frame')!, frame.row, frame.column)) : hidden
+  // Only a grid's positions are the Canvas's, moved by the Frame's corner (through millimetres in another Bead, ticket
+  // 0665); a Custom frame's are named by round and place.
+  return frameGeometryOf(project).grid ? beadsOver(hidden, laidOnCanvas(project, beadsOfLayer(project, 'frame')!, frame)) : hidden
 }
 
 /** A position of a layer's own, back on the Canvas. */

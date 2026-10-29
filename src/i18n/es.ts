@@ -858,6 +858,11 @@ export const es: Translations = {
     confirmTitle: '¿Reemplazar la cuenta?',
     confirmMessage:
       'Con {bead}, este proyecto medirá unos {new} en lugar de {old}. Tu diseño y su recuento de cuentas se quedan exactamente igual. Puedes deshacerlo.',
+    canvasMessage:
+      'Con {bead}, el lienzo se dibuja al tamaño de esa cuenta. El marco conserva su propia cuenta, así que su tamaño y su recuento de cuentas se quedan exactamente igual. Puedes deshacerlo.',
+    layerLabel: 'Dónde reemplazar la cuenta',
+    layerFrame: 'Marco',
+    layerCanvas: 'Lienzo',
     confirmButton: 'Reemplazar cuenta',
     outdatedPostfix: '(como se guardó)',
     cancelButton: 'Cancelar',

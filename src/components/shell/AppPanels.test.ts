@@ -211,7 +211,7 @@ describe('Project', () => {
     expect(mounted.panels.activeProject.value).toBeUndefined()
   })
 
-  it('replaces the Bead after a confirmation: Cancel keeps it, confirming switches it (ticket 48)', async () => {
+  it('replaces the Bead after a confirmation: Cancel keeps it, confirming switches the layer chosen in it (tickets 48, 0665)', async () => {
     const mounted = mountPanels()
     const pickReplacement = async () => {
       await mounted.openPanel('project')
@@ -222,11 +222,13 @@ describe('Project', () => {
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(true)
     await click(mounted, 'confirm-modal-cancel')
     expect(mounted.wrapper.find('[data-testid="replace-bead-modal"]').exists()).toBe(false)
-    expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/cube/1.5mm')
+    expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/cube/1.5mm')
 
     await pickReplacement()
+    await mounted.wrapper.get('[data-testid="replace-bead-layer"] [data-value="canvas"]').trigger('click')
     await click(mounted, 'confirm-modal-confirm')
     expect(canvasOf(loadProjects()[0]).beadId).toBe('toho/round/11-0')
+    expect(frameOf(loadProjects()[0])!.beadId).toBe('toho/cube/1.5mm')
   })
 })
 
