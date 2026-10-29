@@ -2,6 +2,7 @@ import { computed, inject, provide, ref, shallowRef, type InjectionKey, type Ref
 import { catalogSwatches } from '../../domain/beadSwatch'
 import { findBead } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
+import { layerOf } from '../../domain/layerRecord'
 import { brandColors, type AddUsedColorOutcome, type Palette } from '../../domain/palette'
 import type { Project } from '../../domain/project'
 import { loadColorCatalog } from '../../services/colorCatalogs'
@@ -22,7 +23,8 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
 
   const bead = computed(() => {
     const project = currentProject()
-    return project && (project.bead ?? findBead(project.beadId))
+    const canvas = project && layerOf(project, 'canvas')
+    return canvas && (canvas.bead ?? findBead(canvas.beadId))
   })
   const catalogId = computed(() => bead.value?.formFactor.colorCatalog)
   const size = computed(() => bead.value?.size)
