@@ -4,6 +4,7 @@ import ShortcutsHelp from './shell/ShortcutsHelp.vue'
 import MenuPanel from './shell/MenuPanel.vue'
 import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
+import ExportPanel from './canvas/ExportPanel.vue'
 import FramePanel from './canvas/FramePanel.vue'
 import ProjectPanel from './project/ProjectPanel.vue'
 import NewProjectForm from './project/NewProjectForm.vue'
@@ -33,14 +34,17 @@ const showAll = (root: HTMLElement): void => {
   button.click()
 }
 
-/** A component inside a panel shell's context, as the Menu panel needs. */
-const inPanel = (component: Component, props: Record<string, unknown>): Component =>
+/** A component inside a panel shell's context, as the Menu panel needs; given a width, as wide as that panel's content
+ * (the Export panel's small one, ticket 0652). */
+const inPanel = (component: Component, props: Record<string, unknown>, width?: string): Component =>
   defineComponent({
     setup() {
       provide(PANEL_CONTEXT, { itemRole: ref(undefined), close: () => {}, openSub: () => {} })
-      return () => h(component, props)
+      return () => (width ? h('div', { style: { width, maxWidth: '100%' } }, [h(component, props)]) : h(component, props))
     },
   })
+
+const smallPanel = 'calc(var(--panel-width-small) - 2 * var(--space-8))'
 
 const CASES: FitCase[] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 }],
@@ -55,6 +59,9 @@ const CASES: FitCase[] = [
   ['FramePanel (rows done)', inPanel(FramePanel, { project: { ...painted, rowProgress: { ...painted.rowProgress, currentRow: 1 } } }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
   ['FramePanel (Fringe earring)', inPanel(FramePanel, { project: earring }), {}],
+  ['ExportPanel', inPanel(ExportPanel, { project: painted }, smallPanel), {}],
+  ['ExportPanel (exporting)', inPanel(ExportPanel, { project: framed, exporting: 'pdf' }, smallPanel), {}],
+  ['ExportPanel (no Frame)', inPanel(ExportPanel, { project }, smallPanel), {}],
   ['ProjectPanel (brick)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (peyote, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (brick, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],

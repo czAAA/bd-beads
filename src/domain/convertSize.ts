@@ -33,6 +33,11 @@ export const RATIO_PRESETS: readonly PixelToBeadRatio[] = [
 export const CUSTOM_RATIO_MIN = 2
 export const CUSTOM_RATIO_MAX = 32
 
+/** A ratio's short key, "2-1": its chip's value and its control registry action's id (ticket 0650). */
+export function ratioId(ratio: PixelToBeadRatio): string {
+  return `${ratio.pixels}-${ratio.beads}`
+}
+
 /** Whether two ratios are the same. */
 export function sameRatio(a: PixelToBeadRatio, b: PixelToBeadRatio): boolean {
   return a.pixels === b.pixels && a.beads === b.beads
@@ -50,6 +55,14 @@ export interface PixelCrop {
   width: number
   height: number
 }
+
+/** The Convert image wizard's five numbered sections, in the step rail's order (ConvertImage card). */
+export const CONVERT_STEPS = ['picture', 'bead', 'size', 'colors', 'review'] as const
+export type ConvertStep = (typeof CONVERT_STEPS)[number]
+
+/** The crop's handles on the preview, in Tab order round it (ConvertImage card): four corners, four edge bars. */
+export const CROP_HANDLES = ['topLeft', 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left'] as const
+export type CropHandle = (typeof CROP_HANDLES)[number]
 
 /** The whole picture as a crop: where By Pixel to bead ratio starts. */
 export function fullCrop({ width, height }: ImageSize): PixelCrop {

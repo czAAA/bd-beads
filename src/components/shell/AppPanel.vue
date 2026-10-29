@@ -21,6 +21,8 @@ const props = defineProps<{
   skipsFields?: boolean
   /** The dropdown's width, when not `panel-width`. */
   width?: string
+  /** The button edge the dropdown lines up with, `start` when not given. */
+  align?: 'start' | 'end'
   /** The first subpanel's title; a panel with a `sub` slot gives one. */
   subTitle?: string
   /** A figure at the right of the subpanel's header (the library's count). */
@@ -67,7 +69,7 @@ const anchorEl = ref<HTMLElement>()
 /** The buttons that open, swap or close a panel themselves, so a press on one is not a press outside. */
 const OPENERS = PANEL_OPENERS
 
-const anchored = useAnchoredPosition(anchorEl, panelEl, () => 'start')
+const anchored = useAnchoredPosition(anchorEl, panelEl, () => props.align ?? 'start')
 /** The dropdown is as tall as the window allows below its button (16px clear of the bottom edge) and scrolls inside
  * past that. */
 const placed = anchored.style
