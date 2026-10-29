@@ -54,7 +54,8 @@ const beadSummary = computed(() => {
 
 const canvasName = computed(() => {
   const background = canvas.background.value
-  return background ? t.value.canvas.canvasColor.names[background.id] : undefined
+  if (!background) return undefined
+  return background.id === 'custom' ? t.value.palette.customColorLabel : t.value.canvas.canvasColor.names[background.id]
 })
 </script>
 
