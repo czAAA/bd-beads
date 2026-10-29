@@ -2,7 +2,7 @@
   "id": "warpedSquare",
   "design": "warpedSquare.json",
   "shape": "warpedSquare",
-  "technique": "peyote",
+  "weave": {"technique": "peyote"},
   "measure": "frame",
   "sizes": [
     {"id": "rounds", "default": 8, "presets": [6, 8, 10]}

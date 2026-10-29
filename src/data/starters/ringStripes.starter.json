@@ -1,7 +1,7 @@
 {
   "id": "ringStripes",
   "design": "ringStripes.json",
-  "technique": "peyote",
+  "weave": {"technique": "peyote"},
   "measure": "ring",
   "sizes": [
     {"id": "width", "labelKey": "width", "min": 3, "max": 20, "step": 1, "default": 7, "presets": [5, 7, 9]},
