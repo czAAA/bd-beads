@@ -58,6 +58,7 @@ const {
   handedness,
   setHandedness,
   openPanel,
+  exportOpener,
   framePanelShown,
   onStepFrameEdge,
   onResizeFrame,
@@ -117,8 +118,8 @@ const chosenStarter = ref<StarterId>()
     </template>
   </PanelHost>
 
-  <!-- The Export panel (ticket 0652): the strip's Export button's, the Frame panel's export rows or the way to a Frame. -->
-  <PanelHost v-if="activeProject && openPanel === 'export'" open="export" :only="['export']" @close="openPanel = null">
+  <!-- The Export panel (tickets 0652, 0657): the strip's Export button's or the margin sheet's, hung from the one pressed. -->
+  <PanelHost v-if="activeProject && openPanel === 'export'" open="export" :only="['export']" :anchor="exportOpener" @close="openPanel = null">
     <ExportPanel
       :project="activeProject"
       :exporting="exporting"

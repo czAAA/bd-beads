@@ -27,6 +27,7 @@ const CASES = [
   { name: 'marginColor', key: 'openbeads:margin-color', saved: '2', read: 2, other: 'auto', stored: 'auto', invalid: '0', fallback: 'auto' },
   { name: 'marginColor', key: 'openbeads:margin-color', saved: 'custom', read: 'custom', other: 5, stored: '5', invalid: 'mine', fallback: 'auto' },
   { name: 'marginCustomColor', key: 'openbeads:margin-custom-color', saved: '#7A2E8C', read: '#7a2e8c', other: '#14213d', stored: '#14213d', invalid: 'purple', fallback: undefined },
+  { name: 'marginTitleBlock', key: 'openbeads:margin-title-block', saved: 'off', read: false, other: false, stored: 'off', invalid: null, fallback: true },
   { name: 'inputMode', key: 'openbeads:input-mode', saved: 'pen', read: 'pen', other: 'mouse', stored: 'mouse', invalid: 'finger', fallback: undefined },
   { name: 'handedness', key: 'openbeads:handedness', saved: 'left', read: 'left', other: 'left', stored: 'left', invalid: 'both', fallback: 'right' },
   { name: 'penSeen', key: 'openbeads:pen-seen', saved: 'yes', read: true, other: true, stored: 'yes', invalid: 'no', fallback: false },

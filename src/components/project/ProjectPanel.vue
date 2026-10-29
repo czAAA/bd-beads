@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { beadLabel, type Bead } from '../../domain/beads'
-import { resolveProjectBead } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
-import { DEFAULT_BEAD_SHAPE, type BeadShape, type Technique } from '../../domain/weave'
+import type { BeadShape, Technique } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
@@ -46,9 +46,12 @@ const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const file = controlAction('export-project-file')
 
+/** The Canvas's Bead and Bead shape (ADR 0079), which the Frame shares until ticket 0665. */
+const canvasLayer = computed(() => layerOf(props.project, 'canvas'))
+
 const beadSummary = computed(() => {
-  const bead = resolveProjectBead(props.project)
-  const shape = (props.project.beadShape ?? DEFAULT_BEAD_SHAPE) === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric
+  const { bead, beadShape } = canvasLayer.value
+  const shape = beadShape === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric
   return bead ? `${beadLabel(bead, t.value.formFactors)} · ${shape.toLowerCase()}` : undefined
 })
 
@@ -75,8 +78,8 @@ const canvasName = computed(() => {
 
     <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
       <BeadSection
-        :bead="resolveProjectBead(project)"
-        :bead-shape="project.beadShape ?? DEFAULT_BEAD_SHAPE"
+        :bead="canvasLayer.bead"
+        :bead-shape="canvasLayer.beadShape"
         :candidates="replaceCandidates"
         @update:bead-shape="emit('set-bead-shape', $event)"
         @pick="emit('replace-bead', $event)"

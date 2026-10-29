@@ -1,0 +1,225 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
+import { computeColorQuantities } from '../../domain/beadQuantities'
+import { frameWeave } from '../../domain/layerWeave'
+import { MAX_MAKER_NAME } from '../../domain/makerName'
+import { projectPalette } from '../../domain/palette'
+import { MAX_PIECE_NAME } from '../../domain/pieceNames'
+import type { Project } from '../../domain/project'
+import { resolveProjectBead } from '../../domain/projectBead'
+import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { TECHNIQUES, type Technique } from '../../domain/weave'
+import { listedColorName } from '../../i18n/colorName'
+import { techniqueName } from '../../i18n/techniqueName'
+import { useI18n } from '../../i18n/useI18n'
+import { letterInk } from '../../rendering/beadLook'
+import EditableLine from '../project/EditableLine.vue'
+import PanelPicker from '../shell/PanelPicker.vue'
+import AppSwitch from '../ui/AppSwitch.vue'
+
+// The margin sheet's title block (MarginSheet card, ticket 0657), in its bottom-right corner like a drawing's: the
+// Frame's name, its Technique and "by" the maker, each edited in place, then its size in beads and in cm, the lettered
+// legend and the Letters switch. It only asks; the shell's flows do the work, as from the Frame and Project panels.
+const props = defineProps<{ project: Project }>()
+
+const emit = defineEmits<{
+  rename: [name: string]
+  'set-technique': [technique: Technique]
+  'save-maker-name': [name: string]
+  'set-letters': [on: boolean]
+}>()
+
+const { t, locale } = useI18n()
+const deps = computed(() => controlDeps({ activeProject: () => props.project }))
+const techniqueAction = controlAction('change-technique')
+const frame = computed(() => props.project.frame!)
+
+/** The Frame's Technique, the one its rows are woven in; locked with its reason once a pass is done. */
+const technique = computed(() => frameWeave(props.project).technique)
+const options = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
+const techniqueLocked = computed(() => !techniqueAction.enabled?.(deps.value))
+
+/** "by" and what follows the maker, as the language orders them round the name ("by {maker}", "автор: {maker}"). */
+const by = computed(() => {
+  const [before = '', after = ''] = t.value.print.byMaker.split('{maker}')
+  return { before: before.trim(), after: after.trim() }
+})
+
+const size = computed(() => `${frame.value.columns} × ${frame.value.rows}`)
+const estimate = computed(() => {
+  const bead = resolveProjectBead(props.project)
+  return bead ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
+})
+
+/** The legend shows at most this many colors, then "+n". */
+const LEGEND_MAX = 8
+/** One disc per Palette color in the Frame, in the Palette's order, with its Swatch letter. */
+const legend = computed(() => {
+  const palette = projectPalette(props.project)
+  const slot = (hex: string) => {
+    const index = palette.colors.findIndex((color) => color.hex === hex)
+    return index < 0 ? palette.colors.length : index
+  }
+  const used = computeColorQuantities(props.project, palette).sort((a, b) => slot(a.hex) - slot(b.hex))
+  return used.map(({ colorId, hex }) => ({
+    hex,
+    letter: props.project.paletteLetters?.[hex] ?? '?',
+    ink: letterInk(hex),
+    name: listedColorName(t.value, palette.byId(colorId), hex),
+  }))
+})
+const shownLegend = computed(() => legend.value.slice(0, LEGEND_MAX))
+const moreColors = computed(() => Math.max(0, legend.value.length - LEGEND_MAX))
+const legendLabel = computed(() => legend.value.map((color) => `${color.letter} ${color.name}`.trim()).join(', '))
+</script>
+
+<template>
+  <div class="margin-title" data-testid="margin-title-block">
+    <div class="margin-title__cell margin-title__name">
+      <EditableLine
+        bare
+        :label="t.panels.project.nameLabel"
+        :value="frame.name ?? ''"
+        :edit-label="t.frame.nameEdit"
+        :edit-tooltip="t.frame.nameTooltip"
+        :empty-text="t.frame.nameEmpty"
+        :maxlength="MAX_PIECE_NAME"
+        :normalize="(raw) => raw.trim()"
+        testid="margin-frame-name"
+        @save="emit('rename', $event)"
+      />
+    </div>
+    <div class="margin-title__cell margin-title__value">
+      <span class="margin-title__text" data-testid="margin-technique">{{ techniqueName(t, technique) }}</span>
+      <PanelPicker
+        bare
+        icon-only="pencil"
+        :model-value="technique"
+        :label="t.frame.margin.changeTechnique"
+        :options="options"
+        :disabled="techniqueLocked"
+        :disabled-body="techniqueLocked ? techniqueAction.disabledBody?.(t, deps) : undefined"
+        data-testid="margin-technique-picker"
+        @update:model-value="emit('set-technique', $event)"
+      />
+    </div>
+    <div class="margin-title__cell margin-title__value margin-title__maker">
+      <span v-if="by.before" class="margin-title__meta">{{ by.before }}</span>
+      <EditableLine
+        bare
+        :label="t.panels.project.makerLabel"
+        :value="project.makerName ?? ''"
+        :edit-label="t.panels.project.changeMaker"
+        :empty-text="t.saveBox.yourName"
+        :placeholder="t.saveBox.yourName"
+        :maxlength="MAX_MAKER_NAME"
+        :normalize="(raw) => raw.trim()"
+        testid="margin-maker"
+        @save="emit('save-maker-name', $event)"
+      />
+      <span v-if="by.after" class="margin-title__meta">{{ by.after }}</span>
+    </div>
+    <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
+    <div class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
+    <div class="margin-title__cell margin-title__legend" role="img" :aria-label="legendLabel" data-testid="margin-legend">
+      <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
+      <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
+    </div>
+    <div class="margin-title__cell margin-title__letters">
+      <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
+      <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+    </div>
+  </div>
+</template>
+
+<style scoped>
+/* Two rows of 23px with 1px rules between the cells, on `margin-title`, its bottom-right corner rounded with the inner
+ * border (MarginSheet card). Row 1: the name, the Technique, "by" the maker over two cells; row 2: the sizes, the
+ * legend, Letters. */
+.margin-title {
+  display: grid;
+  grid-template-columns: repeat(4, max-content);
+  grid-template-rows: repeat(2, var(--margin-title-row));
+  box-sizing: border-box;
+  color: var(--ink);
+  background: var(--margin-title);
+  border: 1px solid var(--margin-line);
+  border-radius: 0 0 var(--radius-sm) 0;
+}
+
+.margin-title__cell {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  min-width: 0;
+  padding: 0 var(--space-6) 0 var(--space-8);
+  white-space: nowrap;
+  border-right: 1px solid var(--margin-line);
+  border-bottom: 1px solid var(--margin-line);
+}
+
+/* The last cell of a row has the block's own edge; the second row has no rule below. */
+.margin-title__maker,
+.margin-title__letters {
+  border-right: 0;
+}
+
+.margin-title__cell:nth-child(n + 4) {
+  border-bottom: 0;
+}
+
+.margin-title__maker {
+  grid-column: 3 / 5;
+}
+
+.margin-title__cell:not(.margin-title__name) {
+  min-width: max-content;
+}
+
+/* A long name ends in an ellipsis rather than pushing the block off the sheet (one line, MarginSheet card). */
+.margin-title__name {
+  max-width: var(--margin-edit-width);
+}
+
+.margin-title__name {
+  font: var(--margin-title-name);
+}
+
+.margin-title__value,
+.margin-title__text {
+  font: var(--type-small);
+}
+
+.margin-title__meta {
+  font: var(--type-meta-small);
+  color: var(--body);
+}
+
+/* The Technique picker as a pencil: no row height of its own. */
+.margin-title :deep(.panel-picker) {
+  min-height: 0;
+  padding: 0;
+}
+
+.margin-title__legend {
+  gap: var(--space-4);
+}
+
+/* A 14px disc in the color, its Swatch letter white on a dark bead and `ink` on a light one (Inter 600 8). */
+.margin-title__disc {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--margin-legend-disc);
+  height: var(--margin-legend-disc);
+  font: var(--margin-legend-letter);
+  border-radius: var(--radius-full);
+  box-shadow: 0 0 0 1px var(--swatch-edge);
+}
+
+.margin-title__letters {
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+</style>

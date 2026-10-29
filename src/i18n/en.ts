@@ -609,6 +609,8 @@ export const en: Translations = {
       autoLabel: 'Auto, one step off the Canvas color',
       canvasColorLabel: '{color}, the Canvas color',
       line: 'The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it.',
+      titleBlock: 'Name and size on the margin',
+      changeTechnique: 'Change Technique',
     },
     qualityHintLabel: 'What the lowest quality is for',
     qualityHint: 'Low saves memory: smaller files, and a picture a phone can always make.',

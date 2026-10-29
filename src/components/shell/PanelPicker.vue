@@ -15,6 +15,9 @@ const props = defineProps<{
   bare?: boolean
   disabled?: boolean
   disabledBody?: string
+  /** The button is this icon alone, named by `label` in its Tooltip (the margin title block's Technique pencil, ticket
+   * 0657); the value is shown beside it by the host. */
+  iconOnly?: IconName
   options: readonly { value: T; label: string; icon?: IconName; lang?: string; /** What the button shows when the name is long (a language's code). */ shortLabel?: string }[]
 }>()
 const value = defineModel<T>({ required: true })
@@ -27,6 +30,11 @@ const listId = useId()
 const anchored = useAnchoredPosition(buttonEl, listEl, () => 'end')
 
 const chosen = computed(() => props.options.find((option) => option.value === value.value))
+/** The button's Tooltip: why it is off, or for a pencil its name. */
+const tooltip = computed(() => {
+  if (props.disabled && props.disabledBody) return { name: props.label, disabled: true as const, disabledBody: props.disabledBody, announce: false }
+  return props.iconOnly ? { name: props.label, announce: false } : undefined
+})
 /** The button's text: a code or word shown for the value; the name always says label and value. */
 const shown = computed(() => chosen.value?.shortLabel ?? chosen.value?.label ?? '')
 
@@ -111,14 +119,14 @@ function onListKeydown(event: KeyboardEvent) {
   <div ref="rootEl" class="panel-picker" :class="{ 'panel-picker--bare': bare }">
     <span v-if="!bare" class="panel-picker__label"><AppIcon v-if="icon" :name="icon" :size="16" />{{ label }}</span>
     <component
-      :is="disabled && disabledBody ? AppTooltip : 'span'"
-      v-bind="disabled && disabledBody ? { name: label, disabled: true, disabledBody, announce: false } : {}"
+      :is="tooltip ? AppTooltip : 'span'"
+      v-bind="tooltip ?? {}"
       class="panel-picker__wrap"
     >
       <button
         ref="buttonEl"
         class="ui-control panel-picker__button"
-        :class="{ 'panel-picker__button--open': open }"
+        :class="{ 'panel-picker__button--open': open, 'panel-picker__button--icon': iconOnly }"
         type="button"
         aria-haspopup="menu"
         :aria-expanded="open"
@@ -128,9 +136,12 @@ function onListKeydown(event: KeyboardEvent) {
         @click="onButtonClick"
         @keydown="onButtonKeydown"
       >
-        <AppIcon v-if="chosen?.icon" :name="chosen.icon" :size="14" />
-        <span class="panel-picker__value" :lang="chosen?.lang">{{ shown }}</span>
-        <AppIcon name="chevron-down" :size="12" />
+        <AppIcon v-if="iconOnly" :name="iconOnly" :size="12" />
+        <template v-else>
+          <AppIcon v-if="chosen?.icon" :name="chosen.icon" :size="14" />
+          <span class="panel-picker__value" :lang="chosen?.lang">{{ shown }}</span>
+          <AppIcon name="chevron-down" :size="12" />
+        </template>
       </button>
     </component>
     <div v-if="open" :id="listId" ref="listEl" class="panel-picker__list" :style="anchored.style.value" role="menu" :aria-label="label" @keydown="onListKeydown">
@@ -220,6 +231,21 @@ function onListKeydown(event: KeyboardEvent) {
 
 .panel-picker__button--open {
   border-color: var(--ink);
+}
+
+/* The title block's pencil (ticket 0657): an 18px plain button holding a 12px icon (MarginSheet card). */
+.panel-picker__button--icon {
+  justify-content: center;
+  width: var(--margin-pencil);
+  height: var(--margin-pencil);
+  padding: 0;
+  color: var(--body);
+  background: none;
+  border-color: transparent;
+}
+
+.panel-picker__button--icon:hover {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
 .panel-picker__button:focus-visible {

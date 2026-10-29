@@ -18,6 +18,7 @@ import { changedSetting, frameAllows, settingsOf, settingValuesOf, sizeSettingOf
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
+import { layerOf } from '../../domain/layerRecord'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
@@ -314,7 +315,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   /** Remove Frame: asks first, a Custom frame as any Frame (ticket 0669). */
   function remove(): void {
-    if (deps.currentProject()?.frame) removeConfirmOpen.value = true
+    const project = deps.currentProject()
+    if (project && layerOf(project, 'frame')) removeConfirmOpen.value = true
   }
 
   /** The Remove frame question answered No: nothing changes. */
@@ -336,7 +338,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function replaceAsking(place: () => void): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
-    if (project.frame && hasBeads(project.frame.beads)) {
+    const frame = layerOf(project, 'frame')
+    if (frame && hasBeads(frame.beads)) {
       pendingPlace = place
       replaceConfirmOpen.value = true
       return

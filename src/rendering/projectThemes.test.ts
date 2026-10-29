@@ -20,6 +20,7 @@ const FIELDS: Record<Exclude<keyof ProjectTheme, 'rim' | 'rimOnBlack' | 'finishe
   rulerStrong: 'body',
   emptyBead: 'bead-empty',
   marker: 'marker',
+  accent: 'accent',
   outline: 'bead-outline',
 }
 

@@ -19,6 +19,7 @@ import {
   type Selection,
 } from '../../domain/selection'
 import { frameAllows } from '../../domain/frameShape'
+import { layerOf } from '../../domain/layerRecord'
 import type { FrameEdge } from '../../domain/frame'
 import type { EditFn } from '../project/useEdit'
 import type { FramePress } from '../../rendering/frameHandles'
@@ -160,7 +161,7 @@ export function useSelectionGesture(
   function selectAll(): boolean {
     const project = currentProject()
     // A Frame that offers no Selection leaves Select all the Canvas's beads.
-    const all = project ? selectAllSelection(project.beads, frameAllows(project.frame, 'select') ? project.frame : undefined) : undefined
+    const all = project ? selectAllSelection(layerOf(project, 'canvas').beads, frameAllows(project.frame, 'select') ? project.frame : undefined) : undefined
     if (!all) {
       return false
     }

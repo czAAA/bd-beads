@@ -15,9 +15,12 @@ export interface MarginColor {
   setChoice: (next: MarginChoice) => void
   /** Shows a Custom color on the margin and remembers it. */
   setCustomColor: (hex: string) => void
+  /** Whether the sheet shows its title block (ticket 0657, "Name and size on the margin"), kept on the device. */
+  titleBlock: Readonly<Ref<boolean>>
+  setTitleBlock: (shown: boolean) => void
 }
 
-/** The person's Canvas color (tickets 252, 0653) and margin color (ticket 0656), shared by the app. The stored choice is
+/** The person's Canvas color (tickets 252, 0653) and margin color and title block (tickets 0656, 0657), shared by the app. The stored choice is
  * kept whatever the theme shows of it, and the Custom color is kept while a numbered one shows. */
 export function useCanvasBackground(preferences: DevicePreferences = useDevicePreferences()): {
   /** The stored choice: 1 to 5, or `custom`. */
@@ -39,6 +42,7 @@ export function useCanvasBackground(preferences: DevicePreferences = useDevicePr
   const customColor = preferences.get('canvasCustomColor')
   const marginChoice = preferences.get('marginColor')
   const marginCustomColor = preferences.get('marginCustomColor')
+  const titleBlock = preferences.get('marginTitleBlock')
   const theme = useResolvedTheme()
   const marginPick = () => ({ choice: marginChoice.value, customColor: marginCustomColor.value })
   return {
@@ -57,6 +61,10 @@ export function useCanvasBackground(preferences: DevicePreferences = useDevicePr
       setCustomColor(hex) {
         marginCustomColor.value = hex
         marginChoice.value = 'custom'
+      },
+      titleBlock: readonly(titleBlock),
+      setTitleBlock(shown) {
+        titleBlock.value = shown
       },
     },
     setChoice(next) {
