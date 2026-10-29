@@ -404,7 +404,6 @@ const drawingStyle = computed(() => {
           :row-highlight="rowHighlight"
           :export-open="openPanel === 'export' && exportOpener === 'margin-export'"
           :selection="selectionAnchor?.box"
-          :pill="pillRect"
           @rotate="onRotateFrame"
           @toggle-edit="onEditFrame"
           @export="onOpenExport"

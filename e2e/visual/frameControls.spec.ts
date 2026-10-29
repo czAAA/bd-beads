@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test'
-import { gridBox, openApp, savedProject, settle, setZoom } from '../support/app'
+import { gridBox, openApp, openColorPopover, savedProject, settle, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { frameOf } from '../../src/domain/layerRecord'
 import { frameGrid } from '../../src/testUtils/frameGrid'
@@ -173,3 +173,43 @@ for (const zoom of [60, 80, 100]) {
     })
   }
 }
+
+/** What a press at the middle of each of a box's 12px squares lands on, past its rounded corners: the testid of the
+ * nearest marked element. */
+async function landsOn(page: Page, area: Box, inset: number): Promise<string[]> {
+  return page.evaluate(({ area, inset }) => {
+    const hits: string[] = []
+    for (let x = area.x + inset; x < area.x + area.width - inset; x += 12) {
+      for (let y = area.y + inset; y < area.y + area.height - inset; y += 12) {
+        hits.push(document.elementFromPoint(x, y)?.closest('[data-testid]')?.getAttribute('data-testid') ?? 'none')
+      }
+    }
+    return hits
+  }, { area, inset })
+}
+
+// The Tool pill and its color popover float over the drawing, the margin sheet included (StackingOrder card): the
+// sheet's title block, wider at its scale (ticket 0698), used to be drawn over them and take none of their presses.
+test('the Tool pill and its color popover are drawn over the margin sheet, whose other controls still take a press', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 30, rows: 30 })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  await settle(page)
+  await openColorPopover(page)
+
+  const title = await box(page, 'margin-title-block')
+  const pill = await box(page, 'tool-pill')
+  const popover = await box(page, 'color-popover')
+  expect(overlaps(title, pill) && overlaps(title, popover), 'the title block lies under the pill and the popover').toBe(true)
+
+  const pillLayer = (testid: string) => page.getByTestId('tool-pill-layer').getByTestId(testid).count().then((n) => n > 0)
+  for (const [area, inset] of [[pill, pill.height / 2], [popover, 16]] as const) {
+    for (const hit of new Set(await landsOn(page, area, inset))) expect(await pillLayer(hit), `a press there lands on ${hit}`).toBe(true)
+  }
+  // The fold button stands clear of the pill: it takes its press.
+  const fold = await box(page, 'margin-title-fold')
+  expect(overlaps(fold, pill) || overlaps(fold, popover)).toBe(false)
+  expect(await landsOn(page, { x: fold.x + fold.width / 2 - 1, y: fold.y + fold.height / 2 - 1, width: 2, height: 2 }, 0)).toEqual(['margin-title-fold'])
+  await context.close()
+})
