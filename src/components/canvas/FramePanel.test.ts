@@ -324,6 +324,14 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-fit"]').attributes('aria-disabled')).toBe('true')
   })
 
+  it('with no Frame puts the ways to get one first, above Export, headed by the line saying why (ticket 0650)', () => {
+    const { frame: _frame, ...bare } = framed()
+    const wrapper = mountBar(bare)
+    const order = ['export-needs-frame', 'frame-from-starter', 'frame-select', 'frame-fit', 'frame-none-line', 'export-png']
+    const inDomOrder = wrapper.findAll('[data-testid]').map((node) => node.attributes('data-testid')).filter((id) => order.includes(id!))
+    expect(inDomOrder).toEqual(order)
+  })
+
   it('with no Frame, Fit is on once something is drawn and asks the shell to fit (ticket 555)', async () => {
     const { frame: _frame, ...bare } = framed()
     const wrapper = mountBar({ ...bare, beads: { 1: { 1: '#ff0000' } } })

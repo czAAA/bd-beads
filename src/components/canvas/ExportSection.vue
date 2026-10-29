@@ -86,7 +86,6 @@ const exportingText = computed(() => fillBlanks(props.exporting === 'pdf' ? t.va
   />
   <p v-if="highPngDpi" class="export-section__line" data-testid="quality-pdf-capped">{{ fillBlanks(t.frame.qualityPdfCapped, { n: highPngDpi }) }}</p>
   <slot />
-  <p v-if="!frame" class="export-section__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
   <LoadingState v-if="exporting" class="export-section__loading" compact :text="exportingText" />
 </template>
 
