@@ -1,9 +1,10 @@
-import { changedPositions, colorAt, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
+import { colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type FrameSheet } from './canvas'
 import { rowOrderOf, type ShapedSheet } from './frameShape'
 import type { GridPosition } from './grid'
 import { sameBeads } from './layerBeads'
 import { beadsOfLayer, frameOf, type Layered, touchFrameSheet, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
+import type { LayerGeometry } from './layerGeometry'
 import { frameWeave } from './layerWeave'
 import type { Project, RowProgress } from './project'
 import type { RowOrder, RowWay } from './rowOrder'
@@ -242,15 +243,21 @@ export function finishedRowsOf(project: Layered): (position: GridPosition) => bo
   }
 }
 
-/** Whether each bead of a draw sits in a finished pass or the current one (ticket 0676): `isInFinishedRow` and
- * `isInCurrentRow` with the Frame's Row order worked out once, not for each of the thousands of beads drawn. */
-export function rowPassesOf(project: Layered): (position: GridPosition) => 'finished' | 'current' | undefined {
+/** Whether each Frame bead of a draw, at its Canvas row and column, sits in a finished pass or the current one (ticket
+ * 0676): `isInFinishedRow` and `isInCurrentRow` with the Frame's Row order worked out once, not for each of the
+ * thousands of beads drawn, and what framePassAt reads of the Project read once (ticket 0677). */
+export function rowPassesOf(project: Layered): (row: number, column: number) => 'finished' | 'current' | undefined {
   const current = currentPass(rowProgressOf(project))
-  if (!frameOf(project)) return () => undefined
+  const frame = frameOf(project)
+  if (!frame) return () => undefined
   let order: RowOrder | undefined
-  return (position) => {
-    const pass = framePassAt(project, position, () => (order ??= frameRowOrder(project)))
-    return pass === undefined ? undefined : pass < current ? 'finished' : pass === current ? 'current' : undefined
+  let geometry: LayerGeometry | undefined
+  return (row, column) => {
+    const own = { row: row - frame.row, column: column - frame.column }
+    const inside = own.row >= 0 && own.row < frame.rows && own.column >= 0 && own.column < frame.columns
+    if (!inside && !(geometry ??= frameGeometryOf(project)).hasPosition(own)) return undefined
+    const pass = (order ??= frameRowOrder(project)).passAt(own)
+    return pass < current ? 'finished' : pass === current ? 'current' : undefined
   }
 }
 
@@ -268,14 +275,16 @@ export function isInCurrentRow(project: Layered, position: GridPosition): boolea
 export function keepFinishedRows(before: Project, after: Project): Project {
   const frame = frameOf(before)
   const [was, now] = [beadsOfLayer(before, 'frame'), beadsOfLayer(after, 'frame')]
-  if (!frame || !was || !now || now === was) {
+  // With no pass finished there is nothing to take back, and no bead is read (a Fill changes them all, ticket 0677).
+  if (!frame || !was || !now || now === was || currentPass(rowProgressOf(before)) === 0) {
     return sameBeads(before, after) ? before : after
   }
-  // The Row order is worked out once for every changed bead, not for each (a Fill changes them all, ticket 0677).
+  // The Row order is worked out once for every changed bead, not for each.
   const finished = finishedRowsOf(before)
-  const reverts: BeadChange[] = changedPositions(was, now)
-    .filter(({ row, column }) => finished({ row: row + frame.row, column: column + frame.column, layer: 'frame' }))
-    .map(({ row, column }) => ({ row, column, color: colorAt(was, row, column) }))
+  const reverts: BeadChange[] = []
+  forEachChangedPosition(was, now, (row, column) => {
+    if (finished({ row: row + frame.row, column: column + frame.column, layer: 'frame' })) reverts.push({ row, column, color: colorAt(was, row, column) })
+  })
   const kept = reverts.length === 0 ? after : withLayer(after, 'frame', { beads: withColors(now, reverts) })
   return sameBeads(before, kept) ? before : kept
 }

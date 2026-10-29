@@ -100,8 +100,8 @@ describe('row progress', () => {
       const expected = positions.map((position) => (isInFinishedRow(woven, position) ? 'finished' : isInCurrentRow(woven, position) ? 'current' : undefined))
       expect(expected).toContain('finished')
       expect(expected).toContain('current')
-      expect(positions.map(passes)).toEqual(expected)
-      expect(passes({ row: 2, column: 3, layer: 'canvas' })).toBeUndefined()
+      expect(positions.map(({ row, column }) => passes(row, column))).toEqual(expected)
+      expect(passes(-1, -1)).toBeUndefined()
     }
   })
 

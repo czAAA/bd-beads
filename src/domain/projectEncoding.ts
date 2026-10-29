@@ -107,6 +107,9 @@ function encodeBeads(beads: BeadMap): EncodedBeads {
     }
   }
 
+  // A run of one color asks the table once (a Fill's rows are mostly one color, ticket 0677).
+  let lastColor: string | undefined
+  let lastSlot = EMPTY_INDEX
   forEachBead(beads, (row, column, color) => {
     if (row !== currentRow) {
       closeRow()
@@ -119,7 +122,11 @@ function encodeBeads(beads: BeadMap): EncodedBeads {
     if (column > nextColumn) {
       push(EMPTY_INDEX, column - nextColumn)
     }
-    push(slotFor(color), 1)
+    if (color !== lastColor) {
+      lastColor = color
+      lastSlot = slotFor(color)
+    }
+    push(lastSlot, 1)
     nextColumn = column + 1
   })
   closeRow()
