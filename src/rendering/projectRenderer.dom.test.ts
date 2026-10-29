@@ -10,7 +10,7 @@ import { renderProject as renderInSpace, visibleBeads, type RenderInput } from '
 import { spaceOf, type Space } from './space'
 import { displayedExtentPx, positionBoxPx, projectExtentPx, beadStepPx, type Region } from './surfaceView'
 import { withFrameGrid } from '../testUtils/frameGrid'
-import { canvasOf, frameOf, heldWeave, orientationOf, withLayer } from '../domain/layerRecord'
+import { canvasOf, frameOf, heldWeave, quarterTurnOf, withLayer } from '../domain/layerRecord'
 import { type FlatChange, withFields } from '../testUtils/flatFields'
 
 /** Renders a Project on its own (Frame-only space) unless a space is given. */
@@ -39,7 +39,7 @@ function projectOf(technique: Technique, columns: number, rows: number, extra: F
 }
 
 const whole = (project: Project, zoom = 1): Region => {
-  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, orientationOf(project))
+  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, quarterTurnOf(project))
   return { x: 0, y: 0, width, height }
 }
 

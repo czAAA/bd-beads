@@ -13,10 +13,11 @@ import type { ToolCapabilities } from '../../../domain/tool'
 import { boxPressAt, frameHandleIdAt, framePressAt, handleIdAt, HANDLE_CURSORS, pointInBox, type FramePress, type HandleId } from '../../../rendering/frameHandles'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
+import type { TiltedView } from '../../../rendering/tiltedView'
 import { edgeScrollStep } from '../../../composables/canvas/edgeScroll'
 import { EYEDROPPER_CURSOR, EYEDROPPER_IMAGE } from '../eyedropperCursor'
 import { toolPointer, toolPointerImage } from '../toolCursors'
-import { frameOf, orientationOf } from '../../../domain/layerRecord'
+import { frameOf, quarterTurnOf } from '../../../domain/layerRecord'
 
 /** What a press, a drag, the hover and the wheel on the Drawing surface tell the canvas panel. */
 export interface SurfacePointerEvents {
@@ -68,8 +69,12 @@ export interface SurfacePointerDeps {
   }
   emit: EmitFn<ShortEmitsToObject<SurfacePointerEvents>>
   root: Ref<HTMLElement | undefined>
+  /** The surface's size on screen. */
   size: Ref<Size>
+  /** The view of the drawing, at the Canvas's quarter turn: a point is turned onto it from the screen first. */
   surface: Ref<SurfaceView>
+  /** How the drawing leans off its quarter turn on screen (ticket 0672). */
+  leaning: Ref<TiltedView>
   /** Whether the Row progress look is drawn: a press on a finished row then toggles its dimming (ticket 352). */
   marksShown: Ref<boolean>
   /** Shows the margin's outline for a moment: a press there was refused. */
@@ -105,7 +110,7 @@ function hoversFor(event: PointerEvent): boolean {
 /** The Drawing surface's pointer and cursor (ticket 0619): it reads presses, drags, hover and the wheel (ticket 60:
  * pointer events, so mouse, touch and pen work alike) into bead positions and gestures, and picks the cursor, the bead
  * marker, the hovering Pencil's pointer and the pick chip that show for them. */
-export function useSurfacePointer({ props, emit, root: rootEl, size, surface, marksShown, refuse: refusePress }: SurfacePointerDeps) {
+export function useSurfacePointer({ props, emit, root: rootEl, size, surface, leaning, marksShown, refuse: refusePress }: SurfacePointerDeps) {
   /** Whether the chosen Tool moves the canvas right now: the Hand tool. */
   const handMoves = computed(() => props.tools.moves)
   /** Whether the pointer is the eyedropper (ticket 403): picking, unless the canvas is being moved (Hand, Space). */
@@ -173,7 +178,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       : eyedropperShown.value ? EYEDROPPER_IMAGE
       : tool && !picking ? toolPointerImage(tool, { color: props.previewColor })
       : undefined
-    const point = pointInSurface(penAt.value)
+    const point = pointOnScreen(penAt.value)
     return image && { url: image.url, x: point.x - image.hotSpot[0] - PEN_POINTER_NUDGE, y: point.y - image.hotSpot[1] - PEN_POINTER_NUDGE }
   })
 
@@ -276,12 +281,10 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
   })
 
   function beadUnder(event: Pick<PointerEvent, 'clientX' | 'clientY'>): GridPosition | undefined {
-    const root = rootEl.value
-    if (!root) {
+    if (!rootEl.value) {
       return undefined
     }
-    const box = root.getBoundingClientRect()
-    const point = { x: event.clientX - box.left, y: event.clientY - box.top }
+    const point = pointInSurface(event)
     // The Select tool marks out a rectangle of a Custom frame's cells on screen, between its beads too (ticket 0594).
     return (props.tools.selectsAnywhere ? surface.value.frameCellAt(point) : undefined) ?? surface.value.pointToHit(point)
   }
@@ -345,10 +348,15 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     return handMoves.value || event.button === 1 || event.button === 2 || movesCanvas(event)
   }
 
-  /** The point of the viewport a pointer is at, in px from its top-left corner. */
-  function pointInSurface(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
+  /** The point of the viewport a pointer is at on screen, in px from its top-left corner. */
+  function pointOnScreen(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
     const box = rootEl.value?.getBoundingClientRect()
     return { x: event.clientX - (box?.left ?? 0), y: event.clientY - (box?.top ?? 0) }
+  }
+
+  /** The point of the drawing a pointer is at: on screen, turned back by the Canvas's lean (ticket 0672). */
+  function pointInSurface(event: Pick<PointerEvent, 'clientX' | 'clientY'>): { x: number; y: number } {
+    return leaning.value.toDrawn(pointOnScreen(event))
   }
 
   /** The layer whose geometry a held press is measured in (ticket 492): the Frame's for its resize handles and a
@@ -370,7 +378,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
   function framePress(event: PointerEvent, touch = touchInput.value): FramePress | undefined {
     const point = pointInSurface(event)
     if (!props.tools.settingFrame) return undefined
-    const target = framePressAt(frameOf(props.project), surface.value, orientationOf(props.project), point, touch)
+    const target = framePressAt(frameOf(props.project), surface.value, quarterTurnOf(props.project), point, touch)
     return target.kind === 'handle' ? target : undefined
   }
 
@@ -401,7 +409,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     }
     if (!heldPointer) return
     const point = pointInSurface(heldPointer)
-    const { dx, dy } = edgeScrollStep(point, size.value)
+    const { dx, dy } = edgeScrollStep(pointOnScreen(heldPointer), size.value)
     if (dx !== 0 || dy !== 0) {
       emit('pan', -dx, -dy)
       // After the parent has applied the pan, so the cell under the still pointer is the new one.
@@ -468,7 +476,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       const target: FramePress = props.selection.cells
         ? { kind: 'outside' }
         : selectionHasHandles(props.selection)
-          ? boxPressAt(box, orientationOf(props.project), point, touchInput.value)
+          ? boxPressAt(box, quarterTurnOf(props.project), point, touchInput.value)
           : { kind: pointInBox(box, point) ? 'inside' : 'outside' }
       if (target.kind !== 'outside') {
         adjusting.value = true

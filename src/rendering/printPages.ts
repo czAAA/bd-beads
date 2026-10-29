@@ -19,7 +19,7 @@ import {
 import { COVER_CUT_LABEL } from './coverLayout'
 import type { PrintText } from './printText'
 import { fillBlanks } from '../domain/fillBlanks'
-import { type Layered, orientationOf } from '../domain/layerRecord'
+import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
 // Drawing the printed pages (ticket 162; printed-output.md, PrintChartPage card; the Cover page is coverPage.ts). The chart first,
 // the rest is small in the margins. Nothing is drawn behind or over the chart: the sheets are open to share. Paper is
@@ -176,14 +176,14 @@ function downReversed(rotation: Rotation): boolean {
 /** The Project's own number for a bead at this across-axis index (a turned Project's rows may run across), counted
  * from its far end when the turn reverses this axis. */
 export function acrossNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(orientationOf(project)) ? projectDimensions(project).rows : projectDimensions(project).columns
-  return acrossReversed(orientationOf(project)) ? dimension - index : index + 1
+  const dimension = rotationSwapsAxes(quarterTurnOf(project)) ? projectDimensions(project).rows : projectDimensions(project).columns
+  return acrossReversed(quarterTurnOf(project)) ? dimension - index : index + 1
 }
 
 /** The down-axis equivalent of acrossNumber. */
 export function downNumber(project: RulerShape, index: number): number {
-  const dimension = rotationSwapsAxes(orientationOf(project)) ? projectDimensions(project).columns : projectDimensions(project).rows
-  return downReversed(orientationOf(project)) ? dimension - index : index + 1
+  const dimension = rotationSwapsAxes(quarterTurnOf(project)) ? projectDimensions(project).columns : projectDimensions(project).rows
+  return downReversed(quarterTurnOf(project)) ? dimension - index : index + 1
 }
 
 // Page 1's rulers on all four sides in the Project's own numbers (a turned Project's rows run across, counted from the
@@ -313,6 +313,6 @@ export function partLabel(project: Project, labels: PrintText['labels'], part: P
   const range = (a: number, b: number) => `${Math.min(a, b)}–${Math.max(a, b)}`
   const across = range(acrossNumber(project, part.firstAcross), acrossNumber(project, part.lastAcross))
   const down = range(downNumber(project, part.firstDown), downNumber(project, part.lastDown))
-  const turned = rotationSwapsAxes(orientationOf(project))
+  const turned = rotationSwapsAxes(quarterTurnOf(project))
   return fillBlanks(labels.partArea, { part: part.letter, columns: turned ? down : across, rows: turned ? across : down })
 }

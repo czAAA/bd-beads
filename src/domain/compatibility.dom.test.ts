@@ -35,6 +35,7 @@ import projectFileV8BrickBlock from './fixtures/project-file-v8-swatch-codes-bri
 import projectFileV11 from './fixtures/project-file-v11-weave-settings.json?raw'
 import projectFileV11Turned from './fixtures/project-file-v11-frame-turned.json?raw'
 import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
+import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
 import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave.json?raw'
@@ -444,6 +445,12 @@ describe('stored-data compatibility', () => {
       expect(sheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
       expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
       expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV12))
+    })
+
+    it('opens a version 12 file whose Canvas a twist left at any angle, and writes it back the same (ticket 0672)', () => {
+      const [opened] = parseProjectsFile(projectFileV12Twisted).projects
+      expect(canvasOf(opened!)).toMatchObject({ name: 'Twisted fox', orientation: 37.5 })
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV12Twisted))
     })
 
     it('keeps every Frame a version 12 file holds, and a Frame\'s own Piece names, though the app shows one (ticket 0664)', () => {

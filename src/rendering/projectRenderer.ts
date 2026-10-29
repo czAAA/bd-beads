@@ -36,7 +36,7 @@ import {
   setGridTransform,
   type Region,
 } from './surfaceView'
-import { beadsOfLayer, frameOf, heldWeave, type Layered, orientationOf } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, heldWeave, type Layered, quarterTurnOf } from '../domain/layerRecord'
 
 // The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
 // is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
@@ -341,7 +341,7 @@ const SEAM_WIDTH_PX = 1
 /** The Canvas's beads, bead by bead, with the Frame's footprint cut out so none shows over it. */
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin } = draw
-  const rotation = orientationOf(project)
+  const rotation = quarterTurnOf(project)
   const beads = beadsOfLayer(project, 'canvas')
   const covered = footprintOf(project)
   const weave = canvasWeave(project)
@@ -448,7 +448,7 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
 export function renderProject(context: DrawingContext, input: RenderInput): void {
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters } = input
   const frame = frameOf(project)
-  const rotation = orientationOf(project)
+  const rotation = quarterTurnOf(project)
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme

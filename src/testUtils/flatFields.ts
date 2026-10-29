@@ -8,7 +8,8 @@ import { DEFAULT_TECHNIQUE } from '../domain/weave'
 
 /** What a test sets on a Project in the words it had before its layers (ticket 0664): the Canvas's own fields, the
  * shared Bead, Bead shape and Letters, the Frame as a sheet (none removes it), its Row progress, and the rest as they are. */
-export type FlatChange = Partial<Omit<FlatProject, 'frame'>> & { frame?: (FrameSheet & Partial<FrameLayer>) | undefined }
+// `rotation` is the Canvas's orientation in degrees, any angle since ticket 0672.
+export type FlatChange = Partial<Omit<FlatProject, 'frame' | 'rotation'>> & { frame?: (FrameSheet & Partial<FrameLayer>) | undefined; rotation?: number }
 
 /** The Project with fields set as a test wrote them before the Project held its layers (ticket 0664): `technique`,
  * `beads`, `name`, `pieceNames` and `rotation` go to the Canvas, the Bead, Bead shape and Letters to every layer,
