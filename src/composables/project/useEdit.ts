@@ -27,7 +27,8 @@ export type EditOutcome =
   | { kind: 'refused'; reason: FrameChangeRefusal }
   | { kind: 'applied' }
 
-/** A layer's Technique (ADR 0079); none for a Frame the Project lacks. A change of it leaves the session on the old one. */
+/** A layer's Technique (ADR 0079), none for a Frame the Project lacks: an edit that changes it resets the session built
+ * on the old one. */
 function techniqueOf(project: Project, layer: Layer): Technique | undefined {
   return layerOf(project, layer)?.weave.technique
 }

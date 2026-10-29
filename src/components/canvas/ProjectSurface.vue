@@ -91,11 +91,11 @@ function measure(): void {
  * position is. */
 const space = computed(() => spaceOf(props.project, true))
 
-/** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
- * agree with what is drawn. */
 /** The Canvas's Weave (ADR 0079), with the cell its Bead and Bead shape draw it in. */
 const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 
+/** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
+ * agree with what is drawn. */
 const surface = computed(() =>
   surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
