@@ -25,7 +25,7 @@ async function openAndInstall(page: Page, storageNote = false): Promise<void> {
 }
 
 const savedNames = (page: Page) =>
-  page.evaluate((key) => (JSON.parse(localStorage.getItem(key) ?? '{"patterns":[]}') as { patterns: { name: string }[] }).patterns.map((p) => p.name), STORAGE_KEY)
+  page.evaluate((key) => (JSON.parse(localStorage.getItem(key) ?? '{"patterns":[]}') as { patterns: { layers: { name: string }[] }[] }).patterns.map((p) => p.layers[0]!.name), STORAGE_KEY)
 
 /** Reloads, and expects the app itself (not the browser's error page) with the Project that was open. */
 async function reloadsIntoTheApp(page: Page): Promise<void> {

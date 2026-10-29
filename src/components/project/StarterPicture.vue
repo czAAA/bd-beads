@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { designSizes, STARTER_BEAD_ID, starterProject, type Starter, type StarterChoice } from '../../domain/starters'
+import { withBeadShape } from '../../domain/projectBead'
 import { PROJECT_THEMES } from '../../rendering/beadLook'
 import { renderProject } from '../../rendering/projectRenderer'
 import { spaceOf } from '../../rendering/space'
@@ -29,10 +30,9 @@ const props = withDefaults(
 const theme = useResolvedTheme()
 const canvasEl = ref<HTMLCanvasElement>()
 
-const project = computed(() => ({
-  ...starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }),
-  beadShape: 'real' as const,
-}))
+const project = computed(() =>
+  withBeadShape(starterProject(props.starter, { name: '', beadId: props.beadId, ...(props.choice ?? { sizes: designSizes(props.starter), useDesign: true }) }), 'real'),
+)
 
 /** The gap between a pair, as a share of one picture's width. */
 const PAIR_GAP = 0.25
