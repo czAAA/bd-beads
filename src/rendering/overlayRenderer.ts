@@ -20,7 +20,7 @@ import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, inGridPx, positionBoxPx, positionsBoxPx, setGridTransform, type Region, type SurfaceView } from './surfaceView'
 import { BEAD_GAP_PX } from './beadLook'
 import { drawDraftBeads } from './draftRenderer'
-import { beadsOfLayer, frameOf, orientationOf } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, quarterTurnOf } from '../domain/layerRecord'
 
 // The overlay layer of a Drawing surface (CONTEXT.md, ADR 0018): everything that comes and goes with the pointer or a
 // tool, drawn over the cells so it changes without redrawing them. Coordinates are the base layer's (see
@@ -562,7 +562,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     return
   }
 
-  setGridTransform(context, space.extent, region, zoom, orientationOf(project), pixelRatio)
+  setGridTransform(context, space.extent, region, zoom, quarterTurnOf(project), pixelRatio)
   // Bitmaps of beads are made at the size they are on the screen, so they are blitted as they are, not resampled.
   context.imageSmoothingEnabled = false
 
@@ -576,7 +576,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   const offFrame = <T extends GridPosition>(cells: readonly T[]): T[] => cells.filter((cell) => !onFrame(frame, geometry, covered, cell))
   const ownLayer: 'canvas' | 'frame' = space.open ? (selection ? selectionLayerOf(project, selection) : 'canvas') : 'frame'
   const canvasSelection = selection && ownLayer === 'canvas' ? selection : undefined
-  const canvasView = () => visibleBeadsInSpace(canvasWeaveOf, space, region, zoom, orientationOf(project))
+  const canvasView = () => visibleBeadsInSpace(canvasWeaveOf, space, region, zoom, quarterTurnOf(project))
   const offFrameStamp = (stamp: PasteStamp) => stampInView(stamp, canvasView(), { row: 0, column: 0 }, frame && ((cell) => !onFrame(frame, geometry, covered, cell)))
   const canvasCells = preview && space.open ? offFrame(preview.cells) : []
   const canvasStamp = preview?.stamp && space.open ? offFrameStamp(preview.stamp) : []
@@ -604,7 +604,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
     const layerOrigin = frame ? { row: frame.row, column: frame.column } : { row: 0, column: 0 }
     const sheetSelection = selection && ownLayer === 'frame' ? (frame ? { ...selection, top: selection.top - frame.row, left: selection.left - frame.column } : selection) : undefined
     const sheetView = (): VisiblePositions => {
-      if (geometry!.grid) return visibleBeadsInSpace(sheetWeave, space, region, zoom, orientationOf(project), origin)
+      if (geometry!.grid) return visibleBeadsInSpace(sheetWeave, space, region, zoom, quarterTurnOf(project), origin)
       // A Custom frame's cells are named by round and place: only those its rectangle holds can be on it.
       return covered ? { firstRow: covered.row - layerOrigin.row, lastRow: covered.row + covered.rows - 1 - layerOrigin.row, columnsOf: () => ({ first: covered.column - layerOrigin.column, last: covered.column + covered.columns - 1 - layerOrigin.column }) } : EVERYWHERE
     }
