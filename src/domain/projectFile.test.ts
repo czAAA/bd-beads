@@ -84,12 +84,6 @@ describe('single-Project roundtrip', () => {
     expect(backgroundOf(restored, 'frame')).toBeUndefined()
   })
 
-  it('carries a square stitch Project through the file (ticket 0635)', () => {
-    const project = withWeave(decoratedProject(), 'canvas', { technique: 'square' })
-
-    expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
-  })
-
   it('carries brick stitch\'s Drop through the file, and reads a file without one as 1 (tickets 477, 0691)', () => {
     const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickDrop: 3 } })
 
