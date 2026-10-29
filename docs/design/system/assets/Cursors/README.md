@@ -15,7 +15,7 @@ The Tool pointers: the canvas pointer for each tool (ticket 0542), so the pointe
 | `hand.svg` | Hand | the `hand` icon, open | 11, 12 |
 | `hand-grabbing.svg` | Hand, while dragging | the same hand with the fingers curled | 11, 12 |
 | `select.svg` | Select | the system's arrow, white with an ink outline (1.2) | 4, 3 (the tip) |
-| `fill.svg` | Fill | the `fill` bucket at 78% without its drop; the colour bead is the drop | 18, 18 (the bead's centre) |
+| `fill.svg` | Fill | the `fill` bucket and its handle at 78% without its drop; the colour bead is the drop | 18, 18 (the bead's centre) |
 | `piece.svg` | Select a piece | the `piece` polygon of beads at 2 and 2.8, with a bead in the middle | 12, 12 (the middle bead) |
 
 The CSS value is the image, its hot spot and the system cursor as fallback: `url(paint.svg) 5 19, crosshair`, `url(hand.svg) 11 12, grab`, `url(hand-grabbing.svg) 11 12, grabbing`, `url(select.svg) 4 3, default`.
