@@ -138,8 +138,10 @@ onBeforeUnmount(() => {
   inset: 0;
   z-index: calc(var(--z-modal) - 1);
   display: grid;
-  /* A track that can shrink, so the dialog's max-width is the screen and not its own width (ticket 231). */
+  /* Tracks that can shrink, so the dialog's max-width and max-height are the screen and not its own size (tickets 231,
+   * 0654): an auto row grew with the large Modal's 820px and pushed its footer below a landscape iPad's screen. */
   grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr);
   place-items: center;
   padding: var(--space-24);
   background: var(--scrim);

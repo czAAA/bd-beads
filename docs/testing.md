@@ -60,6 +60,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `storageWrites.ts`: count localStorage writes, or make one fail.
 - `sharedPage.ts`: what the setup resets before each `page` file, and its never-repeating clock.
 - `rotated.ts`: a ready-made rotated Project.
+- `convertPicture.ts`: `flatColorsPicture` for the Convert image wizard to read, and `pictureSet` to wait until it has (ticket 0654).
 - `frameGrid.ts`: `frameGrid` reads a Project's beads as a dense grid of rows and columns, the shape an expectation is written in, and `withFrameGrid` puts one back (ticket 0609).
 
 App code holds only what the app uses (ticket 0609): `npm run knip`'s second run, `knip --production`, leaves the tests and these helpers out and fails on a file or export only a test reaches. A fixture builder belongs here, not in `src/`. An export the app keeps that a test also names on purpose (a limit it counts with, a step it drives on its own, a reset hook) is tagged `@internal` in its doc comment with the reason, and that run leaves it out.
