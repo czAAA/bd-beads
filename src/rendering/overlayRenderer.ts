@@ -8,7 +8,7 @@ import type { LayerGeometry } from '../domain/layerGeometry'
 import { colorAt, frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { canvasWeave, frameWeave } from '../domain/layerWeave'
 import { currentPass, rowProgressOn } from '../domain/rowProgress'
-import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type PasteStamp, type Selection } from '../domain/selection'
+import { selectionFrame, selectionHasHandles, selectionLayer as selectionLayerOf, type PastedCell, type PasteStamp, type Selection } from '../domain/selection'
 import type { VisiblePositions } from '../domain/weaveGeometry'
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
@@ -241,7 +241,7 @@ function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells:
     if (color) {
       const row: PreviewRow = rows.get(cell.row) ?? { beads: [], first: cell.column, last: cell.column }
       rows.set(cell.row, row)
-      row.beads.push({ bead: { x, y, width, height, radius: Math.max(0, roundness) }, color })
+      row.beads.push({ column: cell.column, bead: { x, y, width, height, radius: Math.max(0, roundness) }, color })
       row.first = Math.min(row.first, cell.column)
       row.last = Math.max(row.last, cell.column)
     } else {
@@ -249,13 +249,13 @@ function drawPreview(context: DrawingContext, weave: Weave, space: Space, cells:
     }
   }
   for (const [row, { beads, first, last }] of rows) {
-    fillRowFaintly(context, beads, nextRowBeads(boxOf, space, row, first, last, beads[0]!.bead))
+    fillRowFaintly(context, beads, nextRowBeads(boxOf, space, row, first, last, beads[0]!))
   }
 }
 
 /** A row of the hover preview's colored beads, and the first and last columns they reach. */
 interface PreviewRow {
-  beads: { bead: BeadRect; color: string }[]
+  beads: { column: number; bead: BeadRect; color: string }[]
   first: number
   last: number
 }
@@ -292,16 +292,13 @@ function fillRowFaintly(context: DrawingContext, beads: PreviewRow['beads'], cov
   context.globalAlpha = 1
 }
 
-/** A cell of a pasted block in view, with its color. */
-type PasteCell = PreviewCell & { color: string }
-
 /** How small a bead is on the screen, in device px, below which a pasted block's preview is drawn in the draft look
  * (ticket 0675): there its gap and rounding are about a pixel, and the whole block is in view, a fill a bead. */
 const DRAFT_PREVIEW_BEAD_PX = 10
 
 /** A pasted block's preview on a layer laid on a grid: as beads, or zoomed out as one draft image at the preview's
  * opacity. */
-function drawStampPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PasteCell[], preview: HoverPreview, theme: ProjectTheme, deviceScale: number): void {
+function drawStampPreview(context: DrawingContext, weave: Weave, space: Space, cells: readonly PastedCell[], preview: HoverPreview, theme: ProjectTheme, deviceScale: number): void {
   if (CELL_SIZE_PX * deviceScale >= DRAFT_PREVIEW_BEAD_PX) {
     drawPreview(context, weave, space, cells, preview, theme)
     return
@@ -354,11 +351,13 @@ function boxesOf(weave: Weave): BoxOf {
 }
 
 // The beads of the next row that lie over a row's beads from `first` to `last` as drawn (peyote's rows nest): none where
-// rows stack. Each is drawn in as far from its box as `bead`, one of the row's, is. One that lies over none of the row's
-// beads is a hole where nothing is drawn, so the row is asked about once, not bead by bead.
-function nextRowBeads(boxOf: BoxOf, space: Space, row: number, first: number, last: number, bead: BeadRect): BeadRect[] {
+// rows stack. Each is drawn in as far from its box as `sample`, one of the row's beads, is. One that lies over none of
+// the row's beads is a hole where nothing is drawn, so the row is asked about once, not bead by bead.
+function nextRowBeads(boxOf: BoxOf, space: Space, row: number, first: number, last: number, sample: { column: number; bead: BeadRect }): BeadRect[] {
   const own = boxOf(row, first)
   const end = boxOf(row, last)
+  const { bead } = sample
+  const inset = { x: bead.x - boxOf(row, sample.column).x, y: bead.y - boxOf(row, sample.column).y }
   const below = boxOf(row + 1, first)
   if (below.y >= own.y + own.height || below.y + below.height <= own.y) return []
   const beads: BeadRect[] = []
@@ -366,7 +365,7 @@ function nextRowBeads(boxOf: BoxOf, space: Space, row: number, first: number, la
     const next = boxOf(row + 1, column)
     // One the Project does not have is not drawn, so it covers nothing.
     if (next.x < end.x + end.width && next.x + next.width > own.x && inSpace(space, row + 1, column)) {
-      beads.push({ ...bead, x: bead.x + next.x - own.x, y: bead.y + next.y - own.y })
+      beads.push({ ...bead, x: next.x + inset.x, y: next.y + inset.y })
     }
   }
   return beads
@@ -495,8 +494,8 @@ const EVERYWHERE: VisiblePositions = { firstRow: -Infinity, lastRow: Infinity, c
 /** The cells of a paste stamp in view on one layer (ticket 0675), counted from `origin`, the layer's first position on
  * the Canvas: read only where the view reaches, so a big block costs what is on screen. `keeps`, where some cells are
  * another layer's, takes Canvas positions. */
-function stampInView(stamp: PasteStamp, view: VisiblePositions, origin: GridPosition, keeps?: (cell: GridPosition) => boolean): PasteCell[] {
-  const cells: PasteCell[] = []
+function stampInView(stamp: PasteStamp, view: VisiblePositions, origin: GridPosition, keeps?: (cell: GridPosition) => boolean): PastedCell[] {
+  const cells: PastedCell[] = []
   const top = stamp.top - origin.row
   const left = stamp.left - origin.column
   for (let row = Math.max(view.firstRow, top); row <= Math.min(view.lastRow, top + stamp.rows - 1); row++) {

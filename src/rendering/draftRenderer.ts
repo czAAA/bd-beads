@@ -1,5 +1,6 @@
 import { channelsOf } from '../domain/color'
 import { describeWeave, draftCost, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
+import type { PastedCell } from '../domain/selection'
 import type { WeaveGeometry } from '../domain/weaveGeometry'
 import type { DrawingContext, ProjectTheme } from './beadLook'
 import { cellSizePx } from './cellSize'
@@ -120,18 +121,10 @@ export function renderDraft(
   context.drawImage(scratch, 0, 0, image.width, image.height, 0, 0, bitmapWidth, bitmapHeight)
 }
 
-
-/** A bead of a draft, where it lies. */
-interface PlacedBead {
-  row: number
-  column: number
-  color: string
-}
-
 /** Beads where they lie as a draft image (ticket 0675): `wide` pixels a bead across as in `draftImage`, its first pixel
  * at `firstColumn` of `firstRow`, the first any bead reaches, and clear where there is no bead.
  * @internal Its test reads the pixels on their own. */
-export function draftOfBeads(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, beads: readonly PlacedBead[]): DraftImage & { firstRow: number; firstColumn: number; wide: number } {
+export function draftOfBeads(geometry: Pick<WeaveGeometry, 'shift' | 'rowOffset'>, beads: readonly PastedCell[]): DraftImage & { firstRow: number; firstColumn: number; wide: number } {
   // Loops, not Math.min(...): a block zoomed out can hold more beads than a call takes arguments.
   let [firstRow, lastRow, firstColumn, lastColumn] = [Infinity, -Infinity, Infinity, -Infinity]
   for (const { row, column } of beads) {
@@ -161,7 +154,7 @@ let beadsScratch: HTMLCanvasElement | undefined
 
 /** Draws beads where they lie in the draft look, through the context's grid transform and at its opacity (ticket 0675):
  * one image for a big paste preview zoomed out, where a fill a bead would cost more than the screen shows. */
-export function drawDraftBeads(context: DrawingContext, weave: Weave, beads: readonly PlacedBead[]): void {
+export function drawDraftBeads(context: DrawingContext, weave: Weave, beads: readonly PastedCell[]): void {
   if (beads.length === 0) return
   const description = describeWeave(weave)
   const image = draftOfBeads(description, beads)

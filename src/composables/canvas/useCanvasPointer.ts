@@ -66,8 +66,13 @@ export function useCanvasPointer(deps: CanvasPointerDeps) {
   // out those in rows already woven as the cells above do.
   const previewStamp = computed<PasteStamp | undefined>(() => {
     const project = deps.currentProject()
-    const stamp = project && hoveredCell.value && deps.activeTool() === 'select' ? deps.pastePreviewStamp(project, hoveredCell.value) : undefined
-    if (!project || !stamp) return undefined
+    if (!project || !hoveredCell.value || deps.activeTool() !== 'select') {
+      return undefined
+    }
+    const stamp = deps.pastePreviewStamp(project, hoveredCell.value)
+    if (!stamp) {
+      return undefined
+    }
     const finished = finishedRowsOf(project)
     return { ...stamp, lands: (row, column) => stamp.lands(row, column) && !finished({ row, column }) }
   })
