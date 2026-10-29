@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import IconButton from './IconButton.vue'
+import InfoButton from './InfoButton.vue'
 
 // A discrete slider of a few named stops (QualitySlider card; ticket 576): a native range input, so touch drag, arrows,
 // Home and End work, with a tappable button under each stop that mirrors it.
@@ -45,9 +45,9 @@ function pick(next: number): void {
     <p class="qs-head">
       <span class="qs-label">
         {{ label }}
-        <IconButton v-if="hint" variant="plain" icon="info" :icon-size="16" :label="hint.label" :tooltip="{ body: hint.body }" data-testid="quality-hint" />
+        <InfoButton v-if="hint" :label="hint.label" :body="hint.body" data-testid="quality-hint" />
       </span>
-      <IconButton v-if="reduced && stops.some((stop) => stop.from)" class="qs-info" variant="plain" icon="info" :icon-size="16" :label="reduced.label" :tooltip="{ body: reduced.body }" data-testid="quality-reduced-info" />
+      <InfoButton v-if="reduced && stops.some((stop) => stop.from)" class="qs-info" :label="reduced.label" :body="reduced.body" data-testid="quality-reduced-info" />
       <span data-testid="quality-chosen">{{ chosen?.word }}</span>
     </p>
     <input

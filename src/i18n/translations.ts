@@ -707,9 +707,10 @@ export interface Translations {
     exportPages: PluralForms
     qualityDpi: string
     qualityPdfCapped: string
-    /** The Letters switch in the Frame panel (ticket 0573) and its one-line explanation. */
+    /** The Letters switch in the Frame panel (ticket 0573), its explanation and the name of the info button that holds it (ticket 0651). */
     lettersLabel: string
     lettersLine: string
+    lettersInfoLabel: string
     qualityHintLabel: string
     qualityHint: string
     estimateInfo: string

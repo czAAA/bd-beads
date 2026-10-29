@@ -601,6 +601,7 @@ export const en: Translations = {
     qualityPdfCapped: 'High is {n} DPI in the PNG on this device.',
     lettersLabel: 'Letters',
     lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
+    lettersInfoLabel: 'What Letters does',
     qualityHintLabel: 'What the lowest quality is for',
     qualityHint: 'Low saves memory: smaller files, and a picture a phone can always make.',
     estimateInfo: 'An estimate. Bead size × beads across and down. Thread, tension and small differences between beads mean the finished work often comes out a little different.',
