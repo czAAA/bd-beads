@@ -3,12 +3,16 @@ import { nextTick } from 'vue'
 import { mount } from '@vue/test-utils'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 import ProjectPanel from './ProjectPanel.vue'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { findBead, offeredBeads } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { replaceBead } from '../../domain/projectBead'
 import { en } from '../../i18n/en'
 
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.unstubAllGlobals()
+  useCanvasBackground().setChoice(1)
+})
 
 beforeEach(() => {
   localStorage.clear()
@@ -204,5 +208,14 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     await header.trigger('click')
     expect(header.attributes('aria-expanded')).toBe('false')
     expect(header.text()).toContain('TOHO Cube 1.5mm · symmetric')
+  })
+
+  it('names a Custom Canvas color in the canvas section\'s summary (ticket 0653)', async () => {
+    document.documentElement.dataset.theme = 'light'
+    useCanvasBackground().setCustomColor('#7a2e8c')
+    const wrapper = mountPanel()
+    const header = wrapper.findAll('.panel-section__header')[1]!
+    await header.trigger('click')
+    expect(header.text()).toContain('Custom color')
   })
 })

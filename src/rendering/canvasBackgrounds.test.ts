@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { channelsOf, relativeLuminance } from '../domain/color'
+import { channelsOf, contrastRatio } from '../domain/color'
 import { PROJECT_THEMES, PRINT_THEME } from './beadLook'
 import { canvasBackgrounds, canvasBackgroundOf, canvasTheme, migratedChoice, shownChoice } from './canvasBackgrounds'
 
@@ -10,10 +10,7 @@ const tokens = JSON.parse(readFileSync(resolve(__dirname, '../../docs/design/sys
 }
 const token = (n: number, theme: 'light' | 'dark') => tokens.color.tokens.find((entry) => entry.name === `canvas-bg-${n}`)!.value[theme]
 
-function contrast(a: string, b: string): number {
-  const [light, dark] = [relativeLuminance(channelsOf(a)), relativeLuminance(channelsOf(b))].sort((x, y) => y - x)
-  return (light + 0.05) / (dark + 0.05)
-}
+const contrast = (a: string, b: string) => contrastRatio(channelsOf(a), channelsOf(b))
 
 describe('Canvas color backgrounds', () => {
   it('offers five in light, five in dark and none in high contrast', () => {
@@ -79,6 +76,31 @@ describe('Canvas color backgrounds', () => {
       expect(contrast(look.marker, look.canvas), `marker on ${id}`).toBeGreaterThanOrEqual(marker)
     }
   })
+
+  it('shows the Custom color (ticket 0653) in light and dark alike, and the first background while there is none', () => {
+    expect(canvasBackgroundOf('light', 'custom', '#7a2e8c')).toMatchObject({ id: 'custom', color: '#7a2e8c' })
+    expect(canvasBackgroundOf('dark', 'custom', '#7a2e8c')).toMatchObject({ id: 'custom', color: '#7a2e8c' })
+    expect(canvasBackgroundOf('light', 'custom')?.id).toBe('studio')
+    expect(shownChoice('dark', 'custom', '#7a2e8c')).toBe('custom')
+    expect(shownChoice('dark', 'custom')).toBe(1)
+    expect(canvasTheme('contrast', 'custom', '#7a2e8c')).toBe(PROJECT_THEMES.contrast)
+  })
+
+  it('draws on a dark Custom color in the dark look and on a light one in the light look, whatever the theme', () => {
+    expect(canvasTheme('light', 'custom', '#14213d')).toMatchObject({ canvas: '#14213d', background: '#14213d', marker: PROJECT_THEMES.dark.marker, rim: PROJECT_THEMES.dark.rim })
+    expect(canvasTheme('dark', 'custom', '#fde68a')).toMatchObject({ canvas: '#fde68a', marker: PROJECT_THEMES.light.marker, rim: PROJECT_THEMES.light.rim })
+  })
+
+  it.each(['#ffffff', '#fde68a', '#9ca3af', '#777777', '#767676', '#e03c3c', '#3b82f6', '#14213d', '#000000'])(
+    'keeps rulers at 4.5:1, the row marker at 3:1 and empty beads off the background on the Custom color %s',
+    (color) => {
+      const look = canvasTheme('light', 'custom', color)
+      expect(contrast(look.ruler, color)).toBeGreaterThanOrEqual(4.5)
+      expect(contrast(look.rulerStrong, color)).toBeGreaterThanOrEqual(contrast(look.ruler, color))
+      expect(contrast(look.marker, color)).toBeGreaterThanOrEqual(3)
+      expect(contrast(look.emptyBead, color)).toBeGreaterThan(1.15)
+    },
+  )
 
   it('never changes the print board that exports use', () => {
     expect(PRINT_THEME.background).toBe('#f7f3ec')

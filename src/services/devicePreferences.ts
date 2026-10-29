@@ -2,7 +2,7 @@ import { customRef, hasInjectionContext, inject, type InjectionKey, type Ref } f
 import type { Locale } from '../i18n/translations'
 import { LOCALES } from '../domain/locale'
 import { type Handedness, type InputMode } from '../domain/inputMode'
-import { CANVAS_BACKGROUND_MAX, migratedChoice } from '../rendering/canvasBackgrounds'
+import { CANVAS_BACKGROUND_MAX, migratedChoice, type CanvasChoice } from '../rendering/canvasBackgrounds'
 import type { ThemePick } from '../theme/theme'
 import { PILL_POSITIONS, DEFAULT_PILL_POSITION, RECENT_COLORS_KEPT, type PillPosition } from '../domain/toolPill'
 import { normalizeHex } from '../domain/color'
@@ -43,12 +43,13 @@ export const PREFERENCES = {
   rulers: onUntilOff('openbeads:rulers'),
   /** Whether the Row progress look shows on the Canvas (ticket 474, ADR 0055): on by default; a view setting only. */
   rowHighlight: onUntilOff('openbeads:row-highlight'),
-  /** The Canvas color (tickets 252, 554): a number, 1 to 5, so it survives a change of theme. The first list's number
-   * (1 to 6) is read once from its own key and moved by name. */
-  canvasBackground: preference({
+  /** The Canvas color (tickets 252, 554, 0653): a number, 1 to 5, so it survives a change of theme, or `custom`. The
+   * first list's number (1 to 6) is read once from its own key and moved by name. */
+  canvasBackground: preference<CanvasChoice>({
     key: 'openbeads:canvas-background-2',
     fallback: 1,
     parse: (raw) => {
+      if (raw === 'custom') return raw
       const choice = Number(raw)
       return Number.isInteger(choice) && choice >= 1 && choice <= CANVAS_BACKGROUND_MAX ? choice : undefined
     },
@@ -60,6 +61,13 @@ export const PREFERENCES = {
         return Number.isInteger(choice) && choice >= 1 && choice <= FIRST_LIST_SIZE ? migratedChoice(themeShown(storage), choice) : undefined
       },
     },
+  }),
+  /** The last Custom color taken for the Canvas (ticket 0653), as `#rrggbb`: kept while a numbered one shows. */
+  canvasCustomColor: preference<string | undefined>({
+    key: 'openbeads:canvas-custom-color',
+    fallback: undefined,
+    parse: normalizeHex,
+    write: (hex) => hex ?? null,
   }),
   // The input mode the person chose (ticket 325): Pen mode or Mouse mode; unset until they choose (ticket 326), so a
   // pen can pick Pen mode.

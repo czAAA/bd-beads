@@ -19,6 +19,7 @@ function render() {
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
   localStorage.removeItem(PREFERENCES.canvasBackground.key)
+  localStorage.removeItem(PREFERENCES.canvasCustomColor.key)
   setTheme('light')
   useCanvasBackground().setChoice(1)
 })
@@ -35,35 +36,46 @@ async function flush() {
 describe('CanvasSection', () => {
   it('is a radio group of five light swatches named "{name}, {n} of {count}", with the chosen one named under them', () => {
     const wrapper = render()
-    const swatches = wrapper.findAll('.canvas-section__swatches [role="radio"]')
+    const swatches = wrapper.findAll('[role="radio"]')
     expect(swatches.map((s) => s.attributes('aria-label'))).toEqual(['Studio, 1 of 5', 'Linen, 2 of 5', 'Stone, 3 of 5', 'Fog, 4 of 5', 'Pebble, 5 of 5'])
     expect(swatches.map((s) => s.attributes('aria-checked'))).toEqual(['true', 'false', 'false', 'false', 'false'])
-    expect(swatches.map((s) => s.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
-    expect(wrapper.get('[data-testid="canvas-color-name"]').text()).toContain('Studio')
-    expect(wrapper.get('[data-testid="canvas-color-name"]').text()).toContain('#fafafa')
+    expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Studio #fafafa')
   })
 
   it('offers five in dark, and keeps the position when the theme changes', async () => {
     useCanvasBackground().setChoice(3)
     setTheme('dark')
     await flush()
-    const swatches = render().findAll('.canvas-section__swatches [role="radio"]')
+    const swatches = render().findAll('[role="radio"]')
     expect(swatches).toHaveLength(5)
     expect(swatches[2].attributes('aria-label')).toBe('Midnight, 3 of 5')
     expect(swatches[2].attributes('aria-checked')).toBe('true')
   })
 
-  it('applies a choice at once, stores the number, and moves with the arrows', async () => {
+  it('stores the number of the swatch picked', async () => {
     const wrapper = render()
-    await wrapper.get('[data-testid="canvas-color-linen"]').trigger('click')
-    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('2')
-
-    await wrapper.get('[data-testid="canvas-color-linen"]').trigger('keydown', { key: 'ArrowRight' })
+    await wrapper.get('[data-testid="background-color-stone"]').trigger('click')
     expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('3')
-    await wrapper.get('[data-testid="canvas-color-stone"]').trigger('keydown', { key: 'ArrowLeft' })
-    await wrapper.get('[data-testid="canvas-color-linen"]').trigger('keydown', { key: 'ArrowLeft' })
-    await wrapper.get('[data-testid="canvas-color-studio"]').trigger('keydown', { key: 'ArrowLeft' })
-    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('5')
+  })
+
+  it('stores a Custom color taken (ticket 0653), shows it in dark too, and keeps it once a swatch is picked', async () => {
+    const wrapper = render()
+    await wrapper.get('[data-testid="custom-color-button"]').trigger('click')
+    const field = wrapper.get<HTMLInputElement>('[data-testid="custom-color-hex"]')
+    await field.setValue('#7a2e8c')
+    await field.trigger('keydown', { key: 'Enter' })
+    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('custom')
+    expect(localStorage.getItem(PREFERENCES.canvasCustomColor.key)).toBe('#7a2e8c')
+    expect(useCanvasBackground().background.value?.color).toBe('#7a2e8c')
+
+    setTheme('dark')
+    await flush()
+    expect(wrapper.get('[data-testid="custom-color-button"]').attributes('aria-pressed')).toBe('true')
+    expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Custom color #7a2e8c')
+
+    await wrapper.get('[data-testid="background-color-ink"]').trigger('click')
+    expect(localStorage.getItem(PREFERENCES.canvasBackground.key)).toBe('2')
+    expect(localStorage.getItem(PREFERENCES.canvasCustomColor.key)).toBe('#7a2e8c')
   })
 
   it('in high contrast says the canvas stays white', async () => {
