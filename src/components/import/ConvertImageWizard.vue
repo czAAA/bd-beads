@@ -426,10 +426,12 @@ function onCreate() {
 }
 
 .convert-wizard__footer {
+  --footer-gap: var(--space-12);
+
   display: flex;
   flex: 1;
   align-items: center;
-  gap: var(--space-12);
+  gap: var(--footer-gap);
   min-width: 0;
 }
 
@@ -540,7 +542,7 @@ function onCreate() {
    * wrapper; less the gap, so the two stay on one row. */
   .convert-wizard__cancel,
   .convert-wizard__footer > :deep(.app-button-wrap) {
-    flex: 1 1 calc(50% - var(--space-12));
+    flex: 1 1 calc(50% - var(--footer-gap));
   }
 
   .convert-wizard__cancel,
