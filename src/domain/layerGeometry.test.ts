@@ -19,7 +19,7 @@ const REAL: BeadCell = { aspect: 1.3, roundness: 0.35 }
 
 /** Every Technique, with its settings at their defaults and moved off them, in each Bead shape. */
 const WEAVES: Weave[] = TECHNIQUES.flatMap((technique) =>
-  [{ technique }, { technique, techniqueSettings: { brickBlock: 2 } }].flatMap((weave) => [weave, { ...weave, cell: REAL }]),
+  [{ technique }, { technique, techniqueSettings: { brickDrop: 2 } }].flatMap((weave) => [weave, { ...weave, cell: REAL }]),
 )
 
 const named = (weave: Weave) => `${weave.technique} ${Object.values(weave.techniqueSettings ?? {}).join('')} ${weave.cell ? 'real' : 'symmetric'}`

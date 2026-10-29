@@ -9,7 +9,7 @@ The one section that sets a layer (ADR 0079, ticket 0670): the Canvas or a Frame
 
 ## Layout (top to bottom, in the panel's density, MenuPanel card)
 
-1. **Technique:** a PanelPicker (the `pattern` icon) offering every Technique, or on a Custom frame only those its Frame shape supports. Then one row per setting the Technique describes, a SettingStepper (Brick block for brick stitch), its label above a small Stepper, lined up with the picker (10px in).
+1. **Technique:** a PanelPicker (the `pattern` icon) offering every Technique, or on a Custom frame only those its Frame shape supports. Then one row per setting the Technique describes, a SettingStepper (Drop for peyote and for brick stitch, each Technique's its own, ticket 0691), its label above a small Stepper, lined up with the picker (10px in).
 2. **Shape settings** (a Custom frame only): one `panel-row` per setting, its name (`control`) at the left and a Stepper at the right (Rounds, Part size or Rows; a Fringe earring's Top width, Top rows and Fringe length), then the Fringe style as a SegmentedControl of the setup's names under its label. Shrinking keeps what is given up as Folded beads, without asking; the steppers commit once, as one Undo step, when the panel closes.
 3. **Bead:** the heading "Bead" (`label` style, `muted`), then the Bead shape row (Symmetric | Real, a small SegmentedControl, BeadShape Tooltips) and the three PanelPicker buttons Brand, Type and Size on one row (BeadPicker card). A pick only asks: the Project panel and the Frame panel open Replace bead? for that layer (ConfirmDialogs card), and the pickers keep showing the layer's Bead until it is confirmed.
 4. **Background:** the heading "Background" (`label` style, `muted`), then the BackgroundColorPicker (CanvasBackground card): the five colors of the theme and the Custom color tile, the chosen one's name and hex; in high contrast the one `body` line "The canvas stays white in high contrast.". Its radio group is named "Canvas color" for the Canvas and "Frame background" for a Frame.
@@ -28,6 +28,6 @@ Where the section is a PanelSection, its folded summary is the layer's Technique
 
 ## Copy
 
-English: Technique, Brick block, Bead, Bead shape, Symmetric, Real, Brand, Type, Size, Background, Canvas color, Frame background, Settings (the Frame panel's section). Every language: `writing.md` (Layer settings copy, ticket 0670).
+English: Technique, Drop, Bead, Bead shape, Symmetric, Real, Brand, Type, Size, Background, Canvas color, Frame background, Settings (the Frame panel's section). Every language: `writing.md` (Layer settings copy, ticket 0670).
 
 Hand-written for ticket 0670; static rendition.

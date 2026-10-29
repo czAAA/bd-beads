@@ -170,14 +170,23 @@ export const en: Translations = {
     square: 'Square stitch',
   },
   weaveSettings: {
-    brickBlock: {
-      label: 'Brick block',
-      less: 'Fewer rows in a block',
-      more: 'More rows in a block',
-      value: 'Rows in a block',
-      body: 'Rows woven straight on top of each other before the next rows shift by half a bead. 1 shifts every row.',
-      locked: 'Rows are marked done. Remove the Frame to change the Brick block.',
-      changed: 'Brick block changed to {count}',
+    peyoteDrop: {
+      label: 'Drop',
+      less: 'Fewer beads in each stitch',
+      more: 'More beads in each stitch',
+      value: 'Beads in each stitch',
+      body: 'Beads picked up in each stitch: they sit straight beside each other before the next ones shift by half a bead. 1 is ordinary peyote.',
+      locked: 'Rows are marked done. Remove the Frame to change the Drop.',
+      changed: 'Drop changed to {count}',
+    },
+    brickDrop: {
+      label: 'Drop',
+      less: 'Fewer beads in each stitch',
+      more: 'More beads in each stitch',
+      value: 'Beads in each stitch',
+      body: 'Beads picked up in each stitch: they sit straight beside each other before the next ones shift by half a bead. 1 is ordinary brick stitch.',
+      locked: 'Rows are marked done. Remove the Frame to change the Drop.',
+      changed: 'Drop changed to {count}',
     },
   },
   projects: {

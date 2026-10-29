@@ -3,10 +3,14 @@ import type { BeadMap, FrameSheet } from './canvas'
 import type { Rotation } from './grid'
 import type { PieceName } from './pieceNames'
 import type { Project, RowProgress } from './project'
-import { BRICK_BLOCK_SETTING, type BeadShape, type Technique, type TechniqueSettings } from './weave'
+import { BRICK_DROP_SETTING, type BeadShape, type Technique, type TechniqueSettings } from './weave'
 
-// The flat Brick block of earlier stored versions (file v4–v10, library v1–v4; ticket 0636): a layer's Brick block was a
-// field beside its Technique. Read only: their readers lift it into the settings map the app holds, and v11 writes that.
+// The Brick block of earlier stored versions: brick stitch's Drop under its old name (ticket 0691), flat beside a
+// layer's Technique (file v4–v10, library v1–v4; ticket 0636) or in its settings map (file v11–v12, library v4–v5).
+// Read only: their readers lift it into the settings map the app holds as brick stitch's Drop, and v13 writes that.
+
+/** The id brick stitch's Drop was stored under before ticket 0691. */
+const BRICK_BLOCK_ID = 'brickBlock'
 
 /** A layer's Technique settings as a stored record may hold them: the map, and an earlier version's flat Brick block. */
 export interface FlatWeave {
@@ -36,23 +40,45 @@ export interface FlatProject extends Omit<Project, 'layers'> {
  * normalizeProject reads it. */
 export type SavedProject = Omit<FlatProject, 'frame'> & FlatWeave & { frame?: FrameSheet & FlatWeave }
 
-/** A stored Project of an earlier version with each layer's flat Brick block moved into its settings map, where it wins
- * over the map as it did when both were read. An unreadable one is dropped, so the layer reads as the default. */
+/** A stored Project of an earlier version with each layer's Brick block in its settings map as brick stitch's Drop: a
+ * flat one wins over the map's, as it did when both were read; an unreadable flat one is dropped, so the layer reads as
+ * the default. */
 export function liftFlatWeave<T extends FlatWeave & { frame?: object }>(stored: T): T {
-  const project = lifted(stored)
-  return project.frame ? { ...project, frame: lifted(project.frame) } : project
+  return withEachLayer(stored, lifted)
+}
+
+/** A stored Project of file version 11, whose layers' settings were maps already, with each map's Brick block renamed
+ * brick stitch's Drop; a flat field beside the map is not read, as it never was. */
+export function renamedBrickBlocks<T extends FlatWeave & { frame?: object }>(stored: T): T {
+  return withEachLayer(stored, renamedBrickBlock)
+}
+
+/** A flat stored Project with `read` applied to the Canvas's own fields and to its Frame sheet, where it has one. */
+function withEachLayer<T extends FlatWeave & { frame?: object }>(stored: T, read: <L extends FlatWeave>(layer: L) => L): T {
+  const project = read(stored)
+  return project.frame ? { ...project, frame: read(project.frame) } : project
 }
 
 function lifted<T extends FlatWeave>(layer: T): T {
-  const { brickBlock, ...rest } = layer
+  const { brickBlock, ...rest } = renamedBrickBlock(layer)
   if (!isBrickBlock(brickBlock)) return rest as T
-  const settings = isSettingsMap(layer.techniqueSettings) ? layer.techniqueSettings : {}
-  return { ...rest, techniqueSettings: { ...settings, [BRICK_BLOCK_SETTING.id]: brickBlock } } as T
+  const settings = isSettingsMap(rest.techniqueSettings) ? rest.techniqueSettings : {}
+  const techniqueSettings: TechniqueSettings = { ...settings, [BRICK_DROP_SETTING.id]: brickBlock }
+  return { ...rest, techniqueSettings } as T
+}
+
+/** A layer whose settings map holds a Brick block (file v11–v12, library v4–v5) with it renamed brick stitch's Drop;
+ * one without is returned as it is. */
+export function renamedBrickBlock<T extends Pick<FlatWeave, 'techniqueSettings'>>(layer: T): T {
+  const settings = layer.techniqueSettings
+  if (!isSettingsMap(settings) || !(BRICK_BLOCK_ID in settings)) return layer
+  const { [BRICK_BLOCK_ID]: brickBlock, ...rest } = settings
+  return { ...layer, techniqueSettings: { ...rest, [BRICK_DROP_SETTING.id]: brickBlock } }
 }
 
 /** A stored Brick block if it is a whole number within its setting's range. */
 function isBrickBlock(value: unknown): value is number {
-  return typeof value === 'number' && Number.isInteger(value) && value >= BRICK_BLOCK_SETTING.min && value <= BRICK_BLOCK_SETTING.max
+  return typeof value === 'number' && Number.isInteger(value) && value >= BRICK_DROP_SETTING.min && value <= BRICK_DROP_SETTING.max
 }
 
 /** Whether a stored settings map is one: an object of named values, not a list or anything else. */

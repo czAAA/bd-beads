@@ -12,7 +12,7 @@ import type { Technique, TechniqueSettings, Weave } from './weave'
 export type WeaveChange = { technique: Technique; techniqueSettings?: TechniqueSettings } | { techniqueSettings: TechniqueSettings }
 
 /** The layer's Weave switched to another Technique, or to its own with other settings (ADR 0038, ticket 0625): each
- * setting given replaces the layer's, and the rest are held as `heldSettings` says (a Brick block stays, one the
+ * setting given replaces the layer's, and the rest are held as `heldSettings` says (another Technique's Drop stays, one the
  * Technique describes and the layer lacks is its default). */
 export function switchedWeave(current: Weave, technique: Technique, settings: TechniqueSettings = {}): Weave {
   return weaveOf({ technique, techniqueSettings: { ...current.techniqueSettings, ...settings } })

@@ -51,7 +51,7 @@ function lastFrame(deps: ReturnType<typeof setup>['deps']) {
   const last = deps.replaceProject.mock.calls.at(-1)?.[0]
   const frame = last && frameSheetOf(last)
   if (!frame) return undefined
-  const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
+  const { beads: _beads, name: _name, technique: _technique, techniqueSettings: _settings, ...rectangle } = frame
   return rectangle
 }
 
@@ -237,7 +237,7 @@ describe('useFrameFlow', () => {
     })
 
     it('counts several rows added on top', () => {
-      const { deps, setTo } = setup(withLayers(woven('brick'), { techniqueSettings: { brickBlock: 4 } }))
+      const { deps, setTo } = setup(withLayers(woven('brick'), { techniqueSettings: { brickDrop: 4 } }))
       setTo({ row: 11, column: 0, rows: 4, columns: 4 })
       expect(deps.showToast).toHaveBeenCalledWith('frame-snapped', 'Added 3 empty rows on top: a Frame must start on an unshifted row.', 'info')
     })
@@ -400,11 +400,11 @@ describe('useFrameFlow', () => {
       expect(canvasOf(deps.harness.project).technique).toBe('brick')
     })
 
-    it('changes the Brick block of the Canvas alone', () => {
+    it('changes the Drop of the Canvas alone', () => {
       const { deps, setWeaveSetting } = setup(withLayers(sized, { technique: 'brick' }))
-      setWeaveSetting('canvas', 'brickBlock', 3)
-      expect(canvasOf(deps.harness.project).techniqueSettings?.brickBlock).toBe(3)
-      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock).toBeUndefined()
+      setWeaveSetting('canvas', 'brickDrop', 3)
+      expect(canvasOf(deps.harness.project).techniqueSettings?.brickDrop).toBe(3)
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickDrop).toBeUndefined()
     })
   })
 
@@ -426,12 +426,12 @@ describe('useFrameFlow', () => {
       expect(frameOf(deps.harness.project)).toMatchObject({ technique: 'brick', folded })
     })
 
-    it('takes a Brick block kept from before back to brick stitch (ticket 477)', () => {
+    it('takes brick stitch\'s Drop kept from before back to brick stitch (ticket 477)', () => {
       const { deps, setLayerTechnique, setWeaveSetting } = setup(withLayers(drawnCanvas, { technique: 'brick' }))
-      setWeaveSetting('canvas', 'brickBlock', 3)
+      setWeaveSetting('canvas', 'brickDrop', 3)
       setLayerTechnique('canvas', 'loom')
       setLayerTechnique('canvas', 'brick')
-      expect(layersView(deps.harness.project)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+      expect(layersView(deps.harness.project)).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
     })
 
@@ -442,32 +442,54 @@ describe('useFrameFlow', () => {
     })
   })
 
-  describe('the Brick block (ticket 477)', () => {
+  describe('the Drop (tickets 477, 0691)', () => {
     const brick = withLayers(sized, { frame: { ...frameOf(sized)!, technique: 'brick' as const } })
 
-    it('changes the Brick block as one announced undo step, keeping every bead and the Frame row', () => {
+    it('changes brick stitch\'s Drop as one announced undo step, keeping every bead and the Frame row', () => {
       const { deps, setWeaveSetting } = setup(brick)
       const before = deps.harness.project
-      setWeaveSetting('frame', 'brickBlock', 3)
-      expect(layersView(deps.harness.project)).toMatchObject({ frame: { ...frameSheetOf(before), techniqueSettings: { brickBlock: 3 } }, beads: beadsOfLayer(before, 'canvas') })
-      expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
+      setWeaveSetting('frame', 'brickDrop', 3)
+      expect(layersView(deps.harness.project)).toMatchObject({ frame: { ...frameSheetOf(before), techniqueSettings: { brickDrop: 3 } }, beads: beadsOfLayer(before, 'canvas') })
+      expect(deps.announce).toHaveBeenCalledWith('Drop changed to 3')
       deps.harness.history.onUndo()
-      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock ?? 1).toBe(1)
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickDrop ?? 1).toBe(1)
       deps.harness.history.onRedo()
-      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock).toBe(3)
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.brickDrop).toBe(3)
     })
 
     it('is no step for the number already used', () => {
       const { deps, setWeaveSetting } = setup(brick)
-      setWeaveSetting('frame', 'brickBlock', 1)
+      setWeaveSetting('frame', 'brickDrop', 1)
       expect(deps.replaceProject).not.toHaveBeenCalled()
     })
 
     it('changes it over drawn beads, keeping every one (ticket 0626)', () => {
       const drawn = withLayers(brick, { frame: { ...frameOf(brick)!, beads: { 0: { 0: '#111111', 1: '#222222' } } } })
       const { deps, setWeaveSetting } = setup(drawn)
-      setWeaveSetting('frame', 'brickBlock', 2)
-      expect(frameOf(deps.harness.project)).toMatchObject({ techniqueSettings: { brickBlock: 2 }, beads: frameOf(drawn)!.beads })
+      setWeaveSetting('frame', 'brickDrop', 2)
+      expect(frameOf(deps.harness.project)).toMatchObject({ techniqueSettings: { brickDrop: 2 }, beads: frameOf(drawn)!.beads })
+    })
+
+    it('changes peyote\'s Drop as one announced undo step, keeping every bead, and brick stitch\'s kept off it (ticket 0691)', () => {
+      const drawn = withLayers(sized, { frame: { ...frameOf(sized)!, technique: 'peyote' as const, techniqueSettings: { brickDrop: 3 }, beads: { 0: { 0: '#111111', 1: '#222222' } } } })
+      const { deps, setWeaveSetting, setTechnique } = setup(drawn)
+      setWeaveSetting('frame', 'peyoteDrop', 2)
+      expect(frameOf(deps.harness.project)).toMatchObject({ techniqueSettings: { brickDrop: 3, peyoteDrop: 2 }, beads: frameOf(drawn)!.beads })
+      expect(deps.announce).toHaveBeenCalledWith('Drop changed to 2')
+      setTechnique('brick')
+      setTechnique('peyote')
+      expect(frameOf(deps.harness.project)?.techniqueSettings).toEqual({ brickDrop: 3, peyoteDrop: 2 })
+      deps.harness.history.onUndo()
+      deps.harness.history.onUndo()
+      deps.harness.history.onUndo()
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.peyoteDrop ?? 1).toBe(1)
+    })
+
+    it('leaves the Frame\'s Drop alone while Row progress is on', () => {
+      const peyote = withLayers(sized, { frame: { ...frameOf(sized)!, technique: 'peyote' as const } })
+      const { deps, setWeaveSetting } = setup(moveToRow(peyote, 1))
+      setWeaveSetting('frame', 'peyoteDrop', 2)
+      expect(frameOf(deps.harness.project)?.techniqueSettings?.peyoteDrop ?? 1).toBe(1)
     })
   })
 
@@ -507,6 +529,12 @@ describe('useFrameFlow', () => {
       const { deps, stepEdge } = setup(withLayers(sized, { technique: 'peyote', frame: { technique: 'peyote' as const, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
       stepEdge('top', 1)
       expect(lastFrame(deps)).toEqual({ row: 2, column: 0, rows: 8, columns: 3 })
+    })
+
+    it('steps the top edge by 2N rows on peyote with a Drop of N (ticket 0691)', () => {
+      const { deps, stepEdge } = setup(withLayers(sized, { technique: 'peyote', frame: { technique: 'peyote' as const, techniqueSettings: { peyoteDrop: 2 }, row: 4, column: 0, rows: 6, columns: 3, beads: {} } }))
+      stepEdge('top', 1)
+      expect(lastFrame(deps)).toEqual({ row: 0, column: 0, rows: 10, columns: 3 })
     })
 
     it('does nothing with no Frame, or once Row progress holds it (ticket 411)', () => {

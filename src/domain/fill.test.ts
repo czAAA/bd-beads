@@ -8,7 +8,7 @@ import { fillArea } from './fill'
 import type { GridPosition } from './grid'
 import { gridGeometry } from './layerGeometry'
 import type { LayerSheet } from './layers'
-import { BRICK_BLOCK_SETTING, type Technique, type Weave } from './weave'
+import { BRICK_DROP_SETTING, type Technique, type Weave } from './weave'
 import { fillAt } from '../testUtils/layers'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 
@@ -94,7 +94,7 @@ describe('fillArea floods the same beads as one neighbour at a time', () => {
     { technique: 'loom' },
     { technique: 'peyote' },
     { technique: 'brick' },
-    { technique: 'brick', techniqueSettings: { [BRICK_BLOCK_SETTING.id]: 3 } },
+    { technique: 'brick', techniqueSettings: { [BRICK_DROP_SETTING.id]: 3 } },
   ]
 
   /** A seeded jumble of two colors and gaps over a block, its four corners painted so the beads' box is the block. */
