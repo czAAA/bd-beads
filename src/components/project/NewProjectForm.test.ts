@@ -3,7 +3,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import NewProjectForm from './NewProjectForm.vue'
 import { PANEL_CONTEXT } from '../shell/panelContext'
-import { BEAD_CATALOG, beadLabel } from '../../domain/beads'
+import { BEAD_CATALOG } from '../../domain/beads'
 import { chooseBeadInSection } from '../../testUtils/beadPicker'
 import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
@@ -85,14 +85,12 @@ describe('NewProjectForm', () => {
     ])
   })
 
-  it('shows the selected bead label as the name placeholder', async () => {
+  it('shows the selected bead label as the name placeholder, its Form factor untranslated (ticket 0692)', async () => {
     const wrapper = mount(NewProjectForm)
 
     await chooseBeadInSection(wrapper, BEAD_CATALOG[1]!.id)
 
-    expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe(
-      beadLabel(BEAD_CATALOG[1]!, ru.formFactors),
-    )
+    expect(wrapper.find('[data-testid="name-input"]').attributes('placeholder')).toBe('TOHO Round 11/0')
   })
 
   it('emits the trimmed custom name when one is typed', async () => {

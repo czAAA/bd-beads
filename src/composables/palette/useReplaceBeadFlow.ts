@@ -46,14 +46,14 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
 
     const t = deps.messages()
     if (pending.value?.layer === 'canvas' && frameOf(project)) {
-      return fillBlanks(t.replaceBead.canvasMessage, { bead: beadLabel(bead, t.formFactors) })
+      return fillBlanks(t.replaceBead.canvasMessage, { bead: beadLabel(bead) })
     }
     const unitLabels = { mm: t.form.unitMm, cm: t.form.unitCm }
     const estimateWith = (candidate: Bead | undefined) =>
       candidate ? formatSizeMm(estimatedSizeMm(project, candidate), unitLabels, deps.locale()) : '—'
 
     return fillBlanks(t.replaceBead.confirmMessage, {
-      bead: beadLabel(bead, t.formFactors),
+      bead: beadLabel(bead),
       new: estimateWith(bead),
       old: estimateWith(beadOfLayer(project, 'frame').bead),
     })

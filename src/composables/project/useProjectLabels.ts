@@ -29,7 +29,7 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
       return undefined
     }
     const bead = resolveProjectBead(project)
-    return bead ? beadLabel(bead, deps.messages().formFactors) : deps.messages().projects.unknownBeadLabel
+    return bead ? beadLabel(bead) : deps.messages().projects.unknownBeadLabel
   })
 
   /** The Project's accessible name (ScreenReaders card): "Logo panel, 40 by 30 beads, 2 colors, row 12 of 30 done". */

@@ -45,7 +45,7 @@ _Avoid_: color library, swatch catalog
 The one shared list every Brand's own finish wording is mapped onto: transparent, opaque, ceylon, silver-lined, luster, matte, rainbow, metallic, plated (ticket 536). A code keeps the maker's wording beside it for display (Miyuki's "Opaque · Metallic" is metallic). Where Miyuki gives several tags, the first of plated, metallic, rainbow, matte, silver-lined, luster wins, else its glass type decides.
 
 **Form factor**:
-The shape of a family of Beads (e.g. round, Delica, cube), a lookup row that carries its outline and its number and direction of holes, so a new shape is data, not code (ADR 0072). Its name is a translation, by a plain name key that a test checks in every language, so a new shape is its row and its strings (ADR 0078). In a Real Bead shape it decides the outline of a project cell.
+The shape of a family of Beads (e.g. round, Delica, cube), a lookup row that carries its outline and its number and direction of holes, so a new shape is data, not code (ADR 0072). Its name is a literal, the same in every language as the maker names it on the bag (Round, Cube, Delica), held once in the domain by its name key, so a new shape is its row and its name (ADR 0078, ticket 0692). In a Real Bead shape it decides the outline of a project cell.
 _Avoid_: bead outline
 **Brand**:
 The maker of a Bead (TOHO, Miyuki), a lookup row with a literal name and, for a Brand with a set of its own, its color families (ADR 0078): they are the Project's built-in colors and the base of its Color catalog's generated swatches, and a Brand without them takes the twelve. A layer's Bead copy saves the Brand's id and name only. Not the app's Wordmark.

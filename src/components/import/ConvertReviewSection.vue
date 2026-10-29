@@ -70,7 +70,7 @@ const summary = computed(() => {
 const gramsNote = computed(() => {
   const perGram = beadsPerGram(bead.value)
   return perGram
-    ? `${fillBlanks(t.value.print.gramsNote, { count: groupThousands(perGram, locale.value), bead: `${formFactorName(bead.value.formFactor, t.value.formFactors)} ${bead.value.size}` })} ${t.value.print.spares}`
+    ? `${fillBlanks(t.value.print.gramsNote, { count: groupThousands(perGram, locale.value), bead: `${formFactorName(bead.value.formFactor)} ${bead.value.size}` })} ${t.value.print.spares}`
     : undefined
 })
 </script>
