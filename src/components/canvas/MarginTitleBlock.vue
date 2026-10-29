@@ -17,22 +17,25 @@ import { letterInk } from '../../rendering/beadLook'
 import EditableLine from '../project/EditableLine.vue'
 import PanelPicker from '../shell/PanelPicker.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
+import IconButton from '../ui/IconButton.vue'
 
-// The margin sheet's title block (MarginSheet card, ticket 0657), in its bottom-right corner like a drawing's: the
-// Frame's name, its Technique and "by" the maker, each edited in place, then its size in beads and in cm, the lettered
-// legend and the Letters switch. It only asks; the shell's flows do the work, as from the Frame and Project panels.
-const props = defineProps<{ project: Project }>()
+// The margin sheet's title block (MarginSheet card, tickets 0657, 0658), in its bottom-right corner like a drawing's:
+// the name, Technique and maker edited in place, the sizes, the lettered legend, Letters and fold; compact, one row of
+// them. It only asks; the shell's flows do the work, as from the Frame and Project panels.
+const props = withDefaults(defineProps<{ project: Project; form?: 'full' | 'compact' }>(), { form: 'full' })
 
 const emit = defineEmits<{
   rename: [name: string]
   'set-technique': [technique: Technique]
   'save-maker-name': [name: string]
   'set-letters': [on: boolean]
+  fold: []
 }>()
 
 const { t, locale } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const techniqueAction = controlAction('change-technique')
+const foldAction = controlAction('fold-title-block')
 const frame = computed(() => props.project.frame!)
 
 /** The Frame's Technique, the one its rows are woven in; locked with its reason once a pass is done. */
@@ -75,54 +78,63 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 </script>
 
 <template>
-  <div class="margin-title" data-testid="margin-title-block">
-    <div class="margin-title__cell margin-title__name">
-      <EditableLine
-        bare
-        :label="t.panels.project.nameLabel"
-        :value="frame.name ?? ''"
-        :edit-label="t.frame.nameEdit"
-        :edit-tooltip="t.frame.nameTooltip"
-        :empty-text="t.frame.nameEmpty"
-        :maxlength="MAX_PIECE_NAME"
-        :normalize="(raw) => raw.trim()"
-        testid="margin-frame-name"
-        @save="emit('rename', $event)"
-      />
-    </div>
-    <div class="margin-title__cell margin-title__value">
-      <span class="margin-title__text" data-testid="margin-technique">{{ techniqueName(t, technique) }}</span>
-      <PanelPicker
-        bare
-        icon-only="pencil"
-        :model-value="technique"
-        :label="t.frame.margin.changeTechnique"
-        :options="options"
-        :disabled="techniqueLocked"
-        :disabled-body="techniqueLocked ? techniqueAction.disabledBody?.(t, deps) : undefined"
-        data-testid="margin-technique-picker"
-        @update:model-value="emit('set-technique', $event)"
-      />
-    </div>
-    <div class="margin-title__cell margin-title__value margin-title__maker">
-      <span v-if="by.before" class="margin-title__meta">{{ by.before }}</span>
-      <EditableLine
-        bare
-        :label="t.panels.project.makerLabel"
-        :value="project.makerName ?? ''"
-        :edit-label="t.panels.project.changeMaker"
-        :empty-text="t.saveBox.yourName"
-        :placeholder="t.saveBox.yourName"
-        :maxlength="MAX_MAKER_NAME"
-        :normalize="(raw) => raw.trim()"
-        testid="margin-maker"
-        @save="emit('save-maker-name', $event)"
-      />
-      <span v-if="by.after" class="margin-title__meta">{{ by.after }}</span>
-    </div>
+  <div class="margin-title" :class="`margin-title--${form}`" data-testid="margin-title-block">
+    <template v-if="form === 'full'">
+      <div class="margin-title__cell margin-title__name">
+        <EditableLine
+          bare
+          :label="t.panels.project.nameLabel"
+          :value="frame.name ?? ''"
+          :edit-label="t.frame.nameEdit"
+          :edit-tooltip="t.frame.nameTooltip"
+          :empty-text="t.frame.nameEmpty"
+          :maxlength="MAX_PIECE_NAME"
+          :normalize="(raw) => raw.trim()"
+          testid="margin-frame-name"
+          @save="emit('rename', $event)"
+        />
+      </div>
+      <div class="margin-title__cell margin-title__value">
+        <span class="margin-title__text" data-testid="margin-technique">{{ techniqueName(t, technique) }}</span>
+        <PanelPicker
+          bare
+          icon-only="pencil"
+          :model-value="technique"
+          :label="t.frame.margin.changeTechnique"
+          :options="options"
+          :disabled="techniqueLocked"
+          :disabled-body="techniqueLocked ? techniqueAction.disabledBody?.(t, deps) : undefined"
+          data-testid="margin-technique-picker"
+          @update:model-value="emit('set-technique', $event)"
+        />
+      </div>
+      <div class="margin-title__cell margin-title__value margin-title__maker">
+        <span v-if="by.before" class="margin-title__meta">{{ by.before }}</span>
+        <EditableLine
+          bare
+          :label="t.panels.project.makerLabel"
+          :value="project.makerName ?? ''"
+          :edit-label="t.panels.project.changeMaker"
+          :empty-text="t.saveBox.yourName"
+          :placeholder="t.saveBox.yourName"
+          :maxlength="MAX_MAKER_NAME"
+          :normalize="(raw) => raw.trim()"
+          testid="margin-maker"
+          @save="emit('save-maker-name', $event)"
+        />
+        <span v-if="by.after" class="margin-title__meta">{{ by.after }}</span>
+      </div>
+    </template>
+    <!-- Compact, the name and the Technique are read only: the Frame panel and the full form edit them. -->
+    <template v-else>
+      <div class="margin-title__cell margin-title__name" data-testid="margin-frame-name">
+        <span class="margin-title__ellipsis" :class="{ 'margin-title__empty': !frame.name }">{{ frame.name || t.frame.nameEmpty }}</span>
+      </div>
+      <div class="margin-title__cell margin-title__value" data-testid="margin-technique">{{ techniqueName(t, technique) }}</div>
+    </template>
     <div class="margin-title__cell margin-title__meta" data-testid="margin-size">{{ size }}</div>
     <div class="margin-title__cell margin-title__meta" data-testid="margin-estimate">{{ estimate }}</div>
-    <div class="margin-title__cell margin-title__legend" role="img" :aria-label="legendLabel" data-testid="margin-legend">
+    <div v-if="form === 'full'" class="margin-title__cell margin-title__legend" role="img" :aria-label="legendLabel" data-testid="margin-legend">
       <span v-for="color in shownLegend" :key="color.hex" class="margin-title__disc" :style="{ background: color.hex, color: color.ink }" aria-hidden="true">{{ color.letter }}</span>
       <span v-if="moreColors" class="margin-title__meta" aria-hidden="true" data-testid="margin-legend-more">+{{ moreColors }}</span>
     </div>
@@ -130,22 +142,30 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
       <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
       <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
     </div>
+    <div class="margin-title__cell margin-title__fold">
+      <IconButton variant="plain" :icon-size="12" :action="foldAction" data-testid="margin-title-fold" @click="emit('fold')" />
+    </div>
   </div>
 </template>
 
 <style scoped>
 /* Two rows of 23px with 1px rules between the cells, on `margin-title`, its bottom-right corner rounded with the inner
  * border (MarginSheet card). Row 1: the name, the Technique, "by" the maker over two cells; row 2: the sizes, the
- * legend, Letters. */
+ * legend, Letters; the fold button over both. Compact: one 22px row (ticket 0658). */
 .margin-title {
   display: grid;
-  grid-template-columns: repeat(4, max-content);
+  grid-template-columns: repeat(5, max-content);
   grid-template-rows: repeat(2, var(--margin-title-row));
   box-sizing: border-box;
   color: var(--ink);
   background: var(--margin-title);
   border: 1px solid var(--margin-line);
   border-radius: 0 0 var(--radius-sm) 0;
+}
+
+.margin-title--compact {
+  grid-template-columns: repeat(6, max-content);
+  grid-template-rows: var(--margin-done-compact);
 }
 
 .margin-title__cell {
@@ -159,13 +179,22 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
   border-bottom: 1px solid var(--margin-line);
 }
 
-/* The last cell of a row has the block's own edge; the second row has no rule below. */
-.margin-title__maker,
-.margin-title__letters {
+/* The fold button has the block's own edge; the second row, and the compact one, have no rule below. */
+.margin-title__fold {
+  grid-row: 1 / 3;
+  grid-column: 5;
+  justify-content: center;
+  padding: 0 var(--space-2);
   border-right: 0;
 }
 
-.margin-title__cell:nth-child(n + 4) {
+.margin-title--compact .margin-title__fold {
+  grid-row: 1;
+  grid-column: 6;
+}
+
+.margin-title__cell:nth-child(n + 4),
+.margin-title--compact .margin-title__cell {
   border-bottom: 0;
 }
 
@@ -184,6 +213,31 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
 
 .margin-title__name {
   font: var(--margin-title-name);
+}
+
+/* Compact, the name is 11px, as on its tab (MarginSheet card, Zoom forms). */
+.margin-title--compact .margin-title__name {
+  font: var(--margin-tab-name);
+}
+
+.margin-title__ellipsis {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.margin-title__empty {
+  color: var(--muted);
+}
+
+/* The fold button: 18px, a 12px icon, no fill, hover `ink` at 10%. */
+.margin-title__fold :deep(.icon-btn) {
+  width: var(--margin-pencil);
+  height: var(--margin-pencil);
+  border-radius: var(--radius-sm);
+}
+
+.margin-title__fold :deep(.icon-btn:hover) {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
 }
 
 .margin-title__value,

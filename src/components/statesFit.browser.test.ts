@@ -18,6 +18,7 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
 import { paintAt } from '../testUtils/layers'
+import { frameOutsetPx } from '../rendering/rulerScale'
 import { armSelectionBar } from '../testUtils/pill'
 import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
@@ -121,14 +122,20 @@ const MarginColorPopoverHost = defineComponent({
 
 /** The margin sheet at 100% round a 30-column Frame, in a box that scrolls sideways as the drawing area pans: on a
  * phone the sheet is wider than the screen, and the canvas is moved to reach the rest (ticket 0657). */
-const MarginSheetHost = defineComponent({
-  setup() {
-    const bare: Project = { ...empty, makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } }
-    const project = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
-    const anchor = { box: { left: 65, top: 65, width: 554, height: 158 }, sheet: { left: 0, top: 0, width: 684, height: 288 }, band: 72, viewport: { width: 684, height: 288 } }
-    return () => h('div', { style: { position: 'relative', overflowX: 'auto', width: '100%', height: '320px' } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])
-  },
-})
+const marginSheetHost = (zoom: number) =>
+  defineComponent({
+    setup() {
+      const bare: Project = { ...empty, makerName: 'Ada', frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom' as const, beads: {}, name: 'Sun band' } }
+      const project = createPalette(defaultPaletteIds()).colors.map((color) => color.hex).reduce((drawn, color, column) => paintAt(drawn, [{ row: 0, column }], color), bare)
+      // Beads of 20px at 100%, the line out from them, the sheet 4 beads round them (ticket 0658's forms by zoom).
+      const band = 80 * zoom
+      const outset = frameOutsetPx(zoom)
+      const beads = { width: 600 * zoom, height: 160 * zoom }
+      const sheet = { left: 0, top: 0, width: beads.width + 2 * band, height: beads.height + 2 * band }
+      const anchor = { box: { left: band - outset, top: band - outset, width: beads.width + 2 * outset, height: beads.height + 2 * outset }, sheet, band, viewport: { width: sheet.width, height: sheet.height } }
+      return () => h('div', { style: { position: 'relative', overflowX: 'auto', width: '100%', height: `${sheet.height + 32}px` } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })])
+    },
+  })
 
 const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
@@ -137,7 +144,9 @@ const CASES: FitCase[] = [
   ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, { ...empty, id: 'b', name: 'Fox' }, { ...empty, id: 'c', name: 'Owl' }, { ...empty, id: 'd', name: 'Hare' }], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
-  ['MarginSheet', MarginSheetHost, {}],
+  ['MarginSheet', marginSheetHost(1), {}],
+  ['MarginSheet (compact)', marginSheetHost(0.66), {}],
+  ['MarginSheet (folded)', marginSheetHost(0.4), {}],
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
   [
     'ContextBar',

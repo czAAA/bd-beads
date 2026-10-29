@@ -14,11 +14,12 @@ async function box(page: Page, testid: string): Promise<Box> {
 
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 
-for (const zoom of [10, 100, 400]) {
+// The sheet's full form, from 85% (ticket 0658): under it the tools are compact or folded, and at 10% the sheet holds none.
+for (const zoom of [100, 400]) {
   test(`the handle, pencil and bar keep their size, and the handle and pencil clear each other, at ${zoom}%`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
-    await openApp(page, [fixtureProject({ technique: 'loom' })])
+    await openApp(page, [fixtureProject({ technique: 'loom', columns: 40 })])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     // Zoom first: a press on the strip's zoom buttons closes the bar, as it does Menu and Project (ticket 475).
     await setZoom(page, zoom)
