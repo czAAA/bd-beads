@@ -5,5 +5,5 @@ import type { SettingWords, Translations } from './translations'
  * fails on it) reads as itself. */
 export function weaveSettingWords(t: Translations, setting: Pick<SettingSpec, 'labelKey'>): SettingWords {
   const key = setting.labelKey
-  return t.weaveSettings[key] ?? { label: key, less: key, more: key, value: key, locked: key, changed: key }
+  return t.weaveSettings[key] ?? { label: key, less: key, more: key, value: key, locked: key, changed: key, short: key }
 }

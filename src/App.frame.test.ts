@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { frameWeave } from './domain/layerWeave'
+import { weaveSettings } from './domain/weave'
 import { flushPromises, mount } from '@vue/test-utils'
 import App from './App.vue'
 import { withColors, type Rect } from './domain/canvas'
@@ -291,5 +293,14 @@ describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
     await wrapper.get('[data-testid="margin-export"]').trigger('click')
     await flushPromises()
     expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
+  })
+
+  it('sets the Frame\'s Drop from its title block\'s stepper (ticket 0698)', async () => {
+    const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'brick' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
+    await wrapper.get('[data-testid="margin-brick-drop-edit"]').trigger('click')
+    await flushPromises()
+    await wrapper.get('[data-testid="margin-brick-drop-stepper-more"]').trigger('click')
+    await flushPromises()
+    expect(weaveSettings(frameWeave(loadProjects()[0]!))).toEqual({ brickDrop: 2 })
   })
 })

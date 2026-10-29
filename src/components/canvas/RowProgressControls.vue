@@ -19,9 +19,12 @@ const props = withDefaults(defineProps<{
   /** Whether the Canvas draws the Row progress look (ticket 474): the Switch is on while it does. */
   rowHighlight?: boolean
   form: 'bar' | 'margin' | 'compact' | 'folded'
+  /** On the margin, what a row too narrow for the whole form gives up (ticket 0698): 1 the track, 2 the counter too, so
+   * Row done and Row highlight go last. */
+  drop?: 0 | 1 | 2
   /** The prefix of the controls' test ids, so the two places can be told apart. */
   testid: string
-}>(), { rowHighlight: true })
+}>(), { rowHighlight: true, drop: 0 })
 
 const emit = defineEmits<{
   'move-row': [delta: number]
@@ -86,14 +89,20 @@ const directionLabel = computed(() => {
 
 type Item = 'direction' | 'highlight' | 'reset' | 'position' | 'counter' | 'track' | 'divider' | 'steps'
 /** The bar's order (ProgressBar card), and the margin's, which puts Reset beside Turn row direction and sets the
- * counter off with dividers, then its smaller forms (MarginSheet card, Zoom forms). */
+ * counter off with dividers, then its smaller forms, which keep Row highlight beside Row done (MarginSheet card, Zoom
+ * forms; ticket 0698). */
 const ITEMS: Record<typeof props.form, readonly Item[]> = {
   bar: ['direction', 'highlight', 'reset', 'position', 'counter', 'track', 'steps'],
   margin: ['direction', 'reset', 'highlight', 'divider', 'counter', 'track', 'divider', 'steps'],
-  compact: ['counter', 'track', 'steps'],
-  folded: ['counter', 'steps'],
+  compact: ['highlight', 'counter', 'track', 'steps'],
+  folded: ['highlight', 'counter', 'steps'],
 }
-const items = computed(() => ITEMS[props.form])
+/** What each drop leaves out: the track, then the counter with the divider that set it off. */
+const DROPPED: Record<0 | 1 | 2, readonly Item[]> = { 0: [], 1: ['track'], 2: ['track', 'counter'] }
+const items = computed(() => {
+  const left = ITEMS[props.form].filter((item) => !DROPPED[props.drop].includes(item))
+  return left.filter((item, index) => item !== 'divider' || left[index + 1] !== 'divider')
+})
 const margin = computed(() => props.form !== 'bar')
 /** The smaller forms keep Row done alone: Row not done is the Progress bar's there. */
 const small = computed(() => props.form === 'compact' || props.form === 'folded')
