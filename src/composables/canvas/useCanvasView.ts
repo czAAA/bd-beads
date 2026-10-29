@@ -118,7 +118,7 @@ export function useCanvasView(
   watch(
     // Two sources, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on
     // every bead drawn.
-    [() => currentProject()?.id, () => currentProject()?.rotation],
+    [() => currentProject()?.id, () => orientationOf(currentProject())],
     () => {
       if (measured()) {
         fit()

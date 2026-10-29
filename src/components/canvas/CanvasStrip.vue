@@ -11,7 +11,6 @@ import AppButton from '../ui/AppButton.vue'
 import AppLogo from '../ui/AppLogo.vue'
 import IconButton from '../ui/IconButton.vue'
 import type { OpenPanel } from '../../composables/shell/openPanel'
-import { projectNameOf } from '../../domain/layerRecord'
 
 // The canvas box's header strip on the editor and the Homepage (tickets 143, 540, ADR 0046, ADR 0073; CanvasStrip card):
 // three slots: Menu · Project · Frame on the left, the Brand in the middle, Rotate · Rulers · Undo · Redo, the zoom and Export
@@ -108,7 +107,7 @@ function onPanelsKeydown(event: KeyboardEvent) {
         data-testid="strip-project"
         @click="emit('select-panel', 'project')"
       >
-        <span class="canvas-strip__label">{{ actions.projectNameOf(project)(t) }}</span>
+        <span class="canvas-strip__label">{{ actions.project.name(t) }}</span>
       </AppButton>
       <AppButton
         v-if="project"

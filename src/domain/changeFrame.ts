@@ -310,7 +310,7 @@ function resizedFrame(project: Project, rectangle: Rect): Project {
   const carried = carryNames(project, withLayer(resized, 'canvas', { beads: beadsOver(withColors(beadsOfLayer(project, 'canvas'), lifted), given) }))
   // A named Piece taken whole gives the Frame its name, as Frame from Selection does.
   const name = namedPieceTaken(project, taken) ?? frameOf(resized)!.name
-  return name === undefined ? carried : withFrameSheet(carried, { ...carried.frame!, name })
+  return name === undefined ? carried : withFrameSheet(carried, { ...frameOf(carried)!, name })
 }
 
 /** The Project with a Frame at `rectangle` holding the Canvas's beads inside it (ADR 0066). A Frame there before lays
@@ -382,7 +382,7 @@ function madeCustomFrame(project: Project, rectangle: Rect): Project {
   const made = carryNames(laid, withLayer(withLayer(framed, 'canvas', { beads: canvas }), 'frame', { beads: withColors({}, landed) }))
   // The name stays with the Frame unless Remove Frame left it on a Piece on the Canvas.
   const keepsName = frame.name !== undefined && !pieceNamesOf(made)?.some((entry) => entry.name === frame.name)
-  return keepsName ? withFrameSheet(made, { ...made.frame!, name: frame.name }) : made
+  return keepsName ? withFrameSheet(made, { ...frameOf(made)!, name: frame.name }) : made
 }
 
 /** The fewest rows and columns of a Weave that reach as far on the Canvas as a rectangle of its positions. */

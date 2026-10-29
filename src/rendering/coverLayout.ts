@@ -1,6 +1,5 @@
 import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions } from '../domain/projectExtent'
-import type { Project } from '../domain/project'
 import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER, type PageSize } from './printPlan'
 import type { PrintText } from './printText'
 import { CELL_SIZE_PX } from './cellSize'

@@ -2,7 +2,7 @@
 import { computed, reactive, ref } from 'vue'
 import { DEFAULT_BEAD, findBead, offeredBeads } from '../../domain/beads'
 import { frameShapeOf, type FrameSettingName } from '../../domain/frameShape'
-import { frameOf, layerOf } from '../../domain/layerRecord'
+import { layerOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { formatMm, formatSizeMm } from '../../domain/projectSize'
 import {

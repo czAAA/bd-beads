@@ -91,7 +91,7 @@ function setSetting(id: string, value: number) {
       testid="project"
       :technique="weave.technique"
       :settings="weave.techniqueSettings ?? {}"
-      :techniques="techniquesOf(project.frame)"
+      :techniques="techniquesOf(frameOf(project))"
       :disabled="locked"
       :technique-disabled-body="techniqueAction.disabledBody?.(t, deps)"
       @update:technique="setTechnique"

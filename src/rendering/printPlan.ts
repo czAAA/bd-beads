@@ -2,7 +2,6 @@ import { projectDimensions } from '../domain/projectExtent'
 import { frameWeave } from '../domain/layerWeave'
 import { rotationSwapsAxes, type Rotation } from '../domain/grid'
 import type { Weave } from '../domain/weave'
-import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
 import { heldWeave, type Layered, orientationOf } from '../domain/layerRecord'
@@ -99,7 +98,7 @@ type Shape = Layered
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
 export function displayedGrid(project: Shape) {
-  const { rotation } = project
+  const rotation = orientationOf(project)
   const weave = frameWeave(project)
   const { columns, rows } = projectDimensions(project)
   const step = beadStepPx(weave)

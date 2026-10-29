@@ -1,5 +1,5 @@
 import { forEachBead, hasBeads, type BeadMap, type FrameSheet } from './canvas'
-import { isFrameShape } from './frameShape'
+import { isFrameShape, type QuarterTurns } from './frameShape'
 import { liftFlatWeave, type FlatProject, type FlatWeave, type SavedProject } from './flatWeave'
 import type { FrameLayer, Grid, Project } from './project'
 import type { GridProject, LayeredProject, StoredLayer } from './storedProject'
@@ -205,7 +205,7 @@ function encodeLayer(layer: Project['layers'][number]): EncodedLayer {
  * A Frame's orientation is read back as its quarter turns. */
 export function decodeProject(encoded: EncodedProject): LayeredProject {
   const [canvas, ...frames] = encoded.layers.map(decodeLayer)
-  return { ...encoded, layers: [canvas!, ...frames.map(({ orientation, ...frame }) => ({ ...frame, ...(typeof orientation === 'number' ? { quarterTurns: orientation / 90 } : {}) }))] }
+  return { ...encoded, layers: [canvas!, ...frames.map(({ orientation, ...frame }): StoredLayer => ({ ...frame, ...(typeof orientation === 'number' ? { quarterTurns: (orientation / 90) as QuarterTurns } : {}) }))] }
 }
 
 function decodeLayer({ encodedBeads, encodedFolded, ...layer }: EncodedLayer): StoredLayer {

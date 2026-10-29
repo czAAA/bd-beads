@@ -159,8 +159,9 @@ function drawPieceNames(context: DrawingContext, { project, surface, layout, the
   const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = namedPieces(project)
     .filter((piece) => !covered(piece))
     .map((piece) => ({ ...piece, layer: 'canvas' as const }))
-  if (frame && frameOf(project)?.name) {
-    pieces.push({ ...frame, name: frameOf(project).name, layer: 'frame' })
+  const name = frameOf(project)?.name
+  if (frame && name) {
+    pieces.push({ ...frame, name, layer: 'frame' })
   }
   if (pieces.length === 0) {
     return

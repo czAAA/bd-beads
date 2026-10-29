@@ -4,7 +4,6 @@ import { useI18n } from '../../i18n/useI18n'
 import { canvasBackgrounds } from '../../rendering/canvasBackgrounds'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
-import { frameOf } from '../../domain/layerRecord'
 
 const AUTO = 'auto'
 

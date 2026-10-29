@@ -500,7 +500,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
   }
   if (space.open && rulers && frameEditing && frameOf(project)) {
     drawFrameEditing(context, {
-      frame: frameOf(project),
+      frame: frameOf(project)!,
       surface: rulers.surface,
       pixelRatio,
       theme,

@@ -1,7 +1,6 @@
 import { colorAt } from '../domain/canvas'
 import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions } from '../domain/projectExtent'
-import type { Project } from '../domain/project'
 import type { LayoutPoint } from '../domain/frameLayout'
 import { CELL_SIZE_PX } from './cellSize'
 import { geometryDrawnAlone } from './space'

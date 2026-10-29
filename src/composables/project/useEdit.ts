@@ -81,7 +81,7 @@ export function useEdit(deps: EditDeps) {
     record(project)
     deps.replaceProject(updated)
     // A command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
-    if (!sameFrame(frameOf(project), updated.frame) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
+    if (!sameFrame(frameOf(project), frameOf(updated)) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
       deps.resetAfterFrameChange()
     }
     return { kind: 'applied' }
@@ -179,7 +179,7 @@ export function useEdit(deps: EditDeps) {
     }
     const restored = restoreSnapshot(project, snapshot)
     deps.replaceProject(restored)
-    if (!sameFrame(restored.frame, frameOf(project)) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, 'frame') !== techniqueOf(project, 'frame')) {
+    if (!sameFrame(frameOf(restored), frameOf(project)) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, 'frame') !== techniqueOf(project, 'frame')) {
       deps.resetAfterFrameChange()
     }
   }

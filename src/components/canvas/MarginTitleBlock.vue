@@ -17,7 +17,7 @@ import { letterInk } from '../../rendering/beadLook'
 import EditableLine from '../project/EditableLine.vue'
 import PanelPicker from '../shell/PanelPicker.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
-import { frameOf } from '../../domain/layerRecord'
+import { frameOf, lettersOn } from '../../domain/layerRecord'
 
 // The margin sheet's title block (MarginSheet card, ticket 0657), in its bottom-right corner like a drawing's: the
 // Frame's name, its Technique and "by" the maker, each edited in place, then its size in beads and in cm, the lettered
@@ -129,7 +129,7 @@ const legendLabel = computed(() => legend.value.map((color) => `${color.letter} 
     </div>
     <div class="margin-title__cell margin-title__letters">
       <span class="margin-title__text" aria-hidden="true">{{ t.frame.lettersLabel }}</span>
-      <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
+      <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="margin-letters" @update:model-value="emit('set-letters', $event)" />
     </div>
   </div>
 </template>

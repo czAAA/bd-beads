@@ -74,7 +74,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, more?: (project: Project) => { fileName: string; make: () => Promise<Blob> }[]) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
-    if (!frameOf(project) || exporting.value) {
+    if (!project || !frameOf(project) || exporting.value) {
       return
     }
     exporting.value = extension

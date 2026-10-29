@@ -2,7 +2,7 @@ import { colorAt } from './canvas'
 import type { Rotation } from './grid'
 import { frameRowOrder, rowProgressOf } from './rowProgress'
 import { frameWeave } from './layerWeave'
-import { beadsOfLayer, lettersOn, orientationOf } from './layerRecord'
+import { beadsOfLayer, frameOf, lettersOn, orientationOf } from './layerRecord'
 import type { Project } from './project'
 import { describeWeave } from './weave'
 import type { PassDirection } from './weaveGeometry'
@@ -66,7 +66,7 @@ const ASCENDS: Record<PassDirection, Record<Rotation, boolean>> = {
 
 /** The Word chart of a Project's Frame, or undefined with Letters off or no Frame. */
 export function wordChartOf(project: Project): WordChart | undefined {
-  const { frame } = project
+  const frame = frameOf(project)
   const weave = frameWeave(project)
   const { wordChart, twoPasses } = describeWeave(weave)
   if (!lettersOn(project) || !frame) {

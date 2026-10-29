@@ -39,7 +39,7 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
 
   function onRequestDuplicate() {
     const project = deps.currentProject()
-    if (project) duplicating.value = suggestCopyName(projectNameOf(project), deps.projects().map((existing) => existing.name))
+    if (project) duplicating.value = suggestCopyName(projectNameOf(project), deps.projects().map((existing) => projectNameOf(existing)))
   }
 
   function onCancelDuplicate() {
