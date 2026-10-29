@@ -268,3 +268,25 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
     expect(wrapper.get('[data-testid="progress-bar-reset"]').attributes('aria-disabled')).toBe('true')
   })
 })
+
+describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
+  const sheetProject = () => ({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+
+  it('moves the one pointer from its Row done, which the Progress bar then shows', async () => {
+    const wrapper = await mountOpen(sheetProject())
+    await wrapper.get('[data-testid="margin-progress-next"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="progress-bar-compact-position"]').text()).toBe('2/2')
+  })
+
+  it('opens the Export panel from its Export button, hung from that button', async () => {
+    const wrapper = await mountOpen(sheetProject())
+    await wrapper.get('[data-testid="margin-export"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="margin-export"]').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('[data-testid="margin-export"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
+  })
+})

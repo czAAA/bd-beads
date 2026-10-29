@@ -88,6 +88,8 @@ export const PREFERENCES = {
     parse: normalizeHex,
     write: (hex) => hex ?? null,
   }),
+  /** Whether the Frame's margin sheet shows its title block (ticket 0657, MarginSheet card): on by default. */
+  marginTitleBlock: onUntilOff('openbeads:margin-title-block'),
   // The input mode the person chose (ticket 325): Pen mode or Mouse mode; unset until they choose (ticket 326), so a
   // pen can pick Pen mode.
   inputMode: preference<InputMode | undefined>({

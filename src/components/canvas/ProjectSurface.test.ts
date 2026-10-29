@@ -12,6 +12,7 @@ import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
+import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
@@ -1540,15 +1541,20 @@ describe('ProjectSurface with a Frame', () => {
     await surface.trigger('pointerup', { clientX: to[0], clientY: to[1], pointerId: 1 })
   }
 
-  /** A press on the Move handle's button, handed to the surface the way FrameChrome does (ticket 473). */
+  /** A press on the Move bar's button, handed to the surface the way MarginSheet does (tickets 473, 0657). */
   function pressMoveHandle(wrapper: Awaited<ReturnType<typeof mountSurface>>['wrapper'], at: [number, number], pointerType = 'mouse'): void {
     const event = { button: 0, clientX: at[0], clientY: at[1], pointerId: 1, pointerType, isPrimary: true, preventDefault: () => {} }
     ;(wrapper.vm as unknown as { pressMoveHandle(event: PointerEvent): void }).pressMoveHandle(event as unknown as PointerEvent)
   }
 
-  it('reports the Frame\'s place always, with edit on or off', async () => {
+  it('reports the Frame\'s place always, with edit on or off, and its margin sheet 4 beads round it (ticket 0657)', async () => {
     const { wrapper } = await mountSurface(framed(), 1)
-    expect(wrapper.emitted('frame-anchor')!.at(-1)![0]).toMatchObject({ box: { left: expect.any(Number) } })
+    const anchor = wrapper.emitted('frame-anchor')!.at(-1)![0] as FrameAnchor
+    expect(anchor.box.left).toEqual(expect.any(Number))
+    // A loom bead is 20px at 100%: the band is 4 of them, round the Frame's beads (its line stands 7px out from them).
+    expect(anchor.band).toBe(80)
+    expect(anchor.sheet.left).toBeCloseTo(anchor.box.left + 7 - 80)
+    expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
   })
 
   it('reports no Frame place once the Frame is scrolled wholly out of view, so no control stays on screen', async () => {

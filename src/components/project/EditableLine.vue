@@ -23,6 +23,9 @@ const props = defineProps<{
   normalize: (raw: string) => string
   /** The smaller line (the maker's name). */
   small?: boolean
+  /** A cell of the margin's title block (ticket 0657): no label, the value or the empty text always with its pencil,
+   * and the field floated over the sheet, since the cell is one row of text. */
+  bare?: boolean
   testid: string
 }>()
 const emit = defineEmits<{ save: [value: string] }>()
@@ -58,21 +61,36 @@ function cancel() {
   editing.value = false
   refused.value = false
 }
+
+/** Outside a panel nothing turns Escape into `panel-escape`: the bare line's form cancels on it itself. */
+function cancelByKey(event: KeyboardEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+  cancel()
+}
 </script>
 
 <template>
-  <div class="editable-line" :class="{ 'editable-line--small': small }" :data-testid="`${testid}-row`">
-    <span class="editable-line__label">{{ label }}</span>
+  <div class="editable-line" :class="{ 'editable-line--small': small, 'editable-line--bare': bare }" :data-testid="`${testid}-row`">
+    <span v-if="!bare" class="editable-line__label">{{ label }}</span>
     <div v-if="!editing" class="editable-line__body">
-      <template v-if="value">
-        <span class="editable-line__value" :data-testid="testid">{{ value }}</span>
-        <IconButton variant="plain" icon="pencil" :label="editLabel" :tooltip="{ body: editTooltip }" :data-testid="`${testid}-edit`" @click="start" />
+      <template v-if="value || bare">
+        <span class="editable-line__value" :class="{ 'editable-line__value--empty': !value }" :data-user-text="value ? '' : undefined" :data-testid="testid">{{ value || emptyText }}</span>
+        <IconButton variant="plain" icon="pencil" :icon-size="bare ? 12 : undefined" :label="editLabel" :tooltip="{ body: editTooltip }" :data-testid="`${testid}-edit`" @click="start" />
       </template>
       <button v-else class="ui-control editable-line__empty" type="button" :data-testid="`${testid}-add`" @click="start">
         {{ emptyText }}
       </button>
     </div>
-    <form v-else class="editable-line__form" :data-testid="`${testid}-form`" data-handles-escape @submit.prevent="commit" @panel-escape="cancel">
+    <form
+      v-else
+      class="editable-line__form"
+      :data-testid="`${testid}-form`"
+      data-handles-escape
+      @submit.prevent="commit"
+      @panel-escape="cancel"
+      @keydown.esc="bare && cancelByKey($event)"
+    >
       <div class="editable-line__field">
         <TextField
           :id="fieldId"
@@ -186,6 +204,43 @@ function cancel() {
 .editable-line__counter {
   font: var(--type-meta);
   color: var(--muted);
+}
+
+.editable-line__value--empty {
+  color: var(--muted);
+}
+
+/* The title block's cell (ticket 0657): one line, the pencil 18px; the field floats over the sheet above the cell, on
+ * the panel's own surface. */
+.editable-line--bare {
+  position: relative;
+  gap: var(--space-4);
+  min-height: 0;
+}
+
+.editable-line--bare .editable-line__value {
+  font: inherit;
+  color: inherit;
+}
+
+.editable-line--bare :deep(.icon-btn) {
+  width: var(--margin-pencil);
+  height: var(--margin-pencil);
+  color: var(--body);
+}
+
+.editable-line--bare .editable-line__form {
+  position: absolute;
+  bottom: calc(100% + var(--space-8));
+  left: calc(-1 * var(--space-8));
+  z-index: var(--z-popover);
+  box-sizing: border-box;
+  width: var(--margin-edit-width);
+  padding: var(--space-12);
+  background: var(--overlay-fill);
+  border: 1px solid var(--overlay-line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--elevation-3);
 }
 
 .editable-line__error {

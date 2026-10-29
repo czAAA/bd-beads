@@ -62,7 +62,7 @@ describe('which boxes carry rulers', () => {
 
   it('is the Frame alone, on every side, once it is set, whatever pieces there are', () => {
     const { boxes } = layoutOf(project([...block(0, 0), ...block(10, 10)], { row: 2, column: 3, rows: 4, columns: 5 }))
-    expect(boxes).toEqual([{ technique: 'loom', row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'all' }])
+    expect(boxes).toEqual([{ technique: 'loom', row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'sheet' }])
   })
 
   it('leaves out a box far off screen', () => {
@@ -74,13 +74,22 @@ describe('which boxes carry rulers', () => {
 describe('the numbers of a ruled box', () => {
   const frame = { row: 0, column: 0, rows: 3, columns: 4 }
 
-  it('are every row and column, from 1, above, left, below and right of a Frame', () => {
+  it('are every row and column, from 1, above, left and right of a Frame, none below, where its title block is (ticket 0657)', () => {
     const { labels } = framed(frame)
 
     expect(labels.filter((l) => l.axis === 'column' && l.y < 0).map((l) => l.text)).toEqual(['1', '2', '3', '4'])
-    expect(labels.filter((l) => l.axis === 'column' && l.y > 60).map((l) => l.text)).toEqual(['1', '2', '3', '4'])
+    expect(labels.filter((l) => l.axis === 'column' && l.y > 60).map((l) => l.text)).toEqual([])
     expect(labels.filter((l) => l.axis === 'row' && l.x < 0).map((l) => l.text)).toEqual(['1', '2', '3'])
     expect(labels.filter((l) => l.axis === 'row' && l.x > 80).map((l) => l.text)).toEqual(['1', '2', '3'])
+  })
+
+  it('leave out the side shown at the bottom, whichever way the view is turned (ticket 0657)', () => {
+    const turned = { rotation: 180 as const, centred: frame }
+    const { labels } = framed(frame, turned)
+    const columns = labels.filter((l) => l.axis === 'column')
+    expect(columns.length).toBe(4)
+    expect(columns.every((l) => l.y < 1000)).toBe(true)
+    expect(labels.filter((l) => l.axis === 'row')).toHaveLength(6)
   })
 
   it('stand 3px clear of the line, which is 7px outside the beads, on each side', () => {
@@ -214,11 +223,13 @@ describe('the Ruler dots', () => {
   })
 
   it('shift a brick stitch’s odd rows by half a bead, as the numbers do', () => {
-    const { dots } = framed({ row: 0, column: 0, rows: 4, columns: 12 }, { technique: 'brick', zoom: 0.7 })
+    // Turned a quarter, the first row's and the last row's rulers both stand on screen, at the right and the left.
+    const look = { technique: 'brick' as const, zoom: 0.7, rotation: 90 as const, centred: { row: 0, column: 0, rows: 4, columns: 12 } }
+    const { dots } = framed({ row: 0, column: 0, rows: 4, columns: 12 }, look)
     const columns = dots.filter((d) => d.axis === 'column')
     const first = (side: (d: RulerDot) => boolean) => columns.find(side)!
-    // Row 0 sits unshifted, row 3 is shifted a half bead: the same column's dot is 14 * 0.5 apart sideways.
-    expect(first((d) => d.y > 0).x - first((d) => d.y < 0).x).toBeCloseTo(10 * 0.7)
+    // Row 0 sits unshifted, row 3 is shifted a half bead: the same column's dot is 14 * 0.5 apart along the side.
+    expect(Math.abs(first((d) => d.x > 1000).y - first((d) => d.x < 1000).y)).toBeCloseTo(10 * 0.7)
   })
 
   it('stand on the side the top faces when turned, and give only a Piece’s start sides dots', () => {
@@ -246,9 +257,9 @@ describe('the numbers below 50% zoom (ticket 303)', () => {
     expect(texts(0.5, (l) => l.axis === 'row' && l.x < 0).length).toBeGreaterThan(0)
   })
 
-  it('are only the last one on each side at 49%, columns and rows, above and below, left and right', () => {
+  it('are only the last one on each side at 49%, columns and rows, above, left and right', () => {
     expect(texts(0.49, (l) => l.axis === 'column' && l.y < 0)).toEqual(['100'])
-    expect(texts(0.49, (l) => l.axis === 'column' && l.y > 0)).toEqual(['100'])
+    expect(texts(0.49, (l) => l.axis === 'column' && l.y > 0)).toEqual([])
     expect(texts(0.49, (l) => l.axis === 'row' && l.x < 0)).toEqual(['13'])
     expect(texts(0.49, (l) => l.axis === 'row' && l.x > 0)).toEqual(['13'])
   })
@@ -348,7 +359,7 @@ describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => 
 
 describe('a Custom frame (ticket 0592)', () => {
   it('carries no rulers: its beads lie in rounds, not its rectangle\'s rows and columns', () => {
-    const triangle = { row: 0, column: 0, rows: 12, columns: 10, technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 4 } }
+    const triangle = { row: 0, column: 0, rows: 12, columns: 10, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'peyote', rotation: 0, zoom: 1, viewport: { width: 800, height: 600 } })
     const laid = rulerLayout({ technique: 'peyote', frame: triangle, beads: {} }, surface, { fontPx: 11, numbers: true })
     expect(laid.boxes).toEqual([])

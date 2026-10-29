@@ -609,6 +609,8 @@ export const en: Translations = {
       autoLabel: 'Auto, one step off the Canvas color',
       canvasColorLabel: '{color}, the Canvas color',
       line: 'The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it.',
+      titleBlock: 'Name and size on the margin',
+      changeTechnique: 'Change Technique',
     },
     qualityHintLabel: 'What the lowest quality is for',
     qualityHint: 'Low saves memory: smaller files, and a picture a phone can always make.',
@@ -639,7 +641,7 @@ export const en: Translations = {
     announceMoved: 'Frame moved with its beads',
     announceNothingToFit: 'Nothing drawn yet to fit the Frame to',
     refusedCutsSchema: 'A Frame can’t cut through the Schema “{name}”. Frame all of it, or none of it.',
-    customKinds: { fringeEarring: 'Fringe earring', triangle: 'Triangle', warpedSquare: 'Warped Square', star: 'Star', kaleidocycle: 'Kaleidocycle', kite: 'Kite' },
+    shapes: { fringeEarring: 'Fringe earring', triangle: 'Triangle', warpedSquare: 'Warped Square', star: 'Star', kaleidocycle: 'Kaleidocycle', kite: 'Kite' },
     sizeSettings: {
       topWidth: { label: 'Top width', less: 'One bead fewer in the base row', more: 'One bead more in the base row', summary: { one: 'top {count}', other: 'top {count}' }, announce: 'Top width: {count}' },
       topRows: { label: 'Top rows', less: 'One row fewer', more: 'One row more', summary: { one: '{count} top row', other: '{count} top rows' }, announce: 'Top rows: {count}' },
@@ -668,7 +670,7 @@ export const en: Translations = {
     },
     fringeStyle: { label: 'Fringe style', announce: 'Fringe style: {style}' },
     removeConfirmCustom: 'Its beads are removed with it. This can be undone.',
-    announceCustom: '{kind} frame set, {size}',
+    announceCustom: '{shape} frame set, {size}',
     snapAddedTop: {
       one: 'Added an empty row on top: a Frame must start on an unshifted row.',
       other: 'Added {count} empty rows on top: a Frame must start on an unshifted row.',

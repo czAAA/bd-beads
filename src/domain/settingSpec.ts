@@ -1,12 +1,12 @@
 import { clamp } from './clamp'
 
-// The one shape of a setting a kind describes (ADR 0078, ticket 0624): a Technique's (Brick block) and a Frame
-// kind's (Rounds, Part size, ...) alike, so one generic control edits any of them and a new one is an entry, not wiring.
+// The one shape of a setting a registry entry describes (ADR 0078, ticket 0624): a Technique's (Brick block) and a
+// Frame shape's (Rounds, Part size, ...) alike, so one generic control edits any of them and a new one is an entry, not wiring.
 
-/** One numbered setting of a Technique or a Frame kind: values only, never an expression (ADR 0078). */
+/** One numbered setting of a Technique or a Frame shape: values only, never an expression (ADR 0078). */
 export interface SettingSpec<Id extends string = string> {
   id: Id
-  /** Its words' key: in the `weaveSettings` translations for a Technique's, in `frame.sizeSettings` for a Frame kind's. */
+  /** Its words' key: in the `weaveSettings` translations for a Technique's, in `frame.sizeSettings` for a Frame shape's. */
   labelKey: string
   min: number
   max: number

@@ -1,6 +1,7 @@
 import { changedPositions, frameContains, type BeadMap, type Rect } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
+import { beadsOfLayer } from '../domain/layerRecord'
 import { namedPieces, type NamedPiece } from '../domain/pieceNames'
 import { pieceAreasOf } from '../domain/pieces'
 import { rowCycle } from '../domain/weave'
@@ -25,16 +26,17 @@ const AREA_REACH = 2
  * starts an area of its own), so a stroke step costs its changed rows. The stroke's end counts again. */
 export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking }: { numbers: boolean; stroking: boolean }): RuledPieces {
   const weave = canvasWeave(project)
+  const beads = beadsOfLayer(project, 'canvas')
   const ruled = numbers && !project.frame
   const held = stroking && previous && previous.cycle === rowCycle(weave) && (previous.areas !== undefined) === ruled
   if (!held) {
-    return { beads: project.beads, cycle: rowCycle(weave), areas: ruled ? pieceAreasOf(project.beads, weave) : undefined, named: namedPieces(project) }
+    return { beads, cycle: rowCycle(weave), areas: ruled ? pieceAreasOf(beads, weave) : undefined, named: namedPieces(project) }
   }
-  if (previous.beads === project.beads) return previous
-  const painted = changedPositions(previous.beads, project.beads).filter(({ row, column }) => project.beads[row]?.[column] !== undefined)
+  if (previous.beads === beads) return previous
+  const painted = changedPositions(previous.beads, beads).filter(({ row, column }) => beads[row]?.[column] !== undefined)
   const areas = previous.areas && painted.reduce(grownAreas, previous.areas)
   const named = previous.named.map((piece) => painted.reduce((grown: NamedPiece, at) => (reaches(grown, at, 1) && !frameContains(grown, at) ? { ...grown, ...holding(grown, at) } : grown), piece))
-  return { beads: project.beads, cycle: previous.cycle, areas, named }
+  return { beads, cycle: previous.cycle, areas, named }
 }
 
 function grownAreas(areas: Rect[], at: GridPosition): Rect[] {

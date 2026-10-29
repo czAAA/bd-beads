@@ -1,6 +1,6 @@
 import type { Bead } from './beads'
 import { sizeOf, type FrameSheet, type Sized } from './canvas'
-import { frameSizeMm } from './frameKind'
+import { frameSizeMm } from './frameShape'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type Rotation, type SizeUnit } from './grid'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
@@ -31,8 +31,8 @@ export function formatMm(mm: number, locale: Locale = 'en'): string {
   return trimmedOneDecimal(mm, decimalSign(locale))
 }
 
-/** What a Frame's size is measured from beside its rectangle: its kind, and a Custom frame's settings and turn. */
-type Kinded = Partial<Pick<FrameSheet, 'kind' | 'settings' | 'quarterTurns'>>
+/** What a Frame's size is measured from beside its rectangle: its Frame shape, and a Custom frame's settings and turn. */
+type Shaped = Partial<Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>>
 
 /** A grid's Estimated size in mm (CONTEXT.md): width first, as seen on screen. */
 export interface EstimatedSizeMm {
@@ -43,11 +43,11 @@ export interface EstimatedSizeMm {
 // A Project's Estimated size (CONTEXT.md, ADR 0026): Bead size times beads across and down, the exact inverse of
 // gridFromSize's mm conversion. Not Technique-aware (no peyote packing, slack, tension), hence only an estimate.
 // Width and height follow the rotated view, as summarizeProject's do.
-export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Kinded & { frame?: Kinded }, bead: Bead): EstimatedSizeMm {
+export function estimatedSizeMm(project: Sized & { rotation?: Rotation } & Shaped & { frame?: Shaped }, bead: Bead): EstimatedSizeMm {
   const { columns, rows } = sizeOf(project)
-  // The Frame's own kind when there is one (ticket 0592): a Custom frame's shape is what is measured.
+  // The Frame's own shape when there is one (ticket 0592): a Custom frame's shape is what is measured.
   const woven = 'frame' in project && project.frame ? project.frame : project
-  const { widthMm, heightMm } = frameSizeMm({ kind: woven.kind, settings: woven.settings, quarterTurns: woven.quarterTurns, columns, rows }, bead)
+  const { widthMm, heightMm } = frameSizeMm({ shape: woven.shape, settings: woven.settings, quarterTurns: woven.quarterTurns, columns, rows }, bead)
   return project.rotation !== undefined && rotationSwapsAxes(project.rotation) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 

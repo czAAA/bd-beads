@@ -1,6 +1,7 @@
 import type { GridDimensions, GridPosition } from './grid'
-import type { FrameKindId, FrameSettings, QuarterTurns } from './frameKind'
+import type { FrameShapeId, FrameSettings, QuarterTurns } from './frameShape'
 import type { Weave } from './weave'
+import { beadsOfLayer } from './layerRecord'
 
 // The painted beads of a Canvas (ADR 0026) by row, then column, then the color's hex. Only painted positions are
 // stored; rows and columns may be negative. Nested plain objects, so an edit copies only the rows it touched and shares
@@ -29,9 +30,9 @@ export interface FrameSheet extends Rect, Weave {
   folded?: BeadMap
   /** The name of the Piece the Frame was made from (ticket 489), drawn under the Frame. Absent: unnamed. */
   name?: string
-  /** Its Frame kind (ticket 0591, ADR 0077). Absent means Rectangular, which is left unsaved. */
-  kind?: FrameKindId
-  /** A Custom frame's settings (ticket 0592): what its layout is built from. Absent on a Rectangular Frame. */
+  /** Its Frame shape (ticket 0591, ADR 0077, ADR 0079), which makes it a Custom frame. Absent on a Frame without one. */
+  shape?: FrameShapeId
+  /** A Custom frame's settings (ticket 0592): what its layout is built from. Absent on a Frame without a shape. */
   settings?: FrameSettings
   /** How many quarter turns clockwise Rotate Frame has given a Custom frame's layout (ticket 0594). Absent: none. */
   quarterTurns?: QuarterTurns
@@ -213,7 +214,7 @@ export function sizeOf(sized: Sized): GridDimensions {
   if ('columns' in sized) {
     return { columns: sized.columns, rows: sized.rows }
   }
-  const box = sized.frame ?? beadBounds(sized.beads)
+  const box = sized.frame ?? beadBounds(beadsOfLayer(sized, 'canvas'))
   return box ? { columns: box.columns, rows: box.rows } : { columns: 0, rows: 0 }
 }
 

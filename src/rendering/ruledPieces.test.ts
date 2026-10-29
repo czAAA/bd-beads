@@ -61,7 +61,7 @@ describe('the Pieces the rulers hang from', () => {
 
   it('are not counted at all while the rulers are hidden, nor while a Frame carries them', () => {
     const hidden = ruledPieces(undefined, start, { numbers: false, stroking: false })
-    const framed = ruledPieces(undefined, { ...start, frame: { row: 50, column: 50, rows: 4, columns: 4, technique: 'loom', beads: {} } }, { numbers: true, stroking: false })
+    const framed = ruledPieces(undefined, { ...start, frame: { row: 50, column: 50, rows: 4, columns: 4, technique: 'loom' } }, { numbers: true, stroking: false })
 
     expect(pieceAreasOf).not.toHaveBeenCalled()
     expect(hidden.areas).toBeUndefined()
