@@ -355,11 +355,12 @@ describe('FramePanel (ticket 473)', () => {
 })
 
 describe('FramePanel Letters (ticket 0573)', () => {
-  it('has a Letters switch, off by default, with a one-line explanation, and asks to turn it on', async () => {
+  it('has a Letters switch, off by default, explained in an info button (ticket 0651), and asks to turn it on', async () => {
     const panel = mountBar()
     const letters = panel.get('[data-testid="frame-letters"]')
     expect(letters.attributes('aria-checked')).toBe('false')
-    expect(panel.get('[data-testid="frame-letters-line"]').text()).toBe(en.frame.lettersLine)
+    expect(panel.find('[data-testid="frame-letters-line"]').exists()).toBe(false)
+    expect(panel.get('[data-testid="frame-letters-info"]').attributes('aria-label')).toBe(en.frame.lettersInfoLabel)
     await letters.trigger('click')
     expect(panel.emitted('set-letters')).toEqual([[true]])
   })
