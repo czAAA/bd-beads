@@ -4,7 +4,7 @@ import { frameSizeMm } from './frameShape'
 import { computeGridDimensions, rotationSwapsAxes, toMillimeters, type GridDimensions, type SizeUnit } from './grid'
 import { decimalSign } from './formatNumber'
 import type { Locale } from './locale'
-import { frameOf, orientationOf, type Layered } from './layerRecord'
+import { frameOf, quarterTurnOf, type Layered } from './layerRecord'
 
 /** A size as the New Project form states it: a number of beads across and down, or a real-world size in mm/cm. */
 export interface StatedSize {
@@ -50,7 +50,7 @@ export function estimatedSizeMm(project: (GridDimensions & Shaped) | Layered, be
   // The Frame's own shape when there is one (ticket 0592): a Custom frame's shape is what is measured.
   const woven: Shaped = whole ? (frameOf(project) ?? {}) : project
   const { widthMm, heightMm } = frameSizeMm({ shape: woven.shape, settings: woven.settings, quarterTurns: woven.quarterTurns, columns, rows }, bead)
-  return whole && rotationSwapsAxes(orientationOf(project)) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
+  return whole && rotationSwapsAxes(quarterTurnOf(project)) ? { widthMm: heightMm, heightMm: widthMm } : { widthMm, heightMm }
 }
 
 export interface SizeUnitLabels {

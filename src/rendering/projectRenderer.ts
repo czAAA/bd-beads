@@ -36,7 +36,7 @@ import {
   setGridTransform,
   type Region,
 } from './surfaceView'
-import { beadsOfLayer, frameOf, heldWeave, type Layered, orientationOf } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, heldWeave, type Layered, quarterTurnOf } from '../domain/layerRecord'
 import { blockAround, drawDraftBlock, drawsDraft, keptDraft, layDraft, type DraftImageOf, type DraftPainter } from './draftRenderer'
 
 // The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
@@ -391,7 +391,7 @@ const SEAM_WIDTH_PX = 1
  * What every bead shares (its Weave's description, cell, corners, the margin) is worked out once (ticket 0676). */
 function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space): void {
   const { project, region, zoom, pixelRatio, look, drawBead, area, rows: band, margin } = draw
-  const rotation = orientationOf(project)
+  const rotation = quarterTurnOf(project)
   const beads = beadsOfLayer(project, 'canvas')
   const covered = footprintOf(project)
   const keptOut = covered && withMargin(covered, margin)
@@ -545,7 +545,7 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 export function renderProject(context: DrawingContext, input: RenderInput): void {
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false } = input
   const frame = frameOf(project)
-  const rotation = orientationOf(project)
+  const rotation = quarterTurnOf(project)
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look = space.open ? canvasLook(theme) : theme
