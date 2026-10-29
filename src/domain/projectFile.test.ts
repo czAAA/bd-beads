@@ -90,25 +90,50 @@ describe('single-Project roundtrip', () => {
     expect(parseProjectsFile(serializeProject(project)).projects).toEqual([project])
   })
 
-  it('carries a Brick block through the file, and reads a file without one as 1 (ticket 477)', () => {
-    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+  it('carries brick stitch\'s Drop through the file, and reads a file without one as 1 (tickets 477, 0691)', () => {
+    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickDrop: 3 } })
 
     const [restored] = parseProjectsFile(serializeProject(project)).projects
 
-    expect(canvasOf(restored).techniqueSettings).toEqual({ brickBlock: 3 })
+    expect(canvasOf(restored).techniqueSettings).toEqual({ brickDrop: 3 })
     expect(restored).toEqual(project)
 
     const one = withWeave(decoratedProject(), 'canvas', { technique: 'brick' })
     const file = JSON.parse(serializeProject(one))
     expect(file.projects[0]).not.toHaveProperty('brickBlock')
-    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickDrop: 1 })
   })
 
-  it('stores each layer\'s settings as the map the app holds, the Brick block in it, with no flat field (ticket 0636)', () => {
-    const canvas = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
-    const project = withWeave(canvas, 'frame', { technique: 'brick', techniqueSettings: { brickBlock: 4 } })
+  it('carries peyote\'s Drop through the file beside brick stitch\'s, each under its own id (ticket 0691)', () => {
+    const brick = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickDrop: 3 } })
+    const project = withWeave(brick, 'canvas', { technique: 'peyote', techniqueSettings: { peyoteDrop: 2 } })
+    const file = JSON.parse(serializeProject(project))
+    expect(file.projects[0].layers[0].techniqueSettings).toEqual({ brickDrop: 3, peyoteDrop: 2 })
+
+    const [restored] = parseProjectsFile(JSON.stringify(file)).projects
+    expect(canvasOf(restored).techniqueSettings).toEqual({ brickDrop: 3, peyoteDrop: 2 })
+    expect(restored).toEqual(project)
+    expect(frameOf(parseProjectsFile(serializeProject(decoratedProject())).projects[0])!.techniqueSettings).toEqual({ peyoteDrop: 1 })
+  })
+
+  it('reads a version 12 file\'s Brick block in a layer\'s settings map as brick stitch\'s Drop (ticket 0691)', () => {
+    const file = JSON.parse(serializeProject(withWeave(decoratedProject(), 'frame', { technique: 'brick' })))
+    file.version = 12
+    file.projects[0].layers[0].techniqueSettings = { brickBlock: 3 }
+    file.projects[0].layers[1].techniqueSettings = { brickBlock: 4 }
+
+    const [read] = parseProjectsFile(JSON.stringify(file)).projects
+    expect(canvasOf(read).techniqueSettings).toEqual({ brickDrop: 3, peyoteDrop: 1 })
+    expect(frameOf(read)!.techniqueSettings).toEqual({ brickDrop: 4 })
+    file.version = 13
+    expect(frameOf(parseProjectsFile(JSON.stringify(file)).projects[0])!.techniqueSettings).toEqual({ brickDrop: 1 })
+  })
+
+  it('stores each layer\'s settings as the map the app holds, the Drop in it, with no flat field (ticket 0636)', () => {
+    const canvas = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickDrop: 3 } })
+    const project = withWeave(canvas, 'frame', { technique: 'brick', techniqueSettings: { brickDrop: 4 } })
     const [stored] = JSON.parse(serializeProject(project)).projects
-    expect(stored.layers).toMatchObject([{ technique: 'brick', techniqueSettings: { brickBlock: 3 } }, { technique: 'brick', techniqueSettings: { brickBlock: 4 } }])
+    expect(stored.layers).toMatchObject([{ technique: 'brick', techniqueSettings: { brickDrop: 3 } }, { technique: 'brick', techniqueSettings: { brickDrop: 4 } }])
     expect(stored.layers[0]).not.toHaveProperty('brickBlock')
     expect(stored.layers[1]).not.toHaveProperty('brickBlock')
   })
@@ -117,28 +142,28 @@ describe('single-Project roundtrip', () => {
     for (const bad of [0, 21, 2.5, 'two', null]) {
       const file = legacyFile([withWeave(decoratedProject(), 'canvas', { technique: 'brick' })], 10)
       file.projects[0]!.brickBlock = bad
-      expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
+      expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickDrop: 1 })
     }
   })
 
   it('reads an unreadable settings map, or an unreadable value in it, as the defaults (ticket 0636)', () => {
     const brick = withWeave(withWeave(decoratedProject(), 'canvas', { technique: 'brick' }), 'frame', { technique: 'brick' })
-    for (const bad of [{ brickBlock: 'two' }, { brickBlock: null }, 'three', null, [3]]) {
+    for (const bad of [{ brickDrop: 'two' }, { brickDrop: null }, 'three', null, [3]]) {
       const file = JSON.parse(serializeProject(brick))
       file.projects[0].layers[0].techniqueSettings = bad
       file.projects[0].layers[1].techniqueSettings = bad
       const [read] = parseProjectsFile(JSON.stringify(file)).projects
-      expect(canvasOf(read).techniqueSettings).toEqual({ brickBlock: 1 })
-      expect(frameOf(read)!.techniqueSettings).toEqual({ brickBlock: 1 })
+      expect(canvasOf(read).techniqueSettings).toEqual({ brickDrop: 1 })
+      expect(frameOf(read)!.techniqueSettings).toEqual({ brickDrop: 1 })
     }
   })
 
   it('reads a flat Brick block only from a file of version 10 or earlier (ticket 0636)', () => {
     const file = legacyFile([withWeave(decoratedProject(), 'canvas', { technique: 'brick' })], 11)
     file.projects[0]!.brickBlock = 3
-    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 1 })
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickDrop: 1 })
     file.version = 10
-    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickBlock: 3 })
+    expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).techniqueSettings).toEqual({ brickDrop: 3 })
   })
 
   it('carries the grid, technique, bead and row progress through the file', () => {
@@ -167,11 +192,11 @@ describe('single-Project roundtrip', () => {
     expect(rowProgressOf(restored)).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 0 })
   })
 
-  it('writes version 12 with the layer list, each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
+  it('writes version 13 with the layer list, each layer\'s beads compact, and the openbeads kind (ADR 0048, 0066, 0079)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
 
     expect(file.kind).toBe('openbeads/project')
-    expect(file.version).toBe(12)
+    expect(file.version).toBe(13)
     expect(file.patterns).toBeUndefined()
     expect(Object.keys(file.projects[0]).sort()).toEqual(['createdAt', 'id', 'layers', 'palette', 'paletteLetters', 'updatedAt'])
     expect(file.projects[0].layers[0].beads).toBeUndefined()
@@ -190,8 +215,8 @@ describe('single-Project roundtrip', () => {
 
   it('refuses a file of the next version rather than read it as this one, and a version 3 file is read as one (ADR 0066)', () => {
     const file = JSON.parse(serializeProject(decoratedProject()))
-    file.version = 13
-    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 13')
+    file.version = 14
+    expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('Unsupported openbeads file version: 14')
   })
 
   it('carries the Palette through a file (ticket 0525), and reads a version 4 file as its Bead\'s built-in colors', () => {
@@ -258,11 +283,11 @@ describe('a Technique this build does not know in a file (ticket 0644)', () => {
   })
 
   it('reads a Frame woven in it in the Canvas\'s Weave', () => {
-    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    const project = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickDrop: 3 } })
     const file = JSON.parse(serializeProject(project))
     file.projects[0].layers[1].technique = 'herringbone'
 
-    expect(frameOf(parseProjectsFile(JSON.stringify(file)).projects[0])).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    expect(frameOf(parseProjectsFile(JSON.stringify(file)).projects[0])).toMatchObject({ technique: 'brick', techniqueSettings: { brickDrop: 3 } })
   })
 })
 

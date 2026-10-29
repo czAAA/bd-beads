@@ -98,25 +98,25 @@ describe('shownBeads', () => {
 describe('the Frame as a layer woven in its own Technique (ticket 492)', () => {
   it('hands a command the Frame\'s Weave, not the Canvas\'s', () => {
     const base = layered()
-    const project: Project = withLayers(base, { technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
+    const project: Project = withLayers(base, { technique: 'brick', techniqueSettings: { brickDrop: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
     const seen: LayerSheet[] = []
     onLayer(project, 'frame', (sheet) => {
       seen.push(sheet)
       return sheet.beads
     })
     expect(seen[0]).toMatchObject({ weave: { technique: 'peyote' }, frame: { technique: 'peyote' }, edge: { row: 0, column: 0, rows: 3, columns: 4 } })
-    expect(seen[0]!.weave).not.toHaveProperty('techniqueSettings')
+    expect(seen[0]!.weave.techniqueSettings).toEqual({ peyoteDrop: 1 })
   })
 
   it('hands a command the Canvas\'s Weave for the Canvas', () => {
     const base = layered()
-    const project: Project = withLayers(base, { technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
+    const project: Project = withLayers(base, { technique: 'brick', techniqueSettings: { brickDrop: 3 }, frame: { ...frameOf(base)!, technique: 'peyote' } })
     const seen: LayerSheet[] = []
     onLayer(project, 'canvas', (sheet) => {
       seen.push(sheet)
       return sheet.beads
     })
-    expect(seen[0]).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickBlock: 3 } } })
+    expect(seen[0]).toMatchObject({ weave: { technique: 'brick', techniqueSettings: { brickDrop: 3 } } })
     expect(seen[0]).not.toHaveProperty('edge')
   })
 })

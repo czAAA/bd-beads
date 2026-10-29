@@ -106,11 +106,19 @@ describe('renderProject', () => {
     expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([[0, 0], [20, 0], [10, 20], [30, 20], [0, 40], [20, 40]])
   })
 
-  it('draws brick stitch rows in blocks of the Brick block, N straight then N shifted (ticket 477)', () => {
-    const project = projectOf('brick', 2, 5, { techniqueSettings: { brickBlock: 2 } })
+  it('draws brick stitch rows in blocks of its Drop, N straight then N shifted (ticket 477)', () => {
+    const project = projectOf('brick', 2, 5, { techniqueSettings: { brickDrop: 2 } })
 
     expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([
       [0, 0], [20, 0], [0, 20], [20, 20], [10, 40], [30, 40], [10, 60], [30, 60], [0, 80], [20, 80],
+    ])
+  })
+
+  it('draws 2-drop peyote as pairs of lines level, the pairs shifted in turn, at peyote\'s own spacing (ticket 0691)', () => {
+    const project = projectOf('peyote', 2, 5, { techniqueSettings: { peyoteDrop: 2 } })
+
+    expect(beadsDrawn(project, whole(project)).map(({ x, y }) => [x, y])).toEqual([
+      [0, 0], [20, 0], [0, 15], [20, 15], [10, 30], [30, 30], [10, 45], [30, 45], [0, 60], [20, 60],
     ])
   })
 

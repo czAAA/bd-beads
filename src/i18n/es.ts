@@ -176,14 +176,23 @@ export const es: Translations = {
     square: 'Punto cuadrado',
   },
   weaveSettings: {
-    brickBlock: {
-      label: 'Bloque de ladrillos',
-      less: 'Menos filas por bloque',
-      more: 'Más filas por bloque',
-      value: 'Filas por bloque',
-      body: 'Filas tejidas rectas una sobre otra antes de que las siguientes se desplacen media cuenta. Con 1 se desplaza cada fila.',
-      locked: 'Hay filas marcadas como hechas. Quita el marco para cambiar el bloque de ladrillos.',
-      changed: 'Bloque de ladrillos cambiado a {count}',
+    peyoteDrop: {
+      label: 'Drop',
+      less: 'Menos cuentas por puntada',
+      more: 'Más cuentas por puntada',
+      value: 'Cuentas por puntada',
+      body: 'Cuentas que se toman en cada puntada: quedan rectas una junto a otra antes de que las siguientes se desplacen media cuenta. 1 es el peyote de siempre.',
+      locked: 'Hay filas marcadas como hechas. Quita el marco para cambiar el drop.',
+      changed: 'Drop cambiado a {count}',
+    },
+    brickDrop: {
+      label: 'Drop',
+      less: 'Menos cuentas por puntada',
+      more: 'Más cuentas por puntada',
+      value: 'Cuentas por puntada',
+      body: 'Cuentas que se toman en cada puntada: quedan rectas una junto a otra antes de que las siguientes se desplacen media cuenta. 1 es el punto ladrillo de siempre.',
+      locked: 'Hay filas marcadas como hechas. Quita el marco para cambiar el drop.',
+      changed: 'Drop cambiado a {count}',
     },
   },
   projects: {

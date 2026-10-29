@@ -93,9 +93,12 @@ export function forEachBead(beads: BeadMap, visit: (row: number, column: number,
 }
 
 function sortedKeys(record: Record<number, unknown>): number[] {
-  return Object.keys(record)
-    .map(Number)
-    .sort((a, b) => a - b)
+  const keys = Object.keys(record).map(Number)
+  // Keys from 0 up come out in order already; only a negative row or column puts them out of it (ticket 0677).
+  for (let at = 1; at < keys.length; at += 1) {
+    if (keys[at]! < keys[at - 1]!) return keys.sort((a, b) => a - b)
+  }
+  return keys
 }
 
 /** Whether at least one bead is painted; stops at the first. */
@@ -296,32 +299,61 @@ export function beadsWithout(beads: BeadMap, area: Rect): BeadMap {
   return withColors(beads, changes)
 }
 
-/** Every position whose color differs between two bead maps; a row both share is passed over unread. */
-export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[] {
-  const changed: GridPosition[] = []
+/** The rows one bead map holds in another object than the other, or alone: an edit copies the rows it touches and
+ * shares the rest (ADR 0019), so these are the rows it may have changed, found without reading a bead. In no order. */
+export function changedRows(before: BeadMap, after: BeadMap): number[] {
+  if (before === after) return []
+  const rows: number[] = []
   for (const key of Object.keys(after)) {
     const row = Number(key)
-    if (before[row] !== after[row]) changedInRow(row, before[row], after[row], changed)
+    if (before[row] !== after[row]) rows.push(row)
   }
   for (const key of Object.keys(before)) {
     const row = Number(key)
-    if (after[row] === undefined) changedInRow(row, before[row], undefined, changed)
+    if (after[row] === undefined) rows.push(row)
   }
+  return rows
+}
+
+/** Every position whose color differs between two bead maps, in row then column order; a row both share is passed
+ * over unread. For a Fill's tens of thousands, `forEachChangedPosition` visits them in no order and lists nothing. */
+export function changedPositions(before: BeadMap, after: BeadMap): GridPosition[] {
+  const changed: GridPosition[] = []
+  forEachChangedPosition(before, after, (row, column) => {
+    changed.push({ row, column })
+  })
   return changed.sort((a, b) => a.row - b.row || a.column - b.column)
 }
 
-function changedInRow(
-  row: number,
-  was: Record<number, string> | undefined,
-  now: Record<number, string> | undefined,
-  changed: GridPosition[],
-): void {
-  for (const key of Object.keys(now ?? {})) {
-    const column = Number(key)
-    if (was?.[column] !== now![column]) changed.push({ row, column })
+/** Calls `visit` for every position whose color differs between two bead maps, a changed row's beads together, the
+ * rows in no order. */
+export function forEachChangedPosition(before: BeadMap, after: BeadMap, visit: (row: number, column: number) => void): void {
+  for (const row of changedRows(before, after)) {
+    const [was, now] = [before[row], after[row]]
+    for (const key of Object.keys(now ?? {})) {
+      const column = Number(key)
+      if (was?.[column] !== now![column]) visit(row, column)
+    }
+    for (const key of Object.keys(was ?? {})) {
+      const column = Number(key)
+      if (now?.[column] === undefined) visit(row, column)
+    }
   }
-  for (const key of Object.keys(was ?? {})) {
-    const column = Number(key)
-    if (now?.[column] === undefined) changed.push({ row, column })
+}
+
+/** Whether any position's color differs between two bead maps: stops at the first that does, where a whole-sheet
+ * repaint would otherwise be listed to learn that it changed (ticket 0677). */
+export function anyChangedPosition(before: BeadMap, after: BeadMap): boolean {
+  for (const row of changedRows(before, after)) {
+    const [was, now] = [before[row], after[row]]
+    for (const key in now) {
+      const column = Number(key)
+      if (was?.[column] !== now[column]) return true
+    }
+    for (const key in was) {
+      const column = Number(key)
+      if (now?.[column] === undefined) return true
+    }
   }
+  return false
 }

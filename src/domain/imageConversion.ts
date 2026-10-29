@@ -185,7 +185,7 @@ interface RatioPlacement {
 type SamplingInput = {
   image: PixelData
   technique: Technique
-  /** The settings of the Project being made (ticket 0625): its Brick block; one left out is its default. */
+  /** The settings of the Project being made (ticket 0625): its Drop; one left out is its default. */
   techniqueSettings?: TechniqueSettings
 } & (SizePlacement | RatioPlacement)
 

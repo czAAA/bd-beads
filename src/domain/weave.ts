@@ -8,10 +8,10 @@ import type { CellCenter, GeometryNumber, GeometryRef, GeometryStrategy, WeaveGe
 /** The weaving method, which determines a Project's grid geometry: a key of the config map below. */
 export type Technique = keyof typeof TECHNIQUE_RULES
 
-/** One row to a block of rows: every other row shifts, as peyote's and an unblocked brick stitch's do. */
+/** One row to a block of rows: every other row shifts, as ordinary peyote's and brick stitch's do. */
 const ONE_ROW_BLOCK = 1
-/** The most rows a Brick block may hold straight on top of each other (ticket 477). */
-const MAX_BRICK_BLOCK = 20
+/** The most beads a Drop may pick up in one stitch, so the most rows level beside each other (tickets 477, 0691). */
+const MAX_DROP = 20
 
 /** A Technique's setting (ticket 0627): the shape every setting has, and the number of its Technique's geometry it sets
  * in place of the entry's own, where it changes the layout. */
@@ -19,19 +19,27 @@ interface TechniqueSetting<Sets extends string = GeometryNumber> extends Setting
   sets?: Sets
 }
 
-/** Brick stitch's Brick block, as its entry describes it (ticket 0624): the rows' block, 1, every other row, up to
- * MAX_BRICK_BLOCK; the same cells, so a change loses no bead. */
-export const BRICK_BLOCK_SETTING: TechniqueSetting<'block'> = { id: 'brickBlock', labelKey: 'brickBlock', min: ONE_ROW_BLOCK, max: MAX_BRICK_BLOCK, step: 1, default: ONE_ROW_BLOCK, sets: 'block' }
+/** A Drop (ticket 0691): the beads each stitch picks up, so the rows' block, 1, every other row, up to MAX_DROP; the
+ * same cells, so a change loses no bead. Each Technique that has one keeps its own, under its own id and words. */
+function dropSetting<Id extends string>(id: Id): TechniqueSetting<'block'> & { id: Id } {
+  return { id, labelKey: id, min: ONE_ROW_BLOCK, max: MAX_DROP, step: 1, default: ONE_ROW_BLOCK, sets: 'block' }
+}
 
-/** A layer's Technique settings by id (ticket 0624): each its Technique describes, and any kept off it (a Brick block on
- * peyote, for a switch back). */
+/** Peyote's Drop (ticket 0691): 2-drop, 3-drop and on; 1 is ordinary peyote. */
+const PEYOTE_DROP_SETTING = dropSetting('peyoteDrop')
+
+/** Brick stitch's Drop, called its Brick block before ticket 0691 (ticket 0624); 1 is ordinary brick stitch. */
+export const BRICK_DROP_SETTING = dropSetting('brickDrop')
+
+/** A layer's Technique settings by id (ticket 0624): each its Technique describes, and any kept off it (brick stitch's
+ * Drop on peyote, for a switch back). */
 export type TechniqueSettings = Readonly<Record<string, number>>
 
 /** The settings of a Technique that describes none, shared: a Weave's description is asked for per bead. */
 const NO_SETTINGS: TechniqueSettings = Object.freeze({})
 
-/** What decides how a Project is laid out: the Technique and its settings, such as brick stitch's Brick block (ticket
- * 477). A Project is one, and so is its Frame. */
+/** What decides how a Project is laid out: the Technique and its settings, such as peyote's or brick stitch's Drop
+ * (tickets 477, 0691). A Project is one, and so is its Frame. */
 export interface Weave {
   technique: Technique
   /** Its settings by id (tickets 0624, 0625, 0627); a setting left out is its default. */
@@ -88,7 +96,7 @@ const TECHNIQUE_RULES = {
   peyote: {
     nameKey: 'peyote',
     geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 0.75, cellAspect: 1, roundness: ROUNDED_BEAD_CORNER, passes: 'twoAfterFirst', block: ONE_ROW_BLOCK },
-    settings: [],
+    settings: [PEYOTE_DROP_SETTING],
     wordChart: { marked: true },
     draftCost: 3,
     slowFramingCells: SLOW_FRAMING_CELLS,
@@ -96,7 +104,7 @@ const TECHNIQUE_RULES = {
   brick: {
     nameKey: 'brick',
     geometry: { kind: 'rows', shifted: true, shift: 0.5, rowPitch: 1, cellAspect: 1, roundness: 0, passes: 'one', block: ONE_ROW_BLOCK },
-    settings: [BRICK_BLOCK_SETTING],
+    settings: [BRICK_DROP_SETTING],
     wordChart: { marked: true },
     draftCost: 1,
     slowFramingCells: SLOW_FRAMING_CELLS,
@@ -147,7 +155,7 @@ export const DEFAULT_TECHNIQUE: Technique = TECHNIQUES[0]
 export interface WeaveDescription extends Omit<TechniqueRules, 'geometry'>, WeaveGeometry {}
 
 /** The Weave's settings, each its Technique describes, read within its range from its settings map, or else its
- * default. Another Technique's (a Brick block kept off brick stitch) is left out. */
+ * default. Another Technique's (brick stitch's Drop kept off it) is left out. */
 export function weaveSettings(weave: Weave): TechniqueSettings {
   const { settings } = RULES[weave.technique]
   if (settings.length === 0) {
@@ -171,14 +179,14 @@ export function settingsOffDefault(values: TechniqueSettings = NO_SETTINGS): Tec
 }
 
 /** The settings a layer woven in `technique` holds of `values` (ticket 0625): each the Technique describes, within its
- * range or its default where none is given, and each other one that has a value, kept off it for a switch back (a
- * Brick block, ticket 477); an id no Technique describes is dropped. */
+ * range or its default, and each other one off its default, kept for a switch back (a Drop, tickets 477, 0691), left
+ * out at its default as a file leaves it (`settingsOffDefault`); an id no Technique describes is dropped. */
 export function heldSettings(technique: Technique, values: Readonly<Record<string, number | undefined>> = {}): TechniqueSettings {
   const described = RULES[technique].settings
   return Object.fromEntries(
     EVERY_SETTING.flatMap((setting) => {
-      const value = values[setting.id]
-      return described.includes(setting) || value !== undefined ? [[setting.id, settingValue(setting, value)]] : []
+      const value = settingValue(setting, values[setting.id])
+      return described.includes(setting) || value !== setting.default ? [[setting.id, value]] : []
     }),
   )
 }
@@ -238,8 +246,8 @@ function describeTechnique(technique: Technique): WeaveDescription {
   return known
 }
 
-/** After how many rows the shift repeats: 1 for loom (it never shifts), 2 for peyote, 2N for brick stitch with a Brick
- * block of N. Frame starts, edges and moves go by multiples of it. */
+/** After how many rows the shift repeats: 1 for loom (it never shifts), 2N for peyote and brick stitch with a Drop of
+ * N. Frame starts, edges and moves go by multiples of it. */
 export function rowCycle(weave: Weave): number {
   return describeWeave(weave).frameStep
 }
