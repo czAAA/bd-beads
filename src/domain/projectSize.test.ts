@@ -7,6 +7,7 @@ import {
   formatMm,
   isSizeStated,
   formatSizeMm,
+  formatSizeInMm,
   gridFromSize,
 } from './projectSize'
 import { bareProject } from '../testUtils/layerFields'
@@ -107,6 +108,16 @@ describe('formatSizeMm', () => {
   it('keeps the English decimal point when locale is left out or set to en', () => {
     expect(formatSizeMm({ widthMm: 15, heightMm: 30 }, units, 'en')).toBe('1.5 × 3.0 cm')
     expect(formatSizeMm({ widthMm: 15, heightMm: 30 }, units)).toBe('1.5 × 3.0 cm')
+  })
+})
+
+describe('formatSizeInMm (ticket 0687)', () => {
+  it('stays in mm however large, at most one decimal, in the language’s decimal sign', () => {
+    expect(formatSizeInMm({ widthMm: 120, heightMm: 80.25 }, 'mm')).toBe('120 × 80.3 mm')
+    expect(formatSizeInMm({ widthMm: 2.6, heightMm: 2.6 }, 'mm')).toBe('2.6 × 2.6 mm')
+    expect(formatSizeInMm({ widthMm: 16.5, heightMm: 44 }, 'мм', 'ru')).toBe('16,5 × 44 мм')
+    // A Round 11/0's pitch, 1.5 + 0.15, lies just under 1.65 as a float; it still rounds half up.
+    expect(formatSizeInMm({ widthMm: 1.5 + 0.15, heightMm: 2.2 }, 'mm')).toBe('1.7 × 2.2 mm')
   })
 })
 

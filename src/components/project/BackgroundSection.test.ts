@@ -17,7 +17,8 @@ const framed = (): Project => createProject({ technique: 'loom', beadId: 'toho-c
 
 const mounted: ReturnType<typeof mount>[] = []
 function render(project: Project = framed(), layer: Layer = 'canvas') {
-  const wrapper = mount(BackgroundSection, { props: { project, layer }, attachTo: document.body })
+  const background = useCanvasBackground(() => project).shownOf(layer).background
+  const wrapper = mount(BackgroundSection, { props: { background, layer }, attachTo: document.body })
   mounted.push(wrapper)
   return wrapper
 }

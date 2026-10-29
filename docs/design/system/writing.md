@@ -61,7 +61,7 @@ Checked on the real layouts in Russian. The rules apply to both languages: see t
 | Frame | рамка | Set Frame / Задать рамку; no Frame / без рамки (v16, in Size's place) |
 | Piece | кусочек | Beads that touch; 1 кусочек, 2 кусочка, 5 кусочков |
 | Folded beads | свёрнутые бисерины | The Frame's own beads beyond its edge, out of sight (ADR 0066); proposed, ticket 0641 |
-| Canvas · Hand · Rulers | Полотно · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
+| Canvas · Hand · Rulers | Холст · Рука · Линейки | The drawing area, the tool that moves it, the row and column numbers |
 | Export · Import | Экспорт · Импорт | Buttons use the verb: Экспортировать схему |
 | Convert image | Конвертировать изображение | A Project made from a picture |
 | Pixel to bead ratio | соотношение пикселей и бисерин | Picture pixels : beads, one side always 1 ("2:1"); the label reads «пиксели изображения : бисерины» (ticket 0646) |
@@ -122,7 +122,7 @@ The same voice and sentence patterns in each language; domain words are never re
 
 ## Canvas color names
 
-The Canvas color control (Russian "Цвет полотна") offers five backgrounds in light and five in dark (ticket 0554). The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
+The Canvas color control (Russian "Цвет холста") offers five backgrounds in light and five in dark (ticket 0554). The accessible name of each swatch is "{name}, {n} of {count}" (Russian "{name}, {n} из {count}").
 
 | Choice | Light (EN / RU) | Dark (EN / RU) |
 | --- | --- | --- |
@@ -375,6 +375,15 @@ Russian here is a proposal for review, like the section below.
 
 Russian here is a proposal for review; the other five languages follow it in the app change.
 
+## Replace bead? per layer (ticket 0687)
+
+The confirmation asked from a layer's panel (ConfirmDialogs card): the layer, its Bead's size in mm before and after, then for the Frame its Estimated size, always in mm. Following the Confirm pattern: what changes, then that it can be undone. The other five languages say the same in the app.
+
+| English | Русский |
+|---|---|
+| The Canvas's Bead changes from {old} to {new}. The Canvas will look different in proportion, but your design and its bead count stay exactly the same. You can undo this. | Бисер холста меняется с {old} на {new}. Пропорции холста будут выглядеть иначе, но рисунок и число бисерин останутся точно такими же. Это действие можно отменить. |
+| The Frame's Bead changes from {old} to {new}, so the Frame will be about {newSize} instead of {oldSize}. It will look different in proportion, but your design and its bead count stay exactly the same. You can undo this. | Бисер рамки меняется с {old} на {new}, поэтому рамка будет примерно {newSize} вместо {oldSize}. Её пропорции будут выглядеть иначе, но рисунок и число бисерин останутся точно такими же. Это действие можно отменить. |
+
 ## Convert image wizard copy (ticket 0646)
 
 The popup of spec 0645 (ConvertImage, PixelToBeadRatio and FoundColorRow cards). Errors, the slow-framing warning, Colors at most, the drag hint and the Finish names on Bead colors keep the app's existing strings. Grid sizes follow Numbers and units ("32×24 beads"); a count with a noun in Russian, Ukrainian and Polish takes the "Label: number" form ("цветов: 8"); after a grid size the noun is the genitive plural, as with "1920×1080 пикселей". Belarusian, Spanish and Chinese were written with the build (ticket 0649) and live in `src/i18n/`.
@@ -460,3 +469,14 @@ The tab's accessible name in Russian, Ukrainian and Polish follows the rows abov
 The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
 
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.
+
+## Layer settings copy (ticket 0670)
+
+The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Drop, Bead shape, Symmetric, Real, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Settings (the Frame panel's section) | Настройки | Налаштування | Налады | 设置 | Ajustes | Ustawienia |
+| Background (the heading over the picker) | Фон | Фон | Фон | 背景 | Fondo | Tło |
+
+"Bead" over the Bead shape and pickers is the Project panel's existing section word.

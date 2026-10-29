@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useDialogsContext } from '../../composables/shell/useAppShell'
 import ConfirmModal from '../ui/ConfirmModal.vue'
@@ -7,7 +6,6 @@ import DuplicateProjectModal from '../project/DuplicateProjectModal.vue'
 import NamePieceModal from '../project/NamePieceModal.vue'
 import ShortcutsHelp from './ShortcutsHelp.vue'
 import ConvertImageWizard from '../import/ConvertImageWizard.vue'
-import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { projectNameOf } from '../../domain/layerRecord'
 
 // The app's dialogs (ticket 0618): the registry shows one at a time, named by `open`; each flow holds what its dialog
@@ -36,8 +34,6 @@ const {
   onConfirmRemoveAddedColor,
   replaceBeadPendingBead,
   replaceBeadConfirmMessage,
-  replaceBeadAsksLayer,
-  replaceBeadLayer,
   onCancelReplaceBead,
   onConfirmReplaceBead,
   pendingImport,
@@ -74,13 +70,6 @@ const {
   onConvertImageCreate,
   onConvertImageCancel,
 } = useDialogsContext()
-
-/** Replace bead's choice of layer with a Frame (ticket 0665): the Frame's Bead first, as it is the one woven. */
-const replaceBeadLayerLabel = useId()
-const replaceBeadLayers = computed(() => [
-  { value: 'frame' as const, label: t.value.replaceBead.layerFrame },
-  { value: 'canvas' as const, label: t.value.replaceBead.layerCanvas },
-])
 </script>
 
 <template>
@@ -180,12 +169,7 @@ const replaceBeadLayers = computed(() => [
     :cancel-label="t.replaceBead.cancelButton"
     @confirm="onConfirmReplaceBead"
     @cancel="onCancelReplaceBead"
-  >
-    <div v-if="replaceBeadAsksLayer" class="app-shell__modal-choice" data-testid="replace-bead-layer-row">
-      <span :id="replaceBeadLayerLabel">{{ t.replaceBead.layerLabel }}</span>
-      <SegmentedControl v-model="replaceBeadLayer" :options="replaceBeadLayers" :labelledby="replaceBeadLayerLabel" small data-testid="replace-bead-layer" />
-    </div>
-  </ConfirmModal>
+  />
 
   <!-- Import asks before switching (ticket 154). With a failed save the question is about saving first. -->
   <ConfirmModal
@@ -291,16 +275,6 @@ const replaceBeadLayers = computed(() => [
 </template>
 
 <style scoped>
-/* A choice inside a confirmation, above its message: its label, then the control (ConfirmDialogs card, ticket 0665). */
-.app-shell__modal-choice {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-  margin: 0 0 var(--space-8);
-  font: var(--type-control);
-  color: var(--ink);
-}
-
 /* An error inside a confirmation, in the danger color (forms-and-states.md). */
 .app-shell__modal-error {
   margin: 0 0 var(--space-8);
