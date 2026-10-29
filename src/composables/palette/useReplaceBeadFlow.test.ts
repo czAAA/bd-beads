@@ -7,7 +7,7 @@ import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useReplaceBeadFlow } from './useReplaceBeadFlow'
-import { canvasOf } from '../../domain/layerRecord'
+import { canvasOf, frameOf } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
@@ -76,10 +76,10 @@ describe('useReplaceBeadFlow', () => {
     onConfirmReplaceBead()
 
     expect(replaceBeadPendingBead.value).toBeUndefined()
-    expect(canvasOf(harness.project).beadId).toBe(other.id)
+    expect(frameOf(harness.project)!.beadId).toBe(other.id)
 
     harness.history.onUndo()
-    expect(canvasOf(harness.project).beadId).toBe(canvasOf(base).beadId)
+    expect(frameOf(harness.project)!.beadId).toBe(canvasOf(base).beadId)
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -141,5 +141,36 @@ describe('Replace Bead with coded swatches (ticket 0538)', () => {
     harness.history.onUndo()
     expect(harness.project.paletteCodes).toEqual({ '#123456': 'DB1' })
     expect(canvasOf(harness.project).beadId).toBe(delica.id)
+  })
+})
+
+describe('Replace Bead asks which layer with a Frame (ticket 0665, ADR 0079)', () => {
+  it('asks only with a Frame, the Frame first, and again from the Frame at each pick', () => {
+    const { replaceBeadAsksLayer, replaceBeadLayer, onRequestReplaceBead } = setup()
+    expect(replaceBeadAsksLayer.value).toBe(true)
+    replaceBeadLayer.value = 'canvas'
+    onRequestReplaceBead(other.id)
+    expect(replaceBeadLayer.value).toBe('frame')
+    expect(setup(withLayers(base, { frame: undefined })).replaceBeadAsksLayer.value).toBe(false)
+  })
+
+  it("replaces the Canvas's Bead when the person picks it, the Frame's and the Palette staying, in one Undo step", async () => {
+    const { harness, replaceBeadLayer, replaceBeadConfirmMessage, onRequestReplaceBead, onConfirmReplaceBead } = setup()
+    onRequestReplaceBead(other.id)
+    replaceBeadLayer.value = 'canvas'
+    expect(replaceBeadConfirmMessage.value).toContain('the Canvas is drawn at that bead')
+    await onConfirmReplaceBead()
+    expect(canvasOf(harness.project).beadId).toBe(other.id)
+    expect(frameOf(harness.project)!.beadId).toBe(canvasOf(base).beadId)
+    expect(harness.project.palette).toBe(base.palette)
+    harness.history.onUndo()
+    expect(canvasOf(harness.project).beadId).toBe(canvasOf(base).beadId)
+  })
+
+  it("replaces the Canvas's Bead on a Project with no Frame, as before", async () => {
+    const { harness, onRequestReplaceBead, onConfirmReplaceBead } = setup(withLayers(base, { frame: undefined }))
+    onRequestReplaceBead(other.id)
+    await onConfirmReplaceBead()
+    expect(canvasOf(harness.project).beadId).toBe(other.id)
   })
 })

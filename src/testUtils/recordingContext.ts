@@ -27,6 +27,7 @@ export function recordingContext() {
     arc: record('arc'),
     fillText: record('fillText'),
     translate: record('translate'),
+    scale: record('scale'),
     rotate: record('rotate'),
     stroke: record('stroke'),
     setLineDash: record('setLineDash'),
