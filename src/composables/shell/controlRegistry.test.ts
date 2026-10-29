@@ -10,8 +10,7 @@ import type { Translations } from '../../i18n/translations'
 import { actionKey } from '../../components/ui/controlAction'
 import type { Chord } from '../../domain/chord'
 import type { Locale } from '../../domain/locale'
-import { CROP_HANDLES, RATIO_PRESETS } from '../../domain/convertSize'
-import { CONVERT_STEPS } from '../import/useConvertImageWizard'
+import { CONVERT_STEPS, CROP_HANDLES, RATIO_PRESETS, ratioId } from '../../domain/convertSize'
 import { CONTROLS, chordMatches, controlAction } from './controlRegistry'
 
 const LANGUAGES: Record<Locale, Translations> = { en, ru, uk, be, zh, es, pl }
@@ -80,7 +79,7 @@ describe('the control registry', () => {
       'treat-as-empty',
       'remap-color',
       'empty-color',
-      ...RATIO_PRESETS.map((ratio) => `pixel-ratio-${ratio.pixels}-${ratio.beads}`),
+      ...RATIO_PRESETS.map((ratio) => `pixel-ratio-${ratioId(ratio)}`),
       'pixel-ratio-custom',
       ...CONVERT_STEPS.map((step) => `convert-step-${step}`),
       ...CROP_HANDLES.map((handle) => `crop-${handle}`),

@@ -1,6 +1,6 @@
 import { type Chord } from '../../domain/chord'
 import type { IconName } from '../../components/ui/icons'
-import { CROP_HANDLES, RATIO_PRESETS } from '../../domain/convertSize'
+import { CONVERT_STEPS, CROP_HANDLES, RATIO_PRESETS, ratioId } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { FRAME_EDGES, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { PALETTE_SHORTCUTS } from '../../domain/palette'
@@ -10,7 +10,6 @@ import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import { ratioSentence, ratioText } from '../../i18n/ratioWords'
 import type { Translations } from '../../i18n/translations'
-import { CONVERT_STEPS } from '../import/useConvertImageWizard'
 
 /** What a control's action needs from the app shell: state read lazily, and the handlers the actions call. */
 export interface ControlDeps {
@@ -554,7 +553,7 @@ export const CONTROLS: readonly ControlAction[] = [
   unkeyed('remap-color', (t) => t.convertImage.wizard.remap, 'colors', { icon: 'paint', body: (t) => t.tooltips.remapColor }),
   unkeyed('empty-color', (t) => t.convertImage.wizard.empty, 'colors', { icon: 'erase', body: (t) => t.tooltips.emptyColor }),
   ...RATIO_PRESETS.map((ratio) =>
-    unkeyed(`pixel-ratio-${ratio.pixels}-${ratio.beads}`, (t) => fillBlanks(t.convertImage.wizard.ratioChip, { ratio: ratioText(ratio) }), 'edit', {
+    unkeyed(`pixel-ratio-${ratioId(ratio)}`, (t) => fillBlanks(t.convertImage.wizard.ratioChip, { ratio: ratioText(ratio) }), 'edit', {
       body: (t) => ratioSentence(t, ratio),
     }),
   ),

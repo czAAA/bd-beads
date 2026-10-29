@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends string">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRovingFocus } from '../../../composables/ui/useRovingFocus'
 import { useI18n } from '../../../i18n/useI18n'
 import AppTooltip from '../AppTooltip.vue'
@@ -18,7 +18,8 @@ const { t } = useI18n()
 const rootEl = ref<HTMLElement>()
 const roving = useRovingFocus(rootEl, { selector: '.chip-group__chip' })
 
-const isStop = (index: number) => (value.value === undefined || !props.options.some((option) => option.value === value.value) ? index === 0 : props.options[index]!.value === value.value)
+/** The Tab stop: the chosen chip, or the first while none is. */
+const stopIndex = computed(() => Math.max(0, props.options.findIndex((option) => option.value === value.value)))
 </script>
 
 <template>
@@ -31,8 +32,7 @@ const isStop = (index: number) => (value.value === undefined || !props.options.s
         :class="{ 'chip-group__chip--on': option.value === value }"
         :aria-checked="option.value === value"
         :aria-label="option.action.name(t)"
-        :tabindex="roving.tabIndexFor(isStop(index))"
-        :data-value="option.value"
+        :tabindex="roving.tabIndexFor(index === stopIndex)"
         :data-testid="option.testid"
         @click="value = option.value"
       >
