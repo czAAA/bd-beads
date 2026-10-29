@@ -143,6 +143,15 @@
   --margin-title-row: 23px; /* MarginSheet card: one row of the title block (one 22px row in the compact form). */
   --margin-band-full: 64px; /* MarginSheet card: the band height, in screen pixels, from which the margin shows its full form. */
   --margin-band-compact: 34px; /* MarginSheet card: the band height under which the margin folds. */
+  --margin-band-inset: 14px; /* MarginSheet card: the top band's tools in from the sheet's top-left corner (10px compact). */
+  --margin-move-height: 28px; /* MarginSheet card: the Move bar's hit area on the paper (56 wide, like the gutter handle's). */
+  --margin-done: 26px; /* MarginSheet card: Row done on the paper, the bar's primary button at 26px. */
+  --margin-track: 64px; /* MarginSheet card: the Row progress track on the paper. */
+  --margin-pencil: 18px; /* MarginSheet card: a title block pencil (a 12px icon). */
+  --margin-legend-disc: 14px; /* MarginSheet card: one legend disc holding its Swatch letter. */
+  --margin-edit-width: 260px; /* MarginSheet card: the title block's name editor, floated over the sheet (ticket 0657). */
+  --margin-title-name: 600 0.75rem/1rem var(--font-sans); /* MarginSheet card: the Frame's name in the title block (Inter 600 12). */
+  --margin-legend-letter: 600 0.5rem/1 var(--font-sans); /* MarginSheet card: a Swatch letter in a legend disc (Inter 600 8). */
   /* Motion (interaction-and-motion.md) */
   --duration-instant: 80ms;
   --duration-fast: 120ms;

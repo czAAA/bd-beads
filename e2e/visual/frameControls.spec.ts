@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test'
 import { openApp, settle, setZoom } from '../support/app'
 import { fixtureProject } from '../support/projects'
 
-/** The Frame's Move handle, edit pencil never scale with the zoom (ticket 473); the Frame panel hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
+/** The margin sheet's Move bar and Edit Frame never scale with the zoom (tickets 473, 0657); the Frame panel hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
 
 type Box = { x: number; y: number; width: number; height: number }
 
@@ -28,8 +28,8 @@ for (const zoom of [10, 100, 400]) {
     const pencil = await box(page, 'frame-edit-toggle')
     const bar = await box(page, 'panel-dropdown')
 
-    expect([handle.width, handle.height]).toEqual([56, 44])
-    expect([pencil.width, pencil.height]).toEqual([32, 32])
+    expect([handle.width, handle.height]).toEqual([56, 28])
+    expect([pencil.width, pencil.height]).toEqual([28, 28])
     expect(bar.width).toBe(585)
     for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
       const step = await box(page, testid)
@@ -71,11 +71,11 @@ test('panning the canvas moves the Frame but not a bar opened from the strip, an
   const after = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
 
   expect(after.bar).toEqual(before.bar)
-  expect([after.handle.width, after.handle.height]).toEqual([56, 44])
+  expect([after.handle.width, after.handle.height]).toEqual([56, 28])
   await context.close()
 })
 
-test('the Frame\'s keep-out margin is outlined round it, and its controls sit in the gutter just outside the Frame\'s edge (ADR 0066)', async ({ browser }) => {
+test('the Frame\'s margin sheet carries its tools, Row progress and title block, with hot corners while Edit Frame is on (ticket 0657)', async ({ browser }) => {
   const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
   const page = await context.newPage()
   await openApp(page, [fixtureProject({ technique: 'loom' })])
@@ -84,6 +84,6 @@ test('the Frame\'s keep-out margin is outlined round it, and its controls sit in
   await page.getByTestId('frame-edit-toggle').click()
   await settle(page)
   await page.mouse.move(5, 5)
-  await expect(page.getByTestId('app-canvas')).toHaveScreenshot('frame-gutter-controls.png', { maxDiffPixelRatio: 0.01 })
+  await expect(page.getByTestId('app-canvas')).toHaveScreenshot('frame-margin-sheet.png', { maxDiffPixelRatio: 0.01 })
   await context.close()
 })
