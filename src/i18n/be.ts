@@ -349,6 +349,7 @@ export const be: Translations = {
     hexLabel: 'Колер у HEX',
     hexInvalid: 'Увядзіце колер выгляду #1a2b3c.',
     previewLabel: 'Новы колер',
+    addToPalette: 'Дадаць {hex} у палітру',
     pickFromCanvasLabel: 'Узяць колер з палатна',
     removed: 'Колер выдалены з палітры.',
     removeSwatch: 'Прыбраць {hex} з палітры',

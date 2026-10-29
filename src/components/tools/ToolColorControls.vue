@@ -30,7 +30,7 @@ const customColorSelected = computed(() => !props.selectedColorId && !!props.cus
 
 // The Custom color picker expands under the grid (ticket 449) and does not close on use. Taking its color (press
 // outside, Escape, Enter) hands it up once and closes the sheet holding this control; picking a Palette swatch instead
-// closes the picker with nothing taken.
+// closes the picker with nothing taken. Its + (ticket 0690) hands a color up at once and keeps the picker open.
 const palette = usePalette()
 const { t } = useI18n()
 // The Bead's own colors (ticket 0537) open under the grid the same way; only a Bead with a Color catalog offers them.
@@ -92,7 +92,16 @@ async function cancel() {
     {{ t.palette.beadColors.open }}
   </AppButton>
   <BeadColorList v-if="beadColors && catalogOpen && !editing" :colors="beadColors" />
-  <CustomColorPanel ref="panel" v-if="pickerOpen" :color="customColor ?? paintHex" @take="take" @leave="leave" @cancel="cancel" />
+  <CustomColorPanel
+    ref="panel"
+    v-if="pickerOpen"
+    :color="customColor ?? paintHex"
+    addable
+    @take="take"
+    @add="emit('select-custom-color', $event)"
+    @leave="leave"
+    @cancel="cancel"
+  />
 </template>
 
 <style scoped>

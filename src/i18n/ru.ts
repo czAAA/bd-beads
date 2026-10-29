@@ -348,6 +348,7 @@ export const ru: Translations = {
     hexLabel: 'Цвет в HEX',
     hexInvalid: 'Введите цвет вида #1a2b3c.',
     previewLabel: 'Новый цвет',
+    addToPalette: 'Добавить {hex} в палитру',
     pickFromCanvasLabel: 'Взять цвет с полотна',
     removed: 'Цвет удалён из палитры.',
     removeSwatch: 'Убрать {hex} из палитры',
