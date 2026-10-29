@@ -283,12 +283,13 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().find('[data-testid="frame-coffee"]').exists()).toBe(false)
   })
 
-  it('leads with Export, then the size, and ends with Beads needed, its total in the header (tickets 555, 568)', () => {
+  it('leads with Export, then the size and Beads needed, its total in the header, and ends with the margin (tickets 555, 568, 0656)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
-    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.quantities.heading])
+    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.quantities.heading, en.frame.margin.heading])
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
-    expect(sections.at(-1)!.attributes('data-testid')).toBe('bead-quantities')
+    expect(sections.at(-2)!.attributes('data-testid')).toBe('bead-quantities')
+    expect(sections.at(-1)!.attributes('data-testid')).toBe('margin-section')
   })
 
   it('offers Replace Frame from the Starter gallery, one level deeper, and Back brings focus back to it (ticket 0596)', async () => {

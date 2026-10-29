@@ -6,15 +6,19 @@ import AppSwatch from '../ui/AppSwatch.vue'
 import CustomColorPanel from './CustomColorPanel.vue'
 import CustomColorPicker from './CustomColorPicker.vue'
 
-// A background color picker (ticket 0653; CanvasBackground and ColorPickers cards), Project's Canvas color first: a
-// radio group of swatches applying at once, then the Palette's Custom color tile and picker, and the chosen one's name
-// and hex. The host owns what is stored; this only shows it and says what was picked.
+// A background color picker (ticket 0653; CanvasBackground and ColorPickers cards), for the Canvas color and the margin
+// color (ticket 0656): a radio group of swatches applying at once, then the Palette's Custom color tile and picker, and
+// the chosen one's name and hex. The host owns what is stored; this only shows it and says what was picked.
 interface BackgroundSwatch {
   id: string
   color: string
   name: string
   /** Its accessible name, e.g. "Linen, 2 of 5". */
   label: string
+  /** Drawn split corner to corner, this color top left and `color` bottom right: Auto shows what it does. */
+  split?: string
+  /** Marked with a dot while not chosen: the margin picker's swatch that is the Canvas color. */
+  dot?: boolean
 }
 
 const props = defineProps<{
@@ -97,10 +101,12 @@ async function cancel() {
             :tabindex="index === tabStop ? 0 : -1"
             :data-testid="`background-color-${swatch.id}`"
             data-background-swatch
+            :style="swatch.split ? { backgroundImage: `linear-gradient(135deg, ${swatch.split} 50%, ${swatch.color} 50%)` } : undefined"
             @select="choose(index)"
             @keydown="onSwatchKeydown($event, index)"
           >
             <AppIcon v-if="index === selectedIndex" class="background-color-picker__check" name="check" :size="16" />
+            <span v-else-if="swatch.dot" class="background-color-picker__dot" data-testid="background-color-dot" />
           </AppSwatch>
         </div>
         <span class="background-color-picker__custom">
@@ -158,6 +164,13 @@ async function cancel() {
 
 .background-color-picker__custom {
   width: var(--swatch-size);
+}
+
+.background-color-picker__dot {
+  width: var(--space-6);
+  height: var(--space-6);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--ink) 70%, transparent);
 }
 
 .background-color-picker__name {

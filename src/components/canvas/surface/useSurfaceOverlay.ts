@@ -12,9 +12,8 @@ import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceV
 import type { Size } from '../../../rendering/cellSize'
 import { sizeCanvas } from './useSurfaceDrawing'
 
-// The Frame margin's outline (ticket 276, Frame card): always shown with a Frame (ticket 452) and 1s after a refused
-// margin press, faded over --duration-fast, redrawn on the overlay frame by frame; with reduced motion shown and hidden
-// at once.
+// The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
+// redrawn frame by frame; with reduced motion at once. At rest the sheet's own edge marks the margin (ticket 0656).
 const MARGIN_FADE_MS = 120
 const REFUSED_PRESS_MS = 1000
 const SIZE_FLASH_MS = 1200
@@ -30,8 +29,8 @@ export function useMarginCue(props: { project: Project; selectionRefusals?: numb
   const refusedPress = ref(false)
   let refusedTimer: ReturnType<typeof setTimeout> | undefined
   let fadeFrame: number | undefined
-  const opacity = ref(props.project.frame ? 1 : 0)
-  const wanted = computed(() => props.project.frame !== undefined || refusedPress.value)
+  const opacity = ref(0)
+  const wanted = computed(() => props.project.frame !== undefined && refusedPress.value)
 
   watch(wanted, (shown) => {
     if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)

@@ -316,9 +316,9 @@ describe('Selections on a layer (ADR 0066)', () => {
 
   it('copies, for a Canvas Selection across a Frame that draws shorter than the rows it names, only what lies clear of what it draws and its margin (ticket 0659)', () => {
     const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-    // A 48-row peyote Frame covers 36 loom rows: rows 36 to 41 are its margin, row 42 is free Canvas.
+    // A 48-row peyote Frame covers 36 loom rows: rows 36 to 39 are its margin, row 40 is free Canvas.
     const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-    const woven: Project = { ...placed, frame: { ...placed.frame!, technique: 'peyote' }, beads: withColors({}, [{ row: 40, column: 3, color: RED }, { row: 42, column: 3, color: BLUE }]) }
+    const woven: Project = { ...placed, frame: { ...placed.frame!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) }
     expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
   })
 
