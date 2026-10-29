@@ -319,8 +319,10 @@ describe('ProjectSurface', () => {
         return (this.dataset.testid === 'project-surface-cells' ? cells : context).context as unknown as CanvasRenderingContext2D
       } as never)
       const project = shallowRef(projectOf(20, 30))
+      let saved = 0
+      // Each step lands in the library as it does in the app, stamped saved (ticket 0674): that draws no bead.
       const paint = (row: number, column: number) => {
-        project.value = painted(project.value, row, column)
+        project.value = { ...painted(project.value, row, column), savedAt: (saved += 1) }
       }
       const scroll = { x: 0, y: 0 }
       /** How tall a row of beads is drawn at zoom 1, from the top of the view. */

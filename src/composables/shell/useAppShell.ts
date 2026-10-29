@@ -103,8 +103,6 @@ function wireAppShell(services: Services) {
   const messages = () => t.value
   const currentLocale = () => locale.value
 
-  const { projectLabel } = useProjectLabels({ currentProject, messages, locale: currentLocale })
-
   /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
 
@@ -387,6 +385,10 @@ function wireAppShell(services: Services) {
   /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the
    * stroke ends. */
   const settledProject = useSettledProject(currentProject, () => strokeMode.value !== null)
+
+  /** The Project's accessible name counts its colors, so it waits for a stroke's end to follow it (ticket 0674). */
+  const labelledProject = useSettledProject(currentProject, () => strokeMode.value !== null, Infinity)
+  const { projectLabel } = useProjectLabels({ currentProject: () => labelledProject.value, messages, locale: currentLocale })
 
   /** The canvas panel's horizontal scroller (ticket 95), which Space+drag scrolls sideways; vertical panning scrolls
    * the window, as nothing traps vertical overflow. */
