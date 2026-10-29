@@ -3,6 +3,7 @@ import { nextTick, onMounted, ref } from 'vue'
 import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useI18n } from '../../i18n/useI18n'
+import type { Project } from '../../domain/project'
 import MarginColorPicker from './MarginColorPicker.vue'
 
 // The margin sheet's Margin color popover (MarginSheet card, ticket 0657): the Frame panel's margin color picker, hung
@@ -11,6 +12,8 @@ import MarginColorPicker from './MarginColorPicker.vue'
 const props = defineProps<{
   /** The Margin color button it hangs from: its own press toggles the popover. */
   anchor: HTMLElement | undefined
+  /** The Project whose Canvas's Background the margin's Auto follows (ticket 0666). */
+  project: Project
 }>()
 const emit = defineEmits<{ close: [] }>()
 
@@ -41,7 +44,7 @@ onMounted(async () => {
 <template>
   <div ref="rootEl" class="margin-color-popover" :style="anchored.style.value" role="dialog" :aria-label="t.frame.margin.colorLabel" data-testid="margin-color-popover">
     <span class="margin-color-popover__label">{{ t.frame.margin.colorLabel }}</span>
-    <MarginColorPicker />
+    <MarginColorPicker :project="project" />
   </div>
 </template>
 

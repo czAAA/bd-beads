@@ -198,9 +198,8 @@ const frameAnchor = ref<FrameAnchor>()
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
 
-/** The Canvas color (ticket 252) as the drawing area's fill, and the technique word's own color where the background
- * needs one. */
-const canvasBackground = useCanvasBackground()
+/** The Canvas's Background (tickets 252, 0666) as the drawing area's fill; the device's last pick with no Project open. */
+const canvasBackground = useCanvasBackground(() => activeProject.value)
 
 /** The drawing area, also tracked here for the layer that carries the Selection bar over it. */
 const drawingEl = ref<HTMLElement>()

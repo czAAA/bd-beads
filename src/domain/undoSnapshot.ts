@@ -1,6 +1,6 @@
 import type { BeadMap } from './canvas'
 import type { HistoryCap } from './history'
-import { beadIdOfLayer, canvasOf, lettersOn, withCanvas, withLetters } from './layerRecord'
+import { backgroundOf, beadIdOfLayer, canvasOf, lettersOn, withBackground, withCanvas, withLetters } from './layerRecord'
 import type { PaletteCodes, PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
 import { touch, type Project } from './project'
@@ -13,7 +13,7 @@ import type { SwatchLetters } from './swatchLetters'
 export interface UndoEntry {
   /** Every layer whole (ADR 0079, ticket 0664): its Weave, Bead, Bead shape, beads, Piece names, and the Frame's place,
    * shape, turn, name, Folded beads and Row progress, so Undo undoes any of them with the beads they moved. Its views
-   * (the Project's name, the Canvas's orientation, the Letters switch) are not put back. */
+   * (the Project's name, the Canvas's orientation, the Letters switch, each layer's Background) are not put back. */
   layers: Project['layers']
   /** The Palette as it was, so Undo and Redo of adding, removing or moving a swatch restore it (ticket 0525). */
   palette: PaletteIds
@@ -32,7 +32,7 @@ export function snapshotOf(project: Project): UndoEntry {
 }
 
 /** The Project with everything an undo entry holds put back (see UndoEntry), keeping its name, the Canvas's
- * orientation and the Letters switch as they are now. */
+ * orientation, the Letters switch and each layer's Background (ticket 0666) as they are now. */
 export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   const { removedDefaults: _removed, paletteCodes: _codes, paletteLetters: _letters, ...rest } = project
   const { name, orientation } = canvasOf(project)
@@ -40,7 +40,11 @@ export function restoreSnapshot(project: Project, entry: UndoEntry): Project {
   // Each layer put back is the one recorded, the very object, unless a view changed since (ticket 0616).
   const viewed = name === canvasOf(entry).name && orientation === canvasOf(entry).orientation ? restored : withCanvas(restored, { name, orientation })
   const on = lettersOn(project)
-  const layered = viewed.layers.every((layer) => (layer.letters === true) === on) ? viewed : withLetters(viewed, on)
+  const lettered = viewed.layers.every((layer) => (layer.letters === true) === on) ? viewed : withLetters(viewed, on)
+  const layered = (['canvas', 'frame'] as const).reduce((kept, layer) => {
+    const now = backgroundOf(project, layer)
+    return now === undefined || now === backgroundOf(kept, layer) ? kept : withBackground(kept, layer, now)
+  }, lettered)
   return touch(layered, {
     palette: entry.palette,
     ...(entry.removedDefaults ? { removedDefaults: entry.removedDefaults } : {}),

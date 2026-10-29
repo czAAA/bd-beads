@@ -13,8 +13,9 @@ import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
-import { beadsOfLayer, canvasOf, frameOf } from '../domain/layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
+import { changeFrame } from '../domain/changeFrame'
 
 /** A 3-wide, 4-tall Frame at row 6, column 5, every position painted, with Row progress on and two rows done. */
 function framedProject(technique: Technique, rotation: Rotation = 0): Project {
@@ -40,7 +41,7 @@ const markFills = (named: (name: string) => { args: unknown[]; fillStyle: unknow
     .filter((call) => typeof call.fillStyle === 'object')
     .map(({ args: [x, y, width, height] }) => ({ left: x as number, top: y as number, right: (x as number) + (width as number), bottom: (y as number) + (height as number) }))
 
-function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme } = {}) {
+function render(project: Project, open: boolean, extra: { region?: Region; rows?: { first: number; last: number }; zoom?: number; theme?: ProjectTheme; frameTheme?: ProjectTheme } = {}) {
   const beads: BeadShape[] = []
   const { context, calls, named } = recordingContext()
   renderProject(context, {
@@ -50,6 +51,7 @@ function render(project: Project, open: boolean, extra: { region?: Region; rows?
     zoom: extra.zoom ?? 1,
     rows: extra.rows,
     theme: extra.theme,
+    frameTheme: extra.frameTheme,
     drawBead: (_c, bead) => beads.push(bead),
   })
   return { beads, calls, named, context }
@@ -129,6 +131,58 @@ describe.each<Technique>(['loom', 'peyote', 'brick'])('renderProject, %s', (tech
       expect(topOf(false, 0)[1]).toBe(positionBoxPx({ technique }, 0, 0).y)
       expect(topOf(true, 8)[1]).toBe(positionBoxPx({ technique }, 8, 0).y)
     })
+  })
+})
+
+describe('the Frame on its own background (ticket 0666)', () => {
+  const canvasLook = PROJECT_THEMES.light
+  const frameLook: ProjectTheme = { ...PROJECT_THEMES.dark, canvas: '#3b3e43', background: '#3b3e43', positionMark: '#50545a', emptyBead: '#50545a' }
+  const whole = { x: -1000, y: -1000, width: 2000, height: 2000 }
+
+  it('fills the Frame\'s box in its background on the Canvas and draws its beads and marks in its look', () => {
+    const project = withLayers(framedProject('loom'), { beads: {} })
+    const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+
+    const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
+    expect(fills).toHaveLength(1)
+    const [x, y, width, height] = fills[0]!.args as number[]
+    const corner = positionBoxPx({ technique: 'loom' }, 6, 5)
+    expect([x, y]).toEqual([corner.x - BEAD_GAP_PX / 2, corner.y - BEAD_GAP_PX / 2])
+    expect([width, height]).toEqual([3 * CELL_SIZE_PX + BEAD_GAP_PX, 4 * CELL_SIZE_PX + BEAD_GAP_PX])
+    expect(beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead && theme.background === frameLook.canvas)).toBe(true)
+    // Four strips round the margin's box in the Canvas's marks, and a fifth over the Frame in its own.
+    expect(markFills(named)).toHaveLength(5)
+  })
+
+  it('fills nothing more where the Frame is on the Canvas\'s background, and on its own fills its board', () => {
+    const project = framedProject('loom')
+    const alike = render(project, true, { region: whole, theme: canvasLook, frameTheme: { ...canvasLook } })
+    expect(alike.named('fillRect').filter((call) => typeof call.fillStyle === 'string')).toHaveLength(0)
+
+    const alone = render(project, false, { theme: canvasLook, frameTheme: frameLook })
+    expect(alone.named('fillRect').some((call) => call.fillStyle === frameLook.background && call.args[2] === view.width)).toBe(true)
+    expect(alone.beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead)).toBe(true)
+  })
+
+  it('fills the box a Frame in another Bead draws, at its own size (ticket 0665)', () => {
+    const project = withLayer(withLayers(framedProject('loom'), { beads: {} }), 'frame', { bead: findBead('miyuki-delica-11-0')! })
+    const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+
+    const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
+    expect(fills).toHaveLength(1)
+    const [, , width, height] = fills[0]!.args as number[]
+    expect([width, height]).not.toEqual([3 * CELL_SIZE_PX + BEAD_GAP_PX, 4 * CELL_SIZE_PX + BEAD_GAP_PX])
+    expect(beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead)).toBe(true)
+  })
+
+  it('draws a Custom frame\'s Off-shape in the Frame\'s background', () => {
+    const plain = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 10, height: 10, unit: 'beads' } })
+    const shaped = changeFrame(plain, { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } })
+    if (shaped.kind !== 'changed') throw new Error('expected a Triangle')
+    const { named } = render(shaped.project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+    expect(named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)).toHaveLength(1)
+    // Its Off-shape holds no position, so the box has no marks of its own.
+    expect(markFills(named)).toHaveLength(4)
   })
 })
 

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useMarginSwatches } from '../../composables/canvas/useMarginSwatches'
+import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import PanelSection from '../shell/PanelSection.vue'
@@ -8,15 +9,19 @@ import MarginColorPicker from './MarginColorPicker.vue'
 
 // The Frame panel's last section, margin (tickets 0656, 0657; MarginSheet and Frame cards): the margin color, the Switch
 // that shows or hides the sheet's title block, and the line on what the margin is. High contrast keeps the sheet white.
+const props = defineProps<{
+  /** The Project whose Canvas's Background the margin's Auto follows (ticket 0666). */
+  project: Project
+}>()
 const { t } = useI18n()
-const picker = useMarginSwatches()
-const margin = useCanvasBackground().margin
+const picker = useMarginSwatches(() => props.project)
+const margin = useCanvasBackground(() => props.project).margin
 </script>
 
 <template>
   <PanelSection id="frame:margin" :label="t.frame.margin.heading" :summary="picker.summary.value" data-testid="margin-section">
     <div class="margin-section">
-      <MarginColorPicker />
+      <MarginColorPicker :project="project" />
       <div class="margin-section__switch">
         <span class="margin-section__switch-label">{{ t.frame.margin.titleBlock }}</span>
         <AppSwitch :model-value="margin.titleBlock.value" :label="t.frame.margin.titleBlock" data-testid="margin-title-block-switch" @update:model-value="margin.setTitleBlock" />

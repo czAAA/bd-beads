@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { beadCopy, findBead } from './beads'
 import { changeFrame } from './changeFrame'
 import { createProject } from './createProject'
-import { beadIdOfLayer, beadOfLayer, beadsOfLayer, canvasOf, frameOf, heldWeave, layerOf, lettersOn, withFrameSheet, withLayer, withLetters, withPieceNames } from './layerRecord'
+import { backgroundOf, beadIdOfLayer, beadOfLayer, beadsOfLayer, canvasOf, frameOf, heldWeave, layerOf, lettersOn, withBackground, withFrameSheet, withLayer, withLetters, withPieceNames, withStartBackground } from './layerRecord'
 import type { Project } from './project'
 import { beadCell } from './weave'
 import { withLayers } from '../testUtils/layerFields'
@@ -174,5 +174,32 @@ describe('the layer list (ADR 0079, ticket 0664)', () => {
     const named = withPieceNames(open(), [{ name: 'Fox', row: 9, column: 9 }])
     expect(canvasOf(named).pieceNames).toEqual([{ name: 'Fox', row: 9, column: 9 }])
     expect(canvasOf(withPieceNames(named, []))).not.toHaveProperty('pieceNames')
+  })
+})
+
+describe('a layer\'s Background (ADR 0079, ticket 0666)', () => {
+  it('sets each layer\'s on its own, unstamped, and leaves a Project without a Frame as it is', () => {
+    const project = framed()
+    const set = withBackground(withBackground(project, 'canvas', 4), 'frame', '#336699')
+    expect(backgroundOf(set, 'canvas')).toBe(4)
+    expect(backgroundOf(set, 'frame')).toBe('#336699')
+    expect(set.updatedAt).toBe(project.updatedAt)
+    const canvasOnly = open()
+    expect(withBackground(canvasOnly, 'frame', 2)).toBe(canvasOnly)
+    expect(backgroundOf(canvasOnly, 'frame')).toBeUndefined()
+  })
+
+  it('lays a Frame anew on the Canvas\'s Background, and keeps a Frame\'s own when its sheet is laid again', () => {
+    const laid = withFrameSheet(withBackground(open(), 'canvas', 3), { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} })
+    expect(backgroundOf(laid, 'frame')).toBe(3)
+    const own = withBackground(laid, 'frame', '#112233')
+    expect(backgroundOf(withFrameSheet(own, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} }), 'frame')).toBe('#112233')
+  })
+
+  it('starts every layer without one on the device\'s last pick, keeping a layer\'s own', () => {
+    const started = withStartBackground(withBackground(framed(), 'frame', 2), '#abcdef')
+    expect(backgroundOf(started, 'canvas')).toBe('#abcdef')
+    expect(backgroundOf(started, 'frame')).toBe(2)
+    expect(withStartBackground(started, 4)).toBe(started)
   })
 })

@@ -602,6 +602,7 @@ export const en: Translations = {
     lettersLabel: 'Letters',
     lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
     lettersInfoLabel: 'What Letters does',
+    background: { heading: 'Background', label: 'Frame background' },
     margin: {
       heading: 'Margin',
       colorLabel: 'Margin color',

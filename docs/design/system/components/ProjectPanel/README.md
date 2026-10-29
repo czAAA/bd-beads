@@ -16,7 +16,7 @@ The panel shell (width, edge, radius, motion, closing, focus), the density and t
 ## Sections (PanelSection, in this order)
 
 1. **bead:** Bead shape first, a small SegmentedControl on its row (Symmetric | Real). Then **Bead**: three PanelPicker buttons on the same row, Brand, Type, Size (`[Miyuki ⌄] [Delica ⌄] [11/0 ⌄]`, BeadPicker card). Collapsed summary: "Miyuki Delica 11/0 · real". No size or weight line.
-2. **canvas:** the Canvas colors as 26px `radius-sm` swatches, 6px apart, the chosen one ringed `ink` with a 2px gap; the chosen color's name and hex at the right (`control` and `meta`). Five in light, five in dark, from the CanvasBackground card. In high contrast the swatches are replaced by one `body` line, "The canvas stays white in high contrast.". Collapsed summary: a 12px swatch and the name.
+2. **canvas:** the Canvas's own Background (ticket 0666, CanvasBackground card), saved with the Project: the Canvas colors as 26px `radius-sm` swatches, 6px apart, the chosen one ringed `ink` with a 2px gap; the chosen color's name and hex at the right (`control` and `meta`). Five in light, five in dark, from the CanvasBackground card. In high contrast the swatches are replaced by one `body` line, "The canvas stays white in high contrast.". Collapsed summary: a 12px swatch and the name.
 3. **export:** **Project file** (`export`, value `.openbeads`). Picture (PNG) and Printable chart (PDF) need a Frame and live in the Frame panel (Frame card).
 4. **this project:** Duplicate, **Clear all beads** (`erase`, `danger`) and **Delete project** (`delete`, `danger`), as PanelItems. Clear all beads is the app's existing Clear: every bead of this canvas emptied and Row progress off, behind its usual confirmation, one Undo step; the Project stays.
 

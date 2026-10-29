@@ -31,6 +31,9 @@ import { useRotateFrameFlow } from '../tools/useRotateFrameFlow'
 import { useRotateCanvasFlow } from '../canvas/useRotateCanvasFlow'
 import { hasOpenLayer } from '../ui/useOverlayLayer'
 import { useBeadShapeFlow } from '../project/useBeadShapeFlow'
+import { useBackgroundFlow } from '../project/useBackgroundFlow'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
+import { withStartBackground } from '../../domain/layerRecord'
 import { useExportFlow } from '../export/useExportFlow'
 import { migrateLegacyMakerName } from '../../services/legacyMakerName'
 import { useImportSwitchFlow } from '../import/useImportSwitchFlow'
@@ -109,12 +112,16 @@ function wireAppShell(services: Services) {
   /** "Update ready", once a newer version has downloaded behind the open page (ticket 69). */
   useUpdatePrompt({ updates: services.appUpdates, messages, showToast })
 
+  /** The device's last Background pick (ticket 0666): a new Project's layers start on it, and keep it on every device. */
+  const backgrounds = useCanvasBackground(currentProject, services.devicePreferences)
+  const addNewProject = (project: Parameters<typeof addProject>[0]) => addProject(withStartBackground(project, backgrounds.start.value))
+
   // Convert image (spec 0645, ADR 0010): a dialog creating a new Project, independent of the open one, so nothing here
   // touches replaceProject, undo or the Row lock.
-  const convertImage = useConvertImageFlow({ dialogs, addProject })
+  const convertImage = useConvertImageFlow({ dialogs, addProject: addNewProject })
 
   /** New-Project creation, blank or from a Starter (tickets 196, 0596). */
-  const { onCreateProject, onCreateFromStarter } = useNewProjectFlow({ addProject })
+  const { onCreateProject, onCreateFromStarter } = useNewProjectFlow({ addProject: addNewProject })
 
   /** The Rulers toggle (R, the canvas strip's button): on by default and kept on the device. */
   const showRulers = services.devicePreferences.get('rulers')
@@ -524,6 +531,8 @@ function wireAppShell(services: Services) {
   })
 
   const beadShapeFlow = useBeadShapeFlow({ currentProject, edit })
+  /** Each layer's Background (ticket 0666): a view, so no Edit. */
+  const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
   /** Rotate and the Row progress controls; none is an undo step (tickets 32, 171, 201). */
   const rowOps = useRowOps({ currentProject, replaceProject, showToast, messages, dialogs })
@@ -799,6 +808,7 @@ function wireAppShell(services: Services) {
       onSetCanvasTechnique: frameFlow.setCanvasTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
       onSetBeadShape: beadShapeFlow.setBeadShape,
+      onSetBackground: backgroundFlow.setBackground,
       replaceBeadCandidates: replaceBead.replaceBeadCandidates,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,

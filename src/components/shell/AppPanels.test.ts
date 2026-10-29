@@ -11,7 +11,7 @@ import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
 import { mountShellParts } from '../../testUtils/shellHost'
 import { refuseStorageWrites } from '../../testUtils/storageWrites'
-import { canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
+import { backgroundOf, canvasOf, frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
 
 /** Menu, Project and the Frame panel reach their flows and dialogs without the canvas (tickets 232, 443, 0618), one
@@ -260,6 +260,35 @@ describe('The Frame panel', () => {
     await nextTick()
     mounted.canvas.onUndo()
     expect(frameOf(loadProjects()[0])!.settings).toEqual({ rounds: 6 })
+  })
+})
+
+describe('Backgrounds (ticket 0666)', () => {
+  it('saves the Canvas\'s from the Project panel and the Frame\'s from the Frame panel, each on its own', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('project')
+    await click(mounted, 'background-color-fog')
+    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(4)
+
+    await mounted.openPanel('frame')
+    await click(mounted, 'background-color-pebble')
+    expect(backgroundOf(loadProjects()[0], 'frame')).toBe(5)
+    expect(backgroundOf(loadProjects()[0], 'canvas')).toBe(4)
+  })
+
+  it('starts a new Project\'s layers on the last one picked', async () => {
+    const mounted = mountPanels()
+    await mounted.openPanel('frame')
+    await click(mounted, 'background-color-stone')
+    await mounted.openPanel('menu')
+    await click(mounted, 'menu-new-project')
+    await click(mounted, 'pick-starter')
+    await click(mounted, 'starter-category-shapes')
+    await click(mounted, 'starter-card-star')
+    await click(mounted, 'create-starter-project')
+
+    const star = loadProjects().find((project) => canvasOf(project).name === en.frame.shapes.star)!
+    expect([backgroundOf(star, 'canvas'), backgroundOf(star, 'frame')]).toEqual([3, 3])
   })
 })
 
