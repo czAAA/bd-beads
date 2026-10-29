@@ -757,7 +757,6 @@ export const pl: Translations = {
     increaseColorsButton: 'Więcej kolorów',
     wizard: {
       title: 'Konwertuj obraz',
-      close: 'Zamknij',
       sections: { picture: 'Obraz', bead: 'Koralik i technika', size: 'Rozmiar', colors: 'Kolory', review: 'Podsumowanie' },
       rail: { picture: 'obraz', bead: 'koralik', size: 'rozmiar', colors: 'kolory', review: 'podsumowanie' },
       railLabel: 'Kroki',
@@ -924,6 +923,10 @@ export const pl: Translations = {
     importFile: 'Otwórz projekt z pliku .openbeads.',
     changeName: 'Zmień imię twórcy drukowane w eksportach.',
     convertImage: 'Zamień obraz w schemat.',
+    treatAsEmpty: 'Dotknij koloru na podglądzie, aby jego koraliki były puste.',
+    customRatio: 'Ustaw własną liczbę pikseli na koralik lub koralików na piksel.',
+    remapColor: 'Wybierz kolor koralików, którym stanie się ten kolor obrazu.',
+    emptyColor: 'Pomiń ten kolor: jego koraliki zostaną puste.',
     list: (names) => `${names.join(', ')}.`,
   },
 }

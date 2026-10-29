@@ -2,6 +2,7 @@ import type { FormFactorNames } from '../domain/beads'
 import type { CustomFrameKindId, FrameSettingName, FringeStyle } from '../domain/frameKind'
 import type { Locale } from '../domain/locale'
 import type { BandFit, StarterCategoryId, StarterSizeName } from '../domain/starters'
+import type { ConvertStep, CropHandle } from '../domain/convertSize'
 import type { PluralForms } from './plural'
 
 export type { Locale }
@@ -862,10 +863,9 @@ export interface Translations {
     /** The Convert image wizard (spec 0645; ConvertImage, PixelToBeadRatio, FoundColorRow cards; writing.md). */
     wizard: {
       title: string
-      close: string
       /** The five sections' titles, and their short labels on the step rail. */
-      sections: Record<'picture' | 'bead' | 'size' | 'colors' | 'review', string>
-      rail: Record<'picture' | 'bead' | 'size' | 'colors' | 'review', string>
+      sections: Record<ConvertStep, string>
+      rail: Record<ConvertStep, string>
       /** The step rail's accessible name. */
       railLabel: string
       /** A disabled section's summary until a picture is set. */
@@ -910,7 +910,7 @@ export interface Translations {
       oneBead: string
       blockBeads: string
       /** The crop handles' names, each edge and corner. */
-      crop: Record<'top' | 'right' | 'bottom' | 'left' | 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight', string>
+      crop: Record<CropHandle, string>
       cropHint: string
       keepProportions: string
       pictureZoom: string
@@ -1066,6 +1066,10 @@ export interface Translations {
     importFile: string
     changeName: string
     convertImage: string
+    treatAsEmpty: string
+    customRatio: string
+    remapColor: string
+    emptyColor: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }

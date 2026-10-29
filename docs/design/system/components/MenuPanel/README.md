@@ -1,6 +1,6 @@
 # MenuPanel
 
-The body of the Menu: what is about the app and the device. It renders as a dropdown under its strip button on every screen size (ADR 0046). The Project body is the ProjectPanel card; the Frame panel is in the Frame card. All three open in the same shell, one at a time, close the same way and are built from the same four parts (below), so they look and space alike. (Spec 0440, tickets 0443, 0475; redesigned in ticket 0553, design canvas https://claude.ai/artifact/DtuwrYB8pNEabwFCYCC8wB.)
+The body of the Menu: what is about the app and the device. It renders as a dropdown under its strip button on every screen size (ADR 0046). The Project body is the ProjectPanel card; the Frame panel is in the Frame card; the Export panel is the ExportPanel card. All four open in the same shell, one at a time, close the same way and are built from the same four parts (below), so they look and space alike. (Spec 0440, tickets 0443, 0475; redesigned in ticket 0553, design canvas https://claude.ai/artifact/DtuwrYB8pNEabwFCYCC8wB.)
 
 ## Panel (the dropdown)
 

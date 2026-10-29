@@ -757,7 +757,6 @@ export const ru: Translations = {
     increaseColorsButton: 'Больше цветов',
     wizard: {
       title: 'Конвертировать изображение',
-      close: 'Закрыть',
       sections: { picture: 'Изображение', bead: 'Бисер и техника', size: 'Размер', colors: 'Цвета', review: 'Проверка' },
       rail: { picture: 'изображение', bead: 'бисер', size: 'размер', colors: 'цвета', review: 'итог' },
       railLabel: 'Шаги',
@@ -924,6 +923,10 @@ export const ru: Translations = {
     importFile: 'Открыть проект из файла .openbeads.',
     changeName: 'Изменить имя мастера при экспорте.',
     convertImage: 'Превратить картинку в схему.',
+    treatAsEmpty: 'Делает пустым цвет, на который вы нажмёте на превью.',
+    customRatio: 'Задаёт своё число пикселей на бисерину или бисерин на пиксель.',
+    remapColor: 'Выбирает цвет бисера, которым станет этот цвет картинки.',
+    emptyColor: 'Убирает этот цвет: его бисерины остаются пустыми.',
     list: (names) => `${names.join(', ')}.`,
   },
 
