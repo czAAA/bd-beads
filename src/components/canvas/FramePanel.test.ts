@@ -238,6 +238,8 @@ describe('FramePanel (ticket 473)', () => {
     await choosePanelOption(wrapper, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
 
     expect(wrapper.emitted('replace-bead')).toEqual([['toho/round/11-0']])
+    await wrapper.get('[data-testid="frame-bead"] [data-testid="bead-shape"] [data-value="real"]').trigger('click')
+    expect(wrapper.emitted('set-bead-shape')).toEqual([['real']])
   })
 
   it('asks for the Picture and the Printable chart, and waits while one is being made (ticket 555)', async () => {

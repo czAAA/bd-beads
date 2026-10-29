@@ -40,18 +40,22 @@ interface PendingReplace {
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   const pending = (deps.dialogs ?? useDialogs()).question<PendingReplace>('replace-bead')
 
+  /** The open Project when it has the layer: always the Canvas, the Frame only once there is one. */
+  const projectWith = (layer: Layer) => {
+    const project = deps.currentProject()
+    return project && (layer === 'canvas' || frameOf(project)) ? project : undefined
+  }
+
   /** A layer's own Bead in the open Project; undefined with no Project, or for the Frame with none. */
   const ownBead = (layer: Layer) => {
-    const project = deps.currentProject()
-    if (!project || (layer === 'frame' && !frameOf(project))) return undefined
-    return beadOfLayer(project, layer).bead
+    const project = projectWith(layer)
+    return project && beadOfLayer(project, layer).bead
   }
 
   /** The Beads a layer could switch to (tickets 48, 534): everything offered but its own, and the catalog's current Bead
    * of its id when its copy differs from it; nothing for a layer the Project doesn't have. */
   function choiceOf(layer: Layer): LayerBeadChoice {
-    const project = deps.currentProject()
-    if (!project || (layer === 'frame' && !frameOf(project))) return { candidates: [], outdated: false }
+    if (!projectWith(layer)) return { candidates: [], outdated: false }
     const own = ownBead(layer)
     const current = own && offeredBeads().find((bead) => bead.id === own.id)
     const outdated = !!own && !!current && beadsDiffer(own, current)

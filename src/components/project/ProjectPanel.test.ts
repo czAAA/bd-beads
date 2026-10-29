@@ -33,12 +33,12 @@ describe('ProjectPanel (tickets 443, 554)', () => {
   it('has the head, then the bead, canvas, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
     const order = ['project-head', 'bead-shape', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
-    // The bead section holds the Bead shape alone; the Canvas section the Canvas's own Bead (ticket 0687).
+    // The Canvas section opens on the Canvas's own Bead section (ticket 0687); the Frame's is the Frame panel's.
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Bead', 'Canvas', 'Export', 'This project'])
+    expect(wrapper.findAll('.panel-section__label').map((label) => label.text())).toEqual(['Canvas', 'Export', 'This project'])
     expect(wrapper.get('[data-testid="project-delete"]').classes()).toContain('panel-item--danger')
     expect(wrapper.get('[data-testid="project-clear"]').text()).toBe(en.panels.project.clear)
     expect(wrapper.get('[data-testid="export-project-file"]').text()).toContain('.openbeads')
@@ -53,7 +53,7 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.text()).not.toContain('Estimated size')
   })
 
-  it('shows the Bead shape and asks for the other one (ticket 508)', async () => {
+  it("shows the Canvas's Bead shape and asks for the other one (tickets 508, 0687)", async () => {
     const wrapper = mountPanel()
     const shape = wrapper.get('[data-testid="bead-shape"]')
     expect(shape.get('[aria-checked="true"]').attributes('data-value')).toBe('symmetric')
@@ -216,20 +216,13 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
   })
 
-  it('folds a section shut and shows its summary', async () => {
+  it('folds the canvas section shut, naming the Canvas\'s Custom Background in its summary (tickets 0653, 0666)', async () => {
     localStorage.removeItem('openbeads:panel-sections-closed')
-    const wrapper = mountPanel()
+    document.documentElement.dataset.theme = 'light'
+    const wrapper = mountPanel({ project: withBackground(project, 'canvas', '#7a2e8c') })
     const header = wrapper.findAll('.panel-section__header')[0]!
     await header.trigger('click')
     expect(header.attributes('aria-expanded')).toBe('false')
-    expect(header.text()).toContain('symmetric')
-  })
-
-  it('names the Canvas\'s Custom Background in the canvas section\'s summary (tickets 0653, 0666)', async () => {
-    document.documentElement.dataset.theme = 'light'
-    const wrapper = mountPanel({ project: withBackground(project, 'canvas', '#7a2e8c') })
-    const header = wrapper.findAll('.panel-section__header')[1]!
-    await header.trigger('click')
     expect(header.text()).toContain('Custom color')
   })
 
