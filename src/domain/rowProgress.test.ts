@@ -2,7 +2,7 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { finishedRowsOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
+import { finishedRowsOf, rowPassesOf, isInCurrentRow, isInFinishedRow, keepFinishedRows, moveToRow, resetRowProgress, rowProgressOf, rowProgressOn, rowProgressPosition, rowProgressStarted, toggleRowDirection } from './rowProgress'
 import { normalizeProject } from './storedProject'
 import type { Project } from './project'
 import { withFrame } from './frame'
@@ -88,6 +88,20 @@ describe('row progress', () => {
       expect(positions.filter(finished)).toEqual(expected)
       expect(finished({ row: 2, column: 3, layer: 'canvas' })).toBe(false)
       expect(finishedRowsOf(moveToRow(woven, 0))({ row: 2, column: 3 })).toBe(false)
+    }
+  })
+
+  it('tells finished and current beads for many positions at once as it does for each (ticket 0676)', () => {
+    for (const technique of ['loom', 'peyote'] as const) {
+      const placed = createProject({ technique, beadId: cubeBead.id, size: { width: 4, height: 6, unit: 'beads' } })
+      const woven = moveToRow(withFields(placed, { frame: { ...frameOf(placed)!, row: 2, column: 3 } }), 3)
+      const passes = rowPassesOf(woven)
+      const positions = Array.from({ length: 10 * 9 }, (_, index) => ({ row: Math.floor(index / 9), column: index % 9 }))
+      const expected = positions.map((position) => (isInFinishedRow(woven, position) ? 'finished' : isInCurrentRow(woven, position) ? 'current' : undefined))
+      expect(expected).toContain('finished')
+      expect(expected).toContain('current')
+      expect(positions.map(passes)).toEqual(expected)
+      expect(passes({ row: 2, column: 3, layer: 'canvas' })).toBeUndefined()
     }
   })
 

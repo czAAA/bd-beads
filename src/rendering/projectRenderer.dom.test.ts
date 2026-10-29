@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recordingContext } from '../testUtils/recordingContext'
 import { type BeadMap, withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
+import { MARGIN } from '../domain/margin'
 import type { Grid, Project } from '../domain/project'
 import type { Technique, Weave } from '../domain/weave'
 import { blendOver, brighten, DARK_THEME, DEFAULT_THEME, drawFlatBead, fadeOver, greyscale, PROJECT_THEMES, type BeadDrawer, type BeadShape } from './beadLook'
@@ -886,5 +887,104 @@ describe('a round Bead in Real shape is a pill (ADR 0068)', () => {
     const radii = calls.filter((call) => call.name === 'roundRect').map((call) => call.args[4])
     expect(radii.length).toBeGreaterThan(0)
     for (const radius of radii) expect(radius as number).toBeLessThanOrEqual(10)
+  })
+})
+
+describe('the draft look zoomed out (ticket 0676)', () => {
+  /** Scratch canvases standing in for the ones a browser makes: reads the images put on them so far, in order. */
+  function withDraftCanvas(): () => { width: number; height: number; data: Uint8ClampedArray }[] {
+    const scratch = recordingContext()
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(scratch.context as unknown as CanvasRenderingContext2D)
+    return () => scratch.named('putImageData').map((call) => call.args[0] as { width: number; height: number; data: Uint8ClampedArray })
+  }
+  afterEach(() => vi.restoreAllMocks())
+
+  /** A 100 × 100 Frame at row 100, column 100 over a 300 × 300 Canvas Piece of green, the Frame's first bead red. */
+  function framedPiece(technique: Technique): Project {
+    const base = projectOf(technique, 100, 100)
+    const green = Object.fromEntries(Array.from({ length: 300 }, (_row, row) => [row, Object.fromEntries(Array.from({ length: 300 }, (_cell, column) => [column, '#00ff00']))]))
+    return withFields(base, { frame: { ...frameOf(base)!, technique, row: 100, column: 100, beads: { 0: { 0: '#ff0000' } } }, beads: green })
+  }
+  const SCREEN = { x: 0, y: 0, width: 1900, height: 1200 }
+
+  function drawn(project: Project, zoom: number, pixelRatio = 1, draftWhenSmall = true) {
+    const { context, named } = recordingContext()
+    let beads = 0
+    renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom, pixelRatio, rowMarks: false, draftWhenSmall, drawBead: () => (beads += 1) })
+    return { beads, images: named('drawImage') }
+  }
+
+  it('draws each layer as one image below 5 device px a bead, and bead by bead above it', () => {
+    withDraftCanvas()
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      const project = framedPiece(technique)
+      // A bead 4 px across on the screen: one image for the Canvas and one for the Frame.
+      expect(drawn(project, 0.2)).toEqual({ beads: 0, images: [expect.anything(), expect.anything()] })
+      // The same zoom on a screen of twice the pixels: 8 px a bead, each its own.
+      expect(drawn(project, 0.2, 2).beads).toBeGreaterThan(10_000)
+      // An export, or anything else that does not ask for it, keeps every bead's look.
+      expect(drawn(project, 0.2, 1, false).beads).toBeGreaterThan(10_000)
+    }
+  })
+
+  it('lays each layer\'s image over its beads\' boxes, peyote\'s and brick\'s shifted rows half a bead across', () => {
+    const imagesSoFar = withDraftCanvas()
+    for (const technique of ['loom', 'peyote', 'brick'] as const) {
+      const before = imagesSoFar().length
+      const { images: draws } = drawn(framedPiece(technique), 0.2)
+      const images = imagesSoFar().slice(before)
+      const step = beadStepPx({ technique })
+      const wide = technique === 'loom' ? 1 : 2
+      // The Canvas: its 300 rows from row 0, its columns from 0, a shifted row's room on the right.
+      const canvasImage = images[0]!
+      expect([canvasImage.width, canvasImage.height]).toEqual([300 * wide + (wide - 1), 300])
+      expect(draws[0]!.args.slice(1)).toEqual([0, 0, canvasImage.width, 300, 0, 0, (canvasImage.width * 20) / wide, 300 * step.down])
+      // The Frame: from its own first bead, red, at its place on the Canvas.
+      const frameImage = images[1]!
+      expect([frameImage.width, frameImage.height]).toEqual([100 * wide + (wide - 1), 100])
+      expect(draws[1]!.args.slice(5)).toEqual([100 * 20, 100 * step.down, (frameImage.width * 20) / wide, 100 * step.down])
+      expect([...frameImage.data.slice(0, 4)]).toEqual([255, 0, 0, 255])
+      // Row 1 is shifted on peyote and brick: its first bead starts a pixel in, half a bead.
+      const shifted = frameImage.width * 4 + (wide - 1) * 4
+      expect([...frameImage.data.slice(shifted, shifted + 4)]).toEqual([...frameImage.data.slice(frameImage.width * 4 * 2, frameImage.width * 4 * 2 + 4)])
+      if (wide === 2) expect(frameImage.data[frameImage.width * 4 + 3]).toBe(0)
+    }
+  })
+
+  it('lays each layer\'s kept image down again while only the view moves, and paints it afresh for an edited Project', () => {
+    const images = withDraftCanvas()
+    const project = framedPiece('peyote')
+    const at = (region: Region, drawnProject = project) => {
+      const { context, named } = recordingContext()
+      renderInSpace(context, { project: drawnProject, space: spaceOf(drawnProject, true), region, zoom: 0.2, rowMarks: false, draftWhenSmall: true })
+      return named('drawImage').length
+    }
+
+    expect(at(SCREEN)).toBe(2)
+    expect(at({ ...SCREEN, x: 300, y: -200 })).toBe(2)
+    expect(images()).toHaveLength(2)
+    expect(at({ ...SCREEN, x: 300 }, withFields(project, { beads: { 0: { 0: '#0000ff' } } }))).toBe(2)
+    expect(images()).toHaveLength(4)
+  })
+
+  it('leaves the Canvas clear under the Frame and its margin, and draws the Frame\'s empty beads and finished rows as their look does', () => {
+    const images = withDraftCanvas()
+    const project = withFields(framedPiece('loom'), { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
+    const { context } = recordingContext()
+
+    renderInSpace(context, { project, space: spaceOf(project, true), region: SCREEN, zoom: 0.2, rowMarks: true, draftWhenSmall: true })
+
+    const [canvasImage, frameImage] = images()
+    const at = (image: typeof canvasImage, row: number, column: number) => [...image!.data.slice((row * image!.width + column) * 4, (row * image!.width + column) * 4 + 4)]
+    expect(at(canvasImage, 0, 0)).toEqual([0, 255, 0, 255])
+    expect(at(canvasImage, 150, 150)[3]).toBe(0)
+    expect(at(canvasImage, 100 - MARGIN, 150)[3]).toBe(0)
+    expect(at(canvasImage, 100 - MARGIN - 1, 150)).toEqual([0, 255, 0, 255])
+    // Row 0 is finished: its red faded toward the drawing area. Row 1 is the current one: its empty beads as empty beads.
+    const look = { ...DEFAULT_THEME, background: DEFAULT_THEME.canvas }
+    const hex = (color: string) => [1, 3, 5].map((at) => parseInt(color.slice(at, at + 2), 16))
+    const rgb = (color: string) => color.match(/\d+/g)!.map(Number)
+    expect(at(frameImage, 0, 0)).toEqual([...rgb(fadeOver('#ff0000', look.background, look.finished.opacity)), 255])
+    expect(at(frameImage, 1, 0)).toEqual([...hex(DEFAULT_THEME.emptyBead), 255])
   })
 })
