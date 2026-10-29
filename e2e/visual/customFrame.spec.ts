@@ -4,7 +4,7 @@ import { PNG } from 'pngjs'
 import { openApp, openStripPanel, selectTool, settle } from '../support/app'
 import { fixtureProject } from '../support/projects'
 import { changeFrame } from '../../src/domain/changeFrame'
-import { frameLayoutOf, type CustomFrameKindId } from '../../src/domain/frameKind'
+import { frameLayoutOf, type FrameShapeId } from '../../src/domain/frameShape'
 import { onLayer } from '../../src/domain/layers'
 import { moveToRow } from '../../src/domain/rowProgress'
 import { paintCells } from '../../src/domain/drawing'
@@ -15,9 +15,9 @@ import type { Project } from '../../src/domain/project'
 // or row painted a colour of its own, so the rounds and their step from panel to panel show.
 const ROUND_COLORS = ['#e63746', '#f2c94c', '#2f6fed', '#27ae60', '#9b51e0']
 
-function customFramed(kind: CustomFrameKindId, size: number): Project {
+function customFramed(shape: FrameShapeId, size: number): Project {
   const { frame: _frame, ...open } = fixtureProject({ technique: 'loom', blank: true })
-  const placed = changeFrame(open, { custom: { kind, size, centre: { row: 8, column: 10 } } })
+  const placed = changeFrame(open, { custom: { shape, size, centre: { row: 8, column: 10 } } })
   if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
   const positions = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row }) => row < size - 1)
   return ROUND_COLORS.reduce(
@@ -28,14 +28,14 @@ function customFramed(kind: CustomFrameKindId, size: number): Project {
 
 // Each at a size that fits the screen whole: a Star's arms and a Kaleidocycle's triangles in Part size rounds, a Kite in
 // Rows, a Fringe earring by its Top width (ticket 0597).
-const SIZES = { triangle: 7, warpedSquare: 7, star: 5, kaleidocycle: 5, kite: 15, fringeEarring: 7 } as const satisfies Record<CustomFrameKindId, number>
+const SIZES = { triangle: 7, warpedSquare: 7, star: 5, kaleidocycle: 5, kite: 15, fringeEarring: 7 } as const satisfies Record<FrameShapeId, number>
 
-for (const kind of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite', 'fringeEarring'] as const) {
-  test(`a ${kind} Custom frame`, async ({ page }) => {
-    await openApp(page, [customFramed(kind, SIZES[kind])])
+for (const shape of ['triangle', 'warpedSquare', 'star', 'kaleidocycle', 'kite', 'fringeEarring'] as const) {
+  test(`a ${shape} Custom frame`, async ({ page }) => {
+    await openApp(page, [customFramed(shape, SIZES[shape])])
     await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
     await page.mouse.move(5, 5)
-    await expect(page.getByTestId('app-canvas')).toHaveScreenshot(`custom-frame-${kind}.png`, { maxDiffPixelRatio: 0.01 })
+    await expect(page.getByTestId('app-canvas')).toHaveScreenshot(`custom-frame-${shape}.png`, { maxDiffPixelRatio: 0.01 })
   })
 }
 

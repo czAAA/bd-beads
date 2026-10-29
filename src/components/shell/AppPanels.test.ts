@@ -87,7 +87,7 @@ describe('Menu', () => {
     await click(mounted, 'starter-card-star')
     await click(mounted, 'create-starter-project')
 
-    expect(loadProjects().find((project) => project.name === en.frame.customKinds.star)!.frame).toMatchObject({ kind: 'star' })
+    expect(loadProjects().find((project) => project.name === en.frame.shapes.star)!.frame).toMatchObject({ shape: 'star' })
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
@@ -239,12 +239,12 @@ describe('The Frame panel', () => {
     await click(mounted, 'starter-card-triangle')
     await click(mounted, 'create-starter-project')
 
-    expect(loadProjects()[0]!.frame).toMatchObject({ kind: 'triangle' })
+    expect(loadProjects()[0]!.frame).toMatchObject({ shape: 'triangle' })
     expect(mounted.wrapper.find('[data-testid="panel-body"]').exists()).toBe(false)
   })
 
   it('saves each press of a Custom frame\'s stepper at once, and they are one Undo step once the panel closes (ticket 0640)', async () => {
-    const placed = changeFrame(moth(), { custom: { kind: 'triangle', size: 6, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(moth(), { custom: { shape: 'triangle', size: 6, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error(placed.kind)
     saveProjects([placed.project])
     const mounted = mountPanels()

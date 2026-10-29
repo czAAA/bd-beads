@@ -64,7 +64,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
 /** The open Canvas with a Triangle Custom frame laid on it. */
 function triangle(): Project {
-  const result = changeFrame(open(), { custom: { kind: 'triangle', size: 3, centre: { row: 20, column: 30 } } })
+  const result = changeFrame(open(), { custom: { shape: 'triangle', size: 3, centre: { row: 20, column: 30 } } })
   if (result.kind !== 'changed') throw new Error('expected a Custom frame')
   return result.project
 }
@@ -97,11 +97,11 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
     expect(withLayer(after, 'canvas', { beadShape: 'symmetric' })).not.toHaveProperty('beadShape')
   })
 
-  it('writes a Custom frame\'s beads and Weave, keeping its kind, settings and place', () => {
+  it('writes a Custom frame\'s beads and Weave, keeping its Frame shape, settings and place', () => {
     const before = triangle()
     const after = withLayer(before, 'frame', { weave: { technique: 'loom' }, beads: { 0: { 0: RED } } })
-    const { kind, settings, row, column } = before.frame!
-    expect(after.frame).toMatchObject({ technique: 'loom', beads: { 0: { 0: RED } }, kind, settings, row, column })
+    const { shape, settings, row, column } = before.frame!
+    expect(after.frame).toMatchObject({ technique: 'loom', beads: { 0: { 0: RED } }, shape, settings, row, column })
   })
 
   it('leaves the change unstamped, for the caller to stamp', () => {

@@ -1,7 +1,7 @@
 {
   "id": "star",
   "design": "star.json",
-  "kind": "star",
+  "shape": "star",
   "technique": "peyote",
   "measure": "frame",
   "sizes": [

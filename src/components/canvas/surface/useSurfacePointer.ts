@@ -1,7 +1,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch, type EmitFn, type Ref, type ShortEmitsToObject } from 'vue'
 import { layerAt } from '../../../domain/layers'
 import { footprintOf } from '../../../domain/footprint'
-import { frameAllows } from '../../../domain/frameKind'
+import { frameAllows } from '../../../domain/frameShape'
 import { inMargin, mayPlace } from '../../../domain/margin'
 import type { GridPosition, Layer, PreviewCell } from '../../../domain/grid'
 import { pointerDraws, type Handedness, type InputMode } from '../../../domain/inputMode'
