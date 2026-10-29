@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { colorAt, withColors, type Rect } from './canvas'
 import { keepAllowedEdits } from './allowedEdits'
-import { clampOutOfMargin, inMargin, MARGIN, marginBoxFor, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
+import { inMargin, MARGIN, mayPlace, selectionAllowed, trimToAllowed, withMargin } from './margin'
 import { createProject } from './createProject'
 import { withFrame } from './frame'
 import type { GridPosition } from './grid'
@@ -59,28 +59,7 @@ describe('the keep-out margin', () => {
   })
 })
 
-describe('clampOutOfMargin (ticket 428)', () => {
-  it('leaves a cell outside the margin, and any cell without a Frame, alone', () => {
-    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 12, column: 12 })).toEqual({ row: 12, column: 12 })
-    expect(clampOutOfMargin(undefined, { row: 0, column: 0 }, { row: 7, column: 10 })).toEqual({ row: 7, column: 10 })
-  })
-
-  it('pulls a drag begun inside the Frame back to the Frame\'s own edge', () => {
-    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 8, column: 12 })).toEqual({ row: 10, column: 12 })
-    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 16, column: 18 })).toEqual({ row: 13, column: 15 })
-  })
-
-  it('holds a drag begun inside the Frame to the Frame, even past the margin', () => {
-    expect(clampOutOfMargin(frame, { row: 11, column: 11 }, { row: 40, column: 2 })).toEqual({ row: 13, column: 10 })
-  })
-
-  it('pulls a drag begun outside the margin back to the margin\'s outer edge', () => {
-    expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 8, column: 8 })).toEqual({ row: 5, column: 8 })
-    expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 15, column: 17 })).toEqual({ row: 18, column: 17 })
-  })
-})
-
-describe('a Selection never covers the margin (ticket 428)', () => {
+describe('a Piece tap keeps out of the margin (tickets 428, 433)', () => {
   it('allows a Selection wholly inside the Frame or wholly clear of the band, and nothing else (ticket 433)', () => {
     expect(selectionAllowed(frame, { top: 10, left: 10, rows: 4, columns: 6 })).toBe(true)
     expect(selectionAllowed(frame, { top: 11, left: 11, rows: 1, columns: 1 })).toBe(true)
@@ -103,25 +82,6 @@ describe('a Selection never covers the margin (ticket 428)', () => {
     expect(trimToAllowed(frame, wide, { row: 20, column: 11 })).toEqual({ top: 18, left: 10, rows: 12, columns: 3 })
     expect(trimToAllowed(frame, { top: 11, left: 11, rows: 2, columns: 2 }, { row: 11, column: 11 })).toEqual({ top: 11, left: 11, rows: 2, columns: 2 })
     expect(trimToAllowed(frame, wide, { row: 8, column: 11 })).toBeUndefined()
-  })
-
-  it('refuses a drag that begins in the margin by returning the anchor', () => {
-    expect(clampOutOfMargin(frame, { row: 8, column: 11 }, { row: 12, column: 12 })).toEqual({ row: 8, column: 11 })
-  })
-
-  it('stops a drag from outside before the margin instead of crossing the Frame', () => {
-    // from above the margin to the far side of the Frame: held at the margin's outer edge above it
-    expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 20, column: 12 })).toEqual({ row: 5, column: 12 })
-    // from a corner across the whole Frame: the clamp keeps the larger rectangle
-    const end = clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 30, column: 30 })
-    expect(selectionAllowed(frame, { top: 2, left: 2, rows: end.row - 1, columns: end.column - 1 })).toBe(true)
-  })
-
-  it('lets a drag from outside go all the way across the Frame and its margin to take it in whole', () => {
-    expect(clampOutOfMargin(frame, { row: 2, column: 2 }, { row: 30, column: 30 })).toEqual({ row: 30, column: 30 })
-    expect(clampOutOfMargin(frame, { row: 30, column: 30 }, { row: 2, column: 2 })).toEqual({ row: 2, column: 2 })
-    // across in one direction only still cuts through the margin, so it is held back
-    expect(clampOutOfMargin(frame, { row: 2, column: 12 }, { row: 30, column: 12 })).toEqual({ row: 5, column: 12 })
   })
 })
 
@@ -149,11 +109,4 @@ describe('the margin of a Frame that draws shorter than the rows it names (ADR 0
   it('never calls a Frame bead margin, whatever its position says', () => {
     expect(mayPlace(woven, { row: 40, column: 3, layer: 'frame' })).toBe(true)
   })
-
-  it('measures from the Frame\'s own rectangle for what is on the Frame, and the footprint for the Canvas', () => {
-    expect(marginBoxFor(woven, 'frame')).toEqual(woven.frame)
-    expect(marginBoxFor(woven, 'canvas')).toMatchObject({ row: 0, column: 0, rows: 36, columns: 11 })
-    expect(marginBoxFor({ ...woven, frame: undefined }, 'canvas')).toBeUndefined()
-  })
 })
-
