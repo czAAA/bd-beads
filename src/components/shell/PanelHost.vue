@@ -11,6 +11,8 @@ const props = defineProps<{
   open: PanelId | null
   /** The panels this host shows, so Menu and Project share one that stays mounted while they swap. */
   only: readonly PanelId[]
+  /** The button it hangs from, by test id, when not its descriptor's: Export from the margin sheet (ticket 0657). */
+  anchor?: string
 }>()
 const emit = defineEmits<{ close: [] }>()
 
@@ -22,7 +24,7 @@ const panel = computed(() => (props.open && props.only.includes(props.open) ? PA
   <AppPanel
     v-if="panel"
     :title="panel.title(t)"
-    :anchor="panel.anchor"
+    :anchor="anchor ?? panel.anchor"
     :menu="panel.menu"
     :skips-fields="panel.skipsFields"
     :width="panel.width"

@@ -1,7 +1,7 @@
 import { beadPitchMm, type Bead } from './beads'
 import type { BeadMap } from './canvas'
 import { changeFrame, type FrameChangeResult } from './changeFrame'
-import { customFrameSize, frameGeometry, frameKindOf, settingValuesOf, type FrameKindId, type FrameSettingName, type FrameSettings } from './frameKind'
+import { customFrameSize, frameGeometry, frameShapeOf, settingValuesOf, type FrameShapeId, type FrameSettingName, type FrameSettings } from './frameShape'
 import type { GridDimensions, GridPosition } from './grid'
 import { createProject } from './createProject'
 import { resolveProjectBead } from './projectBead'
@@ -13,14 +13,14 @@ import type { SettingSpec } from './settingSpec'
 import { describeWeave, type Technique } from './weave'
 import categories from '../data/starters/categories.json'
 
-// The Starters (spec 0590, tickets 0596, 0597, 0633; StarterGallery card): each a design for one Frame kind at one best
+// The Starters (spec 0590, tickets 0596, 0597, 0633; StarterGallery card): each a design for a Frame at one best
 // size, kept with the app in `src/data/starters/` as a manifest (`<id>.starter.json`) beside its design, its Frame's
 // size and beads alone (ticket 0636). A new one is data alone.
 
 /** The Starter gallery's categories. */
 export type StarterCategoryId = 'shapes' | 'earrings' | 'rings' | 'bands'
 
-/** A Starter by id: a Shape's is its kind's and it is named by it, the others name their copy (`starters.options.<id>`). */
+/** A Starter by id: a Shape's is its Frame shape's and it is named by it, the others name their copy (`starters.options.<id>`). */
 export type StarterId = string
 
 /** What a Starter's setup sizes in numbers: a Custom frame's settings, or a Ring's or Band's Width in beads and its Ring
@@ -49,8 +49,8 @@ const RING_EASE_MM = 4
 /** The usual US Ring sizes, offered as chips when the Size system is US. */
 export const US_RING_PRESETS: readonly number[] = [5, 6, 7, 8, 9]
 
-/** How a Starter's Frame is sized and measured, the rule its manifest names (ticket 0633): `frame` by its Custom frame
- * kind's settings, `ring` and `band` as a strip lying across, as long as the finger's round or the wrist with its Fit. */
+/** How a Starter's Frame is sized and measured, the rule its manifest names (ticket 0633): `frame` by its Frame shape's
+ * settings, `ring` and `band` as a strip lying across, as long as the finger's round or the wrist with its Fit. */
 type StarterMeasureRule = 'frame' | 'ring' | 'band'
 
 /** One size of a Starter, in the shape every setting has (ADR 0078): its default is the value its design is made for,
@@ -70,18 +70,19 @@ export interface StarterPick {
   before?: StarterSizeName
 }
 
-/** A size as a manifest gives it: one of its kind's settings names only what differs from the kind's own (the design's
+/** A size as a manifest gives it: one of its Frame shape's settings names only what differs from the shape's own (the design's
  * default and presets), any other every field. */
 type ManifestSize = Partial<StarterSize> & Pick<StarterSize, 'id'>
 
-/** A Starter's manifest (ticket 0633), the file `<id>.starter.json` beside its design: its kind, the Technique it is
- * woven in, its sizes and choices, how it is measured, and whether it is made as a pair (an earring).
+/** A Starter's manifest (ticket 0633), the file `<id>.starter.json` beside its design: its Frame shape, the Technique it
+ * is woven in, its sizes and choices, how it is measured, and whether it is made as a pair (an earring).
  * @internal The registry test reads every manifest file as one, to find any no category lists. */
 export interface StarterManifest {
   id: StarterId
   /** Its design's file name, beside it: the design's Frame size and beads (StoredDesign). */
   design: string
-  kind: FrameKindId
+  /** Its Frame shape: a Shape's or an earring's; none for a Ring or Band, a Frame without one. */
+  shape?: FrameShapeId
   technique: Technique
   measure: StarterMeasureRule
   pair?: true
@@ -97,8 +98,8 @@ interface StoredDesign {
   encodedBeads: EncodedBeads
 }
 
-/** A ready-made design for one Frame kind (ADR 0077): its manifest, its sizes in full, its category and its stored
- * design. A Ring or Band is a Rectangular Frame sized for the finger or the wrist. */
+/** A ready-made design for a Frame (ADR 0077): its manifest, its sizes in full, its category and its stored design. A
+ * Ring or Band is a Frame without a Frame shape, sized for the finger or the wrist. */
 export interface Starter extends Omit<StarterManifest, 'design' | 'sizes'> {
   category: StarterCategoryId
   sizes: readonly StarterSize[]
@@ -117,15 +118,16 @@ const FOLDER = '../data/starters/'
 const MANIFESTS = import.meta.glob<StarterManifest>('../data/starters/*.starter.json', { eager: true, import: 'default' })
 const DESIGNS = import.meta.glob<StoredDesign>(['../data/starters/*.json', '!**/*.starter.json', '!**/categories.json'], { eager: true, import: 'default' })
 
-/** A size in full: a setting of the Starter's kind takes the kind's range, default and presets where it gives none. */
-function sizeOf(kind: FrameKindId, size: ManifestSize): StarterSize {
-  const own = frameKindOf({ kind }).custom?.settings.find((each) => each.id === size.id)
+/** A size in full: a setting of the Starter's Frame shape takes the shape's range, default and presets where it gives
+ * none. */
+function sizeOf(shape: FrameShapeId | undefined, size: ManifestSize): StarterSize {
+  const own = frameShapeOf({ shape })?.settings.find((each) => each.id === size.id)
   return { presets: [], ...own, ...size } as StarterSize
 }
 
 /** A Starter from its manifest, in the category that lists it. */
 function starterOf({ design, sizes, ...manifest }: StarterManifest, category: StarterCategoryId): Starter {
-  return { ...manifest, category, sizes: sizes.map((size) => sizeOf(manifest.kind, size)), file: DESIGNS[FOLDER + design] }
+  return { ...manifest, category, sizes: sizes.map((size) => sizeOf(manifest.shape, size)), file: DESIGNS[FOLDER + design] }
 }
 
 const BY_ID = new Map(Object.values(MANIFESTS).map((manifest) => [manifest.id, manifest]))
@@ -217,7 +219,7 @@ export function designFits(starter: Starter, choice: Pick<StarterChoice, 'sizes'
 /** The range each of a Starter's sizes may take with the others as they are: a Fringe earring's top has fewer rows than
  * its base row has beads. */
 export function starterSizeRanges(starter: Starter, sizes: StarterSizes): Partial<Record<StarterSizeName, { min: number; max: number }>> {
-  const custom = new Map(settingValuesOf({ kind: starter.kind, settings: customSettings(starter, { sizes }) }).map((each) => [each.name as StarterSizeName, each]))
+  const custom = new Map(settingValuesOf({ shape: starter.shape, settings: customSettings(starter, { sizes }) }).map((each) => [each.name as StarterSizeName, each]))
   return Object.fromEntries(starter.sizes.map(({ id, min, max }) => [id, { min, max: custom.get(id)?.max ?? max }]))
 }
 
@@ -228,7 +230,7 @@ const STRIP_LENGTH_MM: Readonly<Record<Exclude<StarterMeasureRule, 'frame'>, (st
   band: (starter, { sizes, picks }) => sizeIn(starter, sizes, 'wrist') * 10 + (BAND_EASE_MM[pickIn(starter, picks, 'fit') as BandFit] ?? BAND_EASE_MM.comfortable) - BAND_CLASP_MM,
 }
 
-/** A Custom frame Starter's settings for a choice: its sizes and choices in its kind's settings. */
+/** A Custom frame Starter's settings for a choice: its sizes and choices in its Frame shape's settings. */
 function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 'sizes' | 'picks'>): FrameSettings {
   const numbers = Object.fromEntries(starter.sizes.map(({ id }) => [id, sizeIn(starter, sizes, id)]))
   return { ...numbers, ...Object.fromEntries(starter.picks.map(({ id }) => [id, pickIn(starter, picks, id)])) }
@@ -238,7 +240,7 @@ function customSettings(starter: Starter, { sizes, picks }: Pick<StarterChoice, 
  * or Band lying across takes its Width in rows and its length in columns of the Bead's pitch, as put in place.
  * @internal Its test checks each Starter's size on its own. */
 export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: Bead): GridDimensions {
-  if (starter.measure === 'frame') return customFrameSize(starter.kind, customSettings(starter, choice))
+  if (starter.measure === 'frame') return customFrameSize(starter.shape!, customSettings(starter, choice))
   if (choice.useDesign && designFits(starter, choice)) return { rows: designOf(starter).rows, columns: designOf(starter).columns }
   return { rows: sizeIn(starter, choice.sizes, 'width'), columns: Math.max(1, Math.round(STRIP_LENGTH_MM[starter.measure](starter, choice) / beadPitchMm(bead))) }
 }
@@ -246,7 +248,7 @@ export function starterFrameSize(starter: Starter, choice: StarterChoice, bead: 
 /** How many beads a Starter's Frame holds for a choice on a Bead: every position its geometry has. */
 export function starterBeadCount(starter: Starter, choice: StarterChoice, bead: Bead): number {
   const size = starterFrameSize(starter, choice, bead)
-  return frameGeometry({ kind: starter.kind, settings: customSettings(starter, choice), ...size, technique: starter.technique }).positions().length
+  return frameGeometry({ shape: starter.shape, settings: customSettings(starter, choice), ...size, technique: starter.technique }).positions().length
 }
 
 /** What a Starter's setup measures with a Bead (StarterGallery card, Setup): a Shape's or earring's width and height; a
@@ -260,7 +262,7 @@ export type StarterMeasure =
 export function starterMeasure(starter: Starter, choice: StarterChoice, bead: Bead): StarterMeasure {
   const { rows, columns } = starterFrameSize(starter, choice, bead)
   if (starter.measure === 'frame') {
-    return { shape: 'frame', ...estimatedSizeMm({ rows, columns, kind: starter.kind, settings: customSettings(starter, choice) }, bead) }
+    return { shape: 'frame', ...estimatedSizeMm({ rows, columns, shape: starter.shape, settings: customSettings(starter, choice) }, bead) }
   }
   // Lying across, the strip's length is the Frame's width on screen and its width the Frame's height.
   const { widthMm: lengthMm, heightMm: widthMm } = estimatedSizeMm({ rows, columns }, bead)
@@ -280,7 +282,7 @@ function chosenBeads(starter: Starter, choice: StarterChoice): BeadMap {
  * Colours stay as painted, whatever the Project's Bead; an empty Ring's or Band's length is worked out from it. */
 export function placedStarter(project: Project, starter: Starter, choice: StarterChoice, centre: GridPosition): FrameChangeResult {
   const beads = chosenBeads(starter, choice)
-  if (frameKindOf(starter).custom) return changeFrame(project, { custom: { kind: starter.kind, settings: customSettings(starter, choice), centre, beads } })
+  if (starter.shape) return changeFrame(project, { custom: { shape: starter.shape, settings: customSettings(starter, choice), centre, beads } })
   const { rows, columns } = starterFrameSize(starter, choice, resolveProjectBead(project)!)
   const frame = { row: centre.row - Math.floor(rows / 2), column: centre.column - Math.floor(columns / 2), rows, columns }
   return changeFrame(project, { place: { frame, weave: weaveOf({ technique: starter.technique }), beads } })

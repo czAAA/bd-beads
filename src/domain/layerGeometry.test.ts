@@ -2,15 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { CELL_SIZE_PX } from '../rendering/cellSize'
 import { layerExtentPx, positionBoxPx, positionsBoxPx, type Region } from '../rendering/surfaceView'
 import type { Rect } from './canvas'
-import { customFrameSize, frameGeometry, frameKindOf, frameLayoutOf, type CustomFrameKindId, type FrameSettings, type KindedSheet, type QuarterTurns } from './frameKind'
+import { customFrameSize, frameGeometry, frameShapeOf, frameLayoutOf, type FrameShapeId, type FrameSettings, type ShapedSheet, type QuarterTurns } from './frameShape'
 import { layoutNeighbors, layoutPosition, layoutPositionAt } from './frameLayout'
+import { laidSize } from './frameOrientation'
 import type { GridPosition } from './grid'
 import { gridGeometry, layoutPlacement, type LayerGeometry } from './layerGeometry'
 import { describeWeave, neighborsOf, TECHNIQUES, type BeadCell, type Weave } from './weave'
 import type { Box } from './weaveGeometry'
 
-// Ticket 0628: the Layer geometry answers as the Weave and the layouts do, for every Technique and every Custom frame
-// kind. Drawing and the Surface view's hit test ask it since ticket 0630, so it is checked against the domain's own
+// Ticket 0628: the Layer geometry answers as the Weave and the layouts do, for every Technique and every Frame
+// shape. Drawing and the Surface view's hit test ask it since ticket 0630, so it is checked against the domain's own
 // answers and the bead boxes the Weave gives in px.
 
 /** A Real cell, unlike any Technique's own, so the Bead shape is part of every answer. */
@@ -23,8 +24,8 @@ const WEAVES: Weave[] = TECHNIQUES.flatMap((technique) =>
 
 const named = (weave: Weave) => `${weave.technique} ${Object.values(weave.techniqueSettings ?? {}).join('')} ${weave.cell ? 'real' : 'symmetric'}`
 
-/** Each Custom frame kind at two small sizes: a kind left out fails the type check. */
-const CUSTOM: Record<CustomFrameKindId, FrameSettings[]> = {
+/** Each Frame shape at two small sizes: a shape left out fails the type check. */
+const CUSTOM: Record<FrameShapeId, FrameSettings[]> = {
   triangle: [{ rounds: 2 }, { rounds: 4 }],
   warpedSquare: [{ rounds: 2 }, { rounds: 3 }],
   star: [{ partSize: 2 }, { partSize: 3 }],
@@ -38,26 +39,26 @@ const CUSTOM: Record<CustomFrameKindId, FrameSettings[]> = {
 
 const TURNS: (QuarterTurns | undefined)[] = [undefined, 1, 2, 3]
 
-/** Every Custom frame kind, size and turn, in each Bead shape: its rectangle as Change Frame makes it. */
-const CUSTOM_FRAMES: KindedSheet[] = (Object.entries(CUSTOM) as [CustomFrameKindId, FrameSettings[]][]).flatMap(([kind, sizes]) =>
+/** Every Frame shape, size and turn, in each Bead shape: its rectangle as Change Frame makes it. */
+const CUSTOM_FRAMES: ShapedSheet[] = (Object.entries(CUSTOM) as [FrameShapeId, FrameSettings[]][]).flatMap(([shape, sizes]) =>
   sizes.flatMap((settings) =>
     TURNS.flatMap((quarterTurns) =>
       [undefined, REAL].map((cell) => ({
-        kind,
+        shape,
         settings,
         ...(quarterTurns ? { quarterTurns } : {}),
-        ...customFrameSize(kind, settings, quarterTurns),
-        technique: frameKindOf({ kind }).custom!.technique,
+        ...customFrameSize(shape, settings, quarterTurns),
+        technique: frameShapeOf({ shape })!.techniques[0],
         ...(cell ? { cell } : {}),
       })),
     ),
   ),
 )
 
-const customNamed = (frame: KindedSheet) => `${frame.kind} ${JSON.stringify(frame.settings)} turned ${frame.quarterTurns ?? 0} ${frame.cell ? 'real' : 'symmetric'}`
+const customNamed = (frame: ShapedSheet) => `${frame.shape} ${JSON.stringify(frame.settings)} turned ${frame.quarterTurns ?? 0} ${frame.cell ? 'real' : 'symmetric'}`
 
-/** A Rectangular Frame of a Weave, 7 rows by 6 columns. */
-const rectangular = (weave: Weave): KindedSheet => ({ ...weave, rows: 7, columns: 6 })
+/** A Frame without a shape in a Weave, 7 rows by 6 columns. */
+const plain = (weave: Weave): ShapedSheet => ({ ...weave, rows: 7, columns: 6 })
 
 /** A Box in grid px, as the Surface view gives one. */
 const inPx = (box: Box): Region => ({ x: box.x * CELL_SIZE_PX, y: box.y * CELL_SIZE_PX, width: box.width * CELL_SIZE_PX, height: box.height * CELL_SIZE_PX })
@@ -115,8 +116,8 @@ function expectPositionsIn(geometry: LayerGeometry, everywhere: readonly GridPos
   for (const position of touching) expect(given).toContainEqual(position)
 }
 
-describe('a Rectangular Frame answers as its Weave does', () => {
-  it.each(WEAVES.map((weave) => [named(weave), rectangular(weave)] as const))('%s', (_name, frame) => {
+describe('a Frame without a shape answers as its Weave does', () => {
+  it.each(WEAVES.map((weave) => [named(weave), plain(weave)] as const))('%s', (_name, frame) => {
     const geometry = frameGeometry(frame)
     const bounds = { row: 0, column: 0, rows: frame.rows, columns: frame.columns }
     const everywhere = around(bounds)
@@ -226,10 +227,56 @@ describe('a point between beads', () => {
 
 describe('a point off a Frame', () => {
   it('hits none of its beads, whatever lays them out', () => {
-    for (const frame of [rectangular({ technique: TECHNIQUES[0] }), CUSTOM_FRAMES[0]!]) {
+    for (const frame of [plain({ technique: TECHNIQUES[0] }), CUSTOM_FRAMES[0]!]) {
       const { width, height } = frameGeometry(frame).extent()!
       for (const point of [{ x: -0.1, y: 0.5 }, { x: 0.5, y: -0.1 }, { x: width + 0.1, y: 0.5 }, { x: 0.5, y: height + 0.1 }]) {
         expect(frameGeometry(frame).positionAt(point)).toBeUndefined()
+      }
+    }
+  })
+})
+
+describe('a Frame without a shape lying turned (ticket 0667, ADR 0079)', () => {
+  const TURNS: QuarterTurns[] = [1, 2, 3]
+  const sheetOf = (weave: Weave, quarterTurns: QuarterTurns): ShapedSheet => ({ ...weave, rows: 5, columns: 7, quarterTurns })
+  const centreOf = ({ box }: { box: Box }) => ({ x: box.x + box.width / 2, y: box.y + box.height / 2 })
+
+  it('keeps its own positions, and finds each bead where it places it, turned a quarter at a time', () => {
+    for (const weave of WEAVES) {
+      for (const turns of TURNS) {
+        const geometry = frameGeometry(sheetOf(weave, turns))
+        const upright = frameGeometry({ ...weave, rows: 5, columns: 7 })
+        expect(geometry.grid).toBe(false)
+        expect(geometry.positions()).toEqual(upright.positions())
+        expect(geometry.neighbors({ row: 2, column: 3 })).toEqual(upright.neighbors({ row: 2, column: 3 }))
+        for (const position of geometry.positions()) {
+          const place = geometry.place(position)!
+          expect(place.angle).toBeCloseTo((turns * Math.PI) / 2)
+          expect(geometry.positionAt(centreOf(place)), `${named(weave)} turned ${turns} at ${position.row},${position.column}`).toEqual(position)
+        }
+        expect(geometry.positionsIn(geometry.extent()!)).toHaveLength(35)
+      }
+    }
+  })
+
+  it('lies across the rectangle it covers: the first bead goes to the top right on a quarter turn', () => {
+    const geometry = frameGeometry(sheetOf({ technique: 'loom' }, 1))
+    expect(geometry.extent()).toEqual({ x: 0, y: 0, width: 5, height: 7 })
+    expect(centreOf(geometry.place({ row: 0, column: 0 })!)).toEqual({ x: 4.5, y: 0.5 })
+    expect(centreOf(geometry.place({ row: 4, column: 6 })!)).toEqual({ x: 0.5, y: 6.5 })
+  })
+
+  it('is a layout whose positions lie where its geometry places them, for a Selection and a Paste over it', () => {
+    for (const weave of WEAVES) {
+      for (const turns of TURNS) {
+        const sheet = sheetOf(weave, turns)
+        const geometry = frameGeometry(sheet)
+        const placement = layoutPlacement(frameLayoutOf(sheet)!, laidSize(sheet), weave)
+        for (const position of frameLayoutOf(sheet)!.positions) {
+          const at = centreOf(geometry.place(position)!)
+          expect(placement.x + position.x * placement.scale).toBeCloseTo(at.x)
+          expect(placement.y + position.y * placement.scale).toBeCloseTo(at.y)
+        }
       }
     }
   })

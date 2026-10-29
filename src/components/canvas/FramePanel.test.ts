@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import FramePanel from './FramePanel.vue'
+import { rotateFrame } from '../../domain/rotate'
 import PanelHost from '../shell/PanelHost.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject } from '../../domain/createProject'
 import { moveToRow } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
-import type { CustomFrameKindId } from '../../domain/frameKind'
+import type { FrameShapeId } from '../../domain/frameShape'
 import { changeFrame } from '../../domain/changeFrame'
 import { en } from '../../i18n/en'
 import { PNG_DPI_BY_QUALITY, type ExportQuality } from '../../domain/exportQuality'
@@ -156,6 +157,16 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
+  })
+
+  it('shows a turned Frame\'s size as seen, off until it is upright, and keeps Rotate Frame (ticket 0667)', () => {
+    const wrapper = mountBar(rotateFrame(framed())!)
+    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('placeholder')).toBe('6')
+    expect(wrapper.get('[data-testid="frame-panel-height"]').attributes('placeholder')).toBe('5')
+    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-size-turned"]').text()).toBe(en.frame.sizeTurnedLine)
+    expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('asks its parent to remove and rotate, and passes keys up', async () => {
@@ -374,22 +385,22 @@ describe('FramePanel Letters (ticket 0573)', () => {
 })
 
 describe('FramePanel with a Custom frame (ticket 0592)', () => {
-  /** A Project with a Custom frame of a kind and size in place of its Frame. */
-  function custom(kind: CustomFrameKindId, size: number, project = framed()): Project {
-    const result = changeFrame(project, { custom: { kind, size, centre: { row: 10, column: 10 } } })
-    if (result.kind !== 'changed') throw new Error(`expected a ${kind}`)
+  /** A Project with a Custom frame of a Frame shape and size in place of its Frame. */
+  function custom(shape: FrameShapeId, size: number, project = framed()): Project {
+    const result = changeFrame(project, { custom: { shape, size, centre: { row: 10, column: 10 } } })
+    if (result.kind !== 'changed') throw new Error(`expected a ${shape}`)
     return result.project
   }
   const triangle = (rounds = 4) => custom('triangle', rounds)
 
   it('sizes a Star and a Kaleidocycle by Part size and a Kite by Rows (ticket 0593)', () => {
-    for (const [kind, size, words] of [
+    for (const [shape, size, words] of [
       ['star', 6, en.frame.sizeSettings.partSize],
       ['kaleidocycle', 9, en.frame.sizeSettings.partSize],
       ['kite', 21, en.frame.sizeSettings.rows],
     ] as const) {
-      const wrapper = mountBar(custom(kind, size))
-      const name = kind === 'kite' ? 'rows' : 'partSize'
+      const wrapper = mountBar(custom(shape, size))
+      const name = shape === 'kite' ? 'rows' : 'partSize'
       expect(wrapper.get(`[data-testid="frame-setting-${name}"]`).text()).toContain(words.label)
       expect(wrapper.get(`[data-testid="frame-setting-${name}-value"]`).text()).toBe(String(size))
       expect(wrapper.get(`[data-testid="frame-setting-${name}-less"]`).attributes('aria-label')).toBe(words.less)
@@ -397,7 +408,7 @@ describe('FramePanel with a Custom frame (ticket 0592)', () => {
   })
 
   it('offers a Fringe earring\'s Top width, Top rows and Fringe length, and its Fringe style (ticket 0597)', async () => {
-    const result = changeFrame(framed(), { custom: { kind: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 10, column: 10 } } })
+    const result = changeFrame(framed(), { custom: { shape: 'fringeEarring', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 }, centre: { row: 10, column: 10 } } })
     if (result.kind !== 'changed') throw new Error('expected an earring')
     const wrapper = mountBar(result.project)
     expect(['topWidth', 'topRows', 'fringeLength'].map((name) => wrapper.get(`[data-testid="frame-setting-${name}-value"]`).text())).toEqual(['7', '6', '12'])

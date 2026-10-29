@@ -1,7 +1,6 @@
 {
   "id": "bandDiamonds",
   "design": "bandDiamonds.json",
-  "kind": "rectangular",
   "technique": "peyote",
   "measure": "band",
   "sizes": [

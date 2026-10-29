@@ -5,6 +5,7 @@ import type { Palette } from './palette'
 import { forEachBead } from './canvas'
 import type { Project } from './project'
 import { frameGeometryOf } from './layers'
+import { beadsOfLayer } from './layerRecord'
 
 /** One line of a Project's shopping list: a painted color and how many beads of it the Project needs. */
 export interface ColorQuantity {
@@ -19,14 +20,14 @@ export interface ColorQuantity {
 // count.
 export function computeColorQuantities(project: Project, palette: Palette): ColorQuantity[] {
   const counts = new Map<string, number>()
-  if (!project.frame) {
+  const beads = beadsOfLayer(project, 'frame')
+  if (!beads) {
     return []
   }
 
-  const frame = project.frame
   // Every real bead counts once: a Custom frame's are its layout's (ticket 0592).
   const geometry = frameGeometryOf(project)
-  forEachBead(frame.beads, (row, column, color) => {
+  forEachBead(beads, (row, column, color) => {
     if (geometry.hasPosition({ row, column })) {
       counts.set(color, (counts.get(color) ?? 0) + 1)
     }

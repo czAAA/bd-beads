@@ -2,11 +2,12 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
-import { projectCell } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { selectionFrame, selectionLayer, type Selection } from '../../domain/selection'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
+import { marginSheetPx } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
@@ -58,8 +59,8 @@ const emit = defineEmits<SurfacePointerEvents & {
   /** The Selection's rectangle in the surface's pixels (ticket 415), or none: where the Selection bar anchors.
    * Follows pan and zoom. */
   'selection-anchor': [anchor: SelectionAnchor | undefined]
-  /** The Frame's rectangle in the surface's pixels (tickets 417, 473), or none once it is out of view: where the Move
-   * handle and the edit pencil sit in its gutter. */
+  /** The Frame's and its margin sheet's rectangles in the surface's pixels (tickets 417, 473, 0657), or none once the
+   * sheet is out of view: where the sheet's tools and title block sit. */
   'frame-anchor': [anchor: FrameAnchor | undefined]
 }>()
 
@@ -91,10 +92,13 @@ function measure(): void {
  * position is. */
 const space = computed(() => spaceOf(props.project, true))
 
+/** The Canvas's Weave (ADR 0079), with the cell its Bead and Bead shape draw it in. */
+const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
+
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: props.project.technique, techniqueSettings: props.project.techniqueSettings, cell: projectCell(props.project), frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: props.project.frame, rotation: props.project.rotation, zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
 )
 
 /** The numbers' size: 11px, 12px on a phone (Rulers card). */
@@ -121,19 +125,28 @@ watch(
   { immediate: true, flush: 'post' },
 )
 
-/** Where the Frame is on screen, none once it is out of view (tickets 417, 427, 452, 473): told to the Move handle and
- * the edit pencil. */
+/** Where the Frame and its margin sheet are on screen, none once the sheet is out of view (tickets 417, 473, 0657):
+ * told to the sheet's tools and title block. */
 const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = props.project.frame
-  if (!frame || size.value.width === 0) return undefined
+  const grid = marginSheetPx(props.project)
+  if (!frame || !grid || size.value.width === 0) return undefined
   const box = surface.value.frameBox(frame)
-  // Scrolled wholly out of view, the Frame has no controls to keep on screen: they are clamped to the box only while
-  // some of it shows.
+  const corners = [surface.value.gridToPoint(grid.sheet.x, grid.sheet.y), surface.value.gridToPoint(grid.sheet.x + grid.sheet.width, grid.sheet.y + grid.sheet.height)]
+  const sheet = {
+    left: Math.min(corners[0].x, corners[1].x),
+    top: Math.min(corners[0].y, corners[1].y),
+    width: Math.abs(corners[1].x - corners[0].x),
+    height: Math.abs(corners[1].y - corners[0].y),
+  }
+  // Scrolled wholly out of view, the sheet has no tools to keep on screen.
   const { width, height } = size.value
-  if (box.x + box.width <= 0 || box.y + box.height <= 0 || box.x >= width || box.y >= height) return undefined
+  if (sheet.left + sheet.width <= 0 || sheet.top + sheet.height <= 0 || sheet.left >= width || sheet.top >= height) return undefined
   const origin = surface.value.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')
   return {
     box: { left: box.x, top: box.y, width: box.width, height: box.height },
+    sheet,
+    band: grid.band * props.zoom,
     viewport: { ...size.value },
     origin: { left: origin.x, top: origin.y, width: origin.width, height: origin.height },
   }
@@ -150,7 +163,7 @@ const { oncePerFrame } = useFrameScheduler()
 useBeadLayer({ props, canvas: baseEl, size, space, theme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
   props, canvas: overlayEl, size, space, surface, rulers, theme, marksShown, oncePerFrame,
-  markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, marginOpacity: marginCue.opacity,
+  markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
 })
 
 // Tests read what was drawn from the layout the surface built.
@@ -176,8 +189,8 @@ onBeforeUnmount(() => {
     ref="rootEl"
     class="project-surface"
     data-testid="project-surface"
-    :data-technique="project.technique"
-    :data-technique-settings="JSON.stringify(project.techniqueSettings ?? {})"
+    :data-technique="canvasWeave.technique"
+    :data-technique-settings="JSON.stringify(canvasWeave.techniqueSettings ?? {})"
     :data-rotation="project.rotation"
     :data-zoom="zoom"
     :data-scroll-x="scroll.x"

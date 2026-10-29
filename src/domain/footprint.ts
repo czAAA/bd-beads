@@ -1,4 +1,5 @@
-import type { Rect } from './canvas'
+import type { FrameSheet, Rect } from './canvas'
+import { laidRect } from './frameOrientation'
 import { canvasWeave, frameWeave, sameWeave } from './layerWeave'
 import type { Project } from './project'
 import { describeWeave, positionStep, type Weave } from './weave'
@@ -8,8 +9,11 @@ const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
 
 /** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where both layers are woven
  * alike, else the rows whose middle lies inside what the Frame draws, which is shorter or taller than `rows` Canvas rows
- * where it is woven otherwise. */
-export function frameFootprint(canvas: Weave, frame: Rect & Weave): Rect {
+ * where it is woven otherwise. A turned Frame covers the rectangle it lies in (ticket 0667). */
+export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'quarterTurns'>>): Rect {
+  // Both layers are drawn in the Project's Bead shape, whose cell the Canvas's Weave carries.
+  const laid = laidRect({ ...sheet, cell: sheet.cell ?? canvas.cell })
+  const frame = { ...sheet, rows: laid.rows, columns: laid.columns }
   const rectangle = { row: frame.row, column: frame.column, rows: frame.rows, columns: frame.columns }
   if (sameWeave(canvas, frame)) {
     return rectangle

@@ -1,7 +1,8 @@
 import { frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import { frameFootprint } from '../domain/footprint'
-import { frameGeometry } from '../domain/frameKind'
+import { frameGeometry } from '../domain/frameShape'
+import { laidRect } from '../domain/frameOrientation'
 import { gridGeometry, type LayerGeometry } from '../domain/layerGeometry'
 import { describeWeave, type BeadCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import { beadsBox } from '../domain/weaveGeometry'
@@ -9,6 +10,7 @@ import type { DrawingContext } from './beadLook'
 import { frameOutsetPx } from './rulerScale'
 import type { Space } from './space'
 import { CELL_SIZE_PX, cellSizePx, type Size } from './cellSize'
+import { heldWeave, unwoven } from '../domain/layerRecord'
 
 // The Surface view (ADR 0010, 0018, 0026): the one place mapping beads and screen points both ways. Rotation is private;
 // where a bead is comes from the Weave's description (ticket 0623). Grid space is px at zoom 1; displayed space is
@@ -141,7 +143,7 @@ export interface SurfaceViewInput {
   cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
    * its top-left position's corner. Left out, the view is one layer: the Canvas, or the Frame alone in an own space. */
-  frame?: Rect & Weave & Partial<Pick<FrameSheet, 'kind' | 'settings' | 'quarterTurns'>>
+  frame?: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>>
   rotation: Rotation
   zoom: number
   /** Where the viewport's top-left corner is in displayed space; nothing when left out. */
@@ -176,14 +178,14 @@ export interface SurfaceView {
    * press is refused as on the keep-out margin. */
   offShapeAt(point: Scroll): boolean
   /** The Frame's cell under a point on a Custom frame, on a bead or not (ticket 0594): what the Select tool marks out
-   * there, a rectangle on screen; none off the Frame or on a Rectangular one. */
+   * there, a rectangle on screen; none off the Frame or on one without a shape. */
   frameCellAt(point: Scroll): (GridPosition & { layer: 'frame' }) | undefined
   /** The bead position nearest a point, gaps and rounded corners included, in a layer's geometry: what dragging a Frame
    * needs. */
   pointToCell(point: Scroll, layer?: ViewLayer): GridPosition
   /** The Frame's line in the viewport: its beads' rectangle with the line's outset, which is what its handles stand
-   * on. */
-  frameBox(frame: Rect): Region
+   * on. A Frame given whole is taken as it lies, turned (ticket 0667). */
+  frameBox(frame: Rect | FrameSheet): Region
   // The scroll that puts the middle of a block of beads, or the origin when there is none, in the middle of the
   // viewport.
   scrollToCentre(box?: Rect, layer?: ViewLayer): Scroll
@@ -244,8 +246,11 @@ export function surfaceView({ space, technique, techniqueSettings, cell: beadSha
   // The Canvas has no edge; a Project drawn on its own is its rows and columns from its first.
   const edge = space.open ? undefined : { row: 0, column: 0, rows: space.rows, columns: space.columns }
   const canvas = layerOf(canvasWeave, gridGeometry(canvasWeave, edge), { x: 0, y: 0 }, { row: 0, column: 0 })
-  const sheetWeave: Weave | undefined = frame && { technique: frame.technique, techniqueSettings: frame.techniqueSettings, cell: beadShapeCell }
-  const sheet = frame && sheetWeave && space.open ? layerOf(sheetWeave, frameGeometry({ ...frame, ...sheetWeave }), frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }) : undefined
+  const held = heldWeave({ frame }, 'frame')
+  const sheetWeave: Weave | undefined = held && { ...held, cell: beadShapeCell }
+  const sheet = frame && sheetWeave && space.open ? layerOf(sheetWeave, frameGeometry({ ...unwoven(frame), ...sheetWeave }), frameOriginPx(canvasWeave, frame), { row: frame.row, column: frame.column }) : undefined
+  // The rectangle the Frame lies in, turned with it (ticket 0667).
+  const laid = frame && sheetWeave ? laidRect({ ...unwoven(frame), ...sheetWeave }) : undefined
   const layerNamed = (name: ViewLayer | undefined): Layer => (name === 'frame' && sheet ? sheet : canvas)
   // A Custom frame's beads lie where its layout puts them (ADR 0077), not on rows and columns: a point between them is
   // off its shape.
@@ -284,9 +289,9 @@ export function surfaceView({ space, technique, techniqueSettings, cell: beadSha
 
   /** A point of the viewport on the Frame, from its first position's corner, or none off it. */
   const onSheet = (point: Scroll): { x: number; y: number } | undefined => {
-    if (!sheet || !frame) return undefined
+    if (!sheet || !laid) return undefined
     const [gridX, gridY] = toGrid(point)
-    const extent = layerExtentPx(sheet.weave, frame.columns, frame.rows)
+    const extent = layerExtentPx(sheet.weave, laid.columns, laid.rows)
     const x = gridX - sheet.origin.x
     const y = gridY - sheet.origin.y
     return x >= 0 && y >= 0 && x < extent.width && y < extent.height ? { x, y } : undefined
@@ -323,10 +328,10 @@ export function surfaceView({ space, technique, techniqueSettings, cell: beadSha
       return !!laidOut && !!at && beadIn(laidOut, at.x, at.y) === undefined
     },
     frameCellAt: (point) => {
-      const at = laidOut && frame && onSheet(point)
+      const at = laidOut && laid && onSheet(point)
       if (!at) return undefined
       const cell = cellIn(laidOut!, at.x, at.y)
-      const within = { row: Math.min(Math.max(cell.row, 0), frame!.rows - 1), column: Math.min(Math.max(cell.column, 0), frame!.columns - 1) }
+      const within = { row: Math.min(Math.max(cell.row, 0), laid!.rows - 1), column: Math.min(Math.max(cell.column, 0), laid!.columns - 1) }
       return { ...addressOf(laidOut!, within), layer: 'frame' }
     },
     pointToBead: (point) => {
@@ -339,7 +344,8 @@ export function surfaceView({ space, technique, techniqueSettings, cell: beadSha
       return addressOf(on, cellIn(on, gridX - on.origin.x, gridY - on.origin.y))
     },
     frameBox: (box) => {
-      const shown = inViewport(displayedBox(box, zoom, sheet ?? canvas))
+      const lying = 'technique' in box ? laidRect({ ...box, cell: beadShapeCell }) : box
+      const shown = inViewport(displayedBox(lying, zoom, sheet ?? canvas))
       const outset = frameOutsetPx(zoom)
       return { x: shown.x - outset, y: shown.y - outset, width: shown.width + outset * 2, height: shown.height + outset * 2 }
     },

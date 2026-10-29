@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { beadCopy, findBead } from './beads'
 import { changeFrame } from './changeFrame'
 import { createProject } from './createProject'
-import { layerOf, withLayer } from './layerRecord'
+import { beadIdOfLayer, beadOfLayer, beadsOfLayer, heldWeave, layerOf, withLayer } from './layerRecord'
 import type { Project } from './project'
 import { beadCell } from './weave'
 
@@ -64,7 +64,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
 /** The open Canvas with a Triangle Custom frame laid on it. */
 function triangle(): Project {
-  const result = changeFrame(open(), { custom: { kind: 'triangle', size: 3, centre: { row: 20, column: 30 } } })
+  const result = changeFrame(open(), { custom: { shape: 'triangle', size: 3, centre: { row: 20, column: 30 } } })
   if (result.kind !== 'changed') throw new Error('expected a Custom frame')
   return result.project
 }
@@ -97,11 +97,11 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
     expect(withLayer(after, 'canvas', { beadShape: 'symmetric' })).not.toHaveProperty('beadShape')
   })
 
-  it('writes a Custom frame\'s beads and Weave, keeping its kind, settings and place', () => {
+  it('writes a Custom frame\'s beads and Weave, keeping its Frame shape, settings and place', () => {
     const before = triangle()
     const after = withLayer(before, 'frame', { weave: { technique: 'loom' }, beads: { 0: { 0: RED } } })
-    const { kind, settings, row, column } = before.frame!
-    expect(after.frame).toMatchObject({ technique: 'loom', beads: { 0: { 0: RED } }, kind, settings, row, column })
+    const { shape, settings, row, column } = before.frame!
+    expect(after.frame).toMatchObject({ technique: 'loom', beads: { 0: { 0: RED } }, shape, settings, row, column })
   })
 
   it('leaves the change unstamped, for the caller to stamp', () => {
@@ -112,5 +112,28 @@ describe('a layer written through the same record (ADR 0079, ticket 0661)', () =
   it('leaves a Project without a Frame as it is when the Frame is written', () => {
     const project = open()
     expect(withLayer(project, 'frame', { beads: { 0: { 0: RED } } })).toBe(project)
+  })
+})
+
+describe('a layer\'s parts read from less than a whole Project (ticket 0662)', () => {
+  it('reads each layer\'s beads as its record holds them, and none for a Frame the Project lacks', () => {
+    const project = framed()
+    expect(beadsOfLayer(project, 'canvas')).toBe(layerOf(project, 'canvas').beads)
+    expect(beadsOfLayer(project, 'frame')).toBe(layerOf(project, 'frame')!.beads)
+    expect(beadsOfLayer({ beads: {} }, 'frame')).toBeUndefined()
+  })
+
+  it('reads the Bead, its id and Bead shape both layers share, Symmetric where none is saved', () => {
+    const project = { ...framed(), beadShape: 'real' as const }
+    expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(delica), beadShape: 'real' })
+    expect(beadIdOfLayer(project, 'canvas')).toBe(delica.id)
+    expect(beadOfLayer({}, 'canvas')).toEqual({ beadShape: 'symmetric' })
+  })
+
+  it('reads a layer\'s Weave as held, without the cell its Bead draws it in', () => {
+    const project = { ...framed(), beadShape: 'real' as const }
+    expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+    expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote' })
+    expect(heldWeave(open(), 'frame')).toBeUndefined()
   })
 })

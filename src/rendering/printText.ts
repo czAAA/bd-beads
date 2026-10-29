@@ -3,7 +3,7 @@ import { computeColorQuantities } from '../domain/beadQuantities'
 import { projectPalette } from '../domain/palette'
 import { listedColorName } from '../i18n/colorName'
 import { rotationSwapsAxes } from '../domain/grid'
-import { projectDimensions } from '../domain/projectExtent'
+import { shownDimensions } from '../domain/projectExtent'
 import { frameWeave } from '../domain/layerWeave'
 import { resolveProjectBead } from '../domain/projectBead'
 import type { Project } from '../domain/project'
@@ -16,6 +16,7 @@ import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
+import { beadOfLayer } from '../domain/layerRecord'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -118,7 +119,7 @@ function wordChartText(chart: WordChart, t: Translations['print']['wordChart'], 
 export function printText(project: Project, t: Translations, locale: Locale, at: Date): PrintText {
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
-  const { columns, rows } = projectDimensions(project)
+  const { columns, rows } = shownDimensions(project)
   const [across, down] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
@@ -154,7 +155,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       ? fillBlanks(t.print.metaLine, { size, bead: beadName, estimate })
       : fillBlanks(t.print.metaLineNoEstimate, { size, bead: beadName }),
     bead: beadName,
-    shape: project.beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
+    shape: beadOfLayer(project, 'frame').beadShape === 'real' ? t.form.beadShapeReal : t.form.beadShapeSymmetric,
     size,
     estimatedSize: estimate ? `≈ ${estimate}` : '',
     colors: quantities.map((quantity, index) => ({

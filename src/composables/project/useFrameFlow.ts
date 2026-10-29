@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { hasBeads, type Rect, sameFrame } from '../../domain/canvas'
+import { hasBeads, type FrameSheet, type Rect, sameFrame } from '../../domain/canvas'
 import {
   fitToDrawing,
   frameResizedAround,
@@ -14,10 +14,11 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
-import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
+import { changedSetting, frameAllows, settingsOf, settingValuesOf, sizeSettingOf, type FrameSettings } from '../../domain/frameShape'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
+import { layerOf } from '../../domain/layerRecord'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
@@ -99,7 +100,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
   const settingFrame = computed(() => {
     const frame = deps.currentProject()?.frame
-    // A Custom frame's shape comes from its settings, not handles (ticket 0592).
+    // A Custom frame's handles step its size setting (ticket 0669).
     return !!frame && frameAllows(frame, 'resize') && handlesOn.value && !locked.value
   })
 
@@ -138,8 +139,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     barOpen.value = false
   }
 
-  function describe(frame: Rect): string {
+  /** What a resize left, said as the Frame is sized: its width and height, or a Custom frame's size setting. */
+  function describe(frame: FrameSheet): string {
     const t = deps.messages()
+    const id = sizeSettingOf(frame)?.id
+    const setting = settingValuesOf(frame).find(({ name }) => name === id)
+    if (setting) return fillBlanks(t.frame.sizeSettings[setting.name].announce, { count: String(setting.value) })
     return fillBlanks(t.frame.announceSet, { width: frame.columns, height: frame.rows })
   }
 
@@ -308,23 +313,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * (tickets 426, 455). */
   const removeConfirmOpen = dialogs.flag('remove-frame')
 
-  /** Whether Remove Frame takes the Frame's beads with it rather than dropping them onto the Canvas (ADR 0077): the
-   * question says so. */
-  const removeTakesBeads = computed(() => {
-    const frame = deps.currentProject()?.frame
-    return !!frame && frameKindOf(frame).removedBeads === 'removed'
-  })
-
-  /** Remove Frame: asks first, except for an empty Frame that takes its beads with it, as there is nothing to lose
-   * (ticket 0592). */
+  /** Remove Frame: asks first, a Custom frame as any Frame (ticket 0669). */
   function remove(): void {
     const project = deps.currentProject()
-    if (!project?.frame) return
-    if (removeTakesBeads.value && !hasBeads(project.frame.beads) && !locked.value) {
-      commit(undefined)
-      return
-    }
-    removeConfirmOpen.value = true
+    if (project && layerOf(project, 'frame')) removeConfirmOpen.value = true
   }
 
   /** The Remove frame question answered No: nothing changes. */
@@ -346,7 +338,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   function replaceAsking(place: () => void): void {
     const project = deps.currentProject()
     if (!project || locked.value) return
-    if (project.frame && hasBeads(project.frame.beads)) {
+    const frame = layerOf(project, 'frame')
+    if (frame && hasBeads(frame.beads)) {
       pendingPlace = place
       replaceConfirmOpen.value = true
       return
@@ -363,7 +356,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
       const t = deps.messages()
       const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
-      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { kind: starterName(t, starter), size }))
+      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { shape: starterName(t, starter), size }))
     })
   }
 
@@ -447,7 +440,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setTo,
     remove,
     removeConfirmOpen,
-    removeTakesBeads,
     cancelRemove,
     confirmRemove,
     placeFromStarter,

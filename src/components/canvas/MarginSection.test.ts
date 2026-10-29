@@ -25,7 +25,7 @@ const radios = (wrapper: ReturnType<typeof render>) => wrapper.findAll('[role="r
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
-  for (const name of ['canvasBackground', 'canvasCustomColor', 'marginColor', 'marginCustomColor', 'panelSectionsClosed'] as const) localStorage.removeItem(PREFERENCES[name].key)
+  for (const name of ['canvasBackground', 'canvasCustomColor', 'marginColor', 'marginCustomColor', 'marginTitleBlock', 'panelSectionsClosed'] as const) localStorage.removeItem(PREFERENCES[name].key)
   setTheme('light')
   useCanvasBackground().setChoice(1)
   useCanvasBackground().margin.setChoice('auto')
@@ -35,7 +35,7 @@ afterEach(() => {
   mounted.splice(0).forEach((wrapper) => wrapper.unmount())
 })
 
-describe('MarginSection (ticket 0656, MarginSheet card)', () => {
+describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
   it('offers Auto, then the theme\'s five Canvas colors, then Custom color, with Auto chosen and the Canvas color dotted', () => {
     const wrapper = render()
     expect(wrapper.get('[role="radiogroup"]').attributes('aria-label')).toBe('Margin color')
@@ -106,6 +106,18 @@ describe('MarginSection (ticket 0656, MarginSheet card)', () => {
     useCanvasBackground().margin.setChoice('auto')
     await flush()
     expect(wrapper.text()).toContain('Auto')
+  })
+
+  it('shows the title block on the sheet until its Switch is turned off, remembered on the device (ticket 0657)', async () => {
+    const wrapper = render()
+    const toggle = wrapper.get('[data-testid="margin-title-block-switch"]')
+    expect(toggle.attributes('aria-label')).toBe('Name and size on the margin')
+    expect(toggle.attributes('aria-checked')).toBe('true')
+    await toggle.trigger('click')
+    expect(useCanvasBackground().margin.titleBlock.value).toBe(false)
+    expect(localStorage.getItem(PREFERENCES.marginTitleBlock.key)).toBe('off')
+    await toggle.trigger('click')
+    expect(useCanvasBackground().margin.titleBlock.value).toBe(true)
   })
 
   it('in high contrast offers no colors, the sheet being white', async () => {

@@ -19,9 +19,10 @@ import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
-import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameKind'
+import { seenSize } from '../../domain/frameOrientation'
+import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { resolveProjectBead } from '../../domain/projectBead'
+import { layerOf } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -61,15 +62,19 @@ const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
 const frame = computed(() => props.project.frame)
+/** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
+const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
+/** Whether the size fields are off, and why: finished rows, or a turned Frame. */
+const sizeHeld = computed(() => locked.value || turned.value)
 
 /** A Custom frame's settings in place of Width and Height (tickets 0592, 0593, 0597), each its value, its range now and
  * its words: Rounds, Part size or Rows, or a Fringe earring's Top width, Top rows and Fringe length; none for a
- * Rectangular Frame. */
+ * Frame without a Frame shape. */
 const settings = computed(() => (frame.value ? settingValuesOf(frame.value).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
 /** A Fringe earring's Fringe style and its options, the setup's names (ticket 0597); none for any other Frame. */
 const fringeStyle = computed(() => frame.value && fringeStyleOf(frame.value))
 const fringeOptions = computed(() => FRINGE_STYLES.map((value) => ({ value, label: t.value.starters.picks.fringeStyle.options[value] })))
-/** Whether the Frame can be turned a quarter: its kind allows it (a Custom frame too, ticket 0594). */
+/** Whether the Frame can be turned a quarter: it allows it (a Custom frame too, ticket 0594). */
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 
 /** The edge the last press stepped, lit in its cell. */
@@ -78,7 +83,7 @@ const lastEdge = ref<FrameEdge>()
 const cells = FRAME_EDGES.map((edge) => {
   const hold = useHoldRepeat((direction) => {
     const current = frame.value
-    if (!current || locked.value || frameWithEdgeStep(props.project, current, edge, direction) === current) return false
+    if (!current || sizeHeld.value || frameWithEdgeStep(props.project, current, edge, direction) === current) return false
     lastEdge.value = edge
     emit('step', edge, direction)
     return true
@@ -90,7 +95,7 @@ const cells = FRAME_EDGES.map((edge) => {
 const typedWidth = ref('')
 const typedHeight = ref('')
 const sizeEdited = computed(() => typedWidth.value !== '' || typedHeight.value !== '')
-const counted = computed(() => frame.value ?? { columns: 0, rows: 0 })
+const counted = computed(() => (frame.value ? seenSize(frame.value) : { columns: 0, rows: 0 }))
 function clearSize(): void {
   typedWidth.value = ''
   typedHeight.value = ''
@@ -124,7 +129,7 @@ function onSizeFocusOut(event: FocusEvent): void {
 
 /** The Estimated size as "≈ 3.8 × 3.9 cm" (the Bead's size × beads across and down), or nothing for an unknown Bead. */
 const estimate = computed(() => {
-  const bead = resolveProjectBead(props.project)
+  const bead = layerOf(props.project, 'frame')?.bead
   return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
@@ -133,7 +138,7 @@ const sizeSummary = computed(() =>
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
 /** The Tooltip over the off size fields. */
-const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: t.value.tooltips.frameSizeLocked, announce: false }))
+const lockedTip = computed(() => ({ name: t.value.frame.title, disabled: true as const, disabledBody: turned.value ? t.value.tooltips.frameSizeTurned : t.value.tooltips.frameSizeLocked, announce: false }))
 
 // Top, Bottom, Left, Right is the cell order whatever the edges' own order is.
 const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cells.find((cell) => cell.edge === edge)!)
@@ -248,12 +253,12 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
         </div>
         <div v-else class="frame-panel__body">
           <!-- Escape during an edit in a field clears it; otherwise it closes the panel (PanelHost). -->
-          <!-- Once a pass is done the fields are shown but off, and a Tooltip says why and how to unblock. -->
+          <!-- Once a pass is done, or while the Frame lies turned, the fields are shown but off, and a Tooltip says why and how to unblock. -->
           <component
-            :is="locked ? AppTooltip : 'div'"
-            v-bind="locked ? lockedTip : {}"
+            :is="sizeHeld ? AppTooltip : 'div'"
+            v-bind="sizeHeld ? lockedTip : {}"
             class="frame-panel__size"
-            :class="{ 'frame-panel__size--locked': locked }"
+            :class="{ 'frame-panel__size--locked': sizeHeld }"
             :data-handles-escape="sizeEdited || undefined"
             @panel-escape="clearSize"
             @focusout="onSizeFocusOut"
@@ -268,7 +273,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               autocomplete="off"
               :aria-label="t.frame.widthLabel"
               :placeholder="String(counted.columns)"
-              :disabled="locked"
+              :disabled="sizeHeld"
               class="frame-panel__field"
               data-testid="frame-panel-width"
               @update:model-value="setSize('width', String($event))"
@@ -286,7 +291,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               autocomplete="off"
               :aria-label="t.frame.heightLabel"
               :placeholder="String(counted.rows)"
-              :disabled="locked"
+              :disabled="sizeHeld"
               class="frame-panel__field"
               data-testid="frame-panel-height"
               @update:model-value="setSize('height', String($event))"
@@ -297,6 +302,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
           </component>
 
           <p v-if="locked" class="frame-panel__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>
+          <p v-else-if="turned" class="frame-panel__line" data-testid="frame-size-turned">{{ t.frame.sizeTurnedLine }}</p>
           <div v-else class="frame-panel__edges">
             <div v-for="cell in ordered" :key="cell.edge" class="frame-panel__cell" :data-testid="`frame-panel-cell-${cell.edge}`">
               <span class="frame-panel__glyph" :class="[`frame-panel__glyph--${cell.edge}`, { 'frame-panel__glyph--last': lastEdge === cell.edge }]" aria-hidden="true" />

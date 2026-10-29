@@ -1,7 +1,9 @@
+import { frameShapeOf } from './frameShape'
 import { beadsInFrame, beadsWithout, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
 import { foldsOver } from './folding'
 import type { GridPosition } from './grid'
 import { canvasWeave, frameWeave } from './layerWeave'
+import { beadsOfLayer, heldWeave } from './layerRecord'
 import { pieceBeadsAt } from './pieces'
 import type { Project } from './project'
 import { rowCycle } from './weave'
@@ -12,12 +14,13 @@ import { rowCycle } from './weave'
 /** Whether a resize of the Project's Frame trades beads with the Canvas: a Frame woven like it (Technique and Brick
  * block alike), whose own positions are the Canvas's (ADR 0066). */
 function tradesWithCanvas(project: Project): boolean {
-  return !!project.frame && !foldsOver(canvasWeave(project), project.frame)
+  return !!project.frame && !foldsOver(canvasWeave(project), heldWeave(project, 'frame')!)
 }
 
 /** The beads of each named Piece on the Canvas, with its name. */
 function namedPieceBeads(project: Project): { name: string; beads: GridPosition[] }[] {
-  return (project.pieceNames ?? []).map(({ name, row, column }) => ({ name, beads: pieceBeadsAt(project.beads, project, { row, column }) }))
+  const [beads, weave] = [beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas')]
+  return (project.pieceNames ?? []).map(({ name, row, column }) => ({ name, beads: pieceBeadsAt(beads, weave, { row, column }) }))
 }
 
 /** Whether a Frame at `from` resized to `to` newly covers a Canvas position. */
@@ -25,10 +28,10 @@ const newlyCovers = (from: Rect, to: Rect, position: GridPosition) => frameConta
 
 /** The Frame a resize to `rectangle` leaves (ticket 0639): an edge growing into a named Piece stops at its edge until it
  * would cover it whole, and `stoppedAt` names it. A Piece the Frame already hides part of stays on the Canvas, so stops
- * nothing; nor does any Piece for a Frame woven unlike the Canvas, which lifts nothing. */
+ * nothing; nor does any Piece for a Frame woven unlike the Canvas or a Custom frame (ticket 0669), which lift nothing. */
 export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect; stoppedAt?: string } {
   const frame = project.frame
-  const pieces = frame && tradesWithCanvas(project) ? namedPieceBeads(project) : []
+  const pieces = frame && !frameShapeOf(frame) && tradesWithCanvas(project) ? namedPieceBeads(project) : []
   if (!frame || pieces.length === 0) return { rectangle }
   const cycle = rowCycle(frameWeave(project))
   let at = rectangle
@@ -57,7 +60,7 @@ export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect
 export function canvasLift(project: Project, rectangle: Rect): BeadMap {
   const frame = project.frame
   if (!frame || !tradesWithCanvas(project)) return {}
-  const offered = beadsWithout(beadsInFrame(project.beads, rectangle), frame)
+  const offered = beadsWithout(beadsInFrame(beadsOfLayer(project, 'canvas'), rectangle), frame)
   const kept: BeadChange[] = namedPieceBeads(project)
     .filter(({ beads }) => !beads.every((bead) => newlyCovers(frame, rectangle, bead)))
     .flatMap(({ beads }) => beads.map(({ row, column }) => ({ row, column, color: null })))

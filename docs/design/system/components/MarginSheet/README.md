@@ -74,6 +74,19 @@ On a coarse pointer every control on the sheet has a 44px hit area, centred on i
 
 Margin color, margin, auto, Auto, the Canvas color, Name and size on the margin, Fold the title block, Show the title block, Change Technique, Frame tools, and the line "The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it." (`writing.md`, Margin sheet copy). Everything else is existing copy: Rotate Frame, Edit Frame, Export, Remove Frame, Move Frame, Row done, Row not done, Turn row direction, Reset progress, Row highlight, Letters, Technique, by {maker}, Name this frame, Custom color.
 
+## As built (ticket 0657)
+
+- **Values:** the top band's inset `--margin-band-inset` (14px), the Move bar's hit height `--margin-move-height` (28px; 56 wide, as `--frame-handle-hit-width`), Row done `--margin-done` (26px), the track `--margin-track` (64px), a title block pencil `--margin-pencil` (18px), a legend disc `--margin-legend-disc` (14px), the name `--margin-title-name` (Inter 600 12), a disc's letter `--margin-legend-letter` (Inter 600 8) and the name editor `--margin-edit-width` (260px), in `bundle.css` and `src/styles/design-values.css`.
+- **The band's row** is three columns: Row progress at the start, the Move bar centred, the tools at the end; a sheet narrower than its content lets it run past the right edge until the zoom forms (ticket 0658). On a phone the full form only shows zoomed in, where the canvas is panned to reach the rest.
+- **A band too thin** for the row or the title block (zoomed out, until ticket 0658's compact and folded forms) has them stand past the sheet's edge, 7px clear of the Frame's line, never over its beads.
+- **Editing in place:** the name and the maker's name open their field (Save, Cancel, "n/40") floated above their cell in the shared popover look, since a 23px cell cannot hold it; Escape or Cancel closes it. The Technique pencil opens the PanelPicker's menu under it.
+- **The legend** follows the Palette's order (A, B, C…), not the bead count; a color with no letter shows "?", as the Word chart does. The name's cell stops at `--margin-edit-width` and ellipsizes.
+- **Hot corners** are drawn just outside the Frame line, as in the design canvas: a bracket's stroke 3px clear of it, an edge's bar against it; their hit points are on the line.
+- **Touch:** every control on the sheet is a `ui-control`, whose coarse-pointer hit area is 44px (controls.css). Edit Frame keeps the Frame card's four corner handles on touch.
+- **Gives way:** the band's row and the title block take no press where a Selection's handles reach under them or the Tool pill covers them (ticket 498).
+- **The row pointer** stands 4px outside the leftmost row number (or the Frame's line with Rulers off); in the top band, the topmost column number.
+- **Edit Frame's outline** is the sheet element's own outline (DOM), the hot corners and size Tooltip are drawn on the canvas; the Tooltip sits out from the hot corner, beyond its disc.
+
 ## Acceptance
 
 - [ ] The margin is 4 positions wide, filled with its color, with the inner border, in light, dark, high contrast and on a Custom Canvas color.

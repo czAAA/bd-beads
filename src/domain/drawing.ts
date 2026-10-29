@@ -2,6 +2,7 @@ import { withColors, type BeadMap, type FrameSheet } from './canvas'
 import type { GridPosition } from './grid'
 import { hasProjectBeads } from './layerBeads'
 import type { LayerSheet } from './layers'
+import { withLayer } from './layerRecord'
 import { touch, type Project } from './project'
 import { INITIAL_ROW_PROGRESS, isInitialRowProgress } from './rowProgress'
 
@@ -25,14 +26,12 @@ export function deleteAll(project: Project): Project {
 
   // No bead is left, so no Piece is: a name would only wait for a bead painted at its anchor (ticket 406).
   const { pieceNames: _names, ...rest } = project
-  return touch(rest, {
-    beads: {},
-    ...(project.frame ? { frame: emptied(project.frame) } : {}),
-    rowProgress: { ...INITIAL_ROW_PROGRESS },
-  })
+  const unfolded = project.frame ? { ...rest, frame: withoutFolded(project.frame) } : rest
+  const emptied = withLayer(withLayer(unfolded, 'canvas', { beads: {} }), 'frame', { beads: {} })
+  return touch(emptied, { rowProgress: { ...INITIAL_ROW_PROGRESS } })
 }
 
-/** A Frame with no bead left, its Folded beads gone too (ticket 0638). */
-function emptied({ folded: _folded, ...frame }: FrameSheet): FrameSheet {
-  return { ...frame, beads: {} }
+/** A Frame with its Folded beads gone (ticket 0638). */
+function withoutFolded({ folded: _folded, ...frame }: FrameSheet): FrameSheet {
+  return frame
 }

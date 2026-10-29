@@ -1,5 +1,6 @@
 import type { Rect, FrameSheet } from '../domain/canvas'
-import { frameGeometry } from '../domain/frameKind'
+import { frameShapeOf } from '../domain/frameShape'
+import { laidRect } from '../domain/frameOrientation'
 import { describeWeave, withCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
@@ -8,9 +9,10 @@ import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
+import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
 
-// The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
-// Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
+// The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
+// (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
 // Numbers are display-only (ticket 447).
 
 // From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than
@@ -32,8 +34,8 @@ export interface RuledBox extends Rect {
   kind: 'frame' | 'piece'
   /** How far outside its beads its line sits. */
   outset: number
-  /** Every side (the Frame), or only above and to the left (a Piece). */
-  sides: 'all' | 'start'
+  /** The Frame's sides but the one shown at the bottom (`sheet`, ticket 0657), or only above and to the left (a Piece). */
+  sides: 'sheet' | 'start'
 }
 
 /** One number on a ruler, where it is in the viewport and what a click on it selects. */
@@ -57,16 +59,18 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'kind' | 'settings'>; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; techniqueSettings?: TechniqueSettings }
+export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'shape' | 'settings' | 'quarterTurns'>; beads: Parameters<typeof pieceAreasOf>[0]; technique: Technique; techniqueSettings?: TechniqueSettings }
 
-// The boxes that carry rulers: the Frame alone once it is set, otherwise every Piece area of more than 4 beads (those
-// near the viewport are chosen by the caller). A Custom frame has none: its beads lie in rounds, not its rectangle's
-// rows and columns (ticket 0592).
+// The boxes that carry rulers: the Frame alone once it is set, as it lies (turned, the cells it covers: ticket 0667),
+// otherwise every Piece area of more than 4 beads (those near the viewport are chosen by the caller). A Custom frame
+// has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
-  if (project.frame) {
-    return frameGeometry(project.frame).grid ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }] : []
+  const frame = project.frame
+  if (frame) {
+    if (frameShapeOf(frame)) return []
+    return [{ ...laidRect({ ...frame, cell: canvasWeave(project).cell }), kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
   }
-  return pieceAreasOf(project.beads, canvasWeave(project))
+  return pieceAreasOf(beadsOfLayer(project, 'canvas'), canvasWeave(project))
     .filter(hasGuides)
     .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
@@ -266,12 +270,16 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     }
   }
 
-  columnsAt(start.row, area.y, [0, -1])
-  rowsAt(left, [-1, 0])
-  if (box.sides === 'all') {
-    columnsAt(lastRow, bottom, [0, 1])
-    rowsAt(right, [1, 0])
+  // A Frame's sides are the ones its margin sheet shows on screen above, left and right of it: the one at the bottom
+  // holds the title block (MarginSheet card, ticket 0657), whichever way the view is turned.
+  const shownBelow = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y > 0.5
+  const side = (normal: [number, number], lay: () => void) => {
+    if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !shownBelow(normal)) lay()
   }
+  side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))
+  side([-1, 0], () => rowsAt(left, [-1, 0]))
+  side([0, 1], () => columnsAt(lastRow, bottom, [0, 1]))
+  side([1, 0], () => rowsAt(right, [1, 0]))
   return { labels, beads, step: Math.max(columnStep, rowStep) }
 }
 
@@ -288,7 +296,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   })
   const laid = boxes.map((box) =>
     box.kind === 'frame' && project.frame
-      ? layBox(box, withCell(project.frame, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
+      ? layBox(box, withCell(heldWeave(project, 'frame')!, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale),
   )
   const everyLabel = laid.flatMap((box) => box.labels)

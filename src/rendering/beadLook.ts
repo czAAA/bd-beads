@@ -76,6 +76,8 @@ export interface ProjectTheme {
   emptyBead: string
   /** The mark that shows where the weaver has got to: the current-row outline (`marker`). */
   marker: string
+  /** Edit Frame's hot corners and edge bars on the Frame's line (`accent`, MarginSheet card, ticket 0657). */
+  accent: string
   /** The outline of a hover preview that has no color to show (`bead-outline`). */
   outline: string
   /** A bead in a finished row: its own color at `opacity` over the board in every theme (ticket 352), never grey;
@@ -106,6 +108,7 @@ export const LIGHT_THEME: ProjectTheme = withAutoMargin('light', {
   rimOnBlack: WHITE_RIM,
   emptyBead: '#d8d2cc',
   marker: '#1d4ed8',
+  accent: '#fa520f',
   outline: '#1f1f1f',
   finished: { grey: false, opacity: FINISHED_OPACITY },
 })
@@ -124,6 +127,7 @@ export const DARK_THEME: ProjectTheme = withAutoMargin('dark', {
   rimOnBlack: WHITE_RIM,
   emptyBead: '#3c3c3c',
   marker: '#faff69',
+  accent: '#faff69',
   outline: '#ffffff',
   finished: { grey: false, opacity: FINISHED_OPACITY },
 })
@@ -141,6 +145,7 @@ const CONTRAST_THEME: ProjectTheme = {
   rimOnBlack: 'rgba(0,0,0,.35)',
   emptyBead: '#b8b0a8',
   marker: '#000000',
+  accent: '#a82c00',
   outline: '#000000',
   finished: { grey: false, opacity: FINISHED_OPACITY },
   // White paper with a black edge whatever is picked (MarginSheet card); the inner border is `margin-line`.
@@ -378,17 +383,22 @@ export interface BeadLetter {
   theme: ProjectTheme
 }
 
+/** The Swatch letter's color on a bead of `color`: white on a dark one, `ink` on a light one (ticket 0573). The margin's
+ * title block letters its legend the same way (ticket 0657). */
+export function letterInk(color: string): string {
+  const rgb = parseColor(color)
+  return rgb && luma(rgb) < DARK_BEAD_LUMA ? LETTER_ON_DARK : LETTER_ON_LIGHT
+}
+
 /** The Swatch letter centred on a bead (ticket 0573): white on a dark bead, `ink` on a light one, judged on the color
  * the bead shows (a finished row's faded one included). A finished bead keeps its letter at the same fade. */
 export function drawBeadLetter(context: DrawingContext, { x, y, size, width = size, height = size, color, letter, dimmed, theme }: BeadLetter): void {
   const shown = dimmed ? finishedColor(color, theme) : color
-  const rgb = parseColor(shown)
-  const dark = rgb ? luma(rgb) < DARK_BEAD_LUMA : false
   const side = Math.min(width, height)
   const fontSize = (side * LETTER_HEIGHT_SHARE) / Math.max(1, letter.length * LETTER_WIDTH_EM + LETTER_BASE_EM)
   context.font = `600 ${fontSize}px Inter, system-ui, sans-serif`
   context.textAlign = 'center'
   context.textBaseline = 'middle'
-  context.fillStyle = dark ? LETTER_ON_DARK : LETTER_ON_LIGHT
+  context.fillStyle = letterInk(shown)
   context.fillText(letter, x + width / 2, y + height / 2 + fontSize * LETTER_DROP_EM)
 }
