@@ -4,6 +4,7 @@ import ShortcutsHelp from './shell/ShortcutsHelp.vue'
 import MenuPanel from './shell/MenuPanel.vue'
 import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
+import ExportPanel from './canvas/ExportPanel.vue'
 import FramePanel from './canvas/FramePanel.vue'
 import ProjectPanel from './project/ProjectPanel.vue'
 import NewProjectForm from './project/NewProjectForm.vue'
@@ -42,6 +43,15 @@ const inPanel = (component: Component, props: Record<string, unknown>): Componen
     },
   })
 
+/** A component in the small panel the Export panel opens in (ticket 0652), as wide as its shell's content. */
+const inSmallPanel = (component: Component, props: Record<string, unknown>): Component =>
+  defineComponent({
+    setup() {
+      provide(PANEL_CONTEXT, { itemRole: ref(undefined), close: () => {}, openSub: () => {} })
+      return () => h('div', { style: { width: 'calc(var(--panel-width-small) - 2 * var(--space-8))', maxWidth: '100%' } }, [h(component, props)])
+    },
+  })
+
 const CASES: FitCase[] = [
   ['CanvasStrip', CanvasStrip, { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 }],
   ['ShortcutsHelp', ShortcutsHelp, {}],
@@ -55,6 +65,9 @@ const CASES: FitCase[] = [
   ['FramePanel (rows done)', inPanel(FramePanel, { project: { ...painted, rowProgress: { ...painted.rowProgress, currentRow: 1 } } }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
   ['FramePanel (Fringe earring)', inPanel(FramePanel, { project: earring }), {}],
+  ['ExportPanel', inSmallPanel(ExportPanel, { project: painted }), {}],
+  ['ExportPanel (exporting)', inSmallPanel(ExportPanel, { project: framed, exporting: 'pdf' }), {}],
+  ['ExportPanel (no Frame)', inSmallPanel(ExportPanel, { project }), {}],
   ['ProjectPanel (brick)', ProjectPanel, { project: createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (peyote, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'peyote', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],
   ['ProjectPanel (brick, rows done)', ProjectPanel, { project: rowsDone(createProject({ technique: 'brick', beadId: 'miyuki/delica/11-0', name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } })), replaceCandidates: BEAD_CATALOG.slice(0, 2), saveFailed: false, unsaved: false }],

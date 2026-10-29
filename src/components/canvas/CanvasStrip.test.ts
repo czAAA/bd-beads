@@ -18,11 +18,11 @@ describe('CanvasStrip', () => {
 
   const project = { frame: undefined, beads: { 0: { 0: '#ff0000' } }, technique: 'loom' } as unknown as Project
 
-  it('holds Menu, Project, Frame (with or without one, ticket 555), Rotate canvas, Rulers, Undo, Redo, then the zoom (out, in, Fit), and passes each press on (tickets 425, 431)', async () => {
+  it('holds Menu, Project, Frame (with or without one, ticket 555), Rotate canvas, Rulers, Undo, Redo, then the zoom (out, in, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
 
     const order = wrapper.findAll('[data-testid]').map((element) => element.attributes('data-testid'))
-    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-coffee', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset'])
+    expect(order.filter((id) => id?.startsWith('strip-') || id?.startsWith('zoom-'))).toEqual(['strip-menu', 'strip-project', 'strip-frame', 'strip-coffee', 'strip-rotate-canvas', 'strip-rulers', 'strip-undo', 'strip-redo', 'zoom-out', 'zoom-in', 'zoom-reset', 'strip-export'])
     expect(wrapper.find('[data-testid="zoom-level"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="canvas-strip-zoom"]').attributes('data-zoom-percent')).toBe('125')
 
@@ -52,6 +52,20 @@ describe('CanvasStrip', () => {
     await wrapper.get('[data-testid="strip-menu"]').trigger('click')
     await wrapper.get('[data-testid="strip-project"]').trigger('click')
     expect(wrapper.emitted('select-panel')).toEqual([['menu'], ['project']])
+  })
+
+  it('asks for the Export panel from its last button, lit while that panel is open (ticket 0652)', async () => {
+    const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
+    const exportButton = () => wrapper.get('[data-testid="strip-export"]')
+
+    expect(exportButton().attributes('aria-label')).toBe(en.panels.project.exportHeading)
+    expect(exportButton().attributes('aria-pressed')).not.toBe('true')
+    await exportButton().trigger('click')
+    expect(wrapper.emitted('select-panel')).toEqual([['export']])
+
+    await wrapper.setProps({ openPanel: 'export' })
+    expect(exportButton().attributes('aria-pressed')).toBe('true')
+    expect(mount(CanvasStrip, { props: { zoomPercent: 100 } }).find('[data-testid="strip-export"]').exists()).toBe(false)
   })
 
   it('names nothing: no title, size line, estimate, grid icon or hint', () => {
@@ -167,7 +181,10 @@ describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
     const reset = wrapper.get('[data-testid="zoom-reset"]')
     ;(reset.element as HTMLElement).focus()
     await reset.trigger('keydown', { key: 'ArrowRight' })
-    expect(document.activeElement).toBe(reset.element)
+    const exportButton = wrapper.get('[data-testid="strip-export"]')
+    expect(document.activeElement).toBe(exportButton.element)
+    await exportButton.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(exportButton.element)
     wrapper.unmount()
   })
 

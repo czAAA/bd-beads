@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import ExportPanel from '../canvas/ExportPanel.vue'
 import FramePanel from '../canvas/FramePanel.vue'
 import MenuPanel from './MenuPanel.vue'
 import PanelHost from './PanelHost.vue'
@@ -114,6 +115,18 @@ const chosenStarter = ref<StarterId>()
         {{ activeProject.frame ? t.frame.replaceFrame : t.frame.addFrameButton }}
       </AppButton>
     </template>
+  </PanelHost>
+
+  <!-- The Export panel (ticket 0652): the strip's Export button's, the Frame panel's export rows or the way to a Frame. -->
+  <PanelHost v-if="activeProject && openPanel === 'export'" open="export" :only="['export']" @close="openPanel = null">
+    <ExportPanel
+      :project="activeProject"
+      :exporting="exporting"
+      @fit="onFitFrame"
+      @select-frame="onSelectFrame"
+      @export-png="onExportPng"
+      @export-pdf="onExportPdf"
+    />
   </PanelHost>
 
   <!--
