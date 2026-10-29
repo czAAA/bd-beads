@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { beadLabel, type Bead } from '../../domain/beads'
 import { layerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
+import type { LayerBeadChoice } from '../../composables/palette/useReplaceBeadFlow'
 import type { Background, Project } from '../../domain/project'
 import type { BeadShape, Technique } from '../../domain/weave'
 import { controlAction } from '../../composables/shell/controlRegistry'
@@ -15,13 +15,13 @@ import BackgroundSection from './BackgroundSection.vue'
 import BeadSection from './BeadSection.vue'
 import ProjectHead from './ProjectHead.vue'
 
-// The body of Project (spec 0440, tickets 443, 554; ProjectPanel card): everything about the open Project that no tool
-// already does. A head (title with the save state, name, maker, Technique), then four sections that fold shut: bead,
-// canvas, export and this project. It only asks; the app shell does the work (Picture and chart: Frame panel, ticket 555).
+// The body of Project (spec 0440, tickets 443, 554; ProjectPanel card): what no tool already does. A head (title with the
+// save state, name, maker, Technique), then four sections that fold shut: bead, canvas (its Bead, ticket 0687, and
+// Background), export and this project. It only asks; the app shell does the work (Picture and chart: Frame panel).
 const props = defineProps<{
   project: Project
-  /** What the Project could switch to (ticket 48). */
-  replaceCandidates: readonly Bead[]
+  /** What the Canvas's Bead could switch to (tickets 48, 0687). */
+  canvasBeadChoice: LayerBeadChoice
   saveFailed: boolean
   unsaved: boolean
 }>()
@@ -33,6 +33,7 @@ const emit = defineEmits<{
   'set-bead-shape': [shape: BeadShape]
   /** A layer's Background picked (ticket 0666): here the Canvas's. */
   'set-background': [layer: Layer, background: Background]
+  /** A Bead picked for the Canvas (ticket 0687), to confirm. */
   'replace-bead': [beadId: string]
   save: []
   'export-project-file': []
@@ -49,15 +50,11 @@ const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
 const file = controlAction('export-project-file')
 
-/** The woven layer's Bead and Bead shape (ADR 0079, ticket 0665): the Frame's when there is one, else the Canvas's.
- * Replace Bead asks which layer it changes; ticket 0670 gives each its own Layer settings. */
-const wovenLayer = computed(() => layerOf(props.project, 'frame') ?? layerOf(props.project, 'canvas'))
+/** The Canvas's own layer (ticket 0687): its Bead is the Canvas section's, and its Bead shape, which both layers share
+ * until ticket 0670, the bead section's. */
+const canvasLayer = computed(() => layerOf(props.project, 'canvas'))
 
-const beadSummary = computed(() => {
-  const { bead, beadShape } = wovenLayer.value
-  const shape = beadShape === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric
-  return bead ? `${beadLabel(bead, t.value.formFactors)} · ${shape.toLowerCase()}` : undefined
-})
+const beadSummary = computed(() => (canvasLayer.value.beadShape === 'real' ? t.value.form.beadShapeReal : t.value.form.beadShapeSymmetric).toLowerCase())
 
 </script>
 
@@ -76,19 +73,19 @@ const beadSummary = computed(() => {
     />
 
     <PanelSection id="project:bead" :label="t.panels.project.bead" :summary="beadSummary">
-      <BeadSection
-        :bead="wovenLayer.bead"
-        :bead-shape="wovenLayer.beadShape"
-        :candidates="replaceCandidates"
-        @update:bead-shape="emit('set-bead-shape', $event)"
-        @pick="emit('replace-bead', $event)"
-      />
+      <BeadSection :bead-shape="canvasLayer.beadShape" @update:bead-shape="emit('set-bead-shape', $event!)" />
     </PanelSection>
 
-    <PanelSection id="project:canvas" :label="t.panels.project.canvas">
+    <PanelSection id="project:canvas" :label="t.panels.project.canvas" data-testid="project-canvas">
       <template v-if="canvas.background.value" #summary>
         <BackgroundChip :background="canvas.background.value" />
       </template>
+      <BeadSection
+        :bead="canvasLayer.bead"
+        :candidates="canvasBeadChoice.candidates"
+        :outdated="canvasBeadChoice.outdated"
+        @pick="emit('replace-bead', $event)"
+      />
       <BackgroundSection :project="project" layer="canvas" @pick="emit('set-background', 'canvas', $event)" />
     </PanelSection>
 

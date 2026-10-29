@@ -977,21 +977,17 @@ export interface Translations {
       decodeFailed: string
     }
   }
-  /** The Replace Bead control (CONTEXT.md, ADR 0007) next to the open Project's Bead, and its confirmation modal
+  /** The Replace Bead control (CONTEXT.md, ADR 0007) in each layer's panel (ticket 0687), and its confirmation modal
    * (ticket 48). */
   replaceBead: {
     selectLabel: string
     confirmTitle: string
-    // `{bead}` is the new Bead, `{new}`/`{old}` the Estimated size with it and the current one. Says the size changes,
-    // the design and bead count don't, and rows/columns can be adjusted afterwards.
-    confirmMessage: string
-    // With a Frame, when the Canvas's Bead is replaced (ticket 0665): `{bead}` is the new Bead. Says the Canvas is drawn
-    // at its size and the Frame keeps its own, so its size and bead count stay.
+    // The Canvas's Bead (ticket 0687): `{old}`/`{new}` its Bead's size in mm before and after. Says it looks different in
+    // proportion, the design and bead count stay, and it can be undone.
     canvasMessage: string
-    /** With a Frame, the label of the choice of which layer's Bead is replaced (ticket 0665), and its two options. */
-    layerLabel: string
-    layerFrame: string
-    layerCanvas: string
+    // The Frame's Bead (ticket 0687): `{old}`/`{new}` as for the Canvas, then `{newSize}`/`{oldSize}` the Frame's
+    // Estimated size in mm with the new Bead and the old.
+    frameMessage: string
     confirmButton: string
     /** After the Project's own Bead when the catalog's Bead of the same id has changed (ticket 534). */
     outdatedPostfix: string

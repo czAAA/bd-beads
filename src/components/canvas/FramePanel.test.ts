@@ -16,6 +16,8 @@ import { pngDpiFor } from '../../rendering/exportDpi'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
+import { findBead, offeredBeads } from '../../domain/beads'
+import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -219,6 +221,23 @@ describe('FramePanel (ticket 473)', () => {
     await wrapper.findAll('.panel-section__header')[1]!.trigger('click')
     expect(wrapper.findAll('[data-testid="frame-estimate"]')).toHaveLength(0)
     expect(wrapper.get('.panel-section__summary').text()).toMatch(/^5 × 6 · ≈ /)
+  })
+
+  it('gives the Estimated size in mm however large the Frame, as Replace Bead does (ticket 0687)', () => {
+    const wrapper = mountBar(framed({ row: 0, column: 0, rows: 30, columns: 40, beads: {} }))
+    expect(wrapper.get('[data-testid="frame-estimate"] .frame-panel__estimate-value').text()).toBe('≈ 60 × 45 mm')
+  })
+
+  it("shows the Frame's own Bead in its bead section and asks to replace it (ticket 0687)", async () => {
+    const project = framed()
+    const choice = { candidates: offeredBeads().filter((bead) => bead.id !== frameOf(project)!.beadId), outdated: false }
+    expect(mountBar(project).find('[data-testid="frame-bead"]').exists()).toBe(false)
+
+    const wrapper = mount(FramePanel, { props: { project, beadChoice: choice }, attachTo: document.body })
+    expect(panelOptionShown(wrapper.get('[data-testid="frame-bead"]'), 'bead-type')).toBe('Cube')
+    await choosePanelOption(wrapper, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
+
+    expect(wrapper.emitted('replace-bead')).toEqual([['toho/round/11-0']])
   })
 
   it('asks for the Picture and the Printable chart, and waits while one is being made (ticket 555)', async () => {

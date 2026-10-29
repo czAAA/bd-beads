@@ -22,7 +22,8 @@ beforeEach(() => {
 })
 
 const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 4, height: 4, unit: 'beads' } })
-const base = { project, replaceCandidates: offeredBeads().filter((bead) => bead.id !== canvasOf(project).bead?.id), saveFailed: false, unsaved: false }
+const choiceBut = (id: string | undefined) => ({ candidates: offeredBeads().filter((bead) => bead.id !== id), outdated: false })
+const base = { project, canvasBeadChoice: choiceBut(canvasOf(project).bead?.id), saveFailed: false, unsaved: false }
 
 function mountPanel(props: Record<string, unknown> = {}) {
   return mount(ProjectPanel, { props: { ...base, ...props }, attachTo: document.body })
@@ -32,6 +33,7 @@ describe('ProjectPanel (tickets 443, 554)', () => {
   it('has the head, then the bead, canvas, export and this project sections, in that order', () => {
     const wrapper = mountPanel()
     const order = ['project-head', 'bead-shape', 'bead-brand', 'canvas-section', 'export-project-file', 'project-duplicate', 'project-clear', 'project-delete']
+    // The bead section holds the Bead shape alone; the Canvas section the Canvas's own Bead (ticket 0687).
     const html = wrapper.html()
     const positions = order.map((id) => html.indexOf(`data-testid="${id}"`))
     expect(positions.every((position) => position >= 0)).toBe(true)
@@ -62,9 +64,13 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     expect(wrapper.get('[data-testid="bead-shape"] [aria-checked="true"]').attributes('data-value')).toBe('real')
   })
 
-  it('shows the Bead as Brand, Type and Size and asks to replace it, keeping what it can', async () => {
-    const miyuki = replaceBead(project, findBead('miyuki/delica/11-0')!)
-    const wrapper = mountPanel({ project: miyuki, replaceCandidates: offeredBeads().filter((bead) => bead.id !== 'miyuki/delica/11-0') })
+  it("shows the Canvas's Bead as Brand, Type and Size in its section and asks to replace it, keeping what it can (ticket 0687)", async () => {
+    // The Canvas's Bead, not the Frame's, which the Frame panel replaces.
+    const miyuki = replaceBead(project, findBead('miyuki/delica/11-0')!, undefined, 'canvas')
+    const wrapper = mountPanel({ project: miyuki, canvasBeadChoice: choiceBut('miyuki/delica/11-0') })
+    const section = wrapper.get('[data-testid="project-canvas"]')
+    expect(section.find('[data-testid="bead-brand"]').exists()).toBe(true)
+    expect(wrapper.findAll('[data-testid="bead-brand"]')).toHaveLength(1)
     const names = ['bead-brand', 'bead-type', 'bead-size'].map((id) => wrapper.get(`[data-testid="${id}"] button`).attributes('aria-label'))
     expect(names).toEqual(['Brand: Miyuki', 'Type: Delica', 'Size: 11/0'])
     // Type only lists the Brand's own, Size the Type's own, in an app-drawn menu: a native select's picker swallowed
@@ -216,7 +222,7 @@ describe('ProjectPanel (tickets 443, 554)', () => {
     const header = wrapper.findAll('.panel-section__header')[0]!
     await header.trigger('click')
     expect(header.attributes('aria-expanded')).toBe('false')
-    expect(header.text()).toContain('TOHO Cube 1.5mm · symmetric')
+    expect(header.text()).toContain('symmetric')
   })
 
   it('names the Canvas\'s Custom Background in the canvas section\'s summary (tickets 0653, 0666)', async () => {
