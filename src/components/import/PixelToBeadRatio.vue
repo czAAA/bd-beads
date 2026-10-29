@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, ref, useId } from 'vue'
-import { useRovingFocus } from '../../composables/ui/useRovingFocus'
+import { computed, useId } from 'vue'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { CUSTOM_RATIO_MAX, CUSTOM_RATIO_MIN, RATIO_PRESETS, sameRatio, type PixelToBeadRatio } from '../../domain/convertSize'
 import { fillBlanks } from '../../domain/fillBlanks'
+import { ratioSentence, ratioText } from '../../i18n/ratioWords'
 import { useI18n } from '../../i18n/useI18n'
 import AppStepper from '../ui/form/AppStepper.vue'
+import ChipRadioGroup from '../ui/form/ChipRadioGroup.vue'
 import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import AppIcon from '../ui/AppIcon.vue'
 
@@ -22,11 +24,26 @@ const emit = defineEmits<{ choose: [ratio: PixelToBeadRatio, custom: boolean] }>
 
 const { t } = useI18n()
 const labelId = useId()
-const chipsEl = ref<HTMLElement>()
-const roving = useRovingFocus(chipsEl, { selector: '.pixel-ratio__chip' })
 
-const label = (ratio: PixelToBeadRatio) => `${ratio.pixels}:${ratio.beads}`
-const chosenPreset = computed(() => (props.custom ? undefined : RATIO_PRESETS.find((preset) => sameRatio(preset, props.ratio))))
+/** The chips, each a registry action (ticket 0650): the presets by their ratio, then Custom. */
+const chips = computed(() => [
+  ...RATIO_PRESETS.map((preset) => {
+    const id = `${preset.pixels}-${preset.beads}`
+    return { value: id, label: ratioText(preset), action: controlAction(`pixel-ratio-${id}`), testid: `ratio-${id}` }
+  }),
+  { value: 'custom', label: t.value.convertImage.wizard.custom, action: controlAction('pixel-ratio-custom'), testid: 'ratio-custom' },
+])
+const chosen = computed(() => {
+  if (props.custom) return 'custom'
+  const preset = RATIO_PRESETS.find((ratio) => sameRatio(ratio, props.ratio))
+  return preset && `${preset.pixels}-${preset.beads}`
+})
+
+function choose(value: string | undefined) {
+  if (value === 'custom') return chooseCustom()
+  const preset = RATIO_PRESETS.find((ratio) => `${ratio.pixels}-${ratio.beads}` === value)
+  if (preset) emit('choose', preset, false)
+}
 
 /** A Custom ratio's whole number and which way it runs. */
 const customNumber = computed(() => Math.max(props.ratio.pixels, props.ratio.beads))
@@ -49,11 +66,7 @@ const drawing = computed(() => {
   const { pixels, beads } = props.ratio
   return { pixels: Math.min(8, pixels), beads: Math.min(4, beads) }
 })
-const sentence = computed(() => {
-  const words = t.value.convertImage.wizard
-  if (props.ratio.beads > 1) return fillBlanks(words.everyPixelBeads, { n: props.ratio.beads })
-  return props.ratio.pixels > 1 ? fillBlanks(words.everyBlock, { n: props.ratio.pixels }) : words.everyPixel
-})
+const sentence = computed(() => ratioSentence(t.value, props.ratio))
 const pixelCaption = computed(() => (props.ratio.pixels > 1 ? fillBlanks(t.value.convertImage.wizard.blockPx, { n: props.ratio.pixels }) : t.value.convertImage.wizard.onePx))
 const beadCaption = computed(() => (props.ratio.beads > 1 ? fillBlanks(t.value.convertImage.wizard.blockBeads, { n: props.ratio.beads }) : t.value.convertImage.wizard.oneBead))
 </script>
@@ -61,36 +74,7 @@ const beadCaption = computed(() => (props.ratio.beads > 1 ? fillBlanks(t.value.c
 <template>
   <div class="pixel-ratio" data-testid="pixel-ratio">
     <span :id="labelId" class="pixel-ratio__label">{{ t.convertImage.wizard.ratioLabel }}</span>
-    <div ref="chipsEl" class="pixel-ratio__chips" role="radiogroup" :aria-labelledby="labelId" @keydown="roving.onKeydown">
-      <button
-        v-for="(preset, index) in RATIO_PRESETS"
-        :key="label(preset)"
-        type="button"
-        role="radio"
-        class="pixel-ratio__chip"
-        :class="{ 'pixel-ratio__chip--on': chosenPreset === preset }"
-        :aria-checked="chosenPreset === preset"
-        :aria-label="fillBlanks(t.convertImage.wizard.ratioChip, { ratio: label(preset) })"
-        :tabindex="roving.tabIndexFor(chosenPreset ? chosenPreset === preset : !custom && index === 0)"
-        :data-testid="`ratio-${preset.pixels}-${preset.beads}`"
-        @click="emit('choose', preset, false)"
-      >
-        {{ label(preset) }}
-      </button>
-      <button
-        type="button"
-        role="radio"
-        class="pixel-ratio__chip"
-        :class="{ 'pixel-ratio__chip--on': custom }"
-        :aria-checked="custom"
-        :aria-label="t.convertImage.wizard.customRatio"
-        :tabindex="roving.tabIndexFor(custom)"
-        data-testid="ratio-custom"
-        @click="chooseCustom"
-      >
-        {{ t.convertImage.wizard.custom }}
-      </button>
-    </div>
+    <ChipRadioGroup :model-value="chosen" :options="chips" :labelledby="labelId" @update:model-value="choose" />
 
     <div v-if="custom" class="pixel-ratio__custom" data-testid="ratio-custom-controls">
       <AppStepper
@@ -145,37 +129,6 @@ const beadCaption = computed(() => (props.ratio.beads > 1 ? fillBlanks(t.value.c
 .pixel-ratio__label {
   font: var(--type-label);
   color: var(--muted);
-}
-
-.pixel-ratio__chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-6);
-}
-
-.pixel-ratio__chip {
-  box-sizing: border-box;
-  min-width: var(--ratio-chip-min);
-  height: var(--item-height);
-  padding: 0 var(--space-8);
-  font: var(--type-meta);
-  font-family: var(--font-mono);
-  color: var(--ink);
-  background: var(--elevated);
-  border: 1px solid var(--line-strong);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-}
-
-.pixel-ratio__chip--on {
-  color: var(--on-accent);
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.pixel-ratio__chip:focus-visible {
-  outline: var(--focus-width) solid var(--focus-ring);
-  outline-offset: 2px;
 }
 
 .pixel-ratio__custom {
