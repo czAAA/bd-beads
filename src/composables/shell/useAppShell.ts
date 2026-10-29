@@ -7,7 +7,7 @@ import { browserServices, type Services } from '../../services/index'
 import { devicePreferencesKey } from '../../services/devicePreferences'
 import type { GridPosition } from '../../domain/grid'
 import { useMediaQuery } from '../ui/useMediaQuery'
-import { shownBeads, type Layer } from '../../domain/layers'
+import type { Layer } from '../../domain/layers'
 import { copyLayerSelection, selectionFrame, selectionHoldsAllBeads } from '../../domain/selection'
 import type { FramePress } from '../../rendering/frameHandles'
 import type { Tool } from '../../domain/tool'
@@ -261,7 +261,7 @@ function wireAppShell(services: Services) {
     const project = currentProject()
     const current = selection.value
     if (!project || !current) return
-    if (selectionHoldsAllBeads(shownBeads(project), current)) deleteAll.onRequestDeleteAll()
+    if (selectionHoldsAllBeads(project, current)) deleteAll.onRequestDeleteAll()
     else onEmptySelection()
   }
 

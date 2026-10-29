@@ -639,19 +639,29 @@ describe('useSelectionGesture', () => {
       expect(harness.currentProject()!.beads).toEqual({})
     })
 
-    it('a resize handle and a move are not stopped by the Frame\'s edge or its margin', () => {
-      const { gesture } = framed()
-      gesture.beginPress(11, 11)
-      gesture.extendPress(12, 12)
-      gesture.endPress()
+    /** A 2 x 2 Selection in the Frame, at (11, 11). */
+    const frameSelected = () => {
+      const made = framed()
+      made.gesture.beginPress(11, 11)
+      made.gesture.extendPress(12, 12)
+      made.gesture.endPress()
+      return made.gesture
+    }
+
+    it('a resize handle is not stopped by the Frame\'s edge or its margin', () => {
+      const gesture = frameSelected()
       gesture.beginAdjust({ kind: 'handle', edges: ['bottom', 'right'] }, { row: 12, column: 12 }, 'select')
       gesture.dragAdjust({ row: 40, column: 40 })
       gesture.endAdjust()
       expect(gesture.selection.value).toMatchObject({ top: 11, left: 11, rows: 30, columns: 30, layer: 'frame' })
+    })
+
+    it('a move is not stopped by the Frame\'s edge or its margin', () => {
+      const gesture = frameSelected()
       gesture.beginAdjust({ kind: 'inside' }, { row: 11, column: 11 }, 'select')
       gesture.dragAdjust({ row: 1, column: 2 })
       gesture.endAdjust()
-      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 30, columns: 30, layer: 'frame' })
+      expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 2, columns: 2, layer: 'frame' })
     })
 
     it('a Piece tap selects the tapped bead\'s side only, and a tap in the margin is refused with the cue (ticket 433)', () => {

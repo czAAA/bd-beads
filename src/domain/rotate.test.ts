@@ -149,6 +149,17 @@ describe('rotateLayerSelection (ADR 0066)', () => {
     const project = inFrame(beadsFromColors([['#aa0000', '#bb0000', null], ['#dd0000', '#ee0000', null], [null, '#123456', null]]))
     expect(rotateLayerSelection(project, { top: 10, left: 10, rows: 1, columns: 2 }).covered).toBe(1)
   })
+
+  it('turns only the Canvas beads clear of the Frame and its margin for a Canvas Selection across them (ticket 0659)', () => {
+    const canvas = withColors({}, [
+      { row: 2, column: 2, color: '#aa0000' },
+      { row: 8, column: 10, color: '#00aa00' },
+      { row: 10, column: 10, color: '#0000aa' },
+    ])
+    const project = inFrame({}, { beads: canvas })
+    const result = rotateLayerSelection(project, { top: 2, left: 2, rows: 9, columns: 9, layer: 'canvas' })
+    expect(positionsOf(result.project.beads)).toEqual(['10,10:#0000aa', '2,10:#aa0000', '8,10:#00aa00'])
+  })
 })
 
 describe('rotateFrame (ticket 471, ADR 0066)', () => {
