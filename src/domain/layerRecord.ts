@@ -1,4 +1,5 @@
 import { beadCopy, type Bead } from './beads'
+import { nearestQuarterTurn } from './canvasOrientation'
 import type { BeadMap, FrameSheet } from './canvas'
 import type { Layer, Rotation } from './grid'
 import type { PieceName } from './pieceNames'
@@ -169,11 +170,18 @@ export function frameIdentity({ id, beadId, bead, beadShape, letters, rowProgres
 /** Where a Frame laid anew starts its Row progress: the first row, along its rows. */
 const FIRST_ROW: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
 
-/** The Canvas's orientation (ADR 0079): the turn the whole picture is shown at, in degrees; none with no Project open. */
-export function orientationOf(project: Layered): Rotation
-export function orientationOf(project: Layered | undefined): Rotation | undefined
-export function orientationOf(project: Layered | undefined): Rotation | undefined {
+/** The Canvas's orientation (ADR 0079): the turn the whole picture is shown at, in degrees, any angle (ticket 0672);
+ * none with no Project open. */
+export function orientationOf(project: Layered): number
+export function orientationOf(project: Layered | undefined): number | undefined
+export function orientationOf(project: Layered | undefined): number | undefined {
   return project && canvasOf(project).orientation
+}
+
+/** The quarter turn the Canvas's orientation is nearest (ticket 0672): what it is drawn, exported and measured as seen
+ * at; only the view on screen leans off it. */
+export function quarterTurnOf(project: Layered): Rotation {
+  return nearestQuarterTurn(canvasOf(project).orientation)
 }
 
 /** The Project's name: the Canvas's (ADR 0079), and its file's. */

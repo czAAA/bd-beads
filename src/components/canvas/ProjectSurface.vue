@@ -2,7 +2,8 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { PreviewCell } from '../../domain/grid'
 import type { Handedness, InputMode } from '../../domain/inputMode'
-import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, orientationOf, quarterTurnOf, withCanvas } from '../../domain/layerRecord'
+import { nearestQuarterTurn, tiltOf } from '../../domain/canvasOrientation'
 import { placedFrame } from '../../domain/layerWeave'
 import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
@@ -15,6 +16,7 @@ import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
 import { spaceOf } from '../../rendering/space'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { surfaceView, type Scroll } from '../../rendering/surfaceView'
+import { tiltedView } from '../../rendering/tiltedView'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useBeadLayer, useFrameScheduler } from './surface/useSurfaceDrawing'
 import { useMarginCue, useSurfaceOverlay } from './surface/useSurfaceOverlay'
@@ -30,6 +32,9 @@ const props = withDefaults(defineProps<{
   /** Where the viewport's top-left corner is, in displayed px from the bead at row 0, column 0 (see the Surface
    * view). */
   scroll: Scroll
+  /** The Canvas's orientation as shown, in degrees: live while two fingers twist it (ticket 0672); the Project's when
+   * left out. */
+  orientation?: number
   /** What the tool in hand and the modes on let a press, the pointer and the overlay do (ticket 0619,
    * `toolCapabilities`); absent, no tool is in hand and the bead-shaped marker shows over the beads. */
   tools?: ToolCapabilities
@@ -97,6 +102,31 @@ function measure(): void {
   }
 }
 
+// A Canvas twisted off a quarter turn (ticket 0672) is drawn at that quarter turn on a larger square, which is turned
+// the rest about the surface's middle: the drawing, the hit test, the rulers and the Frame's handles keep the quarter
+// turn's own mapping, and only a point crossing between the screen and the drawing is turned (`tiltedView`).
+const shownOrientation = computed(() => props.orientation ?? orientationOf(props.project))
+const quarterTurn = computed(() => nearestQuarterTurn(shownOrientation.value))
+const leaning = computed(() => tiltedView(size.value, tiltOf(shownOrientation.value)))
+/** The Project at the quarter turn it is drawn at: itself, unless a live twist has passed half way to another. */
+const drawnProject = computed(() => (quarterTurnOf(props.project) === quarterTurn.value ? props.project : withCanvas(props.project, { orientation: quarterTurn.value })))
+/** Where the drawing's top-left is: the view's scroll, less how far the larger square reaches past the surface. */
+const drawnScroll = computed(() => {
+  const { offset } = leaning.value
+  return offset.x === 0 && offset.y === 0 ? props.scroll : { x: props.scroll.x - offset.x, y: props.scroll.y - offset.y }
+})
+const drawnSize = computed(() => leaning.value.drawn)
+/** The props as the drawing sees them: the Project at its quarter turn and the drawing's scroll. */
+const drawnProps = new Proxy(props, {
+  get: (target, key) => (key === 'project' ? drawnProject.value : key === 'scroll' ? drawnScroll.value : Reflect.get(target, key)),
+})
+/** The larger square the canvases fill while the Canvas leans, turned about the surface's middle. */
+const drawingStyle = computed(() => {
+  const { degrees, drawn, offset } = leaning.value
+  if (degrees === 0) return undefined
+  return { left: `${-offset.x}px`, top: `${-offset.y}px`, width: `${drawn.width}px`, height: `${drawn.height}px`, transform: `rotate(${degrees}deg)` }
+})
+
 /** Where the Project's positions live: built once and handed to both layers, so they can't disagree about where a
  * position is. */
 const space = computed(() => spaceOf(props.project, true))
@@ -107,7 +137,7 @@ const canvasWeave = computed(() => layerOf(props.project, 'canvas').weave)
 /** How a bead and a point of the viewport map onto each other: built once, so the pointer and the Frame's handles
  * agree with what is drawn. */
 const surface = computed(() =>
-  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: placedFrame(props.project), rotation: orientationOf(props.project), zoom: props.zoom, scroll: props.scroll, viewport: size.value }),
+  surfaceView({ space: space.value, technique: canvasWeave.value.technique, techniqueSettings: canvasWeave.value.techniqueSettings, cell: canvasWeave.value.cell, frame: placedFrame(props.project), rotation: quarterTurn.value, zoom: props.zoom, scroll: drawnScroll.value, viewport: drawnSize.value }),
 )
 
 /** The Pieces the rulers hang from: counted once per edit, and held through a stroke, growing only where it paints,
@@ -138,7 +168,8 @@ watch(
       emit('selection-anchor', undefined)
       return
     }
-    const box = surface.value.beadBox(selectionFrame(selected), selectionLayer(props.project, selected))
+    // The Selection bar stands upright over the box the Selection covers on screen, leaning or not.
+    const box = leaning.value.screenBox(surface.value.beadBox(selectionFrame(selected), selectionLayer(props.project, selected)))
     emit('selection-anchor', { box: { left: box.x, top: box.y, width: box.width, height: box.height }, viewport: { ...size.value } })
   },
   { immediate: true, flush: 'post' },
@@ -150,24 +181,27 @@ const frameAnchor = computed<FrameAnchor | undefined>(() => {
   const frame = frameOf(props.project)
   const grid = marginSheetPx(props.project)
   if (!frame || !grid || size.value.width === 0) return undefined
-  const box = surface.value.frameBox(frame)
   const corners = [surface.value.gridToPoint(grid.sheet.x, grid.sheet.y), surface.value.gridToPoint(grid.sheet.x + grid.sheet.width, grid.sheet.y + grid.sheet.height)]
-  const sheet = {
-    left: Math.min(corners[0].x, corners[1].x),
-    top: Math.min(corners[0].y, corners[1].y),
+  const drawnSheet = {
+    x: Math.min(corners[0].x, corners[1].x),
+    y: Math.min(corners[0].y, corners[1].y),
     width: Math.abs(corners[1].x - corners[0].x),
     height: Math.abs(corners[1].y - corners[0].y),
   }
   // Scrolled wholly out of view, the sheet has no tools to keep on screen.
+  const seen = leaning.value.screenBox(drawnSheet)
   const { width, height } = size.value
-  if (sheet.left + sheet.width <= 0 || sheet.top + sheet.height <= 0 || sheet.left >= width || sheet.top >= height) return undefined
-  const origin = surface.value.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')
+  if (seen.x + seen.width <= 0 || seen.y + seen.height <= 0 || seen.x >= width || seen.y >= height) return undefined
+  // The sheet's tools are laid out as the drawing is, before it leans, and lean with it (`tilt`).
+  const { offset, degrees } = leaning.value
+  const unleaned = ({ x, y, width, height }: { x: number; y: number; width: number; height: number }) => ({ left: x - offset.x, top: y - offset.y, width, height })
   return {
-    box: { left: box.x, top: box.y, width: box.width, height: box.height },
-    sheet,
+    box: unleaned(surface.value.frameBox(frame)),
+    sheet: unleaned(drawnSheet),
     band: grid.band * props.zoom,
     viewport: { ...size.value },
-    origin: { left: origin.x, top: origin.y, width: origin.width, height: origin.height },
+    origin: unleaned(surface.value.beadBox({ row: 0, column: 0, rows: 1, columns: 1 }, 'canvas')),
+    ...(degrees === 0 ? {} : { tilt: degrees }),
   }
 })
 watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, flush: 'post' })
@@ -176,12 +210,12 @@ watch(frameAnchor, (anchor) => emit('frame-anchor', anchor), { immediate: true, 
 const marksShown = computed(() => props.rowMarks && rowProgressOn(props.project))
 
 const marginCue = useMarginCue(props)
-const pointer = useSurfacePointer({ props, emit, root: rootEl, size, surface, marksShown, refuse: marginCue.refuse })
+const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
-useBeadLayer({ props, canvas: baseEl, size, space, theme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
+useBeadLayer({ props: drawnProps, canvas: baseEl, size: drawnSize, space, theme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
-  props, canvas: overlayEl, size, space, surface, rulers, theme, marksShown, oncePerFrame,
+  props: drawnProps, canvas: overlayEl, size: drawnSize, space, surface, rulers, theme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,
 })
 
@@ -210,7 +244,8 @@ onBeforeUnmount(() => {
     data-testid="project-surface"
     :data-technique="canvasWeave.technique"
     :data-technique-settings="JSON.stringify(canvasWeave.techniqueSettings ?? {})"
-    :data-rotation="orientationOf(project)"
+    :data-rotation="quarterTurn"
+    :data-tilt="leaning.degrees || undefined"
     :data-zoom="zoom"
     :data-scroll-x="scroll.x"
     :data-scroll-y="scroll.y"
@@ -228,8 +263,10 @@ onBeforeUnmount(() => {
     @wheel="handlers.onWheel"
     @contextmenu.prevent
   >
-    <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
-    <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
+    <div class="project-surface__drawing" :style="drawingStyle">
+      <canvas ref="baseEl" class="project-surface__canvas" data-testid="project-surface-cells" />
+      <canvas ref="overlayEl" class="project-surface__canvas" data-testid="project-surface-overlay" />
+    </div>
     <img
       v-if="penPointer"
       class="project-surface__pen-pointer"
@@ -323,6 +360,13 @@ onBeforeUnmount(() => {
 
 .project-surface--dragging {
   cursor: grabbing;
+}
+
+/* The canvases' box: the surface itself, or, while the Canvas leans off a quarter turn, a larger square turned about
+ * its middle (ticket 0672). */
+.project-surface__drawing {
+  position: absolute;
+  inset: 0;
 }
 
 .project-surface__canvas {

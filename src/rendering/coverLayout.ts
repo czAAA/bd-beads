@@ -4,7 +4,7 @@ import { A4_PORTRAIT, mm, PRINT_BOARD_PAD, PRINT_MARGIN, PRINT_RULER, type PageS
 import type { PrintText } from './printText'
 import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx } from './surfaceView'
-import { type Layered, orientationOf } from '../domain/layerRecord'
+import { type Layered, quarterTurnOf } from '../domain/layerRecord'
 
 // Where everything sits on the Cover page (ticket 0583; glossary: Cover page), worked out without a canvas so the PDF, the
 // PNG and the page count agree. Page px at 150 dpi, like the rest of the print layout.
@@ -96,7 +96,7 @@ export function coverLayout(project: CoverShape, words: CoverWords, page: PageSi
   const cover: ColorsSlice = { from: 0, count: onCover, rowHeight, rows: Math.ceil(onCover / 2), total: whole }
   const tableHeight = colorsHeight(onCover, rowHeight, whole)
 
-  const wide = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, orientationOf(project), frameWeave(project).cell)
+  const wide = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, 1, quarterTurnOf(project), frameWeave(project).cell)
   const inset = PRINT_RULER + PRINT_BOARD_PAD
   const room = available - tableHeight - COVER_GAP
   const widthRoom = page.width - PRINT_MARGIN * 2 - inset * 2
