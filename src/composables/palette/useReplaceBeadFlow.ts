@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { beadPitchMm, findBead, type Bead } from '../../domain/beads'
+import { beadPitchMm, colorCatalogOf, findBead, type Bead } from '../../domain/beads'
 import type { Layer } from '../../domain/grid'
 import { beadOfLayer, frameOf } from '../../domain/layerRecord'
 import { replaceBead } from '../../domain/projectBead'
@@ -82,7 +82,7 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     const chosen = pending.value?.layer
     pending.value = undefined
     if (!bead || !chosen) return
-    const catalogId = bead.formFactor.colorCatalog
+    const catalogId = colorCatalogOf(bead.id)
     const coded = Object.keys(deps.currentProject()?.paletteCodes ?? {}).length > 0
     const catalog = coded && catalogId ? await loadColorCatalog(catalogId).catch(() => undefined) : undefined
     deps.edit('exempt', (project) => replaceBead(project, bead, catalog, chosen))

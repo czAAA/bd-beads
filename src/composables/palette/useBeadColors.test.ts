@@ -1,15 +1,21 @@
 import { describe, expect, it } from 'vitest'
+import { beadCopy, DEFAULT_BEAD } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import { projectPalette } from '../../domain/palette'
 import { listedColorName } from '../../i18n/colorName'
 import { en } from '../../i18n/en'
 import { paintAt } from '../../testUtils/layers'
 import { editHarness } from '../../testUtils/editHarness'
+import { withLayers } from '../../testUtils/layerFields'
 import { useProjectPalette } from '../tools/usePalette'
 import { useBeadColors } from './useBeadColors'
 
 const delica = createProject({ technique: 'loom', beadId: 'miyuki/delica/11-0', size: { width: 3, height: 3, unit: 'beads' } })
 const toho = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
+const tohoRound = createProject({ technique: 'loom', beadId: 'toho/round/11-0', size: { width: 3, height: 3, unit: 'beads' } })
+/** A Project on a Bead the registry lacks: the only Bead without a Color catalog, as every registry Bead has one
+ * (ticket 0694). */
+const noCatalog = withLayers(toho, { beadId: 'brand/gone/1', bead: { ...beadCopy(DEFAULT_BEAD), id: 'brand/gone/1' } })
 
 function setup(project = delica) {
   const harness = editHarness(project)
@@ -20,9 +26,26 @@ function setup(project = delica) {
 
 describe('useBeadColors', () => {
   it('offers nothing for a Bead with no Color catalog', async () => {
-    const { available, load, swatches } = setup(toho)
+    const { available, load, swatches } = setup(noCatalog)
     await load()
     expect(available.value).toBe(false)
+    expect(swatches.value).toEqual([])
+  })
+
+  it('lists TOHO Round 11/0 codes from the one toho catalog, each approximate (ticket 0694)', async () => {
+    const { available, load, swatches, state } = setup(tohoRound)
+    expect(available.value).toBe(true)
+    await load()
+    expect(state.value).toBe('ready')
+    expect(swatches.value.find((entry) => entry.code === '1')).toMatchObject({ family: 'Crystal', finish: 'transparent', approximate: true })
+    expect(swatches.value.every((entry) => entry.approximate)).toBe(true)
+  })
+
+  it('shows TOHO Cube 1.5mm an empty list without error, its size being in no code yet (ticket 0695 fills it)', async () => {
+    const { available, load, swatches, state } = setup(toho)
+    expect(available.value).toBe(true)
+    await load()
+    expect(state.value).toBe('ready')
     expect(swatches.value).toEqual([])
   })
 

@@ -204,9 +204,15 @@ describe('defaultPalette (ticket 0528)', () => {
     expect(delica).toBe(findBead('miyuki-delica-11-0')!.brand.colorFamilies)
   })
 
-  it('gives a brand without a set, and a Bead the catalog lacks, the twelve', () => {
-    expect(defaultPalette('toho-round-11-0')).toBe(BUILT_IN_COLORS)
-    expect(defaultPalette('toho-cube-1.5mm')).toBe(BUILT_IN_COLORS)
+  it('gives TOHO its 21 families, the twelve among them, on every TOHO Bead (ticket 0694)', () => {
+    const toho = defaultPalette('toho-round-11-0')
+    expect(toho).toBe(defaultPalette('toho-cube-1.5mm'))
+    expect(toho).toHaveLength(21)
+    expect(toho.map((color) => color.id)).toEqual(expect.arrayContaining(BUILT_IN_COLORS.map((color) => color.id)))
+    expect(toho.map((color) => color.id)).toEqual(expect.arrayContaining(['lime', 'aqua', 'navy', 'beige', 'copper', 'crystal', 'iridescent']))
+  })
+
+  it('gives a Bead the catalog lacks the twelve', () => {
     expect(defaultPalette('a-custom-bead')).toBe(BUILT_IN_COLORS)
   })
 

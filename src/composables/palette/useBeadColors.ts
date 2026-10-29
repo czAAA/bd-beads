@@ -1,6 +1,6 @@
 import { computed, inject, provide, ref, shallowRef, type InjectionKey, type Ref } from 'vue'
 import { catalogSwatches } from '../../domain/beadSwatch'
-import { findBead } from '../../domain/beads'
+import { colorCatalogOf, findBead } from '../../domain/beads'
 import type { ColorCatalog } from '../../domain/colorCatalog'
 import { beadIdOfLayer, beadOfLayer } from '../../domain/layerRecord'
 import { brandColors, type AddUsedColorOutcome, type Palette } from '../../domain/palette'
@@ -21,12 +21,17 @@ export function useBeadColors({ currentProject, palette, addUsed }: BeadColorsDe
   const catalog = shallowRef<ColorCatalog>()
   const state = ref<'idle' | 'loading' | 'ready' | 'failed'>('idle')
 
-  // The woven layer's Bead, the Frame's when there is one (ADR 0079, ticket 0665), whose colors the Palette holds.
+  // The woven layer's Bead, the Frame's when there is one (ADR 0079, ticket 0665), whose colors the Palette holds. Its
+  // catalog is the registry's, not the copy's (ticket 0694).
+  const beadId = computed(() => {
+    const project = currentProject()
+    return project && beadIdOfLayer(project, 'frame')
+  })
   const bead = computed(() => {
     const project = currentProject()
     return project && (beadOfLayer(project, 'frame').bead ?? findBead(beadIdOfLayer(project, 'frame')))
   })
-  const catalogId = computed(() => bead.value?.formFactor.colorCatalog)
+  const catalogId = computed(() => colorCatalogOf(beadId.value))
   const size = computed(() => bead.value?.size)
 
   async function load() {

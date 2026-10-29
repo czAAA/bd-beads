@@ -87,6 +87,10 @@ export const en: Translations = {
     silver: 'Silver',
     crystal: 'Crystal',
     iridescent: 'Iridescent',
+    lime: 'Lime',
+    aqua: 'Aqua',
+    navy: 'Navy',
+    copper: 'Copper',
   },
   panels: {
     back: 'Back',

@@ -33,12 +33,12 @@ describe('parseColorCatalog', () => {
 })
 
 describe('a Form factor names its catalog', () => {
-  it('gives Delica and Miyuki Round one each and leaves TOHO without', () => {
+  it('gives Delica and Miyuki Round one each and every TOHO Bead the one toho catalog (ticket 0694)', () => {
     const catalogOf = (id: string) => BEAD_CATALOG.find((bead) => bead.id === id)?.formFactor.colorCatalog
     expect(catalogOf('miyuki/delica/15-0')).toBe('miyuki-delica')
     expect(catalogOf('miyuki/round/11-0')).toBe('miyuki-round')
-    expect(BEAD_CATALOG.filter((bead) => bead.brand.id === 'toho').map((bead) => bead.formFactor.colorCatalog)).toEqual(
-      BEAD_CATALOG.filter((bead) => bead.brand.id === 'toho').map(() => undefined),
-    )
+    const toho = BEAD_CATALOG.filter((bead) => bead.brand.id === 'toho')
+    expect(toho.map((bead) => bead.formFactor.id)).toEqual(expect.arrayContaining(['cube', 'round']))
+    expect(new Set(toho.map((bead) => bead.formFactor.colorCatalog))).toEqual(new Set(['toho']))
   })
 })

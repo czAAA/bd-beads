@@ -89,6 +89,10 @@ export const pl: Translations = {
     silver: 'Srebrny',
     crystal: 'Kryształowy',
     iridescent: 'Opalizujący',
+    lime: 'Limonkowy',
+    aqua: 'Błękitny',
+    navy: 'Granatowy',
+    copper: 'Miedziany',
   },
   panels: {
     back: 'Wstecz',

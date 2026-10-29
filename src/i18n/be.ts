@@ -90,6 +90,10 @@ export const be: Translations = {
     silver: 'Сярэбраны',
     crystal: 'Празрысты',
     iridescent: 'Пераліўны',
+    lime: 'Салатавы',
+    aqua: 'Блакітны',
+    navy: 'Цёмна-сіні',
+    copper: 'Медны',
   },
   panels: {
     back: 'Назад',
