@@ -29,4 +29,6 @@ export const MARGIN_PX = {
   gap: 4,
   /** A tool's icon. */
   icon: { full: 16, compact: 14 },
+  /** The current pass's mark (ticket 0685): the pill's room round its number, and the tick's thickness. */
+  pass: { pillPad: 2, tick: 3 },
 } as const

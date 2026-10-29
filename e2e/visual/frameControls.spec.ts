@@ -132,3 +132,44 @@ for (const touch of [false, true]) {
     })
   }
 }
+
+// The current pass is marked on its number in the full form and by a tick inside the Frame's line in the compact one
+// (ticket 0685): with the passes running down the columns, its mark stands in the top band with the tools, but never
+// under one, wherever along the Frame the pass is.
+for (const zoom of [60, 80, 100]) {
+  for (const column of [20, 37]) {
+    test(`the current column's mark stands under no tool of the margin sheet, at ${zoom}% on column ${column + 1}`, async ({ browser }) => {
+      const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+      const page = await context.newPage()
+      await openApp(page, [fixtureProject({ technique: 'loom', columns: 40, rowProgress: { direction: 'columns', currentColumn: column } })])
+      await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+      await setZoom(page, zoom)
+      await expect(page.getByTestId('margin-band')).toHaveCount(1)
+      await page.mouse.move(5, 5)
+      await settle(page)
+
+      const { marked, covered } = await page.evaluate(() => {
+        const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="project-surface-overlay"]')!
+        const rect = canvas.getBoundingClientRect()
+        const { data } = canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height)
+        // The light theme's `marker`, #1d4ed8.
+        const marker = [0x1d, 0x4e, 0xd8]
+        let marked = 0
+        const covered: string[] = []
+        for (let index = 0; index < data.length; index += 4) {
+          if (data[index + 3]! < 250 || Math.abs(data[index]! - marker[0]!) + Math.abs(data[index + 1]! - marker[1]!) + Math.abs(data[index + 2]! - marker[2]!) > 24) continue
+          marked += 1
+          const pixel = index / 4
+          const x = rect.left + ((pixel % canvas.width) + 0.5) * (rect.width / canvas.width)
+          const y = rect.top + (Math.floor(pixel / canvas.width) + 0.5) * (rect.height / canvas.height)
+          const tool = document.elementFromPoint(x, y)?.closest('[data-testid="margin-sheet"] :is(button, [role="progressbar"], .row-progress__counter)')
+          if (tool && covered.length < 5) covered.push(`${tool.getAttribute('aria-label') ?? tool.className} at ${Math.round(x)}, ${Math.round(y)}`)
+        }
+        return { marked, covered }
+      })
+      expect(marked).toBeGreaterThan(0)
+      expect(covered).toEqual([])
+      await context.close()
+    })
+  }
+}
