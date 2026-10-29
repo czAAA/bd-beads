@@ -2,9 +2,9 @@ import { withColors, type BeadMap, type FrameSheet } from './canvas'
 import type { GridPosition } from './grid'
 import { hasProjectBeads } from './layerBeads'
 import type { LayerSheet } from './layers'
-import { withLayer } from './layerRecord'
+import { canvasOf, frameOf, withFrameSheet, withLayer } from './layerRecord'
 import { touch, type Project } from './project'
-import { INITIAL_ROW_PROGRESS, isInitialRowProgress } from './rowProgress'
+import { INITIAL_ROW_PROGRESS, isInitialRowProgress, rowProgressOf } from './rowProgress'
 
 // The drawing commands' changes to beads: painting a stroke on a layer, and Delete all.
 
@@ -20,18 +20,19 @@ export function paintCells({ beads, geometry, edge }: LayerSheet, positions: Gri
  * the first row; name, size, Technique, Bead and rotation stay. Ignores the Row progress lock (see isInFinishedRow):
  * clearing progress is the point, so callers skip keepFinishedRows. Returns the same instance if already so. */
 export function deleteAll(project: Project): Project {
-  if (!hasProjectBeads(project) && !project.frame?.folded && isInitialRowProgress(project.rowProgress)) {
+  if (!hasProjectBeads(project) && !frameOf(project)?.folded && isInitialRowProgress(rowProgressOf(project))) {
     return project
   }
 
   // No bead is left, so no Piece is: a name would only wait for a bead painted at its anchor (ticket 406).
-  const { pieceNames: _names, ...rest } = project
-  const unfolded = project.frame ? { ...rest, frame: withoutFolded(project.frame) } : rest
-  const emptied = withLayer(withLayer(unfolded, 'canvas', { beads: {} }), 'frame', { beads: {} })
-  return touch(emptied, { rowProgress: { ...INITIAL_ROW_PROGRESS } })
+  const { pieceNames: _names, ...canvas } = canvasOf(project)
+  const frame = frameOf(project)
+  const unnamed = { ...project, layers: [canvas, ...project.layers.slice(1)] as Project['layers'] }
+  const unfolded = frame ? withFrameSheet(unnamed, { ...withoutFolded(frame), rowProgress: { ...INITIAL_ROW_PROGRESS } }) : unnamed
+  return touch(withLayer(withLayer(unfolded, 'canvas', { beads: {} }), 'frame', { beads: {} }), {})
 }
 
 /** A Frame with its Folded beads gone (ticket 0638). */
-function withoutFolded({ folded: _folded, ...frame }: FrameSheet): FrameSheet {
+function withoutFolded<T extends FrameSheet>({ folded: _folded, ...frame }: T): Omit<T, 'folded'> {
   return frame
 }

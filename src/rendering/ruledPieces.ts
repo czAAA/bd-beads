@@ -1,7 +1,7 @@
 import { changedPositions, frameContains, type BeadMap, type Rect } from '../domain/canvas'
 import type { GridPosition } from '../domain/grid'
 import { canvasWeave } from '../domain/layerWeave'
-import { beadsOfLayer } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf } from '../domain/layerRecord'
 import { namedPieces, type NamedPiece } from '../domain/pieceNames'
 import { pieceAreasOf } from '../domain/pieces'
 import { rowCycle } from '../domain/weave'
@@ -28,7 +28,7 @@ const NAMED_REACH = 1
 export function ruledPieces(previous: RuledPieces | undefined, project: RuledProject, { numbers, stroking }: { numbers: boolean; stroking: boolean }): RuledPieces {
   const weave = canvasWeave(project)
   const beads = beadsOfLayer(project, 'canvas')
-  const ruled = numbers && !project.frame
+  const ruled = numbers && !frameOf(project)
   const held = stroking && previous && previous.cycle === rowCycle(weave) && (previous.areas !== undefined) === ruled
   if (!held) {
     return { beads, cycle: rowCycle(weave), areas: ruled ? pieceAreasOf(beads, weave) : undefined, named: namedPieces(project) }

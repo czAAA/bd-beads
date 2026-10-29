@@ -13,6 +13,8 @@ import { rotateFrame } from './rotate'
 import { shownWay } from './rowProgress'
 import { copyLayerSelection, paintLayerSelection, pasteOnLayer } from './selection'
 import { wordChartOf } from './wordChart'
+import { beadsOfLayer, frameOf } from './layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 // A Frame's orientation (ticket 0667, ADR 0079): Rotate Frame turns the Frame like a sheet on the Canvas, its beads in
 // their own rows and columns, and everything that works on the Frame as it lies follows the turn.
@@ -22,14 +24,14 @@ const GREEN = '#27ae60'
 const BLUE = '#2f6fed'
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 /** A loom Frame of 4 rows and 6 columns at (20, 20), a red bead in its first, turned once: it lies 6 x 4 at (19, 21). */
-const upright: Project = { ...base, beads: {}, frame: { technique: 'loom', row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) } }
+const upright: Project = withFields(base, { beads: {}, frame: { technique: 'loom', row: 20, column: 20, rows: 4, columns: 6, beads: withColors({}, [{ row: 0, column: 0, color: RED }]) } })
 const turned = rotateFrame(upright)!
 
 describe('what a turned Frame covers', () => {
   it('lies in its own rows and columns turned, Width and Height swapped as seen', () => {
     expect(laidFrame(turned)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
-    expect(seenSize(turned.frame!)).toEqual({ columns: 4, rows: 6 })
-    expect(laidFrame(upright)).toBe(upright.frame)
+    expect(seenSize(frameOf(turned)!)).toEqual({ columns: 4, rows: 6 })
+    expect(laidFrame(upright)).toBe(frameOf(upright))
   })
 
   it('covers on peyote the rows its turned beads reach, which are not its own count', () => {
@@ -49,10 +51,10 @@ describe('what a turned Frame covers', () => {
 
 describe('what a turned Frame offers', () => {
   it('turns, is selected on and woven otherwise; it is resized, has a line removed and is made again only upright', () => {
-    for (const action of ['rotate', 'select', 'technique'] as const) expect(frameAllows(turned.frame, action)).toBe(true)
+    for (const action of ['rotate', 'select', 'technique'] as const) expect(frameAllows(frameOf(turned), action)).toBe(true)
     for (const action of ['resize', 'remove-line', 'from-selection'] as const) {
-      expect(frameAllows(turned.frame, action)).toBe(false)
-      expect(frameAllows(upright.frame, action)).toBe(true)
+      expect(frameAllows(frameOf(turned), action)).toBe(false)
+      expect(frameAllows(frameOf(upright), action)).toBe(true)
     }
     expect(changeFrame(turned, { set: { row: 19, column: 21, rows: 5, columns: 6 } })).toEqual({ kind: 'refused', reason: 'not-offered' })
     expect(removeLineRefusal(turned, { top: 19, left: 21, rows: 1, columns: 6, layer: 'frame' })).toBe('no-line')
@@ -60,9 +62,9 @@ describe('what a turned Frame offers', () => {
 
   it('drops its beads onto the Canvas on Remove Frame where they lie turned, its Folded beads too (ticket 0669)', () => {
     // Its first bead lies in the top-right corner of what it covers; a Folded bead past its last column, below that.
-    const folded = { ...turned, frame: { ...turned.frame!, folded: withColors({}, [{ row: 0, column: 6, color: GREEN }]) } }
+    const folded = withFields(turned, { frame: { ...frameOf(turned)!, folded: withColors({}, [{ row: 0, column: 6, color: GREEN }]) } })
     const removed = changeFrame(folded, { remove: true })
-    expect(removed.kind === 'changed' && removed.project.beads).toEqual({ 19: { 24: RED }, 25: { 24: GREEN } })
+    expect(removed.kind === 'changed' && beadsOfLayer(removed.project, 'canvas')).toEqual({ 19: { 24: RED }, 25: { 24: GREEN } })
   })
 })
 
@@ -70,16 +72,16 @@ describe('a Selection and a Paste over a turned Frame', () => {
   it('fill the beads lying under the rectangle on screen', () => {
     // The laid rectangle's top row: on a quarter turn the Frame's first column, its rows from the last up.
     const painted = paintLayerSelection(turned, { top: 19, left: 21, rows: 1, columns: 4, layer: 'frame' }, BLUE)
-    expect([3, 2, 1, 0].map((row) => colorAt(painted.frame!.beads, row, 0))).toEqual([BLUE, BLUE, BLUE, BLUE])
-    expect(colorAt(painted.frame!.beads, 0, 1)).toBeNull()
+    expect([3, 2, 1, 0].map((row) => colorAt(frameOf(painted)!.beads, row, 0))).toEqual([BLUE, BLUE, BLUE, BLUE])
+    expect(colorAt(frameOf(painted)!.beads, 0, 1)).toBeNull()
   })
 
   it('lay a copy from the Canvas as it is seen', () => {
-    const canvas = { ...turned, beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 0, column: 1, color: GREEN }, { row: 0, column: 2, color: BLUE }]) }
+    const canvas = withFields(turned, { beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 0, column: 1, color: GREEN }, { row: 0, column: 2, color: BLUE }]) })
     const block = copyLayerSelection(canvas, { top: 0, left: 0, rows: 1, columns: 3, layer: 'canvas' })!
     const pasted = pasteOnLayer(canvas, block, { row: 19, column: 21, layer: 'frame' })
     // Left to right across the top of the turned Frame: its first column, from its last row up.
-    expect([3, 2, 1].map((row) => colorAt(pasted.frame!.beads, row, 0))).toEqual([RED, GREEN, BLUE])
+    expect([3, 2, 1].map((row) => colorAt(frameOf(pasted)!.beads, row, 0))).toEqual([RED, GREEN, BLUE])
   })
 })
 
@@ -92,8 +94,8 @@ describe('Row progress on a turned Frame', () => {
   })
 
   it('puts Row 1 of the Word chart on the edge its first row lies along', () => {
-    const lettered = { ...turned, letters: true }
-    expect(wordChartOf({ ...upright, letters: true })!.firstEdge).toBe('top')
+    const lettered = withFields(turned, { letters: true })
+    expect(wordChartOf(withFields(upright, { letters: true }))!.firstEdge).toBe('top')
     expect(wordChartOf(lettered)!.firstEdge).toBe('right')
     expect(wordChartOf(lettered)!.rows).toHaveLength(4)
   })

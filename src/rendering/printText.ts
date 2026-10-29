@@ -16,7 +16,7 @@ import type { Locale, Translations } from '../i18n/translations'
 import { wordChartOf, type WordChart } from '../domain/wordChart'
 import { orderStepLabel } from '../i18n/orderStep'
 import { fillBlanks } from '../domain/fillBlanks'
-import { beadOfLayer } from '../domain/layerRecord'
+import { beadOfLayer, lettersOn, orientationOf, projectNameOf } from '../domain/layerRecord'
 
 /** One color of Beads needed on paper: its swatch, name, beads and grams. */
 interface PrintedColor {
@@ -120,7 +120,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
   const bead = resolveProjectBead(project)
   const maker = (project.makerName ?? '').trim()
   const { columns, rows } = shownDimensions(project)
-  const [across, down] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
+  const [across, down] = rotationSwapsAxes(orientationOf(project)) ? [rows, columns] : [columns, rows]
   const size = `${across}×${down}`
   const estimate = bead ? formatSizeMm(estimatedSizeMm(project, bead), { mm: t.form.unitMm, cm: t.form.unitCm }, locale) : undefined
   const beadName = bead ? beadLabel(bead, t.formFactors) : t.projects.unknownBeadLabel
@@ -147,7 +147,7 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
 
   return {
     locale,
-    name: project.name,
+    name: projectNameOf(project),
     techniqueWord: technique,
     maker,
     exportedAt: `${date} · ${time}`,
@@ -165,14 +165,14 @@ export function printText(project: Project, t: Translations, locale: Locale, at:
       grams: grams(quantity.count),
       ...(palette.byId(quantity.colorId)?.code ? { code: palette.byId(quantity.colorId)!.code } : {}),
       ...(tubeCounts[index] === undefined ? {} : { tubes: tubes(tubeCounts[index]!) }),
-      ...(project.letters && project.paletteLetters?.[quantity.hex] ? { letter: project.paletteLetters[quantity.hex] } : {}),
+      ...(lettersOn(project) && project.paletteLetters?.[quantity.hex] ? { letter: project.paletteLetters[quantity.hex] } : {}),
     })),
     colorsCount: plural(locale, quantities.length, t.a11y.colorsCount),
     totalBeads: plural(locale, total, t.print.beadsCount),
     totalBeadsCount: groupThousands(total, locale),
     totalGrams: grams(total),
     ...(tubeTotal === undefined ? {} : { totalTubes: tubes(tubeTotal) }),
-    chartStyle: project.letters ? t.print.chartStyleLetters : t.print.chartStyleColor,
+    chartStyle: lettersOn(project) ? t.print.chartStyleLetters : t.print.chartStyleColor,
     gramsNote:
       perGram && bead
         ? `${fillBlanks(t.print.gramsNote, { count: groupThousands(perGram, locale), bead: `${formFactorName(bead.formFactor, t.formFactors)} ${bead.size}` })} ${t.print.spares}`

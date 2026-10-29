@@ -1,9 +1,9 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedPositions, type BeadMap } from '../../../domain/canvas'
-import { layerOf, withLayer } from '../../../domain/layerRecord'
+import { frameOf, layerOf } from '../../../domain/layerRecord'
 import { sameWeave } from '../../../domain/layerWeave'
 import { shownLetters } from '../../../domain/paletteEdits'
-import type { Project } from '../../../domain/project'
+import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
 import { renderProject } from '../../../rendering/projectRenderer'
@@ -70,16 +70,14 @@ export interface BeadLayerDeps {
  * stamps, are not drawn, ticket 0674). Any other difference, even one added later, can change how a bead is drawn
  * (shape, size, Technique, weave), so it repaints it all. */
 function sameDrawing(a: Project, b: Project): boolean {
-  const { frame: frameA, updatedAt: _u, savedAt: _s, ...restA } = withoutBeads(a)
-  const { frame: frameB, updatedAt: _v, savedAt: _t, ...restB } = withoutBeads(b)
-  return sameFields(restA, restB) && (frameA === undefined || frameB === undefined ? frameA === frameB : sameFields(frameA, frameB))
+  const { layers: layersA, updatedAt: _u, savedAt: _s, ...restA } = a
+  const { layers: layersB, updatedAt: _v, savedAt: _t, ...restB } = b
+  return sameFields(restA, restB) && layersA.length === layersB.length && layersA.every((layer, index) => sameFields(unpainted(layer), unpainted(layersB[index]!)))
 }
 
-const NO_BEADS: BeadMap = {}
-
-/** The Project with both layers' beads emptied (ADR 0079), so what is left is what decides how a bead is drawn. */
-function withoutBeads(project: Project): Project {
-  return withLayer(withLayer(project, 'canvas', { beads: NO_BEADS }), 'frame', { beads: NO_BEADS })
+/** A layer without its beads (ADR 0079): what is left is what decides how a bead is drawn. */
+function unpainted({ beads: _beads, ...layer }: LayerFields): object {
+  return layer
 }
 
 /** Whether two records hold the same values, comparing objects one level deep (a row progress is replaced whole). */
@@ -110,7 +108,7 @@ function changedBands(before: Project, after: Project): { first: number; last: n
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
   const framed = (project: Project) => layerOf(project, 'frame')?.beads ?? {}
-  const frameTop = after.frame?.row ?? 0
+  const frameTop = frameOf(after)?.row ?? 0
   const changed = [
     ...new Set([
       ...changedPositions(layerOf(before, 'canvas').beads, layerOf(after, 'canvas').beads).map((position) => position.row),
@@ -231,7 +229,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
       before.zoom > 0
     const heavy =
       onlyViewMoved &&
-      beadsToDraw(storedBeads(project), project.frame ? project.frame.columns * project.frame.rows : 0, size.value, props.zoom) > GESTURE_BEAD_LIMIT
+      beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
       drawCells()

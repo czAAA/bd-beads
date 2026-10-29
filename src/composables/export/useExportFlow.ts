@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { withMakerName } from '../../domain/makerName'
-import { withLetters } from '../../domain/paletteEdits'
+import { lettersOn, withLetters } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { libraryFileName, projectExportFileName, projectFileName, projectListFileName } from '../../domain/projectFile'
 import type { Locale, Translations } from '../../i18n/translations'
@@ -11,6 +11,7 @@ import { downloadFile as browserDownloadFile, type DownloadFile } from '../../se
 import { packLibraryFile, packProjectFile } from '../../services/projectFileCodec'
 import { useExportQuality } from './useExportQuality'
 import type { MessageTone, Toast } from '../ui/useToasts'
+import { frameOf } from '../../domain/layerRecord'
 
 /** What exporting needs from the app shell: the open Project and the library, and the app's language. */
 export interface ExportFlowDeps {
@@ -46,7 +47,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   /** Letters on or off (ticket 0573): saved with the Project, no Undo step, like the maker's name. */
   function onSetLetters(on: boolean) {
     const project = deps.currentProject()
-    if (project && (project.letters === true) !== on) {
+    if (project && lettersOn(project) !== on) {
       deps.replaceProject(withLetters(project, on))
     }
   }
@@ -73,7 +74,7 @@ export function useExportFlow(deps: ExportFlowDeps) {
   async function runExport(make: (project: Project) => Promise<Blob>, extension: 'png' | 'pdf', type: string, more?: (project: Project) => { fileName: string; make: () => Promise<Blob> }[]) {
     const project = deps.currentProject()
     // Exports take the Frame's beads, so with no Frame there is nothing to export (Export asks for one first).
-    if (!project?.frame || exporting.value) {
+    if (!project || !frameOf(project) || exporting.value) {
       return
     }
     exporting.value = extension

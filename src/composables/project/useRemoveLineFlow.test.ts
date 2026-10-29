@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../../domain/createProject'
-import { moveToRow } from '../../domain/rowProgress'
+import { moveToRow, rowProgressOf } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import type { Selection } from '../../domain/selection'
 import { editHarness } from '../../testUtils/editHarness'
 import { useDialogs } from '../shell/useDialogs'
 import { en } from '../../i18n/en'
 import { useRemoveLineFlow } from './useRemoveLineFlow'
+import { frameOf } from '../../domain/layerRecord'
+import { sheetOf, withFields } from '../../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const secondRow: Selection = { top: 1, left: 0, rows: 1, columns: 4 }
@@ -32,8 +34,8 @@ describe('useRemoveLineFlow', () => {
     expect(canRemoveSelectedLine.value).toBe(true)
     onRemoveSelectedLine()
     expect(dialogs.open.value).toBeUndefined()
-    expect(harness.project.frame).toMatchObject({ rows: 2 })
-    expect(harness.project.rowProgress.currentRow).toBe(1)
+    expect(frameOf(harness.project)).toMatchObject({ rows: 2 })
+    expect(rowProgressOf(harness.project).currentRow).toBe(1)
   })
 
   it('asks before a finished row, then takes it and moves the pointer back, one Undo bringing both back (ticket 0647)', () => {
@@ -46,12 +48,12 @@ describe('useRemoveLineFlow', () => {
 
     confirmRemoveLine()
     expect(dialogs.open.value).toBeUndefined()
-    expect(harness.project.frame).toMatchObject({ rows: 2 })
-    expect(harness.project.rowProgress.currentRow).toBe(1)
+    expect(frameOf(harness.project)).toMatchObject({ rows: 2 })
+    expect(rowProgressOf(harness.project).currentRow).toBe(1)
 
     harness.history.onUndo()
-    expect(harness.project.frame).toEqual(woven.frame)
-    expect(harness.project.rowProgress).toEqual(woven.rowProgress)
+    expect(sheetOf(harness.project)).toEqual(sheetOf(woven))
+    expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
   })
 
   it('words the question for the line it asks about, rows or columns as the rows run (ticket 0647)', () => {
@@ -59,7 +61,7 @@ describe('useRemoveLineFlow', () => {
     onRemoveSelectedLine()
     expect(removeLinePrompt.value).toEqual({ title: 'Remove row?', message: 'Row 2 is already woven. Removing it moves Row progress back to row 2.' })
 
-    const peyote: Project = { ...base, technique: 'peyote', frame: { ...base.frame!, technique: 'peyote' }, rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 3 } }
+    const peyote: Project = withFields(base, { technique: 'peyote', frame: { ...frameOf(base)!, technique: 'peyote' }, rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 3 } })
     const firstColumn: Selection = { top: 0, left: 1, rows: 3, columns: 1 }
     const columns = setup({ project: peyote, selection: firstColumn })
     columns.onRemoveSelectedLine()
@@ -82,11 +84,11 @@ describe('useRemoveLineFlow', () => {
     const { harness, onRemoveSelectedLine } = setup({ selection: secondRow })
     onRemoveSelectedLine()
 
-    expect(harness.project.frame).toMatchObject({ columns: 4, rows: 2 })
+    expect(frameOf(harness.project)).toMatchObject({ columns: 4, rows: 2 })
     expect(harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
 
     harness.history.onUndo()
-    expect(harness.project.frame).toEqual(base.frame)
+    expect(sheetOf(harness.project)).toEqual(sheetOf(base))
   })
 
   it('does nothing without a line selected', () => {

@@ -6,7 +6,7 @@ import { snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, frameWeave } from './layerWeave'
-import { beadsOfLayer, heldWeave, withLayer } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, heldWeave, orientationOf, withCanvas, withFrameSheet, withLayer } from './layerRecord'
 import { touch, type Project } from './project'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
@@ -138,9 +138,9 @@ export function rotateLayerSelection(project: Project, selection: Selection): Ro
 /** The Canvas turned, with its Piece names carried as the turn moved their beads, before what fell under the Frame was
  * put back. */
 function withCanvasNames(project: Project, rotated: Project, turn: ReturnType<typeof turnedBeads>): Project {
-  const names = turnedNames(project, turn).pieceNames
-  const { pieceNames: _names, ...rest } = rotated
-  return { ...rest, ...(names ? { pieceNames: names } : {}) }
+  const names = canvasOf(turnedNames(project, turn)).pieceNames
+  const { pieceNames: _names, ...canvas } = canvasOf(rotated)
+  return { ...rotated, layers: [{ ...canvas, ...(names ? { pieceNames: names } : {}) }, ...rotated.layers.slice(1)] as Project['layers'] }
 }
 
 /** A Selection over a Custom frame turned (ticket 0594): its beads a quarter turn about its middle on screen, each on the
@@ -178,7 +178,7 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
-  const frame = project.frame
+  const frame = frameOf(project)
   if (!frame) {
     return undefined
   }
@@ -192,7 +192,7 @@ export function rotateFrame(project: Project): Project | undefined {
     return canvasDistance(project, own, Math.floor(rows / 2), Math.floor(columns / 2))
   }
   const [was, now] = [half(frame), half(turned)]
-  return { ...project, frame: { ...turned, row: frame.row + was.row - now.row, column: frame.column + was.column - now.column }, updatedAt: Date.now() }
+  return touch(withFrameSheet(project, { ...turned, row: frame.row + was.row - now.row, column: frame.column + was.column - now.column }), {})
 }
 
 /** The next quarter turn clockwise: 0, 90, 180, 270 and round again. */
@@ -200,5 +200,5 @@ const NEXT_ROTATION: Readonly<Record<Rotation, Rotation>> = { 0: 90, 90: 180, 18
 
 /** Rotate canvas (ticket 471): the picture a quarter turn clockwise further; only the view turns, no data changes. */
 export function rotateCanvas(project: Project): Project {
-  return touch(project, { rotation: NEXT_ROTATION[project.rotation] })
+  return touch(withCanvas(project, { orientation: NEXT_ROTATION[orientationOf(project)] }), {})
 }

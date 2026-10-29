@@ -1,6 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 import { gridBox, openApp, savedProject, settle, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
+import { frameOf } from '../../src/domain/layerRecord'
 import { frameGrid } from '../../src/testUtils/frameGrid'
 
 /** The margin sheet's Move bar and Edit Frame never scale with the zoom (tickets 473, 0657); the Frame panel hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
@@ -113,7 +114,7 @@ for (const touch of [false, true]) {
       await expect(page.getByTestId('margin-band')).toHaveCount(0)
 
       // A press on the first row's middle bead, just under the bar, paints it.
-      const before = (await savedProject(page)).frame!
+      const before = frameOf(await savedProject(page))!
       const bead = beadCentre({ technique: 'loom', rotation: 0 }, await gridBox(page), zoom / 100, { row: before.row, column: before.column + 20 })
       if (touch) await tap(page, bead)
       else await page.mouse.click(bead.x, bead.y)
@@ -126,7 +127,7 @@ for (const touch of [false, true]) {
       await page.mouse.down()
       await page.mouse.move(from.x + 200 * (zoom / 100), from.y, { steps: 10 })
       await page.mouse.up()
-      await expect.poll(async () => (await savedProject(page)).frame!.column).toBe(before.column + 10)
+      await expect.poll(async () => frameOf(await savedProject(page))!.column).toBe(before.column + 10)
       await context.close()
     })
   }

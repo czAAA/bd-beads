@@ -2,7 +2,7 @@ import { computed, ref, watch, type Ref } from 'vue'
 import { beadBounds, type Rect, sameFrame } from '../../domain/canvas'
 import { clampZoom, stepZoom, type GridPosition } from '../../domain/grid'
 import { laidFrame } from '../../domain/frameOrientation'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, orientationOf } from '../../domain/layerRecord'
 import type { Project } from '../../domain/project'
 import { DEFAULT_TECHNIQUE } from '../../domain/weave'
 import { OPEN_SPACE } from '../../rendering/space'
@@ -43,7 +43,7 @@ export function useCanvasView(
   /** The Canvas as the view stands, or at another zoom; with no Project, an empty one in the default Technique. */
   function surfaceOf(project: Project | undefined): SurfaceView {
     const { technique, techniqueSettings, cell } = project ? layerOf(project, 'canvas').weave : { technique: DEFAULT_TECHNIQUE }
-    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: project?.frame, rotation: project?.rotation ?? 0, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
+    return surfaceView({ space: OPEN_SPACE, technique, techniqueSettings, cell, frame: frameOf(project), rotation: orientationOf(project) ?? 0, zoom: zoom.value, scroll: scroll.value, viewport: viewport.value })
   }
 
   function measured(): boolean {
@@ -118,7 +118,7 @@ export function useCanvasView(
   watch(
     // Two sources, not one getter returning an array: a fresh array is "changed" on every edit, which refit the view on
     // every bead drawn.
-    [() => currentProject()?.id, () => currentProject()?.rotation],
+    [() => currentProject()?.id, () => orientationOf(currentProject())],
     () => {
       if (measured()) {
         fit()
