@@ -1,3 +1,4 @@
+import { frameAllows } from './frameShape'
 import type { Rect } from './canvas'
 import { pieceAreasOf } from './pieces'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
@@ -42,7 +43,8 @@ export function selectedAreaLine(frame: Rect | undefined, selection: Selection |
 
 /** The line the Selection covers, in the Frame or, with no Frame, in whichever Piece area it is a whole line of. */
 function selectedProjectLine(project: Project, selection: Selection | undefined): ProjectLine | undefined {
-  const areas = project.frame ? [project.frame] : pieceAreasOf(project.beads, project)
+  // A Custom frame has no plain rows to remove (ADR 0079).
+  const areas = project.frame ? (frameAllows(project.frame, 'remove-line') ? [project.frame] : []) : pieceAreasOf(project.beads, project)
   for (const area of areas) {
     const line = selectedAreaLine(area, selection)
     if (line) {

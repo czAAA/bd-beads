@@ -674,7 +674,6 @@ export const ru: Translations = {
       },
     },
     fringeStyle: { label: 'Вид бахромы', announce: 'Вид бахромы: {style}' },
-    removeConfirmCustom: 'Её бусины удалятся вместе с ней. Это действие можно отменить.',
     announceCustom: 'Рамка «{shape}», {size}',
     snapAddedTop: {
       one: 'Добавлен пустой ряд сверху: рамка должна начинаться с несмещённого ряда.',

@@ -815,7 +815,6 @@ function wireAppShell(services: Services) {
       onCancelDeleteAll: deleteAll.onCancelDeleteAll,
       onConfirmResetProgress: rowOps.onConfirmResetProgress,
       onCancelResetProgress: rowOps.onCancelResetProgress,
-      removeFrameTakesBeads: frameFlow.removeTakesBeads,
       onConfirmRemoveFrame: frameFlow.confirmRemove,
       onCancelRemoveFrame: frameFlow.cancelRemove,
       removeLinePrompt: removeLine.removeLinePrompt,

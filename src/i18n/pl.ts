@@ -674,7 +674,6 @@ export const pl: Translations = {
       },
     },
     fringeStyle: { label: 'Rodzaj frędzli', announce: 'Rodzaj frędzli: {style}' },
-    removeConfirmCustom: 'Jej koraliki zostaną usunięte razem z nią. Można to cofnąć.',
     announceCustom: 'Ramka „{shape}”, {size}',
     snapAddedTop: {
       one: 'Dodano pusty wiersz u góry: ramka musi zaczynać się od nieprzesuniętego wiersza.',

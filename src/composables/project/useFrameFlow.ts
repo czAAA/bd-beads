@@ -1,5 +1,5 @@
 import { computed, ref, watch, type Ref } from 'vue'
-import { hasBeads, type Rect, sameFrame } from '../../domain/canvas'
+import { hasBeads, type FrameSheet, type Rect, sameFrame } from '../../domain/canvas'
 import {
   fitToDrawing,
   frameResizedAround,
@@ -14,7 +14,7 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
-import { changedSetting, frameAllows, removedBeadsOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
+import { changedSetting, frameAllows, settingsOf, settingValuesOf, sizeSettingOf, type FrameSettings } from '../../domain/frameShape'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
@@ -99,7 +99,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   /** Whether the Frame's handles and steppers are on: a Frame, the toggle on, and no pass done. */
   const settingFrame = computed(() => {
     const frame = deps.currentProject()?.frame
-    // A Custom frame's shape comes from its settings, not handles (ticket 0592).
+    // A Custom frame's handles step its size setting (ticket 0669).
     return !!frame && frameAllows(frame, 'resize') && handlesOn.value && !locked.value
   })
 
@@ -138,8 +138,12 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     barOpen.value = false
   }
 
-  function describe(frame: Rect): string {
+  /** What a resize left, said as the Frame is sized: its width and height, or a Custom frame's size setting. */
+  function describe(frame: FrameSheet): string {
     const t = deps.messages()
+    const id = sizeSettingOf(frame)?.id
+    const setting = settingValuesOf(frame).find(({ name }) => name === id)
+    if (setting) return fillBlanks(t.frame.sizeSettings[setting.name].announce, { count: String(setting.value) })
     return fillBlanks(t.frame.announceSet, { width: frame.columns, height: frame.rows })
   }
 
@@ -308,23 +312,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * (tickets 426, 455). */
   const removeConfirmOpen = dialogs.flag('remove-frame')
 
-  /** Whether Remove Frame takes the Frame's beads with it rather than dropping them onto the Canvas (ADR 0077): the
-   * question says so. */
-  const removeTakesBeads = computed(() => {
-    const frame = deps.currentProject()?.frame
-    return !!frame && removedBeadsOf(frame) === 'removed'
-  })
-
-  /** Remove Frame: asks first, except for an empty Frame that takes its beads with it, as there is nothing to lose
-   * (ticket 0592). */
+  /** Remove Frame: asks first, a Custom frame as any Frame (ticket 0669). */
   function remove(): void {
-    const project = deps.currentProject()
-    if (!project?.frame) return
-    if (removeTakesBeads.value && !hasBeads(project.frame.beads) && !locked.value) {
-      commit(undefined)
-      return
-    }
-    removeConfirmOpen.value = true
+    if (deps.currentProject()?.frame) removeConfirmOpen.value = true
   }
 
   /** The Remove frame question answered No: nothing changes. */
@@ -447,7 +437,6 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     setTo,
     remove,
     removeConfirmOpen,
-    removeTakesBeads,
     cancelRemove,
     confirmRemove,
     placeFromStarter,

@@ -74,6 +74,11 @@ function cellCentre(weave: Weave, cell: GridPosition): LayoutPoint {
   return description.center(cell, 1, aspect)
 }
 
+/** A cell and the eight cells round it. */
+function cellsAround(cell: GridPosition): GridPosition[] {
+  return [-1, 0, 1].flatMap((rows) => [-1, 0, 1].map((columns) => ({ row: cell.row + rows, column: cell.column + columns })))
+}
+
 /** The Custom frame's cell aimed at one of its beads, named by round and place: a cell whose centre lies on that bead
  * where one does, so a Paste aimed there lands its anchor on it (Ctrl+V under a tool that hovers beads); else the cell
  * holding the bead's centre. Any other position is returned as it is. */
@@ -83,7 +88,7 @@ export function cellOfBead(sheet: LayerSheet, position: GridPosition): GridPosit
   if (!found) return position
   const weave = sheet.weave
   const holding = cellAt(weave, centreOf(placement, found))
-  const near = [-1, 0, 1].flatMap((rows) => [-1, 0, 1].map((columns) => ({ row: holding.row + rows, column: holding.column + columns })))
+  const near = cellsAround(holding)
   const onBead = (cell: GridPosition) => {
     const { x, y } = cellCentre(weave, cell)
     return landingAt(placement.layout, (x - placement.x) / placement.scale, (y - placement.y) / placement.scale) === found
@@ -138,24 +143,68 @@ function nearestFree(layout: FrameLayout, panel: number, x: number, y: number, t
  * position's panel when an earlier bead took it; one on a Seam or Off-shape, or with no free position near, is dropped.
  * `points` are in cell widths from the Frame's first position's corner. */
 export function landOnLayout(sheet: LayerSheet, points: readonly PlacedColor[]): { landed: BeadChange[]; dropped: number } {
+  const landings = landingsOf(sheet, points)
+  const landed = landings.flatMap((free, index) => (free ? [{ ...free, color: points[index]!.color }] : []))
+  return { landed, dropped: points.length - landed.length }
+}
+
+/** The position each point on screen lands on, in order, or none for one that is dropped (see `landOnLayout`). */
+function landingsOf(sheet: LayerSheet, points: readonly LayoutPoint[]): (GridPosition | undefined)[] {
   const placement = placementOf(sheet)
   const { layout } = placement
   const taken = new Set<string>()
-  const landed: BeadChange[] = []
-  let dropped = 0
-  for (const point of points) {
+  return points.map((point) => {
     const x = (point.x - placement.x) / placement.scale
     const y = (point.y - placement.y) / placement.scale
     const under = landingAt(layout, x, y)
     const free = under && !taken.has(keyOf(under)) ? { row: under.row, column: under.column } : under && nearestFree(layout, under.panel, x, y, taken)
-    if (!free) {
-      dropped += 1
-      continue
+    if (free) taken.add(keyOf(free))
+    return free
+  })
+}
+
+/** A grid's beads lifted into a Custom frame (Frame from Selection, ticket 0669): each, from the Frame's cell it is on,
+ * lands as a Paste lands it; one that lands on a Seam or Off-shape stays where it was. `cells` are in the Frame's own
+ * rows and columns: what landed, by layout position, and the cells it was lifted from. */
+export function liftedOntoLayout(sheet: LayerSheet, cells: readonly (GridPosition & { color: string })[]): { landed: BeadChange[]; lifted: GridPosition[] } {
+  const landings = landingsOf(sheet, cells.map((cell) => cellCentre(sheet.weave, cell)))
+  const landed: BeadChange[] = []
+  const lifted: GridPosition[] = []
+  landings.forEach((free, index) => {
+    if (!free) return
+    const { row, column, color } = cells[index]!
+    landed.push({ ...free, color })
+    lifted.push({ row, column })
+  })
+  return { landed, lifted }
+}
+
+/** A Custom frame's beads laid on a grid (Remove Frame, ticket 0669, ADR 0077): each on the Frame's cell nearest its
+ * centre, as a Paste of them lays them, or the nearest free cell next to it where an earlier bead took that one. In
+ * the Frame's own rows and columns, a bead read in order on screen. */
+export function droppedFromLayout(sheet: LayerSheet): BeadChange[] {
+  const placement = placementOf(sheet)
+  const { weave } = sheet
+  const taken = new Set<string>()
+  const dropped: BeadChange[] = []
+  const beads = placement.layout.positions
+    .flatMap((position) => {
+      const color = colorAt(sheet.beads, position.row, position.column)
+      return color ? [{ centre: centreOf(placement, position), color }] : []
+    })
+    .sort((a, b) => a.centre.y - b.centre.y || a.centre.x - b.centre.x)
+  for (const { centre, color } of beads) {
+    const holding = cellAt(weave, centre)
+    const away = (cell: GridPosition) => {
+      const { x, y } = cellCentre(weave, cell)
+      return Math.hypot(x - centre.x, y - centre.y)
     }
+    const free = [holding, ...cellsAround(holding).sort((a, b) => away(a) - away(b))].find((cell) => !taken.has(keyOf(cell)))
+    if (!free) continue
     taken.add(keyOf(free))
-    landed.push({ row: free.row, column: free.column, color: point.color })
+    dropped.push({ ...free, color })
   }
-  return { landed, dropped }
+  return dropped
 }
 
 /** Where a Paste aimed at a Custom frame's cell puts the anchor bead, on screen in cell widths: on the centre of the bead

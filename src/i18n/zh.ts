@@ -661,7 +661,6 @@ export const zh: Translations = {
       },
     },
     fringeStyle: { label: '流苏样式', announce: '流苏样式：{style}' },
-    removeConfirmCustom: '其中的珠子会随边框一起移除。此操作可以撤销。',
     announceCustom: '边框「{shape}」，{size}',
     snapAddedTop: {
       other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
