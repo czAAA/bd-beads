@@ -17,9 +17,9 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { createProject } from '../domain/createProject'
 import { paintAt } from '../testUtils/layers'
 import { armSelectionBar } from '../testUtils/pill'
+import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
-import type { PixelData } from '../domain/imageConversion'
 import type { ColorCatalog } from '../domain/colorCatalog'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
@@ -70,15 +70,6 @@ const SaveFailedNotice = defineComponent({
   setup: () => () => h(AppMessage, { tone: 'danger', placement: 'notice' }, () => 'This device could not save your Project. Download it to keep it.'),
 })
 
-/** An image of a few flat colours, for the Convert image wizard. */
-function picture(): PixelData {
-  const width = 16
-  const height = 10
-  const data = new Uint8ClampedArray(width * height * 4)
-  for (let i = 0; i < width * height; i += 1) data.set(i % 3 === 0 ? [230, 55, 70, 255] : i % 3 === 1 ? [47, 111, 219, 255] : [250, 220, 60, 255], i * 4)
-  return { width, height, data }
-}
-
 /** The Bead's Color catalog as its list reads it (a stand-in for `useBeadColors`). */
 function beadColors(state: 'ready' | 'failed') {
   const swatches = ['Blue', 'Gray', 'Green'].map((family, i) => ({ code: `DB${i + 1}`, family, finish: 'metallic', hex: '#123456', approximate: true, discontinued: i === 1, taken: false }))
@@ -102,15 +93,10 @@ function wizardProps(withPicture: boolean) {
       draft: { technique: 'peyote', beadId: 'miyuki/delica/11-0', name: '', makerName: '' },
       ...(withPicture ? { file: new File(['x'], 'sunflower-in-a-long-file-name.png', { type: 'image/png' }) } : {}),
     },
-    decodeImage: async () => picture(),
+    decodeImage: async () => flatColorsPicture(),
     loadCatalog: async () => catalog,
     readClipboardImage: async () => undefined,
   }
-}
-
-/** Waits for the picture the wizard was opened with to be read. */
-async function pictureSet(root: HTMLElement) {
-  for (let tries = 0; tries < 50 && !root.querySelector('[data-testid="found-color"]'); tries += 1) await new Promise((done) => setTimeout(done, 20))
 }
 
 const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)?.click()
