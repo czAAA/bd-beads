@@ -37,8 +37,9 @@ export interface LayerGeometry {
   /** The box round the Layer's edge (a Custom frame's is its rectangle), or none on an open Canvas. */
   extent(): Box | undefined
   /** The positions whose beads may lie in or touch a box, a row at a time as a drawing lays them down (a later row's
-   * beads over an earlier one's): what a view of part of the Layer draws. */
-  positionsIn(box: Box): GridPosition[]
+   * beads over an earlier one's): what a view of part of the Layer draws. On a grid `rows` keeps only those rows, so
+   * redrawing a band of a big Frame walks the band alone (ticket 0674); a Custom frame's are all its positions. */
+  positionsIn(box: Box, rows?: { first: number; last: number }): GridPosition[]
   /** The lines where its parts are joined (a Custom frame's Seams), from point to point; none on a grid. */
   seams(): readonly (readonly [LayoutPoint, LayoutPoint])[]
 }
@@ -75,9 +76,10 @@ export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
       return found && has(found) ? found : undefined
     },
     extent: () => extent,
-    positionsIn: ({ x, y, width, height: deep }) => {
+    positionsIn: ({ x, y, width, height: deep }, rows) => {
       const seen = description.visible({ left: x, right: x + width, top: y, bottom: y + deep }, 1, height)
-      const [firstRow, lastRow] = bounds ? [Math.max(bounds.row, seen.firstRow), Math.min(bounds.row + bounds.rows - 1, seen.lastRow)] : [seen.firstRow, seen.lastRow]
+      const [visibleFirst, visibleLast] = rows ? [Math.max(seen.firstRow, rows.first), Math.min(seen.lastRow, rows.last)] : [seen.firstRow, seen.lastRow]
+      const [firstRow, lastRow] = bounds ? [Math.max(bounds.row, visibleFirst), Math.min(bounds.row + bounds.rows - 1, visibleLast)] : [visibleFirst, visibleLast]
       const found: GridPosition[] = []
       for (let row = firstRow; row <= lastRow; row += 1) {
         const { first, last } = seen.columnsOf(row)

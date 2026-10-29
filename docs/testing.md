@@ -56,6 +56,7 @@ CI (`.github/workflows/ci.yml`) is the gate: every pull request to `main` runs t
 - `paletteHost.ts`: `mountWithPalette(component, ids, props)` mounts a Palette control under the real Palette and Edit, as the app shell provides them, with spies for asking to remove one color or all (ticket 0601).
 - `beads.ts`: press, hover and read beads on a mounted surface (`pressBead`, `hoverBead`, `beadColor`, `beadColors`, `rowProgressView`, `rulerNumbers`, …).
 - `fakeCanvas.ts`, `recordingContext.ts`: jsdom has no canvas; these stand in for it.
+- `countingBeads.ts`: a set of beads behind a counter of the rows and beads read, so a test counts the work an edit does instead of timing it (ticket 0674).
 - `fakeMatchMedia.ts`, `fakeResizeObserver.ts`, `surfaceLayout.ts`: media queries, element sizes and layout a test controls.
 - `storageWrites.ts`: count localStorage writes, or make one fail.
 - `sharedPage.ts`: what the setup resets before each `page` file, and its never-repeating clock.

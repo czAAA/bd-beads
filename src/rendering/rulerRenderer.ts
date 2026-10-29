@@ -1,6 +1,5 @@
 import { frameContains, type Rect } from '../domain/canvas'
 import { laidFrame } from '../domain/frameOrientation'
-import { namedPieces } from '../domain/pieceNames'
 import { currentPass, frameRowOrder, rowProgressOn } from '../domain/rowProgress'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
@@ -87,10 +86,7 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
   for (const box of layout.boxes) {
-    // With Rulers off a Piece's rectangle goes with its numbers; the Frame's line never does.
-    if (layout.numbers || box.kind === 'frame') {
-      strokeBoxLine(context, box, surface, theme)
-    }
+    strokeBoxLine(context, box, surface, theme)
   }
   for (const dot of layout.dots) {
     drawDot(context, dot, layout.scale, theme)
@@ -155,7 +151,7 @@ function drawPieceNames(context: DrawingContext, { project, surface, layout, the
   const frame = laidFrame(project)
   const covered = (piece: Rect) =>
     frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
-  const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = namedPieces(project)
+  const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = layout.named
     .filter((piece) => !covered(piece))
     .map((piece) => ({ ...piece, layer: 'canvas' as const }))
   if (frame && project.frame?.name) {

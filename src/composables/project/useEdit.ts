@@ -134,14 +134,15 @@ export function useEdit(deps: EditDeps) {
     strokeBaseline = project && snapshotOf(project)
   }
 
-  /** One step of a stroke: a drawing edit that lands on screen at once but defers its save and its Undo step to
-   * endStroke. */
-  function strokeStep(command: EditCommands['drawing']) {
+  /** One step of a stroke: drawing edits that land on screen at once but defer their save and their Undo step to
+   * endStroke. Several commands (the beads one pointer move crossed, ticket 0674) are each kept or refused by the rules
+   * in turn and land together, once. */
+  function strokeStep(...commands: EditCommands['drawing'][]) {
     const project = deps.currentProject()
     if (!project) {
       return
     }
-    const updated = keepAllowedEdits(project, command(project))
+    const updated = commands.reduce((current, command) => keepAllowedEdits(current, command(current)), project)
     if (updated !== project) {
       deps.replaceProject(updated, { deferSave: true })
     }

@@ -11,7 +11,7 @@ export interface Piece extends Rect {
 
 /** The positions a bead touches: all eight around it on loom, whose rows stack; on peyote and brick stitch the six
  * beads that nest against it (the neighbours of the weave's own geometry). */
-function touching(weave: Weave, position: GridPosition): GridPosition[] {
+export function touching(weave: Weave, position: GridPosition): GridPosition[] {
   if (rowCycle(weave) > 1) {
     return neighborsOf(weave, undefined, position)
   }
