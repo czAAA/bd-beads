@@ -26,6 +26,8 @@ export interface SettingWords {
   locked: string
   /** `{count}` is the new value. */
   changed: string
+  /** The value in a word or two where room is short, the margin's title block (ticket 0698): `{count}` is the value. */
+  short: string
 }
 
 export interface Translations {
@@ -718,7 +720,7 @@ export interface Translations {
     background: { label: string }
     /** The margin sheet (tickets 0656, 0657; MarginSheet card): the Frame panel's section, its color, the title block's
      * Switch and the title block's Technique pencil. */
-    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
+    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; changeSetting: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
     qualityHintLabel: string
     qualityHint: string
     estimateInfo: string

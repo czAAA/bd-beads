@@ -180,6 +180,7 @@ export const pl: Translations = {
       body: 'Tyle koralików nabiera się na jeden ścieg: leżą prosto obok siebie, zanim kolejne przesuną się o pół koralika. 1 to zwykły peyote.',
       locked: 'Są rzędy oznaczone jako gotowe. Usuń ramkę, aby zmienić drop.',
       changed: 'Zmieniono drop na: {count}',
+      short: '{count}-drop',
     },
     brickDrop: {
       label: 'Drop',
@@ -189,6 +190,7 @@ export const pl: Translations = {
       body: 'Tyle koralików nabiera się na jeden ścieg: leżą prosto obok siebie, zanim kolejne przesuną się o pół koralika. 1 to zwykły ścieg ceglasty.',
       locked: 'Są rzędy oznaczone jako gotowe. Usuń ramkę, aby zmienić drop.',
       changed: 'Zmieniono drop na: {count}',
+      short: '{count}-drop',
     },
   },
   projects: {
@@ -628,6 +630,7 @@ export const pl: Translations = {
       line: 'Margines ma 4 koraliki z każdej strony. Nie można na nim nic umieścić i nie trafia do eksportu.',
       titleBlock: 'Nazwa i rozmiar na marginesie',
       changeTechnique: 'Zmień technikę',
+      changeSetting: 'Zmień: {setting}',
       foldTitleBlock: 'Zwiń tabliczkę',
       showTitleBlock: 'Pokaż tabliczkę',
       showTitleBlockOf: 'Pokaż tabliczkę: {name}',

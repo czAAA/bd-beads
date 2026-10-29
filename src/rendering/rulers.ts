@@ -146,6 +146,9 @@ export interface RulerLayoutOptions {
   /** The form of the Frame's margin sheet, which its numbers hang on: only the full form has room for them and their
    * dots (MarginSheet card, ticket 0658). Full when left out. */
   sheet?: MarginForm
+  /** The margin sheet's scale (`marginScale`, ticket 0698): a Frame's numbers stand on its sheet and are drawn at it in
+   * place of the zoom's own rule. Left out, the zoom's rule. */
+  sheetScale?: number
   /** The Pieces to rule, when the caller holds them through a stroke (`ruledPieces`, ticket 0674); counted from the
    * beads otherwise. */
   pieces?: RuledPieces
@@ -166,6 +169,8 @@ export interface RulerLayout {
   step: number
   /** Whether the current pass is marked: the margin sheet is there, not in the bare form (tickets 0682, 0685). */
   passMark: boolean
+  /** The margin sheet's scale, which the current pass's mark is drawn at too (ticket 0698). */
+  sheetScale: number
   /** The numbers to draw: none while `numbers` is off. */
   labels: RulerLabel[]
   // The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch;
@@ -300,10 +305,12 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
 
 // The rulers of one Canvas view (`surface` must be one); drawing and picking read this one value. A 0 by 0 viewport has
 // no edge to cut at.
-export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
+export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontPx, numbers, sheet = 'full', sheetScale, pieces = ruledPieces(undefined, project, { numbers, stroking: false }) }: RulerLayoutOptions): RulerLayout {
   const measured = surface.viewport.width > 0 && surface.viewport.height > 0
   const viewport = measured ? surface.viewport : { width: Infinity, height: Infinity }
-  const scale = rulerScale(surface.zoom, fontPx)
+  const zoomed = rulerScale(surface.zoom, fontPx)
+  // Once there is a Frame its numbers are the only ones, on its sheet, and grow and shrink with it (ticket 0698).
+  const scale = frameOf(project) && sheetScale !== undefined ? { ...zoomed, fontPx: fontPx * sheetScale } : zoomed
   const reach = scale.fontPx * 4 + scale.frameOutset + NEAR_VIEWPORT_PX
   const boxes = ruledBoxes(project, scale, pieces).filter((box) => {
     const shown = surface.beadBox(box, box.kind === 'frame' ? 'frame' : 'canvas')
@@ -326,6 +333,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     named: pieces.named,
     step: Math.max(1, ...laid.map((box) => box.step)),
     passMark: sheet !== 'bare',
+    sheetScale: sheetScale ?? 1,
     labels: numbers ? everyLabel : [],
     dots: numbers ? everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)) : [],
   }

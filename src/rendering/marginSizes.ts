@@ -1,16 +1,19 @@
-// The margin sheet's sizes in screen px (MarginSheet card, ticket 0683): one source for its form rule, the canvas that
+// The margin sheet's sizes (MarginSheet card, ticket 0683): one source for its form rule, the canvas that
 // draws it and the controls laid over it. Their CSS twins (design-values.css, bundle.css, tokens.json) are held to these
 // by marginSizes.test.ts.
 
-/** The margin sheet's screen px. The compact places serve the folded form too. */
+/** The margin sheet's px at scale 1, which `marginScale` multiplies (ticket 0698). The compact places serve the folded
+ * form too. */
 export const MARGIN_PX = {
-  /** The band height from which each form fits (MarginSheet card, Zoom forms; ticket 0682 for folded). */
+  /** The drafting sheet's band, where the scale is 1, and the scale's bounds (ticket 0698). */
+  scale: { band: 72, min: 0.6, max: 1.5 },
+  /** The band height, at scale 1, from which each form fits (MarginSheet card, Zoom forms; ticket 0682 for folded). */
   band: {
-    /** The full form's two-row title block, 10px in, clear of the Frame's line (about 85%). */
+    /** The full form's two-row title block, 10px in, clear of the Frame's line. */
     full: 68,
-    /** The compact row, 8px in, clear of the Frame's line; under it the sheet folds (about 50%). */
+    /** The compact row, 8px in, clear of the Frame's line; under it the sheet folds. */
     compact: 40,
-    /** The folded row, 24px, between the sheet's edge and the Frame's line (about 39%); under it the sheet is bare. */
+    /** The folded row, 24px, between the sheet's edge and the Frame's line; under it the sheet is bare. */
     folded: 31,
   },
   /** The band's row down from the sheet's top and in from its sides, and the inner border's inset. */

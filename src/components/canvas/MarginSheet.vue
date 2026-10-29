@@ -13,7 +13,7 @@ import type { Project } from '../../domain/project'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
-import { marginForm, type MarginForm } from '../../rendering/marginForm'
+import { marginForm, marginScale, type MarginForm } from '../../rendering/marginForm'
 import { MARGIN_PX } from '../../rendering/marginSizes'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import AppButton from '../ui/AppButton.vue'
@@ -59,6 +59,8 @@ const emit = defineEmits<{
   'toggle-row-highlight': []
   rename: [name: string]
   'set-technique': [technique: Technique]
+  /** A setting of the Frame's Technique, by its id (ticket 0698). */
+  'set-setting': [id: string, value: number]
   'save-maker-name': [name: string]
   'set-letters': [on: boolean]
 }>()
@@ -91,70 +93,92 @@ const sheetStyle = computed(() => {
 
 /** The sheet's form by its band's height (MarginSheet card, Zoom forms): what the canvas draws it in too. */
 const form = computed(() => marginForm(props.anchor.band))
+/** What the band's row and the title block are drawn at (ticket 0698): laid out in the drafting sheet's px and scaled
+ * with the beads, so the fitting below measures in those px too. */
+const scale = computed(() => marginScale(props.anchor.band))
 
 // The band's row and the title block step down a form where the sheet is too narrow for them, and are left out where
-// nothing fits: `narrow` is the folded row with Margin color in the Frame tools menu and no Row progress.
+// nothing fits: `narrow` is the folded row with Margin color in the Frame tools menu and no Row progress. Each tools form
+// first gives up Row progress's track (`:1`), then its counter (`:2`): Row done and Row highlight stay to the last.
 type RowForm = 'full' | 'compact' | 'folded' | 'narrow'
-const ROW_FORMS: Record<MarginForm, readonly RowForm[]> = {
-  full: ['full', 'compact', 'folded', 'narrow'],
-  compact: ['compact', 'folded', 'narrow'],
-  folded: ['folded', 'narrow'],
+type RowFit = `${Exclude<RowForm, 'narrow'>}:${0 | 1 | 2}` | 'narrow'
+const SMALL_FITS: readonly RowFit[] = ['compact:0', 'compact:1', 'compact:2', 'folded:0', 'folded:2', 'narrow']
+const ROW_FITS: Record<MarginForm, readonly RowFit[]> = {
+  full: ['full:0', 'full:1', 'full:2', ...SMALL_FITS],
+  compact: SMALL_FITS,
+  folded: SMALL_FITS.slice(3),
   bare: [],
 }
-type TitleForm = 'full' | 'compact' | 'tab'
-const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['full', 'compact', 'tab'], compact: ['compact', 'tab'], folded: ['tab'], bare: [] }
+// The legend is the first the title block gives up: `brief` is the compact row without it (ticket 0698).
+type TitleForm = 'full' | 'compact' | 'brief' | 'tab'
+const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['full', 'compact', 'brief', 'tab'], compact: ['compact', 'brief', 'tab'], folded: ['tab'], bare: [] }
 
-const place = computed(() => (form.value === 'full' ? MARGIN_PX.place.full : MARGIN_PX.place.compact))
+/** The places of the sheet's form, in screen px at its scale. */
+const place = computed(() => {
+  const { top, side, border } = form.value === 'full' ? MARGIN_PX.place.full : MARGIN_PX.place.compact
+  return { top: top * scale.value, side: side * scale.value, border: border * scale.value }
+})
 /** The room between the sheet's top or bottom edge and the Frame's line: the folded row and tab sit in its middle. */
 const roomAbove = computed(() => props.anchor.box.top - props.anchor.sheet.top)
 const roomBelow = computed(() => props.anchor.sheet.top + props.anchor.sheet.height - props.anchor.box.top - props.anchor.box.height)
-const middle = (room: number) => Math.max(0, (room - MARGIN_PX.tab) / 2)
+const middle = (room: number) => Math.max(0, (room - MARGIN_PX.tab * scale.value) / 2)
+/** A part drawn at the scale from its `origin` corner. */
+const scaledFrom = (origin: string) => ({ transform: `scale(${scale.value})`, transformOrigin: origin })
 
 const bandEl = ref<HTMLElement>()
 const bandParts = () => [...(bandEl.value?.children ?? [])]
-/** The band row's width: the Move bar centred, with room on each side for the wider of Row progress and the tools. */
+/** The band's room on screen: the sheet's width inside the row's inset. */
+const bandRoom = computed(() => Math.max(0, props.anchor.sheet.width - 2 * place.value.side))
+/** The band row's width in drafting px: the Move bar centred, with room on each side for the wider of Row progress and
+ * the tools. */
 function bandWidth(): number {
-  const [start = 0, move = 0, end = 0] = bandParts().map((part) => part.getBoundingClientRect().width)
+  const [start = 0, move = 0, end = 0] = bandParts().map((part) => part.getBoundingClientRect().width / scale.value)
   return move ? move + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap : 0
 }
-const row = useFittingForm({
-  forms: () => ROW_FORMS[form.value],
-  room: () => props.anchor.sheet.width - 2 * place.value.side,
+const rowFit = useFittingForm({
+  forms: () => ROW_FITS[form.value],
+  room: () => bandRoom.value / scale.value,
   measure: bandWidth,
   observed: bandParts,
 })
+const row = computed(() => rowFit.value?.split(':')[0] as RowForm | undefined)
+/** How much of Row progress the row gives up: nothing, its track, or its track and counter. */
+const progressDrop = computed(() => Number(rowFit.value?.split(':')[1] ?? 0) as 0 | 1 | 2)
 const rowTop = computed(() => (form.value === 'folded' ? middle(roomAbove.value) : place.value.top))
+/** The row's height in drafting px; on screen, times the scale. */
 const rowHeight = computed(() => (row.value === 'full' ? MARGIN_PX.tool : MARGIN_PX.tab))
-const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${place.value.side}px`, right: `${place.value.side}px`, height: `${rowHeight.value}px` }))
+const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${place.value.side}px`, width: `${bandRoom.value / scale.value}px`, height: `${rowHeight.value}px`, ...scaledFrom('0 0') }))
 const small = computed(() => row.value !== 'full')
 const iconSize = computed(() => (small.value ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full))
 const progressForm = computed(() => (row.value === 'full' ? 'margin' : row.value === 'compact' ? 'compact' : 'folded'))
 
 const titleEl = ref<HTMLElement>()
-/** The title block's room: the sheet's width inside its border. */
-const titleRoom = computed(() => props.anchor.sheet.width - 2 * (form.value === 'folded' ? MARGIN_PX.place.compact.side : place.value.border))
+/** The title block's room on screen: the sheet's width inside its border. */
+const titleRoom = computed(() => props.anchor.sheet.width - 2 * (form.value === 'folded' ? MARGIN_PX.place.compact.side * scale.value : place.value.border))
 const title = useFittingForm({
   forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? TITLE_FORMS[form.value].filter((shown) => shown === 'tab') : TITLE_FORMS[form.value]) : []),
-  room: () => titleRoom.value,
-  measure: () => titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0,
+  room: () => titleRoom.value / scale.value,
+  measure: () => (titleEl.value?.firstElementChild?.getBoundingClientRect().width ?? 0) / scale.value,
   observed: () => [titleEl.value?.firstElementChild],
 })
 /** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
 const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
 /** The title block's inset from the sheet's bottom-right corner: the inner border's, or folded, the tab's. */
-const titleInset = computed(() => (form.value === 'folded' ? { right: MARGIN_PX.place.compact.side, bottom: middle(roomBelow.value) } : { right: place.value.border, bottom: place.value.border }))
-const titleStyle = computed(() => ({ right: `${titleInset.value.right}px`, bottom: `${titleInset.value.bottom}px`, maxWidth: `${titleRoom.value}px` }))
+const titleInset = computed(() =>
+  form.value === 'folded' ? { right: MARGIN_PX.place.compact.side * scale.value, bottom: middle(roomBelow.value) } : { right: place.value.border, bottom: place.value.border },
+)
+const titleStyle = computed(() => ({ right: `${titleInset.value.right}px`, bottom: `${titleInset.value.bottom}px`, maxWidth: `${titleRoom.value / scale.value}px`, ...scaledFrom('100% 100%') }))
 
 // The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498)
 // and the Tool pill.
 const bandBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
-  return { left: sheet.left + place.value.side, top: sheet.top + rowTop.value, width: Math.max(0, sheet.width - 2 * place.value.side), height: rowHeight.value }
+  return { left: sheet.left + place.value.side, top: sheet.top + rowTop.value, width: bandRoom.value, height: rowHeight.value * scale.value }
 })
 const titleSize = useElementSize(titleEl)
 const titleBox = computed<BarBox>(() => {
   const { sheet } = props.anchor
-  const { width, height } = { width: titleSize.width.value, height: titleSize.height.value }
+  const { width, height } = { width: titleSize.width.value * scale.value, height: titleSize.height.value * scale.value }
   const { right, bottom } = titleInset.value
   return { left: sheet.left + sheet.width - right - width, top: sheet.top + sheet.height - bottom - height, width, height }
 })
@@ -194,6 +218,10 @@ const colorOpen = ref(false)
 const colorButton = computed(() =>
   colorOpen.value ? (toolsEl.value?.querySelector<HTMLElement>('[data-testid="margin-color"], [data-testid="margin-frame-tools"]') ?? undefined) : undefined,
 )
+// It hangs from its button as a dropdown does (ticket 0698): where the zoom or the width takes that button away (into
+// the Frame tools menu, or the row with it), it closes rather than float.
+const colorHangsFrom = computed(() => (row.value === 'narrow' ? 'menu' : row.value ? 'button' : 'none'))
+watch(colorHangsFrom, () => (colorOpen.value = false))
 
 /** Folded, the Frame tools menu holds the tools the band has no room for (MarginSheet card, Zoom forms). */
 const menuItems = computed(() =>
@@ -225,6 +253,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           :project="project"
           :row-highlight="rowHighlight"
           :form="progressForm"
+          :drop="progressDrop"
           testid="margin-progress"
           @move-row="emit('move-row', $event)"
           @reset-progress="emit('reset-progress')"
@@ -299,6 +328,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
         :form="title"
         @rename="emit('rename', $event)"
         @set-technique="emit('set-technique', $event)"
+        @set-setting="(id, value) => emit('set-setting', id, value)"
         @save-maker-name="emit('save-maker-name', $event)"
         @set-letters="emit('set-letters', $event)"
         @fold="fold.fold()"
@@ -321,7 +351,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       </span>
     </div>
 
-    <MarginColorPopover v-if="colorOpen && colorButton" :project="project" :anchor="colorButton" @close="colorOpen = false" />
+    <MarginColorPopover v-if="colorOpen && colorButton" :project="project" :anchor="colorButton" :sheet="anchor" @close="colorOpen = false" />
   </div>
 </template>
 

@@ -9,7 +9,7 @@ import { rowProgressOn } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { selectionFrame, selectionLayer, type PasteStamp, type Selection } from '../../domain/selection'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
-import { marginForm } from '../../rendering/marginForm'
+import { marginForm, marginScale } from '../../rendering/marginForm'
 import { marginSheetPx } from '../../rendering/projectRenderer'
 import { rulerLayout } from '../../rendering/rulers'
 import { ruledPieces, type RuledPieces } from '../../rendering/ruledPieces'
@@ -150,15 +150,15 @@ function rulerFontPx(): number {
   return window.innerWidth <= 743 ? 12 : 11
 }
 
-/** The form the Frame's margin sheet takes at this zoom (ticket 0658): the Frame's numbers hang on it. */
-const sheetForm = computed(() => {
-  const grid = marginSheetPx(props.project)
-  return grid ? marginForm(grid.band * props.zoom) : 'full'
+/** The form and scale the Frame's margin sheet takes at this zoom (tickets 0658, 0698): the Frame's numbers hang on it. */
+const sheetLook = computed(() => {
+  const band = (marginSheetPx(props.project)?.band ?? 0) * props.zoom
+  return band ? { sheet: marginForm(band), sheetScale: marginScale(band) } : {}
 })
 
 /** The rulers of this view, laid out once: the overlay draws them and a press asks them what it selects, so the two
  * cannot disagree. */
-const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, sheet: sheetForm.value, pieces: pieces.value }))
+const rulers = computed(() => rulerLayout(props.project, surface.value, { fontPx: rulerFontPx(), numbers: props.showRulers ?? true, ...sheetLook.value, pieces: pieces.value }))
 
 /** Where the Selection is on screen, told to the Selection bar (ticket 415). */
 watch(

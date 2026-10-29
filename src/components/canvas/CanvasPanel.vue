@@ -114,6 +114,7 @@ const {
   onRotateFrame,
   onRenameFrame,
   onSetFrameTechnique,
+  onSetFrameSetting,
   onSaveMakerName,
   onSetLetters,
   exportOpener,
@@ -416,6 +417,7 @@ const drawingStyle = computed(() => {
           @toggle-row-highlight="toggleRowHighlight"
           @rename="onRenameFrame"
           @set-technique="onSetFrameTechnique"
+          @set-setting="onSetFrameSetting"
           @save-maker-name="onSaveMakerName"
           @set-letters="onSetLetters"
         />
