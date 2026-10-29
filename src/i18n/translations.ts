@@ -720,6 +720,8 @@ export interface Translations {
     qualityHint: string
     estimateInfo: string
     sizeLockedLine: string
+    /** Under the size fields of a Frame lying turned (ticket 0667), which cannot be resized until upright. */
+    sizeTurnedLine: string
     editFrame: string
     moveHandle: string
     /** The Frame panel's stepper names, by the edge they move (tickets 417, 473): a bead out, a bead in. */
@@ -1034,6 +1036,8 @@ export interface Translations {
     /** The one reason shared by every control Row progress locks, each naming what it would change. */
     rowProgressLockedFrame: string
     frameSizeLocked: string
+    /** Why a turned Frame's size fields are off (ticket 0667). */
+    frameSizeTurned: string
     fillNeedsColor: string
     rowProgressLockedTechnique: string
     changeTechnique: string

@@ -5,6 +5,7 @@ import { colorAt, frameContains } from '../domain/canvas'
 import { footprintOf } from '../domain/footprint'
 import type { BeadPlace, LayerGeometry } from '../domain/layerGeometry'
 import { MARGIN, withMargin } from '../domain/margin'
+import { laidFrame } from '../domain/frameOrientation'
 import { canvasWeave, frameWeave, sameWeave } from '../domain/layerWeave'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn } from '../domain/rowProgress'
 import { projectCell } from '../domain/projectBead'
@@ -126,7 +127,8 @@ function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'techniqueSe
     return own
   }
   const origin = frameOriginPx(canvas, frame)
-  const drawn = layerExtentPx(frame, frame.columns, frame.rows)
+  const laid = laidFrame(project)!
+  const drawn = layerExtentPx(frame, laid.columns, laid.rows)
   const left = Math.min(own.x, origin.x)
   const top = Math.min(own.y, origin.y)
   return { x: left, y: top, width: Math.max(own.x + own.width, origin.x + drawn.width) - left, height: Math.max(own.y + own.height, origin.y + drawn.height) - top }

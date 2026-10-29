@@ -1,4 +1,5 @@
 import { frameContains, type Rect } from '../domain/canvas'
+import { laidFrame } from '../domain/frameOrientation'
 import { namedPieces } from '../domain/pieceNames'
 import { currentPass, frameRowOrder, rowProgressOn } from '../domain/rowProgress'
 import type { DrawingContext } from './beadLook'
@@ -106,14 +107,15 @@ const NAME_GAP_PX = 4
 // color; read at any zoom.
 function drawPieceNames(context: DrawingContext, { project, surface, layout, theme }: RulerDrawInput): void {
   // The Frame's name, when it was made from a named Piece (ticket 489), stands under the Frame as a Piece's does.
-  const frame = project.frame
+  // A turned Frame's name stands under it as it lies (ticket 0667).
+  const frame = laidFrame(project)
   const covered = (piece: Rect) =>
     frame !== undefined && frameContains(frame, piece) && frameContains(frame, { row: piece.row + piece.rows - 1, column: piece.column + piece.columns - 1 })
   const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = namedPieces(project)
     .filter((piece) => !covered(piece))
     .map((piece) => ({ ...piece, layer: 'canvas' as const }))
-  if (project.frame?.name) {
-    pieces.push({ ...project.frame, name: project.frame.name, layer: 'frame' })
+  if (frame && project.frame?.name) {
+    pieces.push({ ...frame, name: project.frame.name, layer: 'frame' })
   }
   if (pieces.length === 0) {
     return

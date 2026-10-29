@@ -77,7 +77,9 @@ export function wordChartOf(project: Project): WordChart | undefined {
   }
   const { direction, reversed } = project.rowProgress
   const along = direction === 'rows' ? frame.columns : frame.rows
-  const ascends = ASCENDS[direction][project.rotation]
+  // The Frame's own rows, as the picture shows them: turned on the Canvas (ticket 0667), then with the view.
+  const shown = ((project.rotation + 90 * (frame.quarterTurns ?? 0)) % 360) as Rotation
+  const ascends = ASCENDS[direction][shown]
   let hasEmpty = false
 
   const rows: WordRow[] = []
@@ -97,7 +99,7 @@ export function wordChartOf(project: Project): WordChart | undefined {
 
   return {
     marked: wordChart.marked,
-    firstEdge: reversed ? OPPOSITE[FIRST_EDGE[direction][project.rotation]] : FIRST_EDGE[direction][project.rotation],
+    firstEdge: reversed ? OPPOSITE[FIRST_EDGE[direction][shown]] : FIRST_EDGE[direction][shown],
     ...(twoPasses ? { count: along % 2 === 0 ? 'even' : 'odd' } : {}),
     rows,
     lastNumber: rows[rows.length - 1]?.number ?? 0,

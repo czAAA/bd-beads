@@ -6,6 +6,7 @@ import { createProject } from './createProject'
 import { isInFinishedRow } from './rowProgress'
 import type { Project } from './project'
 import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, rotatedSelection } from './rotate'
+import { laidFrame, seenSize } from './frameOrientation'
 import type { Selection } from './selection'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
@@ -162,20 +163,21 @@ describe('rotateLayerSelection (ADR 0066)', () => {
   })
 })
 
-describe('rotateFrame (ticket 471, ADR 0066)', () => {
+describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
   const frame = { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6 }
   const framed = (beads: BeadMap, extra: Partial<Project> = {}): Project => ({ ...base, beads: {}, frame: { ...frame, beads }, ...extra })
 
-  it('turns the Frame about its centre, swapping Width and Height, and its own beads with it', () => {
+  it('steps the Frame\'s orientation about its centre: its beads keep their own rows and columns, what it covers turns', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 3, column: 5, color: '#bb0000' }]))
     const turned = rotateFrame(project)!
 
-    // The 4 x 6 Frame at (20, 20) turns to 6 x 4 at (19, 21); its first bead goes to the top right, its last to the bottom left.
-    expect(turned.frame).toMatchObject({ row: 19, column: 21, rows: 6, columns: 4 })
-    expect(positionsOf(turned.frame!.beads)).toEqual(['0,3:#aa0000', '5,0:#bb0000'])
+    // The 4 x 6 Frame at (20, 20) lies 6 x 4 at (19, 21); its own size and beads are as they were.
+    expect(turned.frame).toMatchObject({ row: 19, column: 21, rows: 4, columns: 6, quarterTurns: 1 })
+    expect(turned.frame!.beads).toBe(project.frame!.beads)
+    expect(laidFrame(turned)).toEqual({ row: 19, column: 21, rows: 6, columns: 4 })
   })
 
-  it('comes back after four turns', () => {
+  it('comes back after four turns, upright again', () => {
     const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]))
     let turned = project
     for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
@@ -191,41 +193,35 @@ describe('rotateFrame (ticket 471, ADR 0066)', () => {
     expect(turned.frame!.name).toBe('Leaf')
   })
 
-  it('starts the turned Frame on an even row on peyote', () => {
-    // A 5 x 4 Frame at (20, 20): its turned top row falls on an odd row, so it snaps to the even row above.
-    const peyote = { ...framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }])), technique: 'peyote' as const, frame: { technique: 'peyote' as const, row: 20, column: 20, rows: 5, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
-    const turned = rotateFrame(peyote)!
-    expect(turned.frame!.row % 2).toBe(0)
-    expect(turned.frame).toMatchObject({ rows: 4, columns: 5 })
-    expect(positionsOf(turned.frame!.beads)).toHaveLength(1)
+  it('rewrites nothing on peyote and brick stitch, so no row snaps (ADR 0079)', () => {
+    const beads = withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 1, column: 3, color: '#bb0000' }])
+    for (const [technique, techniqueSettings] of [['peyote', undefined], ['brick', { brickBlock: 3 }]] as const) {
+      const project = { ...base, technique, beads: {}, frame: { technique, ...(techniqueSettings ? { techniqueSettings } : {}), row: 20, column: 20, rows: 5, columns: 4, beads } }
+      let turned: Project = project
+      for (let turn = 1; turn <= 4; turn++) {
+        turned = rotateFrame(turned)!
+        expect(turned.frame!.beads, `${technique} turn ${turn}`).toBe(beads)
+        expect(turned.frame).toMatchObject({ rows: 5, columns: 4 })
+      }
+      expect(turned.frame).toEqual(project.frame)
+    }
   })
 
-  it('moves the turned Frame by whole cycles of its own rows on brick stitch with a Brick block of N (tickets 477, 492)', () => {
-    for (const brickBlock of [2, 3, 5]) {
-      const brick = { ...base, technique: 'brick' as const, brickBlock, beads: {}, frame: { technique: 'brick' as const, techniqueSettings: { brickBlock }, row: 30, column: 20, rows: 7, columns: 4, beads: withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]) } }
-      const turned = rotateFrame(brick)!
-      expect((turned.frame!.row - brick.frame.row) % (2 * brickBlock)).toBe(0)
-      expect(turned.frame).toMatchObject({ rows: 4, columns: 7 })
-      expect(positionsOf(turned.frame!.beads)).toHaveLength(1)
-    }
+  it('swaps Width and Height as seen', () => {
+    const turned = rotateFrame(framed({}))!
+    expect(seenSize(turned.frame!)).toEqual({ columns: 4, rows: 6 })
+    expect(seenSize(rotateFrame(turned)!.frame!)).toEqual({ columns: 6, rows: 4 })
   })
 
   it('does nothing without a Frame', () => {
     expect(rotateFrame({ ...base, beads: {}, frame: undefined })).toBeUndefined()
   })
 
-  it('turns its Folded beads with it, kept folded beyond the turned edge (ticket 0638)', () => {
+  it('keeps its Folded beads as they are, in its own rows and columns (ticket 0638)', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]))
-    const folded = { ...project, frame: { ...project.frame!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }, { row: 3, column: -2, color: '#dd0000' }]) } }
-    const turned = rotateFrame(folded)!
-    expect(positionsOf(turned.frame!.beads)).toEqual(['0,3:#aa0000'])
-    // Past the right edge before, below the bottom after; past the left edge before, above the top after.
-    expect(positionsOf(turned.frame!.folded!)).toEqual(['-2,0:#dd0000', '7,3:#cc0000'])
-    let back = turned
-    for (let i = 0; i < 3; i++) back = rotateFrame(back)!
-    expect(back.frame).toEqual(folded.frame)
+    const folded = { ...project, frame: { ...project.frame!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }]) } }
+    expect(rotateFrame(folded)!.frame!.folded).toBe(folded.frame.folded)
   })
-
 })
 
 describe('rotating a Piece-tool shape (ticket 547)', () => {
@@ -260,49 +256,20 @@ describe('rotating a Piece-tool shape (ticket 547)', () => {
   })
 })
 
-describe('rotateFrame with Row progress (ticket 0647, ADR 0052)', () => {
-  type Way = { direction: 'rows' | 'columns'; reversed?: boolean }
-  const WAYS: Way[] = [{ direction: 'rows' }, { direction: 'columns' }, { direction: 'rows', reversed: true }, { direction: 'columns', reversed: true }]
-  const pointers = { currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5 }
-
+describe('rotateFrame with Row progress (tickets 0647, 0667, ADR 0052)', () => {
   /** A Frame of 5 rows and 6 columns at (20, 20) in a Technique, its four pointers set and its rows running `way`. */
-  function woven(technique: 'loom' | 'peyote' | 'brick', way: Way, rows = 5): Project {
-    return { ...base, technique, beads: {}, frame: { technique, row: 20, column: 20, rows, columns: 6, beads: {} }, rowProgress: { ...pointers, ...way } }
+  function woven(technique: 'loom' | 'peyote' | 'brick', way: { direction: 'rows' | 'columns'; reversed?: boolean }): Project {
+    return { ...base, technique, beads: {}, frame: { technique, row: 20, column: 20, rows: 5, columns: 6, beads: {} }, rowProgress: { currentRow: 3, currentColumn: 4, currentRowBack: 2, currentColumnBack: 5, ...way } }
   }
 
-  /** Every finished position of the Frame, counted from its first row and column, as `place` sends it. */
-  function finished(project: Project, place: (row: number, column: number) => [number, number] = (row, column) => [row, column]): string[] {
-    const { row: top, column: left, rows, columns } = project.frame!
-    const found: string[] = []
-    for (let row = 0; row < rows; row++) {
-      for (let column = 0; column < columns; column++) {
-        if (isInFinishedRow(project, { row: top + row, column: left + column, layer: 'frame' })) found.push(place(row, column).join(','))
-      }
-    }
-    return found.sort()
-  }
-
-  it('moves each way\'s pointer a quarter turn on: five rows done from the top are five columns done from the right', () => {
-    const turned = rotateFrame({ ...woven('loom', { direction: 'rows' }), rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } })!
-    expect(turned.rowProgress).toEqual({ direction: 'columns', reversed: true, currentRow: 0, currentColumn: 0, currentColumnBack: 5 })
-    expect(rotateFrame(woven('loom', { direction: 'columns' }))!.rowProgress).toEqual({ direction: 'rows', currentRow: 4, currentColumn: 2, currentRowBack: 5, currentColumnBack: 3 })
-  })
-
-  it('keeps the same beads finished every way, on loom, peyote and brick stitch', () => {
+  it('keeps every pointer, so the same beads stay finished, on loom, peyote and brick stitch', () => {
     for (const technique of ['loom', 'peyote', 'brick'] as const) {
-      for (const way of WAYS) {
+      for (const way of [{ direction: 'rows' as const }, { direction: 'columns' as const, reversed: true }]) {
         const project = woven(technique, way)
-        // A quarter turn clockwise sends row r, column c of the 5-row Frame to row c, column 4 - r.
-        expect(finished(rotateFrame(project)!), `${technique} ${JSON.stringify(way)}`).toEqual(finished(project, (row, column) => [column, 4 - row]))
+        const turned = rotateFrame(project)!
+        expect(turned.rowProgress, `${technique} ${JSON.stringify(way)}`).toBe(project.rowProgress)
+        expect(isInFinishedRow(turned, { row: turned.frame!.row + 1, column: turned.frame!.column, layer: 'frame' })).toBe(isInFinishedRow(project, { row: 21, column: 20, layer: 'frame' }))
       }
     }
-  })
-
-  it('takes a peyote column half woven back to its start where the turn swaps its halves', () => {
-    // Columns of 6 beads: turned, a column's even and odd beads swap passes, so its first half can't stay the done one.
-    const project = { ...woven('peyote', { direction: 'columns' }, 6), rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 4 } }
-    const turned = rotateFrame(project)!
-    expect(turned.rowProgress.currentRow).toBe(3)
-    expect(finished(project, (row, column) => [column, 5 - row])).toEqual(expect.arrayContaining(finished(turned)))
   })
 })

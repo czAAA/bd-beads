@@ -19,7 +19,7 @@ import type { GridPosition } from './grid'
 import { footprintOf } from './footprint'
 import { refoldSheet, withEachBead } from './folding'
 import { canvasLift, grownFrame, namedPieceTaken } from './frameGrowth'
-import { customFrameSize, frameAllows, frameGeometry, frameKindOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
+import { customFrameSize, frameAllows, frameGeometry, frameKindOf, removedBeadsOf, settingsOf, sizeSettingOf, type FrameKindId, type FrameSettings, type QuarterTurns } from './frameKind'
 import type { LayerGeometry } from './layerGeometry'
 import type { Weave } from './weave'
 import { carryNames, namedPieceCutBy, namedPieces } from './pieceNames'
@@ -340,7 +340,7 @@ function placedFrame(project: Project, place: { frame: Rect; weave: Weave; beads
  * the passes go with the Frame. A Frame whose kind removes its beads with it leaves the Canvas as it is (ADR 0077). */
 function removedFrame(project: Project): Project {
   const frame = project.frame!
-  if (frameKindOf(frame).removedBeads === 'removed') {
+  if (removedBeadsOf(frame) === 'removed') {
     return withFrame(project, undefined)
   }
   const dropped = shiftedBeads(frame.beads, frame.row, frame.column)

@@ -91,7 +91,7 @@ export function normalizeProject(stored: StoredProject): Project {
   const canvas = readWeave(technique, rest)
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
   const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...unflattened(readFrameKind(project.frame)), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
-  const { rows, columns } = projectFrame(placed)
+  const { rows, columns } = placed.frame ?? projectFrame(placed)
   const sheet: KindedSheet = { ...frameWeave({ ...canvas, ...placed }), ...laidOf(placed.frame), rows, columns }
 
   return {
@@ -145,13 +145,14 @@ function readWeave(technique: Technique, { techniqueSettings }: FlatWeave): Weav
 
 /** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
  * unsaved (ticket 0591): one without, or with one it does not know, reads as Rectangular. A Custom frame keeps its
- * settings, read within its kind's range (ticket 0592); a Rectangular one has none. */
+ * settings, read within its kind's range (ticket 0592); a Rectangular one has none. Any Frame keeps its orientation
+ * (tickets 0594, 0667); one saved before a plain Frame had one was turned by rewriting its beads, and opens upright. */
 function readFrameKind({ kind, settings: stored, quarterTurns, ...frame }: FrameSheet): FrameSheet {
+  // Rotate Frame's turn: one, two or three quarters; anything else reads as none.
+  const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
   if (!isFrameKind(kind) || kind === DEFAULT_FRAME_KIND) {
-    return frame
+    return { ...frame, ...turned }
   }
   const settings = settingsOf({ kind, settings: stored })
-  // Rotate Frame's turn (ticket 0594): one, two or three quarters; anything else reads as none.
-  const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
   return { ...frame, kind, ...(settings ? { settings } : {}), ...turned }
 }

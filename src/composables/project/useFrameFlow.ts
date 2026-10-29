@@ -14,7 +14,7 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
-import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
+import { changedSetting, frameAllows, removedBeadsOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
@@ -312,7 +312,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * question says so. */
   const removeTakesBeads = computed(() => {
     const frame = deps.currentProject()?.frame
-    return !!frame && frameKindOf(frame).removedBeads === 'removed'
+    return !!frame && removedBeadsOf(frame) === 'removed'
   })
 
   /** Remove Frame: asks first, except for an empty Frame that takes its beads with it, as there is nothing to lose

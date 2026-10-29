@@ -1,12 +1,12 @@
 import type { GridPosition, Rotation } from './grid'
-import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
-import { withEachBead } from './folding'
+import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
+import type { QuarterTurns } from './frameKind'
+import { laidSize } from './frameOrientation'
 import { snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
 import { carryNames } from './pieceNames'
 import { canvasDistance, frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
-import { turnedRowProgress } from './rowProgress'
 import { turnedCustomFrame } from './changeFrame'
 import { coveredOnLayout, turnedOnLayout } from './customSelection'
 import { cellKey, selectableOn, selectionFrame, selectionInLayer, selectionLayer, selectionMask, type Selection } from './selection'
@@ -176,9 +176,11 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
   return covered
 }
 
-/** Rotate Frame (ticket 471, ADR 0052, 0066): the Frame and its own beads turned a quarter clockwise about their centre,
- * as Rotate does a Selection; Width and Height swap, and Row progress turns with them (ticket 0647; a Custom frame's
- * order turns with its layout, so its pointer stays). The Canvas under it is not touched. No Frame: undefined. */
+/** Rotate Frame (tickets 471, 0667, ADR 0052, 0079): the Frame turned a quarter clockwise on the Canvas about its
+ * centre, like a sheet of A4 turned on an A1. It steps the Frame's orientation: its beads keep their own rows and
+ * columns, so nothing is rewritten in any Technique and no row snaps, and Row progress, being the same beads, keeps its
+ * pointers. What it covers on the Canvas turns; the Canvas under it is not touched. A Custom frame turns its layout so
+ * (ticket 0594). No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom
@@ -187,20 +189,16 @@ export function rotateFrame(project: Project): Project | undefined {
     return undefined
   }
   const own = frameWeave(project)
-  // Turned in the Frame's own rows (its first is 0), then placed on the Canvas by as far as its corner moved.
-  const turned = rotatedSelection(own, { top: 0, left: 0, rows: frame.rows, columns: frame.columns })
-  const weave = describeWeave(own)
-  const block = { columns: frame.columns, rows: frame.rows }
-  // Folded beads beyond the Frame's edge turn with the rest (ticket 0638).
-  const { folded: _folded, ...rest } = frame
-  const carried = withEachBead(frame, (position) => weave.turned(position, block))
-  const moved = canvasDistance(project, own, turned.top, turned.left)
-  return {
-    ...project,
-    frame: { ...rest, row: frame.row + moved.row, column: frame.column + moved.column, rows: turned.rows, columns: turned.columns, ...carried },
-    rowProgress: turnedRowProgress(project.rowProgress, { twoPasses: weave.twoPasses, rows: frame.rows }),
-    updatedAt: Date.now(),
+  const turns = ((frame.quarterTurns ?? 0) + 1) % 4
+  const { quarterTurns: _turns, ...upright } = frame
+  const turned: FrameSheet = { ...upright, ...(turns ? { quarterTurns: turns as QuarterTurns } : {}) }
+  // Its centre stays: the corner moves by half what it covered less half what it covers now, so turns come back to it.
+  const half = (sheet: FrameSheet) => {
+    const { rows, columns } = laidSize({ ...sheet, ...own })
+    return canvasDistance(project, own, Math.floor(rows / 2), Math.floor(columns / 2))
   }
+  const [was, now] = [half(frame), half(turned)]
+  return { ...project, frame: { ...turned, row: frame.row + was.row - now.row, column: frame.column + was.column - now.column }, updatedAt: Date.now() }
 }
 
 /** The next quarter turn clockwise: 0, 90, 180, 270 and round again. */
