@@ -22,6 +22,18 @@ _Avoid_: sheet (for these three), dropdown, Frame bar (retired name), PanelShell
 The Menu panel: the modal dropdown of app-wide settings and links (language, theme, Name on exports, Keyboard shortcuts, Homepage, the source link), opened by the first button of the Canvas strip, an icon with the word "Menu" (ticket 431), which is there with or without a Project. Everything about the open Project lives in the Project panel instead.
 _Avoid_: More, header menu
 
+**Feedback sheet**:
+The one modal (same shell as the confirm dialogs) through which a person sends a Report to the maintainer, decided in the grilling session of 2026-10-29 (ADR 0081). Opened from three places, each setting the Report kind: the Menu's Help row **Send feedback**, the link **Report a translation problem** at the Menu's Language row, and the row **Wrong or missing color?** at the foot of the Bead colors list. It shows what the app attaches (version, language, browser, viewport; for a translation its language; for a color the Brand, code, stored hex and Swatch letter) collapsed before Send, never the Project or the device id; an optional email, prefilled when signed in; text only, no attachments. When sending fails (offline, switched off, rate-limited, an error) it keeps everything typed and offers **Copy report**; on success it closes and a toast thanks the person. It works on the Homepage too, through its Menu.
+_Avoid_: bug report, support form, contact form, feedback dialog
+
+**Report kind**:
+Which of the three Reports the Feedback sheet is sending: **general** (Message), **translation** (Language, Text as shown, Should say, Note) or **bead-color** (Problem: wrong color or missing color; Brand and catalog, read-only; Code; Looks like; Note). The kind decides the fields, the prefills, and the issue's title and label.
+_Avoid_: feedback type, category
+
+**Report**:
+One sent Feedback sheet, which becomes one GitHub issue in the private docs repo (ADR 0081), labelled `from-app` and with its Report kind (`feedback`, `translation`, `bead-color`), plus `dev` from the dev Worker. Its title is `feedback: <first words>`, `translation [<lang>]: <text as shown>` or `bead-color [<catalog> <code>]: <problem>`; its body holds the person's fields as headings, the attached context as a table, the email last.
+_Avoid_: ticket (a ticket is what the maintainer writes after triage), issue (the GitHub side), message
+
 **Subpanel** (was Panel sub-view):
 A level inside a panel (Menu panel, Project panel, Frame panel), stacked over its root (ticket 493): the header shows a Back arrow and the subpanel's title, the body swaps to the subpanel and Back returns one level, to the panel's root list from the first. Built into `AppPanel`, so every panel inherits it. The first user is **New Project** (the Menu's accent-coloured row): the New Project form is a subpanel, not a sheet. Opening it leaves the open Project untouched until Create; Back and closing the panel discard the form's draft; Create and Convert image close the panel. The Menu opens straight on it while the library has no saved Project and from the empty-canvas bar's New Project button; otherwise it opens at the root. Escape pops a level, except on the first level when it was the starting view, where it closes the panel.
 _Avoid_: New Project panel, New Project modal (gone)
