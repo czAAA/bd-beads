@@ -6,6 +6,7 @@ import type { Project } from './project'
 import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { frameOf } from './layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 
 function blank(columns: number, rows: number): Project {
@@ -44,31 +45,31 @@ describe('an edit shares the rows it leaves alone', () => {
   })
 
   it('keepFinishedRows leaves an edit to the row being woven as it is, and shares the rest', () => {
-    const before = { ...blank(6, 5), rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
+    const before = withFields(blank(6, 5), { rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
     const after = paintAt(before, [{ row: 3, column: 1 }], '#e63746')
 
     const kept = keepFinishedRows(before, after)
 
     expect(frameGrid(kept)[3]![1]).toEqual({ color: '#e63746' })
-    expect(frameOf(kept)!.beads[0]).toBe(before.frame!.beads[0])
-    expect(frameOf(kept)!.beads[4]).toBe(before.frame!.beads[4])
+    expect(frameOf(kept)!.beads[0]).toBe(frameOf(before)!.beads[0])
+    expect(frameOf(kept)!.beads[4]).toBe(frameOf(before)!.beads[4])
   })
 
   it('keepFinishedRows takes back an edit to a finished row, and says nothing changed', () => {
-    const before = { ...blank(6, 5), rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
+    const before = withFields(blank(6, 5), { rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
     const after = paintAt(before, [{ row: 1, column: 1 }], '#e63746')
 
     expect(keepFinishedRows(before, after)).toBe(before)
   })
 
   it('keepFinishedRows takes back the finished columns of an edit, and keeps the rest of it', () => {
-    const before = { ...blank(6, 4), rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 3 } }
+    const before = withFields(blank(6, 4), { rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 3 } })
     const after = paintAt(before, [{ row: 1, column: 1 }, { row: 1, column: 4 }], '#e63746')
 
     const kept = keepFinishedRows(before, after)
 
     expect(frameGrid(kept)[1]!.map((cell) => cell.color)).toEqual([null, null, null, null, '#e63746', null])
-    expect(frameOf(kept)!.beads[0]).toBe(before.frame!.beads[0])
+    expect(frameOf(kept)!.beads[0]).toBe(frameOf(before)!.beads[0])
   })
 
   it('keepFinishedRows leaves the edit alone while Row progress is off', () => {

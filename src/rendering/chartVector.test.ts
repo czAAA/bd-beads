@@ -10,14 +10,14 @@ import { TECHNIQUES, type Technique } from '../domain/weave'
 import { drawChartParts, letterColor, placeBeads } from './chartVector'
 import { planPrint, mm } from './printPlan'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { type FlatChange, withFields } from '../testUtils/flatFields'
 
 // The PrintChartPage card's Acceptance list, on a 100 × 100 loom Schema with an empty background, White beads and dark
 // beads, Letters off.
 const DARK = '#1f2a44'
 const LETTERS = { '#ffffff': 'A', [DARK]: 'B', '#f2c94c': 'AA' }
 
-function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra: Partial<Project> = {}): Project {
+function schema(technique: Technique = 'loom', columns = 100, rows = 100, extra: FlatChange = {}): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   // Dark in the top left 10 × 10, White in the next 5 columns of its first 10 rows, a pale yellow beyond them; the rest empty.
   const beads: Record<number, Record<number, string>> = {}

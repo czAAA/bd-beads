@@ -18,6 +18,8 @@ import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx, surfaceView } from './surfaceView'
 import { canvasOf, frameOf, orientationOf, withFrameSheet } from '../domain/layerRecord'
 import { withFields } from '../testUtils/flatFields'
+import { type BeadMap } from '../domain/canvas'
+import { type RowProgress } from '../domain/project'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -36,7 +38,7 @@ function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: 
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<TestRowProgress>, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
-  const beads: Project['beads'] = {}
+  const beads: BeadMap = {}
   for (let row = 0; filled && row < rows; row += 1) {
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
@@ -130,7 +132,7 @@ describe('renderOverlay', () => {
 
     it('marks only the cells that hold a bead: an empty cell gets no ring and no lift (ticket 411)', () => {
       const base = projectOf('loom', 3, 3, { currentRow: 1 })
-      const project = { ...base, frame: { ...frameOf(base)!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } }
+      const project = withFields(base, { frame: { ...frameOf(base)!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -439,7 +441,7 @@ describe('renderOverlay', () => {
   })
 
   describe('the Frame margin outline (ticket 276)', () => {
-    const framed = { ...projectOf('loom', 4, 4, { marks: false }), frame: { technique: 'loom' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } }
+    const framed = withFields(projectOf('loom', 4, 4, { marks: false }), { frame: { technique: 'loom' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } })
 
     it('strokes a dashed 1px outline round the margin at the given opacity', () => {
       const { context, calls, named } = recordingContext()
@@ -453,7 +455,7 @@ describe('renderOverlay', () => {
 
     // The margin's cells come from `withMargin`; the sizes are worked out here from the bead geometry (CELL_SIZE_PX 20), not from `projectExtentPx`.
     const outline = (technique: Technique, frame: Rect) => {
-      const project = { ...projectOf(technique, 4, 4, { marks: false }), frame: { technique, ...frame, beads: {} } }
+      const project = withFields(projectOf(technique, 4, 4, { marks: false }), { frame: { technique, ...frame, beads: {} } })
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
       const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
@@ -509,7 +511,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
   })
 
   it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
-    const project = { ...mixed(), rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0, marks: false } }
+    const project = withFields(mixed(), { rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0, marks: false } as RowProgress })
     const draw = (layer: 'canvas' | 'frame', top: number) => {
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left: 3, rows: 1, columns: 1, layer } })

@@ -19,7 +19,7 @@ import { withFields } from '../../testUtils/flatFields'
  * and useOverlayLayer, the rules in the flows, and a strip button opening its panel in the App tests. */
 
 const moth = () => createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Moth', size: { width: 10, height: 10, unit: 'beads' } })
-const other = () => ({ ...moth(), id: 'other', name: 'Other' })
+const other = () => (withFields(moth(), { id: 'other', name: 'Other' }))
 
 beforeEach(() => {
   saveProjects([moth()])
@@ -190,7 +190,7 @@ describe('Project', () => {
     await click(mounted, 'duplicate-confirm')
 
     expect(names()).toEqual(['Moth', 'Moth 2'])
-    expect(canvasOf(mounted.panels.activeProject.value).name).toBe('Moth 2')
+    expect(canvasOf(mounted.panels.activeProject.value!).name).toBe('Moth 2')
   })
 
   it('deletes after a confirmation naming the Project, leaving none open; Cancel keeps it', async () => {

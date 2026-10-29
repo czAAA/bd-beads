@@ -71,7 +71,7 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
   })
 
   it('does nothing without a Frame or without a Project', () => {
-    for (const project of [{ ...framed, frame: undefined }, null]) {
+    for (const project of [withFields(framed, { frame: undefined }), null]) {
       const { harness, onRotateFrame } = setup(project)
       onRotateFrame()
       expect(harness.replaceProject).not.toHaveBeenCalled()

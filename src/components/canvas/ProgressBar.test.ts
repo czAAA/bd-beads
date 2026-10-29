@@ -189,7 +189,7 @@ describe('ProgressBar', () => {
   })
 
   it('has no Row highlight while there is no Frame (ticket 474)', () => {
-    const wrapper = mount(ProgressBar, { props: { project: { ...makeProject(), frame: undefined } } })
+    const wrapper = mount(ProgressBar, { props: { project: withFields(makeProject(), { frame: undefined }) } })
     expect(wrapper.find('[data-testid="progress-bar-highlight"]').exists()).toBe(false)
   })
 

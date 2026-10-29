@@ -62,7 +62,7 @@ describe('what a turned Frame offers', () => {
 
   it('drops its beads onto the Canvas on Remove Frame where they lie turned, its Folded beads too (ticket 0669)', () => {
     // Its first bead lies in the top-right corner of what it covers; a Folded bead past its last column, below that.
-    const folded = { ...turned, frame: { ...frameOf(turned)!, folded: withColors({}, [{ row: 0, column: 6, color: GREEN }]) } }
+    const folded = withFields(turned, { frame: { ...frameOf(turned)!, folded: withColors({}, [{ row: 0, column: 6, color: GREEN }]) } })
     const removed = changeFrame(folded, { remove: true })
     expect(removed.kind === 'changed' && beadsOfLayer(removed.project, 'canvas')).toEqual({ 19: { 24: RED }, 25: { 24: GREEN } })
   })
@@ -77,7 +77,7 @@ describe('a Selection and a Paste over a turned Frame', () => {
   })
 
   it('lay a copy from the Canvas as it is seen', () => {
-    const canvas = { ...turned, beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 0, column: 1, color: GREEN }, { row: 0, column: 2, color: BLUE }]) }
+    const canvas = withFields(turned, { beads: withColors({}, [{ row: 0, column: 0, color: RED }, { row: 0, column: 1, color: GREEN }, { row: 0, column: 2, color: BLUE }]) })
     const block = copyLayerSelection(canvas, { top: 0, left: 0, rows: 1, columns: 3, layer: 'canvas' })!
     const pasted = pasteOnLayer(canvas, block, { row: 19, column: 21, layer: 'frame' })
     // Left to right across the top of the turned Frame: its first column, from its last row up.

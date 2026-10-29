@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from '../domain/createProject'
-import { withLetters } from '../domain/paletteEdits'
+import { withLetters } from '../domain/layerRecord'
 import { changeFrame } from '../domain/changeFrame'
 import { paintAt } from '../testUtils/layers'
 import { en } from '../i18n/en'

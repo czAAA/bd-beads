@@ -9,6 +9,7 @@ import { paintAt } from '../testUtils/layers'
 import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
 import { canvasOf, frameOf } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -37,12 +38,12 @@ describe('a .openbeads file', () => {
   })
 
   it('round-trips an empty canvas', async () => {
-    const empty = { ...makeProject(), beads: {}, frame: undefined } as Project
+    const empty = withFields(makeProject(), { beads: {}, frame: undefined }) as Project
     expect(await roundTrip(empty)).toEqual(await roundTrip(await roundTrip(empty)))
   })
 
   it('round-trips a single bead', async () => {
-    const one = paintAt({ ...makeProject(), beads: {}, frame: undefined } as Project, [{ row: 5, column: 7 }], '#abcdef')
+    const one = paintAt(withFields(makeProject(), { beads: {}, frame: undefined }) as Project, [{ row: 5, column: 7 }], '#abcdef')
     expect(await roundTrip(one)).toEqual(one)
   })
 

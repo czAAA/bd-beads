@@ -2,6 +2,8 @@ import type { FrameSheet } from '../domain/canvas'
 import type { FlatProject } from '../domain/flatWeave'
 import { frameOf, withCanvas, withFrameSheet, withLetters } from '../domain/layerRecord'
 import type { CanvasLayer, FrameLayer, LayerFields, Project } from '../domain/project'
+import { DEFAULT_BEAD } from '../domain/beads'
+import { DEFAULT_TECHNIQUE } from '../domain/weave'
 
 /** What a test sets on a Project in the words it had before its layers (ticket 0664): the Canvas's own fields, the
  * shared Bead, Bead shape and Letters, the Frame as a sheet (none removes it), its Row progress, and the rest as they are. */
@@ -46,4 +48,11 @@ export function sheetOf(project: Pick<Project, 'layers'>): FrameSheet | undefine
   if (!frame) return undefined
   const { id: _id, beadId: _beadId, bead: _bead, beadShape: _shape, letters: _letters, pieceNames: _names, rowProgress: _progress, ...sheet } = frame
   return sheet
+}
+
+/** A Project made from fields as a test wrote them before the Project held its layers (ticket 0664), for a test that
+ * hands a reader a bare shape: an upright Canvas of nothing, with no Bead copy, set by `withFields`. */
+export function flatProject(change: FlatChange): Project {
+  const canvas: CanvasLayer = { id: 'canvas', name: 'Test', technique: change.technique ?? DEFAULT_TECHNIQUE, beadId: DEFAULT_BEAD.id, beads: {}, orientation: 0 }
+  return withFields({ id: 'test', layers: [canvas], palette: [], createdAt: 0, updatedAt: 0 }, change)
 }

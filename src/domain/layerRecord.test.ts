@@ -37,7 +37,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
   })
 
   it('reads the Frame from its sheet, with the Project\'s Bead and Bead shape', () => {
-    expect(layerOf({ ...framed(), beadShape: 'real' }, 'frame')).toEqual({
+    expect(layerOf(withFields(framed(), { beadShape: 'real' }), 'frame')).toEqual({
       weave: { technique: 'peyote', cell: beadCell(delica, 'real') },
       beadId: delica.id,
       bead: beadCopy(delica),
@@ -49,7 +49,7 @@ describe('a layer read as one record (ADR 0079, ticket 0661)', () => {
 
   it('reads an unnamed Frame without a name, and no Frame on a Canvas without one', () => {
     const { name: _name, ...unnamed } = frameOf(framed())!
-    expect(layerOf({ ...framed(), frame: unnamed }, 'frame')).not.toHaveProperty('name')
+    expect(layerOf(withFields(framed(), { frame: unnamed }), 'frame')).not.toHaveProperty('name')
     expect(layerOf(open(), 'frame')).toBeUndefined()
     expect(layerOf(open(), 'canvas').beads).toEqual({ 9: { 9: RED } })
   })
@@ -121,18 +121,18 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
     const project = framed()
     expect(beadsOfLayer(project, 'canvas')).toBe(layerOf(project, 'canvas').beads)
     expect(beadsOfLayer(project, 'frame')).toBe(layerOf(project, 'frame')!.beads)
-    expect(beadsOfLayer({ beads: {} }, 'frame')).toBeUndefined()
+    expect(beadsOfLayer(open(), 'frame')).toBeUndefined()
   })
 
   it('reads the Bead, its id and Bead shape both layers share, Symmetric where none is saved', () => {
-    const project = { ...framed(), beadShape: 'real' as const }
+    const project = withFields(framed(), { beadShape: 'real' })
     expect(beadOfLayer(project, 'frame')).toEqual({ bead: beadCopy(delica), beadShape: 'real' })
     expect(beadIdOfLayer(project, 'canvas')).toBe(delica.id)
-    expect(beadOfLayer({}, 'canvas')).toEqual({ beadShape: 'symmetric' })
+    expect(beadOfLayer(open(), 'canvas')).toEqual({ bead: beadCopy(delica), beadShape: 'symmetric' })
   })
 
   it('reads a layer\'s Weave as held, without the cell its Bead draws it in', () => {
-    const project = { ...framed(), beadShape: 'real' as const }
+    const project = withFields(framed(), { beadShape: 'real' })
     expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
     expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote' })
     expect(heldWeave(open(), 'frame')).toBeUndefined()

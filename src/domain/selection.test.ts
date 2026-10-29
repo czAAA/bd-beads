@@ -21,7 +21,7 @@ import {
   selectionInFinishedRows,
   type CopiedBlock,
 } from './selection'
-import { withColors } from './canvas'
+import { type BeadMap, withColors } from './canvas'
 import { createProject } from './createProject'
 import { withFrame } from './frame'
 import type { Project } from './project'
@@ -348,8 +348,8 @@ describe('resizing and moving a Selection (ticket 414)', () => {
 })
 
 describe('selectionHoldsAllBeads (ticket 415)', () => {
-  const open = (beads: Project['beads']): Project => (withFields(project(4, 4), { frame: undefined, beads }))
-  const framed = (beads: Project['beads'], frameBeads: Project['beads']): Project => {
+  const open = (beads: BeadMap): Project => (withFields(project(4, 4), { frame: undefined, beads }))
+  const framed = (beads: BeadMap, frameBeads: BeadMap): Project => {
     const placed = withFrame(project(4, 4), { row: 10, column: 10, rows: 3, columns: 3 })
     return withFields(placed, { beads, frame: { ...frameOf(placed)!, beads: frameBeads } })
   }
@@ -461,7 +461,7 @@ frame: { technique: 'loom', row: 10, column: 10, rows: 6, columns: 6, beads: {} 
   it('reads a shaped Selection by its own cells, and the way the rows run', () => {
     const shape = { top: 11, left: 10, rows: 2, columns: 2, cells: [{ row: 12, column: 11 }] }
     expect(selectionInFinishedRows(woven, shape)).toBe(false)
-    const fromTheLeft = { ...woven, rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } }
+    const fromTheLeft = withFields(woven, { rowProgress: { direction: 'columns' as const, currentRow: 0, currentColumn: 2 } })
     expect(selectionInFinishedRows(fromTheLeft, { top: 14, left: 11, rows: 1, columns: 1 })).toBe(true)
     expect(selectionInFinishedRows(fromTheLeft, { top: 10, left: 12, rows: 1, columns: 1 })).toBe(false)
   })

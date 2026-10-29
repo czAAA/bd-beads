@@ -27,7 +27,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
 
   it('reads each layer\'s settings map, and keeps a Brick block off brick stitch for a switch back (tickets 0624, 0625)', () => {
     const brick = createProject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, beadId: 'toho-cube-1.5mm', size: { width: 4, height: 6, unit: 'beads' } })
-    const brickFrame = { ...brick, technique: 'peyote' as const, techniqueSettings: {}, frame: { ...frameOf(brick)!, techniqueSettings: { brickBlock: 5 } } }
+    const brickFrame = withFields(brick, { technique: 'peyote' as const, techniqueSettings: {}, frame: { ...frameOf(brick)!, techniqueSettings: { brickBlock: 5 } } })
     expect(canvasWeave(brickFrame)).toEqual({ technique: 'peyote' })
     expect(frameWeave(brickFrame)).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 5 } })
     // A Brick block kept off brick stitch, for a switch back, lays nothing out in loom.
@@ -42,7 +42,7 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   })
 
   it('counts its rows, passes and size in its own Weave: peyote\'s first line takes one pass and every later one two', () => {
-    const project = { ...peyoteOnLoom(), rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
+    const project = withFields(peyoteOnLoom(), { rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
     expect(rowProgressPosition(project).total).toBe(11)
     // Row 0 is pass 0, done; row 1 is pass 1 on its even positions and pass 2 on its odd.
     expect(isInFinishedRow(project, { row: 10, column: 10 })).toBe(true)
@@ -78,8 +78,8 @@ describe('a Frame woven in its own Technique (ticket 492)', () => {
   it('reads a Frame stored without a Weave of its own as woven like the Project, and an unreadable one the same', () => {
     const base = withWeave(canvasLoom(), 'canvas', { technique: 'brick' })
     const { technique: _technique, ...bare } = frameOf(base)!
-    expect(frameOf(normalizeProject({ ...base, techniqueSettings: { brickBlock: 2 }, frame: bare as never }))).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
-    expect(frameOf(normalizeProject({ ...base, frame: { ...frameOf(base)!, technique: 'sideways' as never } }))?.technique).toBe('brick')
+    expect(frameOf(normalizeProject(withFields(base, { techniqueSettings: { brickBlock: 2 }, frame: bare as never })))).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 2 } })
+    expect(frameOf(normalizeProject(withFields(base, { frame: { ...frameOf(base)!, technique: 'sideways' as never } })))?.technique).toBe('brick')
   })
 
   it('keeps a Frame\'s own Weave when it is read back', () => {

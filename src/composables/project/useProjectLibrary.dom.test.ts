@@ -8,18 +8,19 @@ import { refuseStorageWrites, spyOnStorageWrites } from '../../testUtils/storage
 import { useProjectLibrary } from './useProjectLibrary'
 import { frameGrid } from '../../testUtils/frameGrid'
 import { frameOf } from '../../domain/layerRecord'
+import { type FlatChange, withFields } from '../../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
-function makeProject(overrides: Partial<Project> = {}): Project {
-  return {
-    ...createProject({
+function makeProject(overrides: FlatChange = {}): Project {
+  return withFields(
+    createProject({
       technique: 'loom',
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     }),
-    ...overrides,
-  }
+    overrides,
+  )
 }
 
 /** One painted cell, the way a stroke's per-cell commit arrives at replaceProject. */

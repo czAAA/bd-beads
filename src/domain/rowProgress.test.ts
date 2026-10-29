@@ -11,6 +11,7 @@ import { paintAt } from '../testUtils/layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
 import { withFields } from '../testUtils/flatFields'
+import { type RowProgress } from './project'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -133,7 +134,7 @@ describe('row direction', () => {
     const ways = [tallProject()]
     for (let at = 0; at < 4; at += 1) ways.push(toggleRowDirection(ways[at]))
 
-    expect(ways.map(({ rowProgress }) => [rowProgress.direction, !!rowProgress.reversed])).toEqual([
+    expect(ways.map((way) => [rowProgressOf(way).direction, !!rowProgressOf(way).reversed])).toEqual([
       ['rows', false],
       ['columns', false],
       ['rows', true],
@@ -248,7 +249,7 @@ describe('Row progress on the Frame (ticket 233)', () => {
 
   it('opens with Row progress on for a Frame whatever an old file stored, and never carries the flag on (tickets 426, 434)', () => {
     const open = withFrameSheet(base, undefined)
-    const stored = (project: Project, enabled: boolean) => ({ ...project, rowProgress: { ...rowProgressOf(project), enabled, decided: true } })
+    const stored = (project: Project, enabled: boolean) => (withFields(project, { rowProgress: { ...rowProgressOf(project), enabled, decided: true } as RowProgress }))
     const fromOffFile = normalizeProject(stored(base, false) as Project)
     expect(rowProgressOn(fromOffFile)).toBe(true)
     expect(rowProgressOf(fromOffFile)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })

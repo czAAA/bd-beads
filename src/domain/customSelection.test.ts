@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { beadCount, colorAt, withColors } from './canvas'
+import { beadCount, colorAt, type FrameSheet, withColors } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
 import { cellOfBead } from './customSelection'
 import { customFrameSize, frameLayoutOf, type FrameShapeId } from './frameShape'
@@ -14,6 +14,7 @@ import type { Project } from './project'
 import { rotateFrame, rotateLayerSelection } from './rotate'
 import { copyLayerSelection, paintLayerSelection, pasteLostCount, pasteOnLayer, pastedCellsOnLayer, selectAllSelection, type Selection } from './selection'
 import { beadsOfLayer, frameOf, withFrameSheet } from './layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 const RED = '#ff0000'
 const BLUE = '#0000ff'
@@ -119,7 +120,7 @@ describe('Copy and Paste on a Custom frame (ticket 0594)', () => {
 
     // Two beads side by side on the loom Canvas, pasted on a Warped Square's straight side away from its Seams.
     const square = custom('warpedSquare', 5)
-    const canvasPainted = { ...square, beads: withColors({}, [{ row: 100, column: 100, color: RED }, { row: 100, column: 101, color: BLUE }]) }
+    const canvasPainted = withFields(square, { beads: withColors({}, [{ row: 100, column: 100, color: RED }, { row: 100, column: 101, color: BLUE }]) })
     const fromCanvas = copyLayerSelection(canvasPainted, { top: 100, left: 100, rows: 1, columns: 2, layer: 'canvas' })!
     const landed = pasteOnLayer(square, fromCanvas, aimedAt(square, { row: 3, column: 1 }))
     expect(beadCount(frameOf(landed)!.beads)).toBe(2)
@@ -133,7 +134,7 @@ describe('Rotate on a Custom frame (ticket 0594)', () => {
     const turned = rotateLayerSelection(project, everything(project))
     expect(turned.dropped).toBe(0)
     expect(beadCount(frameOf(turned.project)!.beads)).toBe(3)
-    const rounds = (beads: Project['frame']) => allPositions(project).filter(({ row, column }) => colorAt(beads!.beads, row, column)).map(({ row }) => row).sort()
+    const rounds = (beads: FrameSheet | undefined) => allPositions(project).filter(({ row, column }) => colorAt(beads!.beads, row, column)).map(({ row }) => row).sort()
     expect(rounds(frameOf(turned.project))).toEqual([1, 3, 3])
     expect(frameOf(turned.project)!.beads).not.toEqual(frameOf(project)!.beads)
     expect(turned.selection.layer).toBe('frame')

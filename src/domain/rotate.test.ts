@@ -9,11 +9,11 @@ import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, 
 import { laidFrame } from './frameOrientation'
 import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { type FlatChange, withFields } from '../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
-function withBeads(beads: BeadMap, extra: Partial<Project> = {}): Project {
+function withBeads(beads: BeadMap, extra: FlatChange = {}): Project {
   return withFields(base, { beads, frame: { technique: 'loom' as const, row: 0, column: 0, rows: 40, columns: 40, beads: {} }, ...extra })
 }
 
@@ -110,20 +110,20 @@ describe('coveredByRotation', () => {
     ])
     const project = withBeads(beads)
     const { project: after, selection } = rotateSelection(project, SELECTION)
-    expect(coveredByRotation(project, after, SELECTION, selection)).toBe(1)
+    expect(coveredByRotation({ beads: beadsOfLayer(project, 'canvas') }, { beads: beadsOfLayer(after, 'canvas') }, SELECTION, selection)).toBe(1)
   })
 
   it('counts nothing a trimmed turn left in place', () => {
     const beads = withColors(SELECTION_BEADS, [{ row: 12, column: 11, color: '#123456' }])
     const project = withBeads(beads)
     const { selection } = rotateSelection(project, SELECTION)
-    expect(coveredByRotation(project, project, SELECTION, selection)).toBe(0)
+    expect(coveredByRotation({ beads: beadsOfLayer(project, 'canvas') }, { beads: beadsOfLayer(project, 'canvas') }, SELECTION, selection)).toBe(0)
   })
 })
 
 describe('rotateLayerSelection (ADR 0066)', () => {
   const frame = { technique: 'loom' as const, row: 10, column: 10, rows: 3, columns: 3 }
-  const inFrame = (beads: BeadMap, extra: Partial<Project> = {}): Project => (withFields(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
+  const inFrame = (beads: BeadMap, extra: FlatChange = {}): Project => (withFields(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
 
   it('turns the Canvas\'s beads for a Selection on the Canvas, in Canvas positions', () => {
     const project = withBeads(SELECTION_BEADS, { frame: undefined })
@@ -167,7 +167,7 @@ describe('rotateLayerSelection (ADR 0066)', () => {
 
 describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
   const frame = { technique: 'loom' as const, row: 20, column: 20, rows: 4, columns: 6 }
-  const framed = (beads: BeadMap, extra: Partial<Project> = {}): Project => (withFields(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
+  const framed = (beads: BeadMap, extra: FlatChange = {}): Project => (withFields(base, { beads: {}, frame: { ...frame, beads }, ...extra }))
 
   it('steps the Frame\'s orientation about its centre: its beads keep their own rows and columns, what it covers turns', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 3, column: 5, color: '#bb0000' }]))
@@ -189,7 +189,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
   it('leaves the Canvas where it is, and keeps the Frame\'s name', () => {
     const canvas = withColors({}, [{ row: 21, column: 22, color: '#999999' }])
     const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]), { beads: canvas })
-    const named = { ...project, frame: { ...frameOf(project)!, name: 'Leaf' } }
+    const named = withFields(project, { frame: { ...frameOf(project)!, name: 'Leaf' } })
     const turned = rotateFrame(named)!
     expect(beadsOfLayer(turned, 'canvas')).toBe(canvas)
     expect(frameOf(turned)!.name).toBe('Leaf')
@@ -198,7 +198,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
   it('rewrites nothing on peyote and brick stitch, so no row snaps (ADR 0079)', () => {
     const beads = withColors({}, [{ row: 0, column: 0, color: '#aa0000' }, { row: 1, column: 3, color: '#bb0000' }])
     for (const [technique, techniqueSettings] of [['peyote', undefined], ['brick', { brickBlock: 3 }]] as const) {
-      const project = { ...base, technique, beads: {}, frame: { technique, ...(techniqueSettings ? { techniqueSettings } : {}), row: 20, column: 20, rows: 5, columns: 4, beads } }
+      const project = withFields(base, { technique, beads: {}, frame: { technique, ...(techniqueSettings ? { techniqueSettings } : {}), row: 20, column: 20, rows: 5, columns: 4, beads } })
       let turned: Project = project
       for (let turn = 1; turn <= 4; turn++) {
         turned = rotateFrame(turned)!
@@ -215,8 +215,8 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
 
   it('keeps its Folded beads as they are, in its own rows and columns (ticket 0638)', () => {
     const project = framed(withColors({}, [{ row: 0, column: 0, color: '#aa0000' }]))
-    const folded = { ...project, frame: { ...frameOf(project)!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }]) } }
-    expect(frameOf(rotateFrame(folded))!.folded).toBe(folded.frame.folded)
+    const folded = withFields(project, { frame: { ...frameOf(project)!, folded: withColors({}, [{ row: 0, column: 7, color: '#cc0000' }]) } })
+    expect(frameOf(rotateFrame(folded))!.folded).toBe(frameOf(folded)!.folded)
   })
 })
 
@@ -248,7 +248,7 @@ describe('rotating a Piece-tool shape (ticket 547)', () => {
 
   it('reports as covered only the beads the shape landed on', () => {
     const turned = rotateSelection(withBeads(beads), shape)
-    expect(coveredByRotation(withBeads(beads), turned.project, shape, turned.selection)).toBe(0)
+    expect(coveredByRotation({ beads: beadsOfLayer(withBeads(beads), 'canvas') }, { beads: beadsOfLayer(turned.project, 'canvas') }, shape, turned.selection)).toBe(0)
   })
 })
 

@@ -69,9 +69,9 @@ describe('useExportFlow Letters (ticket 0573)', () => {
     const replaced: Project[] = []
     const flow = useExportFlow({ currentProject: () => replaced.at(-1) ?? project, projects: () => [project], messages: () => en, locale: () => 'en' as const, replaceProject: (next) => replaced.push(next), downloadFile })
     flow.onSetLetters(true)
-    expect(canvasOf(replaced.at(-1)).letters).toBe(true)
+    expect(canvasOf(replaced.at(-1)!).letters).toBe(true)
     flow.onSetLetters(false)
-    expect(canvasOf(replaced.at(-1)).letters).toBeUndefined()
+    expect(canvasOf(replaced.at(-1)!).letters).toBeUndefined()
     flow.onSetLetters(false)
     expect(replaced).toHaveLength(2)
   })

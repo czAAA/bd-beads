@@ -21,6 +21,7 @@ import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf } from './layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -159,8 +160,8 @@ describe('single-Project roundtrip', () => {
   })
 
   it('keeps the Canvas beside the Frame through a file, and the Frame\'s name', () => {
-    const both = { ...decoratedProject(), beads: { 40: { 40: '#123456' } } }
-    both.frame = { ...both.frame!, name: 'Cherry' }
+    const both = withFields(decoratedProject(), { beads: { 40: { 40: '#123456' } } })
+    both.frame = { ...frameOf(both)!, name: 'Cherry' })
 
     expect(parseProjectsFile(serializeProject(both)).projects).toEqual([both])
   })
@@ -183,7 +184,7 @@ describe('single-Project roundtrip', () => {
   })
 
   it('keeps Piece names through a file, and reads a file that has none (ticket 406)', () => {
-    const named = { ...decoratedProject(), pieceNames: [{ row: 2, column: 3, name: 'Fox' }] }
+    const named = withFields(decoratedProject(), { pieceNames: [{ row: 2, column: 3, name: 'Fox' }] })
     const file = JSON.parse(serializeProject(named))
 
     expect(canvasOf(parseProjectsFile(JSON.stringify(file)).projects[0]).pieceNames).toEqual([{ row: 2, column: 3, name: 'Fox' }])
@@ -404,7 +405,7 @@ describe('importProjects', () => {
 describe('the Bead copy in a file (ticket 534)', () => {
   it('round-trips the copy of a Bead the catalog does not have', () => {
     const retired = { ...findBead('toho/cube/1.5mm')!, id: 'old-maker/cube/2mm', widthMm: 2 }
-    const project = { ...decoratedProject(), beadId: retired.id, bead: retired }
+    const project = withFields(decoratedProject(), { beadId: retired.id, bead: retired })
     expect(canvasOf(parseProjectsFile(serializeProject(project)).projects[0]).bead).toEqual(retired)
   })
 

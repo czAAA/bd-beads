@@ -272,7 +272,7 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
 })
 
 describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
-  const sheetProject = () => ({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+  const sheetProject = () => (withFields(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
 
   it('moves the one pointer from its Row done, which the Progress bar then shows', async () => {
     const wrapper = await mountOpen(sheetProject())

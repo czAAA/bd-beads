@@ -10,23 +10,14 @@ import { rotateFrame } from '../domain/rotate'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 import { withFrameSheet } from '../domain/layerRecord'
+import { withFields } from '../testUtils/flatFields'
 
 function project(grid: (string | null)[][], rotation: Rotation = 0, technique: Technique = 'loom'): Project {
-  return {
-    id: 'p',
-    name: 'P',
-    technique,
-    beadId: 'toho-cube-1.5mm',
-    ...framedGrid(
-      grid.map((row) => row.map((color) => ({ color }))),
-      { technique },
-    ),
-    rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 },
-    palette: defaultPaletteIds(),
-    rotation,
-    createdAt: 0,
-    updatedAt: 0,
-  }
+  const { layers } = framedGrid(
+    grid.map((row) => row.map((color) => ({ color }))),
+    { technique, beadId: 'toho-cube-1.5mm' },
+  )
+  return withFields({ id: 'p', layers, palette: defaultPaletteIds(), createdAt: 0, updatedAt: 0 }, { name: 'P', rotation })
 }
 
 const RED = [255, 0, 0, 255]

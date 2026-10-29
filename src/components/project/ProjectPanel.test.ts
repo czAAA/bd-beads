@@ -176,13 +176,13 @@ describe('ProjectPanel (tickets 443, 554)', () => {
 
   it('offers a Custom frame the Techniques its shape supports alone (ADR 0079, ticket 0669)', async () => {
     const triangle = { ...frameOf(project)!, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
-    const wrapper = mountPanel({ project: { ...project, frame: triangle } })
+    const wrapper = mountPanel({ project: withFields(project, { frame: triangle }) })
     await wrapper.get('[data-testid="project-technique"] button').trigger('click')
     expect(wrapper.findAll('[data-testid="project-technique"] [role="menuitemradio"]').map((item) => item.attributes('data-value'))).toEqual(['peyote'])
   })
 
   it('locks the Technique, with the reason, once a Row progress pass is done', async () => {
-    const wrapper = mountPanel({ project: { ...project, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } } })
+    const wrapper = mountPanel({ project: withFields(project, { rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } }) })
     const picker = wrapper.get('[data-testid="project-technique"] button')
     expect(picker.attributes('aria-disabled')).toBe('true')
     await picker.trigger('click')

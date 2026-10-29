@@ -4,11 +4,11 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { FIT_MARGIN_PX, fitBox, useCanvasView } from './useCanvasView'
-import { withFields } from '../../testUtils/flatFields'
+import { type FlatChange, withFields } from '../../testUtils/flatFields'
 
 
-function projectOf(columns: number, rows: number, extra: Partial<Project> = {}): Project {
-  return { ...createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), ...extra }
+function projectOf(columns: number, rows: number, extra: FlatChange = {}): Project {
+  return withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } }), extra)
 }
 
 function setup(project: Project | undefined, size = { width: 1000, height: 800 }) {

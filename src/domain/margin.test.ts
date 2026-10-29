@@ -96,7 +96,7 @@ describe('mayPlace (ticket 501)', () => {
 describe('the margin of a Frame that draws shorter than the rows it names (ADR 0066)', () => {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
   const peyote = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
-  const woven = { ...peyote, frame: { ...frameOf(peyote)!, technique: 'peyote' as const } }
+  const woven = withFields(peyote, { frame: { ...frameOf(peyote)!, technique: 'peyote' as const } })
 
   it('hangs off what the Frame draws, so it is joined to it', () => {
     // The Frame covers 36 loom rows: the 4 below are the margin, the rows after those are free Canvas.

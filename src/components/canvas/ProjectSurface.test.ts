@@ -14,11 +14,11 @@ import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { canvasOf, frameOf, orientationOf, withFrameSheet } from '../../domain/layerRecord'
 import { rowProgressOf } from '../../domain/rowProgress'
-import { withFields } from '../../testUtils/flatFields'
+import { type FlatChange, withFields } from '../../testUtils/flatFields'
 
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
-function projectOf(columns: number, rows: number, extra: Partial<Project> = {}, technique: Technique = 'loom'): Project {
+function projectOf(columns: number, rows: number, extra: FlatChange = {}, technique: Technique = 'loom'): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const { beads, ...rest } = extra
   // Left out the Frame is the usual one; `frame: undefined` is a Canvas with none, and its beads are the Canvas's.

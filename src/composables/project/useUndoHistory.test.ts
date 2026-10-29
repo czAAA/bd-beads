@@ -3,8 +3,8 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { editHarness } from '../../testUtils/editHarness'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
-import { beadsOfLayer, canvasOf, frameOf } from '../../domain/layerRecord'
-import { rowProgressOf } from '../../domain/rowProgress'
+import { frameOf, withFrameSheet } from '../../domain/layerRecord'
+import { snapshotOf } from '../../domain/undoSnapshot'
 
 function newProject(): Project {
   return createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 3, unit: 'beads' } })
@@ -61,12 +61,7 @@ describe('useUndoHistory', () => {
   it('clears the Selection when the Frame differs', () => {
     const ctx = editHarness(newProject())
     ctx.history.record({
-      beads: beadsOfLayer(ctx.project, 'canvas'),
-      rowProgress: rowProgressOf(ctx.project),
-      palette: ctx.project.palette,
-      beadId: canvasOf(ctx.project).beadId,
-      weave: { technique: canvasOf(ctx.project).technique },
-      frame: { technique: 'loom' as const, row: 0, column: 0, columns: 5, rows: 5, beads: {} },
+      ...snapshotOf(withFrameSheet(ctx.project, { technique: 'loom', row: 0, column: 0, columns: 5, rows: 5, beads: {} })),
     })
     ctx.history.onUndo()
     expect(ctx.resetAfterFrameChange).toHaveBeenCalled()

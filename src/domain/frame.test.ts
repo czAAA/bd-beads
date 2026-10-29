@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { withColors, sameFrame } from './canvas'
 import { fitToDrawing, frameWithEdges, frameResizedAround, frameWithEdgeStep, frameWithSize, movedFrame, snapRow } from './frame'
-import { withFields } from '../testUtils/flatFields'
+import { flatProject, withFields } from '../testUtils/flatFields'
 
 describe('snapRow', () => {
   it('starts on an even row where rows alternate, reaching one row up rather than losing a row', () => {
@@ -53,27 +53,27 @@ describe('fitToDrawing', () => {
   ])
 
   it('wraps every bead drawn', () => {
-    expect(fitToDrawing({ technique: 'loom', beads })).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+    expect(fitToDrawing(flatProject({ technique: 'loom', beads }))).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
   it('leaves out beads the current Frame covers', () => {
     const current = { technique: 'loom' as const, row: 20, column: 20, rows: 3, columns: 3, beads: {} }
     const withHidden = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
-    expect(fitToDrawing({ technique: 'loom', beads: withHidden, frame: current })).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
+    expect(fitToDrawing(flatProject({ technique: 'loom', beads: withHidden, frame: current }))).toEqual({ row: 1, column: -3, rows: 6, columns: 12 })
   })
 
   it('wraps the Frame\'s own beads with the Canvas beads that show, and leaves out those the Frame covers', () => {
     const frame = { technique: 'loom' as const, row: 20, column: 20, rows: 5, columns: 5, beads: withColors({}, [{ row: 4, column: 2, color: '#0f0' }]) }
     const covered = withColors(beads, [{ row: 21, column: 21, color: '#f00' }])
-    expect(fitToDrawing({ technique: 'loom', beads: covered, frame })).toEqual({ row: 1, column: -3, rows: 24, columns: 26 })
+    expect(fitToDrawing(flatProject({ technique: 'loom', beads: covered, frame }))).toEqual({ row: 1, column: -3, rows: 24, columns: 26 })
   })
 
   it('starts on an even row where rows alternate, keeping the last row where it is', () => {
-    expect(fitToDrawing({ technique: 'peyote', beads })).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
+    expect(fitToDrawing(flatProject({ technique: 'peyote', beads }))).toEqual({ row: 0, column: -3, rows: 7, columns: 12 })
   })
 
   it('is nothing for an empty canvas', () => {
-    expect(fitToDrawing({ technique: 'loom', beads: {} })).toBeUndefined()
+    expect(fitToDrawing(flatProject({ technique: 'loom', beads: {} }))).toBeUndefined()
   })
 })
 
@@ -171,6 +171,6 @@ describe('a Brick block (ticket 477)', () => {
 
   it('fits to the drawing from a legal row', () => {
     const beads = withColors({}, [{ row: 9, column: 1, color: '#111111' }, { row: 13, column: 4, color: '#111111' }])
-    expect(fitToDrawing(withFields(block2, { beads }))).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
+    expect(fitToDrawing(flatProject({ ...block2, beads }))).toEqual({ row: 8, column: 1, rows: 6, columns: 4 })
   })
 })

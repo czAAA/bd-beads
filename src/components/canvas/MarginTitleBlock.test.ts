@@ -8,14 +8,14 @@ import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
 import { frameOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { type FlatChange, withFields } from '../../testUtils/flatFields'
 
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-function framed(extra: Partial<Project> = {}): Project {
+function framed(extra: FlatChange = {}): Project {
   const project = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } })
   return withFields(project, { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} }, ...extra })
 }

@@ -134,7 +134,7 @@ describe('piece names', () => {
 
   it('carries nothing when no Piece is named', () => {
     const project = projectWith(row(0, 0, 1))
-    const after = { ...project, beads: {} }
+    const after = withFields(project, { beads: {} })
 
     expect(carryNames(project, after)).toBe(after)
   })

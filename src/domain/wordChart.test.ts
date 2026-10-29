@@ -9,12 +9,12 @@ import type { Project } from './project'
 import type { Technique } from './weave'
 import { wordChartOf } from './wordChart'
 import { frameOf, withFrameSheet } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { type FlatChange, withFields } from '../testUtils/flatFields'
 
 const HEX: Record<string, string> = { A: '#111111', B: '#222222', C: '#333333' }
 
 /** A Frame of `rows` (a letter per bead, `.` for an empty cell), Letters on, each letter's hex kept as its own. */
-function framed(technique: Technique, rows: string[], changes: Partial<Project> = {}): Project {
+function framed(technique: Technique, rows: string[], changes: FlatChange = {}): Project {
   const base = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: rows[0].length, height: rows.length, unit: 'beads' } })
   const beads: Record<number, Record<number, string>> = {}
   rows.forEach((row, r) => {
@@ -137,7 +137,7 @@ describe('Word chart of a Custom frame (ticket 0594)', () => {
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     // The strands' last beads painted, a drop at each tip.
     const tips = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row, column }) => row === 1000 + (column === 1 ? 2 : 0))
-    const project = { ...onLayer(placed.project, 'frame', (view) => paintCells(view, tips, HEX.A)), letters: true, paletteLetters: { [HEX.A]: 'A' } }
+    const project = withFields(onLayer(placed.project, 'frame', (view) => paintCells(view, tips, HEX.A)), { letters: true, paletteLetters: { [HEX.A]: 'A' } })
     expect(wordChartOf(project)!.start).toBe('base')
     expect(words(project)).toEqual([
       '1 {"kind":"row","number":1}: 3*',

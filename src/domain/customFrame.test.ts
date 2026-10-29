@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { computeColorQuantities } from './beadQuantities'
-import { beadCount, colorAt } from './canvas'
+import { beadCount, colorAt, type FrameSheet } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
 import { frameLayoutOf, type FrameSettings } from './frameShape'
 import { frameGeometryOf, onLayer } from './layers'
@@ -97,7 +97,7 @@ describe('changing a Custom frame\'s Rounds', () => {
     expect(frameOf(grown)).toMatchObject({ settings: { rounds: 6 } })
     expect(colorAt(frameOf(grown)!.beads, 2, 4)).toBe(RED)
     expect(frameOf(grown)!.rows).toBeGreaterThan(frameOf(project)!.rows)
-    const centre = (frame: Project['frame']) => frame!.row + Math.floor(frame!.rows / 2)
+    const centre = (frame: FrameSheet | undefined) => frame!.row + Math.floor(frame!.rows / 2)
     expect(Math.abs(centre(frameOf(grown)) - centre(frameOf(project)))).toBeLessThanOrEqual(1)
   })
 
@@ -120,7 +120,7 @@ describe('changing a Custom frame\'s Rounds', () => {
   })
 
   it('keeps its pointer and the same beads finished on Rotate Frame, as its order turns with its layout (ticket 0647)', () => {
-    const project = { ...triangle(4), rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } }
+    const project = withFields(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 2, currentColumn: 0 } })
     const turned = rotateFrame(project)!
     const finished = (woven: Project) =>
       frameLayoutOf(frameOf(woven)!)!.positions.filter(({ row, column }) => isInFinishedRow(woven, { row: row + frameOf(woven)!.row, column: column + frameOf(woven)!.column, layer: 'frame' })).map(({ row, column }) => `${row},${column}`)
@@ -144,7 +144,7 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   }
 
   it('drops its beads onto the Canvas on Remove Frame, each on the Canvas position nearest its centre, clearing its footprint', () => {
-    const covered = { ...triangle(4), beads: { 20: { 30: BLUE } } }
+    const covered = withFields(triangle(4), { beads: { 20: { 30: BLUE } } })
     const project = paintFrame(covered, [{ row: 3, column: 5 }], RED)
     const removed = changed(project, { remove: true })
     expect(frameOf(removed)).toBeUndefined()
@@ -178,15 +178,15 @@ describe('every Frame action on a Custom frame, each done through its shape (ADR
   })
 
   it('holds its size still once a Row progress pass is done', () => {
-    const project = { ...triangle(4), rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } }
-    expect(changeFrame(project, { set: { ...project.frame!, columns: project.frame!.columns + 6 } })).toEqual({ kind: 'refused', reason: 'locked' })
+    const project = withFields(triangle(4), { rowProgress: { direction: 'rows' as const, currentRow: 1, currentColumn: 0 } })
+    expect(changeFrame(project, { set: { ...frameOf(project)!, columns: frameOf(project)!.columns + 6 } })).toEqual({ kind: 'refused', reason: 'locked' })
   })
 
   it('becomes its shape round a Selection on Frame from Selection, the smallest that covers it, lifting the Canvas beads in', () => {
     // On a Canvas woven like it, the rectangle a 4-round Triangle round row 20, column 30 has, and Canvas beads over four
     // of its beads.
     const selection = { row: 16, column: 26, rows: 11, columns: 9 }
-    const drawn = { ...triangle(4, openPeyote(), { row: 80, column: 80 }), beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 28: BLUE }, 24: { 29: BLUE } } }
+    const drawn = withFields(triangle(4, openPeyote(), { row: 80, column: 80 }), { beads: { 16: { 29: RED }, 17: { 29: RED }, 18: { 28: BLUE }, 24: { 29: BLUE } } })
     const made = changed(drawn, { make: selection })
     expect(frameOf(made)).toMatchObject({ ...selection, shape: 'triangle', settings: { rounds: 4 } })
     expect(beadsOfLayer(made, 'canvas')).toEqual({})

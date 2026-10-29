@@ -8,7 +8,7 @@ import { loadProjects, saveProjects } from './services/libraryStore'
 import { beadColor, hoverBead, previewedBeads, pressBead } from './testUtils/beads'
 import { pickColor, pickTool } from './testUtils/pill'
 import { beadsOfLayer, frameOf, orientationOf } from './domain/layerRecord'
-import { withFields } from './testUtils/flatFields'
+import { type FlatChange, withFields } from './testUtils/flatFields'
 
 /** The Canvas (ticket 233, ADR 0026) as the app shows it: an endless field to draw on, moved by wheel, Hand tool and
  * Space, read via rulers. */
@@ -26,7 +26,7 @@ afterEach(() => {
 })
 
 /** A Project with no Frame and a few beads in two places. */
-function unframedProject(extra: Partial<Project> = {}): Project {
+function unframedProject(extra: FlatChange = {}): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
   return withFields(base, {
 frame: undefined,

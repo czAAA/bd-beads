@@ -93,10 +93,10 @@ describe('useReplaceBeadFlow', () => {
 
 describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', () => {
   const current = findBead(canvasOf(base).beadId)!
-  const older = { ...base, bead: { ...current, widthMm: current.widthMm + 0.2 } }
+  const older = withFields(base, { bead: { ...current, widthMm: current.widthMm + 0.2 } })
 
   it('shows no postfix entry when its copy equals the catalog’s, even if only a name differs', () => {
-    const renamed = { ...base, bead: { ...current, brand: { ...current.brand, name: 'Other name' } } }
+    const renamed = withFields(base, { bead: { ...current, brand: { ...current.brand, name: 'Other name' } } })
     expect(setup(base).replaceBeadOutdated.value).toBeUndefined()
     expect(setup(renamed).replaceBeadOutdated.value).toBeUndefined()
   })
@@ -108,7 +108,7 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
   })
 
   it('shows no copy for a Bead the catalog does not offer', () => {
-    const gone = { ...base, beadId: 'brand/gone/1', bead: { ...current, id: 'brand/gone/1' } }
+    const gone = withFields(base, { beadId: 'brand/gone/1', bead: { ...current, id: 'brand/gone/1' } })
     const { replaceBeadOutdated, replaceBeadCandidates } = setup(gone)
     expect(replaceBeadOutdated.value).toBeUndefined()
     expect(replaceBeadCandidates.value).toHaveLength(BEAD_CATALOG.length)

@@ -9,6 +9,7 @@ import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
 import { withFields } from '../testUtils/flatFields'
+import { type RowProgress } from './project'
 
 /** A Project whose Frame sits at (10, 20) and whose own beads are numbered #00 0N0 by position, so a shift shows. */
 function numbered(columns: number, rows: number, technique: Technique = 'loom'): Project {
@@ -84,7 +85,7 @@ describe('removeSelectedLine', () => {
   })
 
   it('keeps the rest of the Project as it was, and bumps updatedAt', () => {
-    const before = { ...numbered(3, 4), name: 'Keep me', updatedAt: 0 }
+    const before = withFields(numbered(3, 4), { name: 'Keep me', updatedAt: 0 })
     const removed = removeSelectedLine(before, rowOf(before, 1))
     expect(removed).toMatchObject({ id: before.id, name: 'Keep me', technique: 'loom' })
     expect(removed.updatedAt).toBeGreaterThan(0)
@@ -104,7 +105,7 @@ describe('removeSelectedLine', () => {
 
   it('is not offered on a Custom frame, which has no plain rows (ADR 0079, ticket 0669)', () => {
     const plain = numbered(3, 4)
-    const custom = { ...plain, frame: { ...frameOf(plain)!, shape: 'triangle' as const, settings: { rounds: 2 } } }
+    const custom = withFields(plain, { frame: { ...frameOf(plain)!, shape: 'triangle' as const, settings: { rounds: 2 } } })
     expect(removeLineRefusal(custom, rowOf(custom, 0))).toBe('no-line')
     expect(removeLineQuestion(custom, rowOf(custom, 0))).toBeUndefined()
   })
@@ -148,7 +149,7 @@ describe('removeSelectedLine with no Frame (ticket 313)', () => {
 
 describe('Remove row/column once rows are marked done (ticket 0647, ADR 0055)', () => {
   /** A Frame of 3 columns and 6 rows in a Technique, its rows running `rowProgress`'s way with its pointers. */
-  const woven = (rowProgress: Project['rowProgress'], technique: Technique = 'loom'): Project => {
+  const woven = (rowProgress: RowProgress, technique: Technique = 'loom'): Project => {
     const project = numbered(3, 6)
     return withFields(project, { technique, frame: { ...frameOf(project)!, technique }, rowProgress })
   }

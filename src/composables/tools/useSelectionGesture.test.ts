@@ -555,7 +555,7 @@ describe('useSelectionGesture', () => {
       gesture.copy()
       expect(gesture.pasteAt({ row: 11, column: 11 })).toBe(true)
       expect(frameOf(harness.currentProject())!.beads[1]).toEqual({ 1: RED, 2: RED })
-      expect(beadsOfLayer(harness.currentProject(), 'canvas')[11]).toBeUndefined()
+      expect(beadsOfLayer(harness.currentProject()!, 'canvas')[11]).toBeUndefined()
       expect(clipped).toEqual([2])
       harness.history.onUndo()
       expect(frameOf(harness.currentProject())!.beads[1]).toBeUndefined()
@@ -567,7 +567,7 @@ describe('useSelectionGesture', () => {
       gesture.selectAll()
       gesture.copy()
       gesture.pasteAt({ row: 20, column: 20 })
-      expect(beadsOfLayer(harness.currentProject(), 'canvas')[20]?.[20]).toBe(RED)
+      expect(beadsOfLayer(harness.currentProject()!, 'canvas')[20]?.[20]).toBe(RED)
       expect(clipped).toEqual([])
     })
 
@@ -627,7 +627,7 @@ describe('useSelectionGesture', () => {
       gesture.extendPress(30, 30)
       gesture.endPress()
       gesture.cut()
-      expect(beadsOfLayer(harness.currentProject(), 'canvas')).toEqual({ 8: { 11: RED }, 11: { 11: BLUE } })
+      expect(beadsOfLayer(harness.currentProject()!, 'canvas')).toEqual({ 8: { 11: RED }, 11: { 11: BLUE } })
       expect(frameOf(harness.currentProject())!.beads[1]?.[1]).toBe(RED)
     })
 
@@ -638,7 +638,7 @@ describe('useSelectionGesture', () => {
       gesture.endPress()
       gesture.fill(RED)
       expect(frameOf(harness.currentProject())!.beads).toEqual({ 0: { 0: RED, 1: RED }, 1: { 0: RED, 1: RED } })
-      expect(beadsOfLayer(harness.currentProject(), 'canvas')).toEqual({})
+      expect(beadsOfLayer(harness.currentProject()!, 'canvas')).toEqual({})
     })
 
     /** A 2 x 2 Selection in the Frame, at (11, 11). */
@@ -684,7 +684,7 @@ describe('useSelectionGesture', () => {
       const { gesture, harness } = layered()
       gesture.selectAll()
       gesture.cut()
-      expect(beadsOfLayer(harness.currentProject(), 'canvas')[8]?.[11]).toBe(RED)
+      expect(beadsOfLayer(harness.currentProject()!, 'canvas')[8]?.[11]).toBe(RED)
       expect(frameOf(harness.currentProject())!.beads[1]?.[1]).toBeUndefined()
     })
   })
@@ -716,14 +716,14 @@ describe('useSelectionGesture', () => {
         made.gesture.endPress()
         return made
       })()
-      const before = beadsOfLayer(harness.currentProject(), 'canvas')
+      const before = beadsOfLayer(harness.currentProject()!, 'canvas')
 
       gesture.beginAdjust({ kind: 'inside' }, { row: 0, column: 0 }, 'select')
       gesture.dragAdjust({ row: 1, column: 2 })
       gesture.endAdjust()
 
       expect(gesture.selection.value).toMatchObject({ top: 1, left: 2, rows: 2, columns: 2 })
-      expect(beadsOfLayer(harness.currentProject(), 'canvas')).toBe(before)
+      expect(beadsOfLayer(harness.currentProject()!, 'canvas')).toBe(before)
     })
 
     it('a press inside that never moves is a tap: one bead under Select, the bead\'s Piece under Piece', () => {

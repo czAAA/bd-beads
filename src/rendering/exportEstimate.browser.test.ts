@@ -69,7 +69,7 @@ describe('the File size estimate against real exports (QualitySlider card, ADR 0
       if (estimate < real || estimate > real * 2.2) off.push(`${what}: estimate ${estimate} B is ${(estimate / real).toFixed(2)} × the ${real} B file`)
     }
     for (const letters of [false, true]) {
-      const project = { ...make(), letters }
+      const project = withFields(make(), { letters })
       const words = printText(project, en, 'en', new Date())
       const facts = exportFacts(project, words)!
       for (const [quality, dpi] of Object.entries(PNG_DPI_BY_QUALITY)) {
