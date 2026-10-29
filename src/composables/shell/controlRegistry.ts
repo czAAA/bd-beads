@@ -491,6 +491,8 @@ export const CONTROLS: readonly ControlAction[] = [
     disabledBody: (t: Translations) => t.tooltips.noBeadsToRotate,
   }),
   unkeyed('move-frame', (t) => t.frame.moveHandle, 'canvas', { body: (t) => t.tooltips.moveFrame }),
+  // The margin sheet's Margin color button (ticket 0657, MarginSheet card): opens the margin color's picker under it.
+  unkeyed('margin-color', (t) => t.frame.margin.colorLabel, 'canvas', { icon: 'palette' }),
   unkeyed('reset-progress', (t) => t.rowProgress.resetButton, 'rowProgress', {
     icon: 'reset',
     body: (t) => t.tooltips.resetProgress,

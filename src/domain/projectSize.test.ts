@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
 import { BEAD_CATALOG, findBead } from './beads'
-import { customFrameSize } from './frameKind'
+import { customFrameSize } from './frameShape'
 import {
   estimatedSizeMm,
   formatMm,
@@ -131,7 +131,7 @@ describe('isSizeStated (ticket 342)', () => {
 })
 
 describe('a Custom frame\'s Estimated size (ticket 0592)', () => {
-  const triangle = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 6 }), technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 6 } }
+  const triangle = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 6 }), technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 6 } }
 
   it('measures its shape, a Triangle standing on its side, not the cells of its bounding rectangle', () => {
     const { widthMm, heightMm } = estimatedSizeMm(triangle, cube)

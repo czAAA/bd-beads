@@ -1,6 +1,7 @@
 import { beadCopy, beadLabel, findBead } from './beads'
 import { beadsFromColors } from './canvas'
 import { weaveOf } from './layerWeave'
+import { beadIdOfLayer, withLayer } from './layerRecord'
 import { normalizeMakerName } from './makerName'
 import { defaultPalette, defaultPaletteIds, type PaletteCodes, type PaletteIds } from './palette'
 import { lettersOfPalette } from './paletteEdits'
@@ -79,25 +80,18 @@ export function createProjectFromImage(input: CreateProjectFromImageInput): Proj
   const project = createProject(input)
   const frame = project.frame!
   const palette = input.palette
+  const cells = Array.from({ length: frame.rows }, (_row, rowIndex) =>
+    Array.from({ length: frame.columns }, (_cell, columnIndex) => input.grid[rowIndex]?.[columnIndex]?.color ?? null),
+  )
 
   return {
-    ...project,
+    ...withLayer(project, 'frame', { beads: beadsFromColors(cells) }),
     ...(palette
       ? {
           palette: [...palette.ids],
-          paletteLetters: lettersOfPalette(palette.ids, project.beadId, undefined),
+          paletteLetters: lettersOfPalette(palette.ids, beadIdOfLayer(project, 'canvas'), undefined),
           ...(Object.keys(palette.codes).length > 0 ? { paletteCodes: { ...palette.codes } } : {}),
         }
       : {}),
-    frame: {
-      ...frame,
-      beads: beadsFromColors(
-        Array.from({ length: frame.rows }, (_row, rowIndex) =>
-          Array.from({ length: frame.columns }, (_cell, columnIndex) =>
-            input.grid[rowIndex]?.[columnIndex]?.color ?? null,
-          ),
-        ),
-      ),
-    },
   }
 }

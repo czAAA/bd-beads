@@ -5,7 +5,7 @@ import type { Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { projectExtentPx, surfaceView } from './surfaceView'
-import { customFrameSize, frameGeometry } from '../domain/frameKind'
+import { customFrameSize, frameGeometry } from '../domain/frameShape'
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
 const ROTATIONS: Rotation[] = [0, 90, 180, 270]
@@ -233,7 +233,7 @@ describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
 })
 
 describe('a Custom frame on the Canvas (ticket 0592)', () => {
-  const frame = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 4 } }
+  const frame = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
   const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame, rotation: 0, zoom: 1 })
   const { box } = frameGeometry(frame).place({ row: 3, column: 5 })!
   const bead = { x: box.x * CELL_SIZE_PX + (box.width * CELL_SIZE_PX) / 2, y: box.y * CELL_SIZE_PX + (box.height * CELL_SIZE_PX) / 2 }
@@ -254,5 +254,30 @@ describe('a Custom frame on the Canvas (ticket 0592)', () => {
     expect(view.frameCellAt({ x: 2, y: 2 })).toEqual({ row: 0, column: 0, layer: 'frame' })
     expect(view.frameCellAt(bead)).toEqual({ ...view.pointToCell(bead, 'frame'), layer: 'frame' })
     expect(view.frameCellAt({ x: -40, y: -40 })).toBeUndefined()
+  })
+})
+
+describe('a Frame lying turned on the Canvas (ticket 0667)', () => {
+  // A loom Frame of 4 rows and 6 columns, turned once: it lies 6 rows by 4 columns from its corner at (0, 0).
+  const frame = { row: 0, column: 0, rows: 4, columns: 6, technique: 'loom' as const, quarterTurns: 1 as const }
+  const view = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
+  const at = (x: number, y: number) => ({ x: x * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
+
+  it('hits each bead where it lies turned, by its own row and column', () => {
+    // Its first bead lies at the top right, its last at the bottom left.
+    expect(view.pointToHit(at(3.5, 0.5))).toEqual({ row: 0, column: 0, layer: 'frame' })
+    expect(view.pointToHit(at(0.5, 5.5))).toEqual({ row: 3, column: 5, layer: 'frame' })
+    expect(view.beadToPoint({ row: 0, column: 0 }, 'frame')).toEqual(at(3.5, 0.5))
+  })
+
+  it('hides the Canvas under what it covers, and only there', () => {
+    expect(view.pointToHit(at(3.5, 5.5))!.layer).toBe('frame')
+    expect(view.pointToHit(at(4.5, 0.5))).toEqual({ row: 0, column: 4, layer: 'canvas' })
+  })
+
+  it('draws its line round what it covers, and gives the Select tool the cells under a point', () => {
+    const line = view.frameBox(frame)
+    expect(line.width).toBeLessThan(line.height)
+    expect(view.frameCellAt(at(3.5, 5.5))).toEqual({ row: 5, column: 3, layer: 'frame' })
   })
 })

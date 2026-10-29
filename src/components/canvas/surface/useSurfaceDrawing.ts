@@ -1,6 +1,7 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
-import { changedPositions } from '../../../domain/canvas'
-import { canvasWeave, sameWeave } from '../../../domain/layerWeave'
+import { changedPositions, type BeadMap } from '../../../domain/canvas'
+import { layerOf, withLayer } from '../../../domain/layerRecord'
+import { sameWeave } from '../../../domain/layerWeave'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
@@ -68,15 +69,16 @@ export interface BeadLayerDeps {
 /** Whether two Projects differ only in the colors of their beads (`updatedAt` is not drawn). Any other difference, even
  * one added later, can change how a bead is drawn (shape, size, Technique, weave), so it repaints it all. */
 function sameDrawing(a: Project, b: Project): boolean {
-  const { beads: _a, frame: frameA, updatedAt: _u, ...restA } = a
-  const { beads: _b, frame: frameB, updatedAt: _v, ...restB } = b
-  return sameFields(restA, restB) && (frameA === undefined || frameB === undefined ? frameA === frameB : sameFrameLayout(frameA, frameB))
+  const { frame: frameA, updatedAt: _u, ...restA } = withoutBeads(a)
+  const { frame: frameB, updatedAt: _v, ...restB } = withoutBeads(b)
+  return sameFields(restA, restB) && (frameA === undefined || frameB === undefined ? frameA === frameB : sameFields(frameA, frameB))
 }
 
-function sameFrameLayout(a: NonNullable<Project['frame']>, b: NonNullable<Project['frame']>): boolean {
-  const { beads: _a, ...restA } = a
-  const { beads: _b, ...restB } = b
-  return sameFields(restA, restB)
+const NO_BEADS: BeadMap = {}
+
+/** The Project with both layers' beads emptied (ADR 0079), so what is left is what decides how a bead is drawn. */
+function withoutBeads(project: Project): Project {
+  return withLayer(withLayer(project, 'canvas', { beads: NO_BEADS }), 'frame', { beads: NO_BEADS })
 }
 
 /** Whether two records hold the same values, comparing objects one level deep (a row progress is replaced whole). */
@@ -101,15 +103,16 @@ const MOST_ROWS_WORTH_A_BAND = 40
 // cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
   // The Frame's rows are not the Canvas's where it is woven otherwise (ticket 492): draw it all again.
-  if (after.frame && !sameWeave(canvasWeave(after), after.frame) && before.frame?.beads !== after.frame.beads) {
+  const frame = layerOf(after, 'frame')
+  if (frame && !sameWeave(layerOf(after, 'canvas').weave, frame.weave) && layerOf(before, 'frame')?.beads !== frame.beads) {
     return undefined
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
-  const framed = (project: Project) => project.frame?.beads ?? {}
+  const framed = (project: Project) => layerOf(project, 'frame')?.beads ?? {}
   const frameTop = after.frame?.row ?? 0
   const changed = [
     ...new Set([
-      ...changedPositions(before.beads, after.beads).map((position) => position.row),
+      ...changedPositions(layerOf(before, 'canvas').beads, layerOf(after, 'canvas').beads).map((position) => position.row),
       ...changedPositions(framed(before), framed(after)).map((position) => position.row + frameTop),
     ]),
   ].sort((x, y) => x - y)
@@ -133,7 +136,7 @@ function changedBands(before: Project, after: Project): { first: number; last: n
 const storedCounts = new WeakMap<object, number>()
 
 function storedBeads(project: Project): number {
-  const counted = (beads: Project['beads']) => {
+  const counted = (beads: BeadMap) => {
     let count = storedCounts.get(beads)
     if (count === undefined) {
       count = Object.values(beads).reduce((sum, row) => sum + Object.keys(row).length, 0)
@@ -141,7 +144,8 @@ function storedBeads(project: Project): number {
     }
     return count
   }
-  return counted(project.beads) + (project.frame ? counted(project.frame.beads) : 0)
+  const frame = layerOf(project, 'frame')
+  return counted(layerOf(project, 'canvas').beads) + (frame ? counted(frame.beads) : 0)
 }
 
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,

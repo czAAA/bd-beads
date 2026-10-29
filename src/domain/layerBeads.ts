@@ -1,6 +1,7 @@
 import { beadsFromColors, changedPositions, colorAt, forEachBead, frameContains, hasBeads, sameFrame, type BeadMap } from './canvas'
 import type { Layer } from './grid'
 import { sameWeave, weaveOf } from './layerWeave'
+import { beadsOfLayer, heldWeave } from './layerRecord'
 import type { Grid, Project } from './project'
 import { DEFAULT_TECHNIQUE, type Weave } from './weave'
 
@@ -10,18 +11,21 @@ import { DEFAULT_TECHNIQUE, type Weave } from './weave'
  * (ADR 0066). A hex, or null where nothing is painted. */
 export function beadColorAt(project: Pick<Project, 'beads' | 'frame'>, row: number, column: number, layer?: Layer): string | null {
   const frame = project.frame
-  return frame && (layer ? layer === 'frame' : frameContains(frame, { row, column })) ? colorAt(frame.beads, row - frame.row, column - frame.column) : colorAt(project.beads, row, column)
+  return frame && (layer ? layer === 'frame' : frameContains(frame, { row, column }))
+    ? colorAt(beadsOfLayer(project, 'frame')!, row - frame.row, column - frame.column)
+    : colorAt(beadsOfLayer(project, 'canvas'), row, column)
 }
 
 /** Whether the Project has a bead on either layer. */
 export function hasProjectBeads(project: Pick<Project, 'beads' | 'frame'>): boolean {
-  return hasBeads(project.beads) || (project.frame !== undefined && hasBeads(project.frame.beads))
+  const frame = beadsOfLayer(project, 'frame')
+  return hasBeads(beadsOfLayer(project, 'canvas')) || (frame !== undefined && hasBeads(frame))
 }
 
 /** Every color on either layer, each once, in the order the layers hold them. */
 export function projectColors(project: Pick<Project, 'beads' | 'frame'>): string[] {
   const colors = new Set<string>()
-  for (const beads of [project.beads, project.frame?.beads ?? {}]) {
+  for (const beads of [beadsOfLayer(project, 'canvas'), beadsOfLayer(project, 'frame') ?? {}]) {
     forEachBead(beads, (_row, _column, color) => colors.add(color))
   }
   return [...colors]
@@ -31,10 +35,10 @@ export function projectColors(project: Pick<Project, 'beads' | 'frame'>): string
  * nothing: its maps are the same object. */
 export function sameBeads(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project, 'beads' | 'frame'>): boolean {
   const same = (x: BeadMap | undefined, y: BeadMap | undefined) => x === y || changedPositions(x ?? {}, y ?? {}).length === 0
-  return same(a.beads, b.beads) && same(a.frame?.beads, b.frame?.beads)
+  return same(beadsOfLayer(a, 'canvas'), beadsOfLayer(b, 'canvas')) && same(beadsOfLayer(a, 'frame'), beadsOfLayer(b, 'frame'))
 }
 
-/** Whether two states of a Project hold the same Frame and beads: the Frame's place, size, Weave, name, kind, settings
+/** Whether two states of a Project hold the same Frame and beads: the Frame's place, size, Weave, name, shape, settings
  * and turn, its shown and Folded beads, and the Canvas's. How a held Frame change (ticket 0640) knows it came back to
  * where it began, and so is no Undo step. */
 export function sameLayers(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project, 'beads' | 'frame'>): boolean {
@@ -43,9 +47,9 @@ export function sameLayers(a: Pick<Project, 'beads' | 'frame'>, b: Pick<Project,
   const names = new Set([...Object.keys(x.settings ?? {}), ...Object.keys(y.settings ?? {})]) as Set<keyof NonNullable<typeof x.settings>>
   return (
     sameFrame(x, y) &&
-    sameWeave(x, y) &&
+    sameWeave(heldWeave(a, 'frame')!, heldWeave(b, 'frame')!) &&
     x.name === y.name &&
-    x.kind === y.kind &&
+    x.shape === y.shape &&
     x.quarterTurns === y.quarterTurns &&
     [...names].every((name) => x.settings?.[name] === y.settings?.[name]) &&
     sameBeads(a, b) &&

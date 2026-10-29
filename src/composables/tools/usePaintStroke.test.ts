@@ -164,7 +164,7 @@ describe('usePaintStroke', () => {
 
     it('paints a Custom frame\'s bead named past its rectangle, as its layout has one there (ticket 0629)', () => {
       const { frame: _frame, ...open } = over()
-      const placed = changeFrame(open, { custom: { kind: 'triangle', size: 9, centre: { row: 20, column: 30 } } })
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 30 } } })
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const { stroke, harness } = setup('paint', placed.project)
       const { row, column, columns } = harness.project.frame!

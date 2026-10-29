@@ -2,6 +2,8 @@
 import { describe, expect, it } from 'vitest'
 import { withColors } from '../domain/canvas'
 import { createProject } from '../domain/createProject'
+import { moveToRow, toggleRowDirection } from '../domain/rowProgress'
+import { rotateFrame } from '../domain/rotate'
 import { LIGHT_THEME, type DrawingContext } from './beadLook'
 import { drawFrameEditing, drawRulers, type RulerDrawInput } from './rulerRenderer'
 import { rulerLayout } from './rulers'
@@ -27,6 +29,17 @@ function fakeContext() {
     arc: (...args: number[]) => {
       current = args
     },
+    // A path of points (a hot corner's bracket, the row pointer) is written down as the points it passes.
+    moveTo: (x: number, y: number) => {
+      current = [x, y]
+    },
+    lineTo: (x: number, y: number) => {
+      current = [...current, x, y]
+    },
+    arcTo: (x: number, y: number) => {
+      current = [...current, x, y]
+    },
+    closePath: () => {},
     fillRect: () => {},
     roundRect: (...args: number[]) => {
       current = args
@@ -44,6 +57,8 @@ function fakeContext() {
       state.fillStyle = value
     },
     lineWidth: 1,
+    lineCap: 'butt',
+    globalAlpha: 1,
     font: '',
     textAlign: '',
     textBaseline: '',
@@ -164,16 +179,59 @@ describe('the Ruler dots', () => {
   })
 })
 
-describe('drawFrameEditing', () => {
-  const frame = { row: 0, column: 0, rows: 3, columns: 3 }
+describe('the row pointer (MarginSheet card, ticket 0657)', () => {
+  const pointers = (fills: { style: unknown; rect: number[] }[]) => fills.filter((fill) => fill.style === LIGHT_THEME.marker && fill.rect.length === 6)
 
-  it('puts eight 9px handles round the Frame and the size tooltip at its corner', () => {
+  it('points at the current row from the left band, 4px outside the row numbers', () => {
+    const project = moveToRow(base, 1)
+    const input = { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true }
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+
+    const [pointer] = pointers(fills)
+    const row = input.surface.beadToPoint({ row: project.frame!.row + 1, column: project.frame!.column }, 'frame')
+    const numbersLeft = Math.min(...input.layout.labels.filter((label) => label.axis === 'row' && label.x < row.x).map((label) => label.x - label.width / 2))
+    expect(pointer!.rect.slice(0, 2)).toEqual([numbersLeft - 4, row.y])
+    expect(pointer!.rect.slice(2)).toEqual([numbersLeft - 13, row.y - 6, numbersLeft - 13, row.y + 6])
+  })
+
+  it('stands in the top band once the rows run down the columns, and goes with the Row progress look', () => {
+    const project = moveToRow(toggleRowDirection(base), 1)
+    const shown = fakeContext()
+    drawRulers(shown.context, { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true })
+    const [pointer] = pointers(shown.fills)
+    // Pointing down: its tip below its base.
+    expect(pointer!.rect[1]).toBeGreaterThan(pointer!.rect[3]!)
+
+    const hidden = fakeContext()
+    drawRulers(hidden.context, { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: false })
+    expect(pointers(hidden.fills)).toEqual([])
+  })
+  it('stands in the top band over a Frame turned a quarter, whose rows then run down (ticket 0667)', () => {
+    const project = rotateFrame(moveToRow(base, 1))!
+    const input = { ...drawn(project, { zoom: 1, numbers: true }), rowMarks: true }
+    const { context, fills } = fakeContext()
+    drawRulers(context, input)
+    const [pointer] = pointers(fills)
+    const row = input.surface.beadToPoint({ row: project.frame!.row + 1, column: project.frame!.column }, 'frame')
+    // Pointing down at the turned row, from above it.
+    expect(pointer!.rect[0]).toBeCloseTo(row.x)
+    expect(pointer!.rect[1]).toBeGreaterThan(pointer!.rect[3]!)
+  })
+})
+
+describe('drawFrameEditing (MarginSheet card, ticket 0657)', () => {
+  const frame = { row: 0, column: 0, rows: 3, columns: 3 }
+  const accent = (marks: { style: unknown; rect: number[] }[]) => marks.filter((mark) => mark.style === LIGHT_THEME.accent)
+
+  it('draws an accent bracket at each corner of the Frame\'s line and a bar at each edge\'s middle, with the size tooltip', () => {
     const { context, strokes, fills, texts } = fakeContext()
     drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '3×3 ≈ 0.5 × 0.5 cm' })
 
-    expect(strokes).toHaveLength(8)
-    expect(strokes.every((stroke) => stroke.rect[2] === 9 && stroke.rect[3] === 9)).toBe(true)
-    expect(fills).toHaveLength(9)
+    expect(accent(strokes)).toHaveLength(4)
+    const bars = accent(fills)
+    expect(bars).toHaveLength(4)
+    expect(bars.map((bar) => [bar.rect[2], bar.rect[3]])).toEqual([[12, 4], [4, 12], [12, 4], [4, 12]])
     expect(texts).toEqual(['3×3 ≈ 0.5 × 0.5 cm'])
   })
 
@@ -181,15 +239,33 @@ describe('drawFrameEditing', () => {
     const { context, fills, texts } = fakeContext()
     drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '' })
 
-    expect(fills).toHaveLength(8)
+    expect(fills).toHaveLength(4)
     expect(texts).toEqual([])
   })
 
-  it('puts four 16px handles at the corners on touch', () => {
-    const { context, strokes } = fakeContext()
+  it('draws the four corners alone on touch', () => {
+    const { context, strokes, fills } = fakeContext()
     drawFrameEditing(context, { frame, surface: surfaceAt(1), pixelRatio: 1, theme: LIGHT_THEME, touch: true, tooltip: '' })
 
-    expect(strokes).toHaveLength(4)
-    expect(strokes.every((stroke) => stroke.rect[2] === 16 && stroke.rect[3] === 16)).toBe(true)
+    expect(accent(strokes)).toHaveLength(4)
+    expect(fills).toEqual([])
+  })
+
+  it('grows the corner under the pointer on a 32px disc, its arms 18px, and sets the size tooltip beside it', () => {
+    const { context, strokes, fills } = fakeContext()
+    const surface = surfaceAt(1)
+    drawFrameEditing(context, { frame, surface, pixelRatio: 1, theme: LIGHT_THEME, touch: false, tooltip: '3×3 ≈ 0.5 × 0.5 cm', hot: 'bottom-right' })
+
+    const box = surface.frameBox(frame)
+    const corner = { x: box.x + box.width, y: box.y + box.height }
+    const disc = fills.find((fill) => fill.rect.length === 5 && fill.rect[2] === 16)!
+    expect(disc.rect.slice(0, 2)).toEqual([corner.x, corner.y])
+    // The hot bracket: its arms run 18px from its corner, 5px outside the line (3px clear, half its 4px stroke).
+    const hot = strokes.find((stroke) => stroke.rect.includes(corner.x + 5) && stroke.rect.includes(corner.y + 5 - 18))!
+    expect(hot).toBeDefined()
+    // The tooltip stands out from the Frame, right of and below the disc.
+    const tip = fills.at(-1)!
+    expect(tip.rect[0]).toBe(corner.x + 16)
+    expect(tip.rect[1]).toBe(corner.y + 16)
   })
 })

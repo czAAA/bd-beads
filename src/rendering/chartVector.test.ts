@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from '../domain/changeFrame'
-import { frameLayoutOf } from '../domain/frameKind'
+import { rotateFrame } from '../domain/rotate'
+import { frameLayoutOf } from '../domain/frameShape'
 import { onLayer } from '../domain/layers'
 import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
@@ -191,7 +192,7 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
   /** A peyote Triangle of 9 rounds on a loom Canvas, its inner rounds painted dark and its 4th round White. */
   function triangle(): Project {
     const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-    const placed = changeFrame(open, { custom: { kind: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
     const positions = frameLayoutOf(placed.project.frame!)!.positions
     const dark = onLayer(placed.project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row < 3), DARK))
@@ -216,6 +217,17 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
     expect(turned.length).toBe(frameLayoutOf(project.frame!)!.positions.length)
     expect(turned.filter((line) => line.endsWith(' S')).length).toBe(frameLayoutOf(project.frame!)!.positions.length - 30)
     // No ruler numbers: the only text is the beads' letters.
+    expect(texts(pdf).every((text) => /^[A-Z]+$/.test(text.value))).toBe(true)
+  })
+})
+
+describe('a turned Frame\'s chart page (ticket 0667)', () => {
+  it('prints the Frame as it lies, each bead turned with it, and with no rulers', () => {
+    const upright = schema('peyote', 6, 4, { letters: false, paletteLetters: LETTERS })
+    const project = rotateFrame(upright)!
+    const pdf = chartOf(project).content.toString()
+    const turned = pdf.split('\n').filter((line) => / l .* h [BfS]$/.test(line) && !line.includes(' c '))
+    expect(turned.length).toBe(6 * 4)
     expect(texts(pdf).every((text) => /^[A-Z]+$/.test(text.value))).toBe(true)
   })
 })

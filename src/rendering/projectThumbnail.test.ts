@@ -6,6 +6,7 @@ import { framedGrid } from '../domain/layerBeads'
 import type { Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
 import { changeFrame } from '../domain/changeFrame'
+import { rotateFrame } from '../domain/rotate'
 import { frameGeometryOf, onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 
@@ -120,10 +121,19 @@ describe('thumbnailPixels', () => {
     expect(pixel(image, 0, 5)).toEqual(NONE)
   })
 
+  it('draws a Frame turned by Rotate Frame as it lies: its first row down the right side (ticket 0667)', () => {
+    const upright = project([['#ff0000', '#ff0000', '#ff0000', '#ff0000'], ['#0000ff', '#0000ff', '#0000ff', '#0000ff']])
+    const image = thumbnailPixels(rotateFrame(upright)!, 8)
+
+    expect([image.width, image.height]).toEqual([4, 8])
+    expect(pixel(image, 3, 1)).toEqual(RED)
+    expect(pixel(image, 0, 6)).toEqual(BLUE)
+  })
+
   /** A small Custom frame Triangle, every bead red, and its Layer geometry. */
   function redTriangle(rotation: Rotation = 0) {
     const { frame: _frame, ...open } = project([[null]], rotation)
-    const placed = changeFrame(open, { custom: { kind: 'triangle', size: 3, centre: { row: 8, column: 10 } } })
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 3, centre: { row: 8, column: 10 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
     const geometry = frameGeometryOf(placed.project)
     return { geometry, triangle: onLayer(placed.project, 'frame', (view) => paintCells(view, [...geometry.positions()], '#ff0000')) }

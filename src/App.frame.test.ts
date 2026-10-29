@@ -109,9 +109,6 @@ describe('Edit Frame', () => {
     await wrapper.get('[data-testid="frame-edge-right-out"]').trigger('click')
     await flushPromises()
     expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 6 })
-    await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
-    await flushPromises()
-    expect(savedFrame()).toMatchObject({ rows: 6, columns: 5 })
     await wrapper.get('[data-testid="frame-panel-width"]').setValue('9')
     const field = wrapper.get('[data-testid="frame-panel-height"]')
     await field.setValue('7')
@@ -123,6 +120,9 @@ describe('Edit Frame', () => {
     await wrapper.get('[data-testid="frame-name-save"]').trigger('click')
     await flushPromises()
     expect(loadProjects()[0]!.frame!.name).toBe('Moth wing')
+    await wrapper.get('[data-testid="frame-rotate"]').trigger('click')
+    await flushPromises()
+    expect(savedFrame()).toMatchObject({ rows: 7, columns: 9, quarterTurns: 1 })
 
     for (let step = 0; step < 4; step++) await key({ key: 'z', ctrlKey: true })
     expect(savedFrame()).toEqual({ row: 1, column: 2, rows: 5, columns: 5 })
@@ -266,5 +266,27 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
     expect(savedProgress()).toMatchObject({ currentRow: 0, currentColumn: 0 })
     expect(savedFrame()).toEqual({ row: 2, column: 3, rows: 2, columns: 3 })
     expect(wrapper.get('[data-testid="progress-bar-reset"]').attributes('aria-disabled')).toBe('true')
+  })
+})
+
+describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
+  const sheetProject = () => ({ ...unframedProject(), frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } })
+
+  it('moves the one pointer from its Row done, which the Progress bar then shows', async () => {
+    const wrapper = await mountOpen(sheetProject())
+    await wrapper.get('[data-testid="margin-progress-next"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="progress-bar-compact-position"]').text()).toBe('2/2')
+  })
+
+  it('opens the Export panel from its Export button, hung from that button', async () => {
+    const wrapper = await mountOpen(sheetProject())
+    await wrapper.get('[data-testid="margin-export"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(true)
+    expect(wrapper.get('[data-testid="margin-export"]').attributes('aria-pressed')).toBe('true')
+    await wrapper.get('[data-testid="margin-export"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-testid="export-panel"]').exists()).toBe(false)
   })
 })

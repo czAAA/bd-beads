@@ -1,7 +1,7 @@
 {
   "id": "kaleidocycle",
   "design": "kaleidocycle.json",
-  "kind": "kaleidocycle",
+  "shape": "kaleidocycle",
   "technique": "peyote",
   "measure": "frame",
   "sizes": [
