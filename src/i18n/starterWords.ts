@@ -3,10 +3,10 @@ import type { Locale, Translations } from './translations'
 import type { Bead } from '../domain/beads'
 import { designPicks, designSizes, starterBeadCount, type Starter, type StarterChoice, type StarterPick, type StarterSize, type StarterSizes } from '../domain/starters'
 
-/** A Starter's name: a Shape's, whose id is its kind's, its kind's name; an Earring's, Ring's or Band's its own (tickets
- * 0596, 0597, 0633). */
+/** A Starter's name: a Shape's, whose id is its Frame shape's, its shape's name; an Earring's, Ring's or Band's its own
+ * (tickets 0596, 0597, 0633). */
 export function starterName(t: Translations, starter: Starter): string {
-  if (starter.id === starter.kind) return t.frame.customKinds[starter.kind as keyof Translations['frame']['customKinds']]
+  if (starter.shape && starter.id === starter.shape) return t.frame.shapes[starter.shape]
   return t.starters.options[starter.id] ?? starter.id
 }
 

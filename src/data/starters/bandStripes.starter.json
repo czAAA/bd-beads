@@ -1,7 +1,6 @@
 {
   "id": "bandStripes",
   "design": "bandStripes.json",
-  "kind": "rectangular",
   "technique": "peyote",
   "measure": "band",
   "sizes": [

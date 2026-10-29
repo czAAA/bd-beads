@@ -34,7 +34,7 @@ function makeProject(name = 'Fox'): Project {
 
 /** A Project with a five-round Triangle holding two beads, one on its outer round. */
 function customFramed(): Project {
-  const result = changeFrame(makeProject('Kite'), { custom: { kind: 'triangle', size: 5, centre: { row: 10, column: 10 } } })
+  const result = changeFrame(makeProject('Kite'), { custom: { shape: 'triangle', size: 5, centre: { row: 10, column: 10 } } })
   if (result.kind !== 'changed') throw new Error('expected a Triangle')
   return onLayer(result.project, 'frame', (view) => paintCells(view, [{ row: 0, column: 2 }, { row: 4, column: 14 }], '#e63746'))
 }
@@ -242,8 +242,8 @@ describe('a Technique this build does not know in a file (ticket 0644)', () => {
   })
 })
 
-describe('the Frame kind in a file (ticket 0591)', () => {
-  it('opens a Frame with no kind, or with one this build does not know, as Rectangular, left unsaved', () => {
+describe('the Frame shape in a file (tickets 0591, 0668)', () => {
+  it('opens a Frame with no shape, an older file\'s "rectangular", or a shape this build does not know as a Frame', () => {
     const project = decoratedProject()
     const stated = serializeProject(project).replace('"frame":{', '"frame":{"kind":"rectangular",')
     const unknown = serializeProject(project).replace('"frame":{', '"frame":{"kind":"hexagon",')
@@ -252,19 +252,22 @@ describe('the Frame kind in a file (ticket 0591)', () => {
     for (const file of [serializeProject(project), stated, unknown]) {
       const [restored] = parseProjectsFile(file).projects
       expect(restored).toEqual(project)
+      expect(restored!.frame).not.toHaveProperty('shape')
       expect(restored!.frame).not.toHaveProperty('kind')
     }
   })
 
-  it('carries a Custom frame through a file and the library: its kind, Rounds and beads by layout position (ticket 0592)', () => {
+  it('carries a Custom frame through a file and the library: its shape, Rounds and beads by layout position (ticket 0592)', () => {
     const triangle = customFramed()
+    // Stored under the name it had before ADR 0079, so a file reads alike in every build (ticket 0668).
     expect(JSON.parse(serializeProject(triangle)).projects[0].frame).toMatchObject({ kind: 'triangle', settings: { rounds: 5 } })
+    expect(JSON.parse(serializeProject(triangle)).projects[0].frame).not.toHaveProperty('shape')
     expect(parseProjectsFile(serializeProject(triangle)).projects).toEqual([triangle])
     const plain = makeProject()
     expect(parseProjectsFile(serializeLibrary([triangle, plain])).projects).toEqual([triangle, plain])
   })
 
-  it('reads a Custom frame\'s Rounds within its range, and a Rectangular Frame without settings', () => {
+  it('reads a Custom frame\'s Rounds within its range, and a Frame without a shape without settings', () => {
     const wide = serializeProject(customFramed()).replace('"rounds":5', '"rounds":400')
     expect(parseProjectsFile(wide).projects[0]!.frame!.settings).toEqual({ rounds: 40 })
     const stray = serializeProject(decoratedProject()).replace('"frame":{', '"frame":{"settings":{"rounds":5},')

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { beadCount } from './canvas'
 import { changeFrame, type FrameChangeResult } from './changeFrame'
-import { FRAME_KIND_IDS, frameKindOf, frameLayoutOf, settingsOf, type FrameSettings } from './frameKind'
+import { FRAME_SHAPE_IDS, frameShapeOf, frameLayoutOf, settingsOf, type FrameSettings } from './frameShape'
 import { createProject } from './createProject'
 import { weaveOf } from './layerWeave'
 import { TECHNIQUES } from './weave'
@@ -54,7 +54,7 @@ describe('the Starter registry', () => {
   for (const starter of allStarters) {
     it(`fills every position of the ${starter.id} design's Frame, and nothing beyond it`, () => {
       const beads = starterDesign(starter)
-      const layout = frameLayoutOf({ kind: starter.kind, settings: { ...designSizes(starter), ...designPicks(starter) } as FrameSettings })
+      const layout = frameLayoutOf({ shape: starter.shape, settings: { ...designSizes(starter), ...designPicks(starter) } as FrameSettings })
       const { rows, columns } = starterFrameSize(starter, { sizes: designSizes(starter), useDesign: true }, delica)
       const positions = layout ? layout.positions : Array.from({ length: rows * columns }, (_unused, index) => ({ row: Math.floor(index / columns), column: index % columns }))
       expect(beadCount(beads)).toBe(positions.length)
@@ -86,14 +86,14 @@ describe('the Starter manifests (ticket 0633)', () => {
   })
 
   for (const starter of allStarters) {
-    it(`gives the ${starter.id} Starter a known kind and Technique and the sizes and choices its measuring rule reads`, () => {
-      const custom = frameKindOf(starter).custom
-      expect(FRAME_KIND_IDS).toContain(starter.kind)
+    it(`gives the ${starter.id} Starter a known Frame shape or none, a Technique, and the sizes and choices its measuring rule reads`, () => {
+      const custom = frameShapeOf(starter)
+      if (starter.shape) expect(FRAME_SHAPE_IDS).toContain(starter.shape)
       expect(TECHNIQUES).toContain(starter.technique)
       const ids = starter.sizes.map((size) => size.id)
       expect(new Set(ids).size).toBe(ids.length)
       if (starter.measure === 'frame') {
-        expect(custom?.technique).toBe(starter.technique)
+        expect(custom?.techniques).toContain(starter.technique)
         expect(ids).toEqual(expect.arrayContaining(custom!.settings.map((setting) => setting.id)))
       } else {
         expect(custom).toBeUndefined()
@@ -117,13 +117,13 @@ describe('the Starter manifests (ticket 0633)', () => {
 describe('a new Project from a Starter', () => {
   it('puts the design in place in the Frame, named as asked, on the chosen Bead', () => {
     const project = starterProject(starterById('triangle'), { name: 'Sun', beadId, ...asDesigned('triangle') })
-    expect(project).toMatchObject({ name: 'Sun', beadId, frame: { kind: 'triangle', settings: { rounds: 10 } } })
+    expect(project).toMatchObject({ name: 'Sun', beadId, frame: { shape: 'triangle', settings: { rounds: 10 } } })
     expect(project.frame!.beads).toEqual(starterDesign(starterById('triangle')))
     expect(project.beads).toEqual({})
   })
 
   it('puts the same Frame in place empty when it starts empty, or at another size', () => {
-    expect(starterProject(starterById('star'), { name: 'Star', beadId, sizes: { partSize: 5 }, useDesign: false }).frame).toMatchObject({ kind: 'star', settings: { partSize: 5 }, beads: {} })
+    expect(starterProject(starterById('star'), { name: 'Star', beadId, sizes: { partSize: 5 }, useDesign: false }).frame).toMatchObject({ shape: 'star', settings: { partSize: 5 }, beads: {} })
     expect(starterProject(starterById('star'), { name: 'Star', beadId, sizes: { partSize: 7 }, useDesign: true }).frame).toMatchObject({ settings: { partSize: 7 }, beads: {} })
   })
 
@@ -137,7 +137,7 @@ describe('a new Project from a Starter', () => {
 describe('an Earring Starter (ticket 0597)', () => {
   it('is a brick-stitch Fringe earring of its top and fringe, its Fringe style the design\'s: the V fringe 87 beads', () => {
     const project = starterProject(starterById('vFringe'), { name: 'Drop', beadId, ...asDesigned('vFringe') })
-    expect(project).toMatchObject({ technique: 'brick', frame: { kind: 'fringeEarring', technique: 'brick', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 } } })
+    expect(project).toMatchObject({ technique: 'brick', frame: { shape: 'fringeEarring', technique: 'brick', settings: { topWidth: 7, topRows: 6, fringeStyle: 'v', fringeLength: 12 } } })
     expect(project.frame!.beads).toEqual(starterDesign(starterById('vFringe')))
     expect(starterBeadCount(starterById('vFringe'), asDesigned('vFringe'), delica)).toBe(87)
     expect(starterBeadCount(starterById('straightFringe'), asDesigned('straightFringe'), delica)).toBe(97)
@@ -201,17 +201,17 @@ describe('a Starter put on an open Project', () => {
     const painted = { ...open, beads: { 3: { 3: '#00ff00' } } }
     const result = placedStarter(painted, starterById('warpedSquare'), asDesigned('warpedSquare'), { row: 20, column: 30 })
     if (result.kind !== 'changed') throw new Error(result.kind)
-    expect(result.project.frame).toMatchObject({ kind: 'warpedSquare', settings: { rounds: 8 } })
+    expect(result.project.frame).toMatchObject({ shape: 'warpedSquare', settings: { rounds: 8 } })
     expect(result.project.frame!.beads).toEqual(starterDesign(starterById('warpedSquare')))
     expect(result.project.beads).toBe(painted.beads)
     expect(result.project.technique).toBe('loom')
   })
 
-  it('is the same Frame as an empty Custom frame of that kind and size', () => {
+  it('is the same Frame as an empty Custom frame of that Frame shape and size', () => {
     const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? result.project.frame : undefined)
     const empty = frameOf(placedStarter(open, starterById('kaleidocycle'), { sizes: { partSize: 9 }, useDesign: false }, { row: 0, column: 0 }))
-    expect(empty).toMatchObject({ kind: 'kaleidocycle', beads: {} })
-    expect(empty).toEqual(frameOf(changeFrame(open, { custom: { kind: 'kaleidocycle', size: 9, centre: { row: 0, column: 0 } } })))
+    expect(empty).toMatchObject({ shape: 'kaleidocycle', beads: {} })
+    expect(empty).toEqual(frameOf(changeFrame(open, { custom: { shape: 'kaleidocycle', size: 9, centre: { row: 0, column: 0 } } })))
   })
 
   it('puts a Ring in place through the Frame change that places any Frame, holding its design', () => {

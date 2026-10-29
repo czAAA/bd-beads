@@ -1,12 +1,12 @@
 import type { Rect } from './canvas'
-import type { KindedSheet } from './frameKind'
+import type { ShapedSheet } from './frameShape'
 import { layoutNeighbors, layoutPosition, layoutPositionAt, turnedLayout, type FrameLayout, type LayoutPoint, type LayoutPosition } from './frameLayout'
 import type { GridDimensions, GridPosition } from './grid'
 import { describeWeave, type Weave } from './weave'
 import { insideBounds, type Box } from './weaveGeometry'
 
-// The Layer geometry (ADR 0078, ticket 0628): one set of questions every Layer answers, the Canvas and each Frame kind
-// alike, in bead widths from the Layer's first position's corner (a cell is 1 wide). A grid answers from its Weave, a
+// The Layer geometry (ADR 0078, ticket 0628): one set of questions every Layer answers, the Canvas and every Frame,
+// with a Frame shape or none, alike, in bead widths from the Layer's first position's corner (a cell is 1 wide). A grid answers from its Weave, a
 // Custom frame from its layout. Editing (ticket 0629), drawing and exports (ticket 0630) ask it.
 
 /** Where a bead lies: its rectangle as an upright bead, and the angle it is turned by about the rectangle's centre
@@ -20,7 +20,7 @@ export interface BeadPlace {
  * frame's layout (ADR 0077). Positions are the Layer's own (a Frame's from its first row and column, a Custom frame's
  * by round and place); points are in bead widths from the Layer's first position's corner. */
 export interface LayerGeometry {
-  /** Whether its positions are a grid's rows and columns (the Canvas, a Rectangular Frame), which a Frame's first row and
+  /** Whether its positions are a grid's rows and columns (the Canvas, a Frame without a shape), which a Frame's first row and
    * column put on the Canvas's and Pieces are found on, and its beads stand upright in them, which rulers number and a
    * chart rules lines between; a Custom frame's are named by round and place, its beads turned to their panels (ADR 0077). */
   readonly grid: boolean
@@ -43,7 +43,7 @@ export interface LayerGeometry {
   seams(): readonly (readonly [LayoutPoint, LayoutPoint])[]
 }
 
-/** A Layer laid out by its Weave: the Canvas (open, with no `bounds`), a Rectangular Frame (its own rows and columns from
+/** A Layer laid out by its Weave: the Canvas (open, with no `bounds`), a Frame without a shape (its own rows and columns from
  * 0, 0), or any rectangle of a Weave's positions whose edge is the Layer's. Its answers are the Weave description's
  * (ticket 0623), cut to the edge. */
 export function gridGeometry(weave: Weave, bounds?: Rect): LayerGeometry {
@@ -101,7 +101,7 @@ export interface LayoutPlacement {
 }
 
 /** A Custom frame's layout as placed in its rectangle of its Weave's cells. */
-export function layoutPlacement(layout: FrameLayout, frame: Pick<KindedSheet, 'rows' | 'columns'>, weave: Weave): LayoutPlacement {
+export function layoutPlacement(layout: FrameLayout, frame: Pick<ShapedSheet, 'rows' | 'columns'>, weave: Weave): LayoutPlacement {
   const description = describeWeave(weave)
   const extent = description.blockExtent(frame.columns, frame.rows, 1, description.cellAspect)
   const scale = Math.min(1, extent.width / layout.width, extent.height / layout.height)
@@ -109,9 +109,9 @@ export function layoutPlacement(layout: FrameLayout, frame: Pick<KindedSheet, 'r
 }
 
 /** A Custom frame laid out by its layout (ADR 0077), placed in its rectangle as `layoutPlacement` puts it: a bead a
- * cell wide, as deep as the Bead shape's cell where the rounds leave it room, turned to its panel. Its kind's own
- * geometry (`frameGeometry`). */
-export function layoutGeometry(layout: FrameLayout, frame: KindedSheet): LayerGeometry {
+ * cell wide, as deep as the Bead shape's cell where the rounds leave it room, turned to its panel. Its Frame shape's
+ * own geometry (`frameGeometry`). */
+export function layoutGeometry(layout: FrameLayout, frame: ShapedSheet): LayerGeometry {
   const { scale, x, y } = layoutPlacement(layout, frame, frame)
   const description = describeWeave(frame)
   const width = scale
@@ -141,9 +141,9 @@ export function layoutGeometry(layout: FrameLayout, frame: KindedSheet): LayerGe
   }
 }
 
-/** What a plain Frame's turned grid is built from: its own rows and columns, its Weave with the Bead shape's cell, and
+/** What a Frame's turned grid is built from: its own rows and columns, its Weave with the Bead shape's cell, and
  * how many quarter turns clockwise it lies at. */
-type TurnedGrid = Pick<KindedSheet, 'rows' | 'columns' | 'quarterTurns'> & Weave
+type TurnedGrid = Pick<ShapedSheet, 'rows' | 'columns' | 'quarterTurns'> & Weave
 
 /** A point of a block `width` by `height` turned `turns` quarters clockwise with y down, as `turnedLayout` turns one. */
 function turnPoint({ x, y }: LayoutPoint, width: number, height: number, turns: number): LayoutPoint {
@@ -171,7 +171,7 @@ function coveringSize(description: ReturnType<typeof describeWeave>, width: numb
   return { rows, columns }
 }
 
-/** A plain Frame's own grid turned (Rotate Frame, ADR 0079, ticket 0667): its size as it lies, its rectangle on the
+/** A Frame's own grid turned (Rotate Frame, ADR 0079, ticket 0667): its size as it lies, its rectangle on the
  * Canvas in its own Weave's cells, and where the turned grid sits in that rectangle, centred as a Custom frame's layout
  * is (`layoutPlacement`). */
 function turnedGridPlacement(sheet: TurnedGrid) {
@@ -186,7 +186,7 @@ function turnedGridPlacement(sheet: TurnedGrid) {
   return { description, aspect, turns, own, laid, scale, x: (extent.width - lying.width * scale) / 2, y: (extent.height - lying.height * scale) / 2 }
 }
 
-/** The rows and columns of its own Weave's cells a plain Frame covers on the Canvas as it lies (ticket 0667): its own
+/** The rows and columns of its own Weave's cells a Frame without a shape covers on the Canvas as it lies (ticket 0667): its own
  * where it is upright, else those of its turned grid. Width and Height swap as seen. */
 export function turnedGridSize(sheet: TurnedGrid): GridDimensions {
   return sheet.quarterTurns ? turnedGridPlacement(sheet).laid : { rows: sheet.rows, columns: sheet.columns }
@@ -197,7 +197,7 @@ export function turnedGridSize(sheet: TurnedGrid): GridDimensions {
 const gridLayouts = new Map<string, FrameLayout>()
 const GRID_LAYOUTS_KEPT = 4
 
-/** A plain Frame's own grid as a layout (ticket 0667): each of its positions upright at its centre, one panel, turned as
+/** A Frame's own grid as a layout (ticket 0667): each of its positions upright at its centre, one panel, turned as
  * the Frame lies. What a Selection, Paste and Rotate over a turned Frame land beads by, as on a Custom frame. */
 export function turnedGridLayout(sheet: TurnedGrid): FrameLayout {
   const { description, aspect, turns, own } = turnedGridPlacement(sheet)
@@ -217,10 +217,9 @@ export function turnedGridLayout(sheet: TurnedGrid): FrameLayout {
   return turnedLayout(base, turns)
 }
 
-/** A plain Frame's Layer geometry once Rotate Frame has turned it (ADR 0079, ticket 0667): its beads keep their own rows
- * and columns, and its grid is drawn turned with them in its rectangle, so its positions are no longer the Canvas's
- * (not `grid`). Its positions, a Fill's neighbours and which positions it holds are its own grid's; where a bead lies and
- * which bead a point is on are the grid's turned. */
+/** A Frame's Layer geometry once Rotate Frame has turned it (ADR 0079, ticket 0667): its positions and a Fill's
+ * neighbours are its own grid's, drawn turned in its rectangle, so they are no longer the Canvas's (not `grid`); where a
+ * bead lies and which bead a point is on are the grid's turned. */
 export function turnedGridGeometry(sheet: TurnedGrid): LayerGeometry {
   const upright = gridGeometry(sheet, { row: 0, column: 0, rows: sheet.rows, columns: sheet.columns })
   const { description, aspect, turns, own, laid, scale, x, y } = turnedGridPlacement(sheet)

@@ -20,7 +20,7 @@ import { controlAction, controlDeps } from '../../composables/shell/controlRegis
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { seenSize } from '../../domain/frameOrientation'
-import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameKind'
+import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { resolveProjectBead } from '../../domain/projectBead'
 import { rowProgressStarted } from '../../domain/rowProgress'
@@ -62,19 +62,19 @@ const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
 const frame = computed(() => props.project.frame)
-/** A plain Frame lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
+/** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
 const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
 /** Whether the size fields are off, and why: finished rows, or a turned Frame. */
 const sizeHeld = computed(() => locked.value || turned.value)
 
 /** A Custom frame's settings in place of Width and Height (tickets 0592, 0593, 0597), each its value, its range now and
  * its words: Rounds, Part size or Rows, or a Fringe earring's Top width, Top rows and Fringe length; none for a
- * Rectangular Frame. */
+ * Frame without a Frame shape. */
 const settings = computed(() => (frame.value ? settingValuesOf(frame.value).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
 /** A Fringe earring's Fringe style and its options, the setup's names (ticket 0597); none for any other Frame. */
 const fringeStyle = computed(() => frame.value && fringeStyleOf(frame.value))
 const fringeOptions = computed(() => FRINGE_STYLES.map((value) => ({ value, label: t.value.starters.picks.fringeStyle.options[value] })))
-/** Whether the Frame can be turned a quarter: its kind allows it (a Custom frame too, ticket 0594). */
+/** Whether the Frame can be turned a quarter: it allows it (a Custom frame too, ticket 0594). */
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 
 /** The edge the last press stepped, lit in its cell. */

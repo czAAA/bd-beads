@@ -10,7 +10,7 @@ const aspectOf = (weave: Weave): number => weave.cell?.aspect ?? 1
 /** The Canvas positions a Frame hides and takes presses from (ADR 0066): its own rectangle where both layers are woven
  * alike, else the rows whose middle lies inside what the Frame draws, which is shorter or taller than `rows` Canvas rows
  * where it is woven otherwise. A turned Frame covers the rectangle it lies in (ticket 0667). */
-export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick<FrameSheet, 'kind' | 'quarterTurns'>>): Rect {
+export function frameFootprint(canvas: Weave, sheet: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'quarterTurns'>>): Rect {
   // Both layers are drawn in the Project's Bead shape, whose cell the Canvas's Weave carries.
   const laid = laidRect({ ...sheet, cell: sheet.cell ?? canvas.cell })
   const frame = { ...sheet, rows: laid.rows, columns: laid.columns }

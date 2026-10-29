@@ -634,7 +634,7 @@ export const zh: Translations = {
     announceMoved: '边框已连同珠子一起移动',
     announceNothingToFit: '还没有画任何东西，无法让边框贴合',
     refusedCutsSchema: '边框不能切开图案“{name}”。要么整个框住，要么都不框。',
-    customKinds: { fringeEarring: '流苏耳环', triangle: '三角形', warpedSquare: '弯曲方形', star: '星形', kaleidocycle: '万花筒环', kite: '风筝' },
+    shapes: { fringeEarring: '流苏耳环', triangle: '三角形', warpedSquare: '弯曲方形', star: '星形', kaleidocycle: '万花筒环', kite: '风筝' },
     sizeSettings: {
       topWidth: { label: '顶部宽度', less: '底排少一颗', more: '底排多一颗', summary: { other: '顶部 {count}' }, announce: '顶部宽度：{count}' },
       topRows: { label: '顶部行数', less: '少一行', more: '多一行', summary: { other: '顶部 {count} 行' }, announce: '顶部行数：{count}' },
@@ -663,7 +663,7 @@ export const zh: Translations = {
     },
     fringeStyle: { label: '流苏样式', announce: '流苏样式：{style}' },
     removeConfirmCustom: '其中的珠子会随边框一起移除。此操作可以撤销。',
-    announceCustom: '边框「{kind}」，{size}',
+    announceCustom: '边框「{shape}」，{size}',
     snapAddedTop: {
       other: '在上方添加了 {count} 行空白：边框必须从未错位的行开始。',
     },

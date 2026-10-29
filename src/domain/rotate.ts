@@ -1,6 +1,6 @@
 import type { GridPosition, Rotation } from './grid'
 import { colorAt, forEachBead, frameContains, shiftedBeads, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
-import type { QuarterTurns } from './frameKind'
+import type { QuarterTurns } from './frameShape'
 import { laidSize } from './frameOrientation'
 import { snapRow } from './frame'
 import { layerSheet, onLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
@@ -176,11 +176,9 @@ export function coveredByRotation(before: Pick<LayerSheet, 'beads'>, after: Pick
   return covered
 }
 
-/** Rotate Frame (tickets 471, 0667, ADR 0052, 0079): the Frame turned a quarter clockwise on the Canvas about its
- * centre, like a sheet of A4 turned on an A1. It steps the Frame's orientation: its beads keep their own rows and
- * columns, so nothing is rewritten in any Technique and no row snaps, and Row progress, being the same beads, keeps its
- * pointers. What it covers on the Canvas turns; the Canvas under it is not touched. A Custom frame turns its layout so
- * (ticket 0594). No Frame: undefined. */
+/** Rotate Frame (tickets 471, 0594, 0667, ADR 0052, 0079): the Frame's orientation a quarter clockwise about its centre,
+ * like a sheet of A4 turned on an A1. Its beads keep their own rows and columns, so nothing is rewritten and no row snaps,
+ * and Row progress keeps its pointers; what it covers turns, the Canvas under it untouched. No Frame: undefined. */
 export function rotateFrame(project: Project): Project | undefined {
   const custom = turnedCustomFrame(project)
   if (custom) return custom

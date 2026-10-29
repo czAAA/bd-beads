@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { changeFrame } from '../domain/changeFrame'
-import { frameLayoutOf } from '../domain/frameKind'
+import { frameLayoutOf } from '../domain/frameShape'
 import { onLayer } from '../domain/layers'
 import { createProject } from '../domain/createProject'
 import { paintCells } from '../domain/drawing'
@@ -191,7 +191,7 @@ describe('a Custom frame\'s chart page (ticket 0594)', () => {
   /** A peyote Triangle of 9 rounds on a loom Canvas, its inner rounds painted dark and its 4th round White. */
   function triangle(): Project {
     const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-    const placed = changeFrame(open, { custom: { kind: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
+    const placed = changeFrame(open, { custom: { shape: 'triangle', size: 9, centre: { row: 20, column: 20 } } })
     if (placed.kind !== 'changed') throw new Error('expected a Triangle')
     const positions = frameLayoutOf(placed.project.frame!)!.positions
     const dark = onLayer(placed.project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row < 3), DARK))

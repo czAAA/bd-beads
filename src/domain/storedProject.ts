@@ -1,7 +1,7 @@
 import { beadCopy, findBead, readBeadCopy, type Bead } from './beads'
 import { beadsFromColors, type FrameSheet } from './canvas'
 import { normalizeHex } from './color'
-import { DEFAULT_FRAME_KIND, isFrameKind, settingsOf, type KindedSheet } from './frameKind'
+import { isFrameShape, settingsOf, type ShapedSheet } from './frameShape'
 import type { Rotation } from './grid'
 import { isSettingsMap, unflattened, type FlatWeave, type SavedProject } from './flatWeave'
 import { frameWeave, weaveOf } from './layerWeave'
@@ -90,9 +90,9 @@ export function normalizeProject(stored: StoredProject): Project {
   const pieceNames = readPieceNames(legacy.pieceNames)
   const canvas = readWeave(technique, rest)
   // A Frame stored before it had a Weave of its own (ticket 492) takes the Project's.
-  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...unflattened(readFrameKind(project.frame)), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
+  const placed = { beads: project.beads ?? {}, ...(project.frame ? { frame: { ...unflattened(readFrameShape(project.frame)), beads: project.frame.beads ?? {}, ...readFrameWeave(project.frame, canvas) } } : {}) }
   const { rows, columns } = placed.frame ?? projectFrame(placed)
-  const sheet: KindedSheet = { ...frameWeave({ ...canvas, ...placed }), ...laidOf(placed.frame), rows, columns }
+  const sheet: ShapedSheet = { ...frameWeave({ ...canvas, ...placed }), ...laidOf(placed.frame), rows, columns }
 
   return {
     ...withoutNames,
@@ -143,16 +143,15 @@ function readWeave(technique: Technique, { techniqueSettings }: FlatWeave): Weav
   return weaveOf({ technique, ...(isSettingsMap(techniqueSettings) ? { techniqueSettings } : {}) })
 }
 
-/** A stored Frame with its kind kept only where it is one this build knows and not Rectangular, the default left
- * unsaved (ticket 0591): one without, or with one it does not know, reads as Rectangular. A Custom frame keeps its
- * settings, read within its kind's range (ticket 0592); a Rectangular one has none. Any Frame keeps its orientation
- * (tickets 0594, 0667); one saved before a plain Frame had one was turned by rewriting its beads, and opens upright. */
-function readFrameKind({ kind, settings: stored, quarterTurns, ...frame }: FrameSheet): FrameSheet {
+/** A stored Frame with its Frame shape kept only where it is one this build knows (ticket 0591), else read as a Frame
+ * without one. A Custom frame keeps its settings, read within its shape's range (ticket 0592), and any Frame its
+ * orientation (tickets 0594, 0667); one turned before 0667 had its beads rewritten, and opens upright. */
+function readFrameShape({ shape, settings: stored, quarterTurns, ...frame }: FrameSheet): FrameSheet {
   // Rotate Frame's turn: one, two or three quarters; anything else reads as none.
   const turned = quarterTurns === 1 || quarterTurns === 2 || quarterTurns === 3 ? { quarterTurns } : {}
-  if (!isFrameKind(kind) || kind === DEFAULT_FRAME_KIND) {
+  if (!isFrameShape(shape)) {
     return { ...frame, ...turned }
   }
-  const settings = settingsOf({ kind, settings: stored })
-  return { ...frame, kind, ...(settings ? { settings } : {}), ...turned }
+  const settings = settingsOf({ shape, settings: stored })
+  return { ...frame, shape, ...(settings ? { settings } : {}), ...turned }
 }

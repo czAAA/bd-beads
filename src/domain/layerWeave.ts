@@ -1,33 +1,23 @@
 import type { GridPosition, Layer } from './grid'
+import { weaveOfLayer } from './layerRecord'
 import type { Project } from './project'
-import { projectCell, type ShapedBead } from './projectBead'
-import { heldSettings, positionStep, weaveSettings, withCell, type Weave } from './weave'
+import type { ShapedBead } from './projectBead'
+import { positionStep, weaveSettings, type Weave } from './weave'
 
-// The Weave each layer is woven in (ticket 492): the Canvas's from the Project's own fields, the Frame's from its own,
-// and how a distance in one reads in the other.
+export { unwoven, weaveOf } from './layerRecord'
 
-/** A layer's Weave as its record holds it (ticket 0625): its Technique and its settings map, read from that map alone
- * and left out where it holds none. A Frame's other fields are left out. */
-export function weaveOf({ technique, techniqueSettings }: Weave): Weave {
-  const settings = heldSettings(technique, techniqueSettings)
-  return Object.keys(settings).length > 0 ? { technique, techniqueSettings: settings } : { technique }
-}
+// The Weave each layer is woven in (ticket 492), read through the layer's record (ticket 0661), and how a distance in
+// one reads in the other.
 
-/** A layer's record without its Weave's settings: what a new Weave is written over. */
-export function unwoven<T extends Partial<Weave>>(record: T): Omit<T, 'techniqueSettings'> {
-  const { techniqueSettings: _settings, ...rest } = record
-  return rest
-}
-
-/** The Canvas's Weave: the Project's own Technique and settings (tickets 492, 0625). */
+/** The Canvas's Weave (tickets 492, 0625). */
 export function canvasWeave(project: Pick<Project, 'technique' | 'techniqueSettings'> & ShapedBead): Weave {
-  return withCell(weaveOf(project), projectCell(project))
+  return weaveOfLayer(project, 'canvas')
 }
 
 /** The Frame's Weave (ticket 492), which may differ from the Canvas's; a Canvas with no Frame counts its rows in its
  * own. The one place that says which Weave a Frame's rows, rulers, passes and exports are counted in. */
 export function frameWeave(project: Pick<Project, 'technique' | 'techniqueSettings' | 'frame'> & ShapedBead): Weave {
-  return withCell(weaveOf(project.frame ?? project), projectCell(project))
+  return weaveOfLayer(project, 'frame') ?? canvasWeave(project)
 }
 
 /** The Weave of one layer, the Frame's or the Canvas's (ticket 0625). */

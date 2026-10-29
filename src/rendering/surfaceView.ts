@@ -1,7 +1,7 @@
 import { frameContains, type Rect, type FrameSheet } from '../domain/canvas'
 import { rotationSwapsAxes, type GridPosition, type Rotation } from '../domain/grid'
 import { frameFootprint } from '../domain/footprint'
-import { frameGeometry } from '../domain/frameKind'
+import { frameGeometry } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
 import { gridGeometry, type LayerGeometry } from '../domain/layerGeometry'
 import { describeWeave, type BeadCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
@@ -142,7 +142,7 @@ export interface SurfaceViewInput {
   cell?: BeadCell
   /** The Frame on the Canvas with its own Weave (ticket 492): a view that has one lays it out in its own geometry, from
    * its top-left position's corner. Left out, the view is one layer: the Canvas, or the Frame alone in an own space. */
-  frame?: Rect & Weave & Partial<Pick<FrameSheet, 'kind' | 'settings' | 'quarterTurns'>>
+  frame?: Rect & Weave & Partial<Pick<FrameSheet, 'shape' | 'settings' | 'quarterTurns'>>
   rotation: Rotation
   zoom: number
   /** Where the viewport's top-left corner is in displayed space; nothing when left out. */
@@ -177,7 +177,7 @@ export interface SurfaceView {
    * press is refused as on the keep-out margin. */
   offShapeAt(point: Scroll): boolean
   /** The Frame's cell under a point on a Custom frame, on a bead or not (ticket 0594): what the Select tool marks out
-   * there, a rectangle on screen; none off the Frame or on a Rectangular one. */
+   * there, a rectangle on screen; none off the Frame or on one without a shape. */
   frameCellAt(point: Scroll): (GridPosition & { layer: 'frame' }) | undefined
   /** The bead position nearest a point, gaps and rounded corners included, in a layer's geometry: what dragging a Frame
    * needs. */
