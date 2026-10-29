@@ -1,4 +1,5 @@
 import { test, type CDPSession, type Page } from '@playwright/test'
+import { busyMs, startFrameCounter, stopFrameCounter, throttle } from './measure'
 import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, convertPicture } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
@@ -36,41 +37,6 @@ interface Result {
   note?: string
 }
 const results: Result[] = []
-
-async function throttle(page: Page, slowdown: number): Promise<CDPSession> {
-  const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Emulation.setCPUThrottlingRate', { rate: slowdown })
-  await cdp.send('Performance.enable')
-  return cdp
-}
-
-async function busyMs(cdp: CDPSession): Promise<number> {
-  const { metrics } = await cdp.send('Performance.getMetrics')
-  return (metrics.find((metric) => metric.name === 'TaskDuration')?.value ?? 0) * 1000
-}
-
-/** Counts frames in the page until stopped. */
-async function startFrameCounter(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    const counter = { frames: 0, running: true }
-    ;(window as unknown as { __frames: typeof counter }).__frames = counter
-    const tick = () => {
-      counter.frames += 1
-      if (counter.running) {
-        requestAnimationFrame(tick)
-      }
-    }
-    requestAnimationFrame(tick)
-  })
-}
-
-async function stopFrameCounter(page: Page): Promise<number> {
-  return page.evaluate(() => {
-    const counter = (window as unknown as { __frames: { frames: number; running: boolean } }).__frames
-    counter.running = false
-    return counter.frames
-  })
-}
 
 /** Runs `step` over and over for BURST_MS, and reports the frame rate and the main-thread cost per frame. */
 async function burst(page: Page, cdp: CDPSession, step: (index: number) => Promise<void>): Promise<{ fps: number; ms: number }> {
