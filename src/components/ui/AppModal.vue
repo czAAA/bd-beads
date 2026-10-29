@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref, useId } from 'vue'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
+import { wouldRaiseKeyboard } from '../../composables/ui/touchKeyboard'
 
 // The design system's Modal (tickets 76, 0646; Modal card): a centered dialog over a scrim, 420 or 560px, or `large`.
 // The parent mounts it with `v-if` and decides what cancelling means; Escape and (unless `backdrop` is `swallow`) a scrim
@@ -63,31 +64,25 @@ function onKeydown(event: KeyboardEvent) {
   }
 }
 
-/** Focus that leaves the dialog some other way (a click on the page behind, say) is brought back. */
+/** Focus that leaves the dialog some other way (a click on the page behind, the panel that opened it giving focus back
+ * to its button) is brought back: to the first control, or the dialog itself where that would raise a touch keyboard
+ * (ticket 0688). */
 function onFocusIn(event: FocusEvent) {
   const target = event.target as Node | null
   if (dialogEl.value && target && !dialogEl.value.contains(target)) {
-    ;(focusables()[0] ?? dialogEl.value).focus({ preventScroll: true })
+    const first = focusables()[0]
+    ;(first && !wouldRaiseKeyboard(first) ? first : dialogEl.value).focus({ preventScroll: true })
   }
-}
-
-const NON_TEXT_INPUTS = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'color', 'file', 'image'])
-
-/** A control that raises the virtual keyboard when focused. */
-function isTextEntry(el: HTMLElement | undefined): boolean {
-  if (el instanceof HTMLTextAreaElement) return true
-  return el instanceof HTMLInputElement && !NON_TEXT_INPUTS.has(el.type)
 }
 
 onMounted(() => {
   opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
-  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
   let start =
     props.initialFocus === 'dialog'
       ? dialogEl.value
       : (dialogEl.value?.querySelector<HTMLElement>('[data-autofocus]') ?? focusables()[0] ?? dialogEl.value)
   // On a touch device a start on a text entry starts on the dialog, so the keyboard waits for a tap (ticket 516).
-  if (touch && isTextEntry(start)) start = dialogEl.value
+  if (wouldRaiseKeyboard(start)) start = dialogEl.value
   start?.focus({ preventScroll: true })
   document.addEventListener('focusin', onFocusIn)
 })
