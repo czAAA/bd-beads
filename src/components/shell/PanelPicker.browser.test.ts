@@ -4,6 +4,7 @@ import { BEAD_CATALOG } from '../../domain/beads'
 import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { mountAt, type FitLocale } from '../../testUtils/browserFit'
+import { withFields } from '../../testUtils/flatFields'
 import { settleForMeasuring } from '../../testUtils/textFitInPage'
 import MarginSheet from '../canvas/MarginSheet.vue'
 import NewProjectForm from '../project/NewProjectForm.vue'
@@ -12,11 +13,10 @@ import NewProjectForm from '../project/NewProjectForm.vue'
 // pushed the button aside (the margin title block sits in the sheet's bottom-right corner, so its pencil went left) and
 // the list was left where the button had been.
 const bead = BEAD_CATALOG.find((candidate) => candidate.id === 'toho/cube/1.5mm')!
-const project: Project = {
-  ...createProject({ technique: 'loom', beadId: bead.id, name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }),
+const project: Project = withFields(createProject({ technique: 'loom', beadId: bead.id, name: 'Moth', size: { width: 12, height: 12, unit: 'beads' } }), {
   makerName: 'Ada',
   frame: { row: 0, column: 0, rows: 8, columns: 30, technique: 'loom', beads: {}, name: 'Sun band' },
-}
+})
 const anchor = { box: { left: 65, top: 65, width: 554, height: 158 }, sheet: { left: 0, top: 0, width: 684, height: 288 }, band: 72, viewport: { width: 684, height: 288 } }
 const SheetHost = defineComponent({
   setup: () => () => h('div', { style: { position: 'relative', width: '100%', height: '320px' } }, [h(MarginSheet, { project, anchor, editing: false, pressing: false })]),
