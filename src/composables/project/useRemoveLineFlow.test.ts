@@ -8,7 +8,7 @@ import { useDialogs } from '../shell/useDialogs'
 import { en } from '../../i18n/en'
 import { useRemoveLineFlow } from './useRemoveLineFlow'
 import { frameOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { sheetOf, withFields } from '../../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const secondRow: Selection = { top: 1, left: 0, rows: 1, columns: 4 }
@@ -52,7 +52,7 @@ describe('useRemoveLineFlow', () => {
     expect(rowProgressOf(harness.project).currentRow).toBe(1)
 
     harness.history.onUndo()
-    expect(frameOf(harness.project)).toEqual(frameOf(woven))
+    expect(sheetOf(harness.project)).toEqual(sheetOf(woven))
     expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
   })
 
@@ -88,7 +88,7 @@ describe('useRemoveLineFlow', () => {
     expect(harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
 
     harness.history.onUndo()
-    expect(frameOf(harness.project)).toEqual(frameOf(base))
+    expect(sheetOf(harness.project)).toEqual(sheetOf(base))
   })
 
   it('does nothing without a line selected', () => {

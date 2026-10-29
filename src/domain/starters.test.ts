@@ -25,8 +25,8 @@ import {
   usRingSize,
   type StarterManifest,
 } from './starters'
-import { beadsOfLayer, canvasOf, frameOf, frameOf as layerFrame } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
+import { sheetOf, withFields } from '../testUtils/flatFields'
 
 const beadId = 'miyuki/delica/11-0'
 const delica = findBead(beadId)!
@@ -205,12 +205,12 @@ describe('a Starter put on an open Project', () => {
     if (result.kind !== 'changed') throw new Error(result.kind)
     expect(frameOf(result.project)).toMatchObject({ shape: 'warpedSquare', settings: { rounds: 8 } })
     expect(frameOf(result.project)!.beads).toEqual(starterDesign(starterById('warpedSquare')))
-    expect(beadsOfLayer(result.project, 'canvas')).toBe(painted.beads)
+    expect(beadsOfLayer(result.project, 'canvas')).toBe(beadsOfLayer(painted, 'canvas'))
     expect(canvasOf(result.project).technique).toBe('loom')
   })
 
   it('is the same Frame as an empty Custom frame of that Frame shape and size', () => {
-    const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? layerFrame(result.project) : undefined)
+    const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? sheetOf(result.project) : undefined)
     const empty = frameOf(placedStarter(open, starterById('kaleidocycle'), { sizes: { partSize: 9 }, useDesign: false }, { row: 0, column: 0 }))
     expect(empty).toMatchObject({ shape: 'kaleidocycle', beads: {} })
     expect(empty).toEqual(frameOf(changeFrame(open, { custom: { shape: 'kaleidocycle', size: 9, centre: { row: 0, column: 0 } } })))
@@ -218,7 +218,7 @@ describe('a Starter put on an open Project', () => {
 
   it('puts a Ring in place through the Frame change that places any Frame, holding its design', () => {
     const ring = starterById('ringDiamonds')
-    const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? layerFrame(result.project) : undefined)
+    const frameOf = (result: FrameChangeResult) => (result.kind === 'changed' ? sheetOf(result.project) : undefined)
     const frame = { row: 47, column: 32, rows: 7, columns: 36 }
     const placed = frameOf(changeFrame(open, { place: { frame, weave: weaveOf({ technique: 'peyote' }), beads: starterDesign(ring) } }))
     expect(placed?.beads).toEqual(starterDesign(ring))

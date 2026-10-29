@@ -7,7 +7,7 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateFrameFlow } from './useRotateFrameFlow'
 import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { sheetOf, withFields } from '../../testUtils/flatFields'
 
 const GREEN = '#00aa00'
 const RED = '#e63746'
@@ -38,7 +38,7 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
-    expect(frameOf(harness.project)).toEqual(frameOf(framed))
+    expect(sheetOf(harness.project)).toEqual(sheetOf(framed))
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -66,7 +66,7 @@ describe('useRotateFrameFlow (tickets 471, 0667, ADR 0066, 0079)', () => {
     expect(deps.announce).toHaveBeenCalledWith('Frame rotated')
 
     harness.history.onUndo()
-    expect(frameOf(harness.project)).toEqual(frameOf(woven))
+    expect(sheetOf(harness.project)).toEqual(sheetOf(woven))
     expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(woven))
   })
 

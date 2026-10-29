@@ -8,7 +8,7 @@ import { restoreSnapshot, snapshotOf } from './undoSnapshot'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { flatView, sheetOf, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 const roundBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/round/11-0')!
@@ -24,7 +24,7 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(beadsOfLayer(restored, 'canvas')).toBe(beadsOfLayer(before, 'canvas'))
     expect(rowProgressOf(restored)).toEqual(rowProgressOf(before))
     expect(canvasOf(restored).beadId).toBe(canvasOf(before).beadId)
-    expect(frameOf(restored)).toEqual(frameOf(before))
+    expect(sheetOf(restored)).toEqual(sheetOf(before))
   })
 
   it('put back the Canvas\'s whole Weave: its Technique and every setting, and none it did not have (ticket 0624)', () => {
@@ -35,7 +35,7 @@ describe('snapshotOf and restoreSnapshot', () => {
     expect(canvasOf(undone).technique).toBe('peyote')
     expect(canvasOf(undone).techniqueSettings).toBeUndefined()
     const redone = restoreSnapshot(peyote, snapshotOf(brick))
-    expect(redone).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
+    expect(flatView(redone)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 4 } })
     expect(canvasOf(redone).techniqueSettings).toEqual({ brickBlock: 4 })
   })
 

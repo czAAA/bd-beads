@@ -10,6 +10,6 @@ const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 describe('what a drawing edit may leave', () => {
   it('does nothing with no Frame', () => {
     const painted = withFields(open, { beads: withColors(beadsOfLayer(open, 'canvas'), [{ row: 1, column: 1, color: '#ff0000' }]) })
-    expect(beadsOfLayer(keepAllowedEdits(open, painted), 'canvas')).toEqual(painted.beads)
+    expect(beadsOfLayer(keepAllowedEdits(open, painted), 'canvas')).toEqual(beadsOfLayer(painted, 'canvas'))
   })
 })

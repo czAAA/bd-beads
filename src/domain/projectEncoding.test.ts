@@ -8,7 +8,7 @@ import type { Grid, Project } from './project'
 import { decodeEarlierProject, decodeProject, encodeProject } from './projectEncoding'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { sheetOf, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -200,7 +200,7 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(frameOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
+    expect(sheetOf(read)).toEqual({ technique: 'loom', row: 0, column: 0, columns: 3, rows: 2, beads: { 0: { 0: '#ff0000' }, 1: { 1: '#00ff00' } } })
     expect(beadsOfLayer(read, 'canvas')).toEqual({})
   })
 
@@ -215,7 +215,7 @@ describe('encodeProject / decodeProject', () => {
 
     const read = normalizeProject(decodeEarlierProject(stored))
 
-    expect(frameOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
+    expect(sheetOf(read)).toEqual({ technique: 'loom', row: 10, column: 10, rows: 2, columns: 2, beads: { 0: { 0: '#ff0000' } } })
     expect(beadsOfLayer(read, 'canvas')).toEqual({ 10: { 12: '#00ff00' }, 11: { 11: '#0000ff' }, 40: { 40: '#00ff00' } })
     expect(read).not.toHaveProperty('coveredBeads')
   })

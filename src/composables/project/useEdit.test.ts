@@ -11,7 +11,7 @@ import { BEAD_CATALOG } from '../../domain/beads'
 import { editHarness } from '../../testUtils/editHarness'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, canvasOf, frameOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { sheetOf, withFields } from '../../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 const frame = frameOf(base)!
@@ -80,7 +80,7 @@ describe('useEdit', () => {
       expect(ctx.resetAfterFrameChange).toHaveBeenCalledTimes(1)
 
       ctx.history.onUndo()
-      expect(frameOf(ctx.project)).toEqual(frame)
+      expect(sheetOf(ctx.project)).toEqual(frame)
     })
 
     it('hands back the refusal and records nothing', () => {
@@ -99,7 +99,7 @@ describe('useEdit', () => {
       expect(rowProgressOf(ctx.project)).toMatchObject({ currentRow: 0 })
 
       ctx.history.onUndo()
-      expect(frameOf(ctx.project)).toEqual(frameOf(woven))
+      expect(sheetOf(ctx.project)).toEqual(sheetOf(woven))
       expect(rowProgressOf(ctx.project)).toEqual(rowProgressOf(woven))
       expect(ctx.history.canUndo.value).toBe(false)
     })
@@ -125,7 +125,7 @@ describe('useEdit', () => {
 
       ctx.editing.settle()
       ctx.history.onUndo()
-      expect(frameOf(ctx.project)).toEqual(frame)
+      expect(sheetOf(ctx.project)).toEqual(frame)
       expect(ctx.history.canUndo.value).toBe(false)
     })
 
@@ -137,13 +137,13 @@ describe('useEdit', () => {
       expect(beadColorAt(ctx.project, inside(0, 0).row, inside(0, 0).column)).toBeNull()
       expect(frameOf(ctx.project)).toMatchObject({ rows: frame.rows + 1 })
       ctx.history.onUndo()
-      expect(frameOf(ctx.project)).toEqual(frame)
+      expect(sheetOf(ctx.project)).toEqual(frame)
 
       ctx.editing.hold(grow(1))
       ctx.editing.beginStroke()
       ctx.editing.endStroke()
       ctx.history.onUndo()
-      expect(frameOf(ctx.project)).toEqual(frame)
+      expect(sheetOf(ctx.project)).toEqual(frame)
 
       ctx.history.onRedo()
       ctx.editing.hold(grow(2))

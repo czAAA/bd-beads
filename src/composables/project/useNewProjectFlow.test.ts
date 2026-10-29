@@ -4,6 +4,7 @@ import type { Project } from '../../domain/project'
 import { starterById, starterDesign } from '../../domain/starters'
 import { useNewProjectFlow } from './useNewProjectFlow'
 import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
+import { flatView } from '../../testUtils/flatFields'
 
 const draft: CreateProjectInput = {
   technique: 'loom',
@@ -21,14 +22,14 @@ describe('useNewProjectFlow', () => {
     const { deps, flow } = setup()
     flow.onCreateProject(draft)
     expect(deps.addProject).toHaveBeenCalledOnce()
-    expect(deps.addProject.mock.calls[0][0]).toMatchObject({ frame: { columns: 3, rows: 2 } })
+    expect(flatView(deps.addProject.mock.calls[0][0])).toMatchObject({ frame: { columns: 3, rows: 2 } })
   })
 
   it('creates a Project from a Starter, its design in the Frame (ticket 0596)', () => {
     const { deps, flow } = setup()
     flow.onCreateFromStarter(starterById('triangle'), { name: 'Sun', beadId: 'miyuki/delica/11-0', sizes: { rounds: 10 }, useDesign: true })
     const created = deps.addProject.mock.calls[0][0]
-    expect(created).toMatchObject({ name: 'Sun', frame: { shape: 'triangle', settings: { rounds: 10 } } })
+    expect(flatView(created)).toMatchObject({ name: 'Sun', frame: { shape: 'triangle', settings: { rounds: 10 } } })
     expect(frameOf(created)!.beads).toEqual(starterDesign(starterById('triangle')))
   })
 

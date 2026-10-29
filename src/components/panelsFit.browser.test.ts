@@ -18,6 +18,7 @@ import { createProject } from '../domain/createProject'
 import type { Project } from '../domain/project'
 import { rowProgressOf } from '../domain/rowProgress'
 import { withFields } from '../testUtils/flatFields'
+import { frameOf } from '../domain/layerRecord'
 
 // The strip, the Project and Menu panels, the dialogs and the forms, in every language at the layout's width edges
 // (ticket 552).

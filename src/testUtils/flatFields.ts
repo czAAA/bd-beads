@@ -1,6 +1,7 @@
 import type { FrameSheet } from '../domain/canvas'
 import type { FlatProject } from '../domain/flatWeave'
-import { frameOf, withCanvas, withFrameSheet, withLetters } from '../domain/layerRecord'
+import { canvasOf, frameOf, withCanvas, withFrameSheet, withLetters } from '../domain/layerRecord'
+import { rowProgressOf } from '../domain/rowProgress'
 import type { CanvasLayer, FrameLayer, LayerFields, Project } from '../domain/project'
 import { DEFAULT_BEAD } from '../domain/beads'
 import { DEFAULT_TECHNIQUE } from '../domain/weave'
@@ -55,4 +56,13 @@ export function sheetOf(project: Pick<Project, 'layers'>): FrameSheet | undefine
 export function flatProject(change: FlatChange): Project {
   const canvas: CanvasLayer = { id: 'canvas', name: 'Test', technique: change.technique ?? DEFAULT_TECHNIQUE, beadId: DEFAULT_BEAD.id, beads: {}, orientation: 0 }
   return withFields({ id: 'test', layers: [canvas], palette: [], createdAt: 0, updatedAt: 0 }, change)
+}
+
+/** A Project as the flat record it was before it held its layers (ticket 0664), for a test that matches fields by
+ * those names: the Canvas's own fields, its orientation as `rotation`, the Frame's sheet as `frame` and its Row
+ * progress (the first row without a Frame). */
+export function flatView(project: Project): FlatChange {
+  const { layers: _layers, ...rest } = project
+  const { id: _id, orientation, ...canvas } = canvasOf(project)
+  return { ...rest, ...canvas, rotation: orientation, ...(frameOf(project) ? { frame: sheetOf(project) } : {}), rowProgress: rowProgressOf(project) }
 }

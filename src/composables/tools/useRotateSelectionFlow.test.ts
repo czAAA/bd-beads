@@ -9,7 +9,7 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateSelectionFlow } from './useRotateSelectionFlow'
 import { beadsOfLayer, frameOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { sheetOf, withFields } from '../../testUtils/flatFields'
 
 const GREEN = '#00aa00'
 const RED = '#e63746'
@@ -49,7 +49,7 @@ describe('useRotateSelectionFlow', () => {
     expect(beadsOfLayer(harness.project, 'canvas')).toBe(beadsOfLayer(framed, 'canvas'))
 
     harness.history.onUndo()
-    expect(frameOf(harness.project)).toEqual(frameOf(framed))
+    expect(sheetOf(harness.project)).toEqual(sheetOf(framed))
     expect(harness.history.canUndo.value).toBe(false)
   })
 
@@ -74,7 +74,7 @@ describe('useRotateSelectionFlow', () => {
     expect(deps.onUndo).toHaveBeenCalledTimes(1)
 
     harness.history.onUndo()
-    expect(frameOf(harness.project)).toEqual(frameOf(covering))
+    expect(sheetOf(harness.project)).toEqual(sheetOf(covering))
   })
 
   it('drops what the turn would put outside the Frame, and says nothing for it', () => {

@@ -28,7 +28,7 @@ import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { sheetOf, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -304,7 +304,7 @@ beads: withColors({}, [{ row: 20, column: 20, color: BLUE }, { row: 3, column: 3
     expect(frameOf(inFrame)!.beads[1]).toEqual({ 1: RED, 2: RED })
     const onCanvas = pasteOnLayer(layered(), block, { row: 30, column: 9 })
     expect(beadsOfLayer(onCanvas, 'canvas')[30]).toEqual({ 9: RED, 10: RED, 11: RED })
-    expect(frameOf(onCanvas)).toEqual(frameOf(layered()))
+    expect(sheetOf(onCanvas)).toEqual(sheetOf(layered()))
   })
 
   it('shows the paste preview where the paste would land, in Canvas positions and clipped to the Frame', () => {

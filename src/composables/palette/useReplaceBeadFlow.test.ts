@@ -103,7 +103,7 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
 
   it('shows the copy beside the catalog’s current Bead of the same id when they differ', () => {
     const { replaceBeadOutdated, replaceBeadCandidates } = setup(older)
-    expect(replaceBeadOutdated.value).toEqual(older.bead)
+    expect(replaceBeadOutdated.value).toEqual(canvasOf(older).bead)
     expect(replaceBeadCandidates.value.map((bead) => bead.id)).toContain(current.id)
   })
 
@@ -124,7 +124,7 @@ describe('a Project whose Bead the catalog has changed (ticket 534, ADR 0072)', 
     expect(resolveProjectBead(harness.currentProject()!)).toEqual(current)
     expect(harness.history.canUndo.value).toBe(true)
     harness.history.onUndo()
-    expect(resolveProjectBead(harness.currentProject()!)).toEqual(older.bead)
+    expect(resolveProjectBead(harness.currentProject()!)).toEqual(canvasOf(older).bead)
     expect(harness.history.canUndo.value).toBe(false)
   })
 })

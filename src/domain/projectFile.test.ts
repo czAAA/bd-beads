@@ -20,8 +20,8 @@ import { paintCells } from './drawing'
 import { changeFrame } from './changeFrame'
 import { onLayer } from './layers'
 import { frameGrid } from '../testUtils/frameGrid'
-import { canvasOf, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { canvasOf, frameOf, withLayer } from './layerRecord'
+import { flatView, withFields } from '../testUtils/flatFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -86,7 +86,7 @@ describe('single-Project roundtrip', () => {
     const canvas = withWeave(decoratedProject(), 'canvas', { technique: 'brick', techniqueSettings: { brickBlock: 3 } })
     const project = withWeave(canvas, 'frame', { technique: 'brick', techniqueSettings: { brickBlock: 4 } })
     const [stored] = JSON.parse(serializeProject(project)).projects
-    expect(stored).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { technique: 'brick', techniqueSettings: { brickBlock: 4 } } })
+    expect(flatView(stored)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 }, frame: { technique: 'brick', techniqueSettings: { brickBlock: 4 } } })
     expect(stored).not.toHaveProperty('brickBlock')
     expect(stored.frame).not.toHaveProperty('brickBlock')
   })
@@ -160,8 +160,8 @@ describe('single-Project roundtrip', () => {
   })
 
   it('keeps the Canvas beside the Frame through a file, and the Frame\'s name', () => {
-    const both = withFields(decoratedProject(), { beads: { 40: { 40: '#123456' } } })
-    both.frame = { ...frameOf(both)!, name: 'Cherry' })
+    const painted = withFields(decoratedProject(), { beads: { 40: { 40: '#123456' } } })
+    const both = withLayer(painted, 'frame', { name: 'Cherry' })
 
     expect(parseProjectsFile(serializeProject(both)).projects).toEqual([both])
   })

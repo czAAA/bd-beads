@@ -6,8 +6,8 @@ import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useRotateCanvasFlow } from './useRotateCanvasFlow'
-import { beadsOfLayer, canvasOf, frameOf, orientationOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { beadsOfLayer, canvasOf, orientationOf } from '../../domain/layerRecord'
+import { sheetOf, withFields } from '../../testUtils/flatFields'
 
 const base = createProject({ technique: 'peyote', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 const framed: Project = withFields(base, {
@@ -36,7 +36,7 @@ describe('useRotateCanvasFlow (ticket 471)', () => {
     const { harness, onRotateCanvas } = setup()
     onRotateCanvas()
     expect(beadsOfLayer(harness.project, 'canvas')).toEqual(beadsOfLayer(framed, 'canvas'))
-    expect(frameOf(harness.project)).toEqual(frameOf(framed))
+    expect(sheetOf(harness.project)).toEqual(sheetOf(framed))
     expect(canvasOf(harness.project).pieceNames).toEqual(canvasOf(framed).pieceNames)
     expect(rowProgressOf(harness.project)).toEqual(rowProgressOf(framed))
     expect(harness.history.canUndo.value).toBe(false)

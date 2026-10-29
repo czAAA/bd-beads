@@ -37,6 +37,6 @@ describe('naming a Project', () => {
     const original = withFields(moth(), { rowProgress: { direction: 'rows' as const, currentRow: 3, currentColumn: 0 }, makerName: 'Maria' })
     const copy = duplicateProject(original, 'Moth 2', 'copy-id', 5)
     expect(copy).toEqual(withFields(original, { id: 'copy-id', name: 'Moth 2', createdAt: 5, updatedAt: 5 }))
-    expect(rowProgressOf(copy)).not.toBe(original.rowProgress)
+    expect(rowProgressOf(copy)).not.toBe(rowProgressOf(original))
   })
 })

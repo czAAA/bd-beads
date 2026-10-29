@@ -26,13 +26,13 @@ describe('the Frame as its own sheet (ADR 0066)', () => {
     const project = sheet()
     const moved = withFrame(project, { row: 9, column: 9, rows: 3, columns: 4 })
     expect(frameOf(moved)!.beads).toEqual({ 1: { 1: '#111111' } })
-    expect(beadsOfLayer(moved, 'canvas')).toBe(project.beads)
+    expect(beadsOfLayer(moved, 'canvas')).toBe(beadsOfLayer(project, 'canvas'))
   })
 
   it('removes the Frame\'s beads with it', () => {
     const removed = withFrame(sheet(), undefined)
     expect(frameOf(removed)).toBeUndefined()
-    expect(beadsOfLayer(removed, 'canvas')).toEqual(sheet().beads)
+    expect(beadsOfLayer(removed, 'canvas')).toEqual(beadsOfLayer(sheet(), 'canvas'))
   })
 
   it('knows a bead on either layer, and every color of both', () => {

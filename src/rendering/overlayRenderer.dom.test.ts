@@ -19,7 +19,6 @@ import { displayedExtentPx, surfaceView } from './surfaceView'
 import { canvasOf, frameOf, orientationOf, withFrameSheet } from '../domain/layerRecord'
 import { withFields } from '../testUtils/flatFields'
 import { type BeadMap } from '../domain/canvas'
-import { type RowProgress } from '../domain/project'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {

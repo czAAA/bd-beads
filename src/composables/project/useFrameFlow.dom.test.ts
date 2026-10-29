@@ -11,7 +11,7 @@ import { en } from '../../i18n/en'
 import { editHarness } from '../../testUtils/editHarness'
 import { useFrameFlow } from './useFrameFlow'
 import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { flatView, sheetOf, withFields } from '../../testUtils/flatFields'
 
 const sized = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 3, unit: 'beads' } })
 const open = withFrame(sized, undefined)
@@ -69,7 +69,7 @@ describe('useFrameFlow', () => {
     const { deps, draftProject, press, drag, release } = setup(sized)
     press({ kind: 'move' }, { row: 1, column: 1 })
     drag({ row: 2, column: 3 })
-    expect(frameOf(draftProject.value)).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {} })
+    expect(sheetOf(draftProject.value!)).toEqual({ ...sizedRect, technique: 'loom', row: 1, column: 2, beads: {} })
     release()
     expect(draftProject.value).toBe(deps.harness.project)
   })
@@ -118,7 +118,7 @@ describe('useFrameFlow', () => {
     expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual(withColors({}, [{ row: 2, column: 3, color: '#2a9d8f' }]))
     deps.harness.history.onUndo()
     expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual({})
-    expect(frameOf(deps.harness.project)).toEqual(frameOf(start))
+    expect(sheetOf(deps.harness.project)).toEqual(sheetOf(start))
   })
 
   it('folds what a shrinking handle drag gives up on a Frame woven unlike the Canvas, and one Undo unfolds it (ticket 0638)', () => {
@@ -316,7 +316,7 @@ describe('useFrameFlow', () => {
     expect(lastFrame(deps)).toEqual({ row: 3, column: 2, rows: 8, columns: 10 })
     expect(deps.announce).toHaveBeenCalledTimes(1)
     deps.harness.history.onUndo()
-    expect(frameOf(deps.harness.project)).toEqual(big.frame)
+    expect(sheetOf(deps.harness.project)).toEqual(frameOf(big))
 
     const same = setup(big)
     same.resizeTo(6, 6)
@@ -366,7 +366,7 @@ describe('useFrameFlow', () => {
       const { deps, setTechnique } = setup()
       const before = deps.harness.project
       setTechnique('peyote')
-      expect(deps.harness.project).toMatchObject({ technique: 'loom', frame: { ...frameOf(before), technique: 'peyote' }, beads: beadsOfLayer(before, 'canvas') })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'loom', frame: { ...frameOf(before), technique: 'peyote' }, beads: beadsOfLayer(before, 'canvas') })
       expect(deps.harness.resetAfterFrameChange).toHaveBeenCalledTimes(1)
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
       deps.harness.history.onUndo()
@@ -387,7 +387,7 @@ describe('useFrameFlow', () => {
     it('is changed as one announced Undo step, the Frame keeping its own', () => {
       const { deps, setCanvasTechnique } = setup()
       setCanvasTechnique('peyote')
-      expect(deps.harness.project).toMatchObject({ technique: 'peyote', frame: { technique: 'loom' } })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'peyote', frame: { technique: 'loom' } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Peyote')
       deps.harness.history.onUndo()
       expect(canvasOf(deps.harness.project).technique).toBe('loom')
@@ -413,7 +413,7 @@ describe('useFrameFlow', () => {
     it('switches a layer with drawn beads at once, every bead keeping its place, as one Undo step', () => {
       const { deps, setCanvasTechnique } = setup(drawnCanvas)
       setCanvasTechnique('peyote')
-      expect(deps.harness.project).toMatchObject({ technique: 'peyote', beads: drawnCanvas.beads })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'peyote', beads: beadsOfLayer(drawnCanvas, 'canvas') })
       deps.harness.history.onUndo()
       expect(canvasOf(deps.harness.project).technique).toBe('loom')
     })
@@ -430,7 +430,7 @@ describe('useFrameFlow', () => {
       setWeaveSetting('canvas', 'brickBlock', 3)
       setCanvasTechnique('loom')
       setCanvasTechnique('brick')
-      expect(deps.harness.project).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
+      expect(flatView(deps.harness.project)).toMatchObject({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
       expect(deps.announce).toHaveBeenCalledWith('Technique changed to Brick stitch')
     })
 
@@ -448,7 +448,7 @@ describe('useFrameFlow', () => {
       const { deps, setWeaveSetting } = setup(brick)
       const before = deps.harness.project
       setWeaveSetting('frame', 'brickBlock', 3)
-      expect(deps.harness.project).toMatchObject({ frame: { ...frameOf(before), techniqueSettings: { brickBlock: 3 } }, beads: beadsOfLayer(before, 'canvas') })
+      expect(flatView(deps.harness.project)).toMatchObject({ frame: { ...frameOf(before), techniqueSettings: { brickBlock: 3 } }, beads: beadsOfLayer(before, 'canvas') })
       expect(deps.announce).toHaveBeenCalledWith('Brick block changed to 3')
       deps.harness.history.onUndo()
       expect(frameOf(deps.harness.project)?.techniqueSettings?.brickBlock ?? 1).toBe(1)
@@ -489,10 +489,10 @@ describe('useFrameFlow', () => {
       expect(lastFrame(deps)).toEqual({ ...rect(frame), column: frame.column - 1, columns: frame.columns + 2, row: frame.row + 1, rows: frame.rows - 1 })
       expect(deps.announce).toHaveBeenCalledTimes(3)
       deps.harness.history.onUndo()
-      expect(frameOf(deps.harness.project)).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2, beads: {} })
+      expect(sheetOf(deps.harness.project)).toEqual({ ...frame, column: frame.column - 1, columns: frame.columns + 2, beads: {} })
       deps.harness.history.onUndo()
       deps.harness.history.onUndo()
-      expect(frameOf(deps.harness.project)).toEqual({ ...frame, beads: {} })
+      expect(sheetOf(deps.harness.project)).toEqual({ ...frame, beads: {} })
       expect(deps.harness.history.canUndo.value).toBe(false)
     })
 
@@ -524,7 +524,7 @@ describe('useFrameFlow', () => {
       expect(lastFrame(deps)).toMatchObject({ column: 3, columns: 5 })
       expect(beadsOfLayer(deps.harness.project, 'canvas')).toEqual(beads)
       stepEdge('left', 1)
-      expect(deps.harness.project).toMatchObject({ frame: named.frame, beads, pieceNames: named.pieceNames })
+      expect(flatView(deps.harness.project)).toMatchObject({ frame: frameOf(named), beads, pieceNames: canvasOf(named).pieceNames })
       expect(deps.showToast).not.toHaveBeenCalled()
     })
 
@@ -550,7 +550,7 @@ describe('useFrameFlow', () => {
       // Round the middle of the view, (20, 30).
       expect([frame.row < 20, frame.row + frame.rows > 20, frame.column < 30, frame.column + frame.columns > 30]).toEqual([true, true, true, true])
       expect(frame.beads).toEqual(starterDesign(star))
-      expect(beadsOfLayer(deps.harness.project, 'canvas')).toBe(painted.beads)
+      expect(beadsOfLayer(deps.harness.project, 'canvas')).toBe(beadsOfLayer(painted, 'canvas'))
       expect(deps.announce).toHaveBeenCalledWith('Star frame set, part size 5')
       deps.harness.history.onUndo()
       expect(frameOf(deps.harness.project)).toBeUndefined()
@@ -589,7 +589,7 @@ describe('useFrameFlow', () => {
       expect(deps.replaceProject).toHaveBeenCalledTimes(1)
       expect(frameOf(deps.harness.project)!.shape).toBe('star')
       deps.harness.history.onUndo()
-      expect(frameOf(deps.harness.project)).toEqual(drawn.frame)
+      expect(sheetOf(deps.harness.project)).toEqual(frameOf(drawn))
     })
 
     it('does nothing once a pass is done', () => {
@@ -623,7 +623,7 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     barOpen.value = false
     expect(deps.harness.history.canUndo.value).toBe(true)
     deps.harness.history.onUndo()
-    expect(frameOf(deps.harness.project)).toEqual(frameOf(painted))
+    expect(sheetOf(deps.harness.project)).toEqual(sheetOf(painted))
     expect(deps.harness.history.canUndo.value).toBe(false)
   })
 
@@ -669,7 +669,7 @@ describe('useFrameFlow with a Custom frame (ticket 0592)', () => {
     release()
     expect(deps.announce).toHaveBeenLastCalledWith('Rounds: 6')
     deps.harness.history.onUndo()
-    expect(frameOf(deps.harness.project)).toEqual(frame)
+    expect(sheetOf(deps.harness.project)).toEqual(frame)
   })
 
   it('asks before removing it, as for any Frame, and removes it on Yes (ticket 0669)', () => {

@@ -8,7 +8,7 @@ import { removeLineQuestion, removeLineRefusal, removeSelectedLine as removeLine
 import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
-import { withFields } from '../testUtils/flatFields'
+import { flatView, withFields } from '../testUtils/flatFields'
 import { type RowProgress } from './project'
 
 /** A Project whose Frame sits at (10, 20) and whose own beads are numbered #00 0N0 by position, so a shift shows. */
@@ -87,7 +87,7 @@ describe('removeSelectedLine', () => {
   it('keeps the rest of the Project as it was, and bumps updatedAt', () => {
     const before = withFields(numbered(3, 4), { name: 'Keep me', updatedAt: 0 })
     const removed = removeSelectedLine(before, rowOf(before, 1))
-    expect(removed).toMatchObject({ id: before.id, name: 'Keep me', technique: 'loom' })
+    expect(flatView(removed)).toMatchObject({ id: before.id, name: 'Keep me', technique: 'loom' })
     expect(removed.updatedAt).toBeGreaterThan(0)
   })
 

@@ -9,7 +9,7 @@ import { coveredByRotation, rotateFrame, rotateLayerSelection, rotateSelection, 
 import { laidFrame } from './frameOrientation'
 import type { Selection } from './selection'
 import { beadsOfLayer, frameOf } from './layerRecord'
-import { type FlatChange, withFields } from '../testUtils/flatFields'
+import { type FlatChange, sheetOf, withFields } from '../testUtils/flatFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 2, unit: 'beads' } })
 
@@ -40,7 +40,7 @@ describe('rotateSelection', () => {
 
     // 2 rows x 3 columns becomes 3 rows x 2 columns about the same middle.
     expect(result.selection).toMatchObject({ top: 10, left: 11, rows: 3, columns: 2 })
-    expect(frameOf(result.project)).toEqual(frameOf(project))
+    expect(sheetOf(result.project)).toEqual(sheetOf(project))
     expect(rowProgressOf(result.project)).toEqual(rowProgressOf(project))
     // Clockwise: the old left column (A, D) is now the top row, read right to left... D A / . B / F C
     expect(positionsOf(beadsOfLayer(result.project, 'canvas'))).toEqual(
@@ -183,7 +183,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
     const project = framed(withColors({}, [{ row: 1, column: 2, color: '#aa0000' }]))
     let turned = project
     for (let i = 0; i < 4; i++) turned = rotateFrame(turned)!
-    expect(frameOf(turned)).toEqual(frameOf(project))
+    expect(sheetOf(turned)).toEqual(sheetOf(project))
   })
 
   it('leaves the Canvas where it is, and keeps the Frame\'s name', () => {
@@ -205,7 +205,7 @@ describe('rotateFrame (tickets 471, 0667, ADR 0052, 0079)', () => {
         expect(frameOf(turned)!.beads, `${technique} turn ${turn}`).toBe(beads)
         expect(frameOf(turned)).toMatchObject({ rows: 5, columns: 4 })
       }
-      expect(frameOf(turned)).toEqual(project.frame)
+      expect(sheetOf(turned)).toEqual(frameOf(project))
     }
   })
 

@@ -11,7 +11,7 @@ import { rotateSelection } from './rotate'
 import { changeFrame } from './changeFrame'
 import { frameGrid } from '../testUtils/frameGrid'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { sheetOf, withFields } from '../testUtils/flatFields'
 
 const R = '#e63746'
 const row = (r: number, from: number, to: number): BeadChange[] =>
@@ -146,7 +146,7 @@ describe('piece names', () => {
       const project = fox()
       const result = changeFrame(project, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
 
-      expect(result.kind === 'changed' && frameOf(result.project)).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
+      expect(result.kind === 'changed' && sheetOf(result.project)).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
       expect(result.kind === 'changed' && namedPieces(result.project)).toEqual([])
     })
 
