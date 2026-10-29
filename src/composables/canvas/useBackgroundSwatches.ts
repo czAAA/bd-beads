@@ -2,7 +2,6 @@ import { computed, type ComputedRef, type Ref } from 'vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { useI18n } from '../../i18n/useI18n'
 import { canvasBackgrounds, type MarginChoice } from '../../rendering/canvasBackgrounds'
-import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import { useResolvedTheme } from '../../theme/useResolvedTheme'
 
 /** What a background color picker stores its pick in: the Canvas color's preferences or the margin color's. */
@@ -25,8 +24,8 @@ interface AutoSwatch {
 interface BackgroundSwatchOptions {
   /** Auto, first, and how to store it. */
   auto?: { swatch: ComputedRef<AutoSwatch>; choose: () => void }
-  /** Dot the swatch that is the Canvas color, and name it so (the margin's): its accessible name from its color's. */
-  canvasColor?: { label: (name: string) => string }
+  /** Dot the swatch that is the Canvas color, `color`, and name it so (the margin's): its accessible name from its own. */
+  canvasColor?: { color: ComputedRef<string | undefined>; label: (name: string) => string }
 }
 
 const AUTO = 'auto'
@@ -37,12 +36,11 @@ const AUTO = 'auto'
 export function useBackgroundSwatches(store: BackgroundStore, options: BackgroundSwatchOptions = {}) {
   const { t } = useI18n()
   const theme = useResolvedTheme()
-  const canvas = useCanvasBackground()
 
   const listed = computed(() => canvasBackgrounds(theme.value))
   const swatches = computed(() => {
     const dotted = options.canvasColor
-    const canvasColor = canvas.background.value?.color
+    const canvasColor = dotted?.color.value
     const words = t.value.canvas.canvasColor
     const colors = listed.value.map(({ id, color }, index) => {
       const name = words.names[id]
