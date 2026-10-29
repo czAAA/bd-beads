@@ -125,12 +125,24 @@ export function loadProjects(): Project[] {
   return []
 }
 
-/** Writes the whole library over what was there, compactly (ADR 0009): the in-memory library is the truth (ticket 55).
- * Throws what the browser throws when the write doesn't fit (QuotaExceededError); the caller must surface it.
- * @internal Tests seed a library with it before mounting the App. */
+/** Each Project's stored JSON, kept for that Project object (ticket 0677, as ADR 0080 keeps answers per bead map): a
+ * Project is replaced whole on every change, so a save encodes only those that changed since the last one. */
+const storedJson = new WeakMap<Project, string>()
+
+function storedJsonOf(project: Project): string {
+  let json = storedJson.get(project)
+  if (json === undefined) {
+    json = JSON.stringify(encodeProject(project))
+    storedJson.set(project, json)
+  }
+  return json
+}
+
+/** Writes the whole library over what was there, compactly (ADR 0009), from each Project's kept encoding: the in-memory
+ * library is the truth (ticket 55). Throws what the browser throws when the write doesn't fit (QuotaExceededError); the
+ * caller must surface it. @internal Tests seed a library with it before mounting the App. */
 export function saveProjects(projects: Project[]): void {
-  const stored: StoredLibrary = { version: STORED_VERSION, patterns: projects.map(encodeProject) }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
+  localStorage.setItem(STORAGE_KEY, `{"version":${STORED_VERSION},"patterns":[${projects.map(storedJsonOf).join(',')}]}`)
 }
 
 // Where the Project library is kept (ADR 0020); useProjectLibrary persists through it, so tests fake it and a backend
@@ -142,5 +154,33 @@ export interface LibraryStore {
   save: (projects: Project[]) => void
 }
 
+/** How long to wait for a quiet moment where the browser has no idle callback (Safari). */
+const IDLE_FALLBACK_MS = 200
+
+function whenIdle(work: () => void): void {
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(work)
+  else setTimeout(work, IDLE_FALLBACK_MS)
+}
+
+/** Keeps the encoding of each Project of a library just opened, one per idle moment (ticket 0677): otherwise the first
+ * save after opening would encode them all. */
+function encodeWhenIdle(projects: readonly Project[]): void {
+  const waiting = [...projects]
+  const next = (): void => {
+    const project = waiting.shift()
+    if (!project) return
+    storedJsonOf(project)
+    whenIdle(next)
+  }
+  whenIdle(next)
+}
+
 /** The library in this browser's localStorage (ADR 0001). */
-export const browserLibraryStore: LibraryStore = { load: loadProjects, save: saveProjects }
+export const browserLibraryStore: LibraryStore = {
+  load: () => {
+    const projects = loadProjects()
+    encodeWhenIdle(projects)
+    return projects
+  },
+  save: saveProjects,
+}

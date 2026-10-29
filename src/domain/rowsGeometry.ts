@@ -2,6 +2,11 @@ import { beadPitchMm } from './beads'
 import type { GridPosition } from './grid'
 import { insideBounds, type Box, type CellCenter, type GeometryStrategy, type RowsGeometry } from './weaveGeometry'
 
+// The columns a bead reaches in a row offset further right, further left, or the same (see `reach`).
+const REACH_BACK = [-1, 0] as const
+const REACH_ON = [0, 1] as const
+const REACH_SAME = [0, 0] as const
+
 /** Beads laid on rows (loom, peyote, brick stitch; ADR 0078): every other row, or block of `block` rows, sits
  * `shift` across where the rows are shifted, and rows sit `rowPitch` apart. Passes are lines: one each, or peyote's
  * first line in one pass and every later one in two. */
@@ -34,12 +39,10 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
     lastRow: Math.floor(bottom / (cellHeight * rowPitch)),
   })
   // A row's cell overlaps the same column of a row with the same offset, and two columns of a row offset the other way.
-  const overlappingColumns = (fromRow: number, toRow: number, column: number): number[] => {
+  const reach = (fromRow: number, toRow: number): readonly [number, number] => {
     const from = rowOffset(fromRow, 1)
     const to = rowOffset(toRow, 1)
-    if (to > from) return [column - 1, column]
-    if (to < from) return [column, column + 1]
-    return [column]
+    return to > from ? REACH_BACK : to < from ? REACH_ON : REACH_SAME
   }
   const lineOf = (pass: number): number => (twoPasses && pass > 0 ? Math.ceil(pass / 2) : pass)
   return {
@@ -111,10 +114,12 @@ export const rowsGeometry: GeometryStrategy<RowsGeometry> = (geometry, cell) => 
         { row, column: column + 1 },
       ]
       for (const neighborRow of [row - 1, row + 1]) {
-        for (const c of overlappingColumns(row, neighborRow, column)) candidates.push({ row: neighborRow, column: c })
+        const [first, last] = reach(row, neighborRow)
+        for (let c = column + first; c <= column + last; c += 1) candidates.push({ row: neighborRow, column: c })
       }
       return candidates.filter((position) => insideBounds(bounds, position))
     },
+    reach,
     twoPasses,
     passes: {
       count: (lines) => (!twoPasses || lines <= 0 ? Math.max(0, lines) : 1 + (lines - 1) * 2),
