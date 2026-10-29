@@ -4,7 +4,6 @@ import {
   allBeadsSelection,
   selectAllSelection,
   copyLayerSelection,
-  dragFocusOnLayer,
   hasGuides,
   paintLayerSelection,
   pastedCellsOnLayer,
@@ -24,6 +23,7 @@ import {
 } from './selection'
 import { withColors } from './canvas'
 import { createProject } from './createProject'
+import { withFrame } from './frame'
 import type { Project } from './project'
 import { BEAD_CATALOG } from './beads'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
@@ -314,6 +314,14 @@ describe('Selections on a layer (ADR 0066)', () => {
     ])
   })
 
+  it('copies, for a Canvas Selection across a Frame that draws shorter than the rows it names, only what lies clear of what it draws and its margin (ticket 0659)', () => {
+    const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
+    // A 48-row peyote Frame covers 36 loom rows: rows 36 to 39 are its margin, row 40 is free Canvas.
+    const placed = withFrame(base, { row: 0, column: 0, rows: 48, columns: 11 })
+    const woven: Project = { ...placed, frame: { ...placed.frame!, technique: 'peyote' }, beads: withColors({}, [{ row: 38, column: 3, color: RED }, { row: 40, column: 3, color: BLUE }]) }
+    expect(copyLayerSelection(woven, { top: 0, left: 3, rows: 50, columns: 1, layer: 'canvas' })?.colors).toEqual([[BLUE]])
+  })
+
   it('taps a Piece of the layer the tap is on', () => {
     expect(pieceSelectionOnLayer(layered(), { row: 3, column: 3 })).toEqual({ top: 3, left: 3, rows: 1, columns: 1, layer: 'frame', cells: [{ row: 3, column: 3 }] })
     expect(pieceSelectionOnLayer(layered(), { row: 20, column: 20 })).toMatchObject({ top: 20, left: 20, rows: 1, columns: 1 })
@@ -339,16 +347,28 @@ describe('resizing and moving a Selection (ticket 414)', () => {
 })
 
 describe('selectionHoldsAllBeads (ticket 415)', () => {
-  const beads = { 1: { 1: RED }, 3: { 2: BLUE } }
+  const open = (beads: Project['beads']): Project => ({ ...project(4, 4), frame: undefined, beads })
+  const framed = (beads: Project['beads'], frameBeads: Project['beads']): Project => {
+    const placed = withFrame(project(4, 4), { row: 10, column: 10, rows: 3, columns: 3 })
+    return { ...placed, beads, frame: { ...placed.frame!, beads: frameBeads } }
+  }
 
   it('is true for the Select all rectangle and anything round it', () => {
-    expect(selectionHoldsAllBeads(beads, { top: 1, left: 1, rows: 3, columns: 2 })).toBe(true)
-    expect(selectionHoldsAllBeads(beads, { top: 0, left: 0, rows: 9, columns: 9 })).toBe(true)
+    const beads = { 1: { 1: RED }, 3: { 2: BLUE } }
+    expect(selectionHoldsAllBeads(open(beads), { top: 1, left: 1, rows: 3, columns: 2 })).toBe(true)
+    expect(selectionHoldsAllBeads(open(beads), { top: 0, left: 0, rows: 9, columns: 9 })).toBe(true)
   })
 
   it('is false when a bead is left outside, and on an empty canvas', () => {
-    expect(selectionHoldsAllBeads(beads, { top: 1, left: 1, rows: 2, columns: 2 })).toBe(false)
-    expect(selectionHoldsAllBeads({}, { top: 0, left: 0, rows: 9, columns: 9 })).toBe(false)
+    expect(selectionHoldsAllBeads(open({ 1: { 1: RED }, 3: { 2: BLUE } }), { top: 1, left: 1, rows: 2, columns: 2 })).toBe(false)
+    expect(selectionHoldsAllBeads(open({}), { top: 0, left: 0, rows: 9, columns: 9 })).toBe(false)
+  })
+
+  it('is false when its rectangle goes round a bead on the other layer, which Clear selection leaves (ticket 0659)', () => {
+    const frameSelection = { top: 0, left: 0, rows: 30, columns: 30, layer: 'frame' as const }
+    expect(selectionHoldsAllBeads(framed({ 2: { 2: RED } }, { 0: { 0: BLUE } }), frameSelection)).toBe(false)
+    expect(selectionHoldsAllBeads(framed({}, { 0: { 0: BLUE } }), frameSelection)).toBe(true)
+    expect(selectionHoldsAllBeads(framed({ 2: { 2: RED } }, { 0: { 0: BLUE } }), { ...frameSelection, layer: 'canvas' })).toBe(false)
   })
 })
 
@@ -382,20 +402,6 @@ describe('hasGuides', () => {
     expect([[1, 5], [5, 1], [2, 3]].map(([rows, columns]) => hasGuides({ rows, columns }))).toEqual([true, true, true])
   })
 })
-
-describe('dragFocusOnLayer for a Frame that draws shorter than the rows it names (ADR 0066)', () => {
-  const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 11, height: 48, unit: 'beads' } })
-  const project: Project = { ...base, frame: { technique: 'peyote' as const, row: 0, column: 0, rows: 48, columns: 11, beads: {} } }
-
-  it('holds a Canvas drag off a Frame bead that shares its position with the strip', () => {
-    expect(dragFocusOnLayer(project, 'canvas', { row: 40, column: 3, layer: 'frame' }, { row: 50, column: 3 })).toEqual({ row: 50, column: 3 })
-  })
-
-  it('lets a Canvas drag into the strip', () => {
-    expect(dragFocusOnLayer(project, 'canvas', { row: 40, column: 3, layer: 'canvas' }, { row: 50, column: 3 })).toEqual({ row: 40, column: 3, layer: 'canvas' })
-  })
-})
-
 
 describe('a Piece-tool shape (ticket 547)', () => {
   // A red ring with a blue Piece in its hole: the ring is not a rectangle, and its rectangle holds another Piece.
