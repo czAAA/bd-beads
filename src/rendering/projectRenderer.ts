@@ -21,6 +21,7 @@ import {
 } from './beadLook'
 import type { MarginLook } from './marginLook'
 import { marginForm } from './marginForm'
+import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -402,15 +403,9 @@ export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: 
   return { sheet, footprint, band }
 }
 
-// The margin's sheet (MarginSheet card, tickets 0656, 0658), in screen px: its corners (10px compact), its inner
-// border's inset (6px compact) and that border's corners. A folded sheet keeps its color and edge, no inner border.
-const SHEET_RADIUS_PX = { full: 12, compact: 10 }
-const BORDER_INSET_PX = { full: 10, compact: 6 }
-const BORDER_RADIUS_PX = 6
-
 /** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the
- * Frame's footprint left out, a hairline edge and an inner border where it fits; none bare, which keeps only the Move
- * bar (ticket 0682). In grid space, its px divided by the zoom to stay screen px. */
+ * Frame's footprint left out, a hairline edge and an inner border where it fits; folded, no inner border; none bare,
+ * which keeps only the Move bar (ticket 0682). In grid space, its `MARGIN_PX` divided by the zoom to stay screen px. */
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
@@ -418,7 +413,7 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   if (form === 'bare') return
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(SHEET_RADIUS_PX[drawn], band) / zoom
+  const radius = Math.min(MARGIN_PX.sheetRadius[drawn], band) / zoom
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
@@ -433,11 +428,11 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   context.roundRect(sheet.x + half, sheet.y + half, sheet.width - 2 * half, sheet.height - 2 * half, Math.max(0, radius - half))
   context.stroke()
   if (form === 'full' || form === 'compact') {
-    const at = BORDER_INSET_PX[form] / zoom
+    const at = MARGIN_PX.place[form].border / zoom
     context.lineWidth = 1 / zoom
     context.strokeStyle = look.line
     context.beginPath()
-    context.roundRect(sheet.x + at, sheet.y + at, sheet.width - 2 * at, sheet.height - 2 * at, BORDER_RADIUS_PX / zoom)
+    context.roundRect(sheet.x + at, sheet.y + at, sheet.width - 2 * at, sheet.height - 2 * at, MARGIN_PX.borderRadius / zoom)
     context.stroke()
   }
   context.restore()
