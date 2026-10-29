@@ -795,8 +795,6 @@ export const zh: Translations = {
       resultPerPixel: '1 像素 = {n} × {n} 颗',
       colorsCount: { other: '{count} 种颜色' },
       noPicture: '还没有图片',
-      discardQuestion: '放弃这次转换？',
-      discard: '放弃',
       previewName: '预览：{size}，{colors}',
       previewEmpty: '预览：还没有图片',
       zoomLevel: '{percent}%',

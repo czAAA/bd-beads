@@ -820,8 +820,6 @@ export const pl: Translations = {
       resultPerPixel: '1 px = {n} × {n} koralików',
       colorsCount: { other: 'kolorów: {count}' },
       noPicture: 'Brak obrazu',
-      discardQuestion: 'Odrzucić konwersję?',
-      discard: 'Odrzuć',
       previewName: 'Podgląd: {size}, {colors}',
       previewEmpty: 'Podgląd: brak obrazu',
       zoomLevel: '{percent}%',
