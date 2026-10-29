@@ -9,7 +9,7 @@ import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import { controlAction, controlDeps, type ControlAction } from '../../composables/shell/controlRegistry'
-import { frameAllows } from '../../domain/frameKind'
+import { frameAllows } from '../../domain/frameShape'
 import type { Project } from '../../domain/project'
 import { copyLayerSelection, selectionInFinishedRows, type Selection } from '../../domain/selection'
 
@@ -128,7 +128,7 @@ const items = computed<BarItem[]>(() => {
   ]
   list.push({ id: 'fill', action: actions.fill, group: 2, run: () => emit('fill') })
   // Offered with a Frame too: it moves the Frame to the Selection, e.g. onto another named Schema (ticket 407); not over
-  // a Frame whose kind keeps its own shape (a Custom frame, ticket 0592).
+  // a Custom frame, whose Frame shape sets its outline (ticket 0592).
   if (frameAllows(props.project?.frame, 'from-selection')) list.push({ id: 'frame', action: actions.frame, group: 2, run: () => emit('frame') })
   // Disabled, saying why, where the Selection reaches into finished rows (ticket 0647).
   list.push({ id: 'rotate', action: actions.rotate, group: 2, run: () => emit('rotate') })

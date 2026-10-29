@@ -32,7 +32,7 @@ export interface LayoutJoin {
   parts: readonly number[]
 }
 
-/** What a kind's panel builder makes of its settings. */
+/** What a Frame shape's panel builder makes of its settings. */
 export interface FrameLayout {
   positions: readonly LayoutPosition[]
   panels: readonly LayoutPanel[]

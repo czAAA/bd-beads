@@ -5,7 +5,7 @@ import { withMargin } from '../domain/margin'
 import { createProject } from '../domain/createProject'
 import { moveToRow } from '../domain/rowProgress'
 import { changeFrame } from '../domain/changeFrame'
-import { frameLayoutOf } from '../domain/frameKind'
+import { frameLayoutOf } from '../domain/frameShape'
 import { onLayer } from '../domain/layers'
 import { paintCells } from '../domain/drawing'
 import type { Project, RowProgress } from '../domain/project'
@@ -181,7 +181,7 @@ describe('renderOverlay', () => {
   describe('the pass being woven on a Custom frame (ticket 0594)', () => {
     it('rings each bead of the current round turned to its panel\'s angle, and only the beads that hold a colour', () => {
       const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
-      const placed = changeFrame(open, { custom: { kind: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
+      const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
       const round = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row }) => row === 1)
       const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746'))

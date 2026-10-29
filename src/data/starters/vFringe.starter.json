@@ -1,7 +1,7 @@
 {
   "id": "vFringe",
   "design": "vFringe.json",
-  "kind": "fringeEarring",
+  "shape": "fringeEarring",
   "technique": "brick",
   "measure": "frame",
   "pair": true,
