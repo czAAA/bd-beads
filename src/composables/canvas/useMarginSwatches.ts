@@ -12,11 +12,12 @@ export function useMarginSwatches() {
   const canvas = useCanvasBackground()
   const margin = canvas.margin
   const words = computed(() => t.value.frame.margin)
+  const canvasColor = computed(() => canvas.background.value?.color)
   return useBackgroundSwatches(margin, {
     auto: {
-      swatch: computed(() => ({ color: margin.auto.value, split: canvas.background.value?.color, name: words.value.auto, label: words.value.autoLabel })),
+      swatch: computed(() => ({ color: margin.auto.value, split: canvasColor.value, name: words.value.auto, label: words.value.autoLabel })),
       choose: () => margin.setChoice('auto'),
     },
-    canvasColor: { label: (color) => fillBlanks(words.value.canvasColorLabel, { color }) },
+    canvasColor: { color: canvasColor, label: (color) => fillBlanks(words.value.canvasColorLabel, { color }) },
   })
 }
