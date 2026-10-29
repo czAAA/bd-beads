@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
+import { makerCodeOf } from '../../domain/beadCodeSearch'
 import { familyColorId } from '../../domain/palette'
 import { colorName } from '../../i18n/colorName'
 import { useI18n } from '../../i18n/useI18n'
@@ -23,10 +24,14 @@ onMounted(() => void props.colors.load())
 /** A family's name in words: the Palette's name for the built-in color it is. */
 const familyName = (family: string) => colorName(t.value, { id: familyColorId(family), hex: '' })
 
+// A code is found as a part of a maker code or a family name, or typed the way a shop writes it (ticket 0696).
 const matches = computed(() => {
   const needle = query.value.trim().toLowerCase()
+  const bead = props.colors.bead.value
+  const typedCode = bead && makerCodeOf(query.value, bead)
   return props.colors.swatches.value.filter(
-    (entry) => !needle || entry.code.toLowerCase().includes(needle) || familyName(entry.family).toLowerCase().includes(needle),
+    (entry) =>
+      !needle || entry.code === typedCode || entry.code.toLowerCase().includes(needle) || familyName(entry.family).toLowerCase().includes(needle),
   )
 })
 const shown = computed(() => matches.value.slice(0, SHOWN))

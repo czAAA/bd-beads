@@ -5,6 +5,7 @@ import BeadColorList from './BeadColorList.vue'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
 import type { CatalogSwatch } from '../../domain/beadSwatch'
 import { en } from '../../i18n/en'
+import { findBead } from '../../domain/beads'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
@@ -13,7 +14,8 @@ beforeEach(() => {
 const entry = (over: Partial<CatalogSwatch>): CatalogSwatch => ({ code: 'DB1', family: 'Blue', finish: 'metallic', hex: '#123456', approximate: true, discontinued: false, taken: false, ...over })
 
 function setup(swatches: CatalogSwatch[], state: 'ready' | 'failed' | 'loading' = 'ready') {
-  const colors = { available: ref(true), state: ref(state), swatches: ref(swatches), load: vi.fn(), add: vi.fn(() => 'added' as const) } as unknown as BeadColors
+  const bead = ref(findBead('miyuki/delica/11-0'))
+  const colors = { available: ref(true), state: ref(state), swatches: ref(swatches), bead, load: vi.fn(), add: vi.fn(() => 'added' as const) } as unknown as BeadColors
   return { colors, wrapper: mount(BeadColorList, { props: { colors } }) }
 }
 
@@ -58,6 +60,19 @@ describe('BeadColorList', () => {
 
     await wrapper.get('[data-testid="bead-colors-search"]').setValue('zzz')
     expect(wrapper.find('[data-testid="bead-colors-empty"]').exists()).toBe(true)
+  })
+
+  it('finds a code typed the way a shop writes it, and a part of a code as before (ticket 0696)', async () => {
+    const { wrapper } = setup([entry({ code: 'DB433' }), entry({ code: 'DB1433' })])
+    const codes = () => wrapper.findAll('[data-testid="bead-color"]').map((row) => row.attributes('data-code'))
+
+    for (const typed of ['DB-0433', 'DB0433', 'db 433']) {
+      await wrapper.get('[data-testid="bead-colors-search"]').setValue(typed)
+      expect(codes(), typed).toEqual(['DB433'])
+    }
+
+    await wrapper.get('[data-testid="bead-colors-search"]').setValue('433')
+    expect(codes()).toEqual(['DB433', 'DB1433'])
   })
 
   it('says so when the catalog could not be loaded', () => {
