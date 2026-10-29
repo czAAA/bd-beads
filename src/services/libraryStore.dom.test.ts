@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createProject } from '../domain/createProject'
 import type { Grid, Project } from '../domain/project'
 import type { Technique } from '../domain/weave'
-import { loadProjects, saveProjects } from './libraryStore'
+import { browserLibraryStore, loadProjects, saveProjects } from './libraryStore'
 import { parseProjectsFile, serializeLibrary } from '../domain/projectFile'
 import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
@@ -10,6 +10,13 @@ import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf } from '../domain/layerRecord'
 import { layersView } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
+import { encodeProject } from '../domain/projectEncoding'
+
+// Counts the encodings a save makes (ticket 0677), passing each through to the real encoder.
+vi.mock('../domain/projectEncoding', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../domain/projectEncoding')>()
+  return { ...actual, encodeProject: vi.fn(actual.encodeProject) }
+})
 
 const STORAGE_KEY = 'openbeads:patterns'
 
@@ -82,6 +89,44 @@ describe('projectStorage', () => {
     saveProjects([first, second])
 
     expect(loadProjects()).toEqual([first, second])
+  })
+
+  it('encodes again only the Project that changed since the last save (ticket 0677)', () => {
+    const library = [makeProject(), makeProject(), makeProject()]
+    saveProjects(library)
+    const edited = { ...library[1]!, updatedAt: library[1]!.updatedAt + 1 }
+    vi.mocked(encodeProject).mockClear()
+
+    saveProjects([edited, library[0]!, library[2]!])
+
+    expect(vi.mocked(encodeProject).mock.calls).toEqual([[edited]])
+    expect(loadProjects()).toEqual([edited, library[0], library[2]])
+  })
+
+  it('encodes the library it opened while the device is idle, so the first save encodes only what changed (ticket 0677)', () => {
+    vi.useFakeTimers()
+    try {
+      saveProjects([makeProject(), makeProject()])
+      const [first, second] = browserLibraryStore.load()
+      vi.runAllTimers()
+      vi.mocked(encodeProject).mockClear()
+      const edited = { ...first!, updatedAt: first!.updatedAt + 1 }
+
+      saveProjects([edited, second!])
+
+      expect(vi.mocked(encodeProject).mock.calls).toEqual([[edited]])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('writes the same library a whole encoding would (ticket 0677)', () => {
+    const library = [makeProject(), paintedOrdinaryProject()]
+    saveProjects(library)
+
+    saveProjects(library)
+
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(JSON.stringify({ version: 5, patterns: library.map(encodeProject) }))
   })
 
   it('replaces what was stored rather than merging with it', () => {

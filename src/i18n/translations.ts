@@ -985,6 +985,13 @@ export interface Translations {
     // `{bead}` is the new Bead, `{new}`/`{old}` the Estimated size with it and the current one. Says the size changes,
     // the design and bead count don't, and rows/columns can be adjusted afterwards.
     confirmMessage: string
+    // With a Frame, when the Canvas's Bead is replaced (ticket 0665): `{bead}` is the new Bead. Says the Canvas is drawn
+    // at its size and the Frame keeps its own, so its size and bead count stay.
+    canvasMessage: string
+    /** With a Frame, the label of the choice of which layer's Bead is replaced (ticket 0665), and its two options. */
+    layerLabel: string
+    layerFrame: string
+    layerCanvas: string
     confirmButton: string
     /** After the Project's own Bead when the catalog's Bead of the same id has changed (ticket 534). */
     outdatedPostfix: string

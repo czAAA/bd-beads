@@ -35,7 +35,7 @@ A Tools-group tool, next to Eraser, that removes the specific row or column the 
 _Avoid_: delete row, delete column, shrink
 
 **Replace Bead**:
-Swaps a Project's single Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes. The Schema size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007.
+Swaps a layer's Bead for a different catalog entry, after a confirmation that shows how the Estimated size changes; with a Frame it asks whether the Frame's Bead or the Canvas's is replaced (ticket 0665, ADR 0079), and the Palette follows the woven layer's. The Schema size and every painted cell stay as they are, whichever unit the Project was created in — see ADR 0007. Each layer is drawn at its own Bead's real size.
 _Avoid_: change bead, swap bead, resize pattern
 
 **Custom color**:
@@ -78,7 +78,7 @@ Paste mode (ADR 0016) is on right after Copy or Cut: a click, or a click-and-dra
 _Avoid_: place, insert, apply
 
 **Undo**:
-Steps the grid back to how it was just before the most recent step-worthy edit — a whole dragged Paint/erase stroke, a Fill, a Paste, a Frame change (Frame from Selection, an Edit Frame drag or stepper, a Move handle drag with its beads), Fit to drawing or Remove Frame (which brings the Frame back with its progress, and restores the Canvas beads it cleared), a Rotate, a Remove row/column, a Replace Bead, adding, removing or moving a Palette swatch — restoring it in full even where the edit has since been covered by Row progress's finished-row lock; Undo replays history rather than drawing, so the lock never blocks it. Row direction, moving the Row progress pointer, Select, and Copy are not edits and are never undo steps. An editing-session aid like the clipboard: never saved with the Project, and reset whenever the open Project changes. Available anywhere in the editor via Ctrl/Cmd+Z, except while typing in a form field.
+Steps the grid back to how it was just before the most recent step-worthy edit — a whole dragged Paint/erase stroke, a Fill, a Paste, a Frame change (Frame from Selection, an Edit Frame drag or stepper, a Move handle drag with its beads), Fit to drawing or Remove Frame (which brings the Frame back with its progress, and restores the Canvas beads it cleared), a Rotate, a Remove row/column, a Replace Bead, adding, removing or moving a Palette swatch — restoring it in full even where the edit has since been covered by Row progress's finished-row lock; Undo replays history rather than drawing, so the lock never blocks it. Row direction, moving the Row progress pointer, Select, and Copy are not edits and are never undo steps. An editing-session aid like the clipboard: never saved with the Project, and reset whenever the open Project changes. It reaches back as far as a memory cap allows (ticket 0677): past it the oldest steps are dropped, so a long session of whole-sheet Fills keeps its last few dozen and one of strokes its last thousands. Available anywhere in the editor via Ctrl/Cmd+Z, except while typing in a form field.
 _Avoid_: revert, step back
 
 **Redo**:

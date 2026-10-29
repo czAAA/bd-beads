@@ -50,3 +50,34 @@ describe('EditableLine (ticket 554)', () => {
     expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(false)
   })
 })
+
+describe('EditableLine in the margin\'s title block (ticket 0685)', () => {
+  const pressOutside = () => document.body.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, isPrimary: true }))
+
+  it('closes on a press outside its floated field and keeps what was typed', async () => {
+    const wrapper = mountLine({ value: 'Ada', bare: true })
+    await wrapper.get('[data-testid="line-edit"]').trigger('click')
+    await wrapper.get('[data-testid="line-input"]').setValue(' Eve ')
+    wrapper.get('[data-testid="line-input"]').element.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, button: 0, isPrimary: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(true)
+
+    pressOutside()
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(false)
+    expect(wrapper.emitted('save')).toEqual([['Eve']])
+  })
+
+  it('still cancels on Escape, keeping nothing of what was typed', async () => {
+    const wrapper = mountLine({ value: 'Ada', bare: true })
+    await wrapper.get('[data-testid="line-edit"]').trigger('click')
+    await wrapper.get('[data-testid="line-input"]').setValue('Eve')
+    wrapper.get('[data-testid="line-input"]').element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="line-form"]').exists()).toBe(false)
+    expect(wrapper.emitted('save')).toBeUndefined()
+
+    pressOutside()
+    expect(wrapper.emitted('save')).toBeUndefined()
+  })
+})

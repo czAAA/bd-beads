@@ -857,6 +857,8 @@ function wireAppShell(services: Services) {
       onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
       replaceBeadPendingBead: replaceBead.replaceBeadPendingBead,
       replaceBeadConfirmMessage: replaceBead.replaceBeadConfirmMessage,
+      replaceBeadAsksLayer: replaceBead.replaceBeadAsksLayer,
+      replaceBeadLayer: replaceBead.replaceBeadLayer,
       onConfirmReplaceBead: replaceBead.onConfirmReplaceBead,
       onCancelReplaceBead: replaceBead.onCancelReplaceBead,
       pendingImport: importSwitch.pendingImport,

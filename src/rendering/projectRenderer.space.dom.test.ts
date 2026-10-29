@@ -3,6 +3,8 @@ import { withColors } from '../domain/canvas'
 import { type Rotation } from '../domain/grid'
 import { type Technique } from '../domain/weave'
 import { createProject } from '../domain/createProject'
+import { findBead } from '../domain/beads'
+import { replaceBead } from '../domain/projectBead'
 import { weaveOf } from '../domain/layerWeave'
 import type { Project } from '../domain/project'
 import { recordingContext } from '../testUtils/recordingContext'
@@ -11,7 +13,7 @@ import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { gridToRegion, positionBoxPx, type Region } from './surfaceView'
-import { beadsOfLayer, canvasOf, frameOf } from '../domain/layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, withLayer } from '../domain/layerRecord'
 import { withLayers } from '../testUtils/layerFields'
 import { changeFrame } from '../domain/changeFrame'
 
@@ -160,6 +162,17 @@ describe('the Frame on its own background (ticket 0666)', () => {
     const alone = render(project, false, { theme: canvasLook, frameTheme: frameLook })
     expect(alone.named('fillRect').some((call) => call.fillStyle === frameLook.background && call.args[2] === view.width)).toBe(true)
     expect(alone.beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead)).toBe(true)
+  })
+
+  it('fills the box a Frame in another Bead draws, at its own size (ticket 0665)', () => {
+    const project = withLayer(withLayers(framedProject('loom'), { beads: {} }), 'frame', { bead: findBead('miyuki-delica-11-0')! })
+    const { named, beads } = render(project, true, { region: whole, theme: canvasLook, frameTheme: frameLook })
+
+    const fills = named('fillRect').filter((call) => call.fillStyle === frameLook.canvas)
+    expect(fills).toHaveLength(1)
+    const [, , width, height] = fills[0]!.args as number[]
+    expect([width, height]).not.toEqual([3 * CELL_SIZE_PX + BEAD_GAP_PX, 4 * CELL_SIZE_PX + BEAD_GAP_PX])
+    expect(beads.every(({ theme }) => theme.emptyBead === frameLook.emptyBead)).toBe(true)
   })
 
   it('draws a Custom frame\'s Off-shape in the Frame\'s background', () => {
@@ -393,5 +406,31 @@ describe.each<{ canvas: Technique; frame: Technique }>([
 
     expect(colors).not.toContain('#111111')
     expect(colors).toContain('#222222')
+  })
+})
+
+describe('a Frame in a Bead of its own over the Canvas (ticket 0665)', () => {
+  /** The 3 by 4 loom Frame at row 6, column 5, in TOHO 15/0 over a TOHO 8/0 Canvas: half as wide. */
+  function halfSize(): Project {
+    const base = createProject({ technique: 'loom', beadId: 'toho/round/8-0', size: { width: 3, height: 4, unit: 'beads' } })
+    const framed = withLayers(base, { frame: { ...frameOf(framedProject('loom'))!, beadId: base.layers[0].beadId } })
+    return replaceBead(framed, findBead('toho/round/15-0')!)
+  }
+
+  it('draws the Frame from its corner at its own Bead\'s size: its beads at their own place, scaled by it', () => {
+    const { beads, named } = render(halfSize(), true)
+    const origin = positionBoxPx({ technique: 'loom' }, 6, 5)
+    expect(named('translate').map(({ args }) => args)).toContainEqual([origin.x, origin.y])
+    expect(named('scale').map(({ args }) => args)).toEqual([[0.5, 0.5]])
+    expect(beads.filter(({ color }) => color !== null).slice(0, 2).map(({ x, y }) => ({ x, y }))).toEqual([{ x: 0, y: 0 }, { x: CELL_SIZE_PX, y: 0 }])
+  })
+
+  it('makes its bead bitmaps at the size they are on screen', () => {
+    const { beads } = render(halfSize(), true, { zoom: 2 })
+    expect(beads.find(({ color }) => color !== null)!.deviceScale).toBe(1)
+  })
+
+  it('draws it unscaled on its own, as an export does', () => {
+    expect(render(halfSize(), false).named('scale')).toEqual([])
   })
 })

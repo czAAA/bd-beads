@@ -852,6 +852,11 @@ export const en: Translations = {
     confirmTitle: 'Replace bead?',
     confirmMessage:
       'With {bead}, this Project will be about {new} instead of {old}. Your design and its bead count stay exactly the same. You can undo this.',
+    canvasMessage:
+      'With {bead}, the Canvas is drawn at that bead\'s size. The Frame keeps its own bead, so its size and bead count stay exactly the same. You can undo this.',
+    layerLabel: 'Where to replace the bead',
+    layerFrame: 'Frame',
+    layerCanvas: 'Canvas',
     confirmButton: 'Replace bead',
     outdatedPostfix: '(as saved)',
     cancelButton: 'Cancel',

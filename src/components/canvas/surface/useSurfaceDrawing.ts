@@ -1,7 +1,7 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedPositions, type BeadMap } from '../../../domain/canvas'
 import { frameOf, layerOf } from '../../../domain/layerRecord'
-import { sameWeave } from '../../../domain/layerWeave'
+import { layersAlike } from '../../../domain/layerWeave'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
@@ -103,9 +103,10 @@ const MOST_ROWS_WORTH_A_BAND = 40
 // Empty when nothing changed; undefined when so much did (Undo, Fill) that drawing all again is
 // cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
-  // The Frame's rows are not the Canvas's where it is woven otherwise (ticket 492): draw it all again.
+  // The Frame's rows are not the Canvas's where it is woven otherwise or in a Bead of another size (tickets 492, 0665):
+  // draw it all again.
   const frame = layerOf(after, 'frame')
-  if (frame && !sameWeave(layerOf(after, 'canvas').weave, frame.weave) && layerOf(before, 'frame')?.beads !== frame.beads) {
+  if (frame && !layersAlike(after) && layerOf(before, 'frame')?.beads !== frame.beads) {
     return undefined
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.

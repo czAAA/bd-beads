@@ -1,13 +1,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useBackgroundSwatches } from '../../composables/canvas/useBackgroundSwatches'
 import type { Layer } from '../../domain/grid'
 import type { Background, Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
-import { canvasBackgrounds } from '../../rendering/canvasBackgrounds'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
-import { useResolvedTheme } from '../../theme/useResolvedTheme'
 import BackgroundColorPicker from '../palette/BackgroundColorPicker.vue'
-import { fillBlanks } from '../../domain/fillBlanks'
 
 // A layer's Background picker (ADR 0079, ticket 0666; CanvasBackground and ProjectPanel cards): the Project panel's
 // Canvas section and the Frame panel's background section. Five swatches in each theme and a Custom color, on the
@@ -22,43 +20,35 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const theme = useResolvedTheme()
 const backgrounds = useCanvasBackground(() => props.project)
-const shown = computed(() => backgrounds.shownOf(props.layer))
-
-const swatches = computed(() => {
-  const list = canvasBackgrounds(theme.value)
-  return list.map(({ id, color }, index) => {
-    const name = t.value.canvas.canvasColor.names[id]
-    return { id, color, name, label: fillBlanks(t.value.canvas.canvasColor.swatchLabel, { name, n: index + 1, count: list.length }) }
-  })
+const background = computed(() => backgrounds.shownOf(props.layer).background)
+/** The layer's Background as the picker's model stores it (ticket 0683); a pick is asked for, not stored here. The tile
+ * keeps the layer's own Custom color, else the last one taken on the device. */
+const picker = useBackgroundSwatches({
+  choice: computed(() => (typeof background.value === 'number' ? background.value : 'custom')),
+  customColor: computed(() => (typeof background.value === 'string' ? background.value : backgrounds.customColor.value)),
+  setChoice: (position) => emit('pick', position),
+  setCustomColor: (hex) => emit('pick', hex),
 })
-const selectedId = computed(() => (shown.value.choice === 'custom' ? undefined : swatches.value[shown.value.choice - 1]?.id))
-/** The tile keeps the layer's own Custom color, else the last one taken on the device. */
-const customColor = computed(() => (typeof shown.value.background === 'string' ? shown.value.background : backgrounds.customColor.value))
 /** Each layer's section: its radio group's name and its test ids. */
 const ofLayer = computed(() =>
   props.layer === 'canvas'
     ? { label: t.value.canvas.canvasColor.label, section: 'canvas-section', picker: 'canvas-color-picker' }
     : { label: t.value.frame.background.label, section: 'frame-background-section', picker: 'frame-background-picker' },
 )
-
-function choose(id: string) {
-  emit('pick', swatches.value.findIndex((swatch) => swatch.id === id) + 1)
-}
 </script>
 
 <template>
   <div class="background-section" :data-testid="ofLayer.section">
     <BackgroundColorPicker
-      v-if="swatches.length"
-      :swatches="swatches"
+      v-if="picker.offered.value"
+      :swatches="picker.swatches.value"
       :label="ofLayer.label"
-      :selected-id="selectedId"
-      :custom-color="customColor"
+      :selected-id="picker.selectedId.value"
+      :custom-color="picker.customColor.value"
       :data-testid="ofLayer.picker"
-      @select="choose"
-      @select-custom="emit('pick', $event)"
+      @select="picker.choose"
+      @select-custom="picker.chooseCustom"
     />
     <p v-else class="background-section__white" data-testid="canvas-stays-white">{{ t.panels.project.whiteInContrast }}</p>
   </div>

@@ -101,16 +101,16 @@ export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined
   return { weave: weaveOfLayer(project, layer)!, beadId: held.beadId, ...beadOfLayer(project, layer), beads: held.beads, ...(name ? { name } : {}) }
 }
 
-/** The Project with a layer written (ADR 0079): its Weave, beads and name into that layer, and a Bead or Bead shape into
- * every layer, which share them until ticket 0665. Not stamped as a change: the caller does that, as a change of view
- * is not. The same Project without a Frame. */
+/** The Project with a layer written (ADR 0079): its Weave, Bead, beads and name into that layer (ticket 0665), and a
+ * Bead shape into every layer, which share it until ticket 0670. Not stamped as a change: the caller does that, as a
+ * change of view is not. The same Project without a Frame. */
 export function withLayer(project: Project, layer: Layer, change: LayerChange): Project {
   const held = heldLayer(project, layer)
   if (!held) {
     return project
   }
   const { weave, bead, beadShape, beads, name } = change
-  const rewoven = { ...(weave ? { ...unwoven(held), ...weaveOf(weave) } : held), ...(beads ? { beads } : {}) }
+  const rewoven = withBead({ ...(weave ? { ...unwoven(held), ...weaveOf(weave) } : held), ...(beads ? { beads } : {}) }, bead, undefined)
   let layers: Project['layers']
   if (layer === 'canvas') {
     layers = [{ ...(rewoven as CanvasLayer), ...(name !== undefined ? { name } : {}) }, ...framesOf(project)]
@@ -119,7 +119,7 @@ export function withLayer(project: Project, layer: Layer, change: LayerChange): 
     const kept = name ?? previous
     layers = [canvasOf(project), { ...frame, ...(kept ? { name: kept } : {}) }, ...framesOf(project).slice(1)]
   }
-  return { ...project, layers: bead || beadShape ? mapLayers(layers, (each) => withBead(each, bead, beadShape)) : layers }
+  return { ...project, layers: beadShape ? mapLayers(layers, (each) => withBead(each, undefined, beadShape)) : layers }
 }
 
 /** Every layer changed alike, the Canvas still first. */
@@ -230,15 +230,15 @@ export function beadsOfLayer(project: Layered, layer: Layer): BeadMap | undefine
   return heldLayer(project, layer)?.beads
 }
 
-/** A layer's Bead copy and Bead shape (ADR 0068, 0072), which every layer shares until ticket 0665; a Frame the Project
- * lacks reads the Canvas's. Those of `layerOf`. */
+/** A layer's Bead copy and Bead shape (ADR 0068, 0072, 0079); a Frame the Project lacks reads the Canvas's, so the
+ * Frame's is the woven layer's. Those of `layerOf`. */
 export function beadOfLayer(project: Layered, layer: Layer): Pick<LayerRecord, 'bead' | 'beadShape'> {
   const held = heldLayer(project, layer) ?? canvasOf(project)
   return { ...(held.bead ? { bead: held.bead } : {}), beadShape: held.beadShape ?? DEFAULT_BEAD_SHAPE }
 }
 
-/** The id of a layer's Bead (ADR 0072), every layer's the same until ticket 0665: what its built-in colors and Swatch
- * letters are read from. A Frame the Project lacks reads the Canvas's. That of `layerOf`. */
+/** The id of a layer's Bead (ADR 0072, 0079). A Frame the Project lacks reads the Canvas's, so the Frame's is the woven
+ * layer's: what the Palette's built-in colors and Swatch letters are read from (ticket 0665). That of `layerOf`. */
 export function beadIdOfLayer(project: Layered, layer: Layer): string {
   return (heldLayer(project, layer) ?? canvasOf(project)).beadId
 }

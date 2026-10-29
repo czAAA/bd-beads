@@ -6,7 +6,7 @@ import { footprintOf } from '../domain/footprint'
 import type { BeadPlace, LayerGeometry } from '../domain/layerGeometry'
 import { MARGIN, withMargin } from '../domain/margin'
 import { laidFrame } from '../domain/frameOrientation'
-import { canvasWeave, frameWeave, sameWeave } from '../domain/layerWeave'
+import { canvasWeave, frameScale, frameWeave, layersAlike } from '../domain/layerWeave'
 import { isInCurrentRow, isInFinishedRow, rowProgressOn } from '../domain/rowProgress'
 import {
   BEAD_GAP_PX,
@@ -21,6 +21,7 @@ import {
 } from './beadLook'
 import type { MarginLook } from './marginLook'
 import { marginForm } from './marginForm'
+import { MARGIN_PX } from './marginSizes'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -36,7 +37,7 @@ import {
   setGridTransform,
   type Region,
 } from './surfaceView'
-import { beadsOfLayer, frameOf, heldWeave, type Layered, quarterTurnOf } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, type Layered, quarterTurnOf } from '../domain/layerRecord'
 
 // The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
 // is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
@@ -69,11 +70,11 @@ function visibleBeadsOpen(weave: Weave, area: { left: number; right: number; top
 }
 
 /** The beads in view of a space: with no edge on the Canvas, and within the Project otherwise. `origin` is where the
- * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492). The overlay culls by it
- * too (ticket 0675). */
-export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }): VisiblePositions {
+ * layer's first position sits in the space's grid px (a Frame laid over the Canvas, ticket 492), and `scale` how many
+ * grid px one of its own is (its Bead's size, ticket 0665). The overlay culls by it too (ticket 0675). */
+export function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: number, rotation: Rotation, origin: { x: number; y: number } = { x: 0, y: 0 }, scale = 1): VisiblePositions {
   const seen = regionInGridSpace(space.extent, region, zoom, rotation)
-  const area = { left: seen.left - origin.x, right: seen.right - origin.x, top: seen.top - origin.y, bottom: seen.bottom - origin.y }
+  const area = { left: (seen.left - origin.x) / scale, right: (seen.right - origin.x) / scale, top: (seen.top - origin.y) / scale, bottom: (seen.bottom - origin.y) / scale }
   return space.open ? visibleBeadsOpen(weave, area) : visibleBeads(weave, space.columns, space.rows, area)
 }
 
@@ -116,7 +117,8 @@ export interface RenderInput {
 }
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
- * take in its drawn extent where it is woven otherwise and so draws larger or smaller than that. */
+ * take in its drawn extent where it is woven otherwise or in a Bead of another size (ticket 0665) and so draws larger
+ * or smaller than that. */
 function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined {
   const frame = frameOf(project)
   if (!frame) {
@@ -126,13 +128,14 @@ function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined
   // With a `margin` the box also takes in the keep-out margin (ticket 501), which the Canvas draws nothing in.
   const grown = withMargin(footprintOf(project)!, margin)
   const own = gridBox(canvas, grown)
-  const held = heldWeave(project, 'frame')!
-  if (sameWeave(canvas, held)) {
+  if (layersAlike(project)) {
     return own
   }
   const origin = frameOriginPx(canvas, frame)
   const laid = laidFrame(project)!
-  const drawn = layerExtentPx(held, laid.columns, laid.rows)
+  const scale = frameScale(project)
+  const extent = layerExtentPx(frameWeave(project), laid.columns, laid.rows)
+  const drawn = { width: extent.width * scale, height: extent.height * scale }
   const left = Math.min(own.x, origin.x)
   const top = Math.min(own.y, origin.y)
   return { x: left, y: top, width: Math.max(own.x + own.width, origin.x + drawn.width) - left, height: Math.max(own.y + own.height, origin.y + drawn.height) - top }
@@ -153,7 +156,7 @@ function drawPositionMarks(
   const box = frameOf(project) && withMargin(footprintOf(project)!, margin)
   // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
   const held = frameFootprintPx(project, margin)
-  const alike = frameOf(project) !== undefined && sameWeave(canvas, heldWeave(project, 'frame')!)
+  const alike = layersAlike(project)
   const cut = box && held && (alike ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
   const hole = cut && { left: cut.x, right: cut.x + cut.width, top: cut.y, bottom: cut.y + cut.height }
   context.fillStyle = pattern
@@ -422,15 +425,9 @@ export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: 
   return { sheet, footprint, band }
 }
 
-// The margin's sheet (MarginSheet card, tickets 0656, 0658), in screen px: its corners (10px compact), its inner
-// border's inset (6px compact) and that border's corners. A folded sheet keeps its color and edge, no inner border.
-const SHEET_RADIUS_PX = { full: 12, compact: 10 }
-const BORDER_INSET_PX = { full: 10, compact: 6 }
-const BORDER_RADIUS_PX = 6
-
 /** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band in the margin color, the
- * Frame's footprint left out, a hairline edge and an inner border where it fits; none bare, which keeps only the Move
- * bar (ticket 0682). In grid space, its px divided by the zoom to stay screen px. */
+ * Frame's footprint left out, a hairline edge and an inner border where it fits; folded, no inner border; none bare,
+ * which keeps only the Move bar (ticket 0682). In grid space, its `MARGIN_PX` divided by the zoom to stay screen px. */
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
@@ -438,7 +435,7 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   if (form === 'bare') return
   const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(SHEET_RADIUS_PX[drawn], band) / zoom
+  const radius = Math.min(MARGIN_PX.sheetRadius[drawn], band) / zoom
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
@@ -453,11 +450,11 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   context.roundRect(sheet.x + half, sheet.y + half, sheet.width - 2 * half, sheet.height - 2 * half, Math.max(0, radius - half))
   context.stroke()
   if (form === 'full' || form === 'compact') {
-    const at = BORDER_INSET_PX[form] / zoom
+    const at = MARGIN_PX.place[form].border / zoom
     context.lineWidth = 1 / zoom
     context.strokeStyle = look.line
     context.beginPath()
-    context.roundRect(sheet.x + at, sheet.y + at, sheet.width - 2 * at, sheet.height - 2 * at, BORDER_RADIUS_PX / zoom)
+    context.roundRect(sheet.x + at, sheet.y + at, sheet.width - 2 * at, sheet.height - 2 * at, MARGIN_PX.borderRadius / zoom)
     context.stroke()
   }
   context.restore()
@@ -475,8 +472,8 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look: ProjectTheme = space.open ? { ...theme, background: theme.canvas } : theme
   const frameLook: ProjectTheme = space.open ? { ...frameTheme, background: frameTheme.canvas } : frameTheme
-  // A band of rows is the same rows of both layers only where they are woven alike.
-  const alike = !space.open || !frame || sameWeave(canvasWeave(project), heldWeave(project, 'frame')!)
+  // A band of rows is the same rows of both layers only where they are alike (woven alike, in Beads of one size).
+  const alike = !space.open || !frame || layersAlike(project)
   const band = alike ? rows : undefined
   const bandWeave = space.open ? canvasWeave(project) : frameWeave(project)
 
@@ -514,8 +511,19 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
       drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme })
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
-      // The band's rows are the Canvas's; the Frame's own are counted from its first (alike weaves only).
-      drawFrameLayer(context, { ...draw, look: frameLook, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+      // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's
+      // corner. The band's rows are the Canvas's; the Frame's own are counted from its first (alike layers only).
+      const scale = frameScale(project)
+      if (scale === 1) {
+        drawFrameLayer(context, { ...draw, look: frameLook, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+      } else {
+        const seen = { left: (area.left - origin.x) / scale, right: (area.right - origin.x) / scale, top: (area.top - origin.y) / scale, bottom: (area.bottom - origin.y) / scale }
+        context.save()
+        context.translate(origin.x, origin.y)
+        context.scale(scale, scale)
+        drawFrameLayer(context, { ...draw, look: frameLook, zoom: zoom * scale, area: seen, rows: undefined }, sheet, { x: 0, y: 0 })
+        context.restore()
+      }
     }
   } else if (space.hasFrame) {
     drawFrameLayer(context, { ...draw, look: frameLook }, space, { x: 0, y: 0 })

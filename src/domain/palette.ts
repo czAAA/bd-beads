@@ -239,9 +239,10 @@ export function moveSlot(ids: readonly string[], from: number, to: number): stri
   return next
 }
 
-/** The Palette of a Project as every reader asks it: its stored ids against its Bead's built-in colors (ticket 0528). */
+/** The Palette of a Project as every reader asks it: its stored ids against the built-in colors of its woven layer's
+ * Bead, the Frame's when there is one (tickets 0528, 0665). */
 export function projectPalette(project: Layered & { palette: PaletteIds; paletteCodes?: PaletteCodes }): Palette {
-  return createPalette(project.palette, defaultPalette(beadIdOfLayer(project, 'canvas')), project.paletteCodes)
+  return createPalette(project.palette, defaultPalette(beadIdOfLayer(project, 'frame')), project.paletteCodes)
 }
 
 /** A stored code map read back whatever it holds: only a lowercase-hex key with a non-empty string code is kept (ticket 0538). */
