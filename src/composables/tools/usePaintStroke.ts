@@ -2,6 +2,7 @@ import { ref } from 'vue'
 import { layerAt, onLayer, type Layer } from '../../domain/layers'
 import { fillArea } from '../../domain/fill'
 import { paintCells } from '../../domain/drawing'
+import type { GridPosition } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Tool } from '../../domain/tool'
 import type { Edit } from '../project/useEdit'
@@ -54,13 +55,22 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
   // woven rows (ticket 33). The one caller that defers its save (ticket 55): a stroke touches hundreds of cells a
   // second. The cell lands in the library at once; endStroke makes the stroke one write.
   function paintStrokeCell(row: number, column: number, color: string | null, layer?: Layer) {
+    paintStrokeCells([layer ? { row, column, layer } : { row, column }], color)
+  }
+
+  /** Paints the beads a stroke crossed in one pointer move as one stroke step (ticket 0674): each bead is kept or
+   * refused by the rules as if it came alone, and the lot lands in the library, and on screen, once. */
+  function paintStrokeCells(cells: GridPosition[], color: string | null) {
     // The pointer is over the other layer, where this one's positions are not (ADR 0066): nothing lands.
-    if (layer && layer !== strokeLayer) {
+    const landing = cells.filter((cell) => !cell.layer || cell.layer === strokeLayer)
+    if (landing.length === 0) {
       return
     }
-    deps.edit.strokeStep((project) =>
-      // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
-      onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, [local({ row, column })], color)),
+    deps.edit.strokeStep(
+      ...landing.map((cell) => (project: Project) =>
+        // The Frame holds only its own positions: a stroke that began in it leaves nothing where the pointer goes outside.
+        onLayer(project, strokeLayer, (sheet, local) => paintCells(sheet, [local({ row: cell.row, column: cell.column })], color)),
+      ),
     )
   }
 
@@ -84,5 +94,5 @@ export function usePaintStroke(deps: PaintStrokeDeps) {
     paintStrokeCell(row, column, color)
   }
 
-  return { strokeMode, beginStroke, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress }
+  return { strokeMode, beginStroke, endStroke, cancelStroke, paintStrokeCell, paintStrokeCells, beginOrCommitPress }
 }

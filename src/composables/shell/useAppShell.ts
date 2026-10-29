@@ -1,4 +1,4 @@
-import { inject, provide, ref, watch, type InjectionKey } from 'vue'
+import { computed, inject, provide, ref, watch, type InjectionKey } from 'vue'
 import { beadColorAt } from '../../domain/layerBeads'
 import { provideI18n } from '../../i18n/useI18n'
 import { plural } from '../../i18n/plural'
@@ -102,8 +102,6 @@ function wireAppShell(services: Services) {
   const currentProject = () => activeProject.value
   const messages = () => t.value
   const currentLocale = () => locale.value
-
-  const { projectLabel } = useProjectLabels({ currentProject, messages, locale: currentLocale })
 
   /** Short-lived results, shown as toasts in the canvas box (ticket 76). */
   const { toasts, show: showToast, dismiss: dismissToast } = useToasts()
@@ -378,7 +376,7 @@ function wireAppShell(services: Services) {
 
   /** A Paint-tool drag (ticket 24): the stroke lifecycle and its one undo step and one save (ticket 190). strokeMode
    * is 'paint'/'erase' while a stroke is in progress, else null. */
-  const { strokeMode, endStroke, cancelStroke, paintStrokeCell, beginOrCommitPress } = usePaintStroke({
+  const { strokeMode, endStroke, cancelStroke, paintStrokeCells, beginOrCommitPress } = usePaintStroke({
     currentProject,
     edit: editing,
     activeTool: () => activeTool.value,
@@ -388,6 +386,10 @@ function wireAppShell(services: Services) {
   /** The open Project for what only summarises it: it follows a stroke a few times a second, and is exact when the
    * stroke ends. */
   const settledProject = useSettledProject(currentProject, () => strokeMode.value !== null)
+
+  /** The Project's accessible name counts its colors, so it waits for a stroke's end to follow it (ticket 0674). */
+  const labelledProject = useSettledProject(currentProject, () => strokeMode.value !== null, Infinity)
+  const { projectLabel } = useProjectLabels({ currentProject: () => labelledProject.value, messages, locale: currentLocale })
 
   /** The canvas panel's horizontal scroller (ticket 95), which Space+drag scrolls sideways; vertical panning scrolls
    * the window, as nothing traps vertical overflow. */
@@ -414,6 +416,7 @@ function wireAppShell(services: Services) {
     pasteAtPointer,
     onCellPrimaryDown,
     onCellPrimaryMove,
+    onCellsPrimaryMove,
   } = useCanvasPointer({
     currentProject,
     activeTool: () => activeTool.value,
@@ -430,7 +433,7 @@ function wireAppShell(services: Services) {
       if (mode === 'paint' && color) onPaintColorUsed(color)
       beginOrCommitPress(mode, color, row, column, layer)
     },
-    paintStrokeCell,
+    paintStrokeCells,
     pasteAt: pasteAtCell,
     pickColorAt,
   })
@@ -670,6 +673,8 @@ function wireAppShell(services: Services) {
       zoom,
       scroll,
       showRulers,
+      /** Whether a Paint or Eraser stroke is going on, so the surface holds what it counts until it ends (ticket 0674). */
+      stroking: computed(() => strokeMode.value !== null),
       toggleRulers,
       rowHighlight,
       toggleRowHighlight,
@@ -706,6 +711,7 @@ function wireAppShell(services: Services) {
       previewStamp,
       onCellPrimaryDown,
       onCellPrimaryMove,
+      onCellsPrimaryMove,
       onCellHover,
       onHoverEnd,
       selection,

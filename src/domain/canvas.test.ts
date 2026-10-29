@@ -3,6 +3,7 @@ import { beadBounds, beadCount, beadsFromColors, beadsInFrame, changedPositions,
 import { BEAD_CATALOG } from './beads'
 import { createProject } from './createProject'
 import { paintAt } from '../testUtils/layers'
+import { countingBeads } from '../testUtils/countingBeads'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -27,6 +28,30 @@ describe('beads by position', () => {
     expect(Object.keys(erased)).toEqual(['1'])
     expect(beadBounds(erased)).toEqual({ row: 1, column: 1, rows: 1, columns: 1 })
     expect(beadBounds({})).toBeUndefined()
+  })
+
+  it('grows the bounds of an edited set of beads from the rows it changed, and measures afresh when an edge column empties (ticket 0674)', () => {
+    const square = Array.from({ length: 300 * 300 }, (_, i) => ({ row: Math.floor(i / 300), column: i % 300, color: '#f00' }))
+    const counting = countingBeads(withColors({}, square))
+    expect(beadBounds(counting.beads)).toEqual({ row: 0, column: 0, rows: 300, columns: 300 })
+    counting.reset()
+
+    // Growing, recolouring, and erasing a bead of an edge column that still has others: only those rows are read.
+    const grown = withColors(counting.beads, [{ row: -2, column: 310, color: '#0f0' }])
+    const recoloured = withColors(grown, [{ row: 150, column: 3, color: '#0f0' }])
+    const nicked = withColors(recoloured, [{ row: 10, column: 0, color: null }])
+    expect([beadBounds(grown), beadBounds(recoloured), beadBounds(nicked)]).toEqual([
+      { row: -2, column: 0, rows: 302, columns: 311 },
+      { row: -2, column: 0, rows: 302, columns: 311 },
+      { row: -2, column: 0, rows: 302, columns: 311 },
+    ])
+    // Row 0 is where the left column is found to still have a bead: one lookup.
+    expect([...counting.reads.rows].sort((a, b) => a - b)).toEqual([0, 10, 150])
+    expect(counting.reads.beads).toBeLessThan(2 * 300 * 4)
+
+    // The edge column emptied: the bounds shrink.
+    const column0 = Array.from({ length: 300 }, (_, row) => ({ row, column: 0, color: null }))
+    expect(beadBounds(withColors(nicked, column0))).toEqual({ row: -2, column: 1, rows: 302, columns: 310 })
   })
 
   it('visits beads in reading order and counts them', () => {

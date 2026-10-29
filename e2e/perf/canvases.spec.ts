@@ -17,6 +17,8 @@ const TECHNIQUES = (process.env.PERF_TECHNIQUES ?? 'loom,peyote').split(',') as 
 const FIXTURES = process.env.PERF_FIXTURES?.split(',')
 const ONLY = process.env.PERF_ONLY?.split(',')
 
+/** How long the opening view is given to draw itself sharp (gestureView's settle, at the slowest slowdown). */
+const OPENING_SETTLE_MS = 1500
 /** How long a stroke, a pan or a hover runs. */
 const RUN_MS = 2000
 /** Budgets ("Canvas performance for large patterns", after RAIL): script per pointer move, and one edit's response. */
@@ -205,6 +207,8 @@ for (const slowdown of SLOWDOWNS) {
         await watchLongFrames(page)
         await openApp(page, fixture.library)
         const cdp = await throttle(page, slowdown)
+        // The view opened at the fit draws sharp once it has stood still a while (gestureView): not part of what's measured.
+        await page.waitForTimeout(OPENING_SETTLE_MS)
         await settle(page)
         const record: Recorder = (what, measured) => results.push({ slowdown, technique, fixture: fixture.name, what, ...measured })
         for (const scenario of scenarios) {
