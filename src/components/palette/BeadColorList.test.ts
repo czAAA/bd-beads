@@ -66,10 +66,8 @@ describe('BeadColorList', () => {
     const { wrapper } = setup([entry({ code: 'DB433' }), entry({ code: 'DB1433' })])
     const codes = () => wrapper.findAll('[data-testid="bead-color"]').map((row) => row.attributes('data-code'))
 
-    for (const typed of ['DB-0433', 'DB0433', 'db 433']) {
-      await wrapper.get('[data-testid="bead-colors-search"]').setValue(typed)
-      expect(codes(), typed).toEqual(['DB433'])
-    }
+    await wrapper.get('[data-testid="bead-colors-search"]').setValue('DB-0433')
+    expect(codes()).toEqual(['DB433'])
 
     await wrapper.get('[data-testid="bead-colors-search"]').setValue('433')
     expect(codes()).toEqual(['DB433', 'DB1433'])

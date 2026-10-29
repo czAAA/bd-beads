@@ -27,9 +27,9 @@ const miyukiRoundCode: CodeShape = (typed, size) => {
   return `${match[2]}${match[3]}`
 }
 
-/** TOHO, whose own code is the bare `49`, sold as `TO11R49` or `11-49` (research note, Perles & Co): a size is read only
- * before `R`, a dash or a space, so `1149` stays the code 1149. No shop form of the Cube's `1.5mm` is known, so a Cube
- * takes no size prefix. */
+/** TOHO, whose own code is the bare `49` (`PF21` in its PF series), sold as `TO11R49` or `11-49` (research note, Perles
+ * & Co): a size is read only before `R`, a dash or a space, so `1149` stays the code 1149. No shop form of the Cube's
+ * `1.5mm` is known, so a Cube takes no size prefix. */
 const tohoCode: CodeShape = (typed, size) => {
   const match = /^(?:TO)?(?:(\d+)(?:R|[-\s])\s*)?(PF)?0*(\d+)([A-Z]*)$/.exec(typed)
   if (!match || (match[1] && match[1] !== sizeDigits(size))) return undefined
