@@ -1,17 +1,26 @@
 // @vitest-environment node
 import { existsSync, readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { FRAME_SHAPE_IDS, frameShapeOf, isFrameShape, removedBeadsOf, rowOrderOf, type FrameSettings } from './frameShape'
+import { FRAME_SHAPE_IDS, frameAllows, frameShapeOf, isFrameShape, rowOrderOf, techniquesOf, type FrameSettings } from './frameShape'
+import { TECHNIQUES } from './weave'
 import type { Weave } from './weave'
 
 /** A bare Frame of `rows` by `columns` positions in a Weave, with no Frame shape stored. */
 const sheet = (rows: number, columns: number, weave: Weave = { technique: 'loom' }) => ({ rows, columns, ...weave })
 
 describe('the Frame shape (spec 0590, ticket 0591, ADR 0079)', () => {
-  it('reads a Frame with no shape as a Frame, which drops its beads onto the Canvas on Remove Frame', () => {
+  it('reads a Frame with no shape as a Frame, woven in any Technique', () => {
     expect(frameShapeOf({})).toBeUndefined()
-    expect(removedBeadsOf({})).toBe('dropped')
-    expect(removedBeadsOf({ shape: 'triangle' })).toBe('removed')
+    expect(techniquesOf({})).toEqual(TECHNIQUES)
+    expect(techniquesOf(undefined)).toEqual(TECHNIQUES)
+  })
+
+  it('gives a Custom frame every Frame action but Remove row/column, woven in its shape\'s Techniques (ticket 0669)', () => {
+    expect(techniquesOf({ shape: 'triangle' })).toEqual(['peyote'])
+    expect(techniquesOf({ shape: 'fringeEarring' })).toEqual(['brick'])
+    for (const action of ['resize', 'from-selection', 'rotate', 'technique', 'select'] as const) expect(frameAllows({ shape: 'star' }, action)).toBe(true)
+    expect(frameAllows({ shape: 'star' }, 'remove-line')).toBe(false)
+    expect(frameAllows({}, 'remove-line')).toBe(true)
   })
 
   it('knows no "rectangular" shape: a Frame without one is just a Frame (ticket 0668)', () => {

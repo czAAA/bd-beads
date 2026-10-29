@@ -19,12 +19,14 @@ const props = defineProps<{
   techniqueDisabledBody?: string
   /** The prefix of the controls' test ids. */
   testid: string
+  /** The Techniques offered (a Custom frame's shape's, ADR 0079); every one when none are given. */
+  techniques?: readonly Technique[]
 }>()
 const technique = defineModel<Technique>('technique', { required: true })
 const emit = defineEmits<{ 'set-setting': [id: string, value: number] }>()
 
 const { t } = useI18n()
-const options = computed(() => TECHNIQUES.map((value) => ({ value, label: techniqueName(t.value, value) })))
+const options = computed(() => (props.techniques ?? TECHNIQUES).map((value) => ({ value, label: techniqueName(t.value, value) })))
 const steppers = computed(() =>
   describeWeave({ technique: technique.value }).settings.map((setting) => ({
     setting,

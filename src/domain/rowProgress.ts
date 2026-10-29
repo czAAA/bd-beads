@@ -147,30 +147,23 @@ export function progressWithoutLine(project: RowProgressed, line: AreaLine): Row
   return rowProgress
 }
 
-/** Row progress turned with its Frame a quarter clockwise (Rotate Frame, ticket 0647, ADR 0052): each way's pointer
- * and the current way move a quarter turn on (top to bottom to right to left, left to right to top to bottom, and so
- * on), so the same beads stay finished. `twoPasses` and `rows` are the Frame's before the turn. */
-export function turnedRowProgress(rowProgress: RowProgress, { twoPasses, rows }: { twoPasses: boolean; rows: number }): RowProgress {
-  // A column's beads run the other way once turned: on peyote with even columns its two passes swap, so a column half
-  // woven can't keep its done half and goes back to its start.
-  const alongTurned = (pointer: number) => (twoPasses && rows % 2 === 0 && pointer >= 2 && pointer % 2 === 0 ? pointer - 1 : pointer)
-  const { direction, reversed, currentRow, currentColumn, currentRowBack = 0, currentColumnBack = 0 } = rowProgress
-  const way = direction === 'rows' ? { direction: 'columns' as const, reversed: !reversed } : { direction: 'rows' as const, reversed: !!reversed }
-  const rowBack = alongTurned(currentColumnBack)
-  return {
-    direction: way.direction,
-    ...(way.reversed ? { reversed: true } : {}),
-    currentRow: alongTurned(currentColumn),
-    currentColumn: currentRowBack,
-    ...(rowBack ? { currentRowBack: rowBack } : {}),
-    ...(currentRow ? { currentColumnBack: currentRow } : {}),
-  }
-}
-
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
  * untouched. */
 export function resetRowProgress(project: Project): Project {
   return touch(project, { rowProgress: firstPasses(project.rowProgress) })
+}
+
+/** Which way the rows run on the Canvas, as an arrow points: down is top to bottom. */
+export type ShownWay = 'down' | 'left' | 'up' | 'right'
+
+/** The ways in the order a quarter turn clockwise takes each to the next. */
+const CLOCKWISE: readonly ShownWay[] = ['down', 'left', 'up', 'right']
+
+/** Which way the rows run as the Frame lies (ticket 0667, ADR 0079): its own way (top to bottom, left to right and back),
+ * turned with the Frame on the Canvas, whose own rows and pointers do not change. */
+export function shownWay({ direction, reversed }: Pick<RowProgress, 'direction' | 'reversed'>, quarterTurns = 0): ShownWay {
+  const own: ShownWay = direction === 'rows' ? (reversed ? 'up' : 'down') : reversed ? 'left' : 'right'
+  return CLOCKWISE[(CLOCKWISE.indexOf(own) + quarterTurns) % 4]!
 }
 
 /** Flips which way the weaver's rows run across the grid (see RowDirection), leaving the grid and the rotated view
@@ -203,8 +196,9 @@ export function frameRowOrder(project: RowProgressed): RowOrder {
   return rowOrderOf({ ...frameWeave(project), ...laidOf(project.frame), rows, columns }, project.rowProgress)
 }
 
-/** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. */
-function framePassAt(project: RowProgressed, position: GridPosition): number | undefined {
+/** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. `order` is the
+ * Frame's Row order, for a caller that has it already. */
+function framePassAt(project: RowProgressed, position: GridPosition, order: () => RowOrder = () => frameRowOrder(project)): number | undefined {
   const frame = project.frame
   // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on.
   if (!frame || position.layer === 'canvas') {
@@ -216,7 +210,7 @@ function framePassAt(project: RowProgressed, position: GridPosition): number | u
   if (!frameContains(frame, position) && !frameGeometryOf(project).hasPosition(own)) {
     return undefined
   }
-  return frameRowOrder(project).passAt(own)
+  return order().passAt(own)
 }
 
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
@@ -225,6 +219,18 @@ function framePassAt(project: RowProgressed, position: GridPosition): number | u
 export function isInFinishedRow(project: RowProgressed, position: GridPosition): boolean {
   const pass = framePassAt(project, position)
   return pass !== undefined && pass < currentPass(project.rowProgress)
+}
+
+/** `isInFinishedRow` for many positions at once (ticket 0675): the Frame's Row order worked out once, not for each, for
+ * a paste preview that asks of every bead it shows. */
+export function finishedRowsOf(project: RowProgressed): (position: GridPosition) => boolean {
+  const current = currentPass(project.rowProgress)
+  if (!project.frame || current === 0) return () => false
+  let order: RowOrder | undefined
+  return (position) => {
+    const pass = framePassAt(project, position, () => (order ??= frameRowOrder(project)))
+    return pass !== undefined && pass < current
+  }
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the

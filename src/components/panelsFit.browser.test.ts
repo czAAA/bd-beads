@@ -6,6 +6,7 @@ import { PANEL_CONTEXT } from './shell/panelContext'
 import CanvasStrip from './canvas/CanvasStrip.vue'
 import ExportPanel from './canvas/ExportPanel.vue'
 import FramePanel from './canvas/FramePanel.vue'
+import { rotateFrame } from '../domain/rotate'
 import ProjectPanel from './project/ProjectPanel.vue'
 import NewProjectForm from './project/NewProjectForm.vue'
 import DuplicateProjectModal from './project/DuplicateProjectModal.vue'
@@ -57,6 +58,7 @@ const CASES: FitCase[] = [
   ['FramePanel (all colors shown)', inPanel(FramePanel, { project: painted }), {}, showAll],
   ['FramePanel (no name, exporting)', inPanel(FramePanel, { project: framed, exporting: 'pdf' }), {}],
   ['FramePanel (rows done)', inPanel(FramePanel, { project: { ...painted, rowProgress: { ...painted.rowProgress, currentRow: 1 } } }), {}],
+  ['FramePanel (turned)', inPanel(FramePanel, { project: rotateFrame(painted)! }), {}],
   ['FramePanel (no Frame)', inPanel(FramePanel, { project }), {}],
   ['FramePanel (Fringe earring)', inPanel(FramePanel, { project: earring }), {}],
   ['ExportPanel', inPanel(ExportPanel, { project: painted }, smallPanel), {}],

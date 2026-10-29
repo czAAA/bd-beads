@@ -6,7 +6,7 @@ import type { VueWrapper } from '@vue/test-utils'
 import ProjectSurface from '../components/canvas/ProjectSurface.vue'
 import { type GridPosition, type PreviewCell, type Rotation } from '../domain/grid'
 import type { Technique, TechniqueSettings } from '../domain/weave'
-import type { Selection } from '../domain/selection'
+import { stampCells, type PasteStamp, type Selection } from '../domain/selection'
 import { OPEN_SPACE } from '../rendering/space'
 import type { RulerLabel } from '../rendering/rulers'
 import { surfaceView } from '../rendering/surfaceView'
@@ -125,7 +125,8 @@ export function selectedBeadCount(wrapper: Anywhere): number {
 // The beads a hover preview shows a color on, each with the color it shows (a pasted block's own, or the paint color);
 // a bead with none is drawn as a plain outline and is left out.
 export function previewedBeads(wrapper: Anywhere): (GridPosition & { color: string })[] {
-  const cells: PreviewCell[] = surface(wrapper).props('previewCells') ?? []
+  const stamp: PasteStamp | undefined = surface(wrapper).props('previewStamp')
+  const cells: PreviewCell[] = [...(surface(wrapper).props('previewCells') ?? []), ...(stamp ? stampCells(stamp) : [])]
   const fallback = surface(wrapper).props('previewColor')
   return cells.flatMap((cell) => {
     const color = cell.color ?? fallback

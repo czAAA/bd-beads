@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { h } from 'vue'
 import FramePanel from './FramePanel.vue'
+import { rotateFrame } from '../../domain/rotate'
 import PanelHost from '../shell/PanelHost.vue'
 import { HOLD_DELAY_MS } from '../../composables/ui/useHoldRepeat'
 import { createProject } from '../../domain/createProject'
@@ -156,6 +157,16 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
     expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="frame-size-locked"]').text()).toBe(en.frame.sizeLockedLine)
+  })
+
+  it('shows a turned Frame\'s size as seen, off until it is upright, and keeps Rotate Frame (ticket 0667)', () => {
+    const wrapper = mountBar(rotateFrame(framed())!)
+    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('placeholder')).toBe('6')
+    expect(wrapper.get('[data-testid="frame-panel-height"]').attributes('placeholder')).toBe('5')
+    expect(wrapper.get('[data-testid="frame-panel-width"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="frame-edge-top-out"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="frame-size-turned"]').text()).toBe(en.frame.sizeTurnedLine)
+    expect(wrapper.get('[data-testid="frame-rotate"]').attributes('aria-disabled')).toBeUndefined()
   })
 
   it('asks its parent to remove and rotate, and passes keys up', async () => {
