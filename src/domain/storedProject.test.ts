@@ -6,7 +6,8 @@ import { normalizeProject } from './storedProject'
 import { rotateCanvas } from './rotate'
 import { withFrame } from './frame'
 import { BEAD_CATALOG } from './beads'
-import { beadsOfLayer, frameOf, orientationOf } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, orientationOf } from './layerRecord'
+import { replaceBead } from './projectBead'
 import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 import { legacyRecordOf } from '../testUtils/legacyFile'
 import { type RowProgress } from './project'
@@ -14,6 +15,16 @@ import { type RowProgress } from './project'
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 describe('normalizeProject', () => {
+  it("reads each layer's own Bead back, and the Palette's built-in colors from the Frame's (ticket 0665)", () => {
+    const delica = BEAD_CATALOG.find((bead) => bead.id === 'miyuki/delica/11-0')!
+    const framed = replaceBead(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), delica)
+    const reopened = normalizeProject(JSON.parse(JSON.stringify(framed)))
+
+    expect([canvasOf(reopened).beadId, frameOf(reopened)!.beadId]).toEqual([cubeBead.id, delica.id])
+    expect(reopened.palette).toEqual(framed.palette)
+    expect(reopened.paletteLetters).toEqual(framed.paletteLetters)
+  })
+
   it('keeps a reversed way and its pointers through a save, and opens an old file with neither (ticket 0589)', () => {
     const framed = withFrame(createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 3, height: 4, unit: 'beads' } }), { row: 0, column: 0, rows: 4, columns: 3 })
     const upward = moveToRow(toggleRowDirection(toggleRowDirection(framed)), 3)
