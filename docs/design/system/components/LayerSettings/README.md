@@ -5,7 +5,7 @@ The one section that sets a layer (ADR 0079, ticket 0670): the Canvas or a Frame
 - **New Project form** (NewPatternForm card): both layers of the new Project start from it. Nothing is asked; each pick is kept in the form.
 - **Project panel, canvas section** (ProjectPanel card): the Canvas's. It changes any time, with a Frame and once Row progress has started, as Row progress belongs to the Frame.
 - **Frame panel, settings section** (Frame card): the Frame's.
-- **Starter setup** (StarterGallery card): the Starter's Frame, from ticket 0671.
+- **Starter setup** (StarterGallery card, ticket 0671): the Starter's Frame, pre-filled from the Starter. Nothing is asked; each pick is kept in the setup. Its shape's sizes are the setup's own rows, so no shape settings show here.
 
 ## Layout (top to bottom, in the panel's density, MenuPanel card)
 

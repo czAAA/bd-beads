@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { findBead } from './beads'
 import { beadCount } from './canvas'
 import { changeFrame, type FrameChangeResult } from './changeFrame'
-import { FRAME_SHAPE_IDS, frameShapeOf, frameLayoutOf, settingsOf, type FrameSettings } from './frameShape'
+import { FRAME_SHAPE_IDS, frameShapeOf, frameLayoutOf, settingsOf, techniquesOf, type FrameSettings } from './frameShape'
 import { createProject } from './createProject'
 import { weaveOf } from './layerWeave'
 import { TECHNIQUES } from './weave'
@@ -25,7 +25,7 @@ import {
   usRingSize,
   type StarterManifest,
 } from './starters'
-import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
+import { beadsOfLayer, canvasOf, frameOf, withBackground, withLayer } from './layerRecord'
 import { frameSheetOf, layersView, withLayers } from '../testUtils/layerFields'
 
 const beadId = 'miyuki/delica/11-0'
@@ -88,14 +88,14 @@ describe('the Starter manifests (ticket 0633)', () => {
   })
 
   for (const starter of allStarters) {
-    it(`gives the ${starter.id} Starter a known Frame shape or none, a Technique, and the sizes and choices its measuring rule reads`, () => {
+    it(`gives the ${starter.id} Starter a known Frame shape or none, one Weave its shape supports, and the sizes and choices its measuring rule reads`, () => {
       const custom = frameShapeOf(starter)
       if (starter.shape) expect(FRAME_SHAPE_IDS).toContain(starter.shape)
-      expect(TECHNIQUES).toContain(starter.technique)
+      expect(TECHNIQUES).toContain(starter.weave.technique)
+      expect(techniquesOf(starter), 'its shape supports its Technique').toContain(starter.weave.technique)
       const ids = starter.sizes.map((size) => size.id)
       expect(new Set(ids).size).toBe(ids.length)
       if (starter.measure === 'frame') {
-        expect(custom?.techniques).toContain(starter.technique)
         expect(ids).toEqual(expect.arrayContaining(custom!.settings.map((setting) => setting.id)))
       } else {
         expect(custom).toBeUndefined()
@@ -133,6 +133,52 @@ describe('a new Project from a Starter', () => {
     for (const id of ['kite', 'vFringe', 'bandPlaid'] as const) {
       expect(JSON.stringify(starterProject(starterById(id), { name: 'Piece', beadId, ...asDesigned(id) }))).not.toMatch(/starter/i)
     }
+  })
+})
+
+describe('the Frame\'s Layer settings from a Starter\'s setup (ADR 0079, ticket 0671)', () => {
+  const toho = 'toho/cube/1.5mm'
+  const set = { beadId: toho, beadShape: 'real' as const, background: '#123456' }
+
+  it('gives a new Project\'s Frame the setup\'s Weave, Bead, Bead shape and Background, and the Canvas copies them', () => {
+    const project = starterProject(starterById('bandStripes'), { name: 'Band', ...asDesigned('bandStripes'), weave: { technique: 'loom' }, ...set })
+    for (const layer of [canvasOf(project), frameOf(project)!]) {
+      expect(layer).toMatchObject({ technique: 'loom', beadId: toho, beadShape: 'real', background: '#123456' })
+    }
+  })
+
+  it('on an open Project sets only the Frame: the Canvas keeps its Weave, Bead, Bead shape and Background', () => {
+    const open = withBackground(createProject({ technique: 'loom', beadId, name: 'Open' }), 'canvas', 2)
+    const result = placedStarter(open, starterById('triangle'), { ...asDesigned('triangle'), ...set }, { row: 20, column: 20 })
+    if (result.kind !== 'changed') throw new Error(result.kind)
+    expect(frameOf(result.project)).toMatchObject({ shape: 'triangle', technique: 'peyote', beadId: toho, beadShape: 'real', background: '#123456' })
+    expect(frameOf(result.project)!.beads).toEqual(starterDesign(starterById('triangle')))
+    expect(canvasOf(result.project)).toEqual(canvasOf(open))
+  })
+
+  it('replaces a Frame\'s own Bead, Bead shape and Background with the setup\'s', () => {
+    const open = createProject({ technique: 'peyote', beadId, name: 'Open', size: { unit: 'beads', width: 10, height: 10 } })
+    const framed = withBackground(withLayer(open, 'frame', { beadShape: 'real' }), 'frame', 4)
+    const result = placedStarter(framed, starterById('kite'), { ...asDesigned('kite'), ...set, beadShape: 'symmetric' }, { row: 30, column: 30 })
+    if (result.kind !== 'changed') throw new Error(result.kind)
+    expect(frameOf(result.project)).toMatchObject({ shape: 'kite', beadId: toho, background: '#123456' })
+    expect(frameOf(result.project)!.beadShape).toBeUndefined()
+  })
+
+  it('measures a Ring\'s length in the setup\'s Bead, not the Project\'s', () => {
+    const open = createProject({ technique: 'loom', beadId, name: 'Open' })
+    const result = placedStarter(open, starterById('ringStripes'), { sizes: { width: 7, ringSize: 54 }, useDesign: false, ...set }, { row: 50, column: 50 })
+    if (result.kind !== 'changed') throw new Error(result.kind)
+    // 58 mm of 1.5 mm cubes: 39 columns.
+    expect(frameSheetOf(result.project)).toMatchObject({ rows: 7, columns: 39 })
+  })
+
+  it('sizes and counts a Starter in the Technique the setup chose', () => {
+    const ring = { sizes: { width: 7, ringSize: 54 }, useDesign: false }
+    // Peyote counts each column twice round; loom once.
+    expect(starterMeasure(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toMatchObject({ rows: 36 })
+    expect(starterBeadCount(starterById('ringStripes'), { ...ring, weave: { technique: 'loom' } }, delica)).toBe(252)
+    expect(starterBeadCount(starterById('triangle'), { ...asDesigned('triangle'), weave: { technique: 'peyote' } }, delica)).toBe(165)
   })
 })
 

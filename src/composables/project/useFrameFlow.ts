@@ -16,7 +16,7 @@ import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain
 import { grownFrame } from '../../domain/frameGrowth'
 import { changedSetting, frameAllows, settingsOf, settingValuesOf, sizeSettingOf, type FrameSettings } from '../../domain/frameShape'
 import { namedPieceCutBy } from '../../domain/pieceNames'
-import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
+import { placedStarter, type Starter, type StarterChoice, type StarterLayerSettings } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
 import { frameOf, heldWeave, layerOf } from '../../domain/layerRecord'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
@@ -347,10 +347,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     place()
   }
 
-  /** Add Frame from Starter and Replace Frame (tickets 495, 0596): the Starter's Frame, pre-filled with its design or
-   * empty, round the middle of the view, in place of any Frame there; one Undo step. Replacing a Frame that holds beads
-   * asks first, as they go with it. */
-  function placeFromStarter(starter: Starter, choice: StarterChoice): void {
+  /** Add Frame from Starter and Replace Frame (tickets 495, 0596, 0671): the Starter's Frame in the setup's Layer
+   * settings, pre-filled with its design or empty, round the middle of the view, in place of any Frame there; one Undo
+   * step. Replacing a Frame that holds beads asks first, as they go with it. */
+  function placeFromStarter(starter: Starter, choice: StarterChoice & Partial<StarterLayerSettings>): void {
     replaceAsking(() => {
       const centre = deps.visibleCentre() ?? { row: 0, column: 0 }
       const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
