@@ -31,7 +31,7 @@ No export buttons and no slider. Under the title line:
 - **Select a frame** (`select`): closes the panel and makes Select the tool; the next drag becomes the Frame on release (Frame card, ticket 0568).
 - **Fit a frame to the drawing** (`fit`): disabled with "Nothing is drawn yet to fit a frame to." while nothing is drawn.
 
-The rows are the Frame panel's own. Once a Frame is set the panel shows the export rows the next time it opens.
+The rows are the Frame panel's own. Fit keeps the panel open, and once the Frame is set it shows the export rows at once; Select a frame closes it.
 
 ## Copy
 

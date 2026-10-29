@@ -5,6 +5,7 @@ import AppDialogs from './AppDialogs.vue'
 import AppPanels from './AppPanels.vue'
 import { changeFrame } from '../../domain/changeFrame'
 import { createProject } from '../../domain/createProject'
+import { withColors } from '../../domain/canvas'
 import { findBead } from '../../domain/beads'
 import { loadProjects, saveProjects } from '../../services/libraryStore'
 import { en } from '../../i18n/en'
@@ -255,5 +256,20 @@ describe('The Frame panel', () => {
     await nextTick()
     mounted.canvas.onUndo()
     expect(loadProjects()[0]!.frame!.settings).toEqual({ rounds: 6 })
+  })
+})
+
+describe('The Export panel', () => {
+  it('fits a frame to the drawing from the no-Frame view, then shows the exports (ticket 0652)', async () => {
+    const { frame: _frame, ...open } = moth()
+    saveProjects([{ ...open, beads: withColors({}, [{ row: 2, column: 2, color: '#ff0000' }, { row: 4, column: 5, color: '#00ff00' }]) }])
+    const mounted = mountPanels()
+    await mounted.openPanel('export')
+    expect(mounted.wrapper.find('[data-testid="export-png"]').exists()).toBe(false)
+
+    await click(mounted, 'export-fit')
+
+    expect(loadProjects()[0]!.frame).toBeDefined()
+    expect(mounted.wrapper.find('[data-testid="export-png"]').exists()).toBe(true)
   })
 })
