@@ -10,6 +10,7 @@ import type { RulerLayout } from '../../../rendering/rulers'
 import type { Space } from '../../../rendering/space'
 import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceView'
 import type { Size } from '../../../rendering/cellSize'
+import type { HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
@@ -97,6 +98,8 @@ export interface SurfaceOverlayDeps {
   framing: Ref<boolean>
   /** Whether the last pointer was a finger: the Frame's and Selection's handles are the larger ones. */
   touchInput: Ref<boolean>
+  /** The Frame's handle under the pointer or being dragged: drawn grown, its corner with the size Tooltip (ticket 0657). */
+  hotHandle: Ref<HandleId | undefined>
   marginOpacity: Ref<number>
   oncePerFrame: (draw: () => void) => () => void
 }
@@ -104,12 +107,14 @@ export interface SurfaceOverlayDeps {
 /** Keeps the overlay drawn (overlayRenderer): everything over the beads that comes and goes with a tool or the pointer,
  * redrawn once per frame whenever any of it changes. */
 export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
-  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, marginOpacity } = deps
+  const { props, canvas: canvasEl, size, space, surface, rulers, theme, marksShown, markerAt, framing, touchInput, hotHandle, marginOpacity } = deps
 
   /** Whether a stepper or a key has just changed the Frame's size: the size tooltip shows then too (ticket 452). */
   const sizeFlash = ref(false)
   let sizeTimer: ReturnType<typeof setTimeout> | undefined
-  const sizeShown = computed(() => framing.value || sizeFlash.value)
+  /** A corner under the pointer shows the size beside it (MarginSheet card). */
+  const hotCorner = computed(() => !!hotHandle.value && hotHandle.value.includes('-'))
+  const sizeShown = computed(() => framing.value || sizeFlash.value || hotCorner.value)
   /** The Frame's size tooltip follows a size change that did not come from a drag (an edge stepper, a key) for a
    * moment. */
   watch(
@@ -148,7 +153,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
         preview: !tools.picking && props.previewCells && props.previewCells.length > 0 ? { cells: props.previewCells, color: props.previewColor ?? null } : undefined,
         selection: props.selection,
         marginOutline: marginOpacity.value,
-        frameEditing: tools.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '' } : undefined,
+        frameEditing: tools.settingFrame ? { touch: touchInput.value, tooltip: sizeShown.value ? (props.frameTooltip ?? '') : '', hot: hotHandle.value } : undefined,
         selectionHandles: tools.selects ? { surface: surface.value, touch: touchInput.value } : undefined,
         rulers: { layout: rulers.value, surface: surface.value },
       })
@@ -176,6 +181,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
       () => props.frameTooltip,
       marginOpacity,
       touchInput,
+      hotHandle,
       theme,
     ],
     deps.oncePerFrame(drawOverlay),

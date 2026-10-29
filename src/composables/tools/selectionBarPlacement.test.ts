@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { editPencilCentre, moveHandleCentre, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
+import { overlapsSelectionHandles, selectionBarPlacement, type BarBox } from './selectionBarPlacement'
 
 const bar = { width: 100, height: 28 }
 const viewport = { width: 400, height: 300 }
@@ -29,50 +29,16 @@ describe('selectionBarPlacement (ticket 415)', () => {
 })
 
 
-describe('the Move handle and the edit pencil in the Frame\'s gutter (ticket 473, ADR 0066)', () => {
-  const anchor = {
-    box: { left: 150, top: 100, width: 100, height: 60 },
-    viewport,
-  }
+describe('what of the margin sheet gives way to a Selection\'s handles (tickets 498, 0657)', () => {
+  const selection = { left: 100, top: 100, width: 200, height: 100 }
 
-  it('puts the handle in the gutter above the Frame, centred on its top edge', () => {
-    expect(moveHandleCentre(anchor)).toEqual({ x: 200, y: 52 })
+  it('gives way over the reach round the Selection\'s edge', () => {
+    expect(overlapsSelectionHandles({ left: 120, top: 40, width: 100, height: 28 }, selection)).toBe(true)
   })
 
-  it('keeps the handle and the pencil inside the canvas box when the Frame is dragged over its edge', () => {
-    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, left: -60 } }).x).toBe(28)
-    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, left: 390 } }).x).toBeLessThanOrEqual(viewport.width - 28)
-    expect(editPencilCentre({ ...anchor, box: { ...anchor.box, left: 350 } }).x).toBe(viewport.width - 22)
-    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, top: -300 } }).y).toBe(22)
-  })
-
-  it('flips below the Frame when there is no room above it', () => {
-    const low = { ...anchor, box: { ...anchor.box, top: 20 } }
-    expect(moveHandleCentre(low).y).toBe(128)
-    expect(editPencilCentre(low).y).toBe(128)
-  })
-
-  it('does not change size or place with the zoom: only the anchor moves it', () => {
-    expect(moveHandleCentre({ ...anchor, box: { ...anchor.box, left: 170, top: 120 } })).toEqual({ x: 220, y: 72 })
-  })
-
-  it('slides the handle clear of the pencil on a small Frame, where their hit areas would meet', () => {
-    const small = { ...anchor, box: { left: 190, top: 100, width: 20, height: 20 } }
-    const pencil = editPencilCentre(small)
-    const handle = moveHandleCentre(small)
-    const clearX = Math.abs(handle.x - pencil.x) >= 28 + 22
-    const clearY = Math.abs(handle.y - pencil.y) >= 22 + 22
-    expect(clearX || clearY).toBe(true)
-  })
-
-  it('slides the handle out from under the Frame panel, to the side with the nearer room', () => {
-    const bar = { left: 100, top: 12, width: 200, height: 60 }
-    expect(moveHandleCentre(anchor, bar)).toEqual({ x: 200, y: 94 })
-  })
-
-  it('puts the pencil in the gutter above the Frame\'s top-right corner', () => {
-    expect(editPencilCentre(anchor)).toEqual({ x: 250, y: 52 })
-    expect(editPencilCentre({ ...anchor, box: { ...anchor.box, left: 200 } })).toEqual({ x: 300, y: 52 })
+  it('keeps its press clear of the Selection and well inside it', () => {
+    expect(overlapsSelectionHandles({ left: 120, top: 20, width: 100, height: 28 }, selection)).toBe(false)
+    expect(overlapsSelectionHandles({ left: 140, top: 140, width: 20, height: 20 }, selection)).toBe(false)
   })
 })
 
