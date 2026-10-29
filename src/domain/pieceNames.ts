@@ -3,7 +3,7 @@ import { type GridPosition } from './grid'
 import { rowCycle, type Weave } from './weave'
 import { MAX_MAKER_NAME, normalizeMakerName } from './makerName'
 import { numericKey, pieceBeadsAt } from './pieces'
-import { carryPieceIndex, joinsNamedPieces, piecesStayWhole, presenceChanges, type BeadPresence } from './pieceIndex'
+import { carryPieceIndex, joinsNamedPieces, pieceLabelAt, piecesStayWhole, presenceChanges, type BeadPresence } from './pieceIndex'
 import type { Project } from './project'
 import type { Selection } from './selection'
 import { beadsOfLayer, heldWeave, withLayer } from './layerRecord'
@@ -284,7 +284,6 @@ export function pieceInSelection(
   selection: Selection,
 ): GridPosition | undefined {
   const { beads, weave } = canvasOf(project)
-  const labeller = pieceLabeller(beads, weave)
   const shape = selection.cells && new Set(selection.cells.map((cell) => `${cell.row},${cell.column}`))
   let found: { id: number; at: GridPosition } | undefined
   for (const [rowKey, columns] of Object.entries(beads)) {
@@ -300,7 +299,7 @@ export function pieceInSelection(
       if (shape && !shape.has(`${row},${column}`)) {
         continue
       }
-      const id = labeller.idOf({ row, column })!
+      const id = pieceLabelAt(beads, weave, { row, column })!
       if (found && found.id !== id) {
         return undefined
       }
