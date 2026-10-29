@@ -95,6 +95,43 @@ describe('the margin\'s title block (MarginSheet card, ticket 0657)', () => {
     expect(text(many, 'margin-legend-more')).toBe('+2')
   })
 
+  describe('its Technique\'s settings, each a cell from the Technique\'s description (ticket 0698)', () => {
+    const woven = (technique: 'brick' | 'peyote', techniqueSettings: Record<string, number> = {}) =>
+      framed({ frame: { ...frameOf(framed())!, technique, techniqueSettings } })
+
+    it('shows brick stitch\'s and peyote\'s Drop in short beside the Technique, at every value, and loom none', () => {
+      expect(text(mountBlock(woven('brick', { brickDrop: 2 })), 'margin-brick-drop-short')).toBe('2-drop')
+      expect(text(mountBlock(woven('peyote')), 'margin-peyote-drop-short')).toBe('1-drop')
+      expect(mountBlock(framed()).find('.margin-setting').exists()).toBe(false)
+    })
+
+    it('opens the panels\' stepper from its pencil, each step asked at once, and closes on Escape', async () => {
+      const wrapper = mountBlock(woven('brick', { brickDrop: 2 }))
+      const pencil = wrapper.get('[data-testid="margin-brick-drop-edit"]')
+      expect(pencil.attributes('aria-label')).toBe('Change Drop')
+      await pencil.trigger('click')
+      await wrapper.get('[data-testid="margin-brick-drop-stepper-more"]').trigger('click')
+      expect(wrapper.emitted('set-setting')).toEqual([['brickDrop', 3]])
+      await wrapper.get('[data-testid="margin-brick-drop-popover"]').trigger('keydown', { key: 'Escape' })
+      expect(wrapper.find('[data-testid="margin-brick-drop-popover"]').exists()).toBe(false)
+    })
+
+    it('is locked with the Technique once a row is done, saying why', async () => {
+      const wrapper = mountBlock(moveToRow(woven('peyote'), 1))
+      const pencil = wrapper.get('[data-testid="margin-peyote-drop-edit"]')
+      expect(pencil.attributes('aria-disabled')).toBe('true')
+      await pencil.trigger('click')
+      expect(wrapper.find('[data-testid="margin-peyote-drop-popover"]').exists()).toBe(false)
+    })
+
+    it('is read only in the compact block, which keeps the legend', () => {
+      const wrapper = mount(MarginTitleBlock, { props: { project: woven('brick', { brickDrop: 3 }), form: 'compact' }, attachTo: document.body })
+      expect(text(wrapper, 'margin-brick-drop-short')).toBe('3-drop')
+      expect(wrapper.find('[data-testid="margin-brick-drop-edit"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="margin-legend"]').exists()).toBe(true)
+    })
+  })
+
   it('turns Letters on and off, the Frame panel\'s setting', async () => {
     const wrapper = mountBlock(framed())
     const toggle = wrapper.get('[data-testid="margin-letters"]')

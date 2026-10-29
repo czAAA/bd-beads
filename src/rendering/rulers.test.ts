@@ -21,6 +21,7 @@ interface Look {
   centred?: Rect
   numbers?: boolean
   sheet?: MarginForm
+  sheetScale?: number
 }
 
 const block = (row: number, column: number, rows = 3, columns = 3): [number, number][] =>
@@ -32,12 +33,12 @@ const project = (positions: [number, number][], frame?: Rect, technique: Techniq
     beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
   })
 /** The Ruler layout of a Project in a view of the Canvas. */
-const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet }: Look = {}) => {
+const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet, sheetScale }: Look = {}) => {
   const view = (at?: { x: number; y: number }, size = viewport) => surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll: at, viewport: size })
   // A turn carries the box off the top-left corner: centre it in a viewport that holds it, whichever way it is turned.
   const looking = centred ? view(undefined, { width: 2000, height: 2000 }) : undefined
   const surface = looking ? view(looking.scrollToCentre(centred), { width: 2000, height: 2000 }) : view(scroll)
-  return rulerLayout(subject, surface, { fontPx: 11, numbers, sheet })
+  return rulerLayout(subject, surface, { fontPx: 11, numbers, sheet, sheetScale })
 }
 const framed = (frame: Rect, look: Look = {}) => layoutOf(project([], frame, look.technique), look)
 
@@ -262,6 +263,15 @@ describe('the Ruler dots', () => {
     expect(framed(frame, { zoom: 0.6, sheet: 'full' }).labels.length).toBeGreaterThan(0)
     // A Piece's numbers do not hang on a sheet.
     expect(layoutOf(project(block(0, 0, 5, 5)), { zoom: 0.6, sheet: 'compact' }).labels.length).toBeGreaterThan(0)
+  })
+
+  it('are drawn at the margin sheet\'s scale on a Frame, in place of the zoom\'s own rule, and a Piece\'s keep it (ticket 0698)', () => {
+    const scaled = framed(frame, { zoom: 2, sheetScale: 1.5 })
+    expect(scaled.scale.fontPx).toBeCloseTo(16.5)
+    expect(scaled.sheetScale).toBe(1.5)
+    expect(scaled.labels[0]!.height).toBeCloseTo(16.5)
+    const piece = project(block(0, 0, 5, 5))
+    expect(layoutOf(piece, { zoom: 2, sheetScale: 1.5 }).scale.fontPx).toBeCloseTo(layoutOf(piece, { zoom: 2 }).scale.fontPx)
   })
 })
 

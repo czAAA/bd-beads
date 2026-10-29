@@ -24,8 +24,8 @@ export interface BarPlacement {
 const BAR_GAP_PX = 6
 export const BAR_EDGE_PX = 8
 
-/** Whether two boxes of the canvas box overlap: the Selection bar against the Tool pill, a sheet's control under it. */
-export const boxesOverlap = (a: BarBox, b: BarBox) => a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height
+/** Whether two boxes of the canvas box overlap: the Selection bar against the Tool pill. */
+const boxesOverlap = (a: BarBox, b: BarBox) => a.left < b.left + b.width && b.left < a.left + a.width && a.top < b.top + b.height && b.top < a.top + a.height
 
 // Where the Selection bar sits (ticket 415): centred above the Selection's top edge, clamped inside the canvas box,
 // flipped below when there is no room above. The Tool pill's rectangle (`obstacle`, ticket 439) acts like a canvas

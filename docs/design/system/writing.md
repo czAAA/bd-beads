@@ -466,6 +466,13 @@ Built by ticket 0658 (the zoom forms and folding), in Belarusian, Spanish and Ch
 
 The tab's accessible name in Russian, Ukrainian and Polish follows the rows above: "Показать штамп: {name}", "Показати штамп: {name}", "Pokaż tabliczkę: {name}".
 
+Built by ticket 0698 (a Technique's settings in the title block): each setting's value in short, and its pencil's name round the setting's own label ("Drop", «Дроп», «每针珠数»).
+
+| English | Русский | Українська | Беларуская | Polski | Español | 中文 |
+|---|---|---|---|---|---|---|
+| {count}-drop (Drop, in short) | {count}-дроп | {count}-дроп | {count}-дроп | {count}-drop | {count}-drop | 每针{count}珠 |
+| Change {setting} (the setting's pencil) | Изменить «{setting}» | Змінити «{setting}» | Змяніць «{setting}» | Zmień: {setting} | Cambiar {setting} | 更改{setting} |
+
 The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
 
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.
