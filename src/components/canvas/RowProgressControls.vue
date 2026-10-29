@@ -10,14 +10,14 @@ import AppSwitch from '../ui/AppSwitch.vue'
 import IconButton from '../ui/IconButton.vue'
 import { fillBlanks } from '../../domain/fillBlanks'
 
-// Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657): one component in two places, the
-// Progress bar under the canvas and the margin sheet's top band, so a press in either moves the one pointer the
-// Project carries. `bar` spells the row out and gives Row not done its label; `margin` is the compact form.
+// Row progress's controls (ProgressBar and MarginSheet cards; tickets 144, 411, 0657, 0658): one component in the
+// Progress bar and the margin sheet's top band, so a press in either moves the one pointer the Project carries. `bar`
+// spells the row out; on the margin, `margin` is the full form, `compact` and `folded` its smaller ones.
 const props = withDefaults(defineProps<{
   project: Project
   /** Whether the Canvas draws the Row progress look (ticket 474): the Switch is on while it does. */
   rowHighlight?: boolean
-  form: 'bar' | 'margin'
+  form: 'bar' | 'margin' | 'compact' | 'folded'
   /** The prefix of the controls' test ids, so the two places can be told apart. */
   testid: string
 }>(), { rowHighlight: true })
@@ -88,17 +88,21 @@ const arrowTurn = computed(() => {
 
 type Item = 'direction' | 'highlight' | 'reset' | 'position' | 'counter' | 'track' | 'divider' | 'steps'
 /** The bar's order (ProgressBar card), and the margin's, which puts Reset beside Turn row direction and sets the
- * counter off with dividers (MarginSheet card). */
-const items = computed<readonly Item[]>(() =>
-  props.form === 'bar'
-    ? ['direction', 'highlight', 'reset', 'position', 'counter', 'track', 'steps']
-    : ['direction', 'reset', 'highlight', 'divider', 'counter', 'track', 'divider', 'steps'],
-)
-const margin = computed(() => props.form === 'margin')
+ * counter off with dividers, then its smaller forms (MarginSheet card, Zoom forms). */
+const ITEMS: Record<typeof props.form, readonly Item[]> = {
+  bar: ['direction', 'highlight', 'reset', 'position', 'counter', 'track', 'steps'],
+  margin: ['direction', 'reset', 'highlight', 'divider', 'counter', 'track', 'divider', 'steps'],
+  compact: ['counter', 'track', 'steps'],
+  folded: ['counter', 'steps'],
+}
+const items = computed(() => ITEMS[props.form])
+const margin = computed(() => props.form !== 'bar')
+/** The smaller forms keep Row done alone: Row not done is the Progress bar's there. */
+const small = computed(() => props.form === 'compact' || props.form === 'folded')
 </script>
 
 <template>
-  <div class="row-progress" :class="`row-progress--${form}`" :data-testid="form === 'margin' ? testid : undefined">
+  <div class="row-progress" :class="[`row-progress--${form}`, { 'row-progress--margin': margin, 'row-progress--small': small }]" :data-testid="margin ? testid : undefined">
   <template v-for="(item, index) in items" :key="`${item}-${index}`">
     <!-- Turn row direction and Reset progress sit away from the do/undo pair, so they can't be hit while doing rows (tickets 411, 455). -->
     <IconButton
@@ -151,10 +155,10 @@ const margin = computed(() => props.form === 'margin')
     </div>
     <span v-else-if="item === 'divider'" class="row-progress__divider" aria-hidden="true" />
     <!-- Row not done and Row done follow Row direction with their label and arrow (ticket 411); on the margin Row not
-      done is its arrow alone, named by the label. -->
+      done is its arrow alone, named by the label, and the smaller forms leave it to the Progress bar. -->
     <div v-else-if="item === 'steps'" class="row-progress__steps" :class="[`row-progress__steps--${arrowTurn}`, { 'row-progress__steps--margin': margin }]">
       <IconButton
-        v-if="margin"
+        v-if="margin && !small"
         variant="plain"
         :action="actions.notDone"
         :label="notDoneLabel"
@@ -164,7 +168,7 @@ const margin = computed(() => props.form === 'margin')
         @click="emit('move-row', -1)"
       />
       <AppButton
-        v-else
+        v-else-if="!margin"
         variant="box"
         size="lg"
         :action="actions.notDone"
@@ -307,6 +311,18 @@ const margin = computed(() => props.form === 'margin')
 
 .row-progress--margin :deep(.app-button) {
   height: var(--margin-done);
+}
+
+/* The compact and folded forms: Row done 22px in the small type, the track 40px (MarginSheet card, Zoom forms). */
+.row-progress--small :deep(.app-button) {
+  height: var(--margin-done-compact);
+  padding: 0 var(--space-6) 0 var(--space-8);
+  gap: var(--space-4);
+  font: var(--type-small);
+}
+
+.row-progress--small .row-progress__track--margin {
+  width: var(--margin-track-compact);
 }
 
 /* Phone widths (ticket 411): the bar's large buttons can't share a row with Turn row direction and the track at 360px

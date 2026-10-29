@@ -398,7 +398,7 @@ const drawingStyle = computed(() => {
           :pill="pillRect"
           @rotate="onRotateFrame"
           @toggle-edit="onEditFrame"
-          @export="onOpenExport('margin-export')"
+          @export="onOpenExport"
           @remove="onRemoveFrame"
           @move-press="surfaceRef?.pressMoveHandle($event)"
           @key="onFrameKey"
