@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { computeColorQuantities } from './beadQuantities'
 import { beadCount, colorAt } from './canvas'
 import { changeFrame, type FrameChange } from './changeFrame'
-import { frameLayoutOf, type CustomFrameKindId, type FrameSettings } from './frameKind'
+import { frameLayoutOf, type FrameSettings } from './frameShape'
 import { onLayer } from './layers'
 import { projectPalette } from './palette'
 import { parseProjectsFile, serializeProject } from './projectFile'
@@ -29,7 +29,7 @@ function changed(project: Project, change: FrameChange): Project {
   return result.project
 }
 
-const triangle = (rounds = 4, project = open()) => changed(project, { custom: { kind: 'triangle', size: rounds, centre: { row: 20, column: 30 } } })
+const triangle = (rounds = 4, project = open()) => changed(project, { custom: { shape: 'triangle', size: rounds, centre: { row: 20, column: 30 } } })
 
 /** Paints Frame positions (round, place in round) as a press on the Frame does. */
 const paintFrame = (project: Project, positions: { row: number; column: number }[], color: string | null) =>
@@ -38,23 +38,23 @@ const paintFrame = (project: Project, positions: { row: number; column: number }
 describe('a Custom frame put in place holding beads (ticket 0596)', () => {
   it('keeps the beads its layout has a position for, and drops the rest', () => {
     // A Triangle of 2 rounds has 3 beads in round 0 and 6 in round 1, none in round 2 or at place 3 of round 0.
-    const placed = changed(open(), { custom: { kind: 'triangle', size: 2, centre: { row: 20, column: 30 }, beads: { 0: { 0: RED, 3: RED }, 1: { 5: BLUE }, 2: { 0: BLUE } } } })
+    const placed = changed(open(), { custom: { shape: 'triangle', size: 2, centre: { row: 20, column: 30 }, beads: { 0: { 0: RED, 3: RED }, 1: { 5: BLUE }, 2: { 0: BLUE } } } })
     expect(placed.frame!.beads).toEqual({ 0: { 0: RED }, 1: { 5: BLUE } })
   })
 })
 
 describe('a Custom frame put on the open Canvas (ticket 0592)', () => {
-  it('is a peyote Frame of its kind and Rounds, empty, round the centre it was given', () => {
+  it('is a peyote Frame of its Frame shape and Rounds, empty, round the centre it was given', () => {
     const frame = triangle(4).frame!
-    expect(frame).toMatchObject({ kind: 'triangle', settings: { rounds: 4 }, technique: 'peyote', beads: {} })
+    expect(frame).toMatchObject({ shape: 'triangle', settings: { rounds: 4 }, technique: 'peyote', beads: {} })
     expect(frame.row).toBeLessThanOrEqual(20)
     expect(frame.row + frame.rows).toBeGreaterThan(20)
     expect(frame.column + frame.columns / 2).toBeCloseTo(30, -1)
   })
 
   it('replaces the Frame there with its beads, and turns Row progress on like any first Frame (ticket 0594)', () => {
-    const square = changed(triangle(), { custom: { kind: 'warpedSquare', size: 3, centre: { row: 0, column: 0 } } })
-    expect(square.frame).toMatchObject({ kind: 'warpedSquare', settings: { rounds: 3 } })
+    const square = changed(triangle(), { custom: { shape: 'warpedSquare', size: 3, centre: { row: 0, column: 0 } } })
+    expect(square.frame).toMatchObject({ shape: 'warpedSquare', settings: { rounds: 3 } })
     expect(rowProgressOn(square)).toBe(true)
   })
 })
@@ -120,7 +120,7 @@ describe('changing a Custom frame\'s Rounds', () => {
     expect(finished(project)).toHaveLength(3 + 6)
   })
 
-  it('is no change at the Rounds it has, and keeps within the kind\'s range', () => {
+  it('is no change at the Rounds it has, and keeps within the shape\'s range', () => {
     expect(changeFrame(triangle(4), { settings: { rounds: 4 } }).kind).toBe('unchanged')
     expect(changed(triangle(4), { settings: { rounds: 999 } }).frame!.settings).toEqual({ rounds: 40 })
   })
@@ -161,20 +161,20 @@ describe('Beads needed for a Custom frame', () => {
 
 // A Kaleidocycle's triangles stand a gap apart round the hole, so a fill keeps to the one of its six it starts on.
 describe.each([
-  { kind: 'star', setting: 'partSize', size: 4, filledShare: 1 },
-  { kind: 'kaleidocycle', setting: 'partSize', size: 4, filledShare: 1 / 6 },
-  { kind: 'kite', setting: 'rows', size: 9, filledShare: 1 },
-] as const)('a $kind Custom frame (ticket 0593)', ({ kind, setting, size, filledShare }) => {
-  const placed = (at = size) => changed(open(), { custom: { kind: kind as CustomFrameKindId, size: at, centre: { row: 20, column: 30 } } })
+  { shape: 'star', setting: 'partSize', size: 4, filledShare: 1 },
+  { shape: 'kaleidocycle', setting: 'partSize', size: 4, filledShare: 1 / 6 },
+  { shape: 'kite', setting: 'rows', size: 9, filledShare: 1 },
+] as const)('a $shape Custom frame (ticket 0593)', ({ shape, setting, size, filledShare }) => {
+  const placed = (at = size) => changed(open(), { custom: { shape, size: at, centre: { row: 20, column: 30 } } })
   const layout = () => frameLayoutOf(placed().frame!)!
   /** A position on the last round or row, and one on the first. */
   const outer = () => layout().positions.find(({ row }) => row === size - 1)!
   const inner = () => layout().positions.find(({ row }) => row === 0)!
   const name = ({ row, column }: { row: number; column: number }) => ({ row, column })
 
-  it('is an empty peyote Frame of its kind, sized by its own setting, with Row progress on', () => {
+  it('is an empty peyote Frame of its Frame shape, sized by its own setting, with Row progress on', () => {
     const project = placed()
-    expect(project.frame).toMatchObject({ kind, settings: { [setting]: size }, technique: 'peyote', beads: {} })
+    expect(project.frame).toMatchObject({ shape, settings: { [setting]: size }, technique: 'peyote', beads: {} })
     expect(rowProgressOn(project)).toBe(true)
   })
 
@@ -225,19 +225,19 @@ describe.each([
 
 describe('a Fringe earring Custom frame (ticket 0597)', () => {
   const settings = { topWidth: 6, topRows: 4, fringeStyle: 'straight', fringeLength: 9 } as const
-  const earring = (given: FrameSettings = settings) => changed(open(), { custom: { kind: 'fringeEarring', settings: given, centre: { row: 20, column: 30 } } })
+  const earring = (given: FrameSettings = settings) => changed(open(), { custom: { shape: 'fringeEarring', settings: given, centre: { row: 20, column: 30 } } })
   /** The first bead of the base row, and the last bead of the first strand. */
   const base = { row: 0, column: 0 }
   const strandEnd = { row: 1008, column: 0 }
 
   it('is an empty brick-stitch Frame with its four settings, Row progress on', () => {
     const project = earring()
-    expect(project.frame).toMatchObject({ kind: 'fringeEarring', settings, technique: 'brick', beads: {} })
+    expect(project.frame).toMatchObject({ shape: 'fringeEarring', settings, technique: 'brick', beads: {} })
     expect(frameLayoutOf(project.frame!)!.positions).toHaveLength(6 + 5 + 4 + 3 + 6 * 9)
     expect(rowProgressOn(project)).toBe(true)
   })
 
-  it('reads settings it was not given as the kind\'s defaults, and fewer Top rows than its Top width, ending on a pair', () => {
+  it('reads settings it was not given as the shape\'s defaults, and fewer Top rows than its Top width, ending on a pair', () => {
     expect(earring({ topWidth: 5, topRows: 9 }).frame!.settings).toEqual({ topWidth: 5, topRows: 4, fringeStyle: 'straight', fringeLength: 12 })
   })
 

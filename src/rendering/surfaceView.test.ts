@@ -5,7 +5,7 @@ import type { Technique } from '../domain/weave'
 import { OPEN_SPACE, type Space } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { projectExtentPx, surfaceView } from './surfaceView'
-import { customFrameSize, frameGeometry } from '../domain/frameKind'
+import { customFrameSize, frameGeometry } from '../domain/frameShape'
 
 const TECHNIQUES: Technique[] = ['loom', 'peyote', 'brick']
 const ROTATIONS: Rotation[] = [0, 90, 180, 270]
@@ -233,7 +233,7 @@ describe('Real Bead shape finds beads where they are drawn (ADR 0068)', () => {
 })
 
 describe('a Custom frame on the Canvas (ticket 0592)', () => {
-  const frame = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, kind: 'triangle' as const, settings: { rounds: 4 } }
+  const frame = { row: 0, column: 0, ...customFrameSize('triangle', { rounds: 4 }), technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
   const view = surfaceView({ space: OPEN_SPACE, technique: 'peyote', frame, rotation: 0, zoom: 1 })
   const { box } = frameGeometry(frame).place({ row: 3, column: 5 })!
   const bead = { x: box.x * CELL_SIZE_PX + (box.width * CELL_SIZE_PX) / 2, y: box.y * CELL_SIZE_PX + (box.height * CELL_SIZE_PX) / 2 }

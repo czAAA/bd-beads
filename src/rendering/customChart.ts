@@ -20,7 +20,7 @@ export interface ChartBead {
   color: string | null
 }
 
-/** A Custom frame's beads and Seams drawn into a region of the displayed chart at a zoom; none for a Rectangular Frame.
+/** A Custom frame's beads and Seams drawn into a region of the displayed chart at a zoom; none for a Frame without a shape.
  * Every bead is given, wherever it lies: the caller keeps those of its own part. */
 export function customChart(project: Pick<Project, 'frame' | 'beads' | 'rotation' | 'technique' | 'techniqueSettings'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>, region: Region, zoom: number): { beads: ChartBead[]; seams: [LayoutPoint, LayoutPoint][] } | undefined {
   const frame = project.frame

@@ -14,7 +14,7 @@ import type { GridPosition, Layer } from '../../domain/grid'
 import { describeWeave, weaveSettings, type Technique, type TechniqueSettings } from '../../domain/weave'
 import { changeCanvasWeave, changeFrame, frameChangeRefusal } from '../../domain/changeFrame'
 import { grownFrame } from '../../domain/frameGrowth'
-import { changedSetting, frameAllows, frameKindOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameKind'
+import { changedSetting, frameAllows, removedBeadsOf, settingsOf, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
@@ -312,7 +312,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * question says so. */
   const removeTakesBeads = computed(() => {
     const frame = deps.currentProject()?.frame
-    return !!frame && frameKindOf(frame).removedBeads === 'removed'
+    return !!frame && removedBeadsOf(frame) === 'removed'
   })
 
   /** Remove Frame: asks first, except for an empty Frame that takes its beads with it, as there is nothing to lose
@@ -363,7 +363,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
       const outcome = deps.edit('frame', (project) => placedStarter(project, starter, choice, centre))
       const t = deps.messages()
       const size = starterSizeWords(t, deps.locale(), starter, choice.sizes)
-      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { kind: starterName(t, starter), size }))
+      if (outcome.kind === 'applied') deps.announce(fillBlanks(t.frame.announceCustom, { shape: starterName(t, starter), size }))
     })
   }
 
