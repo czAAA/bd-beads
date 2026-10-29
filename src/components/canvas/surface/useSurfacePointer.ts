@@ -367,27 +367,48 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     return target.kind === 'handle' ? target : undefined
   }
 
-  /** While a Frame is dragged with the pointer at the edge, the view scrolls toward it each frame and the drag follows
-   * (the pointer is still, so no move event would say so). */
-  let framePointer: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
+  /** A Select drag in progress (ticket 505): every move reports the nearest bead position, over a bead or not, in the
+   * geometry of the layer it began on. */
+  let selectDrag = false
+  let selectLayer: ViewLayer = 'canvas'
+
+  /** Reports the cell at `point` to whichever drag is held: a Frame's, a Selection's adjust or a Select drag. */
+  function followHeldDrag(point: { x: number; y: number }): void {
+    if (framing.value) emit('frame-drag', surface.value.pointToCell(point, gestureLayer))
+    else if (adjusting.value) emit('selection-drag', surface.value.pointToCell(point, gestureLayer))
+    else if (selectDrag) {
+      const near = surface.value.pointToCell(point, selectLayer)
+      emit('cell-primary-move', near.row, near.column)
+    }
+  }
+
+  /** While a Frame or a Selection is dragged with the pointer at the edge (ticket 0660), the view scrolls toward it
+   * each frame and the drag follows (the pointer is still, so no move event would say so). */
+  let heldPointer: Pick<PointerEvent, 'clientX' | 'clientY'> | undefined
   let edgeScrollFrame = 0
   function edgeScrollTick(): void {
     edgeScrollFrame = 0
-    if (!framing.value) {
-      framePointer = undefined
+    if (!framing.value && !adjusting.value && !selectDrag) {
+      heldPointer = undefined
       return
     }
-    if (!framePointer) return
-    const point = pointInSurface(framePointer)
+    if (!heldPointer) return
+    const point = pointInSurface(heldPointer)
     const { dx, dy } = edgeScrollStep(point, size.value)
     if (dx !== 0 || dy !== 0) {
       emit('pan', -dx, -dy)
       // After the parent has applied the pan, so the cell under the still pointer is the new one.
-      void nextTick(() => {
-        if (framing.value) emit('frame-drag', surface.value.pointToCell(point, gestureLayer))
-      })
+      void nextTick(() => followHeldDrag(point))
     }
     edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
+  }
+
+  /** Moves a held drag to the pointer and keeps the edge scroll following it, starting the frame loop if it isn't
+   * running. */
+  function dragTo(event: Pick<PointerEvent, 'clientX' | 'clientY'>): void {
+    heldPointer = { clientX: event.clientX, clientY: event.clientY }
+    if (!edgeScrollFrame && typeof requestAnimationFrame === 'function') edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
+    followHeldDrag(pointInSurface(event))
   }
 
   /** A press on the Move handle's button over the canvas (ticket 455): the same grab as a press on the handle itself. */
@@ -403,17 +424,14 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     event.preventDefault()
   }
 
-  /** A Select drag in progress (ticket 505): every move reports the nearest bead position, over a bead or not, in the
-   * geometry of the layer it began on. */
-  let selectDrag = false
-  let selectLayer: ViewLayer = 'canvas'
-
   /** The press-to-release stroke (ticket 504): holes and empty background neither end it nor need a bead to resume. */
   let stroke: { from: { x: number; y: number }; last: GridPosition | undefined } | undefined
 
   function onPointerDown(event: PointerEvent): void {
     penAt.value = undefined
     touchInput.value = event.pointerType === 'touch'
+    // A pinch moves the view itself: the edge scroll stops following the first finger.
+    if (event.pointerType === 'touch' && !event.isPrimary) heldPointer = undefined
     if (props.project.frame && event.pointerType === 'touch' && !event.isPrimary) {
       // A second finger is a pinch (usePinchPan): whatever the first was dragging is let go, uncommitted.
       if (framing.value) {
@@ -529,7 +547,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
   function onPointerMove(event: PointerEvent): void {
     placePen(event)
     if (adjusting.value) {
-      emit('selection-drag', cellUnder(event))
+      dragTo(event)
       return
     }
     if (props.tools.selects && props.selection && event.pointerType !== 'touch' && selectionHasHandles(props.selection)) {
@@ -542,9 +560,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
       handleCursor.value = undefined
     }
     if (framing.value) {
-      framePointer = { clientX: event.clientX, clientY: event.clientY }
-      if (!edgeScrollFrame && typeof requestAnimationFrame === 'function') edgeScrollFrame = requestAnimationFrame(edgeScrollTick)
-      emit('frame-drag', cellUnder(event))
+      dragTo(event)
       return
     }
     if (dragging.value) {
@@ -573,8 +589,7 @@ export function useSurfacePointer({ props, emit, root: rootEl, size, surface, ma
     placeMarker()
     placePickChip(event, bead)
     if (selectDrag && event.buttons & 1) {
-      const near = cellUnder(event, selectLayer)
-      emit('cell-primary-move', near.row, near.column)
+      dragTo(event)
       return
     }
     selectDrag = false
