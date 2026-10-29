@@ -173,7 +173,6 @@ export const ru: Translations = {
     loom: 'Ткачество',
     peyote: 'Мозаичное плетение',
     brick: 'Кирпичное плетение',
-    square: 'Квадратное плетение',
   },
   weaveSettings: {
     peyoteDrop: {

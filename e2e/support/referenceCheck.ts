@@ -17,10 +17,10 @@ import { canvasOf, frameOf, quarterTurnOf } from '../../src/domain/layerRecord'
 // ADR 0018). A canvas never matches DOM pixels exactly, so two comparisons: the look (block-averaged colors, a share
 // of blocks may differ) and the content (every bead's centre color).
 
-// Share of blocks that may differ before the look counts as different: loom and square stitch 2.5%, brick 3.6%, peyote 5.5%
+// Share of blocks that may differ before the look counts as different: loom 2.5%, brick stitch 3.6%, peyote 5.5%
 // (anti-aliased rounded corners). A 2 px rim instead of 1 moves loom and brick by 4-8% at 100% and 300%, so it shows;
 // not in peyote or at 50%: the content check holds there.
-export const MAX_DIFFERING_BLOCKS = { loom: 0.03, brick: 0.04, peyote: 0.06, square: 0.03 }
+export const MAX_DIFFERING_BLOCKS = { loom: 0.03, brick: 0.04, peyote: 0.06 }
 const BLOCK_TOLERANCE = 48
 /** How far a bead's centre pixel may be from its expected color, per channel. */
 const CENTRE_TOLERANCE = 10
