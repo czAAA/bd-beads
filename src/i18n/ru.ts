@@ -182,7 +182,6 @@ export const ru: Translations = {
       changed: 'Блок кирпичей изменён: {count}',
     },
   },
-  formFactors: { cube: 'Куб', round: 'Круглый', delica: 'Delica' },
   projects: {
     heading: 'Библиотека проектов',
     newProjectButton: 'Новый проект',

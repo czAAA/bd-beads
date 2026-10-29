@@ -182,7 +182,6 @@ export const es: Translations = {
       changed: 'Bloque de ladrillos cambiado a {count}',
     },
   },
-  formFactors: { cube: 'Cubo', round: 'Redondo', delica: 'Delica' },
   projects: {
     heading: 'Biblioteca de proyectos',
     newProjectButton: 'Nuevo proyecto',

@@ -13,10 +13,6 @@ interface Brand {
   colorFamilies?: readonly ColorFamily[]
 }
 
-/** The words the Form factors are named by, by name key (ticket 533): open, so a new Form factor is its row and its
- * strings, and `registryNames.test.ts` checks every key is in every language (ADR 0078). */
-export type FormFactorNames = Readonly<Record<string, string>>
-
 /** Which way a Bead's hole runs: `along` its width (the thread's way on a loom, peyote and brick stitch) or `across`. */
 type HoleDirection = 'along' | 'across'
 
@@ -165,18 +161,18 @@ const LEGACY_BEAD_IDS: Readonly<Record<string, string>> = {
   'miyuki-delica-11-0': 'miyuki/delica/11-0',
 }
 
-/** The English names, the default for a label made where no language is at hand (a new Project's name, an old
- * library's) and the English file's own. */
-export const FORM_FACTOR_NAMES_EN: FormFactorNames = { cube: 'Cube', round: 'Round', delica: 'Delica' }
+/** The Form factors' names, by name key: literals like a Brand's name, the same in every language, as the maker names
+ * the shape on the bag (ticket 0692). A new Form factor is its row and its name here. */
+const FORM_FACTOR_NAMES: Readonly<Record<string, string>> = { cube: 'Cube', round: 'Round', delica: 'Delica' }
 
-/** A Form factor's name in the language of `names`; its id where a language lacks one (a test keeps that from shipping). */
-export function formFactorName(formFactor: Pick<FormFactor, 'id' | 'nameKey'>, names: FormFactorNames = FORM_FACTOR_NAMES_EN): string {
-  return names[formFactor.nameKey] ?? formFactor.id
+/** A Form factor's name; its id where it has none (a test keeps that from shipping). */
+export function formFactorName(formFactor: Pick<FormFactor, 'id' | 'nameKey'>): string {
+  return FORM_FACTOR_NAMES[formFactor.nameKey] ?? formFactor.id
 }
 
-/** A human-readable label for a Bead, e.g. "TOHO Cube 1.5mm", with the Form factor named in the app's language. */
-export function beadLabel(bead: Bead, names: FormFactorNames = FORM_FACTOR_NAMES_EN): string {
-  return `${bead.brand.name} ${formFactorName(bead.formFactor, names)} ${bead.size}`
+/** A human-readable label for a Bead, e.g. "TOHO Cube 1.5mm", the same in every language. */
+export function beadLabel(bead: Bead): string {
+  return `${bead.brand.name} ${formFactorName(bead.formFactor)} ${bead.size}`
 }
 
 /** The catalog's Brand with this id, with its color families; undefined for a Brand no catalog Bead is made by. */
