@@ -12,6 +12,7 @@ import { cellKey, selectionFrame, selectionHasHandles, selectionLayer as selecti
 import { brighten, CURRENT_ROW_BRIGHTNESS, DEFAULT_THEME, drawBeadLetter, drawFlatBead, type DrawingContext, type ProjectTheme } from './beadLook'
 import { beadInSpace, inSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { drawBoxHandles, drawFrameEditing, drawRulers } from './rulerRenderer'
+import type { HandleId } from './frameHandles'
 import type { DrawnProject } from './projectRenderer'
 import type { RulerLayout } from './rulers'
 import { CELL_SIZE_PX } from './cellSize'
@@ -88,8 +89,8 @@ export interface OverlayInput {
    * layout was made for. */
   rulers?: { layout: RulerLayout; surface: SurfaceView }
   /** While the Frame is being set (Canvas only): its handles and the size tooltip's text. `touch` gives four larger
-   * corner handles. */
-  frameEditing?: { touch: boolean; tooltip: string }
+   * corner handles; `hot` is the one under the pointer or being dragged, drawn grown (ticket 0657). */
+  frameEditing?: { touch: boolean; tooltip: string; hot?: HandleId }
   /** How visible the Frame's margin outline is, 0 to 1 (ticket 276): it fades in while the Frame is set, moved or
    * resized, and after a refused press. */
   marginOutline?: number
@@ -502,6 +503,7 @@ export function renderOverlay(context: DrawingContext, input: OverlayInput): voi
       pixelRatio,
       theme,
       touch: frameEditing.touch,
+      hot: frameEditing.hot,
       // A size is a number too: the Rulers toggle hides it with the rest.
       tooltip: rulers.layout.numbers ? frameEditing.tooltip : '',
     })

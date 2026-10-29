@@ -10,8 +10,8 @@ import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
 import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
 
-// The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
-// Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
+// The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
+// (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
 // Numbers are display-only (ticket 447).
 
 // From this column number a ruler number is turned a quarter and read upward, so three digits take no more width than
@@ -33,8 +33,8 @@ export interface RuledBox extends Rect {
   kind: 'frame' | 'piece'
   /** How far outside its beads its line sits. */
   outset: number
-  /** Every side (the Frame), or only above and to the left (a Piece). */
-  sides: 'all' | 'start'
+  /** The Frame's sides but the one shown at the bottom (`sheet`, ticket 0657), or only above and to the left (a Piece). */
+  sides: 'sheet' | 'start'
 }
 
 /** One number on a ruler, where it is in the viewport and what a click on it selects. */
@@ -65,7 +65,7 @@ export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 's
 // rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
-    return frameGeometry(project.frame).grid ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }] : []
+    return frameGeometry(project.frame).grid ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }] : []
   }
   return pieceAreasOf(beadsOfLayer(project, 'canvas'), canvasWeave(project))
     .filter(hasGuides)
@@ -267,12 +267,16 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
     }
   }
 
-  columnsAt(start.row, area.y, [0, -1])
-  rowsAt(left, [-1, 0])
-  if (box.sides === 'all') {
-    columnsAt(lastRow, bottom, [0, 1])
-    rowsAt(right, [1, 0])
+  // A Frame's sides are the ones its margin sheet shows on screen above, left and right of it: the one at the bottom
+  // holds the title block (MarginSheet card, ticket 0657), whichever way the view is turned.
+  const shownBelow = (normal: [number, number]) => surface.gridDirection(normal[0], normal[1]).y > 0.5
+  const side = (normal: [number, number], lay: () => void) => {
+    if (box.sides === 'start' ? normal[0] + normal[1] < 0 : !shownBelow(normal)) lay()
   }
+  side([0, -1], () => columnsAt(start.row, area.y, [0, -1]))
+  side([-1, 0], () => rowsAt(left, [-1, 0]))
+  side([0, 1], () => columnsAt(lastRow, bottom, [0, 1]))
+  side([1, 0], () => rowsAt(right, [1, 0]))
   return { labels, beads, step: Math.max(columnStep, rowStep) }
 }
 

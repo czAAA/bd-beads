@@ -3,9 +3,9 @@ import type { FrameEdge } from '../domain/frame'
 import type { Rotation } from '../domain/grid'
 import type { SurfaceView } from './surfaceView'
 
-// The handles a Frame carries while being set (Frame card): eight with a mouse or pen (9px squares), four corners on
-// touch (16px), named by where they stand on screen; what one drags is the Frame's own edge, which a turned view carries
-// to another side. The Frame's sit in a gutter just outside its edge (ADR 0066); a Selection's straddle its own.
+// The handles a Frame carries while being set (Frame card): eight with a mouse or pen, four corners on touch, named by
+// where they stand on screen; what one drags is the Frame's own edge, which a turned view carries to another side. The
+// Frame's stand on its line, drawn as hot corners (MarginSheet card, ticket 0657); a Selection's straddle its own.
 export type HandleId = 'top-left' | 'top' | 'top-right' | 'right' | 'bottom-right' | 'bottom' | 'bottom-left' | 'left'
 
 export interface Handle {
@@ -45,29 +45,6 @@ export function frameHandles(box: { x: number; y: number; width: number; height:
     left: [left, centreY],
   }
   return (touch ? CORNERS : ALL).map((id) => ({ id, x: places[id][0], y: places[id][1], size }))
-}
-
-/** The air between the Frame's edge and a gutter handle's square, in screen px. */
-const GUTTER_GAP_PX = 3
-
-/** The Frame's handles in its gutter (ADR 0066): `frameHandles` each moved out from the edge by half its square and a
- * gap, in screen px at every zoom. A handle with no room outside, the canvas box's edge being in the way, flips to the
- * inside of the edge on that axis. */
-export function gutterHandles(box: { x: number; y: number; width: number; height: number }, touch: boolean, viewport: { width: number; height: number }): Handle[] {
-  const centre = { x: box.x + box.width / 2, y: box.y + box.height / 2 }
-  const away = (value: number, middle: number, limit: number, size: number): number => {
-    if (value === middle) return value
-    const offset = size / 2 + GUTTER_GAP_PX
-    const outward = value < middle ? value - offset : value + offset
-    // A viewport not measured yet (0 by 0) has no edge to run into.
-    const fits = !(limit > 0) || (outward - size / 2 >= 0 && outward + size / 2 <= limit)
-    return fits ? outward : value < middle ? value + offset : value - offset
-  }
-  return frameHandles(box, touch).map((handle) => ({
-    ...handle,
-    x: away(handle.x, centre.x, viewport.width, handle.size),
-    y: away(handle.y, centre.y, viewport.height, handle.size),
-  }))
 }
 
 /** How far from a handle's centre a press still grabs it (ticket 414): the visible squares stay small, the target
@@ -129,10 +106,10 @@ export function pointInBox(box: { x: number; y: number; width: number; height: n
 }
 
 /** The handle of the Frame a point is within reach of (ticket 414), for the resize cursor a hover shows. */
-export function frameHandleIdAt(frame: Rect | undefined, surface: Pick<SurfaceView, 'frameBox' | 'viewport'>, point: { x: number; y: number }, touch: boolean): HandleId | undefined {
+export function frameHandleIdAt(frame: Rect | undefined, surface: Pick<SurfaceView, 'frameBox'>, point: { x: number; y: number }, touch: boolean): HandleId | undefined {
   if (!frame) return undefined
   const box = surface.frameBox(frame)
-  return handleAt(gutterHandles(box, touch, surface.viewport), point, hitRadius(box, touch))?.id
+  return handleAt(frameHandles(box, touch), point, hitRadius(box, touch))?.id
 }
 
 /** The handle of a Selection a point is within reach of (ticket 414), for the resize cursor a hover shows. */
@@ -152,10 +129,9 @@ export const HANDLE_CURSORS: Record<HandleId, string> = {
   right: 'ew-resize',
 }
 
-/** What a press at a point of the viewport grabs of the Frame: a handle in its gutter first, which wins over whatever
+/** What a press at a point of the viewport grabs of the Frame: a handle on its line first, which wins over whatever
  * lies under it. */
-export function framePressAt(frame: Rect | undefined, surface: Pick<SurfaceView, 'frameBox' | 'viewport'>, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
+export function framePressAt(frame: Rect | undefined, surface: Pick<SurfaceView, 'frameBox'>, rotation: Rotation, point: { x: number; y: number }, touch: boolean): FramePress {
   if (!frame) return { kind: 'outside' }
-  const box = surface.frameBox(frame)
-  return boxPressAt(box, rotation, point, touch, gutterHandles(box, touch, surface.viewport))
+  return boxPressAt(surface.frameBox(frame), rotation, point, touch)
 }
