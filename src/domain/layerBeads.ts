@@ -1,4 +1,4 @@
-import { beadsFromColors, changedPositions, colorAt, forEachBead, frameContains, hasBeads, sameFrame, type BeadMap } from './canvas'
+import { anyChangedPosition, beadsFromColors, colorAt, frameContains, hasBeads, sameFrame, type BeadMap } from './canvas'
 import type { Layer } from './grid'
 import { sameWeave, weaveOf } from './layerWeave'
 import { beadsOfLayer, frameOf, heldWeave, type Layered } from './layerRecord'
@@ -23,11 +23,26 @@ export function hasProjectBeads(project: Layered): boolean {
   return hasBeads(beadsOfLayer(project, 'canvas')) || (frame !== undefined && hasBeads(frame))
 }
 
+/** The colors of each row of beads, counted once per row object: an edit copies only the rows it touches (ADR 0019),
+ * so the Project's colors after a stroke cost its rows, not every bead (ticket 0677). */
+const rowColors = new WeakMap<Record<number, string>, readonly string[]>()
+
+function colorsOfRow(row: Record<number, string>): readonly string[] {
+  let colors = rowColors.get(row)
+  if (!colors) {
+    colors = [...new Set(Object.values(row))]
+    rowColors.set(row, colors)
+  }
+  return colors
+}
+
 /** Every color on either layer, each once, in the order the layers hold them. */
 export function projectColors(project: Layered): string[] {
   const colors = new Set<string>()
   for (const beads of [beadsOfLayer(project, 'canvas'), beadsOfLayer(project, 'frame') ?? {}]) {
-    forEachBead(beads, (_row, _column, color) => colors.add(color))
+    for (const row of Object.values(beads)) {
+      for (const color of colorsOfRow(row)) colors.add(color)
+    }
   }
   return [...colors]
 }
@@ -35,7 +50,7 @@ export function projectColors(project: Layered): string[] {
 /** Whether two states of a Project hold the same beads on both layers (ADR 0066). A layer neither touched costs
  * nothing: its maps are the same object. */
 export function sameBeads(a: Layered, b: Layered): boolean {
-  const same = (x: BeadMap | undefined, y: BeadMap | undefined) => x === y || changedPositions(x ?? {}, y ?? {}).length === 0
+  const same = (x: BeadMap | undefined, y: BeadMap | undefined) => x === y || !anyChangedPosition(x ?? {}, y ?? {})
   return same(beadsOfLayer(a, 'canvas'), beadsOfLayer(b, 'canvas')) && same(beadsOfLayer(a, 'frame'), beadsOfLayer(b, 'frame'))
 }
 
@@ -54,7 +69,7 @@ export function sameLayers(a: Layered, b: Layered): boolean {
     x.quarterTurns === y.quarterTurns &&
     [...names].every((name) => x.settings?.[name] === y.settings?.[name]) &&
     sameBeads(a, b) &&
-    (x.folded === y.folded || changedPositions(x.folded ?? {}, y.folded ?? {}).length === 0)
+    (x.folded === y.folded || !anyChangedPosition(x.folded ?? {}, y.folded ?? {}))
   )
 }
 

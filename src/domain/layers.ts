@@ -1,4 +1,4 @@
-import { beadsOver, beadsWithout, changedPositions, colorAt, frameContains, withColors, type BeadMap, type FrameSheet, type Rect } from './canvas'
+import { beadsOver, anyChangedPosition, beadsWithout, colorAt, forEachChangedPosition, frameContains, withColors, type BeadChange, type BeadMap, type FrameSheet, type Rect } from './canvas'
 import type { GridPosition, Layer } from './grid'
 
 export type { Layer }
@@ -110,9 +110,10 @@ export function layerSheet(project: Project, layer: Layer): LayerSheet {
 /** `after` with every position under the Frame put back as `before` had it: the Canvas beads a Frame covers are neither
  * changed nor drawn. The same map back when nothing was under it. */
 function keepUnderFrame(before: BeadMap, after: BeadMap, frame: Rect): BeadMap {
-  const reverts = changedPositions(before, after)
-    .filter((position) => frameContains(frame, position))
-    .map(({ row, column }) => ({ row, column, color: colorAt(before, row, column) }))
+  const reverts: BeadChange[] = []
+  forEachChangedPosition(before, after, (row, column) => {
+    if (frameContains(frame, { row, column })) reverts.push({ row, column, color: colorAt(before, row, column) })
+  })
   return reverts.length === 0 ? after : withColors(after, reverts)
 }
 
@@ -136,7 +137,7 @@ export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSh
   const covered = footprintOf(project)
   const beads = covered ? keepUnderFrame(before, made, covered) : made
   // Everything the command did was under the Frame, so nothing is left of it.
-  if (beads !== made && changedPositions(before, beads).length === 0) {
+  if (beads !== made && !anyChangedPosition(before, beads)) {
     return project
   }
   return touch(withLayer(project, 'canvas', { beads }), {})
