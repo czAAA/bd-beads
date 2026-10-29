@@ -1,10 +1,10 @@
-import { computed, ref } from 'vue'
-import { beadLabel, beadsDiffer, findBead, offeredBeads, type Bead } from '../../domain/beads'
+import { computed } from 'vue'
+import { beadPitchMm, findBead, type Bead } from '../../domain/beads'
 import type { Layer } from '../../domain/grid'
 import { beadOfLayer, frameOf } from '../../domain/layerRecord'
 import { replaceBead } from '../../domain/projectBead'
 import type { Project } from '../../domain/project'
-import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
+import { estimatedSizeMm, formatSizeInMm } from '../../domain/projectSize'
 import type { Locale, Translations } from '../../i18n/translations'
 import { loadColorCatalog } from '../../services/colorCatalogs'
 import type { EditFn } from '../project/useEdit'
@@ -21,88 +21,57 @@ export interface ReplaceBeadFlowDeps {
   dialogs?: Dialogs
 }
 
-/** Replace Bead and its confirmation modal (tickets 48, 113, 205, 0665; ADR 0007, 0020, 0079). With a Frame it asks
- * which layer's Bead it changes, the Frame's first; until ticket 0670 moves it into Layer settings. Deps are read
- * lazily. */
+/** Replace Bead and its confirmation modal (tickets 48, 113, 205, 0665, 0670, 0687; ADR 0007, 0020, 0079): a layer's
+ * Bead, picked in that layer's Layer settings, so it never asks which layer. Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
-  /** The Bead id picked from the Replace bead menu, awaiting confirmation (ticket 48); undefined when its modal is
-   * closed. */
-  const pendingId = (deps.dialogs ?? useDialogs()).question<string>('replace-bead')
-
-  /** The layer whose Bead the confirmation changes (ticket 0665): the woven one, the Frame, until the person picks the
-   * Canvas. Without a Frame it is the Canvas's whatever this says. */
-  const layer = ref<Layer>('frame')
-
-  /** Whether the confirmation asks which layer: only with a Frame, as without one there is only the Canvas. */
-  const asksLayer = computed(() => frameOf(deps.currentProject()) !== undefined)
-
-  /** The open Project's woven Bead (ADR 0079), the Frame's when there is one: the one the Bead section shows. */
-  const ownBead = () => {
-    const project = deps.currentProject()
-    return project && beadOfLayer(project, 'frame').bead
-  }
-
-  /** The catalog's current Bead of the Project's own id, when the Project's copy differs from it (ticket 534, ADR 0072);
-   * undefined when they match, or when that Bead is retired and so offered nowhere. */
-  const currentOfSameId = computed(() => {
-    const own = ownBead()
-    const current = own && offeredBeads().find((bead) => bead.id === own.id)
-    return own && current && beadsDiffer(own, current) ? current : undefined
-  })
-
-  /** The Project's own Bead, shown beside the catalog's current one of the same id because the two differ (ticket 534);
-   * picking it would change nothing, so the list shows it without offering it. */
-  const outdated = computed(() => (currentOfSameId.value ? ownBead() : undefined))
-
-  /** The Beads the open Project could switch to (ticket 48): everything offered but its own, and the catalog's current
-   * Bead of its id when its copy has gone out of date. */
-  const candidates = computed(() => {
-    const project = deps.currentProject()
-    return project ? offeredBeads().filter((bead) => bead.id !== ownBead()?.id || bead === currentOfSameId.value) : []
-  })
+  /** The layer and the Bead id picked in its Layer settings, awaiting confirmation (ticket 48); undefined when its modal
+   * is closed. */
+  const pending = (deps.dialogs ?? useDialogs()).question<{ layer: Layer; beadId: string }>('replace-bead')
 
   /** The Bead behind the pending id, resolved from the catalog — also doubles as "is the Replace bead modal open"
    * (ticket 48), since a pending id always names a real catalog Bead. */
   const pendingBead = computed(() => {
-    const id = pendingId.value
+    const id = pending.value?.beadId
     return id ? findBead(id) : undefined
   })
 
-  /** The modal's message (ticket 48, ADR 0007): for the woven layer's Bead the Estimated size with the new Bead beside
-   * the old, and reassurance the design stays put; for the Canvas's under a Frame, that the Frame keeps its own. */
+  /** The modal's message (tickets 48, 0687; ADR 0007): the layer, its Bead's size in mm before and after, that it looks
+   * different but the design and bead count stay, and for the Frame its Estimated size with the new Bead and the old. */
   const confirmMessage = computed(() => {
     const project = deps.currentProject()
     const bead = pendingBead.value
-    if (!project || !bead) {
+    const layer = pending.value?.layer
+    const frame = project && frameOf(project)
+    const own = project && layer && (layer === 'canvas' || frame) ? beadOfLayer(project, layer).bead : undefined
+    if (!bead || !layer || !own) {
       return ''
     }
 
     const t = deps.messages()
-    if (asksLayer.value && layer.value === 'canvas') {
-      return fillBlanks(t.replaceBead.canvasMessage, { bead: beadLabel(bead, t.formFactors) })
+    const mm = (size: { widthMm: number; heightMm: number }) => formatSizeInMm(size, t.form.unitMm, deps.locale())
+    // A Bead's size as it lies in the work, its width with the correction the Estimated size counts too.
+    const beadSize = (of: Bead) => mm({ widthMm: beadPitchMm(of), heightMm: of.heightMm })
+    const sizes = { old: beadSize(own), new: beadSize(bead) }
+    if (layer === 'canvas' || !frame) {
+      return fillBlanks(t.replaceBead.canvasMessage, sizes)
     }
-    const unitLabels = { mm: t.form.unitMm, cm: t.form.unitCm }
-    const estimateWith = (candidate: Bead | undefined) =>
-      candidate ? formatSizeMm(estimatedSizeMm(project, candidate), unitLabels, deps.locale()) : '—'
-
-    return fillBlanks(t.replaceBead.confirmMessage, {
-      bead: beadLabel(bead, t.formFactors),
-      new: estimateWith(bead),
-      old: estimateWith(ownBead()),
+    return fillBlanks(t.replaceBead.frameMessage, {
+      ...sizes,
+      newSize: mm(estimatedSizeMm(frame, bead)),
+      oldSize: mm(estimatedSizeMm(frame, own)),
     })
   })
 
-  /** Opens the confirmation modal (ticket 48) for the picked Bead id, asking about the Frame's Bead first; does nothing
-   * with no Project open. */
-  function onRequestReplaceBead(beadId: string) {
+  /** Opens the confirmation modal (ticket 48) for a Bead id picked in a layer's Layer settings; does nothing with no
+   * Project open. */
+  function onRequestReplaceBead(layer: Layer, beadId: string) {
     if (deps.currentProject()) {
-      layer.value = 'frame'
-      pendingId.value = beadId
+      pending.value = { layer, beadId }
     }
   }
 
   function onCancelReplaceBead() {
-    pendingId.value = undefined
+    pending.value = undefined
   }
 
   /** Confirms Replace Bead (ticket 48, ADR 0007): the chosen layer's Bead, one undo step, exempt as it draws nothing.
@@ -110,9 +79,9 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
    * (ticket 0538); one that won't load drops them. */
   async function onConfirmReplaceBead() {
     const bead = pendingBead.value
-    const chosen = layer.value
-    pendingId.value = undefined
-    if (!bead) return
+    const chosen = pending.value?.layer
+    pending.value = undefined
+    if (!bead || !chosen) return
     const catalogId = bead.formFactor.colorCatalog
     const coded = Object.keys(deps.currentProject()?.paletteCodes ?? {}).length > 0
     const catalog = coded && catalogId ? await loadColorCatalog(catalogId).catch(() => undefined) : undefined
@@ -120,12 +89,8 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
   }
 
   return {
-    replaceBeadCandidates: candidates,
-    replaceBeadOutdated: outdated,
     replaceBeadPendingBead: pendingBead,
     replaceBeadConfirmMessage: confirmMessage,
-    replaceBeadAsksLayer: asksLayer,
-    replaceBeadLayer: layer,
     onRequestReplaceBead,
     onCancelReplaceBead,
     onConfirmReplaceBead,

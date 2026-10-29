@@ -61,12 +61,13 @@ describe('the Bead shape in a Project', () => {
     expect(canvasWeave(made()).cell).toBeUndefined()
   })
 
-  it('applies the Bead to both layers when Real', () => {
-    const real = withBeadShape(made(), 'real')
-    const withFrame = withLayers(real, { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
-    expect(canvasWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
-    expect(frameWeave(withFrame).cell).toEqual(beadCell(delica, 'real'))
-    expect(frameWeave(withFrame).technique).toBe('loom')
+  it('sets one layer\'s Bead shape, the other keeping its own (ticket 0670)', () => {
+    const framed = withLayers(made(), { frame: { row: 0, column: 0, rows: 2, columns: 2, beads: {}, technique: 'loom' as const } })
+    const real = withBeadShape(framed, 'frame', 'real')
+    expect(frameWeave(real).cell).toEqual(beadCell(delica, 'real'))
+    expect(frameWeave(real).technique).toBe('loom')
+    expect(canvasWeave(real).cell).toBeUndefined()
+    expect(canvasWeave(withBeadShape(real, 'canvas', 'real')).cell).toEqual(beadCell(delica, 'real'))
   })
 
   it('draws a Bead this device does not know as Symmetric', () => {
@@ -74,7 +75,7 @@ describe('the Bead shape in a Project', () => {
   })
 
   it('goes back to Symmetric without a leftover field', () => {
-    expect('beadShape' in withBeadShape(withBeadShape(made(), 'real'), 'symmetric')).toBe(false)
+    expect('beadShape' in withBeadShape(withBeadShape(made(), 'canvas', 'real'), 'canvas', 'symmetric')).toBe(false)
   })
 
   it('travels with the Project file, and an older file reads as Symmetric', () => {

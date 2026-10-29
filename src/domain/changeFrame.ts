@@ -260,8 +260,9 @@ function customSheet(project: Project, shape: FrameShapeId, settings: FrameSetti
   return { row: snapRow(canvas, centre.row - half.row), column: centre.column - half.column, rows, columns, beads: {}, ...weave, shape, settings: read, ...(quarterTurns ? { quarterTurns } : {}) }
 }
 
-/** A new Custom frame: its Frame shape, its size or all its settings, the Canvas position it goes round, and any beads. */
-type CustomPlacement = { shape: FrameShapeId; centre: GridPosition; beads?: BeadMap } & ({ size: number } | { settings: FrameSettings })
+/** A new Custom frame: its Frame shape, its size or all its settings, the Canvas position it goes round, any beads, and
+ * its Weave, a Starter's (ticket 0671), or else the first Technique its shape supports. */
+type CustomPlacement = { shape: FrameShapeId; centre: GridPosition; beads?: BeadMap; weave?: Weave } & ({ size: number } | { settings: FrameSettings })
 
 /** Whether two Custom frames' settings, as `settingsOf` reads them, are the same. */
 function sameSettings(a: FrameSettings, b: FrameSettings): boolean {
@@ -272,9 +273,9 @@ function sameSettings(a: FrameSettings, b: FrameSettings): boolean {
 /** The Project with a new Custom frame in place of any Frame there (ticket 0592), holding the beads given that its
  * layout has a position for: Row progress starts at the first pass, and the Canvas keeps every bead. */
 function placedCustomFrame(project: Project, placement: CustomPlacement): Project {
-  const { shape, centre, beads = {} } = placement
+  const { shape, centre, beads = {}, weave } = placement
   const settings = 'settings' in placement ? placement.settings : { [sizeSettingOf({ shape })!.id]: placement.size }
-  const sheet = customSheet(project, shape, settings, centre)
+  const sheet = customSheet(project, shape, settings, centre, undefined, weave)
   return touchFrameSheet(project, { ...sheet, beads: beadsOn(beads, frameGeometry(sheet)), rowProgress: firstPasses(rowProgressOf(project)) })
 }
 

@@ -49,15 +49,16 @@ How each kind lays its Beads (these are also the Frame shapes' layouts and count
 In order, in the body:
 
 1. The picture: 280px tall, the panel's width, `surface`, 1px `line-strong`, `radius-lg`. It updates as the settings change; it is `role="img"` named "{option}, with design" or "{option}, empty shape with seams".
-2. **Name** and **Bead**, side by side, on New Project only (an open Project keeps its own Bead). Name is optional, with the option's name as its placeholder.
-3. **Design:** a SegmentedControl, **Use design** (on by default) and **Start empty**. When it is off, a Note under it says why (below).
-4. The option's settings, each under its `label`, with its unit at the right in `meta`:
+2. **Name**, on New Project only, optional, with the option's name as its placeholder.
+3. The Frame's **Layer settings** (LayerSettings card; ADR 0079, ticket 0671), on New Project and on an open Project alike, pre-filled from the Starter: its Weave (the manifest's one Technique, and on a Frame shape only the Techniques that shape supports), Delica 11/0, Symmetric and the device's last Background. Each can be changed; the shape's sizes stay in the setup's own rows below, so the section shows no shape settings. On an open Project they set the Frame alone and the Canvas keeps its own; on New Project the Canvas copies them.
+4. **Design:** a SegmentedControl, **Use design** (on by default) and **Start empty**. When it is off, a Note under it says why (below).
+5. The option's settings, each under its `label`, with its unit at the right in `meta`:
    - A count is a Stepper (`field-height`) with the usual sizes as chips beside it (`item-height`, 44px hit, `radius-md`, `line-strong` edge; the matching one `aria-pressed` in `accent` with `on-accent` text). The chip of the design's own size carries a 5px dot, named "design size" for screen readers.
    - A choice is a SegmentedControl; its labels wrap to two lines rather than shrink (LongerText card).
-5. **Estimated size** in a `surface` box, `radius-lg`, its value in DM Mono `control` at the right; under it, right-aligned in `meta`, the bead count and, for a Ring or Band, its rows.
-6. The pinned footer (MenuPanel card): one primary button, 44px, the full width: **Create Project** on New Project, **Add Frame** on an open Project without a Frame, **Replace Frame** when it has one.
+6. **Estimated size**, in the setup's Bead and Technique, in a `surface` box, `radius-lg`, its value in DM Mono `control` at the right; under it, right-aligned in `meta`, the bead count and, for a Ring or Band, its rows.
+7. The pinned footer (MenuPanel card): one primary button, 44px, the full width: **Create Project** on New Project, **Add Frame** on an open Project without a Frame, **Replace Frame** when it has one.
 
-Settings and sizes by option (Delica 11/0: 1.6 mm by 1.3 mm; peyote rows 0.8 mm apart):
+Settings and sizes by option, as the designs are made (Delica 11/0: 1.6 mm by 1.3 mm; peyote rows 0.8 mm apart):
 
 | Option | Settings (design size) | Chips | Estimated size |
 | --- | --- | --- | --- |
@@ -73,7 +74,7 @@ EU ring sizes are the inside circumference in mm; US is worked out from it to th
 
 **Use design.** The design is made for one size and is never cropped, scaled or repeated. Changing any size setting (not the Size system) turns Use design off, and the Note names the design's size: "The design is made for part size 5. Set it back to turn the design on." ("Choose it again" for a choice, as Fringe style or Fit). Setting every size back turns it on again. Choosing Start empty with the design's size shows "Start empty keeps the shape and its seams and leaves every Bead blank." Choosing Use design again puts back the design's sizes.
 
-**Make.** Create Project, Add Frame or Replace Frame put the Frame of that kind and size in place, with the design's beads when Use design is on and none when it is off, and close the panel. Nothing in the Project records the Starter. Replace Frame asks first when the Frame holds beads (ConfirmDialogs card: "Replace Frame?", "The Frame's beads will be removed with it. This can be undone.", Cancel first and focused, Replace Frame primary) and is one Undo step.
+**Make.** Create Project, Add Frame or Replace Frame put the Frame of that kind and size in place, in the Layer settings chosen, with the design's beads when Use design is on and none when it is off, and close the panel. Nothing in the Project records the Starter. Replace Frame asks first when the Frame holds beads (ConfirmDialogs card: "Replace Frame?", "The Frame's beads will be removed with it. This can be undone.", Cancel first and focused, Replace Frame primary) and is one Undo step.
 
 ## Back, Escape and focus
 

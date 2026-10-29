@@ -530,7 +530,8 @@ function wireAppShell(services: Services) {
     showToast,
   })
 
-  const beadShapeFlow = useBeadShapeFlow({ currentProject, edit })
+  /** Each layer's Bead shape (ticket 0670): a view, so no Edit. */
+  const beadShapeFlow = useBeadShapeFlow({ currentProject, replaceProject })
   /** Each layer's Background (ticket 0666): a view, so no Edit. */
   const backgroundFlow = useBackgroundFlow({ currentProject, replaceProject, remember: backgrounds.remember, start: () => backgrounds.start.value })
 
@@ -804,12 +805,11 @@ function wireAppShell(services: Services) {
       onRequestDuplicate: manageProject.onRequestDuplicate,
       onRequestDelete: manageProject.onRequestDelete,
       onRequestDeleteAll: deleteAll.onRequestDeleteAll,
-      onSetTechnique: frameFlow.setTechnique,
-      onSetCanvasTechnique: frameFlow.setCanvasTechnique,
+      // Each layer's Layer settings (ticket 0670): the Canvas's in Project, the Frame's in the Frame panel
+      onSetTechnique: frameFlow.setLayerTechnique,
       onSetWeaveSetting: frameFlow.setWeaveSetting,
       onSetBeadShape: beadShapeFlow.setBeadShape,
       onSetBackground: backgroundFlow.setBackground,
-      replaceBeadCandidates: replaceBead.replaceBeadCandidates,
       onRequestReplaceBead: replaceBead.onRequestReplaceBead,
       onExportProjectFile: exportFlow.onExportProjectFile,
       onSaveMakerName: exportFlow.onSaveMakerName,
@@ -857,8 +857,6 @@ function wireAppShell(services: Services) {
       onCancelRemoveAllAddedColors: removeColor.onCancelRemoveAllAddedColors,
       replaceBeadPendingBead: replaceBead.replaceBeadPendingBead,
       replaceBeadConfirmMessage: replaceBead.replaceBeadConfirmMessage,
-      replaceBeadAsksLayer: replaceBead.replaceBeadAsksLayer,
-      replaceBeadLayer: replaceBead.replaceBeadLayer,
       onConfirmReplaceBead: replaceBead.onConfirmReplaceBead,
       onCancelReplaceBead: replaceBead.onCancelReplaceBead,
       pendingImport: importSwitch.pendingImport,

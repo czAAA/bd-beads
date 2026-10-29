@@ -5,6 +5,8 @@ import { createProject } from '../../domain/createProject'
 import type { Project } from '../../domain/project'
 import { starterById, type StarterId } from '../../domain/starters'
 import { en } from '../../i18n/en'
+import { chooseBeadInSection } from '../../testUtils/beadPicker'
+import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 
 beforeEach(() => {
   localStorage.clear()
@@ -17,11 +19,11 @@ const text = (wrapper: Setup, testId: string) => wrapper.get(`[data-testid="${te
 const design = (wrapper: Setup) => wrapper.get('[data-testid="starter-design"] [aria-checked="true"]').text()
 
 describe('the Starter setup', () => {
-  it('opens on the design at its own size: the picture named for it, Name, Bead, the size and its Estimated size', () => {
+  it('opens on the design at its own size: the picture named for it, Name, the Frame\'s Layer settings, the size and its Estimated size', () => {
     const wrapper = mountSetup('triangle')
     expect(wrapper.get('[data-testid="starter-setup-picture"]').attributes()).toMatchObject({ role: 'img', 'aria-label': 'Triangle, with design' })
     expect(wrapper.get('[data-testid="starter-name-input"]').attributes('placeholder')).toBe('Triangle')
-    expect(wrapper.find('[data-testid="starter-bead-picker"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="starter-layer-settings"]').exists()).toBe(true)
     expect(design(wrapper)).toBe(en.starters.useDesign)
     expect(text(wrapper, 'starter-size-value-rounds')).toBe('10')
     expect(text(wrapper, 'starter-size-label-rounds')).toContain('Rounds')
@@ -61,24 +63,46 @@ describe('the Starter setup', () => {
     expect(design(wrapper)).toBe(en.starters.useDesign)
   })
 
-  it('asks for the Starter, its size and design, the name typed or else the Starter\'s, and the Bead chosen', async () => {
+  it('asks for the Starter, its size and design, the name typed or else the Starter\'s, and the Frame\'s Layer settings', async () => {
     const wrapper = mountSetup('kite')
     await wrapper.get('form').trigger('submit')
     await wrapper.get('[data-testid="starter-name-input"]').setValue('  Wings ')
     await wrapper.get('[data-testid="starter-size-increase-rows"]').trigger('click')
     await wrapper.get('form').trigger('submit')
+    const frame = { weave: { technique: 'peyote', techniqueSettings: { peyoteDrop: 1 } }, beadId: 'miyuki/delica/11-0', beadShape: 'symmetric', background: expect.anything() }
     expect(wrapper.emitted('submit')).toEqual([
-      [{ sizes: { rows: 21 }, picks: {}, useDesign: true, name: 'Kite', beadId: expect.any(String) }],
-      [{ sizes: { rows: 22 }, picks: {}, useDesign: false, name: 'Wings', beadId: expect.any(String) }],
+      [{ sizes: { rows: 21 }, picks: {}, useDesign: true, name: 'Kite', ...frame }],
+      [{ sizes: { rows: 22 }, picks: {}, useDesign: false, name: 'Wings', ...frame }],
     ])
   })
 
-  it('on an open Project asks no Name or Bead, and measures with the Project\'s own Bead', () => {
-    const project = createProject({ technique: 'loom', beadId: 'miyuki/delica/11-0', name: 'Open' })
+  it('pre-fills the Frame\'s Layer settings from the Starter, offering only the Techniques its shape supports (ticket 0671)', async () => {
+    const wrapper = mountSetup('vFringe')
+    expect(panelOptionShown(wrapper, 'starter-technique')).toBe(en.techniques.brick)
+    expect(panelOptionShown(wrapper, 'bead-size')).toBe('11/0')
+    await wrapper.get('[data-testid="starter-technique"] button[aria-haspopup]').trigger('click')
+    expect(wrapper.findAll('[data-testid="starter-technique"] [role="menuitemradio"]').map((each) => each.text())).toEqual([en.techniques.brick])
+  })
+
+  it('makes each of the Frame\'s Layer settings changeable, the Estimated size and count following the Bead and Technique (ticket 0671)', async () => {
+    const wrapper = mountSetup('ringStripes')
+    expect(text(wrapper, 'starter-count')).toBe('≈ 252 beads · 72 rows round')
+    await choosePanelOption(wrapper, 'starter-technique', 'loom')
+    expect(text(wrapper, 'starter-count')).toBe('≈ 252 beads · 36 rows round')
+    await chooseBeadInSection(wrapper, 'toho/cube/1.5mm')
+    expect(text(wrapper, 'starter-estimate')).toBe('ø 17.2 mm inside · 10.5 mm wide')
+    await wrapper.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
+    await wrapper.get('[data-testid="background-color-linen"]').trigger('click')
+    await wrapper.get('form').trigger('submit')
+    expect(wrapper.emitted('submit')![0]![0]).toMatchObject({ weave: { technique: 'loom' }, beadId: 'toho/cube/1.5mm', beadShape: 'real', background: 2 })
+  })
+
+  it('on an open Project asks no Name, its Frame\'s Layer settings still the Starter\'s, not the Canvas\'s', () => {
+    const project = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', name: 'Open' })
     const wrapper = mountSetup('warpedSquare', project)
     expect(wrapper.find('[data-testid="starter-name-input"]').exists()).toBe(false)
-    expect(wrapper.find('[data-testid="starter-bead-picker"]').exists()).toBe(false)
-    expect(text(wrapper, 'starter-estimate')).toMatch(/cm|mm/)
+    expect(panelOptionShown(wrapper, 'starter-technique')).toBe(en.techniques.peyote)
+    expect(panelOptionShown(wrapper, 'bead-size')).toBe('11/0')
     expect(text(wrapper, 'starter-count')).toBe('144 beads')
   })
 

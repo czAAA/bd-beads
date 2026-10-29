@@ -606,7 +606,7 @@ export const zh: Translations = {
     lettersLabel: '字母',
     lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
     lettersInfoLabel: '字母的作用',
-    background: { heading: '背景', label: '边框背景' },
+    background: { label: '边框背景' },
     margin: {
       heading: '边距',
       colorLabel: '边距颜色',
@@ -848,12 +848,10 @@ export const zh: Translations = {
   replaceBead: {
     selectLabel: '替换珠子',
     confirmTitle: '替换珠子？',
-    confirmMessage: '换成 {bead} 后，这个项目的尺寸约为 {new}，而不是 {old}。你的设计和珠子数量完全不变。你可以撤销这一操作。',
     canvasMessage:
-      '换成 {bead} 后，画布会按这种珠子的尺寸绘制。边框保留自己的珠子，尺寸和珠子数量完全不变。你可以撤销这一操作。',
-    layerLabel: '在哪里替换珠子',
-    layerFrame: '边框',
-    layerCanvas: '画布',
+      '画布的珠子从 {old} 换成 {new}。画布的比例看起来会不同，但你的设计和珠子数量完全不变。你可以撤销这一操作。',
+    frameMessage:
+      '边框的珠子从 {old} 换成 {new}，边框的尺寸约为 {newSize}，而不是 {oldSize}。它的比例看起来会不同，但你的设计和珠子数量完全不变。你可以撤销这一操作。',
     confirmButton: '替换珠子',
     outdatedPostfix: '(已保存的)',
     cancelButton: '取消',
@@ -931,5 +929,9 @@ export const zh: Translations = {
     remapColor: '选择这个图片颜色要变成的珠子颜色。',
     emptyColor: '去掉这个颜色，它的珠子留空。',
     list: (names) => `${names.join('、')}。`,
+  },
+  layerSettings: {
+    frameHeading: '设置',
+    background: '背景',
   },
 }
