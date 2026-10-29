@@ -3,6 +3,7 @@ import { forEachBead, frameContains, withColors, type BeadChange, type Rect } fr
 import type { GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
+import { beadsOfLayer, withLayer } from './layerRecord'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
@@ -90,15 +91,15 @@ export function keepMarginClear(before: Project, after: Project): Project {
     return after
   }
   const reverts: BeadChange[] = []
-  forEachBead(after.beads, (row, column, color) => {
-    if (inMargin(frame, { row, column }) && before.beads[row]?.[column] !== color) {
-      reverts.push({ row, column, color: before.beads[row]?.[column] ?? null })
+  const [was, now] = [beadsOfLayer(before, 'canvas'), beadsOfLayer(after, 'canvas')]
+  forEachBead(now, (row, column, color) => {
+    if (inMargin(frame, { row, column }) && was[row]?.[column] !== color) {
+      reverts.push({ row, column, color: was[row]?.[column] ?? null })
     }
   })
   if (reverts.length === 0) {
     return after
   }
-  const beads = withColors(after.beads, reverts)
-  const kept = { ...after, beads }
+  const kept = withLayer(after, 'canvas', { beads: withColors(now, reverts) })
   return sameBeads(before, kept) ? before : kept
 }

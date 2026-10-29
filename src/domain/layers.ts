@@ -5,7 +5,7 @@ export type { Layer }
 import { footprintOf } from './footprint'
 import { frameGeometry, type ShapedSheet } from './frameShape'
 import { gridGeometry, type LayerGeometry } from './layerGeometry'
-import { layerOf, withLayer } from './layerRecord'
+import { beadsOfLayer, layerOf, withLayer } from './layerRecord'
 import { frameWeave } from './layerWeave'
 import { touch, type Project } from './project'
 import { projectCell, type ShapedBead } from './projectBead'
@@ -57,11 +57,11 @@ export function positionInLayer(project: Pick<Project, 'frame'>, layer: Layer, p
 export function shownBeads(project: Framed & Pick<Project, 'beads'>): BeadMap {
   const frame = project.frame
   if (!frame) {
-    return project.beads
+    return beadsOfLayer(project, 'canvas')
   }
-  const hidden = beadsWithout(project.beads, footprintOf(project)!)
+  const hidden = beadsWithout(beadsOfLayer(project, 'canvas'), footprintOf(project)!)
   // Only a grid's positions are the Canvas's, moved by the Frame's corner; a Custom frame's are named by round and place.
-  return frameGeometryOf(project).grid ? beadsOver(hidden, shiftedBeads(frame.beads, frame.row, frame.column)) : hidden
+  return frameGeometryOf(project).grid ? beadsOver(hidden, shiftedBeads(beadsOfLayer(project, 'frame')!, frame.row, frame.column)) : hidden
 }
 
 /** A position of a layer's own, back on the Canvas. */
@@ -129,16 +129,17 @@ export function onLayer(project: Project, layer: Layer, command: (sheet: LayerSh
       return project
     }
     const beads = command(layerSheet(project, 'frame'), (position) => positionInLayer(project, 'frame', position))
-    return beads === frame.beads ? project : touch(withLayer(project, 'frame', { beads }), {})
+    return beads === beadsOfLayer(project, 'frame') ? project : touch(withLayer(project, 'frame', { beads }), {})
   }
   const made = command(layerSheet(project, 'canvas'), (position) => position)
-  if (made === project.beads) {
+  const before = beadsOfLayer(project, 'canvas')
+  if (made === before) {
     return project
   }
   const covered = footprintOf(project)
-  const beads = covered ? keepUnderFrame(project.beads, made, covered) : made
+  const beads = covered ? keepUnderFrame(before, made, covered) : made
   // Everything the command did was under the Frame, so nothing is left of it.
-  if (beads !== made && changedPositions(project.beads, beads).length === 0) {
+  if (beads !== made && changedPositions(before, beads).length === 0) {
     return project
   }
   return touch(withLayer(project, 'canvas', { beads }), {})

@@ -4,6 +4,7 @@ import { projectDimensions } from '../domain/projectExtent'
 import type { Project } from '../domain/project'
 import { displayedGrid, planPrint, type PrintPart, type PrintPlan } from './printPlan'
 import { chartCellOf, customChart } from './customChart'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 // A chart page's color key (tickets 579, 0585): the colors on the page, the overlap included since it is drawn there, and
 // no counts (the Specification has the totals). Its height is set once for the PDF, from the page with the most colors.
@@ -40,7 +41,7 @@ export function colorsOnPage(project: Counted, parts: readonly PrintPart[]): str
   }
   const { columns, rows } = projectDimensions(project)
   const found = new Set<string>()
-  forEachBead(frame.beads, (row, column, hex) => {
+  forEachBead(beadsOfLayer(project, 'frame')!, (row, column, hex) => {
     const [across, down] = displayedAt(project.rotation, columns, rows, column, row)
     if (onPart(across, down)) {
       found.add(hex)

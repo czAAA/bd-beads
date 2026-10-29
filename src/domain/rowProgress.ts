@@ -2,6 +2,7 @@ import { changedPositions, colorAt, frameContains, withColors, type BeadChange, 
 import { rowOrderOf, type ShapedSheet } from './frameShape'
 import type { GridPosition } from './grid'
 import { sameBeads } from './layerBeads'
+import { beadsOfLayer, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
 import { frameWeave } from './layerWeave'
 import { touch, type Project, type RowProgress } from './project'
@@ -238,13 +239,14 @@ export function isInCurrentRow(project: RowProgressed, position: GridPosition): 
  * drawing commands' "unchanged" signal, so no undo step is recorded. */
 export function keepFinishedRows(before: Project, after: Project): Project {
   const frame = before.frame
-  if (!frame || !after.frame || after.frame.beads === frame.beads) {
+  const [was, now] = [beadsOfLayer(before, 'frame'), beadsOfLayer(after, 'frame')]
+  if (!frame || !was || !now || now === was) {
     return sameBeads(before, after) ? before : after
   }
-  const reverts: BeadChange[] = changedPositions(frame.beads, after.frame.beads)
+  const reverts: BeadChange[] = changedPositions(was, now)
     .filter(({ row, column }) => isInFinishedRow(before, { row: row + frame.row, column: column + frame.column, layer: 'frame' }))
-    .map(({ row, column }) => ({ row, column, color: colorAt(frame.beads, row, column) }))
-  const kept = reverts.length === 0 ? after : { ...after, frame: { ...after.frame, beads: withColors(after.frame.beads, reverts) } }
+    .map(({ row, column }) => ({ row, column, color: colorAt(was, row, column) }))
+  const kept = reverts.length === 0 ? after : withLayer(after, 'frame', { beads: withColors(now, reverts) })
   return sameBeads(before, kept) ? before : kept
 }
 
