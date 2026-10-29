@@ -31,6 +31,10 @@ vi.mock('./services/imageDecode', async (importOriginal) => {
   }
 })
 
+// The Bead's Color catalog is not this file's subject: it stays loading, so the matches are the Default Palette's however
+// fast the catalog would arrive (since ticket 0695 TOHO's covers the 1.5 mm cube, and it loads before Create is pressed).
+vi.mock('./services/colorCatalogs', () => ({ loadColorCatalog: () => new Promise(() => undefined) }))
+
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
 /** A picture of two flat blocks: the left half red, the right half blue. */
