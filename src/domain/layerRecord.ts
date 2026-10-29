@@ -111,7 +111,7 @@ export type Beaded = Pick<Project, 'beads'> & Partial<Pick<Project, 'frame'>>
 
 /** A layer's own beads (ADR 0079), the Frame's counted from its first row and column; none for a Frame the Project
  * lacks. The beads of `layerOf`, for a reader given less than a whole Project (ticket 0662). */
-export function beadsOfLayer(project: Beaded, layer: 'canvas'): BeadMap
+export function beadsOfLayer(project: Pick<Project, 'beads'>, layer: 'canvas'): BeadMap
 export function beadsOfLayer(project: Beaded, layer: Layer): BeadMap | undefined
 export function beadsOfLayer(project: Beaded, layer: Layer): BeadMap | undefined {
   return layer === 'frame' ? project.frame?.beads : project.beads

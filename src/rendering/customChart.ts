@@ -5,6 +5,7 @@ import type { LayoutPoint } from '../domain/frameLayout'
 import { CELL_SIZE_PX } from './cellSize'
 import { geometryDrawnAlone } from './space'
 import { gridToRegion, projectExtentPx, type Region } from './surfaceView'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 // A Custom frame on a printed chart (ticket 0594): its beads lie at angles, not on rows and columns, so a chart page
 // places each one where its Layer geometry puts it, through the same transform as the rest of the page.
@@ -35,6 +36,7 @@ export function customChart(project: Pick<Project, 'frame' | 'beads' | 'rotation
   const inGrid = ({ x, y }: LayoutPoint): LayoutPoint => ({ x: x * CELL_SIZE_PX, y: y * CELL_SIZE_PX })
   // The page's own quarter turn, read off the transform's first column.
   const turn = Math.atan2(b, a)
+  const beads = beadsOfLayer(project, 'frame')!
   return {
     beads: geometry.positions().map((position) => {
       const { box, angle } = geometry.place(position)!
@@ -43,7 +45,7 @@ export function customChart(project: Pick<Project, 'frame' | 'beads' | 'rotation
         angle: angle + turn,
         width: box.width * CELL_SIZE_PX * zoom,
         height: box.height * CELL_SIZE_PX * zoom,
-        color: colorAt(frame.beads, position.row, position.column),
+        color: colorAt(beads, position.row, position.column),
       }
     }),
     seams: geometry.seams().map(([from, to]) => [at(inGrid(from)), at(inGrid(to))]),

@@ -8,6 +8,7 @@ import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
+import { beadsOfLayer } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's four sides, or each
 // Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -66,7 +67,7 @@ function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
   if (project.frame) {
     return frameGeometry(project.frame).grid ? [{ ...project.frame, kind: 'frame', outset: scale.frameOutset, sides: 'all' }] : []
   }
-  return pieceAreasOf(project.beads, canvasWeave(project))
+  return pieceAreasOf(beadsOfLayer(project, 'canvas'), canvasWeave(project))
     .filter(hasGuides)
     .map((piece) => ({ ...piece, kind: 'piece' as const, outset: scale.pieceOutset, sides: 'start' as const }))
 }
