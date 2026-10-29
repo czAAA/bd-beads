@@ -99,7 +99,7 @@ describe('UNDO_CAP', () => {
     expect(UNDO_CAP.sizeOf(entry, { ...entry, palette: [] })).toBeLessThan(1024)
   })
 
-  it('sizes a one-bead stroke at about the one row it replaced, and a whole-sheet repaint at every row', () => {
+  it('sizes a one-bead stroke at about the one row it replaced, and a whole-sheet repaint at every row, dozens of which fit the cap', () => {
     const grey = sheet(GREY)
     const frameBeads = beadsOfLayer(grey, 'frame')!
     const stroke = UNDO_CAP.sizeOf(snapshotOf(grey), snapshotOf(repainted(grey, withColors(frameBeads, [{ row: 7, column: 7, color: BLACK }]))))
@@ -108,17 +108,12 @@ describe('UNDO_CAP', () => {
     expect(stroke).toBeGreaterThan(300 * 4)
     expect(stroke).toBeLessThan(16 * 1024)
     expect(repaint).toBeGreaterThan(300 * stroke * 0.9)
+    expect(UNDO_CAP.bytes / repaint).toBeGreaterThan(40)
   })
 
   it('counts the beads of a Frame the next step no longer has', () => {
     const grey = sheet(GREY)
 
     expect(UNDO_CAP.sizeOf(snapshotOf(grey), snapshotOf(withFields(grey, { frame: undefined })))).toBeGreaterThan(300 * 300 * 4)
-  })
-
-  it('holds dozens of whole-sheet repaints of a 300 × 300 Frame before it drops the oldest', () => {
-    const repaint = UNDO_CAP.sizeOf(snapshotOf(sheet(GREY)), snapshotOf(sheet(BLACK)))
-
-    expect(UNDO_CAP.bytes / repaint).toBeGreaterThan(40)
   })
 })
