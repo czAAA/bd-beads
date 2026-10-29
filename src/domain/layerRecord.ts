@@ -195,10 +195,11 @@ export function lettersOn(project: Layered): boolean {
 
 /** The Project with the Letters switch set on every layer, which share one until a layer is given its own. Not stamped. */
 export function withLetters(project: Project, on: boolean): Project {
-  return { ...project, layers: mapLayers(project.layers, (layer) => {
+  const set = <T extends LayerFields>(layer: T): T => {
     const { letters: _letters, ...rest } = layer
-    return (on ? { ...rest, letters: true } : rest) as typeof layer
-  }) }
+    return (on ? { ...rest, letters: true } : rest) as T
+  }
+  return { ...project, layers: mapLayers(project.layers, set) }
 }
 
 /** A layer's own beads (ADR 0079), the Frame's counted from its first row and column; none for a Frame the Project
