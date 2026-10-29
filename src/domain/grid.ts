@@ -62,11 +62,6 @@ export interface PreviewCell extends GridPosition {
   color?: string
 }
 
-/** A stable string key for a grid position, for deduping/indexing positions in a Set or Map. */
-export function positionKey(position: GridPosition): string {
-  return `${position.row},${position.column}`
-}
-
 /** The Zoom floor (ADR 0033): the same on every screen.
  * @internal Tests zoom to the floor. */
 export const MIN_ZOOM = 0.1
