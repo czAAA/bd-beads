@@ -42,10 +42,9 @@ export function replaceBead(project: Project, bead: Bead, catalog?: ColorCatalog
   return touch(withWovenPalette(project, replaced, catalog), {})
 }
 
-/** `after` with its Palette moved to its woven layer's Bead where that differs from `before`'s (tickets 0528, 0665):
- * the built-in colors follow the Bead's set, and a swatch keeps its catalog code only if `catalog`, the new Bead's,
- * lists it in the new size (ticket 0538); with none, while the Color catalog and size stay. The same `after` when the
- * woven Bead is as it was. */
+/** `after` with its Palette moved to its woven layer's Bead where that differs from `before`'s (tickets 0528, 0665): the
+ * built-in colors follow its set, a swatch keeps its code if `catalog` (the new Bead's) lists it in its size (ticket
+ * 0538), or with none while Color catalog and size stay. The same `after` when the woven Bead is as it was. */
 export function withWovenPalette(before: Project, after: Project, catalog?: ColorCatalog): Project {
   const [from, to] = [beadOfLayer(before, 'frame').bead, beadOfLayer(after, 'frame').bead]
   const [fromId, toId] = [beadIdOfLayer(before, 'frame'), beadIdOfLayer(after, 'frame')]

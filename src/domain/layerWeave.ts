@@ -64,10 +64,9 @@ export function placedFrame(project: Layered): PlacedFrame | undefined {
   return frame && { ...frame, ...frameWeave(project), scale: frameScale(project) }
 }
 
-/** A distance counted in the Frame's own rows and columns, as Canvas positions (tickets 492, 0665): the nearest whole
- * ones, through millimetres (the Weave's position step and the Bead's pitch), exactly the same where the layers are
- * alike. A half rounds away from zero both ways, so an edge moved out and back puts the Frame where it was (ticket
- * 0638). `frame` is a Weave of the Frame's; without a cell it is drawn in the Frame's Bead's. */
+/** A distance in the Frame's own rows and columns (in `frame`, a Weave of its, drawn in its Bead), as the nearest whole
+ * Canvas positions through millimetres (tickets 492, 0665), the same where the layers are alike. A half rounds away
+ * from zero both ways, so an edge moved out and back puts the Frame where it was (ticket 0638). */
 export function canvasDistance(project: Layered, frame: Weave, rows: number, columns: number): GridPosition {
   const canvas = canvasWeave(project)
   if (sameWeave(canvas, frame) && sameBeadSize(project)) {
