@@ -2,7 +2,7 @@ import { computed } from 'vue'
 import { beadLabel } from '../../domain/beads'
 import { rotationSwapsAxes } from '../../domain/grid'
 import { projectColors } from '../../domain/layerBeads'
-import { frameOf, layerOf, orientationOf, projectNameOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, quarterTurnOf, projectNameOf } from '../../domain/layerRecord'
 import { rowProgressOn, rowProgressPosition } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { shownDimensions } from '../../domain/projectExtent'
@@ -40,7 +40,7 @@ export function useProjectLabels(deps: ProjectLabelsDeps) {
     const t = deps.messages()
     const colors = projectColors(project).length
     const dimensions = shownDimensions(project)
-    const [columns, rows] = rotationSwapsAxes(orientationOf(project)) ? [dimensions.rows, dimensions.columns] : [dimensions.columns, dimensions.rows]
+    const [columns, rows] = rotationSwapsAxes(quarterTurnOf(project)) ? [dimensions.rows, dimensions.columns] : [dimensions.columns, dimensions.rows]
     const colorWords = plural(deps.locale(), colors, t.a11y.colorsCount)
     // With no Frame the canvas has no size to say: it is named as a Canvas.
     const parts = [

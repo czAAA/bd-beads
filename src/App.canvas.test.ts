@@ -62,6 +62,27 @@ describe('Rotate canvas (ticket 471)', () => {
     expect(orientationOf(loadProjects()[0])).toBe(90)
     expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBe('true')
   })
+
+  it('turns the picture with a two-finger twist, live, and keeps the angle it settles on with no Undo step (ticket 0672)', async () => {
+    saveProjects([unframedProject()])
+    const wrapper = mount(App, { attachTo: document.body })
+    await flushPromises()
+    const finger = (type: string, pointerId: number, clientX: number, clientY: number) =>
+      surface(wrapper).trigger(type, { pointerId, clientX, clientY, pointerType: 'touch', isPrimary: pointerId === 1, button: 0, buttons: 1 })
+
+    await finger('pointerdown', 1, 100, 100)
+    await finger('pointerdown', 2, 200, 100)
+    // The second finger swings 40° clockwise round the first.
+    await finger('pointermove', 2, 100 + 100 * Math.cos((40 * Math.PI) / 180), 100 + 100 * Math.sin((40 * Math.PI) / 180))
+    expect(surface(wrapper).attributes('data-tilt')).toBe('40')
+    expect(orientationOf(loadProjects()[0])).toBe(0)
+
+    await finger('pointerup', 2, 0, 0)
+    await finger('pointerup', 1, 0, 0)
+    await flushPromises()
+    expect(orientationOf(loadProjects()[0])).toBe(40)
+    expect(wrapper.get('[data-testid="strip-undo"]').attributes('aria-disabled')).toBe('true')
+  })
 })
 
 describe('Undo and Redo in the Canvas strip', () => {

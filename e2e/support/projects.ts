@@ -6,7 +6,7 @@ import type { Cell, Project, RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
-import { canvasOf, type Layered, orientationOf } from '../../src/domain/layerRecord'
+import { canvasOf, type Layered, quarterTurnOf } from '../../src/domain/layerRecord'
 
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by
  * writing it directly. */
@@ -76,7 +76,7 @@ export function beadCentre(
   { row, column }: { row: number; column: number },
   scroll: { x: number; y: number } = { x: 0, y: 0 },
 ): { x: number; y: number } {
-  const { technique, rotation } = 'layers' in project ? { technique: canvasOf(project).technique, rotation: orientationOf(project) } : project
+  const { technique, rotation } = 'layers' in project ? { technique: canvasOf(project).technique, rotation: quarterTurnOf(project) } : project
   const at = surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll }).beadToPoint({ row, column })
   return { x: box.x + at.x, y: box.y + at.y }
 }

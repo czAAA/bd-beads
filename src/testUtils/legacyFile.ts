@@ -1,5 +1,5 @@
 import type { FlatProject } from '../domain/flatWeave'
-import { canvasOf } from '../domain/layerRecord'
+import { canvasOf, quarterTurnOf } from '../domain/layerRecord'
 import { encodeProject } from '../domain/projectEncoding'
 import type { Project } from '../domain/project'
 import { rowProgressOf } from '../domain/rowProgress'
@@ -9,13 +9,13 @@ import { frameSheetOf } from './layerFields'
 // Project's own and the Frame layer a sheet beside them (file versions 4 to 11). Its beads are encoded as today's are.
 
 /** A Project as stores and files held it before its layers (ticket 0664), for a test that builds such a stored value
- * from a Project of today: the Canvas layer's fields the Project's own, its orientation as `rotation`, the Frame
+ * from a Project of today: the Canvas layer's fields the Project's own, its orientation as `rotation` (the quarter turns they held), the Frame
  * layer's sheet beside them as `frame`. */
 export function legacyRecordOf(project: Project): FlatProject {
   const { layers: _layers, ...own } = project
-  const { id: _id, orientation, ...canvas } = canvasOf(project)
+  const { id: _id, orientation: _orientation, ...canvas } = canvasOf(project)
   const sheet = frameSheetOf(project)
-  return { ...own, ...canvas, rotation: orientation, rowProgress: rowProgressOf(project), ...(sheet ? { frame: sheet } : {}) }
+  return { ...own, ...canvas, rotation: quarterTurnOf(project), rowProgress: rowProgressOf(project), ...(sheet ? { frame: sheet } : {}) }
 }
 
 /** One Project as such a file held it: the Frame's shape under its earlier name, `kind`. */
