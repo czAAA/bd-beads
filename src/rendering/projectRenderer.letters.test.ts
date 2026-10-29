@@ -5,7 +5,7 @@ import { drawBeadLetter, LETTER_ON_DARK, LETTER_ON_LIGHT, LIGHT_THEME, type Draw
 import { renderProject } from './projectRenderer'
 import { spaceOf } from './space'
 import { frameOf } from '../domain/layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 /** A context that records the text drawn and the color it was drawn in. */
 function recordingContext() {
@@ -26,7 +26,7 @@ function recordingContext() {
 
 function framed(): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 3, height: 1, unit: 'beads' } })
-  return withFields(base, { frame: { ...frameOf(base)!, beads: { 0: { 0: '#1a1a1a', 1: '#f2c94c' } } } })
+  return withLayers(base, { frame: { ...frameOf(base)!, beads: { 0: { 0: '#1a1a1a', 1: '#f2c94c' } } } })
 }
 
 describe('Letters on the Frame (ticket 0573)', () => {

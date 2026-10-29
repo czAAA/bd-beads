@@ -213,8 +213,9 @@ function decodeLayer({ encodedBeads, encodedFolded, ...layer }: EncodedLayer): S
   return { ...layer, beads: decodeBeads(encodedBeads), ...(folded && hasBeads(folded) ? { folded } : {}) }
 }
 
-/** The Project a file version 11 value holds; it still goes through normalizeProject. */
-export function decodeSettingsMapProject(encoded: EncodedFlatProject): SavedProject {
+/** The Project a file version 11 value holds, flat as before its layers (ticket 0664), each Weave's settings a map; it
+ * still goes through normalizeProject. */
+export function decodeVersionElevenProject(encoded: EncodedFlatProject): SavedProject {
   const { encodedBeads, frame, ...rest } = encoded
   return { ...rest, beads: decodeBeads(encodedBeads), ...(frame ? { frame: decodeFrame(frame) } : {}) }
 }
@@ -222,7 +223,7 @@ export function decodeSettingsMapProject(encoded: EncodedFlatProject): SavedProj
 /** The Project a value of file version 4 to 10, or of the library, holds: each layer's flat Brick block read into its
  * settings map (ticket 0636). */
 export function decodeFlatProject(encoded: EncodedFlatProject): SavedProject {
-  return liftFlatWeave(decodeSettingsMapProject(encoded))
+  return liftFlatWeave(decodeVersionElevenProject(encoded))
 }
 
 /** The Project a stored value of version 1 to 3 holds, whichever shape wrote it (temporary, see versionThree.ts), its

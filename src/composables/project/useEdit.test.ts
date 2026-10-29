@@ -11,7 +11,7 @@ import { BEAD_CATALOG } from '../../domain/beads'
 import { editHarness } from '../../testUtils/editHarness'
 import { paintAt } from '../../testUtils/layers'
 import { beadsOfLayer, canvasOf, frameOf } from '../../domain/layerRecord'
-import { sheetOf, withFields } from '../../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../../testUtils/layerFields'
 
 const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
 const frame = frameOf(base)!
@@ -63,7 +63,7 @@ describe('useEdit', () => {
       const ctx = editHarness(base)
       expect(ctx.edit('drawing', (project) => paint(project, marginCell))).toEqual({ kind: 'unchanged' })
 
-      const withMarginBead: Project = withFields(base, { beads: beadsOfLayer(paint(base, marginCell), 'canvas') })
+      const withMarginBead: Project = withLayers(base, { beads: beadsOfLayer(paint(base, marginCell), 'canvas') })
       const erasing = editHarness(withMarginBead)
       expect(erasing.edit('drawing', (project) => paint(project, marginCell, null))).toEqual({ kind: 'applied' })
       expect(colorAt(beadsOfLayer(erasing.project, 'canvas'), marginCell.row, marginCell.column)).toBeNull()
@@ -99,7 +99,7 @@ describe('useEdit', () => {
       expect(rowProgressOf(ctx.project)).toMatchObject({ currentRow: 0 })
 
       ctx.history.onUndo()
-      expect(sheetOf(ctx.project)).toEqual(sheetOf(woven))
+      expect(frameSheetOf(ctx.project)).toEqual(frameSheetOf(woven))
       expect(rowProgressOf(ctx.project)).toEqual(rowProgressOf(woven))
       expect(ctx.history.canUndo.value).toBe(false)
     })
@@ -175,7 +175,7 @@ describe('useEdit', () => {
   describe('an exempt edit', () => {
     it('Delete all clears finished rows too, as one Undo step', () => {
       const painted = paint(moveToRow(base, 1), inside(1, 0))
-      const woven: Project = withFields(painted, { frame: { ...frameOf(painted)!, beads: { ...frameOf(painted)!.beads, ...frameOf(paint(base, inside(0, 0)))!.beads } } })
+      const woven: Project = withLayers(painted, { frame: { ...frameOf(painted)!, beads: { ...frameOf(painted)!.beads, ...frameOf(paint(base, inside(0, 0)))!.beads } } })
       const ctx = editHarness(woven)
       expect(ctx.edit('exempt', deleteAll)).toEqual({ kind: 'applied' })
       expect(frameOf(ctx.project)!.beads).toEqual({})

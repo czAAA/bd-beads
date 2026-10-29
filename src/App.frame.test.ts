@@ -11,7 +11,7 @@ import { hoverBead, pressBead } from './testUtils/beads'
 import { pickColor, pressBar, selectAll } from './testUtils/pill'
 import { frameOf } from './domain/layerRecord'
 import { rowProgressOf } from './domain/rowProgress'
-import { sheetOf, withFields } from './testUtils/flatFields'
+import { frameSheetOf, withLayers } from './testUtils/layerFields'
 
 /** Edit Frame's wiring (tickets 233, 417, ADRs 0026, 0046, 0054): each control reaches the flow once. Its rules live in
  * `useFrameFlow`, `FramePanel` and `changeFrame`'s tests, one level each (ticket 0599, docs/testing.md). */
@@ -29,7 +29,7 @@ afterEach(() => {
 
 function unframedProject(): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name: 'Sketch', size: { width: 4, height: 4, unit: 'beads' } })
-  return withFields(base, {
+  return withLayers(base, {
 frame: undefined,
     beads: withColors({}, [
       { row: 2, column: 3, color: RED },
@@ -67,7 +67,7 @@ const surface = (wrapper: Awaited<ReturnType<typeof mountOpen>>) => wrapper.find
 /** The rectangle of the saved Frame, its beads aside. */
 const savedFrame = () => {
   const [project] = loadProjects()
-  const frame = project && sheetOf(project)
+  const frame = project && frameSheetOf(project)
   if (!frame) return undefined
   const { beads: _beads, name: _name, technique: _technique, ...rectangle } = frame
   return rectangle
@@ -254,7 +254,7 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
   })
 
   it('asks before Reset progress, then takes the rows back to the first, keeping the Frame (ticket 455)', async () => {
-    const wrapper = await mountOpen(withFields(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
+    const wrapper = await mountOpen(withLayers(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
     await wrapper.get('[data-testid="progress-bar-next"]').trigger('click')
     expect(savedProgress().currentRow).toBe(1)
 
@@ -273,7 +273,7 @@ describe('Row progress follows the Frame (tickets 411, 426, 443)', () => {
 })
 
 describe('the margin sheet (ticket 0657, MarginSheet card)', () => {
-  const sheetProject = () => (withFields(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
+  const sheetProject = () => (withLayers(unframedProject(), { frame: { technique: 'loom' as const, row: 2, column: 3, rows: 2, columns: 3, beads: {} } }))
 
   it('moves the one pointer from its Row done, which the Progress bar then shows', async () => {
     const wrapper = await mountOpen(sheetProject())

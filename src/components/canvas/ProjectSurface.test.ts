@@ -16,19 +16,19 @@ import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../../domain/layerRecord'
 import { rowProgressOf } from '../../domain/rowProgress'
-import { type FlatChange, withFields } from '../../testUtils/flatFields'
+import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
 /** A Project of this many beads, with any of its fields changed. */
 /** A Project whose Frame is `columns` × `rows` at the origin, holding the `beads` given (the Frame's own, ADR 0066). */
-function projectOf(columns: number, rows: number, extra: FlatChange = {}, technique: Technique = 'loom'): Project {
+function projectOf(columns: number, rows: number, extra: LayersChange = {}, technique: Technique = 'loom'): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
   const { beads, ...rest } = extra
   // Left out the Frame is the usual one; `frame: undefined` is a Canvas with none, and its beads are the Canvas's.
   if ('frame' in extra && extra.frame === undefined) {
     const open = withFrameSheet(project, undefined)
-    return withFields(open, { ...rest, beads: beads ?? {} })
+    return withLayers(open, { ...rest, beads: beads ?? {} })
   }
-  return withFields(project, { ...rest, frame: { ...frameOf(project)!, ...rest.frame, beads: beads ?? {} } })
+  return withLayers(project, { ...rest, frame: { ...frameOf(project)!, ...rest.frame, beads: beads ?? {} } })
 }
 
 /** How big the drawing area is on the screen. jsdom does no layout, so it is said here. */
@@ -226,7 +226,7 @@ describe('ProjectSurface', () => {
       expect(ruled()).toEqual([5])
 
       // The stroke erases the right column: the box it rules is kept as it was until the stroke ends.
-      await wrapper.setProps({ project: withFields(project, { beads: square(4) }) })
+      await wrapper.setProps({ project: withLayers(project, { beads: square(4) }) })
       expect(ruled()).toEqual([5])
 
       await wrapper.setProps({ stroking: false })
@@ -293,12 +293,12 @@ describe('ProjectSurface', () => {
     })
 
     it.each([
-      ['Bead shape', (project: Project): Project => (withFields(project, { beadShape: 'real' }))],
-      ['piece names', (project: Project): Project => (withFields(project, { pieceNames: [{ row: 0, column: 0, name: 'Strap' }] }))],
-      ['Technique', (project: Project): Project => (withFields(project, { technique: 'peyote' }))],
-      ['Bead', (project: Project): Project => (withFields(project, { beadId: `${canvasOf(project).beadId}-other`, bead: undefined }))],
-      ['brick block', (project: Project): Project => (withFields(project, { techniqueSettings: { brickBlock: 3 } }))],
-      ['rotation', (project: Project): Project => (withFields(project, { rotation: 90 }))],
+      ['Bead shape', (project: Project): Project => (withLayers(project, { beadShape: 'real' }))],
+      ['piece names', (project: Project): Project => (withLayers(project, { pieceNames: [{ row: 0, column: 0, name: 'Strap' }] }))],
+      ['Technique', (project: Project): Project => (withLayers(project, { technique: 'peyote' }))],
+      ['Bead', (project: Project): Project => (withLayers(project, { beadId: `${canvasOf(project).beadId}-other`, bead: undefined }))],
+      ['brick block', (project: Project): Project => (withLayers(project, { techniqueSettings: { brickBlock: 3 } }))],
+      ['rotation', (project: Project): Project => (withLayers(project, { orientation: 90 }))],
     ])('draws everything again when the %s changes, though no bead changed color', async (_name, change) => {
       viewport = { width: 400, height: 600 }
       const project = projectOf(20, 30)
@@ -391,7 +391,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: withFields(project, { rowProgress: { ...rowProgressOf(project) } }) })
+      await wrapper.setProps({ project: withLayers(project, { rowProgress: { ...rowProgressOf(project) } }) })
 
       expect(context.named('rect')).toHaveLength(0)
     })
@@ -402,7 +402,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: withFields(project, { frame: { ...frameOf(project)!, rows: 10 } }) })
+      await wrapper.setProps({ project: withLayers(project, { frame: { ...frameOf(project)!, rows: 10 } }) })
 
       expect(context.named('rect')).toHaveLength(0)
       expect(draws()).toBe(1)
@@ -414,7 +414,7 @@ describe('ProjectSurface', () => {
       const { wrapper } = await mountSurface(project)
       context.calls.length = 0
 
-      await wrapper.setProps({ project: withFields(project, { rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } }) })
+      await wrapper.setProps({ project: withLayers(project, { rowProgress: { direction: 'rows', currentRow: 5, currentColumn: 0 } }) })
 
       expect(context.named('rect')).toHaveLength(0)
     })
@@ -432,7 +432,7 @@ describe('ProjectSurface', () => {
   })
 
   it('shows the turn of a rotated Project in what it says about itself', async () => {
-    const { wrapper } = await mountSurface(projectOf(20, 10, { rotation: 90 }), 1, { x: -300, y: 0 })
+    const { wrapper } = await mountSurface(projectOf(20, 10, { orientation: 90 }), 1, { x: -300, y: 0 })
 
     const root = wrapper.find('[data-testid="project-surface"]')
     expect(root.attributes('data-rotation')).toBe('90')
@@ -440,7 +440,7 @@ describe('ProjectSurface', () => {
   })
 
   it('draws a Canvas twisted off a quarter turn at that quarter turn, leaning the rest about its middle (ticket 0672)', async () => {
-    const { wrapper } = await mountSurface(projectOf(20, 10, { rotation: 120 }))
+    const { wrapper } = await mountSurface(projectOf(20, 10, { orientation: 120 }))
     const root = wrapper.find('[data-testid="project-surface"]')
     expect(root.attributes('data-rotation')).toBe('90')
     expect(root.attributes('data-tilt')).toBe('30')
@@ -762,7 +762,7 @@ describe('ProjectSurface', () => {
       function weaving(): Project {
         const project = projectOf(20, 10)
         const painted = withFrameGrid(project, frameGrid(project).map((cells, index) => (index === 0 ? cells.map((cell, at) => (at === 0 ? { color: '#e63746' } : cell)) : cells)))
-        return withFields(painted, { rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
+        return withLayers(painted, { rowProgress: { direction: 'rows', currentRow: 2, currentColumn: 0 } })
       }
       const redShown = () => context.named('fillRect').some((call) => call.fillStyle === '#e63746')
       const finishedCentre = (project: Project) => centreOf(project, frameOf(project)!.row, frameOf(project)!.column)
@@ -849,7 +849,7 @@ describe('ProjectSurface', () => {
 
         // Undo to before the first row was finished: the same spot is now a row still to weave.
         context.calls.length = 0
-        await wrapper.setProps({ project: withFields(project, { rowProgress: { ...rowProgressOf(project), currentRow: 0 } }) })
+        await wrapper.setProps({ project: withLayers(project, { rowProgress: { ...rowProgressOf(project), currentRow: 0 } }) })
         await nextTick()
         await nextTick()
         expect(redShown()).toBe(false)
@@ -1170,7 +1170,7 @@ describe('ProjectSurface', () => {
     })
 
     it('works out the bead of a rotated Project', async () => {
-      const project = projectOf(20, 10, { rotation: 90 })
+      const project = projectOf(20, 10, { orientation: 90 })
       const { wrapper } = await mountSurface(project)
 
       await wrapper.find('[data-testid="project-surface"]').trigger('pointerdown', { ...centreOf(project, 2, 15), button: 0, buttons: 1 })
@@ -1180,7 +1180,7 @@ describe('ProjectSurface', () => {
 
     it('works out the bead of a Canvas twisted off a quarter turn, the picture turned about the middle of the screen (ticket 0672)', async () => {
       for (const [rotation, quarter, row, column] of [[30, 0, 2, 15], [125, 90, 7, 3], [320, 0, 9, 19]] as const) {
-        const project = projectOf(20, 10, { rotation })
+        const project = projectOf(20, 10, { orientation: rotation })
         const { wrapper } = await mountSurface(project, 1, { x: -300, y: -200 })
         // Where the bead is at the quarter turn, turned the rest about the middle (500, 400) of the 1000 × 800 surface.
         const upright = surfaceView({ space: OPEN_SPACE, technique: 'loom', rotation: quarter, zoom: 1, scroll: { x: -300, y: -200 } }).beadToPoint({ row, column })

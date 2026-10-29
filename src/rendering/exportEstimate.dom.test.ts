@@ -4,16 +4,16 @@ import { en } from '../i18n/en'
 import { estimatePdf, estimatePng, exportFacts, type ExportFacts } from './exportEstimate'
 import { printText } from './printText'
 import type { Technique } from '../domain/weave'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const factsOf = (technique: Technique, columns: number, rows: number, letters = false): ExportFacts => {
-  const project = withFields(fixtureProject({ technique, columns, rows }), { letters })
+  const project = withLayers(fixtureProject({ technique, columns, rows }), { letters })
   return exportFacts(project, printText(project, en, 'en', new Date()))!
 }
 
 describe('exportFacts', () => {
   it('has none for a Project with no Frame', () => {
-    const project = withFields(fixtureProject({ technique: 'loom' }), { frame: undefined })
+    const project = withLayers(fixtureProject({ technique: 'loom' }), { frame: undefined })
     expect(exportFacts(project, printText(project, en, 'en', new Date()))).toBeUndefined()
   })
 

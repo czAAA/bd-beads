@@ -9,7 +9,7 @@ import { paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 import { frameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf, orientationOf } from './layerRecord'
-import { sheetOf, withFields } from '../testUtils/flatFields'
+import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -120,8 +120,8 @@ describe('deleteAll', () => {
 
   it('drops the Frame\'s Folded beads too, even when they are all it holds (ticket 0638)', () => {
     const fresh = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 4, unit: 'beads' } })
-    const folded = withFields(fresh, { frame: { ...frameOf(fresh)!, folded: { 0: { 6: '#e63746' } } } })
+    const folded = withLayers(fresh, { frame: { ...frameOf(fresh)!, folded: { 0: { 6: '#e63746' } } } })
 
-    expect(sheetOf(deleteAll(folded))).toEqual(sheetOf(fresh))
+    expect(frameSheetOf(deleteAll(folded))).toEqual(frameSheetOf(fresh))
   })
 })
