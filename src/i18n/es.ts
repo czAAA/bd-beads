@@ -750,7 +750,6 @@ export const es: Translations = {
     increaseColorsButton: 'Más colores',
     wizard: {
       title: 'Convertir imagen',
-      close: 'Cerrar',
       sections: { picture: 'Imagen', bead: 'Cuenta y técnica', size: 'Tamaño', colors: 'Colores', review: 'Revisión' },
       rail: { picture: 'imagen', bead: 'cuenta', size: 'tamaño', colors: 'colores', review: 'revisión' },
       railLabel: 'Pasos',
@@ -917,6 +916,10 @@ export const es: Translations = {
     importFile: 'Abre un proyecto desde un archivo .openbeads.',
     changeName: 'Cambia el nombre de quien lo hace que se imprime en las exportaciones.',
     convertImage: 'Convierte una imagen en un esquema.',
+    treatAsEmpty: 'Toca un color en la vista previa para dejar sus cuentas vacías.',
+    customRatio: 'Elige tu propio número de píxeles por cuenta, o de cuentas por píxel.',
+    remapColor: 'Elige el color de cuenta en que se convierte este color de la imagen.',
+    emptyColor: 'Quita este color: sus cuentas quedan vacías.',
     list: (names) => `${names.join(', ')}.`,
   },
 }

@@ -2,6 +2,7 @@
 import { computed, nextTick, provide, ref } from 'vue'
 import type { BeadColors } from '../../composables/palette/useBeadColors'
 import { useConvertImageWizardState } from '../../composables/import/useConvertImageWizard'
+import { controlAction } from '../../composables/shell/controlRegistry'
 import { providePalette } from '../../composables/tools/usePalette'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import type { FoundColor, TargetColor } from '../../domain/convertColors'
@@ -33,6 +34,7 @@ const emit = defineEmits<{ 'toggle-remap': [] }>()
 const { t, locale } = useI18n()
 const wizard = useConvertImageWizardState()
 const words = computed(() => t.value.convertImage.wizard)
+const actions = { remap: controlAction('remap-color'), empty: controlAction('empty-color') }
 const rowEl = ref<HTMLElement>()
 const remapButton = ref<InstanceType<typeof IconButton>>()
 
@@ -149,8 +151,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
       <IconButton
         ref="remapButton"
         variant="plain"
-        icon="paint"
-        :label="words.remap"
+        :action="actions.remap"
         :pressed="remapOn"
         :aria-expanded="open"
         :class="{ 'found-color__action--on': remapOn }"
@@ -159,8 +160,7 @@ useOverlayLayer({ isOpen: () => props.open, root: () => rowEl.value, close: () =
       />
       <IconButton
         variant="plain"
-        icon="erase"
-        :label="words.empty"
+        :action="actions.empty"
         :pressed="state === 'empty'"
         :class="{ 'found-color__action--on': state === 'empty' }"
         data-testid="found-color-empty"

@@ -51,6 +51,10 @@ export interface PixelCrop {
   height: number
 }
 
+/** The crop's handles on the preview, in Tab order round it (ConvertImage card): four corners, four edge bars. */
+export const CROP_HANDLES = ['topLeft', 'top', 'topRight', 'right', 'bottomRight', 'bottom', 'bottomLeft', 'left'] as const
+export type CropHandle = (typeof CROP_HANDLES)[number]
+
 /** The whole picture as a crop: where By Pixel to bead ratio starts. */
 export function fullCrop({ width, height }: ImageSize): PixelCrop {
   return { x: 0, y: 0, width, height }

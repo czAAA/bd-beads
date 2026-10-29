@@ -229,6 +229,107 @@ describe('ConvertImageWizard Create Project', () => {
   })
 })
 
+describe('ConvertImageWizard preview zoom (ticket 0650)', () => {
+  const zoomLevel = (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-zoom-level"]').text()
+  function press(key: string) {
+    const event = new KeyboardEvent('keydown', { key, ctrlKey: true, cancelable: true })
+    window.dispatchEvent(event)
+    return event
+  }
+
+  it('zooms the preview with Ctrl/⌘ + plus, minus and 0, taking the keys from the browser', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+
+    expect(press('+').defaultPrevented).toBe(true)
+    await flushPromises()
+    expect(zoomLevel(wrapper)).toBe('150%')
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: '=', metaKey: true }))
+    await flushPromises()
+    expect(zoomLevel(wrapper)).toBe('200%')
+    press('-')
+    await flushPromises()
+    expect(zoomLevel(wrapper)).toBe('150%')
+    press('+')
+    expect(press('0').defaultPrevented).toBe(true)
+    await flushPromises()
+    expect(zoomLevel(wrapper)).toBe('100%')
+  })
+
+  it('names the zoom buttons as the Canvas strip does, and says why one at its limit is off', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    const zoomOut = wrapper.get('[data-testid="convert-zoom-out"]')
+
+    expect(zoomOut.attributes()).toMatchObject({ 'aria-label': en.canvas.zoomOutLabel, 'aria-disabled': 'true' })
+    expect(wrapper.get('[data-testid="convert-zoom-in"]').attributes('aria-label')).toBe(en.canvas.zoomInLabel)
+    const tip = wrapper.findAll('[data-testid="convert-preview-zoom"] .app-tooltip')[0]!
+    await tip.trigger('pointerenter', { pointerType: 'mouse' })
+    expect(tip.get('.app-tooltip__body').text()).toBe(en.tooltips.zoomOutLimit)
+
+    for (let step = 0; step < 6; step += 1) press('+')
+    await flushPromises()
+    expect(wrapper.get('[data-testid="convert-zoom-in"]').attributes('aria-disabled')).toBe('true')
+    expect(zoomOut.attributes('aria-disabled')).toBeUndefined()
+  })
+
+  it('leaves the keys alone once the popup is gone', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    wrapper.unmount()
+    expect(press('+').defaultPrevented).toBe(false)
+  })
+})
+
+describe('ConvertImageWizard controls from the registry (ticket 0650)', () => {
+  it('names Treat as empty and gives it a Tooltip saying what it does, keeping its pressed state', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    const button = wrapper.get('button[data-testid="convert-treat-as-empty"]')
+
+    expect(button.text()).toBe(en.convertImage.wizard.treatAsEmpty)
+    expect(button.attributes('aria-pressed')).toBe('false')
+    await button.trigger('click')
+    expect(button.attributes('aria-pressed')).toBe('true')
+    expect(wrapper.find('[data-testid="convert-eyedropper-banner"]').exists()).toBe(true)
+    expect(wrapper.get('.convert-preview__top [role="tooltip"]').text()).toContain(en.tooltips.treatAsEmpty)
+  })
+
+  it('keeps the ratio chips one radiogroup of radios named for the ratio, each with its sentence as Tooltip', async () => {
+    const { wrapper } = open()
+    await chooseFile(wrapper, picture())
+    const group = wrapper.get('[data-testid="pixel-ratio"] [role="radiogroup"]')
+    const radios = group.findAll('[role="radio"]')
+
+    expect(radios.map((radio) => radio.attributes('aria-label'))).toEqual([
+      ...['1:4', '1:2', '1:1', '2:1', '4:1', '8:1'].map((ratio) => `${ratio}, picture pixels : beads`),
+      en.convertImage.wizard.customRatio,
+    ])
+    // A 4 px picture starts at 1:4 (the Create Project test above).
+    expect(group.get('[aria-checked="true"]').attributes('data-testid')).toBe('ratio-1-4')
+    expect(group.get('[data-testid="ratio-2-1"]').element.closest('.app-tooltip')?.querySelector('[role="tooltip"]')?.textContent).toContain(
+      'Every 2 × 2 pixel block is one bead.',
+    )
+
+    await group.get('[data-testid="ratio-2-1"]').trigger('click')
+    expect(group.get('[aria-checked="true"]').attributes('data-testid')).toBe('ratio-2-1')
+  })
+
+  it('keeps the step rail one Tab stop named Steps, the arrows moving along it', async () => {
+    const { wrapper } = open()
+    const rail = wrapper.get('nav')
+    const steps = rail.findAll('.convert-wizard__step')
+
+    expect(rail.attributes('aria-label')).toBe(en.convertImage.wizard.railLabel)
+    expect(steps.map((step) => step.attributes('tabindex'))).toEqual(['0', '-1', '-1', '-1', '-1'])
+    expect(steps[0]!.attributes('aria-current')).toBe('step')
+    expect(steps.map((step) => step.text())).toEqual(['1picture', '2bead', '3size', '4colors', '5review'])
+    ;(steps[0]!.element as HTMLElement).focus()
+    await steps[0]!.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(steps[1]!.element)
+  })
+})
+
 describe('ConvertImageWizard Cancel', () => {
   it('closes at once with no picture set', async () => {
     const { wrapper } = open()

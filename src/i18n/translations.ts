@@ -861,7 +861,6 @@ export interface Translations {
     /** The Convert image wizard (spec 0645; ConvertImage, PixelToBeadRatio, FoundColorRow cards; writing.md). */
     wizard: {
       title: string
-      close: string
       /** The five sections' titles, and their short labels on the step rail. */
       sections: Record<'picture' | 'bead' | 'size' | 'colors' | 'review', string>
       rail: Record<'picture' | 'bead' | 'size' | 'colors' | 'review', string>
@@ -1065,6 +1064,10 @@ export interface Translations {
     importFile: string
     changeName: string
     convertImage: string
+    treatAsEmpty: string
+    customRatio: string
+    remapColor: string
+    emptyColor: string
     /** "A, B, C." from the item names. */
     list: (names: readonly string[]) => string
   }

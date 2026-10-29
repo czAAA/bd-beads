@@ -80,6 +80,10 @@ export interface ConvertImageWizardDeps {
  * remembers nothing (spec 0645). */
 export type ConvertSizeUnit = 'beads' | 'mm' | 'cm'
 
+/** The wizard's five numbered sections, in the step rail's order (ConvertImage card). */
+export const CONVERT_STEPS = ['picture', 'bead', 'size', 'colors', 'review'] as const
+export type ConvertStep = (typeof CONVERT_STEPS)[number]
+
 /** The layout the wizard is a full-screen sheet in, under 1024 px wide or in portrait (PhoneForms card); the same
  * edge as the CSS of its components. */
 export const CONVERT_SHEET_QUERY = '(max-width: 63.99rem), (orientation: portrait)'

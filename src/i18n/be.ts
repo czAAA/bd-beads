@@ -757,7 +757,6 @@ export const be: Translations = {
     increaseColorsButton: 'Больш колераў',
     wizard: {
       title: 'Канвертаваць выяву',
-      close: 'Закрыць',
       sections: { picture: 'Выява', bead: 'Бісер і тэхніка', size: 'Памер', colors: 'Колеры', review: 'Праверка' },
       rail: { picture: 'выява', bead: 'бісер', size: 'памер', colors: 'колеры', review: 'вынік' },
       railLabel: 'Крокі',
@@ -924,6 +923,10 @@ export const be: Translations = {
     importFile: 'Адкрыць праект з файла .openbeads.',
     changeName: 'Змяніць імя майстра пры экспарце.',
     convertImage: 'Ператварыць малюнак у схему.',
+    treatAsEmpty: 'Робіць пустым колер, на які вы націснеце на прэв’ю.',
+    customRatio: 'Задае сваю колькасць пікселяў на бісерыну або бісерын на піксель.',
+    remapColor: 'Выбірае колер бісеру, якім стане гэты колер малюнка.',
+    emptyColor: 'Прыбірае гэты колер: яго бісерыны застаюцца пустымі.',
     list: (names) => `${names.join(', ')}.`,
   },
 }
