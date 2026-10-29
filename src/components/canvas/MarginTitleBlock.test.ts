@@ -8,16 +8,16 @@ import type { Project } from '../../domain/project'
 import { paintAt } from '../../testUtils/layers'
 import { choosePanelOption } from '../../testUtils/choosePanelOption'
 import { frameOf } from '../../domain/layerRecord'
-import { type FlatChange, withFields } from '../../testUtils/flatFields'
+import { type LayersChange, withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
   localStorage.clear()
   localStorage.setItem('openbeads:locale', 'en')
 })
 
-function framed(extra: FlatChange = {}): Project {
+function framed(extra: LayersChange = {}): Project {
   const project = createProject({ technique: 'loom', beadId: 'toho/cube/1.5mm', size: { width: 10, height: 10, unit: 'beads' } })
-  return withFields(project, { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} }, ...extra })
+  return withLayers(project, { frame: { technique: 'loom', row: 0, column: 0, rows: 11, columns: 40, beads: {} }, ...extra })
 }
 
 /** The Frame with its first `count` beads painted each in the next Palette color. */

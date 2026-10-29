@@ -7,10 +7,10 @@ import type { Selection } from '../../domain/selection'
 import { editHarness } from '../../testUtils/editHarness'
 import { useNamePieceFlow } from './useNamePieceFlow'
 import { canvasOf } from '../../domain/layerRecord'
-import { withFields } from '../../testUtils/flatFields'
+import { withLayers } from '../../testUtils/layerFields'
 
 const R = '#e63746'
-const base: Project = withFields(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }), {
+const base: Project = withLayers(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' }), {
 beads: withColors({}, [
     { row: 0, column: 0, color: R },
     { row: 0, column: 1, color: R },
@@ -35,7 +35,7 @@ describe('useNamePieceFlow', () => {
   })
 
   it('is not available for a Selection that begins on the Frame: Pieces are the Canvas\'s (ADR 0066)', () => {
-    const framed: Project = withFields(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: { 0: { 0: R, 1: R } } }, beads: {} })
+    const framed: Project = withLayers(base, { frame: { technique: 'loom' as const, row: 0, column: 0, rows: 3, columns: 3, beads: { 0: { 0: R, 1: R } } }, beads: {} })
     const harness = editHarness(framed)
     const flow = useNamePieceFlow({ currentProject: harness.currentProject, edit: harness.edit, selection: () => onFirstPiece })
     expect(flow.canNamePiece.value).toBe(false)

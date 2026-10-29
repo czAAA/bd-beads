@@ -18,7 +18,7 @@ import { printText } from './printText'
 import { exportProjectPng, projectPageCount } from './projectExport'
 import { frameGrid } from '../testUtils/frameGrid'
 import { fillBlanks } from '../domain/fillBlanks'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const wordsOf = (project: ReturnType<typeof fixtureProject>, messages: Translations = en, locale: Locale = 'en') => printText(project, messages, locale, new Date())
 
@@ -64,8 +64,8 @@ describe('Cover page', () => {
   })
 
   it('exports the PNG without Swatch letters, whatever the Letters toggle says', async () => {
-    const lettered = withFields(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { letters: true, paletteLetters: { '#ff0000': 'R' } })
-    const plain = withFields(lettered, { letters: false })
+    const lettered = withLayers(fixtureProject({ technique: 'loom', columns: 20, rows: 20 }), { letters: true, paletteLetters: { '#ff0000': 'R' } })
+    const plain = withLayers(lettered, { letters: false })
     const bytes = async (project: typeof lettered) => Array.from(new Uint8Array(await (await exportProjectPng(project, wordsOf(project), 150)).arrayBuffer()))
 
     expect(await bytes(lettered)).toEqual(await bytes(plain))

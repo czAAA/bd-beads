@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import CanvasStrip from './CanvasStrip.vue'
 import { COFFEE_URL } from '../../data/coffeeLink'
 import { en } from '../../i18n/en'
-import { flatProject } from '../../testUtils/flatFields'
+import { bareProject } from '../../testUtils/layerFields'
 
 beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
@@ -16,7 +16,7 @@ describe('CanvasStrip', () => {
     expect(wrapper.find('[data-testid="canvas-strip"]').classes()).toContain('no-page-pan')
   })
 
-  const project = flatProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
+  const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
 
   it('holds Menu, Project, Frame (with or without one, ticket 555), Rotate canvas, Rulers, Undo, Redo, then the zoom (out, in, Fit) and Export, and passes each press on (tickets 425, 431, 0652)', async () => {
     const wrapper = mount(CanvasStrip, { props: { project, rulers: true, canUndo: true, canRedo: true, zoomPercent: 125 } })
@@ -99,7 +99,7 @@ describe('CanvasStrip', () => {
 })
 
 describe('CanvasStrip Brand and layout (ticket 540)', () => {
-  const project = flatProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
+  const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
 
   it('has Menu first and the Brand, the logo and "openbeads", which opens the Homepage from the editor', () => {
     const wrapper = mount(CanvasStrip, { props: { project, zoomPercent: 100 } })
@@ -134,7 +134,7 @@ describe('CanvasStrip Brand and layout (ticket 540)', () => {
 
 describe('CanvasStrip Rotate canvas (ticket 471)', () => {
   it('is disabled with the reason while the Canvas is empty, and does not ask for a turn', async () => {
-    const empty = flatProject({ beads: {}, technique: 'loom', rotation: 0 })
+    const empty = bareProject({ beads: {}, technique: 'loom', orientation: 0 })
     const wrapper = mount(CanvasStrip, { props: { project: empty } })
     const button = wrapper.get('[data-testid="strip-rotate-canvas"]')
 
@@ -145,7 +145,7 @@ describe('CanvasStrip Rotate canvas (ticket 471)', () => {
 })
 
 describe('CanvasStrip Tab stops (ticket 563, ADR 0075)', () => {
-  const project = flatProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
+  const project = bareProject({ beads: { 0: { 0: '#ff0000' } }, technique: 'loom' })
   const props = { project, canUndo: true, canRedo: true, zoomPercent: 125 }
   const stops = (wrapper: ReturnType<typeof mount>) =>
     wrapper.findAll('button, a').filter((el) => el.attributes('tabindex') !== '-1').map((el) => el.attributes('data-testid'))
