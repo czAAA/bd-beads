@@ -4,7 +4,7 @@ import { createProject, createProjectFromImage } from './createProject'
 import { BEAD_CATALOG } from './beads'
 import { addedColorId, defaultPalette } from './palette'
 import { frameGrid } from '../testUtils/frameGrid'
-import { canvasOf, frameOf } from './layerRecord'
+import { backgroundOf, beadOfLayer, canvasOf, frameOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
@@ -18,6 +18,15 @@ describe('createProject Brick block (ticket 477)', () => {
     expect(canvasOf(createProject({ ...input, techniqueSettings: { brickBlock: 99 } })).techniqueSettings).toEqual({ brickBlock: 20 })
     expect(canvasOf(createProject(input)).techniqueSettings).toEqual({ brickBlock: 1 })
     expect(createProject({ ...input, technique: 'loom' })).not.toHaveProperty('techniqueSettings')
+  })
+})
+
+describe('createProject from the form\'s Layer settings (ADR 0079, ticket 0670)', () => {
+  it('gives both layers the form\'s Bead shape and Background, and none for a Background left to the device', () => {
+    const project = createProject({ technique: 'loom', beadId: cubeBead.id, beadShape: 'real', background: '#336699', size: { width: 4, height: 4, unit: 'beads' } })
+    expect([beadOfLayer(project, 'canvas').beadShape, beadOfLayer(project, 'frame').beadShape]).toEqual(['real', 'real'])
+    expect([backgroundOf(project, 'canvas'), backgroundOf(project, 'frame')]).toEqual(['#336699', '#336699'])
+    expect(backgroundOf(createProject({ technique: 'loom', beadId: cubeBead.id }), 'canvas')).toBeUndefined()
   })
 })
 

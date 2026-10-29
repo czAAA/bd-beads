@@ -1,5 +1,5 @@
 import { computed } from 'vue'
-import { beadPitchMm, beadsDiffer, findBead, offeredBeads, type Bead } from '../../domain/beads'
+import { beadPitchMm, findBead, type Bead } from '../../domain/beads'
 import type { Layer } from '../../domain/grid'
 import { beadOfLayer, frameOf } from '../../domain/layerRecord'
 import { replaceBead } from '../../domain/projectBead'
@@ -21,49 +21,12 @@ export interface ReplaceBeadFlowDeps {
   dialogs?: Dialogs
 }
 
-/** What one layer's Bead pickers offer (ticket 0687): every Bead but its own, and whether its own copy is out of date,
- * in which case the catalog's current Bead of its id is offered too and its own shown "(as saved)" (ticket 534). */
-export interface LayerBeadChoice {
-  candidates: readonly Bead[]
-  outdated: boolean
-}
-
-/** The Bead a layer's panel picked, awaiting confirmation (ticket 0687): the layer is the panel's, never asked. */
-interface PendingReplace {
-  layer: Layer
-  beadId: string
-}
-
-/** Replace Bead and its confirmation modal (tickets 48, 113, 205, 0665, 0687; ADR 0007, 0020, 0079): the Project panel's
- * Canvas section replaces the Canvas's Bead, the Frame panel the Frame's, until ticket 0670 folds both into Layer
- * settings. Deps are read lazily. */
+/** Replace Bead and its confirmation modal (tickets 48, 113, 205, 0665, 0670, 0687; ADR 0007, 0020, 0079): a layer's
+ * Bead, picked in that layer's Layer settings, so it never asks which layer. Deps are read lazily. */
 export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
-  const pending = (deps.dialogs ?? useDialogs()).question<PendingReplace>('replace-bead')
-
-  /** The open Project when it has the layer: always the Canvas, the Frame only once there is one. */
-  const projectWith = (layer: Layer) => {
-    const project = deps.currentProject()
-    return project && (layer === 'canvas' || frameOf(project)) ? project : undefined
-  }
-
-  /** A layer's own Bead in the open Project; undefined with no Project, or for the Frame with none. */
-  const ownBead = (layer: Layer) => {
-    const project = projectWith(layer)
-    return project && beadOfLayer(project, layer).bead
-  }
-
-  /** The Beads a layer could switch to (tickets 48, 534): everything offered but its own, and the catalog's current Bead
-   * of its id when its copy differs from it; nothing for a layer the Project doesn't have. */
-  function choiceOf(layer: Layer): LayerBeadChoice {
-    if (!projectWith(layer)) return { candidates: [], outdated: false }
-    const own = ownBead(layer)
-    const current = own && offeredBeads().find((bead) => bead.id === own.id)
-    const outdated = !!own && !!current && beadsDiffer(own, current)
-    return { candidates: offeredBeads().filter((bead) => bead.id !== own?.id || (outdated && bead === current)), outdated }
-  }
-
-  /** Each layer's choice, for the panel that shows it. */
-  const choices = computed<Record<Layer, LayerBeadChoice>>(() => ({ canvas: choiceOf('canvas'), frame: choiceOf('frame') }))
+  /** The layer and the Bead id picked in its Layer settings, awaiting confirmation (ticket 48); undefined when its modal
+   * is closed. */
+  const pending = (deps.dialogs ?? useDialogs()).question<{ layer: Layer; beadId: string }>('replace-bead')
 
   /** The Bead behind the pending id, resolved from the catalog — also doubles as "is the Replace bead modal open"
    * (ticket 48), since a pending id always names a real catalog Bead. */
@@ -78,8 +41,9 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     const project = deps.currentProject()
     const bead = pendingBead.value
     const layer = pending.value?.layer
-    const own = layer && ownBead(layer)
-    if (!project || !bead || !layer || !own) {
+    const frame = project && frameOf(project)
+    const own = project && layer && (layer === 'canvas' || frame) ? beadOfLayer(project, layer).bead : undefined
+    if (!bead || !layer || !own) {
       return ''
     }
 
@@ -88,7 +52,6 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     // A Bead's size as it lies in the work, its width with the correction the Estimated size counts too.
     const beadSize = (of: Bead) => mm({ widthMm: beadPitchMm(of), heightMm: of.heightMm })
     const sizes = { old: beadSize(own), new: beadSize(bead) }
-    const frame = frameOf(project)
     if (layer === 'canvas' || !frame) {
       return fillBlanks(t.replaceBead.canvasMessage, sizes)
     }
@@ -99,7 +62,8 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     })
   })
 
-  /** Opens the confirmation modal (ticket 48) for the Bead id a layer's panel picked; does nothing with no Project open. */
+  /** Opens the confirmation modal (ticket 48) for a Bead id picked in a layer's Layer settings; does nothing with no
+   * Project open. */
   function onRequestReplaceBead(layer: Layer, beadId: string) {
     if (deps.currentProject()) {
       pending.value = { layer, beadId }
@@ -110,22 +74,21 @@ export function useReplaceBeadFlow(deps: ReplaceBeadFlowDeps) {
     pending.value = undefined
   }
 
-  /** Confirms Replace Bead (ticket 48, ADR 0007): the asking panel's layer's Bead, one undo step, exempt as it draws
-   * nothing. With coded swatches the new Bead's Color catalog loads first, so those it lists keep their codes in the
-   * same step (ticket 0538); one that won't load drops them. */
+  /** Confirms Replace Bead (ticket 48, ADR 0007): the chosen layer's Bead, one undo step, exempt as it draws nothing.
+   * With coded swatches the new Bead's Color catalog loads first, so those it lists keep their codes in the same step
+   * (ticket 0538); one that won't load drops them. */
   async function onConfirmReplaceBead() {
     const bead = pendingBead.value
-    const layer = pending.value?.layer
+    const chosen = pending.value?.layer
     pending.value = undefined
-    if (!bead || !layer) return
+    if (!bead || !chosen) return
     const catalogId = bead.formFactor.colorCatalog
     const coded = Object.keys(deps.currentProject()?.paletteCodes ?? {}).length > 0
     const catalog = coded && catalogId ? await loadColorCatalog(catalogId).catch(() => undefined) : undefined
-    deps.edit('exempt', (project) => replaceBead(project, bead, catalog, layer))
+    deps.edit('exempt', (project) => replaceBead(project, bead, catalog, chosen))
   }
 
   return {
-    replaceBeadChoices: choices,
     replaceBeadPendingBead: pendingBead,
     replaceBeadConfirmMessage: confirmMessage,
     onRequestReplaceBead,

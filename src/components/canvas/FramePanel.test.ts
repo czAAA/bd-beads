@@ -16,8 +16,6 @@ import { pngDpiFor } from '../../rendering/exportDpi'
 import { fillBlanks } from '../../domain/fillBlanks'
 import { frameOf, withFrameSheet } from '../../domain/layerRecord'
 import { withLayers } from '../../testUtils/layerFields'
-import { findBead, offeredBeads } from '../../domain/beads'
-import { choosePanelOption, panelOptionShown } from '../../testUtils/choosePanelOption'
 
 vi.mock('../../rendering/exportDpi', () => ({ pngDpiFor: vi.fn((quality: ExportQuality) => PNG_DPI_BY_QUALITY[quality]), pdfPageDpi: vi.fn(() => 300) }))
 
@@ -228,20 +226,6 @@ describe('FramePanel (ticket 473)', () => {
     expect(wrapper.get('[data-testid="frame-estimate"] .frame-panel__estimate-value').text()).toBe('≈ 60 × 45 mm')
   })
 
-  it("shows the Frame's own Bead in its bead section and asks to replace it (ticket 0687)", async () => {
-    const project = framed()
-    const choice = { candidates: offeredBeads().filter((bead) => bead.id !== frameOf(project)!.beadId), outdated: false }
-    expect(mountBar(project).find('[data-testid="frame-bead"]').exists()).toBe(false)
-
-    const wrapper = mount(FramePanel, { props: { project, beadChoice: choice }, attachTo: document.body })
-    expect(panelOptionShown(wrapper.get('[data-testid="frame-bead"]'), 'bead-type')).toBe('Cube')
-    await choosePanelOption(wrapper, 'bead-type', findBead('toho/round/11-0')!.formFactor.id)
-
-    expect(wrapper.emitted('replace-bead')).toEqual([['toho/round/11-0']])
-    await wrapper.get('[data-testid="frame-bead"] [data-testid="bead-shape"] [data-value="real"]').trigger('click')
-    expect(wrapper.emitted('set-bead-shape')).toEqual([['real']])
-  })
-
   it('asks for the Picture and the Printable chart, and waits while one is being made (ticket 555)', async () => {
     const wrapper = mountBar()
     await wrapper.get('[data-testid="export-png"]').trigger('click')
@@ -317,26 +301,45 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().find('[data-testid="frame-coffee"]').exists()).toBe(false)
   })
 
-  it('leads with Export, then the size, Beads needed with its total in the header, the background, and ends with the margin (tickets 555, 568, 0656, 0666)', () => {
+  it('leads with Export, then the size, its Layer settings, Beads needed with its total in the header, and ends with the margin (tickets 555, 568, 0656, 0670)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
     expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([
       en.panels.project.exportHeading,
       en.frame.sizeHeading,
+      en.layerSettings.frameHeading,
       en.quantities.heading,
-      en.frame.background.heading,
       en.frame.margin.heading,
     ])
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
-    expect(sections.at(-3)!.attributes('data-testid')).toBe('bead-quantities')
-    expect(sections.at(-2)!.attributes('data-testid')).toBe('frame-background')
+    expect(sections.at(-2)!.attributes('data-testid')).toBe('bead-quantities')
     expect(sections.at(-1)!.attributes('data-testid')).toBe('margin-section')
   })
 
-  it('asks for the Frame\'s own Background picked in its section (ticket 0666)', async () => {
+  it('sets the Frame in its Layer settings: each ask names the Frame, and its summary is its Technique and Bead (ticket 0670)', async () => {
     const wrapper = mountBar()
-    await wrapper.get('[data-testid="frame-background-section"] [data-testid="background-color-linen"]').trigger('click')
-    expect(wrapper.emitted('set-background')).toEqual([[2]])
+    const settings = wrapper.get('[data-testid="frame-layer-settings"]')
+    await settings.get('[data-testid="frame-technique"] button').trigger('click')
+    await settings.get('[data-testid="frame-technique"] [data-value="peyote"]').trigger('click')
+    await settings.get('[data-testid="bead-shape"] [data-value="real"]').trigger('click')
+    await settings.get('[data-testid="bead-brand"] button').trigger('click')
+    await settings.get('[data-testid="bead-brand"] [data-value="miyuki"]').trigger('click')
+    await settings.get('[data-testid="frame-background-section"] [data-testid="background-color-linen"]').trigger('click')
+    expect(wrapper.emitted('set-technique')).toEqual([['frame', 'peyote']])
+    expect(wrapper.emitted('set-bead-shape')).toEqual([['frame', 'real']])
+    expect(wrapper.emitted('replace-bead')?.[0]?.[0]).toBe('frame')
+    expect(wrapper.emitted('set-background')).toEqual([['frame', 2]])
+    const header = wrapper.findAll('.panel-section__header').find((each) => each.text().includes(en.layerSettings.frameHeading))!
+    await header.trigger('click')
+    expect(header.text()).toContain('Loom · TOHO Cube 1.5mm')
+  })
+
+  it('holds the Frame\'s Technique once a pass is done, never its Bead, Bead shape or Background (ticket 0670)', () => {
+    const wrapper = mountBar(moveToRow(framed(), 1))
+    expect(wrapper.get('[data-testid="frame-technique"] button').attributes('aria-disabled')).toBe('true')
+    expect(wrapper.get('[data-testid="bead-size"] button').attributes('aria-disabled')).toBeUndefined()
+    expect(wrapper.get('[data-testid="bead-shape"] [data-value="real"]').attributes('disabled')).toBeUndefined()
+    expect(wrapper.find('[data-testid="frame-background-section"] [aria-disabled="true"]').exists()).toBe(false)
   })
 
   it('offers Replace Frame from the Starter gallery, one level deeper, and Back brings focus back to it (ticket 0596)', async () => {

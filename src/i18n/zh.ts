@@ -347,6 +347,7 @@ export const zh: Translations = {
     hexLabel: '十六进制颜色',
     hexInvalid: '请输入类似 #1a2b3c 的颜色。',
     previewLabel: '新颜色',
+    addToPalette: '将 {hex} 添加到调色板',
     pickFromCanvasLabel: '从画布取色',
     removed: '颜色已从调色板移除。',
     removeSwatch: '从调色板移除 {hex}',
@@ -596,7 +597,7 @@ export const zh: Translations = {
     lettersLabel: '字母',
     lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
     lettersInfoLabel: '字母的作用',
-    background: { heading: '背景', label: '边框背景' },
+    background: { label: '边框背景' },
     margin: {
       heading: '边距',
       colorLabel: '边距颜色',
@@ -919,5 +920,9 @@ export const zh: Translations = {
     remapColor: '选择这个图片颜色要变成的珠子颜色。',
     emptyColor: '去掉这个颜色，它的珠子留空。',
     list: (names) => `${names.join('、')}。`,
+  },
+  layerSettings: {
+    frameHeading: '设置',
+    background: '背景',
   },
 }

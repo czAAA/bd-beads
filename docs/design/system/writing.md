@@ -469,3 +469,14 @@ The tab's accessible name in Russian, Ukrainian and Polish follows the rows abov
 The Russian and Ukrainian line is built without the dash ("Поля шириной 4 бусины…", "Поля завширшки 4 бісеринки…"): the Russian file uses no em dash.
 
 Russian, Ukrainian and Polish here are proposals for review with the build. "Штамп" is the title block of a Russian and Ukrainian drawing sheet; "tabliczka" the Polish one.
+
+## Layer settings copy (ticket 0670)
+
+The one section that sets a layer (LayerSettings card). Its controls keep their names (Technique, Brick block, Bead shape, Symmetric, Real, Brand, Type, Size, Canvas color, Frame background); two words are new, and the Replace bead? choice of layer ("Where to replace the bead", Frame, Canvas) is gone.
+
+| English | Русский | Українська | Беларуская | 中文 | Español | Polski |
+|---|---|---|---|---|---|---|
+| Settings (the Frame panel's section) | Настройки | Налаштування | Налады | 设置 | Ajustes | Ustawienia |
+| Background (the heading over the picker) | Фон | Фон | Фон | 背景 | Fondo | Tło |
+
+"Bead" over the Bead shape and pickers is the Project panel's existing section word.

@@ -1,8 +1,9 @@
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { defineComponent, h, inject, nextTick } from 'vue'
 import AppPanel from './AppPanel.vue'
 import { PANEL_CONTEXT } from './panelContext'
+import { fakeMatchMedia } from '../../testUtils/fakeMatchMedia'
 
 /** The shell's subpanel (spec 0478): Back, title swap, reset, Escape levels, focus. */
 
@@ -32,6 +33,7 @@ const escape = async () => {
 
 afterEach(() => {
   document.body.innerHTML = ''
+  vi.unstubAllGlobals()
 })
 
 describe('AppSubpanel', () => {
@@ -48,6 +50,27 @@ describe('AppSubpanel', () => {
     expect(wrapper.get('[data-testid="panel-footer"]').find('[data-testid="create"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="panel-body"]').find('[data-testid="create"]').exists()).toBe(false)
     expect(document.activeElement).toBe(wrapper.get('[data-testid="field"]').element)
+  })
+
+  it('opens a subpanel on the panel, not its first field, on a touch device, so the keyboard stays down (ticket 0688)', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = mountShell()
+    await wrapper.get('[data-testid="root-row"]').trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="panel-dropdown"]').element)
+  })
+
+  it('goes back onto the panel, not a field that comes first, on a touch device (ticket 0688)', async () => {
+    vi.stubGlobal('matchMedia', fakeMatchMedia({ '(pointer: coarse)': true }).matchMedia)
+    const wrapper = mount(AppPanel, {
+      attachTo: document.body,
+      props: { title: 'Menu', anchor: 'strip-menu', subTitle: 'New Project' },
+      slots: { default: () => [h('input', { 'data-testid': 'root-field' }), h(Root)], sub: () => h('input', { 'data-testid': 'field' }) },
+    })
+    await wrapper.get('[data-testid="root-row"]').trigger('click')
+    await wrapper.get('[data-testid="panel-back"]').trigger('click')
+    await nextTick()
+    expect(document.activeElement).toBe(wrapper.get('[data-testid="panel-dropdown"]').element)
   })
 
   it('goes back with the arrow or Escape, focusing the row it came from and dropping the subpanel, and closes on the next Escape', async () => {

@@ -101,9 +101,8 @@ export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined
   return { weave: weaveOfLayer(project, layer)!, beadId: held.beadId, ...beadOfLayer(project, layer), beads: held.beads, ...(name ? { name } : {}) }
 }
 
-/** The Project with a layer written (ADR 0079): its Weave, Bead, Bead shape (ticket 0687), beads and name into that
- * layer alone (ticket 0665). Not stamped as a change: the caller does that, as a change of view is not. The same Project
- * without a Frame. */
+/** The Project with a layer written (ADR 0079, tickets 0665, 0670): its Weave, Bead, Bead shape, beads and name. Not
+ * stamped as a change: the caller does that, as a change of view is not. The same Project without a Frame. */
 export function withLayer(project: Project, layer: Layer, change: LayerChange): Project {
   const held = heldLayer(project, layer)
   if (!held) {

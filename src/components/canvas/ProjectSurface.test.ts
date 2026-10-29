@@ -89,17 +89,20 @@ describe('ProjectSurface', () => {
     expect(wrapper.attributes('data-zoom')).toBe('0.6')
   })
 
-  it('moves the drawn beads of a very large piece while the canvas is zoomed, and draws them sharp once it settles (ticket 349)', async () => {
+  it.each([
+    { look: 'full', from: 0.6, to: 0.3, ticket: '349' },
+    { look: 'draft', from: 0.2, to: 0.1, ticket: '0689' },
+  ])('moves the drawn beads of a very large piece while the canvas is zoomed in the $look look, and draws them sharp once it settles (ticket $ticket)', async ({ from, to }) => {
     vi.useFakeTimers()
     try {
       vi.stubGlobal('requestAnimationFrame', (callback: () => void) => setTimeout(callback, 0))
       vi.stubGlobal('cancelAnimationFrame', (id: number) => clearTimeout(id))
-      const { wrapper } = await mountSurface(projectOf(300, 300), 0.6)
+      const { wrapper } = await mountSurface(projectOf(300, 300), from)
       vi.advanceTimersByTime(10)
       const cells = wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]')
       context.calls.length = 0
 
-      await wrapper.setProps({ zoom: 0.3, scroll: { x: 10, y: 20 } })
+      await wrapper.setProps({ zoom: to, scroll: { x: 10, y: 20 } })
       vi.advanceTimersByTime(10)
       expect(cells.element.style.transform).toBe('translate(-10px, -20px) scale(0.5)')
       // Only the overlay was drawn.
@@ -112,18 +115,6 @@ describe('ProjectSurface', () => {
     } finally {
       vi.useRealTimers()
     }
-  })
-
-  it('draws a very large piece live once it is zoomed out to the draft look, a redraw being one image a layer (ticket 0676)', async () => {
-    const { wrapper } = await mountSurface(projectOf(300, 300), 0.3)
-    context.calls.length = 0
-
-    await wrapper.setProps({ zoom: 0.2, scroll: { x: 10, y: 20 } })
-
-    expect(wrapper.find<HTMLCanvasElement>('[data-testid="project-surface-cells"]').element.style.transform).toBe('')
-    // The beads and the overlay, both drawn at once.
-    expect(context.named('clearRect')).toHaveLength(2)
-    expect(context.named('putImageData').length).toBeGreaterThan(0)
   })
 
   it('draws a small piece live on every zoom step, as before', async () => {
