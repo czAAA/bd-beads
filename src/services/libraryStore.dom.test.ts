@@ -360,7 +360,7 @@ describe('projectStorage', () => {
       keepOnDevice()
       saveProjects([makeProject()])
 
-      expect(loadProjects()[0]!.palette).toHaveLength(12)
+      expect(loadProjects()[0]!.palette).toHaveLength(21)
       expect(localStorage.getItem('openbeads:added-colors')).not.toBeNull()
     })
   })

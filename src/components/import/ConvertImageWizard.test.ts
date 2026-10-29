@@ -189,17 +189,13 @@ describe('ConvertImageWizard setup', () => {
     expect(draft).toEqual(before)
   })
 
-  it('offers Bead colors only for a Bead with a Color catalog, and starts on it there', async () => {
+  // Every catalog Bead has a Color catalog since ticket 0694, so the sources without Bead colors have no Bead to show.
+  it('offers Bead colors for a Bead with a Color catalog, and starts on it', async () => {
     const withCatalog = open({ draft: delica })
     await chooseFile(withCatalog.wrapper, picture())
     const options = (wrapper: VueWrapper) => wrapper.findAll('[data-testid="convert-color-source"] [data-value]').map((option) => option.attributes('data-value'))
     expect(options(withCatalog.wrapper)).toEqual(['bead-colors', 'default', 'exact'])
     expect(withCatalog.wrapper.get('[data-testid="convert-color-source"] [aria-checked="true"]').attributes('data-value')).toBe('bead-colors')
-    withCatalog.wrapper.unmount()
-
-    const without = open()
-    await chooseFile(without.wrapper, picture())
-    expect(options(without.wrapper)).toEqual(['default', 'exact'])
   })
 })
 
