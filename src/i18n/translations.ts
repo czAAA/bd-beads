@@ -930,8 +930,6 @@ export interface Translations {
       colorsCount: PluralForms
       noPicture: string
       /** Cancel's question in the footer, once a picture is set. */
-      discardQuestion: string
-      discard: string
       /** The preview's accessible name. */
       previewName: string
       previewEmpty: string
