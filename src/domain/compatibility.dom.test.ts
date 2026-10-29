@@ -446,6 +446,16 @@ describe('stored-data compatibility', () => {
       expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV12))
     })
 
+    it('keeps every Frame a version 12 file holds, and a Frame\'s own Piece names, though the app shows one (ticket 0664)', () => {
+      const file = JSON.parse(projectFileV12)
+      const second = { ...file.projects[0].layers[1], id: 'layer-second', pieceNames: [{ name: 'Ear', row: 0, column: 0 }] }
+      file.projects[0].layers.push(second)
+      const [opened] = parseProjectsFile(JSON.stringify(file)).projects
+      expect(opened!.layers.map((layer) => layer.id)).toEqual(['layer-canvas', 'layer-frame', 'layer-second'])
+      expect(opened!.layers[2]!.pieceNames).toEqual([{ name: 'Ear', row: 0, column: 0 }])
+      expect(parseProjectsFile(serializeProject(opened!)).projects).toEqual([opened])
+    })
+
     it('opens a version 5 file written on Delica with the twelve and an added color showing the same swatches (ticket 0528)', () => {
       const [project] = parseProjectsFile(projectFileV5Delica).projects
       expect(project!.palette).toEqual(['black', 'white', 'red', 'orange', 'yellow', 'green', addedColorId('#2fb6ae'), 'blue', 'purple', 'pink', 'brown', 'grey', 'added-123456'])

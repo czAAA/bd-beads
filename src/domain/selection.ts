@@ -2,7 +2,7 @@ import { type GridPosition } from './grid'
 import { beadBounds, beadCount, colorAt, frameContains, withColors, type BeadMap, type Rect } from './canvas'
 import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
-import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet, type Placed } from './layers'
+import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet } from './layers'
 import { footprintOf } from './footprint'
 import { beadsOfLayer, heldWeave, type Layered } from './layerRecord'
 import { inMargin, trimToAllowed, withMargin } from './margin'
@@ -168,7 +168,7 @@ export function movedSelection(selection: Selection, rows: number, columns: numb
 /** Whether a Selection on a layer acts on a position of that layer (ticket 0659): on the Frame, a cell inside it; on the
  * Canvas, one clear of the Frame and its margin, as the Canvas beads there are not drawn. A Selection's rectangle may
  * lie anywhere; only these positions of it are selected. */
-export function selectableOn(project: Placed, sheet: LayerSheet): (row: number, column: number) => boolean {
+export function selectableOn(project: Layered, sheet: LayerSheet): (row: number, column: number) => boolean {
   const { edge } = sheet
   if (edge) return (row, column) => frameContains(edge, { row, column })
   const covered = footprintOf(project)
@@ -236,7 +236,7 @@ function stampBlock(sheet: LayerSheet, block: CopiedBlock, at: GridPosition): Be
 
 /** The layer a Selection acts on (ADR 0066): the one its top-left bead is on. A Selection that begins in the Frame is the
  * Frame's; any other is the Canvas's. */
-export function selectionLayer(project: Placed, selection: Selection): Layer {
+export function selectionLayer(project: Layered, selection: Selection): Layer {
   return selection.layer ?? layerAt(project, { row: selection.top, column: selection.left })
 }
 

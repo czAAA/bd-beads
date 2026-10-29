@@ -136,7 +136,7 @@ export const lineRunsAlong = (line: AreaLine, way: RowWay): boolean => (line.axi
 
 /** The beads of a Frame line in passes finished `way` (the way the rows run now unless given): how many, and how many
  * passes they make up. */
-export function finishedOnLine(project: RowProgressed, line: AreaLine, way: RowWay = rowProgressOf(project)): { beads: number; passes: number } {
+export function finishedOnLine(project: Layered, line: AreaLine, way: RowWay = rowProgressOf(project)): { beads: number; passes: number } {
   const { rows = 0, columns = 0 } = frameOf(project) ?? {}
   const pointer = rowProgressOf(project)[pointerKey(way)] ?? 0
   const order = rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, way)
@@ -149,7 +149,7 @@ export function finishedOnLine(project: RowProgressed, line: AreaLine, way: RowW
 /** Row progress once a line of the Frame is taken out (Remove line, ticket 0647, ADR 0055): each way whose rows run
  * along it goes back by that row's finished passes, so the rows after it, moved up, stay finished; a line across the
  * rows leaves them finished, a bead short. */
-export function progressWithoutLine(project: RowProgressed, line: AreaLine): RowProgress {
+export function progressWithoutLine(project: Layered, line: AreaLine): RowProgress {
   const rowProgress = { ...rowProgressOf(project) }
   for (const [key, way] of POINTER_WAYS) {
     const { passes } = lineRunsAlong(line, way) ? finishedOnLine(project, line, way) : { passes: 0 }
@@ -193,23 +193,21 @@ export function toggleRowDirection(project: Project): Project {
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
-export function rowProgressPosition(project: RowProgressed): { current: number; total: number } {
+export function rowProgressPosition(project: Layered): { current: number; total: number } {
   return { current: currentPass(rowProgressOf(project)), total: frameRowOrder(project).count }
 }
 
-/** What a Project's Row progress is read from: its pointers, its Frame and the Weave a Canvas with none counts in. */
-type RowProgressed = Layered
 
 /** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
  * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */
-export function frameRowOrder(project: RowProgressed): RowOrder {
+export function frameRowOrder(project: Layered): RowOrder {
   const { rows = 0, columns = 0 } = frameOf(project) ?? {}
   return rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, rowProgressOf(project))
 }
 
 /** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. `order` is the
  * Frame's Row order, for a caller that has it already. */
-function framePassAt(project: RowProgressed, position: GridPosition, order: () => RowOrder = () => frameRowOrder(project)): number | undefined {
+function framePassAt(project: Layered, position: GridPosition, order: () => RowOrder = () => frameRowOrder(project)): number | undefined {
   const frame = frameOf(project)
   // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on.
   if (!frame || position.layer === 'canvas') {
@@ -227,14 +225,14 @@ function framePassAt(project: RowProgressed, position: GridPosition, order: () =
 /** Whether a bead sits in a row the weaver has already finished: its pass (a whole line, or half of one on peyote)
  * is before the pointer, lines counted the way rows run from the Frame's first. Only while the overlay is on and a
  * Frame is set. */
-export function isInFinishedRow(project: RowProgressed, position: GridPosition): boolean {
+export function isInFinishedRow(project: Layered, position: GridPosition): boolean {
   const pass = framePassAt(project, position)
   return pass !== undefined && pass < currentPass(rowProgressOf(project))
 }
 
 /** `isInFinishedRow` for many positions at once (ticket 0675): the Frame's Row order worked out once, not for each, for
  * a paste preview that asks of every bead it shows. */
-export function finishedRowsOf(project: RowProgressed): (position: GridPosition) => boolean {
+export function finishedRowsOf(project: Layered): (position: GridPosition) => boolean {
   const current = currentPass(rowProgressOf(project))
   if (!frameOf(project) || current === 0) return () => false
   let order: RowOrder | undefined
@@ -246,7 +244,7 @@ export function finishedRowsOf(project: RowProgressed): (position: GridPosition)
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
-export function isInCurrentRow(project: RowProgressed, position: GridPosition): boolean {
+export function isInCurrentRow(project: Layered, position: GridPosition): boolean {
   const pass = framePassAt(project, position)
   return pass !== undefined && pass === currentPass(rowProgressOf(project))
 }

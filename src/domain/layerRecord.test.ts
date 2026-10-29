@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { beadCopy, findBead } from './beads'
 import { changeFrame } from './changeFrame'
 import { createProject } from './createProject'
-import { beadIdOfLayer, beadOfLayer, beadsOfLayer, canvasOf, frameOf, heldWeave, layerOf, withFrameSheet, withLayer } from './layerRecord'
+import { beadIdOfLayer, beadOfLayer, beadsOfLayer, canvasOf, frameOf, heldWeave, layerOf, lettersOn, withFrameSheet, withLayer, withLetters, withPieceNames } from './layerRecord'
 import type { Project } from './project'
 import { beadCell } from './weave'
 import { withFields } from '../testUtils/flatFields'
@@ -138,5 +138,37 @@ describe('a layer\'s parts read from less than a whole Project (ticket 0662)', (
     expect(heldWeave(project, 'canvas')).toEqual({ technique: 'brick', techniqueSettings: { brickBlock: 3 } })
     expect(heldWeave(project, 'frame')).toEqual({ technique: 'peyote' })
     expect(heldWeave(open(), 'frame')).toBeUndefined()
+  })
+})
+
+describe('the layer list (ADR 0079, ticket 0664)', () => {
+  it('lays a Frame anew as a copy of the Canvas\'s Bead and Letters, at the first row, under an id of its own', () => {
+    const canvas = withLetters(withLayer(open(), 'canvas', { bead: cube, beadShape: 'real' }), true)
+    const laid = withFrameSheet(canvas, { row: 1, column: 1, rows: 2, columns: 2, technique: 'loom', beads: {} })
+    expect(frameOf(laid)).toMatchObject({ beadId: cube.id, bead: beadCopy(cube), beadShape: 'real', letters: true, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0 } })
+    expect(frameOf(laid)!.id).not.toBe(canvasOf(laid).id)
+  })
+
+  it('keeps a Frame\'s id, Bead, Letters and Row progress when its sheet is laid again, and removes it with none', () => {
+    const before = withFields(framed(), { rowProgress: { direction: 'columns', currentRow: 0, currentColumn: 2 } })
+    const moved = withFrameSheet(before, { row: 5, column: 5, rows: 2, columns: 2, technique: 'loom', beads: {} })
+    const { id, beadId, rowProgress } = frameOf(before)!
+    expect(frameOf(moved)).toMatchObject({ id, beadId, rowProgress, row: 5 })
+    expect(frameOf(moved)).not.toHaveProperty('name')
+    expect(withFrameSheet(before, undefined).layers).toEqual([canvasOf(before)])
+  })
+
+  it('reads the Letters switch from the Frame when there is one, else the Canvas, and sets it on every layer', () => {
+    const on = withLetters(framed(), true)
+    expect(on.layers.every((layer) => layer.letters === true)).toBe(true)
+    expect(lettersOn(on)).toBe(true)
+    expect(lettersOn(withFields(on, { frame: { ...frameOf(on)!, letters: undefined } }))).toBe(false)
+    expect(lettersOn(withLetters(open(), true))).toBe(true)
+  })
+
+  it('leaves an empty list of Piece names unsaved', () => {
+    const named = withPieceNames(open(), [{ name: 'Fox', row: 9, column: 9 }])
+    expect(canvasOf(named).pieceNames).toEqual([{ name: 'Fox', row: 9, column: 9 }])
+    expect(canvasOf(withPieceNames(named, []))).not.toHaveProperty('pieceNames')
   })
 })

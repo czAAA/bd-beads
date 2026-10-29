@@ -229,7 +229,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
       before.zoom > 0
     const heavy =
       onlyViewMoved &&
-      beadsToDraw(storedBeads(project), frameOf(project) ? frameOf(project)!.columns * frameOf(project)!.rows : 0, size.value, props.zoom) > GESTURE_BEAD_LIMIT
+      beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
       drawCells()

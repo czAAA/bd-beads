@@ -42,7 +42,7 @@ export interface NamedPiece extends Rect {
 }
 
 /** The Canvas's beads and its Weave as held, through the Layer accessor (ticket 0662): what a Piece is found in. */
-function canvasOf(project: Layered): { beads: BeadMap; weave: Weave } {
+function canvasPieces(project: Layered): { beads: BeadMap; weave: Weave } {
   return { beads: beadsOfLayer(project, 'canvas'), weave: heldWeave(project, 'canvas') }
 }
 
@@ -56,7 +56,7 @@ export function namedPieces(project: Layered): NamedPiece[] {
   if (!names?.length) {
     return []
   }
-  const { beads, weave } = canvasOf(project)
+  const { beads, weave } = canvasPieces(project)
   const known = namedCache.get(beads)
   if (known && known.names === names && known.cycle === rowCycle(weave)) {
     return known.found
@@ -80,7 +80,7 @@ export function namedPieces(project: Layered): NamedPiece[] {
 /** The name of the first named Piece (an unframed Schema) that `frame` would cut, some beads in, some out (ticket 407).
  * A Frame frames a Schema whole or not at all. */
 export function namedPieceCutBy(project: Layered, frame: Rect): string | undefined {
-  const { beads, weave } = canvasOf(project)
+  const { beads, weave } = canvasPieces(project)
   for (const { name, row, column } of pieceNamesOf(project) ?? []) {
     const members = pieceBeadsAt(beads, weave, { row, column })
     const inside = members.filter((at) => frameContains(frame, at)).length
@@ -97,7 +97,7 @@ export function pieceNameAt(project: Layered, position: GridPosition): string | 
   if (!names?.length) {
     return undefined
   }
-  const { beads, weave } = canvasOf(project)
+  const { beads, weave } = canvasPieces(project)
   const piece = new Set(pieceBeadsAt(beads, weave, position).map(numericKey))
   return names.find((entry) => piece.has(numericKey(entry)))?.name
 }
@@ -105,7 +105,7 @@ export function pieceNameAt(project: Layered, position: GridPosition): string | 
 /** The Project with the Piece holding the bead at `position` named `name` (unnamed when empty). The same Project
  * when nothing changes or there is no bead there. */
 export function withPieceName(project: Project, position: GridPosition, name: string): Project {
-  const { beads, weave } = canvasOf(project)
+  const { beads, weave } = canvasPieces(project)
   const piece = new Set(pieceBeadsAt(beads, weave, position).map(numericKey))
   if (piece.size === 0) {
     return project
@@ -162,7 +162,7 @@ function landNames(
 ): Landing[] {
   const where = (at: GridPosition) => (moved ? moved(at) : at)
   const landings: Landing[] = []
-  const was = canvasOf(before)
+  const was = canvasPieces(before)
   const now = beadsOfLayer(after, 'canvas')
   for (const entry of pieceNamesOf(before) ?? []) {
     const survivors = pieceBeadsAt(was.beads, was.weave, entry)
@@ -229,7 +229,7 @@ export function carryNames(before: Project, after: Project, moved?: (position: G
     return pieceNamesOf(after) === pieceNamesOf(before) ? after : withPieceNames(after, pieceNamesOf(before))
   }
   const kept: Landing[] = []
-  const { beads, weave } = canvasOf(after)
+  const { beads, weave } = canvasPieces(after)
   for (const landing of landNames(before, after, pieceLabeller(beads, weave), moved)) {
     const clash = kept.findIndex((other) => other.id === landing.id)
     if (clash === -1) {
@@ -281,7 +281,7 @@ export function pieceInSelection(
   project: Layered,
   selection: Selection,
 ): GridPosition | undefined {
-  const { beads, weave } = canvasOf(project)
+  const { beads, weave } = canvasPieces(project)
   const shape = selection.cells && new Set(selection.cells.map((cell) => `${cell.row},${cell.column}`))
   let found: { id: number; at: GridPosition } | undefined
   for (const [rowKey, columns] of Object.entries(beads)) {

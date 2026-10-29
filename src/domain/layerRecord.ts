@@ -92,11 +92,11 @@ export function weaveOfLayer(project: Layered, layer: Layer): Weave | undefined 
 export function layerOf(project: Layered, layer: 'canvas'): LayerRecord
 export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined
 export function layerOf(project: Layered, layer: Layer): LayerRecord | undefined {
-  const held = layer === 'frame' ? frameOf(project) : canvasOf(project)
+  const held = heldLayer(project, layer)
   if (!held) {
     return undefined
   }
-  const { name } = held
+  const { name } = held as LayerFields & { name?: string }
   return { weave: weaveOfLayer(project, layer)!, beadId: held.beadId, ...beadOfLayer(project, layer), beads: held.beads, ...(name ? { name } : {}) }
 }
 
@@ -149,17 +149,15 @@ export function withFrameSheet(project: Project, sheet: (FrameSheet & Partial<Fr
   if (!sheet) {
     return { ...project, layers: [canvas] }
   }
-  const from = frameOf(project) ?? canvas
-  const kept = {
-    id: frameOf(project)?.id ?? newLayerId(),
-    beadId: from.beadId,
-    ...(from.bead ? { bead: from.bead } : {}),
-    ...(from.beadShape ? { beadShape: from.beadShape } : {}),
-    ...(from.letters ? { letters: true } : {}),
-    rowProgress: frameOf(project)?.rowProgress ?? { ...FIRST_ROW },
-  }
+  const kept = frameOf(project) ? frameIdentity(frameOf(project)!) : { ...frameIdentity({ ...canvas, rowProgress: { ...FIRST_ROW } }), id: newLayerId() }
   const { cell: _cell, ...laid } = sheet
   return { ...project, layers: [canvas, { ...kept, ...laid }, ...framesOf(project).slice(1)] }
+}
+
+/** What makes a Frame the same layer whatever its sheet (ADR 0079): its id, Bead, Bead shape, Letters switch and Row
+ * progress. A Frame made anew in place of another keeps them. */
+export function frameIdentity({ id, beadId, bead, beadShape, letters, rowProgress }: Omit<FrameLayer, keyof FrameSheet> & LayerFields): Omit<FrameLayer, keyof FrameSheet> {
+  return { id, beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters: true } : {}), rowProgress }
 }
 
 /** Where a Frame laid anew starts its Row progress: the first row, along its rows. */

@@ -42,7 +42,7 @@ import { canvasDistance, canvasWeave, weaveOf } from './layerWeave'
 import { clampPointer, firstPasses, progressWithoutLine, rowProgressOf, rowProgressStarted } from './rowProgress'
 import { sameBeads } from './layerBeads'
 import { withWeave, type WeaveChange } from './weaveSwitch'
-import { beadsOfLayer, frameOf, heldWeave, pieceNamesOf, withFrameSheet, withLayer, withPieceNames } from './layerRecord'
+import { beadsOfLayer, frameIdentity, frameOf, heldWeave, pieceNamesOf, withFrameSheet, withLayer, withPieceNames } from './layerRecord'
 import { touch, type FrameLayer, type Project } from './project'
 import type { AreaLine } from './removeLine'
 
@@ -193,7 +193,8 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   }
 
   // A Custom frame's resize handles step its size setting (ADR 0079).
-  const sized = 'set' in change && frameOf(project) ? sizedSettings(frameOf(project)!, change.set, 'nearest') : undefined
+  const current = frameOf(project)
+  const sized = 'set' in change && current ? sizedSettings(current, change.set, 'nearest') : undefined
   if ('settings' in change || sized) {
     const frame = frameOf(project)!
     const asked = 'settings' in change ? change.settings : sized
@@ -214,8 +215,8 @@ export function changeFrame(project: Project, change: FrameChange): FrameChangeR
   }
 
   if ('make' in change) {
-    const made = frameOf(project) && sizeSettingOf(frameOf(project)!) ? madeCustomFrame(project, change.make) : madeFrame(project, change.make)
-    return sameFrame(frameOf(project), frameOf(made)) && sameBeads(project, made) && frameOf(project)?.name === frameOf(made)?.name
+    const made = current && sizeSettingOf(current) ? madeCustomFrame(project, change.make) : madeFrame(project, change.make)
+    return sameFrame(current, frameOf(made)) && sameBeads(project, made) && current?.name === frameOf(made)?.name
       ? { kind: 'unchanged', project }
       : { kind: 'changed', project: made }
   }
@@ -340,8 +341,7 @@ function madeFrame(original: Project, rectangle: Rect): Project {
 function keptLayer(project: Project, previous: FrameLayer | undefined): Project {
   const made = frameOf(project)
   if (!previous || !made) return project
-  const { id, beadId, bead, beadShape, letters, rowProgress } = previous
-  return withFrameSheet(project, { ...made, id, beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters } : {}), rowProgress: clampPointer(rowProgress, made) })
+  return withFrameSheet(project, { ...made, ...frameIdentity(previous), rowProgress: clampPointer(previous.rowProgress, made) })
 }
 
 /** The Project with its Frame's Folded beads laid on the Canvas where they stand, over what is there (ticket 0638), as
@@ -372,8 +372,7 @@ function madeCustomFrame(project: Project, rectangle: Rect): Project {
   const laid = removedFrame(project)
   const sheet = customSheet(laid, frame.shape!, settings, centre, frame.quarterTurns, heldWeave(project, 'frame'))
   // It stays the same layer: its id, Bead, Letters switch and Row progress.
-  const { id, beadId, bead, beadShape, letters, rowProgress } = frame
-  const framed = withFrameSheet(laid, { ...sheet, id, beadId, ...(bead ? { bead } : {}), ...(beadShape ? { beadShape } : {}), ...(letters ? { letters } : {}), rowProgress })
+  const framed = withFrameSheet(laid, { ...sheet, ...frameIdentity(frame) })
   const under = beadsOfLayer(laid, 'canvas')
   const hidden: (GridPosition & { color: string })[] = []
   forEachBead(beadsInFrame(under, footprintOf(framed)!), (row, column, color) => hidden.push({ row: row - sheet.row, column: column - sheet.column, color }))

@@ -28,16 +28,12 @@ export interface LayerSheet {
   frame?: ShapedSheet
 }
 
-/** What `layerAt` needs of a Project (ADR 0066): the Frame, and the Weaves that say how much of the Canvas it covers. */
-export type Placed = Layered
 
-/** A Project as what reads its Frame's geometry needs it: the Frame, the Weaves and the Bead shape's cell. */
-type Framed = Layered
 
 /** Which layer a press at a Canvas position lands on (ADR 0066): the one the pointer's hit named, else under what
  * the Frame draws it is the Frame, anywhere else the Canvas. The one place that decides; a stroke asks once, at its
  * press, and keeps the answer. */
-export function layerAt(project: Placed, position: GridPosition): Layer {
+export function layerAt(project: Layered, position: GridPosition): Layer {
   if (position.layer) {
     return position.layer === 'frame' && frameOf(project) ? 'frame' : 'canvas'
   }
@@ -54,7 +50,7 @@ export function positionInLayer(project: Layered, layer: Layer, position: GridPo
 /** Every bead you see, by Canvas position: the Frame's laid over the Canvas's, which it hides where it lies (a Custom
  * frame's hide them, having no Canvas positions). For what asks about the picture as a whole (Select all, Fit to
  * drawing); the same map back when there is no Frame. */
-export function shownBeads(project: Framed & Layered): BeadMap {
+export function shownBeads(project: Layered): BeadMap {
   const frame = frameOf(project)
   if (!frame) {
     return beadsOfLayer(project, 'canvas')
@@ -71,7 +67,7 @@ export function positionOnCanvas(project: Layered, layer: Layer, position: GridP
 }
 
 /** The Frame as its Frame shape reads it, in its own Weave with the Bead shape's cell. The Project must have a Frame. */
-function shapedFrame(project: Framed): ShapedSheet {
+function shapedFrame(project: Layered): ShapedSheet {
   const { rows, columns, shape, settings, quarterTurns } = frameOf(project)!
   return { rows, columns, ...(shape ? { shape } : {}), ...(settings ? { settings } : {}), ...(quarterTurns ? { quarterTurns } : {}), ...frameWeave(project) }
 }
@@ -80,7 +76,7 @@ function shapedFrame(project: Framed): ShapedSheet {
 const geometries = new WeakMap<FrameSheet, Map<string, LayerGeometry>>()
 
 /** The Frame's Layer geometry (ADR 0078), counted from its own first row and column. The Project must have a Frame. */
-export function frameGeometryOf(project: Framed): LayerGeometry {
+export function frameGeometryOf(project: Layered): LayerGeometry {
   const frame = frameOf(project)!
   const cell = projectCell(project)
   const key = cell ? `${cell.aspect}:${cell.roundness}` : ''

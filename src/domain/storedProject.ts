@@ -77,9 +77,10 @@ function legacyRotation(project: ProjectWithLegacyFields): Rotation {
 export function normalizeProject(stored: StoredProject): Project {
   const layered = isLayered(stored) ? stored : layeredOf(stored)
   const { layers: storedLayers, palette: storedPalette, removedDefaults: storedRemoved, paletteCodes: storedCodes, paletteLetters: storedLetters, ...rest } = layered
-  const [storedCanvas, storedFrame] = storedLayers as [StoredLayer, StoredLayer | undefined]
+  const [storedCanvas, ...storedFrames] = storedLayers as [StoredLayer, ...StoredLayer[]]
   const canvas = readCanvas(storedCanvas, layered.id)
-  const frame = storedFrame && readFrame(storedFrame, canvas, layered.id)
+  // Every Frame the list holds is kept, though the app makes and shows one (ADR 0079).
+  const frames = storedFrames.map((stored, index) => readFrame(stored, canvas, `${layered.id}:frame${index > 0 ? index + 1 : ''}`))
 
   // The Palette's built-in colors are read with the Bead id as stored, before an alias names it anew (ticket 534).
   const builtIns = defaultPalette(storedCanvas.beadId)
@@ -90,7 +91,7 @@ export function normalizeProject(stored: StoredProject): Project {
 
   return {
     ...rest,
-    layers: frame ? [canvas, frame] : [canvas],
+    layers: [canvas, ...frames],
     palette,
     ...(removedDefaults.length > 0 ? { removedDefaults } : {}),
     ...(Object.keys(paletteCodes).length > 0 ? { paletteCodes } : {}),
@@ -142,15 +143,14 @@ function layeredOf(stored: SavedProject | GridProject | VersionThreeProject): La
  * Bead's label, for a Project saved before it had one. */
 function readCanvas(stored: StoredLayer, projectId: string): CanvasLayer {
   const layer = readLayer(stored, `${projectId}:canvas`, readWeave(stored.technique, stored))
-  const pieceNames = readPieceNames(stored.pieceNames)
   const name = typeof stored.name === 'string' && stored.name ? stored.name : layer.bead ? beadLabel(layer.bead) : layer.beadId
-  return { ...layer, name, ...(pieceNames.length > 0 ? { pieceNames } : {}), orientation: readOrientation(stored.orientation) }
+  return { ...layer, name, orientation: readOrientation(stored.orientation) }
 }
 
 /** The Frame a store or file holds, its Row progress read inside it. One stored before it had a Weave of its own
  * (ticket 492), or with one this build does not know, takes the Canvas's. */
-function readFrame(stored: StoredLayer, canvas: CanvasLayer, projectId: string): FrameLayer {
-  const layer = readLayer(stored, `${projectId}:frame`, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas))
+function readFrame(stored: StoredLayer, canvas: CanvasLayer, fallbackId: string): FrameLayer {
+  const layer = readLayer(stored, fallbackId, isTechnique(stored.technique) ? readWeave(stored.technique, stored) : weaveOf(canvas))
   const { row = 0, column = 0, rows = 0, columns = 0, folded, name } = stored
   const laid = readFrameShape(stored)
   const shaped: ShapedSheet = { ...withCell(weaveOf(layer), beadCell(layer.bead, layer.beadShape ?? DEFAULT_BEAD_SHAPE)), ...laid, rows, columns }
@@ -168,9 +168,10 @@ function readFrame(stored: StoredLayer, canvas: CanvasLayer, projectId: string):
 }
 
 /** What every stored layer holds, read: its id (or `fallbackId` for one saved without), Weave, Bead copy (its own when
- * readable, otherwise the catalog's of that id, through the alias map, ticket 534), Bead shape, beads and Letters. */
+ * readable, else the catalog's of that id through the alias map, ticket 534), Bead shape, beads, Letters, Piece names. */
 function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): LayerFields {
   const bead = readBeadCopy(stored.bead) ?? catalogCopy(stored.beadId)
+  const pieceNames = readPieceNames(stored.pieceNames)
   return {
     id: typeof stored.id === 'string' && stored.id ? stored.id : fallbackId,
     ...weave,
@@ -180,6 +181,7 @@ function readLayer(stored: StoredLayer, fallbackId: string, weave: Weave): Layer
     ...(stored.beadShape === 'real' ? { beadShape: stored.beadShape } : {}),
     beads: stored.beads ?? {},
     ...(stored.letters === true ? { letters: true } : {}),
+    ...(pieceNames.length > 0 ? { pieceNames } : {}),
   }
 }
 

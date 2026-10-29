@@ -324,6 +324,14 @@ describe('parseProjectsFile', () => {
     ).toThrow()
   })
 
+  it('rejects a version 12 Project with no layers, or a layer without its Bead or beads (ticket 0664)', () => {
+    for (const change of [(project: Record<string, any>) => (project.layers = []), (project: Record<string, any>) => delete project.layers[0].beadId, (project: Record<string, any>) => delete project.layers[1].encodedBeads]) { // eslint-disable-line @typescript-eslint/no-explicit-any
+      const file = JSON.parse(serializeProject(decoratedProject()))
+      change(file.projects[0])
+      expect(() => parseProjectsFile(JSON.stringify(file))).toThrow('does not contain readable Projects')
+    }
+  })
+
   it('backfills fields a Project exported by an older version would be missing', () => {
     const file = JSON.parse(serializeProject(makeProject()))
     delete file.projects[0].layers[1].rowProgress

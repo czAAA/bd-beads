@@ -365,7 +365,8 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * asked, as what a smaller setting leaves out folds until it grows again (ADR 0066). Held still once a pass is done. */
   function setSettings(change: FrameSettings): void {
     const project = deps.currentProject()
-    if (!project || !frameOf(project) || !settingsOf(frameOf(project)!) || locked.value) return
+    const frame = frameOf(project)
+    if (!frame || !settingsOf(frame) || locked.value) return
     const name = changedSetting(change)
     const command = (current: Project) => changeFrame(current, { settings: change })
     const outcome = name === 'fringeStyle' ? deps.edit('frame', command) : deps.hold(command)
@@ -402,7 +403,10 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const project = deps.currentProject()
     if (!step || !frameOf(project)) return false
     if (event.shiftKey) {
-      if (settingFrame.value) commit(frameWithSize(frameOf(project)!, frameOf(project)!.columns + step[1], frameOf(project)!.rows + step[0]))
+      if (settingFrame.value) {
+        const frame = frameOf(project)!
+        commit(frameWithSize(frame, frame.columns + step[1], frame.rows + step[0]))
+      }
     } else {
       moveBy(step[0], step[1])
     }
