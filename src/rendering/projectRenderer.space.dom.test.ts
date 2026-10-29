@@ -183,11 +183,14 @@ describe('the Frame margin on the Canvas (ticket 276)', () => {
       expect(roundRects(calls)).toContainEqual([125, 125, 210, 230, 3])
     })
 
-    it('draws the inner border 6px in where the band is under 64px, and none where it cannot fit', () => {
-      // At 50% the band is 4 beads of 10px: 40px, so 6px in, 12 grid px.
-      expect(roundRects(drawn(true, 0.5).calls)).toContainEqual([132, 132, 196, 216, 12])
-      // At 10% the band is 8px, under twice the inset.
-      expect(strokedIn(drawn(true, 0.1).calls, '#abcdef')).toHaveLength(0)
+    it('draws the compact form\'s inner border 6px in and corners of 10px, and none once the sheet folds (ticket 0658)', () => {
+      // At 60% the band is 4 beads of 12px: 48px, compact: 6px in, 10 grid px; its corners 10px, 16.67 grid px.
+      const compact = roundRects(drawn(true, 0.6).calls)
+      expect(compact).toContainEqual([130, 130, 200, 220, 10])
+      expect(compact.some(([x, , , , radius]) => x === 120 && Math.abs(Number(radius) - 10 / 0.6) < 1e-9)).toBe(true)
+      // At 40% the band is 32px, folded: the paper keeps its color and its edge, with no inner border.
+      expect(strokedIn(drawn(true, 0.4).calls, '#abcdef')).toHaveLength(0)
+      expect(strokedIn(drawn(true, 0.4).calls, '#fedcba')).toHaveLength(1)
       expect(drawn(true, 0.1).calls.some((call) => call.name === 'fill' && call.fillStyle === '#123456')).toBe(true)
     })
 

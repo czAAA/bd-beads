@@ -20,6 +20,7 @@ import {
   type ProjectTheme,
 } from './beadLook'
 import type { MarginLook } from './marginLook'
+import { marginForm } from './marginForm'
 import { positionMarkPattern } from './positionMarks'
 import { beadInSpace, geometryDrawnAlone, spaceOf, type Space } from './space'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
@@ -398,12 +399,10 @@ export function marginSheetPx(project: Pick<DrawnProject, 'technique' | 'techniq
   return { sheet, footprint, band }
 }
 
-// The margin's sheet (MarginSheet card, ticket 0656), in screen px: its corners, its inner border's inset (6px once the
-// band is under 64px) and that border's corners.
-const SHEET_RADIUS_PX = 12
-const BORDER_INSET_PX = 10
-const BORDER_INSET_COMPACT_PX = 6
-const FULL_BAND_PX = 64
+// The margin's sheet (MarginSheet card, tickets 0656, 0658), in screen px: its corners (10px compact), its inner
+// border's inset (6px compact) and that border's corners. A folded sheet keeps its color and edge, no inner border.
+const SHEET_RADIUS_PX = { full: 12, compact: 10 }
+const BORDER_INSET_PX = { full: 10, compact: 6 }
 const BORDER_RADIUS_PX = 6
 
 /** The keep-out margin as a sheet of drafting paper (MarginSheet card, ticket 0656): its band filled in the margin color
@@ -412,8 +411,10 @@ const BORDER_RADIUS_PX = 6
 function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin: number, zoom: number, look: MarginLook): void {
   const { sheet, footprint, band: gridBand } = marginSheetPx(project, margin)!
   const band = gridBand * zoom
+  const form = marginForm(band)
+  const drawn = form === 'full' ? 'full' : 'compact'
   const edge = BEAD_GAP_PX / 2
-  const radius = Math.min(SHEET_RADIUS_PX, band) / zoom
+  const radius = Math.min(SHEET_RADIUS_PX[drawn], band) / zoom
   context.save()
   context.beginPath()
   context.roundRect(sheet.x, sheet.y, sheet.width, sheet.height, radius)
@@ -427,9 +428,8 @@ function drawMarginSheet(context: DrawingContext, project: DrawnProject, margin:
   context.beginPath()
   context.roundRect(sheet.x + half, sheet.y + half, sheet.width - 2 * half, sheet.height - 2 * half, Math.max(0, radius - half))
   context.stroke()
-  const inset = band >= FULL_BAND_PX ? BORDER_INSET_PX : BORDER_INSET_COMPACT_PX
-  if (band >= 2 * inset) {
-    const at = inset / zoom
+  if (form === 'full' || form === 'compact') {
+    const at = BORDER_INSET_PX[form] / zoom
     context.lineWidth = 1 / zoom
     context.strokeStyle = look.line
     context.beginPath()

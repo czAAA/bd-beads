@@ -10,6 +10,7 @@ import { OPEN_SPACE } from '../../rendering/space'
 import { recordingContext } from '../../testUtils/recordingContext'
 import { surfaceView } from '../../rendering/surfaceView'
 import { frameGrid, withFrameGrid } from '../../testUtils/frameGrid'
+import { rulerNumbers } from '../../testUtils/beads'
 import { toolCapabilities, type ToolCapabilities } from '../../domain/tool'
 import type { FrameAnchor } from '../../composables/tools/selectionBarPlacement'
 
@@ -1534,6 +1535,14 @@ describe('ProjectSurface with a Frame', () => {
     expect(anchor.band).toBe(80)
     expect(anchor.sheet.left).toBeCloseTo(anchor.box.left + 7 - 80)
     expect(anchor.sheet.width).toBeCloseTo(anchor.box.width - 14 + 160)
+  })
+
+  it('hangs the Frame\'s numbers on its margin sheet only in the full form, as compact has no room for them (ticket 0658)', async () => {
+    const full = await mountSurface(framed(), 1, { x: 0, y: 0 }, { showRulers: true })
+    expect(rulerNumbers(full.wrapper).length).toBeGreaterThan(0)
+    // At 60% the band is 48px: the compact form.
+    const compact = await mountSurface(framed(), 0.6, { x: 0, y: 0 }, { showRulers: true })
+    expect(rulerNumbers(compact.wrapper)).toEqual([])
   })
 
   it('reports no Frame place once the Frame is scrolled wholly out of view, so no control stays on screen', async () => {

@@ -717,7 +717,7 @@ export interface Translations {
      * line under the picker. */
     /** The margin sheet (tickets 0656, 0657; MarginSheet card): the Frame panel's section, its color, the title block's
      * Switch and the title block's Technique pencil. */
-    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string }
+    margin: { heading: string; colorLabel: string; auto: string; autoLabel: string; canvasColorLabel: string; line: string; titleBlock: string; changeTechnique: string; foldTitleBlock: string; showTitleBlock: string; showTitleBlockOf: string; frameTools: string }
     qualityHintLabel: string
     qualityHint: string
     estimateInfo: string
