@@ -141,7 +141,8 @@ const limitsHint = computed(() => formatImageLimits(t.value.convertImage.limitsH
 </template>
 
 <style scoped>
-.new-project-form__convert-button {
+/* Its Tooltip wraps it (AppButton), so the class lands inside the wrapper, out of this file's scope (ticket 0679). */
+.new-project-form__convert :deep(.new-project-form__convert-button) {
   width: 100%;
   height: var(--field-height);
 }

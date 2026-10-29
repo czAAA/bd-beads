@@ -816,8 +816,6 @@ export const uk: Translations = {
       resultPerPixel: '1 px = {n} × {n} бісерин',
       colorsCount: { other: 'кольорів: {count}' },
       noPicture: 'Зображення ще немає',
-      discardQuestion: 'Скинути конвертацію?',
-      discard: 'Скинути',
       previewName: 'Прев’ю: {size}, {colors}',
       previewEmpty: 'Прев’ю: зображення ще немає',
       zoomLevel: '{percent} %',

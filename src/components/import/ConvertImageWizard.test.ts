@@ -334,25 +334,19 @@ describe('ConvertImageWizard Cancel', () => {
     expect(wrapper.emitted('cancel')).toHaveLength(1)
   })
 
-  it('asks in the footer once a picture is set, from Cancel, Close and Escape alike', async () => {
-    const { wrapper } = open()
-    await chooseFile(wrapper, picture())
+  // Ticket 0679: nothing asks first; with a picture set, Cancel, Close and Escape each close at once.
+  for (const [way, close] of [
+    ['Cancel', (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-image-cancel"]').trigger('click')],
+    ['Close', (wrapper: VueWrapper) => wrapper.get('[data-testid="convert-close"]').trigger('click')],
+    ['Escape', () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))],
+  ] as const) {
+    it(`closes at once from ${way} with a picture set`, async () => {
+      const { wrapper } = open()
+      await chooseFile(wrapper, picture())
 
-    for (const ask of [
-      () => wrapper.get('[data-testid="convert-image-cancel"]').trigger('click'),
-      () => wrapper.get('[data-testid="convert-close"]').trigger('click'),
-      () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })),
-    ]) {
-      await ask()
+      await close(wrapper)
       await flushPromises()
-      expect(wrapper.get('[data-testid="convert-discard"]').text()).toContain(en.convertImage.wizard.discardQuestion)
-      expect(wrapper.emitted('cancel')).toBeUndefined()
-      await wrapper.get('[data-testid="convert-discard-keep"]').trigger('click')
-      expect(wrapper.find('[data-testid="convert-discard"]').exists()).toBe(false)
-    }
-
-    await wrapper.get('[data-testid="convert-image-cancel"]').trigger('click')
-    await wrapper.get('[data-testid="convert-discard-confirm"]').trigger('click')
-    expect(wrapper.emitted('cancel')).toHaveLength(1)
-  })
+      expect(wrapper.emitted('cancel')).toHaveLength(1)
+    })
+  }
 })

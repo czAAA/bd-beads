@@ -32,7 +32,7 @@ import ConvertSizeSection from './ConvertSizeSection.vue'
 
 // The Convert image wizard (spec 0645; ConvertImage, PhoneForms and Modal cards): the live preview beside five numbered
 // sections, all open; the large Modal from 1024 px in landscape, else a sheet under a sticky, shrinking preview. Its setup
-// is its own copy of the form's; Cancel, Close and Escape with a picture set ask in the footer first.
+// is its own copy of the form's; Cancel, Close and Escape close it at once, a picture set or not (ticket 0679).
 const props = defineProps<{
   start: ConvertImageStart
   decodeImage: DecodeImage
@@ -161,28 +161,11 @@ onMounted(() => {
 })
 onBeforeUnmount(() => railObserver?.disconnect())
 
-// --- Footer: Create, Cancel and Cancel's question ------------------------------------------------------------------
+// --- Footer: Cancel and Create -------------------------------------------------------------------------------------
 
-const confirming = ref(false)
-const keepButton = ref<InstanceType<typeof AppButton>>()
 const footerLine = computed(() =>
   result.value ? `${result.value.grid} · ${result.value.measured} · ${plural(locale.value, wizard.usedColorCount.value, words.value.colorsCount)}` : words.value.noPicture,
 )
-
-/** Cancel, Close and Escape: with a picture set they ask first, in the footer (one modal at a time). */
-async function onCancelAsked() {
-  if (confirming.value) {
-    confirming.value = false
-    return
-  }
-  if (!wizard.hasPicture.value) {
-    emit('cancel')
-    return
-  }
-  confirming.value = true
-  await nextTick()
-  ;(keepButton.value?.$el as HTMLElement | undefined)?.focus()
-}
 
 function onCreate() {
   const project = wizard.createProject()
@@ -191,9 +174,9 @@ function onCreate() {
 </script>
 
 <template>
-  <AppModal :title="words.title" size="large" data-testid="convert-image-wizard" @cancel="onCancelAsked">
+  <AppModal :title="words.title" size="large" data-testid="convert-image-wizard" @cancel="emit('cancel')">
     <template #header>
-      <IconButton variant="plain" :icon-size="18" :action="closeAction" data-testid="convert-close" @click="onCancelAsked" />
+      <IconButton variant="plain" :icon-size="18" :action="closeAction" data-testid="convert-close" @click="emit('cancel')" />
     </template>
 
     <div
@@ -290,18 +273,8 @@ function onCreate() {
     </div>
 
     <template #actions>
-      <div v-if="confirming" class="convert-wizard__footer" data-testid="convert-discard">
-        <span class="convert-wizard__question">
-          <AppIcon name="warning" :size="16" />
-          <span>{{ words.discardQuestion }}</span>
-        </span>
-        <span class="convert-wizard__buttons">
-          <AppButton ref="keepButton" variant="secondary" data-testid="convert-discard-keep" @click="confirming = false">{{ t.convertImage.cancelButton }}</AppButton>
-          <AppButton variant="danger" data-testid="convert-discard-confirm" @click="emit('cancel')">{{ words.discard }}</AppButton>
-        </span>
-      </div>
-      <div v-else class="convert-wizard__footer">
-        <AppButton class="convert-wizard__cancel" variant="secondary" data-testid="convert-image-cancel" @click="onCancelAsked">{{ t.convertImage.cancelButton }}</AppButton>
+      <div class="convert-wizard__footer">
+        <AppButton class="convert-wizard__cancel" variant="secondary" data-testid="convert-image-cancel" @click="emit('cancel')">{{ t.convertImage.cancelButton }}</AppButton>
         <span class="convert-wizard__line" :class="{ 'convert-wizard__line--empty': !result }" role="status" data-testid="convert-footer-line">{{ footerLine }}</span>
         <AppButton
           class="convert-wizard__create"
@@ -453,10 +426,12 @@ function onCreate() {
 }
 
 .convert-wizard__footer {
+  --footer-gap: var(--space-12);
+
   display: flex;
   flex: 1;
   align-items: center;
-  gap: var(--space-12);
+  gap: var(--footer-gap);
   min-width: 0;
 }
 
@@ -472,28 +447,12 @@ function onCreate() {
   color: var(--muted);
 }
 
+/* Create Project's Tooltip wraps it (AppButton), so its class lands inside the wrapper, out of this file's scope (ticket
+ * 0679). */
 .convert-wizard__cancel,
-.convert-wizard__create {
+.convert-wizard__footer :deep(.convert-wizard__create) {
   flex: none;
   height: var(--field-height);
-}
-
-.convert-wizard__question {
-  display: inline-flex;
-  flex: 1;
-  align-items: center;
-  gap: var(--space-8);
-  font: var(--type-control);
-  color: var(--ink);
-}
-
-.convert-wizard__question > .icon {
-  color: var(--warning);
-}
-
-.convert-wizard__buttons {
-  display: inline-flex;
-  gap: var(--space-8);
 }
 
 /* Under 1024 px or in portrait (PhoneForms card): one long scroll, the preview sticky on top, shrinking (by transform,
@@ -579,10 +538,20 @@ function onCreate() {
     order: -1;
   }
 
+  /* Half the row each. The basis is about a half, not 0, as Cancel has its own padding and Create Project's is inside its
+   * wrapper; less the gap, so the two stay on one row. */
   .convert-wizard__cancel,
-  .convert-wizard__create {
-    flex: 1;
+  .convert-wizard__footer > :deep(.app-button-wrap) {
+    flex: 1 1 calc(50% - var(--footer-gap));
+  }
+
+  .convert-wizard__cancel,
+  .convert-wizard__footer :deep(.convert-wizard__create) {
     height: var(--field-height-phone);
+  }
+
+  .convert-wizard__footer :deep(.convert-wizard__create) {
+    flex: 1;
   }
 }
 
