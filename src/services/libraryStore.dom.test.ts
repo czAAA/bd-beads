@@ -8,7 +8,8 @@ import { BEAD_CATALOG } from '../domain/beads'
 import { refuseStorageWrites } from '../testUtils/storageWrites'
 import { frameGrid, withFrameGrid } from '../testUtils/frameGrid'
 import { canvasOf, frameOf } from '../domain/layerRecord'
-import { flatOf, flatView } from '../testUtils/flatFields'
+import { layersView } from '../testUtils/layerFields'
+import { legacyRecordOf } from '../testUtils/legacyFile'
 
 const STORAGE_KEY = 'openbeads:patterns'
 
@@ -116,7 +117,7 @@ describe('projectStorage', () => {
   })
 
   it('backfills a name from the bead label for projects saved before names existed', () => {
-    const { name: _name, ...legacyProject } = flatOf(makeProject())
+    const { name: _name, ...legacyProject } = legacyRecordOf(makeProject())
     localStorage.setItem('openbeads:patterns', JSON.stringify([legacyProject]))
 
     expect(canvasOf(loadProjects()[0]).name).toBe('TOHO Cube 1.5mm')
@@ -124,7 +125,7 @@ describe('projectStorage', () => {
 
   it('loads a Project saved before ADR 0026 that still carries its millimetre size, ignoring it', () => {
     const project = makeProject()
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...flatOf(project), widthMm: 15, heightMm: 15 }]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...legacyRecordOf(project), widthMm: 15, heightMm: 15 }]))
 
     const [loaded] = loadProjects()
 
@@ -135,7 +136,7 @@ describe('projectStorage', () => {
   })
 
   it('does not write the millimetre size back when such a Project is saved again', () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...flatOf(makeProject()), widthMm: 15, heightMm: 15 }]))
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([{ ...legacyRecordOf(makeProject()), widthMm: 15, heightMm: 15 }]))
 
     saveProjects(loadProjects())
 
@@ -163,20 +164,20 @@ describe('projectStorage', () => {
 
     it('reads a library saved in the old unversioned format back unchanged', () => {
       const project = makeProject()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([flatOf(project)]))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([legacyRecordOf(project)]))
 
-      expect(loadProjects().map(flatView)).toEqual([flatView(project)])
+      expect(loadProjects().map(layersView)).toEqual([layersView(project)])
     })
 
     it('rewrites a library saved in the old format compactly on the next save', () => {
       const legacy = paintedOrdinaryProject()
-      localStorage.setItem(STORAGE_KEY, JSON.stringify([flatOf(legacy)]))
+      localStorage.setItem(STORAGE_KEY, JSON.stringify([legacyRecordOf(legacy)]))
       const legacyBytes = storedBytes()
 
       const loaded = loadProjects()
       saveProjects(loaded)
 
-      expect(loaded.map(flatView)).toEqual([flatView(legacy)])
+      expect(loaded.map(layersView)).toEqual([layersView(legacy)])
       expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).version).toBe(5)
       expect(storedBytes()).toBeLessThan(legacyBytes / 10)
     })
@@ -223,7 +224,7 @@ describe('projectStorage', () => {
     it('opens a Project whose runs do not add up to its grid, rather than refusing it', () => {
       // A hand-edited or truncated stored value: two cells of runs for a 10x10 grid. The Project's own dimensions
       // decide the shape, so the rest comes back empty instead of the Project being unopenable.
-      const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject())
+      const { beads: _beads, frame: _frame, ...base } = legacyRecordOf(makeProject())
       const rest = { ...base, columns: 10, rows: 10 }
       localStorage.setItem(
         STORAGE_KEY,
@@ -242,7 +243,7 @@ describe('projectStorage', () => {
     })
 
     it('drops runs that overrun the grid instead of growing it', () => {
-      const { beads: _beads, frame: _frame, ...base } = flatOf(makeProject())
+      const { beads: _beads, frame: _frame, ...base } = legacyRecordOf(makeProject())
       const rest = { ...base, columns: 10, rows: 10 }
       localStorage.setItem(
         STORAGE_KEY,

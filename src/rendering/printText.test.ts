@@ -7,7 +7,7 @@ import { en } from '../i18n/en'
 import { ru } from '../i18n/ru'
 import { headerMaker, printText } from './printText'
 import { frameOf, withFrameSheet } from '../domain/layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const at = new Date(2026, 8, 26, 14, 32)
 
@@ -47,7 +47,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('has no tubes for an unknown Bead', () => {
-    const text = printText(withFields(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
+    const text = printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
 
     expect(text.colors[0]!.tubes).toBeUndefined()
     expect(text.totalTubes).toBeUndefined()
@@ -61,7 +61,7 @@ describe('printText (tickets 162, 164)', () => {
   })
 
   it('shows no grams and no note for a Bead with no weight', () => {
-    const text = printText(withFields(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
+    const text = printText(withLayers(delicaProject(10), { beadId: 'a-bead-this-device-never-had', bead: undefined }), en, 'en', at)
 
     expect(text.colors[0]!.grams).toBeUndefined()
     expect(text.totalGrams).toBeUndefined()

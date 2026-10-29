@@ -9,7 +9,8 @@ import { paintAt } from '../testUtils/layers'
 import { serializeLibrary } from '../domain/projectFile'
 import { MAX_FILE_BYTES, MAX_UNPACKED_BYTES, packLibraryFile, packProjectFile, readProjectsFile } from './projectFileCodec'
 import { canvasOf, frameOf } from '../domain/layerRecord'
-import { flatOf, flatView, withFields } from '../testUtils/flatFields'
+import { layersView, withLayers } from '../testUtils/layerFields'
+import { legacyRecordOf } from '../testUtils/legacyFile'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -38,12 +39,12 @@ describe('a .openbeads file', () => {
   })
 
   it('round-trips an empty canvas', async () => {
-    const empty = withFields(makeProject(), { beads: {}, frame: undefined }) as Project
+    const empty = withLayers(makeProject(), { beads: {}, frame: undefined }) as Project
     expect(await roundTrip(empty)).toEqual(await roundTrip(await roundTrip(empty)))
   })
 
   it('round-trips a single bead', async () => {
-    const one = paintAt(withFields(makeProject(), { beads: {}, frame: undefined }) as Project, [{ row: 5, column: 7 }], '#abcdef')
+    const one = paintAt(withLayers(makeProject(), { beads: {}, frame: undefined }) as Project, [{ row: 5, column: 7 }], '#abcdef')
     expect(await roundTrip(one)).toEqual(one)
   })
 
@@ -108,10 +109,10 @@ describe('refusing a file', () => {
 describe('a plain .json file from before ADR 0048 (deprecated)', () => {
   it('still imports', async () => {
     const project = paintAt(makeProject(), [{ row: 2, column: 3 }], '#e63746')
-    const file = JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [flatOf(project)] }, null, 2)
-    expect((await readProjectsFile(asFile(file))).projects.map(flatView)).toEqual([flatView(project)])
-    const library = JSON.stringify({ kind: 'bd-beads/library', version: 2, patterns: [flatOf(project)] })
-    expect((await readProjectsFile(asFile(library))).projects.map(flatView)).toEqual([flatView(project)])
+    const file = JSON.stringify({ kind: 'bd-beads/pattern', version: 3, patterns: [legacyRecordOf(project)] }, null, 2)
+    expect((await readProjectsFile(asFile(file))).projects.map(layersView)).toEqual([layersView(project)])
+    const library = JSON.stringify({ kind: 'bd-beads/library', version: 2, patterns: [legacyRecordOf(project)] })
+    expect((await readProjectsFile(asFile(library))).projects.map(layersView)).toEqual([layersView(project)])
   })
 
   it('refuses an unknown kind or version', async () => {

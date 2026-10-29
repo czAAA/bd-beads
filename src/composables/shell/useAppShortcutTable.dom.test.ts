@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import { mount } from '@vue/test-utils'
 import { useAppShortcutTable, type AppShortcutTableDeps } from './useAppShortcutTable'
-import { flatProject } from '../../testUtils/flatFields'
+import { bareProject } from '../../testUtils/layerFields'
 
 function mountTable(overrides: Partial<AppShortcutTableDeps> = {}) {
   const deps: AppShortcutTableDeps = {
@@ -103,7 +103,7 @@ describe('useAppShortcutTable', () => {
     expect(none.deps.onSelectAll).not.toHaveBeenCalled()
     none.wrapper.unmount()
 
-    const { deps, wrapper } = mountTable({ activeProject: () => flatProject({}) })
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
     press({ key: '7' })
     expect(deps.onSelectAll).not.toHaveBeenCalled()
     press({ key: 'a', ctrlKey: true })
@@ -197,7 +197,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('4, 5 and 6 pick Erase, Hand and Piece (tickets 292, 414, 431)', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => flatProject({}) })
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
     for (const key of ['4', '5', '6']) press({ key })
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(1, 'erase')
     expect(deps.onSelectTool).toHaveBeenNthCalledWith(2, 'hand')
@@ -207,7 +207,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('does nothing on keys that no longer have a control: E, H, F and the Mirror keys (tickets 174, 292)', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => flatProject({}) })
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
     for (const key of ['e', 'h', 'f', '-', '=', '[', ']', 'm', 'v']) press({ key })
     for (const fn of Object.values(deps)) if (typeof fn === 'function' && 'mock' in fn) expect(fn).not.toHaveBeenCalled()
     wrapper.unmount()
@@ -226,7 +226,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('D turns the Row progress direction and P does nothing (tickets 94, 426)', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => flatProject({}) })
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({}) })
     press({ key: 'p' })
     expect(deps.onToggleRowDirection).not.toHaveBeenCalled()
     press({ key: 'd' })
@@ -235,14 +235,14 @@ describe('useAppShortcutTable', () => {
   })
 
   it('Enter and Space move one row on, with Shift one back, and only while Row progress is on (tickets 94, 178)', () => {
-    const on = mountTable({ activeProject: () => flatProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }) })
+    const on = mountTable({ activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }) })
     press({ key: 'Enter' })
     press({ key: ' ' })
     press({ key: 'Enter', shiftKey: true })
     press({ key: ' ', shiftKey: true })
     expect(vi.mocked(on.deps.onMoveRow).mock.calls).toEqual([[1], [1], [-1], [-1]])
     on.wrapper.unmount()
-    const off = mountTable({ activeProject: () => flatProject({}) })
+    const off = mountTable({ activeProject: () => bareProject({}) })
     press({ key: 'Enter' })
     press({ key: ' ', shiftKey: true })
     expect(off.deps.onMoveRow).not.toHaveBeenCalled()
@@ -250,7 +250,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('leaves Enter and Space to a focused Progress bar button, so one press does not also move the row', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => flatProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }) })
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }) })
     for (const container of ['progress-bar']) {
       const holder = document.createElement('div')
       holder.dataset.testid = container
@@ -285,7 +285,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while typing in a form field, except those marked to', () => {
-    const { deps, wrapper } = mountTable({ activeProject: () => flatProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }), hasSelection: () => true, onPickColorKey: vi.fn() })
+    const { deps, wrapper } = mountTable({ activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }), hasSelection: () => true, onPickColorKey: vi.fn() })
     const field = document.createElement('input')
     document.body.appendChild(field)
     for (const init of [
@@ -302,7 +302,7 @@ describe('useAppShortcutTable', () => {
   })
 
   it('answers no key while a dialog is open, except Escape', () => {
-    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => flatProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }), onPickColorKey: vi.fn() })
+    const { deps, wrapper } = mountTable({ anyDialogOpen: () => true, activeProject: () => bareProject({ frame: { technique: 'loom', row: 0, column: 0, rows: 4, columns: 4, beads: {} } }), onPickColorKey: vi.fn() })
     for (const init of [{ key: '1' }, { key: '?' }, { key: 'Enter' }, { key: 'r' }, { key: 'p' }, { code: 'Digit1', shiftKey: true }]) press(init)
     for (const fn of [deps.onSelectTool, deps.openShortcutsHelp, deps.onMoveRow, deps.onToggleRulers, deps.onSelectColor]) {
       expect(fn).not.toHaveBeenCalled()

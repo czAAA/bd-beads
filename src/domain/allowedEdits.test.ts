@@ -7,7 +7,7 @@ import type { Project } from './project'
 import { countingBeads } from '../testUtils/countingBeads'
 import { paintAt } from '../testUtils/layers'
 import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
-import { withFields } from '../testUtils/flatFields'
+import { withLayers } from '../testUtils/layerFields'
 
 const open = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
 const R = '#e63746'
@@ -22,7 +22,7 @@ const step = (project: Project, row: number, column: number, color: string | nul
 
 describe('what a drawing edit may leave', () => {
   it('does nothing with no Frame', () => {
-    const painted = withFields(open, { beads: withColors(beadsOfLayer(open, 'canvas'), [{ row: 1, column: 1, color: '#ff0000' }]) })
+    const painted = withLayers(open, { beads: withColors(beadsOfLayer(open, 'canvas'), [{ row: 1, column: 1, color: '#ff0000' }]) })
     expect(beadsOfLayer(keepAllowedEdits(open, painted), 'canvas')).toEqual(beadsOfLayer(painted, 'canvas'))
   })
 })
@@ -35,7 +35,7 @@ describe('the work a stroke step does', () => {
     const others3x3 = Array.from({ length: others }, (_, i) => block(0, 400 + i * 10, 3, 3)).flat()
     const counting = countingBeads(withColors({}, [...block(0, 0, 300, 300), ...others3x3]))
     const pieceNames = [{ name: 'Square', row: 0, column: 0 }, ...Array.from({ length: others }, (_, i) => ({ name: `Dot ${i}`, row: 0, column: 400 + i * 10 }))]
-    return { project: withFields(open, { beads: counting.beads, pieceNames }), ...counting }
+    return { project: withLayers(open, { beads: counting.beads, pieceNames }), ...counting }
   }
 
   it('next to a named 300 × 300 Piece reads only the rows it changed, and keeps the name where it is', () => {
@@ -70,7 +70,7 @@ describe('the work a stroke step does', () => {
 
   it('still refuses the bead that would join two named Pieces through an unnamed one, step by step', () => {
     const beads = withColors({}, [...block(0, 0, 3, 3), ...block(0, 5, 3, 3), ...block(0, 10, 3, 3)])
-    let project: Project = withFields(open, { beads, pieceNames: [{ name: 'Left', row: 0, column: 0 }, { name: 'Right', row: 0, column: 10 }] })
+    let project: Project = withLayers(open, { beads, pieceNames: [{ name: 'Left', row: 0, column: 0 }, { name: 'Right', row: 0, column: 10 }] })
 
     for (const column of [3, 4, 8, 9]) project = step(project, 1, column)
 
@@ -86,7 +86,7 @@ describe('the work a stroke step does', () => {
     const frame = frameOf(created)!
     const inFrame = countingBeads(withColors({}, block(0, 0, 300, 300)))
     const onCanvas = countingBeads(withColors({}, block(frame.row, frame.column + 300 + MARGIN + 10, 100, 100)))
-    const project: Project = withFields(created, { beads: onCanvas.beads, frame: { ...frame, beads: inFrame.beads } })
+    const project: Project = withLayers(created, { beads: onCanvas.beads, frame: { ...frame, beads: inFrame.beads } })
     return { project, frame, inFrame: inFrame.reads, onCanvas: onCanvas.reads }
   }
 
