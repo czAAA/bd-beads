@@ -7,6 +7,7 @@ import { createProject } from './domain/createProject'
 import type { Technique } from './domain/weave'
 import { loadProjects, saveProjects } from './services/libraryStore'
 import { armSelectionBar, pickColor, pickTool } from './testUtils/pill'
+import { frameOf } from './domain/layerRecord'
 
 // "Remove selected row/column" (ticket 123): a Select-tool drag across the Frame selects a whole row/column, removable
 // in one undo step. Ruler numbers are display-only (ticket 447): a press on one selects nothing.
@@ -89,7 +90,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
     await armSelectionBar()
     await removeLineButton(wrapper).trigger('click')
 
-    expect(stored().frame!.rows).toBe(3)
+    expect(frameOf(stored())!.rows).toBe(3)
     expect(beadColors(wrapper)).toEqual([
       [null, RED, null],
       [null, null, null],
@@ -98,7 +99,7 @@ describe('"Remove selected row/column" Tool (ticket 123)', () => {
 
     await undo(wrapper)
 
-    expect(stored().frame!.rows).toBe(4)
+    expect(frameOf(stored())!.rows).toBe(4)
     expect(beadColors(wrapper)[3]![1]).toBe(BLUE)
   })
 })

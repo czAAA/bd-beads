@@ -1,18 +1,17 @@
-import type { Rect, FrameSheet } from '../domain/canvas'
+import type { Rect } from '../domain/canvas'
 import { frameShapeOf } from '../domain/frameShape'
 import { laidRect } from '../domain/frameOrientation'
-import { describeWeave, withCell, type Technique, type TechniqueSettings, type Weave } from '../domain/weave'
+import { describeWeave, type Weave } from '../domain/weave'
 import type { GridPosition } from '../domain/grid'
-import { canvasWeave } from '../domain/layerWeave'
-import type { NamedPiece, PieceName } from '../domain/pieceNames'
-import type { BeadMap } from '../domain/canvas'
+import { canvasWeave, frameScale, frameWeave } from '../domain/layerWeave'
+import type { NamedPiece } from '../domain/pieceNames'
 import { hasGuides, type Selection } from '../domain/selection'
 import type { MarginForm } from './marginForm'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { ruledPieces, type RuledPieces } from './ruledPieces'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
-import { heldWeave } from '../domain/layerRecord'
+import { frameOf, type Layered } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
 // (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -62,16 +61,17 @@ export interface RulerLabel {
 }
 
 /** What decides which boxes carry rulers. */
-export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 'shape' | 'settings' | 'quarterTurns'>; beads: BeadMap; technique: Technique; techniqueSettings?: TechniqueSettings; pieceNames?: PieceName[] }
+export type RuledProject = Layered
 
 // The boxes that carry rulers: the Frame alone once set, as it lies (ticket 0667), else every Piece area of more than 4
 // beads (the caller picks those near the viewport), with the Rulers on only, as a Piece's line goes with its numbers.
 // A Custom frame has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale, pieces: RuledPieces): RuledBox[] {
-  const frame = project.frame
+  const frame = frameOf(project)
   if (frame) {
     if (frameShapeOf(frame)) return []
-    return [{ ...laidRect({ ...frame, cell: canvasWeave(project).cell }), kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
+    const { row, column, rows, columns } = laidRect({ ...frame, cell: frameWeave(project).cell })
+    return [{ row, column, rows, columns, kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
   }
   return (pieces.areas ?? [])
     .filter(hasGuides)
@@ -164,6 +164,8 @@ export interface RulerLayout {
   named: NamedPiece[]
   /** The coarsest Ruler step among the boxes: beads between numbers, 1 with none. */
   step: number
+  /** Whether the current pass is marked: the margin sheet is there, not in the bare form (tickets 0682, 0685). */
+  passMark: boolean
   /** The numbers to draw: none while `numbers` is off. */
   labels: RulerLabel[]
   // The dots to draw: the beads without a number, all of them or only every 5th below DOT_EVERY_BEAD_FROM_PX of pitch;
@@ -181,7 +183,7 @@ interface BoxLayout {
 // Numbers and bead marks of one ruled box touching the viewport. Each number is pushed off the line by half the widest
 // number's size so it stands RULER_GAP_PX clear on one line at any rotation; numbers stay upright, only column numbers
 // from 100 up turn. The Ruler step is worked out once per axis.
-function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
+function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: number }; offset: GridPosition; layer: ViewLayer; size?: number }, surface: SurfaceView, viewport: { width: number; height: number }, scale: RulerScale): BoxLayout {
   const { fontPx, gap } = scale
   // The box counted from the layer's first position, and where that sits in grid px (ticket 492).
   const start = { row: box.row - place.offset.row, column: box.column - place.offset.column }
@@ -217,9 +219,11 @@ function layBox(box: RuledBox, weave: Weave, place: { origin: { x: number; y: nu
   const columnPitch = Math.hypot(columnStepOnScreen.x, columnStepOnScreen.y)
   const rowPitch = Math.hypot(rowStepOnScreen.x, rowStepOnScreen.y)
 
-  // A step outward from a side, in grid space and then once turned.
+  // A step outward from a side, from the layer's own px (`size` grid px each, its Bead's, ticket 0665) and then once
+  // turned.
+  const size = place.size ?? 1
   const outward = (gridX: number, gridY: number, normal: [number, number]) => {
-    const { x, y } = surface.gridToPoint(place.origin.x + gridX, place.origin.y + gridY)
+    const { x, y } = surface.gridToPoint(place.origin.x + gridX * size, place.origin.y + gridY * size)
     const { x: nx, y: ny } = surface.gridDirection(normal[0], normal[1])
     return { x, y, nx, ny }
   }
@@ -307,8 +311,8 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
   })
   const laid = boxes.map((box) => ({
     kind: box.kind,
-    ...(box.kind === 'frame' && project.frame
-      ? layBox(box, withCell(heldWeave(project, 'frame')!, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
+    ...(box.kind === 'frame' && frameOf(project)
+      ? layBox(box, frameWeave(project), { origin: frameOriginPx(canvasWeave(project), frameOf(project)!), offset: frameOf(project)!, layer: 'frame', size: frameScale(project) }, surface, viewport, scale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale)),
   }))
   const numbered = laid.filter((box) => box.kind !== 'frame' || sheet === 'full')
@@ -321,6 +325,7 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     boxes,
     named: pieces.named,
     step: Math.max(1, ...laid.map((box) => box.step)),
+    passMark: sheet !== 'bare',
     labels: numbers ? everyLabel : [],
     dots: numbers ? everyBead.filter((dot) => !dot.numbered && (dot.fifth || dot.pitch >= DOT_EVERY_BEAD_FROM_PX)) : [],
   }

@@ -2,12 +2,14 @@
 import { describe, expect, it } from 'vitest'
 import { createProject } from './createProject'
 import { deleteAll } from './drawing'
-import { moveToRow, toggleRowDirection } from './rowProgress'
+import { moveToRow, rowProgressOf, toggleRowDirection } from './rowProgress'
 import { BEAD_CATALOG } from './beads'
 import type { Technique } from './weave'
 import { paintAt } from '../testUtils/layers'
 import { turnedClockwise } from '../testUtils/rotated'
 import { frameGrid } from '../testUtils/frameGrid'
+import { canvasOf, frameOf, orientationOf } from './layerRecord'
+import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -75,7 +77,7 @@ describe('deleteAll', () => {
   it('puts both direction pointers back at the first row, Row progress staying on with the Frame', () => {
     const cleared = deleteAll(paintedAndWoven())
 
-    expect(cleared.rowProgress).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
+    expect(rowProgressOf(cleared)).toEqual({ direction: 'rows', currentRow: 0, currentColumn: 0 })
   })
 
   it('keeps name, size, Technique, Bead and rotation exactly as they were', () => {
@@ -83,12 +85,12 @@ describe('deleteAll', () => {
 
     const cleared = deleteAll(before)
 
-    expect(cleared.name).toBe(before.name)
-    expect(cleared.technique).toBe(before.technique)
-    expect(cleared.beadId).toBe(before.beadId)
-    expect(cleared.frame!.columns).toBe(before.frame!.columns)
-    expect(cleared.frame!.rows).toBe(before.frame!.rows)
-    expect(cleared.rotation).toBe(before.rotation)
+    expect(canvasOf(cleared).name).toBe(canvasOf(before).name)
+    expect(canvasOf(cleared).technique).toBe(canvasOf(before).technique)
+    expect(canvasOf(cleared).beadId).toBe(canvasOf(before).beadId)
+    expect(frameOf(cleared)!.columns).toBe(frameOf(before)!.columns)
+    expect(frameOf(cleared)!.rows).toBe(frameOf(before)!.rows)
+    expect(orientationOf(cleared)).toBe(orientationOf(before))
   })
 
   it('ignores the Row progress lock: clears a finished row along with the rest', () => {
@@ -118,8 +120,8 @@ describe('deleteAll', () => {
 
   it('drops the Frame\'s Folded beads too, even when they are all it holds (ticket 0638)', () => {
     const fresh = createProject({ technique: 'loom', beadId: cubeBead.id, size: { width: 4, height: 4, unit: 'beads' } })
-    const folded = { ...fresh, frame: { ...fresh.frame!, folded: { 0: { 6: '#e63746' } } } }
+    const folded = withLayers(fresh, { frame: { ...frameOf(fresh)!, folded: { 0: { 6: '#e63746' } } } })
 
-    expect(deleteAll(folded).frame).toEqual(fresh.frame)
+    expect(frameSheetOf(deleteAll(folded))).toEqual(frameSheetOf(fresh))
   })
 })

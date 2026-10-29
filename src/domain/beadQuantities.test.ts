@@ -8,6 +8,8 @@ import { computeColorQuantities, estimatedGrams, formatGrams } from './beadQuant
 import { createProject } from './createProject'
 import type { Project } from './project'
 import { paintAt } from '../testUtils/layers'
+import { frameOf } from './layerRecord'
+import { withLayers } from '../testUtils/layerFields'
 
 const palette = createPalette(defaultPaletteIds())
 
@@ -54,7 +56,7 @@ describe('computeColorQuantities', () => {
 
   it('leaves the Frame\'s Folded beads out, as they are not woven (ticket 0638)', () => {
     const project = painted([[0, 0, RED]])
-    const folded = { ...project, frame: { ...project.frame!, folded: { 0: { [-1]: BLUE } } } }
+    const folded = withLayers(project, { frame: { ...frameOf(project)!, folded: { 0: { [-1]: BLUE } } } })
 
     expect(computeColorQuantities(folded, palette)).toEqual([{ colorId: 'red', hex: RED, count: 1 }])
   })

@@ -11,6 +11,7 @@ import { A4_PORTRAIT, displayedGrid, mm, PRINT_MARGIN, type PageSize, type Print
 import type { PrintText } from './printText'
 import { displayedExtentPx } from './surfaceView'
 import { fillBlanks } from '../domain/fillBlanks'
+import { quarterTurnOf } from '../domain/layerRecord'
 
 // The Cover page (ticket 0583; printed-output.md, PrintPage1 and PngExport cards): the one A4 portrait page that opens the
 // PDF and is the PNG, and the list pages Beads needed continues on. Drawn here once for both formats.
@@ -112,7 +113,7 @@ export function drawCoverPage(project: Project, words: PrintText, layout: CoverL
 
   // The whole Project on its board, rulers with a number every 5 (10 when the beads are too small for that).
   const board = { ...layout.board, ...layout.extent }
-  const whole = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, layout.zoom, project.rotation, frameWeave(project).cell)
+  const whole = displayedExtentPx(frameWeave(project).technique, projectDimensions(project).columns, projectDimensions(project).rows, layout.zoom, quarterTurnOf(project), frameWeave(project).cell)
   drawBoard(context, project, { x: 0, y: 0, width: whole.width, height: whole.height }, layout.zoom, board, shownLetters(project), true)
   const grid = displayedGrid(project)
   const every = grid.stepAcross * layout.zoom * 5 >= MIN_FIVE_STEP ? 5 : 10

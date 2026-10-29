@@ -8,7 +8,7 @@ export type PhysicalUnit = 'mm' | 'cm'
 export type SizeUnit = 'beads' | PhysicalUnit
 
 // A view-only quarter-turn (ticket 171, extending ticket 28): clockwise degrees. Purely cosmetic, like
-// Project.rotation: the grid never turns, only its on-screen (and printed/exported) presentation.
+// The Canvas's orientation (ADR 0079): the grid never turns, only its on-screen (and printed/exported) presentation.
 export type Rotation = 0 | 90 | 180 | 270
 
 // Whether this rotation swaps which grid axis runs across the screen: true for a quarter turn either way (90°/270°),
@@ -60,11 +60,6 @@ export interface GridPosition {
 // preview multi-color for a pasted block (ticket 31); without it the cell takes the preview's color.
 export interface PreviewCell extends GridPosition {
   color?: string
-}
-
-/** A stable string key for a grid position, for deduping/indexing positions in a Set or Map. */
-export function positionKey(position: GridPosition): string {
-  return `${position.row},${position.column}`
 }
 
 /** The Zoom floor (ADR 0033): the same on every screen.

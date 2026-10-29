@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, useId } from 'vue'
+import { coarsePointer } from '../../../composables/ui/touchKeyboard'
 
 // A single-line input (ticket 149): a `unit` labels and cuts the top border (ticket 224) and is read once, as the
 // description. Attributes go to the <input>. `compact` is the 2rem Frame panel field (ticket 517), `selectOnFocus` selects
@@ -18,8 +19,7 @@ const tapped = ref(false)
  * field, so the virtual keyboard stays down (ticket 515), unless the person `asked` for it by tapping something that opens
  * this field (ticket 518); `preventScroll` keeps a clipped ancestor from scrolling. */
 function focus(options: { select?: boolean; asked?: boolean } = {}) {
-  const touch = typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches
-  if (touch && !tapped.value && !options.asked) return
+  if (coarsePointer() && !tapped.value && !options.asked) return
   input.value?.focus({ preventScroll: true })
   if (options.select) input.value?.select()
 }

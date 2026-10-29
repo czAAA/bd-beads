@@ -5,6 +5,7 @@ import PanelItem from '../shell/PanelItem.vue'
 import { fitToDrawing } from '../../domain/frame'
 import type { Project } from '../../domain/project'
 import { useI18n } from '../../i18n/useI18n'
+import { frameOf } from '../../domain/layerRecord'
 
 // The Export panel (ticket 0652; ExportPanel card): opened by the strip's Export button. With a Frame, the Frame panel's
 // export rows (ExportSection); with none, the way to set one: Select a frame and Fit a frame to the drawing.
@@ -31,7 +32,7 @@ const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
     <div class="export-panel__title">
       <span class="export-panel__label">{{ t.panels.project.exportHeading }}:</span>
     </div>
-    <ExportSection v-if="project.frame" :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
+    <ExportSection v-if="frameOf(project)" :project="project" :exporting="exporting" @export-png="emit('export-png')" @export-pdf="emit('export-pdf')" />
     <template v-else>
       <p class="export-panel__line" data-testid="export-needs-frame">{{ t.frame.exportNeedsFrame }}</p>
       <PanelItem icon="select" data-testid="export-select-frame" @select="emit('select-frame')">{{ t.frame.selectAFrame }}</PanelItem>

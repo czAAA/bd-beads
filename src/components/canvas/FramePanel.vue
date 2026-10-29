@@ -3,6 +3,8 @@ import { computed, inject, ref } from 'vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
 import EditableLine from '../project/EditableLine.vue'
 import ExportSection from './ExportSection.vue'
+import LayerSettings from '../project/LayerSettings.vue'
+import { layerSettingsOf, layerSummary } from '../project/layerSettingsOf'
 import MarginSection from './MarginSection.vue'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
@@ -14,24 +16,26 @@ import AppTooltip from '../ui/AppTooltip.vue'
 import IconButton from '../ui/IconButton.vue'
 import InfoButton from '../ui/InfoButton.vue'
 import TextField from '../ui/form/TextField.vue'
-import AppStepper from '../ui/form/AppStepper.vue'
-import SegmentedControl from '../ui/form/SegmentedControl.vue'
 import { controlAction, controlDeps } from '../../composables/shell/controlRegistry'
 import { useHoldRepeat } from '../../composables/ui/useHoldRepeat'
 import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '../../domain/frame'
 import { seenSize } from '../../domain/frameOrientation'
-import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
+import { frameAllows, settingValuesOf, type FrameSettings } from '../../domain/frameShape'
+import type { Layer } from '../../domain/grid'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf, lettersOn } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
-import type { Project } from '../../domain/project'
+import type { Background, Project } from '../../domain/project'
+import type { BeadShape, Technique } from '../../domain/weave'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
+import { frameWeave } from '../../domain/layerWeave'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
-// The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
-// name, size, Beads needed and the margin (ticket 0656); with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
-// (AppPanels, PanelHost), opened from the strip's Frame button only; a press outside or Escape closes it.
+// The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export, the name, size, its
+// Layer settings (ticket 0670), Beads needed and the margin; with no Frame, Frame from starter, Select a frame and Fit.
+// A panel like Menu and Project (AppPanels, PanelHost), opened from the strip's Frame button; outside or Escape closes.
 const props = defineProps<{
   project: Project
   /** The Project as summaries see it, as it was before the stroke going on (useSettledProject), for Beads needed. */
@@ -52,7 +56,14 @@ const emit = defineEmits<{
   'export-pdf': []
   'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
+  /** A Custom frame's shape settings (tickets 0592, 0640), from its Layer settings. */
   'set-settings': [change: FrameSettings]
+  /** The Frame's Layer settings (ticket 0670), each naming its layer as the Project panel's do. */
+  'set-technique': [layer: Layer, technique: Technique]
+  'set-weave-setting': [layer: Layer, id: string, value: number]
+  'set-bead-shape': [layer: Layer, shape: BeadShape]
+  'set-background': [layer: Layer, background: Background]
+  'replace-bead': [layer: Layer, beadId: string]
 }>()
 
 const { t, locale } = useI18n()
@@ -61,19 +72,19 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
-const frame = computed(() => props.project.frame)
+const frame = computed(() => frameOf(props.project))
+const backgrounds = useCanvasBackground(() => props.project)
+/** The Frame's Layer settings (ticket 0670) and its folded summary: its Technique and Bead. */
+const frameSettings = computed(() => (frame.value ? layerSettingsOf(props.project, 'frame') : undefined))
+const settingsSummary = computed(() => (frameSettings.value ? layerSummary(t.value, frameSettings.value) : ''))
 /** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
 const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
 /** Whether the size fields are off, and why: finished rows, or a turned Frame. */
 const sizeHeld = computed(() => locked.value || turned.value)
 
-/** A Custom frame's settings in place of Width and Height (tickets 0592, 0593, 0597), each its value, its range now and
- * its words: Rounds, Part size or Rows, or a Fringe earring's Top width, Top rows and Fringe length; none for a
- * Frame without a Frame shape. */
-const settings = computed(() => (frame.value ? settingValuesOf(frame.value).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
-/** A Fringe earring's Fringe style and its options, the setup's names (ticket 0597); none for any other Frame. */
-const fringeStyle = computed(() => frame.value && fringeStyleOf(frame.value))
-const fringeOptions = computed(() => FRINGE_STYLES.map((value) => ({ value, label: t.value.starters.picks.fringeStyle.options[value] })))
+/** A Custom frame's settings (tickets 0592, 0593, 0597), set in its Layer settings (ticket 0670): the first one is the
+ * size section's summary, which then holds the Estimated size alone; none for a Frame without a Frame shape. */
+const sizeSettings = computed(() => (frame.value ? settingValuesOf(frame.value).map((setting) => ({ ...setting, words: t.value.frame.sizeSettings[setting.name] })) : []))
 /** Whether the Frame can be turned a quarter: it allows it (a Custom frame too, ticket 0594). */
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 
@@ -83,7 +94,7 @@ const lastEdge = ref<FrameEdge>()
 const cells = FRAME_EDGES.map((edge) => {
   const hold = useHoldRepeat((direction) => {
     const current = frame.value
-    if (!current || sizeHeld.value || frameWithEdgeStep(props.project, current, edge, direction) === current) return false
+    if (!current || sizeHeld.value || frameWithEdgeStep(frameWeave(props.project), current, edge, direction) === current) return false
     lastEdge.value = edge
     emit('step', edge, direction)
     return true
@@ -133,7 +144,7 @@ const estimate = computed(() => {
   return bead && frame.value ? `≈ ${formatSizeMm(estimatedSizeMm(frame.value, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value)}` : ''
 })
 const sizeSummary = computed(() =>
-  [settings.value[0] ? plural(locale.value, settings.value[0].value, settings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
+  [sizeSettings.value[0] ? plural(locale.value, sizeSettings.value[0].value, sizeSettings.value[0].words.summary) : `${counted.value.columns} × ${counted.value.rows}`, estimate.value].filter(Boolean).join(' · '),
 )
 /** Fit a frame to the drawing needs something drawn. */
 const nothingToFit = computed(() => fitToDrawing(props.project) === undefined)
@@ -189,7 +200,7 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
               {{ t.frame.lettersLabel }}
               <InfoButton :label="t.frame.lettersInfoLabel" :body="t.frame.lettersLine" data-testid="frame-letters-info" />
             </span>
-            <AppSwitch :model-value="project.letters === true" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
+            <AppSwitch :model-value="lettersOn(project)" :label="t.frame.lettersLabel" data-testid="frame-letters" @update:model-value="emit('set-letters', $event)" />
           </div>
         </template>
       </ExportSection>
@@ -211,39 +222,8 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </div>
 
       <PanelSection id="frame:size" :label="t.frame.sizeHeading" :summary="sizeSummary">
-        <!-- A Custom frame is sized by its settings (tickets 0592, 0593, 0597): growing adds empty rounds, rows or
-             beads outside, shrinking folds what it leaves out (ticket 0640). -->
-        <div v-if="settings.length" class="frame-panel__body">
-          <div v-for="setting in settings" :key="setting.name" class="frame-panel__setting" :data-testid="`frame-setting-${setting.name}`">
-            <span class="frame-panel__setting-label">{{ setting.words.label }}</span>
-            <AppStepper
-              :model-value="setting.value"
-              :min="setting.min"
-              :max="setting.max"
-              :decrease-label="setting.words.less"
-              :increase-label="setting.words.more"
-              :value-label="setting.words.label"
-              :disabled="locked"
-              tooltip
-              :disabled-body="t.tooltips.frameSizeLocked"
-              :decrease-testid="`frame-setting-${setting.name}-less`"
-              :increase-testid="`frame-setting-${setting.name}-more`"
-              :value-testid="`frame-setting-${setting.name}-value`"
-              @update:model-value="emit('set-settings', { [setting.name]: $event })"
-            />
-          </div>
-          <div v-if="fringeStyle" class="frame-panel__style">
-            <span id="frame-fringe-style-label" class="frame-panel__setting-label">{{ t.frame.fringeStyle.label }}</span>
-            <SegmentedControl
-              :model-value="fringeStyle"
-              :options="fringeOptions"
-              labelledby="frame-fringe-style-label"
-              :disabled="locked"
-              data-testid="frame-fringe-style"
-              @update:model-value="emit('set-settings', { fringeStyle: $event as FringeStyle })"
-            />
-          </div>
-          <p v-if="locked" class="frame-panel__line" data-testid="frame-size-locked">{{ t.frame.sizeLockedLine }}</p>
+        <!-- A Custom frame is sized by its settings, in its Layer settings below (ticket 0670). -->
+        <div v-if="sizeSettings.length" class="frame-panel__body">
           <div v-if="estimate" class="frame-panel__estimate" data-testid="frame-estimate">
             <AppIcon name="ruler" :size="16" />
             <span class="frame-panel__estimate-label">{{ t.size.estimateLabel }}</span>
@@ -351,8 +331,21 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
       </PanelSection>
     </template>
 
+    <PanelSection v-if="frameSettings" id="frame:settings" :label="t.layerSettings.frameHeading" :summary="settingsSummary">
+      <LayerSettings
+        v-bind="frameSettings"
+        :background="backgrounds.shownOf('frame').background"
+        testid="frame"
+        @set-technique="emit('set-technique', 'frame', $event)"
+        @set-setting="(id, value) => emit('set-weave-setting', 'frame', id, value)"
+        @set-shape-settings="emit('set-settings', $event)"
+        @pick-bead="emit('replace-bead', 'frame', $event)"
+        @set-bead-shape="emit('set-bead-shape', 'frame', $event)"
+        @set-background="emit('set-background', 'frame', $event)"
+      />
+    </PanelSection>
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />
-    <MarginSection v-if="frame" />
+    <MarginSection v-if="frame" :project="project" />
   </div>
 </template>
 
@@ -394,24 +387,6 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
 .frame-panel__none {
   display: flex;
   flex-direction: column;
-}
-
-.frame-panel__setting {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-  min-height: var(--panel-item-height);
-}
-
-.frame-panel__setting-label {
-  font: var(--type-control);
-}
-
-.frame-panel__style {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
 }
 
 .frame-panel__letters {

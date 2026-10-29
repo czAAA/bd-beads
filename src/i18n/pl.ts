@@ -348,6 +348,7 @@ export const pl: Translations = {
     hexLabel: 'Kolor szesnastkowy',
     hexInvalid: 'Wpisz kolor w postaci #1a2b3c.',
     previewLabel: 'Nowy kolor',
+    addToPalette: 'Dodaj {hex} do palety',
     pickFromCanvasLabel: 'Pobierz kolor z płótna',
     removed: 'Kolor usunięty z palety.',
     removeSwatch: 'Usuń {hex} z palety',
@@ -609,6 +610,7 @@ export const pl: Translations = {
     lettersLabel: 'Litery',
     lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
     lettersInfoLabel: 'Do czego służą Litery',
+    background: { label: 'Tło ramki' },
     margin: {
       heading: 'Margines',
       colorLabel: 'Kolor marginesu',
@@ -864,6 +866,8 @@ export const pl: Translations = {
     confirmTitle: 'Zamienić koralik?',
     confirmMessage:
       'Z koralikiem {bead} ten projekt będzie miał około {new} zamiast {old}. Twój schemat i liczba koralików pozostają dokładnie takie same. Możesz to cofnąć.',
+    canvasMessage:
+      'Z koralikiem {bead} płótno będzie rysowane w jego rozmiarze. Ramka zachowuje własny koralik, więc jej rozmiar i liczba koralików pozostają dokładnie takie same. Możesz to cofnąć.',
     confirmButton: 'Zamień koralik',
     outdatedPostfix: '(jak zapisano)',
     cancelButton: 'Anuluj',
@@ -941,5 +945,9 @@ export const pl: Translations = {
     remapColor: 'Wybierz kolor koralików, którym stanie się ten kolor obrazu.',
     emptyColor: 'Pomiń ten kolor: jego koraliki zostaną puste.',
     list: (names) => `${names.join(', ')}.`,
+  },
+  layerSettings: {
+    frameHeading: 'Ustawienia',
+    background: 'Tło',
   },
 }

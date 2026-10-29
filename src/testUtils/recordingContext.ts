@@ -27,6 +27,7 @@ export function recordingContext() {
     arc: record('arc'),
     fillText: record('fillText'),
     translate: record('translate'),
+    scale: record('scale'),
     rotate: record('rotate'),
     stroke: record('stroke'),
     setLineDash: record('setLineDash'),
@@ -38,6 +39,9 @@ export function recordingContext() {
     lineJoin: 'miter',
     roundRect: record('roundRect'),
     drawImage: record('drawImage'),
+    // A draft image's pixels (ticket 0676): made blank, and put back with the call written down.
+    createImageData: (width: number, height: number) => ({ width, height, data: new Uint8ClampedArray(width * height * 4) }),
+    putImageData: record('putImageData'),
     createPattern: (...args: unknown[]) => {
       const pattern = { setTransform: () => {} }
       record('createPattern')(...args)

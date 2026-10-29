@@ -5,6 +5,7 @@ import { hoverBead, leaveSurface, pressBead, previewedBeads, selectedBeadCount }
 import { loadProjects } from './services/libraryStore'
 import { mountWithProject } from './testUtils/seedProject'
 import { frameGrid } from './testUtils/frameGrid'
+import { rowProgressOf } from './domain/rowProgress'
 
 // The App's wiring for keys and the canvas pointer, one test per key → flow (docs/testing.md). Guards and variants are
 // in useAppShortcutTable, useSpaceDragPan, useCanvasPointer, usePaintStroke and ToolPill; Ctrl+Z is driven by App.frame,
@@ -121,10 +122,10 @@ describe('App keyboard shortcuts', () => {
     await mountApp(15, 30)
 
     await pressKey({ key: 'Enter' })
-    expect(loadProjects()[0]!.rowProgress.currentRow).toBe(1)
+    expect(rowProgressOf(loadProjects()[0]).currentRow).toBe(1)
 
     await pressKey({ key: 'd' })
-    expect(loadProjects()[0]!.rowProgress.direction).toBe('columns')
+    expect(rowProgressOf(loadProjects()[0]).direction).toBe('columns')
   })
 
   it('Space held stops painting and shows the grab cursor', async () => {

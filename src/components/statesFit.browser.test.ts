@@ -22,6 +22,7 @@ import { flatColorsPicture, pictureSet } from '../testUtils/convertPicture'
 import { createPalette, defaultPaletteIds } from '../domain/palette'
 import { starterById } from '../domain/starters'
 import type { ColorCatalog } from '../domain/colorCatalog'
+import { withLayers } from '../testUtils/layerFields'
 
 // The states of the app a person reaches by acting, not by loading: the colour popover, toasts and the save-failed
 // notice, the notes, panels expanded, the Convert image wizard, the empty library (ticket 552).
@@ -102,7 +103,7 @@ function wizardProps(withPicture: boolean) {
 
 const press = (root: HTMLElement, testid: string) => root.querySelector<HTMLElement>(`[data-testid="${testid}"]`)?.click()
 
-const framed = { ...empty, frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } }
+const framed = withLayers(empty, { frame: { row: 2, column: 3, rows: 4, columns: 5, technique: 'loom' as const, beads: {} } })
 
 /** The Margin color popover, hung from a button at the screen's right edge as the sheet's tools are. */
 const MarginColorPopoverHost = defineComponent({
@@ -113,7 +114,7 @@ const MarginColorPopoverHost = defineComponent({
     return () =>
       h('div', { style: { position: 'fixed', right: '8px', top: '8px' } }, [
         h('button', { ref: button, type: 'button' }, 'Margin'),
-        shown.value ? h(MarginColorPopover, { anchor: button.value }) : null,
+        shown.value ? h(MarginColorPopover, { anchor: button.value, project: framed }) : null,
       ])
   },
 })
@@ -122,12 +123,13 @@ const CASES: FitCase[] = [
   ['ColorPopover', ColorPopoverHost as Component, {}],
   ['ToastRegion', Toasts, {}],
   ['Save failed notice', SaveFailedNotice, {}],
-  ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, { ...empty, id: 'b', name: 'Fox' }, { ...empty, id: 'c', name: 'Owl' }, { ...empty, id: 'd', name: 'Hare' }], activeProjectId: empty.id }],
+  ['ProjectsLibrary', ProjectsLibrary, { projects: [empty, withLayers(empty, { id: 'b', name: 'Fox' }), withLayers(empty, { id: 'c', name: 'Owl' }), withLayers(empty, { id: 'd', name: 'Hare' })], activeProjectId: empty.id }],
   ['EmptyCanvas', EmptyCanvas, {}],
   ['CanvasHint', CanvasHint, {}],
   ['MarginSheet', marginSheetHost(1), {}],
   ['MarginSheet (compact)', marginSheetHost(0.66), {}],
   ['MarginSheet (folded)', marginSheetHost(0.4), {}],
+  ['MarginSheet (bare)', marginSheetHost(0.25), {}],
   ['MarginColorPopover', MarginColorPopoverHost as Component, {}],
   [
     'ContextBar',

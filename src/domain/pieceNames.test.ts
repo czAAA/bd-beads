@@ -11,6 +11,8 @@ import { rotateSelection } from './rotate'
 import { changeFrame } from './changeFrame'
 import { frameGrid } from '../testUtils/frameGrid'
 import { countingBeads } from '../testUtils/countingBeads'
+import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
+import { frameSheetOf, withLayers } from '../testUtils/layerFields'
 
 const R = '#e63746'
 const row = (r: number, from: number, to: number): BeadChange[] =>
@@ -18,12 +20,12 @@ const row = (r: number, from: number, to: number): BeadChange[] =>
 
 function projectWith(...rows: BeadChange[][]): Project {
   const base = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm' })
-  return { ...base, beads: withColors({}, rows.flat()) }
+  return withLayers(base, { beads: withColors({}, rows.flat()) })
 }
 
 /** What a drawing edit that sets `changes` does to the Project, through the rules every drawing edit keeps. */
 const draw = (project: Project, changes: BeadChange[]) =>
-  keepAllowedEdits(project, { ...project, beads: withColors(project.beads, changes) })
+  keepAllowedEdits(project, withLayers(project, { beads: withColors(beadsOfLayer(project, 'canvas'), changes) }))
 
 describe('piece names', () => {
   it('names the Piece that holds a bead, and an empty name removes it', () => {
@@ -33,13 +35,13 @@ describe('piece names', () => {
     expect(pieceNameAt(named, { row: 0, column: 0 })).toBe('Fox')
     expect(pieceNameAt(named, { row: 5, column: 0 })).toBeUndefined()
     expect(namedPieces(named)).toEqual([{ name: 'Fox', row: 0, column: 0, rows: 1, columns: 4, beads: 4 }])
-    expect(withPieceName(named, { row: 0, column: 0 }, '').pieceNames).toBeUndefined()
+    expect(canvasOf(withPieceName(named, { row: 0, column: 0 }, '')).pieceNames).toBeUndefined()
   })
 
   it('cuts a name to 40 characters and does nothing where there is no bead', () => {
     const project = projectWith(row(0, 0, 1))
 
-    expect(withPieceName(project, { row: 0, column: 0 }, 'x'.repeat(60)).pieceNames![0].name).toHaveLength(40)
+    expect(canvasOf(withPieceName(project, { row: 0, column: 0 }, 'x'.repeat(60))).pieceNames![0].name).toHaveLength(40)
     expect(withPieceName(project, { row: 9, column: 9 }, 'Fox')).toBe(project)
   })
 
@@ -66,8 +68,8 @@ describe('piece names', () => {
     const bridged = draw(named, [...row(0, 2, 4), { row: 3, column: 3, color: R }])
 
     expect(namedPieces(bridged).map((piece) => piece.name).sort()).toEqual(['A', 'B'])
-    expect(bridged.beads[0]?.[3]).toBeUndefined()
-    expect(bridged.beads[3]?.[3]).toBe(R)
+    expect(beadsOfLayer(bridged, 'canvas')[0]?.[3]).toBeUndefined()
+    expect(beadsOfLayer(bridged, 'canvas')[3]?.[3]).toBe(R)
   })
 
   it('refuses the join even when the edit also erases an anchor', () => {
@@ -90,13 +92,13 @@ describe('piece names', () => {
     const named = withPieceName(projectWith(row(0, 0, 2)), { row: 0, column: 0 }, 'Fox')
     const erased = draw(named, row(0, 0, 2).map((change) => ({ ...change, color: null })))
 
-    expect(erased.pieceNames).toBeUndefined()
+    expect(canvasOf(erased).pieceNames).toBeUndefined()
   })
 
   it('is dropped by Delete all', () => {
     const named = withPieceName(projectWith(row(0, 0, 2)), { row: 0, column: 0 }, 'Fox')
 
-    expect(deleteAll(named).pieceNames).toBeUndefined()
+    expect(canvasOf(deleteAll(named)).pieceNames).toBeUndefined()
   })
 
   it('is no change when the edit changes nothing', () => {
@@ -125,15 +127,15 @@ describe('piece names', () => {
     const base = projectWith(row(0, 0, 3))
     const named = withPieceName(base, { row: 0, column: 0 }, 'Fox')
     const undone = restoreSnapshot(named, snapshotOf(base))
-    expect(undone.pieceNames).toBeUndefined()
+    expect(canvasOf(undone).pieceNames).toBeUndefined()
 
     const redone = restoreSnapshot(undone, snapshotOf(named))
-    expect(redone.pieceNames).toEqual([{ row: 0, column: 0, name: 'Fox' }])
+    expect(canvasOf(redone).pieceNames).toEqual([{ row: 0, column: 0, name: 'Fox' }])
   })
 
   it('carries nothing when no Piece is named', () => {
     const project = projectWith(row(0, 0, 1))
-    const after = { ...project, beads: {} }
+    const after = withLayers(project, { beads: {} })
 
     expect(carryNames(project, after)).toBe(after)
   })
@@ -145,7 +147,7 @@ describe('piece names', () => {
       const project = fox()
       const result = changeFrame(project, { make: { row: 0, column: 0, rows: 1, columns: 4 } })
 
-      expect(result.kind === 'changed' && result.project.frame).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
+      expect(result.kind === 'changed' && frameSheetOf(result.project)).toEqual({ technique: 'loom', row: 0, column: 0, rows: 1, columns: 4, name: 'Fox', beads: { 0: { 0: R, 1: R, 2: R, 3: R } } })
       expect(result.kind === 'changed' && namedPieces(result.project)).toEqual([])
     })
 
@@ -182,10 +184,10 @@ describe('piece names', () => {
       if (onOwl.kind !== 'changed') throw new Error('expected a change')
       const removed = changeFrame(onOwl.project, { remove: true })
 
-      expect(onOwl.project.frame?.name).toBe('Owl')
-      expect(onOwl.project.pieceNames?.map((entry) => entry.name)).toEqual(['Fox'])
-      expect(removed.kind === 'changed' && removed.project.frame).toBeUndefined()
-      expect(removed.kind === 'changed' && removed.project.pieceNames?.map((entry) => entry.name)).toEqual(['Fox', 'Owl'])
+      expect(frameOf(onOwl.project)?.name).toBe('Owl')
+      expect(canvasOf(onOwl.project).pieceNames?.map((entry) => entry.name)).toEqual(['Fox'])
+      expect(removed.kind === 'changed' && frameOf(removed.project)).toBeUndefined()
+      expect(removed.kind === 'changed' && canvasOf(removed.project).pieceNames?.map((entry) => entry.name)).toEqual(['Fox', 'Owl'])
     })
   })
 })
@@ -193,7 +195,7 @@ describe('piece names', () => {
 describe('which Piece a Selection holds', () => {
   it('floods a big Piece once for a set of beads, however often a Select drag asks (ticket 0674)', () => {
     const counting = countingBeads(withColors({}, Array.from({ length: 300 }, (_, r) => row(r, 0, 299)).flat()))
-    const project = { ...projectWith(), beads: counting.beads }
+    const project = withLayers(projectWith(), { beads: counting.beads })
 
     expect(pieceInSelection(project, { top: 10, left: 10, rows: 2, columns: 2 })).toEqual({ row: 11, column: 11 })
     counting.reset()

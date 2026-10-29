@@ -9,6 +9,7 @@ import { onLayer } from '../../src/domain/layers'
 import { moveToRow } from '../../src/domain/rowProgress'
 import { paintCells } from '../../src/domain/drawing'
 import type { Project } from '../../src/domain/project'
+import { frameOf, withFrameSheet } from '../../src/domain/layerRecord'
 
 // A Custom frame (tickets 0592, 0593): a peyote Triangle, Warped Square, Star, Kaleidocycle and Kite on a loom Canvas, every bead at the angle its panel
 // lies, the Seams as thin lines and the Off-shape round them in the Canvas colour with no position marks. Each round
@@ -16,10 +17,10 @@ import type { Project } from '../../src/domain/project'
 const ROUND_COLORS = ['#e63746', '#f2c94c', '#2f6fed', '#27ae60', '#9b51e0']
 
 function customFramed(shape: FrameShapeId, size: number): Project {
-  const { frame: _frame, ...open } = fixtureProject({ technique: 'loom', blank: true })
+  const open = withFrameSheet(fixtureProject({ technique: 'loom', blank: true }), undefined)
   const placed = changeFrame(open, { custom: { shape, size, centre: { row: 8, column: 10 } } })
   if (placed.kind !== 'changed') throw new Error('expected a Custom frame')
-  const positions = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row }) => row < size - 1)
+  const positions = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row < size - 1)
   return ROUND_COLORS.reduce(
     (project, color, index) => onLayer(project, 'frame', (view) => paintCells(view, positions.filter(({ row }) => row % ROUND_COLORS.length === index), color)),
     placed.project,

@@ -1,10 +1,11 @@
-import { beadLabel, findBead } from '../domain/beads'
 import { inKnownTechniques, normalizeProject, type StoredProject } from '../domain/storedProject'
 import type { Project } from '../domain/project'
 import {
   decodeEarlierProject,
   decodeFlatProject,
+  decodeProject,
   encodeProject,
+  type EncodedFlatProject,
   type EncodedGridProject,
   type EncodedProject,
   type EncodedVersionThreeProject,
@@ -22,14 +23,20 @@ const STORAGE_KEY = 'openbeads:patterns'
 const UNREADABLE_KEY = 'openbeads:patterns:unreadable'
 
 // The stored format saveProjects writes (ADR 0009): v1 a bare array of Projects with full hex cells, v2 an envelope
-// with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame with its own beads. v4 now holds each layer's
-// settings map (ticket 0636) where it held a flat Brick block; its reader reads both, so a build rolled back reads it.
-const STORED_VERSION = 4
+// with compact grids, v3 compact beads by position, v4 (ADR 0066) the Frame with its own beads, its layer settings a map
+// (ticket 0636) or a flat Brick block, v5 (ticket 0664, ADR 0079) the layer list.
+const STORED_VERSION = 5
 
 interface StoredLibrary {
   version: number
   // The key stays `patterns` in storage (ADR 0050).
   patterns: EncodedProject[]
+}
+
+/** The same envelope as version 4 wrote it, before the Project held its layers. */
+interface StoredFlatLibrary {
+  version: number
+  patterns: EncodedFlatProject[]
 }
 
 /** The same envelope as version 3 wrote it, before the Frame had beads of its own (temporary, see versionThree.ts). */
@@ -50,7 +57,8 @@ const READERS: Record<number, (parsed: unknown) => StoredProject[]> = {
   1: (parsed) => (parsed as SavedProject[]).map(liftFlatWeave),
   2: (parsed) => (parsed as StoredGridLibrary).patterns.map(decodeEarlierProject),
   3: (parsed) => (parsed as StoredVersionThreeLibrary).patterns.map(decodeEarlierProject),
-  4: (parsed) => (parsed as StoredLibrary).patterns.map(decodeFlatProject),
+  4: (parsed) => (parsed as StoredFlatLibrary).patterns.map(decodeFlatProject),
+  5: (parsed) => (parsed as StoredLibrary).patterns.map(decodeProject),
 }
 
 /** Which stored format a parsed value is in, or undefined when it's neither a version-1 array nor a versioned
@@ -61,15 +69,6 @@ function versionOf(parsed: unknown): number | undefined {
   }
   const version = (parsed as StoredLibrary | null)?.version
   return typeof version === 'number' ? version : undefined
-}
-
-/** Projects saved before the `name` field existed have none; fall back to the bead label. */
-function withName<T extends StoredProject>(project: T): T {
-  if (project.name) {
-    return project
-  }
-  const bead = ('bead' in project ? project.bead : undefined) ?? findBead(project.beadId)
-  return { ...project, name: bead ? beadLabel(bead) : project.beadId }
 }
 
 /** Sets a stored value this build can't read aside, so a later save can't quietly replace it (see UNREADABLE_KEY). */
@@ -116,7 +115,7 @@ export function loadProjects(): Project[] {
     const version = versionOf(parsed)
     const read = version === undefined ? undefined : READERS[version]
     if (read) {
-      return withDevicePalette(inKnownTechniques(read(parsed)).map(withName)).map(normalizeProject)
+      return withDevicePalette(inKnownTechniques(read(parsed))).map(normalizeProject)
     }
   } catch {
     // Unparseable, or not the shape the version it claims implies — the same situation either way: unreadable here.
@@ -126,12 +125,24 @@ export function loadProjects(): Project[] {
   return []
 }
 
-/** Writes the whole library over what was there, compactly (ADR 0009): the in-memory library is the truth (ticket 55).
- * Throws what the browser throws when the write doesn't fit (QuotaExceededError); the caller must surface it.
- * @internal Tests seed a library with it before mounting the App. */
+/** Each Project's stored JSON, kept for that Project object (ticket 0677, as ADR 0080 keeps answers per bead map): a
+ * Project is replaced whole on every change, so a save encodes only those that changed since the last one. */
+const storedJson = new WeakMap<Project, string>()
+
+function storedJsonOf(project: Project): string {
+  let json = storedJson.get(project)
+  if (json === undefined) {
+    json = JSON.stringify(encodeProject(project))
+    storedJson.set(project, json)
+  }
+  return json
+}
+
+/** Writes the whole library over what was there, compactly (ADR 0009), from each Project's kept encoding: the in-memory
+ * library is the truth (ticket 55). Throws what the browser throws when the write doesn't fit (QuotaExceededError); the
+ * caller must surface it. @internal Tests seed a library with it before mounting the App. */
 export function saveProjects(projects: Project[]): void {
-  const stored: StoredLibrary = { version: STORED_VERSION, patterns: projects.map(encodeProject) }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(stored))
+  localStorage.setItem(STORAGE_KEY, `{"version":${STORED_VERSION},"patterns":[${projects.map(storedJsonOf).join(',')}]}`)
 }
 
 // Where the Project library is kept (ADR 0020); useProjectLibrary persists through it, so tests fake it and a backend
@@ -143,5 +154,33 @@ export interface LibraryStore {
   save: (projects: Project[]) => void
 }
 
+/** How long to wait for a quiet moment where the browser has no idle callback (Safari). */
+const IDLE_FALLBACK_MS = 200
+
+function whenIdle(work: () => void): void {
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(work)
+  else setTimeout(work, IDLE_FALLBACK_MS)
+}
+
+/** Keeps the encoding of each Project of a library just opened, one per idle moment (ticket 0677): otherwise the first
+ * save after opening would encode them all. */
+function encodeWhenIdle(projects: readonly Project[]): void {
+  const waiting = [...projects]
+  const next = (): void => {
+    const project = waiting.shift()
+    if (!project) return
+    storedJsonOf(project)
+    whenIdle(next)
+  }
+  whenIdle(next)
+}
+
 /** The library in this browser's localStorage (ADR 0001). */
-export const browserLibraryStore: LibraryStore = { load: loadProjects, save: saveProjects }
+export const browserLibraryStore: LibraryStore = {
+  load: () => {
+    const projects = loadProjects()
+    encodeWhenIdle(projects)
+    return projects
+  },
+  save: saveProjects,
+}

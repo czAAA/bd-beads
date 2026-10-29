@@ -19,10 +19,10 @@ import { controlAction } from '../../composables/shell/controlRegistry'
 import type { FrameAnchor, SelectionAnchor } from '../../composables/tools/selectionBarPlacement'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import type { PillRect } from '../../domain/toolPill'
-import { hasGuides } from '../../domain/selection'
+import { hasGuides, selectionLayer } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { layerOf } from '../../domain/layerRecord'
+import { beadOfLayer, frameOf, layerOf } from '../../domain/layerRecord'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -42,6 +42,7 @@ const {
   bindCanvasScroll,
   zoom,
   scroll,
+  canvasOrientation,
   selectionRefusals,
   activeTool,
   showRulers,
@@ -166,7 +167,7 @@ const shownProject = frameDraftProject
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {
   const project = shownProject.value
-  const frame = project?.frame
+  const frame = frameOf(project)
   if (!project || !frame) return ''
   const bead = layerOf(project, 'frame')?.bead
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
@@ -177,13 +178,13 @@ const frameTooltip = computed(() => {
  * then shrinks to the size instead of hiding. */
 const selectionGuided = computed(() => !!selection.value && hasGuides(selection.value) && showRulers.value !== false)
 
-/** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Project's Bead
- * (ticket 415). */
+/** The Selection's size for the bar's readout: "12×8 ≈ 4.2 × 2.6 cm", the rectangle through the Bead of the layer it
+ * is on (tickets 415, 0665). */
 const selectionSummary = computed(() => {
   const project = activeProject.value
   const current = selection.value
   if (!project || !current) return undefined
-  const bead = layerOf(project, 'canvas').bead
+  const { bead } = beadOfLayer(project, selectionLayer(project, current))
   const estimate = bead ? formatSizeMm(estimatedSizeMm(current, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''
   return fillBlanks(t.value.frame.sizeTooltip, { columns: current.columns, rows: current.rows, estimate })
 })
@@ -197,9 +198,8 @@ const frameAnchor = ref<FrameAnchor>()
 const surfaceRef = ref<InstanceType<typeof ProjectSurface>>()
 const surfacePressing = ref(false)
 
-/** The Canvas color (ticket 252) as the drawing area's fill, and the technique word's own color where the background
- * needs one. */
-const canvasBackground = useCanvasBackground()
+/** The Canvas's Background (tickets 252, 0666) as the drawing area's fill; the device's last pick with no Project open. */
+const canvasBackground = useCanvasBackground(() => activeProject.value)
 
 /** The drawing area, also tracked here for the layer that carries the Selection bar over it. */
 const drawingEl = ref<HTMLElement>()
@@ -272,6 +272,7 @@ const drawingStyle = computed(() => {
               :frame-tooltip="frameTooltip"
               :zoom="zoom"
               :scroll="scroll"
+              :orientation="canvasOrientation"
               :show-rulers="showRulers"
               :stroking="stroking"
               :row-marks="rowHighlight"
@@ -394,7 +395,7 @@ const drawingStyle = computed(() => {
         <!-- The Frame's tools on its margin sheet (ticket 0657, MarginSheet card): Row progress, the Move bar and the
           tools in its top band, the title block in its bottom-right corner, following the Frame. -->
         <MarginSheet
-          v-if="activeProject?.frame && frameAnchor"
+          v-if="frameOf(activeProject) && frameAnchor"
           :project="activeProject"
           :anchor="frameAnchor"
           :editing="settingFrame"

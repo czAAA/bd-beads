@@ -27,4 +27,11 @@ The one background of the drawing area: the rulers and the beads sit on it, and 
 
 **Second use (ticket 0655; MarginSheet card):** the Frame panel's margin section and the margin's Margin color button use the same BackgroundColorPicker with an **Auto** swatch first (drawn split, Canvas color and margin color), then the theme's five Canvas colors and the Custom color tile; the swatch equal to the Canvas color carries a dot. The margin color is remembered on the device, as the Canvas color is.
 
+**Each layer's own (ticket 0666, ADR 0079; wins over the above where they differ):** the background is no longer one device choice but each layer's **Background**, saved with the Project, so a Frame can sit on another color than the Canvas and a Project looks the same on every device. The same list, numbers and Custom color: a layer stores its position (kept across light and dark) or its Custom color.
+- Each layer's is picked in its Layer settings (ticket 0670, LayerSettings card): the Canvas's in Project's canvas section, the Frame's in the Frame panel's settings section (Frame card), the same picker, its radio group named "Frame background", and a new Project's in the New Project form. The 12px chip summary of ticket 0666 is gone: a folded section's summary is the layer's Technique and Bead.
+- On the Canvas the Frame's box is filled in the Frame's background, a Custom frame's Off-shape included, and the Frame's beads, empty beads and position marks take that background's look (its empty bead, and on a Custom color the look it is drawn in). The rulers, the margin sheet and what lies round the Frame keep the Canvas's.
+- A view: changing one is no Undo step, and Row progress never holds it.
+- The device keeps the last one picked, for any layer, as the background a new Project's layers start with; a Project saved before ticket 0666 shows it, and the first pick on such a Project saves what each other layer showed, so a pick never moves another layer. Undo and Redo leave every layer's background as it is. The Custom color tile opens on the layer's own Custom color, else the last one taken on the device.
+- High contrast keeps its one white canvas for every layer, and exports still print on `print-board`.
+
 Hand-written; static rendition of the open picker.

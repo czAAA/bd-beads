@@ -347,6 +347,7 @@ export const en: Translations = {
     hexLabel: 'Hex color',
     hexInvalid: 'Enter a color like #1a2b3c.',
     previewLabel: 'New color',
+    addToPalette: 'Add {hex} to the Palette',
     pickFromCanvasLabel: 'Pick color from Canvas',
     removed: 'Color removed from the Palette.',
     removeSwatch: 'Remove {hex} from the Palette',
@@ -602,6 +603,7 @@ export const en: Translations = {
     lettersLabel: 'Letters',
     lettersLine: "Print each color's letter on its beads, so colors can be told apart on paper and in black and white.",
     lettersInfoLabel: 'What Letters does',
+    background: { label: 'Frame background' },
     margin: {
       heading: 'Margin',
       colorLabel: 'Margin color',
@@ -851,6 +853,8 @@ export const en: Translations = {
     confirmTitle: 'Replace bead?',
     confirmMessage:
       'With {bead}, this Project will be about {new} instead of {old}. Your design and its bead count stay exactly the same. You can undo this.',
+    canvasMessage:
+      'With {bead}, the Canvas is drawn at that bead\'s size. The Frame keeps its own bead, so its size and bead count stay exactly the same. You can undo this.',
     confirmButton: 'Replace bead',
     outdatedPostfix: '(as saved)',
     cancelButton: 'Cancel',
@@ -929,5 +933,8 @@ export const en: Translations = {
     emptyColor: 'Leave this color out, so its beads stay empty.',
     list: (names) => `${names.join(', ')}.`,
   },
-
+  layerSettings: {
+    frameHeading: 'Settings',
+    background: 'Background',
+  },
 }

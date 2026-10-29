@@ -22,4 +22,12 @@ describe('frameFootprint (ADR 0066)', () => {
   it('keeps the Frame\'s columns and corner', () => {
     expect(frameFootprint({ technique: 'loom' }, { ...frame, technique: 'brick' })).toEqual(frame)
   })
+  it("covers the Canvas positions whose middle lies inside a Frame drawn in a smaller Bead (ticket 0665)", () => {
+    // 48 rows by 11 beads at three quarters of the Canvas's width draw 36 by 8.25 Canvas beads.
+    expect(frameFootprint({ technique: 'loom' }, { ...frame, technique: 'loom', scale: 0.75 })).toEqual({ ...frame, rows: 36, columns: 8 })
+  })
+
+  it('covers more Canvas positions under a Frame drawn in a larger Bead', () => {
+    expect(frameFootprint({ technique: 'loom' }, { ...frame, technique: 'loom', scale: 1.5 })).toEqual({ ...frame, rows: 72, columns: 16 })
+  })
 })

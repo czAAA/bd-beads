@@ -1,8 +1,10 @@
 import { inKnownTechniques, normalizeProject, type GridProject, type StoredProject } from './storedProject'
 import type { Project } from './project'
-import { decodeEarlierProject, decodeFlatProject, decodeProject, encodeProject, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
+import { decodeEarlierProject, decodeFlatProject, decodeProject, decodeVersionElevenProject, encodeProject, type EncodedFlatProject, type EncodedLayer, type EncodedProject, type EncodedVersionThreeProject } from './projectEncoding'
 import type { VersionThreeProject } from './versionThree'
+import type { FlatProject } from './flatWeave'
 import { isTechnique } from './weave'
+import { projectNameOf } from './layerRecord'
 
 // The export file format (ADR 0048). With no backend to migrate for us (ADR 0001), a file carries its kind and format
 // version and the reader refuses what it doesn't understand. This is the JSON inside `.openbeads`; the gzip is
@@ -11,13 +13,13 @@ const PROJECT_FILE_KIND = 'openbeads/project'
 const LIBRARY_FILE_KIND = 'openbeads/library'
 /** Version 3 is the first gzipped one (ADR 0009); 4 (ADR 0066) the Frame's own beads, 5 (0525) the Palette, 6 (0528)
  * removed defaults, 7 (534) the Bead's copy, 8 (0538) swatch codes, 9 (0592) a Custom frame, 10 (0638) Folded beads, 11
- * (0636) each layer's settings map, no flat Brick block; a build knowing only the one before refuses, not misreads. */
-const FILE_VERSION = 11
+ * (0636) layer settings maps, 12 (0664) the layer list; a build knowing only the one before refuses, not misreads. */
+const FILE_VERSION = 12
 
 interface ProjectFile {
   kind: typeof PROJECT_FILE_KIND | typeof LIBRARY_FILE_KIND
   version: number
-  projects: EncodedProject[]
+  projects: (EncodedProject | EncodedFlatProject)[]
 }
 
 /** Versions 4 to 10 differ only in fields normalizeProject reads when present; each stores a layer's Brick block flat. */
@@ -28,7 +30,8 @@ const FLAT_WEAVE_VERSIONS = [4, 5, 6, 7, 8, 9, 10]
 // temporary, removed at the public release (ticket 0391).
 const READERS: Record<number, (projects: unknown[]) => StoredProject[]> = {
   3: (projects) => (projects as EncodedVersionThreeProject[]).map(decodeEarlierProject) as (VersionThreeProject | GridProject)[],
-  ...Object.fromEntries(FLAT_WEAVE_VERSIONS.map((version) => [version, (projects: unknown[]) => (projects as EncodedProject[]).map(decodeFlatProject)])),
+  ...Object.fromEntries(FLAT_WEAVE_VERSIONS.map((version) => [version, (projects: unknown[]) => (projects as EncodedFlatProject[]).map(decodeFlatProject)])),
+  11: (projects) => (projects as EncodedFlatProject[]).map(decodeVersionElevenProject),
   [FILE_VERSION]: (projects) => (projects as EncodedProject[]).map(decodeProject),
 }
 
@@ -63,12 +66,12 @@ function fileNameSlug(name: string): string {
 
 /** `my-scarf_pr.openbeads`, or `openbeads_pr.openbeads` when the name leaves nothing to write (ticket 392). */
 export function projectFileName(project: Project): string {
-  return `${fileNameSlug(project.name) || 'openbeads'}_pr.openbeads`
+  return `${fileNameSlug(projectNameOf(project)) || 'openbeads'}_pr.openbeads`
 }
 
 /** The name a picture or document of the Project is saved under (ticket 73, 74), e.g. `openbeads-my-scarf.png`. */
 export function projectExportFileName(project: Project, extension: 'png' | 'pdf'): string {
-  return `openbeads-${fileNameSlug(project.name) || 'project'}.${extension}`
+  return `openbeads-${fileNameSlug(projectNameOf(project)) || 'project'}.${extension}`
 }
 
 /** A further page of the cover PNG (Beads needed running over, ticket 0583), e.g. `openbeads-my-scarf_2.png` for the second. */
@@ -80,9 +83,10 @@ export function libraryFileName(): string {
   return 'openbeads_lib.openbeads'
 }
 
-/** Whether a parsed value has the fields of a Project, in either the beads shape or the older grid shape. */
+/** Whether a parsed value has the fields of a Project saved before its layers, in either the beads shape or the
+ * older grid shape. */
 export function looksLikeProject(value: unknown): value is StoredProject {
-  const project = value as Partial<Project & GridProject> | null
+  const project = value as Partial<FlatProject & GridProject> | null
   const hasBeads = typeof project?.beads === 'object' && project.beads !== null
   const hasGrid = typeof project?.columns === 'number' && typeof project.rows === 'number' && Array.isArray(project.grid)
   return (
@@ -95,16 +99,21 @@ export function looksLikeProject(value: unknown): value is StoredProject {
   )
 }
 
-function looksLikeEncodedProject(value: unknown): value is EncodedProject {
-  const project = value as Partial<EncodedProject> | null
-  return (
-    typeof project === 'object' &&
-    project !== null &&
-    typeof project.encodedBeads === 'object' &&
-    project.encodedBeads !== null &&
-    // The rest of the shape is a Project's; its beads are the encoded ones, so stand a placeholder in for them.
-    looksLikeProject({ ...project, beads: {} })
-  )
+/** Whether a stored layer has what every layer needs (ticket 0664): a Bead id and its encoded beads. Its Technique is
+ * the Canvas's to have (`inKnownTechniques`); a Frame woven in one this build does not know takes the Canvas's. */
+function looksLikeEncodedLayer(value: unknown): boolean {
+  const layer = value as Partial<EncodedLayer> | null
+  return typeof layer === 'object' && layer !== null && typeof layer.beadId === 'string' && typeof layer.encodedBeads === 'object' && layer.encodedBeads !== null
+}
+
+function looksLikeEncodedProject(value: unknown): boolean {
+  const project = value as Partial<EncodedProject & EncodedFlatProject> | null
+  if (typeof project !== 'object' || project === null) return false
+  if (Array.isArray(project.layers)) {
+    return typeof project.id === 'string' && project.layers.length > 0 && project.layers.every(looksLikeEncodedLayer)
+  }
+  // The rest of the shape is a Project's; its beads are the encoded ones, so stand a placeholder in for them.
+  return typeof project.encodedBeads === 'object' && project.encodedBeads !== null && looksLikeProject({ ...project, beads: {} })
 }
 
 /** Reads the Projects out of a file's JSON (one Project or a library) of a version this build knows; throws on foreign

@@ -12,6 +12,7 @@ import { en } from './i18n/en'
 import { createProjectViaForm } from './testUtils/seedProject'
 import { refuseStorageWrites } from './testUtils/storageWrites'
 import { openPanel, openSavedProjects, pickColor } from './testUtils/pill'
+import { canvasOf } from './domain/layerRecord'
 
 beforeEach(() => {
   localStorage.clear()
@@ -46,7 +47,7 @@ const openName = async (wrapper: Wrapper) => {
   await openPanel(wrapper, 'strip-project')
   return wrapper.find('[data-testid="project-name"]').text()
 }
-const libraryNames = () => loadProjects().map((project) => project.name).sort()
+const libraryNames = () => loadProjects().map((project) => canvasOf(project).name).sort()
 const click = (wrapper: Wrapper, testId: string) => wrapper.find(`[data-testid="${testId}"]`).trigger('click')
 
 describe('App import asks before switching (ticket 154)', () => {

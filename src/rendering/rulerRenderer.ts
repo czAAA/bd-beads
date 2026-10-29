@@ -1,13 +1,15 @@
 import { frameContains, type Rect } from '../domain/canvas'
 import { laidFrame } from '../domain/frameOrientation'
-import { currentPass, frameRowOrder, rowProgressOn } from '../domain/rowProgress'
+import { currentPass, frameRowOrder, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
+import { MARGIN_PX } from './marginSizes'
 import type { SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
 import { frameHandles, type Handle, type HandleId } from './frameHandles'
+import { frameOf } from '../domain/layerRecord'
 
 /** The mono stack every number and label on the canvas is set in. */
 const MONO_FONT = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
@@ -26,7 +28,7 @@ export interface RulerDrawInput {
   layout: RulerLayout
   pixelRatio: number
   theme: ProjectTheme
-  /** Whether the current row's number is bold. Defaults to `rowProgressOn(project)` (ticket 434). */
+  /** Whether the current pass is marked, on its number or by a tick. Defaults to `rowProgressOn(project)` (tickets 434, 0685). */
   rowMarks?: boolean
 }
 
@@ -51,18 +53,20 @@ function drawDot(context: DrawingContext, dot: RulerDot, scale: RulerScale, them
   context.fill()
 }
 
-/** One ruler number, in the style its role asks for (Rulers card). */
-function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, project: DrawnProject, theme: ProjectTheme, rowMarks: boolean): void {
-  const { direction } = project.rowProgress
-  const frame = project.frame
-  const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
-  const currentLine = frameRowOrder(project).lineOf(currentPass(project.rowProgress))
-  // A turned Frame's rulers count the cells it covers, not its own rows (ticket 0667): no line of them is the current one.
-  const current = rowMarks && frame && !frame.quarterTurns && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
-
+/** One ruler number, in the style its role asks for (Rulers card); the current pass's on its `marker` pill (ticket 0685). */
+function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, theme: ProjectTheme, current: boolean): void {
+  if (current) {
+    const pad = MARGIN_PX.pass.pillPad
+    const width = label.width + pad * 2
+    const height = label.height + pad * 2
+    context.fillStyle = theme.marker
+    context.beginPath()
+    context.roundRect(label.x - width / 2, label.y - height / 2, width, height, Math.min(width, height) / 2)
+    context.fill()
+  }
   const weight = current || label.fifth ? 700 : 400
   context.font = `${weight} ${fontPx}px ${MONO_FONT}`
-  context.fillStyle = current ? theme.marker : label.fifth ? theme.rulerStrong : theme.ruler
+  context.fillStyle = current ? theme.canvas : label.fifth ? theme.rulerStrong : theme.ruler
   context.textAlign = 'center'
   context.textBaseline = 'middle'
 
@@ -77,11 +81,62 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
   }
 }
 
+/** The current pass of a Frame with lines, as it lies on screen: which line of the Frame it is, and where its first
+ * bead is. None for a Custom frame, nor once every pass is done. */
+interface PassOnScreen {
+  line: number
+  /** Whether the pass runs across the screen, so its marks stand on the Frame's left and right sides, not its top. */
+  across: boolean
+  first: { x: number; y: number }
+  box: RuledBox
+}
+
+function passOnScreen({ project, surface, layout }: RulerDrawInput): PassOnScreen | undefined {
+  const frame = frameOf(project)
+  const box = layout.boxes.find((ruled) => ruled.kind === 'frame')
+  const order = frameRowOrder(project)
+  const pass = currentPass(rowProgressOf(project))
+  const line = pass < order.count ? order.lineOf(pass) : undefined
+  if (!frame || !box || line === undefined) return undefined
+  const columns = rowProgressOf(project).direction === 'columns'
+  const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, 'frame')
+  const along = surface.beadStep('frame')[columns ? 'row' : 'column']
+  // A Frame lying a quarter round runs its own rows the other way on screen (ticket 0667).
+  const across = Math.abs(along.x) >= Math.abs(along.y) !== ((frame.quarterTurns ?? 0) % 2 === 1)
+  return { line, across, first, box }
+}
+
+/** Whether a ruler number is the current pass's own. A turned Frame's rulers count the cells it covers, not its own
+ * rows (ticket 0667): none of its numbers is. */
+function numbersPass(label: RulerLabel, pass: PassOnScreen, project: DrawnProject): boolean {
+  const frame = frameOf(project)
+  if (!frame || frame.quarterTurns) return false
+  const columns = rowProgressOf(project).direction === 'columns'
+  return label.axis === (columns ? 'column' : 'row') && label.position - (columns ? frame.column : frame.row) === pass.line
+}
+
+// Where the current pass has no number drawn (the compact and folded forms, Rulers off, a turned Frame, a Ruler step
+// past it), a `marker` tick from the Frame's line in to the beads (ticket 0685): inside the line, so never under a tool.
+function drawPassTicks(context: DrawingContext, { surface }: RulerDrawInput, { across, first, box }: PassOnScreen, theme: ProjectTheme): void {
+  const shown = surface.beadBox(box, 'frame')
+  const thick = MARGIN_PX.pass.tick
+  const reach = box.outset + FRAME_LINE_PX / 2
+  const ticks = across
+    ? [{ x: shown.x - reach, y: first.y - thick / 2, width: reach, height: thick }, { x: shown.x + shown.width, y: first.y - thick / 2, width: reach, height: thick }]
+    : [{ x: first.x - thick / 2, y: shown.y - reach, width: thick, height: reach }]
+  context.fillStyle = theme.marker
+  for (const tick of ticks) {
+    context.beginPath()
+    context.roundRect(tick.x, tick.y, tick.width, tick.height, thick / 2)
+    context.fill()
+  }
+}
+
 /** Draws the lines and the Ruler layout's numbers and dots, in the viewport's own px over whatever is drawn. */
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
   const { project, surface, layout, pixelRatio, rowMarks = rowProgressOn(project) } = input
   // Once there is a Frame its rulers are the only ones, and they sit on its margin sheet (ticket 0656).
-  const theme = project.frame ? { ...input.theme, ruler: input.theme.margin.ruler, rulerStrong: input.theme.margin.rulerStrong } : input.theme
+  const theme = frameOf(project) ? { ...input.theme, ruler: input.theme.margin.ruler, rulerStrong: input.theme.margin.rulerStrong } : input.theme
   const { fontPx } = layout.scale
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
@@ -91,53 +146,16 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   for (const dot of layout.dots) {
     drawDot(context, dot, layout.scale, theme)
   }
+  // The current pass is marked on its number, or by a tick where it has none (MarginSheet card, ticket 0685).
+  const pass = rowMarks && layout.passMark ? passOnScreen(input) : undefined
+  let numbered = false
   for (const label of layout.labels) {
-    drawLabel(context, label, fontPx, project, theme, rowMarks)
+    const current = pass !== undefined && numbersPass(label, pass, project)
+    numbered ||= current
+    drawLabel(context, label, fontPx, theme, current)
   }
-  if (rowMarks) drawRowPointer(context, input, theme)
+  if (pass && !numbered) drawPassTicks(context, input, pass, theme)
   drawPieceNames(context, input)
-}
-
-/** The row pointer's size and its gap to the row numbers (MarginSheet card). */
-const POINTER_LENGTH_PX = 9
-const POINTER_WIDTH_PX = 12
-const POINTER_GAP_PX = 4
-
-// The current pass's pointer (MarginSheet card, ticket 0657): a `marker` triangle on the margin sheet, 4px outside the
-// numbers, pointing at the pass: in the left band for a pass running across the screen, in the top band for one
-// running down it. None for a Custom frame, whose passes are no line, nor once every pass is done.
-function drawRowPointer(context: DrawingContext, { project, surface, layout }: RulerDrawInput, theme: ProjectTheme): void {
-  const frame = project.frame
-  const box = layout.boxes.find((ruled) => ruled.kind === 'frame')
-  const order = frameRowOrder(project)
-  const pass = currentPass(project.rowProgress)
-  const line = pass < order.count ? order.lineOf(pass) : undefined
-  if (!frame || !box || line === undefined) return
-  const columns = project.rowProgress.direction === 'columns'
-  const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, 'frame')
-  const along = surface.beadStep('frame')[columns ? 'row' : 'column']
-  // A Frame lying a quarter round runs its own rows the other way on screen (ticket 0667).
-  const across = Math.abs(along.x) >= Math.abs(along.y) !== ((frame.quarterTurns ?? 0) % 2 === 1)
-  const shown = surface.beadBox(box, 'frame')
-  context.fillStyle = theme.marker
-  context.beginPath()
-  if (across) {
-    const lineLeft = shown.x - box.outset
-    const edges = layout.labels.filter((label) => label.x < lineLeft).map((label) => label.x - label.width / 2)
-    const tip = Math.min(lineLeft, ...edges) - POINTER_GAP_PX
-    context.moveTo(tip, first.y)
-    context.lineTo(tip - POINTER_LENGTH_PX, first.y - POINTER_WIDTH_PX / 2)
-    context.lineTo(tip - POINTER_LENGTH_PX, first.y + POINTER_WIDTH_PX / 2)
-  } else {
-    const lineTop = shown.y - box.outset
-    const edges = layout.labels.filter((label) => label.y < lineTop).map((label) => label.y - label.height / 2)
-    const tip = Math.min(lineTop, ...edges) - POINTER_GAP_PX
-    context.moveTo(first.x, tip)
-    context.lineTo(first.x - POINTER_WIDTH_PX / 2, tip - POINTER_LENGTH_PX)
-    context.lineTo(first.x + POINTER_WIDTH_PX / 2, tip - POINTER_LENGTH_PX)
-  }
-  context.closePath()
-  context.fill()
 }
 
 /** The gap between a named Piece's rectangle and its name below it. */
@@ -154,8 +172,9 @@ function drawPieceNames(context: DrawingContext, { project, surface, layout, the
   const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = layout.named
     .filter((piece) => !covered(piece))
     .map((piece) => ({ ...piece, layer: 'canvas' as const }))
-  if (frame && project.frame?.name) {
-    pieces.push({ ...frame, name: project.frame.name, layer: 'frame' })
+  const name = frameOf(project)?.name
+  if (frame && name) {
+    pieces.push({ ...frame, name, layer: 'frame' })
   }
   if (pieces.length === 0) {
     return

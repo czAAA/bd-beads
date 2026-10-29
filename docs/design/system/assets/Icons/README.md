@@ -22,3 +22,5 @@ One later addition: `name-piece` (a tag with a bead for its string hole, one clo
 Ticket 0474 added `row-highlight` (a rounded bar between two rules, one row picked out): the Progress bar's Row highlight toggle.
 
 Ticket 0553 added four for the panels redesign. `coffee` (a cup with a handle and two steam strokes): Menu's Buy me a coffee row, the one icon drawn in `accent-strong` there. `external` (a short diagonal arrow): the trailing mark on a row that leaves the app (Source code, Buy me a coffee). `cloud` (a cloud with a check inside) and `cloud-off` (the same cloud with a slash): the Project panel's cloud save state, beside `save` (the floppy disk) for the local one.
+
+Ticket 0686 redrew `fill` (the Fill tool) because early users didn't read it as a bucket: the tilted bucket and its paint line keep their shape, a wire handle (one 1.75 stroke) runs from outside the top edge to the middle, and the bead beside it is now a teardrop drop, one closed 1.75 stroke, since a bead reads as a bead rather than as paint.

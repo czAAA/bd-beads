@@ -6,7 +6,7 @@ import { shownDimensions } from '../../domain/projectExtent'
 import { summarizeProject } from '../../domain/projectLibrary'
 import { namedPieces } from '../../domain/pieceNames'
 import { piecesOf } from '../../domain/pieces'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, heldWeave, layerOf, projectNameOf } from '../../domain/layerRecord'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import ProjectImport from '../import/ProjectImport.vue'
@@ -40,11 +40,11 @@ const exportAll = controlAction('export-all')
 const facts = computed(() =>
   new Map(
     props.projects.map((project) => {
-      const total = piecesOf(layerOf(project, 'canvas').beads, project).length
+      const total = piecesOf(layerOf(project, 'canvas').beads, heldWeave(project, 'canvas')).length
       const named = namedPieces(project).map((piece) => piece.name)
       const unnamed = total - named.length
       const lines = [...named, ...(unnamed > 0 && named.length > 0 ? [fillBlanks(t.value.projects.unnamedPieces, { count: unnamed })] : [])]
-      const body = [lines.join(' · '), project.frame ? frameSize(project) : ''].filter(Boolean).join('\n')
+      const body = [lines.join(' · '), frameOf(project) ? frameSize(project) : ''].filter(Boolean).join('\n')
       return [project.id, { total, title: plural(locale.value, total, t.value.projects.pieces), body: body || undefined }]
     }),
   ),
@@ -82,7 +82,7 @@ function frameSize(project: Project): string {
     <ul v-else class="projects-library__list">
       <li v-for="project in projects" :key="project.id" class="projects-library__item" data-testid="project-item">
         <PanelListRow
-          :name="project.name"
+          :name="projectNameOf(project)"
           :sub="project.makerName"
           :active="project.id === activeProjectId"
           :label="summarizeProject(project)"
@@ -94,7 +94,7 @@ function frameSize(project: Project): string {
             <AppTooltip :name="facts.get(project.id)!.title" :body="facts.get(project.id)!.body" :announce="false">
               <span class="projects-library__facts">
                 <span class="projects-library__pieces" data-testid="project-pieces"><AppIcon name="piece" :size="14" />{{ facts.get(project.id)!.total }}</span>
-                <span class="projects-library__frame" :data-testid="project.frame ? 'project-framed' : undefined" aria-hidden="true"><AppIcon v-if="project.frame" name="frame" :size="14" /></span>
+                <span class="projects-library__frame" :data-testid="frameOf(project) ? 'project-framed' : undefined" aria-hidden="true"><AppIcon v-if="frameOf(project)" name="frame" :size="14" /></span>
               </span>
             </AppTooltip>
           </template>

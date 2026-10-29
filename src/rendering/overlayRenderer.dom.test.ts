@@ -3,7 +3,9 @@ import type { Rotation } from '../domain/grid'
 import type { Rect } from '../domain/canvas'
 import { withMargin } from '../domain/margin'
 import { createProject } from '../domain/createProject'
-import { moveToRow } from '../domain/rowProgress'
+import { findBead } from '../domain/beads'
+import { replaceBead } from '../domain/projectBead'
+import { moveToRow, rowProgressOf } from '../domain/rowProgress'
 import { changeFrame } from '../domain/changeFrame'
 import { frameLayoutOf } from '../domain/frameShape'
 import { onLayer } from '../domain/layers'
@@ -16,6 +18,9 @@ import { renderOverlay as renderOverlayWith } from './overlayRenderer'
 import { spaceOf } from './space'
 import { CELL_SIZE_PX } from './cellSize'
 import { displayedExtentPx, surfaceView } from './surfaceView'
+import { canvasOf, frameOf, quarterTurnOf, withFrameSheet } from '../domain/layerRecord'
+import { withLayers } from '../testUtils/layerFields'
+import { type BeadMap } from '../domain/canvas'
 
 /** The rings round the current beads (ticket 375): the rounded rectangles of the first stroked path. */
 function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnType<typeof recordingContext>['calls'] {
@@ -28,21 +33,21 @@ function ringRects(calls: ReturnType<typeof recordingContext>['calls']): ReturnT
 type TestRowProgress = RowProgress & { marks?: boolean }
 
 function renderOverlay(context: Parameters<typeof renderOverlayWith>[0], input: Parameters<typeof renderOverlayWith>[1]): void {
-  renderOverlayWith(context, { rowMarks: (input.project.rowProgress as TestRowProgress).marks !== false, ...input })
+  renderOverlayWith(context, { rowMarks: (rowProgressOf(input.project) as TestRowProgress).marks !== false, ...input })
 }
 
 /** A Project whose whole Frame holds beads, since only a cell with a bead is marked (ticket 411). */
 function projectOf(technique: Technique, columns: number, rows: number, rowProgress: Partial<TestRowProgress>, rotation: Rotation = 0, filled = true): Project {
   const project = createProject({ technique, beadId: 'toho-cube-1.5mm', size: { width: columns, height: rows, unit: 'beads' } })
-  const beads: Project['beads'] = {}
+  const beads: BeadMap = {}
   for (let row = 0; filled && row < rows; row += 1) {
     beads[row] = Object.fromEntries(Array.from({ length: columns }, (_, column) => [column, '#e63746']))
   }
-  return { ...project, frame: { ...project.frame!, beads }, rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } }
+  return withLayers(project, { frame: { ...frameOf(project)!, beads }, orientation: rotation, rowProgress: { direction: 'rows', currentRow: 0, currentColumn: 0, ...rowProgress } })
 }
 
 function whole(project: Project, zoom = 1) {
-  const { width, height } = displayedExtentPx(project.technique, project.frame!.columns, project.frame!.rows, zoom, project.rotation)
+  const { width, height } = displayedExtentPx(canvasOf(project).technique, frameOf(project)!.columns, frameOf(project)!.rows, zoom, quarterTurnOf(project))
   return { x: 0, y: 0, width, height }
 }
 
@@ -128,7 +133,7 @@ describe('renderOverlay', () => {
 
     it('marks only the cells that hold a bead: an empty cell gets no ring and no lift (ticket 411)', () => {
       const base = projectOf('loom', 3, 3, { currentRow: 1 })
-      const project = { ...base, frame: { ...base.frame!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } }
+      const project = withLayers(base, { frame: { ...frameOf(base)!, beads: { 1: { 0: '#e63746', 2: '#e63746' } } } })
       const { context, calls } = recordingContext()
 
       renderOverlay(context, { project, region: whole(project), zoom: 1 })
@@ -180,10 +185,10 @@ describe('renderOverlay', () => {
 
   describe('the pass being woven on a Custom frame (ticket 0594)', () => {
     it('rings each bead of the current round turned to its panel\'s angle, and only the beads that hold a colour', () => {
-      const { frame: _frame, ...open } = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+      const open = withFrameSheet(createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } }), undefined)
       const placed = changeFrame(open, { custom: { shape: 'triangle', size: 4, centre: { row: 20, column: 20 } } })
       if (placed.kind !== 'changed') throw new Error('expected a Triangle')
-      const round = frameLayoutOf(placed.project.frame!)!.positions.filter(({ row }) => row === 1)
+      const round = frameLayoutOf(frameOf(placed.project)!)!.positions.filter(({ row }) => row === 1)
       const painted = onLayer(placed.project, 'frame', (view) => paintCells(view, round.slice(0, 4), '#e63746'))
       const project = moveToRow(painted, 1)
       const { context, named } = recordingContext()
@@ -437,7 +442,7 @@ describe('renderOverlay', () => {
   })
 
   describe('the Frame margin outline (ticket 276)', () => {
-    const framed = { ...projectOf('loom', 4, 4, { marks: false }), frame: { technique: 'loom' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } }
+    const framed = withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: { technique: 'loom' as const, row: 5, column: 5, rows: 4, columns: 4, beads: {} } })
 
     it('strokes a dashed 1px outline round the margin at the given opacity', () => {
       const { context, calls, named } = recordingContext()
@@ -451,7 +456,7 @@ describe('renderOverlay', () => {
 
     // The margin's cells come from `withMargin`; the sizes are worked out here from the bead geometry (CELL_SIZE_PX 20), not from `projectExtentPx`.
     const outline = (technique: Technique, frame: Rect) => {
-      const project = { ...projectOf(technique, 4, 4, { marks: false }), frame: { technique, ...frame, beads: {} } }
+      const project = withLayers(projectOf(technique, 4, 4, { marks: false }), { frame: { technique, ...frame, beads: {} } })
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 400, height: 400 }, zoom: 1, marginOutline: 1 })
       const [x, , width, height] = calls.find((call) => call.name === 'roundRect')!.args as number[]
@@ -491,7 +496,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
   /** A peyote Frame of 3 × 3 at row 2, column 3 of a loom Canvas, every bead painted, the first pass the current one. */
   function mixed(): Project {
     const base = projectOf('loom', 3, 3, { currentRow: 1 })
-    return { ...base, frame: { ...base.frame!, technique: 'peyote', row: 2, column: 3 } }
+    return withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
   }
 
   it('rings the current pass in the Frame\'s Weave, drawn from the corner of the Canvas position the Frame lies on', () => {
@@ -507,7 +512,7 @@ describe('the overlay of a Frame woven in its own Technique (ticket 492)', () =>
   })
 
   it('outlines a Selection of the Frame inside the Frame\'s layer and one of the Canvas outside it', () => {
-    const project = { ...mixed(), rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0, marks: false } }
+    const project = withLayers(mixed(), { rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0, marks: false } as RowProgress })
     const draw = (layer: 'canvas' | 'frame', top: number) => {
       const { context, calls } = recordingContext()
       renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top, left: 3, rows: 1, columns: 1, layer } })
@@ -527,7 +532,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
   afterEach(() => vi.restoreAllMocks())
   const RED = '#e63746'
   /** An open Canvas with no Frame, Row progress off. */
-  const canvas = (): Project => ({ ...projectOf('loom', 4, 4, { marks: false }), frame: undefined })
+  const canvas = (): Project => (withLayers(projectOf('loom', 4, 4, { marks: false }), { frame: undefined }))
   /** A 100 × 60 px window at zoom 1 into the middle of the Canvas, half a bead off the grid: it shows parts of 6 × 4
    * beads of 20 px. */
   const window = { x: 2010, y: 2010, width: 100, height: 60 }
@@ -550,7 +555,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
 
   it('draws no more of a 300 × 300 paste preview on a Frame than the Frame\'s beads on screen', () => {
     const base = projectOf('loom', 300, 300, { marks: false })
-    const project: Project = { ...base, frame: { ...base.frame!, row: 2, column: 3 } }
+    const project: Project = withLayers(base, { frame: { ...frameOf(base)!, row: 2, column: 3 } })
     const { context, named } = recordingContext()
 
     renderOverlay(context, { project, space: spaceOf(project, true), region: window, zoom: 1, preview: { cells: [], stamp: stampOf(block(300, 300), 2, 3), color: null } })
@@ -576,7 +581,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
 
   it('draws a stamp as the same preview its cells listed one by one make, on the Canvas and on a Frame in its own Weave', () => {
     const base = projectOf('loom', 3, 3, { marks: false })
-    const framed: Project = { ...base, frame: { ...base.frame!, technique: 'peyote', row: 2, column: 3 } }
+    const framed: Project = withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
     const colors = [[RED, null, '#2f6fed', RED], [RED, RED, null, RED], ['#2f6fed', RED, RED, RED]]
     // The stamp runs off the Frame's right edge and down onto the Canvas below it; the Frame clips what it lands.
     const stamp = stampOf(colors, 3, 4, (row, column) => !(row === 3 && column === 6))
@@ -594,7 +599,7 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
   })
 
   it('leaves out what the next peyote row lies over with one clip a row, not one a bead, and one fill a color', () => {
-    const project: Project = { ...canvas(), technique: 'peyote' }
+    const project: Project = withLayers(canvas(), { technique: 'peyote' })
     const { context, named } = recordingContext()
     const colors = [[RED, RED, '#2f6fed', RED], [RED, RED, RED, RED], [RED, RED, RED, RED]]
 
@@ -628,12 +633,28 @@ describe('a big paste preview and Piece-shaped Selection draw only what is on sc
 
   it('outlines a shape on the Frame inside the Frame\'s layer, in its own Weave', () => {
     const base = projectOf('loom', 3, 3, { marks: false })
-    const project: Project = { ...base, frame: { ...base.frame!, technique: 'peyote', row: 2, column: 3 } }
+    const project: Project = withLayers(base, { frame: { ...frameOf(base)!, technique: 'peyote', row: 2, column: 3 } })
     const { context, calls } = recordingContext()
 
     renderOverlay(context, { project, space: spaceOf(project, true), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1, selection: { top: 3, left: 3, rows: 1, columns: 1, layer: 'frame', cells: [{ row: 3, column: 3 }] } })
 
     expect(calls.find((call) => call.name === 'translate')?.args).toEqual([60, 40])
     expect(calls.filter((call) => call.name === 'fillRect')[0]?.args).toEqual([10, 15, 20, 2])
+  })
+})
+
+describe('the overlay of a Frame in a Bead of its own (ticket 0665)', () => {
+  it('draws the Frame\'s layer from its corner at its Bead\'s size over the Canvas\'s, and unscaled on its own', () => {
+    const base = projectOf('loom', 3, 3, { currentRow: 1 })
+    const project = replaceBead(withLayers(base, { frame: { ...frameOf(base)!, row: 2, column: 3 } }), findBead('toho/round/15-0')!)
+    const draw = (open: boolean) => {
+      const { context, named } = recordingContext()
+      renderOverlay(context, { project, space: spaceOf(project, open), region: { x: 0, y: 0, width: 300, height: 300 }, zoom: 1 })
+      return named
+    }
+    const scale = 1 / findBead('toho/cube/1.5mm')!.widthMm
+    expect(draw(true)('translate').map(({ args }) => args)).toEqual([[60, 40]])
+    expect(draw(true)('scale').map(({ args }) => args)).toEqual([[scale, scale]])
+    expect(draw(false)('scale')).toEqual([])
   })
 })

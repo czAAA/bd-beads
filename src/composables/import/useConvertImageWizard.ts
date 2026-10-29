@@ -66,7 +66,7 @@ import { framedGrid } from '../../domain/layerBeads'
 import { brandColors, createPalette, defaultPalette } from '../../domain/palette'
 import type { Grid } from '../../domain/project'
 import { estimatedSizeMm, gridFromSize, isSizeStated, type StatedSize } from '../../domain/projectSize'
-import { DEFAULT_BEAD_SHAPE, beadCell, weaveSettings, withCell, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
+import { DEFAULT_BEAD_SHAPE, weaveSettings, type BeadShape, type Technique, type TechniqueSettings } from '../../domain/weave'
 
 /** What the wizard needs from outside it: the New Project form's values it starts from (its own copy, spec 0645), how
  * a picture is decoded and how a Bead's Color catalog is fetched (both services, handed in by the app shell). */
@@ -389,13 +389,7 @@ export function useConvertImageWizard({ start, decodeImage, loadCatalog }: Conve
     const cells: Grid = Array.from({ length: rows }, (_row, row) =>
       Array.from({ length: columns }, (_cell, column) => ({ color: beadColors.value[row * columns + column] ?? null })),
     )
-    const drawn = withCell(weave.value, beadCell(bead.value, beadShape.value))
-    return {
-      ...drawn,
-      ...framedGrid(cells, drawn),
-      rowProgress: { direction: 'rows' as const, currentRow: 0, currentColumn: 0 },
-      rotation: 0 as const,
-    }
+    return framedGrid(cells, { ...weave.value, beadId: bead.value.id, bead: bead.value, beadShape: beadShape.value })
   })
 
   // --- Colors -------------------------------------------------------------------------------------------------------

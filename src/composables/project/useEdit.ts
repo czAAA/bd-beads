@@ -3,7 +3,7 @@ import { keepAllowedEdits } from '../../domain/allowedEdits'
 import { sameFrame } from '../../domain/canvas'
 import { restoreSnapshot, snapshotOf, type UndoEntry } from '../../domain/undoSnapshot'
 import { sameBeads, sameLayers } from '../../domain/layerBeads'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
 import type { Project } from '../../domain/project'
 import type { Technique } from '../../domain/weave'
@@ -81,7 +81,7 @@ export function useEdit(deps: EditDeps) {
     record(project)
     deps.replaceProject(updated)
     // A command that turned the Frame too (Rotate Frame, ticket 471) leaves the session built on the old one.
-    if (!sameFrame(project.frame, updated.frame) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
+    if (!sameFrame(frameOf(project), frameOf(updated)) || techniqueOf(project, 'canvas') !== techniqueOf(updated, 'canvas')) {
       deps.resetAfterFrameChange()
     }
     return { kind: 'applied' }
@@ -180,7 +180,7 @@ export function useEdit(deps: EditDeps) {
     }
     const restored = restoreSnapshot(project, snapshot)
     deps.replaceProject(restored)
-    if (!sameFrame(restored.frame, project.frame) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, 'frame') !== techniqueOf(project, 'frame')) {
+    if (!sameFrame(frameOf(restored), frameOf(project)) || techniqueOf(restored, 'canvas') !== techniqueOf(project, 'canvas') || techniqueOf(restored, 'frame') !== techniqueOf(project, 'frame')) {
       deps.resetAfterFrameChange()
     }
   }

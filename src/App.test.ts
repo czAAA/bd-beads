@@ -11,6 +11,7 @@ import { mountWithProject } from './testUtils/seedProject'
 import { refuseStorageWrites, spyOnStorageWrites } from './testUtils/storageWrites'
 import { chooseAppLanguage, pickColor } from './testUtils/pill'
 import { frameGrid } from './testUtils/frameGrid'
+import { layersView, withLayers } from './testUtils/layerFields'
 
 const cubeBead = BEAD_CATALOG.find((bead) => bead.id === 'toho/cube/1.5mm')!
 
@@ -23,13 +24,13 @@ beforeEach(() => {
 describe('App', () => {
   it('opens the saved Project at start-up, and shows it unchanged after a reload', async () => {
     const first = await mountWithProject(15, 30)
-    expect(drawnProject(first)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
+    expect(layersView(drawnProject(first))).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
     first.unmount()
 
     const afterReload = mount(App)
 
     expect(afterReload.find('[data-testid="bead-section"]').exists()).toBe(false)
-    expect(drawnProject(afterReload)).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
+    expect(layersView(drawnProject(afterReload))).toMatchObject({ frame: { technique: 'loom' as const, rows: 20, columns: 10 } })
   })
 
   it('still opens and paints a Project created with a since-removed custom Bead', async () => {
@@ -38,7 +39,7 @@ describe('App', () => {
       beadId: cubeBead.id,
       size: { width: 15, height: 15, unit: 'mm' },
     })
-    saveProjects([{ ...project, beadId: 'acme-fancy-8-0' }])
+    saveProjects([withLayers(project, { beadId: 'acme-fancy-8-0' })])
 
     const wrapper = mount(App)
 

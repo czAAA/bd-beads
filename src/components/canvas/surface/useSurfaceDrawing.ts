@@ -1,9 +1,10 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedPositions, type BeadMap } from '../../../domain/canvas'
-import { layerOf, withLayer } from '../../../domain/layerRecord'
-import { sameWeave } from '../../../domain/layerWeave'
+import { frameOf, layerOf } from '../../../domain/layerRecord'
+import { layersAlike } from '../../../domain/layerWeave'
+import { draftCost } from '../../../domain/weave'
 import { shownLetters } from '../../../domain/paletteEdits'
-import type { Project } from '../../../domain/project'
+import type { LayerFields, Project } from '../../../domain/project'
 import type { ProjectTheme } from '../../../rendering/beadLook'
 import { beadsToDraw, gestureTransform, SETTLE_MS, GESTURE_BEAD_LIMIT } from '../../../rendering/gestureView'
 import { renderProject } from '../../../rendering/projectRenderer'
@@ -59,6 +60,8 @@ export interface BeadLayerDeps {
   size: Ref<Size>
   space: Ref<Space>
   theme: Ref<ProjectTheme>
+  /** The Frame's look on its own Background (ticket 0666). */
+  frameTheme: Ref<ProjectTheme>
   /** Whether finished rows show their normal color (ticket 352). */
   showFinished: Ref<boolean>
   /** Whether the Row progress look is drawn (ticket 474). */
@@ -70,16 +73,14 @@ export interface BeadLayerDeps {
  * stamps, are not drawn, ticket 0674). Any other difference, even one added later, can change how a bead is drawn
  * (shape, size, Technique, weave), so it repaints it all. */
 function sameDrawing(a: Project, b: Project): boolean {
-  const { frame: frameA, updatedAt: _u, savedAt: _s, ...restA } = withoutBeads(a)
-  const { frame: frameB, updatedAt: _v, savedAt: _t, ...restB } = withoutBeads(b)
-  return sameFields(restA, restB) && (frameA === undefined || frameB === undefined ? frameA === frameB : sameFields(frameA, frameB))
+  const { layers: layersA, updatedAt: _u, savedAt: _s, ...restA } = a
+  const { layers: layersB, updatedAt: _v, savedAt: _t, ...restB } = b
+  return sameFields(restA, restB) && layersA.length === layersB.length && layersA.every((layer, index) => sameFields(unpainted(layer), unpainted(layersB[index]!)))
 }
 
-const NO_BEADS: BeadMap = {}
-
-/** The Project with both layers' beads emptied (ADR 0079), so what is left is what decides how a bead is drawn. */
-function withoutBeads(project: Project): Project {
-  return withLayer(withLayer(project, 'canvas', { beads: NO_BEADS }), 'frame', { beads: NO_BEADS })
+/** A layer without its beads (ADR 0079): what is left is what decides how a bead is drawn. */
+function unpainted({ beads: _beads, ...layer }: LayerFields): object {
+  return layer
 }
 
 /** Whether two records hold the same values, comparing objects one level deep (a row progress is replaced whole). */
@@ -103,14 +104,15 @@ const MOST_ROWS_WORTH_A_BAND = 40
 // Empty when nothing changed; undefined when so much did (Undo, Fill) that drawing all again is
 // cheaper.
 function changedBands(before: Project, after: Project): { first: number; last: number }[] | undefined {
-  // The Frame's rows are not the Canvas's where it is woven otherwise (ticket 492): draw it all again.
+  // The Frame's rows are not the Canvas's where it is woven otherwise or in a Bead of another size (tickets 492, 0665):
+  // draw it all again.
   const frame = layerOf(after, 'frame')
-  if (frame && !sameWeave(layerOf(after, 'canvas').weave, frame.weave) && layerOf(before, 'frame')?.beads !== frame.beads) {
+  if (frame && !layersAlike(after) && layerOf(before, 'frame')?.beads !== frame.beads) {
     return undefined
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
   const framed = (project: Project) => layerOf(project, 'frame')?.beads ?? {}
-  const frameTop = after.frame?.row ?? 0
+  const frameTop = frameOf(after)?.row ?? 0
   const changed = [
     ...new Set([
       ...changedPositions(layerOf(before, 'canvas').beads, layerOf(after, 'canvas').beads).map((position) => position.row),
@@ -149,11 +151,17 @@ function storedBeads(project: Project): number {
   return counted(layerOf(project, 'canvas').beads) + (frame ? counted(frame.beads) : 0)
 }
 
+/** What one bead of the Project costs to draw, in square beads: its costlier layer's (a rounded bead is three). */
+function beadCost(project: Project): number {
+  const frame = layerOf(project, 'frame')
+  return Math.max(draftCost(layerOf(project, 'canvas').weave.technique), frame ? draftCost(frame.weave.technique) : 0)
+}
+
 /** Keeps the beads' layer drawn (ADR 0018, 0026): once per frame, only the rows an edit changed when nothing else did,
  * and, while a very large piece is panned or zoomed, the drawn bitmap moved instead (ticket 349). */
-export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, showFinished, marksShown, oncePerFrame }: BeadLayerDeps): void {
+export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, frameTheme, showFinished, marksShown, oncePerFrame }: BeadLayerDeps): void {
   /** What the cells were last drawn from, to draw only what an edit changed. */
-  let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
+  let drawn: { project: Project; zoom: number; scroll: Scroll; width: number; height: number; pixelRatio: number; theme: ProjectTheme; frameTheme: ProjectTheme; showFinished: boolean; rowMarks: boolean } | undefined
 
   /** Draws the beads: all of them in view, or, when an edit changed only some rows of what is already drawn, just
    * those. */
@@ -174,7 +182,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
     }
 
     const before = drawn
-    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value }
+    drawn = { project, zoom: props.zoom, scroll: { ...props.scroll }, width: region.width, height: region.height, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value }
     const bands =
       !resized &&
       before &&
@@ -185,6 +193,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
       before.height === region.height &&
       before.pixelRatio === pixelRatio &&
       before.theme === theme.value &&
+      before.frameTheme === frameTheme.value &&
       before.showFinished === showFinished.value &&
       before.rowMarks === marksShown.value &&
       sameDrawing(before.project, project)
@@ -192,11 +201,11 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
         : undefined
 
     if (bands === undefined) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true })
       return
     }
     for (const rows of bands) {
-      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters })
+      renderProject(context, { project, space: space.value, region, zoom: props.zoom, pixelRatio, rows, theme: theme.value, frameTheme: frameTheme.value, showFinished: showFinished.value, rowMarks: marksShown.value, letters, draftWhenSmall: true })
     }
   }
 
@@ -225,13 +234,15 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
       before.height === size.value.height &&
       before.pixelRatio === pixelRatio &&
       before.theme === theme.value &&
+      before.frameTheme === frameTheme.value &&
       before.showFinished === showFinished.value &&
       before.rowMarks === marksShown.value &&
       props.zoom > 0 &&
       before.zoom > 0
+    // The draft look moves its image too (ticket 0689): a live redraw is sharp but held about 40 fps, a move keeps 60.
     const heavy =
       onlyViewMoved &&
-      beadsToDraw(storedBeads(project), project.frame ? project.frame.columns * project.frame.rows : 0, size.value, props.zoom) > GESTURE_BEAD_LIMIT
+      beadsToDraw(storedBeads(project), (frameOf(project)?.columns ?? 0) * (frameOf(project)?.rows ?? 0), size.value, props.zoom, beadCost(project)) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
       drawCells()
@@ -250,6 +261,6 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
 
   // The Project is replaced whole by every edit, so its identity is all that needs watching: a deep watch would make
   // the draw depend on every bead's property.
-  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, showFinished, marksShown], oncePerFrame(drawCellsOrMove), { flush: 'post' })
+  watch([size, () => props.project, () => props.zoom, () => props.scroll, theme, frameTheme, showFinished, marksShown], oncePerFrame(drawCellsOrMove), { flush: 'post' })
   onBeforeUnmount(() => clearTimeout(settleTimer))
 }

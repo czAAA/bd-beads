@@ -1,9 +1,8 @@
 import { frameShapeOf } from './frameShape'
 import { beadsInFrame, beadsWithout, colorAt, frameContains, withColors, type BeadChange, type BeadMap, type Rect } from './canvas'
-import { foldsOver } from './folding'
 import type { GridPosition } from './grid'
-import { canvasWeave, frameWeave } from './layerWeave'
-import { beadsOfLayer, heldWeave } from './layerRecord'
+import { frameWeave, layersAlike } from './layerWeave'
+import { beadsOfLayer, canvasOf, frameOf, heldWeave } from './layerRecord'
 import { pieceBeadsAt } from './pieces'
 import type { Project } from './project'
 import { rowCycle } from './weave'
@@ -12,15 +11,15 @@ import { rowCycle } from './weave'
 // Canvas beads it newly covers, as Frame from Selection does, and takes a named Piece whole or not at all.
 
 /** Whether a resize of the Project's Frame trades beads with the Canvas: a Frame woven like it (Technique and Brick
- * block alike), whose own positions are the Canvas's (ADR 0066). */
+ * block alike) in a Bead of the same size (ticket 0665), whose own positions are the Canvas's (ADR 0066). */
 function tradesWithCanvas(project: Project): boolean {
-  return !!project.frame && !foldsOver(canvasWeave(project), heldWeave(project, 'frame')!)
+  return layersAlike(project)
 }
 
 /** The beads of each named Piece on the Canvas, with its name. */
 function namedPieceBeads(project: Project): { name: string; beads: GridPosition[] }[] {
   const [beads, weave] = [beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas')]
-  return (project.pieceNames ?? []).map(({ name, row, column }) => ({ name, beads: pieceBeadsAt(beads, weave, { row, column }) }))
+  return (canvasOf(project).pieceNames ?? []).map(({ name, row, column }) => ({ name, beads: pieceBeadsAt(beads, weave, { row, column }) }))
 }
 
 /** Whether a Frame at `from` resized to `to` newly covers a Canvas position. */
@@ -30,7 +29,7 @@ const newlyCovers = (from: Rect, to: Rect, position: GridPosition) => frameConta
  * would cover it whole, and `stoppedAt` names it. A Piece the Frame already hides part of stays on the Canvas, so stops
  * nothing; nor does any Piece for a Frame woven unlike the Canvas or a Custom frame (ticket 0669), which lift nothing. */
 export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect; stoppedAt?: string } {
-  const frame = project.frame
+  const frame = frameOf(project)
   const pieces = frame && !frameShapeOf(frame) && tradesWithCanvas(project) ? namedPieceBeads(project) : []
   if (!frame || pieces.length === 0) return { rectangle }
   const cycle = rowCycle(frameWeave(project))
@@ -58,7 +57,7 @@ export function grownFrame(project: Project, rectangle: Rect): { rectangle: Rect
  * except a named Piece it does not newly cover whole, which stays on the Canvas whole, hidden under the Frame. None for
  * a Frame woven unlike the Canvas. */
 export function canvasLift(project: Project, rectangle: Rect): BeadMap {
-  const frame = project.frame
+  const frame = frameOf(project)
   if (!frame || !tradesWithCanvas(project)) return {}
   const offered = beadsWithout(beadsInFrame(beadsOfLayer(project, 'canvas'), rectangle), frame)
   const kept: BeadChange[] = namedPieceBeads(project)

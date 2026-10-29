@@ -14,18 +14,21 @@ import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Technique } from '../../domain/weave'
 import { useI18n } from '../../i18n/useI18n'
 import { marginForm, type MarginForm } from '../../rendering/marginForm'
+import { MARGIN_PX } from '../../rendering/marginSizes'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import AppButton from '../ui/AppButton.vue'
 import AppMenuItem from '../ui/AppMenuItem.vue'
 import IconButton from '../ui/IconButton.vue'
 import MenuButton from '../ui/MenuButton.vue'
 import MarginColorPopover from './MarginColorPopover.vue'
+import MarginMoveBar from './MarginMoveBar.vue'
 import MarginTitleBlock from './MarginTitleBlock.vue'
 import RowProgressControls from './RowProgressControls.vue'
+import { frameOf } from '../../domain/layerRecord'
 
 // The Frame's tools on its margin sheet (MarginSheet card, tickets 0657, 0658): Row progress, the Move bar and the tools
 // in its top band, the title block in its bottom-right corner, laid over the sheet the canvas draws. The controls keep
-// their size as the band grows and shrinks with the zoom, so the sheet changes form instead.
+// their size as the band grows and shrinks with the zoom, so the sheet changes form instead; bare, only the Move bar.
 const props = defineProps<{
   project: Project
   anchor: FrameAnchor
@@ -63,7 +66,6 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const actions = {
-  move: controlAction('move-frame'),
   rotate: controlAction('rotate-frame'),
   edit: controlAction('edit-frame'),
   export: controlAction('strip-export'),
@@ -72,17 +74,19 @@ const actions = {
   show: controlAction('show-title-block'),
 }
 
-const frame = computed(() => props.project.frame)
+const frame = computed(() => frameOf(props.project))
 const rotatable = computed(() => frameAllows(frame.value, 'rotate'))
 /** A Custom frame's shape comes from its settings, and a Frame with a pass done holds still: no Edit Frame then. */
 const editable = computed(() => frameAllows(frame.value, 'resize') && !rowProgressStarted(props.project))
 
-const canvas = useCanvasBackground()
+const canvas = useCanvasBackground(() => props.project)
 const fold = useTitleBlockFold()
 /** The sheet's place, and its lines in the tint that reads on the margin color it is drawn in. */
 const sheetStyle = computed(() => {
-  const { sheet } = props.anchor
-  return { left: `${sheet.left}px`, top: `${sheet.top}px`, width: `${sheet.width}px`, height: `${sheet.height}px`, '--margin-line': canvas.projectTheme.value.margin.line }
+  const { sheet, tilt, viewport } = props.anchor
+  // A Canvas leaning off its quarter turn (ticket 0672) turns the sheet with it, about the middle the drawing turns on.
+  const leaning = tilt ? { transform: `rotate(${tilt}deg)`, transformOrigin: `${viewport.width / 2 - sheet.left}px ${viewport.height / 2 - sheet.top}px` } : {}
+  return { left: `${sheet.left}px`, top: `${sheet.top}px`, width: `${sheet.width}px`, height: `${sheet.height}px`, '--margin-line': canvas.projectTheme.value.margin.line, ...leaning }
 })
 
 /** The sheet's form by its band's height (MarginSheet card, Zoom forms): what the canvas draws it in too. */
@@ -100,24 +104,18 @@ const ROW_FORMS: Record<MarginForm, readonly RowForm[]> = {
 type TitleForm = 'full' | 'compact' | 'tab'
 const TITLE_FORMS: Record<MarginForm, readonly TitleForm[]> = { full: ['full', 'compact', 'tab'], compact: ['compact', 'tab'], folded: ['tab'], bare: [] }
 
-// The px mirror `--margin-band-inset`, `--margin-band-inset-compact`, `--margin-band-top-compact`, `--margin-tool`,
-// `--margin-tab`, `--margin-border-inset`, `--margin-border-inset-compact` and `--space-4`.
-const PLACES = { full: { top: 14, side: 14, border: 10 }, compact: { top: 8, side: 10, border: 6 } }
-const TOOL_PX = 28
-const TAB_PX = 24
-const GAP_PX = 4
-const place = computed(() => (form.value === 'full' ? PLACES.full : PLACES.compact))
+const place = computed(() => (form.value === 'full' ? MARGIN_PX.place.full : MARGIN_PX.place.compact))
 /** The room between the sheet's top or bottom edge and the Frame's line: the folded row and tab sit in its middle. */
 const roomAbove = computed(() => props.anchor.box.top - props.anchor.sheet.top)
 const roomBelow = computed(() => props.anchor.sheet.top + props.anchor.sheet.height - props.anchor.box.top - props.anchor.box.height)
-const middle = (room: number) => Math.max(0, (room - TAB_PX) / 2)
+const middle = (room: number) => Math.max(0, (room - MARGIN_PX.tab) / 2)
 
 const bandEl = ref<HTMLElement>()
 const bandParts = () => [...(bandEl.value?.children ?? [])]
 /** The band row's width: the Move bar centred, with room on each side for the wider of Row progress and the tools. */
 function bandWidth(): number {
   const [start = 0, move = 0, end = 0] = bandParts().map((part) => part.getBoundingClientRect().width)
-  return move ? move + 2 * Math.max(start, end) + 2 * GAP_PX : 0
+  return move ? move + 2 * Math.max(start, end) + 2 * MARGIN_PX.gap : 0
 }
 const row = useFittingForm({
   forms: () => ROW_FORMS[form.value],
@@ -126,15 +124,15 @@ const row = useFittingForm({
   observed: bandParts,
 })
 const rowTop = computed(() => (form.value === 'folded' ? middle(roomAbove.value) : place.value.top))
-const rowHeight = computed(() => (row.value === 'full' ? TOOL_PX : TAB_PX))
+const rowHeight = computed(() => (row.value === 'full' ? MARGIN_PX.tool : MARGIN_PX.tab))
 const bandStyle = computed(() => ({ top: `${rowTop.value}px`, left: `${place.value.side}px`, right: `${place.value.side}px`, height: `${rowHeight.value}px` }))
 const small = computed(() => row.value !== 'full')
-const iconSize = computed(() => (small.value ? 14 : 16))
+const iconSize = computed(() => (small.value ? MARGIN_PX.icon.compact : MARGIN_PX.icon.full))
 const progressForm = computed(() => (row.value === 'full' ? 'margin' : row.value === 'compact' ? 'compact' : 'folded'))
 
 const titleEl = ref<HTMLElement>()
 /** The title block's room: the sheet's width inside its border. */
-const titleRoom = computed(() => props.anchor.sheet.width - 2 * (form.value === 'folded' ? PLACES.compact.side : place.value.border))
+const titleRoom = computed(() => props.anchor.sheet.width - 2 * (form.value === 'folded' ? MARGIN_PX.place.compact.side : place.value.border))
 const title = useFittingForm({
   forms: () => (canvas.margin.titleBlock.value && frame.value ? (fold.folded.value ? TITLE_FORMS[form.value].filter((shown) => shown === 'tab') : TITLE_FORMS[form.value]) : []),
   room: () => titleRoom.value,
@@ -144,7 +142,7 @@ const title = useFittingForm({
 /** The tab unfolds the title block where the sheet has room for it; folded by the zoom, it only names the Frame. */
 const unfoldable = computed(() => fold.folded.value && form.value !== 'folded' && form.value !== 'bare')
 /** The title block's inset from the sheet's bottom-right corner: the inner border's, or folded, the tab's. */
-const titleInset = computed(() => (form.value === 'folded' ? { right: PLACES.compact.side, bottom: middle(roomBelow.value) } : { right: place.value.border, bottom: place.value.border }))
+const titleInset = computed(() => (form.value === 'folded' ? { right: MARGIN_PX.place.compact.side, bottom: middle(roomBelow.value) } : { right: place.value.border, bottom: place.value.border }))
 const titleStyle = computed(() => ({ right: `${titleInset.value.right}px`, bottom: `${titleInset.value.bottom}px`, maxWidth: `${titleRoom.value}px` }))
 
 // The band's row and the title block on the canvas box, for what they give way to: a Selection's handles (ticket 498)
@@ -162,6 +160,15 @@ const titleBox = computed<BarBox>(() => {
 })
 const yields = (box: BarBox) => (!!props.selection && overlapsSelectionHandles(box, props.selection)) || (!!props.pill && boxesOverlap(box, props.pill))
 const bandYields = computed(() => yields(bandBox.value))
+
+// Bare, the Move bar stands alone over the middle of the Frame's top edge, above its line, so it takes no press meant
+// for the beads (ticket 0682).
+const handleAt = computed(() => ({ left: props.anchor.box.left - props.anchor.sheet.left + props.anchor.box.width / 2, top: props.anchor.box.top - props.anchor.sheet.top }))
+const handleStyle = computed(() => ({ left: `${handleAt.value.left}px`, top: `${handleAt.value.top}px` }))
+const handleYields = computed(() => {
+  const { sheet } = props.anchor
+  return yields({ left: sheet.left + handleAt.value.left - MARGIN_PX.moveWidth / 2, top: sheet.top + handleAt.value.top - MARGIN_PX.tab, width: MARGIN_PX.moveWidth, height: MARGIN_PX.tab })
+})
 const titleYields = computed(() => titleSize.width.value > 0 && yields(titleBox.value))
 
 /** Row progress is one Tab stop, ←/→ along its controls, as in the Progress bar (ADR 0075). */
@@ -202,7 +209,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 </script>
 
 <template>
-  <div class="margin-sheet" :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing }]" :style="sheetStyle" data-testid="margin-sheet">
+  <div class="margin-sheet" :class="[`margin-sheet--${form}`, { 'margin-sheet--editing': editing && form !== 'bare' }]" :style="sheetStyle" data-testid="margin-sheet">
     <div
       v-if="row"
       ref="bandEl"
@@ -225,19 +232,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
           @toggle-row-highlight="emit('toggle-row-highlight')"
         />
       </div>
-      <!-- The Move bar: the Frame card's Move handle on the paper. Its press goes on to the canvas to drag; arrows move
-        the Frame, Shift+arrows resize. -->
-      <IconButton
-        variant="plain"
-        :action="actions.move"
-        class="margin-sheet__move"
-        :class="{ 'margin-sheet__move--dragging': dragging }"
-        data-testid="frame-move-handle"
-        @pointerdown="onMovePress"
-        @keydown="emit('key', $event)"
-      >
-        <span class="margin-sheet__move-line" aria-hidden="true" />
-      </IconButton>
+      <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
       <div ref="toolsEl" class="margin-sheet__tools">
         <template v-if="row === 'full' || row === 'compact'">
           <IconButton v-if="rotatable" variant="plain" :icon-size="iconSize" :action="actions.rotate" :deps="deps" data-testid="margin-rotate-frame" @click="emit('rotate')" />
@@ -285,6 +280,10 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       </div>
     </div>
 
+    <div v-if="form === 'bare'" class="margin-sheet__handle" :class="{ 'margin-sheet__yielding': handleYields }" :style="handleStyle" data-testid="margin-handle">
+      <MarginMoveBar :dragging="dragging" @press="onMovePress" @key="emit('key', $event)" />
+    </div>
+
     <div
       v-if="title"
       ref="titleEl"
@@ -322,7 +321,7 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
       </span>
     </div>
 
-    <MarginColorPopover v-if="colorOpen && colorButton" :anchor="colorButton" @close="colorOpen = false" />
+    <MarginColorPopover v-if="colorOpen && colorButton" :project="project" :anchor="colorButton" @close="colorOpen = false" />
   </div>
 </template>
 
@@ -354,7 +353,8 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
 }
 
 .margin-sheet__band > *,
-.margin-sheet__title {
+.margin-sheet__title,
+.margin-sheet__handle {
   pointer-events: auto;
 }
 
@@ -409,33 +409,25 @@ const itemDisabled = (action: (typeof actions)[keyof typeof actions]) => (action
   background: var(--margin-line);
 }
 
-/* The Move bar: a 40 × 6 `ink` pill in a 56 × 28 hit area (24 high compact and folded), `grab`. */
-.margin-sheet__band :deep(.margin-sheet__move) {
-  width: var(--frame-handle-hit-width);
-  height: var(--margin-move-height);
-  background: none;
-  border: 0;
-  cursor: grab;
-  touch-action: none;
-}
-
-.margin-sheet__band :deep(.margin-sheet__move--dragging) {
-  cursor: grabbing;
-}
-
-.margin-sheet__move-line {
-  width: var(--frame-handle-length);
-  height: var(--frame-handle-thickness);
-  background: var(--ink);
-  border-radius: var(--frame-handle-thickness);
-}
-
-.margin-sheet__band :deep(.margin-sheet__move--dragging) .margin-sheet__move-line {
-  background: var(--accent);
-}
-
-.margin-sheet__band:not(.margin-sheet__band--full) :deep(.margin-sheet__move) {
+/* The Move bar is 24 high compact, folded and bare (28 in the full form). */
+.margin-sheet__band:not(.margin-sheet__band--full) :deep(.margin-move),
+.margin-sheet__handle :deep(.margin-move) {
   height: var(--margin-tab);
+}
+
+/* Bare, the Move bar is centred along the Frame's top edge, its bottom on the Frame's line (ticket 0682). On a coarse pointer
+ * it rises by the part of its 44px hit area below it and 16px more, the reach of a browser's touch adjustment, so a
+ * finger on the first row reaches the bead. */
+.margin-sheet__handle {
+  position: absolute;
+  display: flex;
+  transform: translate(-50%, -100%);
+}
+
+@media (pointer: coarse) {
+  .margin-sheet__handle {
+    transform: translate(-50%, calc(-100% - (var(--touch-target) - var(--margin-tab)) / 2 - var(--space-16)));
+  }
 }
 
 /* The title block, anchored to the inner border's bottom-right corner; folded, the tab in the middle of the band. */

@@ -6,6 +6,8 @@ import type { MarginForm } from './marginForm'
 import { rulerLayout, type RulerDot, type RulerLabel } from './rulers'
 import { OPEN_SPACE } from './space'
 import { surfaceView } from './surfaceView'
+import { bareProject } from '../testUtils/layerFields'
+import { canvasOf } from '../domain/layerRecord'
 
 const R = '#e63746'
 interface Look {
@@ -23,13 +25,14 @@ interface Look {
 
 const block = (row: number, column: number, rows = 3, columns = 3): [number, number][] =>
   Array.from({ length: rows * columns }, (_, i) => [row + Math.floor(i / columns), column + (i % columns)])
-const project = (positions: [number, number][], frame?: Rect, technique: Technique = 'loom') => ({
-  technique,
-  frame: frame && { ...frame, technique },
-  beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
-})
+const project = (positions: [number, number][], frame?: Rect, technique: Technique = 'loom') =>
+  bareProject({
+    technique,
+    ...(frame ? { frame: { ...frame, technique, beads: {} } } : {}),
+    beads: withColors({}, positions.map(([row, column]) => ({ row, column, color: R }))),
+  })
 /** The Ruler layout of a Project in a view of the Canvas. */
-const layoutOf = (subject: ReturnType<typeof project>, { technique = subject.technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet }: Look = {}) => {
+const layoutOf = (subject: ReturnType<typeof project>, { technique = canvasOf(subject).technique, rotation = 0, zoom = 1, scroll, viewport, centred, numbers = true, sheet }: Look = {}) => {
   const view = (at?: { x: number; y: number }, size = viewport) => surfaceView({ space: OPEN_SPACE, technique, rotation, zoom, scroll: at, viewport: size })
   // A turn carries the box off the top-left corner: centre it in a viewport that holds it, whichever way it is turned.
   const looking = centred ? view(undefined, { width: 2000, height: 2000 }) : undefined
@@ -64,7 +67,7 @@ describe('which boxes carry rulers', () => {
 
   it('is the Frame alone, on every side, once it is set, whatever pieces there are', () => {
     const { boxes } = layoutOf(project([...block(0, 0), ...block(10, 10)], { row: 2, column: 3, rows: 4, columns: 5 }))
-    expect(boxes).toEqual([{ technique: 'loom', row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'sheet' }])
+    expect(boxes).toEqual([{ row: 2, column: 3, rows: 4, columns: 5, kind: 'frame', outset: 7, sides: 'sheet' }])
   })
 
   it('leaves out a box far off screen', () => {
@@ -350,7 +353,7 @@ describe('the dots below the zoom where only the last number shows (ticket 378)'
 describe('the rulers of a Frame woven in its own Technique (ticket 492)', () => {
   // A peyote Frame of 3 rows × 4 columns at row 2, column 3 of a loom Canvas: its corner is at (60, 40).
   const frame = { technique: 'peyote' as const, row: 2, column: 3, rows: 3, columns: 4 }
-  const subject = { technique: 'loom' as const, frame, beads: {} }
+  const subject = bareProject({ technique: 'loom', frame: { ...frame, beads: {} } })
   const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame, rotation: 0, zoom: 1 })
   const { labels } = rulerLayout(subject, surface, { fontPx: 11, numbers: true })
 
@@ -375,7 +378,7 @@ describe('a Custom frame (ticket 0592)', () => {
   it('carries no rulers: its beads lie in rounds, not its rectangle\'s rows and columns', () => {
     const triangle = { row: 0, column: 0, rows: 12, columns: 10, technique: 'peyote' as const, shape: 'triangle' as const, settings: { rounds: 4 } }
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'peyote', rotation: 0, zoom: 1, viewport: { width: 800, height: 600 } })
-    const laid = rulerLayout({ technique: 'peyote', frame: triangle, beads: {} }, surface, { fontPx: 11, numbers: true })
+    const laid = rulerLayout(bareProject({ technique: 'peyote', frame: { ...triangle, beads: {} } }), surface, { fontPx: 11, numbers: true })
     expect(laid.boxes).toEqual([])
     expect(laid.labels).toEqual([])
   })
@@ -385,7 +388,7 @@ describe('a Frame lying turned (ticket 0667)', () => {
   it('carries its line and rulers round what it covers as it lies, Width and Height swapped', () => {
     const turned = { row: 0, column: 0, rows: 4, columns: 6, technique: 'loom' as const, quarterTurns: 1 as const }
     const surface = surfaceView({ space: OPEN_SPACE, technique: 'loom', frame: turned, rotation: 0, zoom: 1, viewport: { width: 800, height: 600 } })
-    const laid = rulerLayout({ technique: 'loom', frame: turned, beads: {} }, surface, { fontPx: 11, numbers: true })
+    const laid = rulerLayout(bareProject({ technique: 'loom', frame: { ...turned, beads: {} } }), surface, { fontPx: 11, numbers: true })
     expect(laid.boxes).toEqual([expect.objectContaining({ row: 0, column: 0, rows: 6, columns: 4, kind: 'frame' })])
     expect(Math.max(...laid.labels.filter((label) => label.axis === 'column').map((label) => Number(label.text)))).toBe(4)
     expect(Math.max(...laid.labels.filter((label) => label.axis === 'row').map((label) => Number(label.text)))).toBe(6)

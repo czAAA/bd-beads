@@ -5,6 +5,7 @@ import { createProject } from '../../domain/createProject'
 import { summarizeProject } from '../../domain/projectLibrary'
 import type { Project } from '../../domain/project'
 import { en } from '../../i18n/en'
+import { withLayers } from '../../testUtils/layerFields'
 
 beforeEach(() => {
   localStorage.clear()
@@ -15,7 +16,7 @@ const make = (name: string, extra: Partial<Parameters<typeof createProject>[0]> 
   createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', name, size: { width: 4, height: 4, unit: 'beads' }, ...extra })
 const first = make('Moth', { makerName: 'Ada' })
 const second = make('Fern')
-const noFrame = (project: Project): Project => ({ ...project, frame: undefined })
+const noFrame = (project: Project): Project => (withLayers(project, { frame: undefined }))
 
 function mountLibrary(props: Record<string, unknown> = {}) {
   return mount(ProjectsLibrary, { props: { projects: [first, second], ...props }, global: { stubs: { ProjectThumbnail: true } } })

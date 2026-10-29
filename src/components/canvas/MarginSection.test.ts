@@ -1,6 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
+import { createProject } from '../../domain/createProject'
+import { withBackground } from '../../domain/layerRecord'
 import { PREFERENCES } from '../../services/devicePreferences'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import MarginSection from './MarginSection.vue'
@@ -9,9 +11,11 @@ function setTheme(theme: 'light' | 'dark' | 'contrast') {
   document.documentElement.dataset.theme = theme
 }
 
+const project = createProject({ technique: 'loom', beadId: 'toho-cube-1.5mm', size: { width: 4, height: 4, unit: 'beads' } })
+
 const mounted: ReturnType<typeof mount>[] = []
 function render() {
-  const wrapper = mount(MarginSection, { attachTo: document.body })
+  const wrapper = mount(MarginSection, { props: { project }, attachTo: document.body })
   mounted.push(wrapper)
   return wrapper
 }
@@ -27,7 +31,7 @@ beforeEach(() => {
   localStorage.setItem('openbeads:locale', 'en')
   for (const name of ['canvasBackground', 'canvasCustomColor', 'marginColor', 'marginCustomColor', 'marginTitleBlock', 'panelSectionsClosed'] as const) localStorage.removeItem(PREFERENCES[name].key)
   setTheme('light')
-  useCanvasBackground().setChoice(1)
+  useCanvasBackground().remember(1)
   useCanvasBackground().margin.setChoice('auto')
 })
 
@@ -54,13 +58,13 @@ describe('MarginSection (tickets 0656, 0657, MarginSheet card)', () => {
     expect(wrapper.get('[data-testid="margin-line"]').text()).toBe('The margin is 4 beads on every side. Nothing can be placed in it, and exports never show it.')
   })
 
-  it('follows the Canvas color with Auto, on the swatch and on the sheet', async () => {
+  it('follows the Canvas\'s Background with Auto, on the swatch and on the sheet (ticket 0666)', async () => {
     const wrapper = render()
-    useCanvasBackground().setChoice(2)
-    await flush()
+    const linen = withBackground(project, 'canvas', 2)
+    await wrapper.setProps({ project: linen })
     expect(wrapper.get('[data-testid="background-color-name"]').text()).toBe('Auto #ebe7e0')
     expect(radios(wrapper)[2].attributes('aria-label')).toBe('Linen, the Canvas color')
-    expect(useCanvasBackground().projectTheme.value.margin.fill).toBe('#ebe7e0')
+    expect(useCanvasBackground(() => linen).projectTheme.value.margin.fill).toBe('#ebe7e0')
   })
 
   it('stores the position of a Canvas color picked, and keeps it when the theme changes', async () => {
