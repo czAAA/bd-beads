@@ -2,9 +2,9 @@ import type { Rect } from './canvas'
 import { pieceAreasOf } from './pieces'
 import { beadsWithoutLine, changeFrame, frameChangeRefusal, shiftedByLine, type FrameChangeResult } from './changeFrame'
 import { carryNames } from './pieceNames'
-import { finishedOnLine, lineRunsAlong, rowProgressPosition } from './rowProgress'
+import { finishedOnLine, lineRunsAlong, rowProgressOf, rowProgressPosition } from './rowProgress'
 import { frameWeave } from './layerWeave'
-import { beadsOfLayer, heldWeave, withLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, heldWeave, withLayer } from './layerRecord'
 import { describeWeave } from './weave'
 import type { Project } from './project'
 import type { PassDirection } from './weaveGeometry'
@@ -43,7 +43,8 @@ export function selectedAreaLine(frame: Rect | undefined, selection: Selection |
 
 /** The line the Selection covers, in the Frame or, with no Frame, in whichever Piece area it is a whole line of. */
 function selectedProjectLine(project: Project, selection: Selection | undefined): ProjectLine | undefined {
-  const areas = project.frame ? [project.frame] : pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'))
+  const frame = frameOf(project)
+  const areas = frame ? [frame] : pieceAreasOf(beadsOfLayer(project, 'canvas'), heldWeave(project, 'canvas'))
   for (const area of areas) {
     const line = selectedAreaLine(area, selection)
     if (line) {
@@ -67,7 +68,7 @@ export function removeLineRefusal(project: Project, selection: Selection | undef
   if (!line) {
     return 'no-line'
   }
-  if (!project.frame) {
+  if (!frameOf(project)) {
     return undefined
   }
   const refusal = frameChangeRefusal(project, { removeLine: line })
@@ -88,15 +89,15 @@ export type RemoveLineQuestion =
  * line that touches no finished pass. The one place the rule lives; the flow knows only the prompt. */
 export function removeLineQuestion(project: Project, selection: Selection | undefined): RemoveLineQuestion | undefined {
   const line = selectedProjectLine(project, selection)
-  if (!line || !project.frame || removeLineRefusal(project, selection)) {
+  if (!line || !frameOf(project) || removeLineRefusal(project, selection)) {
     return undefined
   }
-  const { direction } = project.rowProgress
+  const { direction } = rowProgressOf(project)
   const { beads } = finishedOnLine(project, line)
   if (beads === 0) {
     return undefined
   }
-  if (!lineRunsAlong(line, project.rowProgress)) {
+  if (!lineRunsAlong(line, rowProgressOf(project))) {
     return { kind: 'across-rows', rows: beads, direction }
   }
   const removed = changeFrame(project, { removeLine: line })
@@ -104,7 +105,7 @@ export function removeLineQuestion(project: Project, selection: Selection | unde
   // As the Progress bar shows it: the row being woven, the last once every pass is done.
   const backTo = Math.min(after.current + 1, after.total)
   const lines = line.axis === 'row' ? line.area.rows : line.area.columns
-  const row = (project.rowProgress.reversed ? lines - 1 - line.index : line.index) + 1
+  const row = (rowProgressOf(project).reversed ? lines - 1 - line.index : line.index) + 1
   return { kind: 'finished-row', row, backTo, shifts: describeWeave(frameWeave(project)).shifted, direction }
 }
 
@@ -114,7 +115,7 @@ export function removeSelectedLine(project: Project, selection: Selection | unde
   if (!line) {
     return { kind: 'refused', reason: 'no-line' }
   }
-  if (project.frame) {
+  if (frameOf(project)) {
     return changeFrame(project, { removeLine: line })
   }
   const shifted = withLayer(project, 'canvas', { beads: beadsWithoutLine(beadsOfLayer(project, 'canvas'), line.area, line) })

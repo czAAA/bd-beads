@@ -3,6 +3,7 @@ import { busyMs, startFrameCounter, stopFrameCounter, throttle } from './measure
 import { chooseNewProjectTechnique, copySelection, currentZoomPercent, openApp, openStripPanel, openNewProjectForm, projectBox, selectTool, settle, convertPicture } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { fixturePicture } from '../support/picture'
+import { frameOf } from '../../src/domain/layerRecord'
 
 // The performance check (ticket 103, ADR 0018), run by hand: `npm run perf`, not in CI (noisy runner timings).
 // Env: PERF_SLOWDOWNS (default 4,6), PERF_SIZES (default 60x90,70x250,250x250), PERF_ONLY (framing, crop, …), PERF_TECHNIQUES.
@@ -96,8 +97,8 @@ function onScreenBeads(
 ): { x: number; y: number }[] {
   const margin = 40
   const beads: { x: number; y: number }[] = []
-  for (let row = 0; row < project.frame!.rows; row += 1) {
-    for (let column = 0; column < project.frame!.columns; column += 1) {
+  for (let row = 0; row < frameOf(project)!.rows; row += 1) {
+    for (let column = 0; column < frameOf(project)!.columns; column += 1) {
       const centre = beadCentre(project, box, zoom, { row, column })
       if (centre.x > margin && centre.x < viewport.width - margin && centre.y > margin && centre.y < viewport.height - margin) {
         beads.push(centre)

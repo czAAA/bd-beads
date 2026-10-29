@@ -36,7 +36,7 @@ import {
   setGridTransform,
   type Region,
 } from './surfaceView'
-import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, heldWeave, type Layered } from '../domain/layerRecord'
 
 // The Project renderer (CONTEXT.md, ADR 0018): the one place that draws a Project's cells for any Technique. Grid space
 // is px at zoom 1; the region asked for is in displayed space (zoomed, rotated, ticket 171), so cost follows what is in
@@ -77,7 +77,7 @@ function visibleBeadsInSpace(weave: Weave, space: Space, region: Region, zoom: n
 }
 
 /** The parts of a Project the renderer reads. */
-export type DrawnProject = Pick<Project, 'technique' | 'techniqueSettings' | 'beads' | 'frame' | 'rowProgress' | 'rotation' | 'pieceNames'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>
+export type DrawnProject = Layered
 
 export interface RenderInput {
   // The Project to draw: its beads, Frame, Technique, rotation and Row progress (finished rows are drawn faded).
@@ -114,8 +114,8 @@ export interface RenderInput {
 
 /** The box on the Canvas the Frame hides (ticket 492), in grid px: the rectangle of Canvas positions it claims, grown to
  * take in its drawn extent where it is woven otherwise and so draws larger or smaller than that. */
-function frameFootprintPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = 0): Region | undefined {
-  const frame = project.frame
+function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined {
+  const frame = frameOf(project)
   if (!frame) {
     return undefined
   }
@@ -147,11 +147,11 @@ function drawPositionMarks(
     return
   }
   const cell = cellSizePx(canvas.technique, canvas.cell)
-  const box = project.frame && withMargin(footprintOf(project)!, margin)
+  const box = frameOf(project) && withMargin(footprintOf(project)!, margin)
   // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
   const footprint = frameFootprintPx(project)
   const held = frameFootprintPx(project, margin)
-  const alike = project.frame !== undefined && sameWeave(canvas, heldWeave(project, 'frame')!)
+  const alike = frameOf(project) !== undefined && sameWeave(canvas, heldWeave(project, 'frame')!)
   const cut = box && held && (alike ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
   const hole = cut && { left: cut.x, right: cut.x + cut.width, top: cut.y, bottom: cut.y + cut.height }
   context.fillStyle = pattern
@@ -392,7 +392,7 @@ function drawCanvasLayer(context: DrawingContext, draw: LayerDraw, space: Space)
 
 /** The margin's sheet in grid px (MarginSheet card, tickets 0656, 0657): its box, the Frame's footprint it holds, and
  * its band, the narrowest of its four sides. What the sheet is drawn from and what its tools on the page are placed by. */
-export function marginSheetPx(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beadId' | 'beadShape'>, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
+export function marginSheetPx(project: DrawnProject, margin = MARGIN): { sheet: Region; footprint: Region; band: number } | undefined {
   const sheet = frameFootprintPx(project, margin)
   const footprint = frameFootprintPx(project)
   if (!sheet || !footprint) return undefined

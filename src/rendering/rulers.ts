@@ -9,7 +9,7 @@ import { hasGuides, type Selection } from '../domain/selection'
 import { rulerScale, type RulerScale } from './rulerScale'
 import { cellSizePx } from './cellSize'
 import { frameOriginPx, gridBox, beadStepPx, type SurfaceView, type ViewLayer } from './surfaceView'
-import { beadsOfLayer, heldWeave } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf, heldWeave } from '../domain/layerRecord'
 
 // The rulers and their lines on the Canvas (ADR 0026): row and column numbers on the Frame's sides but the bottom one
 // (ticket 0657), or each Piece's top and left. Plain geometry in viewport px, so tests find numbers and dots as a pointer would (ADR 0033).
@@ -65,7 +65,7 @@ export type RuledProject = { frame?: Rect & Weave & Pick<FrameSheet, 'name' | 's
 // otherwise every Piece area of more than 4 beads (those near the viewport are chosen by the caller). A Custom frame
 // has none: its beads lie in rounds, not its rectangle's rows and columns (ticket 0592).
 function ruledBoxes(project: RuledProject, scale: RulerScale): RuledBox[] {
-  const frame = project.frame
+  const frame = frameOf(project)
   if (frame) {
     if (frameShapeOf(frame)) return []
     return [{ ...laidRect({ ...frame, cell: canvasWeave(project).cell }), kind: 'frame', outset: scale.frameOutset, sides: 'sheet' }]
@@ -295,8 +295,8 @@ export function rulerLayout(project: RuledProject, surface: SurfaceView, { fontP
     return shown.x + shown.width > -reach && shown.x < viewport.width + reach && shown.y + shown.height > -reach && shown.y < viewport.height + reach
   })
   const laid = boxes.map((box) =>
-    box.kind === 'frame' && project.frame
-      ? layBox(box, withCell(heldWeave(project, 'frame')!, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), project.frame), offset: project.frame, layer: 'frame' }, surface, viewport, scale)
+    box.kind === 'frame' && frameOf(project)
+      ? layBox(box, withCell(heldWeave(project, 'frame')!, canvasWeave(project).cell), { origin: frameOriginPx(canvasWeave(project), frameOf(project)), offset: frameOf(project), layer: 'frame' }, surface, viewport, scale)
       : layBox(box, canvasWeave(project), { origin: { x: 0, y: 0 }, offset: { row: 0, column: 0 }, layer: 'canvas' }, surface, viewport, scale),
   )
   const everyLabel = laid.flatMap((box) => box.labels)

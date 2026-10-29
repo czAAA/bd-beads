@@ -2,7 +2,7 @@ import { changedPositions, colorAt, frameContains, withColors, type BeadChange, 
 import { rowOrderOf, type ShapedSheet } from './frameShape'
 import type { GridPosition } from './grid'
 import { sameBeads } from './layerBeads'
-import { beadsOfLayer, withLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, type Layered, withFrameSheet, withLayer } from './layerRecord'
 import { frameGeometryOf } from './layers'
 import { frameWeave } from './layerWeave'
 import { touch, type Project, type RowProgress } from './project'
@@ -15,6 +15,17 @@ import type { AreaLine } from './removeLine'
 /** Row progress exactly as a freshly created Project starts out — also what Delete all (ticket 42) resets it back
  * to. */
 export const INITIAL_ROW_PROGRESS: RowProgress = { direction: 'rows', currentRow: 0, currentColumn: 0 }
+
+/** The Frame's Row progress (ADR 0079): where its weaver is; a Canvas without a Frame is at the first row. */
+export function rowProgressOf(project: Layered): RowProgress {
+  return frameOf(project)?.rowProgress ?? INITIAL_ROW_PROGRESS
+}
+
+/** The Project with its Frame's Row progress set, stamped as a change; the same Project without a Frame. */
+export function withRowProgress(project: Project, rowProgress: RowProgress): Project {
+  const frame = frameOf(project)
+  return frame ? touch(withFrameSheet(project, { ...frame, rowProgress }), {}) : project
+}
 
 /** Whether Row progress is already exactly the just-created state (see INITIAL_ROW_PROGRESS), so deleteAll has
  * nothing left to reset. */
@@ -32,7 +43,7 @@ export function isInitialRowProgress(rowProgress: RowProgress): boolean {
 /** Whether Row progress is on: exactly when there is a Frame to count rows on (ticket 434, ADR 0055), of any kind (a
  * Custom frame's Row order, ticket 0594). Derived, never stored, so setting a Frame needn't remember it; an old file's
  * saved flag is ignored. */
-export const rowProgressOn = (project: Pick<Project, 'frame'>): boolean => project.frame !== undefined
+export const rowProgressOn = (project: Layered): boolean => frameOf(project) !== undefined
 
 type PointerKey = 'currentRow' | 'currentColumn' | 'currentRowBack' | 'currentColumnBack'
 
@@ -75,7 +86,7 @@ function clampedBack(rowProgress: Partial<RowProgress>, sheet: ShapedSheet): Par
 
 /** Row progress with both pointers (the row and the column being woven) inside the Frame; the one clamp a Frame
  * change uses. */
-export function clampPointer(rowProgress: Project['rowProgress'], sheet: ShapedSheet): Project['rowProgress'] {
+export function clampPointer(rowProgress: RowProgress, sheet: ShapedSheet): RowProgress {
   return {
     ...rowProgress,
     currentRow: clampRow(rowProgress.currentRow, passesOf(sheet, { direction: 'rows' })),
@@ -107,8 +118,8 @@ export function readRowProgress(stored: (Partial<RowProgress> & { currentRow: nu
 
 /** Whether Row progress is on and a pass is done: the Frame is then held still, since the passes belong to it
  * (ticket 411). */
-export function rowProgressStarted(project: Pick<Project, 'rowProgress' | 'frame'>): boolean {
-  const { currentRow, currentColumn, currentRowBack, currentColumnBack } = project.rowProgress
+export function rowProgressStarted(project: Layered): boolean {
+  const { currentRow, currentColumn, currentRowBack, currentColumnBack } = rowProgressOf(project)
   return rowProgressOn(project) && (currentRow > 0 || currentColumn > 0 || !!currentRowBack || !!currentColumnBack)
 }
 
@@ -125,10 +136,10 @@ export const lineRunsAlong = (line: AreaLine, way: RowWay): boolean => (line.axi
 
 /** The beads of a Frame line in passes finished `way` (the way the rows run now unless given): how many, and how many
  * passes they make up. */
-export function finishedOnLine(project: RowProgressed, line: AreaLine, way: RowWay = project.rowProgress): { beads: number; passes: number } {
-  const { rows = 0, columns = 0 } = project.frame ?? {}
-  const pointer = project.rowProgress[pointerKey(way)] ?? 0
-  const order = rowOrderOf({ ...frameWeave(project), ...laidOf(project.frame), rows, columns }, way)
+export function finishedOnLine(project: RowProgressed, line: AreaLine, way: RowWay = rowProgressOf(project)): { beads: number; passes: number } {
+  const { rows = 0, columns = 0 } = frameOf(project) ?? {}
+  const pointer = rowProgressOf(project)[pointerKey(way)] ?? 0
+  const order = rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, way)
   const length = line.axis === 'row' ? columns : rows
   const at = (along: number) => (line.axis === 'row' ? { row: line.index, column: along } : { row: along, column: line.index })
   const finished = Array.from({ length }, (_bead, along) => order.passAt(at(along))).filter((pass) => pass < pointer)
@@ -139,7 +150,7 @@ export function finishedOnLine(project: RowProgressed, line: AreaLine, way: RowW
  * along it goes back by that row's finished passes, so the rows after it, moved up, stay finished; a line across the
  * rows leaves them finished, a bead short. */
 export function progressWithoutLine(project: RowProgressed, line: AreaLine): RowProgress {
-  const rowProgress = { ...project.rowProgress }
+  const rowProgress = { ...rowProgressOf(project) }
   for (const [key, way] of POINTER_WAYS) {
     const { passes } = lineRunsAlong(line, way) ? finishedOnLine(project, line, way) : { passes: 0 }
     if (passes > 0) rowProgress[key] = (rowProgress[key] ?? 0) - passes
@@ -150,7 +161,7 @@ export function progressWithoutLine(project: RowProgressed, line: AreaLine): Row
 /** Takes Row progress back to the first row in both directions, keeping the direction (ticket 455); the grid is
  * untouched. */
 export function resetRowProgress(project: Project): Project {
-  return touch(project, { rowProgress: firstPasses(project.rowProgress) })
+  return withRowProgress(project, firstPasses(rowProgressOf(project)))
 }
 
 /** Which way the rows run on the Canvas, as an arrow points: down is top to bottom. */
@@ -172,33 +183,33 @@ export function toggleRowDirection(project: Project): Project {
   if (!frameRowOrder(project).turns) {
     return project
   }
-  const { direction, reversed } = project.rowProgress
+  const { direction, reversed } = rowProgressOf(project)
   // The four ways in turn: top to bottom, left to right, bottom to top, right to left (ticket 0589).
   const next = direction === 'rows'
     ? { direction: 'columns' as const, reversed }
     : { direction: 'rows' as const, reversed: reversed ? undefined : true }
-  return touch(project, { rowProgress: { ...project.rowProgress, ...next } })
+  return withRowProgress(project, { ...rowProgressOf(project), ...next })
 }
 
 /** Where the weaving has got to, counted in whichever direction its rows run: the row being woven now, and how many
  * rows the Frame has. */
 export function rowProgressPosition(project: RowProgressed): { current: number; total: number } {
-  return { current: currentPass(project.rowProgress), total: frameRowOrder(project).count }
+  return { current: currentPass(rowProgressOf(project)), total: frameRowOrder(project).count }
 }
 
 /** What a Project's Row progress is read from: its pointers, its Frame and the Weave a Canvas with none counts in. */
-type RowProgressed = Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'techniqueSettings'>
+type RowProgressed = Layered
 
 /** The Frame's Row order (spec 0590), worked the way the weaver's rows run now: the one thing Row progress asks how
  * passes go. A Canvas with no Frame has no passes, counted in its own Weave. */
 export function frameRowOrder(project: RowProgressed): RowOrder {
-  const { rows = 0, columns = 0 } = project.frame ?? {}
-  return rowOrderOf({ ...frameWeave(project), ...laidOf(project.frame), rows, columns }, project.rowProgress)
+  const { rows = 0, columns = 0 } = frameOf(project) ?? {}
+  return rowOrderOf({ ...frameWeave(project), ...laidOf(frameOf(project)), rows, columns }, rowProgressOf(project))
 }
 
 /** The pass that weaves a bead of the Frame, or undefined for a position outside it or on the Canvas. */
 function framePassAt(project: RowProgressed, position: GridPosition): number | undefined {
-  const frame = project.frame
+  const frame = frameOf(project)
   // Row progress covers the Frame only: beads outside it stay editable whatever row the weaver is on.
   if (!frame || position.layer === 'canvas') {
     return undefined
@@ -217,21 +228,21 @@ function framePassAt(project: RowProgressed, position: GridPosition): number | u
  * Frame is set. */
 export function isInFinishedRow(project: RowProgressed, position: GridPosition): boolean {
   const pass = framePassAt(project, position)
-  return pass !== undefined && pass < currentPass(project.rowProgress)
+  return pass !== undefined && pass < currentPass(rowProgressOf(project))
 }
 
 /** Whether a bead sits in the pass the weaver is on now (ticket 352): the same pass the pointer points at, so the
  * current row is drawn brighter. Only while the overlay is on and a Frame is set. */
 export function isInCurrentRow(project: RowProgressed, position: GridPosition): boolean {
   const pass = framePassAt(project, position)
-  return pass !== undefined && pass === currentPass(project.rowProgress)
+  return pass !== undefined && pass === currentPass(rowProgressOf(project))
 }
 
 /** Takes back what a drawing command did to finished rows (ticket 33): those beads are already woven, and they are the
  * Frame's, since the Canvas has no rows to finish (ADR 0066). Nothing left to change returns `before` itself, the
  * drawing commands' "unchanged" signal, so no undo step is recorded. */
 export function keepFinishedRows(before: Project, after: Project): Project {
-  const frame = before.frame
+  const frame = frameOf(before)
   const [was, now] = [beadsOfLayer(before, 'frame'), beadsOfLayer(after, 'frame')]
   if (!frame || !was || !now || now === was) {
     return sameBeads(before, after) ? before : after
@@ -247,7 +258,5 @@ export function keepFinishedRows(before: Project, after: Project): Project {
  * finished row and to go back to an earlier one. */
 export function moveToRow(project: Project, row: number): Project {
   const { total } = rowProgressPosition(project)
-  return touch(project, {
-    rowProgress: { ...project.rowProgress, [pointerKey(project.rowProgress)]: clampRow(row, total) },
-  })
+  return withRowProgress(project, { ...rowProgressOf(project), [pointerKey(rowProgressOf(project))]: clampRow(row, total) })
 }

@@ -12,6 +12,7 @@ import type { Scroll, SurfaceView, ViewLayer } from '../../../rendering/surfaceV
 import type { Size } from '../../../rendering/cellSize'
 import type { HandleId } from '../../../rendering/frameHandles'
 import { sizeCanvas } from './useSurfaceDrawing'
+import { frameOf } from '../../../domain/layerRecord'
 
 // The Frame margin's outline (ticket 276, Frame card): 1s after a refused margin press, faded over --duration-fast,
 // redrawn frame by frame; with reduced motion at once. At rest the sheet's own edge marks the margin (ticket 0656).
@@ -31,7 +32,7 @@ export function useMarginCue(props: { project: Project; selectionRefusals?: numb
   let refusedTimer: ReturnType<typeof setTimeout> | undefined
   let fadeFrame: number | undefined
   const opacity = ref(0)
-  const wanted = computed(() => props.project.frame !== undefined && refusedPress.value)
+  const wanted = computed(() => frameOf(props.project) !== undefined && refusedPress.value)
 
   watch(wanted, (shown) => {
     if (fadeFrame !== undefined) cancelAnimationFrame(fadeFrame)
@@ -118,7 +119,7 @@ export function useSurfaceOverlay(deps: SurfaceOverlayDeps): void {
   /** The Frame's size tooltip follows a size change that did not come from a drag (an edge stepper, a key) for a
    * moment. */
   watch(
-    () => [props.project.frame?.columns, props.project.frame?.rows],
+    () => [frameOf(props.project)?.columns, frameOf(props.project)?.rows],
     () => {
       if (!props.tools.settingFrame || framing.value) return
       sizeFlash.value = true

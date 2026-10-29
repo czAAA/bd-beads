@@ -5,6 +5,7 @@ import type { BeadMap, Rect } from '../../src/domain/canvas'
 import type { Grid, Project } from '../../src/domain/project'
 import type { Technique } from '../../src/domain/weave'
 import { fixtureProject } from '../support/projects'
+import { type Layered } from '../../src/domain/layerRecord'
 
 // The shapes the big-Canvas performance check opens (ticket 0673, "Canvas performance for large patterns"): many
 // Pieces, one very large one, a Frame over a full Canvas, a big library, and the overlay's two whole-block cases.
@@ -44,7 +45,7 @@ function projectWith(technique: Technique, id: string, changes: Partial<Project>
 }
 
 /** A columns × rows patterned Frame at the Canvas's origin. */
-function patternedFrame(technique: Technique, columns: number, rows: number): Pick<Project, 'frame'> {
+function patternedFrame(technique: Technique, columns: number, rows: number): Layered {
   const grid: Grid = Array.from({ length: rows }, (_row, row) => Array.from({ length: columns }, (_cell, column) => ({ color: patternColor(row, column) })))
   return { frame: framedGrid(grid, { technique }).frame }
 }

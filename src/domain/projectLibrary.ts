@@ -1,6 +1,7 @@
 import { rotationSwapsAxes } from './grid'
 import type { Project } from './project'
 import { shownDimensions } from './projectExtent'
+import { frameOf, orientationOf, projectNameOf } from './layerRecord'
 
 // The Project library's lists (ticket 145): a Project's line in them and their order.
 
@@ -9,12 +10,12 @@ import { shownDimensions } from './projectExtent'
  * Project currently looks. */
 export function summarizeProject(project: Project): string {
   // The size is the Frame's: a canvas with none has no size to state (ADR 0026).
-  if (!project.frame) {
-    return project.name
+  if (!frameOf(project)) {
+    return projectNameOf(project)
   }
   const { columns, rows } = shownDimensions(project)
-  const [width, height] = rotationSwapsAxes(project.rotation) ? [rows, columns] : [columns, rows]
-  return `${project.name} · ${width}×${height}`
+  const [width, height] = rotationSwapsAxes(orientationOf(project)) ? [rows, columns] : [columns, rows]
+  return `${projectNameOf(project)} · ${width}×${height}`
 }
 
 /** When a Project was last saved, for ordering the library: its updatedAt when it predates savedAt (ticket 145). */

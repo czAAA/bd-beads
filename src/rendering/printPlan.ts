@@ -5,7 +5,7 @@ import type { Weave } from '../domain/weave'
 import type { Project } from '../domain/project'
 import { CELL_SIZE_PX, cellSizePx } from './cellSize'
 import { displayedExtentPx, beadStepPx, type Region } from './surfaceView'
-import { heldWeave } from '../domain/layerRecord'
+import { heldWeave, type Layered, orientationOf } from '../domain/layerRecord'
 
 // PDF page layout (ticket 162, 185, 578, 0584): the Cover page whole, then parts of as many beads as fill a chart page at
 // one bead size, small parts sharing a sheet; page px at 150 dpi.
@@ -94,7 +94,7 @@ export interface PrintPlan {
   keyRows: number
 }
 
-type Shape = Pick<Project, 'technique' | 'techniqueSettings' | 'frame' | 'beads' | 'rotation'> & Partial<Pick<Project, 'beadId' | 'beadShape' | 'letters'>>
+type Shape = Layered
 
 // Beads across and down as the Project shows (turned, its rows run across at a quarter turn), and one bead's step each
 // way at zoom 1.
@@ -189,8 +189,8 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT, listPage
   const inset = PRINT_RULER
   const area = chartArea(page, keyRows)
   // Two rows (columns) are counted so a brick or peyote part's half-bead offset is in the width (height).
-  const fullAcross = beadsThatFit((beads) => blockExtent(canvas, project.rotation, beads, 2).width, zoom, area.width - inset * 2, grid.across)
-  const fullDown = beadsThatFit((beads) => blockExtent(canvas, project.rotation, 2, beads).height, zoom, area.height - inset * 2, grid.down)
+  const fullAcross = beadsThatFit((beads) => blockExtent(canvas, orientationOf(project), beads, 2).width, zoom, area.width - inset * 2, grid.across)
+  const fullDown = beadsThatFit((beads) => blockExtent(canvas, orientationOf(project), 2, beads).height, zoom, area.height - inset * 2, grid.down)
   const sidesAcross = cutSide(grid.across, fullAcross)
   const sidesDown = cutSide(grid.down, fullDown)
   const partsAcross = sidesAcross.length
@@ -203,7 +203,7 @@ export function planPrint(project: Shape, page: PageSize = A4_PORTRAIT, listPage
       const { first: firstDown, last: lastDown } = sidesDown[down]!
       const overlapAcross = Math.min(PRINT_PART_OVERLAP, firstAcross)
       const overlapDown = Math.min(PRINT_PART_OVERLAP, firstDown)
-      const extent = blockExtent(canvas, project.rotation, lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
+      const extent = blockExtent(canvas, orientationOf(project), lastAcross - firstAcross + 1 + overlapAcross, lastDown - firstDown + 1 + overlapDown)
       cut.push({
         across,
         down,

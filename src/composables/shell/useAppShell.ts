@@ -58,6 +58,7 @@ import { useToolAndColor } from '../tools/useToolAndColor'
 import { useToolPill } from '../tools/useToolPill'
 import { useUndoHistory } from '../project/useUndoHistory'
 import { useDialogs } from './useDialogs'
+import { frameOf } from '../../domain/layerRecord'
 
 // The app's composition root (ADR 0020): wires every composable together and hands each part of the shell its own
 // context (ticket 0618); nothing here decides anything. Deps are lazy arrows so composables can reference each other.

@@ -1,6 +1,6 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { changedPositions, type BeadMap } from '../../../domain/canvas'
-import { layerOf, withLayer } from '../../../domain/layerRecord'
+import { frameOf, layerOf, withLayer } from '../../../domain/layerRecord'
 import { sameWeave } from '../../../domain/layerWeave'
 import { shownLetters } from '../../../domain/paletteEdits'
 import type { Project } from '../../../domain/project'
@@ -109,7 +109,7 @@ function changedBands(before: Project, after: Project): { first: number; last: n
   }
   // The Frame's rows are counted from its first, which is the same in both: the Layout is.
   const framed = (project: Project) => layerOf(project, 'frame')?.beads ?? {}
-  const frameTop = after.frame?.row ?? 0
+  const frameTop = frameOf(after)?.row ?? 0
   const changed = [
     ...new Set([
       ...changedPositions(layerOf(before, 'canvas').beads, layerOf(after, 'canvas').beads).map((position) => position.row),
@@ -230,7 +230,7 @@ export function useBeadLayer({ props, canvas: canvasEl, size, space, theme, show
       before.zoom > 0
     const heavy =
       onlyViewMoved &&
-      beadsToDraw(storedBeads(project), project.frame ? project.frame.columns * project.frame.rows : 0, size.value, props.zoom) > GESTURE_BEAD_LIMIT
+      beadsToDraw(storedBeads(project), frameOf(project) ? frameOf(project).columns * frameOf(project).rows : 0, size.value, props.zoom) > GESTURE_BEAD_LIMIT
     if (!heavy || !before) {
       clearMove()
       drawCells()

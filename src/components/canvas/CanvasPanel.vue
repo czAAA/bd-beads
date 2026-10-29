@@ -22,7 +22,7 @@ import type { PillRect } from '../../domain/toolPill'
 import { hasGuides } from '../../domain/selection'
 import { toolCapabilities } from '../../domain/tool'
 import { hasProjectBeads } from '../../domain/layerBeads'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf } from '../../domain/layerRecord'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { seenSize } from '../../domain/frameOrientation'
 import { fillBlanks } from '../../domain/fillBlanks'
@@ -163,7 +163,7 @@ const shownProject = frameDraftProject
 /** The Frame's size tooltip while it is set: beads and measured size, "13×13 ≈ 2.1 × 2.1 cm" (Frame card). */
 const frameTooltip = computed(() => {
   const project = shownProject.value
-  const frame = project?.frame
+  const frame = frameOf(project)
   if (!project || !frame) return ''
   const bead = layerOf(project, 'frame')?.bead
   const estimate = bead ? formatSizeMm(estimatedSizeMm(frame, bead), { mm: t.value.form.unitMm, cm: t.value.form.unitCm }, locale.value) : ''

@@ -1,7 +1,7 @@
 import { codesInPalette, defaultPalette, paletteColors, removedDefaultsAfter, type PaletteCodes, type PaletteIds } from './palette'
 import { touch, type Project } from './project'
 import { lettersFor, type SwatchLetters } from './swatchLetters'
-import { beadIdOfLayer } from './layerRecord'
+import { beadIdOfLayer, lettersOn } from './layerRecord'
 
 // The Project's Palette (ADR 0002, ticket 0525): its swatches, the defaults removed, catalog codes and Swatch letters,
 // which change together.
@@ -22,13 +22,8 @@ export function setPalette(project: Project, palette: PaletteIds, codes: Palette
   return touch(rest, { palette, paletteLetters, ...(removed.length > 0 ? { removedDefaults: removed } : {}), ...(Object.keys(kept).length > 0 ? { paletteCodes: kept } : {}) })
 }
 
-/** The Project with Letters on or off (ticket 0573); off is the default and is left unsaved. */
-export function withLetters(project: Project, on: boolean): Project {
-  const { letters: _old, ...rest } = project
-  return on ? { ...rest, letters: true } : rest
-}
 
 /** The Swatch letters to print on beads: the Project's own while Letters is on, none otherwise (ticket 0573). */
-export function shownLetters(project: Pick<Project, 'letters' | 'paletteLetters'>): SwatchLetters | undefined {
-  return project.letters ? project.paletteLetters : undefined
+export function shownLetters(project: Pick<Project, 'layers' | 'paletteLetters'>): SwatchLetters | undefined {
+  return lettersOn(project) ? project.paletteLetters : undefined
 }

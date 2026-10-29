@@ -17,6 +17,7 @@ import { letterInk } from '../../rendering/beadLook'
 import EditableLine from '../project/EditableLine.vue'
 import PanelPicker from '../shell/PanelPicker.vue'
 import AppSwitch from '../ui/AppSwitch.vue'
+import { frameOf } from '../../domain/layerRecord'
 
 // The margin sheet's title block (MarginSheet card, ticket 0657), in its bottom-right corner like a drawing's: the
 // Frame's name, its Technique and "by" the maker, each edited in place, then its size in beads and in cm, the lettered
@@ -33,7 +34,7 @@ const emit = defineEmits<{
 const { t, locale } = useI18n()
 const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const techniqueAction = controlAction('change-technique')
-const frame = computed(() => props.project.frame!)
+const frame = computed(() => frameOf(props.project)!)
 
 /** The Frame's Technique, the one its rows are woven in; locked with its reason once a pass is done. */
 const technique = computed(() => frameWeave(props.project).technique)

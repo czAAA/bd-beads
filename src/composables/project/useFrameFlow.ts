@@ -18,7 +18,7 @@ import { changedSetting, frameAllows, removedBeadsOf, settingsOf, settingValuesO
 import { namedPieceCutBy } from '../../domain/pieceNames'
 import { placedStarter, type Starter, type StarterChoice } from '../../domain/starters'
 import { starterName, starterSizeWords } from '../../i18n/starterWords'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf } from '../../domain/layerRecord'
 import { frameWeave, layerWeave, sameWeave } from '../../domain/layerWeave'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import { switchedWeave } from '../../domain/weaveSwitch'
@@ -187,7 +187,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * row and column. */
   function changeWeave(layer: Layer, change: { technique: Technique } | { setting: string; value: number }): void {
     const project = deps.currentProject()
-    if (!project || (layer === 'frame' && !project.frame)) return
+    if (!project || (layer === 'frame' && !frameOf(project))) return
     const current = layerWeave(project, layer)
     const technique = 'technique' in change ? change.technique : current.technique
     // The layer's values for the Technique's settings, one kept from before it was woven in another (a Brick block) too.
@@ -216,7 +216,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
 
   function press(target: FramePress, cell: GridPosition): void {
     const project = deps.currentProject()
-    const frame = project?.frame
+    const frame = frameOf(project)
     dragged = false
     moved = { rows: 0, columns: 0 }
     if (!frame) return
@@ -242,7 +242,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
   }
 
   function release(): void {
-    const result = draft.value?.frame
+    const result = draft.value.frame
     const wasMove = gesture?.kind === 'move'
     gesture = undefined
     draft.value = undefined
@@ -268,17 +268,17 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * empty the Frame is none. */
   function stepEdge(edge: FrameEdge, step: 1 | -1): void {
     const project = deps.currentProject()
-    if (!project?.frame || locked.value) return
-    const next = frameWithEdgeStep(frameWeave(project), project.frame, edge, step)
-    if (next !== project.frame) commit(next)
+    if (!frameOf(project) || locked.value) return
+    const next = frameWithEdgeStep(frameWeave(project), frameOf(project), edge, step)
+    if (next !== frameOf(project)) commit(next)
   }
 
   /** The size typed into the Frame panel (ticket 473): both sides grow or shrink evenly about the Frame, one Undo step. */
   function resizeTo(columns: number, rows: number): void {
     const project = deps.currentProject()
-    if (!project?.frame || locked.value) return
-    const next = frameResizedAround(frameWeave(project), project.frame, columns, rows)
-    if (!sameFrame(next, project.frame)) commit(next)
+    if (!frameOf(project) || locked.value) return
+    const next = frameResizedAround(frameWeave(project), frameOf(project), columns, rows)
+    if (!sameFrame(next, frameOf(project))) commit(next)
   }
 
   /** The Frame's name, typed in the Frame panel (ticket 555): one Undo step; empty clears it. */
@@ -375,7 +375,7 @@ export function useFrameFlow(deps: FrameFlowDeps) {
    * asked, as what a smaller setting leaves out folds until it grows again (ADR 0066). Held still once a pass is done. */
   function setSettings(change: FrameSettings): void {
     const project = deps.currentProject()
-    if (!project?.frame || !settingsOf(project.frame) || locked.value) return
+    if (!frameOf(project) || !settingsOf(frameOf(project)) || locked.value) return
     const name = changedSetting(change)
     const command = (current: Project) => changeFrame(current, { settings: change })
     const outcome = name === 'fringeStyle' ? deps.edit('frame', command) : deps.hold(command)
@@ -410,9 +410,9 @@ export function useFrameFlow(deps: FrameFlowDeps) {
     const steps: Record<string, [number, number]> = { ArrowUp: [-1, 0], ArrowDown: [1, 0], ArrowLeft: [0, -1], ArrowRight: [0, 1] }
     const step = steps[event.key]
     const project = deps.currentProject()
-    if (!step || !project?.frame) return false
+    if (!step || !frameOf(project)) return false
     if (event.shiftKey) {
-      if (settingFrame.value) commit(frameWithSize(project.frame, project.frame.columns + step[1], project.frame.rows + step[0]))
+      if (settingFrame.value) commit(frameWithSize(frameOf(project), frameOf(project).columns + step[1], frameOf(project).rows + step[0]))
     } else {
       moveBy(step[0], step[1])
     }

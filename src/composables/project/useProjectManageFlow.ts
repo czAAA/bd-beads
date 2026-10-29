@@ -1,6 +1,7 @@
 import type { Project } from '../../domain/project'
 import { duplicateProject, normalizeProjectName, suggestCopyName, withProjectName } from '../../domain/projectName'
 import { useDialogs, type Dialogs } from '../shell/useDialogs'
+import { projectNameOf } from '../../domain/layerRecord'
 
 /** What managing the open Project needs from the app shell: the library and its commit points. */
 export interface ProjectManageDeps {
@@ -38,7 +39,7 @@ export function useProjectManageFlow(deps: ProjectManageDeps) {
 
   function onRequestDuplicate() {
     const project = deps.currentProject()
-    if (project) duplicating.value = suggestCopyName(project.name, deps.projects().map((existing) => existing.name))
+    if (project) duplicating.value = suggestCopyName(projectNameOf(project), deps.projects().map((existing) => existing.name))
   }
 
   function onCancelDuplicate() {

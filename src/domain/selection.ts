@@ -4,7 +4,7 @@ import type { FrameEdge } from './frame'
 import type { Weave } from './weave'
 import { layerAt, layerSheet, onLayer, shownBeads, positionInLayer, positionOnCanvas, type Layer, type LayerSheet, type Placed } from './layers'
 import { footprintOf } from './footprint'
-import { beadsOfLayer, heldWeave } from './layerRecord'
+import { beadsOfLayer, heldWeave, type Layered } from './layerRecord'
 import { inMargin, trimToAllowed, withMargin } from './margin'
 import { pieceBeadsAt } from './pieces'
 import { paintCells } from './drawing'
@@ -241,7 +241,7 @@ export function selectionLayer(project: Placed, selection: Selection): Layer {
 }
 
 /** The Selection counted in a layer's own rows and columns. */
-export function selectionInLayer(project: Pick<Project, 'frame'>, layer: Layer, selection: Selection): Selection {
+export function selectionInLayer(project: Layered, layer: Layer, selection: Selection): Selection {
   const { row, column } = positionInLayer(project, layer, { row: selection.top, column: selection.left })
   const cells = selection.cells?.map((cell) => positionInLayer(project, layer, cell))
   return { top: row, left: column, rows: selection.rows, columns: selection.columns, ...(cells ? { cells } : {}) }

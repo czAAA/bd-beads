@@ -1,7 +1,7 @@
 import type { GridDimensions, GridPosition } from './grid'
 import type { FrameShapeId, FrameSettings, QuarterTurns } from './frameShape'
 import type { Weave } from './weave'
-import { beadsOfLayer } from './layerRecord'
+import { beadsOfLayer, frameOf, type Layered } from './layerRecord'
 
 // The painted beads of a Canvas (ADR 0026) by row, then column, then the color's hex. Only painted positions are
 // stored; rows and columns may be negative. Nested plain objects, so an edit copies only the rows it touched and shares
@@ -139,14 +139,14 @@ export function sameFrame(a: Rect | undefined, b: Rect | undefined): boolean {
 }
 
 /** Something with a size in beads: plain dimensions, or a Project (a canvas with or without a Frame). */
-export type Sized = GridDimensions | { frame?: Rect; beads: BeadMap }
+export type Sized = GridDimensions | Layered
 
 /** A Frame's size, or — with no Frame — the size of the box round the beads, or 0 × 0 for an empty canvas. */
 export function sizeOf(sized: Sized): GridDimensions {
   if ('columns' in sized) {
     return { columns: sized.columns, rows: sized.rows }
   }
-  const box = sized.frame ?? beadBounds(beadsOfLayer(sized, 'canvas'))
+  const box = frameOf(sized) ?? beadBounds(beadsOfLayer(sized, 'canvas'))
   return box ? { columns: box.columns, rows: box.rows } : { columns: 0, rows: 0 }
 }
 

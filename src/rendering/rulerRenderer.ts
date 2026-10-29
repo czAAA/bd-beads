@@ -1,7 +1,7 @@
 import { frameContains, type Rect } from '../domain/canvas'
 import { laidFrame } from '../domain/frameOrientation'
 import { namedPieces } from '../domain/pieceNames'
-import { currentPass, frameRowOrder, rowProgressOn } from '../domain/rowProgress'
+import { currentPass, frameRowOrder, rowProgressOf, rowProgressOn } from '../domain/rowProgress'
 import type { DrawingContext } from './beadLook'
 import type { RulerScale } from './rulerScale'
 import type { RuledBox, RulerDot, RulerLabel, RulerLayout } from './rulers'
@@ -9,6 +9,7 @@ import type { SurfaceView } from './surfaceView'
 import type { ProjectTheme } from './beadLook'
 import type { DrawnProject } from './projectRenderer'
 import { frameHandles, type Handle, type HandleId } from './frameHandles'
+import { frameOf } from '../domain/layerRecord'
 
 /** The mono stack every number and label on the canvas is set in. */
 const MONO_FONT = '"DM Mono", "JetBrains Mono", ui-monospace, monospace'
@@ -54,10 +55,10 @@ function drawDot(context: DrawingContext, dot: RulerDot, scale: RulerScale, them
 
 /** One ruler number, in the style its role asks for (Rulers card). */
 function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, project: DrawnProject, theme: ProjectTheme, rowMarks: boolean): void {
-  const { direction } = project.rowProgress
-  const frame = project.frame
+  const { direction } = rowProgressOf(project)
+  const frame = frameOf(project)
   const relative = frame ? (label.axis === 'row' ? label.position - frame.row : label.position - frame.column) : -1
-  const currentLine = frameRowOrder(project).lineOf(currentPass(project.rowProgress))
+  const currentLine = frameRowOrder(project).lineOf(currentPass(rowProgressOf(project)))
   // A turned Frame's rulers count the cells it covers, not its own rows (ticket 0667): no line of them is the current one.
   const current = rowMarks && frame && !frame.quarterTurns && ((label.axis === 'row' && direction === 'rows' && relative === currentLine) || (label.axis === 'column' && direction === 'columns' && relative === currentLine))
 
@@ -82,7 +83,7 @@ function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, p
 export function drawRulers(context: DrawingContext, input: RulerDrawInput): void {
   const { project, surface, layout, pixelRatio, rowMarks = rowProgressOn(project) } = input
   // Once there is a Frame its rulers are the only ones, and they sit on its margin sheet (ticket 0656).
-  const theme = project.frame ? { ...input.theme, ruler: input.theme.margin.ruler, rulerStrong: input.theme.margin.rulerStrong } : input.theme
+  const theme = frameOf(project) ? { ...input.theme, ruler: input.theme.margin.ruler, rulerStrong: input.theme.margin.rulerStrong } : input.theme
   const { fontPx } = layout.scale
   context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
 
@@ -111,13 +112,13 @@ const POINTER_GAP_PX = 4
 // numbers, pointing at the pass: in the left band for a pass running across the screen, in the top band for one
 // running down it. None for a Custom frame, whose passes are no line, nor once every pass is done.
 function drawRowPointer(context: DrawingContext, { project, surface, layout }: RulerDrawInput, theme: ProjectTheme): void {
-  const frame = project.frame
+  const frame = frameOf(project)
   const box = layout.boxes.find((ruled) => ruled.kind === 'frame')
   const order = frameRowOrder(project)
-  const pass = currentPass(project.rowProgress)
+  const pass = currentPass(rowProgressOf(project))
   const line = pass < order.count ? order.lineOf(pass) : undefined
   if (!frame || !box || line === undefined) return
-  const columns = project.rowProgress.direction === 'columns'
+  const columns = rowProgressOf(project).direction === 'columns'
   const first = surface.beadToPoint(columns ? { row: frame.row, column: frame.column + line } : { row: frame.row + line, column: frame.column }, 'frame')
   const along = surface.beadStep('frame')[columns ? 'row' : 'column']
   // A Frame lying a quarter round runs its own rows the other way on screen (ticket 0667).
@@ -158,8 +159,8 @@ function drawPieceNames(context: DrawingContext, { project, surface, layout, the
   const pieces: (Rect & { name: string; layer: 'canvas' | 'frame' })[] = namedPieces(project)
     .filter((piece) => !covered(piece))
     .map((piece) => ({ ...piece, layer: 'canvas' as const }))
-  if (frame && project.frame?.name) {
-    pieces.push({ ...frame, name: project.frame.name, layer: 'frame' })
+  if (frame && frameOf(project)?.name) {
+    pieces.push({ ...frame, name: frameOf(project).name, layer: 'frame' })
   }
   if (pieces.length === 0) {
     return

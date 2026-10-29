@@ -6,6 +6,7 @@ import type { Cell, Project, RowProgress } from '../../src/domain/project'
 import { encodeProject } from '../../src/domain/projectEncoding'
 import { OPEN_SPACE } from '../../src/rendering/space'
 import { surfaceView } from '../../src/rendering/surfaceView'
+import { type Layered, orientationOf } from '../../src/domain/layerRecord'
 
 /** The localStorage key and stored version the app writes (services/libraryStore.ts): the checks seed a library by
  * writing it directly. */
@@ -70,12 +71,12 @@ export { STORAGE_KEY }
 // canvas is moved). The surface is the Canvas itself (ADR 0026): a bead sits at its displayed position, turned and
 // zoomed, less the scroll. Worked out from the Technique's geometry (the renderer's).
 export function beadCentre(
-  project: Pick<Project, 'technique' | 'rotation'>,
+  project: Layered,
   box: { x: number; y: number; width: number; height: number },
   zoom: number,
   { row, column }: { row: number; column: number },
   scroll: { x: number; y: number } = { x: 0, y: 0 },
 ): { x: number; y: number } {
-  const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: project.rotation, zoom, scroll }).beadToPoint({ row, column })
+  const at = surfaceView({ space: OPEN_SPACE, technique: project.technique, rotation: orientationOf(project), zoom, scroll }).beadToPoint({ row, column })
   return { x: box.x + at.x, y: box.y + at.y }
 }

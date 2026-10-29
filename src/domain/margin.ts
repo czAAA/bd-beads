@@ -3,7 +3,7 @@ import { forEachBead, frameContains, withColors, type BeadChange, type Rect } fr
 import type { GridPosition } from './grid'
 import { isInFinishedRow } from './rowProgress'
 import { sameBeads } from './layerBeads'
-import { beadsOfLayer, withLayer } from './layerRecord'
+import { beadsOfLayer, type Layered, withLayer } from './layerRecord'
 import type { Project } from './project'
 import type { Selection } from './selection'
 
@@ -23,7 +23,7 @@ export function withMargin(frame: Rect, margin: number = MARGIN): Rect {
 /** Whether a bead may be placed at a position: not in a row the weaver has finished (ticket 33), and not in the
  * Frame's margin (ticket 261). The one statement of the rule, which an Edit enforces and a press asks to show it is
  * refused. */
-export function mayPlace(project: Pick<Project, 'rowProgress' | 'frame' | 'technique' | 'techniqueSettings'> & Partial<Pick<Project, 'beadId' | 'beadShape'>>, position: GridPosition, margin: number = MARGIN): boolean {
+export function mayPlace(project: Layered, position: GridPosition, margin: number = MARGIN): boolean {
   return !isInFinishedRow(project, position) && !inMargin(footprintOf(project), position, margin)
 }
 

@@ -22,7 +22,7 @@ import { FRAME_EDGES, fitToDrawing, frameWithEdgeStep, type FrameEdge } from '..
 import { seenSize } from '../../domain/frameOrientation'
 import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameSettings, type FringeStyle } from '../../domain/frameShape'
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
-import { layerOf } from '../../domain/layerRecord'
+import { frameOf, layerOf } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
 import type { Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
@@ -61,7 +61,7 @@ const deps = computed(() => controlDeps({ activeProject: () => props.project }))
 const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
-const frame = computed(() => props.project.frame)
+const frame = computed(() => frameOf(props.project))
 /** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
 const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
 /** Whether the size fields are off, and why: finished rows, or a turned Frame. */

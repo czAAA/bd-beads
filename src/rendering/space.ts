@@ -6,7 +6,7 @@ import { frameWeave } from '../domain/layerWeave'
 import { projectDimensions, projectFrame } from '../domain/projectExtent'
 import { type DrawnProject } from './projectRenderer'
 import { OPEN_EXTENT, projectExtentPx, type Extent } from './surfaceView'
-import { beadsOfLayer } from '../domain/layerRecord'
+import { beadsOfLayer, frameOf } from '../domain/layerRecord'
 
 // Where a Project's positions live (ADR 0018, ADR 0026), shared by the renderer and overlay: on the Canvas from row 0,
 // column 0; drawn on its own (export, picture, Homepage) the Project is the Frame with its first bead at (0, 0). A
@@ -34,7 +34,7 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
     origin: open ? { row: frame.row, column: frame.column } : { row: 0, column: 0 },
     columns,
     rows,
-    hasFrame: !open || project.frame !== undefined,
+    hasFrame: !open || frameOf(project) !== undefined,
     toAbsolute: open ? { row: 0, column: 0 } : { row: frame.row, column: frame.column },
     extent: open ? OPEN_EXTENT : projectExtentPx(frameWeave(project).technique, columns, rows, frameWeave(project).cell),
   }
@@ -42,8 +42,8 @@ export function spaceOf(project: DrawnProject, open: boolean): Space {
 
 /** The Layer geometry of the Project drawn on its own (ADR 0078, ticket 0630): the Frame's, as its Bead shape draws it,
  * or for a Canvas without one its Weave's over the box round its beads, from the box's first position. */
-export function geometryDrawnAlone(project: Pick<DrawnProject, 'technique' | 'techniqueSettings' | 'frame' | 'beads' | 'beadId' | 'beadShape'>): LayerGeometry {
-  if (project.frame) return frameGeometryOf(project)
+export function geometryDrawnAlone(project: DrawnProject): LayerGeometry {
+  if (frameOf(project)) return frameGeometryOf(project)
   const { rows, columns } = projectDimensions(project)
   return gridGeometry(frameWeave(project), { row: 0, column: 0, rows, columns })
 }
@@ -51,8 +51,8 @@ export function geometryDrawnAlone(project: Pick<DrawnProject, 'technique' | 'te
 /** The color of the bead drawn at a position of a space (ADR 0066): the Frame's own beads inside the Frame, which are
  * counted from its first row and column whichever space it is drawn in, else the Canvas's. A hex, or null where
  * nothing is painted. */
-export function beadInSpace(project: Pick<DrawnProject, 'beads' | 'frame'>, space: Space, row: number, column: number): string | null {
-  const frame = project.frame
+export function beadInSpace(project: DrawnProject, space: Space, row: number, column: number): string | null {
+  const frame = frameOf(project)
   const inside = row >= space.origin.row && row < space.origin.row + space.rows && column >= space.origin.column && column < space.origin.column + space.columns
   return frame && inside
     ? colorAt(beadsOfLayer(project, 'frame')!, row - space.origin.row, column - space.origin.column)
