@@ -3,15 +3,15 @@ import { computed } from 'vue'
 import { beadLabel, type Bead } from '../../domain/beads'
 import { layerOf } from '../../domain/layerRecord'
 import type { Layer } from '../../domain/grid'
-import type { Project } from '../../domain/project'
+import type { Background, Project } from '../../domain/project'
 import type { BeadShape, Technique } from '../../domain/weave'
-import { useBackgroundSwatches } from '../../composables/canvas/useBackgroundSwatches'
 import { controlAction } from '../../composables/shell/controlRegistry'
 import { useI18n } from '../../i18n/useI18n'
 import { useCanvasBackground } from '../../theme/useCanvasBackground'
 import PanelItem from '../shell/PanelItem.vue'
 import PanelSection from '../shell/PanelSection.vue'
-import CanvasSection from './CanvasSection.vue'
+import BackgroundChip from './BackgroundChip.vue'
+import BackgroundSection from './BackgroundSection.vue'
 import BeadSection from './BeadSection.vue'
 import ProjectHead from './ProjectHead.vue'
 
@@ -31,6 +31,8 @@ const emit = defineEmits<{
   'set-canvas-technique': [technique: Technique]
   'set-weave-setting': [layer: Layer, id: string, value: number]
   'set-bead-shape': [shape: BeadShape]
+  /** A layer's Background picked (ticket 0666): here the Canvas's. */
+  'set-background': [layer: Layer, background: Background]
   'replace-bead': [beadId: string]
   save: []
   'export-project-file': []
@@ -41,7 +43,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const canvas = useCanvasBackground()
+const canvas = useCanvasBackground(() => props.project)
 const duplicate = controlAction('duplicate-project')
 const remove = controlAction('delete-project')
 const clear = controlAction('clear-project')
@@ -57,8 +59,6 @@ const beadSummary = computed(() => {
   return bead ? `${beadLabel(bead, t.value.formFactors)} · ${shape.toLowerCase()}` : undefined
 })
 
-/** The Canvas color's name, the canvas section's summary: the one its picker shows chosen. */
-const canvasName = useBackgroundSwatches(canvas).summary
 </script>
 
 <template>
@@ -85,11 +85,11 @@ const canvasName = useBackgroundSwatches(canvas).summary
       />
     </PanelSection>
 
-    <PanelSection id="project:canvas" :label="t.panels.project.canvas" :summary="canvasName">
+    <PanelSection id="project:canvas" :label="t.panels.project.canvas">
       <template v-if="canvas.background.value" #summary>
-        <span class="project-panel__chip" :style="{ backgroundColor: canvas.background.value.color }" aria-hidden="true" />{{ canvasName }}
+        <BackgroundChip :background="canvas.background.value" />
       </template>
-      <CanvasSection />
+      <BackgroundSection :project="project" layer="canvas" @pick="emit('set-background', 'canvas', $event)" />
     </PanelSection>
 
     <PanelSection id="project:export" :label="t.panels.project.exportHeading">
@@ -113,15 +113,5 @@ const canvasName = useBackgroundSwatches(canvas).summary
 
 .project-panel > :deep(.panel-section:first-of-type) {
   margin-top: var(--space-4);
-}
-
-.project-panel__chip {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  margin-right: var(--space-6);
-  vertical-align: -1px;
-  border-radius: var(--radius-sm);
-  box-shadow: inset 0 0 0 1px var(--swatch-edge);
 }
 </style>

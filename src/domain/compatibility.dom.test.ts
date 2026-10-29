@@ -35,6 +35,7 @@ import projectFileV8BrickBlock from './fixtures/project-file-v8-swatch-codes-bri
 import projectFileV11 from './fixtures/project-file-v11-weave-settings.json?raw'
 import projectFileV11Turned from './fixtures/project-file-v11-frame-turned.json?raw'
 import projectFileV12 from './fixtures/project-file-v12-layers.json?raw'
+import projectFileV12Backgrounds from './fixtures/project-file-v12-backgrounds.json?raw'
 import projectFileV12Twisted from './fixtures/project-file-v12-canvas-twisted.json?raw'
 import libraryV5 from './fixtures/library-v5-layers.json?raw'
 import projectFileV5Delica from './fixtures/project-file-v5-delica-palette.json?raw'
@@ -42,7 +43,7 @@ import projectFileV4Weave from './fixtures/project-file-v4-openbeads-frame-weave
 import projectFileBrickBlock from './fixtures/project-file-v3-brick-block.json?raw'
 import projectFileV3 from './fixtures/project-file-v3-openbeads.json?raw'
 import projectFile from './fixtures/project-file.json?raw'
-import { beadsOfLayer, canvasOf, frameOf } from './layerRecord'
+import { backgroundOf, beadsOfLayer, canvasOf, frameOf } from './layerRecord'
 import { rowProgressOf } from './rowProgress'
 import { frameSheetOf, layersView } from '../testUtils/layerFields'
 
@@ -445,6 +446,18 @@ describe('stored-data compatibility', () => {
       expect(frameSheetOf(opened!)).toEqual({ row: 8, column: 6, rows: 3, columns: 4, technique: 'peyote', quarterTurns: 1, name: 'Fox', beads: { 0: { 0: '#e63746', 1: '#1a1a1a' }, 2: { 3: '#e63746' } }, folded: { 1: { 5: '#2f6fed' } } })
       expect(frameOf(opened!)).toMatchObject({ id: 'layer-frame', beadId: 'miyuki/delica/11-0', beadShape: 'real', letters: true, rowProgress: { direction: 'rows', currentRow: 1, currentColumn: 0 } })
       expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV12))
+    })
+
+    it('opens a version 12 file with each layer\'s own Background, and writes it back the same (ticket 0666)', () => {
+      const [opened] = parseProjectsFile(projectFileV12Backgrounds).projects
+      expect(backgroundOf(opened!, 'canvas')).toBe(3)
+      expect(backgroundOf(opened!, 'frame')).toBe('#336699')
+      expect(JSON.parse(serializeProject(opened!))).toEqual(JSON.parse(projectFileV12Backgrounds))
+    })
+
+    it('opens a version 12 file from before Backgrounds with none, so each layer shows the device\'s last pick (ticket 0666)', () => {
+      const [opened] = parseProjectsFile(projectFileV12).projects
+      expect([backgroundOf(opened!, 'canvas'), backgroundOf(opened!, 'frame')]).toEqual([undefined, undefined])
     })
 
     it('opens a version 12 file whose Canvas a twist left at any angle, and writes it back the same (ticket 0672)', () => {

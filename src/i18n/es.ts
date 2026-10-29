@@ -606,6 +606,7 @@ export const es: Translations = {
     lettersLabel: 'Letras',
     lettersLine: 'Imprime la letra de cada color en sus cuentas, para distinguir los colores en papel y en blanco y negro.',
     lettersInfoLabel: 'Para qué sirven las Letras',
+    background: { heading: 'Fondo', label: 'Fondo del marco' },
     margin: {
       heading: 'Margen',
       colorLabel: 'Color del margen',

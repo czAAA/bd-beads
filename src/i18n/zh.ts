@@ -596,6 +596,7 @@ export const zh: Translations = {
     lettersLabel: '字母',
     lettersLine: '在每颗珠子上印出颜色字母，方便在纸上和黑白打印中区分颜色。',
     lettersInfoLabel: '字母的作用',
+    background: { heading: '背景', label: '边框背景' },
     margin: {
       heading: '边距',
       colorLabel: '边距颜色',

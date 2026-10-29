@@ -609,6 +609,7 @@ export const ru: Translations = {
     lettersLabel: 'Буквы',
     lettersLine: 'Печатать букву цвета на каждой бисеринке, чтобы цвета различались на бумаге и в чёрно-белой печати.',
     lettersInfoLabel: 'Что делают Буквы',
+    background: { heading: 'Фон', label: 'Фон рамки' },
     margin: {
       heading: 'Поля',
       colorLabel: 'Цвет полей',

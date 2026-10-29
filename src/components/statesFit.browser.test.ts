@@ -114,7 +114,7 @@ const MarginColorPopoverHost = defineComponent({
     return () =>
       h('div', { style: { position: 'fixed', right: '8px', top: '8px' } }, [
         h('button', { ref: button, type: 'button' }, 'Margin'),
-        shown.value ? h(MarginColorPopover, { anchor: button.value }) : null,
+        shown.value ? h(MarginColorPopover, { anchor: button.value, project: framed }) : null,
       ])
   },
 })

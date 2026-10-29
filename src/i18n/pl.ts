@@ -609,6 +609,7 @@ export const pl: Translations = {
     lettersLabel: 'Litery',
     lettersLine: 'Drukuj literę koloru na każdym koraliku, by kolory dało się odróżnić na papierze i w druku czarno-białym.',
     lettersInfoLabel: 'Do czego służą Litery',
+    background: { heading: 'Tło', label: 'Tło ramki' },
     margin: {
       heading: 'Margines',
       colorLabel: 'Kolor marginesu',

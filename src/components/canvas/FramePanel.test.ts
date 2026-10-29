@@ -296,13 +296,26 @@ describe('FramePanel (ticket 473)', () => {
     expect(mountBar().find('[data-testid="frame-coffee"]').exists()).toBe(false)
   })
 
-  it('leads with Export, then the size and Beads needed, its total in the header, and ends with the margin (tickets 555, 568, 0656)', () => {
+  it('leads with Export, then the size, Beads needed with its total in the header, the background, and ends with the margin (tickets 555, 568, 0656, 0666)', () => {
     const wrapper = mountBar()
     const sections = wrapper.findAll('.panel-section')
-    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([en.panels.project.exportHeading, en.frame.sizeHeading, en.quantities.heading, en.frame.margin.heading])
+    expect(sections.map((section) => section.get('.panel-section__label').text())).toEqual([
+      en.panels.project.exportHeading,
+      en.frame.sizeHeading,
+      en.quantities.heading,
+      en.frame.background.heading,
+      en.frame.margin.heading,
+    ])
     expect(wrapper.find('[data-testid="export-needs-frame"]').exists()).toBe(false)
-    expect(sections.at(-2)!.attributes('data-testid')).toBe('bead-quantities')
+    expect(sections.at(-3)!.attributes('data-testid')).toBe('bead-quantities')
+    expect(sections.at(-2)!.attributes('data-testid')).toBe('frame-background')
     expect(sections.at(-1)!.attributes('data-testid')).toBe('margin-section')
+  })
+
+  it('asks for the Frame\'s own Background picked in its section (ticket 0666)', async () => {
+    const wrapper = mountBar()
+    await wrapper.get('[data-testid="frame-background-section"] [data-testid="background-color-linen"]').trigger('click')
+    expect(wrapper.emitted('set-background')).toEqual([[2]])
   })
 
   it('offers Replace Frame from the Starter gallery, one level deeper, and Back brings focus back to it (ticket 0596)', async () => {

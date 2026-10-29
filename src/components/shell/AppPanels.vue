@@ -37,6 +37,7 @@ const {
   onSetCanvasTechnique,
   onSetWeaveSetting,
   onSetBeadShape,
+  onSetBackground,
   onFitFrame,
   onSelectFrame,
   replaceBeadCandidates,
@@ -99,6 +100,7 @@ const chosenStarter = ref<StarterId>()
       @set-letters="onSetLetters"
       @key="onFrameKey"
       @set-settings="onSetFrameSettings"
+      @set-background="onSetBackground('frame', $event)"
     />
     <!-- Frame from starter (tickets 495, 555, 0596): the categories, a category's options, then a Starter's setup, to put
       its Frame on the open Project. -->
@@ -169,6 +171,7 @@ const chosenStarter = ref<StarterId>()
       @set-canvas-technique="onSetCanvasTechnique"
       @set-weave-setting="onSetWeaveSetting"
       @set-bead-shape="onSetBeadShape"
+      @set-background="onSetBackground"
       @replace-bead="onRequestReplaceBead"
       @save="saveNow"
       @export-project-file="onExportProjectFile"

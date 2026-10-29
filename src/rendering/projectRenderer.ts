@@ -96,6 +96,8 @@ export interface RenderInput {
   /** Device pixels per CSS pixel of the surface, so beads stay crisp on a high-density screen. Defaults to 1. */
   pixelRatio?: number
   theme?: ProjectTheme
+  /** The look the Frame is drawn in, on its own Background (ticket 0666); defaults to `theme`, as an export's does. */
+  frameTheme?: ProjectTheme
   // Draw finished rows at their normal color (ticket 352): while the pointer hovers a finished row, or after a tap on a
   // finished row. Off, they are dimmed.
   showFinished?: boolean
@@ -144,7 +146,7 @@ function frameFootprintPx(project: DrawnProject, margin = 0): Region | undefined
 }
 
 // The Canvas's Position marks (CONTEXT.md): one pattern fill in up to four strips round the margin's box, so no
-// position is tested. The marks also fill the Frame's box (ticket 458).
+// position is tested. The Frame's box has its own (drawFrameGround).
 function drawPositionMarks(
   context: DrawingContext,
   { project, area, zoom, pixelRatio, theme, margin }: { project: DrawnProject; space: Space; margin: number; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; theme: ProjectTheme },
@@ -157,7 +159,6 @@ function drawPositionMarks(
   const cell = cellSizePx(canvas.technique, canvas.cell)
   const box = frameOf(project) && withMargin(footprintOf(project)!, margin)
   // The margin's box, between the marks just inside and just outside it; a Frame woven otherwise holds what it draws.
-  const footprint = frameFootprintPx(project)
   const held = frameFootprintPx(project, margin)
   const alike = layersAlike(project)
   const cut = box && held && (alike ? describeWeave(canvas).boundary(box, cell.width, cell.height) : held)
@@ -165,11 +166,7 @@ function drawPositionMarks(
   context.fillStyle = pattern
   // The pattern is scaled to the tile's whole pixels, so it is smoothed here; the beads are blitted as they are.
   context.imageSmoothingEnabled = true
-  const strip = (left: number, top: number, right: number, bottom: number) => {
-    if (right > left && bottom > top) {
-      context.fillRect(left, top, right - left, bottom - top)
-    }
-  }
+  const strip = stripIn(context, area)
   if (!hole) {
     strip(area.left, area.top, area.right, area.bottom)
   } else {
@@ -180,18 +177,41 @@ function drawPositionMarks(
     strip(area.left, top, Math.min(hole.left, area.right), bottom)
     strip(Math.max(hole.right, area.left), top, area.right, bottom)
   }
-  // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
-  if (footprint && geometryDrawnAlone(project).grid) {
-    // The marks are round every position, the Frame's own included (ticket 458): its cells' outlines show in the gaps
-    // between its beads.
-    const edge = BEAD_GAP_PX / 2
-    strip(
-      Math.max(footprint.x - edge, area.left),
-      Math.max(footprint.y - edge, area.top),
-      Math.min(footprint.x + footprint.width + edge, area.right),
-      Math.min(footprint.y + footprint.height + edge, area.bottom),
-    )
+  context.imageSmoothingEnabled = false
+}
+
+/** Fills a rectangle cut to the view, in the fill in force; nothing where it is empty. */
+function stripIn(context: DrawingContext, area: { left: number; right: number; top: number; bottom: number }) {
+  return (left: number, top: number, right: number, bottom: number) => {
+    const [x0, y0, x1, y1] = [Math.max(left, area.left), Math.max(top, area.top), Math.min(right, area.right), Math.min(bottom, area.bottom)]
+    if (x1 > x0 && y1 > y0) {
+      context.fillRect(x0, y0, x1 - x0, y1 - y0)
+    }
   }
+}
+
+/** The Frame's box on the Canvas (tickets 458, 0666): filled in the Frame's own Background where it differs from the
+ * Canvas's, a Custom frame's Off-shape included, then marked round its positions (ticket 458), in the Frame's look. */
+function drawFrameGround(
+  context: DrawingContext,
+  { project, area, zoom, pixelRatio, canvasLook, frameLook }: { project: DrawnProject; area: { left: number; right: number; top: number; bottom: number }; zoom: number; pixelRatio: number; canvasLook: ProjectTheme; frameLook: ProjectTheme },
+): void {
+  const footprint = frameFootprintPx(project)!
+  const edge = BEAD_GAP_PX / 2
+  const strip = stripIn(context, area)
+  const box = [footprint.x - edge, footprint.y - edge, footprint.x + footprint.width + edge, footprint.y + footprint.height + edge] as const
+  if (frameLook.canvas !== canvasLook.canvas) {
+    context.fillStyle = frameLook.canvas
+    strip(...box)
+  }
+  // A Custom frame's Off-shape and Seams hold no position, so its box has no marks (ticket 0592).
+  const pattern = geometryDrawnAlone(project).grid && positionMarkPattern(context, { ...canvasWeave(project), deviceScale: zoom * pixelRatio, pixelRatio, color: frameLook.positionMark })
+  if (!pattern) {
+    return
+  }
+  context.fillStyle = pattern
+  context.imageSmoothingEnabled = true
+  strip(...box)
   context.imageSmoothingEnabled = false
 }
 
@@ -541,11 +561,13 @@ function canvasLook(theme: ProjectTheme): ProjectTheme {
 // Frame laid over them in its own Weave, or the Frame alone.
 export function renderProject(context: DrawingContext, input: RenderInput): void {
   const { project, space, region, zoom, pixelRatio = 1, theme = DEFAULT_THEME, drawBead = drawFlatBead, rows, showFinished = false, rowMarks = rowProgressOn(input.project), margin = MARGIN, letters, draftWhenSmall = false } = input
+  const frameTheme = input.frameTheme ?? theme
   const frame = frameOf(project)
   const rotation = quarterTurnOf(project)
   const { extent } = space
   // A finished row fades toward what is behind it, which on the Canvas is the drawing area, not a board.
   const look = space.open ? canvasLook(theme) : theme
+  const frameLook = space.open ? canvasLook(frameTheme) : frameTheme
   // A band of rows is the same rows of both layers only where they are alike (woven alike, in Beads of one size).
   const alike = !space.open || !frame || layersAlike(project)
   const band = alike ? rows : undefined
@@ -566,7 +588,7 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
   }
   context.clearRect(cleared.x, cleared.y, cleared.width, cleared.height)
   if (!space.open) {
-    context.fillStyle = theme.background
+    context.fillStyle = frameTheme.background
     context.fillRect(cleared.x, cleared.y, cleared.width, cleared.height)
   }
 
@@ -592,24 +614,25 @@ export function renderProject(context: DrawingContext, input: RenderInput): void
     drawCanvasLayer(context, draw, space)
     if (frame) {
       drawMarginSheet(context, project, margin, zoom, theme.margin)
+      drawFrameGround(context, { project, area, zoom, pixelRatio, canvasLook: theme, frameLook: frameTheme })
       const origin = frameOriginPx(canvasWeave(project), frame)
       const sheet = spaceOf(project, false)
       // The Frame is drawn in its own px, its Bead's size over the Canvas's (ticket 0665), from its first position's
       // corner. The band's rows are the Canvas's; the Frame's own are counted from its first (alike layers only).
       const scale = frameScale(project)
       if (scale === 1) {
-        drawFrameLayer(context, { ...draw, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
+        drawFrameLayer(context, { ...draw, look: frameLook, rows: band && { first: band.first - frame.row, last: band.last - frame.row } }, sheet, origin)
       } else {
         const seen = { left: (area.left - origin.x) / scale, right: (area.right - origin.x) / scale, top: (area.top - origin.y) / scale, bottom: (area.bottom - origin.y) / scale }
         context.save()
         context.translate(origin.x, origin.y)
         context.scale(scale, scale)
-        drawFrameLayer(context, { ...draw, zoom: zoom * scale, area: seen, rows: undefined }, sheet, { x: 0, y: 0 })
+        drawFrameLayer(context, { ...draw, look: frameLook, zoom: zoom * scale, area: seen, rows: undefined }, sheet, { x: 0, y: 0 })
         context.restore()
       }
     }
   } else if (space.hasFrame) {
-    drawFrameLayer(context, draw, space, { x: 0, y: 0 })
+    drawFrameLayer(context, { ...draw, look: frameLook }, space, { x: 0, y: 0 })
   }
 
   if (band) {

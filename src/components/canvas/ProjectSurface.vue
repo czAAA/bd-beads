@@ -78,10 +78,11 @@ const emit = defineEmits<SurfacePointerEvents & {
   'frame-anchor': [anchor: FrameAnchor | undefined]
 }>()
 
-/** The colors the beads are drawn in follow the app's theme and the person's Canvas color; a change redraws both
- * layers. */
-const canvasBackground = useCanvasBackground()
+/** The colors the beads are drawn in follow the app's theme and each layer's own Background (ticket 0666); a change
+ * redraws both layers. */
+const canvasBackground = useCanvasBackground(() => props.project)
 const theme = canvasBackground.projectTheme
+const frameTheme = canvasBackground.frameTheme
 
 const rootEl = ref<HTMLElement>()
 const baseEl = ref<HTMLCanvasElement>()
@@ -213,7 +214,7 @@ const marginCue = useMarginCue(props)
 const pointer = useSurfacePointer({ props: drawnProps, emit, root: rootEl, size, surface, leaning, marksShown, refuse: marginCue.refuse })
 const { handlers, surfaceClass, cursorStyle, penPointer, pickChip, pressMoveHandle } = pointer
 const { oncePerFrame } = useFrameScheduler()
-useBeadLayer({ props: drawnProps, canvas: baseEl, size: drawnSize, space, theme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
+useBeadLayer({ props: drawnProps, canvas: baseEl, size: drawnSize, space, theme, frameTheme, showFinished: pointer.showFinished, marksShown, oncePerFrame })
 useSurfaceOverlay({
   props: drawnProps, canvas: overlayEl, size: drawnSize, space, surface, rulers, theme, marksShown, oncePerFrame,
   markerAt: pointer.markerAt, framing: pointer.framing, touchInput: pointer.touchInput, hotHandle: pointer.hotHandle, marginOpacity: marginCue.opacity,

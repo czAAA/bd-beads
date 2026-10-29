@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, inject, ref } from 'vue'
 import BeadQuantities from '../palette/BeadQuantities.vue'
+import BackgroundChip from '../project/BackgroundChip.vue'
+import BackgroundSection from '../project/BackgroundSection.vue'
 import EditableLine from '../project/EditableLine.vue'
 import ExportSection from './ExportSection.vue'
 import MarginSection from './MarginSection.vue'
@@ -24,11 +26,12 @@ import { FRINGE_STYLES, frameAllows, fringeStyleOf, settingValuesOf, type FrameS
 import { MAX_PIECE_NAME } from '../../domain/pieceNames'
 import { frameOf, layerOf, lettersOn } from '../../domain/layerRecord'
 import { rowProgressStarted } from '../../domain/rowProgress'
-import type { Project } from '../../domain/project'
+import type { Background, Project } from '../../domain/project'
 import { estimatedSizeMm, formatSizeMm } from '../../domain/projectSize'
 import { plural } from '../../i18n/plural'
 import { useI18n } from '../../i18n/useI18n'
 import { frameWeave } from '../../domain/layerWeave'
+import { useCanvasBackground } from '../../theme/useCanvasBackground'
 
 // The Frame panel (tickets 473, 475, 555, 568; Frame card): title with Rotate and Remove, Export (off with no Frame), the
 // name, size, Beads needed and the margin (ticket 0656); with no Frame, Frame from starter, Select a frame and Fit. A panel like Menu and Project
@@ -54,6 +57,8 @@ const emit = defineEmits<{
   'set-letters': [on: boolean]
   key: [event: KeyboardEvent]
   'set-settings': [change: FrameSettings]
+  /** The Frame's Background picked (ticket 0666). */
+  'set-background': [background: Background]
 }>()
 
 const { t, locale } = useI18n()
@@ -63,6 +68,9 @@ const rotateAction = controlAction('rotate-frame')
 const removeAction = controlAction('remove-frame')
 const locked = computed(() => rowProgressStarted(props.project))
 const frame = computed(() => frameOf(props.project))
+/** The color the Frame is drawn on (ticket 0666), its section's summary; none in high contrast. */
+const backgrounds = useCanvasBackground(() => props.project)
+const backgroundShown = computed(() => backgrounds.shownOf('frame').color)
 /** A Frame without a shape lying turned (ticket 0667) keeps its size until it is turned upright: its fields show it as seen, off. */
 const turned = computed(() => !!frame.value && !frameAllows(frame.value, 'resize') && !locked.value)
 /** Whether the size fields are off, and why: finished rows, or a turned Frame. */
@@ -353,7 +361,13 @@ const ordered = (['top', 'bottom', 'left', 'right'] as const).map((edge) => cell
     </template>
 
     <BeadQuantities v-if="frame" :project="settledProject ?? project" />
-    <MarginSection v-if="frame" />
+    <PanelSection v-if="frame" id="frame:background" :label="t.frame.background.heading" data-testid="frame-background">
+      <template v-if="backgroundShown" #summary>
+        <BackgroundChip :background="backgroundShown" />
+      </template>
+      <BackgroundSection :project="project" layer="frame" @pick="emit('set-background', $event)" />
+    </PanelSection>
+    <MarginSection v-if="frame" :project="project" />
   </div>
 </template>
 
