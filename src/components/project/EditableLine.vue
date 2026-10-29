@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, useId } from 'vue'
+import { useAnchoredPosition } from '../../composables/ui/useAnchoredPosition'
 import { useOverlayLayer } from '../../composables/ui/useOverlayLayer'
 import { useI18n } from '../../i18n/useI18n'
 import IconButton from '../ui/IconButton.vue'
@@ -37,6 +38,9 @@ const draft = ref('')
 const refused = ref(false)
 const field = ref<InstanceType<typeof TextField>>()
 const form = ref<HTMLFormElement>()
+const rootEl = ref<HTMLElement>()
+// Bare, the field floats above its cell in the top layer, so the margin sheet's scale (ticket 0698) never shrinks it.
+const anchored = useAnchoredPosition(rootEl, form, () => 'start', () => 'above')
 const fieldId = useId()
 const errorId = useId()
 const canSave = computed(() => !props.requiredMessage || props.normalize(draft.value) !== '')
@@ -45,8 +49,11 @@ function start() {
   draft.value = props.value
   refused.value = false
   editing.value = true
-  // The person tapped to type, so the keyboard rises on a touch device too (ticket 520).
-  void nextTick(() => field.value?.focus({ asked: true }))
+  void nextTick(() => {
+    if (props.bare) anchored.follow()
+    // The person tapped to type, so the keyboard rises on a touch device too (ticket 520).
+    field.value?.focus({ asked: true })
+  })
 }
 
 function commit() {
@@ -56,11 +63,13 @@ function commit() {
     return
   }
   editing.value = false
+  anchored.stop()
   if (next !== props.value) emit('save', next)
 }
 
 function cancel() {
   editing.value = false
+  anchored.stop()
   refused.value = false
 }
 
@@ -70,7 +79,7 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
 </script>
 
 <template>
-  <div class="editable-line" :class="{ 'editable-line--small': small, 'editable-line--bare': bare }" :data-testid="`${testid}-row`">
+  <div ref="rootEl" class="editable-line" :class="{ 'editable-line--small': small, 'editable-line--bare': bare }" :data-testid="`${testid}-row`">
     <span v-if="!bare" class="editable-line__label">{{ label }}</span>
     <div v-if="!editing" class="editable-line__body">
       <template v-if="value || bare">
@@ -85,6 +94,9 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
       v-else
       ref="form"
       class="editable-line__form"
+      :class="{ 'anchored-popup': bare }"
+      :popover="bare ? 'manual' : undefined"
+      :style="bare ? anchored.style.value : undefined"
       :data-testid="`${testid}-form`"
       data-handles-escape
       @submit.prevent="commit"
@@ -229,9 +241,6 @@ useOverlayLayer({ isOpen: () => !!props.bare && editing.value, root: () => form.
 }
 
 .editable-line--bare .editable-line__form {
-  position: absolute;
-  bottom: calc(100% + var(--space-8));
-  left: calc(-1 * var(--space-8));
   z-index: var(--z-popover);
   box-sizing: border-box;
   width: var(--margin-edit-width);

@@ -53,10 +53,11 @@ function drawDot(context: DrawingContext, dot: RulerDot, scale: RulerScale, them
   context.fill()
 }
 
-/** One ruler number, in the style its role asks for (Rulers card); the current pass's on its `marker` pill (ticket 0685). */
-function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, theme: ProjectTheme, current: boolean): void {
+/** One ruler number, in the style its role asks for (Rulers card); the current pass's on its `marker` pill, `pad` round
+ * the number (ticket 0685), or `false` for any other. */
+function drawLabel(context: DrawingContext, label: RulerLabel, fontPx: number, theme: ProjectTheme, pad: number | false): void {
+  const current = pad !== false
   if (current) {
-    const pad = MARGIN_PX.pass.pillPad
     const width = label.width + pad * 2
     const height = label.height + pad * 2
     context.fillStyle = theme.marker
@@ -152,7 +153,7 @@ export function drawRulers(context: DrawingContext, input: RulerDrawInput): void
   for (const label of layout.labels) {
     const current = pass !== undefined && numbersPass(label, pass, project)
     numbered ||= current
-    drawLabel(context, label, fontPx, theme, current)
+    drawLabel(context, label, fontPx, theme, current && MARGIN_PX.pass.pillPad * layout.sheetScale)
   }
   if (pass && !numbered) drawPassTicks(context, input, pass, theme)
   drawPieceNames(context, input)

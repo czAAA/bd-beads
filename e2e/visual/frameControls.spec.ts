@@ -1,10 +1,10 @@
 import { expect, test, type Page } from '@playwright/test'
-import { gridBox, openApp, savedProject, settle, setZoom } from '../support/app'
+import { gridBox, openApp, openColorPopover, savedProject, settle, setZoom } from '../support/app'
 import { beadCentre, fixtureProject } from '../support/projects'
 import { frameOf } from '../../src/domain/layerRecord'
 import { frameGrid } from '../../src/testUtils/frameGrid'
 
-/** The margin sheet's Move bar and Edit Frame never scale with the zoom (tickets 473, 0657); the Frame panel hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
+/** The margin sheet's Move bar and Edit Frame are drawn at the sheet's scale, its band over 72px held between 0.6 and 1.5 (tickets 0657, 0698); the Frame panel hangs from the strip's Frame button (tickets 475, 510). Measured by their boxes, not compared with a picture. */
 
 type Box = { x: number; y: number; width: number; height: number }
 
@@ -16,10 +16,10 @@ async function box(page: Page, testid: string): Promise<Box> {
 
 const overlaps = (a: Box, b: Box) => a.x < b.x + b.width && b.x < a.x + a.width && a.y < b.y + b.height && b.y < a.y + a.height
 
-// The sheet's full form, from 85% (ticket 0658): under it the tools are compact or folded, and under about 39% only the
-// Move bar is left (ticket 0682).
-for (const zoom of [100, 400]) {
-  test(`the handle, pencil and bar keep their size, and the handle and pencil clear each other, at ${zoom}%`, async ({ browser }) => {
+// The sheet's full form, from 51% (tickets 0658, 0698): a loom bead is 20px at 100%, so the band is 80px there and the
+// scale 80 / 72; from 135% it is held at 1.5. Under 23% only the Move bar is left (ticket 0682).
+for (const [zoom, scale] of [[100, 80 / 72], [400, 1.5]] as const) {
+  test(`the handle and pencil are drawn at the sheet's scale and clear each other, and the bar keeps its size, at ${zoom}%`, async ({ browser }) => {
     const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
     const page = await context.newPage()
     await openApp(page, [fixtureProject({ technique: 'loom', columns: 40 })])
@@ -32,8 +32,7 @@ for (const zoom of [100, 400]) {
     const pencil = await box(page, 'frame-edit-toggle')
     const bar = await box(page, 'panel-dropdown')
 
-    expect([handle.width, handle.height]).toEqual([56, 28])
-    expect([pencil.width, pencil.height]).toEqual([28, 28])
+    for (const [drawn, px] of [[handle.width, 56], [handle.height, 28], [pencil.width, 28], [pencil.height, 28]]) expect(drawn).toBeCloseTo(px * scale, 1)
     expect(bar.width).toBe(585)
     for (const testid of ['frame-edge-top-out', 'frame-edge-left-in', 'frame-edge-right-out']) {
       const step = await box(page, testid)
@@ -75,7 +74,8 @@ test('panning the canvas moves the Frame but not a bar opened from the strip, an
   const after = { bar: await box(page, 'panel-dropdown'), handle: await box(page, 'frame-move-handle') }
 
   expect(after.bar).toEqual(before.bar)
-  expect([after.handle.width, after.handle.height]).toEqual([56, 28])
+  // At 400% the sheet is drawn at its largest scale, 1.5 (ticket 0698).
+  expect([after.handle.width, after.handle.height]).toEqual([56 * 1.5, 28 * 1.5])
   await context.close()
 })
 
@@ -99,10 +99,10 @@ async function tap(page: Page, at: { x: number; y: number }): Promise<void> {
   await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] })
 }
 
-// Under a 31px band nothing of the sheet is drawn but the Move bar, on the Frame's top edge (ticket 0682): it still
+// Under 0.6 of a 31px band nothing of the sheet is drawn but the Move bar, on the Frame's top edge (ticket 0682): it still
 // drags the Frame, and a press on the Frame's first row, by mouse or by finger, reaches the bead, not the bar.
 for (const touch of [false, true]) {
-  for (const zoom of [10, 20, 30]) {
+  for (const zoom of [10, 20]) {
     test(`the bare sheet's Move bar drags the Frame and leaves its first row to the beads, at ${zoom}%${touch ? ', by touch' : ''}`, async ({ browser }) => {
       const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce', hasTouch: touch })
       const page = await context.newPage()
@@ -173,3 +173,43 @@ for (const zoom of [60, 80, 100]) {
     })
   }
 }
+
+/** What a press at the middle of each of a box's 12px squares lands on, past its rounded corners: the testid of the
+ * nearest marked element. */
+async function landsOn(page: Page, area: Box, inset: number): Promise<string[]> {
+  return page.evaluate(({ area, inset }) => {
+    const hits: string[] = []
+    for (let x = area.x + inset; x < area.x + area.width - inset; x += 12) {
+      for (let y = area.y + inset; y < area.y + area.height - inset; y += 12) {
+        hits.push(document.elementFromPoint(x, y)?.closest('[data-testid]')?.getAttribute('data-testid') ?? 'none')
+      }
+    }
+    return hits
+  }, { area, inset })
+}
+
+// The Tool pill and its color popover float over the drawing, the margin sheet included (StackingOrder card): the
+// sheet's title block, wider at its scale (ticket 0698), used to be drawn over them and take none of their presses.
+test('the Tool pill and its color popover are drawn over the margin sheet, whose other controls still take a press', async ({ browser }) => {
+  const context = await browser.newContext({ colorScheme: 'light', viewport: { width: 1400, height: 900 }, reducedMotion: 'reduce' })
+  const page = await context.newPage()
+  await openApp(page, [fixtureProject({ technique: 'loom', columns: 30, rows: 30 })])
+  await expect(page.getByTestId('project-surface-cells')).toHaveCount(1)
+  await settle(page)
+  await openColorPopover(page)
+
+  const title = await box(page, 'margin-title-block')
+  const pill = await box(page, 'tool-pill')
+  const popover = await box(page, 'color-popover')
+  expect(overlaps(title, pill) && overlaps(title, popover), 'the title block lies under the pill and the popover').toBe(true)
+
+  const pillLayer = (testid: string) => page.getByTestId('tool-pill-layer').getByTestId(testid).count().then((n) => n > 0)
+  for (const [area, inset] of [[pill, pill.height / 2], [popover, 16]] as const) {
+    for (const hit of new Set(await landsOn(page, area, inset))) expect(await pillLayer(hit), `a press there lands on ${hit}`).toBe(true)
+  }
+  // The fold button stands clear of the pill: it takes its press.
+  const fold = await box(page, 'margin-title-fold')
+  expect(overlaps(fold, pill) || overlaps(fold, popover)).toBe(false)
+  expect(await landsOn(page, { x: fold.x + fold.width / 2 - 1, y: fold.y + fold.height / 2 - 1, width: 2, height: 2 }, 0)).toEqual(['margin-title-fold'])
+  await context.close()
+})
