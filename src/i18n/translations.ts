@@ -1,4 +1,3 @@
-import type { FormFactorNames } from '../domain/beads'
 import type { FrameShapeId, FrameSettingName, FringeStyle } from '../domain/frameShape'
 import type { Locale } from '../domain/locale'
 import type { BandFit, StarterCategoryId, StarterSizeName } from '../domain/starters'
@@ -207,8 +206,6 @@ export interface Translations {
   /** A Technique setting's words, by its label key (ADR 0078, ticket 0624): open like `techniques`, so a new setting is
    * its entry and its strings; `registryNames.test.ts` checks every key is in every language. */
   weaveSettings: Readonly<Record<string, SettingWords>>
-  /** The Form factors' names, the middle word of a Bead's label (ticket 533); a maker's product name stays as it is. */
-  formFactors: FormFactorNames
   projects: {
     heading: string
     newProjectButton: string

@@ -183,7 +183,6 @@ export const be: Translations = {
       changed: 'Блок цэглы зменены: {count}',
     },
   },
-  formFactors: { cube: 'Куб', round: 'Круглы', delica: 'Delica' },
   projects: {
     heading: 'Бібліятэка праектаў',
     newProjectButton: 'Новы праект',

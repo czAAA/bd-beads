@@ -1,4 +1,3 @@
-import { FORM_FACTOR_NAMES_EN } from '../domain/beads'
 import type { Translations } from './translations'
 
 export const en: Translations = {
@@ -181,7 +180,6 @@ export const en: Translations = {
       changed: 'Brick block changed to {count}',
     },
   },
-  formFactors: FORM_FACTOR_NAMES_EN,
   projects: {
     heading: 'Projects library',
     newProjectButton: 'New Project',

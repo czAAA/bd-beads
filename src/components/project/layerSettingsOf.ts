@@ -27,5 +27,5 @@ export function layerSettingsOf(project: Project, layer: Layer) {
 
 /** A folded Layer settings section's summary (ticket 0670): the layer's Technique and Bead, "Loom · Miyuki Delica 11/0". */
 export function layerSummary(t: Translations, { technique, bead }: ReturnType<typeof layerSettingsOf>): string {
-  return [techniqueName(t, technique), bead && beadLabel(bead, t.formFactors)].filter(Boolean).join(' · ')
+  return [techniqueName(t, technique), bead && beadLabel(bead)].filter(Boolean).join(' · ')
 }

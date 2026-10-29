@@ -182,7 +182,6 @@ export const zh: Translations = {
       changed: '砖块行数已改为{count}',
     },
   },
-  formFactors: { cube: '方形', round: '圆形', delica: 'Delica' },
   projects: {
     heading: '项目库',
     newProjectButton: '新建项目',

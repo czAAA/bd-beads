@@ -19,7 +19,6 @@ const ALL: Record<Locale, Translations> = { en, ru, uk, be, zh, es, pl }
  * longer lists them, this does. */
 const NAMED: { group: string; names: (t: Translations) => Readonly<Record<string, string>>; keys: string[] }[] = [
   { group: 'techniques', names: (t) => t.techniques, keys: TECHNIQUES.map(techniqueNameKey) },
-  { group: 'formFactors', names: (t) => t.formFactors, keys: BEAD_CATALOG.map((bead) => bead.formFactor.nameKey) },
   {
     group: 'colorNames',
     names: (t) => t.colorNames,
@@ -34,7 +33,7 @@ const NAMED: { group: string; names: (t: Translations) => Readonly<Record<string
 ]
 
 describe('registry names (ADR 0078)', () => {
-  it('names every Technique, Form factor, Brand color and Starter in every language', () => {
+  it('names every Technique, Brand color and Starter in every language', () => {
     const missing = NAMED.flatMap(({ group, names, keys }) =>
       LOCALES.flatMap((locale) => [...new Set(keys)].filter((key) => !names(ALL[locale])[key]?.trim()).map((key) => `${locale} ${group}.${key}`)),
     )

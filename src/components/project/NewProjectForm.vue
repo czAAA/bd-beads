@@ -51,7 +51,7 @@ defineExpose({ focusName })
 onMounted(focusName)
 
 const selectedBead = computed(() => findBead(beadId.value))
-const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value, t.value.formFactors) : ''))
+const namePlaceholder = computed(() => (selectedBead.value ? beadLabel(selectedBead.value) : ''))
 
 const panel = inject(PANEL_CONTEXT, undefined)
 
